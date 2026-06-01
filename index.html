@@ -4358,7 +4358,8 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ===== Traffic layer state ===== */
     const trafficFilters={ships:'all',planes:'all'};
     let planesData=[], shipsData=[], planesTimer=null, shipsTimer=null;
-    let planesTime=0, planesSynthetic=false;   /* OpenSky snapshot time (Unix s) + synthetic-fallback flag */
+    let planesTime=0, planesSynthetic=false;   /* live-feed snapshot time (ms) + synthetic-fallback flag */
+    let _planesMove=null, _planesMoveT=null;   /* viewport-follow refetch handle */
     /* Aircraft military operator hints (very rough — based on callsign prefixes) */
     const MILITARY_CALLSIGN_PREFIXES=['RCH','REACH','SAM','EVAC','MUSCLE','HOMR','BLUE','RNGR','NATO','PAT','RFR','SPAR','THUG','SHELL','GRZLY','CLAMP','POPS','HAWG','SLAY','DUKE','LOBO','GUMP','HUSKY','HUNTR','BAND','TYRN','MAGMA','KING','CAMEL'];
     function classifyAircraft(callsign){
@@ -4402,42 +4403,54 @@ window.addEventListener('DOMContentLoaded', () => {
       planesData=arr; planesTime=Date.now(); planesSynthetic=true;
       refreshTrafficLayer('planes');
     }
-    /* Query OpenSky for the current viewport (lighter + more relevant than the whole planet,
-       and less likely to hit the anonymous rate limit). Captures EVERY state-vector field
-       OpenSky exposes + the snapshot time so the tooltip can show exactly how fresh each track is. */
-    function openSkyURL(){
-      let bbox='';
-      try{ if(map){ const b=map.getBounds();
-        const lamin=Math.max(-90,b.getSouth()).toFixed(4), lamax=Math.min(90,b.getNorth()).toFixed(4);
-        const lomin=Math.max(-180,b.getWest()).toFixed(4), lomax=Math.min(180,b.getEast()).toFixed(4);
-        bbox=`?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`; } }catch(_){}
-      return 'https://opensky-network.org/api/states/all'+bbox;
+    /* Live aircraft = airplanes.live (free, key-less, CORS-enabled community ADS-B network).
+       OpenSky's REST API is CORS-blocked from browsers and now rate-limits/auth-gates anonymous
+       access, so it cannot be reached client-side; airplanes.live serves the SAME real live ADS-B
+       data with proper CORS headers (and richer fields). We query the current viewport (centre +
+       radius, capped at the API's 250 nm max) so the aircraft match what's on screen, capturing
+       every field for the tooltip + the exact data timestamp. Synthetic data is now a last resort
+       only when the device is offline / the feed is unreachable. */
+    let _lastPlaneFetch=0;
+    function viewportRadiusNm(){
+      try{ if(map){ const c=map.getCenter(), ne=map.getBounds().getNorthEast(), toR=Math.PI/180, R=6371;
+        const dLat=(ne.lat-c.lat)*toR, dLon=(ne.lng-c.lng)*toR;
+        const a=Math.sin(dLat/2)**2+Math.cos(c.lat*toR)*Math.cos(ne.lat*toR)*Math.sin(dLon/2)**2;
+        const km=2*R*Math.asin(Math.min(1,Math.sqrt(a)));
+        return Math.max(50,Math.min(250,Math.round(km/1.852))); } }catch(_){}
+      return 250;
+    }
+    /* Normalise an airplanes.live ADS-B record to our internal plane shape (units → m, m/s). */
+    function adsbToPlane(a,nowMs){
+      const FT=0.3048, KT=0.514444, FPM=0.00508, onGround=a.alt_baro==='ground';
+      const mil=!!((a.dbFlags|0)&1) || classifyAircraft(a.flight)==='military';
+      return {
+        icao24:(a.hex||'').toUpperCase(), callsign:(a.flight||'').trim(), reg:a.r||'', acType:a.t||'', desc:a.desc||'',
+        lng:a.lon, lat:a.lat,
+        baroAlt: onGround?0:(typeof a.alt_baro==='number'?a.alt_baro*FT:null),
+        geoAlt: (typeof a.alt_geom==='number'?a.alt_geom*FT:null),
+        vel: (typeof a.gs==='number'?a.gs*KT:null),
+        heading: (a.track!=null?a.track:(a.true_heading!=null?a.true_heading:(a.mag_heading!=null?a.mag_heading:0))),
+        vrate: (typeof a.baro_rate==='number'?a.baro_rate*FPM:(typeof a.geom_rate==='number'?a.geom_rate*FPM:null)),
+        squawk:a.squawk||'', onGround, category:(a.category||null),
+        lastContact: a.seen!=null ? Math.floor(nowMs/1000 - a.seen) : Math.floor(nowMs/1000),
+        type: mil?'military':'civilian'
+      };
     }
     async function fetchPlanes(){
-      let success=false;
-      const url=openSkyURL();
+      _lastPlaneFetch=Date.now();
+      const lat=(map?map.getCenter().lat:48), lon=(map?map.getCenter().lng:8), rad=viewportRadiusNm();
       try{
-        for(const make of [u=>u, ...PROXIES]){
-          try{
-            const r=await fetch(make(url),{redirect:'follow'});
-            if(!r.ok) continue;
-            const j=await r.json();
-            if(!j||!j.states) continue;
-            planesTime=(j.time?j.time*1000:Date.now());
-            planesSynthetic=false;
-            planesData=j.states.filter(s=>s[5]!=null&&s[6]!=null).slice(0,1500).map(s=>({
-              icao24:s[0], callsign:(s[1]||'').trim(), country:s[2],
-              tpos:s[3], lastContact:s[4], lng:s[5], lat:s[6],
-              baroAlt:s[7], onGround:s[8], vel:s[9], heading:s[10], vrate:s[11],
-              geoAlt:s[13], squawk:s[14], spi:s[15], posSource:s[16], category:s[17],
-              type:classifyAircraft(s[1])
-            }));
-            success=true; break;
-          }catch(_){}
+        const r=await fetch(`https://api.airplanes.live/v2/point/${lat.toFixed(3)}/${lon.toFixed(3)}/${rad}`);
+        if(r.ok){
+          const j=await r.json(); const ac=Array.isArray(j.ac)?j.ac:[];
+          planesTime=(j.now||Date.now());
+          planesSynthetic=false;
+          planesData=ac.filter(a=>a.lat!=null&&a.lon!=null).slice(0,1800).map(a=>adsbToPlane(a,planesTime));
+          refreshTrafficLayer('planes'); return;
         }
-      }catch(e){ console.warn('OpenSky fetch failed',e); }
-      if(!success){ console.warn('OpenSky API unavailable — using synthetic aircraft data'); genSyntheticPlanes(); return; }
-      refreshTrafficLayer('planes');
+      }catch(e){ console.warn('airplanes.live fetch failed',e); }
+      /* feed unreachable (offline / blocked) → clearly-labelled synthetic placeholder so the layer isn't empty */
+      console.warn('Live aircraft feed unavailable — using synthetic placeholder'); genSyntheticPlanes();
     }
     /* Synthetic ship demo data — real-time AIS is paywalled. Distributes ships GLOBALLY along major sea lanes + chokepoints. */
     const SHIP_PORTS=[
@@ -4521,7 +4534,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const filtered=filt==='all'?data:data.filter(d=>d.type===filt);
       const features=filtered.map(d=>{
         const props = id==='planes'
-          ? { type:d.type, callsign:d.callsign||'', icao24:d.icao24||'', country:d.country||'',
+          ? { type:d.type, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'', acType:d.acType||'', desc:d.desc||'',
               baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
               vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
               squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||d.tpos||0), category:(d.category!=null?d.category:null) }
@@ -4557,22 +4570,23 @@ window.addEventListener('DOMContentLoaded', () => {
           row(jp?'針路':'Course',p.heading!=null?Math.round(p.heading)+'°':'')+typeChip+
           `<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${jp?'※デモ用合成データ':'Simulated demo data'}</div>`;
       }
-      /* planes — every available OpenSky field */
+      /* planes — every available ADS-B field (airplanes.live) */
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
       const velKmh=p.vel!=null?` · ${Math.round(p.vel*3.6)} km/h · ${Math.round(p.vel*1.944)} kn`:'';
-      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(jp?'水平':'level'):'');
-      return `<div style="font-weight:700;font-size:13px;">✈️ ${p.callsign||p.icao24||'—'}</div>`+
-        row(jp?'登録国':'Origin',p.country)+
+      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(jp?'水平飛行':'level'):'');
+      const acName=p.desc||p.acType||'';
+      return `<div style="font-weight:700;font-size:13px;">✈️ ${p.callsign||p.reg||p.icao24||'—'}</div>`+
+        row(jp?'機体':'Aircraft',acName)+
+        row(jp?'登録記号':'Reg.',p.reg)+
         row('ICAO24',p.icao24?p.icao24.toUpperCase():'')+
-        row(jp?'高度(気圧)':'Altitude',p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:'')+
+        row(jp?'高度(気圧)':'Altitude',p.onGround?(jp?'地上':'on ground'):(p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:''))+
         row(jp?'高度(GPS)':'Geo alt',p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
         row(jp?'対地速度':'Speed',p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
         row(jp?'針路':'Track',p.heading!=null?Math.round(p.heading)+'°':'')+
-        row(jp?'昇降':'Vert. rate',vr)+
+        row(jp?'昇降率':'Vert. rate',vr)+
         row(jp?'スコーク':'Squawk',p.squawk)+
-        row(jp?'接地':'On ground',p.onGround?(jp?'はい':'yes'):'')+
         typeChip+
-        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(jp?'※デモ用合成データ':'Simulated demo data'):(jp?'最終受信':'Last seen')+': '+fmtClock((p.lastContact||0)*1000)+' ('+agoStr(p.lastContact)+')'}<br>${jp?'データ取得':'Snapshot'}: ${fmtClock(planesTime)}</div>`;
+        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(jp?'※デモ用合成データ（実データ取得不可）':'Simulated placeholder (live feed unavailable)'):(jp?'最終受信':'Last seen')+' '+agoStr(p.lastContact)+' · '+fmtClock(planesTime)}<br>airplanes.live · ADS-B</div>`;
     }
     function setupTrafficLayer(id){
       if(map.getSource('src-'+id)) return;
@@ -4606,7 +4620,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(id==='planes'){
         fetchPlanes();
         if(planesTimer) clearInterval(planesTimer);
-        planesTimer=setInterval(fetchPlanes,30000); /* OpenSky free tier — 30s polling */
+        planesTimer=setInterval(fetchPlanes,20000); /* live ADS-B refresh */
+        /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
+        if(!_planesMove){ _planesMove=()=>{ if(map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible'){ clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>1500) fetchPlanes(); },700); } }; map.on('moveend',_planesMove); }
       } else {
         genSyntheticShips();
         if(shipsTimer) clearInterval(shipsTimer);
