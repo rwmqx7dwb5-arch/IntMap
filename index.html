@@ -258,23 +258,6 @@
     /* WebGL-pin hover tooltip — follows the cursor in screen space. Pins themselves are rendered on the WebGL canvas so they CANNOT drift. */
     .map-tooltip{ position:absolute; display:none; pointer-events:none; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); z-index:1500; width:280px; max-width:80vw; transform:translate(-50%,calc(-100% - 18px)); }
     .map-tooltip::after{ content:''; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%) rotate(45deg); width:10px; height:10px; background:var(--popup-bg); border-right:1px solid rgba(128,128,128,0.15); border-bottom:1px solid rgba(128,128,128,0.15); }
-    /* Full-screen in-site browser for opened news articles (iframe) */
-    .news-browser{ display:none; position:fixed; inset:0; z-index:5000; background:var(--bg-color); flex-direction:column; }
-    .news-browser.active{ display:flex; }
-    .nb-toolbar{ display:flex; align-items:center; gap:8px; padding:8px 12px; padding-top:max(8px, env(safe-area-inset-top)); background:var(--sidebar-bg); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid rgba(128,128,128,0.15); flex-shrink:0; }
-    .nb-btn{ background:var(--input-bg); border:none; color:var(--text-main); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; padding:0; }
-    .nb-btn:hover{ background:rgba(128,128,128,0.15); }
-    .nb-back{ background:var(--primary-color); color:#fff; padding:0 14px; width:auto; font-size:13px; font-weight:600; gap:4px; }
-    .nb-back:hover{ filter:brightness(1.08); background:var(--primary-color); }
-    .nb-url{ flex:1; min-width:0; background:var(--input-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:8px 12px; font-size:12px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .nb-iframe-wrap{ flex:1; position:relative; min-height:0; background:var(--card-bg); }
-    .nb-iframe{ position:absolute; inset:0; width:100%; height:100%; border:none; background:#fff; }
-    .nb-loading{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:13px; background:var(--card-bg); }
-    .nb-fallback{ padding:24px; max-width:680px; margin:0 auto; }
-    .nb-fallback h2{ font-size:20px; margin:0 0 12px; }
-    .nb-fallback .nbf-meta{ color:var(--text-muted); font-size:12px; margin-bottom:14px; }
-    .nb-fallback .nbf-snippet{ font-size:14px; line-height:1.6; margin-bottom:18px; }
-    .nb-fallback a{ display:inline-block; padding:10px 18px; background:var(--primary-color); color:#fff; border-radius:10px; font-weight:600; text-decoration:none; font-size:13px; }
     /* Legacy news reader styles kept (unused but referenced) */
     .news-reader{ display:none; }
     .news-reader.active{ display:none; }
@@ -651,10 +634,6 @@
       .setting-group select{ min-height:46px; }
       .country-popup{ position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:100% !important; max-width:100% !important; max-height:84dvh; border-radius:18px 18px 0 0; transform:none !important; padding:26px 18px max(20px,env(safe-area-inset-bottom)); animation:mSheetUp 0.42s var(--sheet-ease); }
 
-      /* news in-site browser respects the notch */
-      .nb-toolbar{ padding-top:max(8px,env(safe-area-inset-top)); padding-left:10px; padding-right:10px; }
-      .nb-url{ font-size:11px; padding:7px 10px; } .nb-btn{ min-height:40px; }
-
       /* roomier tap targets across content */
       .news-item{ padding:16px; } .stat-row{ padding:15px 14px; }
       .dash-nav-btn{ padding:10px 14px; min-height:38px; }
@@ -801,7 +780,7 @@
 
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-content" style="position:relative;">
-    <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:17px;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
@@ -829,7 +808,7 @@
 <!-- Terms of Service / Privacy Policy -->
 <div class="modal-overlay" id="legal-modal">
   <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
-    <button id="legal-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:none;border-radius:50%;background:var(--input-bg);color:var(--text-main);font-size:17px;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <button id="legal-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <div style="display:flex;gap:6px;margin:0 0 14px;">
       <button id="legal-tab-terms" class="ios-segment-btn" style="flex:1;">Terms</button>
       <button id="legal-tab-privacy" class="ios-segment-btn" style="flex:1;">Privacy</button>
@@ -843,18 +822,6 @@
   <div id="cp-body"></div>
 </div>
 
-<!-- In-site browser for news articles -->
-<div class="news-browser" id="news-browser">
-  <div class="nb-toolbar">
-    <button class="nb-btn nb-back" id="nb-back" title="Back"><span style="font-size:14px;">‹</span> <span data-i18n="back">Back</span></button>
-    <div class="nb-url" id="nb-url"></div>
-    <button class="nb-btn" id="nb-reload" title="Reload">↻</button>
-    <button class="nb-btn" id="nb-extern" title="Open in new tab">↗</button>
-  </div>
-  <div class="nb-iframe-wrap" id="nb-iframe-wrap">
-    <div class="nb-loading" id="nb-loading">Loading...</div>
-  </div>
-</div>
 
 <!-- Compose new community post -->
 <div class="compose-modal" id="compose-modal">
@@ -1237,7 +1204,7 @@ window.addEventListener('DOMContentLoaded', () => {
     } else {
       dateCtrl=`<div class="satc-row"><label>${t('satDate')}</label><span class="satc-latest">${t('satLatest')}</span></div>`;
     }
-    panel.innerHTML=`<div class="satc-head">📡 <span>${t('satCtrlTitle')}</span><button id="satc-close" title="${currentLang==='jp'?'閉じる':'Close'}" aria-label="Close" style="margin-left:auto;background:var(--input-bg);border:none;color:var(--text-main);width:24px;height:24px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer;">×</button></div>`+
+    panel.innerHTML=`<div class="satc-head">📡 <span>${t('satCtrlTitle')}</span><button id="satc-close" title="${currentLang==='jp'?'閉じる':'Close'}" aria-label="Close" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
       `<div class="satc-row"><label>${t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
       dateCtrl+
       `<div class="satc-row"><label>${t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${satState.opacity}"></div>`+
@@ -3312,39 +3279,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(f.scrollTop+f.clientHeight>=f.scrollHeight-120 && renderedCount<newsFiltered.length) appendNewsBatch();
   });
 
-  /* ===== In-site iframe-style news browser ===== */
+  /* ===== Shared helper: strip HTML to plain text (used by the news ingest) ===== */
   function stripHTML(s){ const d=document.createElement('div'); d.innerHTML=s||''; return d.textContent||d.innerText||''; }
-  let currentNewsItem=null;
-  async function buildFallbackView(item){
-    /* Many publishers block iframe embedding via X-Frame-Options / CSP. When the iframe fails,
-       show a reader-mode-style snippet with a button to open the original in a new tab. */
-    let snippet='';
-    let ogimg='';
-    try{
-      for(const make of PROXIES){
-        try{
-          const r=await fetch(make(item.link),{redirect:'follow'});
-          if(!r.ok) continue;
-          const txt=await r.text();
-          if(!txt) continue;
-          const og=txt.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
-          const md=og?og[1]:(txt.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)||[])[1];
-          const ogm=(txt.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)||[])[1];
-          if(md) snippet=stripHTML(md);
-          if(ogm) ogimg=ogm;
-          if(snippet) break;
-        }catch(_){}
-      }
-    }catch(_){}
-    if(!snippet) snippet=currentLang==='jp'?'プレビューを取得できませんでした。下のボタンから元記事を開けます。':'Preview unavailable. Use the button below to open the article in a new tab.';
-    return `<div class="nb-fallback">
-        ${ogimg?`<img src="${ogimg}" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;margin-bottom:14px;" onerror="this.style.display='none'">`:''}
-        <h2>${item.title}</h2>
-        <div class="nbf-meta">${item.publisher} · ${formatCustomDate(item.pubDate)}${item.analysis&&item.analysis.name?' · 📍 '+item.analysis.name:''}</div>
-        <div class="nbf-snippet">${snippet}</div>
-        <a href="${item.link}" target="_blank" rel="noopener">${currentLang==='jp'?'元記事を開く ↗':'Open original ↗'}</a>
-      </div>`;
-  }
   /* ===== In-sidebar article reader (the sidebar becomes the reading zone) ===== */
   let readerOpen=false, readerCurrent=null;
   function escForReader(s){ const d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
@@ -3493,55 +3429,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='';
     renderUI();
   }
-
-  function openNewsBrowser(item){
-    currentNewsItem=item;
-    const nb=document.getElementById('news-browser');
-    const wrap=document.getElementById('nb-iframe-wrap');
-    const urlBar=document.getElementById('nb-url');
-    nb.classList.add('active');
-    /* Reset and create a fresh iframe each time */
-    wrap.innerHTML=`<div class="nb-loading">${currentLang==='jp'?'記事を読み込み中...':'Loading article...'}</div>`;
-    try{ urlBar.textContent=new URL(item.link).hostname; }catch(_){ urlBar.textContent=item.link; }
-    const iframe=document.createElement('iframe');
-    iframe.className='nb-iframe';
-    iframe.referrerPolicy='no-referrer';
-    iframe.sandbox='allow-same-origin allow-scripts allow-popups allow-forms';
-    iframe.src=item.link;
-    let loaded=false;
-    let timeout=null;
-    iframe.onload=()=>{
-      loaded=true;
-      clearTimeout(timeout);
-      const ld=document.getElementById('nb-loading'); if(ld) ld.remove();
-    };
-    iframe.onerror=()=>{ if(!loaded) showFallback(item); };
-    /* If load doesn't complete in 5s (X-Frame-Options block usually doesn't fire onerror),
-       try fetching via proxy and show fallback. */
-    timeout=setTimeout(async ()=>{
-      if(!loaded){
-        try{ if(iframe.contentDocument && iframe.contentDocument.body && iframe.contentDocument.body.children.length>0){ loaded=true; const ld=document.getElementById('nb-loading'); if(ld) ld.remove(); return; } }catch(_){}
-        showFallback(item);
-      }
-    }, 5000);
-    wrap.appendChild(iframe);
-  }
-  async function showFallback(item){
-    const wrap=document.getElementById('nb-iframe-wrap');
-    wrap.innerHTML=`<div class="nb-loading">${currentLang==='jp'?'プレビューを生成中...':'Generating preview...'}</div>`;
-    const html=await buildFallbackView(item);
-    wrap.innerHTML=html;
-  }
-  function closeNewsBrowser(){
-    document.getElementById('news-browser').classList.remove('active');
-    document.getElementById('nb-iframe-wrap').innerHTML='';
-    currentNewsItem=null;
-  }
-  function openNewsReader(item){ openNewsBrowser(item); } /* legacy alias */
-  document.getElementById('nb-back').onclick=closeNewsBrowser;
-  document.getElementById('nb-reload').onclick=()=>{ if(currentNewsItem) openNewsBrowser(currentNewsItem); };
-  document.getElementById('nb-extern').onclick=()=>{ if(currentNewsItem) window.open(currentNewsItem.link, '_blank', 'noopener'); };
-  document.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && document.getElementById('news-browser').classList.contains('active')) closeNewsBrowser(); });
 
   /* ===== Stats — list with multi-select country comparison ===== */
   let compareSet=new Set();
@@ -4471,6 +4358,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ===== Traffic layer state ===== */
     const trafficFilters={ships:'all',planes:'all'};
     let planesData=[], shipsData=[], planesTimer=null, shipsTimer=null;
+    let planesTime=0, planesSynthetic=false;   /* OpenSky snapshot time (Unix s) + synthetic-fallback flag */
     /* Aircraft military operator hints (very rough — based on callsign prefixes) */
     const MILITARY_CALLSIGN_PREFIXES=['RCH','REACH','SAM','EVAC','MUSCLE','HOMR','BLUE','RNGR','NATO','PAT','RFR','SPAR','THUG','SHELL','GRZLY','CLAMP','POPS','HAWG','SLAY','DUKE','LOBO','GUMP','HUSKY','HUNTR','BAND','TYRN','MAGMA','KING','CAMEL'];
     function classifyAircraft(callsign){
@@ -4492,7 +4380,7 @@ window.addEventListener('DOMContentLoaded', () => {
       [144.92,13.58,'military','Andersen'],[72.41,-7.31,'military','DG'],[-157.97,21.36,'military','HCK'],[127.02,36.96,'military','OSAN'],[7.60,49.44,'military','RAM'],[33.52,44.61,'military','SEV'],[126.68,37.96,'military','DMZ'],[35.18,32.99,'military','ROT'],[140.13,35.30,'military','YKS']
     ];
     function genSyntheticPlanes(){
-      const arr=[];
+      const arr=[], now=Math.floor(Date.now()/1000);
       AIRPORTS.forEach(([lng,lat,type,name])=>{
         const count = type==='military'?2:6;
         for(let i=0;i<count;i++){
@@ -4504,27 +4392,44 @@ window.addEventListener('DOMContentLoaded', () => {
             icao24:Math.random().toString(36).slice(2,8).toUpperCase(),
             callsign: type==='military'?'MIL'+Math.floor(Math.random()*9000+1000):name+Math.floor(Math.random()*900+100),
             country: type==='military'?'MIL':'',
+            tpos:now, lastContact:now,
             lng:lng+dLng, lat:lat+dLat,
-            alt:9000+Math.random()*3500, vel:200+Math.random()*60, heading:Math.random()*360,
-            type
+            baroAlt:9000+Math.random()*3500, onGround:false, vel:200+Math.random()*60, heading:Math.random()*360, vrate:0,
+            geoAlt:9000+Math.random()*3500, squawk:null, type
           });
         }
       });
-      planesData=arr;
+      planesData=arr; planesTime=Date.now(); planesSynthetic=true;
       refreshTrafficLayer('planes');
+    }
+    /* Query OpenSky for the current viewport (lighter + more relevant than the whole planet,
+       and less likely to hit the anonymous rate limit). Captures EVERY state-vector field
+       OpenSky exposes + the snapshot time so the tooltip can show exactly how fresh each track is. */
+    function openSkyURL(){
+      let bbox='';
+      try{ if(map){ const b=map.getBounds();
+        const lamin=Math.max(-90,b.getSouth()).toFixed(4), lamax=Math.min(90,b.getNorth()).toFixed(4);
+        const lomin=Math.max(-180,b.getWest()).toFixed(4), lomax=Math.min(180,b.getEast()).toFixed(4);
+        bbox=`?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`; } }catch(_){}
+      return 'https://opensky-network.org/api/states/all'+bbox;
     }
     async function fetchPlanes(){
       let success=false;
+      const url=openSkyURL();
       try{
         for(const make of [u=>u, ...PROXIES]){
           try{
-            const r=await fetch(make('https://opensky-network.org/api/states/all'),{redirect:'follow'});
+            const r=await fetch(make(url),{redirect:'follow'});
             if(!r.ok) continue;
             const j=await r.json();
             if(!j||!j.states) continue;
-            planesData=j.states.filter(s=>s[5]!=null&&s[6]!=null).slice(0,1200).map(s=>({
+            planesTime=(j.time?j.time*1000:Date.now());
+            planesSynthetic=false;
+            planesData=j.states.filter(s=>s[5]!=null&&s[6]!=null).slice(0,1500).map(s=>({
               icao24:s[0], callsign:(s[1]||'').trim(), country:s[2],
-              lng:s[5], lat:s[6], alt:s[7], onGround:s[8], vel:s[9], heading:s[10],
+              tpos:s[3], lastContact:s[4], lng:s[5], lat:s[6],
+              baroAlt:s[7], onGround:s[8], vel:s[9], heading:s[10], vrate:s[11],
+              geoAlt:s[13], squawk:s[14], spi:s[15], posSource:s[16], category:s[17],
               type:classifyAircraft(s[1])
             }));
             success=true; break;
@@ -4611,25 +4516,87 @@ window.addEventListener('DOMContentLoaded', () => {
     function refreshTrafficLayer(id){
       if(!map) return;
       const filt=trafficFilters[id];
-      const src=map.getSource('src-'+id);
+      const src=map.getSource('src-'+id); if(!src) return;
       const data=id==='planes'?planesData:shipsData;
       const filtered=filt==='all'?data:data.filter(d=>d.type===filt);
-      const features=filtered.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d.lng,d.lat]},properties:{type:d.type, callsign:d.callsign||d.name||'', country:d.country||'', alt:d.alt||null, vel:d.vel||d.speed||null, heading:d.heading||0}}));
-      if(src) src.setData({type:'FeatureCollection',features});
+      const features=filtered.map(d=>{
+        const props = id==='planes'
+          ? { type:d.type, callsign:d.callsign||'', icao24:d.icao24||'', country:d.country||'',
+              baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
+              vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
+              squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||d.tpos||0), category:(d.category!=null?d.category:null) }
+          : { type:d.type, name:d.name||'', mmsi:(d.mmsi!=null?d.mmsi:null), vel:(d.speed!=null?d.speed:null), heading:(d.heading!=null?d.heading:0) };
+        return { type:'Feature', geometry:{type:'Point',coordinates:[d.lng,d.lat]}, properties:props };
+      });
+      src.setData({type:'FeatureCollection',features});
+    }
+    /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can colour +
+       rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
+    function ensurePlaneIcons(){
+      if(!map) return;
+      const make=(color)=>{
+        const s=44, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
+        const ctx=cv.getContext('2d'); ctx.translate(s/2,s/2);
+        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
+        const P=[[0,-19],[2.2,-6],[2.2,-3],[17,5],[17,9],[2.2,4.5],[2.2,12],[6,16],[6,18],[0,15.5],[-6,18],[-6,16],[-2.2,12],[-2.2,4.5],[-17,9],[-17,5],[-2.2,-3],[-2.2,-6]];
+        ctx.beginPath(); P.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.fill(); ctx.stroke();
+        return ctx.getImageData(0,0,s,s);
+      };
+      try{ if(!map.hasImage('plane-civ')) map.addImage('plane-civ',make('#1e90ff')); }catch(_){}
+      try{ if(!map.hasImage('plane-mil')) map.addImage('plane-mil',make('#ff3b30')); }catch(_){}
+    }
+    function fmtClock(ms){ try{ return new Date(ms).toLocaleTimeString(currentLang==='jp'?'ja-JP':'en-US'); }catch(_){ return ''; } }
+    function agoStr(sec){ if(!sec) return ''; const s=Math.max(0,Math.round(Date.now()/1000-sec)); if(s<60) return currentLang==='jp'?`${s}秒前`:`${s}s ago`; if(s<3600) return currentLang==='jp'?`${Math.floor(s/60)}分前`:`${Math.floor(s/60)}m ago`; return currentLang==='jp'?`${Math.floor(s/3600)}時間前`:`${Math.floor(s/3600)}h ago`; }
+    function trafficTooltipHTML(id,p){
+      const jp=currentLang==='jp';
+      const row=(label,val)=>val!==''&&val!=null?`<div style="font-size:11px;margin-top:2px;"><span style="color:var(--text-muted);">${label}:</span> ${val}</div>`:'';
+      const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(jp?'軍用':'Military'):(jp?'民間':'Civilian')}</div>`;
+      if(id==='ships'){
+        return `<div style="font-weight:600;font-size:13px;">🚢 ${p.name||'—'}</div>`+
+          row(jp?'MMSI':'MMSI',p.mmsi)+row(jp?'速度':'Speed',p.vel!=null?Math.round(p.vel)+' kn':'')+
+          row(jp?'針路':'Course',p.heading!=null?Math.round(p.heading)+'°':'')+typeChip+
+          `<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${jp?'※デモ用合成データ':'Simulated demo data'}</div>`;
+      }
+      /* planes — every available OpenSky field */
+      const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
+      const velKmh=p.vel!=null?` · ${Math.round(p.vel*3.6)} km/h · ${Math.round(p.vel*1.944)} kn`:'';
+      const vr=p.vrate!=null&&Math.abs(p.vrate)>=0.3?`${p.vrate>0?'▲':'▼'} ${Math.abs(p.vrate).toFixed(1)} m/s`:(p.vrate!=null?(jp?'水平':'level'):'');
+      return `<div style="font-weight:700;font-size:13px;">✈️ ${p.callsign||p.icao24||'—'}</div>`+
+        row(jp?'登録国':'Origin',p.country)+
+        row('ICAO24',p.icao24?p.icao24.toUpperCase():'')+
+        row(jp?'高度(気圧)':'Altitude',p.baroAlt!=null?Math.round(p.baroAlt)+' m'+baroFt:'')+
+        row(jp?'高度(GPS)':'Geo alt',p.geoAlt!=null?Math.round(p.geoAlt)+' m':'')+
+        row(jp?'対地速度':'Speed',p.vel!=null?Math.round(p.vel)+' m/s'+velKmh:'')+
+        row(jp?'針路':'Track',p.heading!=null?Math.round(p.heading)+'°':'')+
+        row(jp?'昇降':'Vert. rate',vr)+
+        row(jp?'スコーク':'Squawk',p.squawk)+
+        row(jp?'接地':'On ground',p.onGround?(jp?'はい':'yes'):'')+
+        typeChip+
+        `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${planesSynthetic?(jp?'※デモ用合成データ':'Simulated demo data'):(jp?'最終受信':'Last seen')+': '+fmtClock((p.lastContact||0)*1000)+' ('+agoStr(p.lastContact)+')'}<br>${jp?'データ取得':'Snapshot'}: ${fmtClock(planesTime)}</div>`;
     }
     function setupTrafficLayer(id){
       if(map.getSource('src-'+id)) return;
       map.addSource('src-'+id,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      const color=id==='planes'?['case',['==',['get','type'],'military'],'#ff3b30','#007aff']:['case',['==',['get','type'],'military'],'#ff3b30','#34c759'];
-      map.addLayer({id:'lyr-'+id,type:'circle',source:'src-'+id,layout:{visibility:'none'},paint:{
-        'circle-radius':id==='planes'?3.5:3,
-        'circle-color':color,
-        'circle-stroke-width':1,
-        'circle-stroke-color':'#ffffff',
-        'circle-opacity':opacities[id]
-      }},beforeId);
-      /* Hover tooltip via shared map-tooltip */
-      map.on('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer'; const f=e.features[0]; const p=f.properties; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=`<div style="font-weight:600;font-size:13px;">${id==='planes'?'✈️':'🚢'} ${p.callsign||'—'}</div><div style="color:var(--text-muted);font-size:11px;margin-top:4px;">${p.country||''}</div>${p.alt?`<div style="font-size:11px;margin-top:2px;">${currentLang==='jp'?'高度':'Alt'}: ${Math.round(p.alt)} m</div>`:''}${p.vel?`<div style="font-size:11px;">${currentLang==='jp'?'速度':'Speed'}: ${Math.round(p.vel)} ${id==='planes'?'m/s':'kn'}</div>`:''}<div style="font-size:11px;margin-top:2px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(currentLang==='jp'?'軍用':'Military'):(currentLang==='jp'?'民間':'Civilian')}</div>`; positionTooltip(map.project(f.geometry.coordinates)); });
+      if(id==='planes'){
+        ensurePlaneIcons();
+        /* Aircraft = a real plane glyph rotated to its track (not a dot). */
+        map.addLayer({id:'lyr-planes',type:'symbol',source:'src-planes',layout:{
+          visibility:'none',
+          'icon-image':['match',['get','type'],'military','plane-mil','plane-civ'],
+          'icon-size':['interpolate',['linear'],['zoom'],2,0.4,5,0.58,9,0.78],
+          'icon-rotate':['coalesce',['get','heading'],0],
+          'icon-rotation-alignment':'map',
+          'icon-allow-overlap':true,
+          'icon-ignore-placement':true
+        },paint:{'icon-opacity':opacities.planes}},beforeId);
+      } else {
+        const color=['case',['==',['get','type'],'military'],'#ff3b30','#34c759'];
+        map.addLayer({id:'lyr-ships',type:'circle',source:'src-ships',layout:{visibility:'none'},paint:{
+          'circle-radius':3,'circle-color':color,'circle-stroke-width':1,'circle-stroke-color':'#ffffff','circle-opacity':opacities.ships
+        }},beforeId);
+      }
+      /* Hover tooltip via shared map-tooltip — shows every available field + data freshness. */
+      map.on('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML(id,f.properties); positionTooltip(map.project(f.geometry.coordinates)); });
       map.on('mousemove','lyr-'+id,(e)=>{ positionTooltip(e.point); });
       map.on('mouseleave','lyr-'+id,()=>{ map.getCanvas().style.cursor=''; if(mapTooltipEl) mapTooltipEl.style.display='none'; });
     }
@@ -4745,7 +4712,8 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',['case',['boolean',['feature-state','nato'],false],v,0]); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
-      else if(id==='ships'||id==='planes'){ if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'circle-opacity',v); }
+      else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v); }
+      else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','circle-opacity',v); }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
     }
   })();
@@ -4781,8 +4749,8 @@ window.addEventListener('DOMContentLoaded', () => {
       .ppm-overlay.show{ opacity:1; visibility:visible; pointer-events:auto; }
       .ppm-card{ position:relative; width:min(940px,96vw); max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; border-radius:26px; padding:30px 30px 26px; transform:scale(0.92) translateY(20px); opacity:0; transition:transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.32s ease; }
       .ppm-overlay.show .ppm-card{ transform:scale(1) translateY(0); opacity:1; }
-      .ppm-close{ position:absolute; top:15px; right:15px; width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; font-size:15px; line-height:1; color:var(--text-main); background:var(--input-bg); display:flex; align-items:center; justify-content:center; transition:transform 0.25s ease, background 0.2s ease; z-index:3; }
-      .ppm-close:hover{ background:rgba(128,128,128,0.28); transform:rotate(90deg); }
+      .ppm-close{ position:absolute; top:13px; right:14px; width:32px; height:32px; border:none; cursor:pointer; font-size:22px; font-weight:300; line-height:1; color:var(--text-muted); background:transparent; display:flex; align-items:center; justify-content:center; transition:color 0.2s ease; z-index:3; }
+      .ppm-close:hover{ color:var(--text-main); }
       .ppm-head{ text-align:center; margin-bottom:22px; padding:0 6px; }
       .ppm-badge{ display:inline-block; font-size:11px; font-weight:800; letter-spacing:1.2px; padding:5px 13px; border-radius:999px; color:#7a5a00; background:linear-gradient(135deg,#ffe08a,#e9b949); box-shadow:0 2px 8px rgba(233,185,73,0.4); margin-bottom:12px; }
       .ppm-title{ margin:0; font-size:26px; font-weight:700; letter-spacing:-0.02em; color:var(--text-main); }
@@ -5521,7 +5489,6 @@ window.addEventListener('DOMContentLoaded', () => {
         <button id="am-tab-signup" style="flex:1;border:none;background:transparent;color:var(--text-muted);padding:8px;border-radius:8px;font-weight:600;cursor:pointer;">Sign Up</button>
       </div>
       <button id="am-oauth-google" style="${oaStyle}"><span style="font-weight:700;color:#4285F4;">G</span> Continue with Google</button>
-      <button id="am-oauth-apple" style="${oaStyle}"> Continue with Apple</button>
       <div style="display:flex;align-items:center;gap:10px;margin:12px 0 14px;color:var(--text-muted);font-size:12px;"><div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div>or<div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div></div>
       <input id="am-name" type="text" placeholder="Display name" autocomplete="nickname" maxlength="40" style="${inStyle}display:none;">
       <input id="am-email" type="email" placeholder="you@example.com" autocomplete="username" style="${inStyle}">
@@ -5573,7 +5540,6 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const {error}=await DB.auth.signInWithOAuth({ provider, options:{ redirectTo: location.href.split('#')[0] } }); if(error) throw error; }
       catch(e){ msg.textContent='Error: '+((e&&e.message)||e); } }
     $am('am-oauth-google').onclick=()=>oauth('google');
-    $am('am-oauth-apple').onclick=()=>oauth('apple');
     window.__amSetTab=setTab;
   }
   function openAuthModal(){ const m=document.getElementById('auth-modal'); if(m){ if(window.__amSetTab) window.__amSetTab('login'); m.style.display='flex'; } }
