@@ -445,40 +445,6 @@
     .compose-buttons .cancel{ background:var(--input-bg); color:var(--text-main); }
     .compose-buttons .submit{ background:var(--primary-color); color:#fff; }
 
-    /* === Community v2: filters, categories, avatars, threads === */
-    #comm-list{ display:flex; flex-direction:column; gap:10px; }
-    .comm-toolbar{ margin-bottom:0; }
-    .comm-filters{ display:flex; gap:8px; }
-    .comm-search{ flex:1; display:flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid rgba(128,128,128,0.12); border-radius:10px; padding:0 10px; }
-    .comm-search span{ color:var(--text-muted); font-size:12px; }
-    .comm-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:12.5px; padding:9px 0; }
-    .comm-inview{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.12); color:var(--text-muted); font-size:11.5px; font-weight:600; padding:0 12px; border-radius:10px; cursor:pointer; white-space:nowrap; }
-    .comm-inview.active{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
-    .comm-cat-row{ display:flex; flex-wrap:wrap; gap:6px; }
-    .comm-cat-chip{ background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:11px; font-weight:600; padding:5px 10px; border-radius:999px; cursor:pointer; white-space:nowrap; line-height:1.1; }
-    .comm-cat-chip:hover{ border-color:var(--cc); color:var(--cc); }
-    .comm-cat-chip.active{ background:var(--cc); border-color:var(--cc); color:#fff; }
-    .compose-cat-label{ font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }
-    .compose-cats{ margin-bottom:12px; }
-    .comm-post-top{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-    .comm-avatar{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; min-width:34px; border-radius:50%; color:#fff; font-weight:700; font-size:12.5px; letter-spacing:.3px; flex:0 0 auto; }
-    .comm-post-idn{ flex:1; min-width:0; }
-    .comm-post-author{ font-weight:700; font-size:13px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .comm-post-sub{ font-size:11px; color:var(--text-muted); margin-top:1px; }
-    .comm-cat-tag{ font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; color:#fff; background:var(--cc); white-space:nowrap; flex:0 0 auto; }
-    .comm-edited{ font-style:italic; opacity:0.85; }
-    .comm-link{ color:var(--primary-color); text-decoration:none; } .comm-link:hover{ text-decoration:underline; }
-    .comm-post-actions{ flex-wrap:wrap; }
-    .comm-post-actions .cmt-toggle:hover{ background:var(--primary-color); color:#fff; }
-    .comm-comments.collapsed{ display:none; }
-    .comm-comment-meta .comm-avatar{ width:18px; height:18px; min-width:18px; font-size:9px; vertical-align:middle; margin-right:3px; }
-    .comm-comment.reply{ margin-left:22px; border-left:2px solid rgba(128,128,128,0.25); }
-    .comm-comment-body{ white-space:pre-wrap; word-break:break-word; }
-    .comm-comment-actions{ display:flex; gap:4px; margin-top:5px; }
-    .comm-comment-actions button{ background:transparent; border:none; color:var(--text-muted); font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:6px; cursor:pointer; }
-    .comm-comment-actions button:hover{ background:var(--card-bg); color:var(--text-main); }
-    .comm-comment-actions .cvote-btn.voted{ color:var(--primary-color); }
-
     /* Legends made draggable + collapsible */
     .data-legend, .koppen-legend{ cursor:default; }
     .data-legend .dl-drag, .koppen-legend .kl-drag{ position:absolute; top:6px; left:8px; color:var(--text-muted); font-size:13px; cursor:move; user-select:none; padding:2px 4px; border-radius:5px; }
@@ -862,8 +828,6 @@
     <h3 id="compose-title">New post</h3>
     <input type="text" id="compose-post-title" placeholder="Title" maxlength="80">
     <textarea id="compose-post-body" placeholder="Share an observation, question, or theory..." maxlength="800"></textarea>
-    <div class="compose-cat-label" id="compose-cat-label">Category</div>
-    <div class="comm-cat-row compose-cats" id="compose-cats"></div>
     <div class="compose-img-row">
       <label class="compose-img-btn" for="compose-img">🖼 <span id="compose-img-label">Add image</span></label>
       <input type="file" id="compose-img" accept="image/*" style="display:none;">
@@ -984,7 +948,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)",
       filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date",
-      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap rows to select 2–3 countries to compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
+      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", borders:"Country borders", compare:"Compare", compareEmpty:"Tap rows to select 2–3 countries to compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
       satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"Pro — add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
       aiSecTitle:"AI features (BYOK / on-device)", aiSecHint:"Bring your own API key — requests go directly from this browser to the provider and the key is stored only here. Or pick Chrome Built-in AI to run on-device with no key.",
       aiProvider:"AI provider", aiModel:"Model", aiApiKey:"API key", aiKeyConnected:"Connected", aiKeyNone:"No key", aiGetKey:"Get a key ↗", aiOnDevice:"Runs on-device in Chrome — no API key needed.",
@@ -1016,7 +980,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)",
       filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付",
-      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして2〜3カ国を選択し比較できます", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
+      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", borders:"国境線", compare:"比較", compareEmpty:"行をタップして2〜3カ国を選択し比較できます", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
       satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"Pro — APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
       aiSecTitle:"AI機能 (BYOK / 端末内)", aiSecHint:"自分のAPIキーを使用します。通信はこのブラウザから各プロバイダへ直接行われ、キーはこの端末にのみ保存されます。Chrome内蔵AIを選べばキー不要で端末内実行できます。",
       aiProvider:"AIプロバイダ", aiModel:"モデル", aiApiKey:"APIキー", aiKeyConnected:"接続済み", aiKeyNone:"未登録", aiGetKey:"キーを取得 ↗", aiOnDevice:"Chrome内で端末内実行されます（APIキー不要）。",
@@ -1650,18 +1614,13 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Map init ===== */
   const isInitiallyDark=document.documentElement.getAttribute('data-theme')==='dark';
   const carto=(s)=>['https://a.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png'];
-  /* Saturate HTTP/2 / HTTP/3 multiplexing: one tile host can serve dozens of concurrent
-     requests over a single connection, so lift MapLibre's default 16-request cap. This is
-     the single biggest win for satellite-tile throughput (no quality change — same tiles). */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=48; }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* preserveDrawingBuffer removed for smoother rendering — the AI vision capture now
          reads the canvas inside a render tick (see aiCaptureCanvas), so it no longer needs it.
-         fadeDuration:0 makes raster tiles appear instantly (no 300ms fade); a large in-memory tile
-         cache keeps recently-seen tiles hot when panning back (the Service Worker layers a
-         disk-backed, reload-surviving cache on top of this — see registerTileSW). */
-      fadeDuration:0, maxTileCacheSize:1024, refreshExpiredTiles:false,
+         fadeDuration:0 makes raster tiles appear instantly (no 300ms fade); a larger tile cache
+         keeps tiles around when panning back, so the map feels buttery and satellite loads faster. */
+      fadeDuration:0, maxTileCacheSize:512,
       glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
       center:[10,20], zoom:1.7, minZoom:0, maxZoom:18,
       style:{ version:8, glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
@@ -1697,52 +1656,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
     if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
   }catch(_){} }
-
-  /* =============================================================================
-   *  TILE ACCELERATION — persistent disk cache (Service Worker) + predictive
-   *  pan/zoom prefetch. Quality is never reduced: identical tile URLs, just
-   *  served from cache on revisit and fetched a beat early in the travel
-   *  direction so they're already there when the viewport arrives.
-   *  ============================================================================= */
-  let _tileSW=null;
-  function registerTileSW(){
-    try{
-      if(!('serviceWorker' in navigator)) return;                       /* unsupported */
-      if(location.protocol!=='https:' && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; /* SW needs a secure context (file:// can't) */
-      navigator.serviceWorker.register('sw.js').then(reg=>{
-        _tileSW=navigator.serviceWorker.controller||reg.active||reg.waiting||reg.installing||null;
-      }).catch(()=>{});
-      navigator.serviceWorker.addEventListener('controllerchange',()=>{ _tileSW=navigator.serviceWorker.controller; });
-    }catch(_){}
-  }
-  const _lng2x=(lng,z)=>Math.floor((lng+180)/360*Math.pow(2,z));
-  const _lat2y=(lat,z)=>{ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); };
-  const _tileUrl=(tpl,z,x,y)=>tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y);
-  let _prevCenter=null, _prefetchT=null;
-  function predictivePrefetch(){
-    if(!map || currentMapType!=='sat') return;                          /* satellite = the heavy high-res case the user asked about */
-    const p=satProviderById(satState.providerId); if(!p) return;
-    let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
-    if(!tiles||!tiles[0]||tiles[0].indexOf('{z}')<0) return;             /* skip non-XYZ custom sources */
-    const tpl=tiles[0], z=Math.min(p.maxzoom||19,Math.max(0,Math.round(map.getZoom()))), n=Math.pow(2,z);
-    const c=map.getCenter(), b=map.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
-    let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
-    if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
-    let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
-    _prevCenter={lng:c.lng,lat:c.lat};
-    const urls=[], RING=2, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
-    if(dx>0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x1+k,y);
-    else if(dx<0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x0-k,y);
-    if(dy>0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y1+k);
-    else if(dy<0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y0-k);
-    if(z+1<=(p.maxzoom||19)){ const z2=z+1,n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2); for(let ix=-1;ix<=1;ix++) for(let iy=-1;iy<=1;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
-    if(!urls.length) return;
-    const uniq=[...new Set(urls)].slice(0,48);
-    if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
-    uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
-  }
-  registerTileSW();
-  if(map) map.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
 
   function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
   function updateOcclusion(){
@@ -3776,45 +3689,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const uniq=[...byLink.values()].sort((a,b)=>parseDate(b.pubDate)-parseDate(a.pubDate));
     return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():(currentLang==='en'?'News':'報道'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:analyzeContext(title,publisher,it.link,desc) }; });
   }
-  /* ===== Server-baked news (FAST PATH) =====
-     The `refresh-news` Edge Function pre-fetches + pre-analyses the default feeds every
-     ~20 min into `current_news`, so the browser just runs ONE SELECT (a few ms) instead of
-     proxy-fetching 150 articles and scoring them against the whole gazetteer at startup.
-     A server row already carries subject/publisher coords, so we skip analyzeContext entirely.
-     Used only for the default feed in single-language mode; search / time-travel / multi-language
-     keep the live-RSS path below (the server only bakes the WORLD+BUSINESS UI-language editions). */
-  function serverRowToItem(r){
-    const subjectLoc=(r.subject_lng!=null&&r.subject_lat!=null)?[r.subject_lng,r.subject_lat]:null;
-    const pubLoc=(r.pub_lng!=null&&r.pub_lat!=null)?[r.pub_lng,r.pub_lat]:null;
-    const subjectName=currentLang==='jp'?(r.subject_name_jp||r.subject_name_en):(r.subject_name_en||r.subject_name_jp);
-    const pubName=r.pub_label?((currentLang==='jp'?'発信: ':'Source: ')+r.pub_label):null;
-    const short=currentLang==='jp'?(r.short_jp||r.short_en||''):(r.short_en||r.short_jp||'');
-    const analysis={ subjectLoc, subjectName, pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };
-    applyPinMode(analysis);   /* sets loc/name/mapped for the current Subject/Publisher toggle */
-    return { title:r.title, publisher:r.publisher||'', link:r.link, pubDate:r.pub_date||'', desc:r.description||'', analysis };
-  }
-  async function loadNewsFromSupabase(){
-    if(!DB || activeSearchQuery || newsDate || newsLangMode==='multi') return false;
-    try{
-      const { data, error } = await DB.from('current_news')
-        .select('title,publisher,link,pub_date,description,subject_lng,subject_lat,subject_name_en,subject_name_jp,pub_lng,pub_lat,pub_label,short_en,short_jp')
-        .eq('lang',currentLang).order('pub_date',{ascending:false}).limit(150);
-      if(error) throw error;
-      if(!data||!data.length) return false;          /* not seeded yet → fall through to live RSS */
-      globalData=data.map(serverRowToItem);
-      saveNewsCache();
-      if(currentMode==='news'||currentMode==='saved') startNews();
-      return true;
-    }catch(e){ console.warn('[IntMap] current_news unavailable, using live RSS:', e&&e.message); return false; }
-  }
   async function fetchData(){
     const feed=document.getElementById('live-news-feed');
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ globalData=cached; if(currentMode==='news'||currentMode==='saved') startNews(); } }
     if((currentMode==='news'||currentMode==='saved')&&feed&&globalData.length===0) feed.innerHTML=`<div class="empty-msg">${t('loading')}</div>`;
-    /* 1b) FAST PATH: pre-analysed news from Supabase. If it returns rows we're done — no client scoring. */
-    if(await loadNewsFromSupabase()) return;
-    /* 2) FALLBACK: live RSS via CORS proxies + client-side analysis (function not deployed, or search/time-travel/multi-lang). */
+    /* 2) Fetch feeds and render incrementally — the first feed to arrive shows right away. */
     const parser=new DOMParser(); const byLink=new Map(); let any=false;
     const ingest=(txt)=>{
       if(!txt) return;
@@ -4913,45 +4793,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let communityAddArmed=false; /* When true, the next map click creates a post here */
   let pendingPostLoc=null;
   function saveCommunity(){ /* community now lives in Supabase; nothing to persist locally */ }
-  let pendingImg='', communitySort='hot';
-  /* ---- Community v2 UI state ---- */
-  let commCaps=null;                 /* detected schema capabilities (graceful degradation) */
-  let commSearch='', commCatFilter='all', commInView=false;
-  let composeEditId=null, composeCat='general', replyingTo=null;
-  let commCollapsed={};              /* postId -> true when its comment thread is collapsed */
-  /* Post categories — drive the composer chips, feed filter, card chip and pin colour. */
-  const COMM_CATEGORIES=[
-    { id:'general',  emoji:'💬', color:'#8e8e93', label:{en:'General',  jp:'全般'} },
-    { id:'conflict', emoji:'⚔️', color:'#ff3b30', label:{en:'Conflict', jp:'紛争'} },
-    { id:'military', emoji:'🛡️', color:'#ff9500', label:{en:'Military', jp:'軍事'} },
-    { id:'maritime', emoji:'⚓', color:'#30b0c7', label:{en:'Maritime', jp:'海事'} },
-    { id:'economy',  emoji:'📈', color:'#34c759', label:{en:'Economy',  jp:'経済'} },
-    { id:'cyber',    emoji:'🖧', color:'#5856d6', label:{en:'Cyber',    jp:'サイバー'} },
-    { id:'question', emoji:'❓', color:'#007aff', label:{en:'Question', jp:'質問'} },
-    { id:'analysis', emoji:'🔍', color:'#af52de', label:{en:'Analysis', jp:'分析'} }
-  ];
-  const commCatById=(id)=>COMM_CATEGORIES.find(c=>c.id===id)||COMM_CATEGORIES[0];
-  const commCatLabel=(id)=>{ const c=commCatById(id); return c.label[currentLang]||c.label.en; };
-  /* Deterministic avatar (coloured initial) from a display name. */
-  function commAvatar(name){
-    const s=(name||'?').trim(); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0;
-    const hue=Math.abs(h)%360, init=escapeHtml(s.slice(0,/[A-Za-z0-9]/.test(s[0]||'')?2:1).toUpperCase()||'?');
-    return `<span class="comm-avatar" style="background:hsl(${hue},58%,46%)">${init}</span>`;
-  }
-  /* Compact relative time ("5m", "3h", "2d" / 「5分前」). */
-  function relTime(ts){
-    const s=Math.max(0,(Date.now()-ts)/1000);
-    if(currentLang==='jp'){
-      if(s<60) return 'たった今'; if(s<3600) return Math.floor(s/60)+'分前'; if(s<86400) return Math.floor(s/3600)+'時間前';
-      if(s<604800) return Math.floor(s/86400)+'日前'; if(s<2629800) return Math.floor(s/604800)+'週間前';
-      return new Date(ts).toLocaleDateString('ja-JP');
-    }
-    if(s<60) return 'now'; if(s<3600) return Math.floor(s/60)+'m'; if(s<86400) return Math.floor(s/3600)+'h';
-    if(s<604800) return Math.floor(s/86400)+'d'; if(s<2629800) return Math.floor(s/604800)+'w';
-    return new Date(ts).toLocaleDateString('en-US');
-  }
-  /* "Hot" ranking — recent + upvoted + discussed floats to the top (Reddit-style decay). */
-  function hotScore(p){ const ageH=(Date.now()-p.ts)/3.6e6; return ((p.votes||0)+0.5*((p.comments||[]).length)+1)/Math.pow(ageH+2,1.3); }
+  let pendingImg='', communitySort='new';
   function compressImage(file, maxDim=1100, quality=0.72){
     return new Promise((resolve,reject)=>{
       const fr=new FileReader();
@@ -4980,16 +4822,14 @@ window.addEventListener('DOMContentLoaded', () => {
   function setupCommunityLayer(){
     if(!map||!map.isStyleLoaded()) return;
     if(!map.getSource('community-points')){
-      /* Colour pins by post category (falls back to green for un-categorised). */
-      const catColor=['match',['get','cat']].concat(COMM_CATEGORIES.flatMap(c=>[c.id,c.color])).concat(['#34c759']);
       map.addSource('community-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
       map.addLayer({id:'community-pulse',type:'circle',source:'community-points',paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,8,4,14,10,20],
-        'circle-color':catColor,'circle-opacity':0.2,'circle-stroke-width':0
+        'circle-color':'#34c759','circle-opacity':0.2,'circle-stroke-width':0
       }});
       map.addLayer({id:'community-dots',type:'circle',source:'community-points',paint:{
         'circle-radius':['case',['boolean',['feature-state','hover'],false],11,8],
-        'circle-color':catColor,'circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'
+        'circle-color':'#34c759','circle-stroke-width':2.5,'circle-stroke-color':'#ffffff'
       }});
       map.addLayer({id:'community-labels',type:'symbol',source:'community-points',layout:{
         'text-field':['get','short'],'text-size':11,'text-font':['literal',['Open Sans Regular']],
@@ -5027,184 +4867,108 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map||!map.getSource('community-points')) return;
     /* Community pins are shown ONLY while the Community tab is active; selecting another
        tab clears them (the posts stay cached in communityPosts for an instant return). */
-    const feats=(currentMode==='community') ? visibleCommunityPosts().map(p=>({
+    const feats=(currentMode==='community') ? communityPosts.map(p=>({
       type:'Feature', id:p.id, geometry:{type:'Point',coordinates:[p.lng,p.lat]},
-      properties:{ fid:p.id, cat:p.category||'general', title:p.title||'', body:(p.body||'').slice(0,80), short:(p.title||'').slice(0,28)+((p.title||'').length>28?'…':'') }
+      properties:{ fid:p.id, title:p.title||'', body:(p.body||'').slice(0,80), short:(p.title||'').slice(0,28)+((p.title||'').length>28?'…':'') }
     })) : [];
     map.getSource('community-points').setData({type:'FeatureCollection',features:feats});
   }
-  /* Posts after the active search / category / in-view filters (drives both feed + pins). */
-  function visibleCommunityPosts(){
-    let list=communityPosts.slice();
-    if(commCatFilter!=='all') list=list.filter(p=>(p.category||'general')===commCatFilter);
-    if(commSearch){ const q=commSearch.toLowerCase(); list=list.filter(p=>((p.title||'')+' '+(p.body||'')+' '+(p.author||'')).toLowerCase().includes(q)); }
-    if(commInView && map){ try{ const b=map.getBounds(); list=list.filter(p=>b.contains([p.lng,p.lat])); }catch(_){} }
-    return list;
-  }
-  /* Escape + auto-link URLs (body/comment text). */
-  function linkify(s){ return escapeHtml(s||'').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" class="comm-link">$1</a>'); }
-
   function renderCommunity(){
     const cont=document.getElementById('community-feed');
     if(map&&map.isStyleLoaded()) setupCommunityLayer();
-    const jp=currentLang==='jp';
-    const sortBtn=(k,lbl)=>`<button data-sort="${k}" class="${communitySort===k?'active':''}">${lbl}</button>`;
-    const catChip=(id,lbl,color)=>`<button class="comm-cat-chip ${commCatFilter===id?'active':''}" data-catf="${id}" style="--cc:${color}">${lbl}</button>`;
-    const loginHint = currentUser ? '' : `<div class="empty-msg" style="padding:10px 16px;">${jp?'投稿・コメント・投票するにはログインしてください。':'Log in to post, comment and vote.'}</div>`;
-    cont.innerHTML=`<div class="comm-toolbar">
-        <button class="comm-add-btn" id="comm-add-btn">${t('commAdd')}</button>
-        <div class="comm-sort">${sortBtn('hot',t('commSortHot'))}${sortBtn('new',t('commSortNew'))}${sortBtn('top',t('commSortTop'))}</div>
+    const loginHint = currentUser ? '' : `<div class="empty-msg" style="padding:10px 16px;">${currentLang==='jp'?'投稿・コメント・投票するにはログインしてください。':'Log in to post, comment and vote.'}</div>`;
+    let html=`<div class="comm-toolbar">
+      <button class="comm-add-btn ${communityAddArmed?'armed':''}" id="comm-add-btn">${communityAddArmed?t('commAddArmed'):t('commAdd')}</button>
+      <div class="comm-sort">
+        <button data-sort="new" class="${communitySort==='new'?'active':''}">${currentLang==='jp'?'新着':'New'}</button>
+        <button data-sort="top" class="${communitySort==='top'?'active':''}">${currentLang==='jp'?'人気':'Top'}</button>
       </div>
-      <div class="comm-filters">
-        <div class="comm-search"><span>🔎</span><input type="text" id="comm-search" placeholder="${t('commSearchPh')}" value="${escapeHtml(commSearch)}"></div>
-        <button class="comm-inview ${commInView?'active':''}" id="comm-inview" title="${jp?'地図の表示範囲内の投稿だけ':'Only posts in the current map view'}">🧭 ${t('commInView')}</button>
-      </div>
-      <div class="comm-cat-row">
-        ${catChip('all',t('commCatAll'),'var(--primary-color)')}
-        ${COMM_CATEGORIES.map(c=>catChip(c.id,c.emoji+' '+commCatLabel(c.id),c.color)).join('')}
-      </div>${loginHint}
-      <div id="comm-list"></div>`;
-    /* Toolbar wiring (rebuilds list on change — search updates list only, so its input keeps focus). */
+    </div>`+loginHint;
+    if(communityPosts.length===0){
+      html+=`<div class="empty-msg">${t('commEmpty')}</div>`;
+    } else {
+      const sorted=[...communityPosts].sort((a,b)=> communitySort==='top' ? (((b.votes||0)-(a.votes||0))||(b.ts-a.ts)) : (b.ts-a.ts));
+      sorted.forEach(post=>{
+        const canDel = currentUser && (post.userId===currentUser.id || currentUser.isAdmin);
+        const imgHtml=post.img?`<img class="comm-post-img" src="${post.img}" data-id="${post.id}" alt="">`:'';
+        const author=post.author?`<b>${escapeHtml(post.author)}</b> · `:'';
+        html+=`<div class="comm-post" id="comm-post-${post.id}">
+          <div class="comm-post-head">
+            <div class="comm-post-title">${escapeHtml(post.title||'(untitled)')}</div>
+          </div>
+          <div class="comm-post-meta">
+            ${author}${formatCustomDate(new Date(post.ts).toISOString())}
+            · <span class="comm-post-loc" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(2)}°, ${post.lng.toFixed(2)}°</span>
+          </div>
+          ${imgHtml}
+          <div class="comm-post-body">${escapeHtml(post.body||'')}</div>
+          <div class="comm-post-actions">
+            <button class="vote-btn ${post.voted?'voted':''}" data-id="${post.id}" title="${currentLang==='jp'?'役に立った':'Upvote'}">▲ ${post.votes||0}</button>
+            <button class="locate-btn" data-id="${post.id}">🌐 ${t('commLocate')}</button>
+            <button class="report-btn" data-id="${post.id}" title="${currentLang==='jp'?'通報':'Report'}">⚑</button>
+            ${canDel?`<button class="del-btn" data-id="${post.id}">${t('commDelete')}</button>`:''}
+          </div>
+          <div class="comm-comments">
+            ${(post.comments||[]).map(c=>`<div class="comm-comment"><div class="comm-comment-meta">${(c.author?escapeHtml(c.author)+' · ':'')}${formatCustomDate(new Date(c.ts).toISOString())}</div>${escapeHtml(c.text)}</div>`).join('')}
+            <div class="comm-comment-add">
+              <input type="text" placeholder="${t('commWrite')}" data-pid="${post.id}" maxlength="240">
+              <button data-pid="${post.id}">${t('commPost')}</button>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    cont.innerHTML=html;
+    /* Wire the toolbar + per-post actions (all writes go to Supabase) */
     document.getElementById('comm-add-btn').onclick=()=>{
       if(!requireLogin()) return;
+      /* Open the composer straight away (location defaults to the current map centre, and can be
+         moved with "Move pin on map"). This removes the old arm-then-tap step that often left
+         users unable to post. */
       communityAddArmed=false;
       if(!pendingPostLoc && map){ const c=map.getCenter(); pendingPostLoc=[c.lng,c.lat]; }
       openComposeModal();
     };
-    cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ communitySort=b.dataset.sort; renderCommunity(); });
-    cont.querySelectorAll('.comm-cat-chip').forEach(b=>b.onclick=()=>{ commCatFilter=b.dataset.catf; renderCommunity(); });
-    document.getElementById('comm-inview').onclick=()=>{ commInView=!commInView; renderCommunity(); };
-    const si=document.getElementById('comm-search');
-    if(si) si.addEventListener('input',()=>{ commSearch=si.value; clearTimeout(renderCommunity._st); renderCommunity._st=setTimeout(renderCommList,160); });
-    renderCommList();
-  }
-  /* Fills only #comm-list (so the search box above never loses focus while typing). */
-  function renderCommList(){
-    const list=document.getElementById('comm-list'); if(!list) return;
-    const posts=visibleCommunityPosts();
-    posts.sort((a,b)=> communitySort==='top' ? (((b.votes||0)-(a.votes||0))||(b.ts-a.ts))
-                     : communitySort==='hot' ? (hotScore(b)-hotScore(a))
-                     : (b.ts-a.ts));
-    if(communityPosts.length===0) list.innerHTML=`<div class="empty-msg">${t('commEmpty')}</div>`;
-    else if(posts.length===0)     list.innerHTML=`<div class="empty-msg">${t('commNoMatch')}</div>`;
-    else                          list.innerHTML=posts.map(postCardHTML).join('');
-    wireCommList(list);
-    try{ pushCommunityFeatures(); }catch(_){}
-  }
-  function postCardHTML(post){
-    const jp=currentLang==='jp', mine=currentUser&&post.userId===currentUser.id;
-    const canDel = currentUser && (mine || currentUser.isAdmin);
-    const cat=commCatById(post.category||'general');
-    const imgHtml=post.img?`<img class="comm-post-img" src="${post.img}" data-id="${post.id}" alt="">`:'';
-    const edited=post.editedTs?` · <span class="comm-edited">${t('commEdited')}</span>`:'';
-    const cmts=post.comments||[];
-    return `<div class="comm-post" id="comm-post-${post.id}">
-      <div class="comm-post-top">
-        ${commAvatar(post.author)}
-        <div class="comm-post-idn">
-          <div class="comm-post-author">${escapeHtml(post.author||(jp?'匿名':'Anonymous'))}</div>
-          <div class="comm-post-sub">${relTime(post.ts)}${edited} · <span class="comm-post-loc" data-lat="${post.lat}" data-lng="${post.lng}">📍 ${post.lat.toFixed(1)}°, ${post.lng.toFixed(1)}°</span></div>
-        </div>
-        <span class="comm-cat-tag" style="--cc:${cat.color}">${cat.emoji} ${commCatLabel(post.category||'general')}</span>
-      </div>
-      ${post.title?`<div class="comm-post-title">${escapeHtml(post.title)}</div>`:''}
-      ${imgHtml}
-      ${post.body?`<div class="comm-post-body">${linkify(post.body)}</div>`:''}
-      <div class="comm-post-actions">
-        <button class="vote-btn ${post.voted?'voted':''}" data-id="${post.id}" title="${jp?'役に立った':'Upvote'}">▲ ${post.votes||0}</button>
-        <button class="cmt-toggle" data-id="${post.id}">💬 ${cmts.length}</button>
-        <button class="locate-btn" data-id="${post.id}">🌐 ${t('commLocate')}</button>
-        ${mine?`<button class="edit-btn" data-id="${post.id}">${t('commEdit')}</button>`:''}
-        <button class="report-btn" data-id="${post.id}" title="${jp?'通報':'Report'}">⚑</button>
-        ${canDel?`<button class="del-btn" data-id="${post.id}">${t('commDelete')}</button>`:''}
-      </div>
-      <div class="comm-comments ${commCollapsed[post.id]?'collapsed':''}" data-cwrap="${post.id}">
-        ${threadHTML(post)}
-        ${currentUser?`<div class="comm-comment-add">
-          <input type="text" placeholder="${t('commWrite')}" data-pid="${post.id}" maxlength="280">
-          <button data-pid="${post.id}">${t('commPost')}</button></div>`:''}
-      </div>
-    </div>`;
-  }
-  function threadHTML(post){
-    const cmts=post.comments||[]; if(!cmts.length) return '';
-    const byId={}; cmts.forEach(c=>byId[c.id]=c);
-    const rootOf=(c)=>{ let cur=c,hop=0; while(cur.parentId&&byId[cur.parentId]&&hop<8){ cur=byId[cur.parentId]; hop++; } return cur; };
-    const roots=cmts.filter(c=>!c.parentId||!byId[c.parentId]).sort((a,b)=>a.ts-b.ts);
-    return roots.map(r=>{
-      const kids=cmts.filter(c=>c.parentId&&c.id!==r.id&&rootOf(c).id===r.id).sort((a,b)=>a.ts-b.ts);
-      return commentHTML(r,false)+kids.map(k=>commentHTML(k,true)).join('');
-    }).join('');
-  }
-  function commentHTML(c,isReply){
-    const mine=currentUser&&c.userId===currentUser.id, canDel=currentUser&&(mine||currentUser.isAdmin);
-    const edited=c.editedTs?` · ${t('commEdited')}`:'';
-    const cv=commCaps&&commCaps.commentVotes, th=commCaps&&commCaps.threads;
-    return `<div class="comm-comment ${isReply?'reply':''}" id="comm-c-${c.id}">
-      <div class="comm-comment-meta">${commAvatar(c.author)} <b>${escapeHtml(c.author||'')}</b> · ${relTime(c.ts)}${edited}</div>
-      <div class="comm-comment-body">${linkify(c.text)}</div>
-      <div class="comm-comment-actions">
-        ${cv?`<button class="cvote-btn ${c.voted?'voted':''}" data-cid="${c.id}">▲ ${c.votes||0}</button>`:''}
-        ${th&&currentUser?`<button class="creply-btn" data-cid="${c.id}" data-pid="${c.postId}">${t('commReply')}</button>`:''}
-        ${mine?`<button class="cedit-btn" data-cid="${c.id}">${t('commEdit')}</button>`:''}
-        ${canDel?`<button class="cdel-btn" data-cid="${c.id}">${t('commDelete')}</button>`:''}
-      </div>
-    </div>`;
-  }
-  const _findComment=(cid)=>{ for(const p of communityPosts){ const c=(p.comments||[]).find(x=>x.id===cid); if(c) return c; } return null; };
-  /* Per-card event wiring (run after every list render). */
-  function wireCommList(cont){
-    cont.querySelectorAll('.comm-post-loc').forEach(el=>el.onclick=()=>{ if(map) map.flyTo({center:[+el.dataset.lng,+el.dataset.lat],zoom:5,speed:1.2}); });
-    cont.querySelectorAll('.locate-btn').forEach(b=>b.onclick=()=>{ const p=communityPosts.find(p=>p.id===b.dataset.id); if(p&&map) map.flyTo({center:[p.lng,p.lat],zoom:5,speed:1.2}); });
-    cont.querySelectorAll('.cmt-toggle').forEach(b=>b.onclick=()=>{ const id=b.dataset.id; commCollapsed[id]=!commCollapsed[id]; const w=cont.querySelector(`[data-cwrap="${id}"]`); if(w) w.classList.toggle('collapsed',!!commCollapsed[id]); });
-    cont.querySelectorAll('.comm-post-img').forEach(im=>im.onclick=()=>openImageLightbox(im.src));
-    cont.querySelectorAll('.vote-btn').forEach(b=>b.onclick=async()=>{
-      if(!requireLogin()) return; const p=communityPosts.find(p=>p.id===b.dataset.id); if(!p) return;
-      try{ await cmVote(p.id,!p.voted); }catch(e){ imToast((e&&e.message)||'Vote failed'); return; } await loadCommunity();
+    cont.querySelectorAll('.locate-btn').forEach(b=>b.onclick=()=>{
+      const p=communityPosts.find(p=>p.id===b.dataset.id);
+      if(p && map) map.flyTo({center:[p.lng,p.lat],zoom:5,speed:1.2});
     });
-    cont.querySelectorAll('.edit-btn').forEach(b=>b.onclick=()=>{ const p=communityPosts.find(p=>p.id===b.dataset.id); if(p) openComposeModal(p); });
     cont.querySelectorAll('.del-btn').forEach(b=>b.onclick=async()=>{
       if(!confirm(currentLang==='jp'?'この投稿を削除しますか？':'Delete this post?')) return;
-      try{ await cmDelete(b.dataset.id); }catch(e){ imToast((e&&e.message)||'Delete failed'); return; } await loadCommunity();
+      try{ await cmDelete(b.dataset.id); }catch(e){ imToast((e&&e.message)||'Delete failed'); return; }
+      await loadCommunity();
     });
+    cont.querySelectorAll('.comm-post-loc').forEach(el=>el.onclick=()=>{
+      const lat=+el.dataset.lat, lng=+el.dataset.lng;
+      if(map) map.flyTo({center:[lng,lat],zoom:5,speed:1.2});
+    });
+    cont.querySelectorAll('.comm-comment-add button').forEach(b=>b.onclick=async()=>{
+      if(!requireLogin()) return;
+      const input=b.previousElementSibling, txt=input.value.trim(); if(!txt) return;
+      input.value='';
+      try{ await cmComment(b.dataset.pid,txt); }catch(e){ imToast((e&&e.message)||'Comment failed'); return; }
+      await loadCommunity();
+    });
+    cont.querySelectorAll('.comm-comment-add input').forEach(inp=>{
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ inp.nextElementSibling.click(); } });
+    });
+    /* Sort toggle */
+    cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ communitySort=b.dataset.sort; renderCommunity(); });
+    /* Upvote (toggle) */
+    cont.querySelectorAll('.vote-btn').forEach(b=>b.onclick=async()=>{
+      if(!requireLogin()) return;
+      const p=communityPosts.find(p=>p.id===b.dataset.id); if(!p) return;
+      try{ await cmVote(p.id, !p.voted); }catch(e){ imToast((e&&e.message)||'Vote failed'); return; }
+      await loadCommunity();
+    });
+    /* Report */
     cont.querySelectorAll('.report-btn').forEach(b=>b.onclick=async()=>{
       if(!requireLogin()) return;
       if(!confirm(currentLang==='jp'?'この投稿を不適切として通報しますか？':'Report this post as inappropriate?')) return;
       try{ await cmReport(b.dataset.id); imToast(currentLang==='jp'?'通報しました。ご協力ありがとうございます。':'Reported. Thank you.'); }catch(e){ imToast((e&&e.message)||'Report failed'); }
     });
-    /* Add comment / reply */
-    const submitComment=async(b)=>{
-      if(!requireLogin()) return; const input=b.previousElementSibling, txt=input.value.trim(); if(!txt) return;
-      const pid=b.dataset.pid, parent=(replyingTo&&replyingTo.pid===pid)?replyingTo.cid:null;
-      input.value=''; replyingTo=null;
-      try{ await cmComment(pid,txt,parent); }catch(e){ imToast((e&&e.message)||'Comment failed'); return; } await loadCommunity();
-    };
-    cont.querySelectorAll('.comm-comment-add button').forEach(b=>b.onclick=()=>submitComment(b));
-    cont.querySelectorAll('.comm-comment-add input').forEach(inp=>inp.addEventListener('keydown',e=>{ if(e.key==='Enter') inp.nextElementSibling.click(); }));
-    /* Reply: focus this post's comment box and remember the parent comment. */
-    cont.querySelectorAll('.creply-btn').forEach(b=>b.onclick=()=>{
-      const pid=b.dataset.pid, cid=b.dataset.cid, c=_findComment(cid);
-      replyingTo={pid,cid};
-      const box=cont.querySelector(`.comm-comment-add input[data-pid="${pid}"]`);
-      if(box){ box.placeholder=(currentLang==='jp'?'返信: ':'Reply to ')+(c?c.author:'')+' …'; box.focus(); }
-    });
-    /* Comment upvote */
-    cont.querySelectorAll('.cvote-btn').forEach(b=>b.onclick=async()=>{
-      if(!requireLogin()) return; const c=_findComment(b.dataset.cid); if(!c) return;
-      try{ await cmVoteComment(c.id,!c.voted); }catch(e){ imToast((e&&e.message)||'Vote failed'); return; } await loadCommunity();
-    });
-    /* Comment edit (inline prompt) */
-    cont.querySelectorAll('.cedit-btn').forEach(b=>b.onclick=async()=>{
-      const c=_findComment(b.dataset.cid); if(!c) return;
-      const v=prompt(currentLang==='jp'?'コメントを編集':'Edit comment',c.text); if(v==null) return;
-      const nv=v.trim(); if(!nv||nv===c.text) return;
-      try{ await cmEditComment(c.id,nv); }catch(e){ imToast((e&&e.message)||'Edit failed'); return; } await loadCommunity();
-    });
-    /* Comment delete */
-    cont.querySelectorAll('.cdel-btn').forEach(b=>b.onclick=async()=>{
-      if(!confirm(currentLang==='jp'?'このコメントを削除しますか？':'Delete this comment?')) return;
-      try{ await cmDeleteComment(b.dataset.cid); }catch(e){ imToast((e&&e.message)||'Delete failed'); return; } await loadCommunity();
-    });
+    /* Tap image to enlarge */
+    cont.querySelectorAll('.comm-post-img').forEach(im=>im.onclick=()=>openImageLightbox(im.src));
   }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   /* When add-mode is armed, map-click drops a community post pin and opens the compose modal */
@@ -5218,42 +4982,29 @@ window.addEventListener('DOMContentLoaded', () => {
       openComposeModal();
     });
   }
-  function renderComposeCats(){
-    const wrap=document.getElementById('compose-cats'); if(!wrap) return;
-    wrap.innerHTML=COMM_CATEGORIES.map(c=>`<button type="button" class="comm-cat-chip ${composeCat===c.id?'active':''}" data-cc="${c.id}" style="--cc:${c.color}">${c.emoji} ${commCatLabel(c.id)}</button>`).join('');
-    wrap.querySelectorAll('[data-cc]').forEach(b=>b.onclick=()=>{ composeCat=b.dataset.cc; renderComposeCats(); });
-  }
-  function openComposeModal(editPost){
-    const m=document.getElementById('compose-modal'), jp=currentLang==='jp';
-    composeEditId = editPost ? editPost.id : null;
-    composeCat = editPost ? (editPost.category||'general') : 'general';
-    if(editPost) pendingPostLoc=[editPost.lng,editPost.lat];
-    document.getElementById('compose-title').textContent = editPost ? t('commEditPost') : t('commPostNew');
-    document.getElementById('compose-post-title').value = editPost ? (editPost.title||'') : '';
-    document.getElementById('compose-post-body').value = editPost ? (editPost.body||'') : '';
+  function openComposeModal(){
+    const m=document.getElementById('compose-modal');
+    document.getElementById('compose-title').textContent=t('commPostNew');
+    document.getElementById('compose-post-title').value='';
+    document.getElementById('compose-post-body').value='';
     document.getElementById('compose-post-title').placeholder=t('commTitle');
     document.getElementById('compose-post-body').placeholder=t('commBody');
     document.getElementById('compose-cancel').textContent=t('commCancel');
-    document.getElementById('compose-submit').textContent = editPost ? t('commSaveEdit') : t('commPost');
-    pendingImg = editPost ? (editPost.img||'') : ''; showComposeImgPreview(pendingImg);
-    document.getElementById('compose-img-label').textContent=jp?'画像を追加':'Add image';
-    document.getElementById('compose-place-label').textContent=jp?'地図でピンを移動':'Move pin on map';
-    /* Category picker — shown unless schema-detection proved the column is missing. */
-    const showCat = !commCaps || commCaps.category;
-    const catLabel=document.getElementById('compose-cat-label'), catWrap=document.getElementById('compose-cats');
-    if(catLabel){ catLabel.textContent=t('commCat'); catLabel.style.display=showCat?'block':'none'; }
-    if(catWrap){ catWrap.style.display=showCat?'flex':'none'; if(showCat) renderComposeCats(); }
+    document.getElementById('compose-submit').textContent=t('commPost');
+    pendingImg=''; showComposeImgPreview('');
+    document.getElementById('compose-img-label').textContent=currentLang==='jp'?'画像を追加':'Add image';
+    document.getElementById('compose-place-label').textContent=currentLang==='jp'?'地図でピンを移動':'Move pin on map';
     if(pendingPostLoc){
       document.getElementById('compose-coord-hint').textContent=
         `${t('commPlacedAt')}: ${pendingPostLoc[1].toFixed(3)}°, ${pendingPostLoc[0].toFixed(3)}°`;
     } else {
       document.getElementById('compose-coord-hint').textContent=
-        jp?'地図をクリックして位置を指定してください。':'Click on the map to place a location.';
+        currentLang==='jp'?'地図をクリックして位置を指定してください。':'Click on the map to place a location.';
     }
     m.classList.add('active');
   }
   document.getElementById('compose-cancel').onclick=()=>{
-    document.getElementById('compose-modal').classList.remove('active'); pendingPostLoc=null; composeEditId=null;
+    document.getElementById('compose-modal').classList.remove('active'); pendingPostLoc=null;
     if(currentMode==='community') renderCommunity();
   };
   /* "Move pin on map": hide the composer, arm a one-shot map tap that re-opens it at the new spot */
@@ -5271,18 +5022,14 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!pendingPostLoc){ if(map){ const c=map.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':'Location not set.'); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
-    try{
-      if(composeEditId) await cmEditPost(composeEditId,{ title, body, img, category:composeCat, lat:loc[1], lng:loc[0] });
-      else await cmAddPost(title, body, img, loc[1], loc[0], composeCat);
-    }
-    catch(e){ btn.disabled=false; alert(((composeEditId?(currentLang==='jp'?'更新に失敗しました: ':'Update failed: '):(currentLang==='jp'?'投稿に失敗しました: ':'Post failed: ')))+((e&&e.message)||e)); return; }
+    try{ await cmAddPost(title, body, img, loc[1], loc[0]); }
+    catch(e){ btn.disabled=false; alert((currentLang==='jp'?'投稿に失敗しました: ':'Post failed: ')+((e&&e.message)||e)); return; }
     btn.disabled=false;
     document.getElementById('compose-modal').classList.remove('active');
-    const wasEdit=!!composeEditId; composeEditId=null;
     pendingPostLoc=null; pendingImg=''; showComposeImgPreview('');
     await loadCommunity();
-    /* Fly to the new / updated post */
-    if(map && !wasEdit) map.flyTo({center:[loc[0],loc[1]],zoom:5,speed:1.0});
+    /* Fly to the new post */
+    if(map) map.flyTo({center:[loc[0],loc[1]],zoom:5,speed:1.0});
   };
   /* Compose image input wiring (bound once) */
   (function(){
@@ -5303,9 +5050,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(map.isStyleLoaded()){ try{ setupCommunityLayer(); }catch(_){} }
     map.on('load',()=>{ try{ setupCommunityLayer(); }catch(_){} });
     map.on('styledata',()=>{ try{ setupCommunityLayer(); }catch(_){} });
-    /* "In view" filter: as you pan, re-filter the feed + pins to the visible map area. */
-    let _commViewT=null;
-    map.on('moveend',()=>{ if(commInView && currentMode==='community'){ clearTimeout(_commViewT); _commViewT=setTimeout(()=>{ try{ renderCommList(); }catch(_){} },120); } });
   }
 
   /* =====================================================================
@@ -5659,83 +5403,30 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- COMMUNITY (cloud) ---------- */
   function requireLogin(){ if(!currentUser){ openAuthModal(); return false; } return true; }
-  /* Detect which v2 columns/tables exist so the UI degrades gracefully on an un-migrated DB.
-     (Same tolerant pattern as refreshCurrentUser's is_pro probe.) Runs once, then cached. */
-  async function detectCommCaps(){
-    if(commCaps) return commCaps;
-    const caps={ category:false, threads:false, commentVotes:false, edited:false };
-    if(DB){
-      const ok=async(tbl,cols)=>{ try{ const {error}=await DB.from(tbl).select(cols).limit(1); return !error; }catch(_){ return false; } };
-      const postsRich=await ok('community_posts','id,category,edited_at');
-      caps.category = postsRich || await ok('community_posts','id,category');
-      const cmtsRich = await ok('community_comments','id,parent_id,edited_at');
-      caps.threads = cmtsRich || await ok('community_comments','id,parent_id');
-      caps.commentVotes = await ok('community_comment_votes','comment_id');
-      caps.edited = postsRich && cmtsRich;
-    }
-    commCaps=caps; return caps;
-  }
-  function commSelectStr(){
-    const c=commCaps||{};
-    const pExtra=(c.category?',category':'')+(c.edited?',edited_at':'');
-    const cExtra=(c.threads?',parent_id':'')+(c.edited?',edited_at':'')+(c.commentVotes?',community_comment_votes(user_id)':'');
-    return `id,user_id,author_name,title,body,img,lat,lng,created_at${pExtra},community_comments(id,user_id,author_name,body,created_at${cExtra}),community_votes(user_id)`;
-  }
-  const LEGACY_COMM_SELECT='id,user_id,author_name,title,body,img,lat,lng,created_at,community_comments(id,user_id,author_name,body,created_at),community_votes(user_id)';
   async function loadCommunity(){
     if(!DB){ communityPosts=[]; renderCommunity(); return; }
-    await detectCommCaps();
     const uid=currentUser?currentUser.id:null;
-    let res=await DB.from('community_posts').select(commSelectStr()).order('created_at',{ascending:false});
-    if(res.error){ /* rich select failed (partial migration) → fall back to the legacy shape */
-      commCaps={category:false,threads:false,commentVotes:false,edited:false};
-      res=await DB.from('community_posts').select(LEGACY_COMM_SELECT).order('created_at',{ascending:false});
-    }
-    if(res.error){ console.warn('[IntMap] community load:', res.error.message); communityPosts=[]; renderCommunity(); return; }
-    communityPosts=(res.data||[]).map(p=>({
+    const {data,error}=await DB.from('community_posts')
+      .select('id,user_id,author_name,title,body,img,lat,lng,created_at,community_comments(id,author_name,body,created_at),community_votes(user_id)')
+      .order('created_at',{ascending:false});
+    if(error){ console.warn('[IntMap] community load:', error.message); communityPosts=[]; renderCommunity(); return; }
+    communityPosts=(data||[]).map(p=>({
       id:p.id, userId:p.user_id, title:p.title||'', body:p.body||'', img:p.img||'', lat:p.lat, lng:p.lng,
-      ts:Date.parse(p.created_at)||Date.now(), editedTs:p.edited_at?Date.parse(p.edited_at):0,
-      author:p.author_name||'', category:p.category||'general',
+      ts:Date.parse(p.created_at)||Date.now(), author:p.author_name||'',
       votes:(p.community_votes||[]).length,
       voted: uid?(p.community_votes||[]).some(v=>v.user_id===uid):false,
       comments:(p.community_comments||[]).slice().sort((a,b)=>(Date.parse(a.created_at)||0)-(Date.parse(b.created_at)||0))
-                .map(c=>({ id:c.id, postId:p.id, userId:c.user_id, text:c.body, author:c.author_name||'',
-                          ts:Date.parse(c.created_at)||Date.now(), editedTs:c.edited_at?Date.parse(c.edited_at):0,
-                          parentId:c.parent_id||null,
-                          votes:(c.community_comment_votes||[]).length,
-                          voted: uid?(c.community_comment_votes||[]).some(v=>v.user_id===uid):false }))
+                .map(c=>({ts:Date.parse(c.created_at)||Date.now(), text:c.body, author:c.author_name||''}))
     }));
     pushCommunityFeatures(); renderCommunity();
   }
-  async function cmAddPost(title,body,img,lat,lng,category){
-    const row={ user_id:currentUser.id, author_name:currentUser.name, title:title||null, body:body||null, img:img||null, lat, lng };
-    if(commCaps&&commCaps.category&&category) row.category=category;
-    let {error}=await DB.from('community_posts').insert(row);
-    if(error && row.category!==undefined){ delete row.category; ({error}=await DB.from('community_posts').insert(row)); } /* retry w/o category if column missing */
+  async function cmAddPost(title,body,img,lat,lng){
+    const {error}=await DB.from('community_posts').insert({ user_id:currentUser.id, author_name:currentUser.name, title:title||null, body:body||null, img:img||null, lat, lng });
     if(error) throw error;
   }
-  async function cmEditPost(id,f){
-    const patch={ title:f.title||null, body:f.body||null, img:f.img||null, lat:f.lat, lng:f.lng };
-    if(commCaps&&commCaps.category) patch.category=f.category||'general';
-    if(commCaps&&commCaps.edited) patch.edited_at=new Date().toISOString();
-    const {error}=await DB.from('community_posts').update(patch).eq('id',id); if(error) throw error;
-  }
-  async function cmComment(postId,text,parentId){
-    const row={ post_id:postId, user_id:currentUser.id, author_name:currentUser.name, body:text };
-    if(parentId && commCaps&&commCaps.threads) row.parent_id=parentId;
-    let {error}=await DB.from('community_comments').insert(row);
-    if(error && row.parent_id){ delete row.parent_id; ({error}=await DB.from('community_comments').insert(row)); }
+  async function cmComment(postId,text){
+    const {error}=await DB.from('community_comments').insert({ post_id:postId, user_id:currentUser.id, author_name:currentUser.name, body:text });
     if(error) throw error;
-  }
-  async function cmEditComment(id,text){
-    const patch={ body:text };
-    if(commCaps&&commCaps.edited) patch.edited_at=new Date().toISOString();
-    const {error}=await DB.from('community_comments').update(patch).eq('id',id); if(error) throw error;
-  }
-  async function cmDeleteComment(id){ const {error}=await DB.from('community_comments').delete().eq('id',id); if(error) throw error; }
-  async function cmVoteComment(id,on){
-    if(on){ const {error}=await DB.from('community_comment_votes').insert({ comment_id:id, user_id:currentUser.id }); if(error && error.code!=='23505') throw error; }
-    else { const {error}=await DB.from('community_comment_votes').delete().eq('comment_id',id).eq('user_id',currentUser.id); if(error) throw error; }
   }
   async function cmVote(postId,on){
     if(on){ const {error}=await DB.from('community_votes').insert({ post_id:postId, user_id:currentUser.id }); if(error && error.code!=='23505') throw error; }
@@ -5754,7 +5445,6 @@ window.addEventListener('DOMContentLoaded', () => {
         .on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},    ()=>loadCommunity())
         .on('postgres_changes',{event:'*',schema:'public',table:'community_comments'}, ()=>{ if(currentMode==='community') loadCommunity(); })
         .on('postgres_changes',{event:'*',schema:'public',table:'community_votes'},    ()=>{ if(currentMode==='community') loadCommunity(); })
-        .on('postgres_changes',{event:'*',schema:'public',table:'current_news'},       ()=>{ try{ if(!activeSearchQuery&&!newsDate&&newsLangMode!=='multi') loadNewsFromSupabase(); }catch(_){} })
         .subscribe();
     }catch(e){ console.warn('[IntMap] realtime subscribe failed:', e&&e.message); }
   }
