@@ -2598,10 +2598,10 @@ window.addEventListener('DOMContentLoaded', () => {
           brg+=`<div class="tp-row"><span>${currentLang==='jp'?'始点→終点':'start → end'}</span><b>${bearingHTML(s,e)}</b></div>`;
         }
       }
-      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('total')}</span><b>${distHTML(tot)}</b></div>${brg}<div class="tp-hint">${t('measureHint')}</div>`;
+      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('total')}</span><b>${distHTML(tot)}</b></div>${brg}`;
     } else if(toolMode==='area'){
       const pe=hasTurf()?ringPerimeter(measurePoints):0, ar=(hasTurf()&&measurePoints.length>=3)?ringArea(measurePoints):0;
-      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('perimeter')}</span><b>${distHTML(pe)}</b></div><div class="tp-row"><span>${t('area')}</span><b>${ar?areaHTML(ar):'—'}</b></div><div class="tp-hint">${t('areaHint')}</div>${measurePoints.length>=3?`<button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
+      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('perimeter')}</span><b>${distHTML(pe)}</b></div><div class="tp-row"><span>${t('area')}</span><b>${ar?areaHTML(ar):'—'}</b></div>${measurePoints.length>=3?`<button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
     } else if(toolMode==='radius'){
       let opts=`<option value="">${t('presetNone')}</option>`;
       RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${grp.g[currentLang]}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
@@ -4470,7 +4470,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
     [
       ['__grp','lyrGrpWeather'],
-      ['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
+      ['climate','lyrClimate'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],
       ['__grp','lyrGrpMaritime'],
@@ -4604,7 +4604,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* NATO members fill (#39): brighter blue so it's clearly visible on the dark basemap
        (the old #0a3d91 navy at 50% was nearly invisible), with a crisp outline. */
-    function addNato(){ if(map.getLayer('nato-fill'))return; map.addLayer({id:'nato-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':['case',['boolean',['feature-state','nato'],false],opacities.nato,0]}},beforeId); map.addLayer({id:'nato-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':['case',['boolean',['feature-state','nato'],false],1.6,0]}},beforeId); }
+    function addNato(){ if(!map.getLayer('nato-fill')) map.addLayer({id:'nato-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':['case',['boolean',['feature-state','nato'],false],opacities.nato,0]}},beforeId); if(!map.getLayer('nato-line')) map.addLayer({id:'nato-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':['case',['boolean',['feature-state','nato'],false],1.6,0]}},beforeId); }
     function applyNato(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; map.setFeatureState({source:'countries',id:f.id},{nato:!!(s&&NATO.has(s.code))}); }); }
 
     let nightTimer=null;
@@ -4617,7 +4617,9 @@ window.addEventListener('DOMContentLoaded', () => {
        the one baked into the PNG so cursor pixel-sampling round-trips perfectly. */
     const KURL='koppen_hires.png';
     const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
-    window.KCOORDS=[[-180,90],[180,90],[180,-90],[-180,-90]];
+    /* Image source corners must stay inside the Web-Mercator latitude limit (±85.0511°),
+       otherwise setCoordinates throws "y=Infinity". The PNG is cropped to this band. */
+    window.KCOORDS=[[-180,85.05],[180,85.05],[180,-85.05],[-180,-85.05]];
     const KCOORDS=window.KCOORDS;
     window.KCOL=[['Af',[0,0,255]],['Am',[0,120,255]],['Aw',[70,170,250]],['BWh',[255,0,0]],['BWk',[255,150,150]],['BSh',[245,165,0]],['BSk',[255,220,100]],['Csa',[255,255,0]],['Csb',[200,200,0]],['Csc',[150,150,0]],['Cwa',[150,255,150]],['Cwb',[100,200,100]],['Cwc',[50,150,50]],['Cfa',[200,255,80]],['Cfb',[100,255,80]],['Cfc',[50,200,0]],['Dsa',[255,0,255]],['Dsb',[200,0,200]],['Dsc',[150,50,150]],['Dsd',[150,100,150]],['Dwa',[170,175,255]],['Dwb',[90,120,220]],['Dwc',[75,80,180]],['Dwd',[50,0,135]],['Dfa',[0,255,255]],['Dfb',[55,200,255]],['Dfc',[0,125,125]],['Dfd',[0,70,95]],['ET',[178,178,178]],['EF',[102,102,102]]];
     window.KNAME={Af:{en:'Tropical rainforest',jp:'熱帯雨林'},Am:{en:'Tropical monsoon',jp:'熱帯モンスーン'},Aw:{en:'Savanna',jp:'サバナ'},BWh:{en:'Hot desert',jp:'砂漠(高温)'},BWk:{en:'Cold desert',jp:'砂漠(寒冷)'},BSh:{en:'Hot steppe',jp:'ステップ(高温)'},BSk:{en:'Cold steppe',jp:'ステップ(寒冷)'},Csa:{en:'Mediterranean, hot summer',jp:'地中海性(高温夏)'},Csb:{en:'Mediterranean, warm summer',jp:'地中海性(温暖夏)'},Csc:{en:'Mediterranean, cold summer',jp:'地中海性(冷涼夏)'},Cwa:{en:'Humid subtropical, dry winter',jp:'温暖冬季少雨'},Cwb:{en:'Subtropical highland',jp:'温帯高地'},Cwc:{en:'Subtropical highland, dry winter',jp:'温帯高地(冬季少雨)'},Cfa:{en:'Humid subtropical',jp:'温暖湿潤'},Cfb:{en:'Oceanic',jp:'西岸海洋性'},Cfc:{en:'Subpolar oceanic',jp:'亜寒帯海洋性'},Dsa:{en:'Continental, dry-hot summer',jp:'大陸性夏季少雨(高温)'},Dsb:{en:'Continental, dry-warm summer',jp:'大陸性夏季少雨(温暖)'},Dsc:{en:'Continental, dry summer (cold)',jp:'大陸性夏季少雨(冷涼)'},Dsd:{en:'Continental, dry summer (severe)',jp:'大陸性夏季少雨(厳寒)'},Dwa:{en:'Continental, dry winter (hot summer)',jp:'大陸性冬季少雨(高温夏)'},Dwb:{en:'Continental, dry winter (warm summer)',jp:'大陸性冬季少雨(温暖夏)'},Dwc:{en:'Subarctic, dry winter',jp:'亜寒帯冬季少雨'},Dwd:{en:'Subarctic, dry winter (severe)',jp:'亜寒帯冬季少雨(厳寒)'},Dfa:{en:'Humid continental, hot summer',jp:'亜寒帯湿潤(高温夏)'},Dfb:{en:'Humid continental, warm summer',jp:'亜寒帯湿潤(温暖夏)'},Dfc:{en:'Subarctic',jp:'亜寒帯'},Dfd:{en:'Subarctic, severe winter',jp:'亜寒帯(厳寒)'},ET:{en:'Tundra',jp:'ツンドラ'},EF:{en:'Ice cap',jp:'氷雪'}};
@@ -4665,10 +4667,10 @@ window.addEventListener('DOMContentLoaded', () => {
         return null;
       }
       if(!window._koppenCanvas) return null;
-      if(lat>90||lat<-90) return null;
+      if(lat>85.05||lat<-85.05) return null;
       const W=window._koppenCanvas.width, H=window._koppenCanvas.height;
       const x=Math.max(0,Math.min(W-1,Math.round((lng+180)/360*W)));
-      const y=Math.max(0,Math.min(H-1,Math.round((90-lat)/180*H)));
+      const y=Math.max(0,Math.min(H-1,Math.round((85.05-lat)/170.1*H)));
       try{ const p=window._koppenCanvas.getContext('2d').getImageData(x,y,1,1).data; return nearestKoppenCode(p[0],p[1],p[2],p[3]); }
       catch(e){ return null; }
     };
