@@ -467,7 +467,13 @@
     .data-legend .dl-drag, .koppen-legend .kl-drag{ position:absolute; top:6px; left:8px; color:var(--text-muted); font-size:13px; cursor:move; user-select:none; padding:2px 4px; border-radius:5px; }
     .data-legend .dl-drag:hover, .koppen-legend .kl-drag:hover{ background:var(--input-bg); color:var(--text-main); }
     .data-legend h4, .koppen-legend h4{ padding-left:18px; }
-    .legend-collapsed .dl-bar, .legend-collapsed .dl-scale, .legend-collapsed .dl-hint, .legend-collapsed .kl-item, .legend-collapsed .kl-hint, .legend-collapsed .kl-clear{ display:none !important; }
+    .legend-collapsed .dl-bar, .legend-collapsed .dl-scale, .legend-collapsed .dl-hint, .legend-collapsed .kl-item, .legend-collapsed .kl-hint, .legend-collapsed .kl-clear, .legend-collapsed .dl-op-row, .legend-collapsed .dl-op-extra{ display:none !important; }
+    /* Minimize/expand button on legends + popups (so a kept-open legend doesn't hog the screen, esp. mobile).
+       Non-essential content is hidden in JS (toggleLegendMin) so it works for every legend shape. */
+    .legend-min{ position:absolute; top:6px; right:34px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; font-weight:600; line-height:1; padding:2px 7px; border-radius:6px; }
+    .legend-min:hover{ background:var(--input-bg); color:var(--text-main); }
+    .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ width:auto !important; min-width:160px; max-height:none !important; height:auto !important; padding-bottom:12px !important; overflow:visible !important; }
+    .data-legend.legend-collapsed h4, .koppen-legend.legend-collapsed h4{ margin-bottom:0; }
 
     /* =====================================================================
        iPhone / iOS-native mobile UI — rebuilt from scratch (v2)
@@ -706,12 +712,9 @@
     /* "More transparent" frosted variant */
     body.sidebar-glass2 .sidebar{ background-color:rgba(255,255,255,0.34); backdrop-filter:saturate(180%) blur(34px); -webkit-backdrop-filter:saturate(180%) blur(34px); }
     [data-theme="dark"] body.sidebar-glass2 .sidebar{ background-color:rgba(28,28,30,0.34); }
-    /* DESKTOP: a frosted sidebar must FLOAT OVER the map (otherwise there's nothing behind it to
-       blur — it sits beside the map). Make the map fill the width and overlay the panel. */
-    @media(min-width:769px){
-      body.sidebar-translucent .map-container{ position:absolute; inset:0; width:100%; }
-      body.sidebar-translucent .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:0 0 44px rgba(0,0,0,0.22); }
-    }
+    /* NOTE: the sidebar ALWAYS stays in normal flex flow (map centred in the remaining space) — we
+       never overlay it on the map, so the layout/centring never shifts on open/close. The frosted
+       look comes purely from the translucent material above. */
 
     /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
     .news-timeline{ bottom:22px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }
@@ -1318,7 +1321,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function ensurePlaceLabels(){
     if(!map||_placeLabelsAdded||!map.isStyleLoaded()) return;
     try{
-      if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',tiles:['https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf'],maxzoom:14,attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
+      /* Use the TileJSON URL (not a hardcoded tile path) — OpenFreeMap serves versioned tiles, so
+         the bare /planet/{z}/{x}/{y}.pbf path 404s at real zooms and labels never appear. */
+      if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
       const FONT=['Noto Sans Regular'];
       const before = map.getLayer('grid-lines') ? 'grid-lines' : undefined;
       if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-transform':'uppercase','text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
@@ -1940,11 +1945,10 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=48; }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
-      /* preserveDrawingBuffer:true so the Screenshot feature can read the WebGL canvas reliably
-         (without it, toDataURL/html2canvas returned a blank frame). The perf cost is negligible
-         on modern GPUs. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
+      /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
+         and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
+         works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
          cache keeps recently-seen tiles hot when panning back. */
-      preserveDrawingBuffer:true,
       fadeDuration:0, maxTileCacheSize:1024, refreshExpiredTiles:false,
       glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
       center:[10,20], zoom:1.7, minZoom:0, maxZoom:18,
@@ -2445,29 +2449,31 @@ window.addEventListener('DOMContentLoaded', () => {
       maxLat=Math.min(85,  Math.ceil(b.getNorth()/major)*major+pad);
     }
     const f=[];
+    /* Cap vertices PER LINE (scales with the visible span instead of a fixed dense step) — far
+       fewer points to build + upload, so the grid appears much faster (#15). On globe a line still
+       gets enough points to look curved; on flat it's nearly straight anyway. */
+    const latSpan=maxLat-minLat, lngSpan=maxLng-minLng;
+    const latStep=Math.max(minor, latSpan/30), lngStep=Math.max(minor, lngSpan/36);
+    const majLatStep=Math.max(major/2, latSpan/40), majLngStep=Math.max(major/2, lngSpan/48);
     /* Minor lines */
     for(let lng=Math.ceil(minLng/minor)*minor; lng<=maxLng; lng+=minor){
       if(Math.abs(lng%major)<1e-6) continue;
-      const pts=[]; const step=Math.max(minor/2,0.5);
-      for(let la=minLat; la<=maxLat; la+=step) pts.push([lng,la]);
+      const pts=[]; for(let la=minLat; la<=maxLat; la+=latStep) pts.push([lng,la]); pts.push([lng,maxLat]);
       if(pts.length>1) f.push({type:'Feature',geometry:{type:'LineString',coordinates:pts},properties:{kind:'minor'}});
     }
     for(let lat=Math.ceil(minLat/minor)*minor; lat<=maxLat; lat+=minor){
       if(Math.abs(lat%major)<1e-6 || Math.abs(lat)<1e-6) continue;
-      const pts=[]; const step=Math.max(minor/2,0.5);
-      for(let lo=minLng; lo<=maxLng; lo+=step) pts.push([lo,lat]);
+      const pts=[]; for(let lo=minLng; lo<=maxLng; lo+=lngStep) pts.push([lo,lat]); pts.push([maxLng,lat]);
       if(pts.length>1) f.push({type:'Feature',geometry:{type:'LineString',coordinates:pts},properties:{kind:'minor'}});
     }
     /* Major lines */
     for(let lng=Math.ceil(minLng/major)*major; lng<=maxLng; lng+=major){
-      const pts=[]; const step=Math.max(major/4,0.5);
-      for(let la=minLat; la<=maxLat; la+=step) pts.push([lng,la]);
+      const pts=[]; for(let la=minLat; la<=maxLat; la+=majLatStep) pts.push([lng,la]); pts.push([lng,maxLat]);
       if(pts.length>1) f.push({type:'Feature',geometry:{type:'LineString',coordinates:pts},properties:{kind:'major'}});
     }
     for(let lat=Math.ceil(minLat/major)*major; lat<=maxLat; lat+=major){
       if(Math.abs(lat)<1e-6) continue; /* equator drawn separately in red */
-      const pts=[]; const step=Math.max(major/4,0.5);
-      for(let lo=minLng; lo<=maxLng; lo+=step) pts.push([lo,lat]);
+      const pts=[]; for(let lo=minLng; lo<=maxLng; lo+=majLngStep) pts.push([lo,lat]); pts.push([maxLng,lat]);
       if(pts.length>1) f.push({type:'Feature',geometry:{type:'LineString',coordinates:pts},properties:{kind:'major'}});
     }
     /* Red equator */
@@ -2505,14 +2511,24 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     return f;
   }
-  let gridRebuildTimer=null;
+  let gridRebuildTimer=null, _gridKey='';
   function refreshGrid(){
     if(!isGridOn||!map||!map.getSource('grid-source')) return;
     clearTimeout(gridRebuildTimer);
-    gridRebuildTimer=setTimeout(()=>{ try{ map.getSource('grid-source').setData({type:'FeatureCollection',features:buildGridFeatures()}); }catch(e){} },80);
+    gridRebuildTimer=setTimeout(()=>{
+      try{
+        /* Skip the rebuild if the zoom-step + rounded viewport haven't really changed (#15) — avoids
+           re-tessellating the whole grid on every tiny pan/rotate of the globe. */
+        const z=map.getZoom(), {major,minor}=gridStepForZoom(z), b=map.getBounds();
+        const key=major+'/'+minor+'/'+(b?[b.getWest(),b.getEast(),b.getSouth(),b.getNorth()].map(v=>Math.round(v/Math.max(major,1))).join(','):'');
+        if(key===_gridKey) return; _gridKey=key;
+        map.getSource('grid-source').setData({type:'FeatureCollection',features:buildGridFeatures()});
+      }catch(e){}
+    },90);
   }
   function toggleGrid(){
     isGridOn=!isGridOn; document.getElementById('btn-tool-grid').classList.toggle('tool-on',isGridOn);
+    _gridKey='';
     if(!map||!map.getSource('grid-source'))return;
     if(isGridOn) map.getSource('grid-source').setData({type:'FeatureCollection',features:buildGridFeatures()});
     else map.getSource('grid-source').setData({type:'FeatureCollection',features:[]});
@@ -4923,7 +4939,7 @@ window.addEventListener('DOMContentLoaded', () => {
       });
       const cb=lg.querySelector('#kl-clear'); if(cb) cb.onclick=()=>{ kSelected.clear(); buildLegend(); window._refreshKoppenImage(); };
       const xb=lg.querySelector('#kl-close'); if(xb) xb.onclick=()=>{ /* × also disables the layer (user request) */ const cb2=document.getElementById('dl-climate'); if(cb2){ cb2.checked=false; cb2.dispatchEvent(new Event('change')); } };
-      try{ window._ensureLegendOpacity&&window._ensureLegendOpacity(lg); }catch(_){}
+      try{ window._ensureLegendOpacity&&window._ensureLegendOpacity(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
     }
 
     /* Stagger legends vertically so multiple can show without overlapping. Only re-tile
@@ -4941,10 +4957,26 @@ window.addEventListener('DOMContentLoaded', () => {
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
     }
     window._ensureLegendOpacity=ensureLegendOpacity;
+    /* Minimize/expand a legend so a kept-open one doesn't hog the screen (esp. mobile Köppen). */
+    function toggleLegendMin(el){
+      const collapsed=el.classList.toggle('legend-collapsed');
+      Array.from(el.children).forEach(ch=>{ if(ch.tagName==='H4'||ch.classList.contains('dl-drag')||ch.classList.contains('kl-drag')||ch.classList.contains('legend-min')||ch.classList.contains('layer-popup-x')) return; ch.style.display = collapsed?'none':''; });
+      const b=el.querySelector('.legend-min'); if(b){ b.textContent=collapsed?'▢':'–'; b.title=collapsed?(currentLang==='jp'?'展開':'Expand'):(currentLang==='jp'?'最小化':'Minimize'); }
+    }
+    function ensureLegendMinimize(el){
+      if(!el) return;
+      let b=el.querySelector('.legend-min');
+      if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el); }; el.appendChild(b); }
+      const collapsed=el.classList.contains('legend-collapsed');
+      b.textContent=collapsed?'▢':'–'; b.title=collapsed?(currentLang==='jp'?'展開':'Expand'):(currentLang==='jp'?'最小化':'Minimize');
+      /* On phones, start minimized so the legend never covers the map on open. */
+      if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
+    }
+    window._ensureLegendMinimize=ensureLegendMinimize;
     function tileLegends(){
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
-      all.forEach(el=>{ if(el&&el.style.display==='block') try{ ensureLegendOpacity(el); }catch(_){} });
+      all.forEach(el=>{ if(el&&el.style.display==='block') try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
       let bottom=140;
       visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.right='24px'; el.style.left='auto'; el.style.top='auto'; bottom += el.getBoundingClientRect().height+10; });
     }
@@ -6818,7 +6850,8 @@ window.addEventListener('DOMContentLoaded', () => {
   function applySidebarStyle(){ const s=window.imSidebarStyle;
     document.body.classList.toggle('sidebar-translucent', s==='translucent'||s==='glass2');
     document.body.classList.toggle('sidebar-glass2', s==='glass2');
-    try{ if(map) setTimeout(()=>{ try{ map.resize(); }catch(_){} },60); }catch(_){}   /* layout shifts to overlay */
+    /* No map.resize() here: the sidebar stays in normal flow (no layout shift), so resizing would
+       only risk a needless flicker. */
   }
 
   /* ---------- Custom scrollbars (#34) — non-Apple only; auto-hide ---------- */
