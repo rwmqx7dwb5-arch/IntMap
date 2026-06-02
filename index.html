@@ -678,6 +678,143 @@
       .sidebar, .m-sheet, .m-scrim, .map-search{ transition-duration:0.01ms !important; }
       .modal-content, .compose-content, .country-popup{ animation:none !important; }
     }
+
+    /* ============================================================
+       ROUND 3 ADDITIONS
+       ============================================================ */
+
+    /* --- Custom scrollbars (#34): thin, rounded, semi-transparent, auto-hide.
+       Only applied on non-Apple platforms (html.custom-scrollbars added by JS);
+       macOS / iOS keep their native overlay scrollbars, which are already ideal. --- */
+    html.custom-scrollbars *{ scrollbar-width:thin; scrollbar-color:rgba(140,142,150,0) transparent; }
+    html.custom-scrollbars.sb-active *, html.custom-scrollbars *:hover{ scrollbar-color:rgba(140,142,150,0.5) transparent; }
+    html.custom-scrollbars *::-webkit-scrollbar{ width:10px; height:10px; }
+    html.custom-scrollbars *::-webkit-scrollbar-track{ background:transparent; }
+    html.custom-scrollbars *::-webkit-scrollbar-corner{ background:transparent; }
+    html.custom-scrollbars *::-webkit-scrollbar-thumb{ background:transparent; border-radius:8px; border:2.5px solid transparent; background-clip:padding-box; transition:background-color 0.25s ease; }
+    html.custom-scrollbars.sb-active *::-webkit-scrollbar-thumb,
+    html.custom-scrollbars *:hover::-webkit-scrollbar-thumb{ background:rgba(140,142,150,0.5); background-clip:padding-box; }
+    html.custom-scrollbars *::-webkit-scrollbar-thumb:hover{ background:rgba(140,142,150,0.82); background-clip:padding-box; }
+    [data-theme="dark"] html.custom-scrollbars.sb-active *::-webkit-scrollbar-thumb,
+    [data-theme="dark"] html.custom-scrollbars *:hover::-webkit-scrollbar-thumb{ background:rgba(170,172,180,0.45); background-clip:padding-box; }
+
+    /* --- Sidebar transparency setting (#23): default OPAQUE; translucent ("frosted")
+       only when body.sidebar-translucent is set from Settings. --- */
+    .sidebar{ background-color:#ffffff; backdrop-filter:none; -webkit-backdrop-filter:none; position:relative; }
+    [data-theme="dark"] .sidebar{ background-color:#1c1c1e; }
+    body.sidebar-translucent .sidebar{ background-color:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(28px); -webkit-backdrop-filter:saturate(180%) blur(28px); }
+
+    /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
+    .news-timeline{ bottom:22px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }
+    .news-timeline:not(.collapsed){ border-radius:18px; padding:8px 12px; }
+    .ntl-toggle{ width:38px; height:38px; border-radius:999px; font-size:16px; }
+    .ntl-body{ padding:2px 6px; gap:7px; }
+    .ntl-slider{ -webkit-appearance:none; appearance:none; height:5px; border-radius:3px; background:linear-gradient(90deg,var(--primary-color) 0%,var(--primary-color) var(--ntl-fill,100%),rgba(128,128,128,0.25) var(--ntl-fill,100%)); }
+    .ntl-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 5px rgba(0,0,0,0.25); cursor:pointer; }
+    .ntl-slider::-moz-range-thumb{ width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); cursor:pointer; }
+    .ntl-label{ letter-spacing:-0.2px; }
+    .ntl-sync-note{ font-size:10px; color:var(--text-muted); margin-top:1px; display:flex; align-items:center; gap:5px; }
+    .ntl-sync-dot{ width:6px; height:6px; border-radius:50%; background:var(--primary-color); box-shadow:0 0 6px var(--primary-color); }
+    .news-timeline.active .ntl-toggle{ background:var(--primary-color); color:#fff; }
+
+    /* --- Summarize-this-view: glass already applied; make it a sibling-aligned glass pill (#22) --- */
+    .ai-view-summary-btn{ bottom:22px; border-radius:999px; }
+
+    /* --- Screenshot button (top-right cluster) + capture mode (#18) --- */
+    #screenshot-btn{ }
+    body.capture-mode .map-controls-top,
+    body.capture-mode .btn-toggle-sidebar,
+    body.capture-mode .map-search,
+    body.capture-mode .m-fab-stack,
+    body.capture-mode .ai-view-summary-btn,
+    body.capture-mode .news-timeline .ntl-toggle,
+    body.capture-mode .layer-fav-bar,
+    body.capture-mode .sat-controller .satc-head,
+    body.capture-mode .measure-tooltip,
+    body.capture-mode .tp-header .tp-close,
+    body.capture-mode .layer-popup-x,
+    body.capture-mode .dl-drag, body.capture-mode .kl-drag{ visibility:hidden !important; }
+    body.capture-mode .maplibregl-ctrl{ display:none !important; }
+    .screenshot-flash{ position:fixed; inset:0; background:#fff; z-index:99999; pointer-events:none; opacity:0; }
+    .screenshot-flash.go{ animation:ssFlash 0.5s ease; }
+    @keyframes ssFlash{ 0%{opacity:0.85;} 100%{opacity:0;} }
+
+    /* --- Measurement "snap to close" affordance (#47): highlighted ring on the first vertex --- */
+    .measure-tooltip.closing{ background:var(--primary-color); }
+
+    /* --- Layer dropdown width fix (#21): wider, never horizontally scrolls --- */
+    .layer-dropdown{ min-width:248px; width:268px; max-width:min(308px,calc(100vw - 36px)); overflow-x:hidden; }
+    .layer-dropdown .layer-option{ width:100%; box-sizing:border-box; }
+    .layer-dropdown .layer-option span{ overflow:hidden; text-overflow:ellipsis; }
+
+    /* --- Layer favorites bar pinned at top of the Layers dropdown (#16) --- */
+    .layer-fav-section{ display:none; }
+    .layer-fav-section.has-favs{ display:block; }
+    .layer-fav-title{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); margin:2px 2px 5px; display:flex; align-items:center; gap:5px; }
+    .layer-fav-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+    .layer-fav-chip{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:999px; cursor:pointer; white-space:nowrap; transition:0.15s; }
+    .layer-fav-chip:hover{ border-color:var(--primary-color); }
+    .layer-fav-chip.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    .layer-fav-chip .lfc-sw{ width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+    /* the per-row star toggle */
+    .lyr-star{ margin-left:auto; background:none; border:none; cursor:pointer; font-size:13px; line-height:1; color:rgba(140,140,150,0.55); padding:2px 4px; border-radius:6px; flex-shrink:0; }
+    .lyr-star:hover{ color:#ffcc00; background:var(--input-bg); }
+    .lyr-star.on{ color:#ffcc00; }
+    .layer-option{ position:relative; }
+
+    /* --- Opacity moved into the legend / layer-control popup (#17) --- */
+    .dl-op-row{ display:flex; align-items:center; gap:8px; margin:8px 0 2px; font-size:10.5px; color:var(--text-muted); }
+    .dl-op-row input[type=range]{ flex:1; min-width:0; accent-color:var(--primary-color); height:4px; }
+    .dl-op-row .dl-op-val{ min-width:30px; text-align:right; font-variant-numeric:tabular-nums; }
+    .dl-op-extra{ margin-top:8px; }
+    .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+    .dl-op-extra input[type=date], .dl-op-extra select{ flex:1; min-width:0; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px; }
+    /* Generic control popup for layers that have no rich legend */
+    .layer-ctrl{ display:none; position:absolute; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
+    .layer-ctrl h4{ margin:0 0 4px; font-size:12px; padding-right:18px; }
+
+    /* --- Stats compare: fixed bottom panel that ignores list scroll (#26) --- */
+    .stats-compare-fixed{ display:none; position:absolute; left:0; right:0; bottom:0; z-index:30; padding:12px 14px max(14px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 24px rgba(0,0,0,0.12); }
+    body.sidebar-translucent .stats-compare-fixed{ background:var(--sidebar-bg); }
+    .stats-compare-fixed.show{ display:block; }
+    .scf-empty{ font-size:12px; color:var(--text-muted); text-align:center; line-height:1.5; }
+    .scf-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .scf-head .scf-title{ font-size:12px; font-weight:700; }
+    .scf-head button{ background:var(--input-bg); border:none; color:var(--text-main); font-size:11px; font-weight:600; padding:5px 10px; border-radius:8px; cursor:pointer; }
+    .scf-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+
+    /* --- Account avatar (#28) --- */
+    .acct-avatar-wrap{ display:flex; align-items:center; gap:12px; margin:6px 0 16px; }
+    .acct-avatar{ width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; flex-shrink:0; background-size:cover; background-position:center; }
+    .acct-avatar-pick{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+    .acct-emoji{ width:34px; height:34px; border-radius:9px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .acct-emoji.sel{ outline:2px solid var(--primary-color); }
+    .acct-color{ width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+    .acct-color.sel{ border-color:var(--text-main); }
+
+    /* --- Animated wind canvas overlay (#7) --- */
+    #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; display:none; }
+
+    /* --- Data sources list in Settings (#37) --- */
+    .src-list{ max-height:300px; overflow-y:auto; margin-top:6px; }
+    .src-list .src-item{ padding:8px 0; border-bottom:1px solid rgba(128,128,128,0.12); font-size:12.5px; }
+    .src-list .src-item b{ color:var(--text-main); } .src-list .src-item a{ color:var(--primary-color); text-decoration:none; word-break:break-all; }
+    .src-list .src-item .src-use{ color:var(--text-muted); font-size:11px; }
+
+    /* --- Mobile compact tweaks (#1,#2): denser news cards + smaller measurement popups --- */
+    @media(max-width:768px){
+      .news-item{ padding:11px 13px !important; border-radius:13px; }
+      .news-item .news-title{ font-size:12.5px; margin-top:5px; -webkit-line-clamp:3; }
+      .news-item .news-head{ padding-right:18px; }
+      .news-item .news-foot{ margin-top:6px; }
+      .news-item .news-origlang{ display:none; }
+      .content-area{ gap:8px !important; }
+      .news-item .btn-bookmark{ top:10px; right:12px; font-size:16px; }
+      .tool-panel{ min-width:150px !important; max-width:62vw !important; padding:8px 10px !important; font-size:11.5px !important; }
+      .tool-panel .tp-select, .tool-panel .radius-list{ font-size:11px; }
+      .tool-panel .tp-hint{ display:none !important; }   /* compact: drop the help line on phones */
+      .news-timeline{ bottom:calc(var(--peek-h) + 56px) !important; }
+    }
   </style>
 </head>
 <body>
@@ -694,8 +831,7 @@
       <button class="mode-btn" id="btn-stats" data-i18n="tabStats">Stats</button>
       <button class="mode-btn" id="btn-community" data-i18n="tabCommunity">Community</button>
     </div>
-    <div class="search-bar">
-      <span class="search-icon">🔍</span>
+    <div class="search-bar" id="sidebar-search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
       <button class="search-btn" id="btn-search" data-i18n="searchBtn">Search</button>
     </div>
@@ -719,13 +855,14 @@
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
     <div class="content-area" id="community-feed" style="display:none;"></div>
     <div class="news-reader-pane" id="news-reader-pane" style="display:none;"></div>
+    <div class="stats-compare-fixed" id="stats-compare-fixed"></div>
   </div>
 
   <div class="map-container" id="map-container">
     <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Toggle Sidebar"><span class="chev"></span></button>
     <div class="map-search" id="map-search">
       <input id="ms-input" type="text" placeholder="Search any place on Earth..." data-i18n-ph="msPh">
-      <button id="ms-btn" title="Search">🔍</button>
+      <button id="ms-btn" title="Search" data-i18n="searchBtn">Search</button>
       <div class="map-search-results" id="ms-results"></div>
     </div>
     <div class="map-controls-top">
@@ -749,9 +886,15 @@
         <button class="view-btn" id="btn-tool-measure" data-i18n="measureBtn" title="Measure Distance">📏 Measure</button>
         <button class="view-btn" id="btn-tool-area" data-i18n="areaBtn" title="Measure Area">📐 Area</button>
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
+        <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
         <div class="layer-menu-container">
           <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
           <div class="layer-dropdown" id="layer-dropdown">
+             <div class="layer-fav-section" id="layer-fav-section">
+               <div class="layer-fav-title">⭐ <span data-i18n="favLayers">Favorite layers</span></div>
+               <div class="layer-fav-chips" id="layer-fav-chips"></div>
+               <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
+             </div>
              <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
@@ -776,6 +919,7 @@
       </div>
     </div>
     <div id="map"></div>
+    <canvas id="wind-canvas"></canvas>
     <div id="tool-panel" class="tool-panel"></div>
     <div id="country-info" class="country-info"></div>
     <div id="coord-readout" class="coord-readout"></div>
@@ -828,6 +972,16 @@
       <div class="ai-hint" data-i18n="aiSecHint">Bring your own API key — requests go directly from this browser to the provider and the key is stored only here.</div>
       <div id="ai-settings-body"></div>
     </div>
+    <div class="setting-group"><label data-i18n="lblSidebarStyle">Sidebar appearance</label><select id="setting-sidebar-style"><option value="opaque" data-i18n="sidebarOpaque">Solid (default)</option><option value="translucent" data-i18n="sidebarTranslucent">Frosted glass (translucent)</option></select></div>
+    <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
+    <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centred)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
+    <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label>
+      <div class="sat-keys-hint" data-i18n="newsCountriesHint">Also pull headlines from the national outlets of the countries you pick (multiple allowed).</div>
+      <div id="newscountry-multi" style="display:grid; grid-template-columns:1fr 1fr; gap:7px 12px; margin-top:4px;"></div>
+    </div>
+    <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
+      <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
+    </div>
     <button class="modal-close-btn" id="btn-close-settings">Apply</button>
     <div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--text-muted);">
       <a href="#" id="link-terms" style="color:var(--text-muted);">Terms of Service</a> ·
@@ -845,6 +999,16 @@
       <button id="legal-tab-privacy" class="ios-segment-btn" style="flex:1;">Privacy</button>
     </div>
     <div id="legal-body" style="font-size:13px;line-height:1.6;color:var(--text-main);"></div>
+  </div>
+</div>
+
+<!-- Data sources & attribution -->
+<div class="modal-overlay" id="sources-modal">
+  <div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;">
+    <button id="sources-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <h3 style="margin:0 0 6px 0; font-size:18px;" id="sources-title">Data sources</h3>
+    <p style="margin:0 0 8px;color:var(--text-muted);font-size:12px;line-height:1.5;" id="sources-sub"></p>
+    <div class="src-list" id="sources-body"></div>
   </div>
 </div>
 <div class="country-popup" id="country-popup">
@@ -939,6 +1103,7 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   /* ===== State ===== */
@@ -4110,8 +4275,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map) return;
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Geopolitical theory", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
     Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"地政学理論", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done" });
-    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables" });
+    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -4244,6 +4409,14 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="dl-hint">${currentLang==='jp'?'NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。':'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.'}</div>`;
     mc.appendChild(lgdPopGrid);
     lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Colour-relief elevation legend (#5) */
+    const lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
+    lgdRelief.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'標高（カラー段彩）':'Elevation (colour)'}</h4>
+      <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
+      <div class="dl-scale"><span>${currentLang==='jp'?'深海':'Deep sea'}</span><span>${currentLang==='jp'?'高峰':'Peaks'}</span></div>
+      <div class="dl-hint">${currentLang==='jp'?'AWS Terrain（terrarium DEM）':'AWS Terrain (terrarium DEM)'}</div>`;
+    mc.appendChild(lgdRelief);
+    lgdRelief.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-relief'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Make EEZ/Temp/Thermal legends draggable too (same handler) */
     function wireDrag(el){
       const handle=el.querySelector('.dl-drag'); if(!handle) return;
@@ -4261,7 +4434,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
       });
     }
-    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid);
+    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief);
     /* Also wire drag for the Köppen legend */
     setTimeout(()=>{ const kl=document.getElementById('koppen-legend');
       if(kl && !kl.querySelector('.kl-drag')){
@@ -4287,7 +4460,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const hr=document.createElement('hr'); hr.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; dd.appendChild(hr);
     const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.5,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85};
+    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.55,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,wind:0.9,subcables:0.95};
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     /* Date-aware layers: temp, precip, thermal — these vary day-by-day. */
@@ -4297,11 +4470,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
     [
       ['__grp','lyrGrpWeather'],
-      ['radar','lyrRadar'],['clouds','lyrClouds'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
+      ['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
       ['__grp','lyrGrpTerrain'],
-      ['hillshade','lyrHillshade'],['contours','lyrContours'],
+      ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],
       ['__grp','lyrGrpMaritime'],
-      ['eez','lyrEEZ'],['ships','lyrShips'],['planes','lyrPlanes'],
+      ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],
       ['__grp','lyrGrpIndic'],
       ['pop','lyrPop'],['popgrid','lyrPopGrid'],['hdi','lyrHDI'],['dem','lyrDem'],['nato','lyrNATO'],['night','lyrNight']
     ].forEach(([id,key])=>{
@@ -4411,7 +4584,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const noData=['<=',['to-number',['feature-state',id],0],0];
       map.addLayer({id:id+'-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{
         'fill-color':['case',noData,'#9aa0a6',ramp],
-        'fill-opacity':['case',noData,0.45,opacities[id]]
+        /* No-data grey now scales with the opacity slider too (#44) — slightly subtler than data fills. */
+        'fill-opacity':['case',noData,Math.max(0,opacities[id]*0.75),opacities[id]]
       }},beforeId);
       wireChoroHover(id);
     }
@@ -4428,20 +4602,25 @@ window.addEventListener('DOMContentLoaded', () => {
       /* If no data made it through, the layer would be invisible — warn and bail. */
       if(count===0) console.warn('applyChoro: no feature-state set for',id);
     }
-    function addNato(){ if(map.getLayer('nato-fill'))return; map.addLayer({id:'nato-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#0a3d91','fill-opacity':['case',['boolean',['feature-state','nato'],false],opacities.nato,0]}},beforeId); map.addLayer({id:'nato-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#1e63ff','line-width':['case',['boolean',['feature-state','nato'],false],1.5,0]}},beforeId); }
-    function applyNato(){ countryGeo.features.forEach(f=>{ const s=countryStats[String(f.id)]; if(s&&NATO.has(s.code)) map.setFeatureState({source:'countries',id:f.id},{nato:true}); }); }
+    /* NATO members fill (#39): brighter blue so it's clearly visible on the dark basemap
+       (the old #0a3d91 navy at 50% was nearly invisible), with a crisp outline. */
+    function addNato(){ if(map.getLayer('nato-fill'))return; map.addLayer({id:'nato-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':['case',['boolean',['feature-state','nato'],false],opacities.nato,0]}},beforeId); map.addLayer({id:'nato-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':['case',['boolean',['feature-state','nato'],false],1.6,0]}},beforeId); }
+    function applyNato(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; map.setFeatureState({source:'countries',id:f.id},{nato:!!(s&&NATO.has(s.code))}); }); }
 
     let nightTimer=null;
     function buildNight(){ if(typeof turf==='undefined')return; const now=new Date(); const N=Math.floor((now-Date.UTC(now.getUTCFullYear(),0,0))/864e5); const decl=-23.44*Math.cos((2*Math.PI/365)*(N+10)); const utc=now.getUTCHours()+now.getUTCMinutes()/60; const subLng=(12-utc)*15; const antiLng=((subLng+360)%360)-180; let poly; try{ poly=turf.circle([antiLng,-decl],10001,{steps:128,units:'kilometers'}); }catch(e){return;} const src=map.getSource('src-night'); if(src)src.setData(poly); else map.addLayer({id:'lyr-night',type:'fill',source:(map.addSource('src-night',{type:'geojson',data:poly}),'src-night'),layout:{visibility:'none'},paint:{'fill-color':'#00112a','fill-opacity':opacities.night}},beforeId); }
 
-    /* Verified working as of 2026-05: Wikipedia moved Köppen file hash from 6/6b/ to e/e8/.
-       Both my earlier URLs returned HTTP 404 — they were the cause of "Köppen does nothing". */
-    const KURL='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
-    const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1280px-Koppen-Geiger_Map_World_present.svg.png';
-    window.KCOORDS=[[-180,84],[180,84],[180,-60],[-180,-60]];
+    /* Köppen-Geiger climate (#13): rendered locally from koppen_geiger_0p00833333.tif
+       (Beck et al. 2018, native 1 km, 30 classes) → koppen_hires.png at 7200×3600, full
+       −180..180 / 90..−90 extent, transparent ocean. Falls back to the Wikipedia PNG if the
+       local file isn't published alongside index.html. The palette below is byte-identical to
+       the one baked into the PNG so cursor pixel-sampling round-trips perfectly. */
+    const KURL='koppen_hires.png';
+    const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
+    window.KCOORDS=[[-180,90],[180,90],[180,-90],[-180,-90]];
     const KCOORDS=window.KCOORDS;
-    window.KCOL=[['Af',[0,0,254]],['Am',[0,119,255]],['Aw',[70,170,250]],['BWh',[254,0,0]],['BWk',[255,150,149]],['BSh',[245,164,0]],['BSk',[255,219,99]],['Csa',[255,255,0]],['Csb',[198,199,0]],['Cwa',[150,255,150]],['Cwb',[99,199,100]],['Cfa',[200,255,80]],['Cfb',[102,255,51]],['Cfc',[50,199,0]],['Dsa',[255,0,254]],['Dsb',[198,0,199]],['Dwa',[171,177,255]],['Dwb',[90,120,220]],['Dwc',[76,81,181]],['Dfa',[0,255,255]],['Dfb',[56,199,255]],['Dfc',[0,126,125]],['Dfd',[0,69,94]],['ET',[178,178,178]],['EF',[104,104,104]]];
-    window.KNAME={Af:{en:'Tropical rainforest',jp:'熱帯雨林'},Am:{en:'Tropical monsoon',jp:'熱帯モンスーン'},Aw:{en:'Savanna',jp:'サバナ'},BWh:{en:'Hot desert',jp:'砂漠(高温)'},BWk:{en:'Cold desert',jp:'砂漠(寒冷)'},BSh:{en:'Hot steppe',jp:'ステップ(高温)'},BSk:{en:'Cold steppe',jp:'ステップ(寒冷)'},Csa:{en:'Mediterranean, hot',jp:'地中海性(高温夏)'},Csb:{en:'Mediterranean, warm',jp:'地中海性(温暖夏)'},Cwa:{en:'Humid subtropical, dry winter',jp:'温暖冬季少雨'},Cwb:{en:'Subtropical highland',jp:'温帯高地'},Cfa:{en:'Humid subtropical',jp:'温暖湿潤'},Cfb:{en:'Oceanic',jp:'西岸海洋性'},Cfc:{en:'Subpolar oceanic',jp:'亜寒帯海洋性'},Dsa:{en:'Continental dry-hot summer',jp:'大陸性夏季少雨'},Dsb:{en:'Continental dry-warm summer',jp:'大陸性夏季少雨'},Dwa:{en:'Continental, dry winter',jp:'大陸性冬季少雨'},Dwb:{en:'Continental, dry winter',jp:'大陸性冬季少雨'},Dwc:{en:'Subarctic, dry winter',jp:'亜寒帯冬季少雨'},Dfa:{en:'Humid continental',jp:'亜寒帯湿潤'},Dfb:{en:'Humid continental',jp:'亜寒帯湿潤'},Dfc:{en:'Subarctic',jp:'亜寒帯'},Dfd:{en:'Subarctic, severe',jp:'亜寒帯(厳寒)'},ET:{en:'Tundra',jp:'ツンドラ'},EF:{en:'Ice cap',jp:'氷雪'}};
+    window.KCOL=[['Af',[0,0,255]],['Am',[0,120,255]],['Aw',[70,170,250]],['BWh',[255,0,0]],['BWk',[255,150,150]],['BSh',[245,165,0]],['BSk',[255,220,100]],['Csa',[255,255,0]],['Csb',[200,200,0]],['Csc',[150,150,0]],['Cwa',[150,255,150]],['Cwb',[100,200,100]],['Cwc',[50,150,50]],['Cfa',[200,255,80]],['Cfb',[100,255,80]],['Cfc',[50,200,0]],['Dsa',[255,0,255]],['Dsb',[200,0,200]],['Dsc',[150,50,150]],['Dsd',[150,100,150]],['Dwa',[170,175,255]],['Dwb',[90,120,220]],['Dwc',[75,80,180]],['Dwd',[50,0,135]],['Dfa',[0,255,255]],['Dfb',[55,200,255]],['Dfc',[0,125,125]],['Dfd',[0,70,95]],['ET',[178,178,178]],['EF',[102,102,102]]];
+    window.KNAME={Af:{en:'Tropical rainforest',jp:'熱帯雨林'},Am:{en:'Tropical monsoon',jp:'熱帯モンスーン'},Aw:{en:'Savanna',jp:'サバナ'},BWh:{en:'Hot desert',jp:'砂漠(高温)'},BWk:{en:'Cold desert',jp:'砂漠(寒冷)'},BSh:{en:'Hot steppe',jp:'ステップ(高温)'},BSk:{en:'Cold steppe',jp:'ステップ(寒冷)'},Csa:{en:'Mediterranean, hot summer',jp:'地中海性(高温夏)'},Csb:{en:'Mediterranean, warm summer',jp:'地中海性(温暖夏)'},Csc:{en:'Mediterranean, cold summer',jp:'地中海性(冷涼夏)'},Cwa:{en:'Humid subtropical, dry winter',jp:'温暖冬季少雨'},Cwb:{en:'Subtropical highland',jp:'温帯高地'},Cwc:{en:'Subtropical highland, dry winter',jp:'温帯高地(冬季少雨)'},Cfa:{en:'Humid subtropical',jp:'温暖湿潤'},Cfb:{en:'Oceanic',jp:'西岸海洋性'},Cfc:{en:'Subpolar oceanic',jp:'亜寒帯海洋性'},Dsa:{en:'Continental, dry-hot summer',jp:'大陸性夏季少雨(高温)'},Dsb:{en:'Continental, dry-warm summer',jp:'大陸性夏季少雨(温暖)'},Dsc:{en:'Continental, dry summer (cold)',jp:'大陸性夏季少雨(冷涼)'},Dsd:{en:'Continental, dry summer (severe)',jp:'大陸性夏季少雨(厳寒)'},Dwa:{en:'Continental, dry winter (hot summer)',jp:'大陸性冬季少雨(高温夏)'},Dwb:{en:'Continental, dry winter (warm summer)',jp:'大陸性冬季少雨(温暖夏)'},Dwc:{en:'Subarctic, dry winter',jp:'亜寒帯冬季少雨'},Dwd:{en:'Subarctic, dry winter (severe)',jp:'亜寒帯冬季少雨(厳寒)'},Dfa:{en:'Humid continental, hot summer',jp:'亜寒帯湿潤(高温夏)'},Dfb:{en:'Humid continental, warm summer',jp:'亜寒帯湿潤(温暖夏)'},Dfc:{en:'Subarctic',jp:'亜寒帯'},Dfd:{en:'Subarctic, severe winter',jp:'亜寒帯(厳寒)'},ET:{en:'Tundra',jp:'ツンドラ'},EF:{en:'Ice cap',jp:'氷雪'}};
     const KCOL=window.KCOL, KNAME=window.KNAME;
     const kSelected=window.kSelected||(window.kSelected=new Set());
     window.kSelected=kSelected;
@@ -4476,7 +4655,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       return bestD<6000?best:null;
     }
-    /* Sample Köppen code at lng/lat (image is equirectangular over lat [+84,-60], lng [-180,180]).
+    /* Sample Köppen code at lng/lat (image is equirectangular over lat [+90,-90], lng [-180,180]).
        Lazily loads the canvas on first call so the cursor-readout shows climate even
        when the Köppen overlay isn't enabled. */
     window._koppenLoadStarted=false;
@@ -4486,10 +4665,10 @@ window.addEventListener('DOMContentLoaded', () => {
         return null;
       }
       if(!window._koppenCanvas) return null;
-      if(lat>84||lat<-60) return null;
+      if(lat>90||lat<-90) return null;
       const W=window._koppenCanvas.width, H=window._koppenCanvas.height;
       const x=Math.max(0,Math.min(W-1,Math.round((lng+180)/360*W)));
-      const y=Math.max(0,Math.min(H-1,Math.round((84-lat)/144*H)));
+      const y=Math.max(0,Math.min(H-1,Math.round((90-lat)/180*H)));
       try{ const p=window._koppenCanvas.getContext('2d').getImageData(x,y,1,1).data; return nearestKoppenCode(p[0],p[1],p[2],p[3]); }
       catch(e){ return null; }
     };
@@ -4553,7 +4732,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Stagger legends vertically so multiple can show without overlapping. Only re-tile
        legends that haven't been manually dragged (left/top still 'auto'/unset). */
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdNATO,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid];
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       let bottom=140;
       visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.right='24px'; el.style.left='auto'; el.style.top='auto'; bottom += el.getBoundingClientRect().height+10; });
@@ -4913,6 +5092,34 @@ window.addEventListener('DOMContentLoaded', () => {
       map.addSource('src-eez',{type:'raster',tiles:[wms],tileSize:256});
       map.addLayer({id:'lyr-eez',type:'raster',source:'src-eez',layout:{visibility:'none'},paint:{'raster-opacity':opacities.eez}},beforeId);
     }
+    /* === Submarine cables (#36) — TeleGeography "Submarine Cable Map" open data ===
+       Their public API serves all cable routes + landing points as GeoJSON; each cable
+       carries its own colour. Loaded lazily with the same CORS-proxy fallbacks used elsewhere. */
+    let _subcablesLoading=false;
+    async function fetchSubcables(){
+      const cableUrl='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
+      const lpUrl='https://www.submarinecablemap.com/api/v3/landing-point/landing-point-geo.json';
+      const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`, x=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(x)}` ];
+      async function grab(u){ for(const mk of proxies){ try{ const r=await fetch(mk(u)); if(!r.ok) continue; const j=await r.json(); if(j&&j.features) return j; }catch(_){} } return null; }
+      const [cab,lp]=await Promise.all([grab(cableUrl),grab(lpUrl)]);
+      return {cab,lp};
+    }
+    function addSubcables(){
+      if(map.getLayer('lyr-subcables')){ setVis('lyr-subcables',true); setVis('lyr-subcables-glow',true); setVis('lyr-subcables-pts',true); return; }
+      if(_subcablesLoading) return; _subcablesLoading=true;
+      fetchSubcables().then(({cab,lp})=>{
+        _subcablesLoading=false;
+        if(!cab){ const cb=document.getElementById('dl-subcables'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } try{ satToast(currentLang==='jp'?'海底ケーブルデータを取得できませんでした':'Submarine cable data unavailable'); }catch(_){} return; }
+        try{
+          if(!map.getSource('src-subcables')) map.addSource('src-subcables',{type:'geojson',data:cab});
+          map.addLayer({id:'lyr-subcables-glow',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':3.2,'line-opacity':0.20,'line-blur':3}},beforeId);
+          map.addLayer({id:'lyr-subcables',type:'line',source:'src-subcables',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#30b0c7'],'line-width':['interpolate',['linear'],['zoom'],0,0.6,4,1.1,8,2],'line-opacity':opacities.subcables}},beforeId);
+          if(lp){ if(!map.getSource('src-subcables-lp')) map.addSource('src-subcables-lp',{type:'geojson',data:lp});
+            map.addLayer({id:'lyr-subcables-pts',type:'circle',source:'src-subcables-lp',minzoom:3,layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],3,1.6,8,3.5],'circle-color':'#ffd23f','circle-stroke-color':'#1a1a1a','circle-stroke-width':0.6,'circle-opacity':0.9}},beforeId); }
+          setVis('lyr-subcables-glow',true); setVis('lyr-subcables',true); if(map.getLayer('lyr-subcables-pts')) setVis('lyr-subcables-pts',true);
+        }catch(e){ console.warn('addSubcables',e); }
+      });
+    }
     /* === Contour lines — generated on the fly from the terrarium DEM by maplibre-contour === */
     let _mlcDem=null;
     function addContours(){
@@ -4922,7 +5129,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!_mlcDem){ _mlcDem=new MLC.DemSource({ url:'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding:'terrarium', maxzoom:13, worker:true }); _mlcDem.setupMaplibre(maplibregl); }
         if(!map.getSource('contour-src')){
           map.addSource('contour-src',{ type:'vector', maxzoom:15, tiles:[ _mlcDem.contourProtocolUrl({
-            thresholds:{ 8:[1000], 9:[500], 10:[500], 11:[200,1000], 12:[100,500], 13:[50,200], 14:[20,100], 15:[20,100] },
+            /* Finer intervals (#6): added low zooms + halved most steps. [minor, major]. */
+            thresholds:{ 5:[1000,4000], 6:[500,2000], 7:[500,2000], 8:[250,1000], 9:[200,1000], 10:[100,500], 11:[100,500], 12:[50,250], 13:[25,100], 14:[10,50], 15:[10,50] },
             elevationKey:'ele', levelKey:'level', contourLayer:'contours' }) ] });
         }
         const dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -5027,6 +5235,21 @@ window.addEventListener('DOMContentLoaded', () => {
           lgdPopGrid.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('popgrid',gibsStatic('GPW_Population_Density_2020',7,'png'),7); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
         }
+        else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(true); }catch(_){} }
+        else if(id==='relief'){
+          /* Colour elevation relief (#5) — MapLibre v5 color-relief over the DEM, hypsometric tint. */
+          whenStyleReady().then(()=>{ try{
+            ensureTerrainSource();
+            if(!map.getLayer('lyr-relief')){
+              map.addLayer({id:'lyr-relief',type:'color-relief',source:'terrain-dem',layout:{visibility:'none'},paint:{'color-relief-opacity':opacities.relief,
+                'color-relief-color':['interpolate',['linear'],['elevation'],
+                  -8000,'#062c5a',-4000,'#0b4f8a',-1000,'#2a78b8',-100,'#7fb3d9',-1,'#cfe6f5',
+                  0,'#1a7a3c',150,'#4fae5b',500,'#a6d96a',1000,'#e6e08b',1800,'#d9a066',2800,'#a87b52',3800,'#9b6b4a',4800,'#cdbfb4',6000,'#ffffff']}},beforeId);
+            }
+            setVis('lyr-relief',true); if(lgdRelief){ lgdRelief.style.display='block'; tileLegends(); }
+          }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'カラー標高を初期化できませんでした':'Colour relief unavailable'); }catch(_){} } });
+        }
+        else if(id==='subcables'){ whenStyleReady().then(()=>{ try{ addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
         else if(id==='hillshade'){
           whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
@@ -5059,7 +5282,7 @@ window.addEventListener('DOMContentLoaded', () => {
           withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
         }
         else if(id==='nato'){
-          lgdNATO.style.display='block'; tileLegends();
+          /* NATO needs no legend (#45) — the blue fill is self-explanatory. */
           withCountries(()=>{ try{ addNato(); applyNato(); setVis('nato-fill',true); setVis('nato-line',true); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
@@ -5068,13 +5291,15 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='nato'){ setVis('nato-fill',false); setVis('nato-line',false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
+        else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); }catch(_){} }
+        else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
         if(id==='climate'){ legend.style.display='none'; }
         if(id==='hdi') lgdHDI.style.display='none';
         if(id==='dem') lgdDem.style.display='none';
         if(id==='pop') lgdPop.style.display='none';
         if(id==='popgrid') lgdPopGrid.style.display='none';
-        if(id==='nato') lgdNATO.style.display='none';
+        if(id==='relief') lgdRelief.style.display='none';
         if(id==='eez') lgdEEZ.style.display='none';
         if(id==='temp') lgdTemp.style.display='none';
         if(id==='thermal') lgdThermal.style.display='none';
@@ -5090,11 +5315,22 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Expose for the lyr-row dt-/ft- handlers above */
     window.refreshDatedLayer=refreshDatedLayer;
     window.refreshTrafficLayer=refreshTrafficLayer;
+    /* Unified time slider (#8): drive the day-based weather layers from the global news date.
+       GIBS imagery lags ~2 days, so clamp future-ish dates back to the freshest processed day. */
+    window.setGlobalLayerDate=function(iso){
+      const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+      let d = iso || maxIso; if(d>maxIso) d=maxIso;
+      ['sst','snow','aod','thermal','precip'].forEach(id=>{
+        layerDates[id]=d;
+        const dp=document.getElementById('dt-'+id); if(dp) dp.value=d;
+        if(map.getLayer('lyr-'+id) && map.getLayoutProperty('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id);
+      });
+    };
     window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
       if(id==='hdi'||id==='dem'||id==='pop'){
         /* Keep no-data countries grey (0.45) — see addChoro for the "<= 0" reasoning. */
-        if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],0.45,v]);
+        if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',['case',['boolean',['feature-state','nato'],false],v,0]); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
@@ -5102,6 +5338,9 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','icon-opacity',v); }
       else if(id==='hillshade'){ if(map.getLayer('lyr-hillshade'))map.setPaintProperty('lyr-hillshade','hillshade-exaggeration',Math.max(0.05,v)); }
       else if(id==='contours'){ if(map.getLayer('contour-lines'))map.setPaintProperty('contour-lines','line-opacity',v); if(map.getLayer('contour-labels'))map.setPaintProperty('contour-labels','text-opacity',v); }
+      else if(id==='relief'){ if(map.getLayer('lyr-relief'))map.setPaintProperty('lyr-relief','color-relief-opacity',v); }
+      else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=v; }
+      else if(id==='subcables'){ if(map.getLayer('lyr-subcables'))map.setPaintProperty('lyr-subcables','line-opacity',v); }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
     }
   })();
@@ -5262,7 +5501,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const v=parseInt(slider.value,10);
       if(v>=3650){ newsDate=null; datePicker.value=''; }
       else{ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(3650-v)); newsDate=d; datePicker.value=ymdISO(d); }
-      setLabel();
+      setLabel(); try{ window.applyGlobalDate&&window.applyGlobalDate(); }catch(_){}
       clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } },250);
     }
     function syncFromPicker(){
@@ -5276,12 +5515,13 @@ window.addEventListener('DOMContentLoaded', () => {
         else{ slider.value=3650-da; newsDate=d; }
         setLabel();
       }
+      try{ window.applyGlobalDate&&window.applyGlobalDate(); }catch(_){}
       clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } },150);
     }
     tg.onclick=()=>tl.classList.toggle('collapsed');
     slider.addEventListener('input',syncFromSlider);
     datePicker.addEventListener('change',syncFromPicker);
-    btnToday.onclick=()=>{ newsDate=null; slider.value=3650; datePicker.value=''; setLabel(); globalData=[]; fetchData(); };
+    btnToday.onclick=()=>{ newsDate=null; slider.value=3650; datePicker.value=''; setLabel(); try{ window.applyGlobalDate&&window.applyGlobalDate(); }catch(_){} globalData=[]; fetchData(); };
     /* Set initial maximum date */
     datePicker.max=ymdISO(new Date());
     datePicker.min=ymdISO(new Date(Date.now()-3650*864e5));
@@ -6188,9 +6428,315 @@ window.addEventListener('DOMContentLoaded', () => {
     subscribeRealtime();
   }
 
+  /* =====================================================================
+   *  ROUND 3 — settings persistence, scrollbars, translucent sidebar,
+   *  screenshot, layer favorites, data-source list, unified time slider,
+   *  animated wind layer, and assorted polish. Self-contained; runs after
+   *  every other declaration so all helpers above are available.
+   * ===================================================================== */
+  Object.assign(i18n.en,{ favLayers:"Favorite layers", screenshotBtn:"Screenshot (hides controls, keeps legends)",
+    lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass (translucent)",
+    lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
+    lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centred)", flatPanFree:"Free pan (wrap around the world)",
+    lblNewsCountries:"News by country media", newsCountriesHint:"Also pull headlines from the national outlets of the countries you pick (multiple allowed).",
+    lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
+    screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables (real)" });
+  Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", screenshotBtn:"スクリーンショット（操作ボタンを隠し凡例は残す）",
+    lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス（半透明）",
+    lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
+    lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",
+    lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国の国内メディアの見出しも取得します（複数選択可）。",
+    lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
+    screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル（実データ）" });
+
+  /* ---------- Settings persistence (#48) ---------- */
+  window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque';
+  window.imNewsCountries=[]; window.imLayerFavs=[];
+  const NEWS_COUNTRY_FEEDS={
+    us:{name:{en:'United States',jp:'アメリカ'},flag:'🇺🇸'}, gb:{name:{en:'United Kingdom',jp:'イギリス'},flag:'🇬🇧'},
+    jp:{name:{en:'Japan',jp:'日本'},flag:'🇯🇵'}, fr:{name:{en:'France',jp:'フランス'},flag:'🇫🇷'},
+    de:{name:{en:'Germany',jp:'ドイツ'},flag:'🇩🇪'}, cn:{name:{en:'China',jp:'中国'},flag:'🇨🇳'},
+    ru:{name:{en:'Russia',jp:'ロシア'},flag:'🇷🇺'}, in:{name:{en:'India',jp:'インド'},flag:'🇮🇳'},
+    kr:{name:{en:'South Korea',jp:'韓国'},flag:'🇰🇷'}, il:{name:{en:'Israel',jp:'イスラエル'},flag:'🇮🇱'},
+    ua:{name:{en:'Ukraine',jp:'ウクライナ'},flag:'🇺🇦'}, br:{name:{en:'Brazil',jp:'ブラジル'},flag:'🇧🇷'},
+    au:{name:{en:'Australia',jp:'オーストラリア'},flag:'🇦🇺'}, sa:{name:{en:'Saudi Arabia',jp:'サウジ'},flag:'🇸🇦'},
+    tr:{name:{en:'Türkiye',jp:'トルコ'},flag:'🇹🇷'}, eg:{name:{en:'Egypt',jp:'エジプト'},flag:'🇪🇬'}
+  };
+  window.NEWS_COUNTRY_FEEDS=NEWS_COUNTRY_FEEDS;
+  function loadSettings(){
+    let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
+    if(s.theme) userTheme=s.theme; if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;
+    if(s.lang==='en'||s.lang==='jp'){ currentLang=s.lang; document.getElementById('lang-en').classList.toggle('active',currentLang==='en'); document.getElementById('lang-jp').classList.toggle('active',currentLang==='jp'); }
+    if(s.newsPinMode) newsPinMode=s.newsPinMode;
+    if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
+    if(s.labelLang) window.imLabelLang=s.labelLang;
+    if(s.flatPan) window.imFlatPan=s.flatPan;
+    if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
+    if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
+    applySidebarStyle();
+  }
+  function saveSettings(){
+    try{ localStorage.setItem('intmap_settings',JSON.stringify({
+      theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan,
+      newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs
+    })); }catch(_){}
+  }
+  window.imSaveSettings=saveSettings;
+  function applySidebarStyle(){ document.body.classList.toggle('sidebar-translucent', window.imSidebarStyle==='translucent'); }
+
+  /* ---------- Custom scrollbars (#34) — non-Apple only; auto-hide ---------- */
+  (function(){
+    const ua=navigator.userAgent, plat=navigator.platform||'';
+    const isApple=/Mac|iPhone|iPad|iPod/.test(plat) || (/Mac/.test(ua)&&navigator.maxTouchPoints>1) || /iPhone|iPad|iPod/.test(ua);
+    if(isApple) return;                              /* macOS/iOS overlay scrollbars are already ideal */
+    document.documentElement.classList.add('custom-scrollbars');
+    let t=null; const root=document.documentElement;
+    const ping=()=>{ root.classList.add('sb-active'); clearTimeout(t); t=setTimeout(()=>root.classList.remove('sb-active'),900); };
+    window.addEventListener('scroll',ping,{passive:true,capture:true});
+    window.addEventListener('wheel',ping,{passive:true});
+  })();
+
+  /* ---------- Screenshot (#18) — keeps legends, hides controls ---------- */
+  async function takeScreenshot(){
+    if(!map) return;
+    const btn=document.getElementById('btn-screenshot'); if(btn) btn.disabled=true;
+    document.body.classList.add('capture-mode');
+    try{
+      /* 1 — map WebGL pixels, read inside a render tick (no preserveDrawingBuffer needed) */
+      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=map.getCanvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; o.getContext('2d').drawImage(c,0,0); res(o); }catch(_){ res(null); } }; try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,900); });
+      const out=document.createElement('canvas');
+      const cont=document.getElementById('map-container');
+      out.width=mapCv?mapCv.width:cont.clientWidth; out.height=mapCv?mapCv.height:cont.clientHeight;
+      const ctx=out.getContext('2d'); if(mapCv) ctx.drawImage(mapCv,0,0);
+      const scale=out.width/cont.clientWidth;
+      /* 2 — DOM overlays (legends, markers, timebar) via html2canvas, skipping the WebGL canvases */
+      if(typeof html2canvas!=='undefined'){
+        try{
+          const ov=await html2canvas(cont,{backgroundColor:null,useCORS:true,logging:false,scale,
+            ignoreElements:el=> el.tagName==='CANVAS' || (el.classList&&el.classList.contains('maplibregl-canvas')) });
+          ctx.drawImage(ov,0,0,out.width,out.height);
+        }catch(_){}
+      }
+      document.body.classList.remove('capture-mode');
+      const flash=document.createElement('div'); flash.className='screenshot-flash'; document.body.appendChild(flash);
+      requestAnimationFrame(()=>{ flash.classList.add('go'); setTimeout(()=>flash.remove(),520); });
+      out.toBlob(b=>{ if(!b) return; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='IntMap_'+ymdISO(new Date())+'_'+Date.now().toString().slice(-5)+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),6000); }, 'image/png');
+      try{ imToast(t('screenshotSaved')); }catch(_){}
+    }catch(e){ document.body.classList.remove('capture-mode'); console.warn('screenshot',e); }
+    finally{ if(btn) btn.disabled=false; }
+  }
+  { const b=document.getElementById('btn-screenshot'); if(b) b.onclick=takeScreenshot; }
+
+  /* ---------- Layer favorites (#16) — star any layer, quick-pick chips on top ---------- */
+  function layerCbInfo(cb){
+    if(!cb) return null;
+    if(cb.id==='cb-names')     return {key:'names', label:t('placeNames')};
+    if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
+    if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
+    if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }
+    if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const sp=cb.closest('.layer-option')&&cb.closest('.layer-option').querySelector('span[data-i18n]'); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
+    return null;
+  }
+  function allLayerCbs(){ return Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]')).filter(cb=>cb.id!=='cb-names-x'); }
+  function cbForKey(key){
+    return allLayerCbs().find(cb=>{ const i=layerCbInfo(cb); return i&&i.key===key; })||null;
+  }
+  function renderLayerFavs(){
+    const sec=document.getElementById('layer-fav-section'), wrap=document.getElementById('layer-fav-chips'); if(!sec||!wrap) return;
+    wrap.innerHTML='';
+    const favs=window.imLayerFavs.filter(k=>cbForKey(k));
+    sec.classList.toggle('has-favs',favs.length>0);
+    favs.forEach(key=>{
+      const cb=cbForKey(key); const info=layerCbInfo(cb); if(!info) return;
+      const chip=document.createElement('button'); chip.className='layer-fav-chip'+(cb.checked?' on':'');
+      chip.innerHTML=(info.color?`<span class="lfc-sw" style="background:${info.color}"></span>`:'')+escapeHtml(info.label);
+      chip.onclick=()=>{ cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true})); renderLayerFavs(); };
+      wrap.appendChild(chip);
+    });
+    /* keep star states in sync */
+    document.querySelectorAll('#layer-dropdown .lyr-star').forEach(st=>{ st.classList.toggle('on', window.imLayerFavs.includes(st.dataset.key)); });
+  }
+  function injectLayerStars(){
+    allLayerCbs().forEach(cb=>{
+      const opt=cb.closest('.layer-option'); if(!opt||opt.querySelector('.lyr-star')) return;
+      const info=layerCbInfo(cb); if(!info) return;
+      const star=document.createElement('button'); star.className='lyr-star'+(window.imLayerFavs.includes(info.key)?' on':'');
+      star.type='button'; star.title='Favorite'; star.dataset.key=info.key; star.textContent='★';
+      star.onclick=(e)=>{ e.preventDefault(); e.stopPropagation();
+        const i=window.imLayerFavs.indexOf(info.key);
+        if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);
+        star.classList.toggle('on'); saveSettings(); renderLayerFavs();
+      };
+      opt.appendChild(star);
+      /* reflect on/off chip state when the underlying layer toggles */
+      cb.addEventListener('change',renderLayerFavs);
+    });
+    renderLayerFavs();
+  }
+  /* layers are built by the GROUP-3 IIFE (already run) + static ones; inject now and once more after idle */
+  injectLayerStars(); setTimeout(injectLayerStars,1200);
+
+  /* ---------- Data sources & attribution modal (#37) ---------- */
+  const DATA_SOURCES=[
+    {n:'CARTO basemaps',u:'https://carto.com/attribution/',use:{en:'Light/dark vector basemap tiles',jp:'標準マップのタイル'}},
+    {n:'Esri World Imagery',u:'https://www.esri.com/',use:{en:'Satellite imagery + reference labels',jp:'衛星画像・地名ラベル'}},
+    {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',use:{en:'Place search (Nominatim) & basemap data',jp:'地名検索・地図データ'}},
+    {n:'NASA GIBS / Worldview',u:'https://www.earthdata.nasa.gov/',use:{en:'Temperature, precipitation, SST, snow, aerosol, fires',jp:'気温・降水・海面水温・積雪・煙霧・火災'}},
+    {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/',use:{en:'Active fire / thermal anomalies',jp:'熱異常（火災）'}},
+    {n:'RainViewer',u:'https://www.rainviewer.com/',use:{en:'Live precipitation radar & IR clouds',jp:'降水レーダー・雲'}},
+    {n:'Open-Meteo',u:'https://open-meteo.com/',use:{en:'Elevation & wind field (animated layer)',jp:'標高・風（アニメーション）'}},
+    {n:'GEBCO 2020',u:'https://www.gebco.net/',use:{en:'Ocean bathymetry (depth readout)',jp:'海底地形（水深）'}},
+    {n:'AWS Terrain Tiles',u:'https://registry.opendata.aws/terrain-tiles/',use:{en:'3D terrain, hillshade & contour generation',jp:'3D地形・陰影・等高線'}},
+    {n:'Beck et al. Köppen-Geiger (2018)',u:'https://www.nature.com/articles/sdata2018214',use:{en:'1 km climate-zone classification',jp:'ケッペン気候区分（1km）'}},
+    {n:'MarineRegions',u:'https://www.marineregions.org/',use:{en:'Maritime EEZ / territorial-sea boundaries',jp:'EEZ・領海境界'}},
+    {n:'TeleGeography Submarine Cable Map',u:'https://www.submarinecablemap.com/',use:{en:'Submarine telecom cable routes',jp:'海底通信ケーブル'}},
+    {n:'NASA SEDAC GPW v4',u:'https://sedac.ciesin.columbia.edu/',use:{en:'Gridded population density',jp:'人口密度（グリッド）'}},
+    {n:'UNDP / EIU / SIPRI / World Bank',u:'https://hdr.undp.org/',use:{en:'HDI, Democracy Index, GDP, military spend, demographics',jp:'HDI・民主主義指数・GDP・軍事費・人口統計'}},
+    {n:'AISstream.io',u:'https://aisstream.io/',use:{en:'Live ship AIS traffic (your key)',jp:'船舶AIS（ユーザーキー）'}},
+    {n:'OpenSky Network',u:'https://opensky-network.org/',use:{en:'Live aircraft traffic',jp:'航空機トラフィック'}},
+    {n:'Natural Earth',u:'https://www.naturalearthdata.com/',use:{en:'Country borders & polygons',jp:'国境・国ポリゴン'}},
+    {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/',use:{en:'Information cards & imagery',jp:'情報カード・画像'}}
+  ];
+  function openSourcesModal(){
+    const m=document.getElementById('sources-modal'); if(!m) return;
+    document.getElementById('sources-title').textContent=t('srcModalTitle');
+    document.getElementById('sources-sub').textContent=t('srcModalSub');
+    document.getElementById('sources-body').innerHTML=DATA_SOURCES.map(s=>`<div class="src-item"><b>${escapeHtml(s.n)}</b> — <span class="src-use">${escapeHtml(s.use[currentLang]||s.use.en)}</span><br><a href="${s.u}" target="_blank" rel="noopener">${escapeHtml(s.u)}</a></div>`).join('');
+    m.style.display='flex';
+  }
+  { const b=document.getElementById('btn-data-sources'); if(b) b.onclick=openSourcesModal;
+    const x=document.getElementById('sources-close-x'); if(x) x.onclick=()=>{ document.getElementById('sources-modal').style.display='none'; };
+    const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }
+
+  /* ---------- News-by-country checkboxes (#29) ---------- */
+  function renderNewsCountryChecks(){
+    const wrap=document.getElementById('newscountry-multi'); if(!wrap) return;
+    if(!wrap.dataset.built){
+      wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>`<label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span>${NEWS_COUNTRY_FEEDS[code].flag} <span class="ncx" data-code="${code}"></span></span></label>`).join('');
+      wrap.dataset.built='1';
+    }
+    wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=window.imNewsCountries.includes(cb.value); });
+    wrap.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=NEWS_COUNTRY_FEEDS[c].name[currentLang]||NEWS_COUNTRY_FEEDS[c].name.en; });
+  }
+
+  /* ---------- Wire the new Settings controls (open → fill, Apply → commit+save) ---------- */
+  { const open=document.getElementById('btn-open-settings');
+    if(open) open.addEventListener('click',()=>{
+      const v=(id)=>document.getElementById(id);
+      if(v('setting-sidebar-style')) v('setting-sidebar-style').value=window.imSidebarStyle;
+      if(v('setting-label-lang'))    v('setting-label-lang').value=window.imLabelLang;
+      if(v('setting-flat-pan'))      v('setting-flat-pan').value=window.imFlatPan;
+      renderNewsCountryChecks();
+    });
+  }
+  { const apply=document.getElementById('btn-close-settings');
+    if(apply) apply.addEventListener('click',()=>{
+      const v=(id)=>document.getElementById(id);
+      if(v('setting-sidebar-style')) window.imSidebarStyle=v('setting-sidebar-style').value;
+      if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
+      if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
+      const ncWrap=document.getElementById('newscountry-multi');
+      if(ncWrap){ window.imNewsCountries=Array.from(ncWrap.querySelectorAll('input:checked')).map(c=>c.value); }
+      applySidebarStyle();
+      try{ applyFlatPanSetting(); }catch(_){}
+      try{ applyLabelLang(); }catch(_){}
+      saveSettings();
+    });
+  }
+  /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
+  ['lang-en','lang-jp'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
+
+  /* ---------- Flat-map free pan (#30) ---------- */
+  function applyFlatPanSetting(){
+    if(!map||currentProj!=='flat') return;
+    try{ map.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
+    try{ map.setMaxBounds(window.imFlatPan==='free'?null:[[-60,-62],[95,82]]); }catch(_){}
+  }
+  window.applyFlatPanSetting=applyFlatPanSetting;
+
+  /* ---------- Unified time slider → dated weather layers + community (#8) ---------- */
+  window.applyGlobalDate=function(){
+    const iso=newsDate?ymdISO(newsDate):null;
+    try{ if(typeof window.setGlobalLayerDate==='function') window.setGlobalLayerDate(iso); }catch(_){}
+    try{ if(typeof pushCommunityFeatures==='function') pushCommunityFeatures(); }catch(_){}
+    try{ if(currentMode==='community' && typeof renderCommunity==='function') renderCommunity(); }catch(_){}
+    /* update the slider gradient fill */
+    const sl=document.getElementById('ntl-slider'); if(sl){ const pct=(sl.value/sl.max*100); sl.style.setProperty('--ntl-fill',pct+'%'); }
+  };
+
+  /* ---------- Animated wind layer, Windy-style (#7) ---------- */
+  window.Wind=(function(){
+    const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){}};
+    const ctx=cv.getContext('2d'); let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1;
+    function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cv.width=cont.clientWidth*dpr; cv.height=cont.clientHeight*dpr; cv.style.width=cont.clientWidth+'px'; cv.style.height=cont.clientHeight+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
+    /* Coarse global wind grid from Open-Meteo current 10m winds (CORS-free, no key). */
+    async function fetchGrid(){
+      if(fetching||Date.now()-fetchT<10*60000&&grid) return;
+      fetching=true;
+      try{
+        const STEP=10, lats=[], lons=[];
+        for(let la=80; la>=-80; la-=STEP) for(let lo=-180; lo<180; lo+=STEP){ lats.push(la); lons.push(lo); }
+        const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
+        const r=await fetch(url); if(!r.ok) throw 0; const j=await r.json();
+        const rows=Math.round(160/STEP)+1, cols=Math.round(360/STEP);
+        const u=[], v=[]; const arr=Array.isArray(j)?j:[j];
+        arr.forEach((o,i)=>{ const sp=(o.current&&o.current.wind_speed_10m)||0, dir=((o.current&&o.current.wind_direction_10m)||0)*Math.PI/180;
+          /* meteorological dir = FROM; convert to vector pointing TO */
+          u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });
+        grid={STEP,rows,cols,u,v,lat0:80,lon0:-180};
+      }catch(_){ if(!grid) grid=null; }
+      fetching=false; fetchT=Date.now();
+    }
+    function sample(lng,lat){
+      if(!grid) return null;
+      let lo=((lng+180)%360+360)%360-180;
+      const gx=(lo-grid.lon0)/grid.STEP, gy=(grid.lat0-lat)/grid.STEP;
+      const x0=Math.floor(gx), y0=Math.floor(gy); if(y0<0||y0>=grid.rows-1) return null;
+      const fx=gx-x0, fy=gy-y0, c=grid.cols;
+      const i00=y0*c+((x0%c)+c)%c, i10=y0*c+((x0+1)%c+c)%c, i01=(y0+1)*c+((x0%c)+c)%c, i11=(y0+1)*c+((x0+1)%c+c)%c;
+      const lerp=(a,b,f)=>a+(b-a)*f;
+      const u=lerp(lerp(grid.u[i00],grid.u[i10],fx),lerp(grid.u[i01],grid.u[i11],fx),fy);
+      const v=lerp(lerp(grid.v[i00],grid.v[i10],fx),lerp(grid.v[i01],grid.v[i11],fx),fy);
+      return [u,v];
+    }
+    function spawn(p){ const b=map.getBounds(); p.lng=b.getWest()+Math.random()*(b.getEast()-b.getWest()); p.lat=b.getSouth()+Math.random()*(b.getNorth()-b.getSouth()); p.age=Math.random()*60|0; p.px=null; }
+    function ensureParts(){ const target=Math.min(2200,Math.max(500,Math.floor(cv.width*cv.height/(dpr*dpr*1700)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
+    function speedColor(s){ s=Math.min(28,s); const tt=s/28; if(tt<0.5){ return `rgba(${Math.round(120+tt*270)},${Math.round(220-tt*120)},255,0.85)`; } return `rgba(255,${Math.round(230-(tt-0.5)*360)},${Math.round(120-(tt-0.5)*220)},0.9)`; }
+    function step(){
+      if(!on) return;
+      ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.10)'; ctx.fillRect(0,0,cv.width/dpr,cv.height/dpr);
+      ctx.globalCompositeOperation='source-over'; ctx.lineWidth=1.15;
+      const c=map.getCenter(), globe=(currentProj==='globe');
+      for(const p of parts){
+        const w=sample(p.lng,p.lat);
+        if(!w){ spawn(p); continue; }
+        const sp=Math.hypot(w[0],w[1]);
+        const kk=0.10/Math.max(0.25,Math.cos(p.lat*Math.PI/180));
+        const nlng=p.lng+w[0]*kk*0.06, nlat=p.lat+w[1]*0.06;
+        let vis=true; if(globe){ const r=Math.PI/180; const a=Math.sin(c.lat*r)*Math.sin(nlat*r)+Math.cos(c.lat*r)*Math.cos(nlat*r)*Math.cos((nlng-c.lng)*r); if(Math.acos(Math.max(-1,Math.min(1,a)))/r>86) vis=false; }
+        let scr=null; try{ scr=map.project([nlng,nlat]); }catch(_){ scr=null; }
+        if(vis&&scr&&p.px&&scr.x>=0&&scr.x<=cv.width/dpr&&scr.y>=0&&scr.y<=cv.height/dpr){
+          ctx.strokeStyle=speedColor(sp); ctx.beginPath(); ctx.moveTo(p.px.x,p.px.y); ctx.lineTo(scr.x,scr.y); ctx.stroke();
+        }
+        p.px=(vis&&scr)?scr:null; p.lng=nlng; p.lat=nlat;
+        if(++p.age>90) spawn(p);
+      }
+      raf=requestAnimationFrame(step);
+    }
+    function start(){ on=true; cv.style.display='block'; resize(); ensureParts(); fetchGrid().then(()=>{ if(on){ ensureParts(); } }); cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+    function stop(){ on=false; cancelAnimationFrame(raf); ctx.clearRect(0,0,cv.width,cv.height); cv.style.display='none'; }
+    window.addEventListener('resize',()=>{ if(on){ resize(); } });
+    if(map){ map.on('move',()=>{ if(on){ parts.forEach(p=>p.px=null); } }); map.on('moveend',()=>{ if(on) ensureParts(); }); }
+    return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid };
+  })();
+
+  loadSettings();
+
   /* ===== Init ===== */
   populateTimezones(); updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
+  try{ if(currentLang==='jp'){ document.getElementById('lang-jp').classList.add('active'); document.getElementById('lang-en').classList.remove('active'); } }catch(_){}
 });
 </script>
 </body>
