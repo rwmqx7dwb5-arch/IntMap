@@ -227,3 +227,4 @@ probed with `curl` first to confirm status + `Access-Control-Allow-Origin:*` bef
   Flat; + mobile Map sheet). The pin popup gets a "🧭 正距方位図 / Azimuthal" button → opens the viewer
   centred on that pin with equidistant range rings (2,500–17,500 km). Reuses `window.countryGeo`, falls
   back to a one-time 110 m fetch.
+  
