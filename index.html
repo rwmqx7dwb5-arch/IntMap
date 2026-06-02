@@ -792,6 +792,11 @@
       <div class="sat-keys-hint" data-i18n="satKeyHint">Enter an API key to unlock these providers in the Satellite panel.</div>
       <div id="sat-keys-list"></div>
     </div>
+    <div class="setting-group" id="ais-key-group">
+      <label data-i18n="aisKeyLabel">Live ship traffic (AISstream key)</label>
+      <div class="sat-keys-hint" data-i18n="aisKeyHint">Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.</div>
+      <input type="text" id="setting-ais-key" placeholder="aisstream.io API key" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.18);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">
+    </div>
     <div class="setting-group" id="ai-settings-group">
       <label data-i18n="aiSecTitle">AI features (BYOK / on-device)</label>
       <div class="ai-hint" data-i18n="aiSecHint">Bring your own API key — requests go directly from this browser to the provider and the key is stored only here.</div>
@@ -949,7 +954,7 @@ window.addEventListener('DOMContentLoaded', () => {
       flat:"Flat", globe:"Globe", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", areaBtn:"📐 Area", radiusBtn:"⭕ Radius", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time-travel news", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
-      lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)",
+      lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
       filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date",
       tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap rows to select 2–3 countries to compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
       satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"Pro — add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
@@ -981,7 +986,7 @@ window.addEventListener('DOMContentLoaded', () => {
       flat:"平面", globe:"地球儀", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", areaBtn:"📐 面積", radiusBtn:"⭕ 半径", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
-      lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)",
+      lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
       filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付",
       tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして2〜3カ国を選択し比較できます", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
       satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"Pro — APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
@@ -4411,6 +4416,24 @@ window.addEventListener('DOMContentLoaded', () => {
        every field for the tooltip + the exact data timestamp. Synthetic data is now a last resort
        only when the device is offline / the feed is unreachable. */
     let _lastPlaneFetch=0;
+    /* airplanes.live caps the query radius at 250 nm, so below this zoom the viewport is far
+       larger than the data coverage → only a central blob would show. Instead of that broken
+       look, we prompt the user to zoom in (their explicit request). */
+    const PLANES_MIN_ZOOM=5, SHIPS_MIN_ZOOM=6;
+    function zoomHintEl(id,onClickZoom){
+      let el=document.getElementById(id);
+      if(!el){ el=document.createElement('button'); el.id=id; el.type='button';
+        el.style.cssText='position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:1200;display:none;white-space:nowrap;background:rgba(18,18,20,0.82);color:#fff;border:none;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,0.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
+        el.onclick=()=>{ if(map) map.easeTo({zoom:onClickZoom,duration:600}); };
+        const mc=document.getElementById('map-container'); if(mc) mc.appendChild(el);
+      }
+      return el;
+    }
+    function updatePlanesZoomHint(){
+      const on=map&&map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible';
+      const el=zoomHintEl('planes-zoom-hint',PLANES_MIN_ZOOM);
+      if(on&&map.getZoom()<PLANES_MIN_ZOOM){ el.textContent=t('planesZoomHint'); el.style.display='block'; } else el.style.display='none';
+    }
     function viewportRadiusNm(){
       try{ if(map){ const c=map.getCenter(), ne=map.getBounds().getNorthEast(), toR=Math.PI/180, R=6371;
         const dLat=(ne.lat-c.lat)*toR, dLon=(ne.lng-c.lng)*toR;
@@ -4438,6 +4461,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     async function fetchPlanes(){
       _lastPlaneFetch=Date.now();
+      /* Too zoomed out → don't query a central blob; show the "zoom in" prompt instead. */
+      if(map && map.getZoom()<PLANES_MIN_ZOOM){ planesData=[]; planesSynthetic=false; refreshTrafficLayer('planes'); updatePlanesZoomHint(); return; }
+      updatePlanesZoomHint();
       const lat=(map?map.getCenter().lat:48), lon=(map?map.getCenter().lng:8), rad=viewportRadiusNm();
       try{
         const r=await fetch(`https://api.airplanes.live/v2/point/${lat.toFixed(3)}/${lon.toFixed(3)}/${rad}`);
@@ -4453,79 +4479,100 @@ window.addEventListener('DOMContentLoaded', () => {
       console.warn('Live aircraft feed unavailable — using synthetic placeholder'); genSyntheticPlanes();
     }
     /* Synthetic ship demo data — real-time AIS is paywalled. Distributes ships GLOBALLY along major sea lanes + chokepoints. */
-    const SHIP_PORTS=[
-      /* Asia */
-      [103.83,1.25,'civilian'],[121.47,31.23,'civilian'],[114.16,22.31,'civilian'],[101.39,2.99,'civilian'],
-      [126.97,37.56,'civilian'],[139.69,35.65,'civilian'],[129.07,35.10,'civilian'],[120.98,14.60,'civilian'],
-      [106.66,10.78,'civilian'],[106.85,-6.13,'civilian'],[72.83,18.97,'civilian'],[80.27,13.08,'civilian'],
-      /* Europe */
-      [4.48,51.95,'civilian'],[2.21,41.36,'civilian'],[8.92,44.40,'civilian'],[9.94,53.54,'civilian'],
-      [-0.55,53.74,'civilian'],[1.31,51.13,'civilian'],[-9.14,38.69,'civilian'],
-      /* Middle East / Africa */
-      [55.27,25.20,'civilian'],[51.53,25.28,'civilian'],[31.24,30.04,'civilian'],[39.18,21.49,'civilian'],
-      [32.55,29.97,'civilian'],[18.42,-33.92,'civilian'],[39.65,-4.05,'civilian'],
-      /* Americas */
-      [-74.04,40.65,'civilian'],[-118.24,33.74,'civilian'],[-95.27,29.72,'civilian'],[-122.32,37.80,'civilian'],
-      [-79.93,32.78,'civilian'],[-46.63,-23.55,'civilian'],[-58.38,-34.61,'civilian'],[-70.65,-33.05,'civilian'],
-      /* Oceania + Arctic */
-      [151.21,-33.87,'civilian'],[174.78,-41.29,'civilian'],[42.99,71.69,'civilian'],[24.94,60.17,'civilian'],
-      /* Chokepoints (heavy traffic) */
-      [56.25,26.56,'civilian'],[43.35,12.60,'civilian'],[100.40,2.50,'civilian'],[29.02,41.10,'civilian'],
-      [-5.35,36.14,'civilian'],[-79.68,9.08,'civilian'],[119.6,24.4,'civilian'],
-      /* Military hot spots */
-      [72.41,-7.31,'military'],[144.92,13.58,'military'],[33.52,44.61,'military'],[-157.97,21.36,'military'],
-      [43.15,11.59,'military'],[127.02,36.96,'military'],[140.13,35.30,'military'],[-76.30,36.94,'military'],[-117.18,32.69,'military']
-    ];
-    function genSyntheticShips(){
-      const arr=[];
-      SHIP_PORTS.forEach(([lng,lat,type])=>{
-        const count= type==='military'?4:12;
-        for(let i=0;i<count;i++){
-          const offLng=(Math.random()-0.5)*5;
-          const offLat=(Math.random()-0.5)*4;
-          arr.push({
-            lng:lng+offLng, lat:lat+offLat,
-            mmsi:Math.floor(Math.random()*900000000+100000000),
-            type, speed:Math.random()*22+1, heading:Math.random()*360,
-            name: type==='military'?'NAVY-'+Math.floor(Math.random()*900+100):'CARGO-'+Math.floor(Math.random()*9000+1000)
-          });
-        }
-      });
-      /* Add scattered ships along major shipping lanes so the open ocean isn't empty */
-      const LANES=[
-        /* Trans-Pacific lane: Asia → US west coast */
-        {a:[140,35], b:[-120,35], n:30},
-        /* Trans-Atlantic lane: NYC → Europe */
-        {a:[-74,40], b:[-2,50], n:25},
-        /* Asia → Europe via Suez */
-        {a:[103,1.5], b:[32,30.5], n:30, mid:[78,15]},
-        /* Suez → Mediterranean */
-        {a:[32.5,30], b:[5,40], n:15},
-        /* Cape route (Asia/Europe via S. Africa) */
-        {a:[80,5], b:[18,-34], n:18},
-        /* China → Australia */
-        {a:[114,22], b:[151,-33], n:18}
-      ];
-      LANES.forEach(L=>{
-        for(let i=0;i<L.n;i++){
-          const t=Math.random();
-          let lng,lat;
-          if(L.mid){
-            /* Quadratic Bezier path through midpoint */
-            const u=1-t;
-            lng=u*u*L.a[0] + 2*u*t*L.mid[0] + t*t*L.b[0];
-            lat=u*u*L.a[1] + 2*u*t*L.mid[1] + t*t*L.b[1];
-          } else {
-            lng=L.a[0]+(L.b[0]-L.a[0])*t;
-            lat=L.a[1]+(L.b[1]-L.a[1])*t;
-          }
-          lng+=(Math.random()-0.5)*2; lat+=(Math.random()-0.5)*1.5;
-          arr.push({lng,lat,mmsi:Math.floor(Math.random()*9e8+1e8),type:'civilian',speed:Math.random()*18+4,heading:Math.random()*360,name:'CARGO-'+Math.floor(Math.random()*9000+1000)});
-        }
-      });
-      shipsData=arr;
+    /* ===== Live ships via AISstream.io (real AIS over WebSocket) =====
+       There is NO free, key-less, CORS-friendly global AIS feed, so this is BYOK: the user pastes
+       their own FREE aisstream.io API key in Settings (stored only in this browser). With a key we
+       stream real vessel positions for the current viewport; WITHOUT a key we show an honest prompt
+       and NO ships — we never fabricate vessels. */
+    let aisKey=''; try{ aisKey=localStorage.getItem('intmap_ais_key')||''; }catch(_){}
+    let aisWS=null, shipsByMMSI={}, aisRefreshT=null, _aisMove=null, _aisMoveT=null, aisReconnectT=null;
+    function updateShipsZoomHint(){
+      const on=map&&map.getLayer('lyr-ships')&&map.getLayoutProperty('lyr-ships','visibility')==='visible';
+      const el=zoomHintEl('ships-zoom-hint',SHIPS_MIN_ZOOM);
+      if(on&&aisKey&&map.getZoom()<SHIPS_MIN_ZOOM){ el.textContent=t('shipsZoomHint'); el.style.display='block'; } else el.style.display='none';
+    }
+    function aisBBox(){ const b=map.getBounds(); return [[[b.getSouth(),b.getWest()],[b.getNorth(),b.getEast()]]]; }
+    function stopAIS(){
+      if(aisRefreshT){ clearTimeout(aisRefreshT); aisRefreshT=null; }
+      if(aisReconnectT){ clearTimeout(aisReconnectT); aisReconnectT=null; }
+      if(aisWS){ try{ aisWS.onclose=null; aisWS.close(); }catch(_){} aisWS=null; }
+    }
+    function shipMaterialize(){
+      const cutoff=Date.now()-15*60000;   /* drop vessels not heard from in 15 min */
+      shipsData=Object.values(shipsByMMSI).filter(s=>s.lat!=null&&s.lng!=null&&s.t>cutoff).map(s=>({
+        lng:s.lng, lat:s.lat, mmsi:s.mmsi, name:s.name||'', callsign:s.callsign||'',
+        speed:(s.sog!=null?s.sog:null), cog:(s.cog!=null?s.cog:null), heading:(s.heading!=null?s.heading:(s.cog!=null?s.cog:0)),
+        navStatus:(s.navStatus!=null?s.navStatus:null), shipType:(s.shipType!=null?s.shipType:null),
+        dest:s.dest||'', draught:(s.draught!=null?s.draught:null), imo:(s.imo!=null?s.imo:null), t:s.t,
+        type:(s.shipType===35?'military':'civilian')
+      }));
       refreshTrafficLayer('ships');
     }
+    function scheduleShipRefresh(){ if(aisRefreshT) return; aisRefreshT=setTimeout(()=>{ aisRefreshT=null; shipMaterialize(); },1200); }
+    function handleAIS(m){
+      const md=m.MetaData||m.metadata||{}; const mmsi=md.MMSI||md.mmsi; if(mmsi==null) return;
+      const s=shipsByMMSI[mmsi]||(shipsByMMSI[mmsi]={mmsi});
+      if(md.latitude!=null) s.lat=md.latitude; if(md.longitude!=null) s.lng=md.longitude;
+      if(md.ShipName) s.name=String(md.ShipName).trim();
+      s.t=md.time_utc?(Date.parse(md.time_utc)||Date.now()):Date.now();
+      const body=m.Message||m.message||{};
+      if(m.MessageType==='PositionReport'){ const p=body.PositionReport||{};
+        if(p.Latitude!=null) s.lat=p.Latitude; if(p.Longitude!=null) s.lng=p.Longitude;
+        if(p.Sog!=null) s.sog=p.Sog; if(p.Cog!=null) s.cog=p.Cog;
+        if(p.TrueHeading!=null&&p.TrueHeading<360) s.heading=p.TrueHeading; else if(p.Cog!=null) s.heading=p.Cog;
+        if(p.NavigationalStatus!=null) s.navStatus=p.NavigationalStatus;
+      } else if(m.MessageType==='ShipStaticData'){ const p=body.ShipStaticData||{};
+        if(p.Name) s.name=String(p.Name).trim(); if(p.CallSign) s.callsign=String(p.CallSign).trim();
+        if(p.Type!=null) s.shipType=p.Type; if(p.Destination) s.dest=String(p.Destination).trim();
+        if(p.MaximumStaticDraught!=null) s.draught=p.MaximumStaticDraught; if(p.ImoNumber!=null) s.imo=p.ImoNumber;
+      }
+    }
+    function connectAIS(){
+      if(!aisKey||!map) return;
+      stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships');
+      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); }catch(e){ imToast((currentLang==='jp'?'AIS接続失敗: ':'AIS connect failed: ')+((e&&e.message)||e)); return; }
+      aisWS=ws;
+      ws.onopen=()=>{ try{ ws.send(JSON.stringify({APIKey:aisKey, BoundingBoxes:aisBBox(), FilterMessageTypes:['PositionReport','ShipStaticData']})); }catch(_){} };
+      ws.onmessage=(ev)=>{ if(ws!==aisWS) return; try{ handleAIS(JSON.parse(ev.data)); scheduleShipRefresh(); }catch(_){} };
+      ws.onerror=()=>{};
+      ws.onclose=()=>{ if(ws!==aisWS) return; aisReconnectT=setTimeout(()=>{ if(map.getLayer('lyr-ships')&&map.getLayoutProperty('lyr-ships','visibility')==='visible'&&aisKey&&map.getZoom()>=SHIPS_MIN_ZOOM) connectAIS(); },4000); };
+    }
+    function startShips(){
+      if(!aisKey){ imToast(t('aisNoKey')); updateShipsZoomHint(); return; }
+      if(map.getZoom()<SHIPS_MIN_ZOOM){ updateShipsZoomHint(); return; }  /* connect once the user zooms in */
+      connectAIS();
+    }
+    /* AIS ship-type code → label */
+    function shipTypeLabel(c){ if(c==null) return ''; const jp=currentLang==='jp';
+      if(c===35) return jp?'軍用':'Military'; if(c===30) return jp?'漁船':'Fishing'; if(c===36) return jp?'帆船':'Sailing'; if(c===37) return jp?'プレジャー':'Pleasure craft';
+      if(c>=60&&c<=69) return jp?'旅客船':'Passenger'; if(c>=70&&c<=79) return jp?'貨物船':'Cargo'; if(c>=80&&c<=89) return jp?'タンカー':'Tanker';
+      if(c>=40&&c<=49) return jp?'高速船':'High-speed craft'; if(c===50) return jp?'パイロット':'Pilot'; if(c===51) return 'SAR'; if(c===52) return jp?'タグ':'Tug'; if(c===55) return jp?'法執行':'Law enforcement';
+      return jp?'その他':'Other'; }
+    /* AIS navigational-status code → label */
+    function navStatusLabel(c){ if(c==null) return ''; const jp=currentLang==='jp';
+      const en=['Under way (engine)','At anchor','Not under command','Restricted manoeuvrability','Constrained by draught','Moored','Aground','Fishing','Under way (sailing)'];
+      const ja=['航行中(機走)','錨泊','操縦不能','操縦制限','喫水制限','係留','座礁','漁労中','航行中(帆走)'];
+      return (c>=0&&c<=8)?(jp?ja[c]:en[c]):''; }
+    /* Ship glyphs (top-view hull) — coloured + rotated by heading/COG, like the plane icons. */
+    function ensureShipIcons(){
+      if(!map) return;
+      const make=(color)=>{ const s=40, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
+        const ctx=cv.getContext('2d'); ctx.translate(s/2,s/2);
+        ctx.fillStyle=color; ctx.strokeStyle='rgba(255,255,255,0.95)'; ctx.lineWidth=1.6; ctx.lineJoin='round';
+        const P=[[0,-16],[4.5,-7],[4.5,11],[3,15],[-3,15],[-4.5,11],[-4.5,-7]];
+        ctx.beginPath(); P.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); ctx.fill(); ctx.stroke();
+        return ctx.getImageData(0,0,s,s); };
+      try{ if(!map.hasImage('ship-civ')) map.addImage('ship-civ',make('#17a2b8')); }catch(_){}
+      try{ if(!map.hasImage('ship-mil')) map.addImage('ship-mil',make('#ff3b30')); }catch(_){}
+    }
+    /* AISstream key field in Settings (added via addEventListener so the existing handlers still run). */
+    (function wireAisKey(){
+      const ob=document.getElementById('btn-open-settings'), cb=document.getElementById('btn-close-settings');
+      if(ob) ob.addEventListener('click',()=>{ const i=document.getElementById('setting-ais-key'); if(i) i.value=aisKey; });
+      if(cb) cb.addEventListener('click',()=>{ const i=document.getElementById('setting-ais-key'); if(!i) return; const nk=i.value.trim();
+        if(nk!==aisKey){ aisKey=nk; try{ aisKey?localStorage.setItem('intmap_ais_key',aisKey):localStorage.removeItem('intmap_ais_key'); }catch(_){}
+          if(map&&map.getLayer('lyr-ships')&&map.getLayoutProperty('lyr-ships','visibility')==='visible'){ stopAIS(); startShips(); updateShipsZoomHint(); } } });
+    })();
     function refreshTrafficLayer(id){
       if(!map) return;
       const filt=trafficFilters[id];
@@ -4538,7 +4585,10 @@ window.addEventListener('DOMContentLoaded', () => {
               baroAlt:(d.baroAlt!=null?d.baroAlt:null), geoAlt:(d.geoAlt!=null?d.geoAlt:null),
               vel:(d.vel!=null?d.vel:null), heading:(d.heading!=null?d.heading:0), vrate:(d.vrate!=null?d.vrate:null),
               squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||d.tpos||0), category:(d.category!=null?d.category:null) }
-          : { type:d.type, name:d.name||'', mmsi:(d.mmsi!=null?d.mmsi:null), vel:(d.speed!=null?d.speed:null), heading:(d.heading!=null?d.heading:0) };
+          : { type:d.type, name:d.name||'', callsign:d.callsign||'', mmsi:(d.mmsi!=null?d.mmsi:null),
+              vel:(d.speed!=null?d.speed:null), cog:(d.cog!=null?d.cog:null), heading:(d.heading!=null?d.heading:0),
+              navStatus:(d.navStatus!=null?d.navStatus:null), shipType:(d.shipType!=null?d.shipType:null),
+              dest:d.dest||'', draught:(d.draught!=null?d.draught:null), imo:(d.imo!=null?d.imo:null), t:(d.t||0) };
         return { type:'Feature', geometry:{type:'Point',coordinates:[d.lng,d.lat]}, properties:props };
       });
       src.setData({type:'FeatureCollection',features});
@@ -4565,10 +4615,21 @@ window.addEventListener('DOMContentLoaded', () => {
       const row=(label,val)=>val!==''&&val!=null?`<div style="font-size:11px;margin-top:2px;"><span style="color:var(--text-muted);">${label}:</span> ${val}</div>`:'';
       const typeChip=`<div style="font-size:11px;margin-top:4px;color:${p.type==='military'?'var(--info-mil)':'var(--info-energy)'};font-weight:600;">${p.type==='military'?(jp?'軍用':'Military'):(jp?'民間':'Civilian')}</div>`;
       if(id==='ships'){
-        return `<div style="font-weight:600;font-size:13px;">🚢 ${p.name||'—'}</div>`+
-          row(jp?'MMSI':'MMSI',p.mmsi)+row(jp?'速度':'Speed',p.vel!=null?Math.round(p.vel)+' kn':'')+
-          row(jp?'針路':'Course',p.heading!=null?Math.round(p.heading)+'°':'')+typeChip+
-          `<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${jp?'※デモ用合成データ':'Simulated demo data'}</div>`;
+        const nm=escapeHtml(p.name||'')||('MMSI '+(p.mmsi||'—'));
+        const spd=p.vel!=null?(Math.round(p.vel*10)/10)+' kn'+(p.vel?` · ${Math.round(p.vel*1.852)} km/h`:''):'';
+        return `<div style="font-weight:700;font-size:13px;">🚢 ${nm}</div>`+
+          row(jp?'種別':'Type',shipTypeLabel(p.shipType))+
+          row('MMSI',p.mmsi)+
+          row(jp?'呼出符号':'Call sign',escapeHtml(p.callsign||''))+
+          (p.imo?row('IMO',p.imo):'')+
+          row(jp?'速力':'Speed',spd)+
+          row(jp?'針路(COG)':'Course',p.cog!=null?Math.round(p.cog)+'°':'')+
+          row(jp?'船首方位':'Heading',p.heading!=null?Math.round(p.heading)+'°':'')+
+          row(jp?'状態':'Status',navStatusLabel(p.navStatus))+
+          row(jp?'喫水':'Draught',p.draught?p.draught+' m':'')+
+          row(jp?'仕向地':'Destination',escapeHtml(p.dest||''))+
+          typeChip+
+          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(jp?'最終受信':'Last seen')+' '+agoStr(Math.floor((p.t||0)/1000))}<br>aisstream.io · AIS</div>`;
       }
       /* planes — every available ADS-B field (airplanes.live) */
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
@@ -4604,10 +4665,16 @@ window.addEventListener('DOMContentLoaded', () => {
           'icon-ignore-placement':true
         },paint:{'icon-opacity':opacities.planes}},beforeId);
       } else {
-        const color=['case',['==',['get','type'],'military'],'#ff3b30','#34c759'];
-        map.addLayer({id:'lyr-ships',type:'circle',source:'src-ships',layout:{visibility:'none'},paint:{
-          'circle-radius':3,'circle-color':color,'circle-stroke-width':1,'circle-stroke-color':'#ffffff','circle-opacity':opacities.ships
-        }},beforeId);
+        ensureShipIcons();
+        /* Ships = a ship glyph rotated to heading/COG (real AIS). */
+        map.addLayer({id:'lyr-ships',type:'symbol',source:'src-ships',layout:{
+          visibility:'none',
+          'icon-image':['match',['get','type'],'military','ship-mil','ship-civ'],
+          'icon-size':['interpolate',['linear'],['zoom'],4,0.5,8,0.72,12,0.95],
+          'icon-rotate':['coalesce',['get','heading'],0],
+          'icon-rotation-alignment':'map',
+          'icon-allow-overlap':true,'icon-ignore-placement':true
+        },paint:{'icon-opacity':opacities.ships}},beforeId);
       }
       /* Hover tooltip via shared map-tooltip — shows every available field + data freshness. */
       map.on('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; map.getCanvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML(id,f.properties); positionTooltip(map.project(f.geometry.coordinates)); });
@@ -4622,17 +4689,19 @@ window.addEventListener('DOMContentLoaded', () => {
         if(planesTimer) clearInterval(planesTimer);
         planesTimer=setInterval(fetchPlanes,20000); /* live ADS-B refresh */
         /* follow the viewport: refetch real aircraft for wherever the user pans/zooms */
-        if(!_planesMove){ _planesMove=()=>{ if(map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible'){ clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>1500) fetchPlanes(); },700); } }; map.on('moveend',_planesMove); }
+        if(!_planesMove){ _planesMove=()=>{ if(map.getLayer('lyr-planes')&&map.getLayoutProperty('lyr-planes','visibility')==='visible'){ clearTimeout(_planesMoveT); _planesMoveT=setTimeout(()=>{ if(Date.now()-_lastPlaneFetch>1500) fetchPlanes(); },700); } }; map.on('moveend',_planesMove); map.on('zoom',updatePlanesZoomHint); }
+        updatePlanesZoomHint();
       } else {
-        genSyntheticShips();
-        if(shipsTimer) clearInterval(shipsTimer);
-        shipsTimer=setInterval(genSyntheticShips,60000);
+        startShips();
+        /* viewport-follow: reconnect AIS for wherever the user pans (when zoomed in enough) */
+        if(!_aisMove){ _aisMove=()=>{ if(map.getLayer('lyr-ships')&&map.getLayoutProperty('lyr-ships','visibility')==='visible'){ updateShipsZoomHint(); if(aisKey&&map.getZoom()>=SHIPS_MIN_ZOOM){ clearTimeout(_aisMoveT); _aisMoveT=setTimeout(connectAIS,1500); } else { stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships'); } } }; map.on('moveend',_aisMove); map.on('zoom',updateShipsZoomHint); }
+        updateShipsZoomHint();
       }
     }
     function stopTraffic(id){
       setVis('lyr-'+id,false);
-      if(id==='planes'&&planesTimer){ clearInterval(planesTimer); planesTimer=null; }
-      if(id==='ships'&&shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; }
+      if(id==='planes'){ if(planesTimer){ clearInterval(planesTimer); planesTimer=null; } updatePlanesZoomHint(); }
+      if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === EEZ via MarineRegions WMS === */
     function addEEZ(){
@@ -4729,7 +4798,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',['case',['boolean',['feature-state','nato'],false],v,0]); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
       else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v); }
-      else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','circle-opacity',v); }
+      else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','icon-opacity',v); }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
     }
   })();
