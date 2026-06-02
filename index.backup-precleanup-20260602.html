@@ -617,19 +617,7 @@
       .m-tool-btn.active{ background:var(--primary-color); color:#fff; }
 
       /* config panels relocated into the option sheets: strip their floating skin */
-      /* fill the sheet width — the desktop dropdown's fixed 268px left-aligned it, leaving a big
-         empty gutter on the right (#9). Now it spans the full sheet, balanced edge-to-edge. */
-      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; width:auto !important; max-width:none !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:0 !important; }
-      /* simple on/off layer toggles arranged as a balanced 2-up grid; complex rows (sliders, legends,
-         group headers, favourites) stay full-width so their controls aren't cramped. */
-      #mo-mount-layers .layer-dropdown{ display:grid !important; grid-template-columns:1fr 1fr; gap:2px 10px !important; align-content:start; }
-      #mo-mount-layers .layer-dropdown > .layer-group-title,
-      #mo-mount-layers .layer-dropdown > .lyr-head,
-      #mo-mount-layers .layer-dropdown > .premium-group-title,
-      #mo-mount-layers .layer-dropdown > hr,
-      #mo-mount-layers .layer-dropdown > .premium-divider,
-      #mo-mount-layers .layer-dropdown > .layer-fav-section,
-      #mo-mount-layers .layer-dropdown > .lyr-row{ grid-column:1 / -1; }
+      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:0 !important; }
       /* tighter layer rows — kills the wasted line spacing in the layer list */
       .m-sheet .layer-dropdown .layer-option{ padding:6px 6px; font-size:13.5px; min-height:32px; gap:9px; line-height:1.2; }
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
@@ -716,37 +704,17 @@
     [data-theme="dark"] html.custom-scrollbars.sb-active *::-webkit-scrollbar-thumb,
     [data-theme="dark"] html.custom-scrollbars *:hover::-webkit-scrollbar-thumb{ background:rgba(170,172,180,0.45); background-clip:padding-box; }
 
-    /* === Unified "Liquid Glass" material (#1,#23,#24,#26) ============================
-       The Settings → "Sidebar appearance" choice (Solid / Frosted / More-transparent)
-       drives the transparency + blur of EVERY frosted surface in the app — the sidebar
-       AND every floating popup, panel, legend, timeline and control — so the whole UI
-       shares one consistent glass texture (#1). ------------------------------------- */
-    :root{ --glass-blur:16px; --glass-sat:150%; --glass-fill:var(--card-bg); --glass-border:rgba(128,128,128,0.16); }
-    body.sidebar-translucent{ --glass-blur:26px; --glass-sat:185%; --glass-fill:var(--popup-bg); }
-    body.sidebar-glass2{ --glass-blur:34px; --glass-sat:200%; --glass-fill:rgba(255,255,255,0.40); --glass-border:rgba(255,255,255,0.34); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(40,40,44,0.42); --glass-border:rgba(255,255,255,0.10); }
-
-    /* Every floating glass surface reads the one shared material. */
-    .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
-    .ctx-menu,.news-timeline,.country-popup,.pin-popup,.map-tooltip,.search-result-card,
-    .map-search-results,.layer-ctrl,.koppen-legend,.data-legend,.map-view-group,.map-search,
-    .ai-view-summary-btn,.btn-toggle-sidebar,.stats-compare-fixed,.m-sheet,.m-fab{
-      background-color:var(--glass-fill) !important;
-      backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)) !important;
-      -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)) !important;
-    }
-
-    /* ---- Sidebar material (matches the floating surfaces above) ---- */
-    .sidebar{ background-color:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
-    /* Desktop: SOLID keeps the sidebar in normal flex flow (map centred beside it, no shift).
-       A FROSTED mode overlays the sidebar on the map so the glass actually has the map behind it
-       to blur (#23); the map keeps its optical centre via JS padding (applySidebarStyle). */
-    @media(min-width:769px){
-      .sidebar{ position:relative; }
-      body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }
-      body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000; box-shadow:8px 0 32px rgba(0,0,0,0.10); }
-      body.sidebar-glass .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
-    }
+    /* --- Sidebar transparency setting (#23): default OPAQUE; translucent ("frosted")
+       only when body.sidebar-translucent is set from Settings. --- */
+    .sidebar{ background-color:#ffffff; backdrop-filter:none; -webkit-backdrop-filter:none; position:relative; }
+    [data-theme="dark"] .sidebar{ background-color:#1c1c1e; }
+    body.sidebar-translucent .sidebar{ background-color:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(28px); -webkit-backdrop-filter:saturate(180%) blur(28px); }
+    /* "More transparent" frosted variant */
+    body.sidebar-glass2 .sidebar{ background-color:rgba(255,255,255,0.34); backdrop-filter:saturate(180%) blur(34px); -webkit-backdrop-filter:saturate(180%) blur(34px); }
+    [data-theme="dark"] body.sidebar-glass2 .sidebar{ background-color:rgba(28,28,30,0.34); }
+    /* NOTE: the sidebar ALWAYS stays in normal flex flow (map centred in the remaining space) — we
+       never overlay it on the map, so the layout/centring never shifts on open/close. The frosted
+       look comes purely from the translucent material above. */
 
     /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
     .news-timeline{ bottom:22px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }
@@ -779,10 +747,6 @@
     body.capture-mode .layer-popup-x,
     body.capture-mode .dl-drag, body.capture-mode .kl-drag{ visibility:hidden !important; }
     body.capture-mode .maplibregl-ctrl{ display:none !important; }
-    /* The map container + #map have an OPAQUE background; html2canvas was painting that solid colour
-       over the captured WebGL frame, producing a blank screenshot (#20). Make them transparent during
-       capture so only the real map pixels (drawn separately) and the DOM overlays composite. */
-    body.capture-mode .map-container, body.capture-mode #map{ background:transparent !important; }
     .screenshot-flash{ position:fixed; inset:0; background:#fff; z-index:99999; pointer-events:none; opacity:0; }
     .screenshot-flash.go{ animation:ssFlash 0.5s ease; }
     @keyframes ssFlash{ 0%{opacity:0.85;} 100%{opacity:0;} }
@@ -864,18 +828,14 @@
     .search-bar{ padding:3px 4px 3px 12px; margin-bottom:12px; }
     .search-bar .search-input{ padding:7px 4px; font-size:13.5px; }
     .search-bar .search-btn{ padding:7px 13px; font-size:12.5px; }
-    /* Close the gap between the News pin-mode selector and the "AI-locate all" button (#8): the
-       button's own margin-top stacked on the toggle's margin-bottom for an ~18px void. */
-    #ai-geocode-row{ margin:0 0 8px 0 !important; }
-    #ai-geocode-row .ai-action-btn{ margin-top:0 !important; }
-    .news-pin-toggle{ margin:0 0 6px 0 !important; }
-    .news-filter-toggle{ margin:0 0 6px 0 !important; }
+    /* tighten the gap between the News pin-mode toggle and the AI-locate button */
+    #ai-geocode-row{ margin:0 0 10px 0 !important; }
+    .news-pin-toggle{ margin:0 0 8px 0 !important; }
+    .news-filter-toggle{ margin:0 0 8px 0 !important; }
 
-    /* --- Information selector + Stats toolbar: paint with the sidebar material and stick flush to
-       the top of the scroll area, so no map/background peeks through above the selector (#18) --- */
+    /* --- Information nav + Stats: kill the see-through gap above the sticky header --- */
+    .dash-nav{ top:-4px; padding-top:8px; margin-top:-4px; }
     .content-area{ padding-top:0; }
-    .dash-nav{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 12px; padding:6px 0 8px; }
-    #live-news-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 8px; padding:4px 0 8px; }
 
     /* --- Mobile compact tweaks (#1,#2): denser news cards + smaller measurement popups --- */
     @media(max-width:768px){
@@ -1217,11 +1177,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const hasTurf=()=>typeof turf!=='undefined';
   const searchVal=()=>document.getElementById('search-input').value.toLowerCase();
   const GDP_YEAR='2023', POP_YEAR='2024';
-  /* Industry-standard responsive breakpoint (#10): the JS "mobile" test tracks the SAME media
-     query the stylesheet uses (Bootstrap/Tailwind-style 768px boundary) via matchMedia, so the
-     script and CSS can never disagree by a scrollbar width or a rounding pixel. */
-  const MOBILE_MQ=window.matchMedia('(max-width:768px)');
-  const isMobile=()=>MOBILE_MQ.matches;
+  const isMobile=()=>window.innerWidth<=768;
 
   /* ===== i18n ===== */
   const i18n={
@@ -1973,7 +1929,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if(isMobile()) sidebar.classList.add('collapsed'); /* start collapsed on phone */
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
-    try{ applySidebarStyle(); }catch(_){}   /* refresh overlay map-padding in frosted mode */
     const start = performance.now();
     requestAnimationFrame(function sync(time) {
       if (map) map.resize();
@@ -2011,9 +1966,8 @@ window.addEventListener('DOMContentLoaded', () => {
           {id:'grid-labels',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['!=','kind','cross']],layout:{'text-field':['get','label'],'text-size':12,'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-ignore-placement':false,'symbol-placement':'point'},paint:{'text-color':'#1d4ed8','text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':2.0}},
           {id:'grid-labels-cross',type:'symbol',source:'grid-source',filter:['all',['==','$type','Point'],['==','kind','cross']],layout:{'text-field':['get','label'],'text-size':10,'text-font':['literal',['Noto Sans Regular']],'text-allow-overlap':false,'text-offset':[0.6,-0.6]},paint:{'text-color':'#475569','text-halo-color':'rgba(255,255,255,0.9)','text-halo-width':1.5}},
           {id:'tool-poly',type:'fill',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true]],paint:{'fill-color':['coalesce',['get','color'],'#007aff'],'fill-opacity':['coalesce',['get','opacity'],0.18]}},
-          {id:'tool-poly-line',type:'line',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true],['!=','noStroke',true]],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.8}},
-          {id:'tool-ring-line',type:'line',source:'tool-source',filter:['==','ringline',true],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.85}},
-          {id:'tool-line',type:'line',source:'tool-source',filter:['all',['==','$type','LineString'],['!=','preview',true],['!=','ringline',true]],paint:{'line-color':'#ff3b30','line-width':3}},
+          {id:'tool-poly-line',type:'line',source:'tool-source',filter:['all',['==','$type','Polygon'],['!=','preview',true]],paint:{'line-color':['coalesce',['get','color'],'#007aff'],'line-width':2,'line-opacity':0.8}},
+          {id:'tool-line',type:'line',source:'tool-source',filter:['all',['==','$type','LineString'],['!=','preview',true]],paint:{'line-color':'#ff3b30','line-width':3}},
           {id:'tool-line-preview',type:'line',source:'tool-source',filter:['all',['==','$type','LineString'],['==','preview',true]],paint:{'line-color':'#ff3b30','line-width':2,'line-opacity':0.85,'line-dasharray':[2,2]}},
           {id:'tool-poly-preview',type:'line',source:'tool-source',filter:['all',['==','$type','Polygon'],['==','preview',true]],paint:{'line-color':'#007aff','line-width':2,'line-opacity':0.7,'line-dasharray':[2,2]}},
           {id:'tool-snap',type:'circle',source:'tool-source',filter:['==',['get','snap'],true],paint:{'circle-radius':16,'circle-color':'rgba(0,122,255,0.18)','circle-stroke-width':2.5,'circle-stroke-color':'#0a84ff'}},
@@ -2643,107 +2597,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let measureSnapClose=false;        /* true while the cursor hovers the first measure vertex */
   const SNAP_PX=22;                  /* screen-space radius that counts as "on the first point" */
-  /* ===== Antimeridian / pole-safe geometry for the measurement tools (#5,#6,#25) =====
-     MapLibre (renderWorldCopies:false) cannot draw a polygon or line whose longitudes jump across
-     ±180°, and a geodesic circle big enough to swallow a pole both crosses that seam AND wraps the
-     pole. These helpers build geometry in CONTINUOUS (unwrapped) longitude, then split it into
-     pieces that each stay inside [-180,180] — adding a polar cap, or using the antipodal
-     complement — so a radius ring or great-circle area stays correct ANYWHERE on Earth. */
-  const _R_EARTH_KM=6371.0088, _HALF_CIRCUM=Math.PI*_R_EARTH_KM;            /* ≈ 20015 km */
-  const _d2r=d=>d*Math.PI/180, _r2d=r=>r*180/Math.PI;
-  const _clampLat=la=>Math.max(-89.9999,Math.min(89.9999,la));
-  function _dest(lon,lat,brgDeg,distKm){                                    /* geodesic destination */
-    const dr=distKm/_R_EARTH_KM, br=_d2r(brgDeg), la1=_d2r(lat), lo1=_d2r(lon);
-    const la2=Math.asin(Math.min(1,Math.max(-1,Math.sin(la1)*Math.cos(dr)+Math.cos(la1)*Math.sin(dr)*Math.cos(br))));
-    const lo2=lo1+Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(la1), Math.cos(dr)-Math.sin(la1)*Math.sin(la2));
-    return [_r2d(lo2), _r2d(la2)];
-  }
-  function _gcPoints(a,b,n){                                                /* great-circle a→b, unwrapped lon */
-    const la1=_d2r(a[1]),lo1=_d2r(a[0]),la2=_d2r(b[1]),lo2=_d2r(b[0]);
-    const d=2*Math.asin(Math.min(1,Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2)));
-    if(!isFinite(d)||d<1e-9) return [[a[0],_clampLat(a[1])],[b[0],_clampLat(b[1])]];
-    const out=[]; let prev=null;
-    for(let i=0;i<=n;i++){ const f=i/n, A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
-      const x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2);
-      const y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2);
-      const z=A*Math.sin(la1)+B*Math.sin(la2);
-      let lat=_r2d(Math.atan2(z,Math.sqrt(x*x+y*y))), lon=_r2d(Math.atan2(y,x));
-      if(prev!=null){ while(lon-prev>180)lon-=360; while(lon-prev<-180)lon+=360; } out.push([lon,_clampLat(lat)]); prev=lon; }
-    return out;
-  }
-  /* closed great-circle ring through pts (each edge densified), longitudes continuous */
-  function _gcRingUnwrapped(pts,nPerEdge){
-    const closed=[...pts,pts[0]]; const ring=[]; let prev=null;
-    for(let i=0;i<closed.length-1;i++){ const seg=_gcPoints(closed[i],closed[i+1],nPerEdge);
-      seg.forEach(p=>{ let lo=p[0]; if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,p[1]]); prev=lo; }); }
-    return ring;
-  }
-  function _clipHalf(poly,x,keepGE){                                        /* Sutherland–Hodgman vs a vertical line */
-    const out=[]; const n=poly.length; if(!n) return out;
-    for(let i=0;i<n;i++){ const a=poly[i], b=poly[(i+1)%n];
-      const ai=keepGE?a[0]>=x:a[0]<=x, bi=keepGE?b[0]>=x:b[0]<=x;
-      if(ai) out.push(a);
-      if(ai!==bi){ const t=(x-a[0])/(b[0]-a[0]); out.push([x, a[1]+(b[1]-a[1])*t]); } }
-    return out;
-  }
-  /* split a polygon given in CONTINUOUS lon into 1+ rings, each shifted into [-180,180] */
-  function _splitPolyToWindows(poly){
-    let mn=Infinity,mx=-Infinity; poly.forEach(p=>{ if(p[0]<mn)mn=p[0]; if(p[0]>mx)mx=p[0]; });
-    const rings=[]; for(let k=Math.floor((mn+180)/360);k<=Math.floor((mx+180)/360);k++){
-      let c=_clipHalf(poly,k*360-180,true); if(c.length<3) continue;
-      c=_clipHalf(c,k*360+180,false); if(c.length<3) continue;
-      rings.push(c.map(p=>[p[0]-k*360,_clampLat(p[1])])); }
-    return rings;
-  }
-  /* split a CONTINUOUS-lon line into segments, each shifted into [-180,180] */
-  function _splitLineToWindows(line){
-    const segs=[]; let cur=[];
-    for(let i=0;i<line.length;i++){ const p=line[i];
-      if(cur.length){ const prev=cur[cur.length-1]; const k0=Math.round(prev[0]/360), k1=Math.round(p[0]/360);
-        if(k0!==k1){ /* crossed a seam → break, inserting boundary points */
-          const x=(Math.max(k0,k1))*360-180; const t=(x-prev[0])/(p[0]-prev[0]); const ly=prev[1]+(p[1]-prev[1])*t;
-          cur.push([x,ly]); segs.push(cur); cur=[[x,ly]]; } }
-      cur.push(p); }
-    if(cur.length) segs.push(cur);
-    return segs.map(s=>{ const k=Math.round(s[Math.floor(s.length/2)][0]/360); return s.map(p=>[p[0]-k*360,_clampLat(p[1])]); }).filter(s=>s.length>=2);
-  }
-  /* geodesic-disk fill polygons (array of GeoJSON Polygon coord arrays) for a radius circle */
-  function diskFillPolys(center,radiusKm,steps){
-    const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500);
-    const dNP=(90-clat)/180*_HALF_CIRCUM, dSP=(90+clat)/180*_HALF_CIRCUM, npIn=R>dNP, spIn=R>dSP;
-    const ring=[]; let prev=null;
-    for(let i=0;i<=steps;i++){ let p=_dest(clon,clat,(i/steps)*360,R); let lo=p[0];
-      if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,_clampLat(p[1])]); prev=lo; }
-    if(npIn&&spIn){                                                         /* disk covers ~everything → world minus antipodal hole */
-      const antiLon=((clon+180+540)%360)-180;
-      const holes=diskFillPolys([antiLon,-clat],_HALF_CIRCUM-R,steps).map(poly=>poly[0]);
-      return [[[[-180,-89.9999],[180,-89.9999],[180,89.9999],[-180,89.9999],[-180,-89.9999]], ...holes]];
-    }
-    if(npIn||spIn){                                                         /* one pole inside → cap to the pole line */
-      const cap=89.9999*(npIn?1:-1), capPoly=ring.concat([[ring[ring.length-1][0],cap],[ring[0][0],cap]]);
-      return _splitPolyToWindows(capPoly).map(r=>[r]);
-    }
-    return _splitPolyToWindows(ring).map(r=>[r]);                           /* ordinary disk, maybe seam-split */
-  }
-  /* geodesic-disk outline lines (array of LineString coord arrays) */
-  function diskOutlineLines(center,radiusKm,steps){
-    const clon=center[0], clat=center[1], R=Math.min(radiusKm,19500);
-    const ring=[]; let prev=null;
-    for(let i=0;i<=steps;i++){ let p=_dest(clon,clat,(i/steps)*360,R); let lo=p[0];
-      if(prev!=null){ while(lo-prev>180)lo-=360; while(lo-prev<-180)lo+=360; } ring.push([lo,_clampLat(p[1])]); prev=lo; }
-    return _splitLineToWindows(ring);
-  }
-
   function buildToolFeatures(){
-    /* radius circles (saved) — antimeridian + pole safe (#6,#5) */
+    /* radius circles (saved) */
     const f=[];
     radiusItems.forEach(c=>{
       try{
-        const steps=c.radiusKm>3000?256:160;
-        diskFillPolys(c.center,c.radiusKm,steps).forEach(poly=>{
-          f.push({type:'Feature',geometry:{type:'Polygon',coordinates:poly},properties:{color:c.color,opacity:c.opacity,noStroke:true}}); });
-        diskOutlineLines(c.center,c.radiusKm,steps).forEach(ln=>{
-          f.push({type:'Feature',geometry:{type:'LineString',coordinates:ln},properties:{color:c.color,ringline:true}}); });
+        /* Large-radius fix (#11): a geodesic circle whose radius approaches half the Earth's
+           circumference (~20015 km) collapses toward the antipode and self-intersects, which
+           breaks the fill. Clamp to a safe maximum and use more vertices for big circles so the
+           outline stays smooth instead of degenerating. */
+        const safeR=Math.min(c.radiusKm,19500);
+        const steps=safeR>3000?256:128;
+        f.push(turf.circle(c.center,safeR,{steps,units:'kilometers',properties:{color:c.color,opacity:c.opacity}}));
         f.push({type:'Feature',geometry:{type:'Point',coordinates:c.center},properties:{color:c.color}});
       }catch(e){}
     });
@@ -2765,13 +2630,23 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     } else if(toolMode==='area'){
       if(measurePoints.length>=3){
-        /* Great-circle polygon, antimeridian + pole safe (#5): build the ring in continuous lon,
-           then split into pieces that each stay inside [-180,180] (no seam-jump fill bug). */
-        try{
-          const ring=_gcRingUnwrapped(measurePoints,48);
-          _splitPolyToWindows(ring).forEach(r=>f.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{color:'#007aff',opacity:0.18,noStroke:true}}));
-          _splitLineToWindows(ring).forEach(ln=>f.push({type:'Feature',geometry:{type:'LineString',coordinates:ln},properties:{color:'#007aff',ringline:true}}));
-        }catch(e){ try{ f.push(turf.polygon([[...measurePoints,measurePoints[0]]],{color:'#007aff',opacity:0.18,noStroke:true})); }catch(_){} }
+        /* Great-circle polygon: subdivide each edge along the great-circle path */
+        const ring=[];
+        const closed=[...measurePoints,measurePoints[0]];
+        for(let i=0;i<closed.length-1;i++){
+          try{
+            const gc=turf.greatCircle(turf.point(closed[i]),turf.point(closed[i+1]),{npoints:48});
+            const cs=gc.geometry.coordinates;
+            if(gc.geometry.type==='MultiLineString'){ cs.forEach(seg=>seg.forEach(p=>ring.push(p))); }
+            else cs.forEach(p=>ring.push(p));
+          }catch(e){ ring.push(closed[i]); ring.push(closed[i+1]); }
+        }
+        if(ring.length>=4){
+          const first=ring[0], last=ring[ring.length-1];
+          if(first[0]!==last[0]||first[1]!==last[1]) ring.push(first);
+          try{ f.push(turf.polygon([ring],{color:'#007aff',opacity:0.18})); }
+          catch(e){ f.push(turf.polygon([[...measurePoints,measurePoints[0]]],{color:'#007aff',opacity:0.18})); }
+        }
       } else if(measurePoints.length>=2){
         try{
           const gc=turf.greatCircle(turf.point(measurePoints[0]),turf.point(measurePoints[1]),{npoints:48});
@@ -2792,25 +2667,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     return f;
   }
-  /* CLAMP coordinates rather than dropping whole features (#5,#25): polar great-circle math can
-     push a latitude past ±90 or emit a stray non-finite value. The old code discarded the entire
-     feature, so a measurement passing near a pole simply vanished. Now we clamp latitude into the
-     renderable band and only drop a vertex that is truly non-finite, so the shape stays visible. */
+  /* Drop any geometry that contains a non-finite coordinate (polar great-circle math can emit
+     NaN/Infinity near the poles, which makes MapLibre throw and the tool "bug out") (#10). */
   function sanitizeFeatures(feats){
-    const fixPos=p=>(Array.isArray(p)&&isFinite(p[0])&&isFinite(p[1]))?[p[0],Math.max(-89.9999,Math.min(89.9999,p[1]))]:null;
-    const fixCoords=(c)=>{ if(!Array.isArray(c)) return null; if(typeof c[0]==='number') return fixPos(c);
-      const out=c.map(fixCoords).filter(x=>x!=null); return out; };
-    const out=[];
-    feats.forEach(f=>{ try{ if(!f||!f.geometry) return; const g=f.geometry; const fixed=fixCoords(g.coordinates);
-      if(fixed==null) return;
-      const okPoint=(g.type==='Point')&&Array.isArray(fixed)&&fixed.length===2&&typeof fixed[0]==='number';
-      const okLine=(g.type==='LineString')&&Array.isArray(fixed)&&fixed.length>=2;
-      const okPoly=(g.type==='Polygon')&&Array.isArray(fixed)&&fixed[0]&&fixed[0].length>=4;
-      const okML=(g.type==='MultiLineString')&&Array.isArray(fixed)&&fixed.length>=1;
-      const okMP=(g.type==='MultiPolygon')&&Array.isArray(fixed)&&fixed.length>=1;
-      if(okPoint||okLine||okPoly||okML||okMP){ out.push({...f,geometry:{...g,coordinates:fixed}}); }
-    }catch(_){} });
-    return out;
+    const okPos=p=>Array.isArray(p)&&isFinite(p[0])&&isFinite(p[1])&&Math.abs(p[1])<=89.9999;
+    const okCoords=(c)=>{ if(!Array.isArray(c)) return false; if(typeof c[0]==='number') return okPos(c); return c.every(okCoords); };
+    return feats.filter(f=>{ try{ return f&&f.geometry&&okCoords(f.geometry.coordinates); }catch(_){ return false; } });
   }
   function refreshTool(){ if(map&&map.getSource('tool-source')) map.getSource('tool-source').setData({type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
 
@@ -2821,13 +2683,20 @@ window.addEventListener('DOMContentLoaded', () => {
   function ringArea(p){
     if(p.length<3)return 0;
     try{
-      /* Great-circle ring in CONTINUOUS longitude (#5): turf.area's spherical formula uses lon/lat
-         differences, so an unwrapped ring (lon possibly outside ±180) yields the correct geodesic
-         area even across the antimeridian — no seam-jump distortion. */
-      const ring=_gcRingUnwrapped(p,48);
-      const first=ring[0], last=ring[ring.length-1];
-      if(first[0]!==last[0]||first[1]!==last[1]) ring.push(first.slice());
+      /* Great-circle-subdivided ring for accurate spherical area on a globe */
+      const ring=[];
+      const closed=[...p,p[0]];
+      for(let i=0;i<closed.length-1;i++){
+        try{
+          const gc=turf.greatCircle(turf.point(closed[i]),turf.point(closed[i+1]),{npoints:48});
+          const cs=gc.geometry.coordinates;
+          if(gc.geometry.type==='MultiLineString'){ cs.forEach(seg=>seg.forEach(pt=>ring.push(pt))); }
+          else cs.forEach(pt=>ring.push(pt));
+        }catch(e){ ring.push(closed[i]); ring.push(closed[i+1]); }
+      }
       if(ring.length<4) return turf.area(turf.polygon([[...p,p[0]]]))/1e6;
+      const first=ring[0], last=ring[ring.length-1];
+      if(first[0]!==last[0]||first[1]!==last[1]) ring.push(first);
       return turf.area(turf.polygon([ring]))/1e6;
     }catch(e){return 0;}
   }
@@ -3990,8 +3859,8 @@ window.addEventListener('DOMContentLoaded', () => {
     renderCompareFixed();
   };
   window._clearCompare=function(){ compareSet.clear(); compareShown=false; document.querySelectorAll('#live-news-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); };
-  window._showCompare=function(){ if(compareSet.size<2) return; compareShown=true; renderCompareView(); renderCompareFixed(); };
-  window._hideCompare=function(){ compareShown=false; renderStats(searchVal()); };
+  window._showCompare=function(){ if(compareSet.size<2) return; compareShown=true; renderCompareFixed(); };
+  window._hideCompare=function(){ compareShown=false; renderCompareFixed(); };
   window._backToStats=function(){ compareShown=false; renderStats(searchVal()); };
   function renderStats(q){
     const feed=document.getElementById('live-news-feed'); clearMarkers();
@@ -4031,16 +3900,14 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Fixed bottom comparison panel (#26) — stays put while the country list scrolls. */
   function renderCompareFixed(){
     const panel=document.getElementById('stats-compare-fixed'); if(!panel) return;
-    /* When the full comparison page is open the bottom dock hides — the comparison occupies the
-       whole content area instead of a half-open panel that covers the list (#17). */
-    panel.classList.toggle('show', currentMode==='stats' && !compareShown);
-    if(currentMode!=='stats'||compareShown){ panel.innerHTML=''; return; }
+    panel.classList.toggle('show', currentMode==='stats');
+    if(currentMode!=='stats'){ panel.innerHTML=''; return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const COLORS=['#007aff','#ff3b30','#34c759'];
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/3)</span><div style="display:flex;gap:6px;">`+
-      (compareSet.size>=2?`<button onclick="_showCompare()">${t('compareView')}</button>`:'')+
+      (compareSet.size>=2?`<button onclick="${compareShown?'_hideCompare()':'_showCompare()'}">${compareShown?(currentLang==='jp'?'閉じる':'Hide'):t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
     let body=`<div class="scf-chips">${chips}</div>`;
     if(compareShown && items.length>=2){
@@ -4052,7 +3919,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function renderCompareView(){
     const feed=document.getElementById('live-news-feed');
-    feed.style.paddingBottom='';   /* full-page comparison: drop the list's bottom-dock reserve (#17) */
     const codes=[...compareSet];
     const items=codes.map(c=>countryStats[c]).filter(Boolean);
     if(items.length<2){ renderStats(searchVal()); return; }
@@ -6982,22 +6848,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window.imSaveSettings=saveSettings;
   function applySidebarStyle(){ const s=window.imSidebarStyle;
-    const frosted=(s==='translucent'||s==='glass2');
-    document.body.classList.toggle('sidebar-translucent', frosted);
+    document.body.classList.toggle('sidebar-translucent', s==='translucent'||s==='glass2');
     document.body.classList.toggle('sidebar-glass2', s==='glass2');
-    document.body.classList.toggle('sidebar-glass', frosted);   /* drives the desktop overlay-frost */
-    /* Desktop frosted mode overlays the sidebar on the map so the glass has the map behind it to
-       blur (#23). Keep the map's optical centre in the area to the RIGHT of the glass by padding the
-       camera by the sidebar width. Mobile padding is owned by the bottom-sheet detents — leave it. */
-    try{
-      if(map && map.setPadding && !isMobile()){
-        const sb=document.getElementById('sidebar');
-        const collapsed=sb && sb.classList.contains('collapsed');
-        const pad=(frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0;
-        map.setPadding({top:0,right:0,bottom:0,left:pad});
-        requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} });
-      }
-    }catch(_){}
+    /* No map.resize() here: the sidebar stays in normal flow (no layout shift), so resizing would
+       only risk a needless flicker. */
   }
 
   /* ---------- Custom scrollbars (#34) — non-Apple only; auto-hide ---------- */
@@ -7018,13 +6872,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const btn=document.getElementById('btn-screenshot'); if(btn) btn.disabled=true;
     document.body.classList.add('capture-mode');
     try{
-      /* let in-flight tiles finish so we don't capture a half-loaded frame */
-      try{ await aiWaitMapIdle(2500); }catch(_){}
-      /* 1 — read the WebGL frame synchronously INSIDE a render tick (the reliable way to capture a
-         canvas created without preserveDrawingBuffer), and composite the animated-wind 2D canvas. */
-      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=map.getCanvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
-        try{ const wc=document.getElementById('wind-canvas'); if(wc && wc.style.display!=='none' && wc.width) cx.drawImage(wc,0,0,o.width,o.height); }catch(_){}
-        res(o); }catch(_){ res(null); } }; try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
+      /* 1 — map WebGL pixels, read inside a render tick (no preserveDrawingBuffer needed) */
+      const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=map.getCanvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; o.getContext('2d').drawImage(c,0,0); res(o); }catch(_){ res(null); } }; try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,900); });
       const out=document.createElement('canvas');
       const cont=document.getElementById('map-container');
       out.width=mapCv?mapCv.width:cont.clientWidth; out.height=mapCv?mapCv.height:cont.clientHeight;
