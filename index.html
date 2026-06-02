@@ -804,9 +804,13 @@
   <div class="modal-content" style="position:relative;">
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
     <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light Mode</option><option value="dark" data-i18n="optDark">Dark Mode</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
-    <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMulti">All languages (auto-translate titles)</option></select></div>
+    <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
+      <div id="newslang-multi" style="display:none; margin-top:10px; grid-template-columns:1fr 1fr; gap:7px 12px;"></div>
+      <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
+    </div>
     <div class="setting-group"><label data-i18n="lblAiLocate">AI location analysis</label><select id="setting-ailocate"><option value="manual" data-i18n="aiLocManual">Manual (button)</option><option value="auto" data-i18n="aiLocAuto">Automatic for all news</option></select></div>
     <div class="setting-group"><label id="lbl-tz">Timezone Setting</label><select id="setting-tz"></select></div>
     <div class="setting-group" id="sat-keys-group">
@@ -888,7 +892,7 @@
 
 <div class="m-sheet" id="mo-sheet" role="dialog" aria-modal="true" aria-label="Map options">
   <div class="m-sheet-grip"></div>
-  <div class="m-sheet-head"><span class="m-sheet-title" id="mo-title">Map</span><button class="m-sheet-done" id="mo-done" type="button">Done</button></div>
+  <div class="m-sheet-head"><span class="m-sheet-title" id="mo-title" data-i18n="mTitleMap">Map</span><button class="m-sheet-done" id="mo-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">
     <div class="m-seg-block">
       <div class="m-seg" id="mseg-type" role="group" aria-label="Base map">
@@ -908,7 +912,7 @@
 
 <div class="m-sheet" id="tools-sheet" role="dialog" aria-modal="true" aria-label="Map tools">
   <div class="m-sheet-grip"></div>
-  <div class="m-sheet-head"><span class="m-sheet-title">Tools</span><button class="m-sheet-done" id="tools-done" type="button">Done</button></div>
+  <div class="m-sheet-head"><span class="m-sheet-title" data-i18n="mTitleTools">Tools</span><button class="m-sheet-done" id="tools-done" type="button" data-i18n="mDone">Done</button></div>
   <div class="m-sheet-scroll">
     <div class="m-tool-grid">
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico">🌐</span><span>Grid</span></button>
@@ -920,6 +924,7 @@
 </div>
 
 <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/maplibre-contour@0.1.0/dist/index.min.js"></script>
 <!-- Supabase backend. Loads the local vendored SDK if present, else falls back to the CDN,
      then creates the client inline — so publishing JUST index.html (no companion files) works.
      The anon/publishable key is public on purpose; Row Level Security protects every table. -->
@@ -951,6 +956,10 @@ window.addEventListener('DOMContentLoaded', () => {
   let newsPinMode='location'; /* 'location' or 'publisher' */
   let aiLocateMode=localStorage.getItem('intmap_ai_locate')||'manual'; /* 'manual' | 'auto' */
   let newsLangMode=localStorage.getItem('intmap_news_lang')||'ui';     /* 'ui' | 'multi' */
+  /* Individually-selectable news languages (used when newsLangMode==='multi'). */
+  const NEWS_LANG_NAMES={ en:{en:'English',jp:'英語'}, ja:{en:'Japanese',jp:'日本語'}, fr:{en:'French',jp:'フランス語'}, de:{en:'German',jp:'ドイツ語'}, es:{en:'Spanish',jp:'スペイン語'}, pt:{en:'Portuguese',jp:'ポルトガル語'}, it:{en:'Italian',jp:'イタリア語'}, ar:{en:'Arabic',jp:'アラビア語'}, ru:{en:'Russian',jp:'ロシア語'}, zh:{en:'Chinese',jp:'中国語'}, ko:{en:'Korean',jp:'韓国語'} };
+  let newsLangs; try{ newsLangs=JSON.parse(localStorage.getItem('intmap_news_langs')||'null'); }catch(_){ newsLangs=null; }
+  if(!Array.isArray(newsLangs)||!newsLangs.length) newsLangs=Object.keys(NEWS_LANG_NAMES);   /* default: all */
   const KM2MI=0.621371;
   const saveBookmarks=()=>localStorage.setItem('intmap_bookmarks',JSON.stringify(bookmarks));
   const t=(k)=>i18n[currentLang][k];
@@ -1039,6 +1048,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(toolMode) updateToolPanel();
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
     try{ localizeGeoLabels(); }catch(_){}
+    try{ if(typeof updateAccountButton==='function') updateAccountButton(); }catch(_){}
+    try{ if(typeof renderNewsLangChecks==='function') renderNewsLangChecks(); }catch(_){}
     renderUI();
   }
   /* Localize the geopolitical / strategic layer checkboxes in the Layers menu (their text was
@@ -3715,7 +3726,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(newsLangMode==='multi'){
       /* the UI edition stays first (so home-language stories dominate), then foreign editions
          (excluding the UI language, which is already covered by the base feed above) */
-      NEWS_EDITIONS_MULTI.filter(ed=>ed.lang!==currentLang).forEach(ed=>base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed.q}`));
+      NEWS_EDITIONS_MULTI.filter(ed=>ed.lang!==currentLang && newsLangs.includes(ed.lang)).forEach(ed=>base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed.q}`));
     }
     /* Pro "RU·CN local primary-source intel" overlay — pulls the Russian + Chinese editions. */
     if(window.proIntelOn && window.imIsPro && window.imIsPro()){
@@ -3862,8 +3873,31 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-community').onclick=()=>setMode('community','btn-community');
 
   /* ===== Language ===== */
-  document.getElementById('lang-en').onclick=(e)=>{ if(currentLang==='en')return; currentLang='en'; document.getElementById('lang-jp').classList.remove('active'); e.currentTarget.classList.add('active'); globalData=[]; updateI18n(); fetchData(); };
-  document.getElementById('lang-jp').onclick=(e)=>{ if(currentLang==='jp')return; currentLang='jp'; document.getElementById('lang-en').classList.remove('active'); e.currentTarget.classList.add('active'); globalData=[]; updateI18n(); fetchData(); };
+  function setLang(lang){
+    if((lang!=='en'&&lang!=='jp') || currentLang===lang) return;
+    currentLang=lang;
+    document.getElementById('lang-en').classList.toggle('active',lang==='en');
+    document.getElementById('lang-jp').classList.toggle('active',lang==='jp');
+    const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
+    globalData=[]; updateI18n(); fetchData();
+  }
+  document.getElementById('lang-en').onclick=()=>setLang('en');
+  document.getElementById('lang-jp').onclick=()=>setLang('jp');
+  { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
+  /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
+  function renderNewsLangChecks(){
+    const wrap=document.getElementById('newslang-multi'), hint=document.getElementById('newslang-hint'), sel=document.getElementById('setting-newslang');
+    if(!wrap||!sel) return;
+    const show=(sel.value==='multi');
+    wrap.style.display=show?'grid':'none'; if(hint) hint.style.display=show?'block':'none';
+    if(!wrap.dataset.built){
+      wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label style="display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer;"><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span class="nlx" data-code="${code}"></span></label>`).join('');
+      wrap.dataset.built='1';
+    }
+    wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=newsLangs.includes(cb.value); });
+    wrap.querySelectorAll('.nlx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=(NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; });
+  }
+  { const sel=document.getElementById('setting-newslang'); if(sel) sel.addEventListener('change',renderNewsLangChecks); }
 
   /* ===== Settings + Timezones ===== */
   function populateTimezones(){
@@ -3884,17 +3918,23 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
-  document.getElementById('btn-open-settings').onclick=()=>{ document.getElementById('setting-theme').value=userTheme; document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex'; };
+  document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme; document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex'; };
   document.getElementById('btn-close-settings').onclick=()=>{
     userTheme=document.getElementById('setting-theme').value; userTZ=document.getElementById('setting-tz').value; unitMode=document.getElementById('setting-units').value;
     aiLocateMode=document.getElementById('setting-ailocate').value; localStorage.setItem('intmap_ai_locate',aiLocateMode);
     const prevNewsLang=newsLangMode; newsLangMode=document.getElementById('setting-newslang').value; localStorage.setItem('intmap_news_lang',newsLangMode);
+    /* Read the individually-selected news languages (when in "multiple languages" mode). */
+    const prevNewsLangs=newsLangs.slice();
+    const wrap=document.getElementById('newslang-multi');
+    if(wrap){ const picked=Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.value); if(picked.length) newsLangs=picked; }
+    try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){}
     /* News pin position is chosen from the News tab's segmented control, not here. */
     try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
     settingsDirty=false; modal.style.display='none'; applyTheme(); if(toolMode)updateToolPanel();
     renderUI();
-    /* Changing the news-language scope changes which feeds we pull → re-fetch. */
-    if(prevNewsLang!==newsLangMode){ globalData=[]; try{ fetchData(); }catch(_){} }
+    /* Changing the news-language scope/selection changes which feeds we pull → re-fetch. */
+    const langsChanged=(prevNewsLangs.length!==newsLangs.length)||prevNewsLangs.some((l,i)=>l!==newsLangs[i]);
+    if(prevNewsLang!==newsLangMode || (newsLangMode==='multi' && langsChanged)){ globalData=[]; try{ fetchData(); }catch(_){} }
   };
   document.getElementById('settings-close-x').onclick=closeSettings;
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
@@ -4068,10 +4108,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Temperature (MODIS)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Geopolitical theory", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温 (MODIS)", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"地政学理論", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays" });
-    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ" });
+    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Geopolitical theory", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"地政学理論", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done" });
+    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -4143,25 +4183,34 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[currentLang==='jp'?'加盟国':'Member',''],currentLang==='jp'?'32か国':'32 members');
     /* EEZ legend — single-color line indicator */
     const lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
-    /* The legend image is GeoServer's OWN GetLegendGraphic for this exact layer, so every boundary
-       type/colour drawn on the map (200 nm, treaty, median line, joint regime, …) is represented.
-       If the image fails to load we fall back to a hand-written two-line key. */
+    /* Native legend whose line colours/dashes mirror the actual MarineRegions eez_boundaries style
+       (taken from the layer's own GetLegendGraphic JSON), so every drawn boundary type is keyed. */
+    const EEZ_CATS=[
+      {c:'#122a2a',n:{en:'EEZ — 200 NM',jp:'EEZ（200海里）'}},
+      {c:'#3e9191',n:{en:'Territorial sea — 12 NM',jp:'領海（12海里）'}},
+      {c:'#2c33a0',n:{en:'Treaty boundary',jp:'条約による境界'}},
+      {c:'#2a6029',n:{en:'Median line',jp:'中間線'}},
+      {c:'#fcc268',n:{en:'Court ruling',jp:'司法判断による境界'}},
+      {c:'#845c38',n:{en:'Joint regime',jp:'共同管理水域'}},
+      {c:'#992ca0',n:{en:'Unilateral claim (undisputed)',jp:'一方的主張（係争なし）'}},
+      {c:'#c64131',d:1,n:{en:'Unsettled / disputed',jp:'未確定・係争中'}},
+      {c:'#892d22',d:1,n:{en:'Unsettled median line',jp:'未確定の中間線'}},
+      {c:'#434948',d:1,n:{en:'Baselines (archipelagic / straight)',jp:'基線（群島・直線・通常）'}},
+      {c:'#969696',n:{en:'Connection line',jp:'接続線'}}
+    ];
+    const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};flex-shrink:0;"></span><span>${cat.n[currentLang]||cat.n.en}</span></div>`).join('');
     lgdEEZ.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海洋管轄区域':'Maritime zones'}</h4>
-      <img alt="EEZ boundary types" src="https://geo.vliz.be/geoserver/MarineRegions/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=eez_boundaries&LEGEND_OPTIONS=forceLabels:on;fontAntiAliasing:true" style="display:block;width:100%;background:#fff;border-radius:8px;padding:6px;box-sizing:border-box;margin:2px 0 6px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
-      <div style="display:none;">
-        <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 0;"><span style="display:inline-block;width:24px;height:3px;background:#0095e5;border-radius:2px;"></span> ${currentLang==='jp'?'EEZ境界（200海里）':'EEZ boundary (200 nm)'}</div>
-        <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 0;"><span style="display:inline-block;width:24px;height:3px;background:#9bdbf5;border-radius:2px;"></span> ${currentLang==='jp'?'領海（12海里）':'Territorial sea (12 nm)'}</div>
-      </div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け。重なりは領有権紛争の目安。':'EEZ = Exclusive Economic Zone (coastal-state control of fishing & seabed to 200 nm). Lines are coloured by boundary type; overlaps flag disputed claims.'}</div>
+      <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け。重なりは領有権紛争の目安。':'EEZ = Exclusive Economic Zone (coastal-state control of fishing & seabed to 200 nm). Lines coloured by boundary type; overlaps flag disputed claims.'}</div>
       <div class="dl-hint">${currentLang==='jp'?'出典: MarineRegions WMS':'Source: MarineRegions WMS'}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Temperature legend (MODIS LST color ramp ≈ Kelvin) */
     const lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
-    lgdTemp.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'地表面温度':'Land Surface Temp'}</h4>
-      <div class="dl-bar" style="background:linear-gradient(to right,#08009c,#0073ff,#00f0d0,#a5ff5d,#fff700,#ff7700,#ed1c24,#8a0027);"></div>
-      <div class="dl-scale"><span>-25 °C</span><span>+45 °C</span></div>
-      <div class="dl-hint">${currentLang==='jp'?'MODIS Terra LST 日中。海域・雲・夜は欠損。':'MODIS Terra LST (day). Oceans/clouds/night: data gap.'}</div>`;
+    lgdTemp.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
+      <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0050d0,#0098ff,#00e0c0,#7dff66,#fff700,#ff9000,#ed1c24,#8a0027);"></div>
+      <div class="dl-scale"><span>-40 °C</span><span>+40 °C</span></div>
+      <div class="dl-hint">${currentLang==='jp'?'MERRA-2 再解析・月別。全球で欠損なし。スライダーで月を選択。':'MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.'}</div>`;
     mc.appendChild(lgdTemp);
     lgdTemp.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-temp'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Thermal anomalies legend (fire/heat-signature pixels) */
@@ -4187,6 +4236,14 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="dl-hint">${currentLang==='jp'?'GHRSST MUR L4（海域のみ）':'GHRSST MUR L4 (oceans only)'}</div>`;
     mc.appendChild(lgdSST);
     lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Gridded population-density legend (NASA SEDAC GPW v4) */
+    const lgdPopGrid=document.createElement('div'); lgdPopGrid.className='data-legend'; lgdPopGrid.id='data-legend-popgrid'; lgdPopGrid.style.bottom='140px';
+    lgdPopGrid.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'人口密度（グリッド）':'Pop. density (grid)'}</h4>
+      <div class="dl-bar" style="background:linear-gradient(to right,#ffffd4,#fee391,#fec44f,#fe9929,#ec7014,#cc4c02,#8c2d04);"></div>
+      <div class="dl-scale"><span>0</span><span>1000+ /km²</span></div>
+      <div class="dl-hint">${currentLang==='jp'?'NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。':'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.'}</div>`;
+    mc.appendChild(lgdPopGrid);
+    lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Make EEZ/Temp/Thermal legends draggable too (same handler) */
     function wireDrag(el){
       const handle=el.querySelector('.dl-drag'); if(!handle) return;
@@ -4204,7 +4261,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
       });
     }
-    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST);
+    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid);
     /* Also wire drag for the Köppen legend */
     setTimeout(()=>{ const kl=document.getElementById('koppen-legend');
       if(kl && !kl.querySelector('.kl-drag')){
@@ -4230,26 +4287,34 @@ window.addEventListener('DOMContentLoaded', () => {
     const hr=document.createElement('hr'); hr.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; dd.appendChild(hr);
     const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:0.75,temp:0.6,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.5,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7};
+    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.5,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85};
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     /* Date-aware layers: temp, precip, thermal — these vary day-by-day. */
     const PRECIP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-    const layerDates={temp:GIBS_DATE,precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    /* Air-temperature (MERRA-2 monthly reanalysis) lags ~3 months → default to the latest safe month. */
+    function tempMonthISO(monthsBack){ const d=new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-(monthsBack==null?3:monthsBack)); return d.toISOString().slice(0,10); }
+    const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
     [
       ['__grp','lyrGrpWeather'],
       ['radar','lyrRadar'],['clouds','lyrClouds'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
+      ['__grp','lyrGrpTerrain'],
+      ['hillshade','lyrHillshade'],['contours','lyrContours'],
       ['__grp','lyrGrpMaritime'],
       ['eez','lyrEEZ'],['ships','lyrShips'],['planes','lyrPlanes'],
       ['__grp','lyrGrpIndic'],
-      ['pop','lyrPop'],['hdi','lyrHDI'],['dem','lyrDem'],['nato','lyrNATO'],['night','lyrNight']
+      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['hdi','lyrHDI'],['dem','lyrDem'],['nato','lyrNATO'],['night','lyrNight']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[currentLang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
-      const isDated=layerDates.hasOwnProperty(id);
+      const isMonth=(id==='temp');                          /* air-temp uses a MONTH slider, not a day picker */
+      const isDated=layerDates.hasOwnProperty(id) && !isMonth;
       const isTraffic=(id==='ships'||id==='planes');
       let extra='';
-      if(isDated){
+      if(isMonth){
+        /* time slider over the last 36 months (value 36 = newest available month) */
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${t('lyrTimeMonth')||'Month'}: <input type="range" id="mo-${id}" min="0" max="36" value="36" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="molbl-${id}" style="min-width:58px; text-align:right; font-variant-numeric:tabular-nums;">${layerDates[id].slice(0,7)}</span></label></div>`;
+      } else if(isDated){
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: <input type="date" id="dt-${id}" value="${layerDates[id]}" max="${new Date().toISOString().slice(0,10)}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"></label></div>`;
       }
       if(isTraffic){
@@ -4264,6 +4329,10 @@ window.addEventListener('DOMContentLoaded', () => {
         toggleLayer(id,e.target.checked);
       });
       w.querySelector('#op-'+id).addEventListener('input',e=>setLayerOpacity(id,parseFloat(e.target.value)));
+      if(isMonth){
+        const sl=w.querySelector('#mo-'+id), lbl=w.querySelector('#molbl-'+id);
+        sl.addEventListener('input',e=>{ const back=36-parseInt(e.target.value,10); layerDates[id]=tempMonthISO(3+back); if(lbl) lbl.textContent=layerDates[id].slice(0,7); if(cb.checked) refreshDatedLayer(id); });
+      }
       if(isDated){
         w.querySelector('#dt-'+id).addEventListener('change',e=>{ layerDates[id]=e.target.value||GIBS_DATE; if(cb.checked){ /* reload tiles for new date */ refreshDatedLayer(id); } });
       }
@@ -4278,6 +4347,8 @@ window.addEventListener('DOMContentLoaded', () => {
        returns 200 OK for tile (0,0,0). The "blank" appearance was because there is little global
        precipitation visible at zoom 0 — keeping the date-only URL like MODIS Temperature. */
     const gibs=(layer,lvl,ext,time)=>[`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${time||GIBS_DATE}/GoogleMapsCompatible_Level${lvl}/{z}/{y}/{x}.${ext}`];
+    /* Non-temporal GIBS layers (e.g. GPW population) omit the date segment entirely. */
+    const gibsStatic=(layer,lvl,ext)=>[`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/GoogleMapsCompatible_Level${lvl}/{z}/{y}/{x}.${ext}`];
     function addRaster(id,tiles,maxz){ if(map.getSource('src-'+id))return; map.addSource('src-'+id,{type:'raster',tiles,tileSize:256,maxzoom:maxz}); map.addLayer({id:'lyr-'+id,type:'raster',source:'src-'+id,layout:{visibility:'none'},paint:{'raster-opacity':opacities[id]}},beforeId); }
 
     const NATO=new Set("USA CAN GBR FRA DEU ITA ESP PRT NLD BEL LUX DNK NOR ISL POL CZE SVK HUN ROU BGR HRV SVN EST LVA LTU GRC TUR ALB MNE MKD FIN SWE".split(' '));
@@ -4482,7 +4553,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Stagger legends vertically so multiple can show without overlapping. Only re-tile
        legends that haven't been manually dragged (left/top still 'auto'/unset). */
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdNATO,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST];
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdNATO,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       let bottom=140;
       visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.right='24px'; el.style.left='auto'; el.style.top='auto'; bottom += el.getBoundingClientRect().height+10; });
@@ -4842,6 +4913,26 @@ window.addEventListener('DOMContentLoaded', () => {
       map.addSource('src-eez',{type:'raster',tiles:[wms],tileSize:256});
       map.addLayer({id:'lyr-eez',type:'raster',source:'src-eez',layout:{visibility:'none'},paint:{'raster-opacity':opacities.eez}},beforeId);
     }
+    /* === Contour lines — generated on the fly from the terrarium DEM by maplibre-contour === */
+    let _mlcDem=null;
+    function addContours(){
+      if(map.getLayer('contour-lines')) return true;
+      const MLC=window.mlcontour||window.maplibreContour; if(!MLC||!MLC.DemSource) return false;
+      try{
+        if(!_mlcDem){ _mlcDem=new MLC.DemSource({ url:'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding:'terrarium', maxzoom:13, worker:true }); _mlcDem.setupMaplibre(maplibregl); }
+        if(!map.getSource('contour-src')){
+          map.addSource('contour-src',{ type:'vector', maxzoom:15, tiles:[ _mlcDem.contourProtocolUrl({
+            thresholds:{ 8:[1000], 9:[500], 10:[500], 11:[200,1000], 12:[100,500], 13:[50,200], 14:[20,100], 15:[20,100] },
+            elevationKey:'ele', levelKey:'level', contourLayer:'contours' }) ] });
+        }
+        const dark=document.documentElement.getAttribute('data-theme')==='dark';
+        map.addLayer({ id:'contour-lines', type:'line', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none'},
+          paint:{ 'line-color': dark?'rgba(220,180,120,0.6)':'rgba(150,100,40,0.7)', 'line-width':['match',['get','level'],1,1.3,0.55], 'line-opacity':opacities.contours } }, beforeId);
+        map.addLayer({ id:'contour-labels', type:'symbol', source:'contour-src', 'source-layer':'contours', layout:{visibility:'none','symbol-placement':'line','symbol-spacing':320,'text-size':10,'text-field':['concat',['to-string',['get','ele']],' m'],'text-font':['Open Sans Regular'],'text-allow-overlap':false},
+          paint:{ 'text-color': dark?'#e8c890':'#7a5320', 'text-halo-color': dark?'rgba(0,0,0,0.7)':'rgba(255,255,255,0.8)', 'text-halo-width':1.2 } }, beforeId);
+        return true;
+      }catch(e){ console.warn('addContours',e); return false; }
+    }
     /* === RainViewer: live precipitation radar + infrared cloud imagery, via its own
        "latest frame" API — this is genuinely real-time (refreshed every ~10 min). === */
     let _rvData=null, _rvAt=0, _rvPending=null, _rvTimer=null;
@@ -4881,7 +4972,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function refreshDatedLayer(id){
       const date=layerDates[id]||GIBS_DATE;
       let tiles=null;
-      if(id==='temp') tiles=gibs('MODIS_Terra_Land_Surface_Temp_Day',7,'png',date);
+      if(id==='temp') tiles=gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',date);  /* gap-free reanalysis, monthly */
       else if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
       else if(id==='thermal') tiles=gibs('MODIS_Fires_All',9,'png',date);
       else if(id==='sst') tiles=gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',date);
@@ -4892,7 +4983,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const wasVis=map.getLayer('lyr-'+id)?map.getLayoutProperty('lyr-'+id,'visibility')==='visible':false;
       if(map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
       if(map.getSource('src-'+id)) map.removeSource('src-'+id);
-      const maxzMap={temp:7,thermal:9,precip:6,sst:7,snow:8,aod:6};
+      const maxzMap={temp:6,thermal:9,precip:6,sst:7,snow:8,aod:6};
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
@@ -4902,7 +4993,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='temp'){
           lgdTemp.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{
-            try{ addRaster('temp',gibs('MODIS_Terra_Land_Surface_Temp_Day',7,'png',layerDates.temp),7); }catch(_){}
+            try{ addRaster('temp',gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',layerDates.temp),6); }catch(_){}
             try{ setVis('lyr-temp',true); }catch(_){}
           });
         }
@@ -4932,6 +5023,20 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         else if(id==='snow'){ whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
         else if(id==='aod'){ whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
+        else if(id==='popgrid'){
+          lgdPopGrid.style.display='block'; tileLegends();
+          whenStyleReady().then(()=>{ try{ addRaster('popgrid',gibsStatic('GPW_Population_Density_2020',7,'png'),7); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
+        }
+        else if(id==='hillshade'){
+          whenStyleReady().then(()=>{ try{
+            ensureTerrainSource();
+            if(!map.getLayer('lyr-hillshade')) map.addLayer({id:'lyr-hillshade',type:'hillshade',source:'terrain-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.6,'hillshade-shadow-color':'#1a2a44','hillshade-highlight-color':'#ffffff','hillshade-accent-color':'#5a6b85'}},beforeId);
+            setVis('lyr-hillshade',true);
+          }catch(e){ console.warn('hillshade fail',e); } });
+        }
+        else if(id==='contours'){
+          whenStyleReady().then(()=>{ try{ if(addContours()){ setVis('contour-lines',true); setVis('contour-labels',true); } else { const cb=document.getElementById('dl-contours'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } try{ satToast(currentLang==='jp'?'等高線を初期化できませんでした':'Could not initialise contours'); }catch(_){} } }catch(e){ console.warn('contours fail',e); } });
+        }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */
           lgdEEZ.style.display='block'; tileLegends();
@@ -4962,11 +5067,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if(id==='hdi'||id==='dem'||id==='pop'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setVis('nato-fill',false); setVis('nato-line',false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
+        else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
         else { setVis('lyr-'+id,false); }
         if(id==='climate'){ legend.style.display='none'; }
         if(id==='hdi') lgdHDI.style.display='none';
         if(id==='dem') lgdDem.style.display='none';
         if(id==='pop') lgdPop.style.display='none';
+        if(id==='popgrid') lgdPopGrid.style.display='none';
         if(id==='nato') lgdNATO.style.display='none';
         if(id==='eez') lgdEEZ.style.display='none';
         if(id==='temp') lgdTemp.style.display='none';
@@ -4993,6 +5100,8 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
       else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v); }
       else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','icon-opacity',v); }
+      else if(id==='hillshade'){ if(map.getLayer('lyr-hillshade'))map.setPaintProperty('lyr-hillshade','hillshade-exaggeration',Math.max(0.05,v)); }
+      else if(id==='contours'){ if(map.getLayer('contour-lines'))map.setPaintProperty('contour-lines','line-opacity',v); if(map.getLayer('contour-labels'))map.setPaintProperty('contour-labels','text-opacity',v); }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
     }
   })();
@@ -5785,7 +5894,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function injectAuthUI(){
     const settingsBtn=document.getElementById('btn-open-settings');
     const acct=document.createElement('button');
-    acct.id='btn-account'; acct.className='btn-settings'; acct.style.marginRight='8px'; acct.textContent='Log in';
+    acct.id='btn-account'; acct.className='btn-settings'; acct.style.marginRight='8px'; acct.textContent=(currentLang==='jp'?'ログイン':'Log in');
     acct.onclick=()=>{ currentUser ? openAccountMenu() : openAuthModal(); };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(acct,settingsBtn);
     else document.body.appendChild(acct);
@@ -5916,7 +6025,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     m.style.display='flex';
   }
-  function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b) b.textContent = currentUser ? ('👤 '+(currentUser.name||currentUser.email.split('@')[0])) : 'Log in'; }
+  function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b) b.textContent = currentUser ? ('👤 '+(currentUser.name||currentUser.email.split('@')[0])) : (currentLang==='jp'?'ログイン':'Log in');
+    /* Sidebar EN/JP toggle shows only when logged OUT; logged-in users switch language in Settings. */
+    const lt=document.querySelector('.lang-toggle'); if(lt) lt.style.display = currentUser ? 'none' : 'flex';
+  }
   async function refreshCurrentUser(){
     if(!DB){ currentUser=null; return; }
     const { data:{ session } } = await DB.auth.getSession();
