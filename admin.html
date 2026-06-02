@@ -87,6 +87,7 @@
     <div class="tabs">
       <button class="tab active" data-tab="geo">Geo Pins</button>
       <button class="tab" data-tab="dash">Dashboard Cards</button>
+      <button class="tab" data-tab="comm">Community</button>
     </div>
 
     <!-- GEO PINS -->
@@ -108,6 +109,25 @@
         <div style="overflow:auto;"><table id="dash-table"><thead><tr>
           <th>Cat</th><th>Type</th><th>Title (EN)</th><th>Badge</th><th>Lng</th><th>Lat</th><th></th>
         </tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY MODERATION -->
+    <section id="tab-comm" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>Community moderation <span class="count" id="comm-count"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="btn sec sm" id="comm-refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="seg" style="max-width:520px;">
+          <button id="cm-seg-posts" class="active">All posts</button>
+          <button id="cm-seg-reported">⚠ Reported</button>
+          <button id="cm-seg-comments">All comments</button>
+        </div>
+        <p class="muted" id="comm-note" style="margin:0 0 10px;">Tip: run <code>supabase_admin_moderation.sql</code> once so admins can see reports and delete any post/comment.</p>
+        <div style="overflow:auto;"><table id="comm-table"><thead><tr id="comm-head"></tr></thead><tbody></tbody></table></div>
       </div>
     </section>
   </div>
@@ -207,7 +227,75 @@
     document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));
     $('tab-geo').classList.toggle('hide',b.dataset.tab!=='geo');
     $('tab-dash').classList.toggle('hide',b.dataset.tab!=='dash');
+    $('tab-comm').classList.toggle('hide',b.dataset.tab!=='comm');
+    if(b.dataset.tab==='comm') loadComm();
   });
+
+  /* ---------------- COMMUNITY MODERATION ---------------- */
+  let commView='posts';
+  $('cm-seg-posts').onclick=()=>{ commView='posts'; cmSeg(); loadComm(); };
+  $('cm-seg-reported').onclick=()=>{ commView='reported'; cmSeg(); loadComm(); };
+  $('cm-seg-comments').onclick=()=>{ commView='comments'; cmSeg(); loadComm(); };
+  $('comm-refresh').onclick=()=>loadComm();
+  function cmSeg(){ $('cm-seg-posts').classList.toggle('active',commView==='posts'); $('cm-seg-reported').classList.toggle('active',commView==='reported'); $('cm-seg-comments').classList.toggle('active',commView==='comments'); }
+  function fmtTime(t){ try{ return new Date(t).toLocaleString(); }catch(_){ return t; } }
+  async function loadComm(){
+    const head=$('comm-head'), tb=$('comm-table').querySelector('tbody');
+    tb.innerHTML='<tr><td colspan="6" class="muted">Loading…</td></tr>';
+    try{
+      if(commView==='comments'){
+        head.innerHTML='<th>When</th><th>Author</th><th>Comment</th><th></th>';
+        const {data,error}=await sb.from('community_comments').select('id,author_name,body,created_at,post_id').order('created_at',{ascending:false}).limit(500);
+        if(error) throw error;
+        $('comm-count').textContent='· '+data.length+' comments';
+        tb.innerHTML=data.length?data.map(c=>`<tr>
+          <td style="white-space:nowrap;color:var(--muted)">${esc(fmtTime(c.created_at))}</td>
+          <td>${esc(c.author_name||'?')}</td>
+          <td style="max-width:520px;">${esc(c.body||'')}</td>
+          <td><button class="btn danger sm" data-del-comment="${c.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="4" class="muted">No comments.</td></tr>';
+        tb.querySelectorAll('[data-del-comment]').forEach(b=>b.onclick=()=>delComment(b.dataset.delComment));
+        return;
+      }
+      if(commView==='reported'){
+        head.innerHTML='<th>Reports</th><th>Title</th><th>Author</th><th>Body</th><th></th>';
+        /* group reports by post */
+        const {data:reps,error}=await sb.from('community_reports').select('post_id').limit(2000);
+        if(error) throw error;
+        const counts={}; (reps||[]).forEach(r=>{ counts[r.post_id]=(counts[r.post_id]||0)+1; });
+        const ids=Object.keys(counts);
+        if(!ids.length){ $('comm-count').textContent='· 0 reported'; tb.innerHTML='<tr><td colspan="5" class="muted">No reported posts. 🎉</td></tr>'; return; }
+        const {data:posts}=await sb.from('community_posts').select('id,title,body,author_name').in('id',ids);
+        const pm={}; (posts||[]).forEach(p=>pm[p.id]=p);
+        const rows=ids.sort((a,b)=>counts[b]-counts[a]).map(id=>({id,n:counts[id],p:pm[id]||{}}));
+        $('comm-count').textContent='· '+rows.length+' reported';
+        tb.innerHTML=rows.map(r=>`<tr>
+          <td><span class="pill" style="background:var(--danger);color:#fff">⚠ ${r.n}</span></td>
+          <td>${esc(r.p.title||'(no title)')}</td><td>${esc(r.p.author_name||'?')}</td>
+          <td style="max-width:420px;color:var(--muted)">${esc((r.p.body||'').slice(0,160))}</td>
+          <td><button class="btn danger sm" data-del-post="${r.id}">Del post</button></td></tr>`).join('');
+        tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
+        return;
+      }
+      /* all posts */
+      head.innerHTML='<th>When</th><th>Title</th><th>Author</th><th>Body</th><th></th>';
+      const {data,error}=await sb.from('community_posts').select('id,title,body,author_name,created_at,community_votes(user_id),community_comments(id)').order('created_at',{ascending:false}).limit(500);
+      if(error) throw error;
+      $('comm-count').textContent='· '+data.length+' posts';
+      tb.innerHTML=data.length?data.map(p=>`<tr>
+        <td style="white-space:nowrap;color:var(--muted)">${esc(fmtTime(p.created_at))}</td>
+        <td>${esc(p.title||'(no title)')}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · 💬${(p.community_comments||[]).length}</div></td>
+        <td>${esc(p.author_name||'?')}</td>
+        <td style="max-width:420px;color:var(--muted)">${esc((p.body||'').slice(0,160))}</td>
+        <td><button class="btn danger sm" data-del-post="${p.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">No posts.</td></tr>';
+      tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
+    }catch(e){ tb.innerHTML='<tr><td colspan="6">'+esc(e.message||e)+'</td></tr>'; }
+  }
+  async function delPost(id){ if(!confirm('Delete this post (and its comments)?'))return;
+    const {error}=await sb.from('community_posts').delete().eq('id',id);
+    if(error) return toast(error.message,'err'); toast('Post deleted','ok'); loadComm(); }
+  async function delComment(id){ if(!confirm('Delete this comment?'))return;
+    const {error}=await sb.from('community_comments').delete().eq('id',id);
+    if(error) return toast(error.message,'err'); toast('Comment deleted','ok'); loadComm(); }
 
   /* ---------------- GEO PINS CRUD ---------------- */
   const GEO_FIELDS=[
