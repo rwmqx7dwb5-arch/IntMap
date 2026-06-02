@@ -113,6 +113,10 @@
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
     .radius-color-row input[type=color]{ width:34px; height:28px; padding:0; border:1px solid rgba(128,128,128,0.2); border-radius:6px; cursor:pointer; background:transparent; }
+    .rad-presets{ display:flex; gap:5px; }
+    .rad-preset{ width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,0.65); box-shadow:0 0 0 1px rgba(0,0,0,0.18); cursor:pointer; padding:0; transition:transform 0.12s ease; }
+    .rad-preset:hover{ transform:scale(1.12); }
+    .rad-preset.on{ outline:2px solid var(--primary-color); outline-offset:1px; border-color:#fff; }
     .tp-add-btn{ width:100%; padding:9px; border:none; border-radius:9px; background:var(--primary-color); color:#fff; font-weight:600; cursor:pointer; margin-top:6px; font-size:12px; }
     .tp-add-btn:hover{ filter:brightness(1.08); }
     .radius-list{ display:flex; flex-direction:column; gap:4px; max-height:140px; overflow-y:auto; margin:8px 0 0; }
@@ -767,6 +771,23 @@
       -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)) !important;
     }
 
+    /* (#R7-glass-text) On a FROSTED material the surface shows the (usually dark) map behind it, so
+       the default grey "muted" text turns low-contrast. In any frosted mode every floating glass
+       surface promotes its muted text to near-white (with a faint shadow so it also reads over the
+       rare light patch). Solid mode is untouched. */
+    body.sidebar-translucent :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,
+      .koppen-legend,.data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,
+      .news-timeline,.src-card,.map-search-results,.search-result-card),
+    body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,
+      .koppen-legend,.data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,
+      .news-timeline,.src-card,.map-search-results,.search-result-card){
+      --text-muted:rgba(255,255,255,0.9);
+    }
+    body.sidebar-translucent :is(.koppen-legend,.data-legend,.koppen-info-pop,.tool-panel,.pin-popup,.country-popup) :is(h4,.dl-scale,.dl-hint,.kl-hint,span,small,label),
+    body.sidebar-glass2 :is(.koppen-legend,.data-legend,.koppen-info-pop,.tool-panel,.pin-popup,.country-popup) :is(h4,.dl-scale,.dl-hint,.kl-hint,span,small,label){
+      text-shadow:0 1px 2px rgba(0,0,0,0.32);
+    }
+
     /* ---- Sidebar material (matches the floating surfaces above) ---- */
     .sidebar{ background-color:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
     /* Desktop: SOLID keeps the sidebar in normal flex flow (map centred beside it, no shift).
@@ -1029,6 +1050,7 @@
         <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels">🌐 Grid</button>
         <button class="view-btn" id="btn-tool-measure" data-i18n="measureBtn" title="Measure Distance">📏 Measure</button>
         <button class="view-btn" id="btn-tool-area" data-i18n="areaBtn" title="Measure Area">📐 Area</button>
+        <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
         <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
         <div class="layer-menu-container">
@@ -1227,6 +1249,7 @@
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico">🌐</span><span>Grid</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico">📏</span><span>Measure</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-area"><span class="ico">📐</span><span>Area</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
     </div>
   </div>
@@ -1253,6 +1276,11 @@
 window.addEventListener('DOMContentLoaded', () => {
   /* ===== State ===== */
   let userTheme='auto', userTZ='auto', currentMapType='map', currentProj='globe', currentLang='en';
+  /* (#R7-i18n) Read the SAVED language up-front, before any legend / option / popup is built. Many
+     surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
+     data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
+     those spots. Seeding currentLang here makes everything build in the right language from the start. */
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&(_s0.lang==='en'||_s0.lang==='jp')) currentLang=_s0.lang; }catch(_){}
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false;
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -1297,11 +1325,11 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", areaBtn:"📐 Area", radiusBtn:"⭕ Radius", layersBtn:"Layers ▾",
+      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time-travel news", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
-      filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date",
+      filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date", thermWin24:"Last 24 h", thermWin48:"Last 48 h", thermWin72:"Last 72 h",
       tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap rows to select 2–3 countries to compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
       satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"Pro — add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
       aiSecTitle:"AI features (BYOK / on-device)", aiSecHint:"Bring your own API key — requests go directly from this browser to the provider and the key is stored only here. Or pick Chrome Built-in AI to run on-device with no key.",
@@ -1329,7 +1357,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", areaBtn:"📐 面積", radiusBtn:"⭕ 半径", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
@@ -2061,7 +2089,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Saturate HTTP/2 / HTTP/3 multiplexing: one tile host can serve dozens of concurrent
      requests over a single connection, so lift MapLibre's default 16-request cap. This is
      the single biggest win for satellite-tile throughput (no quality change — same tiles). */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=64; }catch(_){}
+  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=96; }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
@@ -2848,6 +2876,8 @@ window.addEventListener('DOMContentLoaded', () => {
     {g:{en:"Ballistic missiles",jp:"弾道ミサイル"},items:[["ATACMS",300],["Iskander",500],["DF-21D",1500],["DF-26",4000],["Minuteman III",13000],["Trident II",12000]]},
     {g:{en:"Air defense",jp:"防空"},items:[["Patriot PAC-3",35],["THAAD",200],["S-400",400]]}
   ];
+  /* Radius colour quick-presets (#R7): R / G / B one-tap swatches alongside the custom colour picker. */
+  const RADIUS_COLOR_PRESETS=[{col:'#ff3b30',lbl:'R'},{col:'#34c759',lbl:'G'},{col:'#007aff',lbl:'B'}];
 
   let measureSnapClose=false;        /* true while the cursor hovers the first measure vertex */
   const SNAP_PX=22;                  /* screen-space radius that counts as "on the first point" */
@@ -3085,7 +3115,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       body=`<div class="tp-sub">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
         <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><input type="number" id="radius-num" min="1" value="${radiusKm}"><span>km</span></div></div>
-        <div class="radius-color-row"><span>${t('color')}</span><input type="color" id="radius-color" value="${radiusColor}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
+        <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':'Custom colour'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
         <div class="tp-row"><span>${t('radius')}</span><b id="rad-r">${distHTML(radiusKm)}</b></div>
         <div class="tp-row"><span>${t('circumference')}</span><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div>
         <div class="tp-row"><span>${t('area')}</span><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div>
@@ -3102,7 +3132,11 @@ window.addEventListener('DOMContentLoaded', () => {
       r.oninput=()=>setR(Math.max(1,+r.value));
       n.oninput=()=>{ const v=parseFloat(n.value); if(!isNaN(v)&&v>0) setR(v,true); };
       op.oninput=()=>{ radiusOpacity=parseFloat(op.value); };
-      col.oninput=()=>{ radiusColor=col.value; };
+      const markPreset=()=>{ p.querySelectorAll('.rad-preset').forEach(b=>b.classList.toggle('on',(b.getAttribute('data-col')||'').toLowerCase()===radiusColor.toLowerCase())); };
+      col.oninput=()=>{ radiusColor=col.value; markPreset(); };
+      /* R / G / B quick presets (#R7) — one tap sets the circle colour; the swatch ring shows the
+         active choice. The colour picker remains for any custom colour. */
+      p.querySelectorAll('.rad-preset').forEach(b=>{ b.onclick=()=>{ radiusColor=b.getAttribute('data-col'); col.value=radiusColor; markPreset(); }; });
       pre.onchange=()=>{ const v=parseFloat(pre.value); if(v>0) setR(v); };
     }
   }
@@ -3161,6 +3195,8 @@ window.addEventListener('DOMContentLoaded', () => {
   { const vb=document.getElementById('ai-view-summary-btn'); if(vb) vb.onclick=aiSummarizeView; }
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey'); });
   function handleMapClick(lng,lat,point){
+    /* (#R7-draw) The freehand Draw tool owns the map gesture while it is active. */
+    if(window.DrawTool && window.DrawTool.active()) return;
     /* Köppen click-to-highlight (#25): when the climate layer is on, clicking the map highlights
        (toggles) the climate zone at that point. Works whether or not a measurement tool is active. */
     try{
@@ -3517,7 +3553,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Layer dropdown ===== */
   const layerDropdown=document.getElementById('layer-dropdown');
   document.getElementById('btn-layers').addEventListener('click',(e)=>{ e.stopPropagation(); layerDropdown.classList.toggle('show'); });
-  document.addEventListener('click',()=>layerDropdown.classList.remove('show'));
+  /* (#R7-legend-x) A click anywhere on the document used to collapse the Layers dropdown — including a
+     click on a layer's legend ✕ (which sits OUTSIDE the dropdown). Keep the dropdown open when the
+     click originates inside any legend / its controls, so toggling a legend off doesn't shut the tab. */
+  document.addEventListener('click',(e)=>{ if(e.target.closest&&e.target.closest('.data-legend,.koppen-legend,.koppen-info-pop,.layer-popup-x,.legend-min')) return; layerDropdown.classList.remove('show'); });
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
   function _lyrGroupItems(header){ const out=[]; let el=header.nextElementSibling;
     while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ out.push(el); el=el.nextElementSibling; } return out; }
@@ -4576,7 +4615,11 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== View / Projection ===== */
   document.getElementById('btn-view-map').onclick=(e)=>{ if(currentMapType==='map')return; currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); };
   document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); };
-  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(1.4); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); };
+  /* (#R7-mobile-zoom) Mobile Mercator must zoom out far enough to see the whole world. A min-zoom of
+     1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
+     desktop keeps a sensible floor. */
+  function flatMinZoom(){ return isMobile()?0:1.2; }
+  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); };
   document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); };
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
@@ -4587,9 +4630,14 @@ window.addEventListener('DOMContentLoaded', () => {
        pool per hostname, so round-robining across them ~triples concurrent DEM throughput while tilted
        in 3D — the elevation tiles were the under-fetch bottleneck (user saw <10 Mbps) (#2,#18). */
     try{ map.addSource('terrain-dem',{type:'raster-dem',tiles:[
+        /* (#R7) Five host aliases for the SAME AWS terrarium DEM bucket. Each distinct hostname gets its
+           own browser connection pool, so round-robining ~5× the concurrent DEM fetches over HTTP/1.1
+           S3 — the DEM tiles were the 3D under-fetch bottleneck the user measured (<10 Mbps). */
         'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
         'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png',
-        'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png'
+        'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
+        'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
+        'https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
       ],encoding:'terrarium',tileSize:256,maxzoom:13}); return true; }
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
@@ -4604,13 +4652,13 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Custom atmospheric sky only in mercator — the globe already renders its own atmosphere
          (and fog isn't supported on globe, which otherwise spams console warnings). */
       if(currentProj!=='globe'){ try{ map.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
-      const opts={pitch:Math.max(map.getPitch(),68),duration:900}; if(map.getZoom()<5.5) opts.zoom=6.2;
-      try{ map.easeTo(opts); }catch(e){}
+      /* (#R7-3D-notilt) Do NOT move the camera when 3D is enabled. The user asked that selecting 3D
+         change nothing on screen — terrain is attached so relief appears the moment THEY tilt
+         (right-drag / two-finger), but we never auto-pitch or auto-zoom. */
     } else {
       terrain3D=false; syncBtns();
       try{ map.setTerrain(null); }catch(e){}
-      /* leave any sky spec in place — it only renders when pitched, and we flatten pitch to 0 */
-      try{ map.easeTo({pitch:0,duration:700}); }catch(e){}
+      /* leave the camera exactly where it is — no forced flatten (don't move on toggle). */
     }
   }
   { const b3=document.getElementById('btn-view-3d'); if(b3) b3.onclick=()=>set3D(!terrain3D); }
@@ -4845,7 +4893,12 @@ window.addEventListener('DOMContentLoaded', () => {
       {h:`${t('ctxThisPoint')}: ${fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
       {label:`📍 ${t('ctxDropPin')}`, action:()=>{ const id=addPin(lngLat.lng,lngLat.lat); openPinPopup(id); }},
       {label:`📏 ${t('ctxMeasureFrom')}`, action:()=>{ if(toolMode!=='measure') setTool('measure'); measurePoints=[[lngLat.lng,lngLat.lat]]; refreshTool(); updateToolPanel(); }},
+      {label:`✏️ ${currentLang==='jp'?'ここから描画測定':'Draw / trace from here'}`, action:()=>{ if(window.DrawTool) window.DrawTool.start([lngLat.lng,lngLat.lat]); }},
       {label:`💬 ${t('ctxPostHere')}`, action:()=>{ if(!requireLogin()) return; pendingPostLoc=[lngLat.lng,lngLat.lat]; communityAddArmed=false; openComposeModal(); }},
+      {divider:true},
+      /* (#R7-proj) Azimuthal-equidistant projection on right-click, centred on the clicked point. */
+      {label:`🧭 ${currentLang==='jp'?'正距方位図法（ここ中心）':'Azimuthal map (centre here)'}`, action:()=>{ try{ window.ProjView&&window.ProjView.open('azimuthal',[lngLat.lng,lngLat.lat]); }catch(_){} }},
+      {label:`🗺️ ${currentLang==='jp'?'地図投影法を表示…':'Map projections…'}`, action:()=>{ try{ window.ProjView&&window.ProjView.open('equalEarth',[lngLat.lng,lngLat.lat]); }catch(_){} }},
       {divider:true},
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       ...(userPins.length?[{label:`🗑 ${t('ctxClearPins')} (${userPins.length})`, action:clearAllPins}]:[])
@@ -4905,7 +4958,16 @@ window.addEventListener('DOMContentLoaded', () => {
       .koppen-info-pop .kip-x{ position:absolute; top:6px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; line-height:1; padding:4px 6px; border-radius:6px; }
       .koppen-info-pop .kip-x:hover{ background:var(--input-bg); }
       .koppen-info-pop .kip-h{ display:flex; align-items:center; gap:7px; font-weight:600; font-size:13px; padding-right:22px; margin-bottom:6px; }
-      .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }`;
+      .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }
+      /* (#R7-mobile-legend) On phones the minimize (▢) and close (✕) buttons were a hair out of
+         vertical alignment and sat almost touching, inviting mis-taps. Give them identical metrics,
+         bigger 30px tap targets and a clear gap. */
+      @media(max-width:768px){
+        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ top:8px !important; right:8px !important; width:30px !important; height:30px !important; font-size:17px !important; }
+        .legend-min{ top:8px !important; right:48px !important; width:30px !important; height:30px !important; font-size:18px !important; }
+        .data-legend .dl-drag, .koppen-legend .kl-drag{ top:11px !important; left:9px !important; font-size:14px !important; }
+        .koppen-legend h4, .data-legend h4{ padding:0 84px 0 26px !important; min-height:30px !important; }
+      }`;
     document.head.appendChild(style);
 
     const mc=document.getElementById('map-container');
@@ -5058,31 +5120,39 @@ window.addEventListener('DOMContentLoaded', () => {
     /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
        thermal row carries a window selector in its legend instead of a calendar date. */
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
-    /* Thermal anomalies / active fire (#5) — REAL NASA FIRMS data via its keyless MapServer WMS.
-       Why this instead of GIBS: NASA retired the GIBS "Thermal Anomalies" RASTER layers and now serves
-       them only as vector tiles, so the old raster/WMTS probe could never get a tile (HTTP 400/404) →
-       the layer was permanently blank. FIRMS' own WMS publishes rolling time-window layers (last
-       24/48/72 h) that fuse MODIS (Terra+Aqua) and VIIRS (S-NPP + NOAA-20) active-fire detections, it
-       needs no API key, and it returns image/png with Access-Control-Allow-Origin:* so it works even
-       from file://. Verified live (200 image/png, CORS *). */
-    window._thermalWindow=window._thermalWindow||'24';        /* rolling window in hours: 24 | 48 | 72 */
-    function firmsThermalWMS(){
-      const w=window._thermalWindow||'24';
-      const layers='fires_viirs_'+w+',fires_viirs_noaa20_'+w+',fires_modis_'+w;
-      return 'https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+layers+'&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=';
-    }
+    /* Thermal anomalies / active fire (#R7) — REAL NASA FIRMS detections served through NASA GIBS WMS.
+       Why GIBS, not FIRMS' own WMS: the FIRMS MapServer caps requests per IP, so a tiled web map (dozens
+       of tiles per view) quickly trips its quota and every tile comes back as the red error image
+       "You have exceeded the transaction limit" — exactly what the user saw. GIBS is NASA's purpose-built
+       high-volume tile/WMS service (no per-IP transaction cap), it rasterizes the VIIRS (NOAA-20 + SNPP)
+       and MODIS (Terra + Aqua) thermal-anomaly point layers to PNG, needs no key and returns CORS:*.
+       Verified live: 200 image/png, Access-Control-Allow-Origin:*.
+       Each WMS GetMap takes a single day (TIME=YYYY-MM-DD), so the 24/48/72 h "window" is built by
+       stacking the most-recent N UTC days as separate raster layers (today + previous days). */
+    window._thermalWindow=window._thermalWindow||'24';        /* rolling window: 24 | 48 | 72 (h) → 2 | 3 | 4 recent UTC days */
+    const GIBS_FIRE_LAYERS='VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All,MODIS_Terra_Thermal_Anomalies_All,MODIS_Aqua_Thermal_Anomalies_All';
+    const THERMAL_IDS=['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'];
+    let _thermalOn=false;
+    function _utcDayISO(back){ return new Date(Date.now()-back*86400000).toISOString().slice(0,10); }
+    function gibsThermalWMS(dayISO){ return 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+GIBS_FIRE_LAYERS+'&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+dayISO; }
+    function thermalDayOffsets(){ const n={'24':2,'48':3,'72':4}[window._thermalWindow||'24']||2; const out=[]; for(let i=0;i<n;i++) out.push(i); return out; }
+    function _clearThermal(){ THERMAL_IDS.forEach((lid,i)=>{ try{ if(map.getLayer(lid)) map.removeLayer(lid); }catch(_){} try{ const sid='src-thermal-'+i; if(map.getSource(sid)) map.removeSource(sid); }catch(_){} }); }
     function addFirmsThermal(){
-      if(map.getLayer('lyr-thermal')) return;
-      map.addSource('src-thermal',{type:'raster',tiles:[firmsThermalWMS()],tileSize:256,attribution:'NASA FIRMS — MODIS & VIIRS active fire'});
-      map.addLayer({id:'lyr-thermal',type:'raster',source:'src-thermal',layout:{visibility:'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
+      _clearThermal();
+      thermalDayOffsets().forEach((off,i)=>{
+        const sid='src-thermal-'+i, lid=THERMAL_IDS[i];
+        try{
+          map.addSource(sid,{type:'raster',tiles:[gibsThermalWMS(_utcDayISO(off))],tileSize:256,attribution:'NASA FIRMS / GIBS — MODIS & VIIRS active fire'});
+          map.addLayer({id:lid,type:'raster',source:sid,layout:{visibility:_thermalOn?'visible':'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
+        }catch(_){}
+      });
     }
-    /* Rebuild the source when the user switches the 24/48/72 h window in the legend (#5). */
+    function setThermalVis(on){ _thermalOn=on; THERMAL_IDS.forEach(lid=>{ if(map.getLayer(lid)) map.setLayoutProperty(lid,'visibility',on?'visible':'none'); }); }
+    window._setThermalOpacity=function(v){ THERMAL_IDS.forEach(lid=>{ if(map.getLayer(lid)) map.setPaintProperty(lid,'raster-opacity',v); }); };
+    /* Rebuild the stacked layers when the user switches the 24/48/72 h window in the legend. */
     window._refreshThermal=function(){
-      if(!map.getSource('src-thermal')) return;
-      const wasVis=map.getLayer('lyr-thermal')&&map.getLayoutProperty('lyr-thermal','visibility')==='visible';
-      try{ if(map.getLayer('lyr-thermal')) map.removeLayer('lyr-thermal'); }catch(_){}
-      try{ map.removeSource('src-thermal'); }catch(_){}
-      try{ addFirmsThermal(); if(wasVis) setVis('lyr-thermal',true); }catch(_){}
+      const was=_thermalOn;
+      try{ addFirmsThermal(); setThermalVis(was); }catch(e){ console.warn('thermal rebuild fail',e); }
     };
     [
       ['__grp','lyrGrpWeather'],
@@ -5236,10 +5306,44 @@ window.addEventListener('DOMContentLoaded', () => {
       /* If no data made it through, the layer would be invisible — warn and bail. */
       if(count===0) console.warn('applyChoro: no feature-state set for',id);
     }
-    /* NATO members fill (#39): brighter blue so it's clearly visible on the dark basemap
-       (the old #0a3d91 navy at 50% was nearly invisible), with a crisp outline. */
-    function addNato(){ if(!map.getLayer('nato-fill')) map.addLayer({id:'nato-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':['case',['boolean',['feature-state','nato'],false],opacities.nato,0]}},beforeId); if(!map.getLayer('nato-line')) map.addLayer({id:'nato-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':['case',['boolean',['feature-state','nato'],false],1.6,0]}},beforeId); }
-    function applyNato(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; map.setFeatureState({source:'countries',id:f.id},{nato:!!(s&&NATO.has(s.code))}); }); }
+    /* NATO members fill (#R7): brighter blue so it's clearly visible on the dark basemap, with a crisp
+       outline. Built from a DEDICATED geojson (not the shared country feature-state) so we can drop the
+       two member territories that lie SOUTH of the Tropic of Cancer — French Guiana (France) and Hawaii
+       (USA) — which fall outside NATO's Article-6 treaty area. The Tropic of Cancer (23.4366°N) is drawn
+       as a labelled gold line so the exclusion is self-explanatory. */
+    const TROPIC_CANCER=23.4366;
+    const GUIANA_BBOX=[-55,1,-51,6.6], HAWAII_BBOX=[-161,18,-154,23];
+    function _ringCentroidInBbox(ring,bb){ if(!ring||!ring.length) return false; let sx=0,sy=0; for(const p of ring){ sx+=p[0]; sy+=p[1]; } const cx=sx/ring.length, cy=sy/ring.length; return cx>=bb[0]&&cx<=bb[2]&&cy>=bb[1]&&cy<=bb[3]; }
+    function _dropPolysInBbox(geom,bbs){
+      if(!geom) return null;
+      const keep=pc=>!bbs.some(bb=>_ringCentroidInBbox(pc[0],bb));
+      if(geom.type==='Polygon'){ return keep(geom.coordinates)?geom:null; }
+      if(geom.type==='MultiPolygon'){ const polys=geom.coordinates.filter(keep); return polys.length?{type:'MultiPolygon',coordinates:polys}:null; }
+      return geom;
+    }
+    function buildNatoFC(){
+      const feats=[];
+      if(countryGeo&&countryGeo.features){
+        countryGeo.features.forEach(f=>{ const code=String(f.id); if(!NATO.has(code)) return;
+          let g=f.geometry;
+          if(code==='FRA') g=_dropPolysInBbox(g,[GUIANA_BBOX]);       /* drop French Guiana */
+          else if(code==='USA') g=_dropPolysInBbox(g,[HAWAII_BBOX]);  /* drop Hawaii */
+          if(g) feats.push({type:'Feature',id:code,properties:{__code:code},geometry:g});
+        });
+      }
+      return {type:'FeatureCollection',features:feats};
+    }
+    function tropicFC(){ const c=[]; for(let lo=-180;lo<=180;lo+=5) c.push([lo,TROPIC_CANCER]); return {type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:c}}]}; }
+    function addNato(){
+      if(!map.getSource('src-nato')) map.addSource('src-nato',{type:'geojson',data:buildNatoFC(),promoteId:'__code'});
+      if(!map.getLayer('nato-fill')) map.addLayer({id:'nato-fill',type:'fill',source:'src-nato',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':opacities.nato}},beforeId);
+      if(!map.getLayer('nato-line')) map.addLayer({id:'nato-line',type:'line',source:'src-nato',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':1.6}},beforeId);
+      if(!map.getSource('src-tropic')) map.addSource('src-tropic',{type:'geojson',data:tropicFC()});
+      if(!map.getLayer('nato-tropic-line')) map.addLayer({id:'nato-tropic-line',type:'line',source:'src-tropic',layout:{visibility:'none'},paint:{'line-color':'#f4b740','line-width':1.4,'line-dasharray':[3,3],'line-opacity':0.9}},beforeId);
+      if(!map.getLayer('nato-tropic-label')) map.addLayer({id:'nato-tropic-label',type:'symbol',source:'src-tropic',layout:{visibility:'none','symbol-placement':'line','text-field':(currentLang==='jp'?'北回帰線 (北緯23.4°)':'Tropic of Cancer (23.4°N)'),'text-size':11,'text-font':['literal',['Noto Sans Regular']],'symbol-spacing':340,'text-letter-spacing':0.04},paint:{'text-color':'#f4b740','text-halo-color':'rgba(0,0,0,0.65)','text-halo-width':1.3}},beforeId);
+    }
+    function applyNato(){ const src=map.getSource('src-nato'); if(src){ try{ src.setData(buildNatoFC()); }catch(_){} } }
+    function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
     /* NATO accession years (#14) — shown on hover alongside the member's defence spend as % of GDP. */
     const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
     function defencePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
@@ -6007,7 +6111,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='precip'){ whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{ try{ addFirmsThermal(); setVis('lyr-thermal',true); }catch(e){ console.warn('thermal (FIRMS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'火災データを取得できませんでした':'Active-fire data unavailable'); }catch(_){} } });
+          whenStyleReady().then(()=>{ try{ addFirmsThermal(); setThermalVis(true); }catch(e){ console.warn('thermal (GIBS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'火災データを取得できませんでした':'Active-fire data unavailable'); }catch(_){} } });
         }
         else if(id==='radar'||id==='clouds'){
           if(id==='radar'){ lgdRadar.style.display='block'; tileLegends(); }
@@ -6089,15 +6193,16 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         else if(id==='nato'){
           /* NATO members fill only (#14) — no legend; accession year + defence %GDP show on hover. */
-          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setVis('nato-fill',true); setVis('nato-line',true); }catch(e){ console.warn('nato fail',e); } });
+          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
       } else {
         if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'){ setVis(id+'-fill',false); }
-        else if(id==='nato'){ setVis('nato-fill',false); setVis('nato-line',false); }
+        else if(id==='nato'){ setNatoVis(false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); }catch(_){} }
+        else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
         if(id==='climate'){ legend.style.display='none'; }
@@ -6139,7 +6244,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Keep no-data countries grey (0.45) — see addChoro for the "<= 0" reasoning. */
         if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
-      else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',['case',['boolean',['feature-state','nato'],false],v,0]); }
+      else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',v); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
       else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v); }
       else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','icon-opacity',v); }
@@ -6149,6 +6254,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='sealevel'){ if(map.getLayer('lyr-sealevel'))map.setPaintProperty('lyr-sealevel','color-relief-opacity',v); }
       else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=v; }
       else if(id==='subcables'){ if(map.getLayer('lyr-subcables'))map.setPaintProperty('lyr-subcables','line-opacity',v); }
+      else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
     }
   })();
@@ -7046,7 +7152,49 @@ window.addEventListener('DOMContentLoaded', () => {
     _dc('d-bagram','mil','mil',69.26,34.95,'Bagram Airfield','バグラム飛行場','Former principal US base in Afghanistan.','旧・在アフガニスタン米軍主要基地。','Bagram_Airfield','Former US'),
     _dc('d-guantanamo','mil','mil',-75.1,19.9,'Guantánamo Bay','グアンタナモ湾','US naval base & detention facility in Cuba.','キューバの米海軍基地・収容施設。','Guantanamo_Bay_Naval_Base','USN'),
     _dc('d-doha','tech','hub',51.53,25.29,'Doha (Al Udeid)','ドーハ（アル・ウデイド）','Qatar hub hosting the largest US base in the Middle East.','中東最大の米軍基地を擁する拠点。','Al_Udeid_Air_Base','CENTCOM'),
-    _dc('d-novo','geo','geo',62.0,74.0,'Novaya Zemlya','ノヴァヤゼムリャ','Russian Arctic nuclear-test archipelago.','ロシア北極の核実験群島。','Novaya_Zemlya','Nuclear')
+    _dc('d-novo','geo','geo',62.0,74.0,'Novaya Zemlya','ノヴァヤゼムリャ','Russian Arctic nuclear-test archipelago.','ロシア北極の核実験群島。','Novaya_Zemlya','Nuclear'),
+    /* ===== +40 world military bases (#R7) — US, Russia, China, Europe, India & allies ===== */
+    _dc('d-norfolk','mil','maritime',-76.33,36.95,'Naval Station Norfolk','ノーフォーク海軍基地','World’s largest naval base; home of the US Atlantic Fleet.','世界最大の海軍基地。米大西洋艦隊の母港。','Naval_Station_Norfolk','USN'),
+    _dc('d-sandiego','mil','maritime',-117.13,32.68,'Naval Base San Diego','サンディエゴ海軍基地','Principal homeport of the US Pacific surface fleet.','米太平洋水上艦隊の主要母港。','Naval_Base_San_Diego','USN'),
+    _dc('d-kitsap','mil','maritime',-122.71,47.72,'Naval Base Kitsap','キトサップ海軍基地','Pacific homeport for US Ohio-class ballistic-missile subs (Bangor).','米オハイオ級SSBNの太平洋拠点（バンゴー）。','Naval_Base_Kitsap','SSBN'),
+    _dc('d-kingsbay','mil','maritime',-81.51,30.8,'Kings Bay Sub Base','キングスベイ潜水艦基地','Atlantic homeport for US ballistic-missile submarines.','米SSBNの大西洋拠点。','Naval_Submarine_Base_Kings_Bay','SSBN'),
+    _dc('d-liberty','mil','mil',-79.0,35.14,'Fort Liberty (Bragg)','フォート・リバティ','Vast US Army base; home of airborne & special forces.','空挺・特殊部隊を擁する米陸軍大基地。','Fort_Liberty','US Army'),
+    _dc('d-pentagon','mil','mil',-77.056,38.871,'The Pentagon','ペンタゴン','Headquarters of the US Department of Defense.','米国防総省の本庁舎。','The_Pentagon','DoD'),
+    _dc('d-cheyenne','mil','space',-104.85,38.74,'Cheyenne Mountain','シャイアン・マウンテン','Hardened NORAD command bunker inside a mountain.','山中のNORAD要塞指令所。','Cheyenne_Mountain_Complex','NORAD'),
+    _dc('d-whiteman','mil','mil',-93.55,38.73,'Whiteman AFB','ホワイトマン空軍基地','Home of the US B-2 stealth bomber fleet.','米B-2ステルス爆撃機の母基地。','Whiteman_Air_Force_Base','USAF'),
+    _dc('d-minot','mil','mil',-101.34,48.42,'Minot AFB','マイノット空軍基地','ICBMs and B-52 bombers — two legs of the US nuclear triad.','ICBMとB-52を擁する核戦力拠点。','Minot_Air_Force_Base','USAF'),
+    _dc('d-barksdale','mil','mil',-93.66,32.5,'Barksdale AFB','バークスデール空軍基地','US Air Force Global Strike Command & B-52 base.','米地球規模攻撃軍・B-52の拠点。','Barksdale_Air_Force_Base','USAF'),
+    _dc('d-yokosuka','mil','maritime',139.67,35.29,'Yokosuka Naval Base','横須賀海軍基地','Forward base of the US Navy 7th Fleet in Japan.','在日米海軍第7艦隊の前方拠点。','United_States_Fleet_Activities_Yokosuka','USN'),
+    _dc('d-kadena','mil','mil',127.77,26.35,'Kadena Air Base','嘉手納基地','Largest US Air Force base in the Pacific (Okinawa).','太平洋最大の米空軍基地（沖縄）。','Kadena_Air_Base','USAF'),
+    _dc('d-misawa','mil','mil',141.37,40.7,'Misawa Air Base','三沢基地','Joint US–Japan air & intelligence base in northern Honshu.','本州北部の日米共同基地。','Misawa_Air_Base','USAF/JASDF'),
+    _dc('d-osan','mil','mil',127.03,37.09,'Osan Air Base','烏山空軍基地','Frontline US/ROK air base near Seoul.','ソウル近郊の米韓最前線空軍基地。','Osan_Air_Base','USFK'),
+    _dc('d-kunsan','mil','mil',126.62,35.9,'Kunsan Air Base','群山空軍基地','US fighter base on Korea’s west coast.','韓国西岸の米戦闘機基地。','Kunsan_Air_Base','USAF'),
+    _dc('d-aviano','mil','mil',12.6,46.03,'Aviano Air Base','アヴィアーノ空軍基地','Key US/NATO air base in northern Italy.','北イタリアの米・NATO重要基地。','Aviano_Air_Base','USAF'),
+    _dc('d-sigonella','mil','maritime',14.92,37.4,'NAS Sigonella','シゴネラ航空基地','“Hub of the Med” — US naval air station in Sicily.','地中海の要、シチリアの米海軍航空基地。','Naval_Air_Station_Sigonella','USN'),
+    _dc('d-rota','mil','maritime',-6.35,36.62,'Naval Station Rota','ロタ海軍基地','US/Spanish base hosting missile-defence destroyers on the Atlantic.','弾道ミサイル防衛艦が展開する米西基地。','Naval_Station_Rota','USN'),
+    _dc('d-souda','mil','maritime',24.15,35.53,'Souda Bay','スーダ湾','US/NATO naval base on Crete commanding the eastern Med.','東地中海を扼するクレタ島の米・NATO基地。','Naval_Support_Activity_Souda_Bay','NATO'),
+    _dc('d-lakenheath','mil','mil',0.561,52.41,'RAF Lakenheath','レイクンヒース空軍基地','Largest US Air Force base in England (F-35).','英国最大の米空軍基地（F-35）。','RAF_Lakenheath','USAF'),
+    _dc('d-menwith','mil','tech',-1.69,54.01,'RAF Menwith Hill','メンウィズヒル基地','Major US/UK signals-intelligence ground station.','米英の主要な信号情報傍受局。','RAF_Menwith_Hill','SIGINT'),
+    _dc('d-faslane','mil','maritime',-4.82,56.07,'HMNB Clyde (Faslane)','クライド海軍基地','Home of the UK Trident nuclear-submarine deterrent.','英トライデント核抑止潜水艦の母港。','HMNB_Clyde','RN SSBN'),
+    _dc('d-toulon','mil','maritime',5.92,43.1,'Toulon Naval Base','トゥーロン軍港','France’s largest naval base & Mediterranean fleet home.','仏最大の軍港・地中海艦隊の拠点。','Toulon','FR Navy'),
+    _dc('d-ilelongue','mil','maritime',-4.49,48.31,'Île Longue','イル・ロング','Base for France’s ballistic-missile submarines.','仏SSBN（戦略原潜）の基地。','Île_Longue','FR SSBN'),
+    _dc('d-bahrain','mil','maritime',50.61,26.21,'NSA Bahrain','バーレーン海軍支援施設','Headquarters of the US Navy 5th Fleet in the Gulf.','湾岸の米海軍第5艦隊司令部。','Naval_Support_Activity_Bahrain','USN'),
+    _dc('d-psab','mil','mil',47.58,24.06,'Prince Sultan AB','プリンス・スルタン空軍基地','US air hub in Saudi Arabia for Gulf operations.','湾岸作戦の米空軍拠点（サウジ）。','Prince_Sultan_Air_Base','USAF'),
+    _dc('d-alisalem','mil','mil',47.52,29.35,'Ali Al Salem AB','アリ・アル・サレム基地','Forward US air base in Kuwait near Iraq.','イラクに近いクウェートの米前線基地。','Ali_Al_Salem_Air_Base','USAF'),
+    _dc('d-nevatim','mil','mil',35.01,31.21,'Nevatim Airbase','ネバティム空軍基地','Major Israeli Air Force base (F-35I “Adir”).','イスラエル空軍の主要基地（F-35I）。','Nevatim_Airbase','IAF'),
+    _dc('d-hmeimim','mil','mil',35.95,35.41,'Khmeimim Air Base','フメイミム空軍基地','Russia’s main air base in Syria.','シリアにおけるロシアの主要空軍基地。','Khmeimim_Air_Base','RU'),
+    _dc('d-engels','mil','mil',46.21,51.48,'Engels-2 Air Base','エンゲルス空軍基地','Home of Russia’s strategic Tu-160/Tu-95 bombers.','ロシア戦略爆撃機の母基地。','Engels-2_(air_base)','RU strat'),
+    _dc('d-plesetsk','mil','space',40.68,62.93,'Plesetsk Cosmodrome','プレセツク宇宙基地','Russia’s military spaceport for ICBM & satellite launches.','ロシアの軍事宇宙基地。','Plesetsk_Cosmodrome','RU mil'),
+    _dc('d-vladivostok','mil','maritime',131.88,43.11,'Vladivostok','ウラジオストク','Headquarters of Russia’s Pacific Fleet.','ロシア太平洋艦隊の司令部。','Vladivostok','RU Navy'),
+    _dc('d-yulin','mil','maritime',109.51,18.23,'Yulin Naval Base','楡林海軍基地','Chinese SSBN base on Hainan with underground submarine pens.','海南島の中国SSBN基地（地下潜水艦壕）。','Yulin_Naval_Base','PLAN'),
+    _dc('d-zhanjiang','mil','maritime',110.4,21.2,'Zhanjiang','湛江','Headquarters of China’s South Sea Fleet.','中国南海艦隊の司令部。','South_Sea_Fleet','PLAN'),
+    _dc('d-mischief','mil','maritime',115.54,9.9,'Mischief Reef','ミスチーフ礁','Militarised Chinese artificial island in the Spratlys.','南沙の中国人工島・軍事拠点。','Mischief_Reef','PLA'),
+    _dc('d-woody','mil','maritime',112.34,16.83,'Woody Island','永興島','China’s military & administrative hub in the Paracels.','西沙諸島における中国の軍事・行政拠点。','Woody_Island','PLA'),
+    _dc('d-ream','mil','maritime',103.61,10.52,'Ream Naval Base','リアム海軍基地','Cambodian base expanded with Chinese backing.','中国の支援で拡張されたカンボジアの基地。','Ream_Naval_Base','CN-linked'),
+    _dc('d-stirling','mil','maritime',115.68,-32.24,'HMAS Stirling','HMASスターリング','Australia’s west-coast fleet base, central to AUKUS submarines.','AUKUS潜水艦の要となる豪西岸の艦隊基地。','HMAS_Stirling','RAN'),
+    _dc('d-darwin','mil','mil',130.95,-12.42,'Darwin (Robertson Bks)','ダーウィン（ロバートソン兵営）','Hosts rotational US Marines in northern Australia.','米海兵隊が輪番展開する豪北部の拠点。','Robertson_Barracks','AU/US'),
+    _dc('d-kadamba','mil','maritime',74.13,14.81,'INS Kadamba (Karwar)','INSカダンバ','India’s largest naval base under Project Seabird.','インド最大の海軍基地（シーバード計画）。','INS_Kadamba','IN Navy'),
+    _dc('d-vizag','mil','maritime',83.3,17.69,'Visakhapatnam','ヴィシャーカパトナム','Headquarters of India’s Eastern Naval Command & SSBN base.','インド東部海軍司令部・SSBN拠点。','Eastern_Naval_Command','IN Navy')
   ];
   async function loadDashFromSupabase(){
     let rows=[];
@@ -7418,10 +7566,22 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Register the auth listener FIRST so the SIGNED_IN event fired while supabase parses the OAuth
        token out of the redirect URL is never missed (a cause of "logged in but not logged in", #33). */
     DB.auth.onAuthStateChange((event,session)=>{
-      /* CRITICAL (#14): never await Supabase calls directly inside this callback — getSession()/from()
-         try to re-acquire the auth lock this callback already holds, which deadlocks in supabase-js v2
-         and is the root cause of "signed in with Google but not actually logged in". Defer all work to
-         a microtask-after-tick so the lock is released first, and reuse the event's own session. */
+      /* (#R7-login) IMMEDIATE, synchronous, lock-safe reflection: the instant Supabase parses the
+         Google OAuth token out of the redirect URL it fires here. Update the account button RIGHT NOW
+         from the event's own session (no Supabase calls — those would re-enter the held auth lock and
+         deadlock, #14), so the UI shows "logged in" without waiting for the profile fetch or a reload. */
+      try{
+        if(session&&session.user){
+          if(!currentUser||currentUser.id!==session.user.id){
+            const m=session.user.user_metadata||{};
+            currentUser={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||(session.user.email||'user').split('@')[0]), isAdmin:false, isPro:false };
+          }
+          try{ updateAccountButton(); }catch(_){}
+          try{ const am=document.getElementById('auth-modal'); if(am && am.style.display!=='none') am.style.display='none'; }catch(_){}
+        } else if(event==='SIGNED_OUT'){ currentUser=null; try{ updateAccountButton(); }catch(_){} }
+      }catch(_){}
+      /* Then the heavier enrich (profile name / admin / pro, favorites, tab re-render) deferred a tick
+         so the auth lock is released first. */
       setTimeout(async()=>{
         await refreshCurrentUser(session||null); await loadFavorites();
         try{ if(currentMode==='news'||currentMode==='saved') startNews(); }catch(_){}
@@ -7437,10 +7597,18 @@ window.addEventListener('DOMContentLoaded', () => {
        first getSession ran a hair too early, re-check a couple of times so the session is picked up
        without needing a manual reload (#33). */
     if(!currentUser && /[#&?](access_token|code|refresh_token)=/.test(location.href)){
-      for(let i=0;i<5 && !currentUser;i++){ await new Promise(r=>setTimeout(r,400)); try{ await refreshCurrentUser(); }catch(_){} }
+      for(let i=0;i<8 && !currentUser;i++){ await new Promise(r=>setTimeout(r,350)); try{ await refreshCurrentUser(); }catch(_){} if(currentUser){ try{ updateAccountButton(); }catch(_){} } }
       try{ if(currentUser){ await loadFavorites(); renderUI(); } }catch(_){}
-      try{ history.replaceState(null,'',location.origin+location.pathname); }catch(_){}   /* scrub the token from the address bar */
+      try{ if(location.protocol==='http:'||location.protocol==='https:') history.replaceState(null,'',location.origin+location.pathname); }catch(_){}   /* scrub the token from the address bar (http(s) only — file:// origin is "null") */
     }
+    /* (#R7-login) Safety net for the OAuth round-trip: when the user comes back to the tab after the
+       Google page, re-check the session once. Covers the rare case where the in-page event was missed,
+       so the login state appears without a manual reload. */
+    let _authRecheck=0;
+    const _recheckAuth=()=>{ if(_authRecheck&&Date.now()-_authRecheck<1500) return; _authRecheck=Date.now();
+      setTimeout(async()=>{ try{ const had=!!currentUser; await refreshCurrentUser(); if(!!currentUser!==had){ try{ updateAccountButton(); renderUI(); }catch(_){} if(currentUser) try{ await loadFavorites(); }catch(_){} } }catch(_){} },0); };
+    window.addEventListener('focus',_recheckAuth);
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') _recheckAuth(); });
     await Promise.all([ loadGeoFromSupabase(), loadDashFromSupabase(), loadFavorites() ]);
     try{ renderUI(); }catch(_){}          /* re-render the active tab now data + favorites are in */
     try{ loadCommunity(); }catch(_){}      /* prime the community map pins */
@@ -7519,7 +7687,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const sb=document.getElementById('sidebar');
         const collapsed=sb && sb.classList.contains('collapsed');
         const pad=(frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0;
-        map.setPadding({top:0,right:0,bottom:0,left:pad}, {duration:animate?400:0});
+        /* Match the sidebar's CSS transition (margin-left 0.4s cubic-bezier(0.25,1,0.5,1) ≈ easeOutCubic)
+           so the optical centre GLIDES in perfect lock-step with the slide — no lag, no snap (#R7). */
+        map.setPadding({top:0,right:0,bottom:0,left:pad}, {duration:animate?400:0, easing:x=>1-Math.pow(1-x,3)});
         if(!animate) requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} });
       }
     }catch(_){}
@@ -7846,31 +8016,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- entry selectors (#16): desktop top-controls + mobile map sheet ---- */
     function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&map&&map.getCenter){ const cc=map.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
     window.__projChoose=chooseProj;
-    function buildEntries(){
-      const opts='<option value="mercator">'+(currentLang==='jp'?'メルカトル (標準)':'Mercator (default)')+'</option>'+Object.keys(PROJS).map(k=>`<option value="${k}">${PROJS[k].name[currentLang]||PROJS[k].name.en}</option>`).join('');
-      /* desktop: append to the Flat/Globe/3D control group, shown only while Flat is the active view */
-      try{
-        const grp=document.querySelectorAll('.map-view-group')[1];
-        if(grp && !document.getElementById('map-proj-entry')){
-          entry=document.createElement('select'); entry.id='map-proj-entry'; entry.className='view-btn proj-entry'; entry.title=(currentLang==='jp'?'平面地図の図法':'Flat-map projection'); entry.innerHTML=opts;
-          entry.onchange=()=>chooseProj(entry.value); grp.appendChild(entry);
-          const sync=()=>{ entry.style.display=(typeof currentProj!=='undefined'&&currentProj==='flat')?'':'none'; };
-          ['btn-view-flat','btn-view-globe','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(()=>{ if(id!=='btn-view-flat') api.close(); else if(entry.value!=='mercator'){ entry.value='mercator'; } sync(); },0)); });
-          sync();
-        }
-      }catch(_){}
-      /* mobile: a labelled selector inside the Map bottom-sheet's projection block */
-      try{
-        const blk=document.querySelector('#mo-sheet .m-seg-block');
-        if(blk && !document.getElementById('m-proj-entry')){
-          const wrap=document.createElement('label'); wrap.style.cssText='display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text-muted);';
-          wrap.innerHTML=(currentLang==='jp'?'図法':'Projection')+': ';
-          mEntry=document.createElement('select'); mEntry.id='m-proj-entry'; mEntry.style.cssText='flex:1;padding:8px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; mEntry.innerHTML=opts;
-          mEntry.onchange=()=>chooseProj(mEntry.value); wrap.appendChild(mEntry); blk.appendChild(wrap);
-        }
-      }catch(_){}
-    }
-    if(document.readyState!=='loading') setTimeout(buildEntries,0); else document.addEventListener('DOMContentLoaded',buildEntries);
+    /* (#R7-proj) The Flat-view no longer carries a projection SELECTOR — Flat = real Mercator and Globe
+       stay in perfect lock-step with the live map (the user disliked a separate "blank" projection
+       window hijacking the Flat toggle). The alternative projections live in the right-click context
+       menu instead: Azimuthal-equidistant is centred on the clicked point, and an "All projections…"
+       entry opens the viewer (whose own bar still switches between Equal Earth / Robinson / Winkel /
+       Mollweide / Equirectangular / Azimuthal). So buildEntries no longer injects any selector. */
+    function buildEntries(){ /* intentionally empty — see note above */ }
+    /* Close the projection viewer whenever the user returns to the real map via Flat/Globe/3D. */
+    function _wireProjAutoClose(){ ['btn-view-flat','btn-view-globe','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b&&!b.__projWired){ b.__projWired=1; b.addEventListener('click',()=>{ try{ if(api.isOpen()) api.close(); }catch(_){} }); } }); }
+    if(document.readyState!=='loading') setTimeout(_wireProjAutoClose,0); else document.addEventListener('DOMContentLoaded',_wireProjAutoClose);
     return api;
   })();
 
@@ -7893,7 +8048,7 @@ window.addEventListener('DOMContentLoaded', () => {
     async function fetchGrid(){
       if(fetching) return; if(grid && Date.now()-fetchT<10*60000) return;
       fetching=true;
-      const STEP=12, lat0=72, lats=[], lons=[];
+      const STEP=8, lat0=72, lats=[], lons=[];   /* (#R7) 8° grid (855 pts) → finer, Windy-like regional flow */
       for(let la=lat0; la>=-lat0; la-=STEP) for(let lo=-180; lo<180; lo+=STEP){ lats.push(la); lons.push(lo); }
       const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}` ];
@@ -7928,22 +8083,27 @@ window.addEventListener('DOMContentLoaded', () => {
        visible area at any zoom). */
     function spawn(p){
       let b; try{ b=map.getBounds(); }catch(_){ b=null; }
-      if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-grid?grid.lat0:85,b.getSouth()),n=Math.min(grid?grid.lat0:85,b.getNorth());
+      /* (#R7) FIX: the old `-grid?grid.lat0:85` parsed as `(-grid)?…:85` → NaN → 85, so every particle
+         was seeded at lat ≥72° ABOVE the wind grid, where sample() returns null and the particle
+         instantly respawns — the whole field rendered nothing. Clamp the seed band into the grid. */
+      const gl=grid?grid.lat0:85;
+      if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-gl,b.getSouth()),n=Math.min(gl,b.getNorth());
         let lo=w+(e-w)*Math.random(); if(e<w) lo=w+((e+360-w)*Math.random()); if(lo>180) lo-=360;
         p.lng=lo; p.lat=s+(n-s)*Math.random(); }
-      else { p.lng=Math.random()*360-180; p.lat=Math.random()*150-75; }
-      p.age=(Math.random()*60)|0; p.life=60+((Math.random()*60)|0);
+      else { p.lng=Math.random()*360-180; p.lat=Math.random()*2*gl-gl; }
+      p.age=(Math.random()*60)|0; p.life=60+((Math.random()*70)|0);
     }
-    function ensureParts(){ const target=Math.min(1400,Math.max(350,Math.floor(cssW*cssH/3000))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
-    function speedColor(s){ const tt=Math.min(1,s/26); if(tt<0.5){ const k=tt/0.5; return `rgba(${Math.round(150+k*90)},${Math.round(235-k*40)},255,0.9)`; } const k=(tt-0.5)/0.5; return `rgba(255,${Math.round(220-k*180)},${Math.round(150-k*120)},0.95)`; }
+    function ensureParts(){ const target=Math.min(isMobile()?1000:2800,Math.max(400,Math.floor(cssW*cssH/(isMobile()?2400:1150)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
+    /* Windy-style perceptual ramp: calm→teal→green→yellow→orange→red as speed rises (0–30 m/s). */
+    function speedColor(s){ const stops=[[0,'120,180,255'],[5,'90,220,210'],[10,'120,235,120'],[16,'240,225,90'],[22,'250,160,60'],[30,'250,80,70']]; const v=Math.min(30,Math.max(0,s)); let a=stops[0],b=stops[stops.length-1]; for(let i=0;i<stops.length-1;i++){ if(v>=stops[i][0]&&v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } } const f=(v-a[0])/Math.max(1e-6,(b[0]-a[0])); const ca=a[1].split(','),cb=b[1].split(','); const r=Math.round(+ca[0]+(+cb[0]-+ca[0])*f),g=Math.round(+ca[1]+(+cb[1]-+ca[1])*f),bl=Math.round(+ca[2]+(+cb[2]-+ca[2])*f); return `rgba(${r},${g},${bl},0.92)`; }
     const onScreen=(pt)=>pt && pt.x>=-40 && pt.x<=cssW+40 && pt.y>=-40 && pt.y<=cssH+40;
     function step(){
       if(!on) return;
       /* While the map is moving, clear fully each frame so trails track the map without smearing; when
          idle, fade for the classic flowing streaks. */
       if(moving){ ctx.clearRect(0,0,cssW,cssH); }
-      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.10)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
-      ctx.lineWidth=1.3; ctx.lineCap='round';
+      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.085)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
+      ctx.lineWidth=1.5; ctx.lineCap='round';
       let z=2; try{ z=map.getZoom(); }catch(_){}
       const sc=Math.pow(2,z);
       for(const p of parts){
@@ -7973,6 +8133,134 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
     if(map){ map.on('movestart',()=>{ moving=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
     return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid };
+  })();
+
+  /* ===================== Freehand DRAW / trace tool (#R7) =====================
+     Click (or tap) once to start, move the cursor to trace a freehand curve in real time, click again
+     to finish — no repeated clicking. Shows live geodesic LENGTH and, where the trajectory crosses
+     itself, the total spherical AREA of the enclosed loops.
+       • Length is measured along the displayed (smoothed) polyline → a "resolution / smoothing" slider
+         thins the points (Douglas–Peucker) so the line simplifies and the length shrinks live.
+       • Area is ALWAYS computed from the full-resolution RAW trajectory and pinned, so moving the
+         smoothing slider never changes the area number — only the line's look & length change.
+       • Distance = great-circle (turf), area = spherical-excess polygon (ringArea) → correct at any
+         latitude, antimeridian/pole-safe like the other tools. ============================= */
+  window.DrawTool=(function(){
+    if(!map) return { start(){}, toggle(){}, active(){return false;}, exit(){}, onResolution(){} };
+    let state='off';                 // off | armed | drawing | done
+    let raw=[], simplified=[], loopRings=[], lockedArea=0, lengthKm=0, smoothing=0;
+    let lastPx=null, panel=null, layersReady=false, hadTouchMove=false, sampleN=0;
+    const MIN_PX=5;                  // min cursor travel between samples (screen px)
+
+    /* ---- geometry ---- */
+    function perpDist(p,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy; if(L<1e-18) return Math.hypot(p[0]-a[0],p[1]-a[1]); let tt=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L; tt=Math.max(0,Math.min(1,tt)); return Math.hypot(p[0]-(a[0]+tt*dx),p[1]-(a[1]+tt*dy)); }
+    function rdp(pts,eps){ if(pts.length<3||eps<=0) return pts.slice(); const keep=new Array(pts.length).fill(false); keep[0]=keep[pts.length-1]=true; const stk=[[0,pts.length-1]];
+      while(stk.length){ const sg=stk.pop(),s=sg[0],e=sg[1]; let dmax=0,idx=-1; for(let i=s+1;i<e;i++){ const d=perpDist(pts[i],pts[s],pts[e]); if(d>dmax){dmax=d;idx=i;} } if(dmax>eps&&idx>-1){ keep[idx]=true; stk.push([s,idx]); stk.push([idx,e]); } }
+      const out=[]; for(let i=0;i<pts.length;i++) if(keep[i]) out.push(pts[i]); return out; }
+    function bboxDiag(pts){ let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9; for(const p of pts){ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; } return Math.hypot(mxx-mnx,mxy-mny)||0; }
+    function epsFor(pts){ const f=smoothing/100; return f*f*0.28*Math.max(0.0004,bboxDiag(pts)); }   // RDP tolerance scaled to the drawing's own size → behaves the same at any zoom
+    function segX(a,b,c,d){ const den=(a[0]-b[0])*(c[1]-d[1])-(a[1]-b[1])*(c[0]-d[0]); if(Math.abs(den)<1e-14) return null;
+      const tt=((a[0]-c[0])*(c[1]-d[1])-(a[1]-c[1])*(c[0]-d[0]))/den, uu=((a[0]-c[0])*(a[1]-b[1])-(a[1]-c[1])*(a[0]-b[0]))/den;
+      if(tt<0||tt>1||uu<0||uu>1) return null; return [a[0]+tt*(b[0]-a[0]), a[1]+tt*(b[1]-a[1])]; }
+    /* total spherical area of every closed loop a self-intersecting OPEN path forms (greedy: find an
+       intersecting segment pair, bank that loop's geodesic area, collapse the loop to the crossing
+       point, repeat). */
+    function enclosedArea(points){ let pts=points.slice(), total=0, rings=[], guard=0, found=true;
+      while(found && guard++<3000){ found=false;
+        for(let i=0;i<pts.length-1 && !found;i++){ for(let j=i+2;j<pts.length-1;j++){
+          const X=segX(pts[i],pts[i+1],pts[j],pts[j+1]);
+          if(X){ const mid=pts.slice(i+1,j+1), ring=[X].concat(mid);
+            let a=0; try{ a=ringArea(ring); }catch(_){}
+            if(a>0){ total+=a; rings.push(ring.concat([X])); }
+            pts=pts.slice(0,i+1).concat([X]).concat(pts.slice(j+1)); found=true; break; } } }
+      }
+      return {area:total, rings}; }
+
+    /* ---- map layers (line is stored in lng/lat so MapLibre reprojects it for any view) ---- */
+    function fc(features){ return {type:'FeatureCollection',features}; }
+    function ensureLayers(){ if(layersReady && map.getSource('draw-src')) return;
+      try{
+        if(!map.getSource('draw-src')) map.addSource('draw-src',{type:'geojson',data:fc([])});
+        if(!map.getLayer('draw-loop-fill')) map.addLayer({id:'draw-loop-fill',type:'fill',source:'draw-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ffcc00','fill-opacity':0.22}});
+        if(!map.getLayer('draw-line-casing')) map.addLayer({id:'draw-line-casing',type:'line',source:'draw-src',filter:['==','$type','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':5,'line-opacity':0.6}});
+        if(!map.getLayer('draw-line')) map.addLayer({id:'draw-line',type:'line',source:'draw-src',filter:['==','$type','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff9500','line-width':3}});
+        if(!map.getLayer('draw-pts')) map.addLayer({id:'draw-pts',type:'circle',source:'draw-src',filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':2}});
+        layersReady=true;
+      }catch(_){ layersReady=false; }
+    }
+    function setData(){ const f=[];
+      loopRings.forEach(r=>{ if(r.length>=4) f.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{}}); });
+      if(simplified.length>=2) f.push({type:'Feature',geometry:{type:'LineString',coordinates:simplified},properties:{}});
+      if(raw.length) f.push({type:'Feature',geometry:{type:'Point',coordinates:raw[0]},properties:{color:'#34c759'}});
+      if(raw.length>1) f.push({type:'Feature',geometry:{type:'Point',coordinates:raw[raw.length-1]},properties:{color:'#ff3b30'}});
+      const s=map.getSource('draw-src'); if(s) try{ s.setData(fc(f)); }catch(_){}
+    }
+
+    /* ---- recompute ---- */
+    function recomputeLine(){ simplified=rdp(raw, epsFor(raw)); lengthKm=0; for(let i=1;i<simplified.length;i++){ try{ lengthKm+=turf.distance(turf.point(simplified[i-1]),turf.point(simplified[i]),{units:'kilometers'}); }catch(_){} } }
+    function recomputeArea(){ const r=enclosedArea(raw); lockedArea=r.area; loopRings=r.rings; }   // RAW-based → invariant under smoothing
+
+    /* ---- panel ---- */
+    function jp(){ return currentLang==='jp'; }
+    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='draw-panel'; panel.style.display='none'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
+    function renderPanel(){ const p=ensurePanel(); p.style.display='block';
+      const hint = state==='armed' ? (jp()?'地図をクリック／タップして描画開始':'Click / tap the map to start drawing')
+                 : state==='drawing' ? (jp()?'カーソルを動かして描画 → クリックで確定':'Move the cursor to trace → click to finish')
+                 : (jp()?'完了。「やり直し」で再描画':'Done — use Redraw to start over');
+      p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${jp()?'描画測定':'Draw / trace'}</span><button class="tp-close" title="${t('close')}">✕</button></div>`+
+        `<div class="tp-row"><span>${jp()?'距離':'Length'}</span><b>${distHTML(lengthKm)}</b></div>`+
+        `<div class="tp-row"><span>${jp()?'面積（閉領域）':'Area (loops)'}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
+        `<div class="tp-row"><span>${jp()?'点数（簡略/元）':'Points (simpl/raw)'}</span><b>${simplified.length}/${raw.length}</b></div>`+
+        `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span>${jp()?'解像度（平滑化）':'Resolution (smoothing)'}</span>`+
+          `<input type="range" id="draw-res" min="0" max="100" step="1" value="${smoothing}" style="width:100%;accent-color:var(--primary-color);"></div>`+
+        `<div class="tp-hint">${hint}</div>`+
+        `<div style="display:flex;gap:6px;margin-top:8px;">`+
+          `<button class="tp-clear" id="draw-finish" style="flex:1;">${jp()?'確定':'Finish'}</button>`+
+          `<button class="tp-clear" id="draw-redo" style="flex:1;">${jp()?'やり直し':'Redraw'}</button>`+
+        `</div>`;
+      p.querySelector('.tp-close').onclick=()=>api.exit();
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+      const res=p.querySelector('#draw-res'); if(res) res.oninput=()=>{ smoothing=+res.value; recomputeLine(); /* AREA stays locked to raw */ setData(); updateNumbers(); };
+      const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=finish;
+      const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; state='armed'; setData(); renderPanel(); };
+    }
+    function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=simplified.length+'/'+raw.length; }
+
+    /* ---- sampling / lifecycle ---- */
+    function sample(px,ll){ if(state!=='drawing') return;
+      if(lastPx && Math.hypot(px.x-lastPx.x,px.y-lastPx.y)<MIN_PX) return;
+      lastPx={x:px.x,y:px.y}; raw.push([ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]);
+      recomputeLine(); if((++sampleN%3)===0) recomputeArea(); setData(); updateNumbers();
+    }
+    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; sampleN=0; state='drawing'; try{ map.dragPan.disable(); }catch(_){} setData(); renderPanel(); }
+    function finish(){ if(state!=='drawing') return; recomputeLine(); recomputeArea(); setData(); state='done'; try{ map.dragPan.enable(); }catch(_){} renderPanel(); }
+
+    function onClick(e){ if(state==='armed') startStroke(e.lngLat); else if(state==='drawing') finish(); }
+    function onMove(e){ if(state==='drawing') sample(e.point, e.lngLat); }
+    let wired=false;
+    function wire(){ if(wired) return; wired=true; map.on('click',onClick); map.on('mousemove',onMove);
+      const cv=map.getCanvas(); cv.addEventListener('touchstart',onTouchStart,{passive:false}); cv.addEventListener('touchmove',onTouchMove,{passive:false}); cv.addEventListener('touchend',onTouchEnd,{passive:false}); }
+    function unwire(){ if(!wired) return; wired=false; map.off('click',onClick); map.off('mousemove',onMove);
+      const cv=map.getCanvas(); cv.removeEventListener('touchstart',onTouchStart); cv.removeEventListener('touchmove',onTouchMove); cv.removeEventListener('touchend',onTouchEnd); }
+    function touchLL(tch){ const r=map.getCanvas().getBoundingClientRect(); const pt=[tch.clientX-r.left,tch.clientY-r.top]; return {point:{x:pt[0],y:pt[1]}, lngLat:map.unproject(pt)}; }
+    function onTouchStart(e){ if(state==='off'||e.touches.length!==1) return; e.preventDefault(); hadTouchMove=false; if(state==='armed') startStroke(touchLL(e.touches[0]).lngLat); }
+    function onTouchMove(e){ if(state!=='drawing'||e.touches.length!==1) return; e.preventDefault(); hadTouchMove=true; const o=touchLL(e.touches[0]); sample(o.point,o.lngLat); }
+    function onTouchEnd(e){ if(state!=='drawing') return; if(hadTouchMove && raw.length>=2){ e.preventDefault(); finish(); } }
+
+    function setBtn(on){ const b=document.getElementById('btn-tool-draw'); if(b) b.classList.toggle('tool-on',on); document.querySelectorAll('[data-proxy="btn-tool-draw"]').forEach(x=>x.classList.toggle('active',on)); }
+
+    const api={
+      active(){ return state!=='off'; },
+      start(pt){ try{ if(typeof exitTool==='function') exitTool(); }catch(_){}
+        ensureLayers(); wire(); map.getCanvas().style.cursor='crosshair'; setBtn(true);
+        if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
+      },
+      toggle(){ if(this.active()) this.exit(); else this.start(); },
+      exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; setData(); unwire(); try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); }
+    };
+    { const b=document.getElementById('btn-tool-draw'); if(b) b.onclick=()=>api.toggle(); }
+    return api;
   })();
 
   loadSettings();
