@@ -505,11 +505,11 @@
       .sidebar.collapsed{ margin:0 !important; }       /* legacy class is inert here */
 
       /* taller grip = easier to grab; more breathing room above the tabs */
-      .sheet-grip{ display:block; position:relative; flex:0 0 auto; height:34px; cursor:grab; touch-action:none; }
-      .sheet-grip::before{ content:''; position:absolute; top:13px; left:50%; transform:translateX(-50%); width:40px; height:5px; border-radius:3px; background:rgba(128,128,128,0.45); transition:background 0.2s; }
-      .sheet-grip:active::before{ background:rgba(128,128,128,0.72); }
+      .sheet-grip{ display:block; position:relative; flex:0 0 auto; height:48px; cursor:grab; touch-action:none; }
+      .sheet-grip::before{ content:''; position:absolute; top:20px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:rgba(128,128,128,0.45); transition:background 0.2s; }
+      .sheet-grip:active::before{ background:rgba(128,128,128,0.72); width:54px; }
 
-      .header-area{ flex:0 0 auto; margin:0 0 8px; }
+      .header-area{ flex:0 0 auto; margin:0 0 10px; }
       h2{ font-size:18px; }
       .btn-settings{ padding:7px 13px; font-size:13px; min-height:34px; border-radius:17px; }
 
@@ -529,13 +529,15 @@
       .content-area, .news-reader-pane{ flex:1 1 auto; min-height:0; margin-right:0; padding-right:0; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding-bottom:max(16px,env(safe-area-inset-bottom)); touch-action:pan-y; }
 
       /* --- declutter the News header + trim oversized controls so more cards fit --- */
-      .search-bar{ margin:0 0 8px; }
-      .control-panel{ margin:0 0 8px; }
-      .news-pin-toggle{ margin:0 0 8px; padding:6px 10px; }
+      .search-bar{ margin:0 0 6px; }
+      .search-input{ padding:9px 4px; }
+      .control-panel{ margin:0 0 6px; }
+      .news-filter-toggle{ margin:0 0 6px !important; }
+      .news-pin-toggle{ margin:0 0 6px; padding:5px 10px; }
       .news-pin-toggle-label{ font-size:10.5px; }
-      #ai-geocode-row{ margin:0 0 8px !important; }
-      .ai-action-btn{ padding:9px 10px; font-size:12px; }
-      .ios-segment-btn{ padding:7px 10px; font-size:12px; min-height:30px; }
+      #ai-geocode-row{ margin:0 0 6px !important; }
+      .ai-action-btn{ padding:8px 10px; font-size:12px; }
+      .ios-segment-btn{ padding:6px 10px; font-size:12px; min-height:30px; }
       .m-sheet-title{ font-size:18px; }
       .m-tool-btn{ padding:13px 8px; } .m-tool-btn .ico{ font-size:18px; }
 
@@ -543,13 +545,14 @@
       .btn-toggle-sidebar{ display:none !important; }
 
       /* ---------- Map place-search → expandable round FAB (top-left) ---------- */
-      .map-search{ top:max(12px,calc(env(safe-area-inset-top) + 4px)) !important; left:14px !important; right:auto; transform:none !important;
+      .map-search{ box-sizing:border-box; top:max(12px,calc(env(safe-area-inset-top) + 4px)) !important; left:14px !important; right:auto; transform:none !important;
         width:46px; height:46px; min-width:0; padding:0; border-radius:23px; overflow:hidden; justify-content:center; gap:0;
         box-shadow:0 4px 16px rgba(0,0,0,0.18);
         transition:width 0.34s var(--sheet-ease), border-radius 0.34s var(--sheet-ease), opacity 0.25s, transform 0.25s; }
       .map-search input{ width:0; min-width:0; padding:0; opacity:0; font-size:16px; transition:opacity 0.18s; }
       .map-search > button, .map-search #ms-btn{ width:46px; height:46px; flex:0 0 auto; border-radius:23px; }
-      .map-search.ms-open{ width:calc(100vw - 28px); height:auto; border-radius:14px; padding:4px 4px 4px 14px; justify-content:flex-start; gap:6px; }
+      /* Expanded width stops short of the top-right FAB column so neither is clipped or pushed off-screen */
+      .map-search.ms-open{ width:calc(100vw - 14px - 14px - 56px); height:auto; border-radius:14px; padding:4px 4px 4px 14px; justify-content:flex-start; gap:6px; }
       .map-search.ms-open input{ width:auto; flex:1 1 auto; opacity:1; padding:11px 4px; }
       .map-search.ms-open > button, .map-search.ms-open #ms-btn{ width:auto; }
       .map-search-results{ top:54px; }
@@ -572,9 +575,9 @@
       .m-fab-compass{ display:flex; }
       .m-compass-svg{ transition:transform 0.1s linear; }
 
-      /* hide floating chrome when the sheet is fully expanded, or while searching (avoids the
-         expanded search box overlapping the top-right FAB stack) */
-      body.sheet-full .m-fab-stack, body.search-open .m-fab-stack{ opacity:0; pointer-events:none; transform:translateX(14px); }
+      /* hide floating chrome only when the sheet is fully expanded. The expanded search box now
+         leaves room for the FAB column, so the FABs stay visible & tappable while searching. */
+      body.sheet-full .m-fab-stack{ opacity:0; pointer-events:none; transform:translateX(14px); }
       body.sheet-full .map-search{ opacity:0; pointer-events:none; transform:translateX(-14px) !important; }
 
       /* ---------- Slide-up option sheets (Map / Tools) ---------- */
@@ -606,15 +609,29 @@
       .m-tool-btn.active{ background:var(--primary-color); color:#fff; }
 
       /* config panels relocated into the option sheets: strip their floating skin */
-      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
-      .m-sheet .layer-dropdown .layer-option{ padding:11px 6px; font-size:15px; min-height:42px; }
+      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:1px !important; }
+      /* tighter layer rows — kills the wasted line spacing in the layer list */
+      .m-sheet .layer-dropdown .layer-option{ padding:8px 6px; font-size:14px; min-height:36px; gap:9px; }
+      .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
+      .m-sheet .layer-dropdown .lyr-op{ margin:0 0 6px 22px !important; }
+      .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:4px !important; }
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:8px 2px 1px !important; padding:4px 2px !important; font-size:11px; min-height:0; }
+      .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:5px 0 !important; }
       .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 0 !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
       /* ---------- Floating map panels dock just above the sheet peek ---------- */
       .coord-readout{ display:none !important; }
       .country-info{ left:12px !important; right:12px !important; top:auto !important; bottom:calc(var(--peek-h) + 12px); width:auto !important; max-height:38dvh; overflow-y:auto; }
-      .tool-panel{ left:12px !important; right:12px !important; top:auto !important; bottom:calc(var(--peek-h) + 12px); width:auto !important; max-width:none; max-height:42dvh; overflow-y:auto; }
-      .map-container.sat-on .tool-panel{ bottom:calc(var(--peek-h) + 12px) !important; }
+      /* Compact measurement/tool popup: shrink-to-content card on the left, not a full-width slab */
+      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--peek-h) + 10px); width:auto !important; min-width:172px; max-width:calc(100vw - 24px); max-height:34dvh; overflow-y:auto; padding:10px 12px !important; font-size:12px !important; border-radius:12px !important; }
+      .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
+      .tool-panel .tp-row{ margin:2px 0 !important; }
+      .tool-panel .tp-hint{ font-size:10.5px !important; margin-top:5px !important; line-height:1.35 !important; }
+      .tool-panel .tp-header{ margin-bottom:5px !important; }
+      .tool-panel .tp-clear, .tool-panel .tp-add-btn{ padding:7px !important; margin-top:6px !important; }
+      .tool-panel .radius-list{ max-height:92px !important; }
+      .measure-tooltip{ font-size:11px; padding:4px 8px; }
+      .map-container.sat-on .tool-panel{ bottom:calc(var(--peek-h) + 10px) !important; }
       .koppen-legend, .data-legend{ top:auto !important; bottom:calc(var(--peek-h) + 12px) !important; right:10px !important; left:auto !important; max-width:calc(100vw - 20px); width:auto; max-height:32dvh; overflow-y:auto; }
       .news-timeline{ top:auto !important; bottom:calc(var(--peek-h) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
       .ai-view-summary-btn{ bottom:calc(var(--peek-h) + 12px); font-size:12px; padding:8px 14px; }
@@ -715,6 +732,7 @@
       <div class="map-view-group">
         <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
         <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
+        <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain">⛰️ 3D</button>
         <button class="view-btn compass-btn" id="btn-compass" title="Reset North">
           <svg class="compass-svg" width="20" height="20" viewBox="0 0 24 24">
             <polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/>
@@ -782,7 +800,7 @@
   <div class="modal-content" style="position:relative;">
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
-    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light">Light Mode</option><option value="dark">Dark Mode</option></select></div>
+    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light Mode</option><option value="dark" data-i18n="optDark">Dark Mode</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMulti">All languages (auto-translate titles)</option></select></div>
     <div class="setting-group"><label data-i18n="lblAiLocate">AI location analysis</label><select id="setting-ailocate"><option value="manual" data-i18n="aiLocManual">Manual (button)</option><option value="auto" data-i18n="aiLocAuto">Automatic for all news</option></select></div>
@@ -876,6 +894,7 @@
       <div class="m-seg" id="mseg-proj" role="group" aria-label="Projection">
         <button class="m-seg-btn" type="button" data-proxy="btn-view-globe">Globe</button>
         <button class="m-seg-btn" type="button" data-proxy="btn-view-flat">Flat</button>
+        <button class="m-seg-btn" type="button" data-proxy="btn-view-3d">3D</button>
       </div>
     </div>
     <div class="m-mount" id="mo-mount-layers"></div>
@@ -951,7 +970,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", areaBtn:"📐 Area", radiusBtn:"⭕ Radius", layersBtn:"Layers ▾",
+      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", areaBtn:"📐 Area", radiusBtn:"⭕ Radius", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time-travel news", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
@@ -983,7 +1002,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", areaBtn:"📐 面積", radiusBtn:"⭕ 半径", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", areaBtn:"📐 面積", radiusBtn:"⭕ 半径", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
@@ -1015,7 +1034,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const a=document.getElementById('opt-tz-auto'); if(a) a.innerText=d.optLocal;
     if(toolMode) updateToolPanel();
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
+    try{ localizeGeoLabels(); }catch(_){}
     renderUI();
+  }
+  /* Localize the geopolitical / strategic layer checkboxes in the Layers menu (their text was
+     hard-coded English; pull the right language out of geoLayersDB instead). */
+  function localizeGeoLabels(){
+    if(typeof geoLayersDB==='undefined') return;
+    document.querySelectorAll('.geo-layer-cb').forEach(cb=>{
+      const key=cb.getAttribute('data-layer'), data=geoLayersDB[key]; if(!data||!data.name) return;
+      const label=cb.closest('.layer-option'); if(!label) return;
+      let span=label.querySelector('.geo-label');
+      if(!span){ /* migrate the bare trailing text node into a span we can re-localize */
+        Array.from(label.childNodes).forEach(n=>{ if(n.nodeType===3 && n.textContent.trim()) n.remove(); });
+        span=document.createElement('span'); span.className='geo-label'; label.appendChild(span);
+      }
+      span.textContent=' '+(data.name[currentLang]||data.name.en||key);
+    });
   }
 
   /* ===== Theme ===== */
@@ -1083,15 +1118,18 @@ window.addEventListener('DOMContentLoaded', () => {
       keyLabel:{en:'XYZ URL template — use {z}/{x}/{y}',jp:'XYZ URLテンプレート — {z}/{x}/{y} を使用'}, keyPh:'https://…/{z}/{x}/{y}.jpg?key=…',
       tiles:(d,k)=>[k] }
   ];
-  const satDefaultDay=new Date(Date.now()-3*864e5).toISOString().slice(0,10); /* GIBS lags ~1-2 days; -3 is safe */
+  /* Default to YESTERDAY — the freshest near-real-time imagery that is essentially always
+     processed. If a chosen day isn't ready yet, satOnError steps back automatically (below). */
+  const satDefaultDay=new Date(Date.now()-1*864e5).toISOString().slice(0,10);
   let satState={ providerId:'esri', day:satDefaultDay, year:2024, opacity:1 };
-  let satActive=-1, satErrCount=0, satLastGood='esri';
+  let satActive=-1, satErrCount=0, satLastGood='esri', satAutoBackoff=0;
   let satPanelDismissed=false;   /* user closed the panel with ×; re-opened by the Satellite button */
   let satKeys={}; try{ satKeys=JSON.parse(localStorage.getItem('intmap_sat_keys')||'{}')||{}; }catch(_){ satKeys={}; }
   const saveSatKeys=()=>{ try{ localStorage.setItem('intmap_sat_keys',JSON.stringify(satKeys)); }catch(_){} };
   const satProviderById=(id)=>SAT_PROVIDERS.find(p=>p.id===id);
   /* Pro entitlement: admins always count; otherwise a profiles.is_pro flag (read in refreshCurrentUser). */
   function imIsPro(){ return !!(typeof currentUser!=='undefined' && currentUser && (currentUser.isAdmin || currentUser.isPro)); }
+  window.imIsPro=imIsPro;   /* used by the premium UI built in a separate IIFE */
   /* BYOK/paid satellite providers require Pro AND a saved key; free providers are always usable. */
   const satHasKey=(p)=>p.tier==='free' || (imIsPro() && !!(satKeys[p.keyName]&&String(satKeys[p.keyName]).trim()));
   const satMaxDay=()=>new Date().toISOString().slice(0,10);
@@ -1165,10 +1203,11 @@ window.addEventListener('DOMContentLoaded', () => {
   function satSelectProvider(id){
     const p=satProviderById(id); if(!p) return;
     if(!satHasKey(p)){ satToast(t('satLocked')); satRenderController(); return; }
-    satState.providerId=id; satErrCount=0;
+    satState.providerId=id; satErrCount=0; satAutoBackoff=0;
     satRenderController(); satApply(true); satRefreshReadout();
   }
-  function satStepDay(delta){
+  function satStepDay(delta,auto){
+    if(!auto) satAutoBackoff=0;
     const d=new Date(satState.day+'T00:00:00Z'); if(isNaN(d.getTime())) return;
     d.setUTCDate(d.getUTCDate()+delta);
     let s=d.toISOString().slice(0,10); const today=satMaxDay(); if(s>today) s=today;
@@ -1188,6 +1227,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const st=e.error&&e.error.status;
     if(st===401||st===403){ satToast(satMsg('satErrAuth',p)); satErrCount=0; satRevertToFallback(); return; }
     satErrCount++;
+    /* Dated GIBS day-layers: the latest day may not be processed yet → walk back to the freshest
+       AVAILABLE day before giving up, so "latest" really means latest-that-exists. */
+    if(p.dated && p.dateMode==='day' && satAutoBackoff<5 && satErrCount>=2){
+      satAutoBackoff++; satErrCount=0; satStepDay(-1,true); return;
+    }
     if(satErrCount>=4){ satErrCount=0; satToast(satMsg('satErrTiles',p)); satRevertToFallback(); }
   }
   /* Sat-Controller panel (provider + capture-date + opacity). Rebuilt on change / language. */
@@ -1230,7 +1274,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Only Pro users may register their own (paid) satellite imagery providers. */
     if(!imIsPro()){
       wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${currentLang==='jp'?'🔒 独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。':'🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).'}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${currentLang==='jp'?'IntMap Pro を見る':'See IntMap Pro'}</button></div>`;
-      const up=wrap.querySelector('#sat-keys-upgrade'); if(up) up.onclick=()=>{ try{ if(typeof openProModal==='function') openProModal(); }catch(_){} };
+      const up=wrap.querySelector('#sat-keys-upgrade'); if(up) up.onclick=()=>{ try{ if(typeof window.openProModal==='function') window.openProModal(); }catch(_){} };
       return;
     }
     wrap.innerHTML=SAT_PROVIDERS.filter(p=>p.tier==='pro').map(p=>{
@@ -1927,8 +1971,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Country data & extended stats ===== */
   const GDP={USA:27361,CHN:17795,JPN:4213,DEU:4456,IND:3550,GBR:3340,FRA:3031,ITA:2255,BRA:2174,CAN:2140,RUS:2021,MEX:1789,AUS:1724,KOR:1713,ESP:1581,IDN:1371,TUR:1108,NLD:1118,SAU:1068,CHE:884,POL:811,TWN:790,BEL:632,SWE:593,ARG:641,IRL:545,NOR:486,AUT:516,ISR:510,ARE:504,THA:515,SGP:501,BGD:446,PHL:437,VNM:430,DNK:404,MYS:400,HKG:382,EGY:396,IRN:388,ZAF:378,COL:364,ROU:351,CHL:335,CZE:330,FIN:300,PRT:287,PER:268,IRQ:264,KAZ:261,NZL:251,GRC:238,QAT:235,DZA:240,HUN:213,UKR:179,KWT:162,ETH:156,MAR:142,SVK:132,ECU:119,KEN:108,OMN:108,GTM:102,BGR:101,VEN:92,CRI:86,LUX:86,PAN:82,CIV:79,HRV:80,LTU:79,UZB:90,TZA:76,GHA:76,SRB:75,LKA:74,BLR:73,SVN:68,COD:67,MMR:65,TKM:56,JOR:50,CMR:49,UGA:49,TUN:47,BOL:45,LBY:45,PRY:43,NPL:41,ZWE:32,CYP:32,ISL:30,GEO:30,SEN:31,KHM:31,PNG:31,ZMB:28,BIH:27,ARM:24,LBN:23,ALB:23,HTI:20,MOZ:21,YEM:21,GAB:21,BWA:20,MLT:20,BFA:20,MLI:20,BEN:19,PRK:18,MNG:18,NIC:17,NER:17,MDG:16,MDA:16,LAO:15,BRN:15,MUS:14,AFG:14,RWA:14,MWI:13,TCD:13,KGZ:12,TJK:12,NAM:12,SOM:11,CUB:107,SDN:109,FJI:5};
   /* HDI 2022, Democracy Index 2023, Military spending 2023 ($B SIPRI), Life expectancy 2022, Internet users % 2023 */
-  const HDI={NOR:.966,CHE:.967,ISL:.959,HKG:.956,DNK:.952,SWE:.952,DEU:.950,IRL:.950,SGP:.949,AUS:.946,NLD:.946,BEL:.942,FIN:.942,GBR:.940,NZL:.939,ARE:.937,CAN:.935,KOR:.929,LUX:.927,USA:.927,AUT:.926,SVN:.926,JPN:.920,ISR:.915,ESP:.911,FRA:.910,ITA:.906,EST:.899,CZE:.895,GRC:.893,POL:.881,LTU:.879,SAU:.875,QAT:.875,HRV:.878,PRT:.874,HUN:.851,CHL:.860,TUR:.855,ARG:.849,RUS:.821,ROU:.827,BGR:.799,CHN:.788,IRN:.780,MEX:.781,THA:.803,MYS:.807,BRA:.760,COL:.758,ZAF:.717,IDN:.713,VNM:.726,EGY:.728,PHL:.710,UKR:.734,IND:.644,BGD:.670,KEN:.601,PAK:.540,NGA:.548,ETH:.492,COD:.481,AFG:.462,IRQ:.673,MMR:.608,SDN:.516,YEM:.424,SOM:.380};
-  const DEM={NOR:9.81,NZL:9.61,ISL:9.45,SWE:9.39,FIN:9.30,DNK:9.28,IRL:9.19,CHE:9.14,NLD:9.00,TWN:8.92,LUX:8.81,DEU:8.80,CAN:8.69,AUS:8.66,JPN:8.40,KOR:8.09,GBR:8.28,FRA:8.07,ESP:8.07,CHL:8.22,USA:7.85,ITA:7.69,ISR:7.80,PRT:7.95,BEL:7.64,POL:7.18,IND:7.18,ZAF:7.05,BRA:6.68,ARG:6.62,IDN:6.53,PHL:6.36,THA:6.35,MYS:7.30,HUN:6.50,SGP:6.18,HKG:5.28,UKR:5.06,MEX:5.14,KEN:5.05,BGD:5.87,TUR:4.33,NGA:4.23,PAK:3.25,ETH:3.10,EGY:2.93,VNM:2.62,RUS:2.22,SAU:2.08,IRN:1.96,CHN:1.94,BLR:1.99,COD:1.40,SYR:1.43,PRK:1.08,MMR:0.85,AFG:0.26,IRQ:3.51,QAT:3.65,ARE:2.90};
+  /* HDI 2022 (UNDP) — broad coverage so very few countries fall back to the "no data" grey fill. */
+  const HDI={NOR:.966,CHE:.967,ISL:.959,HKG:.956,DNK:.952,SWE:.952,DEU:.950,IRL:.950,SGP:.949,AUS:.946,NLD:.946,BEL:.942,FIN:.942,LIE:.942,GBR:.940,NZL:.939,ARE:.937,CAN:.935,KOR:.929,LUX:.927,USA:.927,AUT:.926,SVN:.926,JPN:.920,MLT:.915,ISR:.915,ESP:.911,FRA:.910,CYP:.907,ITA:.906,EST:.899,CZE:.895,GRC:.893,BHR:.888,AND:.884,POL:.881,LVA:.879,LTU:.879,HRV:.878,QAT:.875,SAU:.875,PRT:.874,SVK:.855,CHL:.860,TUR:.855,HUN:.851,ARG:.849,KWT:.847,MNE:.844,KNA:.838,URY:.830,ATG:.826,PAN:.820,ROU:.827,RUS:.821,OMN:.819,GEO:.814,TTO:.814,KAZ:.811,BHS:.812,BRB:.809,MYS:.807,CRI:.806,SRB:.805,THA:.803,MUS:.802,SYC:.802,BLR:.801,GRD:.793,ALB:.789,CHN:.788,ARM:.786,MEX:.781,MDA:.763,IRN:.780,LKA:.780,BIH:.779,DOM:.766,MKD:.765,ECU:.765,CUB:.764,MDV:.762,PER:.762,AZE:.760,BRA:.760,COL:.758,VCT:.751,LBY:.746,TKM:.744,GUY:.742,MNG:.741,DMA:.740,JOR:.736,UKR:.734,TUN:.732,SUR:.730,PRY:.731,FJI:.729,EGY:.728,UZB:.727,VNM:.726,LCA:.725,LBN:.723,ZAF:.717,PSE:.716,IDN:.713,PHL:.710,BWA:.708,JAM:.706,KGZ:.701,BLZ:.700,VEN:.699,BOL:.698,MAR:.698,GAB:.693,BTN:.681,TJK:.679,SLV:.674,IRQ:.673,BGD:.670,NIC:.669,IND:.644,GTM:.629,KIR:.628,HND:.624,LAO:.620,NAM:.610,SWZ:.610,MMR:.608,GHA:.602,KEN:.601,NPL:.601,KHM:.600,COG:.593,AGO:.591,CMR:.587,ZMB:.569,PNG:.568,COM:.558,SYR:.557,HTI:.552,ZWE:.550,UGA:.550,RWA:.548,NGA:.548,TGO:.547,MRT:.540,PAK:.540,CIV:.534,TZA:.532,LSO:.521,SEN:.517,SDN:.516,DJI:.515,MWI:.508,BEN:.504,GMB:.500,ERI:.493,ETH:.492,LBR:.487,GNB:.483,COD:.481,SLE:.477,GIN:.471,AFG:.462,MOZ:.461,GNQ:.650,BFA:.438,MLI:.428,YEM:.424,BDI:.420,NER:.394,TCD:.394,CAF:.387,SSD:.381,SOM:.380};
+  /* EIU Democracy Index 2023 — broad coverage (the EIU rates 167 states; the rest fall back to grey). */
+  const DEM={NOR:9.81,NZL:9.61,ISL:9.45,SWE:9.39,FIN:9.30,DNK:9.28,IRL:9.19,CHE:9.14,NLD:9.00,TWN:8.92,LUX:8.81,DEU:8.80,CAN:8.69,AUS:8.66,URY:8.66,JPN:8.40,CRI:8.29,GBR:8.28,AUT:8.28,CHL:8.22,MUS:8.14,KOR:8.09,FRA:8.07,ESP:8.07,EST:8.06,CZE:7.97,PRT:7.95,USA:7.85,ISR:7.80,BWA:7.73,ITA:7.69,CPV:7.65,BEL:7.64,MLT:7.57,GRC:7.50,SVN:7.46,LVA:7.38,LTU:7.31,MYS:7.30,POL:7.18,IND:7.18,TTO:7.16,JAM:7.13,PAN:7.10,SVK:7.07,ZAF:7.05,BRA:6.68,DOM:6.62,ARG:6.62,COL:6.55,IDN:6.53,NAM:6.52,MNG:6.50,HRV:6.50,HUN:6.50,ROU:6.48,BGR:6.45,ALB:6.41,PHL:6.36,THA:6.35,SRB:6.33,PRY:6.22,SGP:6.18,LKA:6.17,ECU:6.13,MKD:6.13,LSO:6.11,MDA:6.09,SUR:6.06,MNE:6.02,PER:5.99,PNG:5.97,SEN:5.96,MWI:5.91,BGD:5.87,ZMB:5.80,BTN:5.54,TUN:5.51,ARM:5.42,LBR:5.43,FJI:5.40,HKG:5.28,GEO:5.20,TZA:5.10,MDG:5.10,UKR:5.06,KEN:5.05,MAR:5.04,BIH:5.00,SLV:4.97,HND:4.83,BOL:4.65,GTM:4.62,UGA:4.49,TUR:4.33,NGA:4.23,CIV:4.22,BEN:4.20,NPL:4.07,AGO:3.96,MRT:3.92,PSE:3.86,KWT:3.83,DZA:3.66,QAT:3.65,KGZ:3.62,LBN:3.56,MOZ:3.51,IRQ:3.51,PAK:3.25,MLI:3.23,JOR:3.17,OMN:3.12,RWA:3.10,KAZ:3.08,ETH:3.06,TGO:2.99,SWZ:2.96,EGY:2.93,ZWE:2.92,BFA:2.91,ARE:2.90,AZE:2.80,GAB:2.79,CUB:2.65,GIN:2.65,COG:2.61,VNM:2.62,CMR:2.56,KHM:2.55,HTI:2.50,NIC:2.26,LBY:2.25,VEN:2.23,RUS:2.22,NER:2.20,UZB:2.12,SAU:2.08,ERI:2.03,YEM:1.95,IRN:1.96,TJK:1.94,CHN:1.94,BLR:1.99,GNQ:1.92,SDN:1.76,LAO:1.71,TCD:1.67,TKM:1.66,SYR:1.43,COD:1.40,CAF:1.18,SSD:1.16,PRK:1.08,MMR:0.85,AFG:0.26};
   const MILSPEND={USA:916,CHN:296,RUS:109,IND:84,SAU:75,UKR:65,GBR:75,DEU:67,FRA:61,JPN:50,KOR:48,ITA:36,AUS:32,POL:32,ISR:27,CAN:27,ESP:24,BRA:23,NLD:19,TUR:16,SGP:14,IDN:9,IRN:10,PAK:9,EGY:5,GRC:7,NOR:9,SWE:9,FIN:7,DNK:9,BEL:8,NZL:3,PRT:4,CZE:5,HUN:3,ROU:4,VNM:6,THA:5,COL:9,MEX:8,DZA:18,ARE:23,QAT:11,KWT:8,IRQ:11,LBY:3,MMR:2,VEN:1,CUB:1,NGA:3,ZAF:2,KEN:1,CHL:4,ARG:3,PER:2,PHL:4,MYS:4,TWN:14,UKR2:0};
   const LIFE={JPN:84.0,CHE:83.6,KOR:83.6,SGP:83.5,AUS:83.3,ISL:83.0,ITA:82.9,ESP:82.8,SWE:83.0,FRA:82.5,NOR:83.2,IRL:82.6,NZL:82.5,DEU:80.8,CAN:81.5,GBR:80.7,FIN:81.8,NLD:81.5,BEL:81.6,AUT:81.1,DNK:81.5,GRC:80.1,PRT:81.1,USA:77.4,POL:77.5,CHN:78.2,TUR:76.0,SAU:77.9,BRA:75.9,MEX:70.2,RUS:69.4,IRN:76.7,ARG:75.9,VNM:74.6,THA:78.7,COL:73.7,IDN:71.3,PHL:69.3,EGY:70.2,IND:67.3,BGD:72.4,PAK:66.2,ZAF:62.3,KEN:61.4,NGA:53.6,ETH:65.0,COD:59.2,IRQ:70.4,UKR:71.6,AFG:62.0,MMR:65.7,YEM:63.7,SDN:65.3};
   const INTERNET={NOR:99,DNK:99,KOR:97,SWE:98,JPN:84,USA:91,GBR:97,DEU:93,FRA:86,CAN:93,ITA:84,ESP:94,SGP:96,AUS:96,NZL:91,RUS:88,CHN:73,IND:46,BRA:81,MEX:78,ARG:88,KOR2:97,IDN:62,VNM:73,THA:85,PHL:67,EGY:72,SAU:99,UAE2:0,ARE:100,ISR:90,TUR:83,POL:88,ZAF:72,KEN:32,NGA:55,BGD:39,PAK:36,ETH:17,COD:23,IRN:79,IRQ:75,AFG:18};
@@ -2509,8 +2555,11 @@ window.addEventListener('DOMContentLoaded', () => {
   /* === Instant elevation/depth from cached terrarium DEM tiles (includes ocean bathymetry) === */
   const _demCache=new Map();
   function _ll2tile(lng,lat,z){ const n=Math.pow(2,z); const x=(lng+180)/360*n; const lr=lat*Math.PI/180; const y=(1-Math.log(Math.tan(lr)+1/Math.cos(lr))/Math.PI)/2*n; return {x,y,n}; }
-  function demElevAt(lng,lat,onReady){
-    const z=10; const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
+  /* Pick a DEM tile-zoom matched to the map zoom. Zoomed out → low z (a handful of tiles cover the
+     whole view, so the readout is instant everywhere). Zoomed in → high z (sharper elevation). */
+  function demZoomForMap(){ let mz=4; try{ if(map) mz=map.getZoom(); }catch(_){} return Math.max(3,Math.min(12,Math.round(mz)+1)); }
+  function demElevAt(lng,lat,onReady,zArg){
+    const z=(zArg!=null?zArg:demZoomForMap()); const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
     const key=z+'/'+xi+'/'+yi; let c=_demCache.get(key);
     if(c===undefined){
@@ -2542,12 +2591,13 @@ window.addEventListener('DOMContentLoaded', () => {
      elevation/depth readout is instant on hover (kills the first-hover network wait). */
   function prefetchDEMViewport(){
     if(!map||isMobile()) return;
-    try{ if(map.getZoom()<4) return; const b=map.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=4;
-      for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP);
+    try{ const z=demZoomForMap(); const b=map.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
+      for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP, null, z);
     }catch(_){}
   }
   let _demPrefetchT=null;
-  if(map) map.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,350); });
+  if(map){ map.on('moveend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,200); });
+           map.on('zoomend',()=>{ clearTimeout(_demPrefetchT); _demPrefetchT=setTimeout(prefetchDEMViewport,120); }); }
   /* GEBCO 2020 bathymetry (real ocean depth) via CORS proxy — Open-Meteo returns 0 over water. */
   const _bathyCache=new Map();
   async function fetchBathymetry(lat,lng){
@@ -3638,7 +3688,16 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* Google News editions. In multi-language mode we pull several foreign editions too, so the
      feed includes non-UI-language headlines (which the AI then translates onto the cards). */
-  const NEWS_EDITIONS_MULTI=['hl=fr&gl=FR&ceid=FR:fr','hl=de&gl=DE&ceid=DE:de','hl=es&gl=ES&ceid=ES:es','hl=ar&gl=EG&ceid=EG:ar','hl=zh-CN&gl=CN&ceid=CN:zh-Hans','hl=ru&gl=RU&ceid=RU:ru'];
+  /* World editions pulled in multi-language mode. The UI-language edition is excluded at build
+     time (it is already the base feed), so a JP user also gets English + others and vice-versa. */
+  const NEWS_EDITIONS_MULTI=[
+    {lang:'en',q:'hl=en-US&gl=US&ceid=US:en'},{lang:'ja',q:'hl=ja&gl=JP&ceid=JP:ja'},
+    {lang:'fr',q:'hl=fr&gl=FR&ceid=FR:fr'},{lang:'de',q:'hl=de&gl=DE&ceid=DE:de'},
+    {lang:'es',q:'hl=es&gl=ES&ceid=ES:es'},{lang:'pt',q:'hl=pt-BR&gl=BR&ceid=BR:pt-419'},
+    {lang:'it',q:'hl=it&gl=IT&ceid=IT:it'},{lang:'ar',q:'hl=ar&gl=EG&ceid=EG:ar'},
+    {lang:'ru',q:'hl=ru&gl=RU&ceid=RU:ru'},{lang:'zh',q:'hl=zh-CN&gl=CN&ceid=CN:zh-Hans'},
+    {lang:'ko',q:'hl=ko&gl=KR&ceid=KR:ko'}
+  ];
   function feedUrls(){
     const p=currentLang==='en'?'hl=en-US&gl=US&ceid=US:en':'hl=ja&gl=JP&ceid=JP:ja';
     if(newsDate){
@@ -3650,8 +3709,13 @@ window.addEventListener('DOMContentLoaded', () => {
     if(activeSearchQuery) return[`https://news.google.com/rss/search?q=${encodeURIComponent(activeSearchQuery)}&${p}`];
     const base=[`https://news.google.com/rss/headlines/section/topic/WORLD?${p}`,`https://news.google.com/rss/headlines/section/topic/BUSINESS?${p}`];
     if(newsLangMode==='multi'){
-      /* the UI edition stays first (so home-language stories dominate), then foreign editions */
-      NEWS_EDITIONS_MULTI.forEach(ed=>base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed}`));
+      /* the UI edition stays first (so home-language stories dominate), then foreign editions
+         (excluding the UI language, which is already covered by the base feed above) */
+      NEWS_EDITIONS_MULTI.filter(ed=>ed.lang!==currentLang).forEach(ed=>base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed.q}`));
+    }
+    /* Pro "RU·CN local primary-source intel" overlay — pulls the Russian + Chinese editions. */
+    if(window.proIntelOn && window.imIsPro && window.imIsPro()){
+      ['hl=ru&gl=RU&ceid=RU:ru','hl=zh-CN&gl=CN&ceid=CN:zh-Hans'].forEach(ed=>{ if(!base.some(u=>u.includes(ed))) base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed}`); });
     }
     return base;
   }
@@ -3748,6 +3812,35 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); };
   document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(1.4); updateOcclusion(); };
   document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); };
+
+  /* ===== 3D terrain (Google-Earth-style relief) ===== */
+  let terrain3D=false;
+  function ensureTerrainSource(){
+    if(map.getSource('terrain-dem')) return true;
+    try{ map.addSource('terrain-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13}); return true; }
+    catch(e){ console.warn('terrain source failed',e); return false; }
+  }
+  function set3D(on){
+    if(!map) return;
+    const b3=document.getElementById('btn-view-3d');
+    const syncBtns=()=>{ if(b3) b3.classList.toggle('active',terrain3D); document.querySelectorAll('[data-proxy="btn-view-3d"]').forEach(b=>b.classList.toggle('active',terrain3D)); };
+    if(on){
+      if(!ensureTerrainSource()){ try{ imToast(currentLang==='jp'?'3D地形を読み込めませんでした':'Could not load 3D terrain'); }catch(_){} return; }
+      terrain3D=true; syncBtns();
+      try{ map.setTerrain({source:'terrain-dem',exaggeration:1.45}); }catch(e){}
+      /* Custom atmospheric sky only in mercator — the globe already renders its own atmosphere
+         (and fog isn't supported on globe, which otherwise spams console warnings). */
+      if(currentProj!=='globe'){ try{ map.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
+      const opts={pitch:Math.max(map.getPitch(),68),duration:900}; if(map.getZoom()<5.5) opts.zoom=6.2;
+      try{ map.easeTo(opts); }catch(e){}
+    } else {
+      terrain3D=false; syncBtns();
+      try{ map.setTerrain(null); }catch(e){}
+      /* leave any sky spec in place — it only renders when pitched, and we flatten pitch to 0 */
+      try{ map.easeTo({pitch:0,duration:700}); }catch(e){}
+    }
+  }
+  { const b3=document.getElementById('btn-view-3d'); if(b3) b3.onclick=()=>set3D(!terrain3D); }
 
   /* ===== Mode tabs (deselectable) ===== */
   function setMode(mode,btnId){
@@ -3971,8 +4064,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Temperature (MODIS)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温 (MODIS)", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー" });
+    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Temperature (MODIS)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Geopolitical theory", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温 (MODIS)", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"地政学理論", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays" });
+    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -4044,10 +4139,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[currentLang==='jp'?'加盟国':'Member',''],currentLang==='jp'?'32か国':'32 members');
     /* EEZ legend — single-color line indicator */
     const lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
+    /* The legend image is GeoServer's OWN GetLegendGraphic for this exact layer, so every boundary
+       type/colour drawn on the map (200 nm, treaty, median line, joint regime, …) is represented.
+       If the image fails to load we fall back to a hand-written two-line key. */
     lgdEEZ.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海洋管轄区域':'Maritime zones'}</h4>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 0;"><span style="display:inline-block;width:24px;height:3px;background:#0095e5;border-radius:2px;"></span> ${currentLang==='jp'?'EEZ境界（200海里）':'EEZ boundary (200 nm)'}</div>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 0;"><span style="display:inline-block;width:24px;height:3px;background:#9bdbf5;border-radius:2px;"></span> ${currentLang==='jp'?'領海（12海里）':'Territorial sea (12 nm)'}</div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:6px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。12海里までが領海。境界の重なりは領有権紛争の目安。':'EEZ = Exclusive Economic Zone, where the coastal state controls fishing & seabed resources (to 200 nm). Out to 12 nm is sovereign territorial sea. Overlapping lines flag disputed claims.'}</div>
+      <img alt="EEZ boundary types" src="https://geo.vliz.be/geoserver/MarineRegions/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=eez_boundaries&LEGEND_OPTIONS=forceLabels:on;fontAntiAliasing:true" style="display:block;width:100%;background:#fff;border-radius:8px;padding:6px;box-sizing:border-box;margin:2px 0 6px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+      <div style="display:none;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 0;"><span style="display:inline-block;width:24px;height:3px;background:#0095e5;border-radius:2px;"></span> ${currentLang==='jp'?'EEZ境界（200海里）':'EEZ boundary (200 nm)'}</div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:3px 0;"><span style="display:inline-block;width:24px;height:3px;background:#9bdbf5;border-radius:2px;"></span> ${currentLang==='jp'?'領海（12海里）':'Territorial sea (12 nm)'}</div>
+      </div>
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け。重なりは領有権紛争の目安。':'EEZ = Exclusive Economic Zone (coastal-state control of fishing & seabed to 200 nm). Lines are coloured by boundary type; overlaps flag disputed claims.'}</div>
       <div class="dl-hint">${currentLang==='jp'?'出典: MarineRegions WMS':'Source: MarineRegions WMS'}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -4066,6 +4167,22 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="dl-hint">${currentLang==='jp'?'MODIS Fires (Terra/Aqua) 日次':'MODIS Fires (Terra/Aqua), daily'}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Precipitation-radar legend (RainViewer rain-rate scale) */
+    const lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
+    lgdRadar.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
+      <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
+      <div class="dl-scale"><span>${currentLang==='jp'?'弱い':'Light'}</span><span>${currentLang==='jp'?'激しい':'Heavy'}</span></div>
+      <div class="dl-hint">${currentLang==='jp'?'RainViewer 実時間レーダー（最新フレーム）':'RainViewer live radar (latest frame)'}</div>`;
+    mc.appendChild(lgdRadar);
+    lgdRadar.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Sea-surface-temperature legend (GHRSST MUR L4) */
+    const lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
+    lgdSST.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">✕</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
+      <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0033cc,#0099ff,#00e0c0,#7dff66,#ffe000,#ff7800,#e00000);"></div>
+      <div class="dl-scale"><span>-2 °C</span><span>32 °C</span></div>
+      <div class="dl-hint">${currentLang==='jp'?'GHRSST MUR L4（海域のみ）':'GHRSST MUR L4 (oceans only)'}</div>`;
+    mc.appendChild(lgdSST);
+    lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Make EEZ/Temp/Thermal legends draggable too (same handler) */
     function wireDrag(el){
       const handle=el.querySelector('.dl-drag'); if(!handle) return;
@@ -4083,7 +4200,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
       });
     }
-    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal);
+    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST);
     /* Also wire drag for the Köppen legend */
     setTimeout(()=>{ const kl=document.getElementById('koppen-legend');
       if(kl && !kl.querySelector('.kl-drag')){
@@ -4109,14 +4226,21 @@ window.addEventListener('DOMContentLoaded', () => {
     const hr=document.createElement('hr'); hr.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; dd.appendChild(hr);
     const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:0.75,temp:0.6,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.5,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75};
-    /* GIBS day-old tiles are sometimes still processing — fall back 5 days to be safe. */
-    const GIBS_DATE=new Date(Date.now()-5*864e5).toISOString().slice(0,10);
-    /* Date-aware layers: temp, precip, thermal — these vary day-by-day.
-       IMERG (precip) is only kept for the last ~3 days on GIBS, so it uses a 2-day offset. */
+    const opacities={climate:0.75,temp:0.6,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.5,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7};
+    /* Default to the freshest GIBS day that is reliably processed (−2 days). */
+    const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+    /* Date-aware layers: temp, precip, thermal — these vary day-by-day. */
     const PRECIP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
-    const layerDates={temp:GIBS_DATE,precip:PRECIP_DATE,thermal:GIBS_DATE};
-    [['eez','lyrEEZ'],['temp','lyrTemp'],['precip','lyrPrecip'],['thermal','lyrThermal'],['pop','lyrPop'],['hdi','lyrHDI'],['dem','lyrDem'],['nato','lyrNATO'],['night','lyrNight'],['ships','lyrShips'],['planes','lyrPlanes']].forEach(([id,key])=>{
+    const layerDates={temp:GIBS_DATE,precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    [
+      ['__grp','lyrGrpWeather'],
+      ['radar','lyrRadar'],['clouds','lyrClouds'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
+      ['__grp','lyrGrpMaritime'],
+      ['eez','lyrEEZ'],['ships','lyrShips'],['planes','lyrPlanes'],
+      ['__grp','lyrGrpIndic'],
+      ['pop','lyrPop'],['hdi','lyrHDI'],['dem','lyrDem'],['nato','lyrNATO'],['night','lyrNight']
+    ].forEach(([id,key])=>{
+      if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[currentLang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
       const isDated=layerDates.hasOwnProperty(id);
       const isTraffic=(id==='ships'||id==='planes');
@@ -4350,7 +4474,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Stagger legends vertically so multiple can show without overlapping. Only re-tile
        legends that haven't been manually dragged (left/top still 'auto'/unset). */
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdNATO,lgdEEZ,lgdTemp,lgdThermal];
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdNATO,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       let bottom=140;
       visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.right='24px'; el.style.left='auto'; el.style.top='auto'; bottom += el.getBoundingClientRect().height+10; });
@@ -4710,6 +4834,41 @@ window.addEventListener('DOMContentLoaded', () => {
       map.addSource('src-eez',{type:'raster',tiles:[wms],tileSize:256});
       map.addLayer({id:'lyr-eez',type:'raster',source:'src-eez',layout:{visibility:'none'},paint:{'raster-opacity':opacities.eez}},beforeId);
     }
+    /* === RainViewer: live precipitation radar + infrared cloud imagery, via its own
+       "latest frame" API — this is genuinely real-time (refreshed every ~10 min). === */
+    let _rvData=null, _rvAt=0, _rvPending=null, _rvTimer=null;
+    function rvFetch(){
+      if(_rvData && Date.now()-_rvAt<5*60000) return Promise.resolve(_rvData);
+      if(_rvPending) return _rvPending;
+      _rvPending=fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.ok?r.json():null)
+        .then(j=>{ if(j){ _rvData=j; _rvAt=Date.now(); } _rvPending=null; return _rvData; })
+        .catch(()=>{ _rvPending=null; return null; });
+      return _rvPending;
+    }
+    function rvTiles(kind){
+      if(!_rvData) return null;
+      const host=_rvData.host||'https://tilecache.rainviewer.com';
+      const frames=(kind==='radar') ? (_rvData.radar&&_rvData.radar.past) : (_rvData.satellite&&_rvData.satellite.infrared);
+      if(!frames||!frames.length) return null;
+      const path=frames[frames.length-1].path;  /* the most recent available frame */
+      /* radar: colour scheme 4 (blue→red), smoothed + snow; clouds: IR scheme 0 */
+      return (kind==='radar') ? [host+path+'/256/{z}/{x}/{y}/4/1_1.png'] : [host+path+'/256/{z}/{x}/{y}/0/0_0.png'];
+    }
+    function addRainViewer(kind){
+      const tiles=rvTiles(kind); if(!tiles) return false;
+      try{ if(map.getLayer('lyr-'+kind)) map.removeLayer('lyr-'+kind); if(map.getSource('src-'+kind)) map.removeSource('src-'+kind); }catch(_){}
+      addRaster(kind,tiles, kind==='radar'?12:10);
+      setVis('lyr-'+kind,true);
+      return true;
+    }
+    function rvAutoRefresh(){
+      if(_rvTimer) return;
+      _rvTimer=setInterval(()=>{ rvFetch().then(()=>{ ['radar','clouds'].forEach(k=>{
+        if(map.getLayer('lyr-'+k)&&map.getLayoutProperty('lyr-'+k,'visibility')==='visible'){
+          try{ const tiles=rvTiles(k), src=map.getSource('src-'+k); if(tiles&&src&&src.setTiles) src.setTiles(tiles); else if(tiles) addRainViewer(k); }catch(_){}
+        }
+      }); }); },240000);
+    }
     /* === Refresh tiles for dated layers when the date selector changes === */
     function refreshDatedLayer(id){
       const date=layerDates[id]||GIBS_DATE;
@@ -4717,12 +4876,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if(id==='temp') tiles=gibs('MODIS_Terra_Land_Surface_Temp_Day',7,'png',date);
       else if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
       else if(id==='thermal') tiles=gibs('MODIS_Fires_All',9,'png',date);
+      else if(id==='sst') tiles=gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',date);
+      else if(id==='snow') tiles=gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',date);
+      else if(id==='aod') tiles=gibs('MODIS_Combined_Value_Added_AOD',6,'png',date);
       if(!tiles) return;
       /* Remove and re-add the source/layer with new tiles */
       const wasVis=map.getLayer('lyr-'+id)?map.getLayoutProperty('lyr-'+id,'visibility')==='visible':false;
       if(map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
       if(map.getSource('src-'+id)) map.removeSource('src-'+id);
-      addRaster(id,tiles, id==='temp'?7:(id==='thermal'?9:6));
+      const maxzMap={temp:7,thermal:9,precip:6,sst:7,snow:8,aod:6};
+      addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
     function toggleLayer(id,on){
@@ -4743,6 +4906,24 @@ window.addEventListener('DOMContentLoaded', () => {
             try{ setVis('lyr-thermal',true); }catch(_){}
           });
         }
+        else if(id==='radar'||id==='clouds'){
+          if(id==='radar'){ lgdRadar.style.display='block'; tileLegends(); }
+          whenStyleReady().then(()=>rvFetch()).then(()=>{
+            if(!addRainViewer(id)){
+              try{ satToast(currentLang==='jp'?'気象データを取得できませんでした':'Live weather data unavailable'); }catch(_){}
+              const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
+              if(id==='radar'){ lgdRadar.style.display='none'; tileLegends(); }
+              return;
+            }
+            rvAutoRefresh();
+          });
+        }
+        else if(id==='sst'){
+          lgdSST.style.display='block'; tileLegends();
+          whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
+        }
+        else if(id==='snow'){ whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
+        else if(id==='aod'){ whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
         else if(id==='eez'){
           /* Show legend immediately so user sees feedback; defer source add until style loads */
           lgdEEZ.style.display='block'; tileLegends();
@@ -4782,6 +4963,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if(id==='eez') lgdEEZ.style.display='none';
         if(id==='temp') lgdTemp.style.display='none';
         if(id==='thermal') lgdThermal.style.display='none';
+        if(id==='radar') lgdRadar.style.display='none';
+        if(id==='sst') lgdSST.style.display='none';
+        if((id==='radar'||id==='clouds')&&_rvTimer){ const other=(id==='radar')?'clouds':'radar';
+          const otherVis=map.getLayer('lyr-'+other)&&map.getLayoutProperty('lyr-'+other,'visibility')==='visible';
+          if(!otherVis){ clearInterval(_rvTimer); _rvTimer=null; } }
         tileLegends();
         if(id==='night'&&nightTimer){ clearInterval(nightTimer); nightTimer=null; }
       }
@@ -4854,6 +5040,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const hr=document.createElement('hr'); hr.className='premium-divider'; dd.appendChild(hr);
       const title=document.createElement('div'); title.className='layer-group-title premium-group-title';
       title.setAttribute('data-i18n','proSection'); title.textContent=i18n[currentLang].proSection; dd.appendChild(title);
+      const proItems=[];
       ['proArchive','proIntel'].forEach(key=>{
         const label=document.createElement('label'); label.className='layer-option premium-option';
         const cb=document.createElement('input'); cb.type='checkbox'; cb.className='premium-cb';
@@ -4861,13 +5048,40 @@ window.addEventListener('DOMContentLoaded', () => {
         const pill=document.createElement('span'); pill.className='pro-pill'; pill.textContent='PRO';
         label.append(cb,span,pill);
         label.addEventListener('click',(e)=>{
-          e.preventDefault();    /* dummy/locked: never actually toggles */
+          e.preventDefault();    /* locked for non-Pro; a real toggle for Pro */
           e.stopPropagation();   /* keep the dropdown's own click logic out of it */
-          cb.checked=false;
-          openProModal();
+          if(window.imIsPro && window.imIsPro()){ cb.checked=!cb.checked; proFeatureAction(key,cb.checked); }
+          else { cb.checked=false; openProModal(); }
         });
         dd.appendChild(label);
+        proItems.push({key,label,span,pill,cb});
       });
+      /* Pro features that actually do something once unlocked. */
+      function proFeatureAction(key,on){
+        if(key==='proArchive'){
+          const tg=document.getElementById('ntl-toggle'); const body=document.getElementById('news-timeline');
+          if(body){ body.classList.toggle('collapsed',!on); }
+          try{ imToast(currentLang==='jp'?(on?'タイムトラベル・アーカイブを開きました':'アーカイブを閉じました'):(on?'Time-travel archive opened':'Archive closed')); }catch(_){}
+        } else if(key==='proIntel'){
+          window.proIntelOn=on;
+          try{ imToast(currentLang==='jp'?('露・中 一次情報インテリジェンス: '+(on?'ON':'OFF')):('RU·CN primary-source intel: '+(on?'ON':'OFF'))); }catch(_){}
+          try{ globalData=[]; fetchData(); }catch(_){}
+        }
+      }
+      /* Reflect entitlement on the premium rows (PRO pill → ✓, lock icon → ✦) and refresh
+         the satellite key inputs / controller so unlocked providers appear immediately. */
+      window.refreshProUI=function(){
+        const pro=!!(window.imIsPro&&window.imIsPro());
+        proItems.forEach(it=>{
+          it.pill.textContent=pro?'✓ PRO':'PRO';
+          it.pill.style.background=pro?'linear-gradient(135deg,#34c759,#28a745)':'linear-gradient(135deg,#ffe08a,#e9b949)';
+          it.pill.style.color=pro?'#fff':'#7a5a00';
+          const base=i18n[currentLang][it.key]||''; it.span.textContent=pro?base.replace('🔒','✦'):base;
+        });
+        try{ if(typeof currentMapType!=='undefined' && currentMapType==='sat' && typeof satRenderController==='function') satRenderController(); }catch(_){}
+        try{ const sm=document.getElementById('settings-modal'); if(sm && sm.style.display==='flex' && typeof satRenderKeyInputs==='function') satRenderKeyInputs(); }catch(_){}
+      };
+      try{ window.refreshProUI(); }catch(_){}
     }
 
     /* --- the pricing modal (built once, lives on <body>) --- */
@@ -4902,6 +5116,7 @@ window.addEventListener('DOMContentLoaded', () => {
       modal.classList.add('show');
       document.addEventListener('keydown',onEsc);
     }
+    window.openProModal=openProModal;   /* reachable from the satellite settings + account menu */
     function closeProModal(){
       modal.classList.remove('show');
       document.removeEventListener('keydown',onEsc);
@@ -5464,9 +5679,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window.__setDetent=setDetent;
 
-    let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0;
-    function dragStart(y){ const d=recompute(); maxTy=d.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; sidebar.classList.add('sheet-dragging'); }
-    function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
+    let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0;
+    /* Keep the map's optical centre inside the area visible ABOVE the sheet, live (no animation)
+       so the centred point never drifts while the sheet is being dragged. */
+    function liveMapPad(ty,d){ if(!(map&&map.setPadding)) return; d=d||dragD||recompute();
+      const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
+      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; try{ map.setPadding({top:0,left:0,right:0,bottom:covered},{duration:0}); }catch(_){} }); }
+    function dragStart(y){ dragD=recompute(); maxTy=dragD.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; sidebar.classList.add('sheet-dragging'); }
+    function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
     function dragEnd(){ if(!dragging) return; dragging=false; sidebar.classList.remove('sheet-dragging'); const d=recompute(); const ty=curTy();
       const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek}]; let target;
       if(vel>0.45) target=order.find(o=>o.v>ty+2)||order[order.length-1];
@@ -5636,7 +5856,8 @@ window.addEventListener('DOMContentLoaded', () => {
       m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
       m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;">
         <h2 style="margin:0 0 4px;font-size:19px;">${currentLang==='jp'?'プロフィール':'Your profile'}</h2>
-        <p id="acct-email" style="margin:0 0 16px;color:var(--text-muted);font-size:13px;"></p>
+        <p id="acct-email" style="margin:0 0 10px;color:var(--text-muted);font-size:13px;"></p>
+        <div id="acct-pro" style="margin:0 0 16px;font-size:13px;"></div>
         <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;">${currentLang==='jp'?'表示名':'Display name'}</label>
         <input id="acct-name" type="text" maxlength="40" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin:6px 0 14px;">
         <button id="acct-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">${currentLang==='jp'?'保存':'Save profile'}</button>
@@ -5647,7 +5868,16 @@ window.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(m);
       m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
       document.getElementById('acct-close').onclick=()=>{ m.style.display='none'; };
-      document.getElementById('acct-logout').onclick=async()=>{ m.style.display='none'; await DB.auth.signOut(); };
+      document.getElementById('acct-logout').onclick=()=>{
+        /* Instant: clear local state + UI right away, revoke the session in the background. */
+        m.style.display='none';
+        currentUser=null; bookmarks=[];
+        try{ updateAccountButton(); }catch(_){}
+        try{ if(typeof renderUI==='function') renderUI(); }catch(_){}
+        try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
+        try{ DB.auth.signOut(); }catch(_){}   /* onAuthStateChange will reconcile favorites/community */
+        try{ imToast(currentLang==='jp'?'ログアウトしました':'Logged out'); }catch(_){}
+      };
       document.getElementById('acct-save').onclick=async()=>{
         const name=document.getElementById('acct-name').value.trim(), msg=document.getElementById('acct-msg');
         if(!name){ msg.textContent=currentLang==='jp'?'表示名を入力してください。':'Display name cannot be empty.'; return; }
@@ -5665,6 +5895,17 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('acct-email').textContent=currentUser.email;
     document.getElementById('acct-name').value=currentUser.name||'';
     document.getElementById('acct-msg').textContent='';
+    /* Pro status row — refreshed on every open so entitlement is always visible. */
+    const proRow=document.getElementById('acct-pro');
+    if(proRow){
+      const pro=!!(window.imIsPro&&window.imIsPro());
+      if(pro){
+        proRow.innerHTML=`<span style="display:inline-block;padding:3px 11px;border-radius:999px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;font-weight:800;font-size:11px;letter-spacing:.4px;">✦ ${currentLang==='jp'?'Pro メンバー':'PRO member'}</span>`+(currentUser.isAdmin?` <span style="color:var(--text-muted);font-weight:600;font-size:12px;">· admin</span>`:'');
+      } else {
+        proRow.innerHTML=`<span style="color:var(--text-muted);">${currentLang==='jp'?'フリープラン':'Free plan'}</span> · <a href="#" id="acct-upgrade" style="color:var(--primary-color);font-weight:700;text-decoration:none;">${currentLang==='jp'?'Pro を見る ↗':'See IntMap Pro ↗'}</a>`;
+        const up=document.getElementById('acct-upgrade'); if(up) up.onclick=(e)=>{ e.preventDefault(); m.style.display='none'; try{ window.openProModal&&window.openProModal(); }catch(_){} };
+      }
+    }
     m.style.display='flex';
   }
   function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b) b.textContent = currentUser ? ('👤 '+(currentUser.name||currentUser.email.split('@')[0])) : 'Log in'; }
@@ -5685,6 +5926,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){}
     if(!name) name=session.user.email.split('@')[0];
     currentUser={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin }; updateAccountButton();
+    try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
   }
 
   /* ---------- FAVORITES (★ saved articles) ---------- */
