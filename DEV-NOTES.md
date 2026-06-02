@@ -168,3 +168,62 @@ When adding a live layer, always: (1) try/catch every fetch, (2) provide a CORS-
 All 34 tracked items for this round are complete (see in-session task list). Verified in a headless
 preview where feasible (DOM/CSS measurements + console-error checks; the spinning WebGL globe makes
 screenshot/idle-based tools unreliable, so `preview_eval` was used instead).
+
+---
+
+## 8. Round 6 — 18 requested items
+
+Verified live via `preview_eval` (no console errors; functions/DOM present; ProjView canvas + every
+layer toggle exercised). External endpoints (FIRMS WMS, Open-Meteo, Esri, AWS terrarium, GIBS) were
+probed with `curl` first to confirm status + `Access-Control-Allow-Origin:*` before wiring.
+
+- **JP/EN parity (#1).** On-map geopolitical-theory labels were drawn in English on the JP map. Added
+  `GEO_LABEL_JP` + `geoLabel()`; `buildGeoFC` localizes labels and `refreshGeoLabels()` re-emits each
+  geo source on a language switch (called from `updateI18n`). A runtime scan of every `[data-i18n]`
+  node in JP now shows no English prose (only the acronym "HDI (2022)").
+- **3D + satellite speed (#2,#18).** Multi-host the heavy sources so the browser's per-host socket cap
+  stops throttling: Esri imagery over `server.` **and** `services.arcgisonline.com`; AWS terrarium DEM
+  over 3 S3 host aliases. `maxTileCacheSize` 1024→2048. (Tiles are byte-identical — pure throughput.)
+- **Mobile smoothness (#3).** Cap render resolution to `pixelRatio≤2` on phones (a DPR-3 screen shades
+  9× the fragments). `updateOcclusion` now uses a dot-product test (no per-marker `acos`) and only
+  writes `style.visibility` when it actually flips — kills the per-pan layout thrash.
+- **Sidebar centring (#4).** Frosted mode now animates `setPadding({duration:400})` in lock-step with
+  the 0.4 s slide instead of snapping; solid mode keeps the per-frame resize (skipped in frosted to not
+  fight the ease).
+- **Thermal = NASA FIRMS (#5).** GIBS retired the raster thermal layers (they're vector-only now), so
+  the old probe was permanently blank. Replaced with the **FIRMS MapServer WMS** (`fires_viirs_*`,
+  `fires_viirs_noaa20_*`, `fires_modis_*`, rolling 24/48/72 h), keyless, `image/png`, CORS `*`. Legend
+  has a 24/48/72 h selector (`window._refreshThermal`). thermal removed from `layerDates`.
+- **NATO hover (#6).** Tooltip now shows absolute defence spend ($B, SIPRI 2023) **and** %GDP.
+- **Northern Sea Route (#7).** Redrawn through the real straits (Kara Gate → Vilkitsky → Sannikov →
+  Long Strait → Bering Strait), split at the antimeridian into two segments so it renders correctly
+  with `renderWorldCopies:false`; added labelled strait waypoints.
+- **Rimland (#8).** Already a land-only country fill; confirmed the checkbox routes to `imToggleRimland`
+  and no polygon is drawn (no ocean paint).
+- **Wind (#9).** Was screen-space advected off a single centre px/°, which is nonsense across the globe.
+  Rebuilt as **geographic particles**: each holds lng/lat, is advected through the real Open-Meteo GFS
+  field in degrees (dt scaled by metres-per-pixel for constant on-screen speed), and projected with the
+  live map every frame → correct under any projection/zoom/rotation, panning locked to the map.
+- **Mobile legends drag (#10).** The mobile `!important` dock overrode the JS drag. Scoped it to
+  `:not([data-dragged])`, unified all legends on `wireDrag` (mouse+touch, sets `data-dragged`), and
+  pin-to-current-spot on drag-start so there's no jump.
+- **Sea-level from legend (#11).** Added a slider inside the sea-level legend, two-way synced with the
+  in-dropdown slider via `_refreshSeaLevel`.
+- **Köppen perf + mobile carets (#12).** Pre-compute a per-pixel code index ONCE (was a 30-colour
+  nearest-match per pixel per rebuild — tens of millions of ops); rebuilds are now a single cheap pass
+  (~30×) and debounced. Mobile Layers list hides the ▷/▽ carets and headers are plain labels (desktop
+  unchanged); groups force-expanded on mobile.
+- **Mobile Summarize button (#13).** A later non-media rule (`bottom:22px`) beat the mobile rule by
+  source order, parking it *behind* the sheet. Forced the mobile dock with `!important`.
+- **Google login (#14).** Root cause = supabase-js v2 auth-lock deadlock: `getSession()`/`from()` were
+  awaited *inside* `onAuthStateChange`. Now the callback defers all work via `setTimeout(…,0)` and
+  reuses the event's session (`refreshCurrentUser(session)`); re-renders UI on sign-in.
+- **Former Soviet Union (#15).** New red land-only country fill (`imToggleFSU`, 15 ISO3 republics),
+  geo-theory checkbox routed like Rimland, label localized ("旧ソ連諸国").
+- **Flat-map projections (#16) + azimuthal-on-pin (#17).** MapLibre renders only mercator/globe, so
+  built **`window.ProjView`** — a self-contained 2-D canvas projection engine (Equal Earth, Robinson,
+  Winkel Tripel, Mollweide, Equirectangular, Azimuthal Equidistant) drawing real Natural-Earth geometry
+  + graticule, with drag-pan/wheel-zoom. Entry: a "Projection" selector (desktop view-group, shown in
+  Flat; + mobile Map sheet). The pin popup gets a "🧭 正距方位図 / Azimuthal" button → opens the viewer
+  centred on that pin with equidistant range rings (2,500–17,500 km). Reuses `window.countryGeo`, falls
+  back to a one-time 110 m fetch.

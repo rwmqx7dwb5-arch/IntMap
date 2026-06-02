@@ -654,7 +654,10 @@
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
       .m-sheet .layer-dropdown .lyr-op{ margin:0 0 4px 22px !important; height:18px; }
       .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:3px !important; }
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:7px 2px 0 !important; padding:3px 2px !important; font-size:10.5px; min-height:0; }
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:7px 2px 0 !important; padding:3px 2px !important; font-size:10.5px; min-height:0; cursor:default; }
+      /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
+         (desktop keeps them) (#12). */
+      .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
       .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:4px 0 !important; }
       .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 0 !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
@@ -675,10 +678,16 @@
       .tool-panel .radius-list{ max-height:88px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; }
-      .koppen-legend, .data-legend{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 60px) !important; right:10px !important; left:auto !important; max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
+      .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
+      /* Default dock only applies until the user drags a legend — once dragged it carries data-dragged
+         and its inline left/top win, so legends are freely movable on phones too (#10). */
+      .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 60px) !important; right:10px !important; left:auto !important; }
       /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centred so they never collide. */
       .news-timeline{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
-      .ai-view-summary-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); font-size:12px; padding:8px 14px; }
+      /* !important: a later non-media rule (.ai-view-summary-btn{bottom:22px}) otherwise wins by source
+         order and parks this button at bottom:22px — i.e. BEHIND the bottom sheet, which is exactly why
+         it "disappeared" on phones (#13). Force it to ride just above the sheet's current top instead. */
+      .ai-view-summary-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; top:auto !important; font-size:12px; padding:8px 14px; z-index:1200; }
       body.sheet-full .ai-view-summary-btn{ display:none; }
       .news-timeline .ntl-body{ min-width:0; } .ntl-label{ min-width:0; flex:1; font-size:11px; }
       .pin-popup{ min-width:0; width:max-content; max-width:calc(100vw - 24px); font-size:13px; }
@@ -1037,6 +1046,7 @@
              <div class="layer-group-title" data-i18n="lyrGrpGeo">Geopolitical theory</div>
              <label class="layer-option"><input type="checkbox" data-layer="heartland" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff3b30"></span> Heartland</label>
              <label class="layer-option"><input type="checkbox" data-layer="rimland" class="geo-layer-cb"> <span class="lyr-sw" style="background:#0a84ff"></span> Rimland</label>
+             <label class="layer-option"><input type="checkbox" data-layer="fsu" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e0312e"></span> Former Soviet Union</label>
              <label class="layer-option"><input type="checkbox" data-layer="sahel" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ffcc00"></span> Sahel Risk Zone</label>
              <label class="layer-option"><input type="checkbox" data-layer="islandChain1" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff9500"></span> 1st Island Chain</label>
              <label class="layer-option"><input type="checkbox" data-layer="islandChain2" class="geo-layer-cb"> <span class="lyr-sw" style="background:#af52de"></span> 2nd Island Chain</label>
@@ -1352,6 +1362,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(toolMode) updateToolPanel();
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
     try{ localizeGeoLabels(); }catch(_){}
+    try{ refreshGeoLabels(); }catch(_){}   /* on-map geo-theory labels follow the language too (#1) */
     /* re-evaluate place-label language + basemap on EN/JP switch (retry on idle if style busy) */
     try{ applyTheme(); if(map&&!map.isStyleLoaded()) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
     try{ if(typeof updateAccountButton==='function') updateAccountButton(); }catch(_){}
@@ -1362,7 +1373,7 @@ window.addEventListener('DOMContentLoaded', () => {
      hard-coded English; pull the right language out of geoLayersDB instead). */
   /* Fallback names for geo-layer checkboxes whose layer was pulled out of geoLayersDB (e.g. Rimland,
      now a country-fill) so they still localize EN/JP (#3). */
-  const GEO_LABEL_FALLBACK={ rimland:{name:{en:'Rimland',jp:'リムランド'}} };
+  const GEO_LABEL_FALLBACK={ rimland:{name:{en:'Rimland',jp:'リムランド'}}, fsu:{name:{en:'Former Soviet Union',jp:'旧ソ連諸国'}} };
   function localizeGeoLabels(){
     document.querySelectorAll('.geo-layer-cb').forEach(cb=>{
       const key=cb.getAttribute('data-layer'), data=(typeof geoLayersDB!=='undefined'&&geoLayersDB[key])||GEO_LABEL_FALLBACK[key]; if(!data||!data.name) return;
@@ -1458,7 +1469,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const SAT_PROVIDERS=[
     { id:'esri', tier:'free', short:'Esri', name:{en:'Esri World Imagery',jp:'Esri 衛星画像'},
       dated:false, maxzoom:19, attribution:'Imagery © Esri, Maxar, Earthstar Geographics',
-      tiles:()=>['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] },
+      /* Two host aliases serving the SAME World_Imagery tiles — MapLibre round-robins across them, so
+         the browser's per-host connection cap no longer throttles high-res imagery in 3D (#2,#18). */
+      tiles:()=>['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] },
     { id:'gibs-modis', tier:'free', short:'MODIS Terra', name:{en:'NASA GIBS · MODIS Terra',jp:'NASA GIBS · MODIS Terra'},
       dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — MODIS Terra true colour',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
@@ -2024,12 +2037,19 @@ window.addEventListener('DOMContentLoaded', () => {
   if(isMobile()) sidebar.classList.add('collapsed'); /* start collapsed on phone */
   document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
-    try{ applySidebarStyle(); }catch(_){}   /* refresh overlay map-padding in frosted mode */
-    const start = performance.now();
-    requestAnimationFrame(function sync(time) {
-      if (map) map.resize();
-      if (time - start < 450) requestAnimationFrame(sync);
-    });
+    try{ applySidebarStyle(true); }catch(_){}   /* frosted: animate the overlay map-padding with the slide (#4) */
+    /* SOLID mode: the map-container is a flex child that physically grows/shrinks as the sidebar
+       slides, so resize every frame keeps the camera centred in the remaining area. In FROSTED mode
+       the container size is unchanged (the sidebar overlays it) — the animated setPadding above already
+       glides the centre, so the per-frame resize would only fight that ease; skip it. */
+    const frosted=document.body.classList.contains('sidebar-glass');
+    if(!frosted || isMobile()){
+      const start = performance.now();
+      requestAnimationFrame(function sync(time) {
+        if (map) map.resize();
+        if (time - start < 450) requestAnimationFrame(sync);
+      });
+    }
   });
 
   /* ===== Map init ===== */
@@ -2048,11 +2068,15 @@ window.addEventListener('DOMContentLoaded', () => {
          and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
          works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
          cache keeps recently-seen tiles hot when panning back. */
-      fadeDuration:0, maxTileCacheSize:1024, refreshExpiredTiles:false,
+      fadeDuration:0, maxTileCacheSize:2048, refreshExpiredTiles:false,
+      /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
+         DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
+         roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
+      pixelRatio:(isMobile()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),
       glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
       center:[10,20], zoom:1.7, minZoom:0, maxZoom:18,
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
+        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'}},
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95}},
           {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:isInitiallyDark?'visible':'none'}},
@@ -2137,11 +2161,22 @@ window.addEventListener('DOMContentLoaded', () => {
   if(map) map.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
 
   function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
+  let _occAllVis=false;
   function updateOcclusion(){
     if(!map) return;
-    if(currentProj!=='globe'){ markersArray.forEach(m=>m.getElement().style.visibility='visible'); return; }
-    const c=map.getCenter();
-    markersArray.forEach(m=>{ const ll=m.getLngLat(); m.getElement().style.visibility=(angDist(c.lng,c.lat,ll.lng,ll.lat)>88)?'hidden':'visible'; });
+    /* Flat map: every marker is visible. Do the bulk write ONCE (guarded) instead of on every pan
+       frame — redundant style writes were a needless per-move cost on phones (#3). */
+    if(currentProj!=='globe'){ if(!_occAllVis){ markersArray.forEach(m=>m.getElement().style.visibility='visible'); _occAllVis=true; } return; }
+    _occAllVis=false;
+    /* Globe: hide markers on the far hemisphere. Use a unit-vector DOT PRODUCT (no per-marker acos)
+       and only touch the DOM when a marker's visibility actually flips — this removes the layout
+       thrash that made globe pan/zoom stutter on mobile (#3). */
+    const c=map.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
+    const cx=Math.cos(cla)*Math.cos(clo), cy=Math.cos(cla)*Math.sin(clo), cz=Math.sin(cla);
+    const TH=Math.cos(88*r);   /* dot >= TH ⇒ within ~88° of centre ⇒ on the near side */
+    markersArray.forEach(m=>{ const ll=m.getLngLat(), la=ll.lat*r, lo=ll.lng*r, cla2=Math.cos(la);
+      const dot=cla2*Math.cos(lo)*cx + cla2*Math.sin(lo)*cy + Math.sin(la)*cz;
+      const el=m.getElement(), vis=dot>TH?'visible':'hidden'; if(el.style.visibility!==vis) el.style.visibility=vis; });
   }
 
   /* =============================================================================
@@ -2339,11 +2374,21 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"Djibouti", at:[43.15,11.6]}
     ]},
     seaRoute:{ color:"#34c759", name:{en:"Northern Sea Route",jp:"北極海航路"}, lines:[
-      /* Northern Sea Route redrawn to hug the Russian Arctic coast (#15): Murmansk → Kara Gate →
-         Kara Sea → Vilkitsky Strait (Cape Chelyuskin, ~104°E/77.7°N) → Laptev → Sannikov Strait →
-         East Siberian Sea → Long Strait → Bering Strait approach. Kept inside [-180,180] so the
-         polyline never jumps the antimeridian. */
-      {label:"Northern Sea Route", path:[[33,69.4],[43,69.5],[55,69.7],[58,70.2],[66,72.6],[73,73.2],[80,73.5],[91,75.8],[100,77.2],[104,77.7],[113,76.3],[125,74.3],[139,73.6],[152,72.4],[166,70.2],[176,67.8],[180,66.4]]}
+      /* Northern Sea Route — the real Russian-Arctic shipping lane (#7), traced through the actual
+         straits it transits, then SPLIT at the antimeridian so the polyline never wraps the wrong way
+         with renderWorldCopies:false. Murmansk → Kara Gate (Karskie Vorota, between Novaya Zemlya &
+         Vaygach) → Kara Sea → Vilkitsky Strait off Cape Chelyuskin (104.3°E, 77.7°N — the northernmost
+         point of mainland Eurasia) → Laptev Sea → Sannikov Strait (New Siberian Islands) → East
+         Siberian Sea → Long Strait (south of Wrangel Island) → Chukchi Sea → Bering Strait (66°N,
+         169°W). The second segment re-enters from −180 so the dateline crossing renders correctly. */
+      {label:"Northern Sea Route", path:[[33.1,69.0],[40,68.7],[44.5,68.5],[48,69.2],[54,70.0],[58.5,70.5],[63,71.6],[68,72.7],[74,73.2],[80,73.6],[87,75.0],[95,76.7],[101,77.4],[104.3,77.7],[110,76.6],[120,75.0],[129,74.1],[137,74.7],[140.5,74.9],[148,74.0],[157,72.7],[166,71.2],[173,70.4],[178.5,70.4],[180,69.6]]},
+      {path:[[-180,69.4],[-178,68.4],[-174,67.2],[-171,66.6],[-169,66.0]]}
+    ], points:[
+      {label:"Kara Gate", at:[58.5,70.5]},
+      {label:"Vilkitsky Strait", at:[104.3,77.7]},
+      {label:"Sannikov Strait", at:[140.5,74.9]},
+      {label:"Long Strait", at:[178.5,70.4]},
+      {label:"Bering Strait", at:[-169,66.0]}
     ]},
     chokepoints:{ color:"#ff9500", name:{en:"Global Chokepoints",jp:"世界の海上要衝"}, points:[
       {label:"Strait of Hormuz", at:[56.3,26.6]},
@@ -2392,23 +2437,41 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"Natanz (IR)", at:[51.7,33.7]}
     ]}
   };
+  /* JP translations for the on-map geo-theory labels (#1) — English leaked onto the Japanese map
+     because these labels were drawn verbatim. geoLabel() swaps them when the UI is in Japanese, and
+     refreshGeoLabels() re-emits the source data on a language switch. */
+  const GEO_LABEL_JP={
+    "Heartland (Pivot Area)":"ハートランド（中軸地帯）","Sahel Risk Zone":"サヘル危険地帯",
+    "1st Island Chain":"第一列島線","2nd Island Chain":"第二列島線","String of Pearls":"真珠の首飾り",
+    "Hainan (Yulin Base)":"海南島（楡林基地）","Kyaukpyu":"チャウピュー","Chittagong":"チッタゴン","Hambantota":"ハンバントタ","Gwadar":"グワダル","Djibouti":"ジブチ",
+    "Northern Sea Route":"北極海航路","Kara Gate":"カラ海峡","Vilkitsky Strait":"ヴィリキツキー海峡","Sannikov Strait":"サンニコフ海峡","Long Strait":"ロング海峡","Bering Strait":"ベーリング海峡",
+    "Strait of Hormuz":"ホルムズ海峡","Strait of Malacca":"マラッカ海峡","Suez Canal":"スエズ運河","Bab-el-Mandeb":"バブ・エル・マンデブ海峡","Bosphorus":"ボスポラス海峡","Strait of Gibraltar":"ジブラルタル海峡","Panama Canal":"パナマ運河","Taiwan Strait":"台湾海峡","Danish Straits":"デンマーク海峡群","Dover Strait":"ドーバー海峡","Sunda Strait":"スンダ海峡","Lombok Strait":"ロンボク海峡","Cape of Good Hope":"喜望峰",
+    "BRI — Silk Road Economic Belt":"一帯一路 — シルクロード経済ベルト","BRI — Maritime Silk Road":"一帯一路 — 21世紀海上シルクロード",
+    "Nord Stream":"ノルドストリーム","Power of Siberia":"シベリアの力","Druzhba":"ドルージバ","TurkStream":"トルコストリーム","Trans-Alaska":"トランスアラスカ",
+    "Transatlantic (MAREA)":"大西洋横断（MAREA）","Transpacific (E)":"太平洋横断（東）","Transpacific (W)":"太平洋横断（西）","SEA-ME-WE":"SEA-ME-WE",
+    "Minot AFB (US)":"マイノット空軍基地（米）","Plesetsk (RU)":"プレセツク（露）","Lop Nur (CN)":"ロプノール（中）","Île Longue (FR)":"イル・ロング（仏）","Faslane (UK)":"ファスレーン（英）","Pokhran (IN)":"ポカラン（印）","Kahuta (PK)":"カフータ（パキスタン）","Dimona (IL)":"ディモナ（イスラエル）","Yongbyon (NK)":"寧辺（北朝鮮）","Natanz (IR)":"ナタンズ（イラン）"
+  };
+  function geoLabel(s){ return (currentLang==='jp' && GEO_LABEL_JP[s]) ? GEO_LABEL_JP[s] : s; }
   function buildGeoFC(data){
     const feats=[];
     (data.areas||[]).forEach(a=>{
       const ring=a.ring.slice(); const f=ring[0], l=ring[ring.length-1];
       if(f[0]!==l[0]||f[1]!==l[1]) ring.push(f);
       feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{}});
-      if(a.label){ let sx=0,sy=0; a.ring.forEach(p=>{sx+=p[0];sy+=p[1];}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:[sx/a.ring.length,sy/a.ring.length]},properties:{label:a.label}}); }
+      if(a.label){ let sx=0,sy=0; a.ring.forEach(p=>{sx+=p[0];sy+=p[1];}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:[sx/a.ring.length,sy/a.ring.length]},properties:{label:geoLabel(a.label)}}); }
     });
     (data.lines||[]).forEach(ln=>{
       feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.path},properties:{}});
-      if(ln.label){ const m=ln.path[Math.floor(ln.path.length/2)]; feats.push({type:'Feature',geometry:{type:'Point',coordinates:m},properties:{label:ln.label}}); }
+      if(ln.label){ const m=ln.path[Math.floor(ln.path.length/2)]; feats.push({type:'Feature',geometry:{type:'Point',coordinates:m},properties:{label:geoLabel(ln.label)}}); }
     });
     (data.points||[]).forEach(pt=>{
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:pt.at},properties:{label:pt.label,marker:1}});
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:pt.at},properties:{label:geoLabel(pt.label),marker:1}});
     });
     return {type:'FeatureCollection',features:feats};
   }
+  /* Re-emit every geo source's data so on-map labels follow the active language (#1). */
+  function refreshGeoLabels(){ if(!map) return; for(const key of Object.keys(geoLayersDB)){ const src=map.getSource(key); if(src){ try{ src.setData(buildGeoFC(geoLayersDB[key])); }catch(_){} } } }
+  window.refreshGeoLabels=refreshGeoLabels;
   function ensureGeoLayers(){
     if(!map) return;
     /* Style may not be ready yet (e.g. right after setProjection on load). Retry until it is. */
@@ -2468,7 +2531,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ const r=await fetch(NE+'ne_50m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){}
         if(!(gj&&gj.features)){ try{ const r=await fetch(NE+'ne_110m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){} }
         if(gj&&gj.features){
-          countryGeo=gj;
+          countryGeo=gj; window.countryGeo=countryGeo;   /* reused by the projection viewer (#16,#17) */
           gj.features.forEach(f=>{
             const p=f.properties||{};
             let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
@@ -3462,13 +3525,18 @@ window.addEventListener('DOMContentLoaded', () => {
     _lyrGroupItems(header).forEach(el=>{ el.style.display=collapsed?'none':''; }); }
   function _collapseGroup(header){ if(header.classList.contains('lyr-collapsed')) return; header.classList.add('lyr-collapsed');
     _lyrGroupItems(header).forEach(el=>{ el.style.display='none'; }); }
-  layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation(); _layerGroupToggle(h); } });
+  layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
+    /* Mobile shows all groups expanded (no carets) → headers are plain labels, not collapsers (#12). */
+    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return;
+    _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
   document.getElementById('btn-layers').addEventListener('click',()=>{ setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled) _collapseGroup(h); }); },30); });
   layerDropdown.addEventListener('click',(e)=>e.stopPropagation());
   document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
     /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
     if(cb.getAttribute('data-layer')==='rimland'){ if(window.imToggleRimland) window.imToggleRimland(cb.checked); return; }
+    /* Former Soviet Union is a red country-fill (#15) — route it to its own toggle too. */
+    if(cb.getAttribute('data-layer')==='fsu'){ if(window.imToggleFSU) window.imToggleFSU(cb.checked); return; }
     ensureGeoLayers(); updateGeoLayers();
   }));
   document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme(); });
@@ -4515,7 +4583,14 @@ window.addEventListener('DOMContentLoaded', () => {
   let terrain3D=false;
   function ensureTerrainSource(){
     if(map.getSource('terrain-dem')) return true;
-    try{ map.addSource('terrain-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13}); return true; }
+    /* Three host aliases for the SAME AWS terrarium DEM tiles. The browser opens a separate connection
+       pool per hostname, so round-robining across them ~triples concurrent DEM throughput while tilted
+       in 3D — the elevation tiles were the under-fetch bottleneck (user saw <10 Mbps) (#2,#18). */
+    try{ map.addSource('terrain-dem',{type:'raster-dem',tiles:[
+        'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+        'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png',
+        'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png'
+      ],encoding:'terrarium',tileSize:256,maxzoom:13}); return true; }
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
   function set3D(on){
@@ -4750,7 +4825,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
-      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
+      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button onclick="window._azimuthalFromPin('${pin.id}')" title="${currentLang==='jp'?'この地点を中心とした正距方位図法':'Azimuthal-equidistant map centred here'}">🧭 ${currentLang==='jp'?'正距方位図':'Azimuthal'}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
   }
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;
@@ -4760,6 +4835,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window._closePinPopup=()=>{ activePinId=null; document.getElementById('pin-popup').style.display='none'; };
   window._removePin=(id)=>removePin(id);
   window._measureFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(toolMode!=='measure') setTool('measure'); measurePoints=[[p.lng,p.lat]]; refreshTool(); updateToolPanel(); _closePinPopup(); };
+  /* #17 — open the azimuthal-equidistant viewer centred on this pin (true distances/bearings from it). */
+  window._azimuthalFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(window.ProjView) window.ProjView.open('azimuthal',[p.lng,p.lat]); };
 
   /* Context menu */
   function showContextMenu(point,lngLat){
@@ -4841,35 +4918,8 @@ window.addEventListener('DOMContentLoaded', () => {
       el.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
-      /* Make draggable so it never overlaps the layer dropdown */
-      const handle=el.querySelector('.dl-drag');
-      handle.addEventListener('mousedown',ev=>{
-        ev.preventDefault();
-        const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
-        const dx=ev.clientX-startRect.left, dy=ev.clientY-startRect.top;
-        el.style.bottom='auto'; el.style.right='auto';
-        function mv(e){
-          const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, e.clientX-mcRect.left-dx));
-          const y=Math.max(8,Math.min(mcRect.height-startRect.height-8, e.clientY-mcRect.top-dy));
-          el.style.left=x+'px'; el.style.top=y+'px';
-        }
-        function up(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); }
-        document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
-      });
-      /* Touch drag too */
-      handle.addEventListener('touchstart',ev=>{
-        const t0=ev.touches[0]; const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
-        const dx=t0.clientX-startRect.left, dy=t0.clientY-startRect.top;
-        el.style.bottom='auto'; el.style.right='auto';
-        function mv(e){
-          const t1=e.touches[0];
-          const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, t1.clientX-mcRect.left-dx));
-          const y=Math.max(8,Math.min(mcRect.height-startRect.height-8, t1.clientY-mcRect.top-dy));
-          el.style.left=x+'px'; el.style.top=y+'px';
-        }
-        function up(){ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); }
-        document.addEventListener('touchmove',mv,{passive:true}); document.addEventListener('touchend',up);
-      },{passive:true});
+      /* Drag (mouse + touch) is wired centrally by wireDrag() once it is defined below, so every
+         data-legend behaves like the Köppen legend and stays movable on phones too (#10). */
       return el;
     }
     const lgdHDI=makeLegend('hdi',140,(currentLang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], currentLang==='jp'?'2022 国連UNDP':'2022 UNDP');
@@ -4911,10 +4961,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Thermal anomalies legend (fire/heat-signature pixels) */
     const lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
     lgdThermal.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'熱異常(火災)':'Thermal anomalies'}</h4>
-      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${currentLang==='jp'?'検知された熱異常点':'Detected heat-signature pixel'}</div>
-      <div class="dl-hint">${currentLang==='jp'?'NASA FIRMS · VIIRS (S-NPP) 375m 日次':'NASA FIRMS · VIIRS (S-NPP) 375 m, daily'}</div>`;
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${currentLang==='jp'?'検知された火災・熱源':'Detected active fire / heat source'}</div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${currentLang==='jp'?'期間':'Window'}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24">${currentLang==='jp'?'過去24時間':'Last 24 h'}</option><option value="48">${currentLang==='jp'?'過去48時間':'Last 48 h'}</option><option value="72">${currentLang==='jp'?'過去72時間':'Last 72 h'}</option></select></label>
+      <div class="dl-hint">${currentLang==='jp'?'NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）':'NASA FIRMS · MODIS + VIIRS (real, near-real-time)'}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); }); } }
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
     const lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
     lgdRadar.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
@@ -4951,9 +5003,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
     lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海面上昇':'Sea-level rise'}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${currentLang==='jp'?'浸水域 (≤ 現海面 + ':'Flooded (≤ today + '}<b class="sl-cur">+${window._seaLevelM||0} m</b>${currentLang==='jp'?')':')'}</div>
+      <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">0<input type="range" class="sl-legend-range" min="0" max="80" step="1" value="${window._seaLevelM||0}" style="flex:1; accent-color:var(--primary-color);">80 m</label>
       <div class="dl-hint">${currentLang==='jp'?'スライダーで上昇量を選択。AWS Terrain DEM の標高に基づく簡易浸水。潮汐・防潮堤は未考慮。':'Use the slider to set the rise. Naïve "bathtub" flooding from the AWS Terrain DEM — ignores tides & defences.'}</div>`;
     mc.appendChild(lgdSeaLevel);
     lgdSeaLevel.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sealevel'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Sea-level slider lives in the legend too (#11) — control the simulation straight from the legend. */
+    { const r=lgdSeaLevel.querySelector('.sl-legend-range'); if(r) r.addEventListener('input',()=>{ window._seaLevelM=parseInt(r.value,10)||0; if(window._refreshSeaLevel) window._refreshSeaLevel(); }); }
     /* Unified legend drag — MOUSE + TOUCH (#33), idempotent. Works for any legend whose handle is
        .dl-drag or .kl-drag, so EEZ/Temp/Thermal/… AND the Köppen legend are all movable on phones. */
     function wireDrag(el){
@@ -4962,6 +5017,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const begin=(cx,cy)=>{
         const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
         const ox=cx-startRect.left, oy=cy-startRect.top;
+        /* Pin to the current on-screen spot BEFORE releasing the CSS bottom/right anchor, so the
+           legend never flashes to a default corner when the drag starts (esp. on mobile, #10). */
+        el.style.left=(startRect.left-mcRect.left)+'px'; el.style.top=(startRect.top-mcRect.top)+'px';
         el.style.bottom='auto'; el.style.right='auto'; el.dataset.dragged='1';
         return (mx,my)=>{
           const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, mx-mcRect.left-ox));
@@ -4978,6 +5036,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window._wireLegendDrag=wireDrag;
     wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
+    wireDrag(lgdHDI); wireDrag(lgdDem); wireDrag(lgdPop); wireDrag(lgdNATO);   /* the makeLegend legends drag centrally too now (#10) */
     /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
        innerHTML rebuild that previously wiped it — that rebuild was why it "couldn't be moved" (#22). */
 
@@ -4996,31 +5055,35 @@ window.addEventListener('DOMContentLoaded', () => {
     const PRECIP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     /* Air-temperature (MERRA-2 monthly reanalysis) lags ~3 months → default to the latest safe month. */
     function tempMonthISO(monthsBack){ const d=new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-(monthsBack==null?3:monthsBack)); return d.toISOString().slice(0,10); }
-    const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
-    /* Thermal anomalies / active fire (#13): these are NASA FIRMS detections (MODIS + VIIRS)
-       served as GIBS WMTS. Different GIBS layers publish different TileMatrixSet levels, and a
-       wrong layer/level returns HTTP 400/404 → a BLANK layer (the old `..._375m_All` name was not
-       valid, which is why thermal "didn't work"). We probe a small set of known FIRMS layers at
-       runtime (in the user's real browser) and lock onto the first that actually serves a tile. */
-    const THERMAL_CANDIDATES=[
-      {layer:'MODIS_Combined_Thermal_Anomalies_All', lvl:7},
-      {layer:'VIIRS_SNPP_Thermal_Anomalies_375m_Day', lvl:7},
-      {layer:'VIIRS_NOAA20_Thermal_Anomalies_375m_Day', lvl:7},
-      {layer:'VIIRS_SNPP_Thermal_Anomalies_375m_Night', lvl:7},
-      {layer:'MODIS_Combined_Thermal_Anomalies_All', lvl:9}
-    ];
-    let _thermalCfg=null;
-    async function pickThermalCfg(){
-      if(_thermalCfg) return _thermalCfg;
-      for(const c of THERMAL_CANDIDATES){
-        try{
-          const u=`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${c.layer}/default/${layerDates.thermal}/GoogleMapsCompatible_Level${c.lvl}/0/0/0.png`;
-          const r=await fetch(u,{method:'GET',cache:'no-store'});
-          if(r.ok && (r.headers.get('content-type')||'').indexOf('image')>=0){ _thermalCfg=c; return c; }
-        }catch(_){}
-      }
-      _thermalCfg=THERMAL_CANDIDATES[0]; return _thermalCfg;   /* best-effort default */
+    /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
+       thermal row carries a window selector in its legend instead of a calendar date. */
+    const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    /* Thermal anomalies / active fire (#5) — REAL NASA FIRMS data via its keyless MapServer WMS.
+       Why this instead of GIBS: NASA retired the GIBS "Thermal Anomalies" RASTER layers and now serves
+       them only as vector tiles, so the old raster/WMTS probe could never get a tile (HTTP 400/404) →
+       the layer was permanently blank. FIRMS' own WMS publishes rolling time-window layers (last
+       24/48/72 h) that fuse MODIS (Terra+Aqua) and VIIRS (S-NPP + NOAA-20) active-fire detections, it
+       needs no API key, and it returns image/png with Access-Control-Allow-Origin:* so it works even
+       from file://. Verified live (200 image/png, CORS *). */
+    window._thermalWindow=window._thermalWindow||'24';        /* rolling window in hours: 24 | 48 | 72 */
+    function firmsThermalWMS(){
+      const w=window._thermalWindow||'24';
+      const layers='fires_viirs_'+w+',fires_viirs_noaa20_'+w+',fires_modis_'+w;
+      return 'https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+layers+'&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=';
     }
+    function addFirmsThermal(){
+      if(map.getLayer('lyr-thermal')) return;
+      map.addSource('src-thermal',{type:'raster',tiles:[firmsThermalWMS()],tileSize:256,attribution:'NASA FIRMS — MODIS & VIIRS active fire'});
+      map.addLayer({id:'lyr-thermal',type:'raster',source:'src-thermal',layout:{visibility:'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
+    }
+    /* Rebuild the source when the user switches the 24/48/72 h window in the legend (#5). */
+    window._refreshThermal=function(){
+      if(!map.getSource('src-thermal')) return;
+      const wasVis=map.getLayer('lyr-thermal')&&map.getLayoutProperty('lyr-thermal','visibility')==='visible';
+      try{ if(map.getLayer('lyr-thermal')) map.removeLayer('lyr-thermal'); }catch(_){}
+      try{ map.removeSource('src-thermal'); }catch(_){}
+      try{ addFirmsThermal(); if(wasVis) setVis('lyr-thermal',true); }catch(_){}
+    };
     [
       ['__grp','lyrGrpWeather'],
       ['climate','lyrClimate'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
@@ -5187,6 +5250,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const el=ensureMapTooltip(); el.style.display='block';
         el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'NATO加盟年':'Joined NATO'}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費':'Defence spending'}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
           `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費 (対GDP)':'Defence (% GDP)'}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
         positionTooltip(e.point);
       });
@@ -5201,6 +5265,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function applyRimland(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; map.setFeatureState({source:'countries',id:f.id},{rimland:!!(s&&RIMLAND.has(s.code))}); }); }
     window.imToggleRimland=function(on){ if(on){ withCountries(()=>{ try{ addRimland(); applyRimland(); setVis('rimland-fill',true); setVis('rimland-line',true); }catch(e){ console.warn('rimland fail',e); } }); } else { setVis('rimland-fill',false); setVis('rimland-line',false); } };
+
+    /* Former Soviet Union (#15) — the 15 republics of the USSR as a RED land-only country fill (no sea
+       painted; uses the country polygons directly). Matches on the feature's ISO3 id so every republic
+       fills even if it has no economic stats. */
+    const FSU=new Set("RUS UKR BLR MDA EST LVA LTU GEO ARM AZE KAZ UZB TKM KGZ TJK".split(' '));
+    function addFSU(){
+      if(!map.getLayer('fsu-fill')) map.addLayer({id:'fsu-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#e0312e','fill-opacity':['case',['boolean',['feature-state','fsu'],false],0.42,0]}},beforeId);
+      if(!map.getLayer('fsu-line')) map.addLayer({id:'fsu-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#ff6b6b','line-width':['case',['boolean',['feature-state','fsu'],false],1.2,0]}},beforeId);
+    }
+    function applyFSU(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; map.setFeatureState({source:'countries',id:f.id},{fsu:FSU.has(String(f.id))}); }); }
+    window.imToggleFSU=function(on){ if(on){ withCountries(()=>{ try{ addFSU(); applyFSU(); setVis('fsu-fill',true); setVis('fsu-line',true); }catch(e){ console.warn('fsu fail',e); } }); } else { setVis('fsu-fill',false); setVis('fsu-line',false); } };
 
     /* Sea-level-rise simulator (#24): a color-relief layer over the DEM that floods everything at or
        below the chosen +rise (window._seaLevelM, metres) in blue, leaving higher land transparent so
@@ -5219,7 +5294,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window._refreshSeaLevel=function(){
       if(map.getLayer('lyr-sealevel')){ try{ map.setPaintProperty('lyr-sealevel','color-relief-color',seaLevelRamp()); }catch(_){} }
-      try{ const s=lgdSeaLevel.querySelector('.sl-cur'); if(s) s.textContent='+'+(window._seaLevelM||0)+' m'; }catch(_){}
+      const L=window._seaLevelM||0;
+      try{ const s=lgdSeaLevel.querySelector('.sl-cur'); if(s) s.textContent='+'+L+' m'; }catch(_){}
+      /* Keep the legend slider and the in-dropdown slider in lock-step (#11). */
+      try{ const lr=lgdSeaLevel.querySelector('.sl-legend-range'); if(lr && +lr.value!==L) lr.value=L; }catch(_){}
+      try{ const dd=document.getElementById('sl-sealevel'); if(dd && +dd.value!==L){ dd.value=L; const lbl=document.getElementById('sllbl-sealevel'); if(lbl) lbl.textContent='+'+L+' m'; } }catch(_){}
     };
 
     let nightTimer=null;
@@ -5291,26 +5370,46 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const p=window._koppenCanvas.getContext('2d').getImageData(x,y,1,1).data; return nearestKoppenCode(p[0],p[1],p[2],p[3]); }
       catch(e){ return null; }
     };
-    /* Produce a Köppen image with only the selected codes opaque (others dimmed/hidden).
-       Returns a data URL the MapLibre image source can consume. */
+    /* PERF (#12): classify every pixel into a Köppen-code index ONCE. The previous code ran a
+       30-colour nearest-match for every pixel on every highlight rebuild (W·H·30 ops per click,
+       tens of millions), which is why per-climate highlighting felt heavy. With the index cached,
+       each rebuild is a single cheap pass (no nearest-colour search), ~30× faster. */
+    window._koppenCodeIdx=null; window._koppenSrcData=null;
+    function ensureKoppenCodeIndex(){
+      if(window._koppenCodeIdx || !window._koppenCanvas) return;
+      const c=window._koppenCanvas, W=c.width, H=c.height;
+      let d; try{ d=c.getContext('2d').getImageData(0,0,W,H).data; }catch(e){ return; }
+      const idx=new Uint8Array(W*H), cache=new Map();      /* RGB→code-index cache (only ~30 colours) */
+      for(let p=0,i=0;p<idx.length;p++,i+=4){
+        if(d[i+3]<32){ idx[p]=255; continue; }
+        const key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];
+        let ci=cache.get(key);
+        if(ci===undefined){
+          let best=255,bestD=Infinity;
+          for(let k=0;k<KCOL.length;k++){ const cc=KCOL[k][1],dr=d[i]-cc[0],dg=d[i+1]-cc[1],db=d[i+2]-cc[2],dd2=dr*dr+dg*dg+db*db; if(dd2<bestD){bestD=dd2;best=k;} }
+          ci=(bestD<6000)?best:255; cache.set(key,ci);
+        }
+        idx[p]=ci;
+      }
+      window._koppenCodeIdx=idx; window._koppenSrcData=d;   /* keep the original pixels for fast recolour */
+    }
+    /* Produce a Köppen image with only the selected codes vivid (others dimmed). Returns a data URL. */
     function buildKoppenHighlightURL(selectedSet){
       if(!window._koppenReady||!window._koppenCanvas) return null;
       if(!selectedSet||selectedSet.size===0) return null;
-      const src=window._koppenCanvas, W=src.width, H=src.height;
+      ensureKoppenCodeIndex();
+      const idx=window._koppenCodeIdx, src=window._koppenSrcData; if(!idx||!src) return null;
+      const W=window._koppenCanvas.width, H=window._koppenCanvas.height;
+      const selIdx=new Uint8Array(KCOL.length);
+      for(let k=0;k<KCOL.length;k++) if(selectedSet.has(KCOL[k][0])) selIdx[k]=1;
       const out=document.createElement('canvas'); out.width=W; out.height=H;
-      const sctx=src.getContext('2d'), octx=out.getContext('2d');
-      const img=sctx.getImageData(0,0,W,H), d=img.data;
-      /* selected: stay vivid; non-selected: desaturate + lower alpha so background shows through */
-      for(let i=0;i<d.length;i+=4){
-        const code=nearestKoppenCode(d[i],d[i+1],d[i+2],d[i+3]);
-        if(!code||!selectedSet.has(code)){
-          /* Dim & desaturate by half (still visible but muted) */
-          const g=(d[i]+d[i+1]+d[i+2])/3;
-          d[i]=g*0.6+d[i]*0.0; d[i+1]=g*0.6+d[i+1]*0.0; d[i+2]=g*0.6+d[i+2]*0.0;
-          d[i+3]=Math.floor(d[i+3]*0.3);
-        }else{
-          /* selected: punch up brightness for "glow" effect */
-          d[i]=Math.min(255,d[i]*1.05); d[i+1]=Math.min(255,d[i+1]*1.05); d[i+2]=Math.min(255,d[i+2]*1.05);
+      const octx=out.getContext('2d'), img=octx.createImageData(W,H), o=img.data;
+      for(let p=0,i=0;p<idx.length;p++,i+=4){
+        const ci=idx[p];
+        if(ci!==255 && selIdx[ci]){            /* selected: punch up brightness for a glow */
+          o[i]=Math.min(255,src[i]*1.05); o[i+1]=Math.min(255,src[i+1]*1.05); o[i+2]=Math.min(255,src[i+2]*1.05); o[i+3]=src[i+3];
+        } else {                                /* non-selected: desaturate + lower alpha */
+          const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.3);
         }
       }
       octx.putImageData(img,0,0);
@@ -5318,8 +5417,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window._refreshKoppenImage=function(){
       if(!map.getSource('src-climate')) return;
-      const url=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null;
-      try{ map.getSource('src-climate').updateImage({url:url||KURL,coordinates:KCOORDS}); }catch(e){}
+      /* Debounce so rapid multi-class selection coalesces into one image rebuild (#12). */
+      clearTimeout(window._koppenRefreshT);
+      window._koppenRefreshT=setTimeout(()=>{
+        const url=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null;
+        try{ map.getSource('src-climate').updateImage({url:url||KURL,coordinates:KCOORDS}); }catch(e){}
+      },45);
     };
 
     function addKoppen(){
@@ -5875,9 +5978,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function refreshDatedLayer(id){
       const date=layerDates[id]||GIBS_DATE;
       let tiles=null;
+      /* NOTE: thermal is intentionally NOT here — it is a FIRMS WMS layer now (rolling time window),
+         refreshed by window._refreshThermal, not by a GIBS date (#5). */
       if(id==='temp') tiles=gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',date);  /* gap-free reanalysis, monthly */
       else if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
-      else if(id==='thermal'){ const c=_thermalCfg||THERMAL_CANDIDATES[0]; tiles=gibs(c.layer,c.lvl,'png',date); }  /* FIRMS active fire (#13) — layer auto-picked by pickThermalCfg */
       else if(id==='sst') tiles=gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',date);
       else if(id==='snow') tiles=gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',date);
       else if(id==='aod') tiles=gibs('MODIS_Combined_Value_Added_AOD',6,'png',date);
@@ -5886,7 +5990,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const wasVis=map.getLayer('lyr-'+id)?map.getLayoutProperty('lyr-'+id,'visibility')==='visible':false;
       if(map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
       if(map.getSource('src-'+id)) map.removeSource('src-'+id);
-      const maxzMap={temp:6,thermal:(_thermalCfg?_thermalCfg.lvl:7),precip:6,sst:7,snow:8,aod:6};
+      const maxzMap={temp:6,precip:6,sst:7,snow:8,aod:6};
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
@@ -5903,10 +6007,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='precip'){ whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>pickThermalCfg()).then(c=>{
-            try{ addRaster('thermal',gibs(c.layer,c.lvl,'png',layerDates.thermal),c.lvl); }catch(_){}
-            try{ setVis('lyr-thermal',true); }catch(_){}
-          });
+          whenStyleReady().then(()=>{ try{ addFirmsThermal(); setVis('lyr-thermal',true); }catch(e){ console.warn('thermal (FIRMS) fail',e); const cb=document.getElementById('dl-thermal'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'火災データを取得できませんでした':'Active-fire data unavailable'); }catch(_){} } });
         }
         else if(id==='radar'||id==='clouds'){
           if(id==='radar'){ lgdRadar.style.display='block'; tileLegends(); }
@@ -6760,7 +6861,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /* ---- responsive: relocate config panels in/out of the sheets ---- */
     function applyLayout(isM){
-      if(isM){ moveTo(layerDropdown,moMountLayers); moveTo(satController,moMountSat); }
+      if(isM){ moveTo(layerDropdown,moMountLayers); moveTo(satController,moMountSat);
+        /* Mobile shows every layer group expanded (the carets are hidden there, #12) so nothing stays
+           hidden behind a collapsed header the user can no longer toggle. */
+        try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
+      }
       else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full'); }
     }
 
@@ -7159,9 +7264,13 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window.imViewProfile=imViewProfile;
   document.addEventListener('click',e=>{ const a=e.target.closest&&e.target.closest('.comm-author-link'); if(a && !(e.target.closest&&e.target.closest('.comm-post-loc'))){ e.preventDefault(); imViewProfile(a.getAttribute('data-uid'),a.getAttribute('data-author')); } });
-  async function refreshCurrentUser(){
+  async function refreshCurrentUser(sessionArg){
     if(!DB){ currentUser=null; return; }
-    const { data:{ session } } = await DB.auth.getSession();
+    /* Accept a session passed in from onAuthStateChange so we don't re-enter getSession() while the
+       auth lock is held (that re-entry is the supabase-js v2 deadlock behind "logged in but the UI
+       never updates", #14). Only call getSession() when invoked standalone (sessionArg===undefined). */
+    let session=sessionArg;
+    if(session===undefined){ try{ const r=await DB.auth.getSession(); session=(r&&r.data)?r.data.session:null; }catch(_){ session=null; } }
     if(!session){ currentUser=null; updateAccountButton(); return; }
     const meta=session.user.user_metadata||{};
     let isAdmin=false, isPro=false, name='';
@@ -7308,12 +7417,21 @@ window.addEventListener('DOMContentLoaded', () => {
     injectAuthUI();
     /* Register the auth listener FIRST so the SIGNED_IN event fired while supabase parses the OAuth
        token out of the redirect URL is never missed (a cause of "logged in but not logged in", #33). */
-    DB.auth.onAuthStateChange(async()=>{ await refreshCurrentUser(); await loadFavorites();
-      try{ if(currentMode==='news'||currentMode==='saved') startNews(); }catch(_){}
-      try{ if(currentMode==='community') loadCommunity(); }catch(_){}
-      try{ const am=document.getElementById('auth-modal'); if(currentUser && am && am.style.display!=='none') am.style.display='none'; }catch(_){}   /* close the login modal once signed in */
-      /* Pro entitlement may have changed → re-check satellite provider access */
-      try{ if(currentMapType==='sat'){ const cur=satProviderById(satState.providerId); if(cur&&cur.tier==='pro'&&!satHasKey(cur)) satRevertToFallback(); else satRenderController(); } }catch(_){} });
+    DB.auth.onAuthStateChange((event,session)=>{
+      /* CRITICAL (#14): never await Supabase calls directly inside this callback — getSession()/from()
+         try to re-acquire the auth lock this callback already holds, which deadlocks in supabase-js v2
+         and is the root cause of "signed in with Google but not actually logged in". Defer all work to
+         a microtask-after-tick so the lock is released first, and reuse the event's own session. */
+      setTimeout(async()=>{
+        await refreshCurrentUser(session||null); await loadFavorites();
+        try{ if(currentMode==='news'||currentMode==='saved') startNews(); }catch(_){}
+        try{ if(currentMode==='community') loadCommunity(); }catch(_){}
+        try{ const am=document.getElementById('auth-modal'); if(currentUser && am && am.style.display!=='none') am.style.display='none'; }catch(_){}   /* close the login modal once signed in */
+        try{ renderUI(); }catch(_){}            /* reflect the new auth state in the active tab immediately */
+        /* Pro entitlement may have changed → re-check satellite provider access */
+        try{ if(currentMapType==='sat'){ const cur=satProviderById(satState.providerId); if(cur&&cur.tier==='pro'&&!satHasKey(cur)) satRevertToFallback(); else satRenderController(); } }catch(_){}
+      },0);
+    });
     await refreshCurrentUser();
     /* OAuth implicit-flow tokens land in the URL hash and are parsed asynchronously; if the very
        first getSession ran a hair too early, re-check a couple of times so the session is picked up
@@ -7387,21 +7505,22 @@ window.addEventListener('DOMContentLoaded', () => {
     })); }catch(_){}
   }
   window.imSaveSettings=saveSettings;
-  function applySidebarStyle(){ const s=window.imSidebarStyle;
+  function applySidebarStyle(animate){ const s=window.imSidebarStyle;
     const frosted=(s==='translucent'||s==='glass2');
     document.body.classList.toggle('sidebar-translucent', frosted);
     document.body.classList.toggle('sidebar-glass2', s==='glass2');
     document.body.classList.toggle('sidebar-glass', frosted);   /* drives the desktop overlay-frost */
     /* Desktop frosted mode overlays the sidebar on the map so the glass has the map behind it to
        blur (#23). Keep the map's optical centre in the area to the RIGHT of the glass by padding the
-       camera by the sidebar width. Mobile padding is owned by the bottom-sheet detents — leave it. */
+       camera by the sidebar width — ANIMATED so the centred point glides with the 0.4s slide instead
+       of snapping (#4). Mobile padding is owned by the bottom-sheet detents — leave it. */
     try{
       if(map && map.setPadding && !isMobile()){
         const sb=document.getElementById('sidebar');
         const collapsed=sb && sb.classList.contains('collapsed');
         const pad=(frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0;
-        map.setPadding({top:0,right:0,bottom:0,left:pad});
-        requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} });
+        map.setPadding({top:0,right:0,bottom:0,left:pad}, {duration:animate?400:0});
+        if(!animate) requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} });
       }
     }catch(_){}
   }
@@ -7598,18 +7717,179 @@ window.addEventListener('DOMContentLoaded', () => {
     const sl=document.getElementById('ntl-slider'); if(sl){ const pct=(sl.value/sl.max*100); sl.style.setProperty('--ntl-fill',pct+'%'); }
   };
 
-  /* ---------- Animated wind layer, Windy-style (#7) ---------- */
-  /* Animated wind layer (#7) — particles advected through a REAL global 10 m wind field from
-     Open-Meteo (GFS), moving in screen space so the flow speed looks natural at any zoom. */
+  /* ============================================================================
+   *  PROJECTION VIEWER (#16 flat-map projections, #17 azimuthal-equidistant on a pin)
+   *  MapLibre GL renders ONLY mercator + globe, so true equal-area / compromise /
+   *  azimuthal projections can't come from the basemap. This draws them on a 2D
+   *  canvas from real Natural-Earth country geometry + a graticule. Self-contained:
+   *  own DOM, CSS, projection math and input handling.
+   *  ========================================================================== */
+  window.ProjView=(function(){
+    const RAD=Math.PI/180, EARTH_KM=6371;
+    let host=null, cv=null, ctx=null, sel=null, titleEl=null, entry=null, mEntry=null;
+    let open=false, cur='equalEarth', center=[0,20];
+    let land=null, landPromise=null, zoom=1, panx=0, pany=0, raf=0, dpr=1, cssW=0, cssH=0;
+    let _S=1,_ox=0,_oy=0;
+
+    function loadLand(){
+      if(window.countryGeo&&window.countryGeo.features) return Promise.resolve(window.countryGeo);
+      if(landPromise) return landPromise;
+      landPromise=fetch('https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson').then(r=>r.ok?r.json():null).catch(()=>null);
+      return landPromise;
+    }
+    const sinc=a=>Math.abs(a)<1e-12?1:Math.sin(a)/a;
+    function mollTheta(phi){ if(Math.abs(phi)>=Math.PI/2-1e-9) return phi>0?Math.PI/2:-Math.PI/2; let t=phi; for(let i=0;i<10;i++){ const d=(2*t+Math.sin(2*t)-Math.PI*Math.sin(phi))/(2+2*Math.cos(2*t)); t-=d; if(Math.abs(d)<1e-7) break; } return t; }
+    const ROBX=[1,0.9986,0.9954,0.99,0.9822,0.973,0.96,0.9427,0.9216,0.8962,0.8679,0.835,0.7986,0.7597,0.7186,0.6732,0.6213,0.5722,0.5322];
+    const ROBY=[0,0.062,0.124,0.186,0.248,0.31,0.372,0.434,0.4958,0.5571,0.6176,0.6769,0.7346,0.7903,0.8435,0.8936,0.9394,0.9761,1];
+    const PROJS={
+      equalEarth:{name:{en:'Equal Earth',jp:'イコールアース図法'}, fn(loD,laD){ const l=loD*RAD,p=laD*RAD,M=Math.sqrt(3)/2,A1=1.340264,A2=-0.081106,A3=0.000893,A4=0.003796; const th=Math.asin(M*Math.sin(p)),t2=th*th,t6=t2*t2*t2; return [l*Math.cos(th)/(M*(A1+3*A2*t2+t6*(7*A3+9*A4*t2))), th*(A1+A2*t2+t6*(A3+A4*t2))]; }},
+      robinson:{name:{en:'Robinson',jp:'ロビンソン図法'}, fn(loD,laD){ const a=Math.min(17.9999,Math.abs(laD)/5),i=Math.floor(a),f=a-i; const xl=ROBX[i]+(ROBX[i+1]-ROBX[i])*f, yl=ROBY[i]+(ROBY[i+1]-ROBY[i])*f; return [0.8487*xl*loD*RAD, 1.3523*yl*(laD<0?-1:1)]; }},
+      winkel:{name:{en:'Winkel Tripel',jp:'ヴィンケル第三図法'}, fn(loD,laD){ const l=loD*RAD,p=laD*RAD,p1=Math.acos(2/Math.PI); const al=Math.acos(Math.max(-1,Math.min(1,Math.cos(p)*Math.cos(l/2)))),sc=sinc(al); return [0.5*(l*Math.cos(p1)+2*Math.cos(p)*Math.sin(l/2)/sc), 0.5*(p+Math.sin(p)/sc)]; }},
+      mollweide:{name:{en:'Mollweide',jp:'モルワイデ図法'}, fn(loD,laD){ const l=loD*RAD,th=mollTheta(laD*RAD); return [(2*Math.SQRT2/Math.PI)*l*Math.cos(th), Math.SQRT2*Math.sin(th)]; }},
+      equirect:{name:{en:'Equirectangular',jp:'正距円筒図法'}, fn(loD,laD){ return [loD*RAD, laD*RAD]; }},
+      azimuthal:{name:{en:'Azimuthal equidistant',jp:'正距方位図法'}, azim:true, fn(loD,laD,c){ const l=loD*RAD,p=laD*RAD,l0=c[0]*RAD,p1=c[1]*RAD; let cc=Math.sin(p1)*Math.sin(p)+Math.cos(p1)*Math.cos(p)*Math.cos(l-l0); cc=Math.max(-1,Math.min(1,cc)); if(cc<-0.99996) return null; const C=Math.acos(cc); if(C<1e-9) return [0,0]; const k=C/Math.sin(C); return [k*Math.cos(p)*Math.sin(l-l0), k*(Math.cos(p1)*Math.sin(p)-Math.sin(p1)*Math.cos(p)*Math.cos(l-l0))]; }}
+    };
+    const projRaw=(lo,la)=>PROJS[cur].fn(lo,la,center);
+    const toScreen=(px,py)=>({x:_ox+_S*px+panx, y:_oy-_S*py+pany});
+    const projectPt=(ll)=>{ const f=projRaw(ll[0],ll[1]); return f?toScreen(f[0],f[1]):null; };
+    function fit(){
+      let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+      if(PROJS[cur].azim){ minx=miny=-Math.PI; maxx=maxy=Math.PI; }
+      else for(let la=-90;la<=90;la+=5) for(let lo=-180;lo<=180;lo+=5){ const f=projRaw(lo,la); if(!f) continue; if(f[0]<minx)minx=f[0]; if(f[0]>maxx)maxx=f[0]; if(f[1]<miny)miny=f[1]; if(f[1]>maxy)maxy=f[1]; }
+      const w=maxx-minx||1, h=maxy-miny||1, pad=46;
+      _S=Math.min((cssW-pad)/w,(cssH-pad)/h)*zoom;
+      _ox=cssW/2 - _S*((minx+maxx)/2); _oy=cssH/2 + _S*((miny+maxy)/2);
+    }
+    function outlineRing(){ const r=[],push=(lo,la)=>{const f=projRaw(lo,la); if(f) r.push(f);};
+      for(let la=-90;la<=90;la+=2) push(-180,la);
+      for(let lo=-180;lo<=180;lo+=2) push(lo,90);
+      for(let la=90;la>=-90;la-=2) push(180,la);
+      for(let lo=180;lo>=-180;lo-=2) push(lo,-90);
+      return r; }
+    function strokePath(samples){ ctx.beginPath(); let prev=null,started=false; for(const ll of samples){ const p=projectPt(ll); if(!p){started=false;prev=null;continue;} if(!started){ctx.moveTo(p.x,p.y);started=true;} else { if(prev&&Math.hypot(p.x-prev.x,p.y-prev.y)>cssW*0.5) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);} prev=p; } ctx.stroke(); }
+    function render(){
+      if(!open||!ctx) return;
+      fit();
+      const dark=document.documentElement.getAttribute('data-theme')==='dark';
+      const ocean=dark?'#0a2436':'#b9dcf0', landFill=dark?'#3a4048':'#e7e1d2', border=dark?'#11161c':'#9b9078', grat=dark?'rgba(255,255,255,0.12)':'rgba(20,40,70,0.13)';
+      ctx.clearRect(0,0,cssW,cssH);
+      ctx.beginPath();
+      if(PROJS[cur].azim){ const c0=toScreen(0,0); ctx.arc(c0.x,c0.y,_S*Math.PI,0,2*Math.PI); }
+      else { const ring=outlineRing(); ring.forEach((p,i)=>{ const s=toScreen(p[0],p[1]); i?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y); }); ctx.closePath(); }
+      ctx.fillStyle=ocean; ctx.fill();
+      /* graticule */
+      ctx.strokeStyle=grat; ctx.lineWidth=1;
+      for(let lo=-180;lo<=180;lo+=30){ const s=[]; for(let la=-90;la<=90;la+=2) s.push([lo,la]); strokePath(s); }
+      for(let la=-60;la<=60;la+=30){ const s=[]; for(let lo=-180;lo<=180;lo+=2) s.push([lo,la]); strokePath(s); }
+      /* land */
+      if(land&&land.features){
+        ctx.fillStyle=landFill; ctx.strokeStyle=border; ctx.lineWidth=0.7;
+        const drawPoly=(poly)=>{ ctx.beginPath(); for(const ring of poly){ let started=false,prev=null; for(let i=0;i<ring.length;i++){ const p=projectPt(ring[i]); if(!p){started=false;prev=null;continue;} if(!started){ctx.moveTo(p.x,p.y);started=true;} else { if(prev&&Math.hypot(p.x-prev.x,p.y-prev.y)>cssW*0.4) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);} prev=p; } } ctx.fill('evenodd'); ctx.stroke(); };
+        land.features.forEach(f=>{ const g=f.geometry; if(!g) return; if(g.type==='Polygon') drawPoly(g.coordinates); else if(g.type==='MultiPolygon') g.coordinates.forEach(drawPoly); });
+      }
+      /* azimuthal: concentric equidistant range rings + the focus point */
+      if(PROJS[cur].azim){
+        const c0=toScreen(0,0);
+        ctx.strokeStyle=dark?'rgba(120,200,255,0.5)':'rgba(0,80,150,0.4)'; ctx.lineWidth=1; ctx.setLineDash([4,5]);
+        for(const D of [2500,5000,7500,10000,12500,15000,17500]){ const r=_S*(D/EARTH_KM); if(r<8||r>Math.max(cssW,cssH)*1.4) continue; ctx.beginPath(); ctx.arc(c0.x,c0.y,r,0,2*Math.PI); ctx.stroke(); }
+        ctx.setLineDash([]);
+        ctx.fillStyle=dark?'rgba(170,225,255,0.92)':'rgba(0,60,115,0.85)'; ctx.font='11px -apple-system,sans-serif'; ctx.textAlign='center';
+        for(const D of [2500,5000,7500,10000,12500,15000]){ const r=_S*(D/EARTH_KM); if(r<16) continue; ctx.fillText(D.toLocaleString()+' km', c0.x, c0.y-r-3); }
+        ctx.fillStyle='#ff3b30'; ctx.beginPath(); ctx.arc(c0.x,c0.y,5,0,2*Math.PI); ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
+      }
+    }
+    function scheduleRender(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; render(); }); }
+    function resize(){ if(!host) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=host.clientWidth; cssH=host.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); render(); }
+    function updateTitle(){ if(!titleEl) return; const nm=(PROJS[cur].name[currentLang]||PROJS[cur].name.en); titleEl.textContent = PROJS[cur].azim ? (nm+' · '+center[1].toFixed(1)+'°, '+center[0].toFixed(1)+'°') : nm; }
+    function ensureDOM(){
+      if(host) return;
+      const st=document.createElement('style'); st.textContent=`
+        .proj-host{ position:absolute; inset:0; z-index:1400; display:none; background:var(--bg-color); }
+        .proj-host.on{ display:block; }
+        .proj-host canvas{ position:absolute; inset:0; touch-action:none; cursor:grab; }
+        .proj-host canvas:active{ cursor:grabbing; }
+        .proj-bar{ position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:2; display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; background:var(--glass-fill); -webkit-backdrop-filter:saturate(160%) blur(16px); backdrop-filter:saturate(160%) blur(16px); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:7px 10px; box-shadow:var(--shadow); max-width:calc(100% - 20px); }
+        .proj-bar .proj-title{ font-size:12.5px; font-weight:700; color:var(--text-main); }
+        .proj-bar select{ padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px; }
+        .proj-bar button{ border:1px solid rgba(128,128,128,0.22); background:var(--input-bg); color:var(--text-main); border-radius:8px; padding:6px 10px; font-size:13px; font-weight:600; cursor:pointer; }
+        .proj-bar button.proj-close{ background:var(--primary-color); color:#fff; border-color:transparent; }
+        .proj-entry{ -webkit-appearance:none; appearance:none; }
+        @media(max-width:768px){ .proj-bar{ top:calc(env(safe-area-inset-top) + 8px); } }
+      `; document.head.appendChild(st);
+      const mc=document.getElementById('map-container')||document.body;
+      host=document.createElement('div'); host.className='proj-host';
+      cv=document.createElement('canvas'); host.appendChild(cv);
+      const bar=document.createElement('div'); bar.className='proj-bar';
+      titleEl=document.createElement('span'); titleEl.className='proj-title';
+      sel=document.createElement('select');
+      sel.innerHTML=Object.keys(PROJS).map(k=>`<option value="${k}">${PROJS[k].name[currentLang]||PROJS[k].name.en}</option>`).join('');
+      sel.onchange=()=>{ cur=sel.value; zoom=1;panx=0;pany=0; if(entry)entry.value=cur; updateTitle(); render(); };
+      const zin=document.createElement('button'); zin.textContent='＋'; zin.onclick=()=>{ zoom=Math.min(8,zoom*1.25); render(); };
+      const zout=document.createElement('button'); zout.textContent='－'; zout.onclick=()=>{ zoom=Math.max(0.5,zoom/1.25); render(); };
+      const cl=document.createElement('button'); cl.className='proj-close'; cl.textContent=(currentLang==='jp'?'閉じる':'Close'); cl.onclick=()=>api.close();
+      bar.appendChild(titleEl); bar.appendChild(sel); bar.appendChild(zout); bar.appendChild(zin); bar.appendChild(cl);
+      host.appendChild(bar); mc.appendChild(host); ctx=cv.getContext('2d');
+      /* input: drag to pan, wheel to zoom */
+      let dragging=false,lx=0,ly=0;
+      cv.addEventListener('pointerdown',e=>{ dragging=true; lx=e.clientX; ly=e.clientY; try{cv.setPointerCapture(e.pointerId);}catch(_){} });
+      cv.addEventListener('pointermove',e=>{ if(!dragging) return; panx+=e.clientX-lx; pany+=e.clientY-ly; lx=e.clientX; ly=e.clientY; scheduleRender(); });
+      const up=()=>{ dragging=false; }; cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+      cv.addEventListener('wheel',e=>{ e.preventDefault(); const f=e.deltaY<0?1.12:0.89; zoom=Math.max(0.5,Math.min(8,zoom*f)); scheduleRender(); },{passive:false});
+      window.addEventListener('resize',()=>{ if(open) resize(); });
+    }
+    const api={
+      open(proj,c){ ensureDOM(); cur=PROJS[proj]?proj:'equalEarth'; if(c&&c.length===2) center=[+c[0],+c[1]]; zoom=1;panx=0;pany=0; open=true; host.classList.add('on'); if(sel)sel.value=cur; if(entry)entry.value=cur; updateTitle(); resize(); loadLand().then(g=>{ land=(window.countryGeo&&window.countryGeo.features)?window.countryGeo:g; render(); }); },
+      close(){ open=false; if(host) host.classList.remove('on'); if(entry) entry.value='mercator'; if(mEntry) mEntry.value='mercator'; },
+      isOpen:()=>open,
+      _projs:PROJS
+    };
+    /* ---- entry selectors (#16): desktop top-controls + mobile map sheet ---- */
+    function chooseProj(v){ if(v==='mercator'){ api.close(); } else { let c=[0,20]; try{ if(window.map&&map&&map.getCenter){ const cc=map.getCenter(); c=[cc.lng,cc.lat]; } }catch(_){} api.open(v,c); } }
+    window.__projChoose=chooseProj;
+    function buildEntries(){
+      const opts='<option value="mercator">'+(currentLang==='jp'?'メルカトル (標準)':'Mercator (default)')+'</option>'+Object.keys(PROJS).map(k=>`<option value="${k}">${PROJS[k].name[currentLang]||PROJS[k].name.en}</option>`).join('');
+      /* desktop: append to the Flat/Globe/3D control group, shown only while Flat is the active view */
+      try{
+        const grp=document.querySelectorAll('.map-view-group')[1];
+        if(grp && !document.getElementById('map-proj-entry')){
+          entry=document.createElement('select'); entry.id='map-proj-entry'; entry.className='view-btn proj-entry'; entry.title=(currentLang==='jp'?'平面地図の図法':'Flat-map projection'); entry.innerHTML=opts;
+          entry.onchange=()=>chooseProj(entry.value); grp.appendChild(entry);
+          const sync=()=>{ entry.style.display=(typeof currentProj!=='undefined'&&currentProj==='flat')?'':'none'; };
+          ['btn-view-flat','btn-view-globe','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(()=>{ if(id!=='btn-view-flat') api.close(); else if(entry.value!=='mercator'){ entry.value='mercator'; } sync(); },0)); });
+          sync();
+        }
+      }catch(_){}
+      /* mobile: a labelled selector inside the Map bottom-sheet's projection block */
+      try{
+        const blk=document.querySelector('#mo-sheet .m-seg-block');
+        if(blk && !document.getElementById('m-proj-entry')){
+          const wrap=document.createElement('label'); wrap.style.cssText='display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text-muted);';
+          wrap.innerHTML=(currentLang==='jp'?'図法':'Projection')+': ';
+          mEntry=document.createElement('select'); mEntry.id='m-proj-entry'; mEntry.style.cssText='flex:1;padding:8px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; mEntry.innerHTML=opts;
+          mEntry.onchange=()=>chooseProj(mEntry.value); wrap.appendChild(mEntry); blk.appendChild(wrap);
+        }
+      }catch(_){}
+    }
+    if(document.readyState!=='loading') setTimeout(buildEntries,0); else document.addEventListener('DOMContentLoaded',buildEntries);
+    return api;
+  })();
+
+  /* ---------- Animated wind layer (#9) ---------- */
+  /* REAL global 10 m wind field from Open-Meteo (GFS), no key, CORS-enabled (Access-Control-Allow-
+     Origin:* — works from file:// too). The previous version advected particles in SCREEN space using a
+     single centre-based px/degree, which is badly wrong everywhere except the centre on the globe (the
+     projection curves and the bearing rotates north away from "up") — that is why it looked like
+     nonsense. This version keeps every particle as a true GEOGRAPHIC coordinate (lng/lat), advects it
+     through the wind field in degrees, and PROJECTS it with the live map each frame — so the flow is
+     correct under any projection/zoom/rotation and pans & zooms locked to the map ("座標ベース"). */
   window.Wind=(function(){
     const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){}};
-    const ctx=cv.getContext('2d'); let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0;
+    const ctx=cv.getContext('2d'); let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false;
+    const R=Math.PI/180;
     function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
-    /* Real global wind grid: Open-Meteo CURRENT 10 m winds (CORS-free, no key, multi-point in one
-       request). This is genuine GFS data — the field below interpolates it bilinearly. A 12°
-       grid (≈390 points) keeps the URL safely short while giving noticeably more regional detail
-       than the old 15° grid (#19). The meteorological "from" direction is converted to a true
-       motion vector in fetch; if the request fails we turn the layer OFF rather than fake a flow. */
+    /* Build a regular global grid of CURRENT 10 m winds in ONE multi-point request, refreshed every
+       10 min. Meteorological "from" direction → true (east-u, north-v) motion vector. If the real
+       request fails we turn the layer OFF rather than fabricate a flow. */
     async function fetchGrid(){
       if(fetching) return; if(grid && Date.now()-fetchT<10*60000) return;
       fetching=true;
@@ -7622,21 +7902,19 @@ window.addEventListener('DOMContentLoaded', () => {
       if(arr&&arr.length){
         const cols=Math.round(360/STEP), rows=Math.round(2*lat0/STEP)+1;
         const u=new Float32Array(arr.length), v=new Float32Array(arr.length);
-        arr.forEach((o,i)=>{ const cu=o.current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*Math.PI/180;
-          /* meteorological dir = where it blows FROM → vector points the opposite way */
-          u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });
+        arr.forEach((o,i)=>{ const cu=o.current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R;
+          u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });   /* "from" dir → motion vector */
         grid={STEP,rows,cols,u,v,lat0,lon0:-180};
       } else if(!grid){
-        /* Real data unavailable → don't fake it: turn the layer off with a clear message. */
         try{ satToast(currentLang==='jp'?'風データを取得できませんでした':'Wind data unavailable'); }catch(_){}
         const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
         stop();
       }
       fetching=false; fetchT=Date.now();
     }
+    /* Bilinear sample of the wind field at a geographic lng/lat → [u,v] in m/s, or null off-grid. */
     function sample(lng,lat){
-      if(!grid) return null;
-      if(lat>grid.lat0||lat<-grid.lat0) return null;
+      if(!grid || lat>grid.lat0 || lat<-grid.lat0) return null;
       const lo=((lng+180)%360+360)%360-180;
       const gx=(lo-grid.lon0)/grid.STEP, gy=(grid.lat0-lat)/grid.STEP;
       const x0=Math.floor(gx), y0=Math.floor(gy); if(y0<0||y0>=grid.rows-1) return null;
@@ -7646,35 +7924,54 @@ window.addEventListener('DOMContentLoaded', () => {
       return [ L(L(grid.u[i00],grid.u[i10],fx),L(grid.u[i01],grid.u[i11],fx),fy),
                L(L(grid.v[i00],grid.v[i10],fx),L(grid.v[i01],grid.v[i11],fx),fy) ];
     }
-    function spawn(p){ const b=map.getBounds(); p.x=Math.random()*cssW; p.y=Math.random()*cssH; p.age=(Math.random()*80)|0; }
-    function ensureParts(){ const target=Math.min(2400,Math.max(450,Math.floor(cssW*cssH/1600))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
+    /* Seed a particle at a random GEOGRAPHIC point inside the current view (so the field fills the
+       visible area at any zoom). */
+    function spawn(p){
+      let b; try{ b=map.getBounds(); }catch(_){ b=null; }
+      if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-grid?grid.lat0:85,b.getSouth()),n=Math.min(grid?grid.lat0:85,b.getNorth());
+        let lo=w+(e-w)*Math.random(); if(e<w) lo=w+((e+360-w)*Math.random()); if(lo>180) lo-=360;
+        p.lng=lo; p.lat=s+(n-s)*Math.random(); }
+      else { p.lng=Math.random()*360-180; p.lat=Math.random()*150-75; }
+      p.age=(Math.random()*60)|0; p.life=60+((Math.random()*60)|0);
+    }
+    function ensureParts(){ const target=Math.min(1400,Math.max(350,Math.floor(cssW*cssH/3000))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
     function speedColor(s){ const tt=Math.min(1,s/26); if(tt<0.5){ const k=tt/0.5; return `rgba(${Math.round(150+k*90)},${Math.round(235-k*40)},255,0.9)`; } const k=(tt-0.5)/0.5; return `rgba(255,${Math.round(220-k*180)},${Math.round(150-k*120)},0.95)`; }
+    const onScreen=(pt)=>pt && pt.x>=-40 && pt.x<=cssW+40 && pt.y>=-40 && pt.y<=cssH+40;
     function step(){
       if(!on) return;
-      ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.085)'; ctx.fillRect(0,0,cssW,cssH);
-      ctx.globalCompositeOperation='source-over'; ctx.lineWidth=1.2; ctx.lineCap='round';
-      /* px-per-degree at the map centre → convert m/s wind into a constant on-screen pixel speed */
-      let kx=2, ky=2;
-      try{ const c=map.getCenter(); const p0=map.project([c.lng,c.lat]); const px=map.project([c.lng+0.5,c.lat]), py=map.project([c.lng,c.lat+0.5]);
-        kx=Math.hypot(px.x-p0.x,px.y-p0.y)/0.5; ky=Math.hypot(py.x-p0.x,py.y-p0.y)/0.5; }catch(_){}
-      const VS=0.020;   /* visual speed factor */
+      /* While the map is moving, clear fully each frame so trails track the map without smearing; when
+         idle, fade for the classic flowing streaks. */
+      if(moving){ ctx.clearRect(0,0,cssW,cssH); }
+      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.10)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
+      ctx.lineWidth=1.3; ctx.lineCap='round';
+      let z=2; try{ z=map.getZoom(); }catch(_){}
+      const sc=Math.pow(2,z);
       for(const p of parts){
-        let ll; try{ ll=map.unproject([p.x,p.y]); }catch(_){ spawn(p); continue; }
-        const w=sample(ll.lng,ll.lat);
-        if(!w){ if(++p.age>30){ spawn(p); } else { p.y+=0.5; } continue; }
+        if(p.lng==null){ spawn(p); continue; }
+        const w=sample(p.lng,p.lat);
+        if(!w){ spawn(p); continue; }
         const sp=Math.hypot(w[0],w[1]);
-        const nx=p.x + w[0]*kx*VS, ny=p.y - w[1]*ky*VS;   /* screen y is down → north (+v) is −y */
-        if(p.age<90 && nx>=0&&nx<=cssW&&ny>=0&&ny<=cssH){
-          ctx.strokeStyle=speedColor(sp); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(nx,ny); ctx.stroke();
-          p.x=nx; p.y=ny; p.age++;
+        const s0=map.project([p.lng,p.lat]);
+        if(!onScreen(s0)){ if(++p.age>p.life) spawn(p); else p.age++; continue; }
+        /* Advance in GEOGRAPHIC degrees; dt scales with metres-per-pixel so the on-screen streak
+           length stays natural (≈ constant) at every zoom. */
+        const cosLat=Math.max(0.15,Math.cos(p.lat*R));
+        const mPerPx=156543.03*cosLat/sc, dt=0.13*mPerPx;
+        p.lng += (w[0]*dt)/(111320*cosLat);
+        p.lat += (w[1]*dt)/110540;
+        if(p.lng>180) p.lng-=360; else if(p.lng<-180) p.lng+=360;
+        const s1=map.project([p.lng,p.lat]);
+        if(p.age<p.life && onScreen(s1)){
+          ctx.strokeStyle=speedColor(sp); ctx.beginPath(); ctx.moveTo(s0.x,s0.y); ctx.lineTo(s1.x,s1.y); ctx.stroke();
+          p.age++;
         } else { spawn(p); }
       }
       raf=requestAnimationFrame(step);
     }
     function start(){ on=true; cv.style.display='block'; resize(); ensureParts(); fetchGrid(); cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
     function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; }
-    window.addEventListener('resize',()=>{ if(on){ resize(); ensureParts(); } });
-    if(map){ map.on('movestart',()=>{ if(on) ctx.clearRect(0,0,cssW,cssH); }); map.on('moveend',()=>{ if(on){ resize(); ensureParts(); } }); }
+    window.addEventListener('resize',()=>{ if(on){ resize(); } });
+    if(map){ map.on('movestart',()=>{ moving=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
     return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid };
   })();
 
