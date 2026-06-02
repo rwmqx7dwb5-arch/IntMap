@@ -510,7 +510,8 @@
       .sheet-grip:active::before{ background:rgba(128,128,128,0.72); width:54px; }
 
       .header-area{ flex:0 0 auto; margin:0 0 10px; }
-      h2{ font-size:18px; }
+      h2{ font-size:24px; font-weight:700; letter-spacing:-0.4px; }
+      .title-group{ gap:10px; }
       .btn-settings{ padding:7px 13px; font-size:13px; min-height:34px; border-radius:17px; }
 
       .search-bar{ flex:0 0 auto; margin:0 0 10px; padding:5px 5px 5px 14px; border-radius:12px; }
@@ -551,10 +552,11 @@
         transition:width 0.34s var(--sheet-ease), border-radius 0.34s var(--sheet-ease), opacity 0.25s, transform 0.25s; }
       .map-search input{ width:0; min-width:0; padding:0; opacity:0; font-size:16px; transition:opacity 0.18s; }
       .map-search > button, .map-search #ms-btn{ width:46px; height:46px; flex:0 0 auto; border-radius:23px; }
-      /* Expanded width stops short of the top-right FAB column so neither is clipped or pushed off-screen */
-      .map-search.ms-open{ width:calc(100vw - 14px - 14px - 56px); height:auto; border-radius:14px; padding:4px 4px 4px 14px; justify-content:flex-start; gap:6px; }
-      .map-search.ms-open input{ width:auto; flex:1 1 auto; opacity:1; padding:11px 4px; }
-      .map-search.ms-open > button, .map-search.ms-open #ms-btn{ width:auto; }
+      /* Expanded width stops short of the top-right FAB column so neither is clipped or pushed off-screen.
+         Keeps a fixed 46px height + full pill radius so it morphs cleanly from the circle (no vertical squish). */
+      .map-search.ms-open{ width:calc(100vw - 14px - 14px - 56px); height:46px; border-radius:23px; padding:0 5px 0 16px; justify-content:flex-start; gap:6px; }
+      .map-search.ms-open input{ width:auto; flex:1 1 auto; opacity:1; height:46px; padding:0 4px; }
+      .map-search.ms-open > button, .map-search.ms-open #ms-btn{ width:38px; height:38px; flex:0 0 auto; border-radius:19px; font-size:15px; }
       .map-search-results{ top:54px; }
 
       /* ---------- Hide the cramped desktop control cluster ---------- */
@@ -609,32 +611,34 @@
       .m-tool-btn.active{ background:var(--primary-color); color:#fff; }
 
       /* config panels relocated into the option sheets: strip their floating skin */
-      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:1px !important; }
+      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:0 !important; }
       /* tighter layer rows — kills the wasted line spacing in the layer list */
-      .m-sheet .layer-dropdown .layer-option{ padding:8px 6px; font-size:14px; min-height:36px; gap:9px; }
+      .m-sheet .layer-dropdown .layer-option{ padding:6px 6px; font-size:13.5px; min-height:32px; gap:9px; line-height:1.2; }
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
-      .m-sheet .layer-dropdown .lyr-op{ margin:0 0 6px 22px !important; }
-      .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:4px !important; }
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:8px 2px 1px !important; padding:4px 2px !important; font-size:11px; min-height:0; }
-      .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:5px 0 !important; }
+      .m-sheet .layer-dropdown .lyr-op{ margin:0 0 4px 22px !important; height:18px; }
+      .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:3px !important; }
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:7px 2px 0 !important; padding:3px 2px !important; font-size:10.5px; min-height:0; }
+      .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:4px 0 !important; }
       .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 0 !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
-      /* ---------- Floating map panels dock just above the sheet peek ---------- */
+      /* ---------- Floating map panels dock ABOVE the Summarize-button lane ----------
+         The Summarize button owns the strip just above the sheet (peek+10); every other
+         floating panel/legend docks above it (peek+56) so nothing overlaps the button. */
       .coord-readout{ display:none !important; }
-      .country-info{ left:12px !important; right:12px !important; top:auto !important; bottom:calc(var(--peek-h) + 12px); width:auto !important; max-height:38dvh; overflow-y:auto; }
+      .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--peek-h) + 56px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:34dvh; overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
       /* Compact measurement/tool popup: shrink-to-content card on the left, not a full-width slab */
-      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--peek-h) + 10px); width:auto !important; min-width:172px; max-width:calc(100vw - 24px); max-height:34dvh; overflow-y:auto; padding:10px 12px !important; font-size:12px !important; border-radius:12px !important; }
+      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--peek-h) + 56px); width:auto !important; min-width:168px; max-width:calc(100vw - 24px); max-height:32dvh; overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
       .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
       .tool-panel .tp-row{ margin:2px 0 !important; }
       .tool-panel .tp-hint{ font-size:10.5px !important; margin-top:5px !important; line-height:1.35 !important; }
       .tool-panel .tp-header{ margin-bottom:5px !important; }
       .tool-panel .tp-clear, .tool-panel .tp-add-btn{ padding:7px !important; margin-top:6px !important; }
-      .tool-panel .radius-list{ max-height:92px !important; }
+      .tool-panel .radius-list{ max-height:88px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
-      .map-container.sat-on .tool-panel{ bottom:calc(var(--peek-h) + 10px) !important; }
-      .koppen-legend, .data-legend{ top:auto !important; bottom:calc(var(--peek-h) + 12px) !important; right:10px !important; left:auto !important; max-width:calc(100vw - 20px); width:auto; max-height:32dvh; overflow-y:auto; }
-      .news-timeline{ top:auto !important; bottom:calc(var(--peek-h) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
-      .ai-view-summary-btn{ bottom:calc(var(--peek-h) + 12px); font-size:12px; padding:8px 14px; }
+      .map-container.sat-on .tool-panel{ bottom:calc(var(--peek-h) + 56px) !important; }
+      .koppen-legend, .data-legend{ top:auto !important; bottom:calc(var(--peek-h) + 56px) !important; right:10px !important; left:auto !important; max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
+      .news-timeline{ top:auto !important; bottom:calc(var(--peek-h) + 56px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
+      .ai-view-summary-btn{ bottom:calc(var(--peek-h) + 10px); font-size:12px; padding:8px 14px; }
       body.sheet-full .ai-view-summary-btn{ display:none; }
       .news-timeline .ntl-body{ min-width:0; } .ntl-label{ min-width:0; flex:1; font-size:11px; }
       .pin-popup{ min-width:0; width:max-content; max-width:calc(100vw - 24px); font-size:13px; }
@@ -667,7 +671,7 @@
     @keyframes mSheetUp{ from{ transform:translateY(7%); opacity:0.5; } to{ transform:translateY(0); opacity:1; } }
 
     @media(max-width:480px){
-      h2{ font-size:17px; }
+      h2{ font-size:22px; }
       .m-sheet-title{ font-size:19px; }
     }
     @media (prefers-reduced-motion: reduce){
@@ -1972,7 +1976,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const GDP={USA:27361,CHN:17795,JPN:4213,DEU:4456,IND:3550,GBR:3340,FRA:3031,ITA:2255,BRA:2174,CAN:2140,RUS:2021,MEX:1789,AUS:1724,KOR:1713,ESP:1581,IDN:1371,TUR:1108,NLD:1118,SAU:1068,CHE:884,POL:811,TWN:790,BEL:632,SWE:593,ARG:641,IRL:545,NOR:486,AUT:516,ISR:510,ARE:504,THA:515,SGP:501,BGD:446,PHL:437,VNM:430,DNK:404,MYS:400,HKG:382,EGY:396,IRN:388,ZAF:378,COL:364,ROU:351,CHL:335,CZE:330,FIN:300,PRT:287,PER:268,IRQ:264,KAZ:261,NZL:251,GRC:238,QAT:235,DZA:240,HUN:213,UKR:179,KWT:162,ETH:156,MAR:142,SVK:132,ECU:119,KEN:108,OMN:108,GTM:102,BGR:101,VEN:92,CRI:86,LUX:86,PAN:82,CIV:79,HRV:80,LTU:79,UZB:90,TZA:76,GHA:76,SRB:75,LKA:74,BLR:73,SVN:68,COD:67,MMR:65,TKM:56,JOR:50,CMR:49,UGA:49,TUN:47,BOL:45,LBY:45,PRY:43,NPL:41,ZWE:32,CYP:32,ISL:30,GEO:30,SEN:31,KHM:31,PNG:31,ZMB:28,BIH:27,ARM:24,LBN:23,ALB:23,HTI:20,MOZ:21,YEM:21,GAB:21,BWA:20,MLT:20,BFA:20,MLI:20,BEN:19,PRK:18,MNG:18,NIC:17,NER:17,MDG:16,MDA:16,LAO:15,BRN:15,MUS:14,AFG:14,RWA:14,MWI:13,TCD:13,KGZ:12,TJK:12,NAM:12,SOM:11,CUB:107,SDN:109,FJI:5};
   /* HDI 2022, Democracy Index 2023, Military spending 2023 ($B SIPRI), Life expectancy 2022, Internet users % 2023 */
   /* HDI 2022 (UNDP) — broad coverage so very few countries fall back to the "no data" grey fill. */
-  const HDI={NOR:.966,CHE:.967,ISL:.959,HKG:.956,DNK:.952,SWE:.952,DEU:.950,IRL:.950,SGP:.949,AUS:.946,NLD:.946,BEL:.942,FIN:.942,LIE:.942,GBR:.940,NZL:.939,ARE:.937,CAN:.935,KOR:.929,LUX:.927,USA:.927,AUT:.926,SVN:.926,JPN:.920,MLT:.915,ISR:.915,ESP:.911,FRA:.910,CYP:.907,ITA:.906,EST:.899,CZE:.895,GRC:.893,BHR:.888,AND:.884,POL:.881,LVA:.879,LTU:.879,HRV:.878,QAT:.875,SAU:.875,PRT:.874,SVK:.855,CHL:.860,TUR:.855,HUN:.851,ARG:.849,KWT:.847,MNE:.844,KNA:.838,URY:.830,ATG:.826,PAN:.820,ROU:.827,RUS:.821,OMN:.819,GEO:.814,TTO:.814,KAZ:.811,BHS:.812,BRB:.809,MYS:.807,CRI:.806,SRB:.805,THA:.803,MUS:.802,SYC:.802,BLR:.801,GRD:.793,ALB:.789,CHN:.788,ARM:.786,MEX:.781,MDA:.763,IRN:.780,LKA:.780,BIH:.779,DOM:.766,MKD:.765,ECU:.765,CUB:.764,MDV:.762,PER:.762,AZE:.760,BRA:.760,COL:.758,VCT:.751,LBY:.746,TKM:.744,GUY:.742,MNG:.741,DMA:.740,JOR:.736,UKR:.734,TUN:.732,SUR:.730,PRY:.731,FJI:.729,EGY:.728,UZB:.727,VNM:.726,LCA:.725,LBN:.723,ZAF:.717,PSE:.716,IDN:.713,PHL:.710,BWA:.708,JAM:.706,KGZ:.701,BLZ:.700,VEN:.699,BOL:.698,MAR:.698,GAB:.693,BTN:.681,TJK:.679,SLV:.674,IRQ:.673,BGD:.670,NIC:.669,IND:.644,GTM:.629,KIR:.628,HND:.624,LAO:.620,NAM:.610,SWZ:.610,MMR:.608,GHA:.602,KEN:.601,NPL:.601,KHM:.600,COG:.593,AGO:.591,CMR:.587,ZMB:.569,PNG:.568,COM:.558,SYR:.557,HTI:.552,ZWE:.550,UGA:.550,RWA:.548,NGA:.548,TGO:.547,MRT:.540,PAK:.540,CIV:.534,TZA:.532,LSO:.521,SEN:.517,SDN:.516,DJI:.515,MWI:.508,BEN:.504,GMB:.500,ERI:.493,ETH:.492,LBR:.487,GNB:.483,COD:.481,SLE:.477,GIN:.471,AFG:.462,MOZ:.461,GNQ:.650,BFA:.438,MLI:.428,YEM:.424,BDI:.420,NER:.394,TCD:.394,CAF:.387,SSD:.381,SOM:.380};
+  const HDI={NOR:.966,CHE:.967,ISL:.959,HKG:.956,DNK:.952,SWE:.952,DEU:.950,IRL:.950,SGP:.949,AUS:.946,NLD:.946,BEL:.942,FIN:.942,LIE:.942,GBR:.940,NZL:.939,ARE:.937,CAN:.935,KOR:.929,TWN:.926,LUX:.927,USA:.927,AUT:.926,SVN:.926,JPN:.920,MLT:.915,ISR:.915,ESP:.911,FRA:.910,CYP:.907,ITA:.906,EST:.899,CZE:.895,GRC:.893,BHR:.888,AND:.884,POL:.881,LVA:.879,LTU:.879,HRV:.878,QAT:.875,SAU:.875,PRT:.874,SVK:.855,CHL:.860,TUR:.855,HUN:.851,ARG:.849,KWT:.847,MNE:.844,KNA:.838,URY:.830,ATG:.826,PAN:.820,ROU:.827,RUS:.821,OMN:.819,GEO:.814,TTO:.814,KAZ:.811,BHS:.812,BRB:.809,MYS:.807,CRI:.806,SRB:.805,THA:.803,MUS:.802,SYC:.802,BLR:.801,GRD:.793,ALB:.789,CHN:.788,ARM:.786,MEX:.781,MDA:.763,IRN:.780,LKA:.780,BIH:.779,DOM:.766,MKD:.765,ECU:.765,CUB:.764,MDV:.762,PER:.762,AZE:.760,BRA:.760,COL:.758,VCT:.751,LBY:.746,TKM:.744,GUY:.742,MNG:.741,DMA:.740,JOR:.736,UKR:.734,TUN:.732,SUR:.730,PRY:.731,FJI:.729,EGY:.728,UZB:.727,VNM:.726,LCA:.725,LBN:.723,ZAF:.717,PSE:.716,IDN:.713,PHL:.710,BWA:.708,JAM:.706,KGZ:.701,BLZ:.700,VEN:.699,BOL:.698,MAR:.698,GAB:.693,BTN:.681,TJK:.679,SLV:.674,IRQ:.673,BGD:.670,NIC:.669,IND:.644,GTM:.629,KIR:.628,HND:.624,LAO:.620,NAM:.610,SWZ:.610,MMR:.608,GHA:.602,KEN:.601,NPL:.601,KHM:.600,COG:.593,AGO:.591,CMR:.587,ZMB:.569,PNG:.568,COM:.558,SYR:.557,HTI:.552,ZWE:.550,UGA:.550,RWA:.548,NGA:.548,TGO:.547,MRT:.540,PAK:.540,CIV:.534,TZA:.532,LSO:.521,SEN:.517,SDN:.516,DJI:.515,MWI:.508,BEN:.504,GMB:.500,ERI:.493,ETH:.492,LBR:.487,GNB:.483,COD:.481,SLE:.477,GIN:.471,AFG:.462,MOZ:.461,GNQ:.650,BFA:.438,MLI:.428,YEM:.424,BDI:.420,NER:.394,TCD:.394,CAF:.387,SSD:.381,SOM:.380};
   /* EIU Democracy Index 2023 — broad coverage (the EIU rates 167 states; the rest fall back to grey). */
   const DEM={NOR:9.81,NZL:9.61,ISL:9.45,SWE:9.39,FIN:9.30,DNK:9.28,IRL:9.19,CHE:9.14,NLD:9.00,TWN:8.92,LUX:8.81,DEU:8.80,CAN:8.69,AUS:8.66,URY:8.66,JPN:8.40,CRI:8.29,GBR:8.28,AUT:8.28,CHL:8.22,MUS:8.14,KOR:8.09,FRA:8.07,ESP:8.07,EST:8.06,CZE:7.97,PRT:7.95,USA:7.85,ISR:7.80,BWA:7.73,ITA:7.69,CPV:7.65,BEL:7.64,MLT:7.57,GRC:7.50,SVN:7.46,LVA:7.38,LTU:7.31,MYS:7.30,POL:7.18,IND:7.18,TTO:7.16,JAM:7.13,PAN:7.10,SVK:7.07,ZAF:7.05,BRA:6.68,DOM:6.62,ARG:6.62,COL:6.55,IDN:6.53,NAM:6.52,MNG:6.50,HRV:6.50,HUN:6.50,ROU:6.48,BGR:6.45,ALB:6.41,PHL:6.36,THA:6.35,SRB:6.33,PRY:6.22,SGP:6.18,LKA:6.17,ECU:6.13,MKD:6.13,LSO:6.11,MDA:6.09,SUR:6.06,MNE:6.02,PER:5.99,PNG:5.97,SEN:5.96,MWI:5.91,BGD:5.87,ZMB:5.80,BTN:5.54,TUN:5.51,ARM:5.42,LBR:5.43,FJI:5.40,HKG:5.28,GEO:5.20,TZA:5.10,MDG:5.10,UKR:5.06,KEN:5.05,MAR:5.04,BIH:5.00,SLV:4.97,HND:4.83,BOL:4.65,GTM:4.62,UGA:4.49,TUR:4.33,NGA:4.23,CIV:4.22,BEN:4.20,NPL:4.07,AGO:3.96,MRT:3.92,PSE:3.86,KWT:3.83,DZA:3.66,QAT:3.65,KGZ:3.62,LBN:3.56,MOZ:3.51,IRQ:3.51,PAK:3.25,MLI:3.23,JOR:3.17,OMN:3.12,RWA:3.10,KAZ:3.08,ETH:3.06,TGO:2.99,SWZ:2.96,EGY:2.93,ZWE:2.92,BFA:2.91,ARE:2.90,AZE:2.80,GAB:2.79,CUB:2.65,GIN:2.65,COG:2.61,VNM:2.62,CMR:2.56,KHM:2.55,HTI:2.50,NIC:2.26,LBY:2.25,VEN:2.23,RUS:2.22,NER:2.20,UZB:2.12,SAU:2.08,ERI:2.03,YEM:1.95,IRN:1.96,TJK:1.94,CHN:1.94,BLR:1.99,GNQ:1.92,SDN:1.76,LAO:1.71,TCD:1.67,TKM:1.66,SYR:1.43,COD:1.40,CAF:1.18,SSD:1.16,PRK:1.08,MMR:0.85,AFG:0.26};
   const MILSPEND={USA:916,CHN:296,RUS:109,IND:84,SAU:75,UKR:65,GBR:75,DEU:67,FRA:61,JPN:50,KOR:48,ITA:36,AUS:32,POL:32,ISR:27,CAN:27,ESP:24,BRA:23,NLD:19,TUR:16,SGP:14,IDN:9,IRN:10,PAK:9,EGY:5,GRC:7,NOR:9,SWE:9,FIN:7,DNK:9,BEL:8,NZL:3,PRT:4,CZE:5,HUN:3,ROU:4,VNM:6,THA:5,COL:9,MEX:8,DZA:18,ARE:23,QAT:11,KWT:8,IRQ:11,LBY:3,MMR:2,VEN:1,CUB:1,NGA:3,ZAF:2,KEN:1,CHL:4,ARG:3,PER:2,PHL:4,MYS:4,TWN:14,UKR2:0};
@@ -3827,7 +3831,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(on){
       if(!ensureTerrainSource()){ try{ imToast(currentLang==='jp'?'3D地形を読み込めませんでした':'Could not load 3D terrain'); }catch(_){} return; }
       terrain3D=true; syncBtns();
-      try{ map.setTerrain({source:'terrain-dem',exaggeration:1.45}); }catch(e){}
+      try{ map.setTerrain({source:'terrain-dem',exaggeration:1.0}); }catch(e){}   /* true 1:1 vertical scale */
       /* Custom atmospheric sky only in mercator — the globe already renders its own atmosphere
          (and fog isn't supported on globe, which otherwise spams console warnings). */
       if(currentProj!=='globe'){ try{ map.setSky({'sky-color':'#0a3d91','sky-horizon-blend':0.55,'horizon-color':'#bcd4ff','horizon-fog-blend':0.55,'fog-color':'#e8f2ff','fog-ground-blend':0.35}); }catch(e){} }
@@ -4329,11 +4333,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(id==='hdi') ramp=['interpolate',['linear'],['to-number',['feature-state','hdi'],-1],.45,'#a50026',.6,'#f46d43',.7,'#fee08b',.8,'#a6d96a',.95,'#1a9850'];
       else if(id==='dem') ramp=['interpolate',['linear'],['to-number',['feature-state','dem'],-1],1,'#a50026',4,'#f46d43',6,'#fee08b',8,'#74add1',10,'#313695'];
       else ramp=['interpolate',['linear'],['to-number',['feature-state','pop'],-1],2,'#ffffcc',20,'#fed976',100,'#fd8d3c',500,'#e31a1c',3000,'#800026'];
-      /* Countries WITHOUT data are painted neutral grey (not left blank) so the map reads as
-         "no data here" rather than "nothing selected". Data countries use the colour ramp. */
+      /* Countries WITHOUT data are painted neutral grey. NOTE: an UNSET feature-state reads as
+         null, and MapLibre's to-number(null) is 0 (NOT the -1 fallback) — so we must test "<= 0",
+         and applyChoro also writes an explicit -1 sentinel for no-data countries. All real metric
+         values (HDI, Democracy 0–10, pop-density) are > 0, so "<= 0" cleanly means "no data". */
+      const noData=['<=',['to-number',['feature-state',id],0],0];
       map.addLayer({id:id+'-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{
-        'fill-color':['case',['<',['to-number',['feature-state',id],-1],0],'#9aa0a6',ramp],
-        'fill-opacity':['case',['<',['to-number',['feature-state',id],-1],0],0.42,opacities[id]]
+        'fill-color':['case',noData,'#9aa0a6',ramp],
+        'fill-opacity':['case',noData,0.45,opacities[id]]
       }},beforeId);
       wireChoroHover(id);
     }
@@ -4344,7 +4351,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(f.id==null) return;
         const s=countryStats[f.id];
         const v=s?valFn(s):null;
-        if(v!=null && !isNaN(v)){ map.setFeatureState({source:'countries',id:f.id},{[id]:v}); count++; }
+        if(v!=null && !isNaN(v) && v>0){ map.setFeatureState({source:'countries',id:f.id},{[id]:v}); count++; }
+        else { map.setFeatureState({source:'countries',id:f.id},{[id]:-1}); }   /* explicit no-data → grey */
       });
       /* If no data made it through, the layer would be invisible — warn and bail. */
       if(count===0) console.warn('applyChoro: no feature-state set for',id);
@@ -4978,8 +4986,8 @@ window.addEventListener('DOMContentLoaded', () => {
     window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
       if(id==='hdi'||id==='dem'||id==='pop'){
-        /* Preserve no-data masking via the case expression */
-        if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<',['to-number',['feature-state',id],-1],0],0,v]);
+        /* Keep no-data countries grey (0.45) — see addChoro for the "<= 0" reasoning. */
+        if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],0.45,v]);
       }
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',['case',['boolean',['feature-state','nato'],false],v,0]); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
