@@ -103,6 +103,9 @@
     .layer-group-title, .lyr-head, .premium-group-title{ cursor:pointer; user-select:none; display:flex; align-items:center; }
     .layer-group-title::after, .lyr-head::after, .premium-group-title::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
     .layer-group-title.lyr-collapsed::after, .lyr-head.lyr-collapsed::after, .premium-group-title.lyr-collapsed::after{ content:'▸'; }
+    /* The "Data layers" section label is not a collapsible group — no arrow, not clickable (#30). */
+    .lyr-head.lyr-section-label{ cursor:default; }
+    .lyr-head.lyr-section-label::after{ content:none !important; }
     .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:1000; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
     .tp-title{ font-weight:600; margin-bottom:8px; } .tp-row{ display:flex; justify-content:space-between; margin:4px 0; } .tp-hint{ font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4; }
     .tp-clear{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-weight:600; cursor:pointer; } .tp-clear:hover{ background:rgba(128,128,128,0.15); }
@@ -349,6 +352,18 @@
     /* === News pin mode toggle inside News tab === */
     .news-pin-toggle{ display:flex; align-items:center; gap:8px; margin:0 0 12px 0; padding:8px 12px; background:var(--card-bg); border-radius:12px; border:1px solid rgba(128,128,128,0.08); }
     .news-pin-toggle-label{ font-size:11px; color:var(--text-muted); font-weight:600; }
+    /* #28 — AI-locate (with a Subject/Publisher dropdown) on the left half, Translate-titles on the right half */
+    .news-ai-actions{ display:flex; gap:8px; align-items:stretch; }
+    .ai-locate-wrap{ position:relative; flex:1 1 50%; display:flex; min-width:0; }
+    .ai-locate-wrap .ai-locate-main{ flex:1 1 auto; min-width:0; margin-top:0 !important; border-top-right-radius:0; border-bottom-right-radius:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ai-locate-caret{ flex:0 0 auto; width:28px; margin-top:0; border:1px solid rgba(128,128,128,0.18); border-left:none; border-radius:0 10px 10px 0; background:var(--input-bg); color:var(--text-main); font-size:11px; cursor:pointer; }
+    .ai-locate-caret:hover{ background:rgba(128,128,128,0.15); }
+    .ai-locate-menu{ display:none; position:absolute; bottom:calc(100% + 6px); left:0; min-width:190px; z-index:60; background:var(--glass-fill); border:1px solid var(--glass-border); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); padding:9px; }
+    .ai-locate-menu.show{ display:block; }
+    .ai-locate-menu-h{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; color:var(--text-muted); margin:0 2px 6px; }
+    .ai-locate-menu .ios-segment-btn{ display:block; width:100%; text-align:left; padding:9px 11px; margin:3px 0; border-radius:8px; }
+    .ai-locate-menu .ios-segment-btn.active{ background:var(--primary-color); color:#fff; }
+    #ai-translate-btn{ flex:1 1 50%; min-width:0; margin-top:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* === Stats compare bar (pinned to top of Stats list) === */
     .stats-compare-bar{ display:flex; flex-direction:column; gap:8px; padding:12px 14px; background:var(--card-bg); border-radius:14px; border:1px solid rgba(128,128,128,0.1); margin-bottom:10px; }
@@ -405,6 +420,10 @@
     .comm-sort button{ background:transparent; border:none; color:var(--text-muted); font-size:11px; font-weight:600; padding:6px 11px; border-radius:7px; cursor:pointer; }
     .comm-sort button.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
     [data-theme="dark"] .comm-sort button.active{ background:#3a3a3c; }
+    /* #27 — Community: the feed scrolls, while New-post + Hot/New/Top stay pinned at the bottom. */
+    #community-feed{ overflow:hidden !important; padding-bottom:0 !important; gap:0 !important; }
+    #community-feed .comm-scroll{ flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:12px; padding:2px 0 8px; -webkit-overflow-scrolling:touch; }
+    #community-feed .comm-toolbar-bottom{ flex:0 0 auto; display:flex; align-items:center; gap:8px; margin:0; padding:10px 0 max(10px,env(safe-area-inset-bottom)); background:var(--glass-fill); border-top:1px solid rgba(128,128,128,0.18); }
     .compose-img-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
     .compose-img-btn{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:1px dashed rgba(128,128,128,0.4); color:var(--text-main); padding:10px 14px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; }
     .compose-img-btn:hover{ border-color:var(--primary-color); color:var(--primary-color); }
@@ -643,9 +662,11 @@
          The Summarize button owns the strip just above the sheet (peek+10); every other
          floating panel/legend docks above it (peek+56) so nothing overlaps the button. */
       .coord-readout{ display:none !important; }
-      .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--peek-h) + 56px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:34dvh; overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
+      /* Floating panels track the sheet's CURRENT top (--sheet-cover) so they stay visible at every
+         detent, not just at peek (#32). They fall back to --peek-h before the first sheet layout. */
+      .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:34dvh; overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
       /* Compact measurement/tool popup: shrink-to-content card on the left, not a full-width slab */
-      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--peek-h) + 56px); width:auto !important; min-width:168px; max-width:calc(100vw - 24px); max-height:32dvh; overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
+      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:168px; max-width:calc(100vw - 24px); max-height:32dvh; overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
       .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
       .tool-panel .tp-row{ margin:2px 0 !important; }
       .tool-panel .tp-hint{ font-size:10.5px !important; margin-top:5px !important; line-height:1.35 !important; }
@@ -653,10 +674,11 @@
       .tool-panel .tp-clear, .tool-panel .tp-add-btn{ padding:7px !important; margin-top:6px !important; }
       .tool-panel .radius-list{ max-height:88px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
-      .map-container.sat-on .tool-panel{ bottom:calc(var(--peek-h) + 56px) !important; }
-      .koppen-legend, .data-legend{ top:auto !important; bottom:calc(var(--peek-h) + 56px) !important; right:10px !important; left:auto !important; max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
-      .news-timeline{ top:auto !important; bottom:calc(var(--peek-h) + 56px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
-      .ai-view-summary-btn{ bottom:calc(var(--peek-h) + 10px); font-size:12px; padding:8px 14px; }
+      .map-container.sat-on .tool-panel{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; }
+      .koppen-legend, .data-legend{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 60px) !important; right:10px !important; left:auto !important; max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
+      /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centred so they never collide. */
+      .news-timeline{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
+      .ai-view-summary-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); font-size:12px; padding:8px 14px; }
       body.sheet-full .ai-view-summary-btn{ display:none; }
       .news-timeline .ntl-body{ min-width:0; } .ntl-label{ min-width:0; flex:1; font-size:11px; }
       .pin-popup{ min-width:0; width:max-content; max-width:calc(100vw - 24px); font-size:13px; }
@@ -763,6 +785,29 @@
 
     /* --- Summarize-this-view: glass already applied; make it a sibling-aligned glass pill (#22) --- */
     .ai-view-summary-btn{ bottom:22px; border-radius:999px; }
+
+    /* --- Cursor coord / elevation / layer-value readout = dark HUD, ALL-white text (#34). Overrides
+       the unified glass fill (which would be white-on-white in Solid mode). Shifted clear of the
+       sidebar when the sidebar overlays the map (frosted mode) so it is never hidden behind it. --- */
+    .coord-readout{ background:rgba(18,18,20,0.64) !important; -webkit-backdrop-filter:saturate(160%) blur(14px) !important; backdrop-filter:saturate(160%) blur(14px) !important; border:1px solid rgba(255,255,255,0.14) !important; color:#fff !important; z-index:1200; }
+    .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat{ color:#fff !important; font-weight:600; }
+    body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
+    body.sidebar-glass .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
+
+    /* --- Avatar crop modal (#12) --- */
+    .crop-overlay{ position:fixed; inset:0; z-index:10050; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); padding:16px; }
+    .crop-card{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.18); border-radius:18px; padding:18px; box-shadow:0 20px 60px rgba(0,0,0,0.35); width:max-content; max-width:calc(100vw - 32px); }
+    .crop-title{ font-weight:700; font-size:15px; margin-bottom:12px; text-align:center; }
+    .crop-stage{ position:relative; width:260px; height:260px; max-width:78vw; overflow:hidden; border-radius:12px; background:#111; cursor:grab; touch-action:none; margin:0 auto; }
+    .crop-stage:active{ cursor:grabbing; }
+    .crop-stage #crop-img{ position:absolute; top:0; left:0; user-select:none; -webkit-user-drag:none; max-width:none; }
+    .crop-ring{ position:absolute; inset:0; pointer-events:none; }
+    .crop-ring::after{ content:''; position:absolute; inset:0; border:2px solid rgba(255,255,255,0.92); border-radius:50%; box-shadow:0 0 0 9999px rgba(0,0,0,0.45); }
+    .crop-zoom{ display:flex; align-items:center; gap:10px; margin:14px 4px 4px; color:var(--text-muted); }
+    .crop-zoom input{ flex:1; accent-color:var(--primary-color); }
+    .crop-actions{ display:flex; gap:10px; margin-top:14px; }
+    .crop-actions button{ flex:1; padding:10px; border-radius:10px; border:none; font-weight:600; font-size:13px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
+    .crop-actions .crop-ok{ background:var(--primary-color); color:#fff; }
 
     /* --- Screenshot button (top-right cluster) + capture mode (#18) --- */
     #screenshot-btn{ }
@@ -889,7 +934,7 @@
       .tool-panel{ min-width:150px !important; max-width:62vw !important; padding:8px 10px !important; font-size:11.5px !important; }
       .tool-panel .tp-select, .tool-panel .radius-list{ font-size:11px; }
       .tool-panel .tp-hint{ display:none !important; }   /* compact: drop the help line on phones */
-      .news-timeline{ bottom:calc(var(--peek-h) + 56px) !important; }
+      .news-timeline{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; }
       /* Mobile-only: restore the 🔍 glyph in the round place-search FAB (text "Search" doesn't fit). */
       #ms-btn{ font-size:0 !important; }
       #ms-btn::after{ content:'🔍'; font-size:18px; }
@@ -918,7 +963,7 @@
     </div>
     <div class="search-bar" id="sidebar-search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
-      <button class="search-btn" id="btn-search" data-i18n="searchBtn">Search</button>
+      <button class="search-btn" id="btn-search" data-i18n="searchLoadBtn" title="Search if the box has text, otherwise reload with the current news settings">Search / Load</button>
     </div>
     <div class="news-filter-toggle" id="news-filter-toggle" style="display:none; margin:0 0 12px 0;">
       <div class="ios-segment" role="tablist" style="width:100%;">
@@ -926,15 +971,20 @@
         <button class="ios-segment-btn" id="newsfilter-saved" style="flex:1;">★ Saved</button>
       </div>
     </div>
-    <div class="news-pin-toggle" id="news-pin-toggle" style="display:none;">
-      <span class="news-pin-toggle-label" data-i18n="lblPinMode">News pin position</span>
-      <div class="ios-segment" role="tablist">
-        <button class="ios-segment-btn active" id="pinmode-loc" data-i18n="pinModeLoc">Subject</button>
-        <button class="ios-segment-btn" id="pinmode-pub" data-i18n="pinModePub">Publisher</button>
+    <!-- News pin-position is now a compact dropdown on the AI-locate button; right half = translate (#28) -->
+    <div id="ai-geocode-row" style="display:none; margin:0 0 8px 0;">
+      <div class="news-ai-actions">
+        <div class="ai-locate-wrap">
+          <button class="ai-action-btn ai-locate-main" id="ai-geocode-btn">✨ AI-locate subject</button>
+          <button class="ai-locate-caret" id="ai-locate-caret" aria-haspopup="true" title="Subject / Publisher">▾</button>
+          <div class="ai-locate-menu" id="ai-locate-menu" role="menu">
+            <div class="ai-locate-menu-h" data-i18n="lblPinMode">News pin position</div>
+            <button class="ios-segment-btn active" id="pinmode-loc" data-i18n="pinModeLoc">Subject</button>
+            <button class="ios-segment-btn" id="pinmode-pub" data-i18n="pinModePub">Publisher</button>
+          </div>
+        </div>
+        <button class="ai-action-btn" id="ai-translate-btn">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
       </div>
-    </div>
-    <div id="ai-geocode-row" style="display:none; margin:0 0 12px 0;">
-      <button class="ai-action-btn" id="ai-geocode-btn">✨ AI-locate all news</button>
     </div>
     <div class="content-area" id="live-news-feed"></div>
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
@@ -994,7 +1044,6 @@
              <label class="layer-option"><input type="checkbox" data-layer="seaRoute" class="geo-layer-cb"> <span class="lyr-sw" style="background:#34c759"></span> Northern Sea Route</label>
              <label class="layer-option"><input type="checkbox" data-layer="chokepoints" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff9500"></span> Global Chokepoints</label>
              <div class="layer-group-title" data-i18n="lyrGrpStrat">Strategic networks</div>
-             <label class="layer-option"><input type="checkbox" data-layer="nato" class="geo-layer-cb"> <span class="lyr-sw" style="background:#1d4ed8"></span> NATO Posture</label>
              <label class="layer-option"><input type="checkbox" data-layer="bri" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e8590c"></span> Belt &amp; Road (BRI)</label>
              <label class="layer-option"><input type="checkbox" data-layer="pipelines" class="geo-layer-cb"> <span class="lyr-sw" style="background:#c2271f"></span> Major Pipelines</label>
              <label class="layer-option"><input type="checkbox" data-layer="cables" class="geo-layer-cb"> <span class="lyr-sw" style="background:#30b0c7"></span> Submarine Cables</label>
@@ -1226,7 +1275,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== i18n ===== */
   const i18n={
     en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabStats:"Stats",
-      searchPh:"Search news / places...", searchBtn:"Search", loading:"Loading articles...",
+      searchPh:"Search news / places...", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
@@ -1251,14 +1300,14 @@ window.addEventListener('DOMContentLoaded', () => {
       aiNoKey:"Add an AI API key in Settings → AI features first.", aiNoVision:"This model can't read images. Choose GPT-4o, Claude 3.5 Sonnet, or Gemini 1.5 Pro.",
       aiChromeUnavail:"Chrome Built-in AI isn't available here. Use Chrome 127+ with the on-device AI enabled, or choose another provider.",
       aiThinking:"AI is analyzing…", aiError:"AI request failed", aiCopy:"Copy", aiCopied:"Copied ✓", aiClose:"Close", aiRetry:"Retry",
-      aiGeoBtn:"✨ AI-locate all news", aiGeoBtnSub:"✨ AI-locate all · Subject", aiGeoBtnPub:"✨ AI-locate all · Publisher", aiGeoBusy:"Locating…", aiGeoNone:"Nothing to locate.", aiGeoDone:"Located {n} stories", aiGeoErr:"Geocoding failed",
+      aiGeoBtn:"✨ AI-locate all news", aiGeoBtnSub:"✨ AI-locate subject", aiGeoBtnPub:"✨ AI-locate publisher", aiTranslateTitles:"Translate titles", aiGeoBusy:"Locating…", aiGeoNone:"Nothing to locate.", aiGeoDone:"Located {n} stories", aiGeoErr:"Geocoding failed",
       lblNewsLang:"News languages", newsLangUi:"Current language only", newsLangMulti:"All languages (auto-translate titles)", lblAiLocate:"AI location analysis", aiLocManual:"Manual (button)", aiLocAuto:"Automatic for all news",
       aiTranslate:"Translate", aiShowOriginal:"Original", aiTransNoText:"No article text to translate — try Web view.",
       aiSumBtn:"Summarize this area with AI", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
     jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabStats:"統計",
-      searchPh:"ニュース・地域を検索...", searchBtn:"検索", loading:"記事を読み込み中...",
+      searchPh:"ニュース・地域を検索...", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
@@ -1283,7 +1332,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiNoKey:"先に 設定 → AI機能 でAPIキーを登録してください。", aiNoVision:"このモデルは画像を解析できません。GPT-4o / Claude 3.5 Sonnet / Gemini 1.5 Pro を選択してください。",
       aiChromeUnavail:"このブラウザではChrome内蔵AIを利用できません。Chrome 127以降で端末内AIを有効にするか、別のプロバイダを選択してください。",
       aiThinking:"AIが解析中…", aiError:"AIリクエストに失敗しました", aiCopy:"コピー", aiCopied:"コピーしました ✓", aiClose:"閉じる", aiRetry:"再試行",
-      aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiGeoBtnSub:"✨ AIで全件解析・主題地", aiGeoBtnPub:"✨ AIで全件解析・発信元", aiGeoBusy:"地点解析中…", aiGeoNone:"解析する記事がありません。", aiGeoDone:"{n}件の地点を解析しました", aiGeoErr:"地点解析に失敗しました",
+      aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiGeoBtnSub:"✨ 主題地をAI解析", aiGeoBtnPub:"✨ 発信元をAI解析", aiTranslateTitles:"タイトルを翻訳", aiGeoBusy:"地点解析中…", aiGeoNone:"解析する記事がありません。", aiGeoDone:"{n}件の地点を解析しました", aiGeoErr:"地点解析に失敗しました",
       lblNewsLang:"ニュースの言語", newsLangUi:"現在の言語のみ", newsLangMulti:"全言語（タイトルを自動翻訳）", lblAiLocate:"AIによる地点解析", aiLocManual:"手動（ボタン）", aiLocAuto:"全ニュースで自動実行",
       aiTranslate:"AI翻訳", aiShowOriginal:"原文", aiTransNoText:"翻訳できる本文がありません（ページ表示をお試しください）。",
       aiSumBtn:"この範囲をAIで要約", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
@@ -1311,10 +1360,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* Localize the geopolitical / strategic layer checkboxes in the Layers menu (their text was
      hard-coded English; pull the right language out of geoLayersDB instead). */
+  /* Fallback names for geo-layer checkboxes whose layer was pulled out of geoLayersDB (e.g. Rimland,
+     now a country-fill) so they still localize EN/JP (#3). */
+  const GEO_LABEL_FALLBACK={ rimland:{name:{en:'Rimland',jp:'リムランド'}} };
   function localizeGeoLabels(){
-    if(typeof geoLayersDB==='undefined') return;
     document.querySelectorAll('.geo-layer-cb').forEach(cb=>{
-      const key=cb.getAttribute('data-layer'), data=geoLayersDB[key]; if(!data||!data.name) return;
+      const key=cb.getAttribute('data-layer'), data=(typeof geoLayersDB!=='undefined'&&geoLayersDB[key])||GEO_LABEL_FALLBACK[key]; if(!data||!data.name) return;
       const label=cb.closest('.layer-option'); if(!label) return;
       let span=label.querySelector('.geo-label');
       if(!span){ /* migrate the bare trailing text node into a span we can re-localize */
@@ -1983,11 +2034,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Map init ===== */
   const isInitiallyDark=document.documentElement.getAttribute('data-theme')==='dark';
-  const carto=(s)=>['https://a.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png'];
+  /* Use all FOUR CARTO subdomains (a–d), not just a/b (#7): on HTTP/1.1 the browser caps concurrent
+     connections per host at ~6, so spreading tiles over 4 hosts ~doubles basemap throughput while
+     tilted in 3D; on HTTP/2 it's harmless. */
+  const carto=(s)=>['https://a.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png','https://d.basemaps.cartocdn.com/'+s+'/{z}/{x}/{y}.png'];
   /* Saturate HTTP/2 / HTTP/3 multiplexing: one tile host can serve dozens of concurrent
      requests over a single connection, so lift MapLibre's default 16-request cap. This is
      the single biggest win for satellite-tile throughput (no quality change — same tiles). */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=48; }catch(_){}
+  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=64; }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
@@ -2102,6 +2156,95 @@ window.addEventListener('DOMContentLoaded', () => {
      Supabase data (re)loads. Starts empty; populated by loadGeoFromSupabase(). */
   let geoDB=[];
 
+  /* === Built-in gazetteer (#11) — a strong, ALWAYS-present set of high-news-frequency places so the
+     NON-AI locator can place most stories even with no/limited Supabase geo_pins. Merged with geoRaw
+     in rebuildGeoIndex (Supabase entries are layered on top). Row = [type, [match terms…], lng, lat,
+     nameEn, nameJp]. Flashpoints outrank cities outrank countries (see TYPE_SCORE/TYPE_LOCAL), so a
+     headline naming "Gaza" pins to Gaza rather than the whole of Israel. */
+  const _BUILTIN_GZ=[
+    /* current flashpoints / contested zones */
+    ['flashpoint',['Gaza','ガザ'],34.47,31.50,'Gaza','ガザ'],
+    ['flashpoint',['Rafah','ラファ'],34.25,31.29,'Rafah','ラファ'],
+    ['flashpoint',['West Bank','ヨルダン川西岸'],35.30,32.00,'West Bank','ヨルダン川西岸'],
+    ['flashpoint',['Bakhmut','バフムト'],38.00,48.59,'Bakhmut','バフムト'],
+    ['flashpoint',['Donetsk','ドネツク'],37.80,48.00,'Donetsk','ドネツク'],
+    ['flashpoint',['Kharkiv','ハルキウ','Kharkov'],36.23,49.99,'Kharkiv','ハルキウ'],
+    ['flashpoint',['Zaporizhzhia','ザポリージャ'],35.14,47.84,'Zaporizhzhia','ザポリージャ'],
+    ['flashpoint',['Mariupol','マリウポリ'],37.54,47.10,'Mariupol','マリウポリ'],
+    ['flashpoint',['Crimea','クリミア'],34.10,45.30,'Crimea','クリミア'],
+    ['flashpoint',['Taiwan Strait','台湾海峡'],119.6,24.4,'Taiwan Strait','台湾海峡'],
+    ['flashpoint',['South China Sea','南シナ海'],114.0,12.0,'South China Sea','南シナ海'],
+    ['flashpoint',['Kashmir','カシミール'],74.8,34.0,'Kashmir','カシミール'],
+    ['flashpoint',['Red Sea','紅海'],38.0,20.0,'Red Sea','紅海'],
+    ['flashpoint',['Strait of Hormuz','ホルムズ海峡'],56.3,26.6,'Strait of Hormuz','ホルムズ海峡'],
+    ['flashpoint',['Golan','ゴラン'],35.75,33.0,'Golan Heights','ゴラン高原'],
+    /* capitals & major cities */
+    ['city',['Kyiv','キーウ','Kiev','キエフ'],30.52,50.45,'Kyiv','キーウ'],
+    ['city',['Moscow','モスクワ'],37.62,55.75,'Moscow','モスクワ'],
+    ['city',['Jerusalem','エルサレム'],35.21,31.77,'Jerusalem','エルサレム'],
+    ['city',['Tel Aviv','テルアビブ'],34.78,32.08,'Tel Aviv','テルアビブ'],
+    ['city',['Beirut','ベイルート'],35.50,33.89,'Beirut','ベイルート'],
+    ['city',['Damascus','ダマスカス'],36.30,33.51,'Damascus','ダマスカス'],
+    ['city',['Tehran','テヘラン'],51.39,35.69,'Tehran','テヘラン'],
+    ['city',['Baghdad','バグダッド'],44.36,33.31,'Baghdad','バグダッド'],
+    ['city',['Riyadh','リヤド'],46.72,24.69,'Riyadh','リヤド'],
+    ['city',["Sana'a",'サヌア','Sanaa'],44.21,15.35,"Sana'a",'サヌア'],
+    ['city',['Cairo','カイロ'],31.24,30.04,'Cairo','カイロ'],
+    ['city',['Khartoum','ハルツーム'],32.53,15.50,'Khartoum','ハルツーム'],
+    ['city',['Kabul','カブール'],69.18,34.53,'Kabul','カブール'],
+    ['city',['Islamabad','イスラマバード'],73.04,33.68,'Islamabad','イスラマバード'],
+    ['city',['New Delhi','ニューデリー','Delhi','デリー'],77.21,28.61,'New Delhi','ニューデリー'],
+    ['city',['Mumbai','ムンバイ'],72.88,19.08,'Mumbai','ムンバイ'],
+    ['city',['Beijing','北京'],116.40,39.90,'Beijing','北京'],
+    ['city',['Shanghai','上海'],121.47,31.23,'Shanghai','上海'],
+    ['city',['Hong Kong','香港'],114.16,22.28,'Hong Kong','香港'],
+    ['city',['Taipei','台北'],121.56,25.03,'Taipei','台北'],
+    ['city',['Pyongyang','平壌'],125.76,39.04,'Pyongyang','平壌'],
+    ['city',['Seoul','ソウル'],126.98,37.57,'Seoul','ソウル'],
+    ['city',['Tokyo','東京'],139.69,35.69,'Tokyo','東京'],
+    ['city',['Washington','ワシントン'],-77.04,38.91,'Washington, D.C.','ワシントンD.C.'],
+    ['city',['New York','ニューヨーク'],-74.0,40.71,'New York','ニューヨーク'],
+    ['city',['London','ロンドン'],-0.12,51.51,'London','ロンドン'],
+    ['city',['Paris','パリ'],2.35,48.85,'Paris','パリ'],
+    ['city',['Berlin','ベルリン'],13.40,52.52,'Berlin','ベルリン'],
+    ['city',['Brussels','ブリュッセル'],4.35,50.85,'Brussels','ブリュッセル'],
+    ['city',['Istanbul','イスタンブール'],28.98,41.01,'Istanbul','イスタンブール'],
+    ['city',['Ankara','アンカラ'],32.86,39.93,'Ankara','アンカラ'],
+    ['city',['Rome','ローマ'],12.50,41.90,'Rome','ローマ'],
+    ['city',['Madrid','マドリード'],-3.70,40.42,'Madrid','マドリード'],
+    ['city',['Warsaw','ワルシャワ'],21.01,52.23,'Warsaw','ワルシャワ'],
+    /* countries (representative point) */
+    ['country',['Ukraine','ウクライナ'],31.0,49.0,'Ukraine','ウクライナ'],
+    ['country',['Russia','ロシア'],93.0,62.0,'Russia','ロシア'],
+    ['country',['Israel','イスラエル'],34.85,31.5,'Israel','イスラエル'],
+    ['country',['Palestine','パレスチナ'],35.2,31.9,'Palestine','パレスチナ'],
+    ['country',['Iran','イラン'],53.0,32.5,'Iran','イラン'],
+    ['country',['Iraq','イラク'],43.7,33.2,'Iraq','イラク'],
+    ['country',['Syria','シリア'],38.0,35.0,'Syria','シリア'],
+    ['country',['Yemen','イエメン'],47.5,15.5,'Yemen','イエメン'],
+    ['country',['Lebanon','レバノン'],35.8,33.9,'Lebanon','レバノン'],
+    ['country',['China','中国'],104.0,35.0,'China','中国'],
+    ['country',['Taiwan','台湾'],121.0,23.7,'Taiwan','台湾'],
+    ['country',['North Korea','北朝鮮'],127.5,40.0,'North Korea','北朝鮮'],
+    ['country',['South Korea','韓国'],127.8,36.5,'South Korea','韓国'],
+    ['country',['Japan','日本'],138.0,37.0,'Japan','日本'],
+    ['country',['India','インド'],79.0,22.0,'India','インド'],
+    ['country',['Pakistan','パキスタン'],69.3,30.0,'Pakistan','パキスタン'],
+    ['country',['Afghanistan','アフガニスタン'],66.0,34.0,'Afghanistan','アフガニスタン'],
+    ['country',['United States','アメリカ','米国'],-98.0,39.0,'United States','アメリカ'],
+    ['country',['United Kingdom','イギリス','英国'],-1.5,52.5,'United Kingdom','イギリス'],
+    ['country',['France','フランス'],2.2,46.5,'France','フランス'],
+    ['country',['Germany','ドイツ'],10.0,51.0,'Germany','ドイツ'],
+    ['country',['Turkey','トルコ','Türkiye'],35.0,39.0,'Turkey','トルコ'],
+    ['country',['Saudi Arabia','サウジアラビア'],45.0,24.0,'Saudi Arabia','サウジアラビア'],
+    ['country',['Egypt','エジプト'],30.0,27.0,'Egypt','エジプト'],
+    ['country',['Sudan','スーダン'],30.0,15.5,'Sudan','スーダン'],
+    ['country',['Venezuela','ベネズエラ'],-66.0,8.0,'Venezuela','ベネズエラ'],
+    ['country',['Poland','ポーランド'],19.5,52.0,'Poland','ポーランド'],
+    ['country',['Sahel','サヘル'],10.0,15.0,'Sahel','サヘル']
+  ];
+  const BUILTIN_GAZETTEER=_BUILTIN_GZ.reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
+
   /* Publisher HQ gazetteer — drives the "Publisher" pin mode. Expanded from 24 → ~130 outlets
      so most stories resolve to a real source location (so the Subject/Publisher toggle actually
      moves the pin). Matched longest-key-first with word boundaries (see matchPublisher). */
@@ -2137,7 +2280,11 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Rebuild the flat geoDB + per-term matchers from geoRaw. Called after the
      Supabase geo_pins load (and on realtime updates). */
   function rebuildGeoIndex(){
-    geoDB=Object.entries(geoRaw).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
+    /* Merge the always-present built-in gazetteer (#11) with the Supabase geo_pins so news placement
+       is strong even before/without server data. */
+    const merged={};
+    [BUILTIN_GAZETTEER, geoRaw].forEach(src=>{ for(const type in src){ (merged[type]=merged[type]||[]).push(...src[type]); } });
+    geoDB=Object.entries(merged).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
     geoDB.forEach(g=>{
@@ -2158,13 +2305,17 @@ window.addEventListener('DOMContentLoaded', () => {
   const geoLayersDB={
     /* Geopolitical-theory geometry re-drawn from real geography (#40). */
     heartland:{ color:"#ff3b30", name:{en:"Heartland",jp:"ハートランド"}, areas:[
-      /* Mackinder's "Pivot Area": interior Eurasia, ~Volga to central Siberia, Arctic to the steppe. */
-      {label:"Heartland (Pivot Area)", ring:[[30,52],[42,54],[55,54.5],[70,53],[88,53],[103,54],[116,56],[122,63],[114,69.5],[98,71],[80,71],[62,69],[46,65.5],[35,60],[29,56],[30,52]]}
+      /* Mackinder's Pivot Area / Heartland (#15): the continental interior of Eurasia beyond the
+         reach of sea power — the Volga & Eastern Europe in the west, across the Kazakh steppe and
+         West Siberia, to the central-Siberian uplands (~115°E); Arctic coast in the north down to
+         the Central Asian steppe in the south. The old ring sat far too high (Siberian Arctic only);
+         this extends it properly south to cover Central Asia. */
+      {label:"Heartland (Pivot Area)", ring:[[38,50],[48,49],[58,46],[68,44],[78,44.5],[88,47],[98,49],[108,49.5],[116,51],[122,56],[120,63],[112,69],[100,72.5],[85,73],[70,72],[55,70],[44,66],[37,60],[33,55],[35,51],[38,50]]}
     ]},
-    rimland:{ color:"#0a84ff", name:{en:"Rimland",jp:"リムランド"}, areas:[
-      /* Spykman's coastal crescent around southern & eastern Eurasia (W. Europe → ME → S. Asia → E. Asia). */
-      {label:"Rimland", ring:[[-10,44],[2,40],[15,38],[28,36],[40,33],[50,29],[60,25],[70,22],[82,16],[92,12],[103,9],[113,13],[122,21],[128,31],[131,41],[125,42],[118,33],[108,25],[97,17],[87,17],[77,22],[65,27],[53,31],[43,34],[31,38],[17,42],[2,45],[-10,46],[-10,44]]}
-    ]},
+    /* Rimland (#15,#17) is NOT a drawn polygon any more: Spykman's "inner crescent" is a LAND
+       concept, and a hand-drawn band always spilled into the ocean. It is now rendered as a fill of
+       the actual rimland COUNTRIES via the country source (see imToggleRimland) — land only, real
+       coastlines, no sea painted. */
     sahel:{ color:"#ffcc00", name:{en:"Sahel Risk Zone",jp:"サヘル危険地帯"}, areas:[
       {label:"Sahel Risk Zone", ring:[[-17,16.6],[-12,16.9],[-6,17.0],[0,16.7],[7,16.2],[14,15.7],[21,15.3],[28,15.2],[34,15.5],[40,16.0],[43,16.4],[43,12.6],[40,12.2],[34,11.7],[28,11.3],[21,11.2],[14,11.6],[7,12.1],[0,12.6],[-6,13.0],[-12,13.2],[-17,13.4],[-17,16.6]]}
     ]},
@@ -2188,8 +2339,11 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"Djibouti", at:[43.15,11.6]}
     ]},
     seaRoute:{ color:"#34c759", name:{en:"Northern Sea Route",jp:"北極海航路"}, lines:[
-      /* Murmansk → Kara Sea → Cape Chelyuskin → Laptev → East Siberian → Bering Strait. */
-      {label:"Northern Sea Route", path:[[33,69.2],[44,69.8],[57,70.5],[68,72.5],[74,73],[80,73.2],[91,75],[104,77.6],[113,75.8],[125,74],[140,73],[160,71.5],[172,69.5],[180,67]]}
+      /* Northern Sea Route redrawn to hug the Russian Arctic coast (#15): Murmansk → Kara Gate →
+         Kara Sea → Vilkitsky Strait (Cape Chelyuskin, ~104°E/77.7°N) → Laptev → Sannikov Strait →
+         East Siberian Sea → Long Strait → Bering Strait approach. Kept inside [-180,180] so the
+         polyline never jumps the antimeridian. */
+      {label:"Northern Sea Route", path:[[33,69.4],[43,69.5],[55,69.7],[58,70.2],[66,72.6],[73,73.2],[80,73.5],[91,75.8],[100,77.2],[104,77.7],[113,76.3],[125,74.3],[139,73.6],[152,72.4],[166,70.2],[176,67.8],[180,66.4]]}
     ]},
     chokepoints:{ color:"#ff9500", name:{en:"Global Chokepoints",jp:"世界の海上要衝"}, points:[
       {label:"Strait of Hormuz", at:[56.3,26.6]},
@@ -2206,17 +2360,8 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"Lombok Strait", at:[115.7,-8.7]},
       {label:"Cape of Good Hope", at:[19.5,-34.8]}
     ]},
-    nato:{ color:"#1d4ed8", name:{en:"NATO Posture",jp:"NATO展開"}, lines:[
-      {label:"NATO Eastern Flank", path:[[24.7,59.4],[26,57.5],[25.3,54.7],[23.2,52.2],[22.5,49.6],[24,48],[26,45.5],[28.6,44.2]]}
-    ], points:[
-      {label:"SHAPE / Mons (HQ)", at:[3.9,50.45]},
-      {label:"Ramstein AB", at:[7.6,49.4]},
-      {label:"Aviano AB", at:[12.6,46.0]},
-      {label:"İncirlik AB", at:[35.4,37.0]},
-      {label:"Norfolk (ACT)", at:[-76.3,36.9]},
-      {label:"Tapa (Estonia)", at:[25.96,59.26]},
-      {label:"Mihail Kogălniceanu (RO)", at:[28.49,44.36]}
-    ]},
+    /* NATO "Posture"/deployment layer removed per request (#14). NATO is now ONLY the members
+       country-fill (data layer "nato") with accession-year + defence-spend (%GDP) on hover. */
     bri:{ color:"#e8590c", name:{en:"Belt & Road (BRI)",jp:"一帯一路"}, lines:[
       {label:"BRI — Silk Road Economic Belt", path:[[108.9,34.3],[103.8,36.6],[94,40],[87.6,43.8],[76.9,43.2],[69.2,41.3],[58.4,37.6],[51.4,35.7],[44.4,38.1],[35,39.9],[29,41],[20.5,44.8],[16.4,48.2],[8.7,49.4],[4.5,51.9]]},
       {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[108,13],[103.8,1.3],[95,6],[80,6.9],[66,12],[51,13],[43.2,11.6],[32.5,29.9],[18,35],[12.3,45.4]]}
@@ -2953,6 +3098,22 @@ window.addEventListener('DOMContentLoaded', () => {
   { const vb=document.getElementById('ai-view-summary-btn'); if(vb) vb.onclick=aiSummarizeView; }
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey'); });
   function handleMapClick(lng,lat,point){
+    /* Köppen click-to-highlight (#25): when the climate layer is on, clicking the map highlights
+       (toggles) the climate zone at that point. Works whether or not a measurement tool is active. */
+    try{
+      const climCb=document.getElementById('dl-climate');
+      if(climCb && climCb.checked && window.sampleKoppenAt){
+        const code=window.sampleKoppenAt(lng,lat);
+        if(code && window.kSelected){
+          window.kSelected.has(code)?window.kSelected.delete(code):window.kSelected.add(code);
+          if(window._buildKoppenLegend) window._buildKoppenLegend();
+          if(window._refreshKoppenImage) window._refreshKoppenImage();
+        }
+      }
+    }catch(_){}
+    /* On phones, tapping the map outside a legend collapses any expanded legend so it stops
+       covering the map (#29). */
+    try{ if(isMobile() && window._minimizeOpenLegends) window._minimizeOpenLegends(); }catch(_){}
     if(!toolMode||!hasTurf())return;
     /* Polar safety (#10): the poles AND their surroundings are singular for great-circle / area
        math and make turf emit NaN or globe-wrapping geometry. Clamp out of the polar caps. */
@@ -3034,7 +3195,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const lyr=activeWxLayer();
     if(!lyr){ lastLayerVal=''; return; }
     if(lyr==='climate'){ let code=null; try{ code=window.sampleKoppenAt&&window.sampleKoppenAt(lng,lat); }catch(_){}
-      lastLayerVal = code ? ('🗺 '+code+(window.KNAME&&window.KNAME[code]?' · '+(window.KNAME[code][currentLang]||window.KNAME[code].en):'')) : ''; return; }
+      /* no leading emoji on the layer value (#34) */
+      lastLayerVal = code ? (code+(window.KNAME&&window.KNAME[code]?' · '+(window.KNAME[code][currentLang]||window.KNAME[code].en):'')) : ''; return; }
     const key=lyr+':'+lat.toFixed(1)+','+lng.toFixed(1);
     if(_wxCache.has(key)){ lastLayerVal=_wxCache.get(key); return; }
     clearTimeout(_wxTimer);
@@ -3044,7 +3206,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(lyr==='sst'){ url=`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=sea_surface_temperature`; pick=j=>j&&j.current&&j.current.sea_surface_temperature; }
         else { url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=temperature_2m`; pick=j=>j&&j.current&&j.current.temperature_2m; }
         const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
-        if(typeof v==='number'){ const txt=(lyr==='sst'?'🌊 ':'🌡 ')+v.toFixed(1)+'°C'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }
+        if(typeof v==='number'){ const txt=v.toFixed(1)+'°C'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* no leading emoji (#34) */
       }catch(_){}
     },220);
   }
@@ -3300,11 +3462,15 @@ window.addEventListener('DOMContentLoaded', () => {
     _lyrGroupItems(header).forEach(el=>{ el.style.display=collapsed?'none':''; }); }
   function _collapseGroup(header){ if(header.classList.contains('lyr-collapsed')) return; header.classList.add('lyr-collapsed');
     _lyrGroupItems(header).forEach(el=>{ el.style.display='none'; }); }
-  layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && layerDropdown.contains(h)){ e.stopPropagation(); _layerGroupToggle(h); } });
+  layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation(); _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
   document.getElementById('btn-layers').addEventListener('click',()=>{ setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled) _collapseGroup(h); }); },30); });
   layerDropdown.addEventListener('click',(e)=>e.stopPropagation());
-  document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{ ensureGeoLayers(); updateGeoLayers(); }));
+  document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
+    /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
+    if(cb.getAttribute('data-layer')==='rimland'){ if(window.imToggleRimland) window.imToggleRimland(cb.checked); return; }
+    ensureGeoLayers(); updateGeoLayers();
+  }));
   document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme(); });
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
     bordersOn=e.target.checked;
@@ -3587,12 +3753,11 @@ window.addEventListener('DOMContentLoaded', () => {
           dash=document.getElementById('info-dashboard'),
           comm=document.getElementById('community-feed'),
           sb=document.querySelector('.search-bar'),
-          pinToggle=document.getElementById('news-pin-toggle'),
           filterToggle=document.getElementById('news-filter-toggle');
     clearMarkers();
     try{ pushCommunityFeatures(); }catch(_){}   /* show community pins only on the Community tab */
-    /* Hide all panels first */
-    feed.style.display='none'; dash.style.display='none'; comm.style.display='none'; pinToggle.style.display='none'; filterToggle.style.display='none';
+    /* Hide all panels first (pin-mode toggle now lives inside #ai-geocode-row, #28) */
+    feed.style.display='none'; dash.style.display='none'; comm.style.display='none'; filterToggle.style.display='none';
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
     /* Stats compare panel only belongs on the Stats tab (#26) */
     if(currentMode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
@@ -3611,7 +3776,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(currentMode==='stats'){ feed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
     if(currentMode==='news'||currentMode==='saved'){
       feed.style.display='flex'; sb.style.display='flex';
-      pinToggle.style.display='flex';
       filterToggle.style.display='block';
       { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='block'; }
       try{ aiSyncFeatureButtons(); }catch(_){}
@@ -3640,6 +3804,21 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   document.getElementById('pinmode-loc').onclick=()=>setNewsPinMode('location');
   document.getElementById('pinmode-pub').onclick=()=>setNewsPinMode('publisher');
+  /* Pin-mode dropdown (#28): the ▾ caret on the AI-locate button opens the Subject/Publisher menu;
+     picking one closes it. The main button's label already reflects the mode (see aiButtonSyncers). */
+  (function(){
+    const caret=document.getElementById('ai-locate-caret'), menu=document.getElementById('ai-locate-menu');
+    if(caret&&menu){
+      caret.onclick=(e)=>{ e.stopPropagation(); menu.classList.toggle('show'); };
+      menu.querySelectorAll('.ios-segment-btn').forEach(b=>b.addEventListener('click',()=>menu.classList.remove('show')));
+      document.addEventListener('click',(e)=>{ if(menu.classList.contains('show') && !menu.contains(e.target) && e.target!==caret) menu.classList.remove('show'); });
+    }
+    /* Manual "Translate titles" button (#28) — translates the visible headlines into the UI language. */
+    const tb=document.getElementById('ai-translate-btn');
+    if(tb) tb.onclick=()=>{ try{ if(!aiReady()){ openAISettingsOrToast(); return; } aiTranslateTitles(); }catch(_){} };
+    aiButtonSyncers.push(function(){ const b=document.getElementById('ai-translate-btn'); if(!b) return; b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey'); });
+  })();
+  function openAISettingsOrToast(){ try{ imToast(t('aiNoKey')); }catch(_){} }
 
   /* ===== AI FEATURE 1: news geocoding =====
      Items the local gazetteer couldn't place sit at fake hash coords (analysis.mapped===false).
@@ -4614,8 +4793,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map) return;
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Geopolitical theory", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
     Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"地政学理論", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables" });
-    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrSeaLevel:"Sea-level rise", lgdSeaLevelTitle:"Sea-level rise" });
+    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrSeaLevel:"海面上昇", lgdSeaLevelTitle:"海面上昇" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -4637,7 +4816,19 @@ window.addEventListener('DOMContentLoaded', () => {
       .data-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; }
       .data-legend .dl-bar{ height:10px; border-radius:5px; margin:6px 0 4px; border:1px solid rgba(0,0,0,0.1); }
       .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; }
-      .data-legend .dl-hint{ color:var(--text-muted); margin-top:8px; font-size:10px; }`;
+      .data-legend .dl-hint{ color:var(--text-muted); margin-top:8px; font-size:10px; }
+      /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
+         same size, evenly spaced), and the title padded so it never collides with either side. */
+      .koppen-legend h4, .data-legend h4{ padding:0 56px 0 22px !important; min-height:18px; display:flex; align-items:center; }
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ top:7px; right:7px; width:24px; height:22px; display:flex; align-items:center; justify-content:center; padding:0; font-size:15px; }
+      .legend-min{ top:7px; right:33px; width:24px; height:22px; display:flex; align-items:center; justify-content:center; padding:0; font-size:18px; }
+      .data-legend .dl-drag, .koppen-legend .kl-drag{ top:8px; left:7px; font-size:12px; }
+      /* Köppen criteria popup (#25) */
+      .koppen-info-pop{ display:none; position:absolute; z-index:1300; width:236px; max-width:calc(100vw - 24px); background:var(--glass-fill); border:1px solid var(--glass-border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); font-size:12px; }
+      .koppen-info-pop .kip-x{ position:absolute; top:6px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; line-height:1; padding:4px 6px; border-radius:6px; }
+      .koppen-info-pop .kip-x:hover{ background:var(--input-bg); }
+      .koppen-info-pop .kip-h{ display:flex; align-items:center; gap:7px; font-weight:600; font-size:13px; padding-right:22px; margin-bottom:6px; }
+      .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }`;
     document.head.appendChild(style);
 
     const mc=document.getElementById('map-container');
@@ -4756,50 +4947,49 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="dl-hint">${currentLang==='jp'?'AWS Terrain（terrarium DEM）':'AWS Terrain (terrarium DEM)'}</div>`;
     mc.appendChild(lgdRelief);
     lgdRelief.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-relief'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
-    /* Make EEZ/Temp/Thermal legends draggable too (same handler) */
+    /* Sea-level-rise legend (#24) */
+    const lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
+    lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海面上昇':'Sea-level rise'}</h4>
+      <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${currentLang==='jp'?'浸水域 (≤ 現海面 + ':'Flooded (≤ today + '}<b class="sl-cur">+${window._seaLevelM||0} m</b>${currentLang==='jp'?')':')'}</div>
+      <div class="dl-hint">${currentLang==='jp'?'スライダーで上昇量を選択。AWS Terrain DEM の標高に基づく簡易浸水。潮汐・防潮堤は未考慮。':'Use the slider to set the rise. Naïve "bathtub" flooding from the AWS Terrain DEM — ignores tides & defences.'}</div>`;
+    mc.appendChild(lgdSeaLevel);
+    lgdSeaLevel.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sealevel'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Unified legend drag — MOUSE + TOUCH (#33), idempotent. Works for any legend whose handle is
+       .dl-drag or .kl-drag, so EEZ/Temp/Thermal/… AND the Köppen legend are all movable on phones. */
     function wireDrag(el){
-      const handle=el.querySelector('.dl-drag'); if(!handle) return;
-      handle.addEventListener('mousedown',ev=>{
-        ev.preventDefault();
+      if(!el) return;
+      const handle=el.querySelector('.dl-drag,.kl-drag'); if(!handle||handle.dataset.dragWired) return; handle.dataset.dragWired='1';
+      const begin=(cx,cy)=>{
         const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
-        const dx=ev.clientX-startRect.left, dy=ev.clientY-startRect.top;
-        el.style.bottom='auto'; el.style.right='auto';
-        function mv(e){
-          const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, e.clientX-mcRect.left-dx));
-          const y=Math.max(8,Math.min(mcRect.height-startRect.height-8, e.clientY-mcRect.top-dy));
+        const ox=cx-startRect.left, oy=cy-startRect.top;
+        el.style.bottom='auto'; el.style.right='auto'; el.dataset.dragged='1';
+        return (mx,my)=>{
+          const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, mx-mcRect.left-ox));
+          const y=Math.max(8,Math.min(mcRect.height-startRect.height-8, my-mcRect.top-oy));
           el.style.left=x+'px'; el.style.top=y+'px';
-        }
-        function up(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); }
-        document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
-      });
+        };
+      };
+      handle.addEventListener('mousedown',ev=>{ ev.preventDefault(); const move=begin(ev.clientX,ev.clientY);
+        const mv=e=>move(e.clientX,e.clientY); const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+        document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); });
+      handle.addEventListener('touchstart',ev=>{ const t0=ev.touches[0]; if(!t0) return; ev.preventDefault(); const move=begin(t0.clientX,t0.clientY);
+        const mv=e=>{ const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }; const up=()=>{ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
+        document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
     }
-    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief);
-    /* Also wire drag for the Köppen legend */
-    setTimeout(()=>{ const kl=document.getElementById('koppen-legend');
-      if(kl && !kl.querySelector('.kl-drag')){
-        const drag=document.createElement('span'); drag.className='kl-drag'; drag.textContent='⋮⋮';
-        drag.title=currentLang==='jp'?'ドラッグして移動':'Drag to move'; kl.insertBefore(drag, kl.firstChild);
-        drag.addEventListener('mousedown',ev=>{
-          ev.preventDefault();
-          const startRect=kl.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
-          const dx=ev.clientX-startRect.left, dy=ev.clientY-startRect.top;
-          kl.style.bottom='auto'; kl.style.right='auto';
-          function mv(e){
-            const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, e.clientX-mcRect.left-dx));
-            const y=Math.max(8,Math.min(mcRect.height-startRect.height-8, e.clientY-mcRect.top-dy));
-            kl.style.left=x+'px'; kl.style.top=y+'px';
-          }
-          function up(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); }
-          document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
-        });
-      }
-    },200);
+    window._wireLegendDrag=wireDrag;
+    wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
+    /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
+       innerHTML rebuild that previously wiped it — that rebuild was why it "couldn't be moved" (#22). */
 
     const dd=document.getElementById('layer-dropdown');
     const hr=document.createElement('hr'); hr.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; dd.appendChild(hr);
-    const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
+    /* The top-level "Data layers" line is a SECTION LABEL, not a collapsible group (the real groups
+       are the Weather/Terrain/… sub-headers below it). Mark it so it doesn't show a ▷ it can't act
+       on (#30). */
+    const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,nato:0.55,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,wind:0.9,subcables:0.95};
+    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,nato:0.55,night:0.4,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95};
+    if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     /* Date-aware layers: temp, precip, thermal — these vary day-by-day. */
@@ -4807,15 +4997,39 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Air-temperature (MERRA-2 monthly reanalysis) lags ~3 months → default to the latest safe month. */
     function tempMonthISO(monthsBack){ const d=new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-(monthsBack==null?3:monthsBack)); return d.toISOString().slice(0,10); }
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,thermal:GIBS_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    /* Thermal anomalies / active fire (#13): these are NASA FIRMS detections (MODIS + VIIRS)
+       served as GIBS WMTS. Different GIBS layers publish different TileMatrixSet levels, and a
+       wrong layer/level returns HTTP 400/404 → a BLANK layer (the old `..._375m_All` name was not
+       valid, which is why thermal "didn't work"). We probe a small set of known FIRMS layers at
+       runtime (in the user's real browser) and lock onto the first that actually serves a tile. */
+    const THERMAL_CANDIDATES=[
+      {layer:'MODIS_Combined_Thermal_Anomalies_All', lvl:7},
+      {layer:'VIIRS_SNPP_Thermal_Anomalies_375m_Day', lvl:7},
+      {layer:'VIIRS_NOAA20_Thermal_Anomalies_375m_Day', lvl:7},
+      {layer:'VIIRS_SNPP_Thermal_Anomalies_375m_Night', lvl:7},
+      {layer:'MODIS_Combined_Thermal_Anomalies_All', lvl:9}
+    ];
+    let _thermalCfg=null;
+    async function pickThermalCfg(){
+      if(_thermalCfg) return _thermalCfg;
+      for(const c of THERMAL_CANDIDATES){
+        try{
+          const u=`https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${c.layer}/default/${layerDates.thermal}/GoogleMapsCompatible_Level${c.lvl}/0/0/0.png`;
+          const r=await fetch(u,{method:'GET',cache:'no-store'});
+          if(r.ok && (r.headers.get('content-type')||'').indexOf('image')>=0){ _thermalCfg=c; return c; }
+        }catch(_){}
+      }
+      _thermalCfg=THERMAL_CANDIDATES[0]; return _thermalCfg;   /* best-effort default */
+    }
     [
       ['__grp','lyrGrpWeather'],
       ['climate','lyrClimate'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['thermal','lyrThermal'],
       ['__grp','lyrGrpTerrain'],
-      ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],
+      ['relief','lyrRelief'],['sealevel','lyrSeaLevel'],['hillshade','lyrHillshade'],['contours','lyrContours'],
       ['__grp','lyrGrpMaritime'],
       ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],
       ['__grp','lyrGrpIndic'],
-      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['hdi','lyrHDI'],['dem','lyrDem'],['nato','lyrNATO'],['night','lyrNight']
+      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['hdi','lyrHDI'],['dem','lyrDem'],['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO'],['night','lyrNight']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[currentLang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
@@ -4832,8 +5046,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(isTraffic){
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all">${t('filtAll')||'All'}</option><option value="civilian">${t('filtCiv')||'Civilian'}</option><option value="military">${t('filtMil')||'Military'}</option></select></label></div>`;
       }
+      const isSeaLevel=(id==='sealevel');
+      if(isSeaLevel){
+        /* Sea-level-rise simulator (#24): slider chooses a +rise in metres; the DEM recolours so
+           everything below that level floods blue. */
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${currentLang==='jp'?'海面上昇':'Sea-level rise'}: <input type="range" id="sl-${id}" min="0" max="80" value="${window._seaLevelM||0}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:46px; text-align:right; font-variant-numeric:tabular-nums;">+${window._seaLevelM||0} m</span></label></div>`;
+      }
       /* Layers that own a legend popup get their opacity slider THERE (#17); hide the inline one. */
-      const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief']);
+      const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel']);
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"> <span data-i18n="${key}">${i18n[currentLang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
       dd.appendChild(w);
@@ -4853,6 +5073,10 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       if(isTraffic){
         w.querySelector('#ft-'+id).addEventListener('change',e=>{ trafficFilters[id]=e.target.value; refreshTrafficLayer(id); });
+      }
+      if(isSeaLevel){
+        const sl=w.querySelector('#sl-'+id), lbl=w.querySelector('#sllbl-'+id);
+        sl.addEventListener('input',e=>{ window._seaLevelM=parseInt(e.target.value,10)||0; if(lbl) lbl.textContent='+'+window._seaLevelM+' m'; if(cb.checked && window._refreshSeaLevel) window._refreshSeaLevel(); });
       }
     });
 
@@ -4899,7 +5123,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const CHORO_META={
       pop:{label:()=>currentLang==='jp'?'人口密度':'Pop. density', fmt:s=>s.density!=null?Math.round(s.density).toLocaleString()+' /km²':'—'},
       hdi:{label:()=>'HDI (2022)', fmt:s=>s.hdi!=null?s.hdi.toFixed(3):'—'},
-      dem:{label:()=>currentLang==='jp'?'民主主義指数 (2023)':'Democracy Index (2023)', fmt:s=>s.dem!=null?s.dem.toFixed(2):'—'}
+      dem:{label:()=>currentLang==='jp'?'民主主義指数 (2023)':'Democracy Index (2023)', fmt:s=>s.dem!=null?s.dem.toFixed(2):'—'},
+      /* Military spending choropleths (#26) — absolute (SIPRI 2023, $B) and as a share of GDP. */
+      milSpend:{label:()=>currentLang==='jp'?'国防費 (2023)':'Mil. spending (2023)', fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
+      milSpendGDP:{label:()=>currentLang==='jp'?'国防費 (対GDP)':'Mil. spending (% GDP)', fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }}
     };
     function wireChoroHover(id){
       const meta=CHORO_META[id]; if(!meta) return;
@@ -4918,6 +5145,8 @@ window.addEventListener('DOMContentLoaded', () => {
       let ramp;
       if(id==='hdi') ramp=['interpolate',['linear'],['to-number',['feature-state','hdi'],-1],.45,'#a50026',.6,'#f46d43',.7,'#fee08b',.8,'#a6d96a',.95,'#1a9850'];
       else if(id==='dem') ramp=['interpolate',['linear'],['to-number',['feature-state','dem'],-1],1,'#a50026',4,'#f46d43',6,'#fee08b',8,'#74add1',10,'#313695'];
+      else if(id==='milSpend') ramp=['interpolate',['linear'],['to-number',['feature-state','milSpend'],-1],1,'#fff7ec',5,'#fdd49e',20,'#fc8d59',75,'#d7301f',300,'#7f0000',916,'#4d0000'];
+      else if(id==='milSpendGDP') ramp=['interpolate',['linear'],['to-number',['feature-state','milSpendGDP'],-1],0.5,'#edf8fb',1,'#b2e2e2',2,'#66c2a4',3.5,'#2ca25f',6,'#006d2c'];
       else ramp=['interpolate',['linear'],['to-number',['feature-state','pop'],-1],2,'#ffffcc',20,'#fed976',100,'#fd8d3c',500,'#e31a1c',3000,'#800026'];
       /* Countries WITHOUT data are painted neutral grey. NOTE: an UNSET feature-state reads as
          null, and MapLibre's to-number(null) is 0 (NOT the -1 fallback) — so we must test "<= 0",
@@ -4948,6 +5177,50 @@ window.addEventListener('DOMContentLoaded', () => {
        (the old #0a3d91 navy at 50% was nearly invisible), with a crisp outline. */
     function addNato(){ if(!map.getLayer('nato-fill')) map.addLayer({id:'nato-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#2f6bff','fill-opacity':['case',['boolean',['feature-state','nato'],false],opacities.nato,0]}},beforeId); if(!map.getLayer('nato-line')) map.addLayer({id:'nato-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#7fb0ff','line-width':['case',['boolean',['feature-state','nato'],false],1.6,0]}},beforeId); }
     function applyNato(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; map.setFeatureState({source:'countries',id:f.id},{nato:!!(s&&NATO.has(s.code))}); }); }
+    /* NATO accession years (#14) — shown on hover alongside the member's defence spend as % of GDP. */
+    const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
+    function defencePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
+    function wireNatoHover(){
+      if(map.__natoHover) return; map.__natoHover=true;
+      map.on('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
+        const yr=NATO_JOIN[s.code], pct=defencePctGDP(s);
+        const el=ensureMapTooltip(); el.style.display='block';
+        el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'NATO加盟年':'Joined NATO'}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費 (対GDP)':'Defence (% GDP)'}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
+        positionTooltip(e.point);
+      });
+      map.on('mouseleave','nato-fill',()=>{ if(mapTooltipEl) mapTooltipEl.style.display='none'; });
+    }
+
+    /* Rimland (#15,#17) — Spykman's coastal crescent as a LAND-only country fill (no sea painted). */
+    const RIMLAND=new Set("GBR IRL FRA ESP PRT ITA NLD BEL DEU DNK NOR HRV ALB MNE GRC TUR SYR LBN ISR JOR IRQ IRN SAU YEM OMN ARE QAT KWT BHR PAK IND BGD LKA MMR THA KHM VNM MYS SGP IDN PHL BRN CHN KOR PRK JPN TWN".split(' '));
+    function addRimland(){
+      if(!map.getLayer('rimland-fill')) map.addLayer({id:'rimland-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#0a84ff','fill-opacity':['case',['boolean',['feature-state','rimland'],false],0.30,0]}},beforeId);
+      if(!map.getLayer('rimland-line')) map.addLayer({id:'rimland-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#5ab0ff','line-width':['case',['boolean',['feature-state','rimland'],false],1.2,0]}},beforeId);
+    }
+    function applyRimland(){ if(!countryGeo) return; countryGeo.features.forEach(f=>{ if(f.id==null) return; const s=countryStats[String(f.id)]; map.setFeatureState({source:'countries',id:f.id},{rimland:!!(s&&RIMLAND.has(s.code))}); }); }
+    window.imToggleRimland=function(on){ if(on){ withCountries(()=>{ try{ addRimland(); applyRimland(); setVis('rimland-fill',true); setVis('rimland-line',true); }catch(e){ console.warn('rimland fail',e); } }); } else { setVis('rimland-fill',false); setVis('rimland-line',false); } };
+
+    /* Sea-level-rise simulator (#24): a color-relief layer over the DEM that floods everything at or
+       below the chosen +rise (window._seaLevelM, metres) in blue, leaving higher land transparent so
+       the basemap shows through. The slider rebuilds the ramp live via _refreshSeaLevel. */
+    function seaLevelRamp(){
+      const L=window._seaLevelM||0;
+      return ['interpolate',['linear'],['elevation'],
+        -11000,'rgba(5,40,90,0.88)', -50,'rgba(20,90,170,0.8)', Math.max(-49,L-1.5),'rgba(40,120,200,0.72)',
+        L,'rgba(120,180,235,0.62)', L+0.6,'rgba(0,0,0,0)', 12000,'rgba(0,0,0,0)'];
+    }
+    function addSeaLevel(){
+      try{ ensureTerrainSource(); }catch(_){}
+      if(!map.getLayer('lyr-sealevel')){
+        map.addLayer({id:'lyr-sealevel',type:'color-relief',source:'terrain-dem',layout:{visibility:'none'},paint:{'color-relief-opacity':opacities.sealevel,'color-relief-color':seaLevelRamp()}},beforeId);
+      }
+    }
+    window._refreshSeaLevel=function(){
+      if(map.getLayer('lyr-sealevel')){ try{ map.setPaintProperty('lyr-sealevel','color-relief-color',seaLevelRamp()); }catch(_){} }
+      try{ const s=lgdSeaLevel.querySelector('.sl-cur'); if(s) s.textContent='+'+(window._seaLevelM||0)+' m'; }catch(_){}
+    };
 
     let nightTimer=null;
     function buildNight(){ if(typeof turf==='undefined')return; const now=new Date(); const N=Math.floor((now-Date.UTC(now.getUTCFullYear(),0,0))/864e5); const decl=-23.44*Math.cos((2*Math.PI/365)*(N+10)); const utc=now.getUTCHours()+now.getUTCMinutes()/60; const subLng=(12-utc)*15; const antiLng=((subLng+360)%360)-180; let poly; try{ poly=turf.circle([antiLng,-decl],10001,{steps:128,units:'kilometers'}); }catch(e){return;} const src=map.getSource('src-night'); if(src)src.setData(poly); else map.addLayer({id:'lyr-night',type:'fill',source:(map.addSource('src-night',{type:'geojson',data:poly}),'src-night'),layout:{visibility:'none'},paint:{'fill-color':'#00112a','fill-opacity':opacities.night}},beforeId); }
@@ -5066,15 +5339,55 @@ window.addEventListener('DOMContentLoaded', () => {
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
       const clearBtn=kSelected.size>0?`<button class="kl-clear" id="kl-clear">${currentLang==='jp'?'選択解除':'Clear selection'}</button>`:'';
-      lg.innerHTML=`<button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調(複数可)':'Click to highlight (multi)'}</div>`;
-      lg.querySelectorAll('.kl-item').forEach(it=>it.onclick=()=>{
-        const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code);
-        buildLegend(); window._refreshKoppenImage();
+      const dragTitle=currentLang==='jp'?'ドラッグして移動':'Drag to move';
+      /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
+         old code injected it once after setup and buildLegend() wiped it, so the legend "couldn't be
+         moved" (#22). */
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div>`;
+      lg.querySelectorAll('.kl-item').forEach(it=>{
+        it.onclick=()=>{ const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); window._refreshKoppenImage(); };
+        /* Right-click a climate → popup explaining how that Köppen class is determined (#25). */
+        it.oncontextmenu=(e)=>{ e.preventDefault(); showKoppenInfo(it.dataset.c, e.clientX, e.clientY); };
       });
       const cb=lg.querySelector('#kl-clear'); if(cb) cb.onclick=()=>{ kSelected.clear(); buildLegend(); window._refreshKoppenImage(); };
       const xb=lg.querySelector('#kl-close'); if(xb) xb.onclick=()=>{ /* × also disables the layer (user request) */ const cb2=document.getElementById('dl-climate'); if(cb2){ cb2.checked=false; cb2.dispatchEvent(new Event('change')); } };
       try{ window._ensureLegendOpacity&&window._ensureLegendOpacity(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
+      try{ window._wireLegendDrag&&window._wireLegendDrag(lg); }catch(_){}
     }
+    /* Decode a Köppen code into its defining criteria (#25) — letter by letter, EN + JP. */
+    function koppenCriteria(code){
+      const g=code[0], rest=code.slice(1), en=[], jp=[];
+      const main={A:['Tropical — coldest month ≥ 18 °C','熱帯 — 最寒月も18°C以上'],
+        B:['Arid — annual precipitation below the Köppen dryness threshold','乾燥帯 — 年降水量が乾燥限界未満'],
+        C:['Temperate — coldest month 0–18 °C','温帯 — 最寒月0〜18°C'],
+        D:['Continental — coldest month < 0 °C, warmest > 10 °C','冷帯（亜寒帯）— 最寒月0°C未満・最暖月10°C超'],
+        E:['Polar — warmest month < 10 °C','寒帯 — 最暖月10°C未満']}[g];
+      if(main){ en.push(main[0]); jp.push(main[1]); }
+      const seg={ f:['No dry season (rain year-round)','年中湿潤（乾季なし）'], m:['Monsoonal — brief dry season, very wet overall','モンスーン（短い乾季・多雨）'],
+        w:['Dry winter','冬季乾燥'], s:['Dry summer','夏季乾燥'],
+        W:['Desert (true arid)','砂漠'], S:['Steppe (semi-arid)','ステップ（半乾燥）'],
+        h:['Hot — mean annual ≥ 18 °C','高温（年平均18°C以上）'], k:['Cold — mean annual < 18 °C','寒冷（年平均18°C未満）'],
+        a:['Hot summer — warmest ≥ 22 °C','高温の夏（最暖月22°C以上）'], b:['Warm summer — warmest < 22 °C, ≥4 months > 10 °C','温暖な夏（最暖月22°C未満、10°C超が4か月以上）'],
+        c:['Cool short summer — 1–3 months > 10 °C','冷涼で短い夏（10°C超が1〜3か月）'], d:['Severe winter — coldest < −38 °C','厳寒の冬（最寒月−38°C未満）'],
+        T:['Tundra — warmest month 0–10 °C','ツンドラ（最暖月0〜10°C）'], F:['Ice cap — every month < 0 °C','氷雪（全月0°C未満）'] };
+      for(const ch of rest){ if(seg[ch]){ en.push(seg[ch][0]); jp.push(seg[ch][1]); } }
+      return {en,jp};
+    }
+    function showKoppenInfo(code,x,y){
+      const info=koppenCriteria(code), nm=KNAME[code]?KNAME[code][currentLang]:code;
+      const lines=(currentLang==='jp'?info.jp:info.en).map(s=>`<li>${s}</li>`).join('');
+      const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
+      let pop=document.getElementById('koppen-info-pop');
+      if(!pop){ pop=document.createElement('div'); pop.id='koppen-info-pop'; pop.className='koppen-info-pop'; mc.appendChild(pop); }
+      pop.innerHTML=`<button class="kip-x" title="${t('close')}">✕</button><div class="kip-h"><span class="kl-sw" style="background:rgb(${col[0]},${col[1]},${col[2]})"></span><b>${code}</b> · ${nm}</div><ul>${lines}</ul>`;
+      pop.style.display='block';
+      const r=mc.getBoundingClientRect();
+      pop.style.left=Math.max(8,Math.min((x||0)-r.left, r.width-248))+'px';
+      pop.style.top=Math.max(8,Math.min((y||0)-r.top, r.height-180))+'px';
+      pop.querySelector('.kip-x').onclick=()=>{ pop.style.display='none'; };
+    }
+    window.showKoppenInfo=showKoppenInfo;
+    window._buildKoppenLegend=buildLegend;   /* so a map-click highlight can refresh the legend's selection state */
 
     /* Stagger legends vertically so multiple can show without overlapping. Only re-tile
        legends that haven't been manually dragged (left/top still 'auto'/unset). */
@@ -5107,8 +5420,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
     }
     window._ensureLegendMinimize=ensureLegendMinimize;
+    /* Collapse every open, expanded legend (used when a phone user taps the map outside a legend, #29). */
+    window._minimizeOpenLegends=function(){
+      [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel]
+        .forEach(el=>{ if(el && el.style.display==='block' && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
+    };
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief];
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&el.style.display==='block') try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
       let bottom=140;
@@ -5559,7 +5877,7 @@ window.addEventListener('DOMContentLoaded', () => {
       let tiles=null;
       if(id==='temp') tiles=gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',date);  /* gap-free reanalysis, monthly */
       else if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
-      else if(id==='thermal') tiles=gibs('VIIRS_SNPP_Thermal_Anomalies_375m_All',7,'png',date);  /* FIRMS-derived (#35) — MODIS_Fires_All was not a valid GIBS layer (blank) */
+      else if(id==='thermal'){ const c=_thermalCfg||THERMAL_CANDIDATES[0]; tiles=gibs(c.layer,c.lvl,'png',date); }  /* FIRMS active fire (#13) — layer auto-picked by pickThermalCfg */
       else if(id==='sst') tiles=gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',date);
       else if(id==='snow') tiles=gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',date);
       else if(id==='aod') tiles=gibs('MODIS_Combined_Value_Added_AOD',6,'png',date);
@@ -5568,7 +5886,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const wasVis=map.getLayer('lyr-'+id)?map.getLayoutProperty('lyr-'+id,'visibility')==='visible':false;
       if(map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
       if(map.getSource('src-'+id)) map.removeSource('src-'+id);
-      const maxzMap={temp:6,thermal:7,precip:6,sst:7,snow:8,aod:6};
+      const maxzMap={temp:6,thermal:(_thermalCfg?_thermalCfg.lvl:7),precip:6,sst:7,snow:8,aod:6};
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
@@ -5585,8 +5903,8 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='precip'){ whenStyleReady().then(()=>{ try{ addRaster('precip',gibs('IMERG_Precipitation_Rate',6,'png',layerDates.precip+'T12:00:00Z'),6); }catch(_){} try{ setVis('lyr-precip',true); }catch(_){} }); }
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
-          whenStyleReady().then(()=>{
-            try{ addRaster('thermal',gibs('VIIRS_SNPP_Thermal_Anomalies_375m_All',7,'png',layerDates.thermal),7); }catch(_){}
+          whenStyleReady().then(()=>pickThermalCfg()).then(c=>{
+            try{ addRaster('thermal',gibs(c.layer,c.lvl,'png',layerDates.thermal),c.lvl); }catch(_){}
             try{ setVis('lyr-thermal',true); }catch(_){}
           });
         }
@@ -5626,6 +5944,10 @@ window.addEventListener('DOMContentLoaded', () => {
             setVis('lyr-relief',true); if(lgdRelief){ lgdRelief.style.display='block'; tileLegends(); }
           }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'カラー標高を初期化できませんでした':'Colour relief unavailable'); }catch(_){} } });
         }
+        else if(id==='sealevel'){
+          lgdSeaLevel.style.display='block'; tileLegends();
+          whenStyleReady().then(()=>{ try{ addSeaLevel(); setVis('lyr-sealevel',true); window._refreshSeaLevel(); }catch(e){ console.warn('sealevel fail',e); const cb=document.getElementById('dl-sealevel'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} } });
+        }
         else if(id==='subcables'){ whenStyleReady().then(()=>{ try{ addSubcables(); }catch(e){ console.warn('subcables',e); } }); }
         else if(id==='hillshade'){
           whenStyleReady().then(()=>{ try{
@@ -5658,13 +5980,19 @@ window.addEventListener('DOMContentLoaded', () => {
           lgdDem.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
         }
+        else if(id==='milSpend'){
+          withCountries(()=>{ try{ addChoro('milSpend'); applyChoro('milSpend',s=>s.milSpend); setVis('milSpend-fill',true); }catch(e){ console.warn('milSpend choro fail',e); } });
+        }
+        else if(id==='milSpendGDP'){
+          withCountries(()=>{ try{ addChoro('milSpendGDP'); applyChoro('milSpendGDP',s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null); setVis('milSpendGDP-fill',true); }catch(e){ console.warn('milSpendGDP choro fail',e); } });
+        }
         else if(id==='nato'){
-          /* NATO needs no legend (#45) — the blue fill is self-explanatory. */
-          withCountries(()=>{ try{ addNato(); applyNato(); setVis('nato-fill',true); setVis('nato-line',true); }catch(e){ console.warn('nato fail',e); } });
+          /* NATO members fill only (#14) — no legend; accession year + defence %GDP show on hover. */
+          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setVis('nato-fill',true); setVis('nato-line',true); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
       } else {
-        if(id==='hdi'||id==='dem'||id==='pop'){ setVis(id+'-fill',false); }
+        if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setVis('nato-fill',false); setVis('nato-line',false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
@@ -5677,6 +6005,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(id==='pop') lgdPop.style.display='none';
         if(id==='popgrid') lgdPopGrid.style.display='none';
         if(id==='relief') lgdRelief.style.display='none';
+        if(id==='sealevel') lgdSeaLevel.style.display='none';
         if(id==='eez') lgdEEZ.style.display='none';
         if(id==='temp') lgdTemp.style.display='none';
         if(id==='thermal') lgdThermal.style.display='none';
@@ -5705,7 +6034,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
-      if(id==='hdi'||id==='dem'||id==='pop'){
+      if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'){
         /* Keep no-data countries grey (0.45) — see addChoro for the "<= 0" reasoning. */
         if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
@@ -5716,6 +6045,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='hillshade'){ if(map.getLayer('lyr-hillshade'))map.setPaintProperty('lyr-hillshade','hillshade-exaggeration',Math.max(0.05,v)); }
       else if(id==='contours'){ if(map.getLayer('contour-lines'))map.setPaintProperty('contour-lines','line-opacity',v); if(map.getLayer('contour-labels'))map.setPaintProperty('contour-labels','text-opacity',v); }
       else if(id==='relief'){ if(map.getLayer('lyr-relief'))map.setPaintProperty('lyr-relief','color-relief-opacity',v); }
+      else if(id==='sealevel'){ if(map.getLayer('lyr-sealevel'))map.setPaintProperty('lyr-sealevel','color-relief-opacity',v); }
       else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=v; }
       else if(id==='subcables'){ if(map.getLayer('lyr-subcables'))map.setPaintProperty('lyr-subcables','line-opacity',v); }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
@@ -5966,6 +6296,46 @@ window.addEventListener('DOMContentLoaded', () => {
       fr.onerror=reject; fr.readAsDataURL(file);
     });
   }
+  /* Square-crop modal shown AFTER picking an avatar image (#12): drag to pan, slider to zoom, then
+     Apply renders the visible square to a 256² JPEG. Resolves null if cancelled. */
+  window.imCropImage=function(file){
+    return new Promise((resolve)=>{
+      const url=URL.createObjectURL(file); const SIZE=260;
+      const ov=document.createElement('div'); ov.className='crop-overlay';
+      ov.innerHTML=`<div class="crop-card">
+        <div class="crop-title">${currentLang==='jp'?'画像をトリミング':'Crop image'}</div>
+        <div class="crop-stage" id="crop-stage"><img id="crop-img" alt="" draggable="false"><div class="crop-ring"></div></div>
+        <div class="crop-zoom"><span>－</span><input type="range" id="crop-zoom" min="1" max="4" step="0.01" value="1"><span>＋</span></div>
+        <div class="crop-actions"><button id="crop-cancel">${currentLang==='jp'?'キャンセル':'Cancel'}</button><button id="crop-ok" class="crop-ok">${currentLang==='jp'?'適用':'Apply'}</button></div>
+      </div>`;
+      document.body.appendChild(ov);
+      const stage=ov.querySelector('#crop-stage'), img=ov.querySelector('#crop-img'), zoom=ov.querySelector('#crop-zoom');
+      let scale=1, tx=0, ty=0, natW=0, natH=0;
+      function clampPan(){ const w=natW*scale, h=natH*scale; tx=Math.min(0,Math.max(SIZE-w,tx)); ty=Math.min(0,Math.max(SIZE-h,ty)); }
+      function render(){ clampPan(); img.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; }
+      img.onload=()=>{ natW=img.naturalWidth; natH=img.naturalHeight; const base=Math.max(SIZE/natW,SIZE/natH);
+        scale=base; zoom.min=base; zoom.max=base*4; zoom.step=base/100; zoom.value=base;
+        tx=(SIZE-natW*scale)/2; ty=(SIZE-natH*scale)/2; img.style.transformOrigin='0 0'; render(); };
+      img.src=url;
+      zoom.addEventListener('input',()=>{ const c=SIZE/2, ns=parseFloat(zoom.value), k=ns/scale; tx=c-(c-tx)*k; ty=c-(c-ty)*k; scale=ns; render(); });
+      let drag=false,sx=0,sy=0; const down=(x,y)=>{ drag=true; sx=x-tx; sy=y-ty; }; const move=(x,y)=>{ if(!drag)return; tx=x-sx; ty=y-sy; render(); }; const up=()=>{ drag=false; };
+      const onMM=e=>move(e.clientX,e.clientY), onMU=()=>up();
+      stage.addEventListener('mousedown',e=>{ e.preventDefault(); down(e.clientX,e.clientY); });
+      window.addEventListener('mousemove',onMM); window.addEventListener('mouseup',onMU);
+      stage.addEventListener('touchstart',e=>{ const t=e.touches[0]; if(t) down(t.clientX,t.clientY); },{passive:true});
+      stage.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(t){ move(t.clientX,t.clientY); e.preventDefault(); } },{passive:false});
+      stage.addEventListener('touchend',up);
+      const close=()=>{ try{ URL.revokeObjectURL(url); }catch(_){} window.removeEventListener('mousemove',onMM); window.removeEventListener('mouseup',onMU); ov.remove(); };
+      ov.querySelector('#crop-cancel').onclick=()=>{ close(); resolve(null); };
+      ov.addEventListener('click',e=>{ if(e.target===ov){ close(); resolve(null); } });
+      ov.querySelector('#crop-ok').onclick=()=>{
+        const out=document.createElement('canvas'); out.width=256; out.height=256; const cx=out.getContext('2d');
+        const sxp=-tx/scale, syp=-ty/scale, sw=SIZE/scale, sh=SIZE/scale;
+        let data=null; try{ cx.drawImage(img, sxp, syp, sw, sh, 0,0,256,256); data=out.toDataURL('image/jpeg',0.85); }catch(_){}
+        close(); resolve(data);
+      };
+    });
+  };
   function showComposeImgPreview(src){
     const wrap=document.getElementById('compose-img-preview'), thumb=document.getElementById('compose-img-thumb');
     if(!wrap||!thumb) return;
@@ -6053,19 +6423,22 @@ window.addEventListener('DOMContentLoaded', () => {
     const sortBtn=(k,lbl)=>`<button data-sort="${k}" class="${communitySort===k?'active':''}">${lbl}</button>`;
     const catChip=(id,lbl,color)=>`<button class="comm-cat-chip ${commCatFilter===id?'active':''}" data-catf="${id}" style="--cc:${color}">${lbl}</button>`;
     const loginHint = currentUser ? '' : `<div class="empty-msg" style="padding:10px 16px;">${jp?'投稿・コメント・投票するにはログインしてください。':'Log in to post, comment and vote.'}</div>`;
-    cont.innerHTML=`<div class="comm-toolbar">
+    /* New post + Hot/New/Top are a STICKY BOTTOM bar, always visible while the feed scrolls (#27). */
+    cont.innerHTML=`<div class="comm-scroll" id="comm-scroll">
+        <div class="comm-filters">
+          <div class="comm-search"><span>🔎</span><input type="text" id="comm-search" placeholder="${t('commSearchPh')}" value="${escapeHtml(commSearch)}"></div>
+          <button class="comm-inview ${commInView?'active':''}" id="comm-inview" title="${jp?'地図の表示範囲内の投稿だけ':'Only posts in the current map view'}">🧭 ${t('commInView')}</button>
+        </div>
+        <div class="comm-cat-row">
+          ${catChip('all',t('commCatAll'),'var(--primary-color)')}
+          ${COMM_CATEGORIES.map(c=>catChip(c.id,c.emoji+' '+commCatLabel(c.id),c.color)).join('')}
+        </div>${loginHint}
+        <div id="comm-list"></div>
+      </div>
+      <div class="comm-toolbar comm-toolbar-bottom">
         <button class="comm-add-btn" id="comm-add-btn">${t('commAdd')}</button>
         <div class="comm-sort">${sortBtn('hot',t('commSortHot'))}${sortBtn('new',t('commSortNew'))}${sortBtn('top',t('commSortTop'))}</div>
-      </div>
-      <div class="comm-filters">
-        <div class="comm-search"><span>🔎</span><input type="text" id="comm-search" placeholder="${t('commSearchPh')}" value="${escapeHtml(commSearch)}"></div>
-        <button class="comm-inview ${commInView?'active':''}" id="comm-inview" title="${jp?'地図の表示範囲内の投稿だけ':'Only posts in the current map view'}">🧭 ${t('commInView')}</button>
-      </div>
-      <div class="comm-cat-row">
-        ${catChip('all',t('commCatAll'),'var(--primary-color)')}
-        ${COMM_CATEGORIES.map(c=>catChip(c.id,c.emoji+' '+commCatLabel(c.id),c.color)).join('')}
-      </div>${loginHint}
-      <div id="comm-list"></div>`;
+      </div>`;
     /* Toolbar wiring (rebuilds list on change — search updates list only, so its input keeps focus). */
     document.getElementById('comm-add-btn').onclick=()=>{
       if(!requireLogin()) return;
@@ -6403,8 +6776,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tabs && tabs.offsetParent!==null){ peek=tabs.offsetTop+tabs.offsetHeight+10; }
       else { const vis=['live-news-feed','info-dashboard','community-feed','news-reader-pane'].map(id=>document.getElementById(id)).find(e=>e && e.offsetParent!==null); peek=vis?vis.offsetTop:196; }
       peek=Math.min(Math.max(peek,120),Math.round(H*0.62));
-      const tyPeek=Math.max(0,H-peek); const tyHalf=Math.min(Math.round(H*0.5),tyPeek);
-      return { full:0, half:tyHalf, peek:tyPeek, H:H, peekH:peek };
+      /* MINI: drag even lower so the tabs (News/Info/Stats/Community) AND everything below hide —
+         only the grip + the IntMap header remain (#16). */
+      const header=sidebar.querySelector('.header-area');
+      let mini=(header && header.offsetParent!==null) ? (header.offsetTop+header.offsetHeight+12) : 96;
+      mini=Math.min(Math.max(mini,64), Math.max(64,peek-24));
+      const tyPeek=Math.max(0,H-peek); const tyHalf=Math.min(Math.round(H*0.5),tyPeek); const tyMini=Math.max(0,H-mini);
+      return { full:0, half:tyHalf, peek:tyPeek, mini:tyMini, H:H, peekH:peek };
     }
     function recompute(){ const d=detents(); if(mapContainer) mapContainer.style.setProperty('--peek-h',d.peekH+'px'); return d; }
     function setDetent(name,animate){
@@ -6415,21 +6793,27 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!animate){ void sidebar.offsetHeight; sidebar.classList.remove('sheet-dragging'); }
       document.body.classList.toggle('sheet-full', name==='full');
       /* keep the map's optical centre inside the area visible ABOVE the sheet */
-      if(map && map.setPadding){ const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
-        try{ map.setPadding({top:0,left:0,right:0,bottom:covered}, {duration:animate?300:0}); }catch(_){} }
+      const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
+      /* --sheet-cover tracks how much the sheet currently covers, so floating controls (timebar,
+         Summarize, legends) sit just above the sheet's CURRENT top — not the fixed peek line — and
+         therefore stay visible at every detent (#32). */
+      if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');
+      if(map && map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:covered}, {duration:animate?300:0}); }catch(_){} }
     }
     window.__setDetent=setDetent;
 
     let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0;
     /* Keep the map's optical centre inside the area visible ABOVE the sheet, live (no animation)
        so the centred point never drifts while the sheet is being dragged. */
-    function liveMapPad(ty,d){ if(!(map&&map.setPadding)) return; d=d||dragD||recompute();
+    function liveMapPad(ty,d){ d=d||dragD||recompute();
       const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
+      if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
+      if(!(map&&map.setPadding)) return;
       if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; try{ map.setPadding({top:0,left:0,right:0,bottom:covered},{duration:0}); }catch(_){} }); }
-    function dragStart(y){ dragD=recompute(); maxTy=dragD.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; sidebar.classList.add('sheet-dragging'); }
+    function dragStart(y){ dragD=recompute(); maxTy=dragD.mini; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; sidebar.classList.add('sheet-dragging'); }   /* allow dragging down to MINI (#16) */
     function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
     function dragEnd(){ if(!dragging) return; dragging=false; sidebar.classList.remove('sheet-dragging'); const d=recompute(); const ty=curTy();
-      const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek}]; let target;
+      const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek},{n:'mini',v:d.mini}]; let target;
       if(vel>0.45) target=order.find(o=>o.v>ty+2)||order[order.length-1];
       else if(vel<-0.45){ const rev=order.slice().reverse(); target=rev.find(o=>o.v<ty-2)||order[0]; }
       else target=order.reduce((a,b)=>Math.abs(b.v-ty)<Math.abs(a.v-ty)?b:a);
@@ -6644,7 +7028,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* OAuth (Google / Apple). NOTE: each provider must be ENABLED in the Supabase dashboard
        (Authentication → Providers) with this site added as a redirect URL, or it errors. */
     async function oauth(provider){ const msg=$am('am-msg'); msg.textContent='Redirecting…';
-      try{ const {error}=await DB.auth.signInWithOAuth({ provider, options:{ redirectTo: location.href.split('#')[0] } }); if(error) throw error; }
+      /* Use a CLEAN redirect target (origin + path, no query/hash). It must be listed verbatim in
+         Supabase → Auth → URL Configuration → Redirect URLs, or the provider bounces back without a
+         session (the "logged in via Google but not actually logged in" symptom, #33). file:// can't
+         do OAuth at all — must be served over http(s). */
+      const redirectTo=(location.protocol==='file:') ? location.href : (location.origin+location.pathname);
+      try{ const {error}=await DB.auth.signInWithOAuth({ provider, options:{ redirectTo } }); if(error) throw error; }
       catch(e){ msg.textContent='Error: '+((e&&e.message)||e); } }
     $am('am-oauth-google').onclick=()=>oauth('google');
     window.__amSetTab=setTab;
@@ -6683,7 +7072,13 @@ window.addEventListener('DOMContentLoaded', () => {
       pick.querySelectorAll('.acct-emoji').forEach(b=>b.onclick=()=>{ window.imSetAvatarImg(''); window.imSetAvatar(b.dataset.e); pick.querySelectorAll('.acct-emoji').forEach(x=>x.classList.toggle('sel',x===b)); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=''; pv.textContent=b.dataset.e; });
       /* Upload a custom avatar image (#28) — compressed, stored locally + pushed to the profile if the column exists. */
       const af=document.getElementById('acct-avatar-file');
-      if(af) af.onchange=async()=>{ const f=af.files&&af.files[0]; if(!f) return; try{ const data=await compressImage(f,256,0.82); window.imSetAvatarImg(data); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=`url('${data}')`; pv.textContent=''; try{ await DB.from('profiles').update({avatar_url:data}).eq('id',currentUser.id); }catch(_){} }catch(_){ imToast(currentLang==='jp'?'画像を読み込めませんでした':'Could not load image'); } };
+      if(af) af.onchange=async()=>{ const f=af.files&&af.files[0]; af.value=''; if(!f) return; try{
+        /* Crop to a square first (#12), then store the cropped 256² image. */
+        const data=await window.imCropImage(f); if(!data) return;
+        window.imSetAvatarImg(data); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=`url('${data}')`; pv.textContent='';
+        document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(x=>x.classList.remove('sel'));
+        try{ await DB.from('profiles').update({avatar_url:data}).eq('id',currentUser.id); }catch(_){}
+      }catch(_){ imToast(currentLang==='jp'?'画像を読み込めませんでした':'Could not load image'); } };
       document.getElementById('acct-sub').onclick=()=>{ m.style.display='none'; try{ window.openProModal&&window.openProModal(); }catch(_){ imToast(currentLang==='jp'?'プラン管理は近日対応':'Subscription management coming soon'); } };
       m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
       document.getElementById('acct-close').onclick=()=>{ m.style.display='none'; };
@@ -6911,12 +7306,23 @@ window.addEventListener('DOMContentLoaded', () => {
   async function bootSupabase(){
     if(!DB){ console.warn('[IntMap] Supabase unavailable — load supabase.js / supabase-config.js. Running with empty data.'); return; }
     injectAuthUI();
-    await refreshCurrentUser();
+    /* Register the auth listener FIRST so the SIGNED_IN event fired while supabase parses the OAuth
+       token out of the redirect URL is never missed (a cause of "logged in but not logged in", #33). */
     DB.auth.onAuthStateChange(async()=>{ await refreshCurrentUser(); await loadFavorites();
       try{ if(currentMode==='news'||currentMode==='saved') startNews(); }catch(_){}
       try{ if(currentMode==='community') loadCommunity(); }catch(_){}
+      try{ const am=document.getElementById('auth-modal'); if(currentUser && am && am.style.display!=='none') am.style.display='none'; }catch(_){}   /* close the login modal once signed in */
       /* Pro entitlement may have changed → re-check satellite provider access */
       try{ if(currentMapType==='sat'){ const cur=satProviderById(satState.providerId); if(cur&&cur.tier==='pro'&&!satHasKey(cur)) satRevertToFallback(); else satRenderController(); } }catch(_){} });
+    await refreshCurrentUser();
+    /* OAuth implicit-flow tokens land in the URL hash and are parsed asynchronously; if the very
+       first getSession ran a hair too early, re-check a couple of times so the session is picked up
+       without needing a manual reload (#33). */
+    if(!currentUser && /[#&?](access_token|code|refresh_token)=/.test(location.href)){
+      for(let i=0;i<5 && !currentUser;i++){ await new Promise(r=>setTimeout(r,400)); try{ await refreshCurrentUser(); }catch(_){} }
+      try{ if(currentUser){ await loadFavorites(); renderUI(); } }catch(_){}
+      try{ history.replaceState(null,'',location.origin+location.pathname); }catch(_){}   /* scrub the token from the address bar */
+    }
     await Promise.all([ loadGeoFromSupabase(), loadDashFromSupabase(), loadFavorites() ]);
     try{ renderUI(); }catch(_){}          /* re-render the active tab now data + favorites are in */
     try{ loadCommunity(); }catch(_){}      /* prime the community map pins */
@@ -7199,12 +7605,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){}};
     const ctx=cv.getContext('2d'); let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0;
     function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
-    /* Real global wind grid: Open-Meteo current 10m winds (CORS-free, no key). STEP=15 keeps the
-       URL well under length limits while bilinear interpolation makes the field smooth. */
+    /* Real global wind grid: Open-Meteo CURRENT 10 m winds (CORS-free, no key, multi-point in one
+       request). This is genuine GFS data — the field below interpolates it bilinearly. A 12°
+       grid (≈390 points) keeps the URL safely short while giving noticeably more regional detail
+       than the old 15° grid (#19). The meteorological "from" direction is converted to a true
+       motion vector in fetch; if the request fails we turn the layer OFF rather than fake a flow. */
     async function fetchGrid(){
       if(fetching) return; if(grid && Date.now()-fetchT<10*60000) return;
       fetching=true;
-      const STEP=15, lat0=75, lats=[], lons=[];
+      const STEP=12, lat0=72, lats=[], lons=[];
       for(let la=lat0; la>=-lat0; la-=STEP) for(let lo=-180; lo<180; lo+=STEP){ lats.push(la); lons.push(lo); }
       const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}` ];
@@ -7272,6 +7681,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
 
   /* ===== Init ===== */
+  try{ rebuildGeoIndex(); }catch(_){}   /* index the built-in gazetteer now so the non-AI locator works before Supabase loads (#11) */
   populateTimezones(); updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
   try{ if(currentLang==='jp'){ document.getElementById('lang-jp').classList.add('active'); document.getElementById('lang-en').classList.remove('active'); } }catch(_){}
