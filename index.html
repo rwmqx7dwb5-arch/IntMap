@@ -1878,11 +1878,15 @@ window.addEventListener('DOMContentLoaded', () => {
           {id:'tool-line',type:'line',source:'tool-source',filter:['all',['==','$type','LineString'],['!=','preview',true]],paint:{'line-color':'#ff3b30','line-width':3}},
           {id:'tool-line-preview',type:'line',source:'tool-source',filter:['all',['==','$type','LineString'],['==','preview',true]],paint:{'line-color':'#ff3b30','line-width':2,'line-opacity':0.85,'line-dasharray':[2,2]}},
           {id:'tool-poly-preview',type:'line',source:'tool-source',filter:['all',['==','$type','Polygon'],['==','preview',true]],paint:{'line-color':'#007aff','line-width':2,'line-opacity':0.7,'line-dasharray':[2,2]}},
-          {id:'tool-point',type:'circle',source:'tool-source',filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':['coalesce',['get','color'],'#ff3b30'],'circle-stroke-width':2,'circle-stroke-color':'#fff'}} ] } });
+          {id:'tool-snap',type:'circle',source:'tool-source',filter:['==',['get','snap'],true],paint:{'circle-radius':16,'circle-color':'rgba(0,122,255,0.18)','circle-stroke-width':2.5,'circle-stroke-color':'#0a84ff'}},
+          {id:'tool-point',type:'circle',source:'tool-source',filter:['==','$type','Point'],paint:{'circle-radius':['case',['==',['get','snap'],true],8,6],'circle-color':['case',['==',['get','snap'],true],'#0a84ff',['coalesce',['get','color'],'#ff3b30']],'circle-stroke-width':2,'circle-stroke-color':'#fff'}} ] } });
   }catch(e){ console.warn('MapLibre init failed:',e); }
 
-  if(map&&'ResizeObserver' in window) new ResizeObserver(()=>map.resize()).observe(document.getElementById('map-container'));
-  window.addEventListener('resize',()=>map&&map.resize());
+  /* Coalesce resizes to one per frame (#32) — the sidebar open/close transition fires the
+     ResizeObserver dozens of times; calling map.resize() on each caused a visible flicker. */
+  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };
+  if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
+  window.addEventListener('resize',coalescedResize);
 
   /* Google-Earth-style navigation feel: stepless wheel zoom centred on the cursor, a little
      snappier than the default, plus a low-angle tilt limit so you can lean into the horizon. */
@@ -2014,23 +2018,29 @@ window.addEventListener('DOMContentLoaded', () => {
      Structure: each layer may contain areas[] (filled polygons), lines[] (paths),
      points[] (POI markers). Every feature carries a human label drawn on the map. */
   const geoLayersDB={
+    /* Geopolitical-theory geometry re-drawn from real geography (#40). */
     heartland:{ color:"#ff3b30", name:{en:"Heartland",jp:"ハートランド"}, areas:[
-      {label:"Heartland (Pivot Area)", ring:[[34,68],[37,74],[45,78],[58,80],[74,80],[90,79],[104,77],[116,73],[125,66],[126,59],[121,53],[113,49],[103,46],[92,44],[81,43],[71,44],[62,46],[54,47],[47,49],[41,52],[37,57],[34,62],[34,68]]}
+      /* Mackinder's "Pivot Area": interior Eurasia, ~Volga to central Siberia, Arctic to the steppe. */
+      {label:"Heartland (Pivot Area)", ring:[[30,52],[42,54],[55,54.5],[70,53],[88,53],[103,54],[116,56],[122,63],[114,69.5],[98,71],[80,71],[62,69],[46,65.5],[35,60],[29,56],[30,52]]}
     ]},
     rimland:{ color:"#0a84ff", name:{en:"Rimland",jp:"リムランド"}, areas:[
-      {label:"Rimland", ring:[[-9,44],[0,40],[10,38],[20,37],[30,35],[38,32],[45,28],[52,25],[60,24],[68,22],[76,18],[84,15],[92,13],[100,11],[108,12],[116,16],[123,23],[128,31],[131,39],[131,45],[124,43],[119,36],[112,29],[104,24],[96,22],[88,23],[80,25],[72,28],[64,30],[56,31],[48,33],[40,37],[31,40],[22,42],[12,44],[2,46],[-9,46],[-9,44]]}
+      /* Spykman's coastal crescent around southern & eastern Eurasia (W. Europe → ME → S. Asia → E. Asia). */
+      {label:"Rimland", ring:[[-10,44],[2,40],[15,38],[28,36],[40,33],[50,29],[60,25],[70,22],[82,16],[92,12],[103,9],[113,13],[122,21],[128,31],[131,41],[125,42],[118,33],[108,25],[97,17],[87,17],[77,22],[65,27],[53,31],[43,34],[31,38],[17,42],[2,45],[-10,46],[-10,44]]}
     ]},
     sahel:{ color:"#ffcc00", name:{en:"Sahel Risk Zone",jp:"サヘル危険地帯"}, areas:[
       {label:"Sahel Risk Zone", ring:[[-17,16.6],[-12,16.9],[-6,17.0],[0,16.7],[7,16.2],[14,15.7],[21,15.3],[28,15.2],[34,15.5],[40,16.0],[43,16.4],[43,12.6],[40,12.2],[34,11.7],[28,11.3],[21,11.2],[14,11.6],[7,12.1],[0,12.6],[-6,13.0],[-12,13.2],[-17,13.4],[-17,16.6]]}
     ]},
     islandChain1:{ color:"#ff9500", name:{en:"1st Island Chain",jp:"第一列島線"}, lines:[
-      {label:"1st Island Chain", path:[[155,50],[148,45],[141,40],[135,33.5],[131,31],[128,27],[124,24],[122,22],[121,18.5],[120,15],[118,10],[115,5],[112,1]]}
+      /* Kuriles → Japan → Ryūkyū (Okinawa) → Taiwan → Philippines → Borneo. */
+      {label:"1st Island Chain", path:[[156,45.5],[150,44.5],[145.5,43.5],[142,40.5],[140.5,36],[139,34.5],[134,33],[131,31],[129,28.5],[127.5,26.5],[124.5,24.2],[121.6,23.6],[121,20],[121.5,16.5],[123.5,12.5],[125.5,9.5],[126.3,6.8],[122,3],[118.5,-1]]}
     ]},
     islandChain2:{ color:"#af52de", name:{en:"2nd Island Chain",jp:"第二列島線"}, lines:[
-      {label:"2nd Island Chain", path:[[141,37],[142,33],[143,28],[144,21],[145,15],[145,13],[141,9],[134,7]]}
+      /* Tokyo → Izu/Ogasawara → Marianas (Guam) → Palau → western New Guinea. */
+      {label:"2nd Island Chain", path:[[139.7,35],[139.6,31],[142,27],[142.5,24],[145,18],[145.2,15],[144.8,13.4],[141,9.5],[134.5,7.3],[134,2.5],[132.5,-1.5]]}
     ]},
     stringOfPearls:{ color:"#5856d6", name:{en:"String of Pearls",jp:"真珠の首飾り"}, lines:[
-      {label:"String of Pearls", path:[[110.3,20],[105,13],[97.6,16.8],[91.8,22.3],[85,14],[81.1,6.1],[73.5,4.2],[66,16],[62.3,25.1],[51.5,25.3],[43.15,11.6],[37.2,19.6]]}
+      /* Hainan → (Malacca) → Kyaukpyu → Chittagong → Hambantota → Maldives → Gwadar → Djibouti. */
+      {label:"String of Pearls", path:[[109.5,18.2],[108,6],[100,2.5],[96,15],[93.5,19.4],[91.8,22.3],[84,9],[81.1,6.1],[73,3.5],[66,13],[62.3,25.1],[58,18],[48,12.5],[43.15,11.6]]}
     ], points:[
       {label:"Hainan (Yulin Base)", at:[109.5,18.2]},
       {label:"Kyaukpyu", at:[93.5,19.4]},
@@ -2040,7 +2050,8 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"Djibouti", at:[43.15,11.6]}
     ]},
     seaRoute:{ color:"#34c759", name:{en:"Northern Sea Route",jp:"北極海航路"}, lines:[
-      {label:"Northern Sea Route", path:[[33,69.5],[44,71],[56,73],[68,73.5],[80,74.5],[100,76],[113,74],[129,73.5],[145,72],[165,70],[178,68]]}
+      /* Murmansk → Kara Sea → Cape Chelyuskin → Laptev → East Siberian → Bering Strait. */
+      {label:"Northern Sea Route", path:[[33,69.2],[44,69.8],[57,70.5],[68,72.5],[74,73],[80,73.2],[91,75],[104,77.6],[113,75.8],[125,74],[140,73],[160,71.5],[172,69.5],[180,67]]}
     ]},
     chokepoints:{ color:"#ff9500", name:{en:"Global Chokepoints",jp:"世界の海上要衝"}, points:[
       {label:"Strait of Hormuz", at:[56.3,26.6]},
@@ -2477,12 +2488,20 @@ window.addEventListener('DOMContentLoaded', () => {
     {g:{en:"Air defense",jp:"防空"},items:[["Patriot PAC-3",35],["THAAD",200],["S-400",400]]}
   ];
 
+  let measureSnapClose=false;        /* true while the cursor hovers the first measure vertex */
+  const SNAP_PX=22;                  /* screen-space radius that counts as "on the first point" */
   function buildToolFeatures(){
     /* radius circles (saved) */
     const f=[];
     radiusItems.forEach(c=>{
       try{
-        f.push(turf.circle(c.center,c.radiusKm,{steps:128,units:'kilometers',properties:{color:c.color,opacity:c.opacity}}));
+        /* Large-radius fix (#11): a geodesic circle whose radius approaches half the Earth's
+           circumference (~20015 km) collapses toward the antipode and self-intersects, which
+           breaks the fill. Clamp to a safe maximum and use more vertices for big circles so the
+           outline stays smooth instead of degenerating. */
+        const safeR=Math.min(c.radiusKm,19500);
+        const steps=safeR>3000?256:128;
+        f.push(turf.circle(c.center,safeR,{steps,units:'kilometers',properties:{color:c.color,opacity:c.opacity}}));
         f.push({type:'Feature',geometry:{type:'Point',coordinates:c.center},properties:{color:c.color}});
       }catch(e){}
     });
@@ -2493,7 +2512,9 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ f.push(turf.greatCircle(turf.point(all[i-1]),turf.point(all[i]),{npoints:64})); }
         catch(e){ f.push(turf.lineString([all[i-1],all[i]])); }
       }
-      measurePoints.forEach(p=>f.push(turf.point(p)));
+      /* Close-affordance (#47): when ≥3 points and the cursor is hovering near the FIRST point,
+         highlight it so it's obvious the next click closes the shape (vs. adding a new point). */
+      measurePoints.forEach((p,i)=>f.push(turf.point(p, (i===0&&measureSnapClose&&measurePoints.length>=3)?{snap:true}:{})));
       /* Dashed preview from the last fixed point to the live cursor */
       if(liveCursor && measurePoints.length>=1){
         const last=measurePoints[measurePoints.length-1];
@@ -2567,7 +2588,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function exitTool(){
-    toolMode=null; liveCursor=null;
+    toolMode=null; liveCursor=null; measureSnapClose=false;
     ['measure','area','radius'].forEach(m=>document.getElementById('btn-tool-'+m).classList.remove('tool-on'));
     measurePoints=[]; hideMeasureTip(); refreshTool();
     document.getElementById('map-container').classList.remove('tool-active'); if(map)map.doubleClickZoom.enable();
@@ -2688,6 +2709,9 @@ window.addEventListener('DOMContentLoaded', () => {
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey'); });
   function handleMapClick(lng,lat,point){
     if(!toolMode||!hasTurf())return;
+    /* Polar safety (#10): the exact poles are singular for great-circle / area math and make
+       turf produce NaN or globe-wrapping geometry. Clamp just shy of ±90°. */
+    lat=Math.max(-89.5,Math.min(89.5,lat));
     /* Don't add a measure point if the click landed on an existing pin or intel marker */
     if(point && map){
       try{
@@ -2700,13 +2724,15 @@ window.addEventListener('DOMContentLoaded', () => {
       refreshTool(); updateToolPanel(); return;
     }
     /* === Auto-close for the Measure tool: if 3+ points and the new click lands within
-       ~25 px of the start point, switch into AREA mode and finalize the polygon. */
+       SNAP_PX of the start point (the highlighted vertex), close into AREA mode. The same
+       threshold drives the on-map highlight so "add vs. close" is unambiguous (#47). */
     if(toolMode==='measure' && measurePoints.length>=3 && point){
       try{
         const pStart=map.project(measurePoints[0]);
         const dx=pStart.x-point.x, dy=pStart.y-point.y;
-        if(Math.hypot(dx,dy)<25){
-          toolMode='area';
+        if(Math.hypot(dx,dy)<SNAP_PX){
+          toolMode='area'; measureSnapClose=false;
+          document.getElementById('measure-tooltip').classList.remove('closing');
           ['measure','area'].forEach(m=>document.getElementById('btn-tool-'+m).classList.toggle('tool-on',toolMode===m));
           refreshTool(); updateToolPanel();
           return;
@@ -2812,12 +2838,18 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('mousemove',(e)=>{
       updateCoord(e.lngLat.lng,e.lngLat.lat);
       if(!toolMode||!hasTurf())return;
-      const c=[e.lngLat.lng,e.lngLat.lat];
+      const c=[e.lngLat.lng,Math.max(-89.5,Math.min(89.5,e.lngLat.lat))];   /* polar-safe (#10) */
       liveCursor=c;
       if(toolMode==='measure'&&measurePoints.length>=1){
         const last=measurePoints[measurePoints.length-1];
-        const seg=turf.distance(turf.point(last),turf.point(c),{units:'kilometers'});
-        showMeasureTip(e.point,`+${distTXT(seg)} · ${bearingDeg(last,c).toFixed(0)}°${compassDir(bearingDeg(last,c))} | Σ ${distTXT(totalDistance([...measurePoints,c]))}`);
+        /* Detect hover over the first vertex → snap-to-close (#47) */
+        const wasSnap=measureSnapClose; measureSnapClose=false;
+        if(measurePoints.length>=3){
+          try{ const ps=map.project(measurePoints[0]); if(Math.hypot(ps.x-e.point.x,ps.y-e.point.y)<SNAP_PX) measureSnapClose=true; }catch(_){}
+        }
+        const tip=document.getElementById('measure-tooltip');
+        if(measureSnapClose){ tip.classList.add('closing'); const ar=ringArea(measurePoints); showMeasureTip(e.point,`✓ ${t('measureClickClose')} · ${ar?areaTXT(ar):''}`); }
+        else{ tip.classList.remove('closing'); const seg=turf.distance(turf.point(last),turf.point(c),{units:'kilometers'}); showMeasureTip(e.point,`+${distTXT(seg)} · ${bearingDeg(last,c).toFixed(0)}°${compassDir(bearingDeg(last,c))} | Σ ${distTXT(totalDistance([...measurePoints,c]))}`); }
         refreshTool();
       } else if(toolMode==='area'){
         if(measurePoints.length>=2) showMeasureTip(e.point, areaTXT(ringArea([...measurePoints,c])));
@@ -3294,8 +3326,19 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Hide all panels first */
     feed.style.display='none'; dash.style.display='none'; comm.style.display='none'; pinToggle.style.display='none'; filterToggle.style.display='none';
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
+    /* Stats compare panel only belongs on the Stats tab (#26) */
+    if(currentMode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
+    /* Search-bar UI per tab (#27): News keeps a Search button (matching is slow);
+       Info & Stats filter live as you type, so their button is hidden.
+       Summarize-this-view button shows only on the News tab (#20). */
+    const searchBtn=document.getElementById('btn-search');
+    const sumBtn=document.getElementById('ai-view-summary-btn');
+    const isNewsTab=(currentMode==='news'||currentMode==='saved');
+    if(searchBtn) searchBtn.style.display=isNewsTab?'':'none';
+    if(sumBtn) sumBtn.style.display=isNewsTab?'':'none';
+    { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (currentMode==='stats'||currentMode==='info') ? (currentLang==='jp'?'絞り込み...':'Filter…') : t('searchPh'); }
 
-    if(currentMode==='info'){ dash.style.display='flex'; sb.style.display='none'; renderDashboard(); updateOcclusion(); return; }
+    if(currentMode==='info'){ dash.style.display='flex'; sb.style.display='flex'; renderDashboard(); updateOcclusion(); return; }
     if(currentMode==='community'){ comm.style.display='flex'; sb.style.display='none'; loadCommunity(); updateOcclusion(); return; }
     if(currentMode==='stats'){ feed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
     if(currentMode==='news'||currentMode==='saved'){
@@ -3666,20 +3709,22 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===== Stats — list with multi-select country comparison ===== */
-  let compareSet=new Set();
+  let compareSet=new Set(), compareShown=false;
   window.setStatsSort=function(k){ statsSort=k; renderStats(searchVal()); };
+  /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
+     position) — only the row outline + the fixed bottom panel update (#26). */
   window._toggleCompare=function(code){
     if(compareSet.has(code)) compareSet.delete(code);
     else if(compareSet.size<3) compareSet.add(code);
-    else { /* swap out the oldest one */ const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
-    renderStats(searchVal());
+    else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
+    document.querySelectorAll('#live-news-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
+    if(compareSet.size<2) compareShown=false;
+    renderCompareFixed();
   };
-  window._clearCompare=function(){ compareSet.clear(); renderStats(searchVal()); };
-  window._showCompare=function(){
-    if(compareSet.size<2){ return; }
-    renderCompareView();
-  };
-  window._backToStats=function(){ renderStats(searchVal()); };
+  window._clearCompare=function(){ compareSet.clear(); compareShown=false; document.querySelectorAll('#live-news-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); };
+  window._showCompare=function(){ if(compareSet.size<2) return; compareShown=true; renderCompareFixed(); };
+  window._hideCompare=function(){ compareShown=false; renderCompareFixed(); };
+  window._backToStats=function(){ compareShown=false; renderStats(searchVal()); };
   function renderStats(q){
     const feed=document.getElementById('live-news-feed'); clearMarkers();
     if(!countryDataLoaded){ feed.innerHTML=`<div class="empty-msg">${t('loadingData')}</div>`; loadCountryData().then(()=>{ if(currentMode==='stats')renderStats(searchVal()); }); return; }
@@ -3689,21 +3734,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const key=statsSort;
     arr.sort((a,b)=> key==='name' ? (currentLang==='jp'?(a.nameJp||'').localeCompare(b.nameJp||'','ja'):(a.nameEn||'').localeCompare(b.nameEn||'')) : ((b[key]||0)-(a[key]||0)) );
     const sb=(k,lbl)=>`<button class="stats-sort ${statsSort===k?'active':''}" onclick="setStatsSort('${k}')">${lbl}</button>`;
-    /* Compare bar — always visible at top of Stats */
-    const chips=[...compareSet].map(code=>{
-      const s=countryStats[code]; if(!s) return '';
-      return `<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${code}')">×</button></span>`;
-    }).join('');
-    const canCompare = compareSet.size>=2;
-    const compareBar=`<div class="stats-compare-bar">
-      <div class="scb-title">📊 ${t('compare')} (${compareSet.size}/3)</div>
-      <div class="scb-chips">${chips||`<span style="font-size:11px;color:var(--text-muted);">${t('compareEmpty')}</span>`}</div>
-      <div class="scb-actions">
-        <button class="primary" ${canCompare?'':'disabled style="opacity:0.4;cursor:not-allowed;"'} onclick="_showCompare()">${t('compareView')}</button>
-        <button onclick="_clearCompare()">${t('compareClear')}</button>
-      </div>
-    </div>`;
-    let html=compareBar+`<div class="stats-toolbar">${sb('gdp',t('sortGdp'))}${sb('pop',t('sortPop'))}${sb('area',t('sortArea'))}${sb('hdi',t('sortHDI'))}${sb('milSpend',t('sortMil'))}${sb('name',t('sortName'))}</div>`;
+    /* Compare selection now lives in the fixed bottom panel (#26), not in the scrolling list. */
+    let html=`<div class="stats-toolbar">${sb('gdp',t('sortGdp'))}${sb('pop',t('sortPop'))}${sb('area',t('sortArea'))}${sb('hdi',t('sortHDI'))}${sb('milSpend',t('sortMil'))}${sb('name',t('sortName'))}</div>`;
     if(arr.length===0) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
     arr.forEach(s=>{
       let sub='—', lbl='';
@@ -3725,6 +3757,28 @@ window.addEventListener('DOMContentLoaded', () => {
         clickTimer=setTimeout(()=>{ window._toggleCompare(row.getAttribute('data-ccn')); clickTimer=null; },250);
       };
     });
+    feed.style.paddingBottom='92px';   /* leave room for the fixed compare panel */
+    renderCompareFixed();
+  }
+  /* Fixed bottom comparison panel (#26) — stays put while the country list scrolls. */
+  function renderCompareFixed(){
+    const panel=document.getElementById('stats-compare-fixed'); if(!panel) return;
+    panel.classList.toggle('show', currentMode==='stats');
+    if(currentMode!=='stats'){ panel.innerHTML=''; return; }
+    if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
+    const COLORS=['#007aff','#ff3b30','#34c759'];
+    const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
+    const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
+    let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/3)</span><div style="display:flex;gap:6px;">`+
+      (compareSet.size>=2?`<button onclick="${compareShown?'_hideCompare()':'_showCompare()'}">${compareShown?(currentLang==='jp'?'閉じる':'Hide'):t('compareView')}</button>`:'')+
+      `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
+    let body=`<div class="scf-chips">${chips}</div>`;
+    if(compareShown && items.length>=2){
+      const bar=(it,i,val,max,fmt)=>{ const w=val>0&&max>0?Math.min(100,(val/max)*100):0; return `<div class="cmp-bar-row"><span class="cmp-bar-flag">${it.flag||'🏳️'}</span><span class="cmp-bar-name">${cName(it)}</span><span class="cmp-bar-wrap"><span class="cmp-bar-fill" style="width:${w}%;background:${COLORS[i%COLORS.length]};"></span></span><span class="cmp-bar-val">${val!=null?fmt(val):'—'}</span></div>`; };
+      const sec=(title,key,fmt)=>{ const vals=items.map(s=>s[key]).filter(v=>v!=null&&!isNaN(v)); if(!vals.length) return ''; const max=Math.max(...vals); return `<div class="cmp-section" style="padding:10px 12px;"><h4 style="margin:0 0 8px;">${title}</h4><div class="cmp-bars">${items.map((it,i)=>bar(it,i,it[key],max,fmt)).join('')}</div></div>`; };
+      body+=`<div class="compare-panel" style="max-height:46vh;overflow-y:auto;margin-top:8px;">${sec(t('statGdp'),'gdp',v=>fmtMoney(v))}${sec(t('statGdpPc'),'gdppc',v=>fmtPc(v))}${sec(t('statPop'),'pop',v=>fmtNum(v))}${sec(t('statArea'),'area',v=>fmtArea(v))}${sec(t('statMil'),'milSpend',v=>'$'+v+'B')}${sec(t('statHDI'),'hdi',v=>v.toFixed(3))}${sec(t('statDem'),'dem',v=>v.toFixed(2))}${sec(t('statLife'),'lifeExp',v=>v.toFixed(1)+'yr')}${sec(t('statInet'),'internet',v=>v+'%')}</div>`;
+    }
+    panel.innerHTML=head+body;
   }
   function renderCompareView(){
     const feed=document.getElementById('live-news-feed');
@@ -3800,7 +3854,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function renderDashboard(){
     const dash=document.getElementById('info-dashboard'); clearMarkers(); const dict=i18n[currentLang];
-    const filtered=extendedDashDB.filter(i=>activeDashCategories.has(i.cat));
+    const q=(currentMode==='info')?searchVal():'';   /* live text filter (#27) */
+    const filtered=extendedDashDB.filter(i=>activeDashCategories.has(i.cat) && (!q ||
+      ((i.title.en+' '+(i.title.jp||'')+' '+(i.body.en||'')+' '+(i.body.jp||'')+' '+(i.badge||'')).toLowerCase().includes(q))));
     /* Push features into WebGL source. Pins are mathematically placed by the GPU. */
     dashFeatures=filtered.map(info=>({type:'Feature',id:info.id,geometry:{type:'Point',coordinates:info.loc},properties:{
       fid:info.id, type:info.type, color:INFO_COLORS[info.type]||'#007aff',
@@ -3878,6 +3934,14 @@ window.addEventListener('DOMContentLoaded', () => {
     {lang:'ru',q:'hl=ru&gl=RU&ceid=RU:ru'},{lang:'zh',q:'hl=zh-CN&gl=CN&ceid=CN:zh-Hans'},
     {lang:'ko',q:'hl=ko&gl=KR&ceid=KR:ko'}
   ];
+  /* National editions for the "News by country media" setting (#29) — keys match NEWS_COUNTRY_FEEDS. */
+  const NEWS_COUNTRY_EDITIONS={
+    us:'hl=en-US&gl=US&ceid=US:en', gb:'hl=en-GB&gl=GB&ceid=GB:en', jp:'hl=ja&gl=JP&ceid=JP:ja',
+    fr:'hl=fr&gl=FR&ceid=FR:fr', de:'hl=de&gl=DE&ceid=DE:de', cn:'hl=zh-CN&gl=CN&ceid=CN:zh-Hans',
+    ru:'hl=ru&gl=RU&ceid=RU:ru', in:'hl=en-IN&gl=IN&ceid=IN:en', kr:'hl=ko&gl=KR&ceid=KR:ko',
+    il:'hl=he&gl=IL&ceid=IL:he', ua:'hl=uk&gl=UA&ceid=UA:uk', br:'hl=pt-BR&gl=BR&ceid=BR:pt-419',
+    au:'hl=en-AU&gl=AU&ceid=AU:en', sa:'hl=ar&gl=SA&ceid=SA:ar', tr:'hl=tr&gl=TR&ceid=TR:tr', eg:'hl=ar&gl=EG&ceid=EG:ar'
+  };
   function feedUrls(){
     const p=currentLang==='en'?'hl=en-US&gl=US&ceid=US:en':'hl=ja&gl=JP&ceid=JP:ja';
     if(newsDate){
@@ -3893,6 +3957,8 @@ window.addEventListener('DOMContentLoaded', () => {
          (excluding the UI language, which is already covered by the base feed above) */
       NEWS_EDITIONS_MULTI.filter(ed=>ed.lang!==currentLang && newsLangs.includes(ed.lang)).forEach(ed=>base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed.q}`));
     }
+    /* National media editions chosen in Settings (#29) — multiple allowed. */
+    try{ (window.imNewsCountries||[]).forEach(code=>{ const ed=NEWS_COUNTRY_EDITIONS[code]; if(ed && !base.some(u=>u.includes(ed))) base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed}`); }); }catch(_){}
     /* Pro "RU·CN local primary-source intel" overlay — pulls the Russian + Chinese editions. */
     if(window.proIntelOn && window.imIsPro && window.imIsPro()){
       ['hl=ru&gl=RU&ceid=RU:ru','hl=zh-CN&gl=CN&ceid=CN:zh-Hans'].forEach(ed=>{ if(!base.some(u=>u.includes(ed))) base.push(`https://news.google.com/rss/headlines/section/topic/WORLD?${ed}`); });
@@ -3980,18 +4046,20 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(e){ if(globalData.length===0&&feed&&(currentMode==='news'||currentMode==='saved')) feed.innerHTML=`<div class="empty-msg" style="color:var(--threat-unmapped);">${t('networkError')}</div>`; console.warn('fetchData failed:',e); }
   }
 
-  /* ===== Search ===== */
+  /* ===== Search =====
+     Stats & Information filter live as you type (#27). News & Saved wait for the button /
+     Enter (matching the request that those tabs are button-driven since search is heavier). */
   const searchInput=document.getElementById('search-input');
-  searchInput.addEventListener('input',()=>{ if(currentMode==='news'||currentMode==='saved')startNews(); else if(currentMode==='stats')renderStats(searchVal()); });
-  function runSearch(){ if(currentMode==='stats'){ renderStats(searchVal()); return; } if(currentMode==='saved'){ startNews(); return; } activeSearchQuery=searchInput.value.trim(); globalData=[]; fetchData(); }
+  searchInput.addEventListener('input',()=>{ if(currentMode==='stats')renderStats(searchVal()); else if(currentMode==='info')renderDashboard(); });
+  function runSearch(){ if(currentMode==='stats'){ renderStats(searchVal()); return; } if(currentMode==='info'){ renderDashboard(); return; } if(currentMode==='saved'){ startNews(); return; } activeSearchQuery=searchInput.value.trim(); globalData=[]; fetchData(); }
   document.getElementById('btn-search').onclick=runSearch;
   searchInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter')runSearch(); });
 
   /* ===== View / Projection ===== */
   document.getElementById('btn-view-map').onclick=(e)=>{ if(currentMapType==='map')return; currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); };
   document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); };
-  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(1.4); updateOcclusion(); };
-  document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); };
+  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(1.4); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); };
+  document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); };
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
   let terrain3D=false;
@@ -4382,7 +4450,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
     lgdThermal.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'熱異常(火災)':'Thermal anomalies'}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${currentLang==='jp'?'検知された熱異常点':'Detected heat-signature pixel'}</div>
-      <div class="dl-hint">${currentLang==='jp'?'MODIS Fires (Terra/Aqua) 日次':'MODIS Fires (Terra/Aqua), daily'}</div>`;
+      <div class="dl-hint">${currentLang==='jp'?'NASA FIRMS · VIIRS (S-NPP) 375m 日次':'NASA FIRMS · VIIRS (S-NPP) 375 m, daily'}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
@@ -5184,7 +5252,7 @@ window.addEventListener('DOMContentLoaded', () => {
       let tiles=null;
       if(id==='temp') tiles=gibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',date);  /* gap-free reanalysis, monthly */
       else if(id==='precip') tiles=gibs('IMERG_Precipitation_Rate',6,'png',date+'T12:00:00Z');  /* IMERG requires a sub-daily timestamp or returns 404 */
-      else if(id==='thermal') tiles=gibs('MODIS_Fires_All',9,'png',date);
+      else if(id==='thermal') tiles=gibs('VIIRS_SNPP_Thermal_Anomalies_375m_All',7,'png',date);  /* FIRMS-derived (#35) — MODIS_Fires_All was not a valid GIBS layer (blank) */
       else if(id==='sst') tiles=gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',date);
       else if(id==='snow') tiles=gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',date);
       else if(id==='aod') tiles=gibs('MODIS_Combined_Value_Added_AOD',6,'png',date);
@@ -5193,7 +5261,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const wasVis=map.getLayer('lyr-'+id)?map.getLayoutProperty('lyr-'+id,'visibility')==='visible':false;
       if(map.getLayer('lyr-'+id)) map.removeLayer('lyr-'+id);
       if(map.getSource('src-'+id)) map.removeSource('src-'+id);
-      const maxzMap={temp:6,thermal:9,precip:6,sst:7,snow:8,aod:6};
+      const maxzMap={temp:6,thermal:7,precip:6,sst:7,snow:8,aod:6};
       addRaster(id,tiles, maxzMap[id]||6);
       if(wasVis) setVis('lyr-'+id,true);
     }
@@ -5211,7 +5279,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='thermal'){
           lgdThermal.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{
-            try{ addRaster('thermal',gibs('MODIS_Fires_All',9,'png',layerDates.thermal),9); }catch(_){}
+            try{ addRaster('thermal',gibs('VIIRS_SNPP_Thermal_Anomalies_375m_All',7,'png',layerDates.thermal),7); }catch(_){}
             try{ setVis('lyr-thermal',true); }catch(_){}
           });
         }
@@ -6213,18 +6281,28 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!m){
       m=document.createElement('div'); m.id='acct-modal';
       m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
-      m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;">
+      m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:90vh;overflow-y:auto;">
         <h2 style="margin:0 0 4px;font-size:19px;">${currentLang==='jp'?'プロフィール':'Your profile'}</h2>
         <p id="acct-email" style="margin:0 0 10px;color:var(--text-muted);font-size:13px;"></p>
+        <div class="acct-avatar-wrap"><div class="acct-avatar" id="acct-avatar-preview"></div>
+          <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">${currentLang==='jp'?'アイコン':'Icon'}</div>
+          <div class="acct-avatar-pick" id="acct-avatar-pick"></div></div></div>
         <div id="acct-pro" style="margin:0 0 16px;font-size:13px;"></div>
         <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;">${currentLang==='jp'?'表示名':'Display name'}</label>
         <input id="acct-name" type="text" maxlength="40" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin:6px 0 14px;">
         <button id="acct-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">${currentLang==='jp'?'保存':'Save profile'}</button>
+        <button id="acct-sub" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:11px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-top:10px;">${currentLang==='jp'?'サブスクリプションを管理':'Manage subscription'}</button>
         <p id="acct-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>
         <button id="acct-logout" style="width:100%;background:var(--input-bg);color:var(--info-mil);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-top:12px;">${currentLang==='jp'?'ログアウト':'Log out'}</button>
         <button id="acct-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:6px;padding:6px;cursor:pointer;font-size:13px;">${currentLang==='jp'?'閉じる':'Close'}</button>
       </div>`;
       document.body.appendChild(m);
+      /* Avatar picker (#28): emoji + colour, stored locally (and used as the account-button icon). */
+      const AV_EMOJI=['👤','🌍','🛰️','⚓','✈️','🛡️','📡','⛰️','🗺️','🔭','📰','🏛️','🦅','🐻','🐉','🌐'];
+      const pick=document.getElementById('acct-avatar-pick');
+      pick.innerHTML=AV_EMOJI.map(e=>`<button class="acct-emoji" data-e="${e}">${e}</button>`).join('');
+      pick.querySelectorAll('.acct-emoji').forEach(b=>b.onclick=()=>{ window.imSetAvatar(b.dataset.e); pick.querySelectorAll('.acct-emoji').forEach(x=>x.classList.toggle('sel',x===b)); document.getElementById('acct-avatar-preview').textContent=b.dataset.e; });
+      document.getElementById('acct-sub').onclick=()=>{ m.style.display='none'; try{ window.openProModal&&window.openProModal(); }catch(_){ imToast(currentLang==='jp'?'プラン管理は近日対応':'Subscription management coming soon'); } };
       m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
       document.getElementById('acct-close').onclick=()=>{ m.style.display='none'; };
       document.getElementById('acct-logout').onclick=()=>{
@@ -6254,6 +6332,10 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('acct-email').textContent=currentUser.email;
     document.getElementById('acct-name').value=currentUser.name||'';
     document.getElementById('acct-msg').textContent='';
+    /* avatar preview + current selection */
+    { const av=window.imGetAvatar(); const prev=document.getElementById('acct-avatar-preview');
+      if(prev){ prev.textContent=av; prev.style.background='hsl('+(window.imAvatarHue())+',58%,46%)'; }
+      document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(b=>b.classList.toggle('sel',b.dataset.e===av)); }
     /* Pro status row — refreshed on every open so entitlement is always visible. */
     const proRow=document.getElementById('acct-pro');
     if(proRow){
@@ -6267,7 +6349,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     m.style.display='flex';
   }
-  function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b) b.textContent = currentUser ? ('👤 '+(currentUser.name||currentUser.email.split('@')[0])) : (currentLang==='jp'?'ログイン':'Log in');
+  /* Account avatar (#28) — chosen emoji icon, persisted locally. */
+  window.imGetAvatar=function(){ try{ return localStorage.getItem('intmap_avatar')||'👤'; }catch(_){ return '👤'; } };
+  window.imAvatarHue=function(){ const s=(currentUser&&(currentUser.name||currentUser.email))||'?'; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h)%360; };
+  window.imSetAvatar=function(e){ try{ localStorage.setItem('intmap_avatar',e); }catch(_){} try{ updateAccountButton(); }catch(_){} };
+  function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b) b.textContent = currentUser ? (window.imGetAvatar()+' '+(currentUser.name||currentUser.email.split('@')[0])) : (currentLang==='jp'?'ログイン':'Log in');
     /* Sidebar EN/JP toggle shows only when logged OUT; logged-in users switch language in Settings. */
     const lt=document.querySelector('.lang-toggle'); if(lt) lt.style.display = currentUser ? 'none' : 'flex';
   }
