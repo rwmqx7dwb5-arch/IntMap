@@ -918,6 +918,8 @@
     .acct-color.sel{ border-color:var(--text-main); }
 
     /* --- Animated wind canvas overlay (#7) --- */
+    /* (#R7) Windy model: a wind-SPEED colour field (#wind-bg-canvas) under WHITE particle streaks (#wind-canvas). */
+    #wind-bg-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:4; display:none; }
     #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; display:none; }
 
     /* --- Data sources list in Settings (#37) --- */
@@ -1085,6 +1087,7 @@
       </div>
     </div>
     <div id="map"></div>
+    <canvas id="wind-bg-canvas"></canvas>
     <canvas id="wind-canvas"></canvas>
     <div id="tool-panel" class="tool-panel"></div>
     <div id="country-info" class="country-info"></div>
@@ -1361,7 +1364,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
-      filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付",
+      filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付", thermWin24:"過去24時間", thermWin48:"過去48時間", thermWin72:"過去72時間",
       tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして2〜3カ国を選択し比較できます", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
       satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"Pro — APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
       aiSecTitle:"AI機能 (BYOK / 端末内)", aiSecHint:"自分のAPIキーを使用します。通信はこのブラウザから各プロバイダへ直接行われ、キーはこの端末にのみ保存されます。Chrome内蔵AIを選べばキー不要で端末内実行できます。",
@@ -2439,12 +2442,24 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"BRI — Silk Road Economic Belt", path:[[108.9,34.3],[103.8,36.6],[94,40],[87.6,43.8],[76.9,43.2],[69.2,41.3],[58.4,37.6],[51.4,35.7],[44.4,38.1],[35,39.9],[29,41],[20.5,44.8],[16.4,48.2],[8.7,49.4],[4.5,51.9]]},
       {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[108,13],[103.8,1.3],[95,6],[80,6.9],[66,12],[51,13],[43.2,11.6],[32.5,29.9],[18,35],[12.3,45.4]]}
     ]},
-    pipelines:{ color:"#c2271f", name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
-      {label:"Nord Stream", path:[[28,60.7],[20,59],[15,55.5],[13.6,54.1]]},
-      {label:"Power of Siberia", path:[[124,62],[126,56],[127.5,50.3],[126.6,48.5]]},
-      {label:"Druzhba", path:[[54,54],[44,53.5],[33,53.2],[27.5,53],[23,52.2],[19,52],[12,51.2]]},
+    /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
+    pipelines:{ color:"#e8843b", name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
+      {label:"Nord Stream", path:[[28,60.7],[23,59.5],[18,57],[15,55.5],[13.6,54.1]]},
+      {label:"Yamal–Europe", path:[[66.5,67],[60,64],[52,60],[44,57],[36,55],[27,53.2],[20.5,52.3],[14.2,52.3]]},
+      {label:"Power of Siberia", path:[[120,63],[124,61],[126,56],[127.5,50.3],[126.6,48.5]]},
+      {label:"Druzhba (oil)", path:[[54,54],[44,53.5],[33,53.2],[27.5,53],[23,52.2],[19,52],[12,51.2]]},
+      {label:"ESPO (oil)", path:[[104,56],[113,56.3],[124,55],[131,49],[132.3,43.1]]},
       {label:"TurkStream", path:[[37.8,44.6],[33,43],[28.9,41.4],[26.5,41.2]]},
-      {label:"Trans-Alaska", path:[[-148.5,70.2],[-148.9,63.4],[-145.8,61],[-146.35,61.13]]}
+      {label:"Blue Stream", path:[[37.9,44.6],[36,42.5],[34.9,41.1]]},
+      {label:"Southern Gas Corridor (TANAP/TAP)", path:[[49.9,40.4],[45,40.3],[40,40],[35,39.6],[29,40.5],[26.2,40.8],[23,40.6],[19.4,40.5],[18.4,40.1]]},
+      {label:"BTC (oil)", path:[[49.9,40.4],[46,41.7],[44.8,41.7],[41,39],[35.9,36.9]]},
+      {label:"West–East Gas (China)", path:[[80,41],[88,42],[95,41],[103,37],[110,35],[114,33],[118,31.5],[121.5,31.2]]},
+      {label:"Central Asia–China Gas", path:[[59,39],[64,40],[68,41],[72,43],[80,44],[87,44.2],[95,42],[100,40]]},
+      {label:"TAPI", path:[[61,38],[62,35.5],[65.5,31.6],[67,30.2],[70,29.5],[73,29.4]]},
+      {label:"Trans-Med (Algeria→Italy)", path:[[5,33],[9,34],[11,37],[12.6,37.6],[14,38.2],[15.5,40]]},
+      {label:"Maghreb / Medgaz (→Spain)", path:[[3,35],[-1,35.2],[-2,36.8],[-3.5,36.7]]},
+      {label:"Keystone (oil)", path:[[-110,54],[-104,49],[-97,45],[-96,40.5],[-95,37],[-91,38.7]]},
+      {label:"Trans-Alaska (oil)", path:[[-148.5,70.2],[-148.9,63.4],[-145.8,61],[-146.35,61.13]]}
     ]},
     cables:{ color:"#30b0c7", name:{en:"Submarine Cables",jp:"海底ケーブル"}, lines:[
       {label:"Transatlantic (MAREA)", path:[[-76,36.8],[-50,40],[-20,42],[-2.9,43.4]]},
@@ -5024,7 +5039,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
     lgdThermal.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'熱異常(火災)':'Thermal anomalies'}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${currentLang==='jp'?'検知された火災・熱源':'Detected active fire / heat source'}</div>
-      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${currentLang==='jp'?'期間':'Window'}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24">${currentLang==='jp'?'過去24時間':'Last 24 h'}</option><option value="48">${currentLang==='jp'?'過去48時間':'Last 48 h'}</option><option value="72">${currentLang==='jp'?'過去72時間':'Last 72 h'}</option></select></label>
+      <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${currentLang==='jp'?'期間':'Window'}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
       <div class="dl-hint">${currentLang==='jp'?'NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）':'NASA FIRMS · MODIS + VIIRS (real, near-real-time)'}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -5177,7 +5192,7 @@ window.addEventListener('DOMContentLoaded', () => {
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('lyrTime')||'Date'}: <input type="date" id="dt-${id}" value="${layerDates[id]}" max="${new Date().toISOString().slice(0,10)}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"></label></div>`;
       }
       if(isTraffic){
-        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all">${t('filtAll')||'All'}</option><option value="civilian">${t('filtCiv')||'Civilian'}</option><option value="military">${t('filtMil')||'Military'}</option></select></label></div>`;
+        extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:6px; color:var(--text-muted);">${t('trafficFilter')||'Filter'}: <select id="ft-${id}" style="padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="all" data-i18n="filtAll">${t('filtAll')||'All'}</option><option value="civilian" data-i18n="filtCiv">${t('filtCiv')||'Civilian'}</option><option value="military" data-i18n="filtMil">${t('filtMil')||'Military'}</option></select></label></div>`;
       }
       const isSeaLevel=(id==='sealevel');
       if(isSeaLevel){
@@ -5312,12 +5327,17 @@ window.addEventListener('DOMContentLoaded', () => {
        (USA) — which fall outside NATO's Article-6 treaty area. The Tropic of Cancer (23.4366°N) is drawn
        as a labelled gold line so the exclusion is self-explanatory. */
     const TROPIC_CANCER=23.4366;
-    const GUIANA_BBOX=[-55,1,-51,6.6], HAWAII_BBOX=[-161,18,-154,23];
-    function _ringCentroidInBbox(ring,bb){ if(!ring||!ring.length) return false; let sx=0,sy=0; for(const p of ring){ sx+=p[0]; sy+=p[1]; } const cx=sx/ring.length, cy=sy/ring.length; return cx>=bb[0]&&cx<=bb[2]&&cy>=bb[1]&&cy<=bb[3]; }
-    function _dropPolysInBbox(geom,bbs){
+    /* (#R7) NATO Article 6 limits the treaty area to Europe/North America and North-Atlantic islands
+       NORTH of the Tropic of Cancer. So we drop EVERY member sub-polygon whose centroid is south of that
+       line — French Guiana, Guadeloupe, Martinique, Saint-Martin, Mayotte, Réunion, New Caledonia, French
+       Polynesia, Hawaii, Puerto Rico, Guam, … — while keeping all mainlands and the Atlantic islands
+       (Azores, Madeira, Canaries) that ARE covered. Mainland polygons aren't clipped (centroid is north),
+       so e.g. southern Florida/Texas stay whole. */
+    function _ringCentroidLat(ring){ if(!ring||!ring.length) return 0; let sy=0; for(const p of ring) sy+=p[1]; return sy/ring.length; }
+    function _dropSouthOfTropic(geom){
       if(!geom) return null;
-      const keep=pc=>!bbs.some(bb=>_ringCentroidInBbox(pc[0],bb));
-      if(geom.type==='Polygon'){ return keep(geom.coordinates)?geom:null; }
+      const keep=pc=>_ringCentroidLat(pc[0])>=TROPIC_CANCER;
+      if(geom.type==='Polygon') return keep(geom.coordinates)?geom:null;
       if(geom.type==='MultiPolygon'){ const polys=geom.coordinates.filter(keep); return polys.length?{type:'MultiPolygon',coordinates:polys}:null; }
       return geom;
     }
@@ -5325,9 +5345,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const feats=[];
       if(countryGeo&&countryGeo.features){
         countryGeo.features.forEach(f=>{ const code=String(f.id); if(!NATO.has(code)) return;
-          let g=f.geometry;
-          if(code==='FRA') g=_dropPolysInBbox(g,[GUIANA_BBOX]);       /* drop French Guiana */
-          else if(code==='USA') g=_dropPolysInBbox(g,[HAWAII_BBOX]);  /* drop Hawaii */
+          const g=_dropSouthOfTropic(f.geometry);
           if(g) feats.push({type:'Feature',id:code,properties:{__code:code},geometry:g});
         });
       }
@@ -6252,7 +6270,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='contours'){ if(map.getLayer('contour-lines'))map.setPaintProperty('contour-lines','line-opacity',v); if(map.getLayer('contour-labels'))map.setPaintProperty('contour-labels','text-opacity',v); }
       else if(id==='relief'){ if(map.getLayer('lyr-relief'))map.setPaintProperty('lyr-relief','color-relief-opacity',v); }
       else if(id==='sealevel'){ if(map.getLayer('lyr-sealevel'))map.setPaintProperty('lyr-sealevel','color-relief-opacity',v); }
-      else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=v; }
+      else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=v; const wb=document.getElementById('wind-bg-canvas'); if(wb) wb.style.opacity=v; }
       else if(id==='subcables'){ if(map.getLayer('lyr-subcables'))map.setPaintProperty('lyr-subcables','line-opacity',v); }
       else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
@@ -7718,6 +7736,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* 1 — read the WebGL frame synchronously INSIDE a render tick (the reliable way to capture a
          canvas created without preserveDrawingBuffer), and composite the animated-wind 2D canvas. */
       const mapCv=await new Promise(res=>{ let done=false; const grab=()=>{ if(done)return; done=true; try{ const c=map.getCanvas(); const o=document.createElement('canvas'); o.width=c.width; o.height=c.height; const cx=o.getContext('2d'); cx.drawImage(c,0,0);
+        try{ const wb=document.getElementById('wind-bg-canvas'); if(wb && wb.style.display!=='none' && wb.width) cx.drawImage(wb,0,0,o.width,o.height); }catch(_){}
         try{ const wc=document.getElementById('wind-canvas'); if(wc && wc.style.display!=='none' && wc.width) cx.drawImage(wc,0,0,o.width,o.height); }catch(_){}
         res(o); }catch(_){ res(null); } }; try{ map.once('render',grab); map.triggerRepaint(); }catch(_){ grab(); } setTimeout(grab,1200); });
       const out=document.createElement('canvas');
@@ -8039,9 +8058,11 @@ window.addEventListener('DOMContentLoaded', () => {
      correct under any projection/zoom/rotation and pans & zooms locked to the map ("座標ベース"). */
   window.Wind=(function(){
     const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){}};
-    const ctx=cv.getContext('2d'); let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false;
+    const bgcv=document.getElementById('wind-bg-canvas');
+    const ctx=cv.getContext('2d'); const bgctx=bgcv?bgcv.getContext('2d'):null;
+    let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false, bgDirty=true;
     const R=Math.PI/180;
-    function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
+    function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); if(bgcv){ bgcv.width=cssW*dpr; bgcv.height=cssH*dpr; bgcv.style.width=cssW+'px'; bgcv.style.height=cssH+'px'; } bgDirty=true; }
     /* Build a regular global grid of CURRENT 10 m winds in ONE multi-point request, refreshed every
        10 min. Meteorological "from" direction → true (east-u, north-v) motion vector. If the real
        request fails we turn the layer OFF rather than fabricate a flow. */
@@ -8093,17 +8114,43 @@ window.addEventListener('DOMContentLoaded', () => {
       else { p.lng=Math.random()*360-180; p.lat=Math.random()*2*gl-gl; }
       p.age=(Math.random()*60)|0; p.life=60+((Math.random()*70)|0);
     }
-    function ensureParts(){ const target=Math.min(isMobile()?1000:2800,Math.max(400,Math.floor(cssW*cssH/(isMobile()?2400:1150)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
-    /* Windy-style perceptual ramp: calm→teal→green→yellow→orange→red as speed rises (0–30 m/s). */
-    function speedColor(s){ const stops=[[0,'120,180,255'],[5,'90,220,210'],[10,'120,235,120'],[16,'240,225,90'],[22,'250,160,60'],[30,'250,80,70']]; const v=Math.min(30,Math.max(0,s)); let a=stops[0],b=stops[stops.length-1]; for(let i=0;i<stops.length-1;i++){ if(v>=stops[i][0]&&v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } } const f=(v-a[0])/Math.max(1e-6,(b[0]-a[0])); const ca=a[1].split(','),cb=b[1].split(','); const r=Math.round(+ca[0]+(+cb[0]-+ca[0])*f),g=Math.round(+ca[1]+(+cb[1]-+ca[1])*f),bl=Math.round(+ca[2]+(+cb[2]-+ca[2])*f); return `rgba(${r},${g},${bl},0.92)`; }
+    /* (#R7) Windy model = LOTS of particles. Dense seeding (mobile capped for perf). */
+    function ensureParts(){ const target=Math.min(isMobile()?1600:5200,Math.max(700,Math.floor(cssW*cssH/(isMobile()?1500:480)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
+    /* Windy-style perceptual ramp for the SPEED FIELD background: calm→teal→green→yellow→orange→red→magenta. */
+    function speedColor(s,alpha){ const stops=[[0,'40,60,140'],[4,'40,140,200'],[8,'60,200,170'],[12,'120,225,110'],[17,'235,225,90'],[23,'245,150,55'],[30,'235,70,70'],[40,'200,60,180']]; const v=Math.min(40,Math.max(0,s)); let a=stops[0],b=stops[stops.length-1]; for(let i=0;i<stops.length-1;i++){ if(v>=stops[i][0]&&v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } } const f=(v-a[0])/Math.max(1e-6,(b[0]-a[0])); const ca=a[1].split(','),cb=b[1].split(','); const r=Math.round(+ca[0]+(+cb[0]-+ca[0])*f),g=Math.round(+ca[1]+(+cb[1]-+ca[1])*f),bl=Math.round(+ca[2]+(+cb[2]-+ca[2])*f); return `rgba(${r},${g},${bl},${alpha==null?1:alpha})`; }
     const onScreen=(pt)=>pt && pt.x>=-40 && pt.x<=cssW+40 && pt.y>=-40 && pt.y<=cssH+40;
+    /* Wind-SPEED colour field, computed on a coarse offscreen grid (unproject → sample → colour) and
+       up-scaled with bilinear smoothing → a smooth Windy-like overlay. Recomputed only when the view
+       changes (bgDirty), never per frame. */
+    function renderBackground(){
+      if(!bgctx||!grid){ return; }
+      const STEPpx=isMobile()?22:16; const lw=Math.max(2,Math.ceil(cssW/STEPpx)), lh=Math.max(2,Math.ceil(cssH/STEPpx));
+      const off=renderBackground._c||(renderBackground._c=document.createElement('canvas'));
+      off.width=lw; off.height=lh; const octx=off.getContext('2d'); const img=octx.createImageData(lw,lh); const d=img.data;
+      for(let yy=0; yy<lh; yy++){ for(let xx=0; xx<lw; xx++){
+        const px=(xx+0.5)/lw*cssW, py=(yy+0.5)/lh*cssH; let ll; try{ ll=map.unproject([px,py]); }catch(_){ ll=null; }
+        const idx=(yy*lw+xx)*4;
+        const w=ll?sample(ll.lng,ll.lat):null;
+        if(w){ const sp=Math.hypot(w[0],w[1]); const c=speedColor(sp).match(/\d+/g); d[idx]=+c[0]; d[idx+1]=+c[1]; d[idx+2]=+c[2]; d[idx+3]=150; }
+        else { d[idx+3]=0; }
+      }}
+      octx.putImageData(img,0,0);
+      bgctx.setTransform(1,0,0,1,0,0); bgctx.clearRect(0,0,bgcv.width,bgcv.height);
+      bgctx.imageSmoothingEnabled=true; bgctx.imageSmoothingQuality='high';
+      bgctx.drawImage(off,0,0,bgcv.width,bgcv.height);
+      bgDirty=false;
+    }
+    let _bgT=0;
     function step(){
       if(!on) return;
-      /* While the map is moving, clear fully each frame so trails track the map without smearing; when
-         idle, fade for the classic flowing streaks. */
+      /* Re-render the speed field when the view changed, throttled to ~8 fps so it tracks pans/zooms
+         smoothly without paying the unproject cost every frame. */
+      if(bgDirty && grid && (Date.now()-_bgT>120)){ renderBackground(); _bgT=Date.now(); }
+      /* WHITE particle streaks on top. Fully clear while the map moves so trails track the map; fade when
+         idle for the classic flowing look. */
       if(moving){ ctx.clearRect(0,0,cssW,cssH); }
-      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.085)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
-      ctx.lineWidth=1.5; ctx.lineCap='round';
+      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.09)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
+      ctx.lineCap='round';
       let z=2; try{ z=map.getZoom(); }catch(_){}
       const sc=Math.pow(2,z);
       for(const p of parts){
@@ -8113,8 +8160,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const sp=Math.hypot(w[0],w[1]);
         const s0=map.project([p.lng,p.lat]);
         if(!onScreen(s0)){ if(++p.age>p.life) spawn(p); else p.age++; continue; }
-        /* Advance in GEOGRAPHIC degrees; dt scales with metres-per-pixel so the on-screen streak
-           length stays natural (≈ constant) at every zoom. */
         const cosLat=Math.max(0.15,Math.cos(p.lat*R));
         const mPerPx=156543.03*cosLat/sc, dt=0.13*mPerPx;
         p.lng += (w[0]*dt)/(111320*cosLat);
@@ -8122,16 +8167,18 @@ window.addEventListener('DOMContentLoaded', () => {
         if(p.lng>180) p.lng-=360; else if(p.lng<-180) p.lng+=360;
         const s1=map.project([p.lng,p.lat]);
         if(p.age<p.life && onScreen(s1)){
-          ctx.strokeStyle=speedColor(sp); ctx.beginPath(); ctx.moveTo(s0.x,s0.y); ctx.lineTo(s1.x,s1.y); ctx.stroke();
+          /* white streaks; faster wind = slightly brighter/thicker so the flow reads against the field */
+          const a=0.55+Math.min(0.4,sp/45); ctx.lineWidth=1.0+Math.min(1.1,sp/26);
+          ctx.strokeStyle='rgba(255,255,255,'+a.toFixed(2)+')'; ctx.beginPath(); ctx.moveTo(s0.x,s0.y); ctx.lineTo(s1.x,s1.y); ctx.stroke();
           p.age++;
         } else { spawn(p); }
       }
       raf=requestAnimationFrame(step);
     }
-    function start(){ on=true; cv.style.display='block'; resize(); ensureParts(); fetchGrid(); cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
-    function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; }
+    function start(){ on=true; cv.style.display='block'; if(bgcv) bgcv.style.display='block'; resize(); ensureParts(); fetchGrid().then(()=>{ bgDirty=true; }); cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+    function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} try{ if(bgctx){ bgctx.setTransform(1,0,0,1,0,0); bgctx.clearRect(0,0,bgcv.width,bgcv.height); } }catch(_){} cv.style.display='none'; if(bgcv) bgcv.style.display='none'; }
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
-    if(map){ map.on('movestart',()=>{ moving=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
+    if(map){ map.on('movestart',()=>{ moving=true; }); map.on('move',()=>{ if(on) bgDirty=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); bgDirty=true; } }); }
     return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid };
   })();
 
@@ -8257,10 +8304,148 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
       exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; setData(); unwire(); try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
-      onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); }
+      onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
+      /* Debug/verification hook (same spirit as window.__sat / window.__ai): lets us prove the
+         area-invariant-under-smoothing contract and the geodesic length without map interaction. */
+      _debug:{ enclosedArea, rdp,
+        simulate(rawPts, sm){ raw=rawPts.slice(); smoothing=sm||0; recomputeLine(); recomputeArea(); return { area:lockedArea, length:lengthKm, rawN:raw.length, simplN:simplified.length }; } }
     };
     { const b=document.getElementById('btn-tool-draw'); if(b) b.onclick=()=>api.toggle(); }
     return api;
+  })();
+
+  /* ===================== R7 — Next-gen ADDITIVE architecture & intelligence overlays =====================
+     100% additive & self-contained — it never mutates the existing MapLibre / Supabase / i18n / timezone
+     logic, honouring the repeated "全ロジックを破壊せずに" constraint. It delivers the achievable core of the
+     next-gen brief WITHOUT a risky full CesiumJS rewrite of a working 8k-line app (that swap would break
+     every feature; the app is instead made modular so a Cesium globe can later be fed through IntMapSim):
+       (A) IndexedDB persistence  (B) per-frame simulation bridge for external Wasm fluid/ballistic compute
+       (C) Web-Worker offload bridge  (D) speculative camera-lookahead tile prefetch
+       (E) new overlays: sovereignty-dispute lines + geodesic air-defence coverage "domes". */
+  (function(){
+    if(!map) return;
+
+    /* ---------- (A) IndexedDB persistence — instant next-load + offline resilience ---------- */
+    window.IntMapCache=(function(){
+      const DBN='intmap', STORE='kv'; let dbp=null;
+      function open(){ if(dbp) return dbp; dbp=new Promise((res,rej)=>{ try{ const r=indexedDB.open(DBN,1); r.onupgradeneeded=()=>{ try{ r.result.createObjectStore(STORE); }catch(_){} }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); return dbp; }
+      async function set(k,v){ try{ const db=await open(); return await new Promise(res=>{ const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(v,k); tx.oncomplete=()=>res(true); tx.onerror=()=>res(false); }); }catch(_){ try{ localStorage.setItem('imc_'+k,JSON.stringify(v)); }catch(__){} return false; } }
+      async function get(k){ try{ const db=await open(); return await new Promise(res=>{ const tx=db.transaction(STORE,'readonly'); const rq=tx.objectStore(STORE).get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>res(null); }); }catch(_){ try{ return JSON.parse(localStorage.getItem('imc_'+k)||'null'); }catch(__){ return null; } } }
+      return { get, set };
+    })();
+    /* Mirror Supabase intelligence (dashboard cards) into IndexedDB for an instant warm start next time. */
+    try{ const _origLoadDash=(typeof loadDashFromSupabase==='function')?loadDashFromSupabase:null;
+      window.IntMapCache.get('dash_cards').then(c=>{ try{ if(c&&c.length && typeof extendedDashDB!=='undefined' && (!extendedDashDB||!extendedDashDB.length)){ extendedDashDB=c; if(currentMode==='info'&&typeof renderDashboard==='function') renderDashboard(); } }catch(_){} });
+      setInterval(()=>{ try{ if(typeof extendedDashDB!=='undefined' && extendedDashDB && extendedDashDB.length) window.IntMapCache.set('dash_cards', extendedDashDB); }catch(_){} }, 60000);
+    }catch(_){}
+
+    /* ---------- (B) Simulation bridge — external compute → per-frame render ----------
+       External (Wasm-side) fluid (wind/rain) or ballistic (satellite/missile) compute feeds 64-bit
+       absolute coords here every frame; the bridge owns a geojson source per channel and streams it
+       straight into MapLibre. Future Cesium engine subscribes the same way. */
+    window.IntMapSim=(function(){
+      const ids={};
+      function ensure(id, makeLayers){ if(ids[id]) return ids[id]; const sid='sim-'+id; try{ if(!map.getSource(sid)) map.addSource(sid,{type:'geojson',data:{type:'FeatureCollection',features:[]}}); if(makeLayers) makeLayers(sid); ids[id]=sid; }catch(_){} return sid; }
+      function update(id, geojson){ const sid=ids[id]||('sim-'+id); try{ const s=map.getSource(sid); if(s) s.setData(geojson||{type:'FeatureCollection',features:[]}); }catch(_){} }
+      function feedParticles(id, arr){ update(id,{type:'FeatureCollection',features:(arr||[]).map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat,(p.alt||0)]},properties:p}))}); }
+      function feedTracks(id, tracks){ update(id,{type:'FeatureCollection',features:(tracks||[]).map(t=>({type:'Feature',geometry:{type:'LineString',coordinates:t.path||t},properties:t.props||{}}))}); }
+      return { ensure, update, feedParticles, feedTracks, _ids:ids };
+    })();
+
+    /* ---------- (C) Web-Worker offload bridge — keep heavy compute off the paint thread ---------- */
+    window.IntMapWorker=(function(){
+      let worker=null, seq=0; const pending={};
+      const SRC="self.onmessage=function(e){var d=e.data||{},id=d.id,task=d.task,p=d.payload||{},out=null,err=null;try{"+
+        "if(task==='haversineTotal'){var pts=p.points||[],R=6371,s=0;for(var i=1;i<pts.length;i++){var a=pts[i-1],b=pts[i],dLat=(b[1]-a[1])*Math.PI/180,dLon=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180,h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)*Math.sin(dLon/2);s+=2*R*Math.asin(Math.min(1,Math.sqrt(h)));}out=s;}"+
+        "else if(task==='echo'){out=p;}else{err='unknown task '+task;}"+
+        "}catch(ex){err=String(ex);} self.postMessage({id:id,out:out,err:err});};";
+      function ensure(){ if(worker) return worker; try{ const blob=new Blob([SRC],{type:'application/javascript'}); worker=new Worker(URL.createObjectURL(blob)); worker.onmessage=e=>{ const m=e.data||{},cb=pending[m.id]; if(cb){ delete pending[m.id]; m.err?cb.rej(new Error(m.err)):cb.res(m.out); } }; }catch(_){ worker=null; } return worker; }
+      function run(task,payload){ return new Promise((res,rej)=>{ const w=ensure(); if(!w){ rej(new Error('worker unavailable')); return; } const id=++seq; pending[id]={res,rej}; w.postMessage({id,task,payload}); }); }
+      return { run, ensure };
+    })();
+
+    /* ---------- (D) Speculative tile prefetch — camera-direction lookahead ---------- */
+    (function(){
+      let hist=[];
+      function activeTpl(){ try{ const st=map.getStyle(); if(!st) return null;
+        if(typeof currentMapType!=='undefined' && currentMapType==='sat'){ const s=st.sources['satellite']; return s&&s.tiles&&s.tiles[0]; }
+        for(const id of ['bd','bdn','bl','bln']){ const s=st.sources[id]; if(s&&s.tiles){ const lyr=(st.layers||[]).find(l=>l.source===id); if(lyr && map.getLayer(lyr.id) && map.getLayoutProperty(lyr.id,'visibility')!=='none') return s.tiles[0]; } }
+        const s=st.sources['bd']; return s&&s.tiles&&s.tiles[0]; }catch(_){ return null; } }
+      function prefetch(lng,lat,z){ const tpl=activeTpl(); if(!tpl) return; z=Math.max(0,Math.min(18,Math.round(z))); const n=Math.pow(2,z);
+        const xc=Math.floor((lng+180)/360*n), latR=lat*Math.PI/180, yc=Math.floor((1-Math.log(Math.tan(latR)+1/Math.cos(latR))/Math.PI)/2*n);
+        let cnt=0; for(let dx=-2;dx<=2;dx++){ for(let dy=-2;dy<=2;dy++){ if(cnt>=22) break; const x=((xc+dx)%n+n)%n, y=yc+dy; if(y<0||y>=n) continue; const url=tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y).replace('{s}','a'); try{ const im=new Image(); im.decoding='async'; im.src=url; }catch(_){} cnt++; } } }
+      map.on('moveend',()=>{ try{ const c=map.getCenter(), z=map.getZoom(), now=performance.now(); hist.push({lng:c.lng,lat:c.lat,t:now}); if(hist.length>3) hist.shift(); if(hist.length<2) return; const a=hist[hist.length-2], b=hist[hist.length-1], dt=Math.max(1,b.t-a.t); let dl=b.lng-a.lng; if(dl>180)dl-=360; else if(dl<-180)dl+=360; const vlng=dl/dt, vlat=(b.lat-a.lat)/dt, look=550, pl=b.lng+vlng*look, pa=Math.max(-85,Math.min(85,b.lat+vlat*look)); if(Math.abs(vlng*look)<0.15 && Math.abs(vlat*look)<0.15) return; prefetch(pl,pa,z); }catch(_){} });
+      window.SpeculativePrefetch={ prefetch };
+    })();
+
+    /* ---------- (E) New intelligence overlays ---------- */
+    const jp=()=>currentLang==='jp';
+    /* Sovereignty disputes — international lines whose recognition is split. */
+    const DISPUTES=[
+      { name:{en:'Nine-dash line (S. China Sea)',jp:'九段線（南シナ海）'}, c:[[122.5,24.5],[120.8,21.5],[119.5,18.5],[117.8,15],[116,11],[114,7.5],[111.5,5],[109.5,8.5],[109,12.5],[109.6,16.5],[110.2,19.5],[111.5,21.8]] },
+      { name:{en:'Ukraine front line (approx.)',jp:'ウクライナ前線（概略）'}, c:[[37.6,49.9],[38.1,49],[38.4,48.3],[37.8,47.6],[36.6,47.1],[35.4,47.5],[33.6,46.6],[32.5,46.6]] },
+      { name:{en:'Kashmir Line of Control',jp:'カシミール管理線'}, c:[[74,34.6],[74.3,34],[74.7,33.5],[75.2,33],[75.8,32.7],[76.4,32.6]] },
+      { name:{en:'Korean DMZ',jp:'朝鮮半島軍事境界線'}, c:[[126.68,37.83],[127.3,38.25],[128.36,38.62]] },
+      { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.2,26.3],[119.3,24.7],[118.6,23],[119,21.9]] }
+    ];
+    function disputesFC(){ return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
+    /* Geodesic air-defence coverage "domes" — reuse the radius tool's geodesic-disk builders. */
+    const AD_SITES=[
+      {n:'Moscow · S-400',at:[37.6,55.75],r:400,c:'#e0312e'},{n:'St Petersburg · S-400',at:[30.3,59.95],r:400,c:'#e0312e'},
+      {n:'Kaliningrad · S-400',at:[20.5,54.7],r:400,c:'#e0312e'},{n:'Khmeimim · S-400',at:[35.95,35.41],r:380,c:'#e0312e'},
+      {n:'Crimea · S-400',at:[34.0,45.0],r:400,c:'#e0312e'},
+      {n:'Beijing · HQ-9/S-400',at:[116.4,39.9],r:300,c:'#d98c00'},{n:'Fujian · HQ-9',at:[119.3,26.1],r:300,c:'#d98c00'},
+      {n:'Seoul · Patriot/THAAD',at:[127,37.5],r:200,c:'#2f6bff'},{n:'Taiwan · Patriot',at:[121,23.7],r:160,c:'#2f6bff'},
+      {n:'Guam · THAAD',at:[144.8,13.4],r:200,c:'#2f6bff'},{n:'Warsaw · Patriot',at:[21,52.2],r:160,c:'#2f6bff'},
+      {n:'Israel · multilayer',at:[34.9,31.5],r:150,c:'#2f6bff'},{n:'Tehran · S-300/Bavar',at:[51.4,35.7],r:200,c:'#9b59b6'},
+      {n:'Pyongyang · KN-06',at:[125.75,39.03],r:250,c:'#9b59b6'}
+    ];
+    function airDefFC(){ const f=[];
+      AD_SITES.forEach(s=>{ try{
+        diskFillPolys(s.at,s.r,128).forEach(poly=>f.push({type:'Feature',geometry:{type:'Polygon',coordinates:poly},properties:{color:s.c}}));
+        diskOutlineLines(s.at,s.r,128).forEach(ln=>f.push({type:'Feature',geometry:{type:'LineString',coordinates:ln},properties:{color:s.c}}));
+        f.push({type:'Feature',geometry:{type:'Point',coordinates:s.at},properties:{color:s.c,label:s.n}});
+      }catch(_){} });
+      return {type:'FeatureCollection',features:f}; }
+    function ensureOverlays(){
+      if(!map.isStyleLoaded()) return false;
+      try{
+        if(!map.getSource('r7-disputes')){ map.addSource('r7-disputes',{type:'geojson',data:disputesFC()});
+          map.addLayer({id:'r7-disputes-line',type:'line',source:'r7-disputes',layout:{visibility:'none','line-cap':'round'},paint:{'line-color':'#ff4d4d','line-width':2.2,'line-dasharray':[2,2],'line-opacity':0.92}});
+          map.addLayer({id:'r7-disputes-label',type:'symbol',source:'r7-disputes',layout:{visibility:'none','symbol-placement':'line-center','text-field':['get','label'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ff7a7a','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
+        }
+        if(!map.getSource('r7-airdef')){ map.addSource('r7-airdef',{type:'geojson',data:airDefFC()});
+          map.addLayer({id:'r7-airdef-fill',type:'fill',source:'r7-airdef',filter:['==','$type','Polygon'],layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.1}});
+          map.addLayer({id:'r7-airdef-line',type:'line',source:'r7-airdef',filter:['==','$type','LineString'],layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.1,'line-opacity':0.55}});
+          map.addLayer({id:'r7-airdef-pt',type:'circle',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none'},paint:{'circle-radius':4,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':1.5}});
+          map.addLayer({id:'r7-airdef-label',type:'symbol',source:'r7-airdef',filter:['==','$type','Point'],layout:{visibility:'none','text-field':['get','label'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}});
+        }
+        return true;
+      }catch(e){ return false; }
+    }
+    const DSET=['r7-disputes-line','r7-disputes-label'], ASET=['r7-airdef-fill','r7-airdef-line','r7-airdef-pt','r7-airdef-label'];
+    const state={disputes:false,airdef:false};
+    function setVis(ids,on){ ids.forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }); }
+    function refreshDisputeLabels(){ try{ const s=map.getSource('r7-disputes'); if(s) s.setData(disputesFC()); }catch(_){} }
+    function toggle(which,on){ state[which]=on; const apply=()=>{ if(!ensureOverlays()){ map.once('idle',apply); return; } setVis(which==='disputes'?DSET:ASET,on); }; apply(); }
+    /* re-apply after a style swap (theme / satellite engine) so the overlays survive */
+    map.on('styledata',()=>{ if(state.disputes||state.airdef){ setTimeout(()=>{ if(ensureOverlays()){ setVis(DSET,state.disputes); setVis(ASET,state.airdef); } },60); } });
+
+    /* dropdown UI — appended after the existing layer groups, non-destructive */
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('r7-dl-disputes')) return;
+      const head=document.createElement('div'); head.className='lyr-head'; head.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; head.setAttribute('data-r7head','1'); dd.appendChild(head);
+      function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
+      const cbD=row('r7-dl-disputes', jp()?'係争境界線':'Disputed boundaries', '#ff4d4d');
+      const cbA=row('r7-dl-airdef', jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage', '#e0312e');
+      cbD.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('disputes',e.target.checked); });
+      cbA.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('airdef',e.target.checked); });
+    }
+    if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
+    /* keep the advanced labels localized on language switch */
+    const _origUpdateI18n=window.updateI18n;
+    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage'; refreshDisputeLabels(); }
+    ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
+    window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
 
   loadSettings();
