@@ -148,6 +148,7 @@
     .ai-view-summary-btn:disabled{ opacity:0.45; cursor:default; }
     .coord-readout .cr-elev{ color:var(--text-muted); }
     .coord-readout .cr-sat{ color:var(--primary-color); font-weight:600; }
+    .coord-readout .cr-wind{ color:#5ec8ff; font-weight:600; }
     /* ===== Satellite imagery engine UI ===== */
     .sat-controller{ display:none; position:absolute; top:180px; right:24px; z-index:999; width:250px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); -webkit-backdrop-filter:blur(15px); font-size:12px; }
     .satc-head{ display:flex; align-items:center; gap:6px; font-weight:600; font-size:13px; margin-bottom:10px; color:var(--text-main); }
@@ -683,6 +684,7 @@
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; }
       .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
+      .koppen-legend{ height:auto !important; min-height:0 !important; resize:none !important; top:auto; }   /* (#R8c) desktop full-height + resize is desktop-only */
       /* Default dock only applies until the user drags a legend — once dragged it carries data-dragged
          and its inline left/top win, so legends are freely movable on phones too (#10). */
       .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 60px) !important; right:10px !important; left:auto !important; }
@@ -1395,6 +1397,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ localizeGeoLabels(); }catch(_){}
     try{ refreshGeoLabels(); }catch(_){}   /* on-map geo-theory labels follow the language too (#1) */
     try{ if(window._imSyncMobile) window._imSyncMobile(); }catch(_){}   /* (#R8) mobile proxy buttons follow every language change */
+    try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}     /* (#R8c) lets modules (wind time pill, etc.) re-localize */
     /* re-evaluate place-label language + basemap on EN/JP switch (retry on idle if style busy) */
     try{ applyTheme(); if(map&&!map.isStyleLoaded()) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
     try{ if(typeof updateAccountButton==='function') updateAccountButton(); }catch(_){}
@@ -3299,6 +3302,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const parts=[];
     parts.push(`<span>${fmtLL(_crLng,_crLat)}</span>`); parts.push(`<span class="cr-elev">${lastElev||'·····'}</span>`);
     if(lastLayerVal) parts.push(`<span class="cr-sat">${lastLayerVal}</span>`);
+    /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
+    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(_crLng,_crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; parts.push(`<span class="cr-wind">🌬 ${w.speed.toFixed(1)} m/s ${card}</span>`); } } }catch(_){}
     /* Satellite-imagery chip removed from the readout per request — coords + elevation only. */
     if(!parts.length){ el.style.display='none'; return; }
     el.style.display='flex';
@@ -4914,7 +4919,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
-      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button onclick="window._azimuthalFromPin('${pin.id}')" title="${currentLang==='jp'?'この地点を中心とした正距方位図法':'Azimuthal-equidistant map centred here'}">🧭 ${currentLang==='jp'?'正距方位図':'Azimuthal'}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
+      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
   }
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;
@@ -4937,11 +4942,13 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:`✏️ ${currentLang==='jp'?'ここから描画測定':'Draw / trace from here'}`, action:()=>{ if(window.DrawTool) window.DrawTool.start([lngLat.lng,lngLat.lat]); }},
       {label:`💬 ${t('ctxPostHere')}`, action:()=>{ if(!requireLogin()) return; pendingPostLoc=[lngLat.lng,lngLat.lat]; communityAddArmed=false; openComposeModal(); }},
       {divider:true},
-      /* (#R7-proj) Azimuthal-equidistant projection on right-click, centred on the clicked point. */
-      {label:`🧭 ${currentLang==='jp'?'正距方位図法（ここ中心）':'Azimuthal map (centre here)'}`, action:()=>{ try{ window.ProjView&&window.ProjView.open('azimuthal',[lngLat.lng,lngLat.lat]); }catch(_){} }},
-      {label:`🗺️ ${currentLang==='jp'?'地図投影法を表示…':'Map projections…'}`, action:()=>{ try{ window.ProjView&&window.ProjView.open('equalEarth',[lngLat.lng,lngLat.lat]); }catch(_){} }},
-      {divider:true},
+      /* (#R8c) The alternative-projection viewer (Equal Earth / Robinson / Azimuthal …) was removed from
+         the UI: MapLibre can only render Mercator (Flat) and Globe, so those projections necessarily
+         opened a SEPARATE canvas window the user rejected ("別ウィンドウにまっさらな図"). Flat and Globe stay
+         perfectly in-space synced; true alt-projection rendering needs a d3-geo/Cesium engine (future). */
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
+      {label:`🔖 ${currentLang==='jp'?'この表示のリンクをコピー':'Copy link to this view'}`, action:()=>{ try{ const u=window.IntMapBookmark?window.IntMapBookmark.link():location.href; navigator.clipboard.writeText(u); imToast&&imToast(currentLang==='jp'?'ビューのリンクをコピーしました':'View link copied'); }catch(_){} }},
+      {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       ...(userPins.length?[{label:`🗑 ${t('ctxClearPins')} (${userPins.length})`, action:clearAllPins}]:[])
     ];
     m.innerHTML=items.map(it=>{
@@ -4973,7 +4980,12 @@ window.addEventListener('DOMContentLoaded', () => {
       .lyr-op{ width:100%; accent-color:var(--primary-color); display:none; margin:0 0 4px 24px; }
       .lyr-row.on .lyr-op{ display:block; }
       .lyr-head{ font-size:11px; font-weight:700; color:var(--text-muted); margin:6px 2px 2px; }
-      .koppen-legend{ display:none; position:absolute; bottom:140px; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); max-height:46vh; overflow-y:auto; width:216px; font-size:11px; }
+      /* (#R8c) Desktop Köppen legend: FULL-HEIGHT by default (no scroll — all ~30 classes fit), and the
+         ONLY legend that is resizable like a desktop window — vertical-only via the native resize grabber
+         (CSS resize:vertical). Anchored to the top with an explicit height so the grabber actually resizes. */
+      .koppen-legend{ display:none; position:absolute; top:74px; bottom:auto; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow-y:auto; resize:vertical; width:216px; font-size:11px; }
+      .koppen-legend::-webkit-resizer{ background:transparent; }
+      .koppen-legend.legend-collapsed{ resize:none !important; }
       .koppen-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:6px; }
       .kl-item{ display:flex; align-items:center; gap:7px; padding:3px 4px; cursor:pointer; border-radius:5px; }
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); }
@@ -4995,8 +5007,11 @@ window.addEventListener('DOMContentLoaded', () => {
          NOT font glyphs. ▢ / – / ✕ have different ink positions, so as glyphs they never quite line up;
          as identical centred bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
          leaving tablet/landscape-phone widths with the misaligned glyphs the user still saw.) */
-      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ top:7px; right:7px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; }
-      .legend-min{ top:7px; right:35px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; }
+      /* (#R8c) ONE shared declaration for the box, so close & min cannot diverge in top/size — only the
+         horizontal offset differs. Verified on a live legend: both buttons share top and height exactly. */
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:7px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; line-height:0; }
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:7px; }
+      .legend-min{ right:35px; }
       .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
       .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
       .legend-min::before{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; margin:-0.9px 0 0 -6.5px; border-radius:2px; background:currentColor; }
@@ -7934,6 +7949,12 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ applyLabelLang(); }catch(_){}
       try{ applyTheme(); }catch(_){}        /* re-apply so a Map-color change takes effect */
       saveSettings();
+      /* (#R8c) Reflect EVERY saved setting on screen immediately — the user reported Save not taking
+         effect. updateI18n() re-localizes + re-emits timezone/units-dependent text and the wind pill;
+         renderUI() re-renders the active tab; the coord readout is refreshed for the new units. */
+      try{ updateI18n(); }catch(_){}
+      try{ renderUI(); }catch(_){}
+      try{ if(typeof renderCoordReadout==='function') renderCoordReadout(); }catch(_){}
     });
   }
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
@@ -8121,7 +8142,7 @@ window.addEventListener('DOMContentLoaded', () => {
        to the sphere (no space colour, ever), pans/zooms locked to the map with ZERO per-frame cost, and
        the GPU composites it. Only the WHITE particle streaks remain on #wind-canvas. */
     const oldBg=document.getElementById('wind-bg-canvas'); if(oldBg) oldBg.style.display='none';
-    let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false;
+    let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false, gridTime=null;
     const R=Math.PI/180;
     const FIELD_SRC='wind-field-src', FIELD_LYR='wind-field';
     const fieldCanvas=document.createElement('canvas'); let fieldReady=false, fieldOpacity=0.72;
@@ -8155,6 +8176,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const u=new Float32Array(N), v=new Float32Array(N);
         results.forEach((arr,ji)=>{ const s=jobs[ji][0]; for(let k=0;k<arr.length;k++){ const cu=arr[k].current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R; u[s+k]=-sp*Math.sin(dir); v[s+k]=-sp*Math.cos(dir); } });
         grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false;
+        try{ gridTime=results[0][0].current.time; updateTimePill(); }catch(_){}
       } else if(!grid){
         const ok=await fetchCoarse();
         if(!ok){ try{ satToast(currentLang==='jp'?'風データを取得できませんでした':'Wind data unavailable'); }catch(_){}
@@ -8170,7 +8192,7 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const mk of proxies){ try{ const r=await fetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null);
         if(arr&&arr.length){ const cols=Math.round(360/STEP), rows=Math.round(2*lat0/STEP)+1, u=new Float32Array(arr.length), v=new Float32Array(arr.length);
           arr.forEach((o,i)=>{ const cu=o.current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R; u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });
-          grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false; return true; } }catch(_){} }
+          grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false; try{ gridTime=arr[0].current.time; updateTimePill(); }catch(_){} return true; } }catch(_){} }
       return false;
     }
     /* Bilinear sample of the wind field at a geographic lng/lat → [u,v] in m/s, or null off-grid. */
@@ -8216,6 +8238,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function showField(v){ try{ if(map.getLayer(FIELD_LYR)) map.setPaintProperty(FIELD_LYR,'raster-opacity', v?fieldOpacity:0); }catch(_){} }
     function setFieldOpacity(o){ fieldOpacity=Math.max(0,Math.min(1,+o||0)); if(on) showField(true); }
+    /* (#R8c) Persistent pill stating WHICH hour of GFS data is on screen (the user asked to see the
+       valid time). Open-Meteo returns the analysis time in GMT; show it in the user's timezone. */
+    function fmtWindTime(iso){ if(!iso) return ''; try{ const d=new Date(/[zZ]|[+\-]\d\d:?\d\d$/.test(iso)?iso:iso+'Z');
+      let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
+      return d.toLocaleString(currentLang==='jp'?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
+    function updateTimePill(){ let el=document.getElementById('wind-ts');
+      if(!on||!gridTime){ if(el) el.style.display='none'; return; }
+      if(!el){ el=document.createElement('div'); el.id='wind-ts'; el.style.cssText='position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:950;background:rgba(18,18,20,0.64);color:#fff;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);pointer-events:none;white-space:nowrap;letter-spacing:0.2px;'; (document.getElementById('map-container')||document.body).appendChild(el); }
+      el.style.display='block'; el.textContent=(currentLang==='jp'?'🌬 風（10m）· ':'🌬 Wind 10 m · ')+fmtWindTime(gridTime); }
+    window.addEventListener('intmap-lang',()=>{ try{ updateTimePill(); }catch(_){} });
     /* Re-attach the field after a style reload (theme/basemap switch drops custom sources). */
     if(map) map.on('styledata',()=>{ if(on){ setTimeout(()=>{ if(ensureFieldLayer()){ if(fieldReady) renderFieldImage(); showField(true); } },60); } });
     /* Seed a particle at a random GEOGRAPHIC point inside the current view (so the field fills the
@@ -8275,13 +8307,15 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       raf=requestAnimationFrame(step);
     }
-    function start(){ on=true; cv.style.display='block'; resize(); ensureParts();
-      fetchGrid().then(()=>{ if(grid){ const tryField=(n)=>{ if(ensureFieldLayer()){ renderFieldImage(); showField(true); } else if((n||0)<20) setTimeout(()=>tryField((n||0)+1),150); }; tryField(0); } });
+    function start(){ on=true; cv.style.display='block'; resize(); ensureParts(); updateTimePill();
+      fetchGrid().then(()=>{ if(grid){ const tryField=(n)=>{ if(ensureFieldLayer()){ renderFieldImage(); showField(true); } else if((n||0)<20) setTimeout(()=>tryField((n||0)+1),150); }; tryField(0); } updateTimePill(); });
       cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
-    function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; showField(false); }
+    function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; showField(false); updateTimePill(); }
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
     if(map){ map.on('movestart',()=>{ moving=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
     return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid, setOpacity:setFieldOpacity,
+      sampleAt:(lng,lat)=>{ const w=sample(lng,lat); if(!w) return null; return { speed:Math.hypot(w[0],w[1]), dir:(Math.atan2(-w[0],-w[1])/R+360)%360, time:gridTime }; },
+      dataTime:()=>gridTime,
       _dbg:()=>{ let hasSrc=false,hasLyr=false,op=null; try{ hasSrc=!!map.getSource(FIELD_SRC); }catch(_){}
         try{ hasLyr=!!map.getLayer(FIELD_LYR); if(hasLyr) op=map.getPaintProperty(FIELD_LYR,'raster-opacity'); }catch(_){}
         return { on, gridPts: grid?grid.u.length:0, gridStep: grid?grid.STEP:null, fieldReady, hasSrc, hasLyr, rasterOpacity:op, parts:parts.length, styleLoaded:(()=>{try{return map.isStyleLoaded();}catch(_){return null;}})() }; } };
@@ -8300,7 +8334,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.DrawTool=(function(){
     if(!map) return { start(){}, toggle(){}, active(){return false;}, exit(){}, onResolution(){} };
     let state='off';                 // off | armed | drawing | done
-    let raw=[], simplified=[], loopRings=[], lockedArea=0, lengthKm=0, smoothing=0;
+    let raw=[], simplified=[], loopRings=[], lockedArea=0, lengthKm=0, smoothing=0, closeAux=null;
     let lastPx=null, panel=null, layersReady=false, hadTouchMove=false, sampleN=0;
     const MIN_PX=5;                  // min cursor travel between samples (screen px)
 
@@ -8327,6 +8361,15 @@ window.addEventListener('DOMContentLoaded', () => {
             pts=pts.slice(0,i+1).concat([X]).concat(pts.slice(j+1)); found=true; break; } } }
       }
       return {area:total, rings}; }
+    /* (#R8c) Great-circle ("straight line on the Earth") densified between two points — used as the
+       AREA-only closing aid when an open trace has no self-intersection. */
+    function geodesicLine(a,b,n){ n=n||48; const Rr=Math.PI/180, la1=a[1]*Rr,lo1=a[0]*Rr,la2=b[1]*Rr,lo2=b[0]*Rr;
+      const d=2*Math.asin(Math.min(1,Math.sqrt(Math.sin((la2-la1)/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin((lo2-lo1)/2)**2)));
+      if(!isFinite(d)||d===0) return [a.slice(),b.slice()];
+      const out=[]; for(let i=0;i<=n;i++){ const f=i/n, A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
+        const x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2), y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2), z=A*Math.sin(la1)+B*Math.sin(la2);
+        out.push([Math.atan2(y,x)/Rr, Math.atan2(z,Math.sqrt(x*x+y*y))/Rr]); }
+      return out; }
 
     /* ---- map layers (line is stored in lng/lat so MapLibre reprojects it for any view) ---- */
     function fc(features){ return {type:'FeatureCollection',features}; }
@@ -8334,14 +8377,17 @@ window.addEventListener('DOMContentLoaded', () => {
       try{
         if(!map.getSource('draw-src')) map.addSource('draw-src',{type:'geojson',data:fc([])});
         if(!map.getLayer('draw-loop-fill')) map.addLayer({id:'draw-loop-fill',type:'fill',source:'draw-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ffcc00','fill-opacity':0.22}});
-        if(!map.getLayer('draw-line-casing')) map.addLayer({id:'draw-line-casing',type:'line',source:'draw-src',filter:['==','$type','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':5,'line-opacity':0.6}});
-        if(!map.getLayer('draw-line')) map.addLayer({id:'draw-line',type:'line',source:'draw-src',filter:['==','$type','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff9500','line-width':3}});
+        if(!map.getLayer('draw-line-casing')) map.addLayer({id:'draw-line-casing',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['!=','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':5,'line-opacity':0.6}});
+        if(!map.getLayer('draw-line')) map.addLayer({id:'draw-line',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['!=','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff9500','line-width':3}});
+        /* (#R8c) AREA-only closing aid: a dashed great-circle from end→start, shown when the trace has no self-crossing. */
+        if(!map.getLayer('draw-close-line')) map.addLayer({id:'draw-close-line',type:'line',source:'draw-src',filter:['all',['==','$type','LineString'],['==','aux','close']],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ff3b30','line-width':2,'line-dasharray':[2,2],'line-opacity':0.85}});
         if(!map.getLayer('draw-pts')) map.addLayer({id:'draw-pts',type:'circle',source:'draw-src',filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':['get','color'],'circle-stroke-color':'#fff','circle-stroke-width':2}});
         layersReady=true;
       }catch(_){ layersReady=false; }
     }
     function setData(){ const f=[];
       loopRings.forEach(r=>{ if(r.length>=4) f.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r]},properties:{}}); });
+      if(closeAux && closeAux.length>=2) f.push({type:'Feature',geometry:{type:'LineString',coordinates:closeAux},properties:{aux:'close'}});
       if(simplified.length>=2) f.push({type:'Feature',geometry:{type:'LineString',coordinates:simplified},properties:{}});
       if(raw.length) f.push({type:'Feature',geometry:{type:'Point',coordinates:raw[0]},properties:{color:'#34c759'}});
       if(raw.length>1) f.push({type:'Feature',geometry:{type:'Point',coordinates:raw[raw.length-1]},properties:{color:'#ff3b30'}});
@@ -8374,7 +8420,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const res=p.querySelector('#draw-res'); if(res) res.oninput=()=>{ smoothing=+res.value; recomputeLine(); /* AREA stays locked to raw */ setData(); updateNumbers(); };
       const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=finish;
-      const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; state='armed'; setData(); renderPanel(); };
+      const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; state='armed'; setData(); renderPanel(); };
     }
     function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=simplified.length+'/'+raw.length; }
 
@@ -8384,8 +8430,14 @@ window.addEventListener('DOMContentLoaded', () => {
       lastPx={x:px.x,y:px.y}; raw.push([ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]);
       recomputeLine(); if((++sampleN%3)===0) recomputeArea(); setData(); updateNumbers();
     }
-    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; sampleN=0; state='drawing'; try{ map.dragPan.disable(); }catch(_){} setData(); renderPanel(); }
-    function finish(){ if(state!=='drawing') return; recomputeLine(); recomputeArea(); setData(); state='done'; try{ map.dragPan.enable(); }catch(_){} renderPanel(); }
+    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; sampleN=0; closeAux=null; state='drawing'; try{ map.dragPan.disable(); }catch(_){} setData(); renderPanel(); }
+    function finish(){ if(state!=='drawing') return; recomputeLine(); recomputeArea();
+      /* (#R8c) No self-crossing ⇒ no enclosed loop. Close END→START with a great-circle line and report
+         the area of THAT polygon. The closing line is AREA-only: it is never added to the length and is
+         untouched by the smoothing slider (both use the open RAW path). */
+      closeAux=null;
+      if(lockedArea===0 && raw.length>=3){ try{ const ring=raw.concat([raw[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(raw[raw.length-1],raw[0],64); } }catch(_){} }
+      setData(); state='done'; try{ map.dragPan.enable(); }catch(_){} renderPanel(); }
 
     function onClick(e){ if(state==='armed') startStroke(e.lngLat); else if(state==='drawing') finish(); }
     function onMove(e){ if(state==='drawing') sample(e.point, e.lngLat); }
@@ -8486,16 +8538,19 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---------- (E) New intelligence overlays ---------- */
     const jp=()=>currentLang==='jp';
     /* Sovereignty disputes — international lines whose recognition is split. */
-    /* (#R8b) Denser, more faithful control points (the user: lines were "直線的すぎる"). They are run
-       through window.smoothGeoPath at render so each boundary draws as a natural curve, not chords. */
+    /* (#R8c) FAITHFUL real-geography traces — NOT mathematically smoothed. The user clarified that
+       "smooth" must mean true-to-real-data, not a Catmull-Rom curve (which invents shape). So these are
+       dense vertices that follow the actual lines; rendered as-is (real boundary data IS short straight
+       segments). Authoritative geometry would come from a bundled GeoJSON — same drop-in path as the
+       languages layer — left as documented future work. */
     const DISPUTES=[
-      { name:{en:'Nine-dash line (S. China Sea)',jp:'九段線（南シナ海）'}, c:[[120.8,21.6],[119.5,19.2],[118.1,16.3],[116.7,13.4],[115.1,10.6],[113.2,8.0],[111.3,5.8],[110.0,4.4],[111.4,3.9],[113.5,4.2],[115.6,6.4],[117.2,9.3],[118.3,12.3],[119.1,15.4],[119.8,18.4],[120.6,20.9]] },
-      { name:{en:'Ukraine front line (approx.)',jp:'ウクライナ前線（概略）'}, c:[[37.45,50.0],[37.9,49.4],[38.25,48.85],[38.3,48.3],[38.1,48.05],[37.8,47.95],[37.55,47.6],[36.75,47.3],[35.9,47.45],[35.2,47.6],[34.1,47.0],[33.0,46.6],[32.5,46.55]] },
-      { name:{en:'Kashmir Line of Control',jp:'カシミール管理線'}, c:[[76.95,35.5],[76.6,35.05],[76.15,34.65],[75.65,34.5],[75.0,34.35],[74.5,34.25],[74.12,34.02],[73.98,33.6],[74.2,33.15],[74.35,32.82],[74.62,32.68]] },
-      { name:{en:'Korean DMZ',jp:'朝鮮半島軍事境界線'}, c:[[126.68,37.78],[126.92,37.93],[127.25,38.12],[127.62,38.27],[128.0,38.33],[128.36,38.62]] },
-      { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.35,26.7],[119.7,25.2],[119.0,23.5],[118.6,22.3],[118.4,21.6]] }
+      { name:{en:'Nine-dash line (S. China Sea)',jp:'九段線（南シナ海）'}, c:[[120.6,21.0],[119.8,19.8],[119.1,18.0],[118.3,16.2],[117.6,14.4],[116.7,12.6],[115.6,10.9],[114.3,9.3],[113.0,7.9],[111.6,6.5],[110.2,5.2],[109.6,4.2],[110.4,3.8],[111.8,3.9],[113.4,4.3],[114.9,5.4],[116.2,7.0],[117.2,8.9],[118.0,11.0],[118.6,13.2],[119.0,15.4],[119.4,17.6],[119.9,19.6],[120.5,21.2]] },
+      { name:{en:'Ukraine front line (approx.)',jp:'ウクライナ前線（概略）'}, c:[[37.4,50.05],[37.7,49.6],[38.0,49.2],[38.2,48.8],[38.3,48.5],[38.25,48.2],[38.0,48.0],[37.75,47.9],[37.6,47.65],[37.1,47.4],[36.4,47.3],[35.8,47.45],[35.3,47.55],[34.5,47.2],[33.7,46.8],[32.9,46.6],[32.5,46.55]] },
+      { name:{en:'Kashmir Line of Control',jp:'カシミール管理線'}, c:[[77.0,35.5],[76.8,35.25],[76.5,35.0],[76.2,34.75],[75.8,34.55],[75.4,34.45],[75.0,34.35],[74.6,34.25],[74.25,34.1],[74.05,33.85],[73.95,33.5],[74.1,33.25],[74.3,32.95],[74.5,32.75],[74.65,32.66]] },
+      { name:{en:'Korean DMZ',jp:'朝鮮半島軍事境界線'}, c:[[126.68,37.78],[126.85,37.88],[127.05,37.98],[127.28,38.12],[127.5,38.22],[127.72,38.28],[127.95,38.32],[128.18,38.45],[128.36,38.62]] },
+      { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.4,26.8],[120.0,25.7],[119.5,24.5],[119.0,23.3],[118.6,22.4],[118.4,21.6]] }
     ];
-    function disputesFC(){ const S=window.smoothGeoPath; return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:S?S(d.c,18):d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
+    function disputesFC(){ return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
     /* Geodesic air-defence coverage "domes" — reuse the radius tool's geodesic-disk builders. */
     const AD_SITES=[
       {n:'Moscow · S-400',at:[37.6,55.75],r:400,c:'#e0312e'},{n:'St Petersburg · S-400',at:[30.3,59.95],r:400,c:'#e0312e'},
@@ -8598,6 +8653,148 @@ window.addEventListener('DOMContentLoaded', () => {
     function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
     ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
+  })();
+
+  /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
+     Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels
+     drop a red highlight at the point. Non-destructive: layer-scoped handlers fire only on a label. ===== */
+  (function(){
+    if(!map) return;
+    let popup=null, wired=false;
+    function firstSym(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} }
+    function ensureHL(){ if(map.getSource('place-hl-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource('place-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); const before=firstSym();
+        map.addLayer({id:'place-hl-fill',type:'fill',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#ff3b30','fill-opacity':0.30}},before);
+        map.addLayer({id:'place-hl-line',type:'line',source:'place-hl-src',filter:['==','$type','Polygon'],paint:{'line-color':'#ff3b30','line-width':1.8,'line-opacity':0.9}},before);
+        map.addLayer({id:'place-hl-dot',type:'circle',source:'place-hl-src',filter:['==','$type','Point'],paint:{'circle-radius':9,'circle-color':'#ff3b30','circle-opacity':0.35,'circle-stroke-color':'#ff3b30','circle-stroke-width':2.5}},before);
+        return true; }catch(_){ return false; }
+    }
+    function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; } }
+    function showPopup(lngLat,name){ if(popup){ try{popup.remove();}catch(_){} } const jp=currentLang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const html=`<div style="display:flex;align-items:center;gap:9px;padding:1px 0;"><span style="font-weight:700;font-size:14px;">${safe}</span><button class="plc-copy" style="background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📋 ${jp?'コピー':'Copy'}</button></div>`;
+      try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'280px'}).setLngLat(lngLat).setHTML(html).addTo(map);
+        setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; }; },0);
+      }catch(_){}
+    }
+    function highlight(lngLat,isCountry){ if(!ensureHL()) return; const set=(fc)=>{ try{ map.getSource('place-hl-src').setData(fc); }catch(_){} };
+      const dot={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lngLat.lng,lngLat.lat]},properties:{}}]};
+      if(!isCountry){ set(dot); return; }
+      const fill=()=>{ try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]);
+          for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ set({type:'FeatureCollection',features:[{type:'Feature',geometry:f.geometry,properties:{}}]}); return; } }catch(_){} } } set(dot); }catch(_){ set(dot); } };
+      if(typeof withCountries==='function'){ try{ withCountries(fill); }catch(_){ fill(); } } else fill();
+    }
+    function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
+      highlight(e.lngLat,isCountry); showPopup(e.lngLat,name); }; }
+    function wire(){ if(wired) return; if(!map.getLayer('ofm-country')) return; wired=true;
+      map.on('click','ofm-country',onLabel(true)); map.on('click','ofm-city',onLabel(false)); map.on('click','ofm-other',onLabel(false));
+      ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ map.on('mouseenter',id,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',id,()=>{ map.getCanvas().style.cursor=''; }); });
+      /* clicking the map away from any label clears the highlight */
+      map.on('click',(e)=>{ try{ const ls=['ofm-country','ofm-city','ofm-other'].filter(id=>map.getLayer(id)); const hit=ls.length?map.queryRenderedFeatures(e.point,{layers:ls}):[]; if(!hit.length) clearHL(); }catch(_){} });
+    }
+    function tryWire(n){ if(map.getLayer('ofm-country')) wire(); else if((n||0)<60) setTimeout(()=>tryWire((n||0)+1),200); }
+    if(map.isStyleLoaded()) tryWire(0); else map.on('load',()=>tryWire(0));
+    map.on('styledata',()=>{ setTimeout(()=>{ ensureHL(); }, 120); });   /* re-create the highlight layers after a style swap (click handlers persist by layer id) */
+  })();
+
+  /* ===== (#R8c) View bookmarks — the live map state (centre, zoom, bearing, pitch, projection AND the
+     set of active data layers) is mirrored into the URL hash, so the address bar is a shareable permalink
+     and a reload restores the exact analysis view. "Copy link to this view" lives in the right-click menu. ===== */
+  (function(){
+    if(!map) return;
+    let restoring=false, t=null;
+    function activeLayers(){ const ids=[]; try{
+      document.querySelectorAll('input[id^="dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.push(k); });
+    }catch(_){} return ids; }
+    function encode(){ try{ const c=map.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),map.getZoom().toFixed(2),Math.round(map.getBearing()),Math.round(map.getPitch()),(currentProj==='globe'?'g':'f')].join(',');
+      const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(','); return h; }catch(_){ return ''; } }
+    function save(){ if(restoring) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
+    function restore(){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
+      try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
+        if(proj==='f'&&currentProj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
+        else if(proj==='g'&&currentProj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
+        if(isFinite(lng)&&isFinite(lat)) map.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
+      }catch(_){}
+      const lm=/[#&]l=([^&]+)/.exec(location.hash);
+      if(lm){ const want=decodeURIComponent(lm[1]).split(',');
+        const apply=()=>{ want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); };
+        setTimeout(apply,700); setTimeout(apply,1800);
+      }
+      setTimeout(()=>{ restoring=false; },2400);
+    }
+    map.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
+    if(map.isStyleLoaded()) restore(); else map.on('load',restore);
+    window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
+  })();
+
+  /* ===== (#R8c) Runway / air-base search SCAFFOLD. Data is NOT auto-fetched (the user: "今はすべての
+     データ取ってこなくていい"); it lazy-loads from OurAirports (public-domain, CORS*) only when a search is
+     run, then caches in IndexedDB (IntMapCache). Right-click -> "Runway search (from here)" opens a panel:
+     radius km, military/civil/all, minimum runway length, and airport-level vs runway-level view. ===== */
+  window.RunwaySearch=(function(){
+    if(!map) return { open(){}, load(){}, search(){}, ready:()=>false };
+    const SRC='rwy-src', LYR='rwy-pt', LBL='rwy-lbl';
+    const R=Math.PI/180, MIL=/\b(air ?base|a\.?f\.?b|air force|naval air|\bnas\b|\braf\b|army air ?field|aerodrom|militar|airbase)\b/i;
+    let data=null, loading=false, panel=null, center=null;
+    const jp=()=>currentLang==='jp';
+    const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function hav(lo1,la1,lo2,la2){ const d1=(la2-la1)*R,d2=(lo2-lo1)*R,a=Math.sin(d1/2)**2+Math.cos(la1*R)*Math.cos(la2*R)*Math.sin(d2/2)**2; return 6371*2*Math.asin(Math.min(1,Math.sqrt(a))); }
+    function rows(txt){ const out=[]; let f='',row=[],q=false; for(let i=0;i<txt.length;i++){ const c=txt[i];
+      if(q){ if(c==='"'){ if(txt[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+      else { if(c==='"') q=true; else if(c===','){ row.push(f); f=''; } else if(c==='\n'||c==='\r'){ if(c==='\r'&&txt[i+1]==='\n') i++; row.push(f); out.push(row); row=[]; f=''; } else f+=c; } }
+      if(f.length||row.length){ row.push(f); out.push(row); } return out; }
+    async function load(){ if(data) return data; if(loading) return null; loading=true;
+      try{
+        let cached=null; try{ if(window.IntMapCache&&window.IntMapCache.get) cached=await window.IntMapCache.get('runways_v1'); }catch(_){}
+        if(cached&&cached.length){ data=cached; loading=false; return data; }
+        const base='https://davidmegginson.github.io/ourairports-data/';
+        const got=await Promise.all([ fetch(base+'runways.csv').then(r=>r.text()), fetch(base+'airports.csv').then(r=>r.text()) ]);
+        const rw=got[0], ap=got[1];
+        const A=rows(ap), ah=A[0], ai=n=>ah.indexOf(n); const aId=ai('ident'),aNm=ai('name'),aMu=ai('municipality');
+        const by={}; for(let i=1;i<A.length;i++){ const r=A[i]; if(!r||!r[aId]) continue; const nm=r[aNm]||''; by[r[aId]]={name:nm,muni:r[aMu]||'',mil:MIL.test(nm)}; }
+        const Rw=rows(rw), rh=Rw[0], ri=n=>rh.indexOf(n);
+        const cAp=ri('airport_ident'),cLn=ri('length_ft'),cCl=ri('closed'),cLe=ri('le_ident'),cHe=ri('he_ident'),cLa=ri('le_latitude_deg'),cLo=ri('le_longitude_deg'),cHa=ri('he_latitude_deg'),cHo=ri('he_longitude_deg');
+        const out=[]; for(let i=1;i<Rw.length;i++){ const r=Rw[i]; if(!r||r[cCl]==='1') continue;
+          const a1=parseFloat(r[cLa]),o1=parseFloat(r[cLo]),a2=parseFloat(r[cHa]),o2=parseFloat(r[cHo]); let la,lo;
+          if(isFinite(a1)&&isFinite(a2)){ la=(a1+a2)/2; lo=(o1+o2)/2; } else if(isFinite(a1)){ la=a1; lo=o1; } else continue;
+          const inf=by[r[cAp]]||{}; out.push({apt:r[cAp],name:inf.name||r[cAp],muni:inf.muni||'',mil:!!inf.mil,la:la,lo:lo,lenM:Math.round((parseFloat(r[cLn])||0)*0.3048),rwy:(r[cLe]||'')+'/'+(r[cHe]||'')}); }
+        data=out; loading=false; try{ if(window.IntMapCache&&window.IntMapCache.set) window.IntMapCache.set('runways_v1',out); }catch(_){} return out;
+      }catch(e){ loading=false; return null; }
+    }
+    function search(o){ if(!data) return []; const cl=o.center;
+      let res=data.filter(r=>{ if(o.minLenM&&r.lenM<o.minLenM) return false; if(o.use==='mil'&&!r.mil) return false; if(o.use==='civ'&&r.mil) return false; return hav(cl[0],cl[1],r.lo,r.la)<=o.radiusKm; });
+      res.forEach(r=>{ r._d=hav(cl[0],cl[1],r.lo,r.la); }); res.sort((a,b)=>a._d-b._d);
+      if(o.mode==='airport'){ const seen={},g=[]; res.forEach(r=>{ if(!seen[r.apt]){ seen[r.apt]={apt:r.apt,name:r.name,muni:r.muni,mil:r.mil,la:r.la,lo:r.lo,_d:r._d,maxLen:r.lenM,n:1}; g.push(seen[r.apt]); } else { seen[r.apt].n++; if(r.lenM>seen[r.apt].maxLen) seen[r.apt].maxLen=r.lenM; } }); return g; }
+      return res; }
+    function ensureLayers(){ if(map.getSource(SRC)) return; try{ map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:LYR,type:'circle',source:SRC,paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3,8,6],'circle-color':['case',['get','mil'],'#ff453a','#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
+      map.addLayer({id:LBL,type:'symbol',source:SRC,minzoom:5,layout:{'text-field':['get','t'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+    }catch(_){} }
+    function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy)}})); try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} }
+    function run(){ const p=panel; const radiusKm=+p.querySelector('#rwy-radius').value||300, use=p.querySelector('#rwy-use').value, minLenM=+p.querySelector('#rwy-len').value||0, mode=p.querySelector('#rwy-mode').value;
+      const list=p.querySelector('#rwy-list'); list.innerHTML=jp()?'読み込み中…':'Loading…';
+      load().then(d=>{ if(!d){ list.innerHTML=jp()?'データを取得できませんでした':'Could not load data'; return; }
+        const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
+        if(!res.length){ list.innerHTML=jp()?'該当なし':'No matches'; return; }
+        list.innerHTML=res.slice(0,120).map(r=>{ const dd=r._d.toFixed(0)+'km', len=(mode==='airport'?r.maxLen:r.lenM)+'m', nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
+          return '<div class="rwy-item" data-lo="'+r.lo+'" data-la="'+r.la+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
+        list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ map.flyTo({center:[+it.getAttribute('data-lo'),+it.getAttribute('data-la')],zoom:Math.max(map.getZoom(),11)}); }; });
+      });
+    }
+    function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(jp()?'滑走路検索':'Runway search')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+        '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'半径 (km)':'Radius (km)')+' <input id="rwy-radius" type="number" value="300" min="1" style="width:74px;"></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'最小滑走路長 (m)':'Min length (m)')+' <input id="rwy-len" type="number" value="2000" min="0" step="100" style="width:74px;"></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'種別':'Use')+' <select id="rwy-use"><option value="all">'+(jp()?'すべて':'All')+'</option><option value="mil">'+(jp()?'軍用':'Military')+'</option><option value="civ">'+(jp()?'民間':'Civil')+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'表示':'View')+' <select id="rwy-mode"><option value="airport">'+(jp()?'空港単位':'By airport')+'</option><option value="runway">'+(jp()?'滑走路単位':'By runway')+'</option></select></label>'+
+        '</div>'+
+        '<button class="tp-clear" id="rwy-go" style="width:100%;margin-top:6px;">'+(jp()?'検索（初回データ取得）':'Search (loads data 1st run)')+'</button>'+
+        '<div id="rwy-list" style="margin-top:8px;max-height:230px;overflow:auto;font-size:12.5px;"></div>';
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} };
+      p.querySelector('#rwy-go').onclick=run;
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+    }
+    return { open:open, load:load, search:search, ready:()=>!!data };
   })();
 
   loadSettings();
