@@ -330,3 +330,70 @@ the **right-click context menu**: "🧭 Azimuthal map (centre here)" centres Pro
 - Full CesiumJS hybrid engine + 3D-Tiles/Quantized-Mesh + true 3D domes (needs the engine swap above).
 - Demographic-decline / dynamic-power-projection choropleth (needs bundled age-structure dataset).
 - Historical-border time-travel geometry (needs per-era boundary geojson).
+
+---
+
+## 10. Round 8 — re-attacked the recurring complaints (tags `#R8`)
+
+The user re-reported the SAME pain points (wind ×4, 3D/satellite speed ×2, Google login ×2, mobile
+legend, JP/EN). So this round is about making those *actually* right, not adding surface. Same
+non-goal as R7: **no Cesium engine swap** (would break the 8k-line app; the brief also says
+"全ロジックを破壊せずに"). Everything is additive/in-place. Verified in the headless preview
+(`preview_eval` for parse/DOM/CSS + console-error checks; Open-Meteo + the 6°-grid URL limit probed with
+curl). The hidden preview can't run `requestAnimationFrame`, so the wind *animation* is verified by
+parse + the fetch→seed→canvas pipeline resolving live + provably-correct mask math, not a screenshot.
+
+### Wind — the headline, rebuilt to actually look like Windy (`#R8`)
+Root cause of "coloured into space / でたらめ / nothing renders right": on the **globe**,
+`map.unproject()` of a pixel that is in SPACE still returns a lng/lat, and `map.project()` of a
+**far-side** coordinate still lands on-screen. So the old code painted the speed field into space and
+smeared far-side particle streaks across the front hemisphere. Fix = reuse the marker-occlusion **dot
+test** (`visibleLL`, refreshed once/frame): a coordinate is drawn only if it's on the visible near
+hemisphere (dot > cos 87°). Applied to BOTH the background field AND every particle; the background also
+does a **project-round-trip** check when idle (off-sphere pixels clamp to the limb → round-trip fails →
+stay transparent). Particles now **rejection-seed** onto the visible hemisphere so the front isn't sparse.
+Also per the user: **denser** (~7.2k desktop / mobile-capped, was ~4–5k), **calmer** (advection factor
+0.13→0.066, ≈half speed), **finer** speed-colour field (STEPpx 16→12 idle, coarser while moving),
+longer gentle trails (idle fade 0.09→0.066). Data is still real Open-Meteo GFS at **8°** (855 pts): a
+6° grid is 1500 pts → an 11 KB URL → **HTTP 414** from Open-Meteo, so 8° is the single-request ceiling.
+
+### Google login reflects immediately (`#R8`)
+The remaining gap behind "戻ると未ログイン、再読み込みで直る" was the **bfcache back-button** path: when
+the page is restored from cache after the Google round-trip, `focus`/`visibilitychange` often DON'T fire
+— but **`pageshow`** does. Added `pageshow` (force-rechecks on `persisted`) + a `storage` listener
+(session written by another tab/the Supabase helper). Also: the post-redirect poll now runs longer
+(16×400 ms) to cover a slow PKCE exchange, and the URL token is scrubbed **only after** a session is in
+hand (premature scrubbing threw away the code → forced the manual reload).
+
+### 3D / satellite throughput (`#R8`)
+The user measured *under*-fetching (<20 Mbps, spare CPU/GPU) → spend the spare capacity:
+`MAX_PARALLEL_IMAGE_REQUESTS` 96→128; `maxTileCacheSize` 2048→**4096 desktop** (1536 mobile) so
+pan/tilt-back never refetches; predictive prefetch ring 2→3, cap 48→90, and it now warms **two** zoom
+levels deeper (anticipate a pinch-in); the SW prefetch batch 64→96. (Still bounded by free public tile
+hosts vs Google's private HTTP/2 CDN — this maximises what we control.)
+
+### Mobile legend ▢/✕ alignment — drawn, not typed (`#R8`)
+The slight vertical offset was a **font-glyph-metric** problem (▢/– sit on the math axis, ✕ on the
+dingbat centre). Permanent fix: the minimize and close icons are now **CSS-drawn shapes** (rotated bars
+for ×, a centred bar for –, a square outline for ▢) in identical 30 px boxes, centred with the same
+absolute-positioning math → pixel-aligned at any DPR, zero glyph dependency, with an 8 px gap.
+
+### JP/EN parity (`#R8`)
+A JP-mode DOM scan of the controls came back clean except the **mobile segment buttons**
+(Map/Satellite/Globe/Flat). They copy their label from the desktop buttons via `syncControls()`, which
+only re-ran on a lang-**button** click — so changing language from the **Settings dropdown** left them in
+English. `updateI18n()` now calls `window._imSyncMobile()` so the mobile proxies follow *every* language
+change. (Verified: Settings-dropdown switch now relabels 標準マップ/衛星写真/地球儀/平面.)
+
+### Pipelines — high-quality "infrastructure map" (`#R8`)
+Each trunk line is tagged `kind:'oil'|'gas'` (11 gas / 5 oil) carried into the geojson; the pipeline
+line is two-tone (`['match',['get','kind'],…]`), gets a crisp dark **casing** under a zoom-interpolated
+colour line plus the kept glow. Scoped to `key==='pipelines'` (other geo corridors carry `kind:''` →
+match falls through to their single conceptual colour, unchanged). `-casing` added to the visibility
+toggle list.
+
+### Projection sync — confirmed already correct
+Flat=`setProjection({mercator})` / Globe=`{globe}` on the **same** MapLibre instance → pins, drawings,
+measurements (all stored as lng/lat) reproject in the same space. ProjView (azimuthal/Equal-Earth/…) is
+opt-in from the right-click menu only; nothing auto-spawns a blank window on Flat. (The disliked Flat
+projection *selector* was already removed in R7.)
