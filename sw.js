@@ -84,7 +84,7 @@ self.addEventListener('message', (event) => {
   if (!d || d.type !== 'prefetch' || !Array.isArray(d.urls)) return;
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await Promise.all(d.urls.slice(0, 64).map(async (u) => {
+    await Promise.all(d.urls.slice(0, 96).map(async (u) => {
       try {
         if (await cache.match(u)) return;
         const res = await fetch(u, { mode: 'cors' });

@@ -1394,6 +1394,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
     try{ localizeGeoLabels(); }catch(_){}
     try{ refreshGeoLabels(); }catch(_){}   /* on-map geo-theory labels follow the language too (#1) */
+    try{ if(window._imSyncMobile) window._imSyncMobile(); }catch(_){}   /* (#R8) mobile proxy buttons follow every language change */
     /* re-evaluate place-label language + basemap on EN/JP switch (retry on idle if style busy) */
     try{ applyTheme(); if(map&&!map.isStyleLoaded()) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }catch(_){}
     try{ if(typeof updateAccountButton==='function') updateAccountButton(); }catch(_){}
@@ -2092,14 +2093,17 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Saturate HTTP/2 / HTTP/3 multiplexing: one tile host can serve dozens of concurrent
      requests over a single connection, so lift MapLibre's default 16-request cap. This is
      the single biggest win for satellite-tile throughput (no quality change — same tiles). */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=96; }catch(_){}
+  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=128; }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
          and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
          works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
          cache keeps recently-seen tiles hot when panning back. */
-      fadeDuration:0, maxTileCacheSize:2048, refreshExpiredTiles:false,
+      /* (#R8) Retain far more recently-seen tiles in RAM so panning/tilting back is instant and never
+         refetches — the user measured spare bandwidth (<20 Mbps) and headroom, so trade memory for speed.
+         Phones keep a tighter cap to stay within the mobile GPU/RAM budget. */
+      fadeDuration:0, maxTileCacheSize:(isMobile()?1536:4096), refreshExpiredTiles:false,
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
@@ -2177,14 +2181,16 @@ window.addEventListener('DOMContentLoaded', () => {
     if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
     let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
     _prevCenter={lng:c.lng,lat:c.lat};
-    const urls=[], RING=2, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
+    const urls=[], RING=3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
     if(dx>0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x1+k,y);
     else if(dx<0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x0-k,y);
     if(dy>0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y1+k);
     else if(dy<0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y0-k);
-    if(z+1<=(p.maxzoom||19)){ const z2=z+1,n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2); for(let ix=-1;ix<=1;ix++) for(let iy=-1;iy<=1;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
+    /* (#R8) Anticipate a zoom-IN: warm the centre tiles one AND two levels deeper so the next pinch is
+       already resident (the user asked for "Unthinkable Speed" satellite). */
+    for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
     if(!urls.length) return;
-    const uniq=[...new Set(urls)].slice(0,48);
+    const uniq=[...new Set(urls)].slice(0,90);
     if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
@@ -2444,22 +2450,22 @@ window.addEventListener('DOMContentLoaded', () => {
     ]},
     /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
     pipelines:{ color:"#e8843b", name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
-      {label:"Nord Stream", path:[[28,60.7],[23,59.5],[18,57],[15,55.5],[13.6,54.1]]},
-      {label:"Yamal–Europe", path:[[66.5,67],[60,64],[52,60],[44,57],[36,55],[27,53.2],[20.5,52.3],[14.2,52.3]]},
-      {label:"Power of Siberia", path:[[120,63],[124,61],[126,56],[127.5,50.3],[126.6,48.5]]},
-      {label:"Druzhba (oil)", path:[[54,54],[44,53.5],[33,53.2],[27.5,53],[23,52.2],[19,52],[12,51.2]]},
-      {label:"ESPO (oil)", path:[[104,56],[113,56.3],[124,55],[131,49],[132.3,43.1]]},
-      {label:"TurkStream", path:[[37.8,44.6],[33,43],[28.9,41.4],[26.5,41.2]]},
-      {label:"Blue Stream", path:[[37.9,44.6],[36,42.5],[34.9,41.1]]},
-      {label:"Southern Gas Corridor (TANAP/TAP)", path:[[49.9,40.4],[45,40.3],[40,40],[35,39.6],[29,40.5],[26.2,40.8],[23,40.6],[19.4,40.5],[18.4,40.1]]},
-      {label:"BTC (oil)", path:[[49.9,40.4],[46,41.7],[44.8,41.7],[41,39],[35.9,36.9]]},
-      {label:"West–East Gas (China)", path:[[80,41],[88,42],[95,41],[103,37],[110,35],[114,33],[118,31.5],[121.5,31.2]]},
-      {label:"Central Asia–China Gas", path:[[59,39],[64,40],[68,41],[72,43],[80,44],[87,44.2],[95,42],[100,40]]},
-      {label:"TAPI", path:[[61,38],[62,35.5],[65.5,31.6],[67,30.2],[70,29.5],[73,29.4]]},
-      {label:"Trans-Med (Algeria→Italy)", path:[[5,33],[9,34],[11,37],[12.6,37.6],[14,38.2],[15.5,40]]},
-      {label:"Maghreb / Medgaz (→Spain)", path:[[3,35],[-1,35.2],[-2,36.8],[-3.5,36.7]]},
-      {label:"Keystone (oil)", path:[[-110,54],[-104,49],[-97,45],[-96,40.5],[-95,37],[-91,38.7]]},
-      {label:"Trans-Alaska (oil)", path:[[-148.5,70.2],[-148.9,63.4],[-145.8,61],[-146.35,61.13]]}
+      {label:"Nord Stream", kind:"gas", path:[[28,60.7],[23,59.5],[18,57],[15,55.5],[13.6,54.1]]},
+      {label:"Yamal–Europe", kind:"gas", path:[[66.5,67],[60,64],[52,60],[44,57],[36,55],[27,53.2],[20.5,52.3],[14.2,52.3]]},
+      {label:"Power of Siberia", kind:"gas", path:[[120,63],[124,61],[126,56],[127.5,50.3],[126.6,48.5]]},
+      {label:"Druzhba (oil)", kind:"oil", path:[[54,54],[44,53.5],[33,53.2],[27.5,53],[23,52.2],[19,52],[12,51.2]]},
+      {label:"ESPO (oil)", kind:"oil", path:[[104,56],[113,56.3],[124,55],[131,49],[132.3,43.1]]},
+      {label:"TurkStream", kind:"gas", path:[[37.8,44.6],[33,43],[28.9,41.4],[26.5,41.2]]},
+      {label:"Blue Stream", kind:"gas", path:[[37.9,44.6],[36,42.5],[34.9,41.1]]},
+      {label:"Southern Gas Corridor (TANAP/TAP)", kind:"gas", path:[[49.9,40.4],[45,40.3],[40,40],[35,39.6],[29,40.5],[26.2,40.8],[23,40.6],[19.4,40.5],[18.4,40.1]]},
+      {label:"BTC (oil)", kind:"oil", path:[[49.9,40.4],[46,41.7],[44.8,41.7],[41,39],[35.9,36.9]]},
+      {label:"West–East Gas (China)", kind:"gas", path:[[80,41],[88,42],[95,41],[103,37],[110,35],[114,33],[118,31.5],[121.5,31.2]]},
+      {label:"Central Asia–China Gas", kind:"gas", path:[[59,39],[64,40],[68,41],[72,43],[80,44],[87,44.2],[95,42],[100,40]]},
+      {label:"TAPI", kind:"gas", path:[[61,38],[62,35.5],[65.5,31.6],[67,30.2],[70,29.5],[73,29.4]]},
+      {label:"Trans-Med (Algeria→Italy)", kind:"gas", path:[[5,33],[9,34],[11,37],[12.6,37.6],[14,38.2],[15.5,40]]},
+      {label:"Maghreb / Medgaz (→Spain)", kind:"gas", path:[[3,35],[-1,35.2],[-2,36.8],[-3.5,36.7]]},
+      {label:"Keystone (oil)", kind:"oil", path:[[-110,54],[-104,49],[-97,45],[-96,40.5],[-95,37],[-91,38.7]]},
+      {label:"Trans-Alaska (oil)", kind:"oil", path:[[-148.5,70.2],[-148.9,63.4],[-145.8,61],[-146.35,61.13]]}
     ]},
     cables:{ color:"#30b0c7", name:{en:"Submarine Cables",jp:"海底ケーブル"}, lines:[
       {label:"Transatlantic (MAREA)", path:[[-76,36.8],[-50,40],[-20,42],[-2.9,43.4]]},
@@ -2504,8 +2510,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if(a.label){ let sx=0,sy=0; a.ring.forEach(p=>{sx+=p[0];sy+=p[1];}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:[sx/a.ring.length,sy/a.ring.length]},properties:{label:geoLabel(a.label)}}); }
     });
     (data.lines||[]).forEach(ln=>{
-      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.path},properties:{}});
-      if(ln.label){ const m=ln.path[Math.floor(ln.path.length/2)]; feats.push({type:'Feature',geometry:{type:'Point',coordinates:m},properties:{label:geoLabel(ln.label)}}); }
+      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.path},properties:{kind:ln.kind||''}});
+      if(ln.label){ const m=ln.path[Math.floor(ln.path.length/2)]; feats.push({type:'Feature',geometry:{type:'Point',coordinates:m},properties:{label:geoLabel(ln.label),kind:ln.kind||''}}); }
     });
     (data.points||[]).forEach(pt=>{
       feats.push({type:'Feature',geometry:{type:'Point',coordinates:pt.at},properties:{label:geoLabel(pt.label),marker:1}});
@@ -2528,8 +2534,14 @@ window.addEventListener('DOMContentLoaded', () => {
           /* soft, fuzzy zone edge — no hard outline (zones are conceptual, not borders) */
           map.addLayer({id:key+'-edge',type:'line',source:key,filter:['==','$type','Polygon'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':data.color,'line-width':16,'line-opacity':0.18,'line-blur':8}});
         }
-        map.addLayer({id:key+'-glow',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':data.color,'line-width':10,'line-opacity':0.18,'line-blur':4}});
-        map.addLayer({id:key+'-line',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':data.color,'line-width':3.5,'line-opacity':0.95}});
+        /* (#R8) High-quality pipeline network: two-tone OIL/GAS colour, a crisp dark casing and
+           zoom-scaled width = an "infrastructure map" look. Other geo lines (theory corridors) carry
+           kind:'' so the match falls through to their single conceptual colour — unchanged. */
+        const _pipe=key==='pipelines';
+        const _lineColor=_pipe?['match',['get','kind'],'oil','#d6451f','gas','#f4a72c',data.color]:data.color;
+        map.addLayer({id:key+'-glow',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':_lineColor,'line-width':_pipe?['interpolate',['linear'],['zoom'],1,7,5,14]:10,'line-opacity':_pipe?0.22:0.18,'line-blur':4}});
+        if(_pipe) map.addLayer({id:key+'-casing',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'#1f0d05','line-width':['interpolate',['linear'],['zoom'],1,3,4,5.5,8,10],'line-opacity':0.6}});
+        map.addLayer({id:key+'-line',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':_lineColor,'line-width':_pipe?['interpolate',['linear'],['zoom'],1,1.6,4,3.2,8,5.5]:3.5,'line-opacity':0.97}});
         map.addLayer({id:key+'-pt',type:'circle',source:key,filter:['==','marker',1],layout:{visibility:'none'},paint:{'circle-radius':5,'circle-color':data.color,'circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.95}});
         map.addLayer({id:key+'-label',type:'symbol',source:key,filter:['has','label'],layout:{visibility:'none','text-field':['get','label'],'text-size':12,'text-font':['literal',['Noto Sans Regular']],'text-offset':[0,1.1],'text-anchor':'top','text-allow-overlap':false,'symbol-placement':'point'},paint:{'text-color':data.color,'text-halo-color':'rgba(255,255,255,0.95)','text-halo-width':1.8}});
       }catch(e){ console.warn('geoLayer add fail',key,e); }
@@ -2542,7 +2554,7 @@ window.addEventListener('DOMContentLoaded', () => {
     for(const key of Object.keys(geoLayersDB)){
       const cb=document.querySelector(`input[data-layer="${key}"]`);
       const vis=((cb&&cb.checked)||forceHoverLayers.has(key))?'visible':'none';
-      ['-fill','-edge','-glow','-line','-pt','-label'].forEach(s=>{ if(map.getLayer(key+s)) map.setLayoutProperty(key+s,'visibility',vis); });
+      ['-fill','-edge','-glow','-casing','-line','-pt','-label'].forEach(s=>{ if(map.getLayer(key+s)) map.setLayoutProperty(key+s,'visibility',vis); });
       if(map.getLayer(key+'-label')) map.setPaintProperty(key+'-label','text-halo-color',isDark?'rgba(0,0,0,0.85)':'rgba(255,255,255,0.95)');
     }
   }
@@ -4974,12 +4986,30 @@ window.addEventListener('DOMContentLoaded', () => {
       .koppen-info-pop .kip-x:hover{ background:var(--input-bg); }
       .koppen-info-pop .kip-h{ display:flex; align-items:center; gap:7px; font-weight:600; font-size:13px; padding-right:22px; margin-bottom:6px; }
       .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }
-      /* (#R7-mobile-legend) On phones the minimize (▢) and close (✕) buttons were a hair out of
-         vertical alignment and sat almost touching, inviting mis-taps. Give them identical metrics,
-         bigger 30px tap targets and a clear gap. */
+      /* (#R8-mobile-legend) The minimize (▢/–) and close (✕) glyphs sat a hair out of vertical
+         alignment because different Unicode glyphs have different ink positions (▢/– sit on the math
+         axis, ✕ on the dingbat centre). Fix it for good: DRAW both icons as CSS shapes — identical 30px
+         tap targets, pixel-aligned at every DPR, no dependence on any font glyph metric. */
       @media(max-width:768px){
-        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ top:8px !important; right:8px !important; width:30px !important; height:30px !important; font-size:17px !important; }
-        .legend-min{ top:8px !important; right:48px !important; width:30px !important; height:30px !important; font-size:18px !important; }
+        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
+        .data-legend .legend-min, .koppen-legend .legend-min{
+          top:8px !important; width:30px !important; height:30px !important; font-size:0 !important;
+          color:var(--text-muted); padding:0 !important; border:none; background:none; border-radius:8px; }
+        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:8px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ right:46px !important; }
+        /* close = × (two centred bars) */
+        .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
+        .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
+        .data-legend .legend-min::before, .koppen-legend .legend-min::before{
+          content:''; position:absolute; top:50%; left:50%; width:15px; height:2px; margin:-1px 0 0 -7.5px;
+          border-radius:2px; background:currentColor; }
+        .data-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::before{ transform:rotate(45deg); }
+        .data-legend .layer-popup-x::after,  .koppen-legend .layer-popup-x::after{ transform:rotate(-45deg); }
+        /* minimize = – (single bar); when collapsed = ▢ (square outline) */
+        .data-legend.legend-collapsed .legend-min::before, .koppen-legend.legend-collapsed .legend-min::before{
+          width:13px; height:13px; margin:-6.5px 0 0 -6.5px; background:none; border:2px solid currentColor; border-radius:3px; }
+        .data-legend .layer-popup-x:active, .koppen-legend .layer-popup-x:active,
+        .data-legend .legend-min:active, .koppen-legend .legend-min:active{ background:var(--input-bg); color:var(--text-main); }
         .data-legend .dl-drag, .koppen-legend .kl-drag{ top:11px !important; left:9px !important; font-size:14px !important; }
         .koppen-legend h4, .data-legend h4{ padding:0 84px 0 26px !important; min-height:30px !important; }
       }`;
@@ -6965,6 +6995,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if(fabTools) fabTools.classList.toggle('on', !!toolMode || isGridOn);
     }
     ['lang-en','lang-jp'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
+    /* (#R8 JP/EN) Re-label the mobile segment/tool proxies on EVERY language change — not just the lang
+       toggle buttons. Changing language via the Settings dropdown (or any programmatic switch) used to
+       leave "Globe/Flat/Satellite" in English on the phone ("日本語版で英語が出てくる"). updateI18n() now
+       calls this after it relabels the desktop controls the proxies copy from. */
+    window._imSyncMobile=syncControls;
 
     /* ---- compass FAB: appears only when the map is rotated/tilted ---- */
     const fabCompass=document.getElementById('m-fab-compass');
@@ -7615,18 +7650,25 @@ window.addEventListener('DOMContentLoaded', () => {
        first getSession ran a hair too early, re-check a couple of times so the session is picked up
        without needing a manual reload (#33). */
     if(!currentUser && /[#&?](access_token|code|refresh_token)=/.test(location.href)){
-      for(let i=0;i<8 && !currentUser;i++){ await new Promise(r=>setTimeout(r,350)); try{ await refreshCurrentUser(); }catch(_){} if(currentUser){ try{ updateAccountButton(); }catch(_){} } }
+      /* (#R8) Poll long enough to cover a slow PKCE code-exchange round-trip — the implicit-flow hash
+         parse is near-instant, but a ?code= exchange needs a network hop to Supabase. Reflect each tick. */
+      for(let i=0;i<16 && !currentUser;i++){ await new Promise(r=>setTimeout(r,400)); try{ await refreshCurrentUser(); }catch(_){} if(currentUser){ try{ updateAccountButton(); renderUI(); }catch(_){} } }
       try{ if(currentUser){ await loadFavorites(); renderUI(); } }catch(_){}
-      try{ if(location.protocol==='http:'||location.protocol==='https:') history.replaceState(null,'',location.origin+location.pathname); }catch(_){}   /* scrub the token from the address bar (http(s) only — file:// origin is "null") */
+      /* (#R8) Only scrub the token AFTER a session is in hand. Scrubbing while the exchange is still
+         pending throws away the code and forces a manual reload — the exact "戻ると未ログイン" symptom. */
+      try{ if(currentUser && (location.protocol==='http:'||location.protocol==='https:')) history.replaceState(null,'',location.origin+location.pathname); }catch(_){}
     }
-    /* (#R7-login) Safety net for the OAuth round-trip: when the user comes back to the tab after the
-       Google page, re-check the session once. Covers the rare case where the in-page event was missed,
-       so the login state appears without a manual reload. */
+    /* (#R8) Safety nets so login reflects the instant the user returns from Google — no manual reload.
+       focus + visibilitychange cover a tab switch; pageshow covers a BFCACHE restore (back button from
+       Google, where focus/visibilitychange often DON'T fire — the missing case behind "戻ると未ログイン");
+       storage covers the session being written by another tab or the Supabase auth helper. */
     let _authRecheck=0;
-    const _recheckAuth=()=>{ if(_authRecheck&&Date.now()-_authRecheck<1500) return; _authRecheck=Date.now();
+    const _recheckAuth=(force)=>{ if(!force && _authRecheck && Date.now()-_authRecheck<1200) return; _authRecheck=Date.now();
       setTimeout(async()=>{ try{ const had=!!currentUser; await refreshCurrentUser(); if(!!currentUser!==had){ try{ updateAccountButton(); renderUI(); }catch(_){} if(currentUser) try{ await loadFavorites(); }catch(_){} } }catch(_){} },0); };
-    window.addEventListener('focus',_recheckAuth);
+    window.addEventListener('focus',()=>_recheckAuth());
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') _recheckAuth(); });
+    window.addEventListener('pageshow',(e)=>{ _recheckAuth(!!(e&&e.persisted)); });
+    window.addEventListener('storage',(e)=>{ if(e&&e.key&&/sb-|supabase|auth/i.test(e.key)) _recheckAuth(true); });
     await Promise.all([ loadGeoFromSupabase(), loadDashFromSupabase(), loadFavorites() ]);
     try{ renderUI(); }catch(_){}          /* re-render the active tab now data + favorites are in */
     try{ loadCommunity(); }catch(_){}      /* prime the community map pins */
@@ -8062,6 +8104,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx=cv.getContext('2d'); const bgctx=bgcv?bgcv.getContext('2d'):null;
     let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false, bgDirty=true;
     const R=Math.PI/180;
+    /* (#R8) GLOBE NEAR-HEMISPHERE MASK — the root cause of "coloured into space / でたらめ".
+       On the globe, map.unproject() of a pixel that is in SPACE (off the sphere) still returns a lng/lat,
+       and map.project() of a FAR-SIDE coordinate still lands on-screen — so the old code painted the
+       speed field into space and bled far-side particle streaks across the front. We now reuse the exact
+       marker-occlusion dot test: a coordinate is drawn only if it lies on the visible near hemisphere.
+       Recomputed once per frame (cheap: a few trig ops). */
+    const _view={x:1,y:0,z:0,th:Math.cos(87*R)};
+    function refreshView(){ try{ const c=map.getCenter(), cla=c.lat*R, clo=c.lng*R;
+      _view.x=Math.cos(cla)*Math.cos(clo); _view.y=Math.cos(cla)*Math.sin(clo); _view.z=Math.sin(cla); }catch(_){} }
+    function visibleLL(lng,lat){ if(currentProj!=='globe') return true;
+      const la=lat*R, lo=lng*R, cl=Math.cos(la);
+      return (cl*Math.cos(lo)*_view.x + cl*Math.sin(lo)*_view.y + Math.sin(la)*_view.z) > _view.th; }
     function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); if(bgcv){ bgcv.width=cssW*dpr; bgcv.height=cssH*dpr; bgcv.style.width=cssW+'px'; bgcv.style.height=cssH+'px'; } bgDirty=true; }
     /* Build a regular global grid of CURRENT 10 m winds in ONE multi-point request, refreshed every
        10 min. Meteorological "from" direction → true (east-u, north-v) motion vector. If the real
@@ -8108,14 +8162,21 @@ window.addEventListener('DOMContentLoaded', () => {
          was seeded at lat ≥72° ABOVE the wind grid, where sample() returns null and the particle
          instantly respawns — the whole field rendered nothing. Clamp the seed band into the grid. */
       const gl=grid?grid.lat0:85;
-      if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-gl,b.getSouth()),n=Math.min(gl,b.getNorth());
-        let lo=w+(e-w)*Math.random(); if(e<w) lo=w+((e+360-w)*Math.random()); if(lo>180) lo-=360;
-        p.lng=lo; p.lat=s+(n-s)*Math.random(); }
-      else { p.lng=Math.random()*360-180; p.lat=Math.random()*2*gl-gl; }
+      /* (#R8) Rejection-sample so a globe particle lands on the VISIBLE hemisphere (else it would be born
+         on the far side, fail the mask and respawn every frame — wasted work + a sparse-looking front). */
+      for(let attempt=0; attempt<6; attempt++){
+        if(b){ const w=b.getWest(),e=b.getEast(),s=Math.max(-gl,b.getSouth()),n=Math.min(gl,b.getNorth());
+          let lo=w+(e-w)*Math.random(); if(e<w) lo=w+((e+360-w)*Math.random()); if(lo>180) lo-=360;
+          p.lng=lo; p.lat=s+(n-s)*Math.random(); }
+        else { p.lng=Math.random()*360-180; p.lat=Math.random()*2*gl-gl; }
+        if(currentProj!=='globe' || visibleLL(p.lng,p.lat)) break;
+      }
       p.age=(Math.random()*60)|0; p.life=60+((Math.random()*70)|0);
     }
     /* (#R7) Windy model = LOTS of particles. Dense seeding (mobile capped for perf). */
-    function ensureParts(){ const target=Math.min(isMobile()?1600:5200,Math.max(700,Math.floor(cssW*cssH/(isMobile()?1500:480)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
+    /* (#R8) Windy model = a DENSE flow. Roughly 1 particle / 280 px² on desktop (≈7.2k on a 1080p map),
+       capped for the phone GPU. The user measured idle headroom (CPU 20% / GPU 50%) and asked for more. */
+    function ensureParts(){ const target=Math.min(isMobile()?2800:7200,Math.max(1200,Math.floor(cssW*cssH/(isMobile()?900:280)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
     /* Windy-style perceptual ramp for the SPEED FIELD background: calm→teal→green→yellow→orange→red→magenta. */
     function speedColor(s,alpha){ const stops=[[0,'40,60,140'],[4,'40,140,200'],[8,'60,200,170'],[12,'120,225,110'],[17,'235,225,90'],[23,'245,150,55'],[30,'235,70,70'],[40,'200,60,180']]; const v=Math.min(40,Math.max(0,s)); let a=stops[0],b=stops[stops.length-1]; for(let i=0;i<stops.length-1;i++){ if(v>=stops[i][0]&&v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } } const f=(v-a[0])/Math.max(1e-6,(b[0]-a[0])); const ca=a[1].split(','),cb=b[1].split(','); const r=Math.round(+ca[0]+(+cb[0]-+ca[0])*f),g=Math.round(+ca[1]+(+cb[1]-+ca[1])*f),bl=Math.round(+ca[2]+(+cb[2]-+ca[2])*f); return `rgba(${r},${g},${bl},${alpha==null?1:alpha})`; }
     const onScreen=(pt)=>pt && pt.x>=-40 && pt.x<=cssW+40 && pt.y>=-40 && pt.y<=cssH+40;
@@ -8124,14 +8185,23 @@ window.addEventListener('DOMContentLoaded', () => {
        changes (bgDirty), never per frame. */
     function renderBackground(){
       if(!bgctx||!grid){ return; }
-      const STEPpx=isMobile()?22:16; const lw=Math.max(2,Math.ceil(cssW/STEPpx)), lh=Math.max(2,Math.ceil(cssH/STEPpx));
+      refreshView();
+      /* Crisp when settled, coarser (so the unproject pass is cheap) while the camera is moving. */
+      const STEPpx=moving?(isMobile()?24:18):(isMobile()?16:12); const lw=Math.max(2,Math.ceil(cssW/STEPpx)), lh=Math.max(2,Math.ceil(cssH/STEPpx));
       const off=renderBackground._c||(renderBackground._c=document.createElement('canvas'));
       off.width=lw; off.height=lh; const octx=off.getContext('2d'); const img=octx.createImageData(lw,lh); const d=img.data;
+      const globe=(currentProj==='globe'), strict=!moving;   /* round-trip check only when idle */
       for(let yy=0; yy<lh; yy++){ for(let xx=0; xx<lw; xx++){
         const px=(xx+0.5)/lw*cssW, py=(yy+0.5)/lh*cssH; let ll; try{ ll=map.unproject([px,py]); }catch(_){ ll=null; }
         const idx=(yy*lw+xx)*4;
-        const w=ll?sample(ll.lng,ll.lat):null;
-        if(w){ const sp=Math.hypot(w[0],w[1]); const c=speedColor(sp).match(/\d+/g); d[idx]=+c[0]; d[idx+1]=+c[1]; d[idx+2]=+c[2]; d[idx+3]=150; }
+        let w=null;
+        if(ll && visibleLL(ll.lng,ll.lat)){
+          /* Bulletproof space mask: if projecting the unprojected point back doesn't return to this
+             pixel, the pixel was OFF the sphere (MapLibre clamped it to the limb) → leave it transparent. */
+          let ok=true; if(globe&&strict){ try{ const b=map.project([ll.lng,ll.lat]); ok=(Math.abs(b.x-px)+Math.abs(b.y-py))<9; }catch(_){ ok=false; } }
+          if(ok) w=sample(ll.lng,ll.lat);
+        }
+        if(w){ const sp=Math.hypot(w[0],w[1]); const c=speedColor(sp).match(/\d+/g); d[idx]=+c[0]; d[idx+1]=+c[1]; d[idx+2]=+c[2]; d[idx+3]=158; }
         else { d[idx+3]=0; }
       }}
       octx.putImageData(img,0,0);
@@ -8143,25 +8213,28 @@ window.addEventListener('DOMContentLoaded', () => {
     let _bgT=0;
     function step(){
       if(!on) return;
-      /* Re-render the speed field when the view changed, throttled to ~8 fps so it tracks pans/zooms
-         smoothly without paying the unproject cost every frame. */
-      if(bgDirty && grid && (Date.now()-_bgT>120)){ renderBackground(); _bgT=Date.now(); }
+      refreshView();
+      /* Re-render the speed field when the view changed, throttled so it tracks pans/zooms smoothly
+         without paying the unproject pass every frame. */
+      if(bgDirty && grid && (Date.now()-_bgT>(moving?120:90))){ renderBackground(); _bgT=Date.now(); }
       /* WHITE particle streaks on top. Fully clear while the map moves so trails track the map; fade when
-         idle for the classic flowing look. */
+         idle so the streaks flow (longer, gentler fade = the classic Windy trail). */
       if(moving){ ctx.clearRect(0,0,cssW,cssH); }
-      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.09)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
+      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.066)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
       ctx.lineCap='round';
       let z=2; try{ z=map.getZoom(); }catch(_){}
       const sc=Math.pow(2,z);
       for(const p of parts){
         if(p.lng==null){ spawn(p); continue; }
+        /* never advect/draw a particle on the far side of the globe (it would smear across the front) */
+        if(currentProj==='globe' && !visibleLL(p.lng,p.lat)){ if(++p.age>p.life) spawn(p); continue; }
         const w=sample(p.lng,p.lat);
         if(!w){ spawn(p); continue; }
         const sp=Math.hypot(w[0],w[1]);
         const s0=map.project([p.lng,p.lat]);
         if(!onScreen(s0)){ if(++p.age>p.life) spawn(p); else p.age++; continue; }
         const cosLat=Math.max(0.15,Math.cos(p.lat*R));
-        const mPerPx=156543.03*cosLat/sc, dt=0.13*mPerPx;
+        const mPerPx=156543.03*cosLat/sc, dt=0.066*mPerPx;   /* (#R8) ~half the old step → calmer flow */
         p.lng += (w[0]*dt)/(111320*cosLat);
         p.lat += (w[1]*dt)/110540;
         if(p.lng>180) p.lng-=360; else if(p.lng<-180) p.lng+=360;
