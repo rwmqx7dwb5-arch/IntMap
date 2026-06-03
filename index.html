@@ -2449,7 +2449,7 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[108,13],[103.8,1.3],[95,6],[80,6.9],[66,12],[51,13],[43.2,11.6],[32.5,29.9],[18,35],[12.3,45.4]]}
     ]},
     /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
-    pipelines:{ color:"#e8843b", name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
+    pipelines:{ color:"#e8843b", smooth:true, name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
       {label:"Nord Stream", kind:"gas", path:[[28,60.7],[23,59.5],[18,57],[15,55.5],[13.6,54.1]]},
       {label:"Yamal–Europe", kind:"gas", path:[[66.5,67],[60,64],[52,60],[44,57],[36,55],[27,53.2],[20.5,52.3],[14.2,52.3]]},
       {label:"Power of Siberia", kind:"gas", path:[[120,63],[124,61],[126,56],[127.5,50.3],[126.6,48.5]]},
@@ -2501,6 +2501,19 @@ window.addEventListener('DOMContentLoaded', () => {
     "Minot AFB (US)":"マイノット空軍基地（米）","Plesetsk (RU)":"プレセツク（露）","Lop Nur (CN)":"ロプノール（中）","Île Longue (FR)":"イル・ロング（仏）","Faslane (UK)":"ファスレーン（英）","Pokhran (IN)":"ポカラン（印）","Kahuta (PK)":"カフータ（パキスタン）","Dimona (IL)":"ディモナ（イスラエル）","Yongbyon (NK)":"寧辺（北朝鮮）","Natanz (IR)":"ナタンズ（イラン）"
   };
   function geoLabel(s){ return (currentLang==='jp' && GEO_LABEL_JP[s]) ? GEO_LABEL_JP[s] : s; }
+  /* (#R8b) Catmull-Rom densifier → polylines render as natural CURVES through their control points
+     instead of straight chords (the user: "線が直線的すぎる"). Returns the input unchanged for paths that
+     cross the antimeridian (|Δlng|>170), so seam-spanning routes are never smeared across the globe. */
+  window.smoothGeoPath=function(pts,segs){
+    if(!pts||pts.length<3) return pts;
+    for(let i=1;i<pts.length;i++){ if(Math.abs(pts[i][0]-pts[i-1][0])>170) return pts; }
+    segs=segs||14; const out=[]; const P=i=>pts[Math.max(0,Math.min(pts.length-1,i))];
+    for(let i=0;i<pts.length-1;i++){ const p0=P(i-1),p1=P(i),p2=P(i+1),p3=P(i+2);
+      for(let t=0;t<segs;t++){ const s=t/segs,s2=s*s,s3=s2*s;
+        out.push([ 0.5*((2*p1[0])+(-p0[0]+p2[0])*s+(2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*s2+(-p0[0]+3*p1[0]-3*p2[0]+p3[0])*s3),
+                   0.5*((2*p1[1])+(-p0[1]+p2[1])*s+(2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*s2+(-p0[1]+3*p1[1]-3*p2[1]+p3[1])*s3) ]); } }
+    out.push(pts[pts.length-1]); return out;
+  };
   function buildGeoFC(data){
     const feats=[];
     (data.areas||[]).forEach(a=>{
@@ -2510,7 +2523,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if(a.label){ let sx=0,sy=0; a.ring.forEach(p=>{sx+=p[0];sy+=p[1];}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:[sx/a.ring.length,sy/a.ring.length]},properties:{label:geoLabel(a.label)}}); }
     });
     (data.lines||[]).forEach(ln=>{
-      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.path},properties:{kind:ln.kind||''}});
+      const path=(data.smooth&&window.smoothGeoPath)?window.smoothGeoPath(ln.path,16):ln.path;
+      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:path},properties:{kind:ln.kind||''}});
       if(ln.label){ const m=ln.path[Math.floor(ln.path.length/2)]; feats.push({type:'Feature',geometry:{type:'Point',coordinates:m},properties:{label:geoLabel(ln.label),kind:ln.kind||''}}); }
     });
     (data.points||[]).forEach(pt=>{
@@ -4977,8 +4991,18 @@ window.addEventListener('DOMContentLoaded', () => {
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
       .koppen-legend h4, .data-legend h4{ padding:0 56px 0 22px !important; min-height:18px; display:flex; align-items:center; }
-      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ top:7px; right:7px; width:24px; height:22px; display:flex; align-items:center; justify-content:center; padding:0; font-size:15px; }
-      .legend-min{ top:7px; right:33px; width:24px; height:22px; display:flex; align-items:center; justify-content:center; padding:0; font-size:18px; }
+      /* (#R8b) Minimize/close icons are DRAWN as CSS shapes at EVERY width (desktop · tablet · phone) —
+         NOT font glyphs. ▢ / – / ✕ have different ink positions, so as glyphs they never quite line up;
+         as identical centred bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
+         leaving tablet/landscape-phone widths with the misaligned glyphs the user still saw.) */
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ top:7px; right:7px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; }
+      .legend-min{ top:7px; right:35px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; }
+      .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
+      .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
+      .legend-min::before{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; margin:-0.9px 0 0 -6.5px; border-radius:2px; background:currentColor; }
+      .data-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::before{ transform:rotate(45deg); }
+      .data-legend .layer-popup-x::after,  .koppen-legend .layer-popup-x::after{ transform:rotate(-45deg); }
+      .legend-collapsed .legend-min::before{ width:12px; height:12px; margin:-6px 0 0 -6px; background:none; border:1.8px solid currentColor; border-radius:3px; }
       .data-legend .dl-drag, .koppen-legend .kl-drag{ top:8px; left:7px; font-size:12px; }
       /* Köppen criteria popup (#25) */
       .koppen-info-pop{ display:none; position:absolute; z-index:1300; width:236px; max-width:calc(100vw - 24px); background:var(--glass-fill); border:1px solid var(--glass-border); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); font-size:12px; }
@@ -4986,28 +5010,17 @@ window.addEventListener('DOMContentLoaded', () => {
       .koppen-info-pop .kip-x:hover{ background:var(--input-bg); }
       .koppen-info-pop .kip-h{ display:flex; align-items:center; gap:7px; font-weight:600; font-size:13px; padding-right:22px; margin-bottom:6px; }
       .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }
-      /* (#R8-mobile-legend) The minimize (▢/–) and close (✕) glyphs sat a hair out of vertical
-         alignment because different Unicode glyphs have different ink positions (▢/– sit on the math
-         axis, ✕ on the dingbat centre). Fix it for good: DRAW both icons as CSS shapes — identical 30px
-         tap targets, pixel-aligned at every DPR, no dependence on any font glyph metric. */
+      /* (#R8b) Phones just enlarge the same drawn icons to 30px tap targets with a clear gap; the SHAPES
+         (centred bars) come from the global rules above, so desktop & mobile are identical & aligned. */
       @media(max-width:768px){
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
-        .data-legend .legend-min, .koppen-legend .legend-min{
-          top:8px !important; width:30px !important; height:30px !important; font-size:0 !important;
-          color:var(--text-muted); padding:0 !important; border:none; background:none; border-radius:8px; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ top:8px !important; width:30px !important; height:30px !important; border-radius:8px; }
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:8px !important; }
         .data-legend .legend-min, .koppen-legend .legend-min{ right:46px !important; }
-        /* close = × (two centred bars) */
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
-        .data-legend .legend-min::before, .koppen-legend .legend-min::before{
-          content:''; position:absolute; top:50%; left:50%; width:15px; height:2px; margin:-1px 0 0 -7.5px;
-          border-radius:2px; background:currentColor; }
-        .data-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::before{ transform:rotate(45deg); }
-        .data-legend .layer-popup-x::after,  .koppen-legend .layer-popup-x::after{ transform:rotate(-45deg); }
-        /* minimize = – (single bar); when collapsed = ▢ (square outline) */
-        .data-legend.legend-collapsed .legend-min::before, .koppen-legend.legend-collapsed .legend-min::before{
-          width:13px; height:13px; margin:-6.5px 0 0 -6.5px; background:none; border:2px solid currentColor; border-radius:3px; }
+        .legend-min::before{ width:15px; height:2px; margin:-1px 0 0 -7.5px; }
+        .legend-collapsed .legend-min::before{ width:13px; height:13px; margin:-6.5px 0 0 -6.5px; }
         .data-legend .layer-popup-x:active, .koppen-legend .layer-popup-x:active,
         .data-legend .legend-min:active, .koppen-legend .legend-min:active{ background:var(--input-bg); color:var(--text-main); }
         .data-legend .dl-drag, .koppen-legend .kl-drag{ top:11px !important; left:9px !important; font-size:14px !important; }
@@ -6300,7 +6313,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='contours'){ if(map.getLayer('contour-lines'))map.setPaintProperty('contour-lines','line-opacity',v); if(map.getLayer('contour-labels'))map.setPaintProperty('contour-labels','text-opacity',v); }
       else if(id==='relief'){ if(map.getLayer('lyr-relief'))map.setPaintProperty('lyr-relief','color-relief-opacity',v); }
       else if(id==='sealevel'){ if(map.getLayer('lyr-sealevel'))map.setPaintProperty('lyr-sealevel','color-relief-opacity',v); }
-      else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=v; const wb=document.getElementById('wind-bg-canvas'); if(wb) wb.style.opacity=v; }
+      else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=Math.min(1,0.5+v*0.5); try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v*0.82); }catch(_){} }   /* (#R8b) particle alpha barely dims; slider mainly drives the geo-anchored speed-field raster */
       else if(id==='subcables'){ if(map.getLayer('lyr-subcables'))map.setPaintProperty('lyr-subcables','line-opacity',v); }
       else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
@@ -8099,48 +8112,66 @@ window.addEventListener('DOMContentLoaded', () => {
      through the wind field in degrees, and PROJECTS it with the live map each frame — so the flow is
      correct under any projection/zoom/rotation and pans & zooms locked to the map ("座標ベース"). */
   window.Wind=(function(){
-    const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){}};
-    const bgcv=document.getElementById('wind-bg-canvas');
-    const ctx=cv.getContext('2d'); const bgctx=bgcv?bgcv.getContext('2d'):null;
-    let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false, bgDirty=true;
+    const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){},setOpacity(){}};
+    const ctx=cv.getContext('2d');
+    /* (#R8b) ARCHITECTURE CHANGE. The speed-colour FIELD is no longer a screen-space canvas — that was
+       the cause of "画面全体が光る while scrolling", was heavy (unproject every pixel every ~100 ms), and
+       painted into SPACE on the globe. It is now a GEO-ANCHORED MapLibre raster: a Web-Mercator-
+       parameterised image fed to an image source, so MapLibre reprojects it for Flat AND Globe, CLIPS it
+       to the sphere (no space colour, ever), pans/zooms locked to the map with ZERO per-frame cost, and
+       the GPU composites it. Only the WHITE particle streaks remain on #wind-canvas. */
+    const oldBg=document.getElementById('wind-bg-canvas'); if(oldBg) oldBg.style.display='none';
+    let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false;
     const R=Math.PI/180;
-    /* (#R8) GLOBE NEAR-HEMISPHERE MASK — the root cause of "coloured into space / でたらめ".
-       On the globe, map.unproject() of a pixel that is in SPACE (off the sphere) still returns a lng/lat,
-       and map.project() of a FAR-SIDE coordinate still lands on-screen — so the old code painted the
-       speed field into space and bled far-side particle streaks across the front. We now reuse the exact
-       marker-occlusion dot test: a coordinate is drawn only if it lies on the visible near hemisphere.
-       Recomputed once per frame (cheap: a few trig ops). */
+    const FIELD_SRC='wind-field-src', FIELD_LYR='wind-field';
+    const fieldCanvas=document.createElement('canvas'); let fieldReady=false, fieldOpacity=0.72;
+    /* Globe near-hemisphere mask for the PARTICLES only (the field is masked by MapLibre's own globe
+       clipping). Reuses the marker-occlusion dot test; refreshed once per frame. */
     const _view={x:1,y:0,z:0,th:Math.cos(87*R)};
     function refreshView(){ try{ const c=map.getCenter(), cla=c.lat*R, clo=c.lng*R;
       _view.x=Math.cos(cla)*Math.cos(clo); _view.y=Math.cos(cla)*Math.sin(clo); _view.z=Math.sin(cla); }catch(_){} }
     function visibleLL(lng,lat){ if(currentProj!=='globe') return true;
       const la=lat*R, lo=lng*R, cl=Math.cos(la);
       return (cl*Math.cos(lo)*_view.x + cl*Math.sin(lo)*_view.y + Math.sin(la)*_view.z) > _view.th; }
-    function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); if(bgcv){ bgcv.width=cssW*dpr; bgcv.height=cssH*dpr; bgcv.style.width=cssW+'px'; bgcv.style.height=cssH+'px'; } bgDirty=true; }
-    /* Build a regular global grid of CURRENT 10 m winds in ONE multi-point request, refreshed every
-       10 min. Meteorological "from" direction → true (east-u, north-v) motion vector. If the real
-       request fails we turn the layer OFF rather than fabricate a flow. */
+    function resize(){ const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); cssW=cont.clientWidth; cssH=cont.clientHeight; cv.width=cssW*dpr; cv.height=cssH*dpr; cv.style.width=cssW+'px'; cv.style.height=cssH+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
+    /* Real GFS field at a finer 5° grid (≈2.2k pts). One URL would be 414 Request-URI-Too-Large, so it's
+       fetched as parallel ≤500-pt CHUNKS and reassembled — refreshed every 10 min. "from" direction →
+       (east-u, north-v) motion vector. Falls back to a single coarse 8° request; only then gives up. */
     async function fetchGrid(){
       if(fetching) return; if(grid && Date.now()-fetchT<10*60000) return;
       fetching=true;
-      const STEP=8, lat0=72, lats=[], lons=[];   /* (#R7) 8° grid (855 pts) → finer, Windy-like regional flow */
+      const STEP=5, lat0=75, lats=[], lons=[];
+      for(let la=lat0; la>=-lat0+0.001; la-=STEP) for(let lo=-180; lo<180; lo+=STEP){ lats.push(la); lons.push(lo); }
+      const cols=Math.round(360/STEP), N=lats.length, rows=Math.round(N/cols);
+      const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}` ];
+      const CHUNK=500, jobs=[]; for(let s=0;s<N;s+=CHUNK) jobs.push([s,Math.min(N,s+CHUNK)]);
+      async function getChunk(s,e){
+        const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.slice(s,e).join(',')+'&longitude='+lons.slice(s,e).join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
+        for(const mk of proxies){ try{ const r=await fetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null); if(arr&&arr.length===(e-s)) return arr; }catch(_){} }
+        return null;
+      }
+      let results=null; try{ results=await Promise.all(jobs.map(j=>getChunk(j[0],j[1]))); }catch(_){ results=null; }
+      if(results && results.every(Boolean)){
+        const u=new Float32Array(N), v=new Float32Array(N);
+        results.forEach((arr,ji)=>{ const s=jobs[ji][0]; for(let k=0;k<arr.length;k++){ const cu=arr[k].current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R; u[s+k]=-sp*Math.sin(dir); v[s+k]=-sp*Math.cos(dir); } });
+        grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false;
+      } else if(!grid){
+        const ok=await fetchCoarse();
+        if(!ok){ try{ satToast(currentLang==='jp'?'風データを取得できませんでした':'Wind data unavailable'); }catch(_){}
+          const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); } stop(); }
+      }
+      fetching=false; fetchT=Date.now();
+    }
+    async function fetchCoarse(){
+      const STEP=8, lat0=72, lats=[], lons=[];
       for(let la=lat0; la>=-lat0; la-=STEP) for(let lo=-180; lo<180; lo+=STEP){ lats.push(la); lons.push(lo); }
       const url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms';
       const proxies=[ x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}` ];
-      let arr=null;
-      for(const mk of proxies){ try{ const r=await fetch(mk(url)); if(!r.ok) continue; const j=await r.json(); arr=Array.isArray(j)?j:(j&&j.current?[j]:null); if(arr&&arr.length) break; }catch(_){} }
-      if(arr&&arr.length){
-        const cols=Math.round(360/STEP), rows=Math.round(2*lat0/STEP)+1;
-        const u=new Float32Array(arr.length), v=new Float32Array(arr.length);
-        arr.forEach((o,i)=>{ const cu=o.current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R;
-          u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });   /* "from" dir → motion vector */
-        grid={STEP,rows,cols,u,v,lat0,lon0:-180};
-      } else if(!grid){
-        try{ satToast(currentLang==='jp'?'風データを取得できませんでした':'Wind data unavailable'); }catch(_){}
-        const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; const row=cb.closest('.lyr-row'); if(row) row.classList.remove('on'); }
-        stop();
-      }
-      fetching=false; fetchT=Date.now();
+      for(const mk of proxies){ try{ const r=await fetch(mk(url)); if(!r.ok) continue; const j=await r.json(); const arr=Array.isArray(j)?j:(j&&j.current?[j]:null);
+        if(arr&&arr.length){ const cols=Math.round(360/STEP), rows=Math.round(2*lat0/STEP)+1, u=new Float32Array(arr.length), v=new Float32Array(arr.length);
+          arr.forEach((o,i)=>{ const cu=o.current||{}; const sp=+cu.wind_speed_10m||0, dir=(+cu.wind_direction_10m||0)*R; u[i]=-sp*Math.sin(dir); v[i]=-sp*Math.cos(dir); });
+          grid={STEP,rows,cols,u,v,lat0,lon0:-180}; fieldReady=false; return true; } }catch(_){} }
+      return false;
     }
     /* Bilinear sample of the wind field at a geographic lng/lat → [u,v] in m/s, or null off-grid. */
     function sample(lng,lat){
@@ -8154,6 +8185,39 @@ window.addEventListener('DOMContentLoaded', () => {
       return [ L(L(grid.u[i00],grid.u[i10],fx),L(grid.u[i01],grid.u[i11],fx),fy),
                L(L(grid.v[i00],grid.v[i10],fx),L(grid.v[i01],grid.v[i11],fx),fy) ];
     }
+    /* perceptual Windy ramp → a 256-entry RGB lookup (built once; no per-pixel string parsing) */
+    function speedColor(s){ const stops=[[0,16,32,92],[3,28,108,184],[7,40,168,170],[11,90,205,120],[16,225,215,75],[22,242,150,52],[29,232,70,70],[40,198,55,176]]; const v=Math.min(40,Math.max(0,s)); let a=stops[0],b=stops[stops.length-1]; for(let i=0;i<stops.length-1;i++){ if(v>=stops[i][0]&&v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } } const f=(v-a[0])/Math.max(1e-6,(b[0]-a[0])); return [Math.round(a[1]+(b[1]-a[1])*f),Math.round(a[2]+(b[2]-a[2])*f),Math.round(a[3]+(b[3]-a[3])*f)]; }
+    const LUT=(function(){ const a=new Uint8Array(256*3); for(let i=0;i<256;i++){ const c=speedColor(i/255*42); a[i*3]=c[0]; a[i*3+1]=c[1]; a[i*3+2]=c[2]; } return a; })();
+    window.WIND_SPEEDCOLOR=(s)=>{ const c=speedColor(s); return `rgb(${c[0]},${c[1]},${c[2]})`; };
+    /* Render the field into a Web-Mercator canvas, then hand it to the image source (geo-anchored). */
+    const MERC_LAT=85.0511287798;
+    const invMercY=(t)=>Math.atan(Math.sinh(Math.PI*(1-2*t)))/R;   /* t∈[0,1] top→bottom → latitude */
+    function renderFieldImage(){
+      if(!grid) return;
+      const W=1024, H=512; fieldCanvas.width=W; fieldCanvas.height=H;
+      const fc=fieldCanvas.getContext('2d'); const img=fc.createImageData(W,H); const d=img.data;
+      for(let y=0;y<H;y++){ const lat=invMercY((y+0.5)/H); if(lat>grid.lat0||lat<-grid.lat0) continue;
+        for(let x=0;x<W;x++){ const lng=(x+0.5)/W*360-180; const w=sample(lng,lat); if(!w) continue;
+          const sp=Math.hypot(w[0],w[1]); const li=(Math.min(255,(sp/42*255)|0))*3; const idx=(y*W+x)*4;
+          d[idx]=LUT[li]; d[idx+1]=LUT[li+1]; d[idx+2]=LUT[li+2]; d[idx+3]=178; } }
+      fc.putImageData(img,0,0); fieldReady=true;
+      try{ const src=map.getSource(FIELD_SRC); if(src&&src.updateImage) src.updateImage({url:fieldCanvas.toDataURL()}); }catch(_){}
+    }
+    function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
+    const BLANK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+    function ensureFieldLayer(){
+      if(!map || !map.isStyleLoaded()) return false;
+      if(!map.getSource(FIELD_SRC)){
+        try{ map.addSource(FIELD_SRC,{type:'image',url:BLANK,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
+          map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':0,'raster-opacity-transition':{duration:350},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
+        }catch(e){ return false; }
+      }
+      return true;
+    }
+    function showField(v){ try{ if(map.getLayer(FIELD_LYR)) map.setPaintProperty(FIELD_LYR,'raster-opacity', v?fieldOpacity:0); }catch(_){} }
+    function setFieldOpacity(o){ fieldOpacity=Math.max(0,Math.min(1,+o||0)); if(on) showField(true); }
+    /* Re-attach the field after a style reload (theme/basemap switch drops custom sources). */
+    if(map) map.on('styledata',()=>{ if(on){ setTimeout(()=>{ if(ensureFieldLayer()){ if(fieldReady) renderFieldImage(); showField(true); } },60); } });
     /* Seed a particle at a random GEOGRAPHIC point inside the current view (so the field fills the
        visible area at any zoom). */
     function spawn(p){
@@ -8173,54 +8237,18 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       p.age=(Math.random()*60)|0; p.life=60+((Math.random()*70)|0);
     }
-    /* (#R7) Windy model = LOTS of particles. Dense seeding (mobile capped for perf). */
-    /* (#R8) Windy model = a DENSE flow. Roughly 1 particle / 280 px² on desktop (≈7.2k on a 1080p map),
-       capped for the phone GPU. The user measured idle headroom (CPU 20% / GPU 50%) and asked for more. */
-    function ensureParts(){ const target=Math.min(isMobile()?2800:7200,Math.max(1200,Math.floor(cssW*cssH/(isMobile()?900:280)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
-    /* Windy-style perceptual ramp for the SPEED FIELD background: calm→teal→green→yellow→orange→red→magenta. */
-    function speedColor(s,alpha){ const stops=[[0,'40,60,140'],[4,'40,140,200'],[8,'60,200,170'],[12,'120,225,110'],[17,'235,225,90'],[23,'245,150,55'],[30,'235,70,70'],[40,'200,60,180']]; const v=Math.min(40,Math.max(0,s)); let a=stops[0],b=stops[stops.length-1]; for(let i=0;i<stops.length-1;i++){ if(v>=stops[i][0]&&v<=stops[i+1][0]){ a=stops[i]; b=stops[i+1]; break; } } const f=(v-a[0])/Math.max(1e-6,(b[0]-a[0])); const ca=a[1].split(','),cb=b[1].split(','); const r=Math.round(+ca[0]+(+cb[0]-+ca[0])*f),g=Math.round(+ca[1]+(+cb[1]-+ca[1])*f),bl=Math.round(+ca[2]+(+cb[2]-+ca[2])*f); return `rgba(${r},${g},${bl},${alpha==null?1:alpha})`; }
+    /* (#R8b) Windy model = a DENSE flow. ~1 particle / 300 px² desktop (≈7k on a 1080p map), phone-capped.
+       The heavy per-frame field cost is gone (field is a GPU raster now), so the particle budget is freed. */
+    function ensureParts(){ const target=Math.min(isMobile()?2600:7000,Math.max(1200,Math.floor(cssW*cssH/(isMobile()?900:300)))); if(parts.length>target) parts.length=target; while(parts.length<target){ const p={}; spawn(p); parts.push(p); } }
     const onScreen=(pt)=>pt && pt.x>=-40 && pt.x<=cssW+40 && pt.y>=-40 && pt.y<=cssH+40;
-    /* Wind-SPEED colour field, computed on a coarse offscreen grid (unproject → sample → colour) and
-       up-scaled with bilinear smoothing → a smooth Windy-like overlay. Recomputed only when the view
-       changes (bgDirty), never per frame. */
-    function renderBackground(){
-      if(!bgctx||!grid){ return; }
-      refreshView();
-      /* Crisp when settled, coarser (so the unproject pass is cheap) while the camera is moving. */
-      const STEPpx=moving?(isMobile()?24:18):(isMobile()?16:12); const lw=Math.max(2,Math.ceil(cssW/STEPpx)), lh=Math.max(2,Math.ceil(cssH/STEPpx));
-      const off=renderBackground._c||(renderBackground._c=document.createElement('canvas'));
-      off.width=lw; off.height=lh; const octx=off.getContext('2d'); const img=octx.createImageData(lw,lh); const d=img.data;
-      const globe=(currentProj==='globe'), strict=!moving;   /* round-trip check only when idle */
-      for(let yy=0; yy<lh; yy++){ for(let xx=0; xx<lw; xx++){
-        const px=(xx+0.5)/lw*cssW, py=(yy+0.5)/lh*cssH; let ll; try{ ll=map.unproject([px,py]); }catch(_){ ll=null; }
-        const idx=(yy*lw+xx)*4;
-        let w=null;
-        if(ll && visibleLL(ll.lng,ll.lat)){
-          /* Bulletproof space mask: if projecting the unprojected point back doesn't return to this
-             pixel, the pixel was OFF the sphere (MapLibre clamped it to the limb) → leave it transparent. */
-          let ok=true; if(globe&&strict){ try{ const b=map.project([ll.lng,ll.lat]); ok=(Math.abs(b.x-px)+Math.abs(b.y-py))<9; }catch(_){ ok=false; } }
-          if(ok) w=sample(ll.lng,ll.lat);
-        }
-        if(w){ const sp=Math.hypot(w[0],w[1]); const c=speedColor(sp).match(/\d+/g); d[idx]=+c[0]; d[idx+1]=+c[1]; d[idx+2]=+c[2]; d[idx+3]=158; }
-        else { d[idx+3]=0; }
-      }}
-      octx.putImageData(img,0,0);
-      bgctx.setTransform(1,0,0,1,0,0); bgctx.clearRect(0,0,bgcv.width,bgcv.height);
-      bgctx.imageSmoothingEnabled=true; bgctx.imageSmoothingQuality='high';
-      bgctx.drawImage(off,0,0,bgcv.width,bgcv.height);
-      bgDirty=false;
-    }
-    let _bgT=0;
     function step(){
       if(!on) return;
       refreshView();
-      /* Re-render the speed field when the view changed, throttled so it tracks pans/zooms smoothly
-         without paying the unproject pass every frame. */
-      if(bgDirty && grid && (Date.now()-_bgT>(moving?120:90))){ renderBackground(); _bgT=Date.now(); }
-      /* WHITE particle streaks on top. Fully clear while the map moves so trails track the map; fade when
-         idle so the streaks flow (longer, gentler fade = the classic Windy trail). */
+      /* WHITE particle streaks. Clear fully while the map moves so trails track the map; fade when idle so
+         the streaks flow (the classic Windy trail). The colour FIELD underneath is the geo-anchored raster
+         (it pans/zooms with the map natively now — no screen-space "glow on scroll"). */
       if(moving){ ctx.clearRect(0,0,cssW,cssH); }
-      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.066)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
+      else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
       ctx.lineCap='round';
       let z=2; try{ z=map.getZoom(); }catch(_){}
       const sc=Math.pow(2,z);
@@ -8234,25 +8262,29 @@ window.addEventListener('DOMContentLoaded', () => {
         const s0=map.project([p.lng,p.lat]);
         if(!onScreen(s0)){ if(++p.age>p.life) spawn(p); else p.age++; continue; }
         const cosLat=Math.max(0.15,Math.cos(p.lat*R));
-        const mPerPx=156543.03*cosLat/sc, dt=0.066*mPerPx;   /* (#R8) ~half the old step → calmer flow */
+        const mPerPx=156543.03*cosLat/sc, dt=0.05*mPerPx;   /* (#R8b) calmer still (was 0.066) */
         p.lng += (w[0]*dt)/(111320*cosLat);
         p.lat += (w[1]*dt)/110540;
         if(p.lng>180) p.lng-=360; else if(p.lng<-180) p.lng+=360;
         const s1=map.project([p.lng,p.lat]);
         if(p.age<p.life && onScreen(s1)){
-          /* white streaks; faster wind = slightly brighter/thicker so the flow reads against the field */
-          const a=0.55+Math.min(0.4,sp/45); ctx.lineWidth=1.0+Math.min(1.1,sp/26);
+          const a=0.6+Math.min(0.38,sp/40); ctx.lineWidth=1.0+Math.min(1.0,sp/28);
           ctx.strokeStyle='rgba(255,255,255,'+a.toFixed(2)+')'; ctx.beginPath(); ctx.moveTo(s0.x,s0.y); ctx.lineTo(s1.x,s1.y); ctx.stroke();
           p.age++;
         } else { spawn(p); }
       }
       raf=requestAnimationFrame(step);
     }
-    function start(){ on=true; cv.style.display='block'; if(bgcv) bgcv.style.display='block'; resize(); ensureParts(); fetchGrid().then(()=>{ bgDirty=true; }); cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
-    function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} try{ if(bgctx){ bgctx.setTransform(1,0,0,1,0,0); bgctx.clearRect(0,0,bgcv.width,bgcv.height); } }catch(_){} cv.style.display='none'; if(bgcv) bgcv.style.display='none'; }
+    function start(){ on=true; cv.style.display='block'; resize(); ensureParts();
+      fetchGrid().then(()=>{ if(grid){ const tryField=(n)=>{ if(ensureFieldLayer()){ renderFieldImage(); showField(true); } else if((n||0)<20) setTimeout(()=>tryField((n||0)+1),150); }; tryField(0); } });
+      cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
+    function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; showField(false); }
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
-    if(map){ map.on('movestart',()=>{ moving=true; }); map.on('move',()=>{ if(on) bgDirty=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); bgDirty=true; } }); }
-    return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid };
+    if(map){ map.on('movestart',()=>{ moving=true; }); map.on('moveend',()=>{ moving=false; if(on){ resize(); ensureParts(); } }); }
+    return { toggle(v){ v?start():stop(); }, on:()=>on, refetch:fetchGrid, setOpacity:setFieldOpacity,
+      _dbg:()=>{ let hasSrc=false,hasLyr=false,op=null; try{ hasSrc=!!map.getSource(FIELD_SRC); }catch(_){}
+        try{ hasLyr=!!map.getLayer(FIELD_LYR); if(hasLyr) op=map.getPaintProperty(FIELD_LYR,'raster-opacity'); }catch(_){}
+        return { on, gridPts: grid?grid.u.length:0, gridStep: grid?grid.STEP:null, fieldReady, hasSrc, hasLyr, rasterOpacity:op, parts:parts.length, styleLoaded:(()=>{try{return map.isStyleLoaded();}catch(_){return null;}})() }; } };
   })();
 
   /* ===================== Freehand DRAW / trace tool (#R7) =====================
@@ -8454,14 +8486,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---------- (E) New intelligence overlays ---------- */
     const jp=()=>currentLang==='jp';
     /* Sovereignty disputes — international lines whose recognition is split. */
+    /* (#R8b) Denser, more faithful control points (the user: lines were "直線的すぎる"). They are run
+       through window.smoothGeoPath at render so each boundary draws as a natural curve, not chords. */
     const DISPUTES=[
-      { name:{en:'Nine-dash line (S. China Sea)',jp:'九段線（南シナ海）'}, c:[[122.5,24.5],[120.8,21.5],[119.5,18.5],[117.8,15],[116,11],[114,7.5],[111.5,5],[109.5,8.5],[109,12.5],[109.6,16.5],[110.2,19.5],[111.5,21.8]] },
-      { name:{en:'Ukraine front line (approx.)',jp:'ウクライナ前線（概略）'}, c:[[37.6,49.9],[38.1,49],[38.4,48.3],[37.8,47.6],[36.6,47.1],[35.4,47.5],[33.6,46.6],[32.5,46.6]] },
-      { name:{en:'Kashmir Line of Control',jp:'カシミール管理線'}, c:[[74,34.6],[74.3,34],[74.7,33.5],[75.2,33],[75.8,32.7],[76.4,32.6]] },
-      { name:{en:'Korean DMZ',jp:'朝鮮半島軍事境界線'}, c:[[126.68,37.83],[127.3,38.25],[128.36,38.62]] },
-      { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.2,26.3],[119.3,24.7],[118.6,23],[119,21.9]] }
+      { name:{en:'Nine-dash line (S. China Sea)',jp:'九段線（南シナ海）'}, c:[[120.8,21.6],[119.5,19.2],[118.1,16.3],[116.7,13.4],[115.1,10.6],[113.2,8.0],[111.3,5.8],[110.0,4.4],[111.4,3.9],[113.5,4.2],[115.6,6.4],[117.2,9.3],[118.3,12.3],[119.1,15.4],[119.8,18.4],[120.6,20.9]] },
+      { name:{en:'Ukraine front line (approx.)',jp:'ウクライナ前線（概略）'}, c:[[37.45,50.0],[37.9,49.4],[38.25,48.85],[38.3,48.3],[38.1,48.05],[37.8,47.95],[37.55,47.6],[36.75,47.3],[35.9,47.45],[35.2,47.6],[34.1,47.0],[33.0,46.6],[32.5,46.55]] },
+      { name:{en:'Kashmir Line of Control',jp:'カシミール管理線'}, c:[[76.95,35.5],[76.6,35.05],[76.15,34.65],[75.65,34.5],[75.0,34.35],[74.5,34.25],[74.12,34.02],[73.98,33.6],[74.2,33.15],[74.35,32.82],[74.62,32.68]] },
+      { name:{en:'Korean DMZ',jp:'朝鮮半島軍事境界線'}, c:[[126.68,37.78],[126.92,37.93],[127.25,38.12],[127.62,38.27],[128.0,38.33],[128.36,38.62]] },
+      { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.35,26.7],[119.7,25.2],[119.0,23.5],[118.6,22.3],[118.4,21.6]] }
     ];
-    function disputesFC(){ return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
+    function disputesFC(){ const S=window.smoothGeoPath; return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:S?S(d.c,18):d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
     /* Geodesic air-defence coverage "domes" — reuse the radius tool's geodesic-disk builders. */
     const AD_SITES=[
       {n:'Moscow · S-400',at:[37.6,55.75],r:400,c:'#e0312e'},{n:'St Petersburg · S-400',at:[30.3,59.95],r:400,c:'#e0312e'},
@@ -8497,12 +8531,55 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(e){ return false; }
     }
     const DSET=['r7-disputes-line','r7-disputes-label'], ASET=['r7-airdef-fill','r7-airdef-line','r7-airdef-pt','r7-airdef-label'];
-    const state={disputes:false,airdef:false};
+    const state={disputes:false,airdef:false,langs:false};
     function setVis(ids,on){ ids.forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }); }
     function refreshDisputeLabels(){ try{ const s=map.getSource('r7-disputes'); if(s) s.setData(disputesFC()); }catch(_){} }
-    function toggle(which,on){ state[which]=on; const apply=()=>{ if(!ensureOverlays()){ map.once('idle',apply); return; } setVis(which==='disputes'?DSET:ASET,on); }; apply(); }
+
+    /* ===== (#R8b) World-languages overlay — Jake Jing's digitisation of the Atlas of the World's
+       Languages (Asher & Moseley). It's a heavy global polygon set, so it is: LAZY-loaded on first
+       toggle; simplified at the source (tolerance + low maxzoom) so the worker tiling never janks the
+       UI; kept IN MEMORY (langData) so a theme/basemap swap re-adds it without re-fetching; and inserted
+       UNDER the place labels. Future-proof: set window.LANGUAGES_TILES_URL to an MVT/PMTiles endpoint and
+       it transparently uses a vector source instead of the local GeoJSON. Hover reuses the .map-tooltip
+       material to pop Language + Family. ===== */
+    const LANG_SRC='langs-src', LANG_FILL='langs-fill', LANG_LINE='langs-line', LSET=[LANG_FILL,LANG_LINE];
+    let langData=null, langFetching=false, langHoverWired=false, langTip=null;
+    const _esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const _langHash=s=>{ let h=0; for(let i=0;i<(s||'').length;i++) h=(h*31+s.charCodeAt(i))>>>0; return h; };
+    const _firstLabelId=()=>{ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; };
+    const _langProp=(p,keys)=>{ for(const k of keys){ if(p&&p[k]!=null&&p[k]!=='') return p[k]; } return ''; };
+    function addLangLayers(isVector){ const before=_firstLabelId(); const ext=isVector?{'source-layer':'languages'}:{};
+      if(!map.getLayer(LANG_FILL)) map.addLayer(Object.assign({id:LANG_FILL,type:'fill',source:LANG_SRC,layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#6f9be8'],'fill-opacity':0.34,'fill-antialias':true}},ext),before);
+      if(!map.getLayer(LANG_LINE)) map.addLayer(Object.assign({id:LANG_LINE,type:'line',source:LANG_SRC,layout:{visibility:'none'},paint:{'line-color':'rgba(255,255,255,0.45)','line-width':['interpolate',['linear'],['zoom'],2,0.3,7,0.9]}},ext),before);
+    }
+    function ensureLangSource(cb){
+      if(map.getSource(LANG_SRC)){ cb&&cb(true); return; }
+      if(window.LANGUAGES_TILES_URL){ try{ map.addSource(LANG_SRC,{type:'vector',tiles:[window.LANGUAGES_TILES_URL],maxzoom:10}); addLangLayers(true); cb&&cb(true); return; }catch(_){} }
+      if(langData){ try{ map.addSource(LANG_SRC,{type:'geojson',data:langData,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); return; }catch(_){} }
+      if(langFetching) return;
+      langFetching=true;
+      fetch('data/asher_languages.geojson').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }).then(gj=>{
+        try{ (gj.features||[]).forEach(f=>{ const p=f.properties||(f.properties={}); const fam=_langProp(p,['family','Family','FAMILY','fam','Fam','classification']); const hue=_langHash(fam||_langProp(p,['name','Language','language']))%360; p.__col='hsl('+hue+',58%,56%)'; }); }catch(_){}
+        langData=gj; langFetching=false;
+        try{ map.addSource(LANG_SRC,{type:'geojson',data:gj,tolerance:1.4,maxzoom:8,buffer:0}); addLangLayers(false); cb&&cb(true); }catch(_){ cb&&cb(false); }
+      }).catch(()=>{ langFetching=false; try{ satToast(jp()?'言語データが見つかりません（data/asher_languages.geojson を配置）':'Language data not found — add data/asher_languages.geojson'); }catch(_){}
+        const x=document.getElementById('r7-dl-langs'); if(x){ x.checked=false; const r=x.closest('.lyr-row'); if(r) r.classList.remove('on'); } cb&&cb(false); });
+    }
+    function wireLangHover(){ if(langHoverWired) return; langHoverWired=true;
+      langTip=document.createElement('div'); langTip.className='map-tooltip'; (document.getElementById('map-container')||document.body).appendChild(langTip);
+      map.on('mousemove',LANG_FILL,(e)=>{ const f=e.features&&e.features[0]; if(!f){ langTip.style.display='none'; return; } const p=f.properties||{};
+        const lang=_langProp(p,['Language','language','name','NAME','Name','PRNAME','label'])||'—', fam=_langProp(p,['Family','family','FAMILY','fam','classification'])||'—';
+        langTip.innerHTML='<div style="font-weight:600;margin-bottom:3px;">'+_esc(lang)+'</div><div style="color:var(--text-muted);font-size:12px;">'+(jp()?'語族: ':'Family: ')+_esc(fam)+'</div>';
+        langTip.style.display='block'; langTip.style.left=e.point.x+'px'; langTip.style.top=e.point.y+'px'; });
+      map.on('mouseenter',LANG_FILL,()=>{ map.getCanvas().style.cursor='pointer'; });
+      map.on('mouseleave',LANG_FILL,()=>{ if(langTip) langTip.style.display='none'; map.getCanvas().style.cursor=''; });
+    }
+    function toggle(which,on){ state[which]=on;
+      if(which==='langs'){ if(on){ ensureLangSource(ok=>{ if(ok){ wireLangHover(); setVis(LSET,true); } }); } else { setVis(LSET,false); if(langTip) langTip.style.display='none'; } return; }
+      const apply=()=>{ if(!ensureOverlays()){ map.once('idle',apply); return; } setVis(which==='disputes'?DSET:ASET,on); }; apply(); }
     /* re-apply after a style swap (theme / satellite engine) so the overlays survive */
-    map.on('styledata',()=>{ if(state.disputes||state.airdef){ setTimeout(()=>{ if(ensureOverlays()){ setVis(DSET,state.disputes); setVis(ASET,state.airdef); } },60); } });
+    map.on('styledata',()=>{ if(state.disputes||state.airdef){ setTimeout(()=>{ if(ensureOverlays()){ setVis(DSET,state.disputes); setVis(ASET,state.airdef); } },60); }
+      if(state.langs){ setTimeout(()=>{ ensureLangSource(ok=>{ if(ok) setVis(LSET,true); }); },80); } });
 
     /* dropdown UI — appended after the existing layer groups, non-destructive */
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('r7-dl-disputes')) return;
@@ -8510,13 +8587,15 @@ window.addEventListener('DOMContentLoaded', () => {
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       const cbD=row('r7-dl-disputes', jp()?'係争境界線':'Disputed boundaries', '#ff4d4d');
       const cbA=row('r7-dl-airdef', jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage', '#e0312e');
+      const cbL=row('r7-dl-langs', jp()?'世界の言語分布':'World languages', '#6f9be8');
       cbD.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('disputes',e.target.checked); });
       cbA.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('airdef',e.target.checked); });
+      cbL.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('langs',e.target.checked); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
-    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage'; refreshDisputeLabels(); }
+    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
     ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
