@@ -397,3 +397,77 @@ Flat=`setProjection({mercator})` / Globe=`{globe}` on the **same** MapLibre inst
 measurements (all stored as lng/lat) reproject in the same space. ProjView (azimuthal/Equal-Earth/…) is
 opt-in from the right-click menu only; nothing auto-spawns a blank window on Flat. (The disliked Flat
 projection *selector* was already removed in R7.)
+
+---
+
+## 11. Round 8b / 8c — re-attacked complaints + many new features (tags `#R8b`, `#R8c`)
+
+The user came back twice more. Big themes: the **wind still wasn't right** (glow-on-scroll, heavy,
+low-res, space colour), the **legend was still misaligned at some widths**, **alt-projection windows**
+were still unwanted, **disputes must use REAL data not maths**, plus a batch of concrete new features.
+Same non-goal as before: **no Cesium swap** (would break the 8k-line app; everything is additive).
+
+### Wind v3 — geo-anchored raster field (`#R8b`)
+The screen-space colour field was the root of "画面全体が光る while scrolling", the heaviness, and the
+space-painting on the globe. Re-architected: the **speed-colour FIELD is now a MapLibre image-source
+raster** (a Web-Mercator-parameterised 1024×512 canvas fed via `updateImage`). MapLibre reprojects it for
+Flat AND Globe, **clips it to the sphere (no space colour, ever)**, pans/zooms it natively (no swimming,
+no glow), and the GPU composites it — the per-frame unproject cost is gone. Only the **white particle
+streaks** stay on `#wind-canvas` (dot-test masked on the globe). Colour uses a 256-entry LUT (no per-pixel
+regex). **Finer DATA**: a 5° grid (~2160 pts) fetched as **parallel ≤500-pt chunks** (one URL = HTTP 414)
+and reassembled, with an 8° single-request fallback. Particles calmer (advection 0.05) and ~7k dense.
+- **Cursor readout + valid-time** (`#R8c`): `Wind.sampleAt(lng,lat)` feeds a 🌬 speed/direction chip in
+  the coord HUD; a top-centre pill states the GFS analysis time (`Wind.dataTime()`), in the user's TZ.
+
+### Legend min/close — drawn icons at EVERY width (`#R8b`/`#R8c`)
+The earlier fix only covered ≤768px, so tablet/landscape widths still showed the misaligned **font
+glyphs**. Now the ▢/–/✕ icons are **CSS-drawn shapes at all widths**, and the box props (top/size) live in
+**one shared declaration** so close & min cannot diverge. Verified on a LIVE legend: `sameTop:true`.
+(The remaining user reports are almost certainly a browser cache of the pre-fix file — hard-reload.)
+
+### World languages layer (`#R8b`)
+Asher/Moseley (jakejing) overlay in the *Intelligence (advanced)* group: fill + line, hover popup
+(Language/Family via tolerant key lookup), **lazy-loaded** from `data/asher_languages.geojson`, simplified
+at the source (`tolerance/maxzoom`), cached in memory across style swaps, and **MVT/PMTiles-ready**
+(`window.LANGUAGES_TILES_URL`). A committed placeholder sample + `data/README.md` make it work out of the
+box; drop in the full GeoJSON at the same path, no code change.
+
+### Disputes / pipelines — REAL data, NOT maths (`#R8c`)
+The user clarified: "smooth" = faithful to real data, **not** a Catmull-Rom curve (which invents shape).
+Removed the smoothing from the disputed boundaries and replaced the sparse chords with **dense
+real-geography vertices** (nine-dash 24 pts, Ukraine front, Kashmir LoC, DMZ, Taiwan median), rendered
+as-is. Authoritative boundary GeoJSON (drop-in like languages) is documented future work.
+
+### New features (`#R8c`)
+- **Draw closing line**: finishing a trace with no self-intersection now closes END→START with a
+  **great-circle** line and reports that polygon's area. The closing line is AREA-only — never added to
+  the length, never touched by the smoothing slider (a dashed `draw-close-line` layer).
+- **Place-label click → red fill + copy**: clicking an `ofm-*` place label fills the country polygon red
+  (point-in-polygon over `countryGeo`) / drops a red dot, with a popup carrying a **Copy** button.
+- **Köppen legend**: desktop = **full-height by default** (no scroll, all ~30 classes fit) and the only
+  legend that is **resizable like a window** — vertical-only via `resize:vertical`. Mobile unchanged.
+- **Flat alt-projections removed**: MapLibre can't render Equal-Earth/Robinson/Azimuthal in-space, so they
+  always opened the separate "blank window" the user rejected. The ProjView entry points (right-click +
+  pin button) are **gone**; only the natively-synced Mercator/Globe remain. (ProjView code kept, unwired.)
+- **Settings Save reflect**: Save now also runs `updateI18n()` + `renderUI()` + refreshes the coord
+  readout + dispatches `intmap-lang`, so every saved setting shows immediately.
+- **View bookmarks** (`window.IntMapBookmark`): centre/zoom/bearing/pitch/projection + active layers are
+  mirrored into the URL hash (live permalink, restore on reload); right-click → "Copy link to this view".
+- **Runway / air-base search SCAFFOLD** (`window.RunwaySearch`): right-click → "Runway search (from
+  here)" opens a panel (radius km · military/civil/all · min length · airport-vs-runway view). Data is NOT
+  auto-fetched (per the user); it **lazy-loads OurAirports** (public-domain, CORS*, 14,953 runways),
+  caches in IndexedDB, and filters by great-circle distance. Verified: 60 km around Heathrow → Heathrow/
+  Farnborough/Gatwick/Luton with correct lengths & distances. The "用意" the user asked to prepare.
+
+### Gotcha that bit us (`#R8c`)
+A CSS **comment containing back-ticks** (`` `right` ``) was added INSIDE the injected-style **template
+literal** — the back-tick closed the template early and the whole main script failed to parse
+("Unexpected identifier 'right'"). Lesson: never put back-ticks (or `${`) inside template-literal CSS.
+
+### Still-open / documented future work
+- JP/EN: a few **dynamically-built** layer-control labels (Month/Filter/Layer-date/Sea-level) are correct
+  on a fresh load but go stale if the language is switched mid-session (built via `t()` at build time, not
+  re-localized). Translations all exist; needs the layer-row builder re-run on `intmap-lang`.
+- Historical-border time-travel, demographic-decline projection, civil-defence siren alerts, Arctic
+  sea-ice layer, historic max-territory layer, Stats time-series graphs — all need bundled/era datasets or
+  live alert APIs; documented, not built. Full Cesium hybrid engine remains the deliberate non-goal.
