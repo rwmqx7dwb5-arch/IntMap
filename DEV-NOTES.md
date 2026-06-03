@@ -227,4 +227,106 @@ probed with `curl` first to confirm status + `Access-Control-Allow-Origin:*` bef
   Flat; + mobile Map sheet). The pin popup gets a "🧭 正距方位図 / Azimuthal" button → opens the viewer
   centred on that pin with equidistant range rings (2,500–17,500 km). Reuses `window.countryGeo`, falls
   back to a one-time 110 m fetch.
-  
+
+---
+
+## 9. Round 7 — full requested set + next-gen foundations (tags `#R7`)
+
+Verified in headless `preview_eval`: no console errors; every new global present; external endpoints
+curl-probed first. NOTE on the preview: it runs **hidden** (`document.hidden=true`) so `requestAnimation
+Frame` never fires and WebGL `map.load` doesn't complete — canvas-animation (wind) and map-layer adds
+can't be screenshot-verified there; they're verified by logic + data-fetch + (for wind) reproducing the
+seeding math against the live map. The Draw geometry was unit-tested via `DrawTool._debug.simulate`.
+
+### The deliberate non-goal: NO full CesiumJS swap
+The brief asked for a MapLibre→Cesium hybrid digital-twin migration **and** repeatedly demanded
+"全ロジックを破壊せずに" (don't break any existing logic). Those conflict for an 8k-line working app — a
+rushed engine swap would break every feature. Decision: keep MapLibre as the engine, and instead make
+the app **modular** so a Cesium globe can be fed later through the new simulation bridge without touching
+feature code. Everything in this round is **additive** (new modules/layers/CSS), nothing existing was
+rearchitected. Two data-heavy asks (demographic-decline projection, historical-border time-travel
+geometry) are left as documented future work — they need bundled datasets we don't have.
+
+### Fixes
+- **Wind was the headline bug (#R7).** The layer rendered NOTHING. Root cause: in `spawn()`,
+  `Math.max(-grid?grid.lat0:85, …)` parses as `(-grid)?…:85` → `-{}` is `NaN` (falsy) → `85`, so every
+  particle was seeded at lat ≥72° **above** the wind grid, where `sample()` returns null → instant
+  respawn → empty canvas. Fixed the precedence (`gl=grid?grid.lat0:85; Math.max(-gl,…)`). Then rebuilt
+  to the **Windy model** the user asked for: a wind-SPEED colour FIELD on a new under-canvas
+  (`#wind-bg-canvas`, coarse offscreen unproject→sample→colour, bilinear-upscaled, re-rendered throttled
+  on view change) + **WHITE** particle streaks on top, particle count ~5× denser, 8° grid (855 pts,
+  finer regional flow). Data is real Open-Meteo GFS (curl-verified 200/CORS\*; 855-pt request OK).
+- **Thermal "You have exceeded the transaction limit" (#R7).** FIRMS' own WMS rate-limits per IP, so a
+  tiled map trips it and every tile is the red error PNG. Switched to **NASA GIBS WMS**
+  (`gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi`, VIIRS NOAA-20+SNPP & MODIS Terra+Aqua thermal
+  layers) — purpose-built high-volume tiling, no transaction cap, keyless, CORS\*. The 24/48/72 h
+  "window" is now the most-recent N UTC days **stacked** as separate raster layers (`THERMAL_IDS`),
+  since each GIBS GetMap is one day. `setThermalVis` / `_setThermalOpacity` drive all stacked layers.
+- **NATO Article 6 (#R7).** Switched the members fill from country feature-state to a **dedicated
+  geojson** (`src-nato`, `promoteId:__code` so hover still works) built by dropping every member
+  sub-polygon whose centroid is **south of the Tropic of Cancer (23.4366°N)** — French Guiana,
+  Guadeloupe, Martinique, Saint-Martin, Mayotte, Réunion, New Caledonia, French Polynesia, Hawaii,
+  Puerto Rico, Guam … — i.e. everything outside the Art.6 treaty area. Mainlands aren't clipped
+  (centroid is north). Draws an accurate **Tropic of Cancer** line + label so the cut is self-evident.
+- **Google login immediate reflection (#R7).** `onAuthStateChange` now updates the account button
+  **synchronously** from the event's own session (no Supabase calls inside the lock) before deferring
+  the heavier profile enrich; the post-redirect retry loop re-renders each tick; added a `focus` /
+  `visibilitychange` re-check so returning from Google reflects without a manual reload.
+- **JP/EN (#R7).** Root cause of "English in the JP UI": `currentLang` defaulted to `'en'` and
+  `loadSettings()` ran AFTER legends/`<option>`s were built with `currentLang==='jp'?…:…` ternaries.
+  Now the saved language is read **up-front** (right after the `currentLang` declaration) so everything
+  builds in the right language. Also tagged the thermal-window + traffic-filter `<option>`s with
+  `data-i18n` so they follow a runtime switch.
+- Frosted-glass muted text → near-white (scoped to `body.sidebar-translucent/-glass2` floating
+  surfaces). Mobile legend ▢/✕ given identical 30px metrics + clear gap. Layers dropdown no longer
+  closes when a legend ✕ inside it is clicked. Mobile Mercator min-zoom 1.4→0 (`flatMinZoom()`). 3D no
+  longer auto-pitches/zooms (removed the `easeTo`). Sidebar-centre pan eased to match the CSS
+  `cubic-bezier` (mobile centring already handled by the bottom-sheet `setPadding`).
+- **Radius** got R/G/B quick-swatch presets (`RADIUS_COLOR_PRESETS`) beside the colour picker.
+- **3D / satellite throughput.** `MAX_PARALLEL_IMAGE_REQUESTS` 64→96; DEM over **5** S3 host aliases
+  (HTTP/1.1 → 5× the connection pools); + speculative prefetch (below).
+
+### New: Draw / trace tool (`window.DrawTool`, `#R7`)
+Freehand measurement. Click/tap to start, **move the cursor** to trace (no repeated clicking), click to
+finish (or the panel's Finish; touch = press-drag-release). Length = great-circle along the **smoothed**
+polyline; a **resolution slider** runs Douglas–Peucker (tolerance scaled to the drawing's own bbox, so
+it's zoom-independent) → fewer points, shorter length, live. Self-intersections are found by greedy
+segment-pair scan; each loop's **geodesic** area (`ringArea`, spherical excess) is banked, the loop
+collapsed to its crossing point, repeat. **Area is computed from the RAW trajectory and pinned**, so the
+slider changes length & look but NEVER the area number — proven in `_debug.simulate` (49,459 km² constant
+across smoothing 0/50/90 at 60°N, length 1013→1005 km). Entry: toolbar ✏️ Draw button + right-click
+"Draw / trace from here". Own geojson source `draw-src` (loop fills + line + start/head points).
+
+### Projection (#R7)
+Removed the Flat-view projection **selector** (it spawned the "blank" ProjView window the user disliked).
+Flat = real Mercator and Globe = globe stay in perfect same-space sync. The alt projections now live in
+the **right-click context menu**: "🧭 Azimuthal map (centre here)" centres ProjView on the clicked point;
+"🗺️ Map projections…" opens it (its own bar still switches Equal Earth/Robinson/Winkel/Mollweide/…).
+
+### New: next-gen additive architecture (one self-contained IIFE, `#R7`)
+- `window.IntMapCache` — **IndexedDB** kv store (localStorage fallback); mirrors Supabase dashboard
+  cards for an instant warm start. (News already had a localStorage cache.)
+- `window.IntMapSim` — per-frame **simulation bridge**: external (Wasm) fluid/ballistic compute calls
+  `update(id, geojson)` / `feedParticles` / `feedTracks` and the bridge streams it into a geojson source
+  (`sim-<id>`) every frame — the hook for future satellite/missile 64-bit tracks and a Cesium feed.
+- `window.IntMapWorker` — **Web-Worker** offload bridge (Blob worker, promise `run(task,payload)`;
+  ships a `haversineTotal` task — verified London→Tokyo = 9559 km off-thread). The decoupling foundation
+  for heavy compute / future Wasm.
+- `window.SpeculativePrefetch` — on `moveend`, estimates camera velocity, predicts the next centre
+  ~0.55 s ahead and `new Image()`-warms the active basemap/satellite tiles around it (browser-cache
+  prefetch → instant when the user pans there).
+- **New overlays** in a new "Intelligence (advanced)" dropdown group: **Disputed boundaries**
+  (nine-dash line, Ukraine front, Kashmir LoC, Korean DMZ, Taiwan median line) and **Air-defence
+  coverage** = geodesic range "domes" for 14 SAM sites (S-400/HQ-9/Patriot/THAAD/…) reusing the radius
+  tool's `diskFillPolys`/`diskOutlineLines`; overlapping fills reveal coverage & gaps.
+- **Pipelines layer renewed** (`geoLayersDB.pipelines`): 16 major oil/gas trunk lines (Nord Stream,
+  Yamal, Power of Siberia, ESPO, Druzhba, TurkStream, Blue Stream, Southern Gas Corridor, BTC,
+  West–East/Central-Asia China gas, TAPI, Trans-Med, Maghreb/Medgaz, Keystone, Trans-Alaska).
+- **Information** dashboard: **+41 world military bases** (Norfolk, Yokosuka, Kadena, Ramstein-class US;
+  Russian Khmeimim/Engels/Plesetsk/Vladivostok; Chinese Yulin/Zhanjiang/Mischief/Woody; allied
+  Faslane/Toulon/Île Longue/Stirling/INS Kadamba …).
+
+### Future work (documented, not done this round)
+- Full CesiumJS hybrid engine + 3D-Tiles/Quantized-Mesh + true 3D domes (needs the engine swap above).
+- Demographic-decline / dynamic-power-projection choropleth (needs bundled age-structure dataset).
+- Historical-border time-travel geometry (needs per-era boundary geojson).
