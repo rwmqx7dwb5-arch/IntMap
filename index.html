@@ -1407,7 +1407,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiGeoBtn:"✨ AI-locate all news", aiGeoBtnSub:"✨ AI-locate subject", aiGeoBtnPub:"✨ AI-locate publisher", aiTranslateTitles:"Translate titles", aiGeoBusy:"Locating…", aiGeoNone:"Nothing to locate.", aiGeoDone:"Located {n} stories", aiGeoErr:"Geocoding failed", aiTransBusy:"Translating…", aiTransDone:"Translated {n} titles", aiTransNone:"Titles already in your language.",
       lblNewsLang:"News languages", newsLangUi:"Current language only", newsLangMulti:"All languages (auto-translate titles)", lblAiLocate:"AI location analysis", aiLocManual:"Manual (button)", aiLocAuto:"Automatic for all news",
       aiTranslate:"Translate", aiShowOriginal:"Original", aiTransNoText:"No article text to translate — try Web view.",
-      aiSumBtn:"Summarize this area with AI", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
+      aiSumBtn:"Summarize this area with AI", newsInArea:"News in this area", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
     jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabStats:"統計",
@@ -1439,7 +1439,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiGeoBtnSub:"✨ 主題地をAI解析", aiGeoBtnPub:"✨ 発信元をAI解析", aiTranslateTitles:"タイトルを翻訳", aiGeoBusy:"地点解析中…", aiGeoNone:"解析する記事がありません。", aiGeoDone:"{n}件の地点を解析しました", aiGeoErr:"地点解析に失敗しました", aiTransBusy:"翻訳中…", aiTransDone:"{n}件のタイトルを翻訳しました", aiTransNone:"すでにこの言語のタイトルです。",
       lblNewsLang:"ニュースの言語", newsLangUi:"現在の言語のみ", newsLangMulti:"全言語（タイトルを自動翻訳）", lblAiLocate:"AIによる地点解析", aiLocManual:"手動（ボタン）", aiLocAuto:"全ニュースで自動実行",
       aiTranslate:"AI翻訳", aiShowOriginal:"原文", aiTransNoText:"翻訳できる本文がありません（ページ表示をお試しください）。",
-      aiSumBtn:"この範囲をAIで要約", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
+      aiSumBtn:"この範囲をAIで要約", newsInArea:"この範囲のニュース", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
       aiViewSumBtn:"今の表示エリアを要約", aiViewSumTitle:"画面内で起きていること",
       aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。" }
   };
@@ -3210,6 +3210,26 @@ window.addEventListener('DOMContentLoaded', () => {
   window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); radiusItems.push({id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); refreshTool(); updateToolPanel(); };
   /* Measure: step back one point (#38). If a closed area drops below 3 points it re-opens as a line. */
   window._measureUndo=function(){ if(!measurePoints.length) return; measurePoints.pop(); if(toolMode==='area' && measurePoints.length<3){ toolMode='measure'; _syncToolBtns(); } liveCursor=null; refreshTool(); updateToolPanel(); };
+  /* (#R9/#51) "News in this area": filter the analysed news to the drawn radius/polygon and show it in
+     the News feed, with a dismissable banner. Reuses the same geometry as the AI area-summary. */
+  window._searchNewsInArea=function(){
+    if(!hasTurf()){ try{ imToast('Turf.js unavailable'); }catch(_){} return; }
+    let test=null;
+    if(toolMode==='radius'){ if(!radiusItems.length){ try{ imToast(t('aiSumNoArea')); }catch(_){} return; } const items=radiusItems.slice(); test=(lng,lat)=>items.some(c=>{ try{ return turf.distance(turf.point(c.center),turf.point([lng,lat]),{units:'kilometers'})<=c.radiusKm; }catch(_){ return false; } }); }
+    else if(toolMode==='area'){ if(measurePoints.length<3){ try{ imToast(t('aiSumNoArea')); }catch(_){} return; } let poly; try{ poly=turf.polygon([[...measurePoints,measurePoints[0]]]); }catch(_){ return; } test=(lng,lat)=>{ try{ return turf.booleanPointInPolygon(turf.point([lng,lat]),poly); }catch(_){ return false; } }; }
+    else return;
+    window._newsAreaTest=test;
+    if(currentMode!=='news'){ try{ const b=document.getElementById('btn-news'); if(b) b.click(); }catch(_){} }
+    try{ startNews(); }catch(_){}
+    showAreaNewsBanner();
+  };
+  window._clearNewsArea=function(){ window._newsAreaTest=null; const b=document.getElementById('area-news-banner'); if(b) b.remove(); try{ if(currentMode==='news'||currentMode==='saved') startNews(); }catch(_){} };
+  function showAreaNewsBanner(){
+    let b=document.getElementById('area-news-banner');
+    if(!b){ b=document.createElement('div'); b.id='area-news-banner'; b.style.cssText='display:flex;align-items:center;gap:8px;justify-content:space-between;margin:0 0 8px;padding:7px 11px;border-radius:9px;background:rgba(10,132,255,0.12);border:1px solid var(--primary-color);font-size:12px;color:var(--text-main);';
+      const feed=document.getElementById('live-news-feed'); if(feed&&feed.parentNode) feed.parentNode.insertBefore(b,feed); }
+    b.innerHTML='<span>📍 '+(currentLang==='jp'?'選択範囲のニュースのみ表示中':'Showing news in the selected area')+'</span><button onclick="window._clearNewsArea()" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap;">✕ '+(currentLang==='jp'?'解除':'Clear')+'</button>';
+  }
 
   function updateToolPanel(){
     const p=document.getElementById('tool-panel'); if(!toolMode){ p.style.display='none'; return; } p.style.display='block';
@@ -3227,7 +3247,7 @@ window.addEventListener('DOMContentLoaded', () => {
       body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('total')}</span><b>${distHTML(tot)}</b></div>${brg}`;
     } else if(toolMode==='area'){
       const pe=hasTurf()?ringPerimeter(measurePoints):0, ar=(hasTurf()&&measurePoints.length>=3)?ringArea(measurePoints):0;
-      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('perimeter')}</span><b>${distHTML(pe)}</b></div><div class="tp-row"><span>${t('area')}</span><b>${ar?areaHTML(ar):'—'}</b></div>${measurePoints.length>=3?`<button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
+      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('perimeter')}</span><b>${distHTML(pe)}</b></div><div class="tp-row"><span>${t('area')}</span><b>${ar?areaHTML(ar):'—'}</b></div>${measurePoints.length>=3?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
     } else if(toolMode==='radius'){
       let opts=`<option value="">${t('presetNone')}</option>`;
       RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${grp.g[currentLang]}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
@@ -3241,7 +3261,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="tp-row"><span>${t('radius')}</span><b id="rad-r">${distHTML(radiusKm)}</b></div>
         <div class="tp-row"><span>${t('circumference')}</span><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div>
         <div class="tp-row"><span>${t('area')}</span><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div>
-        <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
+        <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
     }
     const footBtns = (toolMode!=='radius')
       ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
@@ -3249,6 +3269,7 @@ window.addEventListener('DOMContentLoaded', () => {
     p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[toolMode]}</span><button class="tp-close" title="${t('close')}">✕</button></div>${body}${footBtns}`;
     p.querySelector('.tp-close').onclick=exitTool; makeDraggable(p,p.querySelector('.tp-header'));
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
+    { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
     const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; hideMeasureTip(); refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
@@ -4129,7 +4150,7 @@ window.addEventListener('DOMContentLoaded', () => {
     b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey');
     b.textContent = newsPinMode==='publisher' ? t('aiGeoBtnPub') : t('aiGeoBtnSub'); });
 
-  function computeFilteredNews(){ const q=searchVal(); return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false; if(q&&!it.title.toLowerCase().includes(q))return false; return true; }); }
+  function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest; return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false; if(q&&!it.title.toLowerCase().includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
   /* Title shown on a news card. When the translation pass (Settings → multi-language) has
      produced a translated title in the current UI language, show it plus a '(原文: …)' note. */
   function newsTitleHTML(item){

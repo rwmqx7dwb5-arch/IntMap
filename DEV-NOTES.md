@@ -471,3 +471,78 @@ literal** — the back-tick closed the template early and the whole main script 
 - Historical-border time-travel, demographic-decline projection, civil-defence siren alerts, Arctic
   sea-ice layer, historic max-territory layer, Stats time-series graphs — all need bundled/era datasets or
   live alert APIs; documented, not built. Full Cesium hybrid engine remains the deliberate non-goal.
+
+---
+
+## 12. Round 9 — large requested batch (tags `#R9`)
+
+Note up front: Cesium migration was **abandoned by the user** ("没にしました") — MapLibre stays the engine.
+Everything below is additive/in-place; verified in the headless preview (`preview_eval` for globals/DOM/CSS
++ console-error checks; the hidden preview never finishes WebGL `map.load`, so map-layer *adds* are verified
+by wiring + data-probe, not a screenshot). External endpoints curl-probed before wiring.
+
+### Done this round
+- **Measurement consolidation** — desktop **Measure/Draw collapsed under one "Measure ▾"** dropdown; **Radius
+  stays standalone**; the **Area button is gone** (Measure still auto-closes into an area when you click the
+  start vertex). The old `['measure','area','radius']` button loops are now a null-safe `_syncToolBtns()` so
+  removing the Area button can't throw, and the trigger lights up for measure/area/draw. **Undo last point**
+  (`_measureUndo`, ↶ in the tool panel). Removed Area proxy on mobile, **added a Screenshot tool** there.
+- **Draw aux-line bug** — `DrawTool.exit()` never reset `closeAux`, so the dashed END→START closing line
+  persisted after closing Draw. Now reset on exit.
+- **Context menu** — removed "Copy link to this view" and "Draw / trace from here"; added **"⭕ Radius from
+  here"** (`_radiusFromPoint`) and a Radius button in the **pin popup** (`_radiusFromPin`) — fixed centre,
+  tune radius/colour after.
+- **Frosted glass** — "Frosted glass" now IS the rich frosted look (was the old "more transparent"); the
+  "Frosted glass (more transparent)" slot is **genuinely see-through** (≈10–14 % fill, light blur, readability
+  text-shadow). JP label simplified to「フロストガラス」/「フロストガラス（さらに透明）」.
+- **Buy me a blueberry / 開発を支援する** — button always sits just above Apply (last `.setting-group`), opens a
+  modal with the exact thank-you copy + a Stripe link (`window.INTMAP_STRIPE_URL`, **replace the placeholder**).
+- **AI-key warning** — AI buttons (locate / translate / summarize / sat-change) are **no longer `disabled`**
+  without a key (a dead press); they get `.ai-needs-key` (dimmed) and the click now surfaces the existing
+  `aiNoKey` toast ("Add an AI API key in Settings → AI features first.").
+- **Settings scroll bug** — reopening Settings now blurs the focused element and resets `.modal-content`
+  scrollTop (double-rAF), so it always opens at the top instead of jumping to Apply at the bottom.
+- **News language filter** — multi-language mode now fetches **only the ticked languages**; the UI-language
+  WORLD/BUSINESS base feeds are added only when the UI language is among the selections (so picking just
+  Russian no longer leaks English).
+- **Translate-titles UI** — same "detecting" spinner/progress + result toast as AI-locate (`aiTransBusy/Done/None`).
+- **Tab/search spacing swapped** (#21) — global `.search-bar` margin override removed; tabs→search and
+  search→All/Saved gaps swapped per breakpoint (desktop 16/12 → 12/16; mobile 6/12 → 12/6). Verified live.
+- **Sea-level both ways** — slider now **−150…+70 m** plus a **custom number box (−11000…+9000, negative =
+  fall)** with an inline out-of-range error; `seaLevelRamp` rebuilt to keep only strictly-ascending stops so
+  negative offsets don't throw. Layer/legend renamed **Sea-level change /「海面変動」**.
+- **New layers** — **GDP per capita** choropleth (`gdppc`, reuses the bundled `gdppc` field) and **Night lights
+  (satellite)** = VIIRS **Black Marble** via GIBS (`nightsat`).
+- **Place-label click** — removed the red area/dot **highlight**; only the copyable popup remains, and it's
+  **self-themed** (`.plc-popup`) so the name is readable in **dark mode**.
+- **Coordinate paste** (#52) — pasting/typing `lat,lng`, `lat lng`, or hemisphere forms (`35.6N, 139.7E`,
+  either order) into the search box **flies there instantly** (`parseLatLng` + debounced `coordFly`; also from
+  the Search button).
+- **User GeoJSON upload** (#49) — `window.GeoJSONUpload`: a "📂 Upload GeoJSON" button in the Layers menu **or
+  drag-and-drop onto the map**; auto-styles fill/line/point, fits bounds, each upload removable.
+- **Tactical / military theme** (#58) — Settings → Appearance → "Tactical": phosphor-green HUD on near-black
+  olive, monospace type, sharp corners, neon buttons, faint CRT scanlines. `body.theme-tactical` on the dark base.
+- **Legends** — □/×/▢ icons now centre with `transform:translate(-50%,-50%)` (size-independent → pixel-exact at
+  any DPR, kills the last □-vs-× drift); **collapsed legend** hugs the title (tighter padding); the **Köppen
+  legend header + ⋮⋮ handle + min/close stay pinned** while only the inner `.kl-scroll` rows scroll.
+- **Runway search** (#47/#48) — clicking a result **row or a pin** opens an info popup (code / municipality /
+  type / longest runway / count / coords) with a **Wikipedia link**; `makeDraggable` now also clears `bottom`
+  so panels (incl. the runway panel) **drag vertically**, not just sideways.
+- **Screenshot** — the timebar's drop-shadow is flattened in `capture-mode` (#44).
+- **AI Subject-Location prompt** sharpened (#43): ignore outlet/dateline + "spoke-about" venues (White House →
+  the Middle-East country), prefer the most specific place.
+- **News in a drawn area** (#51) — a "📍 News in this area" button on the Area/Radius tool panels filters the
+  analysed news to the shape (`_newsAreaTest` in `computeFilteredNews`), switches to the News tab, and shows a
+  dismissable banner (`_searchNewsInArea` / `_clearNewsArea`).
+
+### Deferred (need datasets / heavy engines / deep mobile-gesture reworks — documented, not built)
+- Arctic sea-ice layer: GIBS serves sea-ice only in the **polar projections** (EPSG:3413/3031), not the
+  Web-Mercator tiles the mercator/globe basemap needs — can't align without a polar reprojection step.
+- Historical-border time-travel + period economic stats, historic max-territory, demographic projection,
+  Stats time-series graphs — need bundled per-era datasets.
+- Civil-defence siren (Ukraine/Israel) live alert polygons — need the alert APIs + CORS handling.
+- Country-isolation "only this country" mode (#53); 3D line-of-sight / radar-shadow (#56); maritime A*
+  routing (#57) — large geometry/terrain engines.
+- Elevation profile under a measured line (#46); financial/weather/clock widgets (#50); jina.ai in-app
+  reader (#45); mobile centre-fixed Add-Point measuring + crosshair + desktop Add-Point button
+  (#34/#35/#36) — sizeable, left for a focused round.
