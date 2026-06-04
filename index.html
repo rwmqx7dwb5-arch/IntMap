@@ -2792,11 +2792,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const popup=document.getElementById('country-popup');
     document.getElementById('cp-title').innerHTML=(s&&s.flag?s.flag+' ':'🏳️ ')+name;
     const body=document.getElementById('cp-body');
-    const isoBtn=()=>`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter('${idStr.replace(/'/g,"")}')" style="width:100%;margin:0 0 12px;padding:9px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12.5px;cursor:pointer;">🔍 ${currentLang==='jp'?'この国だけ表示':'Isolate this country'}</button>`;
-    body.innerHTML=isoBtn()+renderCountryDetailBody(s);
+    window._cpCurrent={code:idStr,name:name};   /* read by the isolate + time-series buttons */
+    const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
+      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="flex:1;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;">🔍 ${currentLang==='jp'?'この国だけ':'Isolate'}</button>`
+      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="flex:1;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;">📈 ${currentLang==='jp'?'時系列グラフ':'Time-series'}</button>`
+      +`</div>`;
+    body.innerHTML=topBtns()+renderCountryDetailBody(s);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
-    /* Asynchronously enrich and re-render (#R9b: keep the isolate button at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block') body.innerHTML=isoBtn()+renderCountryDetailBody(countryStats[idStr]); document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
+    /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block') body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
     popup.style.display='block';
     /* Initial centered position (viewport coords). Drag handle wires in once. */
     if(!popup.dataset.placed){
@@ -9070,6 +9074,49 @@ window.addEventListener('DOMContentLoaded', () => {
     function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} if(btn) btn.style.display='none'; }
     map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){} } },80); } });
     return { enter, exit, active:()=>active };
+  })();
+
+  /* ===== (#R9b/#9) Per-country time-series graphs from the World Bank Open Data API (CORS *). Opened
+     from the country detail popup; draws a small SVG line chart per indicator. ===== */
+  window.IntMapTimeSeries=(function(){
+    const jp=()=>currentLang==='jp';
+    function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
+    const IND=[
+      {id:'NY.GDP.MKTP.CD', label:['GDP (US$)','GDP（米ドル）'], fmt:v=>'$'+short(v)},
+      {id:'NY.GDP.PCAP.CD', label:['GDP per capita','1人当たりGDP'], fmt:v=>'$'+Math.round(v).toLocaleString()},
+      {id:'SP.POP.TOTL', label:['Population','人口'], fmt:v=>short(v)},
+      {id:'SP.DYN.LE00.IN', label:['Life expectancy','平均寿命'], fmt:v=>v.toFixed(1)+(jp()?' 歳':' yr')},
+      {id:'MS.MIL.XPND.GD.ZS', label:['Military (% GDP)','軍事費（対GDP）'], fmt:v=>v.toFixed(2)+'%'},
+      {id:'EN.ATM.CO2E.PC', label:['CO₂ per capita (t)','1人当たりCO₂ (t)'], fmt:v=>v.toFixed(2)}
+    ];
+    let modal=null;
+    function ensureModal(){ if(modal) return modal; modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='timeseries-modal';
+      modal.innerHTML='<div class="modal-content" style="position:relative;max-width:560px;max-height:86vh;overflow-y:auto;"><button id="ts-x" type="button" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;">×</button><h3 id="ts-title" style="margin:0 0 4px;font-size:18px;"></h3><p id="ts-sub" style="margin:0 0 12px;color:var(--text-muted);font-size:12px;"></p><div id="ts-body"></div></div>';
+      document.body.appendChild(modal);
+      modal.querySelector('#ts-x').onclick=()=>{ modal.style.display='none'; };
+      modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
+      return modal; }
+    async function fetchInd(code,id){ try{ const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=70&date=1970:2024'); const j=await r.json(); if(!Array.isArray(j)||!j[1]) return null; return j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); }catch(_){ return null; } }
+    function chart(series,label,fmt){
+      if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(jp()?'データなし':'no data')+'</div>';
+      const W=500,H=92,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v), minV=Math.min(...ys), maxV=Math.max(...ys), y0=series[0].y, y1=series[series.length-1].y;
+      const X=y=>padL+((y-y0)/((y1-y0)||1))*(W-padL-padR), Y=v=>padT+(1-(v-minV)/((maxV-minV)||1))*(H-padT-padB);
+      let d=''; series.forEach((s,i)=>{ d+=(i?'L':'M')+X(s.y).toFixed(1)+' '+Y(s.v).toFixed(1)+' '; });
+      const last=series[series.length-1];
+      return '<div style="margin:0 0 12px;"><div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px;"><b style="color:var(--text-main);">'+label+'</b><span style="color:var(--primary-color);font-weight:700;">'+fmt(last.v)+' <span style="color:var(--text-muted);font-weight:400;">('+last.y+')</span></span></div>'
+        +'<svg width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;"><path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+        +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text></svg></div>';
+    }
+    async function open(){ const cur=window._cpCurrent||{}; const code=cur.code; if(!code) return;
+      const m=ensureModal(); m.style.display='flex';
+      m.querySelector('#ts-title').textContent=(jp()?'時系列グラフ — ':'Time-series — ')+(cur.name||code);
+      m.querySelector('#ts-sub').textContent=jp()?'出典: 世界銀行オープンデータ':'Source: World Bank Open Data';
+      const body=m.querySelector('#ts-body'); body.innerHTML=jp()?'読み込み中…':'Loading…';
+      const results=await Promise.all(IND.map(ind=>fetchInd(code,ind.id)));
+      const html=IND.map((ind,i)=>chart(results[i],jp()?ind.label[1]:ind.label[0],ind.fmt)).join('');
+      body.innerHTML=html || (jp()?'データがありません':'No data available');
+    }
+    return { open };
   })();
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
