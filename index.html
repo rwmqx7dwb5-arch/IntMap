@@ -1101,6 +1101,7 @@
         </div>
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
         <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
+        <button class="view-btn" id="btn-widgets" title="Widgets (clock / weather / FX)">🧩</button>
         <div class="layer-menu-container">
           <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
           <div class="layer-dropdown" id="layer-dropdown">
@@ -4256,7 +4257,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(item.analysis.mapped===true) chipCls='loc-chip';
       else if(item.analysis.mapped==='publisher') chipCls='loc-chip publisher';
       else chipCls='loc-chip unmapped';
-      const readLabel = currentLang==='jp'?'記事を読む ↗':'Read ↗';
+      const readLabel = currentLang==='jp'?'📖 本文を読む':'📖 Read here';
       card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}">★</button>
         <div class="news-head"><span class="${chipCls}">${item.analysis.name||(currentLang==='jp'?'場所不明':'Location unknown')}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${newsTitleHTML(item)}</div>
@@ -4265,8 +4266,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if(currentUser){ const on=await toggleFavorite(item.link,item.title); if(currentMode==='saved')startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active',on); }
         else { /* guest: keep a local list until they log in */ if(bookmarks.includes(item.link))bookmarks=bookmarks.filter(b=>b!==item.link); else bookmarks.push(item.link); saveBookmarks(); if(currentMode==='saved')startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active'); }
       };
-      /* Read article → open directly in the device's browser (the in-app mini-browser was removed) */
-      card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); window.open(item.link,'_blank','noopener'); };
+      /* (#R9b/#45) Read in-app via the r.jina.ai reader (clean body text in the sidebar); the reader
+         itself offers "Open original ↗" + a web fallback. */
+      card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); try{ openArticleInSidebar(item); }catch(_){ window.open(item.link,'_blank','noopener'); } };
       /* Whole card → fly to the map location (replaces the old "Show on map" button) */
       card.onclick=()=>{ if(map&&item.analysis.loc) map.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
       item._cardEl=card; /* lets the translation pass update this title in place */
