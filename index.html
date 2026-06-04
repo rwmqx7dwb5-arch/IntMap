@@ -2792,10 +2792,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const popup=document.getElementById('country-popup');
     document.getElementById('cp-title').innerHTML=(s&&s.flag?s.flag+' ':'🏳️ ')+name;
     const body=document.getElementById('cp-body');
-    body.innerHTML=renderCountryDetailBody(s);
+    const isoBtn=()=>`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter('${idStr.replace(/'/g,"")}')" style="width:100%;margin:0 0 12px;padding:9px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12.5px;cursor:pointer;">🔍 ${currentLang==='jp'?'この国だけ表示':'Isolate this country'}</button>`;
+    body.innerHTML=isoBtn()+renderCountryDetailBody(s);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
-    /* Asynchronously enrich and re-render */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block') body.innerHTML=renderCountryDetailBody(countryStats[idStr]); document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
+    /* Asynchronously enrich and re-render (#R9b: keep the isolate button at the top) */
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block') body.innerHTML=isoBtn()+renderCountryDetailBody(countryStats[idStr]); document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
     popup.style.display='block';
     /* Initial centered position (viewport coords). Drag handle wires in once. */
     if(!popup.dataset.placed){
@@ -9037,6 +9038,39 @@ window.addEventListener('DOMContentLoaded', () => {
       +'</svg>';
     box.innerHTML=svg+'<div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:10px;margin-top:2px;"><span>0 km</span><span>'+total.toFixed(total<10?1:0)+' km</span></div>';
   }
+
+  /* ===== (#R9b/#53) Country isolation — show only the selected country; mask the rest with the globe-style
+     background. A floating "Exit isolation" pill restores the full map. ===== */
+  window.IntMapIsolate=(function(){
+    if(!map) return { enter(){}, exit(){}, active:()=>false };
+    const jp=()=>currentLang==='jp'; let active=false, btn=null;
+    function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark' || document.body.classList.contains('theme-tactical')) ? '#05060a' : '#f2f2f4'; }
+    function ensure(){ if(map.getSource('iso-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
+        return true;
+      }catch(_){ return false; } }
+    function findFeature(id){ const cg=window.countryGeo; if(!cg||!cg.features) return null;
+      return cg.features.find(f=>String(f.id)===String(id)) || cg.features.find(f=>{ const p=f.properties||{}; return [p.__code,p.ISO_A3,p.iso_a3,p.ADM0_A3,p.id].map(String).includes(String(id)); }); }
+    function maskFC(feat){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry;
+      if(g.type==='Polygon') holes.push(g.coordinates[0]); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(poly[0]));
+      return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[world,...holes]},properties:{}}]}; }
+    function bbox(feat){ let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=ring=>ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; });
+      const g=feat.geometry; if(g.type==='Polygon') g.coordinates.forEach(eat); else g.coordinates.forEach(poly=>poly.forEach(eat)); return [[mnx,mny],[mxx,mxy]]; }
+    function exitBtn(){ if(btn) return btn; btn=document.createElement('button'); btn.id='iso-exit-btn';
+      btn.style.cssText='display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
+      btn.onclick=exit; (document.getElementById('map-container')||document.body).appendChild(btn); return btn; }
+    function enter(id){ const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
+        const feat=findFeature(id); if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
+        try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){}
+        active=true; const b=exitBtn(); b.textContent='✕ '+(jp()?'全体表示に戻る':'Exit country view'); b.style.display='block';
+        try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179) map.fitBounds(bb,{padding:60,duration:800}); }catch(_){}
+        try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
+      }; apply(); }
+    function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} if(btn) btn.style.display='none'; }
+    map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){} } },80); } });
+    return { enter, exit, active:()=>active };
+  })();
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
      Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels
