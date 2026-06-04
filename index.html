@@ -93,6 +93,12 @@
     .view-btn.active{ background:var(--card-bg); box-shadow:0 2px 8px rgba(0,0,0,0.1); color:var(--primary-color); } .view-btn.tool-on{ background:var(--primary-color); color:#fff; }
     .compass-btn{ width:40px; display:flex; align-items:center; justify-content:center; } .compass-svg{ transition:transform 0.2s; display:block; }
     .layer-menu-container{ position:relative; }
+    /* (#R9) Measurement tools collapsed under one "Measure ▾" trigger (Radius stays standalone). */
+    .measure-menu-container{ position:relative; display:inline-block; }
+    .measure-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; padding:6px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:182px; flex-direction:column; gap:4px; }
+    .measure-menu-container.open .measure-dropdown{ display:flex; }
+    .measure-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
+    .caret-sm{ font-size:9px; opacity:0.7; }
     .layer-dropdown{ display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--popup-bg); border-radius:12px; padding:12px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); min-width:210px; backdrop-filter:blur(15px); flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; }
     .layer-dropdown.show{ display:flex; }
     .layer-option{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; padding:6px; border-radius:8px; transition:0.2s; } .layer-option:hover{ background:var(--input-bg); }
@@ -109,6 +115,10 @@
     .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:1000; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
     .tp-title{ font-weight:600; margin-bottom:8px; } .tp-row{ display:flex; justify-content:space-between; margin:4px 0; } .tp-hint{ font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4; }
     .tp-clear{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-weight:600; cursor:pointer; } .tp-clear:hover{ background:rgba(128,128,128,0.15); }
+    .tp-foot-btns{ display:flex; gap:6px; } .tp-foot-btns .tp-clear{ flex:1; }
+    /* (#R9) AI buttons stay clickable without a key so pressing them shows the "add a key in Settings"
+       toast (they used to be disabled → a dead press); dimmed to signal the missing key. */
+    .ai-needs-key{ opacity:0.6; }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
@@ -759,9 +769,15 @@
        AND every floating popup, panel, legend, timeline and control — so the whole UI
        shares one consistent glass texture (#1). ------------------------------------- */
     :root{ --glass-blur:16px; --glass-sat:150%; --glass-fill:var(--card-bg); --glass-border:rgba(128,128,128,0.16); }
-    body.sidebar-translucent{ --glass-blur:26px; --glass-sat:185%; --glass-fill:var(--popup-bg); }
-    body.sidebar-glass2{ --glass-blur:34px; --glass-sat:200%; --glass-fill:rgba(255,255,255,0.40); --glass-border:rgba(255,255,255,0.34); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(40,40,44,0.42); --glass-border:rgba(255,255,255,0.10); }
+    /* (#R9) "Frosted glass" is the proper frosted material (was the old "more transparent" look);
+       "Frosted glass (more transparent)" is now GENUINELY see-through — minimal fill, light blur. */
+    body.sidebar-translucent{ --glass-blur:32px; --glass-sat:195%; --glass-fill:rgba(255,255,255,0.42); --glass-border:rgba(255,255,255,0.34); }
+    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(40,40,44,0.46); --glass-border:rgba(255,255,255,0.10); }
+    body.sidebar-glass2{ --glass-blur:13px; --glass-sat:155%; --glass-fill:rgba(255,255,255,0.10); --glass-border:rgba(255,255,255,0.24); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(24,24,28,0.14); --glass-border:rgba(255,255,255,0.08); }
+    /* In the genuinely-transparent mode the map shows through strongly, so add a readability shadow. */
+    body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
+      .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 1px 3px rgba(0,0,0,0.55); }
 
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
@@ -1052,9 +1068,13 @@
       </div>
       <div class="map-view-group">
         <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels">🌐 Grid</button>
-        <button class="view-btn" id="btn-tool-measure" data-i18n="measureBtn" title="Measure Distance">📏 Measure</button>
-        <button class="view-btn" id="btn-tool-area" data-i18n="areaBtn" title="Measure Area">📐 Area</button>
-        <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
+        <div class="measure-menu-container">
+          <button class="view-btn" id="btn-measure-menu" title="Measurement tools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
+          <div class="measure-dropdown" id="measure-dropdown">
+            <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area">📏 Distance / area</button>
+            <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
+          </div>
+        </div>
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
         <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
         <div class="layer-menu-container">
@@ -1154,11 +1174,28 @@
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
     </div>
+    <!-- (#R9) Support button — always the last item before Apply, so future settings push it down but it
+         stays directly above Apply. -->
+    <div class="setting-group" id="support-group">
+      <button type="button" id="btn-blueberry" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="blueberryBtn">🫐 Buy me a blueberry</button>
+    </div>
     <button class="modal-close-btn" id="btn-close-settings">Apply</button>
     <div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--text-muted);">
       <a href="#" id="link-terms" style="color:var(--text-muted);">Terms of Service</a> ·
       <a href="#" id="link-privacy" style="color:var(--text-muted);">Privacy Policy</a>
     </div>
+  </div>
+</div>
+
+<!-- (#R9) Support / "Buy me a blueberry" -->
+<div class="modal-overlay" id="blueberry-modal">
+  <div class="modal-content" style="position:relative;max-width:440px;text-align:center;">
+    <button id="blueberry-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <div style="font-size:46px;line-height:1;margin:6px 0 12px;">🫐</div>
+    <h3 id="blueberry-title" style="margin:0 0 12px;font-size:17px;">Support IntMap</h3>
+    <p id="blueberry-body" style="font-size:13.5px;line-height:1.65;color:var(--text-main);white-space:pre-line;margin:0 0 18px;"></p>
+    <a id="blueberry-go" href="#" target="_blank" rel="noopener" class="modal-close-btn" style="display:block;text-decoration:none;box-sizing:border-box;">Continue ↗</a>
+    <p id="blueberry-note" style="font-size:11px;color:var(--text-muted);margin:10px 0 0;"></p>
   </div>
 </div>
 
@@ -1253,9 +1290,9 @@
     <div class="m-tool-grid">
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-grid"><span class="ico">🌐</span><span>Grid</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-measure"><span class="ico">📏</span><span>Measure</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-tool-area"><span class="ico">📐</span><span>Area</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
+      <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico">📷</span><span data-i18n="mScreenshot">Screenshot</span></button>
     </div>
   </div>
 </div>
@@ -1324,13 +1361,13 @@ window.addEventListener('DOMContentLoaded', () => {
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
       lblTheme:"Appearance", lblTz:"Timezone Setting", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
-      readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear",
+      readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
       measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
       placeNames:"Place names", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", layersBtn:"Layers ▾",
+      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time-travel news", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
@@ -1356,13 +1393,13 @@ window.addEventListener('DOMContentLoaded', () => {
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
       lblTheme:"UIテーマ", lblTz:"基準タイムゾーン", btnApply:"適用", optAuto:"システム標準", optLocal:"ローカル標準時 (端末依存)",
       dashCatMil:"軍事・戦略拠点", dashCatTech:"技術・サイバー", dashCatMar:"海上輸送・要衝", dashCatGeo:"地政学・気候",
-      readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア",
+      readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
       measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
       placeNames:"地名表示", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
@@ -1681,7 +1718,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const pv=panel.querySelector('#satc-prev'); if(pv) pv.onclick=()=>satStepDay(-1);
     const nx=panel.querySelector('#satc-next'); if(nx) nx.onclick=()=>satStepDay(1);
     const op=panel.querySelector('#satc-op'); if(op) op.oninput=ev=>satSetOpacity(parseFloat(ev.target.value));
-    const cb=panel.querySelector('#ai-satchange-btn'); if(cb){ cb.disabled=!aiVisionReady(); cb.title=aiVisionReady()?'':(aiReady()?t('aiNoVision'):t('aiNoKey')); cb.onclick=aiSatChangeDetect; }
+    const cb=panel.querySelector('#ai-satchange-btn'); if(cb){ cb.classList.toggle('ai-needs-key',!aiVisionReady()); cb.title=aiVisionReady()?'':(aiReady()?t('aiNoVision'):t('aiNoKey')); cb.onclick=aiSatChangeDetect; }
     const cl=panel.querySelector('#satc-close'); if(cl) cl.onclick=()=>{ satPanelDismissed=true; panel.style.display='none'; };
   }
   /* Settings-modal API-key management (Pro / BYOK providers). */
@@ -2063,7 +2100,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     run();
   }
-  aiButtonSyncers.push(function(){ const b=document.getElementById('ai-satchange-btn'); if(!b) return; b.disabled=!aiVisionReady(); b.title=aiVisionReady()?'':(aiReady()?t('aiNoVision'):t('aiNoKey')); });
+  aiButtonSyncers.push(function(){ const b=document.getElementById('ai-satchange-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiVisionReady()); b.title=aiVisionReady()?'':(aiReady()?t('aiNoVision'):t('aiNoKey')); });
 
   window.matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{ if(userTheme==='auto') applyTheme(); });
 
@@ -3114,16 +3151,25 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(e){return 0;}
   }
 
+  /* (#R9) Area is no longer a standalone button — Measure auto-closes into area mode — and Measure/Draw
+     live inside one "Measure ▾" dropdown, so the toolbar highlight is computed null-safe here and the
+     dropdown trigger lights up for measure/area/draw. */
+  function _syncToolBtns(){
+    ['measure','radius'].forEach(m=>{ const b=document.getElementById('btn-tool-'+m); if(b) b.classList.toggle('tool-on', toolMode===m); });
+    const trig=document.getElementById('btn-measure-menu');
+    if(trig) trig.classList.toggle('tool-on', toolMode==='measure'||toolMode==='area'||!!(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()));
+  }
+  window._syncToolBtns=_syncToolBtns;
   function exitTool(){
     toolMode=null; liveCursor=null; measureSnapClose=false;
-    ['measure','area','radius'].forEach(m=>document.getElementById('btn-tool-'+m).classList.remove('tool-on'));
+    _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
     document.getElementById('map-container').classList.remove('tool-active'); if(map)map.doubleClickZoom.enable();
     document.getElementById('tool-panel').style.display='none';
   }
   function setTool(mode){
     if(toolMode===mode){ exitTool(); return; }
-    toolMode=mode; ['measure','area','radius'].forEach(m=>document.getElementById('btn-tool-'+m).classList.toggle('tool-on',toolMode===m));
+    toolMode=mode; _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
     document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
     const p=document.getElementById('tool-panel'); p.style.left=''; p.style.top=''; p.style.right=''; updateToolPanel();
@@ -3132,6 +3178,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
   window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); refreshTool(); updateToolPanel(); };
   window.clearAllRadius=function(){ radiusItems=[]; refreshTool(); updateToolPanel(); };
+  /* Radius from an already-chosen point (right-click menu + map-click popup, #54): drop the circle at
+     a fixed centre, then let the user tune radius / colour in the tool panel. */
+  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); radiusItems.push({id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); refreshTool(); updateToolPanel(); };
+  /* Measure: step back one point (#38). If a closed area drops below 3 points it re-opens as a line. */
+  window._measureUndo=function(){ if(!measurePoints.length) return; measurePoints.pop(); if(toolMode==='area' && measurePoints.length<3){ toolMode='measure'; _syncToolBtns(); } liveCursor=null; refreshTool(); updateToolPanel(); };
 
   function updateToolPanel(){
     const p=document.getElementById('tool-panel'); if(!toolMode){ p.style.display='none'; return; } p.style.display='block';
@@ -3165,10 +3216,14 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="tp-row"><span>${t('area')}</span><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div>
         <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
     }
-    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[toolMode]}</span><button class="tp-close" title="${t('close')}">✕</button></div>${body}${toolMode!=='radius'?`<button class="tp-clear" id="tp-clear">${t('clear')}</button>`:''}`;
+    const footBtns = (toolMode!=='radius')
+      ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
+      : '';
+    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[toolMode]}</span><button class="tp-close" title="${t('close')}">✕</button></div>${body}${footBtns}`;
     p.querySelector('.tp-close').onclick=exitTool; makeDraggable(p,p.querySelector('.tp-header'));
-    { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.disabled=!aiReady(); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
+    { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
     const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; hideMeasureTip(); refreshTool(); updateToolPanel(); };
+    const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
       const r=p.querySelector('#radius-range'), n=p.querySelector('#radius-num'), op=p.querySelector('#radius-op'), pre=p.querySelector('#radius-preset'), col=p.querySelector('#radius-color');
       const refresh=()=>{ p.querySelector('#rad-r').innerHTML=distHTML(radiusKm); p.querySelector('#rad-c').innerHTML=distHTML(2*Math.PI*radiusKm); p.querySelector('#rad-a').innerHTML=areaHTML(Math.PI*radiusKm*radiusKm); };
@@ -3237,7 +3292,7 @@ window.addEventListener('DOMContentLoaded', () => {
     _aiAreaSummarize(uniq,'aiViewSumTitle');
   }
   { const vb=document.getElementById('ai-view-summary-btn'); if(vb) vb.onclick=aiSummarizeView; }
-  aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey'); });
+  aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   function handleMapClick(lng,lat,point){
     /* (#R7-draw) The freehand Draw tool owns the map gesture while it is active. */
     if(window.DrawTool && window.DrawTool.active()) return;
@@ -3282,7 +3337,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(Math.hypot(dx,dy)<SNAP_PX){
           toolMode='area'; measureSnapClose=false;
           document.getElementById('measure-tooltip').classList.remove('closing');
-          ['measure','area'].forEach(m=>document.getElementById('btn-tool-'+m).classList.toggle('tool-on',toolMode===m));
+          _syncToolBtns();
           refreshTool(); updateToolPanel();
           return;
         }
@@ -3475,9 +3530,16 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
   }
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
-  document.getElementById('btn-tool-measure').onclick=()=>setTool('measure');
-  document.getElementById('btn-tool-area').onclick=()=>setTool('area');
+  document.getElementById('btn-tool-measure').onclick=()=>{ setTool('measure'); if(window._closeMeasureMenu)window._closeMeasureMenu(); };
   document.getElementById('btn-tool-radius').onclick=()=>setTool('radius');
+  /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
+  (function(){
+    const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
+    window._closeMeasureMenu=()=>{ if(c) c.classList.remove('open'); };
+    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); if(c) c.classList.toggle('open'); }; }
+    document.addEventListener('click',(e)=>{ if(c && !c.contains(e.target)) c.classList.remove('open'); });
+    const dr=document.getElementById('btn-tool-draw'); if(dr) dr.addEventListener('click',()=>window._closeMeasureMenu&&window._closeMeasureMenu());
+  })();
   function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&map)s.style.transform=`rotate(${-map.getBearing()}deg)`; }
   document.getElementById('btn-compass').onclick=()=>map&&map.easeTo({bearing:0,pitch:0,duration:500});
 
@@ -3969,7 +4031,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Manual "Translate titles" button (#28) — translates the visible headlines into the UI language. */
     const tb=document.getElementById('ai-translate-btn');
     if(tb) tb.onclick=()=>{ try{ if(!aiReady()){ openAISettingsOrToast(); return; } aiTranslateTitles(); }catch(_){} };
-    aiButtonSyncers.push(function(){ const b=document.getElementById('ai-translate-btn'); if(!b) return; b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey'); });
+    aiButtonSyncers.push(function(){ const b=document.getElementById('ai-translate-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   })();
   function openAISettingsOrToast(){ try{ imToast(t('aiNoKey')); }catch(_){} }
 
@@ -4037,7 +4099,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   { const gb=document.getElementById('ai-geocode-btn'); if(gb) gb.onclick=()=>aiGeocodeNews(true); }
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-geocode-btn'); if(!b) return;
-    b.disabled=!aiReady(); b.title=aiReady()?'':t('aiNoKey');
+    b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey');
     b.textContent = newsPinMode==='publisher' ? t('aiGeoBtnPub') : t('aiGeoBtnSub'); });
 
   function computeFilteredNews(){ const q=searchVal(); return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false; if(q&&!it.title.toLowerCase().includes(q))return false; return true; }); }
@@ -4770,7 +4832,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
-  document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme; document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex'; };
+  document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme; document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex';
+    /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
+       scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
+    try{ document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); }catch(_){}
+    const _mc=modal.querySelector('.modal-content'); if(_mc){ _mc.scrollTop=0; requestAnimationFrame(()=>{ _mc.scrollTop=0; modal.scrollTop=0; }); }
+  };
   document.getElementById('btn-close-settings').onclick=()=>{
     userTheme=document.getElementById('setting-theme').value; userTZ=document.getElementById('setting-tz').value; unitMode=document.getElementById('setting-units').value;
     aiLocateMode=document.getElementById('setting-ailocate').value; localStorage.setItem('intmap_ai_locate',aiLocateMode);
@@ -4790,6 +4857,24 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   document.getElementById('settings-close-x').onclick=closeSettings;
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
+
+  /* ===== (#R9) "Buy me a blueberry" / 開発を支援する =====
+     Stripe Payment Link. Configure it for "customer chooses what to pay" (pay-what-you-want) and add
+     any preset amounts on Stripe's side — both options then appear on the hosted page. Replace the URL
+     below with your real Stripe link. */
+  window.INTMAP_STRIPE_URL = window.INTMAP_STRIPE_URL || 'https://donate.stripe.com/00gbJ1abc0000000000000';
+  (function(){
+    const bm=document.getElementById('blueberry-modal'); if(!bm) return;
+    function fill(){ const set=(id,key)=>{ const el=document.getElementById(id); if(el) el.textContent=t(key); };
+      set('blueberry-title','blueberryTitle'); set('blueberry-body','blueberryBody'); set('blueberry-go','blueberryGo'); set('blueberry-note','blueberryNote');
+      const go=document.getElementById('blueberry-go'); if(go) go.href=window.INTMAP_STRIPE_URL; }
+    function open(){ fill(); bm.style.display='flex'; }
+    function close(){ bm.style.display='none'; }
+    const btn=document.getElementById('btn-blueberry'); if(btn) btn.onclick=open;
+    const x=document.getElementById('blueberry-close-x'); if(x) x.onclick=close;
+    bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
+    window._openBlueberry=open;
+  })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
   const LEGAL_DATE='2026-06-01';
@@ -4919,7 +5004,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}
-      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
+      <div class="pin-popup-actions"><button onclick="window._measureFromPin('${pin.id}')">${t('measure')}</button><button onclick="window._radiusFromPin('${pin.id}')">⭕ ${t('radius')}</button><button style="background:var(--info-mil); color:#fff;" onclick="window._removePin('${pin.id}')">${t('deletePin')}</button></div>`;
   }
   function positionPinPopup(){
     const pin=userPins.find(p=>p.id===activePinId); if(!pin) return;
@@ -4929,6 +5014,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window._closePinPopup=()=>{ activePinId=null; document.getElementById('pin-popup').style.display='none'; };
   window._removePin=(id)=>removePin(id);
   window._measureFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(toolMode!=='measure') setTool('measure'); measurePoints=[[p.lng,p.lat]]; refreshTool(); updateToolPanel(); _closePinPopup(); };
+  /* Radius from this pin (#54) — fixed centre, tune radius/colour in the tool panel. */
+  window._radiusFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; try{ window._radiusFromPoint(p.lng,p.lat); }catch(_){} _closePinPopup(); };
   /* #17 — open the azimuthal-equidistant viewer centred on this pin (true distances/bearings from it). */
   window._azimuthalFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(window.ProjView) window.ProjView.open('azimuthal',[p.lng,p.lat]); };
 
@@ -4939,15 +5026,12 @@ window.addEventListener('DOMContentLoaded', () => {
       {h:`${t('ctxThisPoint')}: ${fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
       {label:`📍 ${t('ctxDropPin')}`, action:()=>{ const id=addPin(lngLat.lng,lngLat.lat); openPinPopup(id); }},
       {label:`📏 ${t('ctxMeasureFrom')}`, action:()=>{ if(toolMode!=='measure') setTool('measure'); measurePoints=[[lngLat.lng,lngLat.lat]]; refreshTool(); updateToolPanel(); }},
-      {label:`✏️ ${currentLang==='jp'?'ここから描画測定':'Draw / trace from here'}`, action:()=>{ if(window.DrawTool) window.DrawTool.start([lngLat.lng,lngLat.lat]); }},
+      {label:`⭕ ${currentLang==='jp'?'ここからの半径':'Radius from here'}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
       {label:`💬 ${t('ctxPostHere')}`, action:()=>{ if(!requireLogin()) return; pendingPostLoc=[lngLat.lng,lngLat.lat]; communityAddArmed=false; openComposeModal(); }},
       {divider:true},
-      /* (#R8c) The alternative-projection viewer (Equal Earth / Robinson / Azimuthal …) was removed from
-         the UI: MapLibre can only render Mercator (Flat) and Globe, so those projections necessarily
-         opened a SEPARATE canvas window the user rejected ("別ウィンドウにまっさらな図"). Flat and Globe stay
-         perfectly in-space synced; true alt-projection rendering needs a d3-geo/Cesium engine (future). */
+      /* (#R8c) Alt-projection viewer removed (MapLibre renders only Mercator/Globe). (#R9) "Copy link to
+         this view" removed per request — the live-permalink hash still restores a reload. */
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
-      {label:`🔖 ${currentLang==='jp'?'この表示のリンクをコピー':'Copy link to this view'}`, action:()=>{ try{ const u=window.IntMapBookmark?window.IntMapBookmark.link():location.href; navigator.clipboard.writeText(u); imToast&&imToast(currentLang==='jp'?'ビューのリンクをコピーしました':'View link copied'); }catch(_){} }},
       {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       ...(userPins.length?[{label:`🗑 ${t('ctxClearPins')} (${userPins.length})`, action:clearAllPins}]:[])
     ];
@@ -7716,15 +7800,21 @@ window.addEventListener('DOMContentLoaded', () => {
     lblNewsCountries:"News by country media", newsCountriesHint:"Also pull headlines from the national outlets of the countries you pick (multiple allowed).",
     lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
     screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables (real)",
-    lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)" });
+    lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)",
+    blueberryBtn:"🫐 Buy me a blueberry", blueberryTitle:"Support IntMap",
+    blueberryBody:"Thank you for exploring the world with IntMap.\nIf this unified screen has cured your tab-switching eye fatigue, please feel free to drop a blueberry for my eyes.🫐",
+    blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe). Pick any amount — one-time or recurring." });
   Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", screenshotBtn:"スクリーンショット（操作ボタンを隠し凡例は残す）",
-    lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス（半透明）", sidebarGlass2:"フロストガラス（より透明）",
+    lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
     lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
     lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",
     lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国の国内メディアの見出しも取得します（複数選択可）。",
     lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
     screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル（実データ）",
-    lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）" });
+    lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）",
+    blueberryBtn:"開発を支援する", blueberryTitle:"IntMap 開発・運営支援",
+    blueberryBody:"IntMapで世界を旅していただきありがとうございます。\nこの統合画面が、タブを切り替える目の疲れを癒したなら、どうか私の目にブルーベリーを一粒贈ってください。🫐",
+    blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。金額は自由に設定できます（一回・継続どちらも可）。" });
 
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto';
@@ -8451,7 +8541,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function onTouchMove(e){ if(state!=='drawing'||e.touches.length!==1) return; e.preventDefault(); hadTouchMove=true; const o=touchLL(e.touches[0]); sample(o.point,o.lngLat); }
     function onTouchEnd(e){ if(state!=='drawing') return; if(hadTouchMove && raw.length>=2){ e.preventDefault(); finish(); } }
 
-    function setBtn(on){ const b=document.getElementById('btn-tool-draw'); if(b) b.classList.toggle('tool-on',on); document.querySelectorAll('[data-proxy="btn-tool-draw"]').forEach(x=>x.classList.toggle('active',on)); }
+    function setBtn(on){ const b=document.getElementById('btn-tool-draw'); if(b) b.classList.toggle('tool-on',on); document.querySelectorAll('[data-proxy="btn-tool-draw"]').forEach(x=>x.classList.toggle('active',on)); try{ window._syncToolBtns&&window._syncToolBtns(); }catch(_){} }
 
     const api={
       active(){ return state!=='off'; },
@@ -8460,7 +8550,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
-      exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; setData(); unwire(); try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      exit(){ state='off'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
       /* Debug/verification hook (same spirit as window.__sat / window.__ai): lets us prove the
          area-invariant-under-smoothing contract and the geodesic length without map interaction. */
