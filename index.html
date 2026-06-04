@@ -5158,8 +5158,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R9/#24) The legend box itself no longer scrolls — only the inner .kl-scroll does — so the title,
          the ⋮⋮ drag handle and the min/close buttons (all anchored to this non-scrolling box) stay pinned
          at the top while the climate rows scroll under them. */
-      .koppen-legend{ display:none; position:absolute; top:74px; bottom:auto; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; font-size:11px; }
-      .koppen-legend .kl-scroll{ overflow-y:auto; max-height:calc(100% - 34px); margin-top:1px; }
+      /* (#R10) Flex column (shown via inline display:flex): header (h4) pinned top, .kl-scroll flexes +
+         scrolls, footer (opacity slider + hint) pinned bottom — so the opacity slider & minimise button
+         are never clipped (the old overflow-hidden + max-height combo clipped them). */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; font-size:11px; }
+      .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       .koppen-legend::-webkit-resizer{ background:transparent; }
       .koppen-legend.legend-collapsed{ resize:none !important; }
       .koppen-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:6px; }
@@ -5220,6 +5223,9 @@ window.addEventListener('DOMContentLoaded', () => {
         .data-legend .legend-min:active, .koppen-legend .legend-min:active{ background:var(--input-bg); color:var(--text-main); }
         .data-legend .dl-drag, .koppen-legend .kl-drag{ top:11px !important; left:9px !important; font-size:14px !important; }
         .koppen-legend h4, .data-legend h4{ padding:0 84px 0 26px !important; min-height:30px !important; }
+        /* (#R10) Mobile Köppen legend ≈ square (width ≈ height) and the climate rows slide inside it. */
+        .koppen-legend{ width:min(66vw,252px) !important; right:12px !important; height:auto !important; min-height:0 !important; max-height:min(72vw,330px) !important; resize:none !important; }
+        .koppen-legend .kl-scroll{ max-height:none !important; }
       }`;
     document.head.appendChild(style);
 
@@ -5825,7 +5831,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
          old code injected it once after setup and buildLegend() wiped it, so the legend "couldn't be
          moved" (#22). */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4><div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div></div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4><div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div>`;
       lg.querySelectorAll('.kl-item').forEach(it=>{
         it.onclick=()=>{ const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); window._refreshKoppenImage(); };
         /* Right-click a climate → popup explaining how that Köppen class is determined (#25). */
@@ -5881,7 +5887,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(el.querySelector('.dl-op-row')) return;
       const row=document.createElement('div'); row.className='dl-op-row';
       row.innerHTML=`${currentLang==='jp'?'透明度':'Opacity'}<input type="range" min="0" max="1" step="0.05" value="${opacities[id]}"><span class="dl-op-val">${Math.round(opacities[id]*100)}%</span>`;
-      const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint) el.insertBefore(row,hint); else el.appendChild(row);
+      const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row);
       const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
     }
@@ -5905,12 +5911,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Collapse every open, expanded legend (used when a phone user taps the map outside a legend, #29). */
     window._minimizeOpenLegends=function(){
       [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel]
-        .forEach(el=>{ if(el && el.style.display==='block' && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
+        .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
     };
     function tileLegends(){
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
-      all.forEach(el=>{ if(el&&el.style.display==='block') try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
+      all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
       let bottom=140;
       visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.right='24px'; el.style.left='auto'; el.style.top='auto'; bottom += el.getBoundingClientRect().height+10; });
     }
@@ -6375,7 +6381,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function toggleLayer(id,on){
       if(on){
-        if(id==='climate'){ addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(map.getLayer('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='block'; }
+        if(id==='climate'){ addKoppen(); /* layer added async after CORS preflight; setVis once it appears */ const t0=Date.now(); (function w(){ if(map.getLayer('lyr-climate')){ setVis('lyr-climate',true); } else if(Date.now()-t0<5000){ setTimeout(w,150); } })(); legend.style.display='flex'; }
         else if(id==='temp'){
           lgdTemp.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{
