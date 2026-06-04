@@ -894,6 +894,8 @@
     body.capture-mode .layer-popup-x,
     body.capture-mode .dl-drag, body.capture-mode .kl-drag{ visibility:hidden !important; }
     body.capture-mode .maplibregl-ctrl{ display:none !important; }
+    /* (#R9/#44) The timebar's drop-shadow was baked into screenshots — flatten every shadow on it. */
+    body.capture-mode .news-timeline, body.capture-mode .news-timeline *{ box-shadow:none !important; filter:none !important; }
     /* The map container + #map have an OPAQUE background; html2canvas was painting that solid colour
        over the captured WebGL frame, producing a blank screenshot (#20). Make them transparent during
        capture so only the real map pixels (drawn separately) and the DOM overlays composite. */
@@ -3199,7 +3201,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
     const p=document.getElementById('tool-panel'); p.style.left=''; p.style.top=''; p.style.right=''; updateToolPanel();
   }
-  function makeDraggable(panel,handle){ handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>{ if(!panelDrag)return; panel.style.left=(panelDrag.l+ev.clientX-panelDrag.x)+'px'; panel.style.top=(panelDrag.t+ev.clientY-panelDrag.y)+'px'; panel.style.right='auto'; }; document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; }; }
+  function makeDraggable(panel,handle){ handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>{ if(!panelDrag)return; panel.style.left=(panelDrag.l+ev.clientX-panelDrag.x)+'px'; panel.style.top=(panelDrag.t+ev.clientY-panelDrag.y)+'px'; panel.style.right='auto'; panel.style.bottom='auto'; /* (#R9/#48) clear bottom too, else a CSS bottom anchor pinned vertical drag → panel only moved sideways */ }; document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; }; }
 
   window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); refreshTool(); updateToolPanel(); };
   window.clearAllRadius=function(){ radiusItems=[]; refreshTool(); updateToolPanel(); };
@@ -4093,7 +4095,7 @@ window.addEventListener('DOMContentLoaded', () => {
     aiSetBtnBusy(btn,true,t('aiGeoBusy'));
     const sys=pub
       ? "You are a precise geocoder. Each numbered line is the NAME of a news outlet / publisher. Return the city where that outlet is headquartered. Reply with ONLY a JSON array, one object per identifiable outlet: {\"i\":<index>,\"name\":\"<City, Country>\",\"lat\":<number>,\"lng\":<number>}. Omit outlets you cannot place. No commentary, no code fences."
-      : "You are a precise geocoder for a world news map. For EACH numbered headline, give the single primary real-world location where the event takes place (city / region / country / landmark) — NOT the news outlet's HQ. Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear location. No commentary, no code fences.";
+      : "You are a precise geocoder for a world news map. For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event/incident actually happens. RULES: (1) NOT the news outlet's HQ or dateline (e.g. ignore 'Reuters, London'). (2) NOT a place where someone merely SPOKE about the event — if an official at the White House in Washington comments on the Middle East, return the specific Middle-East country/city the event concerns, NOT Washington. (3) Be as SPECIFIC as possible — prefer city/landmark over country (e.g. 'Mariupol' over 'Ukraine', 'Rafah' over 'Gaza' when identifiable). Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name, most specific>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear subject location. No commentary, no code fences.";
     const BATCH=12; let done=0, hit=0, failed=false;
     try{
       for(let i=0;i<todo.length;i+=BATCH){
@@ -9000,19 +9002,39 @@ window.addEventListener('DOMContentLoaded', () => {
       res.forEach(r=>{ r._d=hav(cl[0],cl[1],r.lo,r.la); }); res.sort((a,b)=>a._d-b._d);
       if(o.mode==='airport'){ const seen={},g=[]; res.forEach(r=>{ if(!seen[r.apt]){ seen[r.apt]={apt:r.apt,name:r.name,muni:r.muni,mil:r.mil,la:r.la,lo:r.lo,_d:r._d,maxLen:r.lenM,n:1}; g.push(seen[r.apt]); } else { seen[r.apt].n++; if(r.lenM>seen[r.apt].maxLen) seen[r.apt].maxLen=r.lenM; } }); return g; }
       return res; }
+    /* (#R9/#47) Airport/runway popup with key info + a Wikipedia link. Opened from a list row OR a pin. */
+    let rwyPopup=null;
+    function wikiLink(name){ const w=jp()?'ja':'en'; return 'https://'+w+'.wikipedia.org/wiki/Special:Search?search='+encodeURIComponent(name||''); }
+    function showRwyPopup(d){
+      try{ if(rwyPopup) rwyPopup.remove(); }catch(_){}
+      const title=esc(d.name||d.apt||'Airport'), rws=[];
+      if(d.apt) rws.push((jp()?'コード':'Code')+': <b>'+esc(d.apt)+'</b>');
+      if(d.muni) rws.push((jp()?'所在地':'Municipality')+': <b>'+esc(d.muni)+'</b>');
+      rws.push((jp()?'種別':'Type')+': <b>'+(d.mil?(jp()?'軍用':'Military'):(jp()?'民間':'Civil'))+'</b>');
+      if(d.len) rws.push((jp()?'最長滑走路':'Longest runway')+': <b>'+d.len+' m</b>');
+      if(d.n) rws.push((jp()?'滑走路数':'Runways')+': <b>'+d.n+'</b>');
+      if(d.rwy) rws.push((jp()?'滑走路':'Runway')+': <b>'+esc(d.rwy)+'</b>');
+      rws.push((jp()?'座標':'Coords')+': <b>'+(+d.coords[1]).toFixed(4)+', '+(+d.coords[0]).toFixed(4)+'</b>');
+      const html='<div style="min-width:170px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:6px;">'+(d.mil?'🪖':'🛬')+' '+title+'</div><div style="font-size:12px;color:var(--text-main);line-height:1.65;">'+rws.join('<br>')+'</div><a href="'+wikiLink(d.name||d.apt)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;color:var(--primary-color);font-weight:600;font-size:12px;text-decoration:none;">📖 '+(jp()?'Wikipediaで見る ↗':'Read on Wikipedia ↗')+'</a></div>';
+      try{ rwyPopup=new maplibregl.Popup({closeButton:true,closeOnClick:true,maxWidth:'280px',className:'plc-popup'}).setLngLat(d.coords).setHTML(html).addTo(map); }catch(_){}
+    }
     function ensureLayers(){ if(map.getSource(SRC)) return; try{ map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:LYR,type:'circle',source:SRC,paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3,8,6],'circle-color':['case',['get','mil'],'#ff453a','#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
       map.addLayer({id:LBL,type:'symbol',source:SRC,minzoom:5,layout:{'text-field':['get','t'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+      /* Click a pin → the same info popup (#47). */
+      map.on('click',LYR,e=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}, c=e.features[0].geometry.coordinates; showRwyPopup({ name:p.name, apt:p.apt, muni:p.muni, mil:(p.mil===true||p.mil==='true'), len:+p.len||0, n:+p.n||0, rwy:p.rwy||'', coords:c }); });
+      map.on('mouseenter',LYR,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',LYR,()=>{ map.getCanvas().style.cursor=''; });
     }catch(_){} }
-    function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy)}})); try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} }
+    function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} }
     function run(){ const p=panel; const radiusKm=+p.querySelector('#rwy-radius').value||300, use=p.querySelector('#rwy-use').value, minLenM=+p.querySelector('#rwy-len').value||0, mode=p.querySelector('#rwy-mode').value;
       const list=p.querySelector('#rwy-list'); list.innerHTML=jp()?'読み込み中…':'Loading…';
       load().then(d=>{ if(!d){ list.innerHTML=jp()?'データを取得できませんでした':'Could not load data'; return; }
         const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
         if(!res.length){ list.innerHTML=jp()?'該当なし':'No matches'; return; }
-        list.innerHTML=res.slice(0,120).map(r=>{ const dd=r._d.toFixed(0)+'km', len=(mode==='airport'?r.maxLen:r.lenM)+'m', nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
-          return '<div class="rwy-item" data-lo="'+r.lo+'" data-la="'+r.la+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
-        list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ map.flyTo({center:[+it.getAttribute('data-lo'),+it.getAttribute('data-la')],zoom:Math.max(map.getZoom(),11)}); }; });
+        const shown=res.slice(0,120);
+        list.innerHTML=shown.map((r,idx)=>{ const dd=r._d.toFixed(0)+'km', len=(mode==='airport'?r.maxLen:r.lenM)+'m', nm=esc(mode==='airport'?r.name:(r.apt+' '+r.rwy)), extra=mode==='airport'?(jp()?(r.n+'本'):(r.n+' rwy')):'', flag=r.mil?'🪖':'🛬';
+          return '<div class="rwy-item" data-idx="'+idx+'" style="display:flex;justify-content:space-between;gap:8px;padding:5px 4px;border-radius:6px;cursor:pointer;"><span>'+flag+' '+nm+'</span><span style="color:var(--text-muted);white-space:nowrap;">'+len+' · '+dd+' '+extra+'</span></div>'; }).join('');
+        list.querySelectorAll('.rwy-item').forEach(it=>{ it.onclick=()=>{ const r=shown[+it.getAttribute('data-idx')]; if(!r) return; map.flyTo({center:[r.lo,r.la],zoom:Math.max(map.getZoom(),11)}); showRwyPopup({ name:r.name, apt:r.apt, muni:r.muni, mil:r.mil, len:(mode==='airport'?r.maxLen:r.lenM), n:(mode==='airport'?r.n:0), rwy:(mode==='runway'?r.rwy:''), coords:[r.lo,r.la] }); }; });
       });
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
