@@ -8859,6 +8859,81 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
 
+  /* ===== (#R9b/#40/#41/#42/#14) Earth, sky & airspace: major dams, active volcanoes, NOAA aurora
+     forecast (live), and approximate Air-Defence Identification Zones. Self-contained, additive. ===== */
+  (function(){
+    if(!map) return;
+    const jp=()=>currentLang==='jp';
+    const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} });
+    const state={dams:false,volcanoes:false,aurora:false,adiz:false};
+    /* Curated point datasets (famous, well-located). dam: capacity MW; volcano: summit m. */
+    const DAMS=[['Three Gorges','China',22500,111.003,30.823],['Itaipú','Brazil/Paraguay',14000,-54.589,-25.408],['Xiluodu','China',13860,103.65,28.25],['Belo Monte','Brazil',11233,-51.79,-3.13],['Guri','Venezuela',10235,-62.999,7.766],['Tucuruí','Brazil',8370,-49.64,-3.83],['Grand Coulee','USA',6809,-118.982,47.957],['Xiangjiaba','China',6448,104.42,28.64],['Longtan','China',6426,107.04,25.02],['Sayano-Shushenskaya','Russia',6400,91.37,52.83],['Krasnoyarsk','Russia',6000,92.30,55.93],['Robert-Bourassa','Canada',5616,-77.44,53.79],['Churchill Falls','Canada',5428,-64.10,53.53],['Bratsk','Russia',4500,101.77,56.28],['Jinping-I','China',3600,101.63,28.19],['Aswan High','Egypt',2100,32.877,23.971],['GERD','Ethiopia',5150,35.093,11.215],['Kariba','Zambia/Zimbabwe',1830,28.762,-16.522],['Cahora Bassa','Mozambique',2075,32.70,-15.585],['Akosombo','Ghana',1020,0.06,6.30],['Tarbela','Pakistan',4888,72.69,34.09],['Bhakra','India',1325,76.43,31.41],['Sardar Sarovar','India',1450,73.75,21.83],['Atatürk','Türkiye',2400,38.32,37.49],['Hoover','USA',2078,-114.738,36.016],['Glen Canyon','USA',1320,-111.485,36.937],['Oroville','USA',819,-121.49,39.54],['Nurek','Tajikistan',3015,69.35,38.37],['Rogun','Tajikistan',3600,69.77,38.69],['Merowe','Sudan',1250,31.84,18.68],['Daniel-Johnson','Canada',2660,-68.74,50.66],['Mosul','Iraq',1052,42.82,36.63]];
+    const VOLC=[['Etna','Italy',3357,14.999,37.748],['Stromboli','Italy',924,15.213,38.789],['Vesuvius','Italy',1281,14.426,40.821],['Mt Fuji','Japan',3776,138.728,35.361],['Sakurajima','Japan',1117,130.657,31.585],['Aso','Japan',1592,131.104,32.884],['Kīlauea','USA',1247,-155.287,19.421],['Mauna Loa','USA',4169,-155.608,19.475],['Mt St. Helens','USA',2549,-122.18,46.20],['Yellowstone','USA',2805,-110.67,44.43],['Popocatépetl','Mexico',5426,-98.622,19.023],['Colima','Mexico',3850,-103.62,19.514],['Fuego','Guatemala',3763,-90.88,14.473],['Pacaya','Guatemala',2552,-90.601,14.381],['Arenal','Costa Rica',1670,-84.703,10.463],['Cotopaxi','Ecuador',5897,-78.437,-0.677],['Villarrica','Chile',2860,-71.93,-39.42],['Nevado del Ruiz','Colombia',5321,-75.324,4.892],['Cumbre Vieja','Spain',1949,-17.84,28.57],['Merapi','Indonesia',2910,110.446,-7.54],['Anak Krakatau','Indonesia',155,105.423,-6.102],['Sinabung','Indonesia',2460,98.392,3.17],['Semeru','Indonesia',3676,112.92,-8.108],['Tambora','Indonesia',2850,118.0,-8.25],['Rinjani','Indonesia',3726,116.47,-8.42],['Pinatubo','Philippines',1486,120.35,15.13],['Mayon','Philippines',2462,123.685,13.257],['Taal','Philippines',311,120.993,14.002],['Erebus','Antarctica',3794,167.17,-77.53],['Nyiragongo','DR Congo',3470,29.25,-1.52],['Ol Doinyo Lengai','Tanzania',2962,35.914,-2.764],['Erta Ale','Ethiopia',613,40.67,13.6],['Piton de la Fournaise','Réunion',2632,55.708,-21.244],['Eyjafjallajökull','Iceland',1651,-19.62,63.63],['Grímsvötn','Iceland',1725,-17.33,64.42],['Hekla','Iceland',1491,-19.70,63.98],['Bárðarbunga','Iceland',2009,-17.53,64.64],['Klyuchevskoy','Russia',4750,160.642,56.056],['Shiveluch','Russia',3283,161.36,56.653],['Whakaari','New Zealand',321,177.18,-37.52],['Ruapehu','New Zealand',2797,175.57,-39.28],['Kelud','Indonesia',1731,112.31,-7.93]];
+    /* Approximate ADIZ extents (labelled ≈) — illustrative, not survey-grade. */
+    const ADIZ=[
+      {n:'China ECS ADIZ',c:'#ff453a',ring:[[121.9,33.2],[125.0,33.2],[128.3,31.0],[127.5,29.0],[123.0,25.8],[120.6,27.4],[120.0,30.2],[121.9,33.2]]},
+      {n:'KADIZ (Korea)',c:'#ffcc00',ring:[[124.0,39.6],[129.5,39.6],[131.5,37.0],[131.0,33.8],[127.0,32.2],[124.5,33.0],[123.0,35.5],[124.0,39.6]]},
+      {n:'Taiwan ADIZ',c:'#34c759',ring:[[117.5,27.5],[123.0,27.5],[123.0,21.0],[117.5,21.0],[117.5,27.5]]}
+    ];
+    function ptFC(arr,kind){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[3],d[4]]},properties:{name:d[0],info:(kind==='dam'?(d[2]?d[2].toLocaleString()+' MW · ':''):(d[2]?d[2].toLocaleString()+' m · ':''))+d[1]}}))}; }
+    function adizFC(){ return {type:'FeatureCollection',features:ADIZ.map(a=>({type:'Feature',geometry:{type:'Polygon',coordinates:[a.ring]},properties:{name:'≈ '+a.n,color:a.c}}))}; }
+    let popup=null;
+    function showPop(c,title,info){ try{ if(popup) popup.remove(); }catch(_){}
+      const html='<div style="min-width:140px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">'+title+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+info+'</div></div>';
+      try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(c).setHTML(html).addTo(map); }catch(_){}
+    }
+    let wired=false;
+    function ensureLayers(){ if(!map.isStyleLoaded()) return false;
+      try{
+        if(!map.getSource('l9-dams')){ map.addSource('l9-dams',{type:'geojson',data:ptFC(DAMS,'dam')});
+          map.addLayer({id:'l9-dams-pt',type:'circle',source:'l9-dams',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.4,7,7],'circle-color':'#34c7ff','circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.92}});
+          map.addLayer({id:'l9-dams-lbl',type:'symbol',source:'l9-dams',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#bdeaff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+        }
+        if(!map.getSource('l9-volc')){ map.addSource('l9-volc',{type:'geojson',data:ptFC(VOLC,'volcano')});
+          map.addLayer({id:'l9-volc-pt',type:'circle',source:'l9-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3.6,7,7.5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff2e0','circle-stroke-width':1.3,'circle-opacity':0.95}});
+          map.addLayer({id:'l9-volc-lbl',type:'symbol',source:'l9-volc',minzoom:4,layout:{visibility:'none','text-field':['get','name'],'text-size':10,'text-offset':[0,1.1],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+        }
+        if(!map.getSource('l9-adiz')){ map.addSource('l9-adiz',{type:'geojson',data:adizFC()});
+          map.addLayer({id:'l9-adiz-fill',type:'fill',source:'l9-adiz',layout:{visibility:'none'},paint:{'fill-color':['get','color'],'fill-opacity':0.08}});
+          map.addLayer({id:'l9-adiz-line',type:'line',source:'l9-adiz',layout:{visibility:'none'},paint:{'line-color':['get','color'],'line-width':1.6,'line-dasharray':[3,2],'line-opacity':0.8}});
+          map.addLayer({id:'l9-adiz-lbl',type:'symbol',source:'l9-adiz',layout:{visibility:'none','symbol-placement':'point','text-field':['get','name'],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':['get','color'],'text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.3}});
+        }
+        if(!map.getSource('l9-aurora')){ map.addSource('l9-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          map.addLayer({id:'l9-aurora-heat',type:'heatmap',source:'l9-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,4,30],'heatmap-opacity':0.78,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
+        }
+        if(!wired){ wired=true;
+          map.on('click','l9-dams-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🏞 '+p.name,p.info); });
+          map.on('click','l9-volc-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🌋 '+p.name,p.info); });
+          ['l9-dams-pt','l9-volc-pt'].forEach(l=>{ map.on('mouseenter',l,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',l,()=>{ map.getCanvas().style.cursor=''; }); });
+        }
+        return true;
+      }catch(e){ return false; }
+    }
+    async function loadAurora(){ try{
+      const r=await fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json'); const j=await r.json();
+      const co=j.coordinates||[], feats=[];
+      for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
+      if(map.getSource('l9-aurora')) map.getSource('l9-aurora').setData({type:'FeatureCollection',features:feats});
+    }catch(e){ try{ imToast(jp()?'オーロラ予測を取得できませんでした':'Aurora forecast unavailable'); }catch(_){} } }
+    const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat']};
+    let auroraTimer=null;
+    function toggle(which,on){ state[which]=on;
+      const apply=()=>{ if(!ensureLayers()){ map.once('idle',apply); return; } setVis(SETS[which],on);
+        if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=setInterval(loadAurora,300000); } else if(auroraTimer){ clearInterval(auroraTimer); auroraTimer=null; } } };
+      apply(); }
+    map.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
+    const L9LBL={dams:['主要ダム・水インフラ','Major dams'],volcanoes:['活火山','Active volcanoes'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defence zones (ADIZ ≈)']};
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
+      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
+      function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
+      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6'],['adiz','#ffcc00']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+    }
+    if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
+    function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=jp()?L9LBL[k][0]:L9LBL[k][1]; }); }
+    ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    window.IntMapLayers9={ toggle };
+  })();
+
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
      Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels
      drop a red highlight at the point. Non-destructive: layer-scoped handlers fire only on a label. ===== */
