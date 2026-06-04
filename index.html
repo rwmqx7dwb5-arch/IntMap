@@ -1407,7 +1407,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiGeoBtn:"✨ AI-locate all news", aiGeoBtnSub:"✨ AI-locate subject", aiGeoBtnPub:"✨ AI-locate publisher", aiTranslateTitles:"Translate titles", aiGeoBusy:"Locating…", aiGeoNone:"Nothing to locate.", aiGeoDone:"Located {n} stories", aiGeoErr:"Geocoding failed", aiTransBusy:"Translating…", aiTransDone:"Translated {n} titles", aiTransNone:"Titles already in your language.",
       lblNewsLang:"News languages", newsLangUi:"Current language only", newsLangMulti:"All languages (auto-translate titles)", lblAiLocate:"AI location analysis", aiLocManual:"Manual (button)", aiLocAuto:"Automatic for all news",
       aiTranslate:"Translate", aiShowOriginal:"Original", aiTransNoText:"No article text to translate — try Web view.",
-      aiSumBtn:"Summarize this area with AI", newsInArea:"News in this area", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
+      aiSumBtn:"Summarize this area with AI", newsInArea:"News in this area", elevProfile:"Elevation profile", finalizeMeas:"Keep on map", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
     jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabStats:"統計",
@@ -1439,7 +1439,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiGeoBtn:"✨ 全ニュースをAIで地点解析", aiGeoBtnSub:"✨ 主題地をAI解析", aiGeoBtnPub:"✨ 発信元をAI解析", aiTranslateTitles:"タイトルを翻訳", aiGeoBusy:"地点解析中…", aiGeoNone:"解析する記事がありません。", aiGeoDone:"{n}件の地点を解析しました", aiGeoErr:"地点解析に失敗しました", aiTransBusy:"翻訳中…", aiTransDone:"{n}件のタイトルを翻訳しました", aiTransNone:"すでにこの言語のタイトルです。",
       lblNewsLang:"ニュースの言語", newsLangUi:"現在の言語のみ", newsLangMulti:"全言語（タイトルを自動翻訳）", lblAiLocate:"AIによる地点解析", aiLocManual:"手動（ボタン）", aiLocAuto:"全ニュースで自動実行",
       aiTranslate:"AI翻訳", aiShowOriginal:"原文", aiTransNoText:"翻訳できる本文がありません（ページ表示をお試しください）。",
-      aiSumBtn:"この範囲をAIで要約", newsInArea:"この範囲のニュース", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
+      aiSumBtn:"この範囲をAIで要約", newsInArea:"この範囲のニュース", elevProfile:"標高断面", finalizeMeas:"地図に残す", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
       aiViewSumBtn:"今の表示エリアを要約", aiViewSumTitle:"画面内で起きていること",
       aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。" }
   };
@@ -3244,10 +3244,10 @@ window.addEventListener('DOMContentLoaded', () => {
           brg+=`<div class="tp-row"><span>${currentLang==='jp'?'始点→終点':'start → end'}</span><b>${bearingHTML(s,e)}</b></div>`;
         }
       }
-      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('total')}</span><b>${distHTML(tot)}</b></div>${brg}`;
+      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('total')}</span><b>${distHTML(tot)}</b></div>${brg}${measurePoints.length>=2?`<button class="ai-action-btn" id="tp-profile">📈 ${t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${t('finalizeMeas')}</button>`:''}`;
     } else if(toolMode==='area'){
       const pe=hasTurf()?ringPerimeter(measurePoints):0, ar=(hasTurf()&&measurePoints.length>=3)?ringArea(measurePoints):0;
-      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('perimeter')}</span><b>${distHTML(pe)}</b></div><div class="tp-row"><span>${t('area')}</span><b>${ar?areaHTML(ar):'—'}</b></div>${measurePoints.length>=3?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
+      body=`<div class="tp-row"><span>${t('points')}</span><b>${measurePoints.length}</b></div><div class="tp-row"><span>${t('perimeter')}</span><b>${distHTML(pe)}</b></div><div class="tp-row"><span>${t('area')}</span><b>${ar?areaHTML(ar):'—'}</b></div>${measurePoints.length>=3?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-profile">📈 ${t('elevProfile')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${t('finalizeMeas')}</button>`:''}`;
     } else if(toolMode==='radius'){
       let opts=`<option value="">${t('presetNone')}</option>`;
       RADIUS_PRESETS.forEach(grp=>{ opts+=`<optgroup label="${grp.g[currentLang]}">`+grp.items.map(it=>`<option value="${it[1]}">${it[0]} — ${it[1]} km</option>`).join('')+`</optgroup>`; });
@@ -3261,7 +3261,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="tp-row"><span>${t('radius')}</span><b id="rad-r">${distHTML(radiusKm)}</b></div>
         <div class="tp-row"><span>${t('circumference')}</span><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div>
         <div class="tp-row"><span>${t('area')}</span><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div>
-        <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;
+        <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${t('finalizeMeas')}</button>`:''}`;
     }
     const footBtns = (toolMode!=='radius')
       ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
@@ -3270,6 +3270,7 @@ window.addEventListener('DOMContentLoaded', () => {
     p.querySelector('.tp-close').onclick=exitTool; makeDraggable(p,p.querySelector('.tp-header'));
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
+    { const fb=p.querySelector('#tp-finalize'); if(fb) fb.onclick=()=>{ try{ window._finalizeMeasurement(); }catch(_){} }; const pb=p.querySelector('#tp-profile'); if(pb) pb.onclick=()=>{ try{ window._elevationProfile(); }catch(_){} }; }
     const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; hideMeasureTip(); refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
@@ -8939,6 +8940,103 @@ window.addEventListener('DOMContentLoaded', () => {
     ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.IntMapLayers9={ toggle };
   })();
+
+  /* ===== (#R9b/#55) Persistent measurement annotations — finalise a measure/area/radius as a pin-less
+     line/polygon that stays on the map; small popup to rename / recolour / delete; multiple allowed. ===== */
+  window.IntMapAnnotations=(function(){
+    if(!map) return { add(){}, remove(){}, clear(){}, _items:[] };
+    const SRC='annot-src'; let seq=0, popup=null; const items=[];
+    const jp=()=>currentLang==='jp';
+    function fc(){ return {type:'FeatureCollection',features:items.map(it=>({type:'Feature',geometry:it.geom,properties:{id:it.id,color:it.color,op:it.op}}))}; }
+    function ensure(){ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource(SRC,{type:'geojson',data:fc()});
+        map.addLayer({id:'annot-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['get','color'],'fill-opacity':['coalesce',['get','op'],0.16]}});
+        map.addLayer({id:'annot-line',type:'line',source:SRC,layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['get','color'],'line-width':2.6}});
+        map.on('click','annot-fill',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
+        map.on('click','annot-line',e=>{ if(e.features[0]) openPop(e.features[0].properties.id,e.lngLat); });
+        ['annot-fill','annot-line'].forEach(l=>{ map.on('mouseenter',l,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',l,()=>{ map.getCanvas().style.cursor=''; }); });
+        return true;
+      }catch(_){ return false; }
+    }
+    function refresh(){ try{ if(ensure()) map.getSource(SRC).setData(fc()); }catch(_){} }
+    map.on('styledata',()=>{ if(items.length) setTimeout(refresh,80); });
+    function repr(geom){ try{ if(geom.type==='LineString'){ const c=geom.coordinates; return c[Math.floor(c.length/2)]; } if(geom.type==='Polygon'){ const r=geom.coordinates[0]; let x=0,y=0; r.forEach(p=>{x+=p[0];y+=p[1];}); return [x/r.length,y/r.length]; } }catch(_){} return [0,0]; }
+    function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
+      const at=ll||repr(it.geom);
+      const html='<div style="min-width:172px;"><input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Colour')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
+      popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html).addTo(map);
+      setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
+        const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
+        const co=el.querySelector('.annot-color'); if(co) co.oninput=()=>{ it.color=co.value; refresh(); };
+        const dl=el.querySelector('.annot-del'); if(dl) dl.onclick=()=>remove(id);
+      },0);
+    }
+    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((jp()?'注記 ':'Annotation ')+seq)}); refresh(); if(!opts.silent) openPop(id); return id; }
+    function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
+    return { add, remove, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };
+  })();
+  /* Densify a click-path into a great-circle polyline so the saved annotation matches the drawn arc. */
+  function _gcDensify(pts){ if(!hasTurf()||pts.length<2) return pts.slice(); const out=[pts[0].slice()];
+    for(let i=1;i<pts.length;i++){ try{ const gc=turf.greatCircle(turf.point(pts[i-1]),turf.point(pts[i]),{npoints:24}); const g=gc.geometry;
+      if(g.type==='LineString') out.push(...g.coordinates.slice(1)); else g.coordinates.forEach(seg=>out.push(...seg)); }catch(_){ out.push(pts[i].slice()); } }
+    return out; }
+  window._finalizeMeasurement=function(){
+    try{
+      if(toolMode==='measure' && measurePoints.length>=2){ window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(currentLang==='jp'?'計測線':'Measured line')}); }
+      else if(toolMode==='area' && measurePoints.length>=3){ window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(currentLang==='jp'?'計測範囲':'Measured area')}); }
+      else if(toolMode==='radius' && radiusItems.length){ let last=null; radiusItems.forEach(c=>{ try{ diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; last=window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(currentLang==='jp'?'半径 ':'Radius ')+c.radiusKm+' km',silent:true}); }); }catch(_){} }); if(last) window.IntMapAnnotations.open(last); }
+      else return;
+      exitTool();
+    }catch(_){}
+  };
+
+  /* ===== (#R9b/#46) Elevation cross-section under a measured line (area uses its perimeter). Below 0 m
+     gets a faint blue band so sub-sea segments are obvious. Samples the cached terrarium DEM. ===== */
+  window._elevationProfile=function(){
+    if(!hasTurf() || (toolMode!=='measure' && toolMode!=='area')) return;
+    const pts = (toolMode==='area')?[...measurePoints,measurePoints[0]]:measurePoints;
+    if(pts.length<2) return;
+    const line=_gcDensify(pts);
+    const N=Math.min(80, Math.max(24, line.length)); const stepI=(line.length-1)/(N-1); const samples=[];
+    for(let i=0;i<N;i++) samples.push(line[Math.round(i*stepI)]);
+    const dist=[0]; for(let i=1;i<samples.length;i++) dist.push(dist[i-1]+turf.distance(turf.point(samples[i-1]),turf.point(samples[i]),{units:'kilometers'}));
+    _openProfilePanel(samples,dist);
+  };
+  function _openProfilePanel(samples,dist){
+    let p=document.getElementById('elev-profile-panel');
+    if(!p){ p=document.createElement('div'); p.id='elev-profile-panel'; p.className='tool-panel'; (document.getElementById('map-container')||document.body).appendChild(p); }
+    p.style.cssText='display:block;left:50%;top:auto;bottom:26px;right:auto;transform:translateX(-50%);width:min(560px,calc(100vw - 40px));z-index:1600;';
+    const j=currentLang==='jp';
+    p.innerHTML='<div class="tp-header"><span class="tp-title">📈 '+(j?'標高断面':'Elevation profile')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div><div id="elev-profile-body" style="font-size:12px;color:var(--text-muted);padding:8px 2px;">'+(j?'標高を取得中…':'Sampling elevation…')+'</div>';
+    p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+    try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+    Promise.all(samples.map(s=>{ try{ return Promise.resolve(fetchElevDepth(s[1],s[0])).catch(()=>null); }catch(_){ return Promise.resolve(null); } })).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), dist, els); });
+  }
+  function _drawProfile(box, dist, els){
+    if(!box) return; const j=currentLang==='jp';
+    const known=els.filter(e=>e!=null && !isNaN(e));
+    if(!known.length){ box.textContent=j?'標高データを取得できませんでした':'No elevation data available'; return; }
+    let minE=Math.min(...known,0), maxE=Math.max(...known,0); if(maxE===minE) maxE=minE+1;
+    const cont=document.getElementById('map-container')||document.body;
+    const W=Math.min(520, Math.max(280, cont.clientWidth-60)), H=172, padL=46,padR=10,padT=12,padB=26;
+    const total=dist[dist.length-1]||1;
+    const X=i=>padL+(dist[i]/total)*(W-padL-padR);
+    const Y=e=>padT+(1-(e-minE)/(maxE-minE))*(H-padT-padB);
+    let dPath=''; for(let i=0;i<els.length;i++){ const e=els[i]; if(e==null||isNaN(e)) continue; dPath+=(dPath?'L':'M')+X(i).toFixed(1)+' '+Y(e).toFixed(1)+' '; }
+    const y0=Y(0);
+    const area=dPath?('M'+X(0).toFixed(1)+' '+y0.toFixed(1)+' '+dPath.replace(/^M/,'L')+'L'+X(els.length-1).toFixed(1)+' '+y0.toFixed(1)+' Z'):'';
+    const seaBand=(minE<0)?'<rect x="'+padL+'" y="'+y0.toFixed(1)+'" width="'+(W-padL-padR)+'" height="'+Math.max(0,(H-padB-y0)).toFixed(1)+'" fill="rgba(40,120,200,0.18)"/>':'';
+    const svg='<svg width="'+W+'" height="'+H+'" style="display:block;max-width:100%;">'
+      +seaBand
+      +(area?'<path d="'+area+'" fill="rgba(120,170,90,0.28)"/>':'')
+      +'<line x1="'+padL+'" y1="'+y0.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y0.toFixed(1)+'" stroke="rgba(40,120,200,0.75)" stroke-dasharray="3 3"/>'
+      +(dPath?'<path d="'+dPath+'" fill="none" stroke="#5aa02c" stroke-width="2"/>':'')
+      +'<text x="3" y="'+(Y(maxE)+3).toFixed(1)+'" font-size="9" fill="currentColor">'+Math.round(maxE)+' m</text>'
+      +'<text x="3" y="'+(Y(minE)).toFixed(1)+'" font-size="9" fill="currentColor">'+Math.round(minE)+' m</text>'
+      +(minE<0?'<text x="3" y="'+(y0-2).toFixed(1)+'" font-size="9" fill="rgba(60,140,210,1)">0</text>':'')
+      +'</svg>';
+    box.innerHTML=svg+'<div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:10px;margin-top:2px;"><span>0 km</span><span>'+total.toFixed(total<10?1:0)+' km</span></div>';
+  }
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
      Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels
