@@ -1091,7 +1091,7 @@
         </button>
       </div>
       <div class="map-view-group">
-        <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels">🌐 Grid</button>
+        <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" style="display:none;">🌐 Grid</button>
         <div class="measure-menu-container">
           <button class="view-btn" id="btn-measure-menu" title="Measurement tools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
           <div class="measure-dropdown" id="measure-dropdown">
@@ -1112,11 +1112,10 @@
              </div>
              <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
              <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
-             <div class="layer-group-title" data-i18n="lyrGrpGeo">Geopolitical theory</div>
-             <label class="layer-option"><input type="checkbox" data-layer="heartland" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff3b30"></span> Heartland</label>
-             <label class="layer-option"><input type="checkbox" data-layer="rimland" class="geo-layer-cb"> <span class="lyr-sw" style="background:#0a84ff"></span> Rimland</label>
+             <div class="layer-group-title" data-i18n="lyrGrpGeo">Strategic geography</div>
              <label class="layer-option"><input type="checkbox" data-layer="fsu" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e0312e"></span> Former Soviet Union</label>
              <label class="layer-option"><input type="checkbox" data-layer="sahel" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ffcc00"></span> Sahel Risk Zone</label>
              <label class="layer-option"><input type="checkbox" data-layer="islandChain1" class="geo-layer-cb"> <span class="lyr-sw" style="background:#ff9500"></span> 1st Island Chain</label>
@@ -1127,7 +1126,6 @@
              <div class="layer-group-title" data-i18n="lyrGrpStrat">Strategic networks</div>
              <label class="layer-option"><input type="checkbox" data-layer="bri" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e8590c"></span> Belt &amp; Road (BRI)</label>
              <label class="layer-option"><input type="checkbox" data-layer="pipelines" class="geo-layer-cb"> <span class="lyr-sw" style="background:#c2271f"></span> Major Pipelines</label>
-             <label class="layer-option"><input type="checkbox" data-layer="cables" class="geo-layer-cb"> <span class="lyr-sw" style="background:#30b0c7"></span> Submarine Cables</label>
              <label class="layer-option"><input type="checkbox" data-layer="nuclear" class="geo-layer-cb"> <span class="lyr-sw" style="background:#9b59b6"></span> Nuclear Sites</label>
           </div>
         </div>
@@ -1216,7 +1214,7 @@
 <div class="modal-overlay" id="blueberry-modal">
   <div class="modal-content" style="position:relative;max-width:440px;text-align:center;">
     <button id="blueberry-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
-    <div style="font-size:46px;line-height:1;margin:6px 0 12px;">🫐</div>
+    <div id="blueberry-emoji" style="font-size:46px;line-height:1;margin:6px 0 12px;">🫐</div>
     <h3 id="blueberry-title" style="margin:0 0 12px;font-size:17px;">Support IntMap</h3>
     <p id="blueberry-body" style="font-size:13.5px;line-height:1.65;color:var(--text-main);white-space:pre-line;margin:0 0 18px;"></p>
     <a id="blueberry-go" href="#" target="_blank" rel="noopener" class="modal-close-btn" style="display:block;text-decoration:none;box-sizing:border-box;">Continue ↗</a>
@@ -1392,7 +1390,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
+      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time-travel news", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
@@ -1424,7 +1422,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
@@ -2443,19 +2441,7 @@ window.addEventListener('DOMContentLoaded', () => {
      Structure: each layer may contain areas[] (filled polygons), lines[] (paths),
      points[] (POI markers). Every feature carries a human label drawn on the map. */
   const geoLayersDB={
-    /* Geopolitical-theory geometry re-drawn from real geography (#40). */
-    heartland:{ color:"#ff3b30", name:{en:"Heartland",jp:"ハートランド"}, areas:[
-      /* Mackinder's Pivot Area / Heartland (#15): the continental interior of Eurasia beyond the
-         reach of sea power — the Volga & Eastern Europe in the west, across the Kazakh steppe and
-         West Siberia, to the central-Siberian uplands (~115°E); Arctic coast in the north down to
-         the Central Asian steppe in the south. The old ring sat far too high (Siberian Arctic only);
-         this extends it properly south to cover Central Asia. */
-      {label:"Heartland (Pivot Area)", ring:[[38,50],[48,49],[58,46],[68,44],[78,44.5],[88,47],[98,49],[108,49.5],[116,51],[122,56],[120,63],[112,69],[100,72.5],[85,73],[70,72],[55,70],[44,66],[37,60],[33,55],[35,51],[38,50]]}
-    ]},
-    /* Rimland (#15,#17) is NOT a drawn polygon any more: Spykman's "inner crescent" is a LAND
-       concept, and a hand-drawn band always spilled into the ocean. It is now rendered as a fill of
-       the actual rimland COUNTRIES via the country source (see imToggleRimland) — land only, real
-       coastlines, no sea painted. */
+    /* (#R10) Heartland & Rimland removed per request — classic Mackinder/Spykman theory layers dropped. */
     sahel:{ color:"#ffcc00", name:{en:"Sahel Risk Zone",jp:"サヘル危険地帯"}, areas:[
       {label:"Sahel Risk Zone", ring:[[-17,16.6],[-12,16.9],[-6,17.0],[0,16.7],[7,16.2],[14,15.7],[21,15.3],[28,15.2],[34,15.5],[40,16.0],[43,16.4],[43,12.6],[40,12.2],[34,11.7],[28,11.3],[21,11.2],[14,11.6],[7,12.1],[0,12.6],[-6,13.0],[-12,13.2],[-17,13.4],[-17,16.6]]}
     ]},
@@ -2923,7 +2909,9 @@ window.addEventListener('DOMContentLoaded', () => {
     },90);
   }
   function toggleGrid(){
-    isGridOn=!isGridOn; document.getElementById('btn-tool-grid').classList.toggle('tool-on',isGridOn);
+    isGridOn=!isGridOn; const gb=document.getElementById('btn-tool-grid'); if(gb) gb.classList.toggle('tool-on',isGridOn);
+    const gcb=document.getElementById('cb-grid'); if(gcb) gcb.checked=isGridOn;   /* (#R10) Grid now lives in the Layers menu */
+    document.querySelectorAll('[data-proxy="cb-grid"]').forEach(x=>x.classList.toggle('active',isGridOn));
     _gridKey='';
     if(!map||!map.getSource('grid-source'))return;
     if(isGridOn) map.getSource('grid-source').setData({type:'FeatureCollection',features:buildGridFeatures()});
@@ -3585,6 +3573,7 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
   }
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
+  { const _gcb=document.getElementById('cb-grid'); if(_gcb) _gcb.onchange=()=>toggleGrid(); }   /* (#R10) Grid moved into Layers */
   document.getElementById('btn-tool-measure').onclick=()=>{ setTool('measure'); if(window._closeMeasureMenu)window._closeMeasureMenu(); };
   document.getElementById('btn-tool-radius').onclick=()=>setTool('radius');
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
@@ -4948,21 +4937,28 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('settings-close-x').onclick=closeSettings;
   modal.addEventListener('click',(e)=>{ if(e.target===modal) closeSettings(); });
 
-  /* ===== (#R9) "Buy me a blueberry" / 開発を支援する =====
-     Stripe Payment Link. Configure it for "customer chooses what to pay" (pay-what-you-want) and add
-     any preset amounts on Stripe's side — both options then appear on the hosted page. Replace the URL
-     below with your real Stripe link. */
-  window.INTMAP_STRIPE_URL = window.INTMAP_STRIPE_URL || 'https://donate.stripe.com/00gbJ1abc0000000000000';
+  /* ===== (#R9/#R10) "Buy me a blueberry" / 開発を支援する =====
+     Stripe Payment Links — JPY page for the Japanese UI, USD page for the English UI. The "Continue"
+     button is a direct <a href> to the hosted Stripe page (opens in a new tab). */
+  window.INTMAP_STRIPE_URL_EN = 'https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en';
+  window.INTMAP_STRIPE_URL_JP = 'https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja';
+  window.stripeDonateURL = ()=> (currentLang==='jp' ? window.INTMAP_STRIPE_URL_JP : window.INTMAP_STRIPE_URL_EN);
   (function(){
     const bm=document.getElementById('blueberry-modal'); if(!bm) return;
     function fill(){ const set=(id,key)=>{ const el=document.getElementById(id); if(el) el.textContent=t(key); };
       set('blueberry-title','blueberryTitle'); set('blueberry-body','blueberryBody'); set('blueberry-go','blueberryGo'); set('blueberry-note','blueberryNote');
-      const go=document.getElementById('blueberry-go'); if(go) go.href=window.INTMAP_STRIPE_URL; }
+      const go=document.getElementById('blueberry-go'); if(go) go.href=window.stripeDonateURL();
+      /* JP support page hides the blueberry emoji (per request); EN keeps it. */
+      const em=document.getElementById('blueberry-emoji'); if(em) em.style.display=(currentLang==='jp')?'none':'block'; }
     function open(){ fill(); bm.style.display='flex'; }
     function close(){ bm.style.display='none'; }
     const btn=document.getElementById('btn-blueberry'); if(btn) btn.onclick=open;
     const x=document.getElementById('blueberry-close-x'); if(x) x.onclick=close;
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
+    /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
+       The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
+    const go=document.getElementById('blueberry-go');
+    if(go) go.addEventListener('click', ()=>{ try{ if(typeof DB!=='undefined' && DB && typeof currentUser!=='undefined' && currentUser){ DB.from('donations').insert({ user_id:currentUser.id, email:currentUser.email||null, locale:currentLang, source:'support_button', status:'initiated' }); } }catch(_){} });
     window._openBlueberry=open;
   })();
 
@@ -5143,8 +5139,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Geopolitical theory", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", optTactical:"Tactical (military)", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"地政学理論", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル（軍事）", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", optTactical:"Tactical (military)", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル（軍事）", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
 
@@ -5422,7 +5418,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     [
       ['__grp','lyrGrpWeather'],
-      ['climate','lyrClimate'],['radar','lyrRadar'],['clouds','lyrClouds'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['nightsat','lyrNightSat'],['thermal','lyrThermal'],
+      ['climate','lyrClimate'],['radar','lyrRadar'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['nightsat','lyrNightSat'],['thermal','lyrThermal'],
       ['__grp','lyrGrpTerrain'],
       ['relief','lyrRelief'],['sealevel','lyrSeaLevel'],['hillshade','lyrHillshade'],['contours','lyrContours'],
       ['__grp','lyrGrpMaritime'],
@@ -7919,9 +7915,9 @@ window.addEventListener('DOMContentLoaded', () => {
     lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass", sidebarGlass2:"Frosted glass (more transparent)",
     lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
     lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centred)", flatPanFree:"Free pan (wrap around the world)",
-    lblNewsCountries:"News by country media", newsCountriesHint:"Also pull headlines from the national outlets of the countries you pick (multiple allowed).",
+    lblNewsCountries:"News by country media", newsCountriesHint:"Pull headlines from the media of the countries you pick (multiple allowed).",
     lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
-    screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables (real)",
+    screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
     lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)",
     blueberryBtn:"🫐 Buy me a blueberry", blueberryTitle:"Support IntMap",
     blueberryBody:"Thank you for exploring the world with IntMap.\nIf this unified screen has cured your tab-switching eye fatigue, please feel free to drop a blueberry for my eyes.🫐",
@@ -7930,9 +7926,9 @@ window.addEventListener('DOMContentLoaded', () => {
     lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
     lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
     lblFlatPan:"平面地図の表示", flatPanFixed:"範囲固定（ヨーロッパ中心）", flatPanFree:"自由スクロール（世界一周）",
-    lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国の国内メディアの見出しも取得します（複数選択可）。",
+    lblNewsCountries:"国別メディアのニュース", newsCountriesHint:"選択した国のメディアの見出しを取得します（複数選択可）。",
     lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
-    screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル（実データ）",
+    screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル",
     lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）",
     blueberryBtn:"開発を支援する", blueberryTitle:"IntMap 開発・運営支援",
     blueberryBody:"IntMapをご利用いただきありがとうございます。\n本サービスは個人で開発・運営を行っており、すべての機能を無料で公開しています。\nもしこのプロジェクトを気に入っていただけましたら、今後の機能追加やサーバー維持費のための開発支援（寄付）をご検討いただけますと幸いです。",
@@ -8849,16 +8845,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(state.langs){ setTimeout(()=>{ ensureLangSource(ok=>{ if(ok) setVis(LSET,true); }); },80); } });
 
     /* dropdown UI — appended after the existing layer groups, non-destructive */
-    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('r7-dl-disputes')) return;
-      const head=document.createElement('div'); head.className='lyr-head'; head.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; head.setAttribute('data-r7head','1'); dd.appendChild(head);
-      function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      const cbD=row('r7-dl-disputes', jp()?'係争境界線':'Disputed boundaries', '#ff4d4d');
-      const cbA=row('r7-dl-airdef', jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage', '#e0312e');
-      const cbL=row('r7-dl-langs', jp()?'世界の言語分布':'World languages', '#6f9be8');
-      cbD.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('disputes',e.target.checked); });
-      cbA.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('airdef',e.target.checked); });
-      cbL.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle('langs',e.target.checked); });
-    }
+    /* (#R10) The "Intelligence (advanced)" category (disputes / air-defence / languages) was removed per
+       request. The toggle/state machinery is kept (harmless, unused) so nothing else needs touching. */
+    function buildUI(){ return; }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
@@ -8940,7 +8929,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6'],['seaice','#bfe9ff'],['adiz','#ffcc00']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=jp()?L9LBL[k][0]:L9LBL[k][1]; }); }
