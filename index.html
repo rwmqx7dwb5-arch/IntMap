@@ -8901,6 +8901,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!map.getSource('l9-aurora')){ map.addSource('l9-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           map.addLayer({id:'l9-aurora-heat',type:'heatmap',source:'l9-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,4,30],'heatmap-opacity':0.78,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
         }
+        /* Sea ice (#7) — AMSR2 concentration via NASA GIBS WMS GetMap (the WMTS tiles aren't in 3857, but
+           the WMS GetMap IS). Date = today−2 (resolves to a real, processed day in the user's browser). */
+        if(!map.getSource('l9-seaice')){ const sd=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+          map.addSource('l9-seaice',{type:'raster',tiles:['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=AMSRU2_Sea_Ice_Concentration_12km&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+sd],tileSize:256,attribution:'NASA GIBS — AMSR2 sea-ice concentration'});
+          map.addLayer({id:'l9-seaice',type:'raster',source:'l9-seaice',layout:{visibility:'none'},paint:{'raster-opacity':0.82}});
+        }
         if(!wired){ wired=true;
           map.on('click','l9-dams-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🏞 '+p.name,p.info); });
           map.on('click','l9-volc-pt',e=>{ if(!e.features[0])return; const p=e.features[0].properties; showPop(e.features[0].geometry.coordinates,'🌋 '+p.name,p.info); });
@@ -8915,18 +8921,18 @@ window.addEventListener('DOMContentLoaded', () => {
       for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
       if(map.getSource('l9-aurora')) map.getSource('l9-aurora').setData({type:'FeatureCollection',features:feats});
     }catch(e){ try{ imToast(jp()?'オーロラ予測を取得できませんでした':'Aurora forecast unavailable'); }catch(_){} } }
-    const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat']};
+    const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat'],seaice:['l9-seaice']};
     let auroraTimer=null;
     function toggle(which,on){ state[which]=on;
       const apply=()=>{ if(!ensureLayers()){ map.once('idle',apply); return; } setVis(SETS[which],on);
         if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=setInterval(loadAurora,300000); } else if(auroraTimer){ clearInterval(auroraTimer); auroraTimer=null; } } };
       apply(); }
     map.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
-    const L9LBL={dams:['主要ダム・水インフラ','Major dams'],volcanoes:['活火山','Active volcanoes'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defence zones (ADIZ ≈)']};
+    const L9LBL={dams:['主要ダム・水インフラ','Major dams'],volcanoes:['活火山','Active volcanoes'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)'],seaice:['海氷（北極・南極）','Sea ice (Arctic/Antarctic)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defence zones (ADIZ ≈)']};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6'],['adiz','#ffcc00']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6'],['seaice','#bfe9ff'],['adiz','#ffcc00']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=jp()?L9LBL[k][0]:L9LBL[k][1]; }); }
