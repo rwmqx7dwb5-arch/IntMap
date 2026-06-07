@@ -546,3 +546,70 @@ by wiring + data-probe, not a screenshot). External endpoints curl-probed before
 - Elevation profile under a measured line (#46); financial/weather/clock widgets (#50); jina.ai in-app
   reader (#45); mobile centre-fixed Add-Point measuring + crosshair + desktop Add-Point button
   (#34/#35/#36) — sizeable, left for a focused round.
+
+---
+
+## 13. Round 10–11 — very large re-attack + new features (tags `#R10`, `#R11`)
+
+The user returned with two huge batches (40+ items each), including several **reversals** of R9b additions
+and the real Stripe links. All additive/in-place; verified in the headless preview (`preview_eval` for
+globals/DOM/CSS + console-error checks; external endpoints curl-probed first). MapLibre stays the engine.
+
+### Donations / Pro removal (`#R10`)
+- **Real Stripe links wired**: `INTMAP_STRIPE_URL_EN` (USD, `?locale=en`) and `_JP` (JPY, `?locale=ja`);
+  `stripeDonateURL()` picks by language and the "Continue" button is a direct `<a href>`. JP support page
+  hides the 🫐 emoji.
+- **Donation recording**: a logged-in user clicking the support button inserts an *intent* row into a new
+  `donations` table (`supabase_donations.sql`, RLS own-row) — basis for recognising supporters when a paid
+  plan launches. (Actual paid amount needs a Stripe webhook → `status='paid'`.)
+- **All Pro/premium removed, everything free**: `imIsPro()` now returns `true` (unlocks satellite BYOK);
+  the premium layer section + pricing modal are gone (`openProModal` is a no-op); the account menu's
+  Pro/upgrade/subscription rows removed; the two name-only "premium" layers deleted entirely.
+
+### Layer removals / renames / recategorise (`#R10`/`#R11`)
+- Removed: sea-ice, ADIZ, the whole "Intelligence (advanced)" category (disputes/air-defence/languages),
+  clouds·infrared, the Strategic-networks **submarine cables** (kept the Maritime one, dropped "(real)"),
+  Heartland + Rimland (layers + geoLayersDB). "Geopolitical theory" → **"Strategic geography"**.
+- **Grid moved into the Layers menu** (desktop toolbar button hidden, kept for the mobile proxy).
+- **New layers**: GDP-per-capita, night-lights (Black Marble), dams, volcanoes, NOAA aurora; **ESA
+  WorldCover 2021** (Terrascope WMTS), **WWF/RESOLVE Ecoregions 2017** (PMTiles + the pmtiles protocol
+  plugin, source-layer resolved from metadata), **tectonic plates** (real fraxen/PB2002 polygons +
+  boundaries + labels), **Total Fertility Rate** choropleth (World Bank live). New group "Land cover &
+  earth science". Layer modules now relabel on the Settings language change (header EN/JP toggle removed).
+
+### UI / measurement / fixes (`#R11`)
+- Header **EN/JP toggle removed** (language is Settings-only). **No tab auto-selected** on load (blank
+  sidebar, map prominent; pins load when News opens). **"Read" reverted** to opening the external browser.
+- Measurement: **clearing an area restarts in Measure** (not stuck in area); **"Keep on map"** no longer
+  auto-opens a popup — clicking the saved shape shows a dismissable popup **with the measured value**;
+  **radius-from-pin/point** now lets the slider/colour **edit that circle live** (`_activeRadiusId`).
+- **Köppen legend** flex-column rebuilt — opacity slider + minimise button restored (they vanished when
+  `.kl-hint` moved inside the scroll area broke `ensureLegendOpacity`'s `insertBefore`, which aborted the
+  minimise call in the shared try/catch); collapsed `min-height:0`; mobile legend ≈ square + scrollable.
+- **Wind valid-time pill** moved below the search box (overlap fixed). **Tactical** renamed + made harder
+  (sharp frames, amber warning accent, hazard stripes, denser CRT).
+- **Widgets** (🧩 toolbar/mobile): clock + weather (Open-Meteo at map centre, uses `fmtTemp`) + USD FX,
+  draggable, prefs persist. **Temperature °C/°F/both** Settings option (`fmtTemp`, default both). **Runway
+  search** lengths/distances respect metric/imperial/both.
+- **Country isolation**: now restricts panning to the country (`setMaxBounds`) and the exit pill sits at
+  the bottom-centre. **Elevation profile**: high-res even-distance sampling (~1/1.5 km, 60–240 pts) +
+  **hover-to-map** sync (red cursor marker + chart crosshair + distance/elevation readout).
+- **Line of sight / radar shadow** (`window.IntMapLOS`): radar site + antenna height + range → 96
+  earth-curvature-corrected DEM rays → terrain-blocked dead zones filled red (coverage outlined green).
+- **Mobile centre-fixed measuring**: centre crosshair + bottom-centre **Add point** button (adds the map
+  centre; replaces the disabled long-press menu when no tool is active) + bottom-left centre readout;
+  mobile taps no longer add points.
+
+### Still-open / documented (need data files, live tile formats, or engine-scale work)
+- **ECMWF Open-Meteo `data_spatial` 8-layer weather suite** (WebGL particle wind, isobars, SLP, cloud,
+  humidity, ocean temp, etc.) + per-layer toggles — large; needs the spatial-tile format wired into
+  MapLibre sources. Wind-resolution bump + wind-legend **unit pulldown** belong with this rework.
+- **Köppen multi-period (1901-1930 / 1931-1960 / 1961-1990)** + WWF biome / Holdridge / land-use classes —
+  the period `.tif` source files aren't in the repo and need GDAL → Web-Mercator PNG conversion (like the
+  existing `koppen_mercator.png`); a legend period-pulldown is the intended entry point.
+- **Compare-mode resizable/minimisable window** mirroring the full main UI (minus sidebar) — a second map
+  instance + cloned controls; large.
+- **Maritime A\* routing** (land-avoiding sea routes, no-go zones, real shipping lanes) — needs a sea/land
+  mask grid + pathfinding.
+- **Pipeline geometry** to survey-grade real coordinates — needs an authoritative pipeline dataset.
+- Map-colour-occasionally-wrong + mobile sidebar-drag-centre smoothness — intermittent; still chasing repro.
