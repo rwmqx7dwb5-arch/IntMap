@@ -5150,8 +5150,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map) return;
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", optTactical:"Tactical", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
     Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル（軍事）", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
-    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
+    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -5386,7 +5386,7 @@ window.addEventListener('DOMContentLoaded', () => {
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,nato:0.55,night:0.4,nightsat:0.95,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95};
+    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:0.95,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95};
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -5439,7 +5439,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ['__grp','lyrGrpMaritime'],
       ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],
       ['__grp','lyrGrpIndic'],
-      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['hdi','lyrHDI'],['dem','lyrDem'],['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO'],['night','lyrNight']
+      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO'],['night','lyrNight']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[currentLang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
@@ -5538,7 +5538,8 @@ window.addEventListener('DOMContentLoaded', () => {
       milSpend:{label:()=>currentLang==='jp'?'国防費 (2023)':'Mil. spending (2023)', fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
       milSpendGDP:{label:()=>currentLang==='jp'?'国防費 (対GDP)':'Mil. spending (% GDP)', fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }},
       /* GDP per capita (#R9) — nominal USD, derived from bundled GDP × 1e9 / population. */
-      gdppc:{label:()=>currentLang==='jp'?'1人当たりGDP':'GDP per capita', fmt:s=>s.gdppc!=null?fmtPc(s.gdppc):'—'}
+      gdppc:{label:()=>currentLang==='jp'?'1人当たりGDP':'GDP per capita', fmt:s=>s.gdppc!=null?fmtPc(s.gdppc):'—'},
+      tfr:{label:()=>currentLang==='jp'?'合計特殊出生率':'Total fertility rate', fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
     };
     function wireChoroHover(id){
       const meta=CHORO_META[id]; if(!meta) return;
@@ -5560,6 +5561,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='milSpend') ramp=['interpolate',['linear'],['to-number',['feature-state','milSpend'],-1],1,'#fff7ec',5,'#fdd49e',20,'#fc8d59',75,'#d7301f',300,'#7f0000',916,'#4d0000'];
       else if(id==='milSpendGDP') ramp=['interpolate',['linear'],['to-number',['feature-state','milSpendGDP'],-1],0.5,'#edf8fb',1,'#b2e2e2',2,'#66c2a4',3.5,'#2ca25f',6,'#006d2c'];
       else if(id==='gdppc') ramp=['interpolate',['linear'],['to-number',['feature-state','gdppc'],-1],1000,'#fff7ec',5000,'#fee8c8',15000,'#fdbb84',30000,'#fc8d59',55000,'#e34a33',90000,'#7f0000'];
+      else if(id==='tfr') ramp=['interpolate',['linear'],['to-number',['feature-state','tfr'],-1],1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02'];
       else ramp=['interpolate',['linear'],['to-number',['feature-state','pop'],-1],2,'#ffffcc',20,'#fed976',100,'#fd8d3c',500,'#e31a1c',3000,'#800026'];
       /* Countries WITHOUT data are painted neutral grey. NOTE: an UNSET feature-state reads as
          null, and MapLibre's to-number(null) is 0 (NOT the -1 fallback) — so we must test "<= 0",
@@ -6484,13 +6486,21 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='gdppc'){
           withCountries(()=>{ try{ addChoro('gdppc'); applyChoro('gdppc',s=>s.gdppc!=null?s.gdppc:null); setVis('gdppc-fill',true); }catch(e){ console.warn('gdppc choro fail',e); } });
         }
+        else if(id==='tfr'){
+          /* (#R11) Total fertility rate — fetched live from the World Bank (latest year), cached. */
+          withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
+            const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
+            if(window._tfrData){ apply(); }
+            else { fetch('https://api.worldbank.org/v2/country/all/indicator/SP.DYN.TFRT.IN?format=json&date=2022&per_page=400').then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; window._tfrData={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code){ window._tfrData[d.countryiso3code]=+d.value; if(countryStats[d.countryiso3code]) countryStats[d.countryiso3code].tfr=+d.value; } }); apply(); }).catch(()=>{ try{ imToast(currentLang==='jp'?'出生率データを取得できませんでした':'Could not load fertility data'); }catch(_){} }); }
+          }catch(e){ console.warn('tfr choro fail',e); } });
+        }
         else if(id==='nato'){
           /* NATO members fill only (#14) — no legend; accession year + defence %GDP show on hover. */
           withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
       } else {
-        if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'){ setVis(id+'-fill',false); }
+        if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setNatoVis(false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
@@ -6533,7 +6543,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
-      if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'){
+      if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
         /* Keep no-data countries grey (0.45) — see addChoro for the "<= 0" reasoning. */
         if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
@@ -8862,7 +8872,77 @@ window.addEventListener('DOMContentLoaded', () => {
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=jp()?L9LBL[k][0]:L9LBL[k][1]; }); }
     ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) relabel on Settings language change */
     window.IntMapLayers9={ toggle };
+  })();
+
+  /* ===== (#R11) Land cover & earth science: ESA WorldCover 2021 (WMTS raster), RESOLVE/WWF Ecoregions
+     2017 (PMTiles vector), and tectonic plates (real polygons + boundaries). Self-contained. ===== */
+  (function(){
+    if(!map) return;
+    const jp=()=>currentLang==='jp';
+    const setVis=(ids,on)=>ids.forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} });
+    const state={worldcover:false,ecoregions:false,plates:false};
+    const PAL=['#e8590c','#1c7ed6','#2f9e44','#9c36b5','#f08c00','#0c8599','#e64980','#5c940d','#3b5bdb','#c2255c','#087f5b','#d9480f','#5f3dc4','#1971c2','#66a80f'];
+    /* ---- ESA WorldCover (raster) ---- */
+    function ensureRaster(){ if(map.getSource('eco-worldcover')) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource('eco-worldcover',{type:'raster',tiles:['https://services.terrascope.be/wmts/v2?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=WORLDCOVER_2021_MAP&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png'],tileSize:256,maxzoom:12,attribution:'ESA WorldCover 2021 · Terrascope'});
+        map.addLayer({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.85}}); return true; }catch(_){ return false; } }
+    /* ---- Tectonic plates (geojson) ---- */
+    let platesLoaded=false, platesLoading=false;
+    function ensurePlateLayers(){ if(map.getSource('eco-plates')) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource('eco-plates',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); map.addSource('eco-plates-b',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:'eco-plates-fill',type:'fill',source:'eco-plates',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','_color'],'#e8590c'],'fill-opacity':0.18}});
+        map.addLayer({id:'eco-plates-line',type:'line',source:'eco-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.5,'line-opacity':0.92}});
+        map.addLayer({id:'eco-plates-lbl',type:'symbol',source:'eco-plates',minzoom:2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','PlateName'],['get','Name'],['get','Code'],''],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffd3c7','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.3}}); return true; }catch(_){ return false; } }
+    function loadPlates(cb){ if(platesLoaded){ cb(true); return; } if(platesLoading){ cb(false); return; } platesLoading=true;
+      Promise.all([
+        fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json').then(r=>r.json()),
+        fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').then(r=>r.json()).catch(()=>null)
+      ]).then(([pl,bd])=>{ try{ (pl.features||[]).forEach((f,i)=>{ f.properties=f.properties||{}; f.properties._color=PAL[i%PAL.length]; }); }catch(_){}
+        try{ if(map.getSource('eco-plates')) map.getSource('eco-plates').setData(pl); }catch(_){}
+        try{ if(bd && map.getSource('eco-plates-b')) map.getSource('eco-plates-b').setData(bd); }catch(_){}
+        platesLoaded=true; platesLoading=false; cb(true);
+      }).catch(()=>{ platesLoading=false; try{ imToast(jp()?'プレートデータを取得できませんでした':'Could not load plate data'); }catch(_){} cb(false); }); }
+    /* ---- Ecoregions (PMTiles vector) ---- */
+    let pmReady=false, pmLoading=false; const pmQ=[];
+    function loadPMTiles(cb){ if(pmReady){ cb(true); return; } pmQ.push(cb); if(pmLoading) return; pmLoading=true;
+      const s=document.createElement('script'); s.src='https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js';
+      s.onload=()=>{ try{ if(typeof pmtiles!=='undefined'){ const proto=new pmtiles.Protocol(); maplibregl.addProtocol('pmtiles', proto.tile); pmReady=true; } }catch(_){} pmLoading=false; pmQ.splice(0).forEach(fn=>fn(pmReady)); };
+      s.onerror=()=>{ pmLoading=false; pmQ.splice(0).forEach(fn=>fn(false)); };
+      document.head.appendChild(s); }
+    let ecoBuilt=false;
+    function ensureEco(cb){ if(map.getSource('eco-regions')){ cb(true); return; }
+      loadPMTiles(ok=>{ if(!ok){ try{ imToast(jp()?'PMTilesを読み込めませんでした':'Could not load PMTiles'); }catch(_){} cb(false); return; }
+        const URL='https://r2-public.protomaps.com/protomaps-sample-datasets/resolved_ecoregions_2017.pmtiles';
+        let sl=null; try{ const pm=new pmtiles.PMTiles(URL);
+          pm.getMetadata().then(md=>{ try{ const vl=(md&&(md.vector_layers||(md.tilestats&&md.tilestats.layers)))||[]; if(vl.length) sl=vl[0].id||vl[0].layer; }catch(_){}
+            addEcoLayers(URL, sl||'resolved_ecoregions_2017'); cb(true);
+          }).catch(()=>{ addEcoLayers(URL,'resolved_ecoregions_2017'); cb(true); });
+        }catch(_){ addEcoLayers(URL,'resolved_ecoregions_2017'); cb(true); } }); }
+    function addEcoLayers(url, sl){ if(ecoBuilt||map.getSource('eco-regions')) return; ecoBuilt=true;
+      try{ map.addSource('eco-regions',{type:'vector',url:'pmtiles://'+url,attribution:'RESOLVE Ecoregions 2017 · protomaps'});
+        map.addLayer({id:'eco-regions-fill',type:'fill',source:'eco-regions','source-layer':sl,layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],['to-color',['get','color']],'#4caf50'],'fill-opacity':0.5}});
+        map.addLayer({id:'eco-regions-line',type:'line',source:'eco-regions','source-layer':sl,layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}});
+      }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
+    const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
+    function toggle(which,on){ state[which]=on;
+      if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ map.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); }
+      else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ map.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
+      else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else setVis(SETS.ecoregions,false); }
+    }
+    map.on('styledata',()=>{ if(state.worldcover||state.plates){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } },60); } });
+    const ECLBL={worldcover:['土地被覆 (ESA 2021)','Land cover (ESA 2021)'],ecoregions:['生態地域 (WWF/RESOLVE)','Ecoregions (WWF/RESOLVE)'],plates:['プレート境界','Tectonic plates']};
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('eco-dl-worldcover')) return;
+      const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; dd.appendChild(head);
+      function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
+      [['worldcover','#4caf50'],['ecoregions','#2f9e44'],['plates','#e8590c']].forEach(([k,sw])=>{ const cb=row('eco-dl-'+k, jp()?ECLBL[k][0]:ECLBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+    }
+    if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
+    function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=jp()?ECLBL[k][0]:ECLBL[k][1]; }); }
+    ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
+    window.IntMapEco={ toggle };
   })();
 
   /* ===== (#R9b/#55) Persistent measurement annotations — finalise a measure/area/radius as a pin-less
