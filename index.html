@@ -9056,14 +9056,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== (#R9b/#46) Elevation cross-section under a measured line (area uses its perimeter). Below 0 m
      gets a faint blue band so sub-sea segments are obvious. Samples the cached terrarium DEM. ===== */
+  /* (#R11) Map cursor that mirrors the hovered point on the elevation chart. */
+  function _elevCursor(coord){ try{ if(!map.getSource('elev-cursor')){ map.addSource('elev-cursor',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); map.addLayer({id:'elev-cursor-pt',type:'circle',source:'elev-cursor',paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}}); }
+    map.getSource('elev-cursor').setData({type:'FeatureCollection',features:coord?[{type:'Feature',geometry:{type:'Point',coordinates:coord},properties:{}}]:[]}); }catch(_){} }
   window._elevationProfile=function(){
     if(!hasTurf() || (toolMode!=='measure' && toolMode!=='area')) return;
     const pts = (toolMode==='area')?[...measurePoints,measurePoints[0]]:measurePoints;
     if(pts.length<2) return;
-    const line=_gcDensify(pts);
-    const N=Math.min(80, Math.max(24, line.length)); const stepI=(line.length-1)/(N-1); const samples=[];
-    for(let i=0;i<N;i++) samples.push(line[Math.round(i*stepI)]);
-    const dist=[0]; for(let i=1;i<samples.length;i++) dist.push(dist[i-1]+turf.distance(turf.point(samples[i-1]),turf.point(samples[i]),{units:'kilometers'}));
+    let line; try{ line=turf.lineString(_gcDensify(pts)); }catch(_){ return; }
+    let len; try{ len=turf.length(line,{units:'kilometers'}); }catch(_){ len=0; }
+    if(!(len>0)) return;
+    /* High resolution: ~1 sample / 1.5 km, 60–240 samples (DEM tiles are cached so many samples share fetches). */
+    const N=Math.min(240, Math.max(60, Math.round(len/1.5)));
+    const samples=[], dist=[];
+    for(let i=0;i<N;i++){ const d=len*i/(N-1); let pt=null; try{ pt=turf.along(line,d,{units:'kilometers'}).geometry.coordinates; }catch(_){} if(pt){ samples.push(pt); dist.push(d); } }
+    if(samples.length<2) return;
     _openProfilePanel(samples,dist);
   };
   function _openProfilePanel(samples,dist){
@@ -9072,17 +9079,17 @@ window.addEventListener('DOMContentLoaded', () => {
     p.style.cssText='display:block;left:50%;top:auto;bottom:26px;right:auto;transform:translateX(-50%);width:min(560px,calc(100vw - 40px));z-index:1600;';
     const j=currentLang==='jp';
     p.innerHTML='<div class="tp-header"><span class="tp-title">📈 '+(j?'標高断面':'Elevation profile')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div><div id="elev-profile-body" style="font-size:12px;color:var(--text-muted);padding:8px 2px;">'+(j?'標高を取得中…':'Sampling elevation…')+'</div>';
-    p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+    p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; _elevCursor(null); };
     try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
-    Promise.all(samples.map(s=>{ try{ return Promise.resolve(fetchElevDepth(s[1],s[0])).catch(()=>null); }catch(_){ return Promise.resolve(null); } })).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), dist, els); });
+    Promise.all(samples.map(s=>{ try{ return Promise.resolve(fetchElevDepth(s[1],s[0])).catch(()=>null); }catch(_){ return Promise.resolve(null); } })).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); });
   }
-  function _drawProfile(box, dist, els){
+  function _drawProfile(box, samples, dist, els){
     if(!box) return; const j=currentLang==='jp';
     const known=els.filter(e=>e!=null && !isNaN(e));
     if(!known.length){ box.textContent=j?'標高データを取得できませんでした':'No elevation data available'; return; }
     let minE=Math.min(...known,0), maxE=Math.max(...known,0); if(maxE===minE) maxE=minE+1;
     const cont=document.getElementById('map-container')||document.body;
-    const W=Math.min(520, Math.max(280, cont.clientWidth-60)), H=172, padL=46,padR=10,padT=12,padB=26;
+    const W=Math.min(520, Math.max(280, cont.clientWidth-60)), H=176, padL=46,padR=10,padT=12,padB=26;
     const total=dist[dist.length-1]||1;
     const X=i=>padL+(dist[i]/total)*(W-padL-padR);
     const Y=e=>padT+(1-(e-minE)/(maxE-minE))*(H-padT-padB);
@@ -9090,16 +9097,27 @@ window.addEventListener('DOMContentLoaded', () => {
     const y0=Y(0);
     const area=dPath?('M'+X(0).toFixed(1)+' '+y0.toFixed(1)+' '+dPath.replace(/^M/,'L')+'L'+X(els.length-1).toFixed(1)+' '+y0.toFixed(1)+' Z'):'';
     const seaBand=(minE<0)?'<rect x="'+padL+'" y="'+y0.toFixed(1)+'" width="'+(W-padL-padR)+'" height="'+Math.max(0,(H-padB-y0)).toFixed(1)+'" fill="rgba(40,120,200,0.18)"/>':'';
-    const svg='<svg width="'+W+'" height="'+H+'" style="display:block;max-width:100%;">'
+    const svg='<svg id="elev-svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;max-width:100%;cursor:crosshair;">'
       +seaBand
       +(area?'<path d="'+area+'" fill="rgba(120,170,90,0.28)"/>':'')
       +'<line x1="'+padL+'" y1="'+y0.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y0.toFixed(1)+'" stroke="rgba(40,120,200,0.75)" stroke-dasharray="3 3"/>'
-      +(dPath?'<path d="'+dPath+'" fill="none" stroke="#5aa02c" stroke-width="2"/>':'')
+      +(dPath?'<path d="'+dPath+'" fill="none" stroke="#5aa02c" stroke-width="1.6"/>':'')
+      +'<line id="elev-vline" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="#ff3b30" stroke-width="1" style="display:none;"/>'
+      +'<circle id="elev-vdot" r="3.5" fill="#ff3b30" stroke="#fff" stroke-width="1.5" style="display:none;"/>'
       +'<text x="3" y="'+(Y(maxE)+3).toFixed(1)+'" font-size="9" fill="currentColor">'+Math.round(maxE)+' m</text>'
       +'<text x="3" y="'+(Y(minE)).toFixed(1)+'" font-size="9" fill="currentColor">'+Math.round(minE)+' m</text>'
       +(minE<0?'<text x="3" y="'+(y0-2).toFixed(1)+'" font-size="9" fill="rgba(60,140,210,1)">0</text>':'')
       +'</svg>';
-    box.innerHTML=svg+'<div style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:10px;margin-top:2px;"><span>0 km</span><span>'+total.toFixed(total<10?1:0)+' km</span></div>';
+    box.innerHTML=svg+'<div id="elev-readout" style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:10.5px;margin-top:2px;"><span>0 km</span><span id="elev-hover" style="color:var(--text-main);font-weight:600;"></span><span>'+total.toFixed(total<10?1:0)+' km</span></div>';
+    /* Hover: vertical cursor on the chart + a synced marker on the map (#R11). */
+    const svgEl=box.querySelector('#elev-svg'), vline=box.querySelector('#elev-vline'), vdot=box.querySelector('#elev-vdot'), hov=box.querySelector('#elev-hover');
+    if(svgEl){ const move=(ev)=>{ const r=svgEl.getBoundingClientRect(); const cx=ev.touches?ev.touches[0].clientX:ev.clientX; let xv=(cx-r.left)/r.width*W; xv=Math.max(padL,Math.min(W-padR,xv)); const frac=(xv-padL)/(W-padL-padR); let idx=Math.round(frac*(samples.length-1)); idx=Math.max(0,Math.min(samples.length-1,idx)); const e=els[idx];
+        vline.setAttribute('x1',X(idx)); vline.setAttribute('x2',X(idx)); vline.style.display='block';
+        if(e!=null&&!isNaN(e)){ vdot.setAttribute('cx',X(idx)); vdot.setAttribute('cy',Y(e)); vdot.style.display='block'; if(hov) hov.textContent=dist[idx].toFixed(dist[idx]<10?1:0)+' km · '+Math.round(e)+' m'+(e<0?' '+(j?'(海中)':'(below sea)'):''); }
+        _elevCursor(samples[idx]); };
+      svgEl.addEventListener('mousemove',move); svgEl.addEventListener('touchmove',move,{passive:true});
+      svgEl.addEventListener('mouseleave',()=>{ vline.style.display='none'; vdot.style.display='none'; if(hov) hov.textContent=''; _elevCursor(null); });
+    }
   }
 
   /* ===== (#R9b/#53) Country isolation — show only the selected country; mask the rest with the globe-style
