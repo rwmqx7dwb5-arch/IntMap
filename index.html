@@ -23,7 +23,19 @@
     body.theme-tactical .loc-chip{ background:rgba(25,230,118,0.16); color:#a9ffcf; }
     body.theme-tactical ::selection{ background:#19e676; color:#04210f; }
     body.theme-tactical .control-panel{ background:rgba(20,44,20,0.5); border:1px solid rgba(80,200,120,0.2); }
-    body.theme-tactical .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(25,230,118,0.04) 0 1px,transparent 1px 3px); z-index:9; }
+    body.theme-tactical .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(25,230,118,0.06) 0 1px,transparent 1px 3px); z-index:9; }
+    /* (#R11) HARDER military aesthetic — sharp frames, amber warning accent, hazard stripes, NV phosphor. */
+    body.theme-tactical{ --amber:#ffb000; }
+    body.theme-tactical .sidebar{ border-right:2px solid rgba(25,230,118,0.5) !important; box-shadow:inset 0 0 0 1px rgba(25,230,118,0.12); }
+    body.theme-tactical .sidebar,body.theme-tactical .modal-content,body.theme-tactical .layer-dropdown,body.theme-tactical .measure-dropdown,body.theme-tactical .tool-panel,body.theme-tactical .data-legend,body.theme-tactical .koppen-legend,body.theme-tactical .country-info,body.theme-tactical .pin-popup,body.theme-tactical .country-popup,body.theme-tactical .news-item,body.theme-tactical .m-sheet,body.theme-tactical .ctx-menu,body.theme-tactical .coord-readout,body.theme-tactical .view-btn,body.theme-tactical .search-bar,body.theme-tactical input,body.theme-tactical select,body.theme-tactical .ai-action-btn,body.theme-tactical .ai-test-btn,body.theme-tactical .btn-settings,body.theme-tactical .modal-close-btn{ border-radius:2px !important; }
+    body.theme-tactical .sidebar,body.theme-tactical .modal-content,body.theme-tactical .layer-dropdown,body.theme-tactical .tool-panel,body.theme-tactical .data-legend,body.theme-tactical .koppen-legend,body.theme-tactical .country-popup,body.theme-tactical .pin-popup,body.theme-tactical .m-sheet,body.theme-tactical .ctx-menu{ border-color:rgba(25,230,118,0.42) !important; }
+    body.theme-tactical h2,body.theme-tactical h3,body.theme-tactical h4,body.theme-tactical .layer-group-title,body.theme-tactical .lyr-head,body.theme-tactical .mode-btn,body.theme-tactical .dash-nav-btn{ letter-spacing:0.12em !important; }
+    body.theme-tactical h2::before{ content:'▌ '; color:#19e676; }
+    body.theme-tactical .layer-group-title,body.theme-tactical .lyr-head{ color:var(--amber) !important; border-bottom:1px dashed rgba(255,176,0,0.32); padding-bottom:2px; }
+    body.theme-tactical .mode-btn.active,body.theme-tactical .btn-settings,body.theme-tactical .modal-close-btn,body.theme-tactical .search-btn{ background:repeating-linear-gradient(135deg,#19e676 0 9px,#0f9b50 9px 18px) !important; color:#04210f !important; text-shadow:none; }
+    body.theme-tactical .loc-chip.unmapped{ background:rgba(255,176,0,0.18) !important; color:var(--amber) !important; }
+    body.theme-tactical .btn-bookmark.active{ color:var(--amber); }
+    body.theme-tactical .lang-btn.active{ background:#19e676; color:#04210f; }
     body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
     button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
@@ -5156,7 +5168,7 @@ window.addEventListener('DOMContentLoaded', () => {
   (function(){
     if(!map) return;
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", optTactical:"Tactical", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル（軍事）", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
 
@@ -9109,16 +9121,20 @@ window.addEventListener('DOMContentLoaded', () => {
     function bbox(feat){ let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=ring=>ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; });
       const g=feat.geometry; if(g.type==='Polygon') g.coordinates.forEach(eat); else g.coordinates.forEach(poly=>poly.forEach(eat)); return [[mnx,mny],[mxx,mxy]]; }
     function exitBtn(){ if(btn) return btn; btn=document.createElement('button'); btn.id='iso-exit-btn';
-      btn.style.cssText='display:none;position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
+      /* (#R11) Exit pill lives at the BOTTOM-centre, clear of the timebar / mobile sheet / other UI. */
+      btn.style.cssText='display:none;position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
       btn.onclick=exit; (document.getElementById('map-container')||document.body).appendChild(btn); return btn; }
     function enter(id){ const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
         const feat=findFeature(id); if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
         try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){}
         active=true; const b=exitBtn(); b.textContent='✕ '+(jp()?'全体表示に戻る':'Exit country view'); b.style.display='block';
-        try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179) map.fitBounds(bb,{padding:60,duration:800}); }catch(_){}
+        try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ map.fitBounds(bb,{padding:60,duration:800});
+          /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
+          const padX=(bb[1][0]-bb[0][0])*0.18+0.6, padY=(bb[1][1]-bb[0][1])*0.18+0.6;
+          map.setMaxBounds([[bb[0][0]-padX,Math.max(-85,bb[0][1]-padY)],[bb[1][0]+padX,Math.min(85,bb[1][1]+padY)]]); } }catch(_){}
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
       }; apply(); }
-    function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} if(btn) btn.style.display='none'; }
+    function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){} } },80); } });
     return { enter, exit, active:()=>active };
   })();
