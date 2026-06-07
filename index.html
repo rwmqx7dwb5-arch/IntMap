@@ -5147,6 +5147,7 @@ window.addEventListener('DOMContentLoaded', () => {
          this view" removed per request — the live-permalink hash still restores a reload. */
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
+      {label:`📡 ${currentLang==='jp'?'見通し線解析（レーダー死角）':'Line of sight (radar shadow)'}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
       ...(userPins.length?[{label:`🗑 ${t('ctxClearPins')} (${userPins.length})`, action:clearAllPins}]:[])
     ];
     m.innerHTML=items.map(it=>{
@@ -9198,6 +9199,59 @@ window.addEventListener('DOMContentLoaded', () => {
       body.innerHTML=html || (jp()?'データがありません':'No data available');
     }
     return { open };
+  })();
+
+  /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
+     and the terrain DEM is cast in 96 rays (earth-curvature-corrected) → terrain-blocked dead zones are
+     filled red, the visible coverage outlined green. Uses the same cached terrarium DEM as the readout. ===== */
+  window.IntMapLOS=(function(){
+    if(!map) return { open(){}, clear(){} };
+    const jp=()=>currentLang==='jp';
+    let site=null, panel=null, busy=false;
+    function ensureLayers(){ if(map.getSource('los-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource('los-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:'los-shadow',type:'fill',source:'los-src',filter:['==',['get','kind'],'shadow'],paint:{'fill-color':'#ff2d2d','fill-opacity':0.34}});
+        map.addLayer({id:'los-cover-line',type:'line',source:'los-src',filter:['==',['get','kind'],'cover'],paint:{'line-color':'#2bd66a','line-width':1.4,'line-opacity':0.85}});
+        map.addLayer({id:'los-site',type:'circle',source:'los-src',filter:['==',['get','kind'],'site'],paint:{'circle-radius':6,'circle-color':'#19e676','circle-stroke-color':'#04210f','circle-stroke-width':2}});
+        return true; }catch(_){ return false; } }
+    function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
+    async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()||busy) return; busy=true;
+      const RAYS=96, STEPS=44, R=6371000; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
+      const obsBase=(await Promise.resolve(fetchElevDepth(site[1],site[0])).catch(()=>0))||0; const obsElev=obsBase+obsHeight;
+      const pts=[]; for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ const d=rangeKm*s/STEPS; let c; try{ c=turf.destination(turf.point(site),d,brg,{units:'kilometers'}).geometry.coordinates; }catch(_){ c=site; } pts.push({a,d,c}); } }
+      const elevs=await Promise.all(pts.map(p=>Promise.resolve(fetchElevDepth(p.c[1],p.c[0])).catch(()=>0)));
+      const rays=Array.from({length:RAYS},()=>[]); pts.forEach((p,i)=>rays[p.a].push({d:p.d,terr:elevs[i]||0}));
+      const visEnds=[];
+      for(let a=0;a<RAYS;a++){ let maxA=-Infinity, vd=rangeKm*0.02; rays[a].sort((x,y)=>x.d-y.d);
+        for(const sm of rays[a]){ const dm=sm.d*1000, drop=dm*dm/(2*R), hd=(sm.terr-drop)-obsElev, ang=Math.atan2(hd,dm); if(ang>=maxA-1e-9){ maxA=ang; vd=sm.d; } else break; }
+        let end; try{ end=turf.destination(turf.point(site),vd,a*360/RAYS,{units:'kilometers'}).geometry.coordinates; }catch(_){ end=site; } visEnds.push(end); }
+      visEnds.push(visEnds[0]);
+      let cover=null, shadow=null;
+      try{ cover=turf.polygon([visEnds]); }catch(_){}
+      try{ const disk=turf.circle(site,rangeKm,{units:'kilometers',steps:RAYS}); if(cover) shadow=turf.difference(disk,cover); }catch(_){}
+      const feats=[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}];
+      if(cover) feats.push({type:'Feature',geometry:cover.geometry,properties:{kind:'cover'}});
+      if(shadow) feats.push({type:'Feature',geometry:shadow.geometry,properties:{kind:'shadow'}});
+      setData(feats); busy=false;
+      if(body) body.innerHTML=jp()?'解析完了。赤い領域がレーダー死角（地形遮蔽）です。':'Done. Red = radar shadow (terrain-blocked).';
+    }
+    function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='los-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
+    function open(lngLat){ site=[lngLat.lng,lngLat.lat]; const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:236px;';
+      p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+(jp()?'見通し線解析':'Line of sight')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+        +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
+        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'アンテナ高 (m)':'Antenna height (m)')+' <input id="los-h" type="number" value="30" min="0" step="5" style="width:72px;"></label>'
+        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'射程 (km)':'Range (km)')+' <input id="los-r" type="number" value="60" min="1" max="400" step="5" style="width:72px;"></label>'
+        +'</div><button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+(jp()?'解析する':'Analyse')+'</button>'
+        +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
+        +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyse. May take a moment (DEM sampling).')+'</div>';
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      p.querySelector('#los-go').onclick=()=>{ const h=+p.querySelector('#los-h').value||0, r=Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)); analyze(h,r); };
+      p.querySelector('#los-clr').onclick=()=>clear();
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+      setData([{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]);
+    }
+    function clear(){ setData([]); }
+    return { open, clear };
   })();
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
