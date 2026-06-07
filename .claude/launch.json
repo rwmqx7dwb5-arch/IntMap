@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "intmap-static",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3", "-m", "http.server", "8765", "--bind", "127.0.0.1"],
+      "port": 8765
+    }
+  ]
+}

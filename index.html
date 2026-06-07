@@ -33,7 +33,8 @@
     .map-container{ flex:1; height:100%; position:relative; background:var(--bg-color); overflow:hidden; }
     .header-area{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
     .title-group{ display:flex; align-items:center; gap:12px; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
-    .lang-toggle{ display:flex; background:var(--input-bg); padding:2px; border-radius:8px; }
+    /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
+    .lang-toggle{ display:none !important; }
     .lang-btn{ background:transparent; border:none; padding:4px 8px; font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer; border-radius:6px; transition:0.2s; }
     .lang-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
     .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:20px; transition:0.2s; }
@@ -528,7 +529,7 @@
     .legend-min:hover{ background:var(--input-bg); color:var(--text-main); }
     /* (#R9/#26) Collapsed legend hugs the title — tighter vertical padding, no h4 margin, so the pill is
        only as tall as the text + a small even gap (was a tall block with empty space). */
-    .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ width:auto !important; min-width:160px; max-height:none !important; height:auto !important; padding:8px 14px !important; overflow:visible !important; }
+    .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ width:auto !important; min-width:160px; max-height:none !important; height:auto !important; min-height:0 !important; padding:8px 14px !important; overflow:visible !important; }
     .data-legend.legend-collapsed h4, .koppen-legend.legend-collapsed h4{ margin:0; line-height:1.25; }
 
     /* =====================================================================
@@ -1030,7 +1031,7 @@
       <button class="btn-settings" id="btn-open-settings"><span id="text-settings">Settings</span></button>
     </div>
     <div class="control-panel">
-      <button class="mode-btn active" id="btn-news" data-i18n="tabNews">News</button>
+      <button class="mode-btn" id="btn-news" data-i18n="tabNews">News</button>
       <button class="mode-btn" id="btn-info" data-i18n="tabInfo">Information</button>
       <button class="mode-btn" id="btn-stats" data-i18n="tabStats">Stats</button>
       <button class="mode-btn" id="btn-community" data-i18n="tabCommunity">Community</button>
@@ -1349,7 +1350,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false;
   let map=null, markersArray=[], forceHoverLayers=new Set();
-  let globalData=[], currentMode='news', activeSearchQuery='', statsSort='gdp';
+  let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp';   /* (#R11) no tab auto-selected */
   let newsFiltered=[], renderedCount=0, NEWS_BATCH=30;
   let activeDashCategories=new Set(['mil','tech','maritime','geo']);
   let bookmarks=JSON.parse(localStorage.getItem('intmap_bookmarks'))||[];
@@ -3199,11 +3200,11 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function makeDraggable(panel,handle){ handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>{ if(!panelDrag)return; panel.style.left=(panelDrag.l+ev.clientX-panelDrag.x)+'px'; panel.style.top=(panelDrag.t+ev.clientY-panelDrag.y)+'px'; panel.style.right='auto'; panel.style.bottom='auto'; /* (#R9/#48) clear bottom too, else a CSS bottom anchor pinned vertical drag → panel only moved sideways */ }; document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; }; }
 
-  window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); refreshTool(); updateToolPanel(); };
-  window.clearAllRadius=function(){ radiusItems=[]; refreshTool(); updateToolPanel(); };
+  window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); if(window._activeRadiusId===id) window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
+  window.clearAllRadius=function(){ radiusItems=[]; window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   /* Radius from an already-chosen point (right-click menu + map-click popup, #54): drop the circle at
      a fixed centre, then let the user tune radius / colour in the tool panel. */
-  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); radiusItems.push({id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); refreshTool(); updateToolPanel(); };
+  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); const id='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); radiusItems.push({id,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=id; refreshTool(); updateToolPanel(); };
   /* Measure: step back one point (#38). If a closed area drops below 3 points it re-opens as a line. */
   window._measureUndo=function(){ if(!measurePoints.length) return; measurePoints.pop(); if(toolMode==='area' && measurePoints.length<3){ toolMode='measure'; _syncToolBtns(); } liveCursor=null; refreshTool(); updateToolPanel(); };
   /* (#R9/#51) "News in this area": filter the analysed news to the drawn radius/polygon and show it in
@@ -3267,20 +3268,23 @@ window.addEventListener('DOMContentLoaded', () => {
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
     { const fb=p.querySelector('#tp-finalize'); if(fb) fb.onclick=()=>{ try{ window._finalizeMeasurement(); }catch(_){} }; const pb=p.querySelector('#tp-profile'); if(pb) pb.onclick=()=>{ try{ window._elevationProfile(); }catch(_){} }; }
-    const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; hideMeasureTip(); refreshTool(); updateToolPanel(); };
+    const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; if(toolMode==='area'){ toolMode='measure'; try{ _syncToolBtns(); }catch(_){} } hideMeasureTip(); refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
       const r=p.querySelector('#radius-range'), n=p.querySelector('#radius-num'), op=p.querySelector('#radius-op'), pre=p.querySelector('#radius-preset'), col=p.querySelector('#radius-color');
+      /* (#R11) When a circle is "active" (just dropped, esp. from a pin / map-click popup), the slider /
+         colour / opacity edit THAT circle live — not just the defaults for the next one. */
+      const applyActive=()=>{ if(!window._activeRadiusId) return; const c=radiusItems.find(x=>x.id===window._activeRadiusId); if(c){ c.radiusKm=radiusKm; c.color=radiusColor; c.opacity=radiusOpacity; refreshTool(); } };
       const refresh=()=>{ p.querySelector('#rad-r').innerHTML=distHTML(radiusKm); p.querySelector('#rad-c').innerHTML=distHTML(2*Math.PI*radiusKm); p.querySelector('#rad-a').innerHTML=areaHTML(Math.PI*radiusKm*radiusKm); };
-      const setR=(v,fromInput)=>{ radiusKm=v; if(!fromInput)n.value=v; r.value=Math.min(20000,v); refresh(); };
+      const setR=(v,fromInput)=>{ radiusKm=v; if(!fromInput)n.value=v; r.value=Math.min(20000,v); refresh(); applyActive(); };
       r.oninput=()=>setR(Math.max(1,+r.value));
       n.oninput=()=>{ const v=parseFloat(n.value); if(!isNaN(v)&&v>0) setR(v,true); };
-      op.oninput=()=>{ radiusOpacity=parseFloat(op.value); };
+      op.oninput=()=>{ radiusOpacity=parseFloat(op.value); applyActive(); };
       const markPreset=()=>{ p.querySelectorAll('.rad-preset').forEach(b=>b.classList.toggle('on',(b.getAttribute('data-col')||'').toLowerCase()===radiusColor.toLowerCase())); };
-      col.oninput=()=>{ radiusColor=col.value; markPreset(); };
+      col.oninput=()=>{ radiusColor=col.value; markPreset(); applyActive(); };
       /* R / G / B quick presets (#R7) — one tap sets the circle colour; the swatch ring shows the
          active choice. The colour picker remains for any custom colour. */
-      p.querySelectorAll('.rad-preset').forEach(b=>{ b.onclick=()=>{ radiusColor=b.getAttribute('data-col'); col.value=radiusColor; markPreset(); }; });
+      p.querySelectorAll('.rad-preset').forEach(b=>{ b.onclick=()=>{ radiusColor=b.getAttribute('data-col'); col.value=radiusColor; markPreset(); applyActive(); }; });
       pre.onchange=()=>{ const v=parseFloat(pre.value); if(v>0) setR(v); };
     }
   }
@@ -3369,7 +3373,8 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(e){}
     }
     if(toolMode==='radius'){
-      radiusItems.push({id:'r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity});
+      const rid='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+      radiusItems.push({id:rid,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=rid;
       refreshTool(); updateToolPanel(); return;
     }
     /* === Auto-close for the Measure tool: if 3+ points and the new click lands within
@@ -4032,6 +4037,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if(sumBtn) sumBtn.style.display=isNewsTab?'':'none';
     { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (currentMode==='stats'||currentMode==='info') ? (currentLang==='jp'?'絞り込み...':'Filter…') : t('searchPh'); }
 
+    /* (#R11) No tab selected → blank sidebar content (map stays prominent). News pins still load when the
+       user opens the News tab. */
+    if(!currentMode){ if(sb) sb.style.display='none'; try{ updateOcclusion(); }catch(_){} return; }
     if(currentMode==='info'){ dash.style.display='flex'; sb.style.display='flex'; renderDashboard(); updateOcclusion(); return; }
     if(currentMode==='community'){ comm.style.display='flex'; sb.style.display='none'; loadCommunity(); updateOcclusion(); return; }
     if(currentMode==='stats'){ feed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
@@ -4248,7 +4256,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(item.analysis.mapped===true) chipCls='loc-chip';
       else if(item.analysis.mapped==='publisher') chipCls='loc-chip publisher';
       else chipCls='loc-chip unmapped';
-      const readLabel = currentLang==='jp'?'📖 本文を読む':'📖 Read here';
+      const readLabel = currentLang==='jp'?'記事を読む ↗':'Read ↗';
       card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}">★</button>
         <div class="news-head"><span class="${chipCls}">${item.analysis.name||(currentLang==='jp'?'場所不明':'Location unknown')}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${newsTitleHTML(item)}</div>
@@ -4257,9 +4265,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(currentUser){ const on=await toggleFavorite(item.link,item.title); if(currentMode==='saved')startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active',on); }
         else { /* guest: keep a local list until they log in */ if(bookmarks.includes(item.link))bookmarks=bookmarks.filter(b=>b!==item.link); else bookmarks.push(item.link); saveBookmarks(); if(currentMode==='saved')startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active'); }
       };
-      /* (#R9b/#45) Read in-app via the r.jina.ai reader (clean body text in the sidebar); the reader
-         itself offers "Open original ↗" + a web fallback. */
-      card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); try{ openArticleInSidebar(item); }catch(_){ window.open(item.link,'_blank','noopener'); } };
+      /* (#R11) Read article → open directly in the device's browser (reverted per request). */
+      card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); window.open(item.link,'_blank','noopener'); };
       /* Whole card → fly to the map location (replaces the old "Show on map" button) */
       card.onclick=()=>{ if(map&&item.analysis.loc) map.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
       item._cardEl=card; /* lets the translation pass update this title in place */
@@ -8374,7 +8381,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return d.toLocaleString(currentLang==='jp'?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
     function updateTimePill(){ let el=document.getElementById('wind-ts');
       if(!on||!gridTime){ if(el) el.style.display='none'; return; }
-      if(!el){ el=document.createElement('div'); el.id='wind-ts'; el.style.cssText='position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:950;background:rgba(18,18,20,0.64);color:#fff;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);pointer-events:none;white-space:nowrap;letter-spacing:0.2px;'; (document.getElementById('map-container')||document.body).appendChild(el); }
+      if(!el){ el=document.createElement('div'); el.id='wind-ts'; el.style.cssText='position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:950;background:rgba(18,18,20,0.64);color:#fff;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);pointer-events:none;white-space:nowrap;letter-spacing:0.2px;'; (document.getElementById('map-container')||document.body).appendChild(el); }   /* (#R11) moved below the search box so it no longer overlaps it */
       el.style.display='block'; el.textContent=(currentLang==='jp'?'🌬 風（10m）· ':'🌬 Wind 10 m · ')+fmtWindTime(gridTime); }
     window.addEventListener('intmap-lang',()=>{ try{ updateTimePill(); }catch(_){} });
     /* Re-attach the field after a style reload (theme/basemap switch drops custom sources). */
@@ -8880,7 +8887,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function repr(geom){ try{ if(geom.type==='LineString'){ const c=geom.coordinates; return c[Math.floor(c.length/2)]; } if(geom.type==='Polygon'){ const r=geom.coordinates[0]; let x=0,y=0; r.forEach(p=>{x+=p[0];y+=p[1];}); return [x/r.length,y/r.length]; } }catch(_){} return [0,0]; }
     function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
       const at=ll||repr(it.geom);
-      const html='<div style="min-width:172px;"><input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Colour')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
+      const valHtml = it.value ? '<div style="font-size:13px;color:var(--primary-color);font-weight:700;margin:0 0 6px;">'+it.value+'</div>' : '';
+      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Colour')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
       popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html).addTo(map);
       setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
         const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
@@ -8888,7 +8896,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const dl=el.querySelector('.annot-del'); if(dl) dl.onclick=()=>remove(id);
       },0);
     }
-    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((jp()?'注記 ':'Annotation ')+seq)}); refresh(); if(!opts.silent) openPop(id); return id; }
+    /* (#R11) No auto-popup on finalize — the shape just stays on the map; clicking it later opens the
+       dismissable popup with the measured value + rename/recolour/delete. */
+    function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((jp()?'注記 ':'Annotation ')+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
     return { add, remove, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };
   })();
@@ -8899,9 +8909,9 @@ window.addEventListener('DOMContentLoaded', () => {
     return out; }
   window._finalizeMeasurement=function(){
     try{
-      if(toolMode==='measure' && measurePoints.length>=2){ window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(currentLang==='jp'?'計測線':'Measured line')}); }
-      else if(toolMode==='area' && measurePoints.length>=3){ window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(currentLang==='jp'?'計測範囲':'Measured area')}); }
-      else if(toolMode==='radius' && radiusItems.length){ let last=null; radiusItems.forEach(c=>{ try{ diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; last=window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(currentLang==='jp'?'半径 ':'Radius ')+c.radiusKm+' km',silent:true}); }); }catch(_){} }); if(last) window.IntMapAnnotations.open(last); }
+      if(toolMode==='measure' && measurePoints.length>=2){ const v=hasTurf()?distHTML(totalDistance(measurePoints)):''; window.IntMapAnnotations.add({type:'LineString',coordinates:_gcDensify(measurePoints)},{color:'#0a84ff',name:(currentLang==='jp'?'計測線':'Measured line'),value:v}); }
+      else if(toolMode==='area' && measurePoints.length>=3){ const v=hasTurf()?areaHTML(ringArea(measurePoints)):''; window.IntMapAnnotations.add({type:'Polygon',coordinates:[_gcDensify([...measurePoints,measurePoints[0]])]},{color:'#34c759',op:0.18,name:(currentLang==='jp'?'計測範囲':'Measured area'),value:v}); }
+      else if(toolMode==='radius' && radiusItems.length){ radiusItems.forEach(c=>{ try{ const v=hasTurf()?(distHTML(c.radiusKm)+' ('+areaHTML(Math.PI*c.radiusKm*c.radiusKm)+')'):''; diskFillPolys(c.center,c.radiusKm,c.radiusKm>3000?200:140).forEach(poly=>{ const g=poly.geometry||poly; window.IntMapAnnotations.add(g,{color:c.color,op:c.opacity,name:(currentLang==='jp'?'半径 ':'Radius ')+c.radiusKm+' km',value:v}); }); }catch(_){} }); }
       else return;
       exitTool();
     }catch(_){}
