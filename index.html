@@ -3360,7 +3360,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   { const vb=document.getElementById('ai-view-summary-btn'); if(vb) vb.onclick=aiSummarizeView; }
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
-  function handleMapClick(lng,lat,point){
+  function handleMapClick(lng,lat,point,viaBtn){
     /* (#R7-draw) The freehand Draw tool owns the map gesture while it is active. */
     if(window.DrawTool && window.DrawTool.active()) return;
     /* Köppen click-to-highlight (#25): when the climate layer is on, clicking the map highlights
@@ -3380,6 +3380,9 @@ window.addEventListener('DOMContentLoaded', () => {
        covering the map (#29). */
     try{ if(isMobile() && window._minimizeOpenLegends) window._minimizeOpenLegends(); }catch(_){}
     if(!toolMode||!hasTurf())return;
+    /* (#R11) On mobile, measuring is centre-fixed: a tap does NOT add a point — only the "Add point"
+       button (which calls this with viaBtn=true) adds the map-centre coordinate. */
+    if(isMobile() && !viaBtn) return;
     /* Polar safety (#10): the poles AND their surroundings are singular for great-circle / area
        math and make turf emit NaN or globe-wrapping geometry. Clamp out of the polar caps. */
     lat=Math.max(-88,Math.min(88,lat));
@@ -3576,10 +3579,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
         const rect=canvas.getBoundingClientRect();
         startPt={x:tx-rect.left,y:ty-rect.top}; fired=false;
-        pressTimer=setTimeout(()=>{
-          fired=true;
-          try{ const lngLat=map.unproject([startPt.x,startPt.y]); showContextMenu(startPt,lngLat); }catch(_){}
-        },550);
+        /* (#R11) Long-press context menu disabled on mobile — the centre "Add point" button replaces it. */
       },{passive:true});
       const cancel=(e)=>{
         if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
@@ -9252,6 +9252,39 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function clear(){ setData([]); }
     return { open, clear };
+  })();
+
+  /* ===== (#R11) Mobile measuring is CENTRE-FIXED: a subtle crosshair marks the map centre, a bottom-
+     centre "Add point" button adds the centre coordinate (for measure / area / radius), and a small
+     bottom-left readout shows the centre's coords + active-layer value. The button also replaces the
+     (now-disabled) long-press context menu when no tool is active. On desktop it shows only while a
+     measurement tool is active (so right-click still drives the menu). ===== */
+  (function(){
+    if(!map) return;
+    const mob=()=>{ try{ return isMobile(); }catch(_){ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); } };
+    const mc=document.getElementById('map-container')||document.body;
+    const st=document.createElement('style'); st.textContent=`
+      #m-crosshair{ display:none; position:absolute; top:50%; left:50%; width:28px; height:28px; margin:-14px 0 0 -14px; pointer-events:none; z-index:600; }
+      #m-crosshair::before,#m-crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,0.6); box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
+      #m-crosshair::before{ left:50%; top:0; width:1.4px; height:100%; margin-left:-0.7px; }
+      #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
+      #m-crosshair i{ position:absolute; top:50%; left:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px; border:1.4px solid rgba(255,255,255,0.85); border-radius:50%; box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
+      #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
+      #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
+      @media(max-width:768px){ .coord-readout{ left:8px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 66px) !important; top:auto !important; font-size:10.5px !important; padding:4px 9px !important; max-width:64vw; } }`;
+    document.head.appendChild(st);
+    const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML='<i></i>'; mc.appendChild(cross);
+    const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
+    function setLabel(){ btn.textContent=(currentLang==='jp'?'＋ 地点を追加':'＋ Add point'); }
+    setLabel(); window.addEventListener('intmap-lang',setLabel);
+    function update(){ const m=mob(); cross.style.display=m?'block':'none'; const tool=(typeof toolMode!=='undefined' && toolMode); btn.style.display=(m||tool)?'block':'none'; }
+    function readout(){ if(!mob()) return; try{ const c=map.getCenter(); renderCoordReadout(c.lng,c.lat); }catch(_){} }
+    map.on('moveend',()=>{ readout(); update(); });
+    map.on('move',update);
+    window.addEventListener('resize',update);
+    btn.onclick=()=>{ try{ const c=map.getCenter(), pt=map.project(c); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,pt,true); } else { showContextMenu({x:pt.x,y:pt.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
+    setTimeout(()=>{ update(); readout(); },400);
+    window._mAddPoint=btn;
   })();
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
