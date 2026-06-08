@@ -694,10 +694,15 @@ Suez/Gibraltar (real ≈15,300 km); North-Sea→Med detours around Iberia via Gi
 Lazy-loads the **official Open-Meteo `@openmeteo/weather-map-layer` UMD SDK** (v0.0.19, unpkg) and registers
 its **`om://` MapLibre protocol**, which decodes the ECMWF-IFS `.om` tiles from
 `map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json?variable=…` and applies the SDK's Windy-style
-per-variable colour scales. 8 layers (temperature_2m, precipitation, wind_10m, cloud_cover,
-relative_humidity_2m, **pressure_msl** raster, **isobars** = vector contours off pressure_msl,
-sea_surface_temperature) — variable names validated against the SDK's `variableOptions` (the API uses
-`pressure_msl`, not `sea_level_pressure`),
+per-variable colour scales. 8 layers, each variable+type **validated live against what `ecmwf_ifs` actually serves** (probed the om://
+protocol → real tiles): temperature_2m, **wind (vector arrows** — `wind_u_component_10m&arrows=true`,
+source-layer `wind-arrows`), cloud_cover, **dew_point_2m** (moisture — `relative_humidity_2m` is NOT
+served), pressure_msl raster, **isobars** = vector contours off pressure_msl, **cape** (instability),
+sea_surface_temperature. NOTE: `ecmwf_ifs` spatial does **not** serve `precipitation` or
+`relative_humidity_2m` or a combined `wind_10m`/`wind_speed_10m` (only u/v components) — so precip stays on
+the app's existing IMERG/radar layers, humidity is shown as dew point, and wind is directional arrows
+(the animated GFS Wind layer remains the primary wind viz). Variable also corrected `sea_level_pressure`→
+`pressure_msl`.
 each inserted **between basemap and labels** (`beforeId`). A dedicated panel gives per-layer toggle + opacity,
 an **hourly time slider** off `valid_times`, and the displayed **valid time** (user TZ). Public API
 **`window.toggleWeatherLayer(id, visible)`**. Fully guarded (SDK/endpoint failure → toast, app unaffected).
