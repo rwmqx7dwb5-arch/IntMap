@@ -5893,7 +5893,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function loadKoppenCanvas(){
       if(window._koppenImg) return Promise.resolve();
       return new Promise(resolve=>{
-        const im=new Image(); im.crossOrigin='anonymous';
+        /* (#R13b) NO crossOrigin on the LOCAL PNG: under file:// an `anonymous` request to a same-folder
+           file can fail (no CORS headers on file://), which used to drop us to the wrong remote Wikipedia
+           fallback → garbled highlight. Loading it plainly always gets the real image; getImageData may
+           still throw on a tainted file:// canvas, but that's caught and only disables highlighting, never
+           the base map. The remote fallback keeps crossOrigin (Wikimedia sends CORS). */
+        const im=new Image();
         im.onload=()=>{ _mkKoppenWork(im); resolve(); };
         im.onerror=()=>{
           const im2=new Image(); im2.crossOrigin='anonymous';
@@ -9131,10 +9136,23 @@ window.addEventListener('DOMContentLoaded', () => {
        846 ecoregions, per-feature COLOR), lazy-loaded as a normal GeoJSON source — no external
        dependency, no dead URL, no plugin needed. */
     function ecoBefore(){ try{ for(const l of (map.getStyle().layers||[])){ if(l.type==='symbol') return l.id; } }catch(_){} return undefined; }
+    /* (#R13b) The public site is opened from `file://`, where `fetch()` of a LOCAL file is blocked by
+       Chrome (only http/https/data). So the ecoregions GeoJSON is shipped as a JS global
+       (`data/ecoregions_2017.js` → window.__ECOREGIONS_2017) and loaded with a <script> tag, which works
+       under file:// AND http. Falls back to fetch() of the .geojson when served over http. Exposed as
+       window.__loadEcoregions so the Compare window can reuse it. */
+    window.__loadEcoregions=function(cb){
+      if(window.__ECOREGIONS_2017){ cb(window.__ECOREGIONS_2017); return; }
+      if(window.__ecoQ){ window.__ecoQ.push(cb); return; }
+      window.__ecoQ=[cb];
+      const done=(d)=>{ if(d) window.__ECOREGIONS_2017=d; const q=window.__ecoQ||[]; window.__ecoQ=null; q.forEach(f=>{ try{ f(window.__ECOREGIONS_2017||null); }catch(_){} }); };
+      const s=document.createElement('script'); s.src='data/ecoregions_2017.js';
+      s.onload=()=>done(window.__ECOREGIONS_2017||null);
+      s.onerror=()=>{ fetch('data/ecoregions_2017.geojson').then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status))).then(gj=>done(gj)).catch(()=>done(null)); };
+      document.head.appendChild(s);
+    };
     function ensureEco(cb){ if(map.getSource('eco-regions')){ cb(true); return; }
-      fetch('data/ecoregions_2017.geojson').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(gj=>{ addEcoLayers(gj); cb(true); })
-        .catch(e=>{ try{ console.warn('ecoregions load failed',e); }catch(_){} try{ imToast(jp()?'生態地域データを読み込めませんでした':'Could not load ecoregions'); }catch(_){} cb(false); }); }
+      window.__loadEcoregions(gj=>{ if(!gj){ try{ imToast(jp()?'生態地域データを読み込めませんでした':'Could not load ecoregions'); }catch(_){} cb(false); return; } addEcoLayers(gj); cb(true); }); }
     function addEcoLayers(gj){ window._ecoGJ=gj; if(ecoBuilt||map.getSource('eco-regions')) return; ecoBuilt=true;
       try{ const before=ecoBefore();
         map.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
@@ -9846,7 +9864,10 @@ window.addEventListener('DOMContentLoaded', () => {
       win.querySelector('#cmp-koppen').onchange=(e)=>{ if(e.target.checked){ try{ cmap.getSource('cmp-koppen').updateImage({url:koppenUrl(),coordinates:KC}); }catch(_){} } setVis('cmp-lyr-koppen',e.target.checked); };
       win.querySelector('#cmp-worldcover').onchange=(e)=>setVis('cmp-lyr-worldcover',e.target.checked);
       /* Ecoregions (lazy-added from the bundled GeoJSON so the 10 MB only loads if used) */
-      win.querySelector('#cmp-eco').onchange=(e)=>{ if(e.target.checked){ try{ if(!cmap.getSource('cmp-eco')){ cmap.addSource('cmp-eco',{type:'geojson',data:'data/ecoregions_2017.geojson'}); cmap.addLayer({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.addLayer({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } setVis('cmp-lyr-eco',true); setVis('cmp-lyr-eco-l',true); }catch(_){} } else { setVis('cmp-lyr-eco',false); setVis('cmp-lyr-eco-l',false); } };
+      win.querySelector('#cmp-eco').onchange=(e)=>{ if(e.target.checked){
+          const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.getSource('cmp-eco')){ cmap.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.addLayer({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.addLayer({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } setVis('cmp-lyr-eco',true); setVis('cmp-lyr-eco-l',true); }catch(_){} };
+          if(window.__ECOREGIONS_2017) addEco(window.__ECOREGIONS_2017); else if(window.__loadEcoregions) window.__loadEcoregions(addEco);
+        } else { setVis('cmp-lyr-eco',false); setVis('cmp-lyr-eco-l',false); } };
       win.querySelector('#cmp-sync').onchange=(e)=>{ syncOn=e.target.checked; if(syncOn) syncFromMain(); };
       /* X-ray: hide the compare basemap + go transparent so the MAIN map (with all its own layers) shows
          through at the same location; force sync so it really is the same place. */
