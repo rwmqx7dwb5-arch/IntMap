@@ -9519,6 +9519,199 @@ window.addEventListener('DOMContentLoaded', () => {
     return { open, setStart, setEnd, clear, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
   })();
 
+  /* ===== (#R12 / #20,#21) ECMWF (Open-Meteo data_spatial) weather suite — the official Open-Meteo
+     weather-map-layer SDK decodes the ECMWF IFS .om tiles through a MapLibre `om://` protocol and applies
+     Windy-style colour scales per variable. We lazy-load the UMD build, register the protocol once, and
+     add each variable as a raster (or vector contours for isobars) BETWEEN the basemap and the labels via
+     beforeId. Hourly time selection comes from latest.json's valid_times; the active valid-time is shown.
+     Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Exposes
+     window.toggleWeatherLayer(id, visible) + per-layer opacity. ===== */
+  window.IntMapWeatherEC=(function(){
+    if(!map) return { open(){}, toggle(){} };
+    const jp=()=>currentLang==='jp';
+    const BASE='https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json';
+    const SDK_URL='https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js';
+    /* 8 layers per the brief. type:'raster' uses the SDK's built-in per-variable colour ramp;
+       'isobars' is a vector contour line layer off sea_level_pressure. */
+    const LAYERS=[
+      {id:'ec-temp',    variable:'temperature_2m',      type:'raster', op:0.72, label:['Temperature (2 m)','気温（2m）']},
+      {id:'ec-precip',  variable:'precipitation',       type:'raster', op:0.80, label:['Precipitation','降水量']},
+      {id:'ec-wind',    variable:'wind_10m',            type:'raster', op:0.72, label:['Wind speed (10 m)','風速（10m）']},
+      {id:'ec-cloud',   variable:'cloud_cover',         type:'raster', op:0.70, label:['Cloud cover','雲量']},
+      {id:'ec-humid',   variable:'relative_humidity_2m',type:'raster', op:0.65, label:['Relative humidity','相対湿度']},
+      {id:'ec-slp',     variable:'sea_level_pressure',  type:'raster', op:0.60, label:['Sea-level pressure','海面気圧']},
+      {id:'ec-isobars', variable:'sea_level_pressure',  type:'isobars',op:0.9,  label:['Isobars (pressure)','等圧線']},
+      {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature','海水温']}
+    ];
+    let sdk=null, sdkLoading=null, protoReg=false, panel=null, validTimes=[], timeIdx=0, refTime='';
+    const state={};   /* id → {on, op} */
+    LAYERS.forEach(l=>state[l.id]={on:false, op:l.op});
+    function loadSDK(){ if(sdk) return Promise.resolve(sdk); if(sdkLoading) return sdkLoading;
+      sdkLoading=new Promise((res,rej)=>{ if(window.OMWeatherMapLayer){ sdk=window.OMWeatherMapLayer; return res(sdk); }
+        const s=document.createElement('script'); s.src=SDK_URL; s.async=true;
+        s.onload=()=>{ sdk=window.OMWeatherMapLayer; sdk?res(sdk):rej(new Error('SDK global missing')); };
+        s.onerror=()=>rej(new Error('SDK load failed')); document.head.appendChild(s); });
+      return sdkLoading; }
+    function registerProto(){ if(protoReg||!sdk||!sdk.omProtocol) return protoReg; try{ maplibregl.addProtocol('om', sdk.omProtocol); protoReg=true; }catch(_){ protoReg=true; /* already added */ } return protoReg; }
+    function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
+    function fetchMeta(){ return fetch(BASE).then(r=>r.json()).then(j=>{ validTimes=j.valid_times||[]; refTime=j.reference_time||''; if(!timeIdx&&validTimes.length){ /* default to the step nearest "now" */ const now=Date.now(); let bi=0,bd=Infinity; validTimes.forEach((t,i)=>{ const d=Math.abs(new Date(t.replace('Z','')+'Z')-now); if(d<bd){bd=d;bi=i;} }); timeIdx=bi; } }).catch(()=>{}); }
+    function omUrl(variable){ const t=validTimes[timeIdx]; return 'om://'+BASE+'?variable='+encodeURIComponent(variable)+(t?('&time='+encodeURIComponent(t)):''); }
+    function addLayer(cfg){
+      const sid=cfg.id+'-src'; const before=firstSymbolId();
+      try{
+        if(cfg.type==='isobars'){
+          if(!map.getSource(sid)) map.addSource(sid,{type:'vector',url:omUrl(cfg.variable)});
+          if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
+          if(!map.getLayer(cfg.id+'-lbl')) map.addLayer({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':10},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+        } else {
+          if(!map.getSource(sid)) map.addSource(sid,{type:'raster',url:omUrl(cfg.variable),maxzoom:12});
+          if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-fade-duration':0}},before);
+        }
+        return true;
+      }catch(e){ try{ console.warn('ECMWF add fail',cfg.id,e); }catch(_){} return false; }
+    }
+    function removeLayer(cfg){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(map.getLayer(l)) map.removeLayer(l); }catch(_){} }); try{ if(map.getSource(cfg.id+'-src')) map.removeSource(cfg.id+'-src'); }catch(_){} }
+    function setVis(cfg,on){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} }); }
+    function setOp(cfg,op){ try{ if(cfg.type==='isobars'){ if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'line-opacity',op); } else if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'raster-opacity',op); }catch(_){} }
+    /* Public toggle API (the brief asked for toggleWeatherLayer(layerId, visible)). */
+    function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
+      state[id].on=on;
+      loadSDK().then(()=>{ if(!registerProto()) return;
+        const go=()=>{ if(!map.isStyleLoaded()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
+        go();
+      }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} const cb=document.getElementById(id+'-cb'); if(cb) cb.checked=false; });
+    }
+    window.toggleWeatherLayer=toggle;
+    let fetched=false;
+    /* Rebuild all active sources when the valid-time changes. */
+    function applyTime(){ LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ removeLayer(cfg); if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); updateTimeLabel(); }
+    function fmtVT(iso){ if(!iso) return ''; try{ let tz; if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; return new Date(iso.replace('Z','')+'Z').toLocaleString(jp()?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
+    function updateTimeLabel(){ const el=panel&&panel.querySelector('#ec-validtime'); if(el) el.textContent=(jp()?'有効時刻: ':'Valid: ')+(validTimes.length?fmtVT(validTimes[timeIdx]):(jp()?'最新':'latest')); const sl=panel&&panel.querySelector('#ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
+    /* re-attach after a style swap */
+    map.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!map.isStyleLoaded())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
+    function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ec-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
+    function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:260px;max-height:78vh;overflow-y:auto;';
+      const rows=LAYERS.map(l=>'<div class="lyr-row'+(state[l.id].on?' on':'')+'" style="margin:2px 0;"><label class="layer-option" style="display:flex;align-items:center;gap:7px;"><input type="checkbox" id="'+l.id+'-cb"'+(state[l.id].on?' checked':'')+'> <span>'+(jp()?l.label[1]:l.label[0])+'</span></label><input type="range" class="ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'" style="width:100%;accent-color:var(--primary-color);'+(state[l.id].on?'':'display:none;')+'"></div>').join('');
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🌦 '+(jp()?'ECMWF 気象':'ECMWF weather')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+        +'<div style="font-size:11px;color:var(--text-muted);margin:2px 0 6px;">'+(jp()?'Open-Meteo ECMWF IFS（1時間毎）':'Open-Meteo ECMWF IFS (hourly)')+'</div>'
+        +rows
+        +'<div style="border-top:1px solid rgba(128,128,128,0.18);margin-top:8px;padding-top:7px;">'
+        +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
+        +'<div id="ec-validtime" style="font-size:11px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(jp()?'最新':'latest')+'</div></div>';
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      p.querySelectorAll('input[id$="-cb"]').forEach(cb=>{ cb.onchange=()=>{ const id=cb.id.replace(/-cb$/,''); const row=cb.closest('.lyr-row'); if(row) row.classList.toggle('on',cb.checked); const op=row&&row.querySelector('.ec-op'); if(op) op.style.display=cb.checked?'block':'none'; toggle(id,cb.checked); }; });
+      p.querySelectorAll('.ec-op').forEach(sl=>{ sl.oninput=()=>{ const id=sl.getAttribute('data-for'); state[id].op=+sl.value; const cfg=LAYERS.find(l=>l.id===id); if(cfg) setOp(cfg,+sl.value); }; });
+      const ts=p.querySelector('#ec-time'); if(ts) ts.oninput=()=>{ timeIdx=+ts.value; updateTimeLabel(); clearTimeout(window._ecTimeT); window._ecTimeT=setTimeout(applyTime,250); };
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+      if(!fetched) loadSDK().then(()=>{ registerProto(); return fetchMeta(); }).then(()=>{ fetched=true; updateTimeLabel(); }).catch(()=>{});
+      else updateTimeLabel();
+    }
+    function open(){ refreshPanel(); }
+    /* Entry button injected into the Layers dropdown (no static-HTML edit needed). */
+    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||dd.querySelector('#ec-mount')) return;
+      const wrap=document.createElement('div'); wrap.id='ec-mount'; wrap.style.marginTop='6px';
+      wrap.innerHTML='<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-ecmwf" class="ai-test-btn" style="width:100%;">🌦 <span>'+(jp()?'ECMWF 気象（1時間毎）':'ECMWF weather (hourly)')+'</span></button>';
+      dd.appendChild(wrap); wrap.querySelector('#btn-ecmwf').onclick=open; }
+    mountButton(); setTimeout(mountButton,1500);
+    window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none') refreshPanel(); });
+    return { open, toggle, _layers:LAYERS };
+  })();
+
+  /* ===== (#R12 / compare) Compare-mode window — a resizable / minimisable / draggable floating window
+     holding a SECOND MapLibre instance with its own basemap, projection and data layers, so two states
+     can be viewed side by side (the whole point of "compare"). It mirrors the main map's controls (view +
+     layers) minus the sidebar, and can optionally lock its camera to the main map. Independent layer state
+     is intentional. (Full parity with every main-map tool isn't cloned — the app is single-instance — but
+     the core comparison surface is here and behaves like the main map.) ===== */
+  window.IntMapCompare=(function(){
+    if(!map || typeof maplibregl==='undefined') return { open(){}, close(){} };
+    const jp=()=>currentLang==='jp';
+    let win=null, cmap=null, syncOn=true, minimized=false, built=false, ro=null, syncing=false;
+    const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
+    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); return p?p[1]:'koppen_mercator.png'; }catch(_){ return 'koppen_mercator.png'; } }
+    function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
+      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:both;display:flex;flex-direction:column;}'+
+      '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
+      '#compare-window.cmp-min .cmp-body{display:none;}'+
+      '.cmp-head{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--sidebar-bg);cursor:move;flex:0 0 auto;border-bottom:1px solid rgba(128,128,128,0.18);}'+
+      '.cmp-head .cmp-title{font-weight:700;font-size:12px;margin-right:auto;color:var(--text-main);}'+
+      '.cmp-btn{background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;}'+
+      '.cmp-btn.on{background:var(--primary-color);color:#fff;}'+
+      '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
+      '#compare-map{position:absolute;inset:0;}'+
+      '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:5;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
+      '.cmp-ctrls select,.cmp-ctrls label{font-size:10.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:3px 6px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}';
+      document.head.appendChild(st); }
+    function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
+      return { version:8, glyphs:'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', sources:{
+        'cmp-carto':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
+        'cmp-dark':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
+        'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'© Esri'},
+        'cmp-koppen':{type:'image',url:koppenUrl(),coordinates:KC},
+        'cmp-worldcover':{type:'raster',tiles:['https://services.terrascope.be/wmts/v2?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=WORLDCOVER_2021_MAP&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png'],tileSize:256,maxzoom:12,attribution:'ESA WorldCover 2021 · Terrascope'},
+        'cmp-relief':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256}
+      }, layers:[
+        {id:'cmp-base-carto',type:'raster',source:'cmp-carto',layout:{visibility:dark?'none':'visible'}},
+        {id:'cmp-base-dark',type:'raster',source:'cmp-dark',layout:{visibility:dark?'visible':'none'}},
+        {id:'cmp-base-sat',type:'raster',source:'cmp-sat',layout:{visibility:'none'}},
+        {id:'cmp-lyr-worldcover',type:'raster',source:'cmp-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.9}},
+        {id:'cmp-lyr-koppen',type:'raster',source:'cmp-koppen',layout:{visibility:'none'},paint:{'raster-opacity':0.78}}
+      ] }; }
+    function setVis(id,on){ try{ if(cmap.getLayer(id)) cmap.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }
+    function setBase(kind){ setVis('cmp-base-carto',kind==='map'&&document.documentElement.getAttribute('data-theme')!=='dark'); setVis('cmp-base-dark',kind==='map'&&document.documentElement.getAttribute('data-theme')==='dark'); setVis('cmp-base-sat',kind==='sat'); }
+    function syncFromMain(){ if(!syncOn||!cmap||syncing) return; syncing=true; try{ cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}); }catch(_){} syncing=false; }
+    function build(){ if(built) return; built=true; injectCSS();
+      win=document.createElement('div'); win.id='compare-window';
+      win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較ビュー':'Compare view')+'</span>'+
+        '<button class="cmp-btn" data-v="map">'+(jp()?'地図':'Map')+'</button>'+
+        '<button class="cmp-btn" data-v="sat">'+(jp()?'衛星':'Sat')+'</button>'+
+        '<button class="cmp-btn" data-p="flat">'+(jp()?'平面':'Flat')+'</button>'+
+        '<button class="cmp-btn on" data-p="globe">'+(jp()?'地球儀':'Globe')+'</button>'+
+        '<button class="cmp-btn" id="cmp-min" title="'+(jp()?'最小化':'Minimise')+'">—</button>'+
+        '<button class="cmp-btn" id="cmp-close" title="'+t('close')+'">✕</button></div>'+
+        '<div class="cmp-body"><div id="compare-map"></div>'+
+        '<div class="cmp-ctrls">'+
+        '<label><input type="checkbox" id="cmp-koppen"> '+(jp()?'ケッペン':'Köppen')+'</label>'+
+        '<label><input type="checkbox" id="cmp-worldcover"> '+(jp()?'土地被覆':'Land cover')+'</label>'+
+        '<label><input type="checkbox" id="cmp-sync" checked> '+(jp()?'視点同期':'Sync view')+'</label>'+
+        '</div></div>';
+      (document.getElementById('map-container')||document.body).appendChild(win);
+      cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false});
+      try{ cmap.setProjection({type:'globe'}); }catch(_){}
+      cmap.on('load',()=>{ setBase('map'); });
+      /* view buttons */
+      win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
+      win.querySelector('[data-v="map"]').classList.add('on');
+      win.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-p]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); try{ cmap.setProjection({type:b.getAttribute('data-p')==='globe'?'globe':'mercator'}); }catch(_){} });
+      /* layer toggles */
+      win.querySelector('#cmp-koppen').onchange=(e)=>{ if(e.target.checked){ try{ cmap.getSource('cmp-koppen').updateImage({url:koppenUrl(),coordinates:KC}); }catch(_){} } setVis('cmp-lyr-koppen',e.target.checked); };
+      win.querySelector('#cmp-worldcover').onchange=(e)=>setVis('cmp-lyr-worldcover',e.target.checked);
+      win.querySelector('#cmp-sync').onchange=(e)=>{ syncOn=e.target.checked; if(syncOn) syncFromMain(); };
+      /* min / close */
+      win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
+      win.querySelector('#cmp-close').onclick=close;
+      /* drag by header */
+      (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
+        h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
+        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(0,Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; });
+        h.addEventListener('pointerup',()=>drag=false); h.addEventListener('pointercancel',()=>drag=false);
+      })();
+      /* resize → resize the map */
+      try{ ro=new ResizeObserver(()=>{ try{ cmap.resize(); }catch(_){} }); ro.observe(win); }catch(_){}
+      /* keep camera locked to the main map when sync is on */
+      map.on('move',syncFromMain);
+    }
+    function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} syncFromMain(); },80); }
+    function close(){ if(win) win.style.display='none'; }
+    /* entry button in the Layers dropdown */
+    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||dd.querySelector('#cmp-mount')) return;
+      const wrap=document.createElement('div'); wrap.id='cmp-mount'; wrap.style.marginTop='4px';
+      wrap.innerHTML='<button id="btn-compare" class="ai-test-btn" style="width:100%;">🪟 <span>'+(jp()?'比較ビューを開く':'Open compare view')+'</span></button>';
+      dd.appendChild(wrap); wrap.querySelector('#btn-compare').onclick=open; }
+    mountButton(); setTimeout(mountButton,1600);
+    return { open, close, _map:()=>cmap };
+  })();
+
   /* ===== (#R11) Mobile measuring is CENTRE-FIXED: a subtle crosshair marks the map centre, a bottom-
      centre "Add point" button adds the centre coordinate (for measure / area / radius), and a small
      bottom-left readout shows the centre's coords + active-layer value. The button also replaces the
