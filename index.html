@@ -3479,7 +3479,7 @@ window.addEventListener('DOMContentLoaded', () => {
     points.forEach(p=>{ if(!p) return; const tl=_ll2tile(p[0],p[1],z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y); if(xi>=0&&yi>=0&&xi<tl.n&&yi<tl.n){ keys.add(z+'/'+xi+'/'+yi); demElevAt(p[0],p[1],null,z); } });
     return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,110); })(); });
   }
-  async function demSampleAll(points, z){ await warmDEMTiles(points, z); return points.map(p=>{ if(!p) return null; const v=demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
+  async function demSampleAll(points, z, timeoutMs){ await warmDEMTiles(points, z, timeoutMs); return points.map(p=>{ if(!p) return null; const v=demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
   function elevText(e){ return e<0 ? `${t('depth')} ${Math.abs(Math.round(e))} m` : `${t('elev')} ${Math.round(e)} m`; }
   /* Live weather-layer value at the cursor (#12): Köppen is instant (pixel sample); SST / air-temp
      are fetched seamlessly from Open-Meteo (debounced + cached per ~0.1°). */
@@ -9406,9 +9406,12 @@ window.addEventListener('DOMContentLoaded', () => {
     let site=null, panel=null, busy=false;
     function ensureLayers(){ if(map.getSource('los-src')) return true; if(!map.isStyleLoaded()) return false;
       try{ map.addSource('los-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'los-shadow',type:'fill',source:'los-src',filter:['==',['get','kind'],'shadow'],paint:{'fill-color':'#ff2d2d','fill-opacity':0.34}});
-        map.addLayer({id:'los-cover-line',type:'line',source:'los-src',filter:['==',['get','kind'],'cover'],paint:{'line-color':'#2bd66a','line-width':1.4,'line-opacity':0.85}});
-        map.addLayer({id:'los-site',type:'circle',source:'los-src',filter:['==',['get','kind'],'site'],paint:{'circle-radius':6,'circle-color':'#19e676','circle-stroke-color':'#04210f','circle-stroke-width':2}});
+        /* (#R13) Per the user's spec: REACHABLE range = RED fill, radar BLIND SPOTS = GREEN fill
+           (the previous build had these inverted). Cover is drawn first so the green shadow reads on top. */
+        map.addLayer({id:'los-cover',type:'fill',source:'los-src',filter:['==',['get','kind'],'cover'],paint:{'fill-color':'#ff2d2d','fill-opacity':0.30}});
+        map.addLayer({id:'los-shadow',type:'fill',source:'los-src',filter:['==',['get','kind'],'shadow'],paint:{'fill-color':'#1fd65f','fill-opacity':0.36}});
+        map.addLayer({id:'los-cover-line',type:'line',source:'los-src',filter:['==',['get','kind'],'cover'],paint:{'line-color':'#ff6b6b','line-width':1.1,'line-opacity':0.8}});
+        map.addLayer({id:'los-site',type:'circle',source:'los-src',filter:['==',['get','kind'],'site'],paint:{'circle-radius':6,'circle-color':'#ffd23f','circle-stroke-color':'#3a2a00','circle-stroke-width':2}});
         return true; }catch(_){ return false; } }
     function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
     async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()||busy) return; busy=true;
@@ -9417,8 +9420,12 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R12) Sample the LOCAL cached terrarium DEM — warming the few tiles that cover the disk — instead
          of firing ~4,200 Open-Meteo requests at once (which were rate-limited to nulls → flat terrain →
          no shadow → "Line of Sight doesn't work"). */
-      const z=_demZoomForSpan(rangeKm);
-      const elevs=await demSampleAll([site].concat(pts.map(p=>p.c)), z);
+      /* Cap the DEM zoom so the disk is covered by a manageable number of terrarium tiles — z12 over a
+         60 km disk is ~144 tiles that often don't all load in time (→ flat terrain → "doesn't work"). */
+      const z=Math.min(10,_demZoomForSpan(rangeKm));
+      const elevs=await demSampleAll([site].concat(pts.map(p=>p.c)), z, 16000);
+      const okCount=elevs.filter(v=>v!=null).length;
+      if(okCount < elevs.length*0.3){ busy=false; if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度。':'Could not load enough terrain data — wait a moment and retry.'; return; }
       const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
       const rays=Array.from({length:RAYS},()=>[]); pts.forEach((p,i)=>rays[p.a].push({d:p.d,terr:(elevs[i+1]==null?0:elevs[i+1])}));
       const visEnds=[];
@@ -9433,7 +9440,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(cover) feats.push({type:'Feature',geometry:cover.geometry,properties:{kind:'cover'}});
       if(shadow) feats.push({type:'Feature',geometry:shadow.geometry,properties:{kind:'shadow'}});
       setData(feats); busy=false;
-      if(body) body.innerHTML=jp()?'解析完了。赤い領域がレーダー死角（地形遮蔽）です。':'Done. Red = radar shadow (terrain-blocked).';
+      if(body) body.innerHTML=jp()?'解析完了。<b style="color:#ff4d4d;">赤＝到達範囲</b> / <b style="color:#1fd65f;">緑＝レーダー死角</b>（地形遮蔽）。':'Done. <b style="color:#ff4d4d;">Red = reachable range</b> / <b style="color:#1fd65f;">green = radar shadow</b> (terrain-blocked).';
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='los-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function open(lngLat){ site=[lngLat.lng,lngLat.lat]; const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:236px;';
@@ -9444,13 +9451,15 @@ window.addEventListener('DOMContentLoaded', () => {
         +'</div><button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+(jp()?'解析する':'Analyse')+'</button>'
         +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
         +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyse. May take a moment (DEM sampling).')+'</div>';
-      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      /* ✕ now also wipes the overlay — the "can't remove it" bug was that closing the panel left the
+         shadow painted with no way to clear it. Clearing on close fixes that. */
+      p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
       p.querySelector('#los-go').onclick=()=>{ const h=+p.querySelector('#los-h').value||0, r=Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)); analyze(h,r); };
       p.querySelector('#los-clr').onclick=()=>clear();
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       setData([{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]);
     }
-    function clear(){ setData([]); }
+    function clear(){ site=null; setData([]); const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=jp()?'消去しました。地図を右クリックして再配置できます。':'Cleared. Right-click the map to place again.'; }
     return { open, clear };
   })();
 
@@ -9517,7 +9526,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const inNoGo=(lng,lat)=>{ for(const z of noGo){ if(hav([lng,lat],[z.lng,z.lat])<=z.km) return true; } return false; };
     function isSea(x,y){ if(y<0||y>=H) return false; x=((x%W)+W)%W; if(grid.cell[y*W+x]===2) return false; const ll=llOf(x,y); return !inNoGo(ll[0],ll[1]); }
     /* nearest sea cell to a clicked point (snaps a coastal click out to water) */
-    function snapSea(lng,lat){ const s=cellOf(lng,lat); if(isSea(s.x,s.y)) return s; for(let r=1;r<40;r++){ for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.abs(dx)!==r&&Math.abs(dy)!==r) continue; const nx=((s.x+dx)%W+W)%W, ny=s.y+dy; if(isSea(nx,ny)) return {x:nx,y:ny}; } } return null; }
+    function snapSea(lng,lat){ const s=cellOf(lng,lat); if(isSea(s.x,s.y)) return s; for(let r=1;r<60;r++){ for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.abs(dx)!==r&&Math.abs(dy)!==r) continue; const nx=((s.x+dx)%W+W)%W, ny=s.y+dy; if(isSea(nx,ny)) return {x:nx,y:ny}; } } return null; }
     /* binary-heap A* */
     function astar(s,e){
       const open=[], gScore=new Map(), came=new Map(), closed=new Uint8Array(W*H);
@@ -9536,7 +9545,10 @@ window.addEventListener('DOMContentLoaded', () => {
       return null;
     }
     /* clear-sea sightline between two lng/lat (for string-pulling) */
-    function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/15)); for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); if(grid.cell[c.y*W+c.x]===2) return false; if(inNoGo(lng,lat)) return false; } return true; }
+    /* Sample the sightline finely (every ~9 km) AND reject chords that skim near-coast cells, so
+       string-pulling can't straighten a leg across/along a coastline — keeps the route faithful to the
+       real geography instead of collapsing it into long straight chords ("too linear"). */
+    function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/9)); let nearCoast=0; for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); const cv=grid.cell[c.y*W+c.x]; if(cv===2) return false; if(inNoGo(lng,lat)) return false; if(cv===1) nearCoast++; } return nearCoast<=Math.max(2,Math.floor(n*0.5)); }
     function stringPull(path){ if(path.length<3) return path; const out=[path[0]]; let i=0; while(i<path.length-1){ let j=path.length-1; for(;j>i+1;j--){ if(Math.abs(path[j][0]-path[i][0])>170) continue; if(seaLineClear(path[i],path[j])) break; } out.push(path[j]); i=j; } return out; }
     /* --- layers --- */
     function ensureLayers(){ if(map.getSource('route-src')) return true; if(!map.isStyleLoaded()) return false;
@@ -9587,7 +9599,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(jp()?'ルート計算':'Compute route')+'</button>'
         +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
         +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。':'Pick two sea points (right-click → set start/end), then Compute.')+'</div>';
-      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      /* ✕ now clears the drawn route + no-go zones too — the "can't remove it once used" bug was that
+         closing the panel left everything painted with the Clear button no longer reachable. */
+      p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
       p.querySelector('#route-pure').onchange=(e)=>{ pureDist=e.target.checked; };
       p.querySelector('#route-nogo-add').onchange=(e)=>{ addNoGoMode=e.target.checked; };
       p.querySelector('#route-go').onclick=compute;
