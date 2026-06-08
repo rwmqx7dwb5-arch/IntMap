@@ -802,5 +802,32 @@ checks; endpoints curl-probed). Committed in 5 parts + this note.
 
 ### Documented limitation
 - ECMWF `.om` raster + the compare second-map raster are wiring/data-verified only (headless preview can't
-  complete WebGL) — confirm visually in a real browser. WorldCover WMTS wouldn't answer sandbox `curl`
-  (SNI/UA) but is the user-supplied, previously-working URL.
+  complete WebGL) — confirm visually in a real browser.
+
+### R13b — the public site runs from `file://` (this was the real root cause)
+The user re-reported Köppen "ぐちゃぐちゃ" + weather/land-use/ecoregions "not functioning". Key insight:
+the public site is opened as **`file:///…/index.html`**, and **Chrome blocks `fetch()` of LOCAL files
+under `file://`** (only http/https/data). Remote https fetches and `<img>`/`<script>` loads still work.
+- **Ecoregions** used `fetch('data/ecoregions_2017.geojson')` → silently failed under file://. Now shipped
+  as a JS global `data/ecoregions_2017.js` (`window.__ECOREGIONS_2017`) loaded via a `<script>` tag (works
+  under file:// and http; http keeps a fetch fallback). Exposed `window.__loadEcoregions`; the Compare
+  window consumes the data object, not a URL. (Verified: 847 features load.)
+- **WorldCover**: the brief's host `services.terrascope.be` is **DOWN** (HTTP 000 / reset from every
+  network incl. the user's, while `viewer.terrascope.be` is up). The LIVE WMTS is **`wmts.terrascope.be`**
+  (KVP): `LAYER=esa-worldcover-map-10m-2021-v2_map`, `TILEMATRIXSET=EPSG:3857`, plain numeric TILEMATRIX,
+  and a **required `TIME=2021-01-01`**. Verified HTTP 200 image/png + ACAO (works under file://). Updated
+  the main layer + the Compare source.
+- **Köppen**: (a) dropped `crossOrigin='anonymous'` on the LOCAL PNG — under file:// an anonymous request
+  to a same-folder file can fail to load → it fell back to the wrong remote Wikipedia image → garbled
+  highlight; loading it plainly always gets the real image (a tainted getImageData is caught and only
+  disables highlight sampling, never the base). (b) **Reverted the R13 dim-overlay** highlight — it added a
+  second image layer at identical coordinates to the base, which z-fights/renders garbled (esp. on the
+  globe). Back to the proven R12 recolour-the-same-image approach, still computed on the small work-canvas
+  so the lag fix stays. Base remains 8192².
+- **Weather (ECMWF)**: confirmed the full pipeline works in-browser — SDK loads, `omProtocol` registers,
+  `latest.json` resolves (43 vars / 145 valid_times), a z2 `temperature_2m` tile decodes to a 512×512
+  ImageBitmap, and the endpoint sends `ACAO:*` (so it works under file://). It's integrated as normal layer
+  rows now; the earlier "doesn't function" was the old separate-panel UX. Visual compositing still needs a
+  real (non-headless) browser to confirm.
+- **Gotcha for future work:** anything that `fetch()`es a LOCAL bundled file will break on the file://
+  public site — ship local data as a `<script>` global (or inline) instead, and prefer image/script loads.
