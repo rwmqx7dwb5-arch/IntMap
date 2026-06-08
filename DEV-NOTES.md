@@ -726,3 +726,81 @@ instance — but the comparison surface behaves like the main map.) Entry: Layer
   headless preview (hidden ⇒ no rAF/WebGL completion) — visually confirm in a real browser.
 - Maritime routing through **sub-cell straits not in the carve list** (e.g. Bosphorus is carved; a random
   20 km channel elsewhere may be closed) and **canals other than Suez/Panama/Kiel** aren't auto-traversed.
+
+---
+
+## 15. Round 13 — re-attacked the re-reported batch (tags `#R13`)
+
+The user came back with the same pain points (Köppen quality/lag, ECMWF "mostly broken", Ecoregions/
+WorldCover "not added", Compare X-ray, LOS, sea route, boundaries, mobile/desktop nits). All additive/
+in-place; MapLibre stays the engine. Verified in the headless preview (globals/DOM/CSS + console-error
+checks; endpoints curl-probed). Committed in 5 parts + this note.
+
+### Köppen (#data, #lag, #legend)
+- **1991-2020 regenerated at 8192²** (was 4096²) from the 1 km `koppen_geiger_0p00833333.tif`
+  (`_koppen_convert.py`, PIL/numpy, nearest-neighbour, exact KCOL palette so cursor sampling round-trips).
+  The three eras were re-emitted identically.
+- **Source-data caveat:** `1931-1960.tif` and `1961-1990.tif` are **byte-identical** (md5 `ee9cd732…`), so
+  those two periods are necessarily the same image — not a bug in our pipeline, the downloaded inputs are
+  duplicates. (Drop a real distinct 1961-1990 GeoTIFF in and re-run `_koppen_convert.py` to fix.)
+- **Lag killed:** sampling + class-highlighting now run on a small **≤2048 work-canvas** (built nearest-
+  neighbour so KCOL is preserved), and highlighting is a **separate dim-overlay layer** (`lyr-climate-dim`,
+  non-selected classes darkened) so the base raster stays full-res and we never re-encode an 8192² PNG per
+  click. Period switch swaps the base image immediately (GPU) then recomputes the dim overlay.
+- **Legend class-click no longer jumps to the top** — scrollTop of `.kl-scroll` is saved/restored around the
+  `buildLegend()` rebuild. Vertical-only `resize` was already correct.
+- The big source GeoTIFFs are **git-ignored** (new `.gitignore`); only the shipped PNGs are tracked.
+
+### Layer panel — full re-classification + ECMWF as layers (#panel, #ecmwf)
+- New `window.reorganizeLayerPanel()` re-files **every** row (static Strategic geography/networks, dynamic
+  data layers, ECMWF, land-cover, Round-9 dams/volcanoes/aurora) under **7 coherent categories** + a Tools
+  section, idempotently on every Layers-open. "Data layers" label removed. "Open compare view" + "Upload
+  GeoJSON" moved into the bottom **Tools** section (no more mid-list placement).
+- **ECMWF is no longer a separate button/panel** — each variable is a normal `lyr-row` (checkbox + opacity)
+  with one shared hourly **valid-time slider** + valid-time label. Re-confirmed `ecmwf_ifs` now serves
+  `precipitation`, so an ECMWF precip layer was added (9 layers total). Rendering still uses the official
+  `om://` SDK protocol (data/decode verified; pixel compositing only confirmable in a real browser).
+
+### Ecoregions — dead URL fixed (#eco)
+- The protomaps `resolved_ecoregions_2017.pmtiles` sample **404s** (bucket alive, file removed) — that's why
+  it "wouldn't add". Switched to a **self-hosted simplified GeoJSON** (`data/ecoregions_2017.geojson`, 847
+  RESOLVE/WWF ecoregions from the ArcGIS FeatureServer, per-feature COLOR, ~9.8 MB) loaded as a normal
+  geojson source + click popup; restores across basemap swaps. No plugin / external dependency.
+- WorldCover (Terrascope WMTS) was already wired; it just wasn't visible in the cluttered panel — the
+  reorg surfaces it under "Terrain & elevation".
+
+### Compare mode (#compare)
+- **X-ray mode**: the compare window goes transparent and hides its own basemap so the MAIN map (with all
+  its active layers) shows through at the same location; sync forced on. The compare window's own data layer
+  paints on top → true same-spot comparison.
+- Added an **Ecoregions** toggle (lazy-loaded) so it mirrors more of the main map's thematic layers.
+
+### Line of Sight (#los)
+- Colours **un-inverted** to match the spec: REACHABLE range = red fill, radar BLIND SPOTS = green fill.
+- "Can't remove it" fixed — ✕ now clears the overlay.
+- "Doesn't work": DEM zoom **capped ≤z10** (z12 ≈ 144 terrarium tiles often timed out → flat → no shadow),
+  sampler timeout 16 s, and we now report when too little terrain loaded instead of drawing a full circle.
+
+### Sea route (#route)
+- "Can't remove it" fixed — ✕ clears the route + no-go zones.
+- **Less linear**: string-pull sightlines sampled every ~9 km and reject chords that skim near-coast cells,
+  so legs follow real geography instead of collapsing to long straights.
+- Coastal/shallow endpoints resolve more reliably (snap search widened to 60 cells).
+
+### Boundaries (#boundaries, #borders)
+- **Sahel / Northern Sea Route / Belt & Road** redrawn with dense, geography-faithful vertices (≤2°,
+  real straits/corridors/cities) — `buildGeoFC` draws raw vertices so the extra points remove the linearity.
+- **Country borders → Natural Earth 10 m** (was 50 m; fall back 50 m → 110 m). 10 m gzips to ~4.7 MB and
+  loads async; crisp lines that track the real borders, fixing the coarse / parallel-offset look.
+
+### Mobile / desktop / runway nits
+- Mobile **"+Add point" + crosshair show ONLY while a measurement tool is active**; long-press → context
+  menu re-enabled for touch when idle.
+- Desktop **map-centre-drops-to-bottom** fixed: the bottom-sheet padding helpers can't pad the camera
+  bottom when not in the mobile layout.
+- **Runway search inputs are unit-aware** — Imperial → radius in miles, min length in feet (converted).
+
+### Documented limitation
+- ECMWF `.om` raster + the compare second-map raster are wiring/data-verified only (headless preview can't
+  complete WebGL) — confirm visually in a real browser. WorldCover WMTS wouldn't answer sandbox `curl`
+  (SNI/UA) but is the user-supplied, previously-working URL.
