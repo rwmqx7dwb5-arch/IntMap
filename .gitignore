@@ -7,3 +7,6 @@ koppen_geiger_0p00833333.tif
 # Scratch / one-off build helpers
 _koppen_convert.py
 _eco_test.json
+
+# debug thumbnails
+_thumb_*.png
