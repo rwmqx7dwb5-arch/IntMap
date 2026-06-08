@@ -5959,16 +5959,17 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       window._koppenCodeIdx=idx; window._koppenSrcData=d;   /* keep the original pixels for fast recolour */
     }
-    /* Build a transparent DARKENING mask (#R13): non-selected classes → semi-opaque black, selected
-       classes + ocean → fully transparent. Drawn on a SEPARATE overlay layer so the base climate
-       raster stays at its full 8192² resolution while highlighting (was: recolour+re-encode the whole
-       8192² image each click, which is what made class selection lag). Computed on the small
-       work-canvas → the toDataURL is ~16× cheaper. */
-    function buildKoppenDimURL(selectedSet){
+    /* Highlight = recolour the climate image so SELECTED classes stay vivid and the rest is greyed +
+       faded, then feed it back into the SAME image source (the proven R12 approach the user was happy
+       with — no separate overlay layer). It's computed on the small work-canvas, so the per-pixel pass
+       and the toDataURL are ~16× cheaper than on the full 8192² image → the class-select lag is gone but
+       the behaviour/appearance matches the version that worked. When nothing is selected we restore the
+       full-res KURL. */
+    function buildKoppenHighlightURL(selectedSet){
       if(!window._koppenReady||!window._koppenCanvas) return null;
       if(!selectedSet||selectedSet.size===0) return null;
       ensureKoppenCodeIndex();
-      const idx=window._koppenCodeIdx; if(!idx) return null;
+      const idx=window._koppenCodeIdx, src=window._koppenSrcData; if(!idx||!src) return null;
       const W=window._koppenCanvas.width, H=window._koppenCanvas.height;
       const selIdx=new Uint8Array(KCOL.length);
       for(let k=0;k<KCOL.length;k++) if(selectedSet.has(KCOL[k][0])) selIdx[k]=1;
@@ -5976,33 +5977,20 @@ window.addEventListener('DOMContentLoaded', () => {
       const octx=out.getContext('2d'), img=octx.createImageData(W,H), o=img.data;
       for(let p=0,i=0;p<idx.length;p++,i+=4){
         const ci=idx[p];
-        if(ci===255 || selIdx[ci]){ o[i+3]=0; }                 /* ocean / selected → leave visible */
-        else { o[i]=0; o[i+1]=0; o[i+2]=0; o[i+3]=175; }        /* non-selected → darken */
+        if(ci!==255 && selIdx[ci]){ o[i]=src[i]; o[i+1]=src[i+1]; o[i+2]=src[i+2]; o[i+3]=src[i+3]; }   /* selected: keep */
+        else { const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.28); }   /* rest: grey + faded */
       }
       octx.putImageData(img,0,0);
       try{ return out.toDataURL('image/png'); }catch(e){ return null; }
-    }
-    function ensureKoppenDimLayer(url){
-      if(map.getSource('src-climate-dim')){ try{ map.getSource('src-climate-dim').updateImage({url:url,coordinates:KCOORDS}); }catch(e){} return; }
-      try{
-        const bid=map.getLayer('tool-poly')?'tool-poly':undefined;
-        map.addSource('src-climate-dim',{type:'image',url:url,coordinates:KCOORDS});
-        map.addLayer({id:'lyr-climate-dim',type:'raster',source:'src-climate-dim',layout:{visibility:'visible'},paint:{'raster-opacity':1,'raster-fade-duration':0}},bid);
-      }catch(e){}
     }
     window._refreshKoppenImage=function(){
       if(!map.getSource('src-climate')) return;
       /* Debounce so rapid multi-class selection coalesces into one rebuild (#12). */
       clearTimeout(window._koppenRefreshT);
       window._koppenRefreshT=setTimeout(()=>{
-        const climateOn=map.getLayer('lyr-climate')&&map.getLayoutProperty('lyr-climate','visibility')!=='none';
-        if(climateOn && kSelected.size>0){
-          const url=buildKoppenDimURL(kSelected);
-          if(url){ ensureKoppenDimLayer(url); try{ if(map.getLayer('lyr-climate-dim')) map.setLayoutProperty('lyr-climate-dim','visibility','visible'); }catch(e){} }
-        } else {
-          try{ if(map.getLayer('lyr-climate-dim')) map.setLayoutProperty('lyr-climate-dim','visibility','none'); }catch(e){}
-        }
-      },30);
+        const url=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null;
+        try{ map.getSource('src-climate').updateImage({url:url||KURL,coordinates:KCOORDS}); }catch(e){}
+      },45);
     };
     /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
        cursor sampling and class-highlighting reflect the chosen period, then swaps the map image. */
@@ -6712,7 +6700,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
-        if(id==='climate'){ legend.style.display='none'; try{ if(map.getLayer('lyr-climate-dim')) map.setLayoutProperty('lyr-climate-dim','visibility','none'); }catch(_){} }
+        if(id==='climate'){ legend.style.display='none'; }
         if(id==='hdi') lgdHDI.style.display='none';
         if(id==='dem') lgdDem.style.display='none';
         if(id==='pop') lgdPop.style.display='none';
