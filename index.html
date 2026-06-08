@@ -9539,8 +9539,8 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'ec-wind',    variable:'wind_10m',            type:'raster', op:0.72, label:['Wind speed (10 m)','風速（10m）']},
       {id:'ec-cloud',   variable:'cloud_cover',         type:'raster', op:0.70, label:['Cloud cover','雲量']},
       {id:'ec-humid',   variable:'relative_humidity_2m',type:'raster', op:0.65, label:['Relative humidity','相対湿度']},
-      {id:'ec-slp',     variable:'sea_level_pressure',  type:'raster', op:0.60, label:['Sea-level pressure','海面気圧']},
-      {id:'ec-isobars', variable:'sea_level_pressure',  type:'isobars',op:0.9,  label:['Isobars (pressure)','等圧線']},
+      {id:'ec-slp',     variable:'pressure_msl',         type:'raster', op:0.60, label:['Sea-level pressure','海面気圧']},
+      {id:'ec-isobars', variable:'pressure_msl',         type:'isobars',op:0.9,  label:['Isobars (pressure)','等圧線']},
       {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature','海水温']}
     ];
     let sdk=null, sdkLoading=null, protoReg=false, panel=null, validTimes=[], timeIdx=0, refTime='';
