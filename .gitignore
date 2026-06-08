@@ -1,0 +1,9 @@
+# Large Köppen-Geiger source GeoTIFFs — source data only.
+# The app ships the reprojected Web-Mercator PNGs (koppen_mercator*.png), which ARE tracked.
+Köppen-Geiger climate classification data/
+koppen_geiger_0p00833333.tif
+*.tif
+
+# Scratch / one-off build helpers
+_koppen_convert.py
+_eco_test.json

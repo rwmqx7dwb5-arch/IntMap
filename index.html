@@ -3769,7 +3769,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return;
     _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
-  document.getElementById('btn-layers').addEventListener('click',()=>{ setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled) _collapseGroup(h); }); },30); });
+  document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled) _collapseGroup(h); }); },30); });
   layerDropdown.addEventListener('click',(e)=>e.stopPropagation());
   document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
     /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
@@ -5574,6 +5574,59 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    /* (#R13) Re-classify the WHOLE layer panel into one coherent taxonomy. The static "Strategic
+       geography / networks" groups, the dynamic data layers, the ECMWF rows and the land-cover rows are
+       all appended from different places (static HTML + several IIFEs), so rather than rewrite each
+       source we re-file every row under fresh category headers here. Place names / Country borders /
+       Grid / Countries stay pinned at the top, untouched. Idempotent → safe to re-run on every open.
+       Also moves "Open compare view" + "Upload GeoJSON" into a tidy Tools section at the very bottom
+       (the user disliked them sitting mid-list). The old "Data layers" section label is dropped. */
+    window.reorganizeLayerPanel=function(){
+      const dd=document.getElementById('layer-dropdown'); if(!dd) return;
+      try{
+        const GROUPS=[
+          ['lyrGrpClimate',['climate','ec-temp','temp','ec-precip','precip','ec-wind','wind','radar','ec-cloud','ec-dew','ec-isobars','ec-slp','ec-cape','snow','aod','ec-time']],
+          ['lyrGrpMaritime',['sst','ec-sst','eez','subcables','ships','planes','seaRoute','chokepoints']],
+          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','dams']],
+          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem']],
+          ['lyrGrpHazard',['thermal','volcanoes','aurora','nightsat','night']],
+          ['lyrGrpGeo',['fsu','sahel','islandChain1','islandChain2','stringOfPearls']],
+          ['lyrGrpGeoPol',['bri','pipelines','nuclear','milSpend','milSpendGDP','nato']]
+        ];
+        const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
+          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
+          el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
+          return null; };
+        const lang=(typeof currentLang!=='undefined')?currentLang:'en';
+        const T=(k)=>{ try{ return (i18n[lang]&&i18n[lang][k])||k; }catch(_){ return k; } };
+        /* strip old headers + top-level dividers (favourites' inner <hr> is nested, so it survives) */
+        dd.querySelectorAll(':scope > .layer-group-title, :scope > .lyr-head').forEach(n=>n.remove());
+        dd.querySelectorAll(':scope > hr').forEach(n=>n.remove());
+        const order=[];
+        const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
+        ['cb-names','cb-borders','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
+        order.push(mkHr());
+        GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
+          const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=T(key); order.push(h);
+          rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); }); });
+        /* Tools section (compare + upload) pinned to the very bottom */
+        const upBtn=document.getElementById('btn-upload-geojson');
+        const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
+        let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
+        tools.innerHTML='';
+        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(lang==='jp'?'ツール':'Tools'); tools.appendChild(th);
+        if(cmpBtn){ cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
+        if(upBtn){ upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
+        if(ugj){ tools.appendChild(ugj); }
+        if(cmpBtn||upBtn){ order.push(mkHr()); order.push(tools); }
+        order.forEach(n=>dd.appendChild(n));
+        /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
+        ['ec-mount','cmp-mount','ugj-mount'].forEach(id=>{ const w=document.getElementById(id); if(w) w.remove(); });
+      }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
+    };
+    window.reorganizeLayerPanel();
+
     const beforeId = map.getLayer('tool-poly') ? 'tool-poly' : undefined;
     const setVis=(l,on)=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); };
     /* Verified: IMERG date-only URL (e.g. .../IMERG_Precipitation_Rate/default/2026-05-26/...)
@@ -5809,18 +5862,27 @@ window.addEventListener('DOMContentLoaded', () => {
        (b) build a "highlight only selected" canvas image and feed it back
            into the same source for in-place filtering. */
     window._koppenCanvas=null; window._koppenImg=null; window._koppenReady=false;
+    /* PERF (#R13): the DISPLAYED Köppen raster is the full-res 8192² PNG (composited on the GPU). But
+       cursor-sampling and class highlighting are CPU pixel ops, so they run on a small capped
+       work-canvas (≤2048, nearest-neighbour so the exact KCOL palette is preserved). ~19 km/px is
+       plenty to classify a point, and it makes the per-pixel index + highlight ~16× cheaper → the
+       laggy period-switch / class-select the user reported is gone. */
+    const KWORK_CAP=2048;
+    function _mkKoppenWork(im){
+      const nw=im.naturalWidth||im.width, nh=im.naturalHeight||im.height;
+      const sc=Math.min(1, KWORK_CAP/Math.max(nw,nh,1));
+      const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(nw*sc)); c.height=Math.max(1,Math.round(nh*sc));
+      const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false; cx.drawImage(im,0,0,c.width,c.height);
+      window._koppenImg=im; window._koppenCanvas=c; window._koppenReady=true;
+    }
     function loadKoppenCanvas(){
       if(window._koppenImg) return Promise.resolve();
       return new Promise(resolve=>{
         const im=new Image(); im.crossOrigin='anonymous';
-        im.onload=()=>{
-          const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
-          c.getContext('2d').drawImage(im,0,0);
-          window._koppenImg=im; window._koppenCanvas=c; window._koppenReady=true; resolve();
-        };
+        im.onload=()=>{ _mkKoppenWork(im); resolve(); };
         im.onerror=()=>{
           const im2=new Image(); im2.crossOrigin='anonymous';
-          im2.onload=()=>{ const c=document.createElement('canvas'); c.width=im2.naturalWidth; c.height=im2.naturalHeight; c.getContext('2d').drawImage(im2,0,0); window._koppenImg=im2; window._koppenCanvas=c; window._koppenReady=true; resolve(); };
+          im2.onload=()=>{ _mkKoppenWork(im2); resolve(); };
           im2.onerror=()=>resolve(); im2.src=KURL_FALLBACK;
         };
         im.src=KURL;
@@ -5877,12 +5939,16 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       window._koppenCodeIdx=idx; window._koppenSrcData=d;   /* keep the original pixels for fast recolour */
     }
-    /* Produce a Köppen image with only the selected codes vivid (others dimmed). Returns a data URL. */
-    function buildKoppenHighlightURL(selectedSet){
+    /* Build a transparent DARKENING mask (#R13): non-selected classes → semi-opaque black, selected
+       classes + ocean → fully transparent. Drawn on a SEPARATE overlay layer so the base climate
+       raster stays at its full 8192² resolution while highlighting (was: recolour+re-encode the whole
+       8192² image each click, which is what made class selection lag). Computed on the small
+       work-canvas → the toDataURL is ~16× cheaper. */
+    function buildKoppenDimURL(selectedSet){
       if(!window._koppenReady||!window._koppenCanvas) return null;
       if(!selectedSet||selectedSet.size===0) return null;
       ensureKoppenCodeIndex();
-      const idx=window._koppenCodeIdx, src=window._koppenSrcData; if(!idx||!src) return null;
+      const idx=window._koppenCodeIdx; if(!idx) return null;
       const W=window._koppenCanvas.width, H=window._koppenCanvas.height;
       const selIdx=new Uint8Array(KCOL.length);
       for(let k=0;k<KCOL.length;k++) if(selectedSet.has(KCOL[k][0])) selIdx[k]=1;
@@ -5890,23 +5956,33 @@ window.addEventListener('DOMContentLoaded', () => {
       const octx=out.getContext('2d'), img=octx.createImageData(W,H), o=img.data;
       for(let p=0,i=0;p<idx.length;p++,i+=4){
         const ci=idx[p];
-        if(ci!==255 && selIdx[ci]){            /* selected: punch up brightness for a glow */
-          o[i]=Math.min(255,src[i]*1.05); o[i+1]=Math.min(255,src[i+1]*1.05); o[i+2]=Math.min(255,src[i+2]*1.05); o[i+3]=src[i+3];
-        } else {                                /* non-selected: desaturate + lower alpha */
-          const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.3);
-        }
+        if(ci===255 || selIdx[ci]){ o[i+3]=0; }                 /* ocean / selected → leave visible */
+        else { o[i]=0; o[i+1]=0; o[i+2]=0; o[i+3]=175; }        /* non-selected → darken */
       }
       octx.putImageData(img,0,0);
       try{ return out.toDataURL('image/png'); }catch(e){ return null; }
     }
+    function ensureKoppenDimLayer(url){
+      if(map.getSource('src-climate-dim')){ try{ map.getSource('src-climate-dim').updateImage({url:url,coordinates:KCOORDS}); }catch(e){} return; }
+      try{
+        const bid=map.getLayer('tool-poly')?'tool-poly':undefined;
+        map.addSource('src-climate-dim',{type:'image',url:url,coordinates:KCOORDS});
+        map.addLayer({id:'lyr-climate-dim',type:'raster',source:'src-climate-dim',layout:{visibility:'visible'},paint:{'raster-opacity':1,'raster-fade-duration':0}},bid);
+      }catch(e){}
+    }
     window._refreshKoppenImage=function(){
       if(!map.getSource('src-climate')) return;
-      /* Debounce so rapid multi-class selection coalesces into one image rebuild (#12). */
+      /* Debounce so rapid multi-class selection coalesces into one rebuild (#12). */
       clearTimeout(window._koppenRefreshT);
       window._koppenRefreshT=setTimeout(()=>{
-        const url=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null;
-        try{ map.getSource('src-climate').updateImage({url:url||KURL,coordinates:KCOORDS}); }catch(e){}
-      },45);
+        const climateOn=map.getLayer('lyr-climate')&&map.getLayoutProperty('lyr-climate','visibility')!=='none';
+        if(climateOn && kSelected.size>0){
+          const url=buildKoppenDimURL(kSelected);
+          if(url){ ensureKoppenDimLayer(url); try{ if(map.getLayer('lyr-climate-dim')) map.setLayoutProperty('lyr-climate-dim','visibility','visible'); }catch(e){} }
+        } else {
+          try{ if(map.getLayer('lyr-climate-dim')) map.setLayoutProperty('lyr-climate-dim','visibility','none'); }catch(e){}
+        }
+      },30);
     };
     /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
        cursor sampling and class-highlighting reflect the chosen period, then swaps the map image. */
@@ -5915,9 +5991,10 @@ window.addEventListener('DOMContentLoaded', () => {
       window._koppenPeriod=period; KURL=koppenURLFor(period);
       window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
       window._koppenCodeIdx=null; window._koppenSrcData=null;
-      loadKoppenCanvas().then(()=>{
-        try{ const u=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null; if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:u||KURL,coordinates:KCOORDS}); }catch(e){}
-      });
+      /* Swap the full-res base image immediately (GPU, fast); recompute the dim overlay after the small
+         work-canvas for the new era has loaded. */
+      try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){}
+      loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(e){} });
       try{ buildLegend(); }catch(_){}
     };
 
@@ -5934,6 +6011,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
       } else { setVis('lyr-climate',true); }
       buildLegend();
+      try{ window._refreshKoppenImage(); }catch(_){}
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
@@ -5948,7 +6026,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
-        it.onclick=()=>{ const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); window._refreshKoppenImage(); };
+        it.onclick=()=>{ const sc=lg.querySelector('.kl-scroll'); const top=sc?sc.scrollTop:0; const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); const ns=lg.querySelector('.kl-scroll'); if(ns) ns.scrollTop=top; window._refreshKoppenImage(); };
         /* Right-click a climate → popup explaining how that Köppen class is determined (#25). */
         it.oncontextmenu=(e)=>{ e.preventDefault(); showKoppenInfo(it.dataset.c, e.clientX, e.clientY); };
       });
@@ -6614,7 +6692,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
-        if(id==='climate'){ legend.style.display='none'; }
+        if(id==='climate'){ legend.style.display='none'; try{ if(map.getLayer('lyr-climate-dim')) map.setLayoutProperty('lyr-climate-dim','visibility','none'); }catch(_){} }
         if(id==='hdi') lgdHDI.style.display='none';
         if(id==='dem') lgdDem.style.display='none';
         if(id==='pop') lgdPop.style.display='none';
@@ -9030,18 +9108,27 @@ window.addEventListener('DOMContentLoaded', () => {
       s.onerror=()=>{ pmLoading=false; pmQ.splice(0).forEach(fn=>fn(false)); };
       document.head.appendChild(s); }
     let ecoBuilt=false;
+    /* (#R13) The protomaps `resolved_ecoregions_2017.pmtiles` sample was REMOVED from r2-public
+       (404 — that's why Ecoregions "wouldn't add"). Switched to a self-hosted, simplified copy of the
+       authoritative RESOLVE/WWF Ecoregions 2017 (ArcGIS FeatureServer → data/ecoregions_2017.geojson,
+       846 ecoregions, per-feature COLOR), lazy-loaded as a normal GeoJSON source — no external
+       dependency, no dead URL, no plugin needed. */
+    function ecoBefore(){ try{ for(const l of (map.getStyle().layers||[])){ if(l.type==='symbol') return l.id; } }catch(_){} return undefined; }
     function ensureEco(cb){ if(map.getSource('eco-regions')){ cb(true); return; }
-      loadPMTiles(ok=>{ if(!ok){ try{ imToast(jp()?'PMTilesを読み込めませんでした':'Could not load PMTiles'); }catch(_){} cb(false); return; }
-        const URL='https://r2-public.protomaps.com/protomaps-sample-datasets/resolved_ecoregions_2017.pmtiles';
-        let sl=null; try{ const pm=new pmtiles.PMTiles(URL);
-          pm.getMetadata().then(md=>{ try{ const vl=(md&&(md.vector_layers||(md.tilestats&&md.tilestats.layers)))||[]; if(vl.length) sl=vl[0].id||vl[0].layer; }catch(_){}
-            addEcoLayers(URL, sl||'resolved_ecoregions_2017'); cb(true);
-          }).catch(()=>{ addEcoLayers(URL,'resolved_ecoregions_2017'); cb(true); });
-        }catch(_){ addEcoLayers(URL,'resolved_ecoregions_2017'); cb(true); } }); }
-    function addEcoLayers(url, sl){ if(ecoBuilt||map.getSource('eco-regions')) return; ecoBuilt=true;
-      try{ map.addSource('eco-regions',{type:'vector',url:'pmtiles://'+url,attribution:'RESOLVE Ecoregions 2017 · protomaps'});
-        map.addLayer({id:'eco-regions-fill',type:'fill',source:'eco-regions','source-layer':sl,layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],['to-color',['get','color']],'#4caf50'],'fill-opacity':0.5}});
-        map.addLayer({id:'eco-regions-line',type:'line',source:'eco-regions','source-layer':sl,layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}});
+      fetch('data/ecoregions_2017.geojson').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(gj=>{ addEcoLayers(gj); cb(true); })
+        .catch(e=>{ try{ console.warn('ecoregions load failed',e); }catch(_){} try{ imToast(jp()?'生態地域データを読み込めませんでした':'Could not load ecoregions'); }catch(_){} cb(false); }); }
+    function addEcoLayers(gj){ window._ecoGJ=gj; if(ecoBuilt||map.getSource('eco-regions')) return; ecoBuilt=true;
+      try{ const before=ecoBefore();
+        map.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
+        map.addLayer({id:'eco-regions-fill',type:'fill',source:'eco-regions',layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}},before);
+        map.addLayer({id:'eco-regions-line',type:'line',source:'eco-regions',layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}},before);
+        if(!window._ecoPop) window._ecoPop=new maplibregl.Popup({closeButton:true,maxWidth:'240px'});
+        map.on('mouseenter','eco-regions-fill',()=>{ map.getCanvas().style.cursor='pointer'; });
+        map.on('mouseleave','eco-regions-fill',()=>{ map.getCanvas().style.cursor=''; });
+        map.on('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          const html='<div style="font-size:12px;line-height:1.5;"><b>'+(p.ECO_NAME||'')+'</b><br>'+(jp()?'バイオーム: ':'Biome: ')+(p.BIOME_NAME||'—')+'</div>';
+          window._ecoPop.setLngLat(e.lngLat).setHTML(html).addTo(map); });
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
     function toggle(which,on){ state[which]=on;
@@ -9049,12 +9136,13 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ map.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
       else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else setVis(SETS.ecoregions,false); }
     }
-    map.on('styledata',()=>{ if(state.worldcover||state.plates){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } },60); } });
+    map.on('styledata',()=>{ if(state.worldcover||state.plates||state.ecoregions){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } if(state.ecoregions){ if(!map.getSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } },60); } });
     const ECLBL={worldcover:['土地被覆 (ESA 2021)','Land cover (ESA 2021)'],ecoregions:['生態地域 (WWF/RESOLVE)','Ecoregions (WWF/RESOLVE)'],plates:['プレート境界','Tectonic plates']};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('eco-dl-worldcover')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-ecohead','1'); head.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       [['worldcover','#4caf50'],['ecoregions','#2f9e44'],['plates','#e8590c']].forEach(([k,sw])=>{ const cb=row('eco-dl-'+k, jp()?ECLBL[k][0]:ECLBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=jp()?ECLBL[k][0]:ECLBL[k][1]; }); }
@@ -9538,15 +9626,19 @@ window.addEventListener('DOMContentLoaded', () => {
        does NOT serve precipitation or relative_humidity_2m — precip is covered by the app's IMERG/radar
        layers; humidity is shown here as dew point (the available moisture field). Wind also has a dedicated
        animated GFS layer; this ECMWF arrows layer adds directional barbs. */
+    /* Variables re-confirmed live against ecmwf_ifs latest.json (2026-06): precipitation IS now served,
+       so the ECMWF precip layer is real; relative_humidity_2m is still NOT served → dew_point is the
+       moisture field. All carry the hourly valid_times time-slider. */
     const LAYERS=[
-      {id:'ec-temp',    variable:'temperature_2m',          type:'raster', op:0.72, label:['Temperature (2 m)','気温（2m）']},
-      {id:'ec-wind',    variable:'wind_u_component_10m',     type:'arrows', op:0.85, label:['Wind (10 m arrows)','風（10m 矢羽根）']},
-      {id:'ec-cloud',   variable:'cloud_cover',             type:'raster', op:0.70, label:['Cloud cover','雲量']},
-      {id:'ec-dew',     variable:'dew_point_2m',            type:'raster', op:0.65, label:['Dew point / moisture (2 m)','露点・湿り（2m）']},
-      {id:'ec-slp',     variable:'pressure_msl',            type:'raster', op:0.60, label:['Sea-level pressure','海面気圧']},
-      {id:'ec-isobars', variable:'pressure_msl',            type:'isobars',op:0.9,  label:['Isobars (pressure)','等圧線']},
-      {id:'ec-cape',    variable:'cape',                    type:'raster', op:0.65, label:['CAPE (instability)','CAPE（不安定度）']},
-      {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature','海水温']}
+      {id:'ec-temp',    variable:'temperature_2m',          type:'raster', op:0.72, label:['Temperature 2 m (ECMWF)','気温 2m（ECMWF）']},
+      {id:'ec-precip',  variable:'precipitation',           type:'raster', op:0.72, label:['Precipitation (ECMWF)','降水量（ECMWF）']},
+      {id:'ec-wind',    variable:'wind_u_component_10m',     type:'arrows', op:0.85, label:['Wind 10 m arrows (ECMWF)','風 10m 矢羽根（ECMWF）']},
+      {id:'ec-cloud',   variable:'cloud_cover',             type:'raster', op:0.70, label:['Cloud cover (ECMWF)','雲量（ECMWF）']},
+      {id:'ec-dew',     variable:'dew_point_2m',            type:'raster', op:0.65, label:['Dew point / humidity (ECMWF)','露点・湿度（ECMWF）']},
+      {id:'ec-isobars', variable:'pressure_msl',            type:'isobars',op:0.9,  label:['Isobars (ECMWF)','等圧線（ECMWF）']},
+      {id:'ec-slp',     variable:'pressure_msl',            type:'raster', op:0.60, label:['Sea-level pressure (ECMWF)','海面気圧（ECMWF）']},
+      {id:'ec-cape',    variable:'cape',                    type:'raster', op:0.65, label:['CAPE instability (ECMWF)','CAPE 不安定度（ECMWF）']},
+      {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature (ECMWF)','海水温（ECMWF）']}
     ];
     let sdk=null, sdkLoading=null, protoReg=false, panel=null, validTimes=[], timeIdx=0, refTime='';
     const state={};   /* id → {on, op} */
@@ -9588,14 +9680,14 @@ window.addEventListener('DOMContentLoaded', () => {
       loadSDK().then(()=>{ if(!registerProto()) return;
         const go=()=>{ if(!map.isStyleLoaded()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
         go();
-      }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} const cb=document.getElementById(id+'-cb'); if(cb) cb.checked=false; });
+      }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
     }
     window.toggleWeatherLayer=toggle;
     let fetched=false;
     /* Rebuild all active sources when the valid-time changes. */
     function applyTime(){ LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ removeLayer(cfg); if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); updateTimeLabel(); }
     function fmtVT(iso){ if(!iso) return ''; try{ let tz; if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; return new Date(iso.replace('Z','')+'Z').toLocaleString(jp()?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
-    function updateTimeLabel(){ const el=panel&&panel.querySelector('#ec-validtime'); if(el) el.textContent=(jp()?'有効時刻: ':'Valid: ')+(validTimes.length?fmtVT(validTimes[timeIdx]):(jp()?'最新':'latest')); const sl=panel&&panel.querySelector('#ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
+    function updateTimeLabel(){ const el=document.getElementById('ec-validtime'); if(el) el.textContent=(jp()?'ECMWF 有効時刻: ':'ECMWF valid: ')+(validTimes.length?fmtVT(validTimes[timeIdx]):(jp()?'最新':'latest')); const sl=document.getElementById('ec-time'); if(sl){ sl.max=Math.max(0,validTimes.length-1); sl.value=timeIdx; } }
     /* re-attach after a style swap */
     map.on('styledata',()=>{ if(LAYERS.some(l=>state[l.id].on)){ setTimeout(()=>{ if(!map.isStyleLoaded())return; LAYERS.forEach(cfg=>{ if(state[cfg.id].on){ if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[cfg.id].op); } } }); },80); } });
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ec-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
@@ -9616,14 +9708,34 @@ window.addEventListener('DOMContentLoaded', () => {
       else updateTimeLabel();
     }
     function open(){ refreshPanel(); }
-    /* Entry button injected into the Layers dropdown (no static-HTML edit needed). */
-    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||dd.querySelector('#ec-mount')) return;
-      const wrap=document.createElement('div'); wrap.id='ec-mount'; wrap.style.marginTop='6px';
-      wrap.innerHTML='<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-ecmwf" class="ai-test-btn" style="width:100%;">🌦 <span>'+(jp()?'ECMWF 気象（1時間毎）':'ECMWF weather (hourly)')+'</span></button>';
-      dd.appendChild(wrap); wrap.querySelector('#btn-ecmwf').onclick=open; }
-    mountButton(); setTimeout(mountButton,1500);
-    window.addEventListener('intmap-lang',()=>{ if(panel&&panel.style.display!=='none') refreshPanel(); });
-    return { open, toggle, _layers:LAYERS };
+    /* Per the user: ECMWF must be treated like every other layer — NOT a separate button/panel. So each
+       variable is injected as a normal lyr-row (checkbox + opacity) into the Layers dropdown, plus one
+       shared "valid time" row driving the hourly time slider. The taxonomy reorganiser then files these
+       rows into the Climate & weather / Oceans groups alongside the other weather layers. */
+    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=(jp()?l.label[1]:l.label[0]); }); const tl=document.querySelector('#lyrrow-ec-time .ec-time-cap'); if(tl) tl.textContent=(jp()?'ECMWF 時刻（1時間毎）':'ECMWF time (hourly)'); updateTimeLabel(); }
+    function mountRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('lyrrow-ec-temp')) return;
+      LAYERS.forEach(l=>{
+        const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;
+        w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-'+l.id+'"> <span class="ec-lbl">'+(jp()?l.label[1]:l.label[0])+'</span></label><input type="range" class="lyr-op ec-op" data-for="'+l.id+'" min="0" max="1" step="0.05" value="'+state[l.id].op+'">';
+        dd.appendChild(w);
+        const cb=w.querySelector('#dl-'+l.id), op=w.querySelector('.ec-op');
+        cb.addEventListener('change',()=>{ w.classList.toggle('on',cb.checked); toggle(l.id,cb.checked); });
+        op.addEventListener('input',()=>{ state[l.id].op=+op.value; const cfg=LAYERS.find(x=>x.id===l.id); if(cfg) setOp(cfg,+op.value); });
+      });
+      /* shared hourly valid-time slider */
+      const tw=document.createElement('div'); tw.className='lyr-row'; tw.id='lyrrow-ec-time'; tw.style.cssText='display:block;padding:2px 0 6px;';
+      tw.innerHTML='<div class="ec-time-cap" style="font-size:10.5px;color:var(--text-muted);margin:0 0 3px 2px;">'+(jp()?'ECMWF 時刻（1時間毎）':'ECMWF time (hourly)')+'</div>'
+        +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
+        +'<div id="ec-validtime" style="font-size:10.5px;color:var(--text-main);font-weight:600;margin-top:2px;text-align:center;">'+(jp()?'最新':'latest')+'</div>';
+      dd.appendChild(tw);
+      const ts=tw.querySelector('#ec-time'); ts.oninput=()=>{ timeIdx=+ts.value; updateTimeLabel(); clearTimeout(window._ecTimeT); window._ecTimeT=setTimeout(applyTime,250); };
+      if(!fetched) loadSDK().then(()=>{ registerProto(); return fetchMeta(); }).then(()=>{ fetched=true; updateTimeLabel(); }).catch(()=>{});
+      else updateTimeLabel();
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
+    }
+    mountRows(); setTimeout(mountRows,1500);
+    window.addEventListener('intmap-lang',()=>{ relabelRows(); if(panel&&panel.style.display!=='none') refreshPanel(); });
+    return { open, toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOp(c,op); }, _layers:LAYERS };
   })();
 
   /* ===== (#R12 / compare) Compare-mode window — a resizable / minimisable / draggable floating window
