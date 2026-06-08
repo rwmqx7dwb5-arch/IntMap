@@ -2467,8 +2467,14 @@ window.addEventListener('DOMContentLoaded', () => {
      points[] (POI markers). Every feature carries a human label drawn on the map. */
   const geoLayersDB={
     /* (#R10) Heartland & Rimland removed per request — classic Mackinder/Spykman theory layers dropped. */
+    /* (#R13) Sahel band redrawn DENSE + faithful (≤2° vertices following the real Sahara↔Sudanian
+       transition), NOT a smoothed curve — the user: "現実データに忠実に…直線的すぎる". Northern edge ≈ the
+       Sahara limit (bulges north over Niger/Chad), southern edge ≈ the Sudanian savanna boundary. */
     sahel:{ color:"#ffcc00", name:{en:"Sahel Risk Zone",jp:"サヘル危険地帯"}, areas:[
-      {label:"Sahel Risk Zone", ring:[[-17,16.6],[-12,16.9],[-6,17.0],[0,16.7],[7,16.2],[14,15.7],[21,15.3],[28,15.2],[34,15.5],[40,16.0],[43,16.4],[43,12.6],[40,12.2],[34,11.7],[28,11.3],[21,11.2],[14,11.6],[7,12.1],[0,12.6],[-6,13.0],[-12,13.2],[-17,13.4],[-17,16.6]]}
+      {label:"Sahel Risk Zone", ring:[
+        [-16.5,16.3],[-14.5,16.6],[-12.5,16.9],[-10.5,17.1],[-8.5,17.3],[-6.5,17.4],[-4.5,17.4],[-2.5,17.3],[-0.5,17.1],[1.5,16.9],[3.5,16.8],[5.5,16.8],[7.5,16.9],[9.5,17.0],[11.5,17.2],[13.5,17.5],[15.5,17.8],[17.5,18.0],[19.5,18.1],[21.5,18.0],[23.5,17.7],[25.5,17.2],[27.5,16.7],[29.5,16.3],[31.5,16.1],[33.5,16.1],[35.5,16.4],[37.5,16.8],[39.5,17.0],[41.5,16.9],[43.0,16.6],
+        [43.0,12.8],[41.0,12.9],[39.0,12.7],[37.0,12.3],[35.0,11.9],[33.0,11.6],[31.0,11.5],[29.0,11.7],[27.0,12.1],[25.0,12.5],[23.0,12.9],[21.0,13.1],[19.0,13.3],[17.0,13.5],[15.0,13.7],[13.0,13.8],[11.0,13.8],[9.0,13.7],[7.0,13.5],[5.0,13.4],[3.0,13.4],[1.0,13.5],[-1.0,13.7],[-3.0,13.9],[-5.0,14.1],[-7.0,14.4],[-9.0,14.7],[-11.0,15.1],[-13.0,15.5],[-15.0,15.9],[-16.5,16.1],[-16.5,16.3]
+      ]}
     ]},
     islandChain1:{ color:"#ff9500", name:{en:"1st Island Chain",jp:"第一列島線"}, lines:[
       /* Kuriles → Japan → Ryūkyū (Okinawa) → Taiwan → Philippines → Borneo. */
@@ -2497,8 +2503,8 @@ window.addEventListener('DOMContentLoaded', () => {
          point of mainland Eurasia) → Laptev Sea → Sannikov Strait (New Siberian Islands) → East
          Siberian Sea → Long Strait (south of Wrangel Island) → Chukchi Sea → Bering Strait (66°N,
          169°W). The second segment re-enters from −180 so the dateline crossing renders correctly. */
-      {label:"Northern Sea Route", path:[[33.1,69.0],[40,68.7],[44.5,68.5],[48,69.2],[54,70.0],[58.5,70.5],[63,71.6],[68,72.7],[74,73.2],[80,73.6],[87,75.0],[95,76.7],[101,77.4],[104.3,77.7],[110,76.6],[120,75.0],[129,74.1],[137,74.7],[140.5,74.9],[148,74.0],[157,72.7],[166,71.2],[173,70.4],[178.5,70.4],[180,69.6]]},
-      {path:[[-180,69.4],[-178,68.4],[-174,67.2],[-171,66.6],[-169,66.0]]}
+      {label:"Northern Sea Route", path:[[33.1,69.0],[36,68.9],[39,68.8],[42,68.6],[44.5,68.5],[46,68.8],[48,69.2],[51,69.6],[54,70.0],[56.5,70.3],[58.5,70.5],[60.5,71.0],[63,71.6],[65.5,72.2],[68,72.7],[71,73.0],[74,73.2],[77,73.4],[80,73.6],[83.5,74.3],[87,75.0],[91,75.9],[95,76.7],[98,77.1],[101,77.4],[104.3,77.7],[107,77.2],[110,76.6],[115,75.8],[120,75.0],[124.5,74.5],[129,74.1],[133,74.4],[137,74.7],[140.5,74.9],[144,74.5],[148,74.0],[152.5,73.4],[157,72.7],[161.5,72.0],[166,71.2],[169.5,70.8],[173,70.4],[176,70.4],[178.5,70.4],[180,69.6]]},
+      {path:[[-180,69.4],[-179,69.0],[-178,68.4],[-176,67.8],[-174,67.2],[-172.5,66.9],[-171,66.6],[-170,66.3],[-169,66.0]]}
     ], points:[
       {label:"Kara Gate", at:[58.5,70.5]},
       {label:"Vilkitsky Strait", at:[104.3,77.7]},
@@ -2524,8 +2530,8 @@ window.addEventListener('DOMContentLoaded', () => {
     /* NATO "Posture"/deployment layer removed per request (#14). NATO is now ONLY the members
        country-fill (data layer "nato") with accession-year + defence-spend (%GDP) on hover. */
     bri:{ color:"#e8590c", name:{en:"Belt & Road (BRI)",jp:"一帯一路"}, lines:[
-      {label:"BRI — Silk Road Economic Belt", path:[[108.9,34.3],[103.8,36.6],[94,40],[87.6,43.8],[76.9,43.2],[69.2,41.3],[58.4,37.6],[51.4,35.7],[44.4,38.1],[35,39.9],[29,41],[20.5,44.8],[16.4,48.2],[8.7,49.4],[4.5,51.9]]},
-      {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[108,13],[103.8,1.3],[95,6],[80,6.9],[66,12],[51,13],[43.2,11.6],[32.5,29.9],[18,35],[12.3,45.4]]}
+      {label:"BRI — Silk Road Economic Belt", path:[[108.9,34.3],[106.0,35.5],[103.8,36.6],[99.5,38.5],[94.0,40.0],[90.5,42.2],[87.6,43.8],[82.5,44.5],[80.2,44.2],[76.9,43.2],[73.0,42.3],[69.2,41.3],[64.0,40.0],[59.6,38.5],[58.4,37.6],[54.5,36.7],[51.4,35.7],[48.0,36.5],[44.4,38.1],[40.0,39.5],[35.0,39.9],[32.0,40.5],[29.0,41.0],[25.0,42.5],[20.5,44.8],[18.0,46.5],[16.4,48.2],[12.5,49.0],[8.7,49.4],[6.5,50.8],[4.5,51.9]]},
+      {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[111.0,18.0],[108.5,12.0],[106.0,7.0],[103.8,1.3],[98.0,4.0],[93.0,7.0],[88.0,7.0],[83.0,7.0],[80.0,6.9],[73.0,6.0],[66.0,10.0],[60.0,14.0],[51.0,13.0],[45.0,12.0],[43.2,11.6],[38.0,18.0],[35.0,24.0],[33.5,28.0],[32.5,29.9],[30.0,32.0],[26.0,34.0],[23.6,37.9],[18.5,40.5],[16.0,42.0],[13.5,44.5],[12.3,45.4]]}
     ]},
     /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
     /* (#R12) Pipelines redrawn as DENSE, route-faithful polylines from real corridor coordinates — NOT a
@@ -2677,9 +2683,13 @@ window.addEventListener('DOMContentLoaded', () => {
     countryDataPromise=(async()=>{
       try{
         let gj=null;
-        /* Higher-resolution borders (#38): 50 m so small countries aren't crushed; fall back to 110 m. */
+        /* (#R13) Highest-resolution Natural Earth borders (10 m) so the boundary lines are crisp and
+           track the real borders — the user reported the 50 m lines were too coarse and ran parallel-
+           offset from reality. 10 m gzips to ~4.7 MB and loads async (doesn't block the map), with a
+           graceful fall back to 50 m then 110 m if it can't be fetched. */
         const NE='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/';
-        try{ const r=await fetch(NE+'ne_50m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){}
+        try{ const r=await fetch(NE+'ne_10m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){}
+        if(!(gj&&gj.features)){ try{ const r=await fetch(NE+'ne_50m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){} }
         if(!(gj&&gj.features)){ try{ const r=await fetch(NE+'ne_110m_admin_0_countries.geojson'); if(r.ok) gj=await r.json(); }catch(e){} }
         if(gj&&gj.features){
           countryGeo=gj; window.countryGeo=countryGeo;   /* reused by the projection viewer (#16,#17) */
