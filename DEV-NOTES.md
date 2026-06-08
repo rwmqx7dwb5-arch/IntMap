@@ -613,3 +613,105 @@ globals/DOM/CSS + console-error checks; external endpoints curl-probed first). M
   mask grid + pathfinding.
 - **Pipeline geometry** to survey-grade real coordinates — needs an authoritative pipeline dataset.
 - Map-colour-occasionally-wrong + mobile sidebar-drag-centre smoothness — intermittent; still chasing repro.
+
+---
+
+## 14. Round 12 — cleared the whole deferred backlog + new engines (tags `#R12`)
+
+Re-attacked every item the user re-listed. All additive/in-place; MapLibre stays the engine. Verified in
+the headless preview with `preview_eval` (globals/DOM/CSS, console-error checks, and — crucially — the
+maritime A* and ECMWF/SDK pipelines were *run* off-screen since they're pure JS / network up to the WebGL
+boundary). The hidden preview still can't complete WebGL `map.load`, so the actual om-tile / second-map
+raster *rendering* is verified by wiring + data-probe, not a screenshot. External endpoints curl-probed first.
+
+### Fixes
+- **Line of Sight was firing ~4,200 Open-Meteo elevation requests at once** (`fetchElevDepth` per ray-step)
+  → rate-limited to nulls → flat terrain → no shadow → "doesn't work at all". Now a shared async sampler
+  (`warmDEMTiles` / `demSampleAll`, near `demElevAt`) warms the few terrarium tiles covering the disk and
+  samples them LOCALLY. The same sampler also fixes the **elevation profile** (#9): it was using Open-Meteo
+  (0 over water) so sub-sea was flat — now the terrarium DEM (which carries bathymetry) makes it dip below
+  sea level, with a blue water band drawn over the fill.
+- **Country isolation bleed (#10):** the `iso-mask` (world-minus-country fill) is added topmost once, but
+  layers toggled later — or re-added after a basemap swap when `beforeId='tool-poly'` is absent — landed
+  ABOVE it. Now `toTop()` re-asserts the mask to the very top on `idle` + `styledata` (guarded so it only
+  moves when not already last → no repaint loop).
+- **Mobile crosshair + measuring (#6, #4-mobile):** removed the stray ring on the crosshair; add-point /
+  readout now **unproject the geometric container centre** instead of `map.getCenter()` — the bottom-sheet
+  sets map *padding*, so `getCenter()` was the padded centre, offset from the crosshair (points landed
+  elsewhere). Mobile bottom-left readout now shows coords + elevation + active-layer value (updateCoord
+  early-returns on mobile, so it's computed inline).
+- **Screenshot (#7):** the leftover timebar shadow was the slider-**thumb** (`::-webkit-slider-thumb`,
+  which `.news-timeline *` doesn't match) + `text-shadow`. capture-mode now zeroes box-shadow/filter/
+  text-shadow incl. the thumb/sync-dot pseudo-elements.
+- **Read article (#8):** already opens the external browser (`.btn-read` → `window.open`); `openArticleInSidebar`
+  is dead code. Confirmed, no change.
+- **Map-colour-occasionally-wrong:** `applyTheme()` early-returned when the style wasn't loaded and nothing
+  re-ran it → the wrong base (black/white) sometimes stuck. Now it retries once on `idle`.
+- **Mobile sheet-drag re-centre smoothness:** `map.setPadding` reprojects the whole camera; doing it 60×/s
+  on a WebGL globe was the jank. `--sheet-cover` still tracks every frame (cheap), but setPadding is gated
+  to ≥5px movement / one call per rAF.
+
+### Köppen multi-period (#13)
+The three era GeoTIFFs (1901-1930 / 1931-1960 / 1961-1990) were reprojected (PIL, nearest-neighbour, crisp
+class boundaries) from equirectangular → **Web-Mercator 8192² PNGs** (`koppen_mercator_<era>.png`), same
+palette/coords as the present-day `koppen_mercator.png`, so cursor sampling + class highlighting just work.
+`setKoppenPeriod()` swaps `KURL`, resets the cached sampling canvas/code-index, re-loads, and re-emits.
+A **period pulldown** sits in the Köppen legend; **default stays 1991-2020**.
+
+### Wind legend + units (#19, #22)
+The floating top-centre valid-time pill (overlapped the search box) is gone — the valid time now lives in a
+proper draggable **`data-legend-wind`** (same format as every layer) with a speed colour ramp and a **unit
+pulldown (m/s · km/h · kn · mph)**. `window.fmtWindSpeed()` drives the cursor readout chip; the legend
+max-scale label converts with the unit; choice persists in localStorage.
+
+### Support button (#24)
+Renamed "Buy me a blueberry" → **Support** (EN) / サポート (JP), placed **between Login and Settings** in the
+header (in addition to the Settings-panel one), with the exact requested copy (EN + a JP translation).
+
+### Pipelines (#1-pipe)
+Removed the Catmull-Rom `smooth` flag (the user: "数学的処理ではない") and replaced every sparse chord with
+**dense, route-faithful real coordinates** (12–18 pts each) for all 16 trunk lines, drawn as-is.
+
+### Layer panel re-classification (#17)
+Re-organised the dynamic layers into a cleaner taxonomy: **Climate & weather · Terrain & elevation · Oceans
+& maritime · Hazards & night sky · Population & economy · Geopolitics & defence** (new i18n group keys).
+
+### NEW: maritime A* routing — `window.IntMapRoute` (#57 / routing engine)
+Land is rasterised ONCE from `countryGeo` into an equirectangular **1800×900 (0.2°) mask** (canvas fill +
+near-coast flagging). **A*** (binary-heap) runs on that grid; a **near-coast cost penalty (×1.6)** keeps
+routes off the 0 m coastline (the "国際法・航行上の常識" standoff) without blocking narrow straits. Real
+**chokepoints & canals are carved OPEN** (Gibraltar, Suez+Gulf of Suez, Panama, Bosphorus/Dardanelles,
+Danish straits, Kiel, Bab-el-Mandeb, Hormuz, Malacca, Korea/Tsugaru/La Pérouse/Messina/Cook) with
+**densified, overlapping carve disks** so enclosed seas connect through their real passages — otherwise
+22 km cells wall them off. The staircase path is **string-pulled** along clear-sea sightlines (faithful, not
+an invented curve), split at the antimeridian for `renderWorldCopies:false`. **No-go zones** (click to drop
+120 km circles) and a **pure-shortest-distance (great-circle)** mode. Entry: right-click → "Sea route from
+here" / "Set sea-route end here". Verified live: Singapore→Rotterdam ≈ **15,774 km** via Malacca/Bab-el-Mandeb/
+Suez/Gibraltar (real ≈15,300 km); North-Sea→Med detours around Iberia via Gibraltar; Panama crossing 458 km.
+**Canals are land in the base mask** (too thin) but carved open here, matching real shipping.
+
+### NEW: ECMWF weather suite — `window.IntMapWeatherEC` (#20, #21)
+Lazy-loads the **official Open-Meteo `@openmeteo/weather-map-layer` UMD SDK** (v0.0.19, unpkg) and registers
+its **`om://` MapLibre protocol**, which decodes the ECMWF-IFS `.om` tiles from
+`map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json?variable=…` and applies the SDK's Windy-style
+per-variable colour scales. 8 layers (temperature_2m, precipitation, wind_10m, cloud_cover,
+relative_humidity_2m, sea_level_pressure raster, **isobars** = vector contours, sea_surface_temperature),
+each inserted **between basemap and labels** (`beforeId`). A dedicated panel gives per-layer toggle + opacity,
+an **hourly time slider** off `valid_times`, and the displayed **valid time** (user TZ). Public API
+**`window.toggleWeatherLayer(id, visible)`**. Fully guarded (SDK/endpoint failure → toast, app unaffected).
+The existing animated GFS Wind layer is untouched and coexists. Verified: SDK loads, protocol registers,
+`valid_times` parsed and the nearest-to-now step auto-selected; only the WebGL om-raster itself is
+unverifiable headlessly.
+
+### NEW: Compare-mode window — `window.IntMapCompare` (#15)
+A **resizable / minimisable / draggable** floating window holding a **second MapLibre instance** with its own
+basemap (Map/Satellite), projection (Flat/Globe), and independent data layers (Köppen w/ the active period,
+ESA WorldCover) + an optional **"Sync view"** lock to the main camera. Mirrors the main map's view+layer
+controls minus the sidebar. (Full parity with every main-map *tool* isn't cloned — the app is single-`map`
+instance — but the comparison surface behaves like the main map.) Entry: Layers menu → "Open compare view".
+
+### Documented limitation
+- The ECMWF `.om` raster and the compare-window second-map raster can only be wiring/data-verified in the
+  headless preview (hidden ⇒ no rAF/WebGL completion) — visually confirm in a real browser.
+- Maritime routing through **sub-cell straits not in the carve list** (e.g. Bosphorus is carved; a random
+  20 km channel elsewhere may be closed) and **canals other than Suez/Panama/Kiel** aren't auto-traversed.
