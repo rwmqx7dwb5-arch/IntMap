@@ -9531,16 +9531,21 @@ window.addEventListener('DOMContentLoaded', () => {
     const jp=()=>currentLang==='jp';
     const BASE='https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json';
     const SDK_URL='https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js';
-    /* 8 layers per the brief. type:'raster' uses the SDK's built-in per-variable colour ramp;
-       'isobars' is a vector contour line layer off sea_level_pressure. */
+    /* Variable names + types validated LIVE against what ecmwf_ifs actually serves (probed the om://
+       protocol → real ImageBitmap tiles). type:'raster' uses the SDK's built-in per-variable colour ramp;
+       'isobars' = vector contour lines (source-layer 'contours'); 'arrows' = vector wind barbs
+       (variable wind_u_component_10m + &arrows=true, source-layer 'wind-arrows'). NOTE: ecmwf_ifs spatial
+       does NOT serve precipitation or relative_humidity_2m — precip is covered by the app's IMERG/radar
+       layers; humidity is shown here as dew point (the available moisture field). Wind also has a dedicated
+       animated GFS layer; this ECMWF arrows layer adds directional barbs. */
     const LAYERS=[
-      {id:'ec-temp',    variable:'temperature_2m',      type:'raster', op:0.72, label:['Temperature (2 m)','気温（2m）']},
-      {id:'ec-precip',  variable:'precipitation',       type:'raster', op:0.80, label:['Precipitation','降水量']},
-      {id:'ec-wind',    variable:'wind_10m',            type:'raster', op:0.72, label:['Wind speed (10 m)','風速（10m）']},
-      {id:'ec-cloud',   variable:'cloud_cover',         type:'raster', op:0.70, label:['Cloud cover','雲量']},
-      {id:'ec-humid',   variable:'relative_humidity_2m',type:'raster', op:0.65, label:['Relative humidity','相対湿度']},
-      {id:'ec-slp',     variable:'pressure_msl',         type:'raster', op:0.60, label:['Sea-level pressure','海面気圧']},
-      {id:'ec-isobars', variable:'pressure_msl',         type:'isobars',op:0.9,  label:['Isobars (pressure)','等圧線']},
+      {id:'ec-temp',    variable:'temperature_2m',          type:'raster', op:0.72, label:['Temperature (2 m)','気温（2m）']},
+      {id:'ec-wind',    variable:'wind_u_component_10m',     type:'arrows', op:0.85, label:['Wind (10 m arrows)','風（10m 矢羽根）']},
+      {id:'ec-cloud',   variable:'cloud_cover',             type:'raster', op:0.70, label:['Cloud cover','雲量']},
+      {id:'ec-dew',     variable:'dew_point_2m',            type:'raster', op:0.65, label:['Dew point / moisture (2 m)','露点・湿り（2m）']},
+      {id:'ec-slp',     variable:'pressure_msl',            type:'raster', op:0.60, label:['Sea-level pressure','海面気圧']},
+      {id:'ec-isobars', variable:'pressure_msl',            type:'isobars',op:0.9,  label:['Isobars (pressure)','等圧線']},
+      {id:'ec-cape',    variable:'cape',                    type:'raster', op:0.65, label:['CAPE (instability)','CAPE（不安定度）']},
       {id:'ec-sst',     variable:'sea_surface_temperature', type:'raster', op:0.72, label:['Ocean temperature','海水温']}
     ];
     let sdk=null, sdkLoading=null, protoReg=false, panel=null, validTimes=[], timeIdx=0, refTime='';
@@ -9555,7 +9560,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function registerProto(){ if(protoReg||!sdk||!sdk.omProtocol) return protoReg; try{ maplibregl.addProtocol('om', sdk.omProtocol); protoReg=true; }catch(_){ protoReg=true; /* already added */ } return protoReg; }
     function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
     function fetchMeta(){ return fetch(BASE).then(r=>r.json()).then(j=>{ validTimes=j.valid_times||[]; refTime=j.reference_time||''; if(!timeIdx&&validTimes.length){ /* default to the step nearest "now" */ const now=Date.now(); let bi=0,bd=Infinity; validTimes.forEach((t,i)=>{ const d=Math.abs(new Date(t.replace('Z','')+'Z')-now); if(d<bd){bd=d;bi=i;} }); timeIdx=bi; } }).catch(()=>{}); }
-    function omUrl(variable){ const t=validTimes[timeIdx]; return 'om://'+BASE+'?variable='+encodeURIComponent(variable)+(t?('&time='+encodeURIComponent(t)):''); }
+    function omUrl(variable,extra){ const t=validTimes[timeIdx]; return 'om://'+BASE+'?variable='+encodeURIComponent(variable)+(extra||'')+(t?('&time='+encodeURIComponent(t)):''); }
     function addLayer(cfg){
       const sid=cfg.id+'-src'; const before=firstSymbolId();
       try{
@@ -9563,6 +9568,10 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!map.getSource(sid)) map.addSource(sid,{type:'vector',url:omUrl(cfg.variable)});
           if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
           if(!map.getLayer(cfg.id+'-lbl')) map.addLayer({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':10},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+        } else if(cfg.type==='arrows'){
+          /* Wind directional barbs (vector 'wind-arrows' layer; needs &arrows=true). Colour darkens with speed. */
+          if(!map.getSource(sid)) map.addSource(sid,{type:'vector',url:omUrl(cfg.variable,'&arrows=true')});
+          if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
         } else {
           if(!map.getSource(sid)) map.addSource(sid,{type:'raster',url:omUrl(cfg.variable),maxzoom:12});
           if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'raster',source:sid,layout:{visibility:'none'},paint:{'raster-opacity':cfg.op,'raster-fade-duration':0}},before);
@@ -9572,7 +9581,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function removeLayer(cfg){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(map.getLayer(l)) map.removeLayer(l); }catch(_){} }); try{ if(map.getSource(cfg.id+'-src')) map.removeSource(cfg.id+'-src'); }catch(_){} }
     function setVis(cfg,on){ [cfg.id,cfg.id+'-lbl'].forEach(l=>{ try{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); }catch(_){} }); }
-    function setOp(cfg,op){ try{ if(cfg.type==='isobars'){ if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'line-opacity',op); } else if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'raster-opacity',op); }catch(_){} }
+    function setOp(cfg,op){ try{ if(cfg.type==='isobars'||cfg.type==='arrows'){ if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'line-opacity',op); } else if(map.getLayer(cfg.id)) map.setPaintProperty(cfg.id,'raster-opacity',op); }catch(_){} }
     /* Public toggle API (the brief asked for toggleWeatherLayer(layerId, visible)). */
     function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
       state[id].on=on;
