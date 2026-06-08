@@ -701,9 +701,13 @@ sea_surface_temperature) — variable names validated against the SDK's `variabl
 each inserted **between basemap and labels** (`beforeId`). A dedicated panel gives per-layer toggle + opacity,
 an **hourly time slider** off `valid_times`, and the displayed **valid time** (user TZ). Public API
 **`window.toggleWeatherLayer(id, visible)`**. Fully guarded (SDK/endpoint failure → toast, app unaffected).
-The existing animated GFS Wind layer is untouched and coexists. Verified: SDK loads, protocol registers,
-`valid_times` parsed and the nearest-to-now step auto-selected; only the WebGL om-raster itself is
-unverifiable headlessly.
+The existing animated GFS Wind layer is untouched and coexists. **Verified end-to-end at the data layer**:
+the SDK is `maplibre-gl ^5.20.1` (matches the app → `om://` protocol is v5-compatible); SDK loads, protocol
+registers, decode workers init, `valid_times` parse + nearest-to-now auto-selected. Calling `omProtocol`
+directly returned a valid TileJSON (`tiles` template `…?variable=temperature_2m/{z}/{x}/{y}`) and a real
+z2 tile decoded to a **512×512 ImageBitmap in ~86 ms**; `pressure_msl` metadata resolves too. The ONLY
+unverifiable-headlessly step is compositing that ImageBitmap onto the WebGL canvas (the hidden preview
+pauses rAF) — i.e. the data/decode pipeline is proven; visual confirmation just needs a visible browser.
 
 ### NEW: Compare-mode window — `window.IntMapCompare` (#15)
 A **resizable / minimisable / draggable** floating window holding a **second MapLibre instance** with its own
