@@ -695,7 +695,9 @@ Lazy-loads the **official Open-Meteo `@openmeteo/weather-map-layer` UMD SDK** (v
 its **`om://` MapLibre protocol**, which decodes the ECMWF-IFS `.om` tiles from
 `map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json?variable=…` and applies the SDK's Windy-style
 per-variable colour scales. 8 layers (temperature_2m, precipitation, wind_10m, cloud_cover,
-relative_humidity_2m, sea_level_pressure raster, **isobars** = vector contours, sea_surface_temperature),
+relative_humidity_2m, **pressure_msl** raster, **isobars** = vector contours off pressure_msl,
+sea_surface_temperature) — variable names validated against the SDK's `variableOptions` (the API uses
+`pressure_msl`, not `sea_level_pressure`),
 each inserted **between basemap and labels** (`beforeId`). A dedicated panel gives per-layer toggle + opacity,
 an **hourly time slider** off `valid_times`, and the displayed **valid time** (user TZ). Public API
 **`window.toggleWeatherLayer(id, visible)`**. Fully guarded (SDK/endpoint failure → toast, app unaffected).
