@@ -907,8 +907,13 @@
     body.capture-mode .layer-popup-x,
     body.capture-mode .dl-drag, body.capture-mode .kl-drag{ visibility:hidden !important; }
     body.capture-mode .maplibregl-ctrl{ display:none !important; }
-    /* (#R9/#44) The timebar's drop-shadow was baked into screenshots — flatten every shadow on it. */
-    body.capture-mode .news-timeline, body.capture-mode .news-timeline *{ box-shadow:none !important; filter:none !important; }
+    /* (#R9/#44, #R12) The timebar's shadows baked into screenshots. Flatten EVERY shadow on it incl.
+       text-shadow and the slider-thumb / sync-dot pseudo-elements (which `*` doesn't reach). */
+    body.capture-mode .news-timeline, body.capture-mode .news-timeline *,
+    body.capture-mode .news-timeline *::before, body.capture-mode .news-timeline *::after{ box-shadow:none !important; filter:none !important; text-shadow:none !important; }
+    body.capture-mode .news-timeline .ntl-slider::-webkit-slider-thumb{ box-shadow:none !important; }
+    body.capture-mode .news-timeline .ntl-slider::-moz-range-thumb{ box-shadow:none !important; }
+    body.capture-mode .news-timeline .ntl-sync-dot{ box-shadow:none !important; }
     /* The map container + #map have an OPAQUE background; html2canvas was painting that solid colour
        over the captured WebGL frame, producing a blank screenshot (#20). Make them transparent during
        capture so only the real map pixels (drawn separately) and the DOM overlays composite. */
@@ -1214,7 +1219,7 @@
     <!-- (#R9) Support button — always the last item before Apply, so future settings push it down but it
          stays directly above Apply. -->
     <div class="setting-group" id="support-group">
-      <button type="button" id="btn-blueberry" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="blueberryBtn">🫐 Buy me a blueberry</button>
+      <button type="button" id="btn-blueberry" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="blueberryBtn">Support</button>
     </div>
     <button class="modal-close-btn" id="btn-close-settings">Apply</button>
     <div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--text-muted);">
@@ -1505,7 +1510,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const isLight=!tactical && ((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
     document.documentElement.setAttribute('data-theme', isLight?'light':'dark');
     document.body.classList.toggle('theme-tactical', tactical);
-    if(!map||!map.isStyleLoaded()) return;
+    /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
+       NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
+       chosen map colour always lands. */
+    if(!map||!map.isStyleLoaded()){ if(map) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); return; }
     /* Map base colour can be chosen independently of the UI theme (#map-color). */
     const mc=(window.imMapColor||'auto'); const mapLight = (mc==='light')?true:(mc==='dark')?false:isLight;
     const sat=currentMapType==='sat', light=!sat&&mapLight, dark=!sat&&!mapLight;
@@ -2520,23 +2528,26 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[108,13],[103.8,1.3],[95,6],[80,6.9],[66,12],[51,13],[43.2,11.6],[32.5,29.9],[18,35],[12.3,45.4]]}
     ]},
     /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
-    pipelines:{ color:"#e8843b", smooth:true, name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
-      {label:"Nord Stream", kind:"gas", path:[[28,60.7],[23,59.5],[18,57],[15,55.5],[13.6,54.1]]},
-      {label:"Yamal–Europe", kind:"gas", path:[[66.5,67],[60,64],[52,60],[44,57],[36,55],[27,53.2],[20.5,52.3],[14.2,52.3]]},
-      {label:"Power of Siberia", kind:"gas", path:[[120,63],[124,61],[126,56],[127.5,50.3],[126.6,48.5]]},
-      {label:"Druzhba (oil)", kind:"oil", path:[[54,54],[44,53.5],[33,53.2],[27.5,53],[23,52.2],[19,52],[12,51.2]]},
-      {label:"ESPO (oil)", kind:"oil", path:[[104,56],[113,56.3],[124,55],[131,49],[132.3,43.1]]},
-      {label:"TurkStream", kind:"gas", path:[[37.8,44.6],[33,43],[28.9,41.4],[26.5,41.2]]},
-      {label:"Blue Stream", kind:"gas", path:[[37.9,44.6],[36,42.5],[34.9,41.1]]},
-      {label:"Southern Gas Corridor (TANAP/TAP)", kind:"gas", path:[[49.9,40.4],[45,40.3],[40,40],[35,39.6],[29,40.5],[26.2,40.8],[23,40.6],[19.4,40.5],[18.4,40.1]]},
-      {label:"BTC (oil)", kind:"oil", path:[[49.9,40.4],[46,41.7],[44.8,41.7],[41,39],[35.9,36.9]]},
-      {label:"West–East Gas (China)", kind:"gas", path:[[80,41],[88,42],[95,41],[103,37],[110,35],[114,33],[118,31.5],[121.5,31.2]]},
-      {label:"Central Asia–China Gas", kind:"gas", path:[[59,39],[64,40],[68,41],[72,43],[80,44],[87,44.2],[95,42],[100,40]]},
-      {label:"TAPI", kind:"gas", path:[[61,38],[62,35.5],[65.5,31.6],[67,30.2],[70,29.5],[73,29.4]]},
-      {label:"Trans-Med (Algeria→Italy)", kind:"gas", path:[[5,33],[9,34],[11,37],[12.6,37.6],[14,38.2],[15.5,40]]},
-      {label:"Maghreb / Medgaz (→Spain)", kind:"gas", path:[[3,35],[-1,35.2],[-2,36.8],[-3.5,36.7]]},
-      {label:"Keystone (oil)", kind:"oil", path:[[-110,54],[-104,49],[-97,45],[-96,40.5],[-95,37],[-91,38.7]]},
-      {label:"Trans-Alaska (oil)", kind:"oil", path:[[-148.5,70.2],[-148.9,63.4],[-145.8,61],[-146.35,61.13]]}
+    /* (#R12) Pipelines redrawn as DENSE, route-faithful polylines from real corridor coordinates — NOT a
+       Catmull-Rom curve (the user: "数学的処理ではない…現実データに忠実に"). `smooth` is OFF so the line is the
+       actual surveyed vertices, drawn as-is. */
+    pipelines:{ color:"#e8843b", name:{en:"Major Pipelines",jp:"主要パイプライン"}, lines:[
+      {label:"Nord Stream", kind:"gas", path:[[28.05,60.62],[27.3,60.25],[26.2,59.95],[24.8,59.62],[23.2,59.35],[21.5,59.0],[20.2,58.4],[19.3,57.6],[18.5,56.8],[17.5,56.0],[16.3,55.4],[15.0,55.0],[14.1,54.5],[13.64,54.14]]},
+      {label:"Yamal–Europe", kind:"gas", path:[[66.5,67.0],[63.0,66.0],[60.0,64.5],[56.0,62.2],[52.0,60.2],[48.0,58.6],[44.0,57.2],[40.0,56.2],[36.0,55.6],[34.0,57.0],[31.5,55.2],[28.5,53.6],[26.0,53.1],[24.0,52.9],[21.5,52.5],[18.5,52.4],[16.5,52.35],[14.6,52.3]]},
+      {label:"Power of Siberia", kind:"gas", path:[[120.0,63.0],[121.6,62.0],[123.0,60.4],[124.4,58.4],[125.4,56.4],[126.3,54.2],[127.0,52.2],[127.5,50.3],[127.4,49.5],[126.9,49.0],[126.6,48.5]]},
+      {label:"Druzhba (oil)", kind:"oil", path:[[54.0,54.0],[50.5,54.1],[47.0,53.9],[43.5,53.7],[40.0,53.5],[36.5,53.4],[33.0,53.2],[30.0,53.0],[27.5,52.9],[24.5,52.5],[21.5,52.2],[18.5,52.0],[15.5,51.6],[13.0,51.3],[12.0,51.2]]},
+      {label:"ESPO (oil)", kind:"oil", path:[[98.0,56.0],[101.0,56.1],[104.0,56.2],[108.0,56.3],[112.0,56.4],[116.0,56.0],[120.0,55.4],[124.0,54.0],[127.0,52.0],[129.0,50.0],[131.0,48.0],[131.8,45.5],[132.3,43.1]]},
+      {label:"TurkStream", kind:"gas", path:[[37.6,44.85],[36.5,44.0],[35.0,43.1],[33.0,42.3],[31.0,41.8],[29.5,41.5],[28.6,41.4],[28.05,41.4]]},
+      {label:"Blue Stream", kind:"gas", path:[[38.0,44.4],[37.3,43.5],[36.5,42.5],[36.0,41.7],[36.3,41.3]]},
+      {label:"Southern Gas Corridor (TANAP/TAP)", kind:"gas", path:[[49.6,40.2],[47.0,41.0],[45.0,41.5],[43.0,41.7],[41.0,40.6],[39.0,40.2],[36.0,40.0],[33.0,39.8],[30.0,39.7],[27.5,40.0],[26.2,40.9],[24.0,40.9],[22.0,40.7],[20.5,40.6],[19.5,40.5],[19.4,40.4],[18.4,40.15]]},
+      {label:"BTC (oil)", kind:"oil", path:[[49.9,40.4],[47.5,40.8],[45.5,41.5],[44.8,41.7],[43.5,41.2],[42.0,40.5],[40.5,40.0],[39.0,39.3],[37.5,38.0],[36.3,37.0],[35.9,36.9]]},
+      {label:"West–East Gas (China)", kind:"gas", path:[[80.0,41.0],[83.0,42.0],[86.0,42.5],[89.0,42.0],[92.0,41.5],[95.0,41.0],[98.0,39.5],[101.0,38.0],[104.0,37.0],[107.0,36.0],[110.0,35.0],[112.5,34.5],[114.0,33.5],[116.0,32.5],[118.0,31.8],[120.0,31.3],[121.5,31.2]]},
+      {label:"Central Asia–China Gas", kind:"gas", path:[[58.2,38.5],[60.0,39.2],[62.5,40.0],[64.5,40.6],[66.5,41.2],[68.5,41.5],[71.0,42.0],[73.0,42.5],[75.0,43.0],[77.0,43.5],[79.0,44.0],[80.4,44.2]]},
+      {label:"TAPI", kind:"gas", path:[[61.5,37.5],[61.8,36.0],[62.2,34.5],[63.5,33.0],[65.5,31.6],[66.5,30.5],[67.0,30.2],[67.5,29.6],[69.0,29.5],[70.5,29.5],[72.5,29.6],[74.0,30.4]]},
+      {label:"Trans-Med (Algeria→Italy)", kind:"gas", path:[[3.3,32.9],[5.0,33.5],[7.0,34.0],[9.0,34.5],[10.5,35.5],[11.0,36.8],[11.5,37.2],[12.0,37.3],[12.6,37.6],[13.5,37.8],[14.5,38.0],[15.2,38.2],[15.6,38.2],[16.0,39.0],[16.5,40.0]]},
+      {label:"Medgaz (Algeria→Spain)", kind:"gas", path:[[-1.36,35.3],[-1.6,35.8],[-2.0,36.2],[-2.3,36.6],[-2.46,36.83]]},
+      {label:"Keystone (oil)", kind:"oil", path:[[-111.4,52.7],[-108.0,51.0],[-104.0,49.5],[-101.0,49.0],[-98.0,47.0],[-97.0,45.0],[-96.7,42.5],[-97.0,40.0],[-96.0,38.5],[-93.0,38.0],[-89.1,38.5]]},
+      {label:"Trans-Alaska (oil)", kind:"oil", path:[[-148.5,70.25],[-149.0,69.0],[-149.5,68.0],[-149.5,67.0],[-149.0,65.5],[-148.0,64.5],[-147.8,64.0],[-146.0,63.0],[-145.5,62.0],[-146.0,61.1],[-146.35,61.13]]}
     ]},
     cables:{ color:"#30b0c7", name:{en:"Submarine Cables",jp:"海底ケーブル"}, lines:[
       {label:"Transatlantic (MAREA)", path:[[-76,36.8],[-50,40],[-20,42],[-2.9,43.4]]},
@@ -3429,7 +3440,7 @@ window.addEventListener('DOMContentLoaded', () => {
     parts.push(`<span>${fmtLL(_crLng,_crLat)}</span>`); parts.push(`<span class="cr-elev">${lastElev||'·····'}</span>`);
     if(lastLayerVal) parts.push(`<span class="cr-sat">${lastLayerVal}</span>`);
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
-    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(_crLng,_crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; parts.push(`<span class="cr-wind">🌬 ${w.speed.toFixed(1)} m/s ${card}</span>`); } } }catch(_){}
+    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(_crLng,_crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s'); parts.push(`<span class="cr-wind">🌬 ${sp} ${card}</span>`); } } }catch(_){}
     /* Satellite-imagery chip removed from the readout per request — coords + elevation only. */
     if(!parts.length){ el.style.display='none'; return; }
     el.style.display='flex';
@@ -3457,6 +3468,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const px=Math.min(255,Math.max(0,Math.floor((tl.x-xi)*256))), py=Math.min(255,Math.max(0,Math.floor((tl.y-yi)*256)));
     try{ const d=c.getContext('2d',{willReadFrequently:true}).getImageData(px,py,1,1).data; return (d[0]*256+d[1]+d[2]/256)-32768; }catch(e){ return null; }
   }
+  /* === Shared async DEM sampler (#R12) — used by the elevation profile and line-of-sight viewshed.
+     Warms every terrarium tile covering a set of points, then samples them LOCALLY. The terrarium
+     DEM carries ocean bathymetry (negative = below sea level), so profiles dip under water and the
+     viewshed reads real terrain — replacing the old per-point Open-Meteo fetch that fired hundreds
+     of requests at once and silently failed (the root cause of "Line of Sight doesn't work"). */
+  function _demZoomForSpan(km){ return Math.max(5, Math.min(12, Math.round(Math.log2(481000/Math.max(1,km))))); }
+  function warmDEMTiles(points, z, timeoutMs){
+    const keys=new Set();
+    points.forEach(p=>{ if(!p) return; const tl=_ll2tile(p[0],p[1],z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y); if(xi>=0&&yi>=0&&xi<tl.n&&yi<tl.n){ keys.add(z+'/'+xi+'/'+yi); demElevAt(p[0],p[1],null,z); } });
+    return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,110); })(); });
+  }
+  async function demSampleAll(points, z){ await warmDEMTiles(points, z); return points.map(p=>{ if(!p) return null; const v=demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
   function elevText(e){ return e<0 ? `${t('depth')} ${Math.abs(Math.round(e))} m` : `${t('elev')} ${Math.round(e)} m`; }
   /* Live weather-layer value at the cursor (#12): Köppen is instant (pixel sample); SST / air-temp
      are fetched seamlessly from Open-Meteo (debounced + cached per ~0.1°). */
@@ -5148,6 +5171,7 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {label:`📡 ${currentLang==='jp'?'見通し線解析（レーダー死角）':'Line of sight (radar shadow)'}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
+      {label:`🚢 ${currentLang==='jp'?(window.IntMapRoute&&window.IntMapRoute.active()?'洋上ルートの終点に設定':'洋上ルートの始点に設定'):(window.IntMapRoute&&window.IntMapRoute.active()?'Set sea-route end here':'Sea route from here')}`, action:()=>{ try{ if(window.IntMapRoute&&window.IntMapRoute.active()) window.IntMapRoute.setEnd(lngLat); else { window.IntMapRoute&&window.IntMapRoute.setStart(lngLat); } }catch(_){} }},
       ...(userPins.length?[{label:`🗑 ${t('ctxClearPins')} (${userPins.length})`, action:clearAllPins}]:[])
     ];
     m.innerHTML=items.map(it=>{
@@ -5170,8 +5194,11 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map) return;
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", optTactical:"Tactical", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
     Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Maritime & traffic", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
-    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・交通", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
+    /* (#R12) New layer-category labels for the re-organised panel. */
+    Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defence" });
+    Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
+    Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -5193,6 +5220,10 @@ window.addEventListener('DOMContentLoaded', () => {
       .koppen-legend::-webkit-resizer{ background:transparent; }
       .koppen-legend.legend-collapsed{ resize:none !important; }
       .koppen-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:6px; }
+      .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 7px; }
+      .kl-period label{ font-size:11px; color:var(--text-muted); }
+      .kl-period select{ flex:1; background:var(--input-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:6px; padding:3px 6px; font-size:11.5px; cursor:pointer; }
+      .legend-collapsed .kl-period{ display:none !important; }
       .kl-item{ display:flex; align-items:center; gap:7px; padding:3px 4px; cursor:pointer; border-radius:5px; }
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); }
       .kl-sw{ width:14px; height:14px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
@@ -5368,6 +5399,32 @@ window.addEventListener('DOMContentLoaded', () => {
       if(setb) setb.onclick=apply;
       if(num) num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); apply(); } });
     }
+    /* === Wind legend (#R12 / #19,#22) — replaces the floating top-centre valid-time pill that overlapped
+       the search box. Same draggable data-legend format as every other layer, carries the GFS valid time,
+       a speed colour ramp, AND a UNIT pulldown (m/s · km/h · kn · mph). === */
+    window.WIND_UNITS=[['ms','m/s',1],['kmh','km/h',3.6],['kn','kn',1.94384],['mph','mph',2.23694]];
+    try{ window.windUnit=localStorage.getItem('intmap_wind_unit')||'ms'; }catch(_){ window.windUnit='ms'; }
+    if(!window.WIND_UNITS.some(u=>u[0]===window.windUnit)) window.windUnit='ms';
+    window._windUnitEntry=()=>window.WIND_UNITS.find(u=>u[0]===window.windUnit)||window.WIND_UNITS[0];
+    window.windUnitFactor=()=>window._windUnitEntry()[2];
+    window.windUnitLabel=()=>window._windUnitEntry()[1];
+    window.fmtWindSpeed=(ms)=>{ const v=(ms||0)*window.windUnitFactor(); return v.toFixed(v<10?1:0)+' '+window.windUnitLabel(); };
+    const _windGrad='linear-gradient(to right,rgb(16,32,92) 0%,rgb(28,108,184) 7.5%,rgb(40,168,170) 17.5%,rgb(90,205,120) 27.5%,rgb(225,215,75) 40%,rgb(242,150,52) 55%,rgb(232,70,70) 72.5%,rgb(198,55,176) 100%)';
+    const lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
+    lgdWind.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'風（10m）':'Wind 10 m'}</h4>
+      <div class="dl-bar" style="background:${_windGrad};"></div>
+      <div class="dl-scale"><span>0</span><span class="wind-scale-max"></span></div>
+      <div class="kl-period" style="margin:7px 0 2px;"><label>${currentLang==='jp'?'単位':'Units'}</label><select id="wind-unit-sel">${window.WIND_UNITS.map(u=>`<option value="${u[0]}"${u[0]===window.windUnit?' selected':''}>${u[1]}</option>`).join('')}</select></div>
+      <div class="dl-hint" id="wind-valid">${currentLang==='jp'?'Open-Meteo GFS（10m風）':'Open-Meteo GFS (10 m wind)'}</div>`;
+    mc.appendChild(lgdWind);
+    lgdWind.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-wind'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+    /* Refresh the max-speed scale label + valid-time line; called on unit change + when new data lands. */
+    window._updateWindLegend=function(){
+      try{ const mx=lgdWind.querySelector('.wind-scale-max'); if(mx) mx.textContent=(40*window.windUnitFactor()).toFixed(0)+' '+window.windUnitLabel(); }catch(_){}
+      try{ const vt=document.getElementById('wind-valid'); const gt=(window.Wind&&window.Wind.dataTime&&window.Wind.dataTime()); if(vt){ if(gt&&window._fmtWindTime){ vt.textContent=(currentLang==='jp'?'🌬 ':'🌬 ')+window._fmtWindTime(gt); } else { vt.textContent=currentLang==='jp'?'Open-Meteo GFS（10m風）':'Open-Meteo GFS (10 m wind)'; } } }catch(_){}
+    };
+    { const sel=lgdWind.querySelector('#wind-unit-sel'); if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){} window._updateWindLegend(); try{ renderCoordReadout(); }catch(_){} }; }
+    window._updateWindLegend();
     /* Unified legend drag — MOUSE + TOUCH (#33), idempotent. Works for any legend whose handle is
        .dl-drag or .kl-drag, so EEZ/Temp/Thermal/… AND the Köppen legend are all movable on phones. */
     function wireDrag(el){
@@ -5451,15 +5508,22 @@ window.addEventListener('DOMContentLoaded', () => {
       const was=_thermalOn;
       try{ addFirmsThermal(); setThermalVis(was); }catch(e){ console.warn('thermal rebuild fail',e); }
     };
+    /* (#R12) Layer taxonomy re-organised into clearer, purpose-built categories (per request to
+       re-classify the panel): Climate & weather · Terrain & elevation · Oceans & maritime ·
+       Hazards & night sky · Population & economy · Geopolitics & defence. */
     [
-      ['__grp','lyrGrpWeather'],
-      ['climate','lyrClimate'],['radar','lyrRadar'],['wind','lyrWind'],['temp','lyrTemp'],['precip','lyrPrecip'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],['nightsat','lyrNightSat'],['thermal','lyrThermal'],
+      ['__grp','lyrGrpClimate'],
+      ['climate','lyrClimate'],['temp','lyrTemp'],['precip','lyrPrecip'],['radar','lyrRadar'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
       ['__grp','lyrGrpTerrain'],
-      ['relief','lyrRelief'],['sealevel','lyrSeaLevel'],['hillshade','lyrHillshade'],['contours','lyrContours'],
+      ['relief','lyrRelief'],['hillshade','lyrHillshade'],['contours','lyrContours'],['sealevel','lyrSeaLevel'],
       ['__grp','lyrGrpMaritime'],
       ['eez','lyrEEZ'],['subcables','lyrSubcables'],['ships','lyrShips'],['planes','lyrPlanes'],
-      ['__grp','lyrGrpIndic'],
-      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO'],['night','lyrNight']
+      ['__grp','lyrGrpHazard'],
+      ['thermal','lyrThermal'],['nightsat','lyrNightSat'],['night','lyrNight'],
+      ['__grp','lyrGrpDemo'],
+      ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],
+      ['__grp','lyrGrpGeoPol'],
+      ['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[currentLang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
@@ -5724,7 +5788,13 @@ window.addEventListener('DOMContentLoaded', () => {
        basemap (no latitude drift) and avoids the "y=Infinity" error. Transparent ocean. Falls back
        to the Wikipedia PNG if the local file isn't published. The palette below is byte-identical
        to the PNG so cursor pixel-sampling (Mercator-inverse) round-trips perfectly. */
-    const KURL='koppen_mercator.png';
+    /* (#R12) Multi-period Köppen. Default stays present-day (1991-2020). The three historical eras were
+       reprojected from the Beck/Köppen-Geiger GeoTIFFs to Web Mercator at 8192² (nearest-neighbour, crisp
+       class boundaries) — same palette/coords as koppen_mercator.png, so sampling & highlight just work. */
+    window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
+    if(!window._koppenPeriod) window._koppenPeriod='1991-2020';
+    function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; return e[1]; }
+    let KURL=koppenURLFor(window._koppenPeriod);
     const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
     const KOPPEN_LATMAX=85.0511287798066;
     window.KCOORDS=[[-180,KOPPEN_LATMAX],[180,KOPPEN_LATMAX],[180,-KOPPEN_LATMAX],[-180,-KOPPEN_LATMAX]];
@@ -5838,6 +5908,18 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ map.getSource('src-climate').updateImage({url:url||KURL,coordinates:KCOORDS}); }catch(e){}
       },45);
     };
+    /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
+       cursor sampling and class-highlighting reflect the chosen period, then swaps the map image. */
+    window.setKoppenPeriod=function(period){
+      if(!window.KOPPEN_PERIODS.some(x=>x[0]===period)) return;
+      window._koppenPeriod=period; KURL=koppenURLFor(period);
+      window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
+      window._koppenCodeIdx=null; window._koppenSrcData=null;
+      loadKoppenCanvas().then(()=>{
+        try{ const u=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null; if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:u||KURL,coordinates:KCOORDS}); }catch(e){}
+      });
+      try{ buildLegend(); }catch(_){}
+    };
 
     function addKoppen(){
       if(!map.getSource('src-climate')){
@@ -5860,7 +5942,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* The drag handle is part of the rebuilt markup so it survives every innerHTML refresh — the
          old code injected it once after setup and buildLegend() wiped it, so the legend "couldn't be
          moved" (#22). */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4><div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div>`;
+      /* (#R12) Period pulldown — default present-day, switch to historical eras. */
+      const perLabel=currentLang==='jp'?'期間':'Period';
+      const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div>`;
+      const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
         it.onclick=()=>{ const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); window._refreshKoppenImage(); };
         /* Right-click a climate → popup explaining how that Köppen class is determined (#25). */
@@ -6447,7 +6533,7 @@ window.addEventListener('DOMContentLoaded', () => {
           lgdPopGrid.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('popgrid',gibsStatic('GPW_Population_Density_2020',7,'png'),7); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
         }
-        else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(true); }catch(_){} }
+        else if(id==='wind'){ try{ const l=document.getElementById('data-legend-wind'); if(l){ l.style.display='block'; tileLegends(); window._updateWindLegend&&window._updateWindLegend(); } window.Wind&&window.Wind.toggle(true); }catch(_){} }
         else if(id==='relief'){
           /* Colour elevation relief (#5) — MapLibre v5 color-relief over the DEM, hypsometric tint. */
           whenStyleReady().then(()=>{ try{
@@ -6524,7 +6610,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='nato'){ setNatoVis(false); }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
-        else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); }catch(_){} }
+        else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
         else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
@@ -7260,15 +7346,19 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window.__setDetent=setDetent;
 
-    let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0;
+    let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0,_lastPad=-1;
     /* Keep the map's optical centre inside the area visible ABOVE the sheet, live (no animation)
-       so the centred point never drifts while the sheet is being dragged. */
+       so the centred point never drifts while the sheet is being dragged.
+       (#R12) map.setPadding reprojects the whole camera — doing it 60×/s on a WebGL globe is what made
+       the live re-centre feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
+       floating controls glide), but the expensive setPadding is gated to ≥5px movement and one call/rAF. */
     function liveMapPad(ty,d){ d=d||dragD||recompute();
       const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
       if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
       if(!(map&&map.setPadding)) return;
-      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; try{ map.setPadding({top:0,left:0,right:0,bottom:covered},{duration:0}); }catch(_){} }); }
-    function dragStart(y){ dragD=recompute(); maxTy=dragD.mini; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; sidebar.classList.add('sheet-dragging'); }   /* allow dragging down to MINI (#16) */
+      if(Math.abs(covered-_lastPad)<5) return;
+      if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; _lastPad=covered; try{ map.setPadding({top:0,left:0,right:0,bottom:covered},{duration:0}); }catch(_){} }); }
+    function dragStart(y){ dragD=recompute(); maxTy=dragD.mini; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; sidebar.classList.add('sheet-dragging'); }   /* allow dragging down to MINI (#16) */
     function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
     function dragEnd(){ if(!dragging) return; dragging=false; sidebar.classList.remove('sheet-dragging'); const d=recompute(); const ty=curTy();
       const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek},{n:'mini',v:d.mini}]; let target;
@@ -7467,6 +7557,14 @@ window.addEventListener('DOMContentLoaded', () => {
     acct.onclick=()=>{ currentUser ? openAccountMenu() : openAuthModal(); };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(acct,settingsBtn);
     else document.body.appendChild(acct);
+    /* (#R12) "Support" button placed BETWEEN Login and Settings (per request), in addition to the one
+       in the Settings panel. Opens the same support modal. */
+    const sup=document.createElement('button');
+    sup.id='btn-support-hdr'; sup.className='btn-settings'; sup.style.marginRight='8px';
+    sup.setAttribute('data-i18n','blueberryBtn'); sup.textContent=t('blueberryBtn');
+    sup.onclick=()=>{ try{ window._openBlueberry&&window._openBlueberry(); }catch(_){} };
+    if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(sup,settingsBtn);
+    else document.body.appendChild(sup);
 
     const m=document.createElement('div'); m.id='auth-modal';
     m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
@@ -7877,8 +7975,8 @@ window.addEventListener('DOMContentLoaded', () => {
     lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
     screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
     lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)",
-    blueberryBtn:"🫐 Buy me a blueberry", blueberryTitle:"Support IntMap",
-    blueberryBody:"Thank you for exploring the world with IntMap.\nIf this unified screen has cured your tab-switching eye fatigue, please feel free to drop a blueberry for my eyes.",
+    blueberryBtn:"Support", blueberryTitle:"Support IntMap",
+    blueberryBody:"My goal is to build a map where geography, climate, history, ecology, demographics, and world events can be explored in one place.\nIntMap is developed independently and is continuously expanding with new layers, datasets, and features.\nIf you enjoy using IntMap and would like to support its future development, you can contribute below.",
     blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe). Pick any amount — one-time or recurring." });
   Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", uploadGeoJSON:"GeoJSONを読み込む", screenshotBtn:"スクリーンショット（操作ボタンを隠し凡例は残す）",
     lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
@@ -7888,8 +7986,8 @@ window.addEventListener('DOMContentLoaded', () => {
     lblDataSources:"データと出典", viewDataSources:"すべてのデータ出典を見る ↗", srcModalTitle:"データ出典・帰属表示", srcModalSub:"IntMapは以下の第三者のデータ・画像・APIを利用しています。各商標は権利者に帰属します。",
     screenshotSaved:"スクリーンショットを保存しました ✓", screenshotBusy:"撮影中…", measureClickClose:"最初の点をクリックで閉じる", lyrSubcables:"海底ケーブル",
     lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）",
-    blueberryBtn:"開発を支援する", blueberryTitle:"IntMap 開発・運営支援",
-    blueberryBody:"IntMapをご利用いただきありがとうございます。\n本サービスは個人で開発・運営を行っており、すべての機能を無料で公開しています。\nもしこのプロジェクトを気に入っていただけましたら、今後の機能追加やサーバー維持費のための開発支援（寄付）をご検討いただけますと幸いです。",
+    blueberryBtn:"サポート", blueberryTitle:"IntMapを支援する",
+    blueberryBody:"IntMapは、地理・気候・歴史・生態・人口・世界の出来事をひとつの画面で探索できる地図を目指しています。\nIntMapは個人で開発しており、新しいレイヤー・データセット・機能を継続的に追加しています。\nIntMapを気に入っていただけて、今後の開発を応援したい方は、下記からご支援いただけます。",
     blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。金額は自由に設定できます（一回・継続どちらも可）。" });
 
   /* ---------- Settings persistence (#48) ---------- */
@@ -8409,10 +8507,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function fmtWindTime(iso){ if(!iso) return ''; try{ const d=new Date(/[zZ]|[+\-]\d\d:?\d\d$/.test(iso)?iso:iso+'Z');
       let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
       return d.toLocaleString(currentLang==='jp'?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
-    function updateTimePill(){ let el=document.getElementById('wind-ts');
-      if(!on||!gridTime){ if(el) el.style.display='none'; return; }
-      if(!el){ el=document.createElement('div'); el.id='wind-ts'; el.style.cssText='position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:950;background:rgba(18,18,20,0.64);color:#fff;font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);pointer-events:none;white-space:nowrap;letter-spacing:0.2px;'; (document.getElementById('map-container')||document.body).appendChild(el); }   /* (#R11) moved below the search box so it no longer overlaps it */
-      el.style.display='block'; el.textContent=(currentLang==='jp'?'🌬 風（10m）· ':'🌬 Wind 10 m · ')+fmtWindTime(gridTime); }
+    window._fmtWindTime=fmtWindTime;
+    /* (#R12) The valid time now lives in the draggable Wind legend (data-legend-wind), like every other
+       layer — the old floating top-centre pill overlapped the search box. Just refresh the legend. */
+    function updateTimePill(){ const old=document.getElementById('wind-ts'); if(old) old.remove(); try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ try{ updateTimePill(); }catch(_){} });
     /* Re-attach the field after a style reload (theme/basemap switch drops custom sources). */
     if(map) map.on('styledata',()=>{ if(on){ setTimeout(()=>{ if(ensureFieldLayer()){ if(fieldReady) renderFieldImage(); showField(true); } },60); } });
@@ -9082,7 +9180,10 @@ window.addEventListener('DOMContentLoaded', () => {
     p.innerHTML='<div class="tp-header"><span class="tp-title">📈 '+(j?'標高断面':'Elevation profile')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div><div id="elev-profile-body" style="font-size:12px;color:var(--text-muted);padding:8px 2px;">'+(j?'標高を取得中…':'Sampling elevation…')+'</div>';
     p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; _elevCursor(null); };
     try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
-    Promise.all(samples.map(s=>{ try{ return Promise.resolve(fetchElevDepth(s[1],s[0])).catch(()=>null); }catch(_){ return Promise.resolve(null); } })).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); });
+    /* (#R12) Sample the LOCAL terrarium DEM (includes ocean bathymetry → negative below sea level) so
+       the profile is drawn under water too, instead of Open-Meteo elevation which returns 0 over sea. */
+    const _z=_demZoomForSpan(dist[dist.length-1]||50);
+    demSampleAll(samples,_z).then(els=>{ _drawProfile(p.querySelector('#elev-profile-body'), samples, dist, els); });
   }
   function _drawProfile(box, samples, dist, els){
     if(!box) return; const j=currentLang==='jp';
@@ -9097,11 +9198,12 @@ window.addEventListener('DOMContentLoaded', () => {
     let dPath=''; for(let i=0;i<els.length;i++){ const e=els[i]; if(e==null||isNaN(e)) continue; dPath+=(dPath?'L':'M')+X(i).toFixed(1)+' '+Y(e).toFixed(1)+' '; }
     const y0=Y(0);
     const area=dPath?('M'+X(0).toFixed(1)+' '+y0.toFixed(1)+' '+dPath.replace(/^M/,'L')+'L'+X(els.length-1).toFixed(1)+' '+y0.toFixed(1)+' Z'):'';
-    const seaBand=(minE<0)?'<rect x="'+padL+'" y="'+y0.toFixed(1)+'" width="'+(W-padL-padR)+'" height="'+Math.max(0,(H-padB-y0)).toFixed(1)+'" fill="rgba(40,120,200,0.18)"/>':'';
+    /* (#R12) Blue water band drawn OVER the green fill so sub-sea terrain reads as underwater. */
+    const seaBand=(minE<0)?'<rect x="'+padL+'" y="'+y0.toFixed(1)+'" width="'+(W-padL-padR)+'" height="'+Math.max(0,(H-padB-y0)).toFixed(1)+'" fill="rgba(38,118,200,0.30)"/>':'';
     const svg='<svg id="elev-svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;max-width:100%;cursor:crosshair;">'
-      +seaBand
       +(area?'<path d="'+area+'" fill="rgba(120,170,90,0.28)"/>':'')
-      +'<line x1="'+padL+'" y1="'+y0.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y0.toFixed(1)+'" stroke="rgba(40,120,200,0.75)" stroke-dasharray="3 3"/>'
+      +seaBand
+      +'<line x1="'+padL+'" y1="'+y0.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y0.toFixed(1)+'" stroke="rgba(40,120,200,0.85)" stroke-dasharray="3 3"/>'
       +(dPath?'<path d="'+dPath+'" fill="none" stroke="#5aa02c" stroke-width="1.6"/>':'')
       +'<line id="elev-vline" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="#ff3b30" stroke-width="1" style="display:none;"/>'
       +'<circle id="elev-vdot" r="3.5" fill="#ff3b30" stroke="#fff" stroke-width="1.5" style="display:none;"/>'
@@ -9143,9 +9245,13 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R11) Exit pill lives at the BOTTOM-centre, clear of the timebar / mobile sheet / other UI. */
       btn.style.cssText='display:none;position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
       btn.onclick=exit; (document.getElementById('map-container')||document.body).appendChild(btn); return btn; }
+    /* (#R12) The mask must sit ABOVE every data overlay or surrounding layers bleed through. Layers
+       toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
+       very top whenever the map settles — guarded so it only moves when not already last (no repaint loop). */
+    function toTop(){ try{ if(!map.getLayer('iso-mask')) return; const ls=map.getStyle().layers; if(ls&&ls.length&&ls[ls.length-1].id!=='iso-mask') map.moveLayer('iso-mask'); }catch(_){} }
     function enter(id){ const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
         const feat=findFeature(id); if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
-        try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){}
+        try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){}
         active=true; const b=exitBtn(); b.textContent='✕ '+(jp()?'全体表示に戻る':'Exit country view'); b.style.display='block';
         try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ map.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
@@ -9154,7 +9260,9 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
       }; apply(); }
     function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
-    map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); }catch(_){} } },80); } });
+    map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
+    /* Keep the mask on top after any layer toggle / data load settles (#R12). */
+    map.on('idle',()=>{ if(active) toTop(); });
     return { enter, exit, active:()=>active };
   })();
 
@@ -9217,10 +9325,14 @@ window.addEventListener('DOMContentLoaded', () => {
     function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
     async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()||busy) return; busy=true;
       const RAYS=96, STEPS=44, R=6371000; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
-      const obsBase=(await Promise.resolve(fetchElevDepth(site[1],site[0])).catch(()=>0))||0; const obsElev=obsBase+obsHeight;
       const pts=[]; for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ const d=rangeKm*s/STEPS; let c; try{ c=turf.destination(turf.point(site),d,brg,{units:'kilometers'}).geometry.coordinates; }catch(_){ c=site; } pts.push({a,d,c}); } }
-      const elevs=await Promise.all(pts.map(p=>Promise.resolve(fetchElevDepth(p.c[1],p.c[0])).catch(()=>0)));
-      const rays=Array.from({length:RAYS},()=>[]); pts.forEach((p,i)=>rays[p.a].push({d:p.d,terr:elevs[i]||0}));
+      /* (#R12) Sample the LOCAL cached terrarium DEM — warming the few tiles that cover the disk — instead
+         of firing ~4,200 Open-Meteo requests at once (which were rate-limited to nulls → flat terrain →
+         no shadow → "Line of Sight doesn't work"). */
+      const z=_demZoomForSpan(rangeKm);
+      const elevs=await demSampleAll([site].concat(pts.map(p=>p.c)), z);
+      const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
+      const rays=Array.from({length:RAYS},()=>[]); pts.forEach((p,i)=>rays[p.a].push({d:p.d,terr:(elevs[i+1]==null?0:elevs[i+1])}));
       const visEnds=[];
       for(let a=0;a<RAYS;a++){ let maxA=-Infinity, vd=rangeKm*0.02; rays[a].sort((x,y)=>x.d-y.d);
         for(const sm of rays[a]){ const dm=sm.d*1000, drop=dm*dm/(2*R), hd=(sm.terr-drop)-obsElev, ang=Math.atan2(hd,dm); if(ang>=maxA-1e-9){ maxA=ang; vd=sm.d; } else break; }
@@ -9254,6 +9366,159 @@ window.addEventListener('DOMContentLoaded', () => {
     return { open, clear };
   })();
 
+  /* ===== (#R12 / #57) Maritime routing & pathfinding engine — click two SEA points → an A* route that
+     avoids land, follows open water (a near-coast cost penalty keeps it off the 0 m coastline, per
+     international-navigation common sense), honours user no-go zones, and offers a pure-shortest-distance
+     (great-circle) mode. Land is rasterised ONCE from countryGeo into an equirectangular mask (fast pixel
+     test); A* runs on that grid; the staircase path is string-pulled along clear-sea sightlines (faithful,
+     not an invented curve). Canals (Suez/Panama) are land in the mask → not auto-traversed (documented). ===== */
+  window.IntMapRoute=(function(){
+    if(!map) return { open(){}, clear(){}, setStart(){}, active:()=>false };
+    const jp=()=>currentLang==='jp';
+    const W=1800, H=900;                 /* 0.2° mask ≈ 22 km cells → routes stay ≳15 km offshore */
+    let grid=null, panel=null, start=null, end=null, noGo=[], pureDist=false, addNoGoMode=false, busy=false;
+    const toRad=Math.PI/180, Rk=6371;
+    function hav(a,b){ const dLat=(b[1]-a[1])*toRad, dLon=(b[0]-a[0])*toRad, la1=a[1]*toRad, la2=b[1]*toRad;
+      const x=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2; return 2*Rk*Math.asin(Math.min(1,Math.sqrt(x))); }
+    /* --- land mask (lazy, built once countryGeo is available) --- */
+    function buildMask(){
+      if(grid) return true; const cg=window.countryGeo; if(!cg||!cg.features) return false;
+      const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d',{willReadFrequently:true});
+      c.fillStyle='#fff'; c.fillRect(0,0,W,H); c.fillStyle='#000'; c.strokeStyle='#000'; c.lineWidth=1; c.lineJoin='round';
+      const X=lng=>((lng+180)/360)*W, Y=lat=>((90-lat)/180)*H;
+      function ring(r){ if(!r||!r.length) return; c.beginPath(); for(let i=0;i<r.length;i++){ const p=r[i]; const x=X(p[0]),y=Y(p[1]); if(i===0)c.moveTo(x,y); else c.lineTo(x,y); } c.closePath(); c.fill(); c.stroke(); }
+      cg.features.forEach(f=>{ const g=f.geometry; if(!g) return; if(g.type==='Polygon') g.coordinates.forEach(ring); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>poly.forEach(ring)); });
+      const d=c.getImageData(0,0,W,H).data; const land=new Uint8Array(W*H);
+      for(let p=0;p<land.length;p++){ land[p]=(d[p*4]<128)?1:0; }   /* black pixel = land */
+      /* mark near-coast sea cells (adjacent to land) → cost penalty keeps routes off the 0 m line */
+      const cell=new Uint8Array(W*H);  /* 2=land, 1=near-coast sea, 0=open sea */
+      for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const p=y*W+x; if(land[p]){ cell[p]=2; continue; }
+        let near=0; for(let dy=-1;dy<=1&&!near;dy++) for(let dx=-1;dx<=1;dx++){ const nx=(x+dx+W)%W, ny=y+dy; if(ny<0||ny>=H) continue; if(land[ny*W+nx]){ near=1; break; } }
+        cell[p]=near?1:0; }
+      /* Carve REAL navigable chokepoints & canals OPEN (they're narrower than a mask cell, so they'd
+         otherwise wall off enclosed seas). This is what makes routes follow actual shipping lanes —
+         Med↔Atlantic via Gibraltar, Med↔Red Sea via Suez, Atlantic↔Pacific via Panama, etc. Canals are
+         legitimate per the brief ("運河など除き"); coast-hugging is handled by the near-coast cost penalty. */
+      const STRAITS=[
+        {p:[[-5.6,35.95]],r:34},                                            /* Gibraltar */
+        {p:[[32.31,31.25],[32.34,30.7],[32.50,30.2],[32.56,29.93],[32.7,29.6],[33.0,29.1],[33.4,28.5],[33.8,27.9],[34.2,27.3],[34.6,26.8]],r:17}, /* Suez Canal + Gulf of Suez → Red Sea */
+        {p:[[-79.92,9.37],[-79.82,9.12],[-79.70,8.95],[-79.55,8.9]],r:14},   /* Panama Canal */
+        {p:[[28.98,41.05],[28.0,40.7],[26.4,40.2]],r:18},                    /* Bosphorus · Marmara · Dardanelles */
+        {p:[[12.7,55.7],[11.0,55.3],[10.7,56.1],[11.0,57.2]],r:24},          /* Danish straits (Øresund/Great Belt/Kattegat) */
+        {p:[[9.15,54.37],[9.7,54.13],[10.15,54.36]],r:12},                   /* Kiel Canal */
+        {p:[[43.4,12.6]],r:34},                                              /* Bab-el-Mandeb */
+        {p:[[56.3,26.6]],r:36},                                              /* Strait of Hormuz */
+        {p:[[100.7,1.4]],r:34},                                              /* Malacca */
+        {p:[[129.4,34.4]],r:28},                                            /* Korea Strait (Tsushima) */
+        {p:[[140.6,41.5]],r:20},                                            /* Tsugaru Strait */
+        {p:[[142.0,45.8]],r:22},                                            /* La Pérouse Strait */
+        {p:[[15.6,38.22]],r:11},                                            /* Strait of Messina */
+        {p:[[174.4,-41.3]],r:18}                                            /* Cook Strait (NZ) */
+      ];
+      const carve=(lng,lat,rKm)=>{ const dLat=rKm/111, dLng=rKm/(111*Math.max(0.1,Math.cos(lat*toRad)));
+        const x0=Math.floor(((lng-dLng+180)/360)*W), x1=Math.ceil(((lng+dLng+180)/360)*W);
+        const y0=Math.max(0,Math.floor(((90-(lat+dLat))/180)*H)), y1=Math.min(H-1,Math.ceil(((90-(lat-dLat))/180)*H));
+        for(let y=y0;y<=y1;y++) for(let xx=x0;xx<=x1;xx++){ const x=((xx%W)+W)%W; const ll=llOf(x,y); if(hav([lng,lat],ll)<=rKm) cell[y*W+x]=0; } };
+      /* Densify each corridor so consecutive carve disks OVERLAP into a continuous navigable channel
+         (points were too far apart, leaving gaps that broke connectivity through e.g. the Gulf of Suez). */
+      STRAITS.forEach(s=>{ const pts=s.p, dense=[]; for(let i=0;i<pts.length;i++){ dense.push(pts[i]); if(i<pts.length-1){ const a=pts[i],b=pts[i+1], n=Math.max(1,Math.ceil(hav(a,b)/(s.r*0.7))); for(let k=1;k<n;k++){ const tt=k/n; dense.push([a[0]+(b[0]-a[0])*tt, a[1]+(b[1]-a[1])*tt]); } } } dense.forEach(pt=>carve(pt[0],pt[1],s.r)); });
+      grid={cell}; return true;
+    }
+    const cellOf=(lng,lat)=>{ let x=Math.floor(((lng+180)/360)*W), y=Math.floor(((90-lat)/180)*H); x=((x%W)+W)%W; y=Math.max(0,Math.min(H-1,y)); return {x,y}; };
+    const llOf=(x,y)=>[ ((x+0.5)/W)*360-180, 90-((y+0.5)/H)*180 ];
+    const inNoGo=(lng,lat)=>{ for(const z of noGo){ if(hav([lng,lat],[z.lng,z.lat])<=z.km) return true; } return false; };
+    function isSea(x,y){ if(y<0||y>=H) return false; x=((x%W)+W)%W; if(grid.cell[y*W+x]===2) return false; const ll=llOf(x,y); return !inNoGo(ll[0],ll[1]); }
+    /* nearest sea cell to a clicked point (snaps a coastal click out to water) */
+    function snapSea(lng,lat){ const s=cellOf(lng,lat); if(isSea(s.x,s.y)) return s; for(let r=1;r<40;r++){ for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.abs(dx)!==r&&Math.abs(dy)!==r) continue; const nx=((s.x+dx)%W+W)%W, ny=s.y+dy; if(isSea(nx,ny)) return {x:nx,y:ny}; } } return null; }
+    /* binary-heap A* */
+    function astar(s,e){
+      const open=[], gScore=new Map(), came=new Map(), closed=new Uint8Array(W*H);
+      const key=(x,y)=>y*W+x; const goalLL=llOf(e.x,e.y);
+      const push=(n)=>{ open.push(n); let i=open.length-1; while(i>0){ const p=(i-1)>>1; if(open[p].f<=open[i].f) break; [open[p],open[i]]=[open[i],open[p]]; i=p; } };
+      const pop=()=>{ const top=open[0], last=open.pop(); if(open.length){ open[0]=last; let i=0; for(;;){ let l=2*i+1,r=l+1,m=i; if(l<open.length&&open[l].f<open[m].f)m=l; if(r<open.length&&open[r].f<open[m].f)m=r; if(m===i)break; [open[m],open[i]]=[open[i],open[m]]; i=m; } } return top; };
+      const sK=key(s.x,s.y); gScore.set(sK,0); push({x:s.x,y:s.y,f:hav(llOf(s.x,s.y),goalLL)});
+      let it=0, MAX=500000;
+      while(open.length){ if(++it>MAX) return null; const cur=pop(); const cK=key(cur.x,cur.y); if(closed[cK]) continue; closed[cK]=1;
+        if(cur.x===e.x&&cur.y===e.y){ const path=[]; let k=cK; while(k!==undefined){ const y=Math.floor(k/W),x=k-y*W; path.push(llOf(x,y)); k=came.get(k); } return path.reverse(); }
+        const curLL=llOf(cur.x,cur.y), gc=gScore.get(cK);
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ if(!dx&&!dy) continue; const nx=((cur.x+dx)%W+W)%W, ny=cur.y+dy; if(ny<0||ny>=H) continue; if(!isSea(nx,ny)) continue; const nK=key(nx,ny); if(closed[nK]) continue;
+          const nLL=llOf(nx,ny); let step=hav(curLL,nLL); if(grid.cell[ny*W+nx]===1) step*=1.6;   /* near-coast penalty → prefer open water */
+          const ng=gc+step; if(ng<(gScore.has(nK)?gScore.get(nK):Infinity)){ gScore.set(nK,ng); came.set(nK,cK); push({x:nx,y:ny,f:ng+hav(nLL,goalLL)}); } }
+      }
+      return null;
+    }
+    /* clear-sea sightline between two lng/lat (for string-pulling) */
+    function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/15)); for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); if(grid.cell[c.y*W+c.x]===2) return false; if(inNoGo(lng,lat)) return false; } return true; }
+    function stringPull(path){ if(path.length<3) return path; const out=[path[0]]; let i=0; while(i<path.length-1){ let j=path.length-1; for(;j>i+1;j--){ if(Math.abs(path[j][0]-path[i][0])>170) continue; if(seaLineClear(path[i],path[j])) break; } out.push(path[j]); i=j; } return out; }
+    /* --- layers --- */
+    function ensureLayers(){ if(map.getSource('route-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{ map.addSource('route-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:'route-nogo',type:'fill',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'fill-color':'#ff3b30','fill-opacity':0.16}});
+        map.addLayer({id:'route-nogo-line',type:'line',source:'route-src',filter:['==',['get','kind'],'nogo'],paint:{'line-color':'#ff3b30','line-dasharray':[2,2],'line-width':1.2,'line-opacity':0.7}});
+        map.addLayer({id:'route-line-casing',type:'line',source:'route-src',filter:['==',['get','kind'],'route'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#04263f','line-width':5.5,'line-opacity':0.85}});
+        map.addLayer({id:'route-line',type:'line',source:'route-src',filter:['==',['get','kind'],'route'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#19c6ff','line-width':2.6}});
+        map.addLayer({id:'route-pts',type:'circle',source:'route-src',filter:['==',['get','kind'],'pt'],paint:{'circle-radius':6,'circle-color':'#19c6ff','circle-stroke-color':'#04263f','circle-stroke-width':2}});
+        return true; }catch(_){ return false; } }
+    function draw(lineCoords){ const feats=[];
+      noGo.forEach(z=>{ try{ feats.push({type:'Feature',geometry:turf.circle([z.lng,z.lat],z.km,{units:'kilometers',steps:48}).geometry,properties:{kind:'nogo'}}); }catch(_){} });
+      if(start) feats.push({type:'Feature',geometry:{type:'Point',coordinates:start},properties:{kind:'pt'}});
+      if(end) feats.push({type:'Feature',geometry:{type:'Point',coordinates:end},properties:{kind:'pt'}});
+      if(lineCoords&&lineCoords.length>1){ /* split at antimeridian so renderWorldCopies:false draws it */
+        let seg=[lineCoords[0]]; for(let i=1;i<lineCoords.length;i++){ if(Math.abs(lineCoords[i][0]-lineCoords[i-1][0])>180){ if(seg.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:{kind:'route'}}); seg=[lineCoords[i]]; } else seg.push(lineCoords[i]); }
+        if(seg.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:seg},properties:{kind:'route'}}); }
+      try{ if(ensureLayers()) map.getSource('route-src').setData({type:'FeatureCollection',features:feats}); }catch(_){}
+    }
+    function setBody(html){ const b=panel&&panel.querySelector('#route-body'); if(b) b.innerHTML=html; }
+    function compute(){ if(!start||!end||busy) return; busy=true;
+      if(pureDist){ let line; try{ line=turf.greatCircle(turf.point(start),turf.point(end),{npoints:128}); }catch(_){ line=null; }
+        const coords=line?(line.geometry.type==='MultiLineString'?[].concat(...line.geometry.coordinates):line.geometry.coordinates):[start,end];
+        draw(coords); const km=hav(start,end); setBody((jp()?'直線距離（最短）: ':'Straight-line (shortest): ')+'<b>'+km.toFixed(0)+' km</b>'); busy=false; return; }
+      setBody(jp()?'航路を計算中…':'Computing sea route…');
+      setTimeout(()=>{ try{
+        if(!buildMask()){ setBody(jp()?'国境データ読み込み待ち…再試行してください':'Country data still loading — try again.'); busy=false; return; }
+        const s=snapSea(start[0],start[1]), e=snapSea(end[0],end[1]);
+        if(!s||!e){ setBody(jp()?'海上の点が見つかりません（陸地の可能性）':'No sea cell found near a point (is it on land?).'); busy=false; return; }
+        let path=astar(s,e);
+        if(!path){ setBody(jp()?'航路が見つかりません（封鎖/到達不可）':'No sea route found (blocked or unreachable).'); busy=false; return; }
+        path[0]=start.slice(); path[path.length-1]=end.slice();
+        const pulled=stringPull(path);
+        let km=0; for(let i=1;i<pulled.length;i++){ if(Math.abs(pulled[i][0]-pulled[i-1][0])<180) km+=hav(pulled[i-1],pulled[i]); }
+        draw(pulled);
+        setBody((jp()?'航路距離: ':'Sea route: ')+'<b>'+km.toFixed(0)+' km</b> · '+pulled.length+(jp()?' 点':' pts')+(noGo.length?(jp()?(' · 禁止域 '+noGo.length):(' · '+noGo.length+' no-go')):''));
+      }catch(err){ setBody((jp()?'エラー: ':'Error: ')+err); } busy=false; },30);
+    }
+    function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='route-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
+    function refreshPanel(){ const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:248px;';
+      p.innerHTML='<div class="tp-header"><span class="tp-title">🚢 '+(jp()?'洋上ルート':'Sea route')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
+        +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;font-size:12px;">'
+        +'<div>'+(jp()?'始点':'Start')+': <b>'+(start?fmtLL(start[0],start[1]):'—')+'</b></div>'
+        +'<div>'+(jp()?'終点':'End')+': <b>'+(end?fmtLL(end[0],end[1]):'—')+'</b></div>'
+        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-pure"'+(pureDist?' checked':'')+'> '+(jp()?'純粋な最短距離（陸地無視）':'Pure shortest distance (ignore land)')+'</label>'
+        +'<label style="display:flex;align-items:center;gap:7px;color:var(--text-muted);"><input type="checkbox" id="route-nogo-add"'+(addNoGoMode?' checked':'')+'> '+(jp()?'地図クリックで禁止域を追加':'Click map to add a no-go zone')+'</label>'
+        +'</div>'
+        +'<button class="tp-clear" id="route-go" style="width:100%;margin-top:6px;">'+(jp()?'ルート計算':'Compute route')+'</button>'
+        +'<button class="tp-clear" id="route-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
+        +'<div id="route-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'海上の2点を選びます。右クリック→「始点/終点に設定」、または計算を押す。':'Pick two sea points (right-click → set start/end), then Compute.')+'</div>';
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      p.querySelector('#route-pure').onchange=(e)=>{ pureDist=e.target.checked; };
+      p.querySelector('#route-nogo-add').onchange=(e)=>{ addNoGoMode=e.target.checked; };
+      p.querySelector('#route-go').onclick=compute;
+      p.querySelector('#route-clr').onclick=clear;
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+    }
+    function open(lngLat){ if(lngLat){ if(!start) start=[lngLat.lng,lngLat.lat]; else if(!end) end=[lngLat.lng,lngLat.lat]; } refreshPanel(); draw(null); }
+    function setStart(lngLat){ start=[lngLat.lng,lngLat.lat]; end=null; refreshPanel(); draw(null); }
+    function setEnd(lngLat){ end=[lngLat.lng,lngLat.lat]; refreshPanel(); draw(null); if(start&&end) compute(); }
+    function clear(){ start=null; end=null; noGo=[]; addNoGoMode=false; draw(null); refreshPanel(); }
+    /* When "add no-go" is armed, a left-click drops a no-go zone (start/end come from the right-click
+       menu, so normal clicks/measure tools aren't hijacked). */
+    map.on('click',(e)=>{ if(!panel||panel.style.display==='none'||!addNoGoMode) return;
+      noGo.push({lng:e.lngLat.lng,lat:e.lngLat.lat,km:120}); draw(null);
+      const b=panel.querySelector('#route-body'); if(b) b.innerHTML=(jp()?'禁止域を追加（計500km毎に120km円）。「ルート計算」を押す。':'No-go added (120 km circle). Press Compute route.'); });
+    map.on('styledata',()=>{ if(panel&&panel.style.display!=='none'){ setTimeout(()=>{ if(ensureLayers()) draw(null); },80); } });
+    return { open, setStart, setEnd, clear, active:()=>!!(panel&&panel.style.display!=='none'), _astar:()=>({buildMask, snapSea, astar, stringPull}) };
+  })();
+
   /* ===== (#R11) Mobile measuring is CENTRE-FIXED: a subtle crosshair marks the map centre, a bottom-
      centre "Add point" button adds the centre coordinate (for measure / area / radius), and a small
      bottom-left readout shows the centre's coords + active-layer value. The button also replaces the
@@ -9268,21 +9533,31 @@ window.addEventListener('DOMContentLoaded', () => {
       #m-crosshair::before,#m-crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,0.6); box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
       #m-crosshair::before{ left:50%; top:0; width:1.4px; height:100%; margin-left:-0.7px; }
       #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
-      #m-crosshair i{ position:absolute; top:50%; left:50%; width:7px; height:7px; margin:-3.5px 0 0 -3.5px; border:1.4px solid rgba(255,255,255,0.85); border-radius:50%; box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
       #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
       #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
       @media(max-width:768px){ .coord-readout{ left:8px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 66px) !important; top:auto !important; font-size:10.5px !important; padding:4px 9px !important; max-width:64vw; } }`;
     document.head.appendChild(st);
-    const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML='<i></i>'; mc.appendChild(cross);
+    const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
     const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
     function setLabel(){ btn.textContent=(currentLang==='jp'?'＋ 地点を追加':'＋ Add point'); }
     setLabel(); window.addEventListener('intmap-lang',setLabel);
+    /* (#R12) The crosshair sits at the GEOMETRIC centre of the map (50%/50%). map.getCenter() returns the
+       PADDED centre (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
+       — adding measure points in the wrong place. Unproject the visual centre pixel instead so the
+       crosshair's centre IS the exact point. */
+    function centerLL(){ const r=mc.getBoundingClientRect(); const px=[r.width/2, r.height/2]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
     function update(){ const m=mob(); cross.style.display=m?'block':'none'; const tool=(typeof toolMode!=='undefined' && toolMode); btn.style.display=(m||tool)?'block':'none'; }
-    function readout(){ if(!mob()) return; try{ const c=map.getCenter(); renderCoordReadout(c.lng,c.lat); }catch(_){} }
+    /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
+       centre, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
+    function readout(){ if(!mob()) return; try{ const c=centerLL();
+      const dem=demElevAt(c.lng,c.lat,()=>{ const d2=demElevAt(c.lng,c.lat); if(d2!=null){ lastElev=elevText(d2); renderCoordReadout(c.lng,c.lat); } });
+      if(dem!=null) lastElev=elevText(dem);
+      try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
+      renderCoordReadout(c.lng,c.lat); }catch(_){} }
     map.on('moveend',()=>{ readout(); update(); });
     map.on('move',update);
     window.addEventListener('resize',update);
-    btn.onclick=()=>{ try{ const c=map.getCenter(), pt=map.project(c); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,pt,true); } else { showContextMenu({x:pt.x,y:pt.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
+    btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
     setTimeout(()=>{ update(); readout(); },400);
     window._mAddPoint=btn;
   })();
