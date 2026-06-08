@@ -9761,7 +9761,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapCompare=(function(){
     if(!map || typeof maplibregl==='undefined') return { open(){}, close(){} };
     const jp=()=>currentLang==='jp';
-    let win=null, cmap=null, syncOn=true, minimized=false, built=false, ro=null, syncing=false;
+    let win=null, cmap=null, syncOn=true, minimized=false, built=false, ro=null, syncing=false, xray=false;
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
     function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); return p?p[1]:'koppen_mercator.png'; }catch(_){ return 'koppen_mercator.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
@@ -9775,7 +9775,12 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
       '#compare-map{position:absolute;inset:0;}'+
       '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:5;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
-      '.cmp-ctrls select,.cmp-ctrls label{font-size:10.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:3px 6px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}';
+      '.cmp-ctrls select,.cmp-ctrls label{font-size:10.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:3px 6px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
+      /* (#R13) X-ray mode: the compare window goes transparent so the MAIN map shows through at the same
+         location (like an X-ray) — only the compare window\'s own data layers paint on top. */
+      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.9),0 10px 32px rgba(0,0,0,0.35);}'+
+      '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
+      '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.55);}';
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
       return { version:8, glyphs:'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', sources:{
@@ -9793,7 +9798,7 @@ window.addEventListener('DOMContentLoaded', () => {
         {id:'cmp-lyr-koppen',type:'raster',source:'cmp-koppen',layout:{visibility:'none'},paint:{'raster-opacity':0.78}}
       ] }; }
     function setVis(id,on){ try{ if(cmap.getLayer(id)) cmap.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }
-    function setBase(kind){ setVis('cmp-base-carto',kind==='map'&&document.documentElement.getAttribute('data-theme')!=='dark'); setVis('cmp-base-dark',kind==='map'&&document.documentElement.getAttribute('data-theme')==='dark'); setVis('cmp-base-sat',kind==='sat'); }
+    function setBase(kind){ if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false); return; } setVis('cmp-base-carto',kind==='map'&&document.documentElement.getAttribute('data-theme')!=='dark'); setVis('cmp-base-dark',kind==='map'&&document.documentElement.getAttribute('data-theme')==='dark'); setVis('cmp-base-sat',kind==='sat'); }
     function syncFromMain(){ if(!syncOn||!cmap||syncing) return; syncing=true; try{ cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}); }catch(_){} syncing=false; }
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
@@ -9808,7 +9813,9 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-ctrls">'+
         '<label><input type="checkbox" id="cmp-koppen"> '+(jp()?'ケッペン':'Köppen')+'</label>'+
         '<label><input type="checkbox" id="cmp-worldcover"> '+(jp()?'土地被覆':'Land cover')+'</label>'+
+        '<label><input type="checkbox" id="cmp-eco"> '+(jp()?'生態地域':'Ecoregions')+'</label>'+
         '<label><input type="checkbox" id="cmp-sync" checked> '+(jp()?'視点同期':'Sync view')+'</label>'+
+        '<label title="'+(jp()?'透過してメイン地図を重ねる':'See the main map through')+'"><input type="checkbox" id="cmp-xray"> '+(jp()?'透過(X線)':'X-ray')+'</label>'+
         '</div></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false});
@@ -9821,7 +9828,16 @@ window.addEventListener('DOMContentLoaded', () => {
       /* layer toggles */
       win.querySelector('#cmp-koppen').onchange=(e)=>{ if(e.target.checked){ try{ cmap.getSource('cmp-koppen').updateImage({url:koppenUrl(),coordinates:KC}); }catch(_){} } setVis('cmp-lyr-koppen',e.target.checked); };
       win.querySelector('#cmp-worldcover').onchange=(e)=>setVis('cmp-lyr-worldcover',e.target.checked);
+      /* Ecoregions (lazy-added from the bundled GeoJSON so the 10 MB only loads if used) */
+      win.querySelector('#cmp-eco').onchange=(e)=>{ if(e.target.checked){ try{ if(!cmap.getSource('cmp-eco')){ cmap.addSource('cmp-eco',{type:'geojson',data:'data/ecoregions_2017.geojson'}); cmap.addLayer({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.addLayer({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } setVis('cmp-lyr-eco',true); setVis('cmp-lyr-eco-l',true); }catch(_){} } else { setVis('cmp-lyr-eco',false); setVis('cmp-lyr-eco-l',false); } };
       win.querySelector('#cmp-sync').onchange=(e)=>{ syncOn=e.target.checked; if(syncOn) syncFromMain(); };
+      /* X-ray: hide the compare basemap + go transparent so the MAIN map (with all its own layers) shows
+         through at the same location; force sync so it really is the same place. */
+      win.querySelector('#cmp-xray').onchange=(e)=>{ xray=e.target.checked; win.classList.toggle('cmp-xray',xray);
+        if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false);
+          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; syncFromMain(); }
+        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); }
+        try{ cmap.resize(); }catch(_){} };
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
       win.querySelector('#cmp-close').onclick=close;
