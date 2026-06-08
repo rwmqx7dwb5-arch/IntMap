@@ -3211,6 +3211,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ['measure','radius'].forEach(m=>{ const b=document.getElementById('btn-tool-'+m); if(b) b.classList.toggle('tool-on', toolMode===m); });
     const trig=document.getElementById('btn-measure-menu');
     if(trig) trig.classList.toggle('tool-on', toolMode==='measure'||toolMode==='area'||!!(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()));
+    try{ window._mAddPointUpdate&&window._mAddPointUpdate(); }catch(_){}   /* show/hide the mobile "+Add point" button with the tool state (#R13) */
   }
   window._syncToolBtns=_syncToolBtns;
   function exitTool(){
@@ -3602,7 +3603,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
         const rect=canvas.getBoundingClientRect();
         startPt={x:tx-rect.left,y:ty-rect.top}; fired=false;
-        /* (#R11) Long-press context menu disabled on mobile — the centre "Add point" button replaces it. */
+        /* (#R13) Long-press → context menu re-enabled. The centre "Add point" button now only appears
+           while a measurement tool is active (per the user), so long-press is again the way to reach the
+           right-click menu on touch when idle. Suppressed while a tool is active (the button handles that). */
+        if(typeof toolMode!=='undefined' && toolMode) return;
+        pressTimer=setTimeout(()=>{ fired=true; try{ const ll=map.unproject([startPt.x,startPt.y]); showContextMenu({x:startPt.x,y:startPt.y}, ll); }catch(_){} }, 550);
       },{passive:true});
       const cancel=(e)=>{
         if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
@@ -7414,8 +7419,10 @@ window.addEventListener('DOMContentLoaded', () => {
       sidebar.style.setProperty('--sheet-ty',ty+'px');
       if(!animate){ void sidebar.offsetHeight; sidebar.classList.remove('sheet-dragging'); }
       document.body.classList.toggle('sheet-full', name==='full');
-      /* keep the map's optical centre inside the area visible ABOVE the sheet */
-      const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
+      /* keep the map's optical centre inside the area visible ABOVE the sheet — but ONLY on mobile.
+         (#R13) On desktop there is no bottom sheet; if this ever runs there it must not pad the bottom,
+         which was dropping the map's optical centre toward the bottom of the screen. */
+      const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
       /* --sheet-cover tracks how much the sheet currently covers, so floating controls (timebar,
          Summarize, legends) sit just above the sheet's CURRENT top — not the fixed peek line — and
          therefore stay visible at every detent (#32). */
@@ -7431,7 +7438,7 @@ window.addEventListener('DOMContentLoaded', () => {
        the live re-centre feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
        floating controls glide), but the expensive setPadding is gated to ≥5px movement and one call/rAF. */
     function liveMapPad(ty,d){ d=d||dragD||recompute();
-      const covered=Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82));
+      const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
       if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
       if(!(map&&map.setPadding)) return;
       if(Math.abs(covered-_lastPad)<5) return;
@@ -9890,7 +9897,10 @@ window.addEventListener('DOMContentLoaded', () => {
        — adding measure points in the wrong place. Unproject the visual centre pixel instead so the
        crosshair's centre IS the exact point. */
     function centerLL(){ const r=mc.getBoundingClientRect(); const px=[r.width/2, r.height/2]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
-    function update(){ const m=mob(); cross.style.display=m?'block':'none'; const tool=(typeof toolMode!=='undefined' && toolMode); btn.style.display=(m||tool)?'block':'none'; }
+    /* (#R13) The +Add point button (and the centre crosshair) now appear ONLY while a measurement tool
+       is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
+       drives the context menu instead. */
+    function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=(m&&tool)?'block':'none'; btn.style.display=tool?'block':'none'; }
     /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
        centre, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
     function readout(){ if(!mob()) return; try{ const c=centerLL();
@@ -9903,7 +9913,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize',update);
     btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
     setTimeout(()=>{ update(); readout(); },400);
-    window._mAddPoint=btn;
+    window._mAddPoint=btn; window._mAddPointUpdate=update;
   })();
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
@@ -10043,6 +10053,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const jp=()=>currentLang==='jp';
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     /* (#R11) Runway lengths / distances respect the measurement-units setting (metric / imperial / both). */
+    const isImp=()=>((typeof unitMode!=='undefined')?unitMode:'both')==='imperial';
     const lenFmt=m=>{ const ft=Math.round(m*3.28084); const um=(typeof unitMode!=='undefined')?unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(Math.round(m).toLocaleString()+' m'):(Math.round(m).toLocaleString()+' m / '+ft.toLocaleString()+' ft'); };
     const distFmtKm=km=>{ const mi=km*0.621371; const um=(typeof unitMode!=='undefined')?unitMode:'both'; return um==='imperial'?(mi.toFixed(0)+' mi'):um==='metric'?(km.toFixed(0)+' km'):(km.toFixed(0)+' km'); };
     function hav(lo1,la1,lo2,la2){ const d1=(la2-la1)*R,d2=(lo2-lo1)*R,a=Math.sin(d1/2)**2+Math.cos(la1*R)*Math.cos(la2*R)*Math.sin(d2/2)**2; return 6371*2*Math.asin(Math.min(1,Math.sqrt(a))); }
@@ -10097,7 +10108,8 @@ window.addEventListener('DOMContentLoaded', () => {
       map.on('mouseenter',LYR,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',LYR,()=>{ map.getCanvas().style.cursor=''; });
     }catch(_){} }
     function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} }
-    function run(){ const p=panel; const radiusKm=+p.querySelector('#rwy-radius').value||300, use=p.querySelector('#rwy-use').value, minLenM=+p.querySelector('#rwy-len').value||0, mode=p.querySelector('#rwy-mode').value;
+    function run(){ const p=panel; const rIn=+p.querySelector('#rwy-radius').value||(isImp()?186:300), lIn=+p.querySelector('#rwy-len').value||0, use=p.querySelector('#rwy-use').value, mode=p.querySelector('#rwy-mode').value;
+      const radiusKm=isImp()?rIn*1.60934:rIn, minLenM=isImp()?lIn*0.3048:lIn;
       const list=p.querySelector('#rwy-list'); list.innerHTML=jp()?'読み込み中…':'Loading…';
       load().then(d=>{ if(!d){ list.innerHTML=jp()?'データを取得できませんでした':'Could not load data'; return; }
         const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
@@ -10111,8 +10123,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
       p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(jp()?'滑走路検索':'Runway search')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
         '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'半径 (km)':'Radius (km)')+' <input id="rwy-radius" type="number" value="300" min="1" style="width:74px;"></label>'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'最小滑走路長 (m)':'Min length (m)')+' <input id="rwy-len" type="number" value="2000" min="0" step="100" style="width:74px;"></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(isImp()?(jp()?'半径 (mi)':'Radius (mi)'):(jp()?'半径 (km)':'Radius (km)'))+' <input id="rwy-radius" type="number" value="'+(isImp()?186:300)+'" min="1" style="width:74px;"></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(isImp()?(jp()?'最小滑走路長 (ft)':'Min length (ft)'):(jp()?'最小滑走路長 (m)':'Min length (m)'))+' <input id="rwy-len" type="number" value="'+(isImp()?6500:2000)+'" min="0" step="'+(isImp()?500:100)+'" style="width:74px;"></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'種別':'Use')+' <select id="rwy-use"><option value="all">'+(jp()?'すべて':'All')+'</option><option value="mil">'+(jp()?'軍用':'Military')+'</option><option value="civ">'+(jp()?'民間':'Civil')+'</option></select></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'表示':'View')+' <select id="rwy-mode"><option value="airport">'+(jp()?'空港単位':'By airport')+'</option><option value="runway">'+(jp()?'滑走路単位':'By runway')+'</option></select></label>'+
         '</div>'+
