@@ -718,6 +718,7 @@
       #mo-mount-layers .layer-dropdown > .premium-divider,
       #mo-mount-layers .layer-dropdown > .layer-fav-section,
       #mo-mount-layers .layer-dropdown > #layer-tools,
+      #mo-mount-layers .layer-dropdown > #layer-active-section,
       #mo-mount-layers .layer-dropdown > .lyr-row{ grid-column:1 / -1; }
       /* Tools section: stack its header + buttons full-width on mobile (was squished into one grid cell) */
       #mo-mount-layers .layer-dropdown > #layer-tools{ display:block; }
@@ -979,6 +980,14 @@
     .lyr-star:hover{ color:#ffcc00; background:var(--input-bg); }
     .lyr-star.on{ color:#ffcc00; }
     .layer-option{ position:relative; }
+
+    /* --- Currently-active layers list, pinned below the favourites + top toggles (#R14 / #17) --- */
+    #layer-active-section{ margin:2px 0 4px; }
+    .active-lyr-chips{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 2px 2px; }
+    .active-lyr-chip{ display:inline-flex; align-items:center; gap:5px; background:var(--primary-color); border:1px solid var(--primary-color); color:#fff; font-size:11px; font-weight:600; padding:4px 5px 4px 10px; border-radius:999px; white-space:nowrap; max-width:100%; }
+    .active-lyr-chip .alc-name{ cursor:pointer; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+    .active-lyr-chip .alc-x{ background:rgba(255,255,255,0.22); border:none; color:#fff; font-size:10px; line-height:1; width:16px; height:16px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; }
+    .active-lyr-chip .alc-x:hover{ background:rgba(255,255,255,0.4); }
 
     /* --- Opacity moved into the legend / layer-control popup (#17) --- */
     .dl-op-row{ display:flex; align-items:center; gap:8px; margin:8px 0 2px; font-size:10.5px; color:var(--text-muted); }
@@ -2716,7 +2725,16 @@ window.addEventListener('DOMContentLoaded', () => {
   const HDI={NOR:.966,CHE:.967,ISL:.959,HKG:.956,DNK:.952,SWE:.952,DEU:.950,IRL:.950,SGP:.949,AUS:.946,NLD:.946,BEL:.942,FIN:.942,LIE:.942,GBR:.940,NZL:.939,ARE:.937,CAN:.935,KOR:.929,TWN:.926,LUX:.927,USA:.927,AUT:.926,SVN:.926,JPN:.920,MLT:.915,ISR:.915,ESP:.911,FRA:.910,CYP:.907,ITA:.906,EST:.899,CZE:.895,GRC:.893,BHR:.888,AND:.884,POL:.881,LVA:.879,LTU:.879,HRV:.878,QAT:.875,SAU:.875,PRT:.874,SVK:.855,CHL:.860,TUR:.855,HUN:.851,ARG:.849,KWT:.847,MNE:.844,KNA:.838,URY:.830,ATG:.826,PAN:.820,ROU:.827,RUS:.821,OMN:.819,GEO:.814,TTO:.814,KAZ:.811,BHS:.812,BRB:.809,MYS:.807,CRI:.806,SRB:.805,THA:.803,MUS:.802,SYC:.802,BLR:.801,GRD:.793,ALB:.789,CHN:.788,ARM:.786,MEX:.781,MDA:.763,IRN:.780,LKA:.780,BIH:.779,DOM:.766,MKD:.765,ECU:.765,CUB:.764,MDV:.762,PER:.762,AZE:.760,BRA:.760,COL:.758,VCT:.751,LBY:.746,TKM:.744,GUY:.742,MNG:.741,DMA:.740,JOR:.736,UKR:.734,TUN:.732,SUR:.730,PRY:.731,FJI:.729,EGY:.728,UZB:.727,VNM:.726,LCA:.725,LBN:.723,ZAF:.717,PSE:.716,IDN:.713,PHL:.710,BWA:.708,JAM:.706,KGZ:.701,BLZ:.700,VEN:.699,BOL:.698,MAR:.698,GAB:.693,BTN:.681,TJK:.679,SLV:.674,IRQ:.673,BGD:.670,NIC:.669,IND:.644,GTM:.629,KIR:.628,HND:.624,LAO:.620,NAM:.610,SWZ:.610,MMR:.608,GHA:.602,KEN:.601,NPL:.601,KHM:.600,COG:.593,AGO:.591,CMR:.587,ZMB:.569,PNG:.568,COM:.558,SYR:.557,HTI:.552,ZWE:.550,UGA:.550,RWA:.548,NGA:.548,TGO:.547,MRT:.540,PAK:.540,CIV:.534,TZA:.532,LSO:.521,SEN:.517,SDN:.516,DJI:.515,MWI:.508,BEN:.504,GMB:.500,ERI:.493,ETH:.492,LBR:.487,GNB:.483,COD:.481,SLE:.477,GIN:.471,AFG:.462,MOZ:.461,GNQ:.650,BFA:.438,MLI:.428,YEM:.424,BDI:.420,NER:.394,TCD:.394,CAF:.387,SSD:.381,SOM:.380};
   /* EIU Democracy Index 2023 — broad coverage (the EIU rates 167 states; the rest fall back to grey). */
   const DEM={NOR:9.81,NZL:9.61,ISL:9.45,SWE:9.39,FIN:9.30,DNK:9.28,IRL:9.19,CHE:9.14,NLD:9.00,TWN:8.92,LUX:8.81,DEU:8.80,CAN:8.69,AUS:8.66,URY:8.66,JPN:8.40,CRI:8.29,GBR:8.28,AUT:8.28,CHL:8.22,MUS:8.14,KOR:8.09,FRA:8.07,ESP:8.07,EST:8.06,CZE:7.97,PRT:7.95,USA:7.85,ISR:7.80,BWA:7.73,ITA:7.69,CPV:7.65,BEL:7.64,MLT:7.57,GRC:7.50,SVN:7.46,LVA:7.38,LTU:7.31,MYS:7.30,POL:7.18,IND:7.18,TTO:7.16,JAM:7.13,PAN:7.10,SVK:7.07,ZAF:7.05,BRA:6.68,DOM:6.62,ARG:6.62,COL:6.55,IDN:6.53,NAM:6.52,MNG:6.50,HRV:6.50,HUN:6.50,ROU:6.48,BGR:6.45,ALB:6.41,PHL:6.36,THA:6.35,SRB:6.33,PRY:6.22,SGP:6.18,LKA:6.17,ECU:6.13,MKD:6.13,LSO:6.11,MDA:6.09,SUR:6.06,MNE:6.02,PER:5.99,PNG:5.97,SEN:5.96,MWI:5.91,BGD:5.87,ZMB:5.80,BTN:5.54,TUN:5.51,ARM:5.42,LBR:5.43,FJI:5.40,HKG:5.28,GEO:5.20,TZA:5.10,MDG:5.10,UKR:5.06,KEN:5.05,MAR:5.04,BIH:5.00,SLV:4.97,HND:4.83,BOL:4.65,GTM:4.62,UGA:4.49,TUR:4.33,NGA:4.23,CIV:4.22,BEN:4.20,NPL:4.07,AGO:3.96,MRT:3.92,PSE:3.86,KWT:3.83,DZA:3.66,QAT:3.65,KGZ:3.62,LBN:3.56,MOZ:3.51,IRQ:3.51,PAK:3.25,MLI:3.23,JOR:3.17,OMN:3.12,RWA:3.10,KAZ:3.08,ETH:3.06,TGO:2.99,SWZ:2.96,EGY:2.93,ZWE:2.92,BFA:2.91,ARE:2.90,AZE:2.80,GAB:2.79,CUB:2.65,GIN:2.65,COG:2.61,VNM:2.62,CMR:2.56,KHM:2.55,HTI:2.50,NIC:2.26,LBY:2.25,VEN:2.23,RUS:2.22,NER:2.20,UZB:2.12,SAU:2.08,ERI:2.03,YEM:1.95,IRN:1.96,TJK:1.94,CHN:1.94,BLR:1.99,GNQ:1.92,SDN:1.76,LAO:1.71,TCD:1.67,TKM:1.66,SYR:1.43,COD:1.40,CAF:1.18,SSD:1.16,PRK:1.08,MMR:0.85,AFG:0.26};
-  const MILSPEND={USA:916,CHN:296,RUS:109,IND:84,SAU:75,UKR:65,GBR:75,DEU:67,FRA:61,JPN:50,KOR:48,ITA:36,AUS:32,POL:32,ISR:27,CAN:27,ESP:24,BRA:23,NLD:19,TUR:16,SGP:14,IDN:9,IRN:10,PAK:9,EGY:5,GRC:7,NOR:9,SWE:9,FIN:7,DNK:9,BEL:8,NZL:3,PRT:4,CZE:5,HUN:3,ROU:4,VNM:6,THA:5,COL:9,MEX:8,DZA:18,ARE:23,QAT:11,KWT:8,IRQ:11,LBY:3,MMR:2,VEN:1,CUB:1,NGA:3,ZAF:2,KEN:1,CHL:4,ARG:3,PER:2,PHL:4,MYS:4,TWN:14,UKR2:0};
+  /* Military expenditure, latest available year, current USD $B (SIPRI 2023 where covered; IISS
+     Military Balance estimates for the handful SIPRI omits). (#R14) Expanded from ~58 to ~150 states so
+     far fewer countries fall to "No data" grey. Genuinely unpublished spenders (DPRK, Syria, Eritrea,
+     Turkmenistan, Somalia, Yemen) are deliberately left out rather than fabricated → they stay grey. */
+  const MILSPEND={USA:916,CHN:296,RUS:109,IND:84,SAU:75,UKR:65,GBR:75,DEU:67,FRA:61,JPN:50,KOR:48,ITA:36,AUS:32,POL:32,ISR:27,CAN:27,ESP:24,BRA:23,NLD:19,TUR:16,SGP:14,IDN:9,IRN:10,PAK:9,EGY:5,GRC:7,NOR:9,SWE:9,FIN:7,DNK:9,BEL:8,NZL:3,PRT:4,CZE:5,HUN:3,ROU:4,VNM:6,THA:5,COL:9,MEX:8,DZA:18,ARE:23,QAT:11,KWT:8,IRQ:11,LBY:3,MMR:2,VEN:1,CUB:1,NGA:3,ZAF:2,KEN:1,CHL:4,ARG:3,PER:2,PHL:4,MYS:4,TWN:14,
+    OMN:6,BHR:1.5,JOR:2,LBN:0.7,MAR:5,TUN:1.2,SDN:1.5,AGO:1.6,ETH:1,TZA:0.9,UGA:1,COD:0.5,GHA:0.3,CIV:0.6,CMR:0.5,MLI:0.6,TCD:0.4,NER:0.3,SEN:0.5,BWA:0.5,NAM:0.4,ZMB:0.3,ZWE:0.5,MOZ:0.2,MRT:0.2,BFA:0.4,RWA:0.2,MWI:0.05,TGO:0.1,BEN:0.1,GIN:0.2,GAB:0.3,COG:0.3,MDG:0.1,SSD:0.5,LBR:0.05,SLE:0.05,GMB:0.03,BDI:0.07,DJI:0.1,GNQ:0.1,LSO:0.05,SWZ:0.08,
+    BGD:4,LKA:1.3,NPL:0.5,AFG:0.3,KAZ:1.5,UZB:2,KGZ:0.13,TJK:0.08,MNG:0.1,KHM:0.6,LAO:0.02,BRN:0.5,
+    AZE:3.4,ARM:1.3,GEO:0.5,BLR:1,MDA:0.1,
+    HRV:1.5,SRB:1.6,SVK:2,SVN:0.8,BGR:1.4,AUT:4,CHE:6,IRL:1.3,LTU:2,LVA:1,EST:1.2,CYP:0.6,ALB:0.4,MKD:0.2,BIH:0.2,MNE:0.1,LUX:0.5,MLT:0.07,
+    ECU:2.4,BOL:0.6,PRY:0.4,URY:1.2,DOM:0.6,GTM:0.4,HND:0.5,SLV:0.4,NIC:0.1,TTO:0.3,JAM:0.2,GUY:0.1,SUR:0.05,FJI:0.1,PNG:0.3};
   const LIFE={JPN:84.0,CHE:83.6,KOR:83.6,SGP:83.5,AUS:83.3,ISL:83.0,ITA:82.9,ESP:82.8,SWE:83.0,FRA:82.5,NOR:83.2,IRL:82.6,NZL:82.5,DEU:80.8,CAN:81.5,GBR:80.7,FIN:81.8,NLD:81.5,BEL:81.6,AUT:81.1,DNK:81.5,GRC:80.1,PRT:81.1,USA:77.4,POL:77.5,CHN:78.2,TUR:76.0,SAU:77.9,BRA:75.9,MEX:70.2,RUS:69.4,IRN:76.7,ARG:75.9,VNM:74.6,THA:78.7,COL:73.7,IDN:71.3,PHL:69.3,EGY:70.2,IND:67.3,BGD:72.4,PAK:66.2,ZAF:62.3,KEN:61.4,NGA:53.6,ETH:65.0,COD:59.2,IRQ:70.4,UKR:71.6,AFG:62.0,MMR:65.7,YEM:63.7,SDN:65.3};
   const INTERNET={NOR:99,DNK:99,KOR:97,SWE:98,JPN:84,USA:91,GBR:97,DEU:93,FRA:86,CAN:93,ITA:84,ESP:94,SGP:96,AUS:96,NZL:91,RUS:88,CHN:73,IND:46,BRA:81,MEX:78,ARG:88,KOR2:97,IDN:62,VNM:73,THA:85,PHL:67,EGY:72,SAU:99,UAE2:0,ARE:100,ISR:90,TUR:83,POL:88,ZAF:72,KEN:32,NGA:55,BGD:39,PAK:36,ETH:17,COD:23,IRN:79,IRQ:75,AFG:18};
   /* Capital cities, currencies, primary languages, calling codes — fills the N/A fields */
@@ -3252,7 +3270,15 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function refreshTool(){ if(map&&map.getSource('tool-source')) map.getSource('tool-source').setData({type:'FeatureCollection',features:sanitizeFeatures(buildToolFeatures())}); }
 
-  function showMeasureTip(pt,txt){ const el=document.getElementById('measure-tooltip'); el.innerText=txt; el.style.left=pt.x+'px'; el.style.top=pt.y+'px'; el.style.display='block'; }
+  function showMeasureTip(pt,txt){ const el=document.getElementById('measure-tooltip'); if(!el) return; el.innerText=txt; el.style.display='block';
+    /* (#R14/#7) keep the measure tooltip inside the map — it's drawn translate(12px,-50%), so flip it to
+       the LEFT of the point near the right edge and clamp Y, instead of overflowing off-screen. */
+    try{ const mc=document.getElementById('map-container').getBoundingClientRect(); const w=el.offsetWidth||120, h=el.offsetHeight||24;
+      el.style.transform=(pt.x+12+w > mc.width-6)?('translate(-'+(w+12)+'px,-50%)'):'translate(12px,-50%)';
+      el.style.left=Math.max(6,Math.min(mc.width-6,pt.x))+'px';
+      el.style.top=Math.max(h/2+6,Math.min(mc.height-h/2-6,pt.y))+'px';
+    }catch(_){ el.style.left=pt.x+'px'; el.style.top=pt.y+'px'; }
+  }
   function hideMeasureTip(){ document.getElementById('measure-tooltip').style.display='none'; }
   function totalDistance(p){ let s=0; for(let i=1;i<p.length;i++)s+=turf.distance(turf.point(p[i-1]),turf.point(p[i]),{units:'kilometers'}); return s; }
   function ringPerimeter(p){ if(p.length<2)return 0; let s=totalDistance(p); if(p.length>=3)s+=turf.distance(turf.point(p[p.length-1]),turf.point(p[0]),{units:'kilometers'}); return s; }
@@ -3294,7 +3320,18 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('map-container').classList.add('tool-active'); if(map)map.doubleClickZoom.disable();
     const p=document.getElementById('tool-panel'); p.style.left=''; p.style.top=''; p.style.right=''; updateToolPanel();
   }
-  function makeDraggable(panel,handle){ handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>{ if(!panelDrag)return; panel.style.left=(panelDrag.l+ev.clientX-panelDrag.x)+'px'; panel.style.top=(panelDrag.t+ev.clientY-panelDrag.y)+'px'; panel.style.right='auto'; panel.style.bottom='auto'; /* (#R9/#48) clear bottom too, else a CSS bottom anchor pinned vertical drag → panel only moved sideways */ }; document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; }; }
+  /* (#R14) Draggable panels now support TOUCH too (mobile users reported the tool panel "couldn't be
+     moved" — only onmousedown was wired) and CLAMP to the offset-parent so a panel can never be dragged
+     off-screen and become unreachable (the other half of the mobile measure complaint, #7). */
+  function makeDraggable(panel,handle){
+    const clampTo=(l,t)=>{ const op=panel.offsetParent||document.documentElement; const ow=op.clientWidth||window.innerWidth, oh=op.clientHeight||window.innerHeight; const pw=panel.offsetWidth||0, ph=panel.offsetHeight||0; return [Math.max(6,Math.min(ow-Math.min(pw,ow)-6,l)), Math.max(6,Math.min(oh-Math.min(ph,oh)-6,t))]; };
+    const move=(cx,cy)=>{ if(!panelDrag)return; const c=clampTo(panelDrag.l+cx-panelDrag.x, panelDrag.t+cy-panelDrag.y); panel.style.left=c[0]+'px'; panel.style.top=c[1]+'px'; panel.style.right='auto'; panel.style.bottom='auto'; /* (#R9/#48) clear bottom too, else a CSS bottom anchor pins vertical drag */ };
+    handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
+    handle.addEventListener('touchstart',(e)=>{ const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
+      const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
+      const up=()=>{ panelDrag=null; document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
+      document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
+  }
 
   window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); if(window._activeRadiusId===id) window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   window.clearAllRadius=function(){ radiusItems=[]; window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
@@ -3896,9 +3933,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function positionTooltip(point){
     const el=ensureMapTooltip();
     const mc=document.getElementById('map-container').getBoundingClientRect();
-    const w=el.offsetWidth||280, half=w/2;
+    const w=el.offsetWidth||280, half=w/2, h=el.offsetHeight||80;
     let x=Math.max(half+8, Math.min(mc.width-half-8, point.x));
-    let y=Math.max(160, point.y);
+    let y=Math.max(160, Math.min(mc.height-h-12, point.y));   /* (#R14/#7) clamp to the bottom too */
     el.style.left=x+'px'; el.style.top=y+'px';
   }
   /* iOS-style frosted "pill" behind news labels — generated as a stretchable sprite. */
@@ -5685,6 +5722,41 @@ window.addEventListener('DOMContentLoaded', () => {
        Grid / Countries stay pinned at the top, untouched. Idempotent → safe to re-run on every open.
        Also moves "Open compare view" + "Upload GeoJSON" into a tidy Tools section at the very bottom
        (the user disliked them sitting mid-list). The old "Data layers" section label is dropped. */
+    /* (#R14 / #17) "Active layers" — a live list of every currently-ON thematic layer, shown in the
+       Layers panel just below the favourites bar and the Country-borders/Grid toggles. Each entry is a
+       chip: click the name to scroll to its row, click ✕ to switch it off. Rebuilt whenever any layer
+       checkbox changes and on every panel open. (The 4 utility toggles names/borders/grid/countries are
+       excluded — they sit right above and would be redundant.) */
+    window._refreshActiveLayers=function(){
+      const dd=document.getElementById('layer-dropdown'); if(!dd) return;
+      const sec=document.getElementById('layer-active-section'); if(!sec) return;
+      const lang=(typeof currentLang!=='undefined')?currentLang:'en';
+      const skip=new Set(['cb-names','cb-borders','cb-grid','cb-countries']);
+      const seen=new Set(), chips=[];
+      dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+        if(!cb.checked || skip.has(cb.id) || seen.has(cb.id)) return; seen.add(cb.id);
+        const lab=cb.closest('label'); if(!lab) return;
+        const sp=lab.querySelector('span'); let name=((sp?sp.textContent:lab.textContent)||'').trim();
+        if(!name) return; chips.push({id:cb.id, name});
+      });
+      if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; return; }
+      sec.style.display='';
+      const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
+      sec.innerHTML=`<div class="lyr-head lyr-section-label" style="margin-top:2px;">${title} (${chips.length})</div><div class="active-lyr-chips"></div>`;
+      const wrap=sec.querySelector('.active-lyr-chips');
+      chips.forEach(c=>{
+        const chip=document.createElement('span'); chip.className='active-lyr-chip';
+        const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
+        nm.onclick=()=>{ const cb=document.getElementById(c.id); if(cb){ const row=cb.closest('.lyr-row')||cb.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} } };
+        const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(lang==='jp'?'非表示':'Hide');
+        x.onclick=(e)=>{ e.stopPropagation(); const cb=document.getElementById(c.id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
+        chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
+      });
+    };
+    /* Any layer checkbox toggle → refresh the active-layers list (deferred so toggleLayer runs first). */
+    document.getElementById('layer-dropdown')&&document.getElementById('layer-dropdown').addEventListener('change',(e)=>{
+      if(e.target&&e.target.type==='checkbox') setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0);
+    });
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       try{
@@ -5709,6 +5781,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         ['cb-names','cb-borders','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        /* (#R14 / #17) the live "Active layers" list sits right below the favourites + top toggles */
+        let act=document.getElementById('layer-active-section'); if(!act){ act=document.createElement('div'); act.id='layer-active-section'; act.style.display='none'; }
+        order.push(act);
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         order.push(mkHr());
         GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
@@ -5729,6 +5804,7 @@ window.addEventListener('DOMContentLoaded', () => {
         order.forEach(n=>dd.appendChild(n));
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
         ['ec-mount','cmp-mount','ugj-mount'].forEach(id=>{ const w=document.getElementById(id); if(w) w.remove(); });
+        try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
     };
     window.reorganizeLayerPanel();
@@ -6103,46 +6179,67 @@ window.addEventListener('DOMContentLoaded', () => {
        Graceful fallback to the small-canvas highlight if the full path can't run (file:// taint / OOM). */
     window._koppenFull=null;
     function _koppenFullCap(){ try{ return (typeof isMobile==='function'&&isMobile())?4096:8192; }catch(_){ return 8192; } }
+    /* (#R14) MEMORY-SAFE full-res highlight — the previous version OOM-crashed the tab (and the page
+       reloaded → "先祖返り"): at 8192² it held the 268 MB source pixel array + a 268 MB output ImageData
+       + a 268 MB output canvas + the PNG-encode buffer ALL AT ONCE (>1 GB peak). Two changes roughly
+       HALVE the peak so it no longer crashes, while keeping the SAME 8192²/4096² resolution (画質維持):
+       (1) The Köppen image is a CATEGORICAL palette, so we never keep the raw RGBA — we keep only a
+           1-byte-per-pixel class index (`idx`), built in horizontal STRIPS (peak ≈ one strip, not the
+           whole image), and reconstruct every colour from KCOL.
+       (2) The output is written in STRIPS too (one small ImageData per strip, blitted onto the canvas),
+           so we never allocate a second full-frame ImageData.
+       Any allocation/taint failure is caught → the caller falls back to the small-canvas highlight. */
     function ensureKoppenFull(){
       if(window._koppenFull) return window._koppenFull;
       const im=window._koppenImg; if(!im) return null;
       const nw=im.naturalWidth||im.width, nh=im.naturalHeight||im.height;
       const cap=_koppenFullCap(), sc=Math.min(1, cap/Math.max(nw,nh,1));
       const W=Math.max(1,Math.round(nw*sc)), H=Math.max(1,Math.round(nh*sc));
-      let d;
       try{
-        const c=document.createElement('canvas'); c.width=W; c.height=H;
-        const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false; cx.drawImage(im,0,0,W,H);
-        d=cx.getImageData(0,0,W,H).data;            /* may throw (tainted file:// canvas / OOM) → fallback */
-        c.width=c.height=0;                          /* free the source canvas backing immediately */
+        const idx=new Uint8Array(W*H), cache=new Map();
+        const STRIP=Math.max(1,Math.min(H,Math.floor((1<<21)/Math.max(1,W))));   /* ≈2 M px / strip */
+        const c=document.createElement('canvas'); c.width=W; c.height=STRIP;
+        const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false;
+        const srcScaleY=nh/H, srcScaleX=nw/W;
+        for(let y0=0;y0<H;y0+=STRIP){
+          const rows=Math.min(STRIP,H-y0);
+          cx.clearRect(0,0,W,rows);
+          /* draw the matching source-image band (handles cap down-scale via the source rect) */
+          cx.drawImage(im, 0, Math.round(y0*srcScaleY), nw, Math.round(rows*srcScaleY), 0, 0, W, rows);
+          const d=cx.getImageData(0,0,W,rows).data;   /* may throw on tainted file:// canvas → caught */
+          for(let p=y0*W, i=0; i<d.length; p++, i+=4){
+            if(d[i+3]<32){ idx[p]=255; continue; }
+            const key=(d[i]<<16)|(d[i+1]<<8)|d[i+2]; let ci=cache.get(key);
+            if(ci===undefined){ let best=255,bestD=Infinity; for(let k=0;k<KCOL.length;k++){ const cc=KCOL[k][1],dr=d[i]-cc[0],dg=d[i+1]-cc[1],db=d[i+2]-cc[2],dd2=dr*dr+dg*dg+db*db; if(dd2<bestD){bestD=dd2;best=k;} } ci=(bestD<6000)?best:255; cache.set(key,ci); }
+            idx[p]=ci;
+          }
+        }
+        c.width=c.height=0;                            /* free the strip canvas backing */
+        window._koppenFull={idx, W, H};                /* NO 268 MB src array kept — palette reconstructs it */
+        return window._koppenFull;
       }catch(e){ return null; }
-      const idx=new Uint8Array(W*H), cache=new Map();
-      for(let p=0,i=0;p<idx.length;p++,i+=4){
-        if(d[i+3]<32){ idx[p]=255; continue; }
-        const key=(d[i]<<16)|(d[i+1]<<8)|d[i+2]; let ci=cache.get(key);
-        if(ci===undefined){ let best=255,bestD=Infinity; for(let k=0;k<KCOL.length;k++){ const cc=KCOL[k][1],dr=d[i]-cc[0],dg=d[i+1]-cc[1],db=d[i+2]-cc[2],dd2=dr*dr+dg*dg+db*db; if(dd2<bestD){bestD=dd2;best=k;} } ci=(bestD<6000)?best:255; cache.set(key,ci); }
-        idx[p]=ci;
-      }
-      window._koppenFull={idx, src:d, W, H};
-      return window._koppenFull;
     }
     function freeKoppenFull(){ window._koppenFull=null; }   /* drop ~refs; GC reclaims the big typed arrays */
     function buildKoppenHighlightFull(selectedSet, cb){
       const f=ensureKoppenFull(); if(!f){ cb(null); return; }
       try{
-        const idx=f.idx, src=f.src, W=f.W, H=f.H;
-        const selIdx=new Uint8Array(KCOL.length);
-        for(let k=0;k<KCOL.length;k++) if(selectedSet.has(KCOL[k][0])) selIdx[k]=1;
+        const idx=f.idx, W=f.W, H=f.H, N=KCOL.length;
+        /* per-class colour LUT (selected→vivid KCOL, else grey+faded); index 255 → transparent */
+        const LR=new Uint8Array(256),LG=new Uint8Array(256),LB=new Uint8Array(256),LA=new Uint8Array(256);
+        for(let k=0;k<N;k++){ const c=KCOL[k][1];
+          if(selectedSet.has(KCOL[k][0])){ LR[k]=c[0];LG[k]=c[1];LB[k]=c[2];LA[k]=255; }
+          else { const g=Math.round((c[0]+c[1]+c[2])/3*0.6); LR[k]=g;LG[k]=g;LB[k]=g;LA[k]=71; } }
         const out=document.createElement('canvas'); out.width=W; out.height=H;
-        const octx=out.getContext('2d'), img=octx.createImageData(W,H), o=img.data;
-        for(let p=0,i=0;p<idx.length;p++,i+=4){
-          const ci=idx[p];
-          if(ci!==255 && selIdx[ci]){ o[i]=src[i]; o[i+1]=src[i+1]; o[i+2]=src[i+2]; o[i+3]=src[i+3]; }
-          else { const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.28); }
+        const octx=out.getContext('2d');
+        const STRIP=Math.max(1,Math.min(H,Math.floor((1<<21)/Math.max(1,W))));   /* one small ImageData / strip */
+        for(let y0=0;y0<H;y0+=STRIP){
+          const rows=Math.min(STRIP,H-y0);
+          const img=octx.createImageData(W,rows), o=img.data;
+          for(let p=y0*W, j=0; j<o.length; p++, j+=4){ const ci=idx[p]; o[j]=LR[ci]; o[j+1]=LG[ci]; o[j+2]=LB[ci]; o[j+3]=LA[ci]; }
+          octx.putImageData(img,0,y0);
         }
-        octx.putImageData(img,0,0);
         if(out.toBlob){ out.toBlob(b=>{ try{ out.width=out.height=0; }catch(_){} cb(b?URL.createObjectURL(b):null); }, 'image/png'); }
-        else { let u=null; try{ u=out.toDataURL('image/png'); }catch(_){} cb(u); }
+        else { let u=null; try{ u=out.toDataURL('image/png'); }catch(_){} try{ out.width=out.height=0; }catch(_){} cb(u); }
       }catch(e){ cb(null); }
     }
     window._koppenHLUrl=null; window._koppenHLSeq=0;
