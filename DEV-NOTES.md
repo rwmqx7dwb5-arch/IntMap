@@ -885,3 +885,33 @@ readout** (temp/SST layer), the **temperature & SST legend scales** (now `fmtTem
 ### Git / data housekeeping
 Source `.tif`s are git-ignored (`*.tif`) and `_koppen_convert.py` is a local tool (also ignored); only the
 shipped `koppen_mercator_<period>.png` are tracked.
+
+### R13c part 2 — the re-reported "rest" (tags `#R13c`)
+The user asked to also tackle the remaining standing-list items. Tractable, verifiable ones done:
+- **Every numeric layer now shows its value at the cursor (bottom-left).** Added `window.choroValueAt(lng,lat)`
+  inside the choropleth closure — one `queryRenderedFeatures` over all visible `*-fill` layers, topmost
+  wins, formatted via `CHORO_META[id]` → "Label: value". Wired into `updateLayerReadout` (falls back to it
+  when no weather layer is active). Mobile inherits it (its readout already calls `updateLayerReadout`).
+  Köppen/temp/SST were already covered.
+- **Map/Satellite switching reliability.** `btn-view-map` early-returned whenever `currentMapType` was already
+  `'map'`, so if state ever desynced from what's drawn, clicking Map did nothing. Both handlers now always
+  re-assert + schedule one more `applyTheme()` on the next `idle`; added a guarded `styledata` self-heal that
+  re-asserts the basemap whenever `layer-sat` visibility stops matching the chosen mode (no-loop: only on
+  mismatch). Mobile proxies delegate to these via `real.click()`, so both UIs are covered.
+- **Imperial everywhere (audit).** The big gap was elevation/depth, hard-coded `m` everywhere. New
+  `fmtElevVal()` (imperial→ft, both→"m (ft)") now drives the desktop+mobile coord readout, the `fetchElev`
+  network fallback, and the search-card elevation; the **elevation profile** chart axis/distance/hover use
+  unit-aware `elevC`/`distC`; the sea-level slider label converts too. Measurements/area/runway were already
+  unit-aware.
+- **"Deleted layers still remain."** Root cause for the geo/strategic layers: `updateGeoLayers()` early-returned
+  when the style was mid-load, so a toggle-OFF during loading silently no-op'd and the line stayed on. Now it
+  re-runs on the next `idle`. (Data-layer and choropleth OFF paths were already correct — verified.)
+- **Corridor lines less linear (faithfully).** Densified both **BRI** corridors to real named cities/ports
+  (belt 51 pts: Xi'an→Lanzhou→Urumqi→Khorgos→Almaty→Tashkent→Samarkand→Ashgabat→Tehran→Tabriz→Erzurum→Ankara
+  →Istanbul→Sofia→Belgrade→Budapest→Vienna→Prague→Duisburg→Rotterdam; maritime 39 pts through the real ports
+  & straits). Sahel + NSR were already dense/real (R13). **Pipelines: NOT hand-padded** — survey-grade bends
+  need an authoritative dataset; inventing intermediate points is exactly the "数学的処理でごまかす" the user
+  rejected, so they're left as the real corridor coordinates we have + documented as needing a real dataset.
+
+Verified in the headless preview: full parse, no console errors, `fmtElevVal` imperial/metric/both correct via
+the real settings flow, `choroValueAt` returns gracefully with no layer active.
