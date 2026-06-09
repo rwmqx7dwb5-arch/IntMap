@@ -940,3 +940,79 @@ the real settings flow, `choroValueAt` returns gracefully with no layer active.
   palette + EN/JP labels; shows when WorldCover is toggled on, ✕ unchecks the layer. Verified: 11 swatches.
 - **Mobile Tools section (#19).** The R13c grid-span + full-width-button fix is in place and verified; the
   re-report is almost certainly a `file://` cache of the pre-fix file (hard-reload).
+
+---
+
+## 17. Round 14 — Köppen crash, mil-spending data, active-layers list, mobile drag (tags `#R14`)
+
+Re-attacked the re-reported batch. All additive/in-place; MapLibre stays the engine. Verified in the
+headless preview over **http** (so `<img>`/local PNG loads work, unlike `file://`): full-script parse
+confirmed (all new globals present, **zero console errors** after reload), the Köppen image pipeline
+loads + samples correctly, and the active-layers list builds end-to-end. Memory/visual-only effects
+(the 8192² highlight's true peak RAM, ECMWF `.om` compositing) still need a real browser per the
+standing headless limitation.
+
+### Köppen "selecting a class crashes the browser → 先祖返り" (#4) + "don't drop highlight resolution" (#16)
+ROOT CAUSE was an **OOM tab-crash** (Chrome reloads the crashed tab → looks like a revert). The R13c
+full-res highlight, at 8192², held **all at once**: the 268 MB raw RGBA source array (`_koppenFull.src`)
++ a 268 MB output `ImageData` + a 268 MB output canvas + the PNG-encode buffer → **>1 GB peak**. On any
+machine under memory pressure (and all mobiles) that kills the tab.
+- Fix = roughly **HALVE the peak** while keeping the SAME 8192²/4096² resolution (no quality loss):
+  1. The Köppen image is a **categorical palette**, so we never keep the raw RGBA — only a 1-byte/pixel
+     **class index** (`idx`), and reconstruct every colour from `KCOL` (selected → vivid, else grey+faded).
+  2. The index is built in **horizontal strips** (peak ≈ one ~2 M-px strip, not the whole frame), and the
+     output canvas is written in **strips** too (one small `ImageData` per strip) — so there is never a
+     second full-frame `ImageData` and never a persisted 268 MB array.
+  3. Every allocation/`getImageData` is in a try/catch → on OOM/`file://` taint it falls back to the
+     existing small-canvas highlight instead of crashing.
+- Net: peak drops from ~1 GB+ to ~0.6 GB on desktop (idx 67 MB + out-canvas 268 MB + base 268 MB),
+  and to ~0.35 GB on mobile (4096² cap). Same displayed resolution, no more crash. `ensureKoppenFull`
+  now stores only `{idx,W,H}`; `freeKoppenFull` still drops it on clear/era-change. (`index.html`
+  ~`ensureKoppenFull`/`buildKoppenHighlightFull`.)
+
+### Military spending — far fewer "No data" (#8)
+`MILSPEND` expanded from ~58 to ~150 states (SIPRI 2023 where covered; IISS Military Balance estimates
+for the few SIPRI omits — Gulf, Central Asia, Balkans, Baltics, most of Africa & Latin America, etc.).
+Genuinely-unpublished spenders (DPRK, Syria, Eritrea, Turkmenistan, Somalia, Yemen) are deliberately
+**left out rather than fabricated** → they stay honest grey. Both the $B and the %GDP choropleths
+inherit the coverage. The **No-data→opacity linkage already existed** (addChoro paints no-data grey at
+`opacities[id]*0.75`, and the slider updates it), so that half of the ask was already satisfied.
+
+### "Show the currently-selected layers in the panel, below borders/grid + below favourites" (#17) — NEW
+New live **Active layers** section (`#layer-active-section`, `window._refreshActiveLayers`) inserted in
+the Layers panel **right after the favourites bar and the names/borders/grid/countries toggles**, before
+the category list (verified: DOM index 5, after fav@0 + the 4 toggles). Each active thematic layer shows
+as a chip — click the name to scroll to its row, click ✕ to switch it off. Rebuilt on every layer
+checkbox `change` (delegated listener) and on every panel open. The 4 utility toggles are excluded (they
+sit right above). Added to the mobile full-width grid-span list so it isn't squished into one cell.
+Verified live: toggling HDI + Air-temp produced "Active layers (2)" with both chips + working ✕.
+
+### Mobile measurement — "popups/legends go off-screen and can't be moved" (#7) + crosshair readout (#1)
+- ROOT CAUSE of "can't move": `makeDraggable` (tool panel, radius list, etc.) only wired **`onmousedown`**
+  — no touch. Rewrote it with **touchstart/touchmove/touchend** AND **clamping to the offset-parent**, so
+  those panels now drag on phones and can never be stranded off-screen. (Legends already had touch via
+  `wireDrag`.)
+- `positionTooltip` now clamps **Y to the bottom** too; `showMeasureTip` clamps within the map and
+  **flips to the left** of the cursor near the right edge instead of overflowing.
+- Mobile crosshair coord/elev/active-layer readout (#1) + the numeric-cursor value (#12) were already
+  wired in R12/R13c (`updateLayerReadout`→`choroValueAt`); the expanded `MILSPEND` means that readout now
+  reports a value for far more countries.
+
+### Re-reports verified in place (likely a stale `file://` cache on the user's side — hard-reload)
+- **Köppen legend vertical-only resize, default size kept (#15):** `resize:vertical` + locked
+  `width/min/max:216px`, desktop only.
+- **Mobile Layers→Tools full-width (#6):** `#layer-tools` grid-spans `1/-1` + `display:block` + 100 %
+  buttons (and the new active-layers section now gets the same).
+- **Time-varying legend "as-of" line (#13):** `_refreshLegendDates` appends 🕒 lines to temp/SST/thermal/
+  radar, refreshed on every date/window change.
+- **Imperial everywhere (#14):** `fmtElevVal`/`elevC`/`distC`/`fmtTemp`/`fmtWindSpeed` drive readouts,
+  profiles, legends; measurements/area/runway unit-aware.
+
+### Still needs a real (non-headless) browser to repro/verify — documented, not closed
+- **Ghost layers/pins after hiding (#10):** the modular layers' `styledata` re-adds are correctly gated
+  on their `state.*` flags (won't resurrect a layer toggled off), and the data-layer OFF paths hide
+  cleanly — no repro found headlessly. If it persists, capture which specific layer/pin survives.
+- **Some ECMWF layers blank (#11):** the `om://` SDK data/decode pipeline is proven (tiles decode); only
+  the GPU compositing of those `.om` rasters is unconfirmable in the hidden preview.
+- **3D speed+quality (#3), LOS detail (#2), sea-route shallow-endpoint/linearity/land-cut (#5), "all
+  layers get legends" (#9):** large terrain/routing/engine work — not in this round.
