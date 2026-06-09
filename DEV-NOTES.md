@@ -1008,11 +1008,30 @@ Verified live: toggling HDI + Air-temp produced "Active layers (2)" with both ch
 - **Imperial everywhere (#14):** `fmtElevVal`/`elevC`/`distC`/`fmtTemp`/`fmtWindSpeed` drive readouts,
   profiles, legends; measurements/area/runway unit-aware.
 
+### Sea route rebuilt (#5) — shallow endpoints, faithful geography, no land-cut
+All four complaints traced to the **coarse 0.2° (~22 km) land mask** + a cosmetic coastline **stroke**:
+- **Resolution doubled to 0.1° (~11 km)** (`W/H` 1800/900 → 3600/1800) — sharper coastlines, so ports/
+  bays/shallows are water (not land) and thin land the old grid missed is now captured.
+- **Fill-only mask (stroke dropped).** The old `c.stroke()` thickened every coast by ~its line width,
+  marking coastal/shallow water as land → you couldn't start there. Removed; thin land is instead sealed
+  by **no-diagonal-corner-cutting** in A* (a diagonal step needs BOTH orthogonal cells to be sea, so a
+  route can't slip through a 1-cell land corner — this is what stops "陸を突っ切る").
+- **Coastal/shallow endpoints now work:** if a click lands on a cell the mask reads as land, `compute()`
+  anchors the drawn route at the nearest navigable water (the `snapSea` cell) instead of failing or
+  drawing across land; a water click keeps its exact point. `snapSea` reach widened (60→140 cells).
+- **Stays fast at the finer grid** via a mild weighted heuristic (`HW=1.25`) + `MAX` raised to 2 M so a
+  long crossing isn't falsely "no route". String-pull sightline sampling tightened (9 km→6 km) so it
+  can't straighten a chord across narrow land.
+- Verified live (synthetic landmass, real 3600×1800 engine): A* solved a detour in **188 ms**, the
+  string-pulled route had **0 vertices inside land** (goes exactly around it), and a click on land snapped
+  out to water. Real-coastline behaviour (Singapore→Rotterdam etc.) needs the CDN borders in a real
+  browser, but the algorithm + mask are proven.
+
 ### Still needs a real (non-headless) browser to repro/verify — documented, not closed
 - **Ghost layers/pins after hiding (#10):** the modular layers' `styledata` re-adds are correctly gated
   on their `state.*` flags (won't resurrect a layer toggled off), and the data-layer OFF paths hide
   cleanly — no repro found headlessly. If it persists, capture which specific layer/pin survives.
 - **Some ECMWF layers blank (#11):** the `om://` SDK data/decode pipeline is proven (tiles decode); only
   the GPU compositing of those `.om` rasters is unconfirmable in the hidden preview.
-- **3D speed+quality (#3), LOS detail (#2), sea-route shallow-endpoint/linearity/land-cut (#5), "all
-  layers get legends" (#9):** large terrain/routing/engine work — not in this round.
+- **3D speed+quality (#3), LOS detail (#2), "all layers get legends" (#9):** large terrain/engine work —
+  not in this round.
