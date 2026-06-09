@@ -985,7 +985,10 @@ the category list (verified: DOM index 5, after fav@0 + the 4 toggles). Each act
 as a chip — click the name to scroll to its row, click ✕ to switch it off. Rebuilt on every layer
 checkbox `change` (delegated listener) and on every panel open. The 4 utility toggles are excluded (they
 sit right above). Added to the mobile full-width grid-span list so it isn't squished into one cell.
-Verified live: toggling HDI + Air-temp produced "Active layers (2)" with both chips + working ✕.
+The de-dup + handlers key off the **checkbox element**, not its `id`, so the **id-less geo/strategic rows**
+(`data-layer="…"`, no `id`) show as distinct chips too — i.e. EVERY active layer is listed and removable
+from one place (also a practical mitigation for the "ghost layers" report #10). Verified live: HDI +
+Northern-Sea-Route + Global-Chokepoints → 3 distinct chips with clean labels + working ✕.
 
 ### Mobile measurement — "popups/legends go off-screen and can't be moved" (#7) + crosshair readout (#1)
 - ROOT CAUSE of "can't move": `makeDraggable` (tool panel, radius list, etc.) only wired **`onmousedown`**
