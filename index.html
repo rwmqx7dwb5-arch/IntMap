@@ -36,6 +36,25 @@
     body.theme-tactical .loc-chip.unmapped{ background:rgba(255,176,0,0.18) !important; color:var(--amber) !important; }
     body.theme-tactical .btn-bookmark.active{ color:var(--amber); }
     body.theme-tactical .lang-btn.active{ background:#19e676; color:#04210f; }
+    /* ===== (#R13c) CLASSIC theme — Age-of-Discovery parchment / nautical chart. Built on the LIGHT
+       base: warm sepia surfaces, serif type, brass accents, an aged-paper tint over the basemap and a
+       decorative compass rose on the map. Settings → Appearance → "Classic". ===== */
+    body.theme-classic{ --bg-color:#e7d8b6; --sidebar-bg:rgba(238,227,201,0.94); --primary-color:#8a5a2b; --text-main:#3a2a16; --text-muted:#7b6038; --card-bg:#f3e8cc; --input-bg:rgba(120,90,50,0.08); --popup-bg:rgba(244,234,210,0.97); --shadow:0 10px 30px rgba(80,55,20,0.28); --glass-border:rgba(120,90,50,0.34); --info-hub:#8a5a2b; }
+    body.theme-classic, body.theme-classic input, body.theme-classic select, body.theme-classic button, body.theme-classic textarea{ font-family:"Hoefler Text","Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif !important; }
+    body.theme-classic h2,body.theme-classic h3,body.theme-classic h4,body.theme-classic .layer-group-title,body.theme-classic .lyr-head,body.theme-classic .dash-nav-btn,body.theme-classic .m-sheet-title{ letter-spacing:0.04em; font-variant:small-caps; color:#5a3d1e; }
+    body.theme-classic h2{ text-shadow:0 1px 0 rgba(255,250,235,0.7); }
+    body.theme-classic .layer-group-title,body.theme-classic .lyr-head{ border-bottom:1px solid rgba(138,90,43,0.28); padding-bottom:2px; }
+    /* aged-paper grain on parchment surfaces */
+    body.theme-classic .sidebar,body.theme-classic .modal-content,body.theme-classic .layer-dropdown,body.theme-classic .tool-panel,body.theme-classic .data-legend,body.theme-classic .koppen-legend,body.theme-classic .country-popup,body.theme-classic .pin-popup,body.theme-classic .m-sheet,body.theme-classic .ctx-menu,body.theme-classic .control-panel{ background-image:radial-gradient(rgba(150,110,60,0.05) 1px,transparent 1px),radial-gradient(rgba(120,85,40,0.04) 1px,transparent 1px); background-size:7px 7px,11px 11px; background-position:0 0,3px 4px; border-color:rgba(138,90,43,0.34) !important; }
+    body.theme-classic .sidebar{ border-right:2px solid rgba(138,90,43,0.45) !important; box-shadow:inset -1px 0 0 rgba(255,248,232,0.5); }
+    body.theme-classic .btn-settings,body.theme-classic .modal-close-btn,body.theme-classic .mode-btn.active,body.theme-classic .search-btn,body.theme-classic .lang-btn.active{ background:linear-gradient(180deg,#b98a4e,#8a5a2b) !important; color:#fdf6e6 !important; box-shadow:0 1px 4px rgba(80,55,20,0.4); border:1px solid rgba(90,61,30,0.5) !important; }
+    body.theme-classic .loc-chip{ background:rgba(138,90,43,0.15); color:#5a3d1e; }
+    body.theme-classic ::selection{ background:#8a5a2b; color:#fdf6e6; }
+    /* parchment / antique tint over ONLY the WebGL basemap (markers, HUD, controls stay crisp) */
+    body.theme-classic .maplibregl-canvas{ filter:sepia(0.46) saturate(0.82) contrast(0.94) brightness(1.05) hue-rotate(-6deg); }
+    /* decorative compass rose, lower-right of the map (purely cosmetic, never blocks input) */
+    body.theme-classic .map-container::after{ content:''; position:absolute; right:18px; bottom:34px; width:118px; height:118px; opacity:0.34; pointer-events:none; z-index:6; background-repeat:no-repeat; background-size:contain; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg stroke='%236b4a23' stroke-width='1.1' fill='none'%3E%3Ccircle cx='60' cy='60' r='55'/%3E%3Ccircle cx='60' cy='60' r='45'/%3E%3C/g%3E%3Cg stroke='%236b4a23' stroke-width='0.7' opacity='0.8'%3E%3Cline x1='60' y1='5' x2='60' y2='115'/%3E%3Cline x1='5' y1='60' x2='115' y2='60'/%3E%3Cline x1='23' y1='23' x2='97' y2='97'/%3E%3Cline x1='97' y1='23' x2='23' y2='97'/%3E%3C/g%3E%3Cpolygon points='60,7 67,60 60,51 53,60' fill='%238a2b1e'/%3E%3Cpolygon points='60,113 53,60 60,69 67,60' fill='%236b4a23'/%3E%3Cpolygon points='113,60 60,53 69,60 60,67' fill='%236b4a23'/%3E%3Cpolygon points='7,60 60,67 51,60 60,53' fill='%236b4a23'/%3E%3C/svg%3E"); }
+    @media(max-width:768px){ body.theme-classic .map-container::after{ display:none; } }
     body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
     button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
@@ -698,7 +717,11 @@
       #mo-mount-layers .layer-dropdown > hr,
       #mo-mount-layers .layer-dropdown > .premium-divider,
       #mo-mount-layers .layer-dropdown > .layer-fav-section,
+      #mo-mount-layers .layer-dropdown > #layer-tools,
       #mo-mount-layers .layer-dropdown > .lyr-row{ grid-column:1 / -1; }
+      /* Tools section: stack its header + buttons full-width on mobile (was squished into one grid cell) */
+      #mo-mount-layers .layer-dropdown > #layer-tools{ display:block; }
+      #mo-mount-layers #layer-tools .btn-settings, #mo-mount-layers #layer-tools button{ width:100% !important; box-sizing:border-box; }
       /* tighter layer rows — kills the wasted line spacing in the layer list */
       .m-sheet .layer-dropdown .layer-option{ padding:6px 6px; font-size:13.5px; min-height:32px; gap:9px; line-height:1.2; }
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
@@ -740,6 +763,9 @@
          it "disappeared" on phones (#13). Force it to ride just above the sheet's current top instead. */
       .ai-view-summary-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; top:auto !important; font-size:12px; padding:8px 14px; z-index:1200; }
       body.sheet-full .ai-view-summary-btn{ display:none; }
+      /* (#R13c) Country-isolation "Exit" pill used a fixed bottom:96px → hidden behind the bottom sheet
+         on phones. Ride just above the sheet's current top like the other floating controls. */
+      #iso-exit-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; z-index:1750 !important; }
       .news-timeline .ntl-body{ min-width:0; } .ntl-label{ min-width:0; flex:1; font-size:11px; }
       .pin-popup{ min-width:0; width:max-content; max-width:calc(100vw - 24px); font-size:13px; }
       .ctx-menu{ min-width:210px; } .ctx-menu button{ padding:13px 12px; font-size:15px; }
@@ -876,6 +902,13 @@
     .coord-readout span, .coord-readout .cr-elev, .coord-readout .cr-sat{ color:#fff !important; font-weight:600; }
     body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
     body.sidebar-glass .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
+    /* (#R13c) Desktop legends now sit on the LEFT of the map. In frosted-overlay mode the sidebar floats
+       over the map, so push the legends past it (clear of the sidebar); collapsed sidebar → flush left. */
+    @media(min-width:769px){
+      body.sidebar-glass .data-legend:not([data-dragged]), body.sidebar-glass .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
+      body.sidebar-glass .sidebar.collapsed ~ .map-container .data-legend:not([data-dragged]),
+      body.sidebar-glass .sidebar.collapsed ~ .map-container .koppen-legend:not([data-dragged]){ left:24px; }
+    }
 
     /* --- Avatar crop modal (#12) --- */
     .crop-overlay{ position:fixed; inset:0; z-index:10050; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); padding:16px; }
@@ -1181,7 +1214,7 @@
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
-    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light Mode</option><option value="dark" data-i18n="optDark">Dark Mode</option><option value="tactical" data-i18n="optTactical">Tactical</option></select></div>
+    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light</option><option value="dark" data-i18n="optDark">Dark</option><option value="classic" data-i18n="optClassic">Classic</option><option value="tactical" data-i18n="optTactical">Tactical</option></select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
@@ -1505,11 +1538,15 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Theme ===== */
   let bordersOn=true;
   function applyTheme(){
-    /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme. */
+    /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
+       (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
+       sepia surfaces, serif type, brass accents, and a parchment tint over the (light) basemap. */
     const tactical=(userTheme==='tactical');
-    const isLight=!tactical && ((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
+    const classic=(userTheme==='classic');
+    const isLight=!tactical && (classic || (userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
     document.documentElement.setAttribute('data-theme', isLight?'light':'dark');
     document.body.classList.toggle('theme-tactical', tactical);
+    document.body.classList.toggle('theme-classic', classic);
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
        chosen map colour always lands. */
@@ -3011,6 +3048,15 @@ window.addEventListener('DOMContentLoaded', () => {
   window.imUnitTemp = (function(){ try{ return localStorage.getItem('intmap_temp_unit')||'both'; }catch(_){ return 'both'; } })();
   function fmtTemp(c){ if(c==null||isNaN(c)) return '—'; const C=Math.round(c)+'°C', F=Math.round(c*9/5+32)+'°F'; const m=window.imUnitTemp||'both'; return m==='c'?C:m==='f'?F:C+' ('+F+')'; }
   window.fmtTemp=fmtTemp;
+  /* Convert °C literals embedded in prose (Köppen criteria, scale ticks) to the chosen unit so a
+     Fahrenheit setting never leaks °C. Handles single values and ranges ("0–18 °C", "0〜18°C") and
+     both minus signs (ASCII "-" and U+2212 "−"). Default ('both') keeps °C and appends (°F). (#R13c) */
+  function convTempText(s){ if(s==null) return s; const m=window.imUnitTemp||'both'; if(m==='c') return String(s);
+    const f=t=>Math.round(parseFloat(String(t).replace('−','-'))*9/5+32);
+    return String(s).replace(/([−-]?\d+(?:\.\d+)?)(?:(\s*[–—~〜]\s*)([−-]?\d+(?:\.\d+)?))?\s*°C/g,(mm,a,sep,b)=>{
+      if(b!=null){ return m==='f' ? (f(a)+sep+f(b)+' °F') : (mm+' ('+f(a)+sep+f(b)+' °F)'); }
+      return m==='f' ? (f(a)+' °F') : (mm+' ('+f(a)+' °F)'); }); }
+  window.convTempText=convTempText;
   function bearingDeg(a,b){ return (turf.bearing(turf.point(a),turf.point(b))+360)%360; }
   function compassDir(deg){ const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']; return dirs[Math.round(deg/22.5)%16]; }
   function bearingHTML(a,b){ const d=bearingDeg(a,b); return `${d.toFixed(1)}° <span class="unit-sub">(${compassDir(d)})</span>`; }
@@ -3511,7 +3557,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(lyr==='sst'){ url=`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=sea_surface_temperature`; pick=j=>j&&j.current&&j.current.sea_surface_temperature; }
         else { url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=temperature_2m`; pick=j=>j&&j.current&&j.current.temperature_2m; }
         const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
-        if(typeof v==='number'){ const txt=v.toFixed(1)+'°C'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* no leading emoji (#34) */
+        if(typeof v==='number'){ const um=window.imUnitTemp||'both'; const txt = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* unit-aware (#R13c); no leading emoji (#34) */
       }catch(_){}
     },220);
   }
@@ -3784,7 +3830,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return;
     _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
-  document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled) _collapseGroup(h); }); },30); });
+  document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled && !h.classList.contains('lyr-section-label')) _collapseGroup(h); }); },30); });
   layerDropdown.addEventListener('click',(e)=>e.stopPropagation());
   document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
     /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
@@ -5207,8 +5253,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light Mode", optDark:"Dark Mode", optTactical:"Tactical", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライトモード", optDark:"ダークモード", optTactical:"タクティカル", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optTactical:"Tactical", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optTactical:"タクティカル", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     /* (#R12) New layer-category labels for the re-organised panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defence" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛" });
@@ -5230,7 +5276,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R10) Flex column (shown via inline display:flex): header (h4) pinned top, .kl-scroll flexes +
          scrolls, footer (opacity slider + hint) pinned bottom — so the opacity slider & minimise button
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; font-size:11px; }
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; font-size:11px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       .koppen-legend::-webkit-resizer{ background:transparent; }
       .koppen-legend.legend-collapsed{ resize:none !important; }
@@ -5247,7 +5293,7 @@ window.addEventListener('DOMContentLoaded', () => {
       .layer-popup-x{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:4px 6px; border-radius:6px; line-height:1; }
       .layer-popup-x:hover{ background:var(--input-bg); color:var(--info-mil); }
       /* Generic color-scale legend (HDI/Dem/Pop/NATO) */
-      .data-legend{ display:none; position:absolute; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
+      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
       .data-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; }
       .data-legend .dl-bar{ height:10px; border-radius:5px; margin:6px 0 4px; border:1px solid rgba(0,0,0,0.1); }
       .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; }
@@ -5348,7 +5394,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
     lgdTemp.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0050d0,#0098ff,#00e0c0,#7dff66,#fff700,#ff9000,#ed1c24,#8a0027);"></div>
-      <div class="dl-scale"><span>-40 °C</span><span>+40 °C</span></div>
+      <div class="dl-scale"><span>${fmtTemp(-40)}</span><span>${fmtTemp(40)}</span></div>
       <div class="dl-hint">${currentLang==='jp'?'MERRA-2 再解析・月別。全球で欠損なし。スライダーで月を選択。':'MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.'}</div>`;
     mc.appendChild(lgdTemp);
     lgdTemp.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-temp'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -5373,7 +5419,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
     lgdSST.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">✕</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0033cc,#0099ff,#00e0c0,#7dff66,#ffe000,#ff7800,#e00000);"></div>
-      <div class="dl-scale"><span>-2 °C</span><span>32 °C</span></div>
+      <div class="dl-scale"><span>${fmtTemp(-2)}</span><span>${fmtTemp(32)}</span></div>
       <div class="dl-hint">${currentLang==='jp'?'GHRSST MUR L4（海域のみ）':'GHRSST MUR L4 (oceans only)'}</div>`;
     mc.appendChild(lgdSST);
     lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -5631,9 +5677,11 @@ window.addEventListener('DOMContentLoaded', () => {
         let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
         tools.innerHTML='';
         const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(lang==='jp'?'ツール':'Tools'); tools.appendChild(th);
-        if(cmpBtn){ cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
-        if(upBtn){ upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
-        if(ugj){ tools.appendChild(ugj); }
+        /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
+           left over from an earlier collapse so the Tools section always shows (#R13c). */
+        if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
+        if(upBtn){ upBtn.style.display=''; upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
+        if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
         if(cmpBtn||upBtn){ order.push(mkHr()); order.push(tools); }
         order.forEach(n=>dd.appendChild(n));
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
@@ -5850,16 +5898,18 @@ window.addEventListener('DOMContentLoaded', () => {
     let nightTimer=null;
     function buildNight(){ if(typeof turf==='undefined')return; const now=new Date(); const N=Math.floor((now-Date.UTC(now.getUTCFullYear(),0,0))/864e5); const decl=-23.44*Math.cos((2*Math.PI/365)*(N+10)); const utc=now.getUTCHours()+now.getUTCMinutes()/60; const subLng=(12-utc)*15; const antiLng=((subLng+360)%360)-180; let poly; try{ poly=turf.circle([antiLng,-decl],10001,{steps:128,units:'kilometers'}); }catch(e){return;} const src=map.getSource('src-night'); if(src)src.setData(poly); else map.addLayer({id:'lyr-night',type:'fill',source:(map.addSource('src-night',{type:'geojson',data:poly}),'src-night'),layout:{visibility:'none'},paint:{'fill-color':'#00112a','fill-opacity':opacities.night}},beforeId); }
 
-    /* Köppen-Geiger climate (#13): rendered locally from koppen_geiger_0p00833333.tif
-       (Beck et al. 2018, native 1 km, 30 classes) and REPROJECTED to Web Mercator (EPSG:3857) at
-       ±85.0511° → koppen_mercator.png, so the image source aligns pixel-exactly with the Mercator
-       basemap (no latitude drift) and avoids the "y=Infinity" error. Transparent ocean. Falls back
-       to the Wikipedia PNG if the local file isn't published. The palette below is byte-identical
-       to the PNG so cursor pixel-sampling (Mercator-inverse) round-trips perfectly. */
-    /* (#R12) Multi-period Köppen. Default stays present-day (1991-2020). The three historical eras were
-       reprojected from the Beck/Köppen-Geiger GeoTIFFs to Web Mercator at 8192² (nearest-neighbour, crisp
-       class boundaries) — same palette/coords as koppen_mercator.png, so sampling & highlight just work. */
-    window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
+    /* Köppen-Geiger climate (#13): rendered locally from the native 1 km GeoTIFFs in
+       "Köppen-Geiger climate classification data/<period>.tif" (Beck et al. 2018, 30 classes) and
+       REPROJECTED to Web Mercator (EPSG:3857) at ±85.0511° → koppen_mercator_<period>.png, so the image
+       source aligns pixel-exactly with the Mercator basemap (no latitude drift) and avoids the
+       "y=Infinity" error. Transparent ocean. Falls back to the Wikipedia PNG if the local file isn't
+       published. The palette below is byte-identical to the PNGs so cursor pixel-sampling
+       (Mercator-inverse) round-trips perfectly. */
+    /* (#R12/#R13c) Multi-period Köppen. Default stays present-day (1991-2020). All four eras are
+       reprojected by _koppen_convert.py to Web Mercator at 8192² (nearest-neighbour, crisp class
+       boundaries) and named koppen_mercator_<period>.png (the old koppen_mercator.png was retired);
+       1931-1960 & 1961-1990 now use the user's updated, distinct source TIFFs. */
+    window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator_1991-2020.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
     if(!window._koppenPeriod) window._koppenPeriod='1991-2020';
     function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; return e[1]; }
     let KURL=koppenURLFor(window._koppenPeriod);
@@ -6064,7 +6114,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function showKoppenInfo(code,x,y){
       const info=koppenCriteria(code), nm=KNAME[code]?KNAME[code][currentLang]:code;
-      const lines=(currentLang==='jp'?info.jp:info.en).map(s=>`<li>${s}</li>`).join('');
+      const lines=(currentLang==='jp'?info.jp:info.en).map(s=>`<li>${convTempText(s)}</li>`).join('');
       const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
       let pop=document.getElementById('koppen-info-pop');
       if(!pop){ pop=document.createElement('div'); pop.id='koppen-info-pop'; pop.className='koppen-info-pop'; mc.appendChild(pop); }
@@ -6118,8 +6168,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
+      /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
+         over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
+      let leftBase=24;
+      try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed')) leftBase=(sb.getBoundingClientRect().width||440)+24; } }catch(_){}
+      const mobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
       let bottom=140;
-      visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.right='24px'; el.style.left='auto'; el.style.top='auto'; bottom += el.getBoundingClientRect().height+10; });
+      visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.top='auto'; if(mobile){ el.style.right='10px'; el.style.left='auto'; } else { el.style.left=leftBase+'px'; el.style.right='auto'; } bottom += el.getBoundingClientRect().height+10; });
     }
     /* Mark a legend as user-dragged so tileLegends() leaves it alone. */
     document.addEventListener('mousedown', e=>{
@@ -9786,7 +9841,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const jp=()=>currentLang==='jp';
     let win=null, cmap=null, syncOn=true, minimized=false, built=false, ro=null, syncing=false, xray=false;
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
-    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); return p?p[1]:'koppen_mercator.png'; }catch(_){ return 'koppen_mercator.png'; } }
+    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); return p?p[1]:'koppen_mercator_1991-2020.png'; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
       '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:both;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
