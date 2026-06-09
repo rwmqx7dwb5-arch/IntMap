@@ -9805,7 +9805,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapRoute=(function(){
     if(!map) return { open(){}, clear(){}, setStart(){}, active:()=>false };
     const jp=()=>currentLang==='jp';
-    const W=1800, H=900;                 /* 0.2° mask ≈ 22 km cells → routes stay ≳15 km offshore */
+    const W=3600, H=1800;                /* (#R14) 0.1° mask ≈ 11 km cells — sharper coastlines so a route can start at shallow/coastal points and stops cutting across thin land (was 0.2°/22 km) */
     let grid=null, panel=null, start=null, end=null, noGo=[], pureDist=false, addNoGoMode=false, busy=false;
     const toRad=Math.PI/180, Rk=6371;
     function hav(a,b){ const dLat=(b[1]-a[1])*toRad, dLon=(b[0]-a[0])*toRad, la1=a[1]*toRad, la2=b[1]*toRad;
@@ -9816,7 +9816,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const c=cv.getContext('2d',{willReadFrequently:true});
       c.fillStyle='#fff'; c.fillRect(0,0,W,H); c.fillStyle='#000'; c.strokeStyle='#000'; c.lineWidth=1; c.lineJoin='round';
       const X=lng=>((lng+180)/360)*W, Y=lat=>((90-lat)/180)*H;
-      function ring(r){ if(!r||!r.length) return; c.beginPath(); for(let i=0;i<r.length;i++){ const p=r[i]; const x=X(p[0]),y=Y(p[1]); if(i===0)c.moveTo(x,y); else c.lineTo(x,y); } c.closePath(); c.fill(); c.stroke(); }
+      /* (#R14) FILL ONLY — the old 1px stroke thickened every coastline by ~its width, marking shallow/
+         coastal water as land so a route couldn't start there; A* now seals thin land via no-corner-cutting. */
+      function ring(r){ if(!r||!r.length) return; c.beginPath(); for(let i=0;i<r.length;i++){ const p=r[i]; const x=X(p[0]),y=Y(p[1]); if(i===0)c.moveTo(x,y); else c.lineTo(x,y); } c.closePath(); c.fill(); }
       cg.features.forEach(f=>{ const g=f.geometry; if(!g) return; if(g.type==='Polygon') g.coordinates.forEach(ring); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>poly.forEach(ring)); });
       const d=c.getImageData(0,0,W,H).data; const land=new Uint8Array(W*H);
       for(let p=0;p<land.length;p++){ land[p]=(d[p*4]<128)?1:0; }   /* black pixel = land */
@@ -9859,21 +9861,29 @@ window.addEventListener('DOMContentLoaded', () => {
     const inNoGo=(lng,lat)=>{ for(const z of noGo){ if(hav([lng,lat],[z.lng,z.lat])<=z.km) return true; } return false; };
     function isSea(x,y){ if(y<0||y>=H) return false; x=((x%W)+W)%W; if(grid.cell[y*W+x]===2) return false; const ll=llOf(x,y); return !inNoGo(ll[0],ll[1]); }
     /* nearest sea cell to a clicked point (snaps a coastal click out to water) */
-    function snapSea(lng,lat){ const s=cellOf(lng,lat); if(isSea(s.x,s.y)) return s; for(let r=1;r<60;r++){ for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.abs(dx)!==r&&Math.abs(dy)!==r) continue; const nx=((s.x+dx)%W+W)%W, ny=s.y+dy; if(isSea(nx,ny)) return {x:nx,y:ny}; } } return null; }
+    function snapSea(lng,lat){ const s=cellOf(lng,lat); if(isSea(s.x,s.y)) return s; for(let r=1;r<140;r++){ for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ if(Math.abs(dx)!==r&&Math.abs(dy)!==r) continue; const nx=((s.x+dx)%W+W)%W, ny=s.y+dy; if(isSea(nx,ny)) return {x:nx,y:ny}; } } return null; }
     /* binary-heap A* */
     function astar(s,e){
       const open=[], gScore=new Map(), came=new Map(), closed=new Uint8Array(W*H);
       const key=(x,y)=>y*W+x; const goalLL=llOf(e.x,e.y);
       const push=(n)=>{ open.push(n); let i=open.length-1; while(i>0){ const p=(i-1)>>1; if(open[p].f<=open[i].f) break; [open[p],open[i]]=[open[i],open[p]]; i=p; } };
       const pop=()=>{ const top=open[0], last=open.pop(); if(open.length){ open[0]=last; let i=0; for(;;){ let l=2*i+1,r=l+1,m=i; if(l<open.length&&open[l].f<open[m].f)m=l; if(r<open.length&&open[r].f<open[m].f)m=r; if(m===i)break; [open[m],open[i]]=[open[i],open[m]]; i=m; } } return top; };
-      const sK=key(s.x,s.y); gScore.set(sK,0); push({x:s.x,y:s.y,f:hav(llOf(s.x,s.y),goalLL)});
-      let it=0, MAX=500000;
+      /* (#R14) mild heuristic weight → far fewer expansions so the finer 0.1° grid stays fast (routes can
+         be a hair sub-optimal, which is realistic for shipping); MAX raised so a long ocean crossing on the
+         denser grid isn't falsely reported as "no route". */
+      const HW=1.25;
+      const sK=key(s.x,s.y); gScore.set(sK,0); push({x:s.x,y:s.y,f:HW*hav(llOf(s.x,s.y),goalLL)});
+      let it=0, MAX=2000000;
       while(open.length){ if(++it>MAX) return null; const cur=pop(); const cK=key(cur.x,cur.y); if(closed[cK]) continue; closed[cK]=1;
         if(cur.x===e.x&&cur.y===e.y){ const path=[]; let k=cK; while(k!==undefined){ const y=Math.floor(k/W),x=k-y*W; path.push(llOf(x,y)); k=came.get(k); } return path.reverse(); }
         const curLL=llOf(cur.x,cur.y), gc=gScore.get(cK);
-        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ if(!dx&&!dy) continue; const nx=((cur.x+dx)%W+W)%W, ny=cur.y+dy; if(ny<0||ny>=H) continue; if(!isSea(nx,ny)) continue; const nK=key(nx,ny); if(closed[nK]) continue;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ if(!dx&&!dy) continue; const nx=((cur.x+dx)%W+W)%W, ny=cur.y+dy; if(ny<0||ny>=H) continue; if(!isSea(nx,ny)) continue;
+          /* (#R14) no diagonal corner-cutting: a diagonal step is only allowed if BOTH orthogonally-adjacent
+             cells are also sea, so a route can't slip through a 1-cell land corner (replaces the old stroke). */
+          if(dx&&dy && (!isSea(((cur.x+dx)%W+W)%W,cur.y) || !isSea(cur.x,cur.y+dy))) continue;
+          const nK=key(nx,ny); if(closed[nK]) continue;
           const nLL=llOf(nx,ny); let step=hav(curLL,nLL); if(grid.cell[ny*W+nx]===1) step*=1.6;   /* near-coast penalty → prefer open water */
-          const ng=gc+step; if(ng<(gScore.has(nK)?gScore.get(nK):Infinity)){ gScore.set(nK,ng); came.set(nK,cK); push({x:nx,y:ny,f:ng+hav(nLL,goalLL)}); } }
+          const ng=gc+step; if(ng<(gScore.has(nK)?gScore.get(nK):Infinity)){ gScore.set(nK,ng); came.set(nK,cK); push({x:nx,y:ny,f:ng+HW*hav(nLL,goalLL)}); } }
       }
       return null;
     }
@@ -9881,7 +9891,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Sample the sightline finely (every ~9 km) AND reject chords that skim near-coast cells, so
        string-pulling can't straighten a leg across/along a coastline — keeps the route faithful to the
        real geography instead of collapsing it into long straight chords ("too linear"). */
-    function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/9)); let nearCoast=0; for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); const cv=grid.cell[c.y*W+c.x]; if(cv===2) return false; if(inNoGo(lng,lat)) return false; if(cv===1) nearCoast++; } return nearCoast<=Math.max(2,Math.floor(n*0.5)); }
+    function seaLineClear(a,b){ const d=hav(a,b), n=Math.max(2,Math.ceil(d/6)); let nearCoast=0; for(let i=1;i<n;i++){ const t=i/n, lng=a[0]+(b[0]-a[0])*t, lat=a[1]+(b[1]-a[1])*t; const c=cellOf(lng,lat); const cv=grid.cell[c.y*W+c.x]; if(cv===2) return false; if(inNoGo(lng,lat)) return false; if(cv===1) nearCoast++; } return nearCoast<=Math.max(2,Math.floor(n*0.5)); }
     function stringPull(path){ if(path.length<3) return path; const out=[path[0]]; let i=0; while(i<path.length-1){ let j=path.length-1; for(;j>i+1;j--){ if(Math.abs(path[j][0]-path[i][0])>170) continue; if(seaLineClear(path[i],path[j])) break; } out.push(path[j]); i=j; } return out; }
     /* --- layers --- */
     function ensureLayers(){ if(map.getSource('route-src')) return true; if(!map.isStyleLoaded()) return false;
@@ -9913,7 +9923,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!s||!e){ setBody(jp()?'海上の点が見つかりません（陸地の可能性）':'No sea cell found near a point (is it on land?).'); busy=false; return; }
         let path=astar(s,e);
         if(!path){ setBody(jp()?'航路が見つかりません（封鎖/到達不可）':'No sea route found (blocked or unreachable).'); busy=false; return; }
-        path[0]=start.slice(); path[path.length-1]=end.slice();
+        /* (#R14) if the click landed on a coastal/shallow cell the mask reads as land, anchor the drawn route
+           at the nearest navigable water (the snapped cell) rather than drawing a leg across land or failing —
+           this is what lets the user start/end at ports & shallows. A water click keeps its exact point. */
+        const sC=cellOf(start[0],start[1]), eC=cellOf(end[0],end[1]);
+        path[0]=isSea(sC.x,sC.y)?start.slice():llOf(s.x,s.y);
+        path[path.length-1]=isSea(eC.x,eC.y)?end.slice():llOf(e.x,e.y);
         const pulled=stringPull(path);
         let km=0; for(let i=1;i<pulled.length;i++){ if(Math.abs(pulled[i][0]-pulled[i-1][0])<180) km+=hav(pulled[i-1],pulled[i]); }
         draw(pulled);
