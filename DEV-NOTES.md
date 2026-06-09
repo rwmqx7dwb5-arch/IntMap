@@ -831,3 +831,57 @@ under `file://`** (only http/https/data). Remote https fetches and `<img>`/`<scr
   real (non-headless) browser to confirm.
 - **Gotcha for future work:** anything that `fetch()`es a LOCAL bundled file will break on the file://
   public site — ship local data as a `<script>` global (or inline) instead, and prefer image/script loads.
+
+---
+
+## 16. Round 13c — Köppen re-render + Classic theme + temp-unit + UI nits (tags `#R13c`)
+
+A focused, additive batch. Verified in the headless preview (`preview_eval`: full-script parse via globals,
+console-error checks, DOM/CSS measurements; the spinning WebGL globe still can't be screenshotted).
+
+### Köppen images replaced from the user's UPDATED source TIFFs
+- The user re-downloaded **`1931-1960.tif`** so it is **no longer byte-identical** to `1961-1990.tif`
+  (md5 `56babf54…` vs `ee9cd732…`). Re-ran `_koppen_convert.py` (PIL/numpy, palette-mode 43200×21600 → exact
+  KCOL, nearest-neighbour → Web-Mercator 8192² RGBA). The two previously-identical PNGs are now **distinct**
+  (`277dca79…` vs `dc35f5f7…`); 1901-1930 / 1961-1990 / 1991-2020 re-emit unchanged (their sources didn't move).
+- **Renamed the present-day PNG** `koppen_mercator.png` → **`koppen_mercator_1991-2020.png`** so all four periods
+  share one convention. Updated `window.KOPPEN_PERIODS`, the `koppenUrl()` fallbacks, and the comments. The old
+  source `koppen_geiger_0p00833333.tif` is retired — every period now reads from
+  `Köppen-Geiger climate classification data/<period>.tif`.
+- All four source TIFFs confirmed mode-`P` with indices 0..30 and a palette that matches the script's hard-coded
+  `KCOL` exactly (so cursor sampling still round-trips, image quality preserved — no re-quantisation).
+
+### Classic (Age-of-Discovery) Appearance theme — NEW
+`Settings → Appearance → "Classic"` (`userTheme==='classic'` → `body.theme-classic`, built ON the light base).
+Warm parchment surfaces with an aged-paper grain, serif type + small-caps headings, brass accents, a **sepia
+tint applied to ONLY the `.maplibregl-canvas`** (markers/HUD/controls stay crisp), and a decorative **compass
+rose** (inline data-URI SVG) lower-right of the map (cosmetic, `pointer-events:none`, hidden on mobile).
+
+### "Light Mode"/"Dark Mode" → "Light"/"Dark"
+Label-only rename (`optLight`/`optDark`, EN + JP). Classic slotted between Dark and Tactical.
+
+### Temperature unit — Fahrenheit never leaks when set, default keeps (°F)
+`fmtTemp`'s default `both` already renders Celsius-primary with **Fahrenheit in parentheses** (matches the
+brief "華氏をカッコで表記"). The real bug was **hard-coded `°C` bypassing the setting**: fixed the **cursor
+readout** (temp/SST layer), the **temperature & SST legend scales** (now `fmtTemp(-40)` etc.), and added
+**`window.convTempText()`** — converts `°C` literals embedded in prose (handles single values, ranges
+`0–18 °C`/`0〜18°C`, and both minus signs) — applied to the **Köppen criteria popup**. `'c'`→°C only,
+`'f'`→°F only, `'both'`→`°C (°F)`. (Verified across all three modes in the preview.)
+
+### UI nits
+- **Mobile country-isolation "Exit" pill** used a fixed `bottom:96px` → hidden under the bottom sheet. Now rides
+  `calc(var(--sheet-cover) + 58px)` like the other floating controls (mobile media query, `!important`).
+- **Layers → Tools couldn't open**: the auto-collapse-on-open loop folded **every** header incl. the Tools
+  `lyr-section-label`, but the click handler refuses to toggle section labels → permanently collapsed. Excluded
+  `.lyr-section-label` from the auto-collapse (+ reset stale `display` on the moved Compare/Upload buttons).
+  Verified: after the collapse pass the Tools header stays open and the Compare button is visible.
+- **Mobile Tools display bug**: `#layer-tools` is a direct child of the 2-column mobile layer grid but wasn't in
+  the full-width span list → squished into one cell. Added it to `grid-column:1/-1` + full-width buttons.
+- **Desktop legends/popups moved to the LEFT** of the map (were `right:24px`). Flipped the `.data-legend` /
+  `.koppen-legend` CSS defaults and `tileLegends()` to a left anchor; in frosted-overlay mode they offset past
+  the floating sidebar (`calc(var(--sidebar-w)+24px)`, flush-left when collapsed) — mirroring the coord-readout.
+  Measured clear of the top-right map controls and the sidebar. Mobile keeps its right-dock.
+
+### Git / data housekeeping
+Source `.tif`s are git-ignored (`*.tif`) and `_koppen_convert.py` is a local tool (also ignored); only the
+shipped `koppen_mercator_<period>.png` are tracked.
