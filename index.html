@@ -5734,10 +5734,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const skip=new Set(['cb-names','cb-borders','cb-grid','cb-countries']);
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-        if(!cb.checked || skip.has(cb.id) || seen.has(cb.id)) return; seen.add(cb.id);
+        if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
         const lab=cb.closest('label'); if(!lab) return;
-        const sp=lab.querySelector('span'); let name=((sp?sp.textContent:lab.textContent)||'').trim();
-        if(!name) return; chips.push({id:cb.id, name});
+        const sp=lab.querySelector('span:not(.lyr-sw):not(.lfc-sw)');   /* the name span, not a colour-swatch span */
+        let name=((sp?sp.textContent:lab.textContent)||'').trim();
+        if(!name) return; chips.push({el:cb, name});
       });
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; return; }
       sec.style.display='';
@@ -5747,9 +5748,9 @@ window.addEventListener('DOMContentLoaded', () => {
       chips.forEach(c=>{
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
-        nm.onclick=()=>{ const cb=document.getElementById(c.id); if(cb){ const row=cb.closest('.lyr-row')||cb.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} } };
+        nm.onclick=()=>{ const row=c.el.closest('.lyr-row')||c.el.closest('label'); if(row&&row.scrollIntoView) try{ row.scrollIntoView({block:'nearest'}); }catch(_){} };
         const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(lang==='jp'?'非表示':'Hide');
-        x.onclick=(e)=>{ e.stopPropagation(); const cb=document.getElementById(c.id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
+        x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
     };
