@@ -2567,8 +2567,13 @@ window.addEventListener('DOMContentLoaded', () => {
     /* NATO "Posture"/deployment layer removed per request (#14). NATO is now ONLY the members
        country-fill (data layer "nato") with accession-year + defence-spend (%GDP) on hover. */
     bri:{ color:"#e8590c", name:{en:"Belt & Road (BRI)",jp:"一帯一路"}, lines:[
-      {label:"BRI — Silk Road Economic Belt", path:[[108.9,34.3],[106.0,35.5],[103.8,36.6],[99.5,38.5],[94.0,40.0],[90.5,42.2],[87.6,43.8],[82.5,44.5],[80.2,44.2],[76.9,43.2],[73.0,42.3],[69.2,41.3],[64.0,40.0],[59.6,38.5],[58.4,37.6],[54.5,36.7],[51.4,35.7],[48.0,36.5],[44.4,38.1],[40.0,39.5],[35.0,39.9],[32.0,40.5],[29.0,41.0],[25.0,42.5],[20.5,44.8],[18.0,46.5],[16.4,48.2],[12.5,49.0],[8.7,49.4],[6.5,50.8],[4.5,51.9]]},
-      {label:"BRI — Maritime Silk Road", path:[[113.3,23.1],[111.0,18.0],[108.5,12.0],[106.0,7.0],[103.8,1.3],[98.0,4.0],[93.0,7.0],[88.0,7.0],[83.0,7.0],[80.0,6.9],[73.0,6.0],[66.0,10.0],[60.0,14.0],[51.0,13.0],[45.0,12.0],[43.2,11.6],[38.0,18.0],[35.0,24.0],[33.5,28.0],[32.5,29.9],[30.0,32.0],[26.0,34.0],[23.6,37.9],[18.5,40.5],[16.0,42.0],[13.5,44.5],[12.3,45.4]]}
+      /* (#R13c) Densified along the REAL overland route — every vertex is a named city the corridor
+         actually passes through (Xi'an→Lanzhou→Urumqi→Khorgos→Almaty→Tashkent→Samarkand→Ashgabat→Tehran
+         →Tabriz→Erzurum→Ankara→Istanbul→Sofia→Belgrade→Budapest→Vienna→Prague→Duisburg→Rotterdam). */
+      {label:"BRI — Silk Road Economic Belt", path:[[108.94,34.27],[107.14,34.36],[105.72,34.58],[103.83,36.06],[102.63,37.93],[100.45,38.93],[98.49,39.74],[97.04,40.28],[93.51,42.83],[89.18,42.95],[87.62,43.83],[84.90,44.43],[82.07,44.90],[80.42,44.21],[76.89,43.26],[74.59,42.87],[69.60,42.32],[69.24,41.31],[66.96,39.65],[64.42,39.77],[63.58,39.08],[61.83,37.60],[58.38,37.95],[54.44,36.84],[51.39,35.69],[49.99,36.27],[48.48,36.68],[46.30,38.07],[41.28,39.91],[37.88,39.75],[35.32,38.74],[32.86,39.93],[30.52,39.78],[28.98,41.01],[26.55,41.68],[24.75,42.14],[23.32,42.70],[21.90,43.32],[20.46,44.79],[19.84,45.25],[19.04,47.50],[17.11,48.15],[16.37,48.21],[16.61,49.20],[14.42,50.08],[13.74,51.05],[12.37,51.34],[8.68,50.11],[6.96,50.94],[6.76,51.43],[4.48,51.92]]},
+      /* Maritime road — real ports & straits: Quanzhou→Guangzhou→Singapore/Malacca→Colombo→Maldives
+         →Bab-el-Mandeb→Jeddah→Suez→Port Said→Piraeus→Otranto→Venice. */
+      {label:"BRI — Maritime Silk Road", path:[[118.59,24.87],[118.08,24.48],[114.27,22.55],[113.27,23.13],[110.40,21.20],[110.00,18.20],[109.20,15.00],[109.40,12.25],[107.00,9.80],[104.80,8.40],[103.85,1.29],[100.35,3.00],[98.30,5.40],[94.50,6.50],[88.00,7.00],[82.00,6.40],[79.85,6.93],[73.50,4.20],[66.00,9.00],[58.00,12.00],[51.00,13.50],[45.00,12.40],[43.35,12.60],[40.50,16.00],[39.20,21.50],[36.00,24.50],[33.80,27.80],[32.90,29.30],[32.55,29.97],[32.32,31.27],[30.50,32.20],[27.00,33.50],[25.00,34.30],[23.63,37.94],[19.50,38.20],[18.90,40.10],[16.20,42.00],[13.80,43.80],[12.34,45.44]]}
     ]},
     /* (#R7) Renewed major-pipeline network — global oil & gas trunk lines. */
     /* (#R12) Pipelines redrawn as DENSE, route-faithful polylines from real corridor coordinates — NOT a
@@ -2688,7 +2693,10 @@ window.addEventListener('DOMContentLoaded', () => {
     updateGeoLayers();
   }
   function updateGeoLayers(){
-    if(!map||!map.isStyleLoaded())return;
+    if(!map)return;
+    /* (#R13c) If the style is mid-load, a toggle-OFF would silently no-op and the layer would STAY on
+       ("消したはずのレイヤーが残る"). Re-run once the style settles so the on/off state always lands. */
+    if(!map.isStyleLoaded()){ try{ map.once('idle',()=>{ try{ updateGeoLayers(); }catch(_){} }); }catch(_){} return; }
     const isDark=document.documentElement.getAttribute('data-theme')==='dark';
     for(const key of Object.keys(geoLayersDB)){
       const cb=document.querySelector(`input[data-layer="${key}"]`);
@@ -3537,14 +3545,19 @@ window.addEventListener('DOMContentLoaded', () => {
     return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,110); })(); });
   }
   async function demSampleAll(points, z, timeoutMs){ await warmDEMTiles(points, z, timeoutMs); return points.map(p=>{ if(!p) return null; const v=demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
-  function elevText(e){ return e<0 ? `${t('depth')} ${Math.abs(Math.round(e))} m` : `${t('elev')} ${Math.round(e)} m`; }
+  /* Elevation/depth respects the measurement-units setting (#R13c): imperial → feet, both → "m (ft)". */
+  function fmtElevVal(e){ const m=Math.round(e), ft=Math.round(e*3.28084); const um=(typeof unitMode!=='undefined')?unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(m.toLocaleString()+' m'):(m.toLocaleString()+' m ('+ft.toLocaleString()+' ft)'); }
+  window.fmtElevVal=fmtElevVal;
+  function elevText(e){ return e<0 ? `${t('depth')} ${fmtElevVal(Math.abs(e))}` : `${t('elev')} ${fmtElevVal(e)}`; }
   /* Live weather-layer value at the cursor (#12): Köppen is instant (pixel sample); SST / air-temp
      are fetched seamlessly from Open-Meteo (debounced + cached per ~0.1°). */
   let _wxTimer=null; const _wxCache=new Map();
   function activeWxLayer(){ const on=id=>{ const cb=document.getElementById('dl-'+id); return cb&&cb.checked; }; return on('sst')?'sst':on('temp')?'temp':on('climate')?'climate':null; }
   function updateLayerReadout(lng,lat){
     const lyr=activeWxLayer();
-    if(!lyr){ lastLayerVal=''; return; }
+    if(!lyr){ /* no weather layer → show the active numeric choropleth's value at the cursor (#R13c) */
+      let cv=null; try{ cv=window.choroValueAt&&window.choroValueAt(lng,lat); }catch(_){}
+      lastLayerVal = cv||''; return; }
     if(lyr==='climate'){ let code=null; try{ code=window.sampleKoppenAt&&window.sampleKoppenAt(lng,lat); }catch(_){}
       /* no leading emoji on the layer value (#34) */
       lastLayerVal = code ? (code+(window.KNAME&&window.KNAME[code]?' · '+(window.KNAME[code][currentLang]||window.KNAME[code].en):'')) : ''; return; }
@@ -3604,11 +3617,11 @@ window.addEventListener('DOMContentLoaded', () => {
     try{
       const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${rLat.toFixed(4)}&longitude=${rLng.toFixed(4)}`);
       let e=null; if(r.ok){ const j=await r.json(); e=j&&j.elevation&&j.elevation[0]; }
-      if(typeof e==='number' && e>0.5){ set(`${t('elev')} ${Math.round(e)} m`); return; }
+      if(typeof e==='number' && e>0.5){ set(elevText(e)); return; }
       /* At/below sea level → fetch true depth from GEBCO bathymetry. */
       const d=await fetchBathymetry(rLat,rLng);
-      if(typeof d==='number'){ set(d<0 ? `${t('depth')} ${Math.abs(Math.round(d))} m` : `${t('elev')} ${Math.round(d)} m`); }
-      else if(typeof e==='number'){ set(e<0 ? `${t('depth')} ${Math.abs(Math.round(e))} m` : `${t('elev')} ${Math.round(e)} m`); }
+      if(typeof d==='number'){ set(elevText(d)); }
+      else if(typeof e==='number'){ set(elevText(e)); }
     }catch(_){}
   }
 
@@ -3802,8 +3815,8 @@ window.addEventListener('DOMContentLoaded', () => {
       let e=null; if(r.ok){ const j=await r.json(); e=j&&j.elevation&&j.elevation[0]; }
       const el=searchCardEl&&searchCardEl.querySelector('#src-elev');
       if(el){
-        if(typeof e==='number' && e>0.5){ el.textContent=Math.round(e)+' m'; }
-        else { const d=await fetchBathymetry(lat,lng); if(typeof d==='number'){ el.textContent = d<0 ? (Math.abs(Math.round(d))+' m '+(currentLang==='jp'?'(水深)':'(depth)')) : (Math.round(d)+' m'); } else if(typeof e==='number'){ el.textContent=Math.round(e)+' m'; } else el.textContent='—'; }
+        if(typeof e==='number' && e>0.5){ el.textContent=fmtElevVal(e); }
+        else { const d=await fetchBathymetry(lat,lng); if(typeof d==='number'){ el.textContent = d<0 ? (fmtElevVal(Math.abs(d))+' '+(currentLang==='jp'?'(水深)':'(depth)')) : fmtElevVal(d); } else if(typeof e==='number'){ el.textContent=fmtElevVal(e); } else el.textContent='—'; }
       }
     }catch(_){}
   }
@@ -4911,8 +4924,15 @@ window.addEventListener('DOMContentLoaded', () => {
   searchInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter')runSearch(); });
 
   /* ===== View / Projection ===== */
-  document.getElementById('btn-view-map').onclick=(e)=>{ if(currentMapType==='map')return; currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); };
-  document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); };
+  /* (#R13c) Map/Sat switching was "often" failing: btn-view-map early-returned whenever currentMapType
+     was already 'map', so if the state ever desynced from what's drawn (a style op overwrote the basemap
+     visibility), clicking Map did nothing. Now both always re-assert, and schedule one more reassert on the
+     next idle to win any race with a concurrent style/layer change. */
+  document.getElementById('btn-view-map').onclick=(e)=>{ currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); };
+  document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); };
+  /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
+     re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
+  if(map) map.on('styledata',()=>{ try{ if(!map.isStyleLoaded()||!map.getLayer('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
   /* (#R7-mobile-zoom) Mobile Mercator must zoom out far enough to see the whole world. A min-zoom of
      1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
      desktop keeps a sensible floor. */
@@ -5741,6 +5761,21 @@ window.addEventListener('DOMContentLoaded', () => {
       gdppc:{label:()=>currentLang==='jp'?'1人当たりGDP':'GDP per capita', fmt:s=>s.gdppc!=null?fmtPc(s.gdppc):'—'},
       tfr:{label:()=>currentLang==='jp'?'合計特殊出生率':'Total fertility rate', fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
     };
+    /* (#R13c) Value of the active choropleth under the cursor, for the bottom-left coord readout —
+       so EVERY numeric layer (not just Köppen/temp/SST) shows its value at the cursor. One
+       queryRenderedFeatures over all visible choropleth fills → topmost wins. Returns "Label: value". */
+    window.choroValueAt=function(lng,lat){
+      try{
+        if(!map||!countryStats) return null;
+        const fillIds=Object.keys(CHORO_META).map(id=>id+'-fill').filter(L=>map.getLayer(L));
+        if(!fillIds.length) return null;
+        const pt=map.project([lng,lat]);
+        const hit=map.queryRenderedFeatures(pt,{layers:fillIds});
+        if(hit&&hit.length){ const f=hit[0]; const id=f.layer.id.replace(/-fill$/,''); const meta=CHORO_META[id]; const s=countryStats[f.id];
+          if(meta&&s){ return meta.label()+': '+meta.fmt(s); } }
+      }catch(_){}
+      return null;
+    };
     function wireChoroHover(id){
       const meta=CHORO_META[id]; if(!meta) return;
       map.__choroHover=map.__choroHover||{}; if(map.__choroHover[id]) return; map.__choroHover[id]=true;
@@ -5887,8 +5922,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window._refreshSeaLevel=function(){
       if(map.getLayer('lyr-sealevel')){ try{ map.setPaintProperty('lyr-sealevel','color-relief-color',seaLevelRamp()); }catch(_){} }
-      const L=window._seaLevelM||0, sgn=(L>=0?'+':'')+L+' m', clamp=Math.max(-150,Math.min(70,L));
-      try{ const s=lgdSeaLevel.querySelector('.sl-cur'); if(s) s.textContent=(L>=0?'+':'')+L+' m'; }catch(_){}
+      const L=window._seaLevelM||0, clamp=Math.max(-150,Math.min(70,L));
+      /* (#R13c) imperial → show the offset in feet (slider stays in metres internally) */
+      const _um=(typeof unitMode!=='undefined')?unitMode:'both';
+      const slDisp=(L>=0?'+':'')+(_um==='imperial'?(Math.round(L*3.28084)+' ft'):(L+' m'));
+      const sgn=slDisp;
+      try{ const s=lgdSeaLevel.querySelector('.sl-cur'); if(s) s.textContent=slDisp; }catch(_){}
       /* Keep the legend slider, the legend number box and the in-dropdown slider in lock-step (#11). */
       try{ const lr=lgdSeaLevel.querySelector('.sl-legend-range'); if(lr && +lr.value!==clamp) lr.value=clamp; }catch(_){}
       try{ const nb=lgdSeaLevel.querySelector('.sl-num'); if(nb && +nb.value!==L) nb.value=L; }catch(_){}
@@ -9366,6 +9405,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const area=dPath?('M'+X(0).toFixed(1)+' '+y0.toFixed(1)+' '+dPath.replace(/^M/,'L')+'L'+X(els.length-1).toFixed(1)+' '+y0.toFixed(1)+' Z'):'';
     /* (#R12) Blue water band drawn OVER the green fill so sub-sea terrain reads as underwater. */
     const seaBand=(minE<0)?'<rect x="'+padL+'" y="'+y0.toFixed(1)+'" width="'+(W-padL-padR)+'" height="'+Math.max(0,(H-padB-y0)).toFixed(1)+'" fill="rgba(38,118,200,0.30)"/>':'';
+    /* (#R13c) unit-aware compact labels for the elevation profile (imperial → ft / mi). */
+    const _um=(typeof unitMode!=='undefined')?unitMode:'both';
+    const elevC=(m)=>_um==='imperial'?(Math.round(m*3.28084).toLocaleString()+' ft'):(Math.round(m).toLocaleString()+' m');
+    const distC=(km)=>_um==='imperial'?((km*0.621371).toFixed(km*0.621371<10?1:0)+' mi'):(km.toFixed(km<10?1:0)+' km');
     const svg='<svg id="elev-svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;max-width:100%;cursor:crosshair;">'
       +(area?'<path d="'+area+'" fill="rgba(120,170,90,0.28)"/>':'')
       +seaBand
@@ -9373,16 +9416,16 @@ window.addEventListener('DOMContentLoaded', () => {
       +(dPath?'<path d="'+dPath+'" fill="none" stroke="#5aa02c" stroke-width="1.6"/>':'')
       +'<line id="elev-vline" x1="0" y1="'+padT+'" x2="0" y2="'+(H-padB)+'" stroke="#ff3b30" stroke-width="1" style="display:none;"/>'
       +'<circle id="elev-vdot" r="3.5" fill="#ff3b30" stroke="#fff" stroke-width="1.5" style="display:none;"/>'
-      +'<text x="3" y="'+(Y(maxE)+3).toFixed(1)+'" font-size="9" fill="currentColor">'+Math.round(maxE)+' m</text>'
-      +'<text x="3" y="'+(Y(minE)).toFixed(1)+'" font-size="9" fill="currentColor">'+Math.round(minE)+' m</text>'
+      +'<text x="3" y="'+(Y(maxE)+3).toFixed(1)+'" font-size="9" fill="currentColor">'+elevC(maxE)+'</text>'
+      +'<text x="3" y="'+(Y(minE)).toFixed(1)+'" font-size="9" fill="currentColor">'+elevC(minE)+'</text>'
       +(minE<0?'<text x="3" y="'+(y0-2).toFixed(1)+'" font-size="9" fill="rgba(60,140,210,1)">0</text>':'')
       +'</svg>';
-    box.innerHTML=svg+'<div id="elev-readout" style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:10.5px;margin-top:2px;"><span>0 km</span><span id="elev-hover" style="color:var(--text-main);font-weight:600;"></span><span>'+total.toFixed(total<10?1:0)+' km</span></div>';
+    box.innerHTML=svg+'<div id="elev-readout" style="display:flex;justify-content:space-between;color:var(--text-muted);font-size:10.5px;margin-top:2px;"><span>'+distC(0)+'</span><span id="elev-hover" style="color:var(--text-main);font-weight:600;"></span><span>'+distC(total)+'</span></div>';
     /* Hover: vertical cursor on the chart + a synced marker on the map (#R11). */
     const svgEl=box.querySelector('#elev-svg'), vline=box.querySelector('#elev-vline'), vdot=box.querySelector('#elev-vdot'), hov=box.querySelector('#elev-hover');
     if(svgEl){ const move=(ev)=>{ const r=svgEl.getBoundingClientRect(); const cx=ev.touches?ev.touches[0].clientX:ev.clientX; let xv=(cx-r.left)/r.width*W; xv=Math.max(padL,Math.min(W-padR,xv)); const frac=(xv-padL)/(W-padL-padR); let idx=Math.round(frac*(samples.length-1)); idx=Math.max(0,Math.min(samples.length-1,idx)); const e=els[idx];
         vline.setAttribute('x1',X(idx)); vline.setAttribute('x2',X(idx)); vline.style.display='block';
-        if(e!=null&&!isNaN(e)){ vdot.setAttribute('cx',X(idx)); vdot.setAttribute('cy',Y(e)); vdot.style.display='block'; if(hov) hov.textContent=dist[idx].toFixed(dist[idx]<10?1:0)+' km · '+Math.round(e)+' m'+(e<0?' '+(j?'(海中)':'(below sea)'):''); }
+        if(e!=null&&!isNaN(e)){ vdot.setAttribute('cx',X(idx)); vdot.setAttribute('cy',Y(e)); vdot.style.display='block'; if(hov) hov.textContent=distC(dist[idx])+' · '+elevC(e)+(e<0?' '+(j?'(海中)':'(below sea)'):''); }
         _elevCursor(samples[idx]); };
       svgEl.addEventListener('mousemove',move); svgEl.addEventListener('touchmove',move,{passive:true});
       svgEl.addEventListener('mouseleave',()=>{ vline.style.display='none'; vdot.style.display='none'; if(hov) hov.textContent=''; _elevCursor(null); });
