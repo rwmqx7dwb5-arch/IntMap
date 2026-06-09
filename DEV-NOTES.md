@@ -915,3 +915,28 @@ The user asked to also tackle the remaining standing-list items. Tractable, veri
 
 Verified in the headless preview: full parse, no console errors, `fmtElevVal` imperial/metric/both correct via
 the real settings flow, `choroValueAt` returns gracefully with no layer active.
+
+### R13c part 3 — legends, popups, Köppen highlight (tags `#R13c`)
+- **Mobile country popup overflowed the screen.** `showCountryDetail`'s `.country-popup` becomes a `width:100%`
+  bottom sheet on phones, but with `box-sizing:content-box` + `padding:26px 18px` it was **100vw + 36px** → the
+  stats were cut off the right edge. Added `box-sizing:border-box` to the mobile rule (measured: now exactly
+  375px at a 375px viewport).
+- **Köppen legend "stretched left-right" when moved.** Move-drag never changed the width (verified), so the
+  culprit was the native `resize` grabber being draggable horizontally on the user's browser. **Locked the
+  width** (`min-width:max-width:216px`) so the grabber can only change HEIGHT — vertical-only resize, default
+  size unchanged (the repeated #15/#18 request), and no more horizontal stretch.
+- **Köppen highlight no longer drops resolution (#17).** The highlight used to recolour the small 2048² work
+  canvas and replace the 8192² base → blur. Now the small canvas is kept ONLY for cursor sampling, and the
+  DISPLAYED highlight is recoloured at the **source resolution** (8192² desktop / 4096² mobile cap) and encoded
+  **asynchronously** (`toBlob`→objectURL, sequence-guarded, prev URL revoked, buffers freed on clear/era-change)
+  so the map stays sharp and the UI never freezes. Graceful fallback to the old small-canvas highlight on
+  `file://` taint / OOM. (Visual sharpness only fully confirmable in a non-headless browser; logic + parse verified.)
+- **Time-varying legends state their data time (#15).** A "🕒 as-of" line (`window._refreshLegendDates`) appended
+  to the temp (month), SST (date), thermal (window) and radar (live) legends, refreshed on every date/window/
+  global-slider change. Verified the four lines render with the right text.
+- **Ecoregion click popup was invisible in dark mode (#16).** It was a default-white MapLibre popup; gave it the
+  self-theming `.plc-popup` class (`var(--popup-bg)`/`var(--text-main)`), readable in both themes.
+- **Land cover legend (#18).** New draggable/minimisable legend with the official **ESA WorldCover 2021** 11-class
+  palette + EN/JP labels; shows when WorldCover is toggled on, ✕ unchecks the layer. Verified: 11 swatches.
+- **Mobile Tools section (#19).** The R13c grid-span + full-width-button fix is in place and verified; the
+  re-report is almost certainly a `file://` cache of the pre-fix file (hard-reload).

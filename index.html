@@ -779,7 +779,9 @@
       #settings-modal .modal-content{ padding-top:20px !important; }
       .modal-content input, .modal-content select, .compose-content input, .compose-content textarea, .setting-group select{ font-size:16px; }
       .setting-group select{ min-height:46px; }
-      .country-popup{ position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:100% !important; max-width:100% !important; max-height:84dvh; border-radius:18px 18px 0 0; transform:none !important; padding:26px 18px max(20px,env(safe-area-inset-bottom)); animation:mSheetUp 0.42s var(--sheet-ease); }
+      /* (#R13c) box-sizing:border-box so width:100% INCLUDES the 18px L/R padding — without it the sheet
+         was 100vw + 36px and overflowed the device width, cutting off the country stats. */
+      .country-popup{ position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:100% !important; max-width:100% !important; box-sizing:border-box !important; max-height:84dvh; border-radius:18px 18px 0 0; transform:none !important; padding:26px 18px max(20px,env(safe-area-inset-bottom)); animation:mSheetUp 0.42s var(--sheet-ease); }
 
       /* roomier tap targets across content */
       .news-item{ padding:16px; } .stat-row{ padding:15px 14px; }
@@ -5296,7 +5298,9 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R10) Flex column (shown via inline display:flex): header (h4) pinned top, .kl-scroll flexes +
          scrolls, footer (opacity slider + hint) pinned bottom — so the opacity slider & minimise button
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; font-size:11px; }
+      /* (#R13c) Width is LOCKED (min=max=216) so the native resize grabber can only change HEIGHT — the
+         user reported the legend "stretching left-right"; vertical-only resize is the requested behaviour. */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; min-width:216px; max-width:216px; font-size:11px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       .koppen-legend::-webkit-resizer{ background:transparent; }
       .koppen-legend.legend-collapsed{ resize:none !important; }
@@ -5426,7 +5430,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="dl-hint">${currentLang==='jp'?'NASA FIRMS · MODIS + VIIRS（実データ・準リアルタイム）':'NASA FIRMS · MODIS + VIIRS (real, near-real-time)'}</div>`;
     mc.appendChild(lgdThermal);
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
-    { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); }); } }
+    { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); try{ window._refreshLegendDates&&window._refreshLegendDates(); }catch(_){} }); } }
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
     const lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
     lgdRadar.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
@@ -5555,6 +5559,25 @@ window.addEventListener('DOMContentLoaded', () => {
     /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
        thermal row carries a window selector in its legend instead of a calendar date. */
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    /* (#R13c) Time-varying layers state WHEN their data is from, in the legend (user request). A small
+       "as-of" line is appended to each dated legend and refreshed whenever the date/window changes. */
+    function _legendWhenText(id){ const jp=currentLang==='jp';
+      if(id==='radar') return (jp?'最新フレーム（実時間）':'Latest frame (live)');
+      if(id==='thermal'){ const w=window._thermalWindow||'24'; return (jp?('直近'+w+'時間'):('Last '+w+' h')); }
+      const d=layerDates[id]; if(!d) return '';
+      if(id==='temp') return (jp?'対象月: ':'Month: ')+String(d).slice(0,7);
+      return (jp?'データ: ':'Data: ')+d;
+    }
+    function _refreshLegendDates(){
+      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST]].forEach(([id,lg])=>{
+        if(!lg) return;
+        let w=lg.querySelector('.dl-when');
+        if(!w){ w=document.createElement('div'); w.className='dl-when'; w.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:3px;'; lg.appendChild(w); }
+        w.textContent='🕒 '+_legendWhenText(id);
+      });
+    }
+    window._refreshLegendDates=_refreshLegendDates;
+    _refreshLegendDates();
     /* Thermal anomalies / active fire (#R7) — REAL NASA FIRMS detections served through NASA GIBS WMS.
        Why GIBS, not FIRMS' own WMS: the FIRMS MapServer caps requests per IP, so a tiled web map (dozens
        of tiles per view) quickly trips its quota and every tile comes back as the red error image
@@ -5641,10 +5664,10 @@ window.addEventListener('DOMContentLoaded', () => {
       w.querySelector('#op-'+id).addEventListener('input',e=>setLayerOpacity(id,parseFloat(e.target.value)));
       if(isMonth){
         const sl=w.querySelector('#mo-'+id), lbl=w.querySelector('#molbl-'+id);
-        sl.addEventListener('input',e=>{ const back=36-parseInt(e.target.value,10); layerDates[id]=tempMonthISO(3+back); if(lbl) lbl.textContent=layerDates[id].slice(0,7); if(cb.checked) refreshDatedLayer(id); });
+        sl.addEventListener('input',e=>{ const back=36-parseInt(e.target.value,10); layerDates[id]=tempMonthISO(3+back); if(lbl) lbl.textContent=layerDates[id].slice(0,7); if(cb.checked) refreshDatedLayer(id); try{ _refreshLegendDates(); }catch(_){} });
       }
       if(isDated){
-        w.querySelector('#dt-'+id).addEventListener('change',e=>{ layerDates[id]=e.target.value||GIBS_DATE; if(cb.checked){ /* reload tiles for new date */ refreshDatedLayer(id); } });
+        w.querySelector('#dt-'+id).addEventListener('change',e=>{ layerDates[id]=e.target.value||GIBS_DATE; if(cb.checked){ /* reload tiles for new date */ refreshDatedLayer(id); } try{ _refreshLegendDates(); }catch(_){} });
       }
       if(isTraffic){
         w.querySelector('#ft-'+id).addEventListener('change',e=>{ trafficFilters[id]=e.target.value; refreshTrafficLayer(id); });
@@ -6072,13 +6095,78 @@ window.addEventListener('DOMContentLoaded', () => {
       octx.putImageData(img,0,0);
       try{ return out.toDataURL('image/png'); }catch(e){ return null; }
     }
+    /* (#R13c) FULL-RES highlight. The user asked us to STOP dropping resolution when a class is
+       highlighted: the small 2048² work-canvas is kept ONLY for fast cursor sampling, while the
+       DISPLAYED highlight is now recoloured at the source image's native resolution (8192² desktop /
+       4096² mobile cap) and encoded ASYNCHRONOUSLY (toBlob → objectURL) so the map never blurs and the
+       UI never freezes. Built lazily on first highlight, freed when the selection clears / era changes.
+       Graceful fallback to the small-canvas highlight if the full path can't run (file:// taint / OOM). */
+    window._koppenFull=null;
+    function _koppenFullCap(){ try{ return (typeof isMobile==='function'&&isMobile())?4096:8192; }catch(_){ return 8192; } }
+    function ensureKoppenFull(){
+      if(window._koppenFull) return window._koppenFull;
+      const im=window._koppenImg; if(!im) return null;
+      const nw=im.naturalWidth||im.width, nh=im.naturalHeight||im.height;
+      const cap=_koppenFullCap(), sc=Math.min(1, cap/Math.max(nw,nh,1));
+      const W=Math.max(1,Math.round(nw*sc)), H=Math.max(1,Math.round(nh*sc));
+      let d;
+      try{
+        const c=document.createElement('canvas'); c.width=W; c.height=H;
+        const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false; cx.drawImage(im,0,0,W,H);
+        d=cx.getImageData(0,0,W,H).data;            /* may throw (tainted file:// canvas / OOM) → fallback */
+        c.width=c.height=0;                          /* free the source canvas backing immediately */
+      }catch(e){ return null; }
+      const idx=new Uint8Array(W*H), cache=new Map();
+      for(let p=0,i=0;p<idx.length;p++,i+=4){
+        if(d[i+3]<32){ idx[p]=255; continue; }
+        const key=(d[i]<<16)|(d[i+1]<<8)|d[i+2]; let ci=cache.get(key);
+        if(ci===undefined){ let best=255,bestD=Infinity; for(let k=0;k<KCOL.length;k++){ const cc=KCOL[k][1],dr=d[i]-cc[0],dg=d[i+1]-cc[1],db=d[i+2]-cc[2],dd2=dr*dr+dg*dg+db*db; if(dd2<bestD){bestD=dd2;best=k;} } ci=(bestD<6000)?best:255; cache.set(key,ci); }
+        idx[p]=ci;
+      }
+      window._koppenFull={idx, src:d, W, H};
+      return window._koppenFull;
+    }
+    function freeKoppenFull(){ window._koppenFull=null; }   /* drop ~refs; GC reclaims the big typed arrays */
+    function buildKoppenHighlightFull(selectedSet, cb){
+      const f=ensureKoppenFull(); if(!f){ cb(null); return; }
+      try{
+        const idx=f.idx, src=f.src, W=f.W, H=f.H;
+        const selIdx=new Uint8Array(KCOL.length);
+        for(let k=0;k<KCOL.length;k++) if(selectedSet.has(KCOL[k][0])) selIdx[k]=1;
+        const out=document.createElement('canvas'); out.width=W; out.height=H;
+        const octx=out.getContext('2d'), img=octx.createImageData(W,H), o=img.data;
+        for(let p=0,i=0;p<idx.length;p++,i+=4){
+          const ci=idx[p];
+          if(ci!==255 && selIdx[ci]){ o[i]=src[i]; o[i+1]=src[i+1]; o[i+2]=src[i+2]; o[i+3]=src[i+3]; }
+          else { const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.28); }
+        }
+        octx.putImageData(img,0,0);
+        if(out.toBlob){ out.toBlob(b=>{ try{ out.width=out.height=0; }catch(_){} cb(b?URL.createObjectURL(b):null); }, 'image/png'); }
+        else { let u=null; try{ u=out.toDataURL('image/png'); }catch(_){} cb(u); }
+      }catch(e){ cb(null); }
+    }
+    window._koppenHLUrl=null; window._koppenHLSeq=0;
     window._refreshKoppenImage=function(){
       if(!map.getSource('src-climate')) return;
       /* Debounce so rapid multi-class selection coalesces into one rebuild (#12). */
       clearTimeout(window._koppenRefreshT);
       window._koppenRefreshT=setTimeout(()=>{
-        const url=(kSelected.size>0)?buildKoppenHighlightURL(kSelected):null;
-        try{ map.getSource('src-climate').updateImage({url:url||KURL,coordinates:KCOORDS}); }catch(e){}
+        const seq=++window._koppenHLSeq;
+        const setImg=(url)=>{ try{ map.getSource('src-climate').updateImage({url:url,coordinates:KCOORDS}); }catch(e){} };
+        if(kSelected.size===0){
+          setImg(KURL);
+          if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
+          freeKoppenFull();
+          return;
+        }
+        buildKoppenHighlightFull(kSelected,(url)=>{
+          if(seq!==window._koppenHLSeq){ if(url){ try{ URL.revokeObjectURL(url); }catch(_){} } return; }   /* superseded by a newer selection */
+          if(!url){ /* full-res path unavailable → low-res fallback so highlight still works */
+            const u2=buildKoppenHighlightURL(kSelected); setImg(u2||KURL); return;
+          }
+          const prev=window._koppenHLUrl; setImg(url); window._koppenHLUrl=url;
+          if(prev){ try{ URL.revokeObjectURL(prev); }catch(_){} }
+        });
       },45);
     };
     /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
@@ -6088,6 +6176,8 @@ window.addEventListener('DOMContentLoaded', () => {
       window._koppenPeriod=period; KURL=koppenURLFor(period);
       window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
       window._koppenCodeIdx=null; window._koppenSrcData=null;
+      /* (#R13c) drop the full-res highlight buffers + objectURL so the new era rebuilds them */
+      window._koppenFull=null; if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
       /* Swap the full-res base image immediately (GPU, fast); recompute the dim overlay after the small
          work-canvas for the new era has loaded. */
       try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){}
@@ -6826,6 +6916,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const dp=document.getElementById('dt-'+id); if(dp) dp.value=d;
         if(map.getLayer('lyr-'+id) && map.getLayoutProperty('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id);
       });
+      try{ _refreshLegendDates(); }catch(_){}
     };
     window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
@@ -9240,7 +9331,9 @@ window.addEventListener('DOMContentLoaded', () => {
         map.addSource('eco-regions',{type:'geojson',data:gj,attribution:'RESOLVE/WWF Ecoregions 2017'});
         map.addLayer({id:'eco-regions-fill',type:'fill',source:'eco-regions',layout:{visibility:'visible'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}},before);
         map.addLayer({id:'eco-regions-line',type:'line',source:'eco-regions',layout:{visibility:'visible'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}},before);
-        if(!window._ecoPop) window._ecoPop=new maplibregl.Popup({closeButton:true,maxWidth:'240px'});
+        /* (#R13c) self-theme the popup (.plc-popup → var(--popup-bg)/var(--text-main)) so it stays
+           readable in DARK mode — the default white-popup text was invisible on the dark UI. */
+        if(!window._ecoPop) window._ecoPop=new maplibregl.Popup({closeButton:true,maxWidth:'240px',className:'plc-popup'});
         map.on('mouseenter','eco-regions-fill',()=>{ map.getCanvas().style.cursor='pointer'; });
         map.on('mouseleave','eco-regions-fill',()=>{ map.getCanvas().style.cursor=''; });
         map.on('click','eco-regions-fill',(e)=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
@@ -9248,8 +9341,30 @@ window.addEventListener('DOMContentLoaded', () => {
           window._ecoPop.setLngLat(e.lngLat).setHTML(html).addTo(map); });
       }catch(e){ try{ console.warn('ecoregions add failed',e); }catch(_){} } }
     const SETS={worldcover:['eco-worldcover'],plates:['eco-plates-fill','eco-plates-line','eco-plates-lbl'],ecoregions:['eco-regions-fill','eco-regions-line']};
+    /* (#R13c) Land-cover legend — the official ESA WorldCover 2021 11-class palette + labels (EN/JP).
+       Draggable + minimisable like every other legend; the ✕ unchecks the layer. */
+    const WC_CLASSES=[['#006400','Tree cover','樹木'],['#ffbb22','Shrubland','低木地'],['#ffff4c','Grassland','草地'],
+      ['#f096ff','Cropland','農地'],['#fa0000','Built-up','市街地'],['#b4b4b4','Bare / sparse vegetation','裸地・希少植生'],
+      ['#f0f0f0','Snow and ice','雪氷'],['#0064c8','Permanent water bodies','水域'],['#0096a0','Herbaceous wetland','湿地（草本）'],
+      ['#00cf75','Mangroves','マングローブ'],['#fae6a0','Moss and lichen','苔・地衣類']];
+    function wcLegend(show){
+      let lg=document.getElementById('data-legend-worldcover');
+      if(show){
+        if(!lg){ lg=document.createElement('div'); lg.className='data-legend'; lg.id='data-legend-worldcover'; lg.style.bottom='140px';
+          (document.getElementById('map-container')||document.body).appendChild(lg); }
+        const dragT=jp()?'ドラッグして移動':'Drag to move';
+        lg.innerHTML='<span class="dl-drag" title="'+dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+(t('close'))+'">✕</button>'+
+          '<h4>'+(jp()?'土地被覆 (ESA 2021)':'Land cover (ESA 2021)')+'</h4>'+
+          '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px;">'+
+          WC_CLASSES.map(([c,en,ja])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;flex:none;border:1px solid rgba(128,128,128,0.4);background:'+c+';"></span><span>'+(jp()?ja:en)+'</span></div>').join('')+
+          '</div>';
+        lg.style.display='block';
+        lg.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('eco-dl-worldcover'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
+        try{ window._wireLegendDrag&&window._wireLegendDrag(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
+      } else if(lg){ lg.style.display='none'; }
+    }
     function toggle(which,on){ state[which]=on;
-      if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ map.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); }
+      if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ map.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); wcLegend(on); }
       else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ map.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
       else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else setVis(SETS.ecoregions,false); }
     }
