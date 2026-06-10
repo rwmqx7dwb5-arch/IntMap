@@ -1,6 +1,5 @@
 # IntMap — Developer / Context Notes
 
-> 開発の意図・理由・ユーザーの意向を共有するための専用ファイル。
 > A living record of *why* things are the way they are, so future sessions (human or AI) have context.
 > Keep this in sync with the code. Inline code comments reference task tags like `(#NN)`.
 
@@ -35,8 +34,7 @@ live in **Supabase**. Heavy use of **MapLibre GL** (raster basemaps + globe/3D t
 
 ---
 
-## 2. Standing design intents (ユーザーの意向)
-
+## 2. Standing design intents
 - **Liquid/Frosted Glass must look identical across the WHOLE UI.** One material, one setting.
 - **JP / EN parity.** No English leaking into the Japanese UI (and vice-versa).
 - **Mobile = iOS-native feel.** Bottom sheet w/ detents, FABs, compact popups, 44pt targets.
