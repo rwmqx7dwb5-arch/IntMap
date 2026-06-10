@@ -236,6 +236,17 @@ gtag('config', 'G-57X5MX0ZPW');
     .sat-toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--info-mil); color:#fff; padding:11px 18px; border-radius:11px; font-size:12.5px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,0.32); z-index:3000; opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease; max-width:min(420px,80vw); text-align:center; }
     .sat-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
     .sat-keys-hint{ font-size:11px; color:var(--text-muted); margin-bottom:10px; font-weight:400; line-height:1.45; }
+    /* News-by-country multi-select pulldown (#R15) */
+    .nc-dd{ position:relative; }
+    .nc-dd-btn{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; border-radius:9px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg,rgba(128,128,128,0.08)); color:var(--text-main); font-size:13px; cursor:pointer; text-align:left; }
+    .nc-dd-btn:hover{ border-color:var(--primary-color); }
+    .nc-dd-label{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .nc-dd-caret{ flex-shrink:0; opacity:0.7; transition:transform 0.18s; }
+    .nc-dd.open .nc-dd-caret{ transform:rotate(180deg); }
+    .nc-dd-panel{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:30; max-height:260px; overflow-y:auto; padding:6px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--card-bg,#fff); box-shadow:var(--shadow,0 8px 28px rgba(0,0,0,0.22)); }
+    .nc-dd.open .nc-dd-panel{ display:block; }
+    .nc-dd-panel label{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; font-size:13px; cursor:pointer; }
+    .nc-dd-panel label:hover{ background:var(--input-bg,rgba(128,128,128,0.1)); }
     .sat-key-row{ margin-bottom:11px; }
     .sat-key-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px; }
     .sat-key-name{ font-size:12px; font-weight:500; color:var(--text-main); }
@@ -1262,7 +1273,10 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centred)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
     <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label>
       <div class="sat-keys-hint" data-i18n="newsCountriesHint">Also pull headlines from the national outlets of the countries you pick (multiple allowed).</div>
-      <div id="newscountry-multi" style="display:grid; grid-template-columns:1fr 1fr; gap:7px 12px; margin-top:4px;"></div>
+      <div id="newscountry-dd" class="nc-dd">
+        <button type="button" id="newscountry-dd-btn" class="nc-dd-btn"><span id="newscountry-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
+        <div id="newscountry-multi" class="nc-dd-panel"></div>
+      </div>
     </div>
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
@@ -3810,15 +3824,53 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     return q;
   }
+  /* (#R15) Tiny Levenshtein for tolerant (fuzzy) matching of short queries. */
+  function _lev(a,b){ a=a||'';b=b||''; const m=a.length,n=b.length; if(!m)return n; if(!n)return m;
+    let prev=Array.from({length:n+1},(_,j)=>j), cur=new Array(n+1);
+    for(let i=1;i<=m;i++){ cur[0]=i; for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+c); } [prev,cur]=[cur,prev]; }
+    return prev[n]; }
+  /* (#R15 / #34) Local fuzzy place lookup — resolves vague / partial / slightly-misspelled queries
+     against bundled country names, capitals and the built-in gazetteer, so search still works when the
+     external geocoder is slow / rate-limited / too strict for a loose query. Returns scored {name,lng,lat}. */
+  function localFuzzyPlaces(q){
+    const ql=(q||'').toLowerCase().trim(); if(!ql) return [];
+    const out=[];
+    const push=(name,lng,lat,score)=>{ lng=+lng;lat=+lat; if(isNaN(lng)||isNaN(lat))return; out.push({name,lng,lat,score}); };
+    try{ Object.values(countryStats||{}).forEach(s=>{
+      if(!s.latlng) return; const en=(s.nameEn||'').toLowerCase(), jp=(s.nameJp||''), cap=(s.capital||'').toLowerCase();
+      let sc=0, suffix='';
+      if(en===ql||(jp&&jp===q)) sc=100;
+      else if(en.startsWith(ql)) sc=86;
+      else if(cap===ql){ sc=82; suffix=' · '+s.capital; }
+      else if(en.includes(ql)||(jp&&jp.includes(q))) sc=72;
+      else if(cap.includes(ql)&&ql.length>=3){ sc=58; suffix=' · '+s.capital; }
+      else if(ql.length>=4 && _lev(en,ql)<=2) sc=62;
+      if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc);
+    }); }catch(_){}
+    try{ const gz=(typeof BUILTIN_GAZETTEER!=='undefined')?BUILTIN_GAZETTEER:null;
+      if(gz) for(const type in gz){ gz[type].forEach(e=>{ const terms=Array.isArray(e.terms)?e.terms.join(' '):String(e.terms||''); const tl=terms.toLowerCase(); const nm=(e.name&&(e.name[currentLang]||e.name.en))||terms;
+        let sc=0; if(tl.split(/[|,\s]+/).includes(ql)) sc=88; else if(tl.includes(ql)&&ql.length>=3) sc=64;
+        if(sc>0 && e.loc) push(nm, e.loc[0], e.loc[1], sc); }); }
+    }catch(_){}
+    const seen=new Set();
+    return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,5);
+  }
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
     res.style.display='block'; res.innerHTML=`<div class="ms-loading">${t('loading')}</div>`;
     /* Pre-process: turn abstract queries into something Nominatim can parse */
     const pq=preprocessNLQuery(q);
-    try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`); const arr=r.ok?await r.json():[];
-      if(!arr.length){ res.innerHTML=`<div class="ms-loading">${t('noMatch')}</div>`; return; }
-      res.innerHTML=''; arr.forEach(pl=>{ const d=document.createElement('div'); d.className='ms-item'; d.textContent=pl.display_name; d.onclick=()=>{ gotoPlace(+pl.lon,+pl.lat,pl.display_name,pl); res.style.display='none'; inp.value=pl.display_name.split(',')[0]; }; res.appendChild(d); });
-    }catch(e){ res.innerHTML=`<div class="ms-loading">${t('networkError')}</div>`; }
+    const local=localFuzzyPlaces(q);
+    let arr=[];
+    try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`); arr=r.ok?await r.json():[]; }catch(e){ arr=[]; }
+    res.innerHTML=''; const seen=new Set();
+    const addItem=(label,lng,lat,raw)=>{ if(isNaN(lng)||isNaN(lat))return; const key=label+'|'+lng.toFixed(2)+'|'+lat.toFixed(2); if(seen.has(key))return; seen.add(key);
+      const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; d.onclick=()=>{ gotoPlace(lng,lat,label,raw||null); res.style.display='none'; inp.value=String(label).split(',')[0].split(' · ')[0]; }; res.appendChild(d); };
+    /* Strong local matches (exact / prefix country or capital) lead; then the external geocoder. */
+    local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,null));
+    arr.forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl));
+    if(!res.children.length){ local.forEach(l=>addItem(l.name,l.lng,l.lat,null)); }   /* weak local fallback */
+    if(!res.children.length){ res.innerHTML=`<div class="ms-loading">${t('noMatch')}</div>`; }
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
   function closeSearchCard(){
@@ -3883,8 +3935,22 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }catch(_){}
   }
-  document.getElementById('ms-btn').onclick=doGeocode;
-  document.getElementById('ms-input').addEventListener('keydown',(e)=>{ if(e.key==='Enter')doGeocode(); });
+  /* (#R15 / #32) Mobile place search was broken: the search field collapses to a 46px circle on phones
+     (input width:0, opacity:0) and nothing ever expanded it, so tapping Search just ran doGeocode() on an
+     invisible empty input → no results. Now the button expands the field first, then searches. */
+  (function wireMapSearch(){
+    const box=document.getElementById('map-search'), btn=document.getElementById('ms-btn'), inp=document.getElementById('ms-input'), res=document.getElementById('ms-results');
+    if(!box||!btn||!inp) return;
+    const mob=()=>window.matchMedia('(max-width:768px)').matches;
+    const collapse=()=>{ box.classList.remove('ms-open'); if(res) res.style.display='none'; };
+    btn.onclick=()=>{
+      if(mob() && !box.classList.contains('ms-open')){ box.classList.add('ms-open'); setTimeout(()=>{ try{ inp.focus(); }catch(_){}} ,60); return; }
+      if(mob() && !inp.value.trim()){ collapse(); return; }
+      doGeocode();
+    };
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') doGeocode(); });
+    document.addEventListener('click',(e)=>{ if(mob() && box.classList.contains('ms-open') && !box.contains(e.target) && !inp.value.trim()) collapse(); });
+  })();
   document.addEventListener('click',(e)=>{ const ms=document.getElementById('map-search'); if(ms&&!ms.contains(e.target)) document.getElementById('ms-results').style.display='none'; });
 
   /* ===== Layer dropdown ===== */
@@ -3983,9 +4049,9 @@ window.addEventListener('DOMContentLoaded', () => {
     ensureLabelPill();
     if(!map.getSource('news-points')){
       map.addSource('news-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
-      map.addLayer({id:'news-pulse',type:'circle',source:'news-points',filter:['==',['get','mapped'],'true'],paint:{
+      map.addLayer({id:'news-pulse',type:'circle',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],paint:{
         'circle-radius':['interpolate',['linear'],['zoom'],0,8,4,14,10,22],
-        'circle-color':'#007aff',
+        'circle-color':['match',['get','mapped'],'publisher','#5856d6','#007aff'],
         'circle-opacity':0.18,
         'circle-stroke-width':0
       }});
@@ -4004,8 +4070,9 @@ window.addEventListener('DOMContentLoaded', () => {
         'circle-stroke-width':2,
         'circle-stroke-color':'#ffffff'
       }});
-      /* Title preview to the right of the pin; hidden when hovered (popup takes over) */
-      map.addLayer({id:'news-labels',type:'symbol',source:'news-points',filter:['==',['get','mapped'],'true'],layout:{
+      /* Title preview "band" to the right of the pin; hidden when hovered (popup takes over).
+         (#R15) Shown for publisher-located pins too, not just subject pins. */
+      map.addLayer({id:'news-labels',type:'symbol',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],layout:{
         'text-field':['get','short'],
         'text-size':11.5,
         'text-font':['literal',['Noto Sans Regular']],
@@ -8636,15 +8703,28 @@ window.addEventListener('DOMContentLoaded', () => {
     const m=document.getElementById('sources-modal'); if(m) m.addEventListener('click',e=>{ if(e.target===m) m.style.display='none'; }); }
 
   /* ---------- News-by-country checkboxes (#29) ---------- */
+  function newsCountryLabel(){
+    const sel=(window.imNewsCountries||[]);
+    if(!sel.length) return currentLang==='jp'?'未選択（標準のニュースのみ）':'None (default feeds only)';
+    return sel.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+(f.name[currentLang]||f.name.en)):c; }).join(', ');
+  }
+  function updateNewsCountryLabel(){ const lbl=document.getElementById('newscountry-dd-label'); if(lbl) lbl.textContent=newsCountryLabel(); }
   function renderNewsCountryChecks(){
     const wrap=document.getElementById('newscountry-multi'); if(!wrap) return;
     if(!wrap.dataset.built){
-      wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>`<label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;"><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span>${NEWS_COUNTRY_FEEDS[code].flag} <span class="ncx" data-code="${code}"></span></span></label>`).join('');
+      wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>`<label><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span>${NEWS_COUNTRY_FEEDS[code].flag} <span class="ncx" data-code="${code}"></span></span></label>`).join('');
       wrap.dataset.built='1';
+      /* update the button summary live as boxes are ticked (committed on Apply) */
+      wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value); const lbl=document.getElementById('newscountry-dd-label'); if(lbl) lbl.textContent=(tmp.length?tmp.map(c=>{const f=NEWS_COUNTRY_FEEDS[c];return f?f.flag+' '+(f.name[currentLang]||f.name.en):c;}).join(', '):(currentLang==='jp'?'未選択（標準のニュースのみ）':'None (default feeds only)')); });
     }
     wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=window.imNewsCountries.includes(cb.value); });
     wrap.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=NEWS_COUNTRY_FEEDS[c].name[currentLang]||NEWS_COUNTRY_FEEDS[c].name.en; });
+    updateNewsCountryLabel();
   }
+  (function wireNewsCountryDD(){ const dd=document.getElementById('newscountry-dd'), btn=document.getElementById('newscountry-dd-btn'); if(!dd||!btn) return;
+    btn.addEventListener('click',(e)=>{ e.stopPropagation(); dd.classList.toggle('open'); });
+    document.addEventListener('click',(e)=>{ if(dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open'); });
+  })();
 
   /* ---------- Wire the new Settings controls (open → fill, Apply → commit+save) ---------- */
   { const open=document.getElementById('btn-open-settings');
@@ -8665,7 +8745,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;
       const ncWrap=document.getElementById('newscountry-multi');
-      if(ncWrap){ window.imNewsCountries=Array.from(ncWrap.querySelectorAll('input:checked')).map(c=>c.value); }
+      let newsCountriesChanged=false;
+      if(ncWrap){ const before=(window.imNewsCountries||[]).slice().sort().join(','); window.imNewsCountries=Array.from(ncWrap.querySelectorAll('input:checked')).map(c=>c.value); newsCountriesChanged=(before!==window.imNewsCountries.slice().sort().join(',')); }
+      const dd=document.getElementById('newscountry-dd'); if(dd) dd.classList.remove('open');
       applySidebarStyle();
       try{ applyFlatPanSetting(); }catch(_){}
       try{ applyLabelLang(); }catch(_){}
@@ -8677,6 +8759,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ updateI18n(); }catch(_){}
       try{ renderUI(); }catch(_){}
       try{ if(typeof renderCoordReadout==='function') renderCoordReadout(); }catch(_){}
+      /* (#R15) Changing the national-media selection now actually refreshes the feed — refetch the news
+         so the chosen countries' outlets appear (previously the setting saved but nothing changed). */
+      if(newsCountriesChanged){ try{ updateNewsCountryLabel(); }catch(_){} try{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } }catch(_){} }
     });
   }
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
