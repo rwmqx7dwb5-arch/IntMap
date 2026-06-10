@@ -749,7 +749,9 @@ gtag('config', 'G-57X5MX0ZPW');
       /* ---------- Floating map panels dock ABOVE the Summarize-button lane ----------
          The Summarize button owns the strip just above the sheet (peek+10); every other
          floating panel/legend docks above it (peek+56) so nothing overlaps the button. */
-      .coord-readout{ display:none !important; }
+      /* (#R15 / #1) The coord readout used to be force-hidden on mobile, which silently broke the
+         crosshair readout the user kept asking for. It now shows (positioned bottom-left below); its
+         visibility is driven by renderCoordReadout()'s inline display, like desktop. */
       /* Floating panels track the sheet's CURRENT top (--sheet-cover) so they stay visible at every
          detent, not just at peek (#32). They fall back to --peek-h before the first sheet layout. */
       .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:34dvh; overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
@@ -9590,8 +9592,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const PAL=['#e8590c','#1c7ed6','#2f9e44','#9c36b5','#f08c00','#0c8599','#e64980','#5c940d','#3b5bdb','#c2255c','#087f5b','#d9480f','#5f3dc4','#1971c2','#66a80f'];
     /* ---- ESA WorldCover (raster) ---- */
     function ensureRaster(){ if(map.getSource('eco-worldcover')) return true; if(!map.isStyleLoaded()) return false;
-      try{ map.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:12,attribution:'ESA WorldCover 2021 · Terrascope'});
-        map.addLayer({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.85}}); return true; }catch(_){ return false; } }
+      try{ map.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:13,attribution:'ESA WorldCover 2021 · Terrascope'});
+        /* (#R15 / #19,#29) The Terrascope WMTS is a single slow host (can't multi-host it), so squeeze what
+           we can: raster-fade-duration:0 shows each tile the instant it arrives (no 300 ms fade → feels
+           faster); raster-resampling:nearest keeps the CATEGORICAL land-cover classes crisp instead of
+           blurring class edges (画質); maxzoom 12→13 sharpens deep zoom. */
+        map.addLayer({id:'eco-worldcover',type:'raster',source:'eco-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0,'raster-resampling':'nearest'}}); return true; }catch(_){ return false; } }
     /* ---- Tectonic plates (geojson) ---- */
     let platesLoaded=false, platesLoading=false;
     function ensurePlateLayers(){ if(map.getSource('eco-plates')) return true; if(!map.isStyleLoaded()) return false;
@@ -10364,7 +10370,7 @@ window.addEventListener('DOMContentLoaded', () => {
         {id:'cmp-base-carto',type:'raster',source:'cmp-carto',layout:{visibility:dark?'none':'visible'}},
         {id:'cmp-base-dark',type:'raster',source:'cmp-dark',layout:{visibility:dark?'visible':'none'}},
         {id:'cmp-base-sat',type:'raster',source:'cmp-sat',layout:{visibility:'none'}},
-        {id:'cmp-lyr-worldcover',type:'raster',source:'cmp-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.9}},
+        {id:'cmp-lyr-worldcover',type:'raster',source:'cmp-worldcover',layout:{visibility:'none'},paint:{'raster-opacity':0.9,'raster-fade-duration':0,'raster-resampling':'nearest'}},
         {id:'cmp-lyr-koppen',type:'raster',source:'cmp-koppen',layout:{visibility:'none'},paint:{'raster-opacity':0.78}}
       ] }; }
     function setVis(id,on){ try{ if(cmap.getLayer(id)) cmap.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }
@@ -10469,7 +10475,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R13) The +Add point button (and the centre crosshair) now appear ONLY while a measurement tool
        is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
        drives the context menu instead. */
-    function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=(m&&tool)?'block':'none'; btn.style.display=tool?'block':'none'; }
+    /* (#R15 / #1) The crosshair is now ALWAYS visible on mobile (the user wants the centre point's
+       coords/elevation/layer value shown at all times), while the +Add-point button stays tool-only. */
+    function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=m?'block':'none'; btn.style.display=tool?'block':'none'; }
     /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
        centre, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
     function readout(){ if(!mob()) return; try{ const c=centerLL();
@@ -10477,8 +10485,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(dem!=null) lastElev=elevText(dem);
       try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
       renderCoordReadout(c.lng,c.lat); }catch(_){} }
+    let _roT=0;
     map.on('moveend',()=>{ readout(); update(); });
-    map.on('move',update);
+    /* Live readout while panning on mobile (throttled so the DEM/layer sampling stays cheap). */
+    map.on('move',()=>{ update(); if(mob()){ const now=performance.now(); if(now-_roT>120){ _roT=now; readout(); } } });
     window.addEventListener('resize',update);
     btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
     setTimeout(()=>{ update(); readout(); },400);
