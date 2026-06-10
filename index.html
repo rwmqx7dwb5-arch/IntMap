@@ -5526,7 +5526,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
       el.style.bottom=bottomPx+'px';
-      const noData=(id==='hdi'||id==='dem'||id==='pop')?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${currentLang==='jp'?'データなし':'No data'}</div>`:'';
+      const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${currentLang==='jp'?'データなし':'No data'}</div>`:'';
       el.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -5538,6 +5538,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdDem=makeLegend('dem',140,(currentLang==='jp'?'民主主義指数':'Democracy Index'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], currentLang==='jp'?'2023 EIU':'2023 EIU');
     const lgdPop=makeLegend('pop',140,(currentLang==='jp'?'人口密度':'Pop. density'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], currentLang==='jp'?'per km²':'per km²');
     const lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[currentLang==='jp'?'加盟国':'Member',''],currentLang==='jp'?'32か国':'32 members');
+    /* (#R15b / #38) Legends the value-scale layers were missing — choropleths (GDP pc, fertility, military
+       spend $B & %GDP) and the snow / aerosol / night-lights rasters. They auto-gain an opacity slider via
+       ensureLegendOpacity (their ids exist in `opacities`), moving that control onto the legend too. */
+    const lgdGdppc=makeLegend('gdppc',140,(currentLang==='jp'?'1人当たりGDP':'GDP per capita'),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], currentLang==='jp'?'名目・米ドル':'USD, nominal');
+    const lgdTfr=makeLegend('tfr',140,(currentLang==='jp'?'合計特殊出生率':'Total fertility rate'),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], currentLang==='jp'?'2022 世界銀行':'2022 World Bank');
+    const lgdMil=makeLegend('milSpend',140,(currentLang==='jp'?'国防費（$B）':'Mil. spending ($B)'),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
+    const lgdMilGDP=makeLegend('milSpendGDP',140,(currentLang==='jp'?'国防費（対GDP）':'Mil. spending (% GDP)'),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
+    const lgdSnow=makeLegend('snow',140,(currentLang==='jp'?'積雪・海氷':'Snow & ice'),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[currentLang==='jp'?'少':'Low',currentLang==='jp'?'多':'High'], 'MODIS NDSI');
+    const lgdAod=makeLegend('aod',140,(currentLang==='jp'?'エアロゾル / 煙霧':'Aerosol / haze'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[currentLang==='jp'?'清浄':'Clear',currentLang==='jp'?'濃い':'Hazy'], 'MODIS AOD');
+    const lgdNightsat=makeLegend('nightsat',140,(currentLang==='jp'?'夜間光（衛星）':'Night lights'),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[currentLang==='jp'?'暗':'Dark',currentLang==='jp'?'明':'Bright'], 'VIIRS Black Marble');
     /* EEZ legend — single-color line indicator */
     const lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
     /* Native legend whose line colours/dashes mirror the actual MarineRegions eez_boundaries style
@@ -5686,6 +5696,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window._wireLegendDrag=wireDrag;
     wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
     wireDrag(lgdHDI); wireDrag(lgdDem); wireDrag(lgdPop); wireDrag(lgdNATO);   /* the makeLegend legends drag centrally too now (#10) */
+    wireDrag(lgdGdppc); wireDrag(lgdTfr); wireDrag(lgdMil); wireDrag(lgdMilGDP); wireDrag(lgdSnow); wireDrag(lgdAod); wireDrag(lgdNightsat);   /* (#R15b #38) */
     /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
        innerHTML rebuild that previously wiped it — that rebuild was why it "couldn't be moved" (#22). */
 
@@ -6538,11 +6549,11 @@ window.addEventListener('DOMContentLoaded', () => {
     window._ensureLegendMinimize=ensureLegendMinimize;
     /* Collapse every open, expanded legend (used when a phone user taps the map outside a legend, #29). */
     window._minimizeOpenLegends=function(){
-      [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel]
+      [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat]
         .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
     };
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel];
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat];
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
@@ -7043,10 +7054,10 @@ window.addEventListener('DOMContentLoaded', () => {
           lgdSST.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('sst',gibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',layerDates.sst),7); }catch(_){} try{ setVis('lyr-sst',true); }catch(_){} });
         }
-        else if(id==='snow'){ whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
-        else if(id==='aod'){ whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
+        else if(id==='snow'){ lgdSnow.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
+        else if(id==='aod'){ lgdAod.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
         /* Night-time satellite (#R9/#39) — VIIRS "Black Marble" city-lights composite via NASA GIBS. */
-        else if(id==='nightsat'){ whenStyleReady().then(()=>{ try{ addRaster('nightsat',gibs('VIIRS_Black_Marble',8,'png','2016-01-01'),8); }catch(_){} try{ setVis('lyr-nightsat',true); }catch(_){} }); }
+        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('nightsat',gibs('VIIRS_Black_Marble',8,'png','2016-01-01'),8); }catch(_){} try{ setVis('lyr-nightsat',true); }catch(_){} }); }
         else if(id==='popgrid'){
           lgdPopGrid.style.display='block'; tileLegends();
           whenStyleReady().then(()=>{ try{ addRaster('popgrid',gibsStatic('GPW_Population_Density_2020',7,'png'),7); }catch(_){} try{ setVis('lyr-popgrid',true); }catch(_){} });
@@ -7102,15 +7113,19 @@ window.addEventListener('DOMContentLoaded', () => {
           withCountries(()=>{ try{ addChoro('dem'); applyChoro('dem',s=>s.dem); setVis('dem-fill',true); }catch(e){ console.warn('dem choro fail',e); } });
         }
         else if(id==='milSpend'){
+          lgdMil.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('milSpend'); applyChoro('milSpend',s=>s.milSpend); setVis('milSpend-fill',true); }catch(e){ console.warn('milSpend choro fail',e); } });
         }
         else if(id==='milSpendGDP'){
+          lgdMilGDP.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('milSpendGDP'); applyChoro('milSpendGDP',s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null); setVis('milSpendGDP-fill',true); }catch(e){ console.warn('milSpendGDP choro fail',e); } });
         }
         else if(id==='gdppc'){
+          lgdGdppc.style.display='block'; tileLegends();
           withCountries(()=>{ try{ addChoro('gdppc'); applyChoro('gdppc',s=>s.gdppc!=null?s.gdppc:null); setVis('gdppc-fill',true); }catch(e){ console.warn('gdppc choro fail',e); } });
         }
         else if(id==='tfr'){
+          lgdTfr.style.display='block'; tileLegends();
           /* (#R11) Total fertility rate — fetched live from the World Bank (latest year), cached. */
           withCountries(()=>{ try{ addChoro('tfr'); setVis('tfr-fill',true);
             const apply=()=>applyChoro('tfr',s=>s.tfr!=null?s.tfr:null);
@@ -7144,6 +7159,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if(id==='thermal') lgdThermal.style.display='none';
         if(id==='radar') lgdRadar.style.display='none';
         if(id==='sst') lgdSST.style.display='none';
+        if(id==='gdppc') lgdGdppc.style.display='none';
+        if(id==='tfr') lgdTfr.style.display='none';
+        if(id==='milSpend') lgdMil.style.display='none';
+        if(id==='milSpendGDP') lgdMilGDP.style.display='none';
+        if(id==='snow') lgdSnow.style.display='none';
+        if(id==='aod') lgdAod.style.display='none';
+        if(id==='nightsat') lgdNightsat.style.display='none';
         if((id==='radar'||id==='clouds')&&_rvTimer){ const other=(id==='radar')?'clouds':'radar';
           const otherVis=map.getLayer('lyr-'+other)&&map.getLayoutProperty('lyr-'+other,'visibility')==='visible';
           if(!otherVis){ clearInterval(_rvTimer); _rvTimer=null; } }
