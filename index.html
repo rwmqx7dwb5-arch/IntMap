@@ -10344,7 +10344,11 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-ctrls select,.cmp-ctrls label{font-size:10.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:3px 6px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
       /* (#R13) X-ray mode: the compare window goes transparent so the MAIN map shows through at the same
          location (like an X-ray) — only the compare window\'s own data layers paint on top. */
-      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.9),0 10px 32px rgba(0,0,0,0.35);}'+
+      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.9) inset;}'+
+      /* (#R15 / #18) X-ray must OVERLAY the main map exactly, or the synced camera (same centre/zoom) lands
+         at the centre of a SMALL offset window instead of the full map → everything looked shifted. In
+         X-ray the window fills #map-container (same rect as the main #map), so it aligns pixel-for-pixel. */
+      '#compare-window.cmp-xray{position:absolute !important;inset:0 !important;left:0 !important;top:0 !important;right:0 !important;bottom:0 !important;width:auto !important;height:auto !important;border-radius:0 !important;resize:none !important;}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.55);}';
       document.head.appendChild(st); }
@@ -10404,9 +10408,12 @@ window.addEventListener('DOMContentLoaded', () => {
          through at the same location; force sync so it really is the same place. */
       win.querySelector('#cmp-xray').onchange=(e)=>{ xray=e.target.checked; win.classList.toggle('cmp-xray',xray);
         if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false);
-          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; syncFromMain(); }
-        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); }
-        try{ cmap.resize(); }catch(_){} };
+          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; }
+        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); win.style.right='24px'; win.style.bottom='24px'; win.style.left='auto'; win.style.top='auto'; }
+        /* The window's rect changes (full-cover ↔ floating), so resize the GL canvas FIRST, then re-sync
+           the camera so centre/zoom map to the new viewport — otherwise the overlay is offset (#18). */
+        try{ cmap.resize(); }catch(_){}
+        requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} syncFromMain(); }); };
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
       win.querySelector('#cmp-close').onclick=close;
