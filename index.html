@@ -727,19 +727,11 @@ gtag('config', 'G-57X5MX0ZPW');
       /* fill the sheet width — the desktop dropdown's fixed 268px left-aligned it, leaving a big
          empty gutter on the right (#9). Now it spans the full sheet, balanced edge-to-edge. */
       .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; width:auto !important; max-width:none !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:0 !important; }
-      /* simple on/off layer toggles arranged as a balanced 2-up grid; complex rows (sliders, legends,
-         group headers, favourites) stay full-width so their controls aren't cramped. */
-      #mo-mount-layers .layer-dropdown{ display:grid !important; grid-template-columns:1fr 1fr; gap:2px 10px !important; align-content:start; }
-      #mo-mount-layers .layer-dropdown > .layer-group-title,
-      #mo-mount-layers .layer-dropdown > .lyr-head,
-      #mo-mount-layers .layer-dropdown > .premium-group-title,
-      #mo-mount-layers .layer-dropdown > hr,
-      #mo-mount-layers .layer-dropdown > .premium-divider,
-      #mo-mount-layers .layer-dropdown > .layer-fav-section,
-      #mo-mount-layers .layer-dropdown > #layer-tools,
-      #mo-mount-layers .layer-dropdown > #layer-active-section,
-      #mo-mount-layers .layer-dropdown > .lyr-row{ grid-column:1 / -1; }
-      /* Tools section: stack its header + buttons full-width on mobile (was squished into one grid cell) */
+      /* (#R15 / #27 / #28) iOS-style SINGLE-COLUMN list. The old 2-up CSS grid mixed full-width spans with
+         2-up cells, which mis-aligned constantly (esp. the Tools section — "ぐちゃっと"). A clean single
+         column is predictable, legible and consistent on every phone, matching the Apple-like brief. */
+      #mo-mount-layers .layer-dropdown{ display:flex !important; flex-direction:column !important; gap:1px !important; align-items:stretch; }
+      #mo-mount-layers .layer-dropdown > *{ width:100% !important; box-sizing:border-box; }
       #mo-mount-layers .layer-dropdown > #layer-tools{ display:block; }
       #mo-mount-layers #layer-tools .btn-settings, #mo-mount-layers #layer-tools button{ width:100% !important; box-sizing:border-box; }
       /* tighter layer rows — kills the wasted line spacing in the layer list */
@@ -5418,8 +5410,8 @@ window.addEventListener('DOMContentLoaded', () => {
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optTactical:"Tactical", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
     Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optTactical:"タクティカル", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     /* (#R12) New layer-category labels for the re-organised panel. */
-    Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defence" });
-    Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛" });
+    Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defence", lyrGrpOthers:"Others (beta)" });
+    Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
 
@@ -5428,7 +5420,9 @@ window.addEventListener('DOMContentLoaded', () => {
       .lyr-row{ display:flex; flex-direction:column; gap:2px; }
       .lyr-op{ width:100%; accent-color:var(--primary-color); display:none; margin:0 0 4px 24px; }
       .lyr-row.on .lyr-op{ display:block; }
-      .lyr-head{ font-size:11px; font-weight:700; color:var(--text-muted); margin:6px 2px 2px; }
+      .lyr-head{ font-size:11px; font-weight:700; color:var(--text-muted); margin:6px 2px 2px; text-transform:uppercase; letter-spacing:0.5px; }
+      /* (#R15 / #26) "Others (beta)" group note */
+      .lyr-others-note{ font-size:10.5px; color:var(--text-muted); opacity:0.8; margin:0 2px 4px; line-height:1.4; font-style:italic; }
       /* (#R8c) Desktop Köppen legend: FULL-HEIGHT by default (no scroll — all ~30 classes fit), and the
          ONLY legend that is resizable like a desktop window — vertical-only via the native resize grabber
          (CSS resize:vertical). Anchored to the top with an explicit height so the grabber actually resizes. */
@@ -5864,15 +5858,19 @@ window.addEventListener('DOMContentLoaded', () => {
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       try{
+        /* (#R15 / #26) Curated taxonomy. Only the layers the user wants front-and-centre live in these
+           categories; every other (beta / incomplete) layer is swept into the "Others (beta)" group at the
+           bottom so the panel reads cleanly. ec-time (ECMWF hourly slider) rides with the kept ec-cloud. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','ec-temp','temp','ec-precip','precip','ec-wind','wind','radar','ec-cloud','ec-dew','ec-isobars','ec-slp','ec-cape','snow','aod','ec-time']],
-          ['lyrGrpMaritime',['sst','ec-sst','eez','subcables','ships','planes','seaRoute','chokepoints']],
-          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','dams']],
+          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','ec-time','snow','aod']],
+          ['lyrGrpMaritime',['sst','eez','subcables','planes']],
+          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem']],
-          ['lyrGrpHazard',['thermal','volcanoes','aurora','nightsat','night']],
-          ['lyrGrpGeo',['fsu','sahel','islandChain1','islandChain2','stringOfPearls']],
-          ['lyrGrpGeoPol',['bri','pipelines','nuclear','milSpend','milSpendGDP','nato']]
+          ['lyrGrpHazard',['thermal','aurora','nightsat','night']],
+          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato']]
         ];
+        /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
+        const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','seaRoute','chokepoints','dams','volcanoes','sahel','islandChain1','islandChain2','stringOfPearls','bri','pipelines','nuclear'];
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
           el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
           el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
@@ -5890,9 +5888,26 @@ window.addEventListener('DOMContentLoaded', () => {
         order.push(act);
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         order.push(mkHr());
+        const placed=new Set();
         GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
           const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=T(key); order.push(h);
-          rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); }); });
+          rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); placed.add(r); }); });
+        /* (#R15 / #26) "Others (beta)" — every remaining thematic layer row. Start with the explicit list,
+           then a safety sweep adds any layer row not already placed (so new layers never strand at the top). */
+        const otherRows=[];
+        OTHERS_IDS.forEach(id=>{ const r=rowFor(id); if(r && !placed.has(r)){ otherRows.push(r); placed.add(r); } });
+        dd.querySelectorAll('.lyr-row, label.layer-option').forEach(r=>{
+          if(placed.has(r)) return;
+          const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
+          if(['cb-names','cb-borders','cb-grid','cb-countries'].includes(cb.id)) return;
+          if(r.closest('#layer-fav-section')||r.closest('#layer-tools')||r.closest('#layer-active-section')) return;
+          otherRows.push(r); placed.add(r);
+        });
+        if(otherRows.length){
+          const oh=document.createElement('div'); oh.className='lyr-head'; oh.setAttribute('data-i18n','lyrGrpOthers'); oh.textContent=T('lyrGrpOthers'); order.push(oh);
+          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(lang==='jp'?'動作しない場合や不完全な場合があります。':'May be incomplete or not fully working.'); order.push(note);
+          otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); });
+        }
         /* Tools section (compare + upload) pinned to the very bottom */
         const upBtn=document.getElementById('btn-upload-geojson');
         const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
@@ -7781,7 +7796,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     /* =================== THE BOTTOM SHEET =================== */
-    let currentDetent='half';
+    let currentDetent='peek';
     function curTy(){ return parseFloat(getComputedStyle(sidebar).getPropertyValue('--sheet-ty'))||0; }
     function detents(){
       const H=sidebar.offsetHeight||Math.round(window.innerHeight*0.92);
@@ -7882,7 +7897,9 @@ window.addEventListener('DOMContentLoaded', () => {
       else{ document.body.classList.remove('sheet-full'); if(map&&map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} } }
     }
     syncResponsive();                                                     // initial layout at load width
-    if(mq.matches) requestAnimationFrame(()=>setDetent('half',true));     // animated entrance on phones
+    /* (#R15) Default the sheet to PEEK on load: the News/Information/Stats/Community tab row stays visible
+       but everything beneath it is tucked away, maximising the map (the user's requested default). */
+    if(mq.matches) requestAnimationFrame(()=>setDetent('peek',true));     // animated entrance on phones
     if(mq.addEventListener) mq.addEventListener('change',syncResponsive); // width crosses 768 in either direction
     window.addEventListener('resize',syncResponsive);                    // dvh / toolbar / rotation changes
     window.addEventListener('orientationchange',()=>setTimeout(syncResponsive,220));
