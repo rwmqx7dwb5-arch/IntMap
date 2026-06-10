@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntMap · Admin Console</title>
+<script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
+<style>
+  :root{ --bg:#f5f5f7; --card:#fff; --text:#1d1d1f; --muted:#86868b; --pri:#007aff; --line:rgba(128,128,128,.18); --in:rgba(0,0,0,.05); --danger:#ff3b30; --ok:#34c759; --shadow:0 8px 30px rgba(0,0,0,.08); }
+  [data-theme="dark"]{ --bg:#000; --card:#1c1c1e; --text:#f5f5f7; --muted:#8e8e93; --pri:#0a84ff; --line:rgba(255,255,255,.12); --in:rgba(255,255,255,.1); --shadow:0 8px 30px rgba(0,0,0,.5); }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  a{ color:var(--pri); }
+  header{ position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 22px; background:var(--card); border-bottom:1px solid var(--line); }
+  header h1{ font-size:17px; margin:0; font-weight:600; letter-spacing:-.2px; }
+  header .who{ font-size:12px; color:var(--muted); }
+  .wrap{ max-width:1100px; margin:0 auto; padding:22px; }
+  .btn{ border:none; border-radius:9px; padding:9px 15px; font-size:13px; font-weight:600; cursor:pointer; background:var(--pri); color:#fff; transition:.15s; }
+  .btn:hover{ filter:brightness(1.07); } .btn:disabled{ opacity:.5; cursor:default; }
+  .btn.sec{ background:var(--in); color:var(--text); }
+  .btn.danger{ background:var(--danger); color:#fff; }
+  .btn.sm{ padding:5px 10px; font-size:12px; }
+  input,select,textarea{ width:100%; background:var(--in); border:1px solid transparent; border-radius:8px; padding:9px 11px; font-size:13px; color:var(--text); font-family:inherit; }
+  input:focus,select,textarea:focus{ outline:none; border-color:var(--pri); }
+  textarea{ resize:vertical; min-height:64px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  label{ font-size:11px; font-weight:600; color:var(--muted); display:block; margin:0 0 4px; text-transform:uppercase; letter-spacing:.4px; }
+  .field{ margin-bottom:12px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:20px; margin-bottom:20px; }
+  .tabs{ display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .tab{ background:var(--in); border:none; color:var(--text); padding:9px 16px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; }
+  .tab.active{ background:var(--pri); color:#fff; }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+  td .row-actions{ display:flex; gap:6px; }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:999px; background:var(--in); font-size:11px; font-weight:600; }
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(14px); background:#1c1c1e; color:#fff; padding:11px 18px; border-radius:11px; font-size:13px; box-shadow:0 6px 24px rgba(0,0,0,.35); opacity:0; pointer-events:none; transition:.25s; z-index:3000; max-width:90vw; text-align:center; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.err{ background:var(--danger); } .toast.ok{ background:var(--ok); }
+  .modal-bg{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:flex-start; justify-content:center; z-index:2000; overflow:auto; padding:30px 16px; }
+  .modal-bg.show{ display:flex; }
+  .modal{ background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:24px; width:100%; max-width:640px; }
+  .modal h2{ margin:0 0 16px; font-size:18px; }
+  .auth-box{ max-width:380px; margin:8vh auto; }
+  .muted{ color:var(--muted); font-size:12.5px; line-height:1.55; }
+  .seg{ display:flex; background:var(--in); border-radius:10px; padding:3px; margin-bottom:16px; }
+  .seg button{ flex:1; background:transparent; border:none; color:var(--muted); padding:8px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; }
+  .seg button.active{ background:var(--card); color:var(--text); box-shadow:0 1px 4px rgba(0,0,0,.1); }
+  .bar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .bar h2{ font-size:16px; margin:0; }
+  .count{ font-size:12px; color:var(--muted); }
+  .hide{ display:none !important; }
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH (logged-out / not-authorized) ============ -->
+<div id="view-auth">
+  <div class="wrap">
+    <div class="card auth-box">
+      <h1 style="margin:0 0 4px;font-size:20px;">IntMap · Admin</h1>
+      <p class="muted" style="margin:0 0 18px;">Restricted console. Sign in with an administrator account.</p>
+      <div class="seg">
+        <button id="seg-login" class="active">Log In</button>
+        <button id="seg-signup">Sign Up</button>
+      </div>
+      <div class="field"><label>Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input id="auth-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <button id="auth-submit" class="btn" style="width:100%;">Log In</button>
+      <p id="auth-msg" class="muted" style="margin:14px 0 0;"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADMIN ============ -->
+<div id="view-admin" class="hide">
+  <header>
+    <h1>IntMap · Admin Console</h1>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <span class="who" id="who"></span>
+      <button class="btn sec sm" id="btn-import">Import starter dataset</button>
+      <button class="btn sec sm" id="btn-signout">Sign Out</button>
+    </div>
+  </header>
+  <div class="wrap">
+    <div class="tabs">
+      <button class="tab active" data-tab="geo">Geo Pins</button>
+      <button class="tab" data-tab="dash">Dashboard Cards</button>
+      <button class="tab" data-tab="comm">Community</button>
+    </div>
+
+    <!-- GEO PINS -->
+    <section id="tab-geo">
+      <div class="card">
+        <div class="bar"><h2>Geo Pins <span class="count" id="geo-count"></span></h2>
+          <button class="btn sm" id="geo-add">+ Add geo pin</button></div>
+        <div style="overflow:auto;"><table id="geo-table"><thead><tr>
+          <th>Type</th><th>Name (EN)</th><th>Name (JP)</th><th>Lng</th><th>Lat</th><th>Terms</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD CARDS -->
+    <section id="tab-dash" class="hide">
+      <div class="card">
+        <div class="bar"><h2>Dashboard Cards <span class="count" id="dash-count"></span></h2>
+          <button class="btn sm" id="dash-add">+ Add card</button></div>
+        <div style="overflow:auto;"><table id="dash-table"><thead><tr>
+          <th>Cat</th><th>Type</th><th>Title (EN)</th><th>Badge</th><th>Lng</th><th>Lat</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY MODERATION -->
+    <section id="tab-comm" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>Community moderation <span class="count" id="comm-count"></span></h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="btn sec sm" id="comm-refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="seg" style="max-width:520px;">
+          <button id="cm-seg-posts" class="active">All posts</button>
+          <button id="cm-seg-reported">⚠ Reported</button>
+          <button id="cm-seg-comments">All comments</button>
+        </div>
+        <p class="muted" id="comm-note" style="margin:0 0 10px;">Tip: run <code>supabase_admin_moderation.sql</code> once so admins can see reports and delete any post/comment.</p>
+        <div style="overflow:auto;"><table id="comm-table"><thead><tr id="comm-head"></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ============ EDIT MODAL ============ -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h2 id="modal-title">Edit</h2>
+    <div id="modal-body"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn sec" id="modal-cancel">Cancel</button>
+      <button class="btn" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<datalist id="dl-geo-type"><option value="flashpoint"><option value="city"><option value="country"><option value="region"></datalist>
+<datalist id="dl-cat"><option value="geo"><option value="mil"><option value="tech"><option value="maritime"></datalist>
+<datalist id="dl-type"><option value="hub"><option value="mil"><option value="tech"><option value="space"><option value="choke"><option value="energy"><option value="maritime"></datalist>
+
+<!-- Local vendored SDK first, CDN fallback, then create the client inline (self-contained). -->
+<script src="supabase.js"></script>
+<script>window.supabase||document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/scr'+'ipt>');</script>
+<script>
+  window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
+  window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
+  window.sb=(window.supabase&&window.supabase.createClient)
+    ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
+    : (console.error('[IntMap] Supabase SDK failed to load (local file and CDN both unavailable).'),null);
+</script>
+<script>
+(function(){
+  const $=(id)=>document.getElementById(id);
+  const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let toastT;
+  function toast(msg,kind){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(kind?(' '+kind):''); clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast',3200); }
+
+  if(!window.sb){ $('auth-msg').textContent='Supabase SDK failed to load.'; return; }
+
+  /* ---------------- AUTH ---------------- */
+  let mode='login';
+  $('seg-login').onclick=()=>setMode('login');
+  $('seg-signup').onclick=()=>setMode('signup');
+  function setMode(m){ mode=m;
+    $('seg-login').classList.toggle('active',m==='login');
+    $('seg-signup').classList.toggle('active',m==='signup');
+    $('auth-submit').textContent = m==='login'?'Log In':'Sign Up';
+    $('auth-pass').autocomplete = m==='login'?'current-password':'new-password';
+    $('auth-msg').textContent='';
+  }
+  $('auth-submit').onclick=async()=>{
+    const email=$('auth-email').value.trim(), password=$('auth-pass').value;
+    if(!email||!password){ $('auth-msg').textContent='Enter email and password.'; return; }
+    $('auth-submit').disabled=true; $('auth-msg').textContent='Working…';
+    try{
+      if(mode==='signup'){
+        const {error}=await sb.auth.signUp({email,password});
+        if(error) throw error;
+        $('auth-msg').textContent='Account created. If email confirmation is on, confirm then log in. Then promote yourself to admin via the SQL Editor.';
+        setMode('login');
+      } else {
+        const {error}=await sb.auth.signInWithPassword({email,password});
+        if(error) throw error;
+        await gate();
+      }
+    }catch(e){ $('auth-msg').textContent='Error: '+(e.message||e); }
+    finally{ $('auth-submit').disabled=false; }
+  };
+  $('btn-signout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+
+  /* ---------------- GATE: admin check ---------------- */
+  async function gate(){
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){ show('auth'); return; }
+    const {data:prof,error}=await sb.from('profiles').select('email,is_admin,display_name').eq('id',session.user.id).maybeSingle();
+    if(error){ // table may not exist yet
+      show('auth'); $('auth-msg').textContent='Could not read profiles — did you run supabase_setup.sql in the SQL Editor? ('+error.message+')';
+      return;
+    }
+    if(!prof || !prof.is_admin){
+      show('auth');
+      $('auth-msg').innerHTML='Signed in as <b>'+esc(session.user.email)+'</b> but this account is not an admin.<br>In the SQL Editor run:<br><code>update public.profiles set is_admin = true where email = \''+esc(session.user.email)+'\';</code><br>then log in again.';
+      await sb.auth.signOut();
+      return;
+    }
+    $('who').textContent=session.user.email;
+    show('admin');
+    loadGeo(); loadDash();
+  }
+  function show(v){ $('view-auth').classList.toggle('hide',v!=='auth'); $('view-admin').classList.toggle('hide',v!=='admin'); }
+
+  /* ---------------- TABS ---------------- */
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));
+    $('tab-geo').classList.toggle('hide',b.dataset.tab!=='geo');
+    $('tab-dash').classList.toggle('hide',b.dataset.tab!=='dash');
+    $('tab-comm').classList.toggle('hide',b.dataset.tab!=='comm');
+    if(b.dataset.tab==='comm') loadComm();
+  });
+
+  /* ---------------- COMMUNITY MODERATION ---------------- */
+  let commView='posts';
+  $('cm-seg-posts').onclick=()=>{ commView='posts'; cmSeg(); loadComm(); };
+  $('cm-seg-reported').onclick=()=>{ commView='reported'; cmSeg(); loadComm(); };
+  $('cm-seg-comments').onclick=()=>{ commView='comments'; cmSeg(); loadComm(); };
+  $('comm-refresh').onclick=()=>loadComm();
+  function cmSeg(){ $('cm-seg-posts').classList.toggle('active',commView==='posts'); $('cm-seg-reported').classList.toggle('active',commView==='reported'); $('cm-seg-comments').classList.toggle('active',commView==='comments'); }
+  function fmtTime(t){ try{ return new Date(t).toLocaleString(); }catch(_){ return t; } }
+  async function loadComm(){
+    const head=$('comm-head'), tb=$('comm-table').querySelector('tbody');
+    tb.innerHTML='<tr><td colspan="6" class="muted">Loading…</td></tr>';
+    try{
+      if(commView==='comments'){
+        head.innerHTML='<th>When</th><th>Author</th><th>Comment</th><th></th>';
+        const {data,error}=await sb.from('community_comments').select('id,author_name,body,created_at,post_id').order('created_at',{ascending:false}).limit(500);
+        if(error) throw error;
+        $('comm-count').textContent='· '+data.length+' comments';
+        tb.innerHTML=data.length?data.map(c=>`<tr>
+          <td style="white-space:nowrap;color:var(--muted)">${esc(fmtTime(c.created_at))}</td>
+          <td>${esc(c.author_name||'?')}</td>
+          <td style="max-width:520px;">${esc(c.body||'')}</td>
+          <td><button class="btn danger sm" data-del-comment="${c.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="4" class="muted">No comments.</td></tr>';
+        tb.querySelectorAll('[data-del-comment]').forEach(b=>b.onclick=()=>delComment(b.dataset.delComment));
+        return;
+      }
+      if(commView==='reported'){
+        head.innerHTML='<th>Reports</th><th>Title</th><th>Author</th><th>Body</th><th></th>';
+        /* group reports by post */
+        const {data:reps,error}=await sb.from('community_reports').select('post_id').limit(2000);
+        if(error) throw error;
+        const counts={}; (reps||[]).forEach(r=>{ counts[r.post_id]=(counts[r.post_id]||0)+1; });
+        const ids=Object.keys(counts);
+        if(!ids.length){ $('comm-count').textContent='· 0 reported'; tb.innerHTML='<tr><td colspan="5" class="muted">No reported posts. 🎉</td></tr>'; return; }
+        const {data:posts}=await sb.from('community_posts').select('id,title,body,author_name').in('id',ids);
+        const pm={}; (posts||[]).forEach(p=>pm[p.id]=p);
+        const rows=ids.sort((a,b)=>counts[b]-counts[a]).map(id=>({id,n:counts[id],p:pm[id]||{}}));
+        $('comm-count').textContent='· '+rows.length+' reported';
+        tb.innerHTML=rows.map(r=>`<tr>
+          <td><span class="pill" style="background:var(--danger);color:#fff">⚠ ${r.n}</span></td>
+          <td>${esc(r.p.title||'(no title)')}</td><td>${esc(r.p.author_name||'?')}</td>
+          <td style="max-width:420px;color:var(--muted)">${esc((r.p.body||'').slice(0,160))}</td>
+          <td><button class="btn danger sm" data-del-post="${r.id}">Del post</button></td></tr>`).join('');
+        tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
+        return;
+      }
+      /* all posts */
+      head.innerHTML='<th>When</th><th>Title</th><th>Author</th><th>Body</th><th></th>';
+      const {data,error}=await sb.from('community_posts').select('id,title,body,author_name,created_at,community_votes(user_id),community_comments(id)').order('created_at',{ascending:false}).limit(500);
+      if(error) throw error;
+      $('comm-count').textContent='· '+data.length+' posts';
+      tb.innerHTML=data.length?data.map(p=>`<tr>
+        <td style="white-space:nowrap;color:var(--muted)">${esc(fmtTime(p.created_at))}</td>
+        <td>${esc(p.title||'(no title)')}<div class="muted" style="font-size:11px;">▲${(p.community_votes||[]).length} · 💬${(p.community_comments||[]).length}</div></td>
+        <td>${esc(p.author_name||'?')}</td>
+        <td style="max-width:420px;color:var(--muted)">${esc((p.body||'').slice(0,160))}</td>
+        <td><button class="btn danger sm" data-del-post="${p.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">No posts.</td></tr>';
+      tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
+    }catch(e){ tb.innerHTML='<tr><td colspan="6">'+esc(e.message||e)+'</td></tr>'; }
+  }
+  async function delPost(id){ if(!confirm('Delete this post (and its comments)?'))return;
+    const {error}=await sb.from('community_posts').delete().eq('id',id);
+    if(error) return toast(error.message,'err'); toast('Post deleted','ok'); loadComm(); }
+  async function delComment(id){ if(!confirm('Delete this comment?'))return;
+    const {error}=await sb.from('community_comments').delete().eq('id',id);
+    if(error) return toast(error.message,'err'); toast('Comment deleted','ok'); loadComm(); }
+
+  /* ---------------- GEO PINS CRUD ---------------- */
+  const GEO_FIELDS=[
+    {k:'type',label:'Type',list:'dl-geo-type'},
+    {k:'name_en',label:'Name (EN)'},
+    {k:'name_jp',label:'Name (JP)'},
+    {k:'lng',label:'Longitude',type:'number'},
+    {k:'lat',label:'Latitude',type:'number'},
+    {k:'sort_order',label:'Sort order',type:'number'},
+    {k:'terms',label:'Search terms (comma or newline separated)',area:true}
+  ];
+  async function loadGeo(){
+    const {data,error}=await sb.from('geo_pins').select('*').order('sort_order',{ascending:true});
+    const tb=$('geo-table').querySelector('tbody');
+    if(error){ tb.innerHTML='<tr><td colspan="7">'+esc(error.message)+'</td></tr>'; return; }
+    $('geo-count').textContent='· '+data.length;
+    tb.innerHTML=data.map(r=>`<tr>
+      <td><span class="pill">${esc(r.type)}</span></td>
+      <td>${esc(r.name_en)}</td><td>${esc(r.name_jp)}</td>
+      <td>${r.lng}</td><td>${r.lat}</td>
+      <td style="max-width:240px;color:var(--muted)">${esc((r.terms||[]).join(', '))}</td>
+      <td><div class="row-actions">
+        <button class="btn sec sm" data-edit-geo="${r.id}">Edit</button>
+        <button class="btn danger sm" data-del-geo="${r.id}">Del</button>
+      </div></td></tr>`).join('');
+    tb.querySelectorAll('[data-edit-geo]').forEach(b=>b.onclick=()=>editGeo(data.find(x=>x.id==b.dataset.editGeo)));
+    tb.querySelectorAll('[data-del-geo]').forEach(b=>b.onclick=()=>delGeo(b.dataset.delGeo));
+  }
+  function editGeo(row){
+    openModal((row?'Edit':'New')+' geo pin', GEO_FIELDS, row||{type:'flashpoint',sort_order:0}, async(vals)=>{
+      const payload={ type:vals.type||'flashpoint', name_en:vals.name_en||'', name_jp:vals.name_jp||null,
+        lng:parseFloat(vals.lng), lat:parseFloat(vals.lat), sort_order:parseInt(vals.sort_order||'0',10)||0,
+        terms:String(vals.terms||'').split(/[\n,]/).map(s=>s.trim()).filter(Boolean) };
+      if(!payload.name_en) throw new Error('Name (EN) is required');
+      if(isNaN(payload.lng)||isNaN(payload.lat)) throw new Error('Longitude/Latitude must be numbers');
+      const q = row ? sb.from('geo_pins').update(payload).eq('id',row.id) : sb.from('geo_pins').insert(payload);
+      const {error}=await q; if(error) throw error;
+      toast('Saved','ok'); loadGeo();
+    });
+  }
+  async function delGeo(id){ if(!confirm('Delete this geo pin?'))return;
+    const {error}=await sb.from('geo_pins').delete().eq('id',id);
+    if(error) return toast(error.message,'err'); toast('Deleted','ok'); loadGeo(); }
+  $('geo-add').onclick=()=>editGeo(null);
+
+  /* ---------------- DASHBOARD CARDS CRUD ---------------- */
+  const DASH_FIELDS=[
+    {k:'slug',label:'Slug (unique id)'},
+    {k:'cat',label:'Category',list:'dl-cat'},
+    {k:'type',label:'Type',list:'dl-type'},
+    {k:'layer_ref',label:'Layer ref (optional)'},
+    {k:'lng',label:'Longitude',type:'number'},
+    {k:'lat',label:'Latitude',type:'number'},
+    {k:'sort_order',label:'Sort order',type:'number'},
+    {k:'img',label:'Image URL'},
+    {k:'title_en',label:'Title (EN)'},
+    {k:'title_jp',label:'Title (JP)'},
+    {k:'badge',label:'Badge'},
+    {k:'body_en',label:'Body (EN)',area:true},
+    {k:'body_jp',label:'Body (JP)',area:true},
+    {k:'wiki_en',label:'Wikipedia URL (EN)'},
+    {k:'wiki_jp',label:'Wikipedia URL (JP)'},
+    {k:'specs',label:'Specs (JSON, e.g. {"spType":{"en":"Strait","jp":"海峡"}})',area:true}
+  ];
+  async function loadDash(){
+    const {data,error}=await sb.from('dashboard_cards').select('*').order('sort_order',{ascending:true});
+    const tb=$('dash-table').querySelector('tbody');
+    if(error){ tb.innerHTML='<tr><td colspan="7">'+esc(error.message)+'</td></tr>'; return; }
+    $('dash-count').textContent='· '+data.length;
+    tb.innerHTML=data.map(r=>`<tr>
+      <td><span class="pill">${esc(r.cat)}</span></td><td>${esc(r.type)}</td>
+      <td>${esc(r.title_en)}</td><td style="color:var(--muted)">${esc(r.badge)}</td>
+      <td>${r.lng}</td><td>${r.lat}</td>
+      <td><div class="row-actions">
+        <button class="btn sec sm" data-edit-dash="${r.id}">Edit</button>
+        <button class="btn danger sm" data-del-dash="${r.id}">Del</button>
+      </div></td></tr>`).join('');
+    tb.querySelectorAll('[data-edit-dash]').forEach(b=>b.onclick=()=>editDash(data.find(x=>x.id==b.dataset.editDash)));
+    tb.querySelectorAll('[data-del-dash]').forEach(b=>b.onclick=()=>delDash(b.dataset.delDash));
+  }
+  function editDash(row){
+    const init=row?Object.assign({},row,{specs: row.specs?JSON.stringify(row.specs,null,0):''}):{cat:'geo',type:'hub',sort_order:0};
+    openModal((row?'Edit':'New')+' dashboard card', DASH_FIELDS, init, async(vals)=>{
+      let specs=null;
+      if(vals.specs && vals.specs.trim()){ try{ specs=JSON.parse(vals.specs); }catch(e){ throw new Error('Specs is not valid JSON'); } }
+      const payload={ slug:vals.slug||null, cat:vals.cat||'geo', type:vals.type||'hub', layer_ref:vals.layer_ref||null,
+        lng:parseFloat(vals.lng), lat:parseFloat(vals.lat), sort_order:parseInt(vals.sort_order||'0',10)||0,
+        img:vals.img||null, title_en:vals.title_en||'', title_jp:vals.title_jp||null, badge:vals.badge||null,
+        body_en:vals.body_en||null, body_jp:vals.body_jp||null, wiki_en:vals.wiki_en||null, wiki_jp:vals.wiki_jp||null, specs };
+      if(!payload.title_en) throw new Error('Title (EN) is required');
+      if(isNaN(payload.lng)||isNaN(payload.lat)) throw new Error('Longitude/Latitude must be numbers');
+      const q = row ? sb.from('dashboard_cards').update(payload).eq('id',row.id) : sb.from('dashboard_cards').insert(payload);
+      const {error}=await q; if(error) throw error;
+      toast('Saved','ok'); loadDash();
+    });
+  }
+  async function delDash(id){ if(!confirm('Delete this card?'))return;
+    const {error}=await sb.from('dashboard_cards').delete().eq('id',id);
+    if(error) return toast(error.message,'err'); toast('Deleted','ok'); loadDash(); }
+  $('dash-add').onclick=()=>editDash(null);
+
+  /* ---------------- MODAL ---------------- */
+  let modalSave=null;
+  function openModal(title,fields,values,onSave){
+    $('modal-title').textContent=title;
+    $('modal-body').innerHTML=fields.map(f=>{
+      const v=esc(values[f.k]==null?'':values[f.k]);
+      const inp = f.area
+        ? `<textarea id="f-${f.k}">${v}</textarea>`
+        : `<input id="f-${f.k}" type="${f.type||'text'}" ${f.list?('list="'+f.list+'"'):''} value="${v}">`;
+      return `<div class="field"><label>${esc(f.label)}</label>${inp}</div>`;
+    }).join('');
+    modalSave=async()=>{
+      const vals={}; fields.forEach(f=>vals[f.k]=$('f-'+f.k).value);
+      $('modal-save').disabled=true;
+      try{ await onSave(vals); closeModal(); }
+      catch(e){ toast(e.message||String(e),'err'); }
+      finally{ $('modal-save').disabled=false; }
+    };
+    $('modal-bg').classList.add('show');
+  }
+  function closeModal(){ $('modal-bg').classList.remove('show'); modalSave=null; }
+  $('modal-cancel').onclick=closeModal;
+  $('modal-save').onclick=()=>modalSave&&modalSave();
+  $('modal-bg').onclick=(e)=>{ if(e.target===$('modal-bg')) closeModal(); };
+
+  /* ---------------- IMPORT STARTER DATASET ----------------
+     Reads the original hard-coded arrays straight out of intmap.html and bulk-
+     inserts them, so the existing 294 pins + 48 cards migrate in one click. */
+  function sliceBalanced(src,startIdx,open,close){ let depth=0,inStr=false,q='',esc=false;
+    for(let i=startIdx;i<src.length;i++){ const ch=src[i];
+      if(inStr){ if(esc){esc=false;continue;} if(ch==='\\'){esc=true;continue;} if(ch===q)inStr=false; continue; }
+      if(ch==='"'||ch==="'"||ch==='`'){ inStr=true; q=ch; continue; }
+      if(ch===open)depth++; else if(ch===close){ depth--; if(depth===0) return src.slice(startIdx,i+1); } }
+    return null; }
+  async function bulkInsert(table,rows){ for(let i=0;i<rows.length;i+=100){
+    const {error}=await sb.from(table).insert(rows.slice(i,i+100)); if(error) throw error; } }
+  /* Get intmap.html text. Try fetch first (works when served over http); if that
+     fails (e.g. admin.html opened as a file://), fall back to a file picker. */
+  function pickIntmapFile(){
+    return new Promise(res=>{
+      const inp=document.createElement('input'); inp.type='file'; inp.accept='.html,text/html';
+      inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f){res(null);return;}
+        const fr=new FileReader(); fr.onload=()=>res(String(fr.result||'')); fr.onerror=()=>res(null); fr.readAsText(f); };
+      inp.click();
+    });
+  }
+  async function getIntmapSource(){
+    try{ const r=await fetch('intmap.html?ts='+Date.now()); if(r.ok){ const t=await r.text(); if(t.indexOf('const geoRaw=')>=0) return t; } }catch(_){}
+    toast('Could not auto-load intmap.html — please choose it from disk.');
+    const t=await pickIntmapFile();
+    return t;
+  }
+  $('btn-import').onclick=async()=>{
+    const txt=await getIntmapSource();
+    if(!txt){ return; }                                  // cancelled
+    if(txt.indexOf('const geoRaw=')<0 || txt.indexOf('const extendedDashDB=')<0){
+      toast('That file does not contain the IntMap dataset.','err'); return;
+    }
+    if(!confirm('This DELETES all current Geo Pins and Dashboard Cards, then loads the original defaults from intmap.html. Continue?')) return;
+    $('btn-import').disabled=true; toast('Importing…');
+    try{
+      const geoRaw=eval('('+sliceBalanced(txt,txt.indexOf('{',txt.indexOf('const geoRaw=')),'{','}')+')');
+      const dash=eval('('+sliceBalanced(txt,txt.indexOf('[',txt.indexOf('const extendedDashDB=')),'[',']')+')');
+      const geoRows=[]; let o=0;
+      for(const type of Object.keys(geoRaw)) for(const g of geoRaw[type]){ o++;
+        geoRows.push({type, terms:g.terms||[], name_en:(g.name&&g.name.en)||'', name_jp:(g.name&&g.name.jp)||null, lng:g.loc[0], lat:g.loc[1], sort_order:o}); }
+      const dashRows=dash.map((c,i)=>({ slug:c.id||null, cat:c.cat||'geo', type:c.type||'hub', layer_ref:c.layerRef||null,
+        lng:c.loc[0], lat:c.loc[1], img:c.img||null, title_en:(c.title&&c.title.en)||'', title_jp:(c.title&&c.title.jp)||null,
+        badge:c.badge||null, body_en:(c.body&&c.body.en)||null, body_jp:(c.body&&c.body.jp)||null,
+        wiki_en:(c.wiki&&c.wiki.en)||null, wiki_jp:(c.wiki&&c.wiki.jp)||null, specs:c.specs||null, sort_order:i+1 }));
+      await sb.from('dashboard_cards').delete().neq('id',-1);
+      await sb.from('geo_pins').delete().neq('id',-1);
+      await bulkInsert('geo_pins',geoRows);
+      await bulkInsert('dashboard_cards',dashRows);
+      toast('Imported '+geoRows.length+' pins + '+dashRows.length+' cards','ok');
+      loadGeo(); loadDash();
+    }catch(e){ toast('Import failed: '+((e&&e.message)||e),'err'); }
+    finally{ $('btn-import').disabled=false; }
+  };
+
+  /* ---------------- BOOT ---------------- */
+  gate();
+})();
+</script>
+</body>
+</html>
