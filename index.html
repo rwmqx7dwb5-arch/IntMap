@@ -961,6 +961,11 @@ gtag('config', 'G-57X5MX0ZPW');
     body.capture-mode .news-timeline .ntl-slider::-webkit-slider-thumb{ box-shadow:none !important; }
     body.capture-mode .news-timeline .ntl-slider::-moz-range-thumb{ box-shadow:none !important; }
     body.capture-mode .news-timeline .ntl-sync-dot{ box-shadow:none !important; }
+    /* (#R15 / #31) html2canvas re-bakes the slider-thumb drop-shadow into the PNG even after the CSS above
+       zeroes it (it reads its own computed style for form-control pseudo-elements). The timebar is a
+       CONTROL — and the data time now also shows in the legends — so hide it entirely during capture,
+       matching "Screenshot (hides controls, keeps legends)". No more ghost button shadow. */
+    body.capture-mode .news-timeline{ visibility:hidden !important; }
     /* The map container + #map have an OPAQUE background; html2canvas was painting that solid colour
        over the captured WebGL frame, producing a blank screenshot (#20). Make them transparent during
        capture so only the real map pixels (drawn separately) and the DOM overlays composite. */
@@ -2758,7 +2763,11 @@ window.addEventListener('DOMContentLoaded', () => {
     BGD:4,LKA:1.3,NPL:0.5,AFG:0.3,KAZ:1.5,UZB:2,KGZ:0.13,TJK:0.08,MNG:0.1,KHM:0.6,LAO:0.02,BRN:0.5,
     AZE:3.4,ARM:1.3,GEO:0.5,BLR:1,MDA:0.1,
     HRV:1.5,SRB:1.6,SVK:2,SVN:0.8,BGR:1.4,AUT:4,CHE:6,IRL:1.3,LTU:2,LVA:1,EST:1.2,CYP:0.6,ALB:0.4,MKD:0.2,BIH:0.2,MNE:0.1,LUX:0.5,MLT:0.07,
-    ECU:2.4,BOL:0.6,PRY:0.4,URY:1.2,DOM:0.6,GTM:0.4,HND:0.5,SLV:0.4,NIC:0.1,TTO:0.3,JAM:0.2,GUY:0.1,SUR:0.05,FJI:0.1,PNG:0.3};
+    ECU:2.4,BOL:0.6,PRY:0.4,URY:1.2,DOM:0.6,GTM:0.4,HND:0.5,SLV:0.4,NIC:0.1,TTO:0.3,JAM:0.2,GUY:0.1,SUR:0.05,FJI:0.1,PNG:0.3,
+    /* (#R15 / #8) Further reduce "No data": IISS Military Balance estimates for states SIPRI omits, plus
+       near-zero for countries with no standing army (security/coast-guard budgets). Genuinely-unknowable
+       ones with NO credible figure stay grey rather than fabricated. */
+    PRK:4,SYR:2.5,TKM:1.5,YEM:1.4,ERI:0.1,SOM:0.2,CRI:0.05,PAN:0.7,ISL:0.05,CAF:0.07,BTN:0.1,MDV:0.13,HTI:0.05,BLZ:0.03,BHS:0.07,BRB:0.02,GNB:0.04,CPV:0.01,COM:0.02,STP:0.005,MUS:0.03,SYC:0.02,TLS:0.04,XKX:0.09,HKG:0};
   const LIFE={JPN:84.0,CHE:83.6,KOR:83.6,SGP:83.5,AUS:83.3,ISL:83.0,ITA:82.9,ESP:82.8,SWE:83.0,FRA:82.5,NOR:83.2,IRL:82.6,NZL:82.5,DEU:80.8,CAN:81.5,GBR:80.7,FIN:81.8,NLD:81.5,BEL:81.6,AUT:81.1,DNK:81.5,GRC:80.1,PRT:81.1,USA:77.4,POL:77.5,CHN:78.2,TUR:76.0,SAU:77.9,BRA:75.9,MEX:70.2,RUS:69.4,IRN:76.7,ARG:75.9,VNM:74.6,THA:78.7,COL:73.7,IDN:71.3,PHL:69.3,EGY:70.2,IND:67.3,BGD:72.4,PAK:66.2,ZAF:62.3,KEN:61.4,NGA:53.6,ETH:65.0,COD:59.2,IRQ:70.4,UKR:71.6,AFG:62.0,MMR:65.7,YEM:63.7,SDN:65.3};
   const INTERNET={NOR:99,DNK:99,KOR:97,SWE:98,JPN:84,USA:91,GBR:97,DEU:93,FRA:86,CAN:93,ITA:84,ESP:94,SGP:96,AUS:96,NZL:91,RUS:88,CHN:73,IND:46,BRA:81,MEX:78,ARG:88,KOR2:97,IDN:62,VNM:73,THA:85,PHL:67,EGY:72,SAU:99,UAE2:0,ARE:100,ISR:90,TUR:83,POL:88,ZAF:72,KEN:32,NGA:55,BGD:39,PAK:36,ETH:17,COD:23,IRN:79,IRQ:75,AFG:18};
   /* Capital cities, currencies, primary languages, calling codes — fills the N/A fields */
