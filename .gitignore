@@ -10,3 +10,5 @@ _eco_test.json
 
 # debug thumbnails
 _thumb_*.png
+# ローカル環境固有の設定ファイルを無視
+settings.local.json
