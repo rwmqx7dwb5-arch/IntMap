@@ -1247,7 +1247,10 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
     <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
-      <div id="newslang-multi" style="display:none; margin-top:10px; grid-template-columns:1fr 1fr; gap:7px 12px;"></div>
+      <div id="newslang-dd" class="nc-dd" style="display:none; margin-top:10px;">
+        <button type="button" id="newslang-dd-btn" class="nc-dd-btn"><span id="newslang-dd-label" class="nc-dd-label">—</span><span class="nc-dd-caret">▾</span></button>
+        <div id="newslang-multi" class="nc-dd-panel"></div>
+      </div>
       <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
     </div>
     <div class="setting-group"><label data-i18n="lblAiLocate">AI location analysis</label><select id="setting-ailocate"><option value="manual" data-i18n="aiLocManual">Manual (button)</option><option value="auto" data-i18n="aiLocAuto">Automatic for all news</option></select></div>
@@ -4075,7 +4078,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }});
       /* Title preview "band" to the right of the pin; hidden when hovered (popup takes over).
          (#R15) Shown for publisher-located pins too, not just subject pins. */
-      map.addLayer({id:'news-labels',type:'symbol',source:'news-points',filter:['match',['get','mapped'],['true','publisher'],true,false],layout:{
+      map.addLayer({id:'news-labels',type:'symbol',source:'news-points',layout:{   /* (#R15c) band on ALL pins incl. not-yet-located */
         'text-field':['get','short'],
         'text-size':11.5,
         'text-font':['literal',['Noto Sans Regular']],
@@ -5143,19 +5146,28 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lang-jp').onclick=()=>setLang('jp');
   { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
+  function newsLangNameOf(c){ return (NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; }
+  function updateNewsLangLabel(){ const lbl=document.getElementById('newslang-dd-label'); if(!lbl) return;
+    const sel=newsLangs||[]; lbl.textContent = sel.length? sel.map(newsLangNameOf).join(', ') : (currentLang==='jp'?'未選択':'None selected'); }
   function renderNewsLangChecks(){
-    const wrap=document.getElementById('newslang-multi'), hint=document.getElementById('newslang-hint'), sel=document.getElementById('setting-newslang');
+    const wrap=document.getElementById('newslang-multi'), hint=document.getElementById('newslang-hint'), sel=document.getElementById('setting-newslang'), dd=document.getElementById('newslang-dd');
     if(!wrap||!sel) return;
     const show=(sel.value==='multi');
-    wrap.style.display=show?'grid':'none'; if(hint) hint.style.display=show?'block':'none';
+    if(dd) dd.style.display=show?'block':'none'; if(hint) hint.style.display=show?'block':'none';
     if(!wrap.dataset.built){
-      wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label style="display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer;"><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span class="nlx" data-code="${code}"></span></label>`).join('');
+      wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span class="nlx" data-code="${code}"></span></label>`).join('');
       wrap.dataset.built='1';
+      wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value); const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(tmp.length?tmp.map(newsLangNameOf).join(', '):(currentLang==='jp'?'未選択':'None selected')); });
     }
     wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=newsLangs.includes(cb.value); });
-    wrap.querySelectorAll('.nlx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=(NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; });
+    wrap.querySelectorAll('.nlx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=newsLangNameOf(c); });
+    updateNewsLangLabel();
   }
   { const sel=document.getElementById('setting-newslang'); if(sel) sel.addEventListener('change',renderNewsLangChecks); }
+  (function wireNewsLangDD(){ const dd=document.getElementById('newslang-dd'), btn=document.getElementById('newslang-dd-btn'); if(!dd||!btn) return;
+    btn.addEventListener('click',(e)=>{ e.stopPropagation(); dd.classList.toggle('open'); });
+    document.addEventListener('click',(e)=>{ if(dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open'); });
+  })();
 
   /* ===== Settings + Timezones ===== */
   let _tzZones=null;
@@ -5187,7 +5199,11 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
-  document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme; document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex';
+  document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme;
+    /* (#R15c) Reset the timezone search to the full list on every open, so a stale filter from a previous
+       session can't leave the dropdown showing only a few options (the "検索が機能していない" report). */
+    try{ const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.value=''; if(typeof populateTimezones==='function') populateTimezones(''); }catch(_){}
+    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
     try{ document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); }catch(_){}
@@ -5202,6 +5218,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const prevNewsLangs=newsLangs.slice();
     const wrap=document.getElementById('newslang-multi');
     if(wrap){ const picked=Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.value); if(picked.length) newsLangs=picked; }
+    { const nld=document.getElementById('newslang-dd'); if(nld) nld.classList.remove('open'); try{ updateNewsLangLabel(); }catch(_){} }
     try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){}
     /* News pin position is chosen from the News tab's segmented control, not here. */
     try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
@@ -5397,7 +5414,8 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
       {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {label:`📡 ${currentLang==='jp'?'見通し線解析（レーダー死角）':'Line of sight (radar shadow)'}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
-      {label:`🚢 ${currentLang==='jp'?(window.IntMapRoute&&window.IntMapRoute.active()?'洋上ルートの終点に設定':'洋上ルートの始点に設定'):(window.IntMapRoute&&window.IntMapRoute.active()?'Set sea-route end here':'Sea route from here')}`, action:()=>{ try{ if(window.IntMapRoute&&window.IntMapRoute.active()) window.IntMapRoute.setEnd(lngLat); else { window.IntMapRoute&&window.IntMapRoute.setStart(lngLat); } }catch(_){} }},
+      /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
+         cut across land). The IntMapRoute engine stays defined but is no longer reachable from the UI. */
       ...(userPins.length?[{label:`🗑 ${t('ctxClearPins')} (${userPins.length})`, action:clearAllPins}]:[])
     ];
     m.innerHTML=items.map(it=>{
@@ -5885,9 +5903,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{
         /* (#R15 / #26) Curated taxonomy. Only the layers the user wants front-and-centre live in these
            categories; every other (beta / incomplete) layer is swept into the "Others (beta)" group at the
-           bottom so the panel reads cleanly. ec-time (ECMWF hourly slider) rides with the kept ec-cloud. */
+           bottom so the panel reads cleanly. (#R15c) ec-time moved OUT of the panel into a floating legend. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','ec-time','snow','aod']],
+          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod']],
           ['lyrGrpMaritime',['sst','eez','subcables','planes']],
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem']],
@@ -10291,6 +10309,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Public toggle API (the brief asked for toggleWeatherLayer(layerId, visible)). */
     function toggle(id,on){ const cfg=LAYERS.find(l=>l.id===id); if(!cfg) return;
       state[id].on=on;
+      try{ ensureTimeLegend(); syncTimeLegend(); }catch(_){}   /* (#R15c) show the time legend while any ECMWF layer is on */
       loadSDK().then(()=>{ if(!registerProto()) return;
         const go=()=>{ if(!map.isStyleLoaded()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
         go();
@@ -10326,7 +10345,7 @@ window.addEventListener('DOMContentLoaded', () => {
        variable is injected as a normal lyr-row (checkbox + opacity) into the Layers dropdown, plus one
        shared "valid time" row driving the hourly time slider. The taxonomy reorganiser then files these
        rows into the Climate & weather / Oceans groups alongside the other weather layers. */
-    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=(jp()?l.label[1]:l.label[0]); }); const tl=document.querySelector('#lyrrow-ec-time .ec-time-cap'); if(tl) tl.textContent=(jp()?'ECMWF 時刻（1時間毎）':'ECMWF time (hourly)'); updateTimeLabel(); }
+    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=(jp()?l.label[1]:l.label[0]); }); const tl=document.querySelector('#data-legend-ecmwf .ec-time-cap'); if(tl) tl.textContent=(jp()?'時刻（1時間毎）':'Valid time (hourly)'); updateTimeLabel(); }
     function mountRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('lyrrow-ec-temp')) return;
       LAYERS.forEach(l=>{
         const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;
@@ -10336,17 +10355,28 @@ window.addEventListener('DOMContentLoaded', () => {
         cb.addEventListener('change',()=>{ w.classList.toggle('on',cb.checked); toggle(l.id,cb.checked); });
         op.addEventListener('input',()=>{ state[l.id].op=+op.value; const cfg=LAYERS.find(x=>x.id===l.id); if(cfg) setOp(cfg,+op.value); });
       });
-      /* shared hourly valid-time slider */
-      const tw=document.createElement('div'); tw.className='lyr-row'; tw.id='lyrrow-ec-time'; tw.style.cssText='display:block;padding:2px 0 6px;';
-      tw.innerHTML='<div class="ec-time-cap" style="font-size:10.5px;color:var(--text-muted);margin:0 0 3px 2px;">'+(jp()?'ECMWF 時刻（1時間毎）':'ECMWF time (hourly)')+'</div>'
-        +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
-        +'<div id="ec-validtime" style="font-size:10.5px;color:var(--text-main);font-weight:600;margin-top:2px;text-align:center;">'+(jp()?'最新':'latest')+'</div>';
-      dd.appendChild(tw);
-      const ts=tw.querySelector('#ec-time'); ts.oninput=()=>{ timeIdx=+ts.value; updateTimeLabel(); clearTimeout(window._ecTimeT); window._ecTimeT=setTimeout(applyTime,250); };
+      /* (#R15c) The shared hourly valid-time slider is now a floating LEGEND, NOT a Layers-tab row. */
+      ensureTimeLegend();
       if(!fetched) loadSDK().then(()=>{ registerProto(); return fetchMeta(); }).then(()=>{ fetched=true; updateTimeLabel(); }).catch(()=>{});
       else updateTimeLabel();
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
     }
+    /* (#R15c) ECMWF hourly time slider as a draggable legend (shown only while an ECMWF layer is on). */
+    function ensureTimeLegend(){
+      if(document.getElementById('data-legend-ecmwf')) return;
+      const mc=document.getElementById('map-container')||document.body;
+      const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-ecmwf'; el.style.bottom='140px';
+      el.innerHTML='<span class="dl-drag" title="'+(jp()?'ドラッグして移動':'Drag to move')+'">⋮⋮</span><button class="layer-popup-x" id="ec-legend-x" title="'+t('close')+'">✕</button><h4>'+(jp()?'ECMWF 気象':'ECMWF weather')+'</h4>'
+        +'<div class="ec-time-cap" style="font-size:10.5px;color:var(--text-muted);margin:0 0 4px;">'+(jp()?'時刻（1時間毎）':'Valid time (hourly)')+'</div>'
+        +'<input type="range" id="ec-time" min="0" max="0" step="1" value="0" style="width:100%;accent-color:var(--primary-color);">'
+        +'<div id="ec-validtime" style="font-size:10.5px;color:var(--text-main);font-weight:600;margin-top:3px;text-align:center;">'+(jp()?'最新':'latest')+'</div>';
+      mc.appendChild(el);
+      const ts=el.querySelector('#ec-time'); ts.oninput=()=>{ timeIdx=+ts.value; updateTimeLabel(); clearTimeout(window._ecTimeT); window._ecTimeT=setTimeout(applyTime,250); };
+      el.querySelector('#ec-legend-x').onclick=()=>{ el.style.display='none'; };
+      try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){}
+    }
+    function syncTimeLegend(){ const el=document.getElementById('data-legend-ecmwf'); if(el) el.style.display = LAYERS.some(l=>state[l.id].on) ? 'block' : 'none'; }
+    window._ecSyncTimeLegend=syncTimeLegend;
     mountRows(); setTimeout(mountRows,1500);
     window.addEventListener('intmap-lang',()=>{ relabelRows(); if(panel&&panel.style.display!=='none') refreshPanel(); });
     return { open, toggle, setOp:(id,op)=>{ const c=LAYERS.find(l=>l.id===id); if(c) setOp(c,op); }, _layers:LAYERS };
@@ -10384,7 +10414,13 @@ window.addEventListener('DOMContentLoaded', () => {
          X-ray the window fills #map-container (same rect as the main #map), so it aligns pixel-for-pixel. */
       '#compare-window.cmp-xray{position:absolute !important;inset:0 !important;left:0 !important;top:0 !important;right:0 !important;bottom:0 !important;width:auto !important;height:auto !important;border-radius:0 !important;resize:none !important;}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
-      '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.55);}';
+      /* (#R15c) In X-ray the compare MAP body must fill the whole container too — otherwise the header
+         pushed it down ~32px and the overlay sat OFFSET below the main map. Float the header on top, make
+         the body fill, and let pointer events pass THROUGH the (transparent) map to the main map so you
+         drive the main map and the overlay tracks it via sync (the controls stay clickable). */
+      '#compare-window.cmp-xray .cmp-body{position:absolute !important;inset:0 !important;pointer-events:none;}'+
+      '#compare-window.cmp-xray .cmp-head{position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:auto;background:rgba(15,18,24,0.55);}'+
+      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;}';
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
       return { version:8, glyphs:'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', sources:{
@@ -10489,7 +10525,10 @@ window.addEventListener('DOMContentLoaded', () => {
       #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
       #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
       #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
-      @media(max-width:768px){ .coord-readout{ left:8px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 66px) !important; top:auto !important; font-size:10.5px !important; padding:4px 9px !important; max-width:64vw; } }`;
+      /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
+         smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
+      @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 60px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
+        .coord-readout span{ white-space:nowrap; flex-shrink:0; } }`;
     document.head.appendChild(st);
     const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
     const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
