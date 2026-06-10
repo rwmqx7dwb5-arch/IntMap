@@ -1036,3 +1036,90 @@ All four complaints traced to the **coarse 0.2° (~22 km) land mask** + a cosmet
   the GPU compositing of those `.om` rasters is unconfirmable in the hidden preview.
 - **3D speed+quality (#3), LOS detail (#2), "all layers get legends" (#9):** large terrain/engine work —
   not in this round.
+
+---
+
+## 18. Round 15 — large re-attack batch (tags `#R15`)
+
+Another ~40-item batch (mix of new asks + re-reports). All additive/in-place; MapLibre stays the engine.
+Verified in the headless preview (full-script parse via late globals, zero console errors after each reload,
+DOM/CSS checks; the spinning WebGL globe still can't be screenshotted). Committed in 7 parts.
+
+### Done
+- **Widgets retired (#30).** Removed the 🧩 toolbar button + mobile proxy; the IIFE is a no-op stub
+  (`window.IntMapWidgets={toggle(){},refresh(){}}`) so any stray reference can't throw.
+- **+50 Information cards (#40).** Appended to `DEFAULT_DASH_CARDS` (`d2-*`): chokepoints/ports (Gibraltar,
+  Dardanelles, Kiel, Dover, Sunda, Lombok, Korea Strait, Magellan, Good Hope, Ningbo, Busan, LA/LB, Antwerp,
+  Jebel Ali), bases (Groton, Offutt, Creech, Edwards, Fairford, Grafenwöhr, Tapa, Eielson, Keflavík, Futenma,
+  Iwakuni, Changi, …), tech/space (Vostochny, Wenchang, Starbase, KSC, ITER, ASML, SK hynix, Tsukuba, …) and
+  energy/geo (Permian, Prudhoe, Jamnagar, Itaipu, Kashagan, Lithium Triangle, Kolwezi, Aral, Chernobyl,
+  Kurils, Darién). Cats reuse the 4 existing buckets (mil/tech/maritime/geo).
+- **Stats "Australia" name garbled (#33) — ROOT CAUSE found + fixed.** Natural Earth 10 m assigns three
+  Australian TERRITORY polygons (Ashmore & Cartier, Coral Sea Is., Indian Ocean Ter.) the sovereign's
+  `ISO_A3_EH:"AUS"`; whichever came LAST in the file overwrote `countryStats.AUS.nameEn`. `loadCountryData`
+  now keeps the **largest-area** feature per code (mainland always wins) — a general fix for every sovereign
+  with minor overseas territories. (Confirmed against the live NE 10 m file.)
+- **News titles no longer auto-translate (#22).** Removed the `aiTranslateTitles()` call from
+  `maybeAutoEnrich` — translation runs ONLY on the "Translate titles" button now.
+- **News-country pulldown multi-select (#24).** The 2-col checkbox grid is now an iOS-style dropdown
+  (`#newscountry-dd`, button shows the live selection, panel of checkboxes). **Apply now refetches the feed**
+  when the selection changes (`newsCountriesChanged` → `globalData=[]; fetchData()`) — previously it saved but
+  nothing updated.
+- **Publisher news-pin band (#23).** `news-labels` (the pill "band") + `news-pulse` filters widened from
+  `mapped==='true'` to `['match',['get','mapped'],['true','publisher'],…]`, so publisher-located pins get the
+  same band; pulse tinted purple for publisher.
+- **Mobile place search fixed (#32) + fuzzy (#34).** Root cause: the search field collapses to a 46 px circle
+  on phones (input width:0) and **nothing expanded it**, so Search ran `doGeocode()` on an invisible empty
+  input. New `wireMapSearch` expands-then-searches. `doGeocode` now merges **local fuzzy matches**
+  (`localFuzzyPlaces` — country/capital/gazetteer with Levenshtein tolerance) with Nominatim, so vague /
+  partial / slightly-misspelled queries resolve and it survives a slow geocoder.
+- **Timezone search box (#25).** `#setting-tz-search` filters the `<select>` option list live
+  (`populateTimezones(filter)`, keeps Auto+UTC+current, expands to multi-row while searching).
+- **Esc collapses the sidebar (#39).** Desktop keydown handler (ignored while typing / when a modal is open).
+- **Mobile sheet default = PEEK (#35).** Initial detent `half`→`peek`: the News/Info/Stats/Community tab row
+  shows, everything below it is tucked away.
+- **Layers panel keep-list + Others(beta) (#26).** `reorganizeLayerPanel` GROUPS trimmed to the user's keep
+  list across 6 clean categories; everything else (ECMWF temp/precip/wind/dew/isobars/slp/cape/sst, ships,
+  seaRoute, chokepoints, dams, volcanoes, sahel, island chains, string-of-pearls, BRI, pipelines, nuclear)
+  is swept into a bottom **"Others (beta)"** group + safety sweep for anything unlisted. New `lyrGrpOthers`
+  i18n key + `.lyr-others-note`.
+- **iOS single-column mobile layer list (#27/#6/#28).** The fragile 2-up CSS grid (mixed full-width spans →
+  the recurring "Tools ぐちゃっと") is replaced by a clean single-column flex list (`> *{width:100%}`).
+- **Köppen crash mitigation (#4).** `_koppenFullCap()` is now `navigator.deviceMemory`-aware (≤4 GB → 4096²
+  instead of 8192², 8 GB+ keeps full res) — the OOM (which reloaded a stale `file://` cache → "先祖返り")
+  came from the 268 MB output canvas. Added a `getContext` null-guard → graceful small-canvas fallback.
+- **Köppen era-change flash (#20).** `setKoppenPeriod` no longer swaps to the full base image first when a
+  class is highlighted — keeps the current highlight until the new era's highlight is built (no all-climate
+  flash).
+- **Köppen legend resize discoverable (#37).** The `resize:vertical` grabber was painted transparent →
+  invisible → "not implemented". Now a visible diagonal grip (`::-webkit-resizer`).
+- **Screenshot timebar shadow (#31).** html2canvas re-bakes the slider-thumb drop-shadow even after CSS
+  zeroes it, so the timebar (a control; its time also shows in legends now) is `visibility:hidden` in
+  capture-mode.
+- **Military spending No-data cut (#8).** +25 IISS estimates (PRK, SYR, TKM, YEM, CRI, PAN, ISL, micro-states,
+  …); no-army states get near-0. The no-data→opacity linkage already existed (`fill-opacity` case in
+  addChoro + setLayerOpacity).
+- **Compare x-ray offset (#18).** In x-ray the floating window now fills `#map-container` exactly
+  (`position:absolute;inset:0`), so the synced camera aligns pixel-for-pixel with the main map; re-sync after
+  the resize. Reverts to the floating window when x-ray is off.
+- **Land cover speed/quality (#19/#29).** Terrascope is a single slow host (can't multi-host); squeezed the
+  controllables: `raster-fade-duration:0` (instant tile show), `raster-resampling:nearest` (crisp categorical
+  classes), maxzoom 12→13. Same on the compare-mode copy.
+- **Mobile crosshair readout always-on (#1).** It was force-hidden on mobile by `.coord-readout{display:none
+  !important}` — silently broke the readout the user kept re-requesting. Now shown; the centre crosshair is
+  always visible on mobile (the +Add-point button stays tool-only); readout updates live while panning
+  (throttled).
+
+### Re-confirmed already in place (likely a stale `file://` cache — hard-reload)
+- Active-layers list below favourites + borders/grid toggles (#17, R14); numeric cursor readout (#12, R13c);
+  time-varying legend "as-of" line (#13, R13c/R14); imperial everywhere (#14, R13c).
+
+### Still open / documented (need engines, datasets, or a real browser to verify)
+- **All layers get legends + move time/opacity UI INTO the legends (#9/#38):** large — many layers already
+  have legends with opacity (`ensureLegendOpacity`); a full migration of every per-layer control into the
+  legend is the remaining big UX rework.
+- **ECMWF some-blank (#11):** every configured variable IS served by `ecmwf_ifs` (verified latest.json), so
+  the blanks are the two VECTOR layers (isobars/arrows source-layer names) or genuinely-sparse fields
+  (cape/precip/sst). Needs a real browser to see the `.om` compositing. Most are now in the Others(beta) group.
+- **LOS detail (#2), 3D speed+quality (#3), Sea route real-coastline behaviour (#5), mobile measurement
+  popup clamping (#7), ghost layers (#10):** terrain/engine-scale or no-headless-repro — carried over.
