@@ -259,7 +259,11 @@ gtag('config', 'G-57X5MX0ZPW');
     .ai-key-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px; }
     .ai-key-name{ font-size:12px; font-weight:500; color:var(--text-main); }
     .ai-status{ font-size:10.5px; color:var(--text-muted); white-space:nowrap; } .ai-status.on{ color:#34c759; }
-    .ai-test-btn{ margin-top:6px; padding:7px 14px; border-radius:9px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; font-weight:500; cursor:pointer; }
+    .ai-test-btn{ box-sizing:border-box; margin-top:6px; padding:7px 14px; border-radius:9px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; font-weight:500; cursor:pointer; }
+    /* (#R15c) Tools section: keep its buttons inside the panel (the 100%-width buttons were overflowing
+       the dropdown padding → the "Tools 欄がぐちゃっと" report on both desktop and mobile). */
+    #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; }
+    #layer-tools .ai-test-btn, #layer-tools button{ box-sizing:border-box; width:100%; max-width:100%; }
     .ai-test-btn:hover{ border-color:var(--primary-color); } .ai-test-btn:disabled{ opacity:0.55; cursor:default; }
     .ai-test-msg{ font-size:11px; margin-top:6px; min-height:13px; line-height:1.4; }
     .ai-test-msg.ok{ color:#34c759; } .ai-test-msg.err{ color:#ff453a; }
@@ -10700,8 +10704,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     /* (#R11) Runway lengths / distances respect the measurement-units setting (metric / imperial / both). */
     const isImp=()=>((typeof unitMode!=='undefined')?unitMode:'both')==='imperial';
-    const lenFmt=m=>{ const ft=Math.round(m*3.28084); const um=(typeof unitMode!=='undefined')?unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(Math.round(m).toLocaleString()+' m'):(Math.round(m).toLocaleString()+' m / '+ft.toLocaleString()+' ft'); };
-    const distFmtKm=km=>{ const mi=km*0.621371; const um=(typeof unitMode!=='undefined')?unitMode:'both'; return um==='imperial'?(mi.toFixed(0)+' mi'):um==='metric'?(km.toFixed(0)+' km'):(km.toFixed(0)+' km'); };
+    /* (#R15c) Per-panel unit override — imperial is always selectable inside Runway search regardless of
+       the global default. Reads the panel's own selector, falling back to the global setting. */
+    const imp=()=>{ const s=panel&&panel.querySelector('#rwy-unit'); return s? s.value==='imp' : isImp(); };
+    /* (#R15c) Results follow the panel's own unit selector (imp()) so the Imperial option works in the
+       result rows too, regardless of the global default. */
+    const lenFmt=m=>{ const ft=Math.round(m*3.28084); return imp()?(ft.toLocaleString()+' ft'):(Math.round(m).toLocaleString()+' m'); };
+    const distFmtKm=km=>{ const mi=km*0.621371; return imp()?(mi.toFixed(0)+' mi'):(km.toFixed(0)+' km'); };
     function hav(lo1,la1,lo2,la2){ const d1=(la2-la1)*R,d2=(lo2-lo1)*R,a=Math.sin(d1/2)**2+Math.cos(la1*R)*Math.cos(la2*R)*Math.sin(d2/2)**2; return 6371*2*Math.asin(Math.min(1,Math.sqrt(a))); }
     function rows(txt){ const out=[]; let f='',row=[],q=false; for(let i=0;i<txt.length;i++){ const c=txt[i];
       if(q){ if(c==='"'){ if(txt[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
@@ -10754,8 +10763,8 @@ window.addEventListener('DOMContentLoaded', () => {
       map.on('mouseenter',LYR,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',LYR,()=>{ map.getCanvas().style.cursor=''; });
     }catch(_){} }
     function renderMarks(res,mode){ ensureLayers(); const feats=res.slice(0,600).map(r=>({type:'Feature',geometry:{type:'Point',coordinates:[r.lo,r.la]},properties:{mil:!!r.mil,t:mode==='airport'?r.name:(r.apt+' '+r.rwy),name:r.name||'',apt:r.apt||'',muni:r.muni||'',len:(mode==='airport'?r.maxLen:r.lenM)||0,n:(mode==='airport'?(r.n||0):0),rwy:(mode==='runway'?(r.rwy||''):'')}})); try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} }
-    function run(){ const p=panel; const rIn=+p.querySelector('#rwy-radius').value||(isImp()?186:300), lIn=+p.querySelector('#rwy-len').value||0, use=p.querySelector('#rwy-use').value, mode=p.querySelector('#rwy-mode').value;
-      const radiusKm=isImp()?rIn*1.60934:rIn, minLenM=isImp()?lIn*0.3048:lIn;
+    function run(){ const p=panel; const im=imp(); const rIn=+p.querySelector('#rwy-radius').value||(im?186:300), lIn=+p.querySelector('#rwy-len').value||0, use=p.querySelector('#rwy-use').value, mode=p.querySelector('#rwy-mode').value;
+      const radiusKm=im?rIn*1.60934:rIn, minLenM=im?lIn*0.3048:lIn;
       const list=p.querySelector('#rwy-list'); list.innerHTML=jp()?'読み込み中…':'Loading…';
       load().then(d=>{ if(!d){ list.innerHTML=jp()?'データを取得できませんでした':'Could not load data'; return; }
         const res=search({center:center,radiusKm:radiusKm,use:use,minLenM:minLenM,mode:mode}); renderMarks(res,mode);
@@ -10767,15 +10776,22 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     }
     function open(lngLat){ center=[lngLat.lng,lngLat.lat]; if(!panel){ panel=document.createElement('div'); panel.className='tool-panel'; panel.id='rwy-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); } const p=panel; p.style.display='block';
+      const im0=isImp();
       p.innerHTML='<div class="tp-header"><span class="tp-title">🛬 '+(jp()?'滑走路検索':'Runway search')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
         '<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(isImp()?(jp()?'半径 (mi)':'Radius (mi)'):(jp()?'半径 (km)':'Radius (km)'))+' <input id="rwy-radius" type="number" value="'+(isImp()?186:300)+'" min="1" style="width:74px;"></label>'+
-          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(isImp()?(jp()?'最小滑走路長 (ft)':'Min length (ft)'):(jp()?'最小滑走路長 (m)':'Min length (m)'))+' <input id="rwy-len" type="number" value="'+(isImp()?6500:2000)+'" min="0" step="'+(isImp()?500:100)+'" style="width:74px;"></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'単位':'Units')+' <select id="rwy-unit"><option value="met"'+(im0?'':' selected')+'>'+(jp()?'メートル法 (km/m)':'Metric (km/m)')+'</option><option value="imp"'+(im0?' selected':'')+'>'+(jp()?'ヤード・ポンド (mi/ft)':'Imperial (mi/ft)')+'</option></select></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-r"></span> <input id="rwy-radius" type="number" value="'+(im0?186:300)+'" min="1" style="width:74px;"></label>'+
+          '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;"><span class="rwy-ulabel-l"></span> <input id="rwy-len" type="number" value="'+(im0?6500:2000)+'" min="0" step="'+(im0?500:100)+'" style="width:74px;"></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'種別':'Use')+' <select id="rwy-use"><option value="all">'+(jp()?'すべて':'All')+'</option><option value="mil">'+(jp()?'軍用':'Military')+'</option><option value="civ">'+(jp()?'民間':'Civil')+'</option></select></label>'+
           '<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'表示':'View')+' <select id="rwy-mode"><option value="airport">'+(jp()?'空港単位':'By airport')+'</option><option value="runway">'+(jp()?'滑走路単位':'By runway')+'</option></select></label>'+
         '</div>'+
         '<button class="tp-clear" id="rwy-go" style="width:100%;margin-top:6px;">'+(jp()?'検索（初回データ取得）':'Search (loads data 1st run)')+'</button>'+
         '<div id="rwy-list" style="margin-top:8px;max-height:230px;overflow:auto;font-size:12.5px;"></div>';
+      const relabelUnits=()=>{ const im=imp(); const rl=p.querySelector('.rwy-ulabel-r'), ll=p.querySelector('.rwy-ulabel-l');
+        if(rl) rl.textContent=im?(jp()?'半径 (mi)':'Radius (mi)'):(jp()?'半径 (km)':'Radius (km)');
+        if(ll) ll.textContent=im?(jp()?'最小長 (ft)':'Min length (ft)'):(jp()?'最小長 (m)':'Min length (m)'); };
+      relabelUnits();
+      p.querySelector('#rwy-unit').onchange=()=>{ const im=imp(); const ri=p.querySelector('#rwy-radius'), li=p.querySelector('#rwy-len'); if(ri) ri.value=im?186:300; if(li){ li.value=im?6500:2000; li.step=im?500:100; } relabelUnits(); };
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} };
       p.querySelector('#rwy-go').onclick=run;
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
