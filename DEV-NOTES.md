@@ -1110,6 +1110,24 @@ DOM/CSS checks; the spinning WebGL globe still can't be screenshotted). Committe
   always visible on mobile (the +Add-point button stays tool-only); readout updates live while panning
   (throttled).
 
+### R15b — follow-up after re-report ("レイヤー欄がぐちゃぐちゃ" + peek + 残り)
+- **Layers panel scramble — ROOT CAUSE.** The R15 Others(beta) **safety sweep** used
+  `dd.querySelectorAll('.lyr-row, label.layer-option')`, which ALSO matched the `<label.layer-option>`
+  **nested inside every `.lyr-row`** and `appendChild`-moved those labels into Others — ripping them out of
+  their parent rows (empty husk rows + a duplicated all-layers label list = the "ぐちゃぐちゃ"). Fixed with
+  `:scope >` (direct children only). Also the `.lyr-others-note` accumulated one-per-run → now removed in the
+  cleanup pass. Verified: husks 0, single note, 7 clean headers, no orphan labels.
+- **Mobile sheet really starts at PEEK.** `syncResponsive` snaps to `peek` (not `half`) synchronously when
+  entering the mobile layout, so it no longer depends on the rAF firing (which never fires in the hidden
+  preview) and there's no half→peek flash. Verified: `--sheet-ty` = the exact peek detent at load.
+- **Legends added for the value-scale layers that lacked them (#9/#38).** GDP-per-capita, fertility,
+  military-spend $B and %GDP choropleths + snow / aerosol / night-lights rasters now build a `data-legend`
+  (gradient + scale + no-data swatch) on toggle-on, hidden on toggle-off, wired into `wireDrag` and the
+  `tileLegends`/`_minimizeOpenLegends` arrays — so they ALSO auto-gain the in-legend **opacity slider** and
+  minimize button (their ids already exist in `opacities`). Verified live (snow legend → opacity row + min
+  button present). Remaining no-legend layers are either point markers (dams/volcanoes), shading
+  (hillshade/day-night), click-popup (ecoregions) or the separate-module aurora heatmap.
+
 ### Re-confirmed already in place (likely a stale `file://` cache — hard-reload)
 - Active-layers list below favourites + borders/grid toggles (#17, R14); numeric cursor readout (#12, R13c);
   time-varying legend "as-of" line (#13, R13c/R14); imperial everywhere (#14, R13c).
