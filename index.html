@@ -5436,7 +5436,10 @@ window.addEventListener('DOMContentLoaded', () => {
          user reported the legend "stretching left-right"; vertical-only resize is the requested behaviour. */
       .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; min-width:216px; max-width:216px; font-size:11px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
-      .koppen-legend::-webkit-resizer{ background:transparent; }
+      /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
+         resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
+         shows a small diagonal grip at the bottom-right, matching the resize:vertical affordance. */
+      .koppen-legend::-webkit-resizer{ background:linear-gradient(135deg, transparent 0 44%, var(--text-muted) 44% 52%, transparent 52% 68%, var(--text-muted) 68% 76%, transparent 76%); }
       .koppen-legend.legend-collapsed{ resize:none !important; }
       .koppen-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:6px; }
       .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 7px; }
@@ -6297,7 +6300,18 @@ window.addEventListener('DOMContentLoaded', () => {
        UI never freezes. Built lazily on first highlight, freed when the selection clears / era changes.
        Graceful fallback to the small-canvas highlight if the full path can't run (file:// taint / OOM). */
     window._koppenFull=null;
-    function _koppenFullCap(){ try{ return (typeof isMobile==='function'&&isMobile())?4096:8192; }catch(_){ return 8192; } }
+    /* (#R15) MEMORY-BUDGET-AWARE cap. The re-reported crash ("特定の気候を選ぶと落ちて先祖返り") is the tab
+       being OOM-killed during the full-res highlight; the reloaded tab then serves a STALE file:// disk
+       cache (the "old version revives" symptom). The output canvas alone is 4·W·H bytes (268 MB at 8192²),
+       so on low-RAM machines we cap lower — keeping the highlight crisp but never crashing. 8 GB+ desktops
+       keep full 8192² (no quality loss where it's safe). navigator.deviceMemory is coarse GB (or undefined). */
+    function _koppenFullCap(){ try{
+      if(typeof isMobile==='function'&&isMobile()) return 4096;
+      const dm=(typeof navigator!=='undefined'&&navigator.deviceMemory)||0;
+      if(dm && dm<=4) return 4096;        /* ≤4 GB → 4096² (still sharp, ~1/4 the peak RAM) */
+      if(dm && dm<=6) return 6144;
+      return 8192;                        /* 8 GB+ (or unknown-but-desktop) → full resolution */
+    }catch(_){ return 6144; } }
     /* (#R14) MEMORY-SAFE full-res highlight — the previous version OOM-crashed the tab (and the page
        reloaded → "先祖返り"): at 8192² it held the 268 MB source pixel array + a 268 MB output ImageData
        + a 268 MB output canvas + the PNG-encode buffer ALL AT ONCE (>1 GB peak). Two changes roughly
@@ -6350,6 +6364,7 @@ window.addEventListener('DOMContentLoaded', () => {
           else { const g=Math.round((c[0]+c[1]+c[2])/3*0.6); LR[k]=g;LG[k]=g;LB[k]=g;LA[k]=71; } }
         const out=document.createElement('canvas'); out.width=W; out.height=H;
         const octx=out.getContext('2d');
+        if(!octx){ try{ out.width=out.height=0; }catch(_){} cb(null); return; }   /* alloc failed → small-canvas fallback, no crash */
         const STRIP=Math.max(1,Math.min(H,Math.floor((1<<21)/Math.max(1,W))));   /* one small ImageData / strip */
         for(let y0=0;y0<H;y0+=STRIP){
           const rows=Math.min(STRIP,H-y0);
@@ -6394,9 +6409,11 @@ window.addEventListener('DOMContentLoaded', () => {
       window._koppenCodeIdx=null; window._koppenSrcData=null;
       /* (#R13c) drop the full-res highlight buffers + objectURL so the new era rebuilds them */
       window._koppenFull=null; if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
-      /* Swap the full-res base image immediately (GPU, fast); recompute the dim overlay after the small
-         work-canvas for the new era has loaded. */
-      try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){}
+      /* (#R15 / #20) If a class is highlighted, do NOT swap to the full base image first — that flashed
+         ALL climates for a frame ("一瞬全気候が表示される"). Keep the current highlight on screen and swap
+         straight to the new era's highlight once it's built. Only swap to the plain base when nothing is
+         selected (then it's the correct, expected view). */
+      if(kSelected.size===0){ try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){} }
       loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(e){} });
       try{ buildLegend(); }catch(_){}
     };
