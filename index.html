@@ -5894,6 +5894,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* strip old headers + top-level dividers (favourites' inner <hr> is nested, so it survives) */
         dd.querySelectorAll(':scope > .layer-group-title, :scope > .lyr-head').forEach(n=>n.remove());
         dd.querySelectorAll(':scope > hr').forEach(n=>n.remove());
+        dd.querySelectorAll(':scope > .lyr-others-note').forEach(n=>n.remove());   /* (#R15b) was accumulating one note per run */
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         ['cb-names','cb-borders','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
@@ -5910,11 +5911,14 @@ window.addEventListener('DOMContentLoaded', () => {
            then a safety sweep adds any layer row not already placed (so new layers never strand at the top). */
         const otherRows=[];
         OTHERS_IDS.forEach(id=>{ const r=rowFor(id); if(r && !placed.has(r)){ otherRows.push(r); placed.add(r); } });
-        dd.querySelectorAll('.lyr-row, label.layer-option').forEach(r=>{
+        /* (#R15b) CRITICAL: use :scope > so we only sweep TOP-LEVEL rows. The old `.lyr-row, label.layer-option`
+           also matched the <label.layer-option> NESTED inside every .lyr-row and ripped those labels out of
+           their parent rows (the panel "ぐちゃぐちゃ"). Direct children only: .lyr-row divs + the standalone
+           geo/strategic labels. */
+        dd.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option').forEach(r=>{
           if(placed.has(r)) return;
           const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
           if(['cb-names','cb-borders','cb-grid','cb-countries'].includes(cb.id)) return;
-          if(r.closest('#layer-fav-section')||r.closest('#layer-tools')||r.closest('#layer-active-section')) return;
           otherRows.push(r); placed.add(r);
         });
         if(otherRows.length){
@@ -7921,7 +7925,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function syncResponsive(){
       const isM=mq.matches; const crossed=(isM!==lastIsM);
       if(crossed){ applyLayout(isM); lastIsM=isM; }
-      if(isM){ recompute(); setDetent(crossed?'half':currentDetent,false); }
+      /* (#R15b) Entering the mobile layout (first load OR crossing 768px) snaps to PEEK — the requested
+         default — synchronously, so there's no half→peek flash and no dependency on the rAF below firing. */
+      if(isM){ recompute(); setDetent(crossed?'peek':currentDetent,false); }
       else{ document.body.classList.remove('sheet-full'); if(map&&map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} } }
     }
     syncResponsive();                                                     // initial layout at load width
