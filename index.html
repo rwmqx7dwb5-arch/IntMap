@@ -1171,7 +1171,6 @@ gtag('config', 'G-57X5MX0ZPW');
         </div>
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
         <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
-        <button class="view-btn" id="btn-widgets" title="Widgets (clock / weather / FX)">🧩</button>
         <div class="layer-menu-container">
           <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
           <div class="layer-dropdown" id="layer-dropdown">
@@ -1242,7 +1241,7 @@ gtag('config', 'G-57X5MX0ZPW');
       <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
     </div>
     <div class="setting-group"><label data-i18n="lblAiLocate">AI location analysis</label><select id="setting-ailocate"><option value="manual" data-i18n="aiLocManual">Manual (button)</option><option value="auto" data-i18n="aiLocAuto">Automatic for all news</option></select></div>
-    <div class="setting-group"><label id="lbl-tz">Timezone Setting</label><select id="setting-tz"></select></div>
+    <div class="setting-group"><label id="lbl-tz">Timezone Setting</label><input type="text" id="setting-tz-search" autocomplete="off" placeholder="Search timezone…" style="margin-bottom:6px;"><select id="setting-tz" size="1"></select></div>
     <div class="setting-group" id="sat-keys-group">
       <label data-i18n="satKeysTitle">Satellite imagery (BYOK)</label>
       <div class="sat-keys-hint" data-i18n="satKeyHint">Enter an API key to unlock these providers in the Satellite panel.</div>
@@ -1387,7 +1386,6 @@ gtag('config', 'G-57X5MX0ZPW');
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-draw"><span class="ico">✏️</span><span data-i18n="drawBtn">Draw</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-tool-radius"><span class="ico">⭕</span><span>Radius</span></button>
       <button class="m-tool-btn" type="button" data-proxy="btn-screenshot"><span class="ico">📷</span><span data-i18n="mScreenshot">Screenshot</span></button>
-      <button class="m-tool-btn" type="button" data-proxy="btn-widgets"><span class="ico">🧩</span><span data-i18n="widgetsBtn">Widgets</span></button>
     </div>
   </div>
 </div>
@@ -1454,7 +1452,7 @@ window.addEventListener('DOMContentLoaded', () => {
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
-      lblTheme:"Appearance", lblTz:"Timezone Setting", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
+      lblTheme:"Appearance", lblTz:"Timezone Setting", tzSearch:"Search timezone…", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
       measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
@@ -1486,7 +1484,7 @@ window.addEventListener('DOMContentLoaded', () => {
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
-      lblTheme:"UIテーマ", lblTz:"基準タイムゾーン", btnApply:"適用", optAuto:"システム標準", optLocal:"ローカル標準時 (端末依存)",
+      lblTheme:"UIテーマ", lblTz:"基準タイムゾーン", tzSearch:"タイムゾーンを検索…", btnApply:"適用", optAuto:"システム標準", optLocal:"ローカル標準時 (端末依存)",
       dashCatMil:"軍事・戦略拠点", dashCatTech:"技術・サイバー", dashCatMar:"海上輸送・要衝", dashCatGeo:"地政学・気候",
       readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
       measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
@@ -1522,6 +1520,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-i18n-title]').forEach(el=>{ if(d[el.getAttribute('data-i18n-title')]!==undefined) el.title=d[el.getAttribute('data-i18n-title')]; });
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
+    { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch||'Search timezone…'; }
     document.getElementById('btn-close-settings').innerText=d.btnApply; document.getElementById('opt-theme-auto').innerText=d.optAuto;
     const a=document.getElementById('opt-tz-auto'); if(a) a.innerText=d.optLocal;
     if(toolMode) updateToolPanel();
@@ -2230,6 +2229,17 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
+  /* (#R15) Keyboard shortcut: Esc collapses the sidebar. Ignored while typing in a field, while a modal
+     or popup is open (Esc should close those first), or on mobile (it uses the bottom sheet, not a sidebar). */
+  document.addEventListener('keydown',(e)=>{
+    if(e.key!=='Escape') return;
+    if(isMobile()) return;
+    const ae=document.activeElement, tag=ae&&ae.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(ae&&ae.isContentEditable)) return;
+    const modalOpen=[...document.querySelectorAll('.modal,.lightbox,#compose-modal,#settings-modal')].some(m=>{ const s=getComputedStyle(m); return s.display!=='none'&&s.visibility!=='hidden'; });
+    if(modalOpen) return;
+    if(!sidebar.classList.contains('collapsed')){ document.getElementById('btn-toggle-sidebar').click(); }
+  });
 
   /* ===== Map init ===== */
   const isInitiallyDark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -2771,12 +2781,18 @@ window.addEventListener('DOMContentLoaded', () => {
             let code=(p.ISO_A3_EH&&p.ISO_A3_EH!=='-99')?p.ISO_A3_EH:((p.ISO_A3&&p.ISO_A3!=='-99')?p.ISO_A3:(p.ADM0_A3||''));
             if(!code||code==='-99'){ f.id=undefined; return; }
             f.id=code; if(f.properties) f.properties.__code=code;  /* used as promoteId so feature ids are stable codes */
+            let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
+            /* (#R15) Natural Earth 10 m assigns minor territory polygons (Ashmore & Cartier, Coral Sea
+               Islands, Indian Ocean Territories …) the SOVEREIGN's ISO_A3_EH code. Whichever such polygon
+               came last in the file overwrote the real country's name/stats — e.g. "Australia" turned into
+               a tiny territory's name. Keep the LARGEST-area feature per code so the mainland always wins. */
+            const existing=countryStats[code];
+            if(existing && existing._area!=null && existing._area>=area) return;
             const pop=+p.POP_EST||0;
             const gdp=(GDP[code]!=null)?GDP[code]:(p.GDP_MD!=null?+p.GDP_MD/1000:(p.GDP_MD_EST!=null?+p.GDP_MD_EST/1000:null));
-            let area=0; try{ area=turf.area(f)/1e6; }catch(e){}
             const a2=(p.ISO_A2_EH&&p.ISO_A2_EH!=='-99')?p.ISO_A2_EH:p.ISO_A2;
             countryStats[code]={ code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
-              pop, area:Math.round(area), density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
+              pop, area:Math.round(area), _area:area, density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
               hdi:HDI[code]||null, dem:DEM[code]||null, milSpend:MILSPEND[code]||null, lifeExp:LIFE[code]||null, internet:INTERNET[code]||null };
@@ -4361,7 +4377,8 @@ window.addEventListener('DOMContentLoaded', () => {
     clearTimeout(_autoEnrichT);
     _autoEnrichT=setTimeout(()=>{
       try{ if(aiLocateMode==='auto' && aiReady()) aiGeocodeNews(false); }catch(_){}
-      try{ if(newsLangMode==='multi' && aiReady()) aiTranslateTitles(); }catch(_){}
+      /* (#R15) Titles are NO LONGER auto-translated on load — the user found the automatic translation
+         intrusive. Translation now runs ONLY when the "Translate titles" button is pressed. */
     }, 600);
   }
   /* ===== AI title translation (multi-language news mode) =====
@@ -5071,15 +5088,26 @@ window.addEventListener('DOMContentLoaded', () => {
   { const sel=document.getElementById('setting-newslang'); if(sel) sel.addEventListener('change',renderNewsLangChecks); }
 
   /* ===== Settings + Timezones ===== */
-  function populateTimezones(){
-    const sel=document.getElementById('setting-tz'); let zones=[];
-    try{ zones=Intl.supportedValuesOf('timeZone'); }catch(e){ zones=['UTC','Asia/Tokyo','America/New_York','Europe/London','Europe/Moscow','Europe/Berlin','Asia/Shanghai','America/Los_Angeles','Asia/Kolkata','Australia/Sydney']; }
+  let _tzZones=null;
+  function populateTimezones(filter){
+    const sel=document.getElementById('setting-tz'); if(!sel) return;
+    if(!_tzZones){ try{ _tzZones=Intl.supportedValuesOf('timeZone'); }catch(e){ _tzZones=['UTC','Asia/Tokyo','America/New_York','Europe/London','Europe/Moscow','Europe/Berlin','Asia/Shanghai','America/Los_Angeles','Asia/Kolkata','Australia/Sydney']; } }
+    const q=(filter||'').trim().toLowerCase();
     const prev=userTZ; sel.innerHTML='';
+    /* (#R15) search box filters the option list. "Auto" + UTC always stay; the current value is re-added
+       even if it doesn't match so the selection is never lost. Expand to multi-row when actively searching. */
     const auto=document.createElement('option'); auto.value='auto'; auto.id='opt-tz-auto'; auto.textContent=i18n[currentLang].optLocal; sel.appendChild(auto);
     const utc=document.createElement('option'); utc.value='UTC'; utc.textContent='UTC'; sel.appendChild(utc);
-    zones.forEach(z=>{ if(z==='UTC')return; const o=document.createElement('option'); o.value=z; o.textContent=z.replace(/_/g,' '); sel.appendChild(o); });
+    let added=0;
+    _tzZones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(q && !disp.toLowerCase().includes(q) && !z.toLowerCase().includes(q)) return; const o=document.createElement('option'); o.value=z; o.textContent=disp; sel.appendChild(o); added++; });
+    if(prev && prev!=='auto' && prev!=='UTC' && !sel.querySelector('option[value="'+(window.CSS&&CSS.escape?CSS.escape(prev):prev)+'"]')){ const o=document.createElement('option'); o.value=prev; o.textContent=prev.replace(/_/g,' '); sel.appendChild(o); }
+    sel.size = q ? Math.min(10, Math.max(2, added+2)) : 1;
     sel.value=prev;
   }
+  (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'); if(!inp) return;
+    inp.addEventListener('input',()=>populateTimezones(inp.value));
+    inp.addEventListener('focus',()=>{ const sel=document.getElementById('setting-tz'); if(sel&&!inp.value) populateTimezones(''); });
+  })();
   const modal=document.getElementById('settings-modal');
   /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
   let settingsDirty=false;
@@ -7910,7 +7938,58 @@ window.addEventListener('DOMContentLoaded', () => {
     _dc('d-stirling','mil','maritime',115.68,-32.24,'HMAS Stirling','HMASスターリング','Australia’s west-coast fleet base, central to AUKUS submarines.','AUKUS潜水艦の要となる豪西岸の艦隊基地。','HMAS_Stirling','RAN'),
     _dc('d-darwin','mil','mil',130.95,-12.42,'Darwin (Robertson Bks)','ダーウィン（ロバートソン兵営）','Hosts rotational US Marines in northern Australia.','米海兵隊が輪番展開する豪北部の拠点。','Robertson_Barracks','AU/US'),
     _dc('d-kadamba','mil','maritime',74.13,14.81,'INS Kadamba (Karwar)','INSカダンバ','India’s largest naval base under Project Seabird.','インド最大の海軍基地（シーバード計画）。','INS_Kadamba','IN Navy'),
-    _dc('d-vizag','mil','maritime',83.3,17.69,'Visakhapatnam','ヴィシャーカパトナム','Headquarters of India’s Eastern Naval Command & SSBN base.','インド東部海軍司令部・SSBN拠点。','Eastern_Naval_Command','IN Navy')
+    _dc('d-vizag','mil','maritime',83.3,17.69,'Visakhapatnam','ヴィシャーカパトナム','Headquarters of India’s Eastern Naval Command & SSBN base.','インド東部海軍司令部・SSBN拠点。','Eastern_Naval_Command','IN Navy'),
+    /* ===== +50 strategic-location cards (#R15) — chokepoints, ports, bases, tech & energy ===== */
+    _dc('d2-gibraltar','maritime','choke',-5.35,35.97,'Strait of Gibraltar','ジブラルタル海峡','14 km gateway between the Atlantic and the Mediterranean.','大西洋と地中海を結ぶ幅14kmの要衝。','Strait_of_Gibraltar','Chokepoint'),
+    _dc('d2-dardanelles','maritime','choke',26.4,40.2,'Dardanelles','ダーダネルス海峡','Turkish strait linking the Aegean to the Sea of Marmara.','エーゲ海とマルマラ海を結ぶトルコの海峡。','Dardanelles','Chokepoint'),
+    _dc('d2-kiel','maritime','choke',9.45,54.37,'Kiel Canal','キール運河','World’s busiest artificial waterway, Baltic↔North Sea.','世界一通航量の多い運河（バルト海↔北海）。','Kiel_Canal','Chokepoint'),
+    _dc('d2-dover','maritime','choke',1.45,51.0,'Strait of Dover','ドーバー海峡','Busiest shipping lane on Earth between England and France.','英仏間の世界一混雑する航路。','Strait_of_Dover','Chokepoint'),
+    _dc('d2-sunda','maritime','choke',105.9,-5.95,'Sunda Strait','スンダ海峡','Indonesian strait between Java and Sumatra.','ジャワ島とスマトラ島の間の海峡。','Sunda_Strait','Chokepoint'),
+    _dc('d2-lombok','maritime','choke',115.74,-8.73,'Lombok Strait','ロンボク海峡','Deep alternative passage for large vessels avoiding Malacca.','マラッカを避ける大型船の代替深水航路。','Lombok_Strait','Chokepoint'),
+    _dc('d2-korea','maritime','choke',129.5,34.6,'Korea Strait','対馬海峡','Strait between Korea and Japan (Tsushima passage).','韓国と日本の間の海峡（対馬航路）。','Korea_Strait','Chokepoint'),
+    _dc('d2-magellan','maritime','choke',-70.4,-53.6,'Strait of Magellan','マゼラン海峡','Historic Atlantic–Pacific passage south of mainland Chile.','チリ南部の大西洋–太平洋歴史的航路。','Strait_of_Magellan','Chokepoint'),
+    _dc('d2-goodhope','maritime','choke',18.48,-34.35,'Cape of Good Hope','喜望峰','Southern-Africa cape route used when Suez is closed.','スエズ閉鎖時に使われる南アフリカ航路。','Cape_of_Good_Hope','Route'),
+    _dc('d2-ningbo','maritime','maritime',122.07,29.87,'Ningbo-Zhoushan Port','寧波舟山港','World’s busiest port by cargo tonnage.','貨物取扱量で世界最大の港。','Port_of_Ningbo-Zhoushan','Port'),
+    _dc('d2-busan','maritime','maritime',129.07,35.08,'Port of Busan','釜山港','South Korea’s largest port and a major transshipment hub.','韓国最大の港・主要中継拠点。','Port_of_Busan','Port'),
+    _dc('d2-lalong','maritime','maritime',-118.21,33.74,'LA / Long Beach','ロサンゼルス・ロングビーチ港','Largest container port complex in the Americas.','南北アメリカ最大のコンテナ港群。','Port_of_Los_Angeles','Port'),
+    _dc('d2-antwerp','maritime','maritime',4.4,51.27,'Antwerp-Bruges','アントワープ・ブルッヘ港','Europe’s second-largest seaport & top chemical cluster.','欧州第2の港・最大の化学産業集積地。','Port_of_Antwerp-Bruges','Port'),
+    _dc('d2-jebelali','maritime','maritime',55.06,25.01,'Jebel Ali Port','ジェベル・アリ港','Largest man-made harbour & Middle East transshipment hub.','世界最大の人工港・中東の中継拠点。','Jebel_Ali_Port','Port'),
+    _dc('d2-groton','mil','maritime',-72.09,41.4,'Sub Base New London','ニューロンドン潜水艦基地','Primary US East-coast attack-submarine base (Groton).','米東海岸の主要攻撃型潜水艦基地。','Naval_Submarine_Base_New_London','USN'),
+    _dc('d2-mayport','mil','maritime',-81.4,30.39,'Naval Station Mayport','メイポート海軍基地','Atlantic surface-fleet & carrier-capable base in Florida.','大西洋水上艦隊の基地（フロリダ）。','Naval_Station_Mayport','USN'),
+    _dc('d2-offutt','mil','mil',-95.91,41.12,'Offutt AFB','オファット空軍基地','Headquarters of US Strategic Command (STRATCOM).','米戦略軍（STRATCOM）の司令部。','Offutt_Air_Force_Base','STRATCOM'),
+    _dc('d2-creech','mil','mil',-115.67,36.58,'Creech AFB','クリーチ空軍基地','Hub of US remotely-piloted (drone) operations.','米無人機（ドローン）作戦の中枢。','Creech_Air_Force_Base','USAF'),
+    _dc('d2-edwards','mil','space',-117.88,34.9,'Edwards AFB','エドワーズ空軍基地','US flight-test centre on a Mojave dry lakebed.','モハーベ砂漠の米飛行試験センター。','Edwards_Air_Force_Base','USAF'),
+    _dc('d2-fairford','mil','mil',-1.79,51.68,'RAF Fairford','フェアフォード空軍基地','US strategic-bomber forward base in England.','英国の米戦略爆撃機前方基地。','RAF_Fairford','USAF'),
+    _dc('d2-grafenwoehr','mil','mil',11.94,49.7,'Grafenwöhr','グラーフェンヴェーア','Largest US Army training area in Europe.','在欧米陸軍最大の訓練場。','Grafenwöhr_Training_Area','US Army'),
+    _dc('d2-mkair','mil','mil',28.49,44.36,'Mihail Kogălniceanu','コガルニチェアヌ基地','Expanding US/NATO air hub on Romania’s Black Sea coast.','黒海沿岸の拡張中の米・NATO空軍拠点。','Mihail_Kogălniceanu_International_Airport','NATO'),
+    _dc('d2-tapa','mil','mil',25.96,59.26,'Tapa Army Base','タパ陸軍基地','NATO enhanced-Forward-Presence battlegroup in Estonia.','エストニアのNATO前方展開部隊。','Tapa_Army_Base','NATO eFP'),
+    _dc('d2-eielson','mil','mil',-147.1,64.66,'Eielson AFB','アイエルソン空軍基地','Arctic US F-35 base in interior Alaska.','アラスカ内陸の米F-35北極基地。','Eielson_Air_Force_Base','USAF'),
+    _dc('d2-keflavik','mil','maritime',-22.6,63.99,'Keflavík','ケプラヴィーク','NATO anti-submarine air station guarding the GIUK gap.','GIUKギャップを守るNATO対潜基地。','Naval_Air_Station_Keflavik','NATO'),
+    _dc('d2-futenma','mil','mil',127.76,26.27,'MCAS Futenma','普天間飛行場','US Marine Corps air station in central Okinawa.','沖縄中部の米海兵隊航空基地。','Marine_Corps_Air_Station_Futenma','USMC'),
+    _dc('d2-iwakuni','mil','maritime',132.24,34.14,'MCAS Iwakuni','岩国基地','Joint US Marine / Japanese air base on the Inland Sea.','瀬戸内海の日米共同航空基地。','Marine_Corps_Air_Station_Iwakuni','USMC'),
+    _dc('d2-changi','mil','maritime',103.99,1.32,'Changi Naval Base','チャンギ海軍基地','Singapore base able to host US aircraft carriers.','米空母も寄港可能なシンガポールの基地。','Changi_Naval_Base','SG/US'),
+    _dc('d2-vostochny','tech','space',128.33,51.88,'Vostochny Cosmodrome','ボストチヌイ宇宙基地','Russia’s newest civil spaceport in the Far East.','ロシア極東の最新の民生宇宙基地。','Vostochny_Cosmodrome','Space'),
+    _dc('d2-wenchang','tech','space',110.95,19.61,'Wenchang','文昌発射場','China’s coastal heavy-lift launch site (Hainan).','中国沿岸の大型ロケット発射場（海南）。','Wenchang_Space_Launch_Site','Space'),
+    _dc('d2-starbase','tech','space',-97.18,25.997,'Starbase','スターベース','SpaceX Starship development & launch site in Texas.','SpaceXのスターシップ開発・発射場。','SpaceX_Starbase','Space'),
+    _dc('d2-ksc','tech','space',-80.65,28.57,'Kennedy Space Center','ケネディ宇宙センター','NASA’s primary launch complex in Florida.','NASAの主要打上げ拠点（フロリダ）。','Kennedy_Space_Center','NASA'),
+    _dc('d2-iter','tech','tech',5.75,43.7,'ITER','ITER','World’s largest nuclear-fusion experiment (Cadarache).','世界最大の核融合実験炉（カダラッシュ）。','ITER','Fusion'),
+    _dc('d2-asml','tech','tech',5.46,51.41,'ASML / Eindhoven','ASML・アイントホーフェン','Sole maker of EUV lithography machines for chips.','EUV露光装置を独占供給する企業の拠点。','ASML_Holding','Semis'),
+    _dc('d2-skhynix','tech','tech',127.44,37.27,'SK hynix (Icheon)','SKハイニックス（利川）','Major global memory-chip (DRAM/NAND) fabrication hub.','世界有数のメモリ半導体生産拠点。','SK_Hynix','Semis'),
+    _dc('d2-tsukuba','tech','tech',140.1,36.08,'Tsukuba Science City','筑波研究学園都市','Japan’s planned national science & research city.','日本の国立研究学園都市。','Tsukuba_Science_City','Science'),
+    _dc('d2-seattle','tech','tech',-122.33,47.6,'Seattle','シアトル','Aerospace (Boeing) & cloud-software (Amazon/MS) hub.','航空宇宙とクラウドソフトの中心地。','Seattle','Tech'),
+    _dc('d2-telaviv','tech','tech',34.78,32.08,'Tel Aviv','テルアビブ','“Silicon Wadi” — Israel’s startup & cyber capital.','「シリコンワディ」イスラエルの起業・サイバー中心。','Silicon_Wadi','Tech'),
+    _dc('d2-cambridgeuk','tech','tech',0.09,52.21,'Cambridge','ケンブリッジ','“Silicon Fen” research & deep-tech cluster (Arm, AI).','「シリコンフェン」研究・先端技術集積地。','Silicon_Fen','Tech'),
+    _dc('d2-permian','geo','energy',-102.5,31.8,'Permian Basin','パーミアン盆地','Most prolific US oil & shale-gas producing region.','米最大の産油・シェールガス地帯。','Permian_Basin','Oil'),
+    _dc('d2-prudhoe','geo','energy',-148.3,70.25,'Prudhoe Bay','プルドー湾','Largest US oil field; head of the Trans-Alaska Pipeline.','米最大の油田・アラスカ横断管の起点。','Prudhoe_Bay_Oil_Field','Oil'),
+    _dc('d2-jamnagar','geo','energy',69.95,22.35,'Jamnagar Refinery','ジャムナガル製油所','World’s largest oil-refining complex (India).','世界最大の製油所複合体（インド）。','Jamnagar_Refinery','Oil'),
+    _dc('d2-itaipu','geo','energy',-54.59,-25.41,'Itaipu Dam','イタイプダム','Binational mega-dam on the Brazil–Paraguay border.','ブラジル・パラグアイ国境の巨大ダム。','Itaipu_Dam','Hydro'),
+    _dc('d2-kashagan','geo','energy',51.2,46.8,'Kashagan Field','カシャガン油田','Giant offshore oil field in the northern Caspian Sea.','カスピ海北部の巨大海上油田。','Kashagan_Field','Oil'),
+    _dc('d2-atacama','geo','energy',-68.3,-23.5,'Lithium Triangle','リチウムトライアングル','Salar de Atacama — core of global lithium supply.','アタカマ塩湖、世界のリチウム供給の中核。','Salar_de_Atacama','Lithium'),
+    _dc('d2-kolwezi','geo','energy',25.47,-10.71,'Kolwezi','コルウェジ','Heart of the DR Congo cobalt & copper belt.','コンゴのコバルト・銅鉱帯の中心。','Kolwezi','Cobalt'),
+    _dc('d2-aralsea','geo','geo',59.8,45.0,'Aral Sea','アラル海','Lake that largely dried up — an ecological catastrophe.','大半が干上がった環境破壊の象徴。','Aral_Sea','Climate'),
+    _dc('d2-chernobyl','geo','geo',30.1,51.39,'Chernobyl Zone','チェルノブイリ立入禁止区域','Exclusion zone around the 1986 nuclear disaster.','1986年原発事故周辺の立入禁止区域。','Chernobyl_Exclusion_Zone','Nuclear'),
+    _dc('d2-kuriles','geo','geo',147.5,44.5,'Kuril Islands','千島列島','Russo-Japanese territorial dispute (Northern Territories).','日露の領土問題（北方領土）。','Kuril_Islands','Disputed'),
+    _dc('d2-darien','geo','geo',-77.5,8.4,'Darién Gap','ダリエン地峡','Roadless jungle break in the Pan-American Highway.','パンアメリカン道が途切れる密林地帯。','Darién_Gap','Geo')
   ];
   async function loadDashFromSupabase(){
     let rows=[];
@@ -8356,7 +8435,7 @@ window.addEventListener('DOMContentLoaded', () => {
     lblMapColor:"Map color", mapColorAuto:"Same as appearance", mapColorLight:"Light (white)", mapColorDark:"Dark (black)",
     blueberryBtn:"Support", blueberryTitle:"Support IntMap",
     blueberryBody:"My goal is to build a map where geography, climate, history, ecology, demographics, and world events can be explored in one place.\nIntMap is developed independently and is continuously expanding with new layers, datasets, and features.\nIf you enjoy using IntMap and would like to support its future development, you can contribute below.",
-    blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe). Pick any amount — one-time or recurring." });
+    blueberryGo:"Choose an amount ↗", blueberryNote:"Opens an external page (Stripe)." });
   Object.assign(i18n.jp,{ favLayers:"お気に入りレイヤー", uploadGeoJSON:"GeoJSONを読み込む", screenshotBtn:"スクリーンショット（操作ボタンを隠し凡例は残す）",
     lblSidebarStyle:"サイドバーの外観", sidebarOpaque:"不透過（デフォルト）", sidebarTranslucent:"フロストガラス", sidebarGlass2:"フロストガラス（さらに透明）",
     lblLabelLang:"地名ラベル", labelLangUi:"アプリの言語に合わせる", labelLangLocal:"現地語（その地域の表記）", labelLangEn:"常に英語",
@@ -8367,7 +8446,7 @@ window.addEventListener('DOMContentLoaded', () => {
     lblMapColor:"地図の配色", mapColorAuto:"テーマに合わせる", mapColorLight:"ライト（白）", mapColorDark:"ダーク（黒）",
     blueberryBtn:"サポート", blueberryTitle:"IntMapを支援する",
     blueberryBody:"IntMapは、地理・気候・歴史・生態・人口・世界の出来事をひとつの画面で探索できる地図を目指しています。\nIntMapは個人で開発しており、新しいレイヤー・データセット・機能を継続的に追加しています。\nIntMapを気に入っていただけて、今後の開発を応援したい方は、下記からご支援いただけます。",
-    blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。金額は自由に設定できます（一回・継続どちらも可）。" });
+    blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。" });
 
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto';
@@ -9489,9 +9568,11 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapEco={ toggle };
   })();
 
-  /* ===== (#R11/#50) Always-on widgets — clock, weather (Open-Meteo at map centre), FX (USD rates).
-     User picks which to show; toggled from the 🧩 toolbar button. Draggable, position persists per open. ===== */
+  /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
+     A no-op stub remains so any stray reference can't throw. ===== */
+  window.IntMapWidgets={ toggle:function(){}, refresh:function(){} };
   (function(){
+    return; /* widgets disabled */
     if(typeof map==='undefined' || !map) return;
     const jp=()=>currentLang==='jp'; const KEY='intmap_widgets';
     let cfg={clock:true,weather:true,fx:false}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cfg=Object.assign(cfg,s); }catch(_){}
