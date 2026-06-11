@@ -1577,7 +1577,11 @@ window.addEventListener('DOMContentLoaded', () => {
       let span=label.querySelector('.geo-label');
       if(!span){ /* migrate the bare trailing text node into a span we can re-localize */
         Array.from(label.childNodes).forEach(n=>{ if(n.nodeType===3 && n.textContent.trim()) n.remove(); });
-        span=document.createElement('span'); span.className='geo-label'; label.appendChild(span);
+        span=document.createElement('span'); span.className='geo-label';
+        /* (#R15e) Insert the label BEFORE the favourite star — appending it to the end put it AFTER the
+           star (which has margin-left:auto), shoving the text to the right with a big gap ("ぐちゃっと"). */
+        const star=label.querySelector('.lyr-star');
+        if(star) label.insertBefore(span,star); else label.appendChild(span);
       }
       span.textContent=' '+(data.name[currentLang]||data.name.en||key);
     });
