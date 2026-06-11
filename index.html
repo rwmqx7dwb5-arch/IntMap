@@ -154,7 +154,8 @@ gtag('config', 'G-57X5MX0ZPW');
     .measure-menu-container.open .measure-dropdown{ display:flex; }
     .measure-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
     .caret-sm{ font-size:9px; opacity:0.7; }
-    .layer-dropdown{ display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--popup-bg); border-radius:12px; padding:12px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); min-width:210px; backdrop-filter:blur(15px); flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; }
+    /* (#R15d) Use the shared glass border so the Layers dropdown matches every other frosted surface. */
+    .layer-dropdown{ display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--glass-fill); border-radius:12px; padding:12px; box-shadow:var(--shadow); border:1px solid var(--glass-border); min-width:210px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; }
     .layer-dropdown.show{ display:flex; }
     .layer-option{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; padding:6px; border-radius:8px; transition:0.2s; } .layer-option:hover{ background:var(--input-bg); }
     .layer-option input[type="checkbox"]{ accent-color:var(--primary-color); width:16px; height:16px; cursor:pointer; }
@@ -3436,7 +3437,7 @@ window.addEventListener('DOMContentLoaded', () => {
         list=`<div class="tp-sub">${radiusItems.length} ${t('radius')}</div><div class="radius-list">`+radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button class="rl-del" onclick="removeRadiusItem('${c.id}')">✕</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${t('removeAll')}</button>`;
       }
       body=`<div class="tp-sub">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
-        <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><input type="number" id="radius-num" min="1" value="${radiusKm}"><span>km</span></div></div>
+        <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><input type="number" id="radius-num" min="1" value="${radiusKm}"><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
         <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':'Custom colour'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
         <div class="tp-row"><span>${t('radius')}</span><b id="rad-r">${distHTML(radiusKm)}</b></div>
         <div class="tp-row"><span>${t('circumference')}</span><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div>
@@ -3458,10 +3459,16 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R11) When a circle is "active" (just dropped, esp. from a pin / map-click popup), the slider /
          colour / opacity edit THAT circle live — not just the defaults for the next one. */
       const applyActive=()=>{ if(!window._activeRadiusId) return; const c=radiusItems.find(x=>x.id===window._activeRadiusId); if(c){ c.radiusKm=radiusKm; c.color=radiusColor; c.opacity=radiusOpacity; refreshTool(); } };
+      /* (#R15d) Radius input unit toggle (km/mi) — imperial is selectable even when the app default is
+         metric. The slider stays km internally; only the number field + its unit follow the toggle. */
+      const unitSel=p.querySelector('#radius-unit'); if(unitSel && (window.unitMode==='imperial')) unitSel.value='mi';
+      const rImp=()=>!!(unitSel && unitSel.value==='mi');
+      const dispVal=(km)=> rImp()? Math.round(km/1.60934*100)/100 : km;
       const refresh=()=>{ p.querySelector('#rad-r').innerHTML=distHTML(radiusKm); p.querySelector('#rad-c').innerHTML=distHTML(2*Math.PI*radiusKm); p.querySelector('#rad-a').innerHTML=areaHTML(Math.PI*radiusKm*radiusKm); };
-      const setR=(v,fromInput)=>{ radiusKm=v; if(!fromInput)n.value=v; r.value=Math.min(20000,v); refresh(); applyActive(); };
+      const setR=(v,fromInput)=>{ radiusKm=v; if(!fromInput)n.value=dispVal(v); r.value=Math.min(20000,v); refresh(); applyActive(); };
       r.oninput=()=>setR(Math.max(1,+r.value));
-      n.oninput=()=>{ const v=parseFloat(n.value); if(!isNaN(v)&&v>0) setR(v,true); };
+      n.oninput=()=>{ const raw=parseFloat(n.value); if(!isNaN(raw)&&raw>0){ const km=rImp()? raw*1.60934 : raw; setR(km,true); } };
+      if(unitSel){ unitSel.onchange=()=>{ n.value=dispVal(radiusKm); }; unitSel.value=rImp()?'mi':'km'; n.value=dispVal(radiusKm); }
       op.oninput=()=>{ radiusOpacity=parseFloat(op.value); applyActive(); };
       const markPreset=()=>{ p.querySelectorAll('.rad-preset').forEach(b=>b.classList.toggle('on',(b.getAttribute('data-col')||'').toLowerCase()===radiusColor.toLowerCase())); };
       col.oninput=()=>{ radiusColor=col.value; markPreset(); applyActive(); };
@@ -5184,7 +5191,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const sel=document.getElementById('setting-tz'); if(!sel) return;
     if(!_tzZones){ try{ _tzZones=Intl.supportedValuesOf('timeZone'); }catch(e){ _tzZones=['UTC','Asia/Tokyo','America/New_York','Europe/London','Europe/Moscow','Europe/Berlin','Asia/Shanghai','America/Los_Angeles','Asia/Kolkata','Australia/Sydney']; } }
     const q=(filter||'').trim().toLowerCase();
-    const prev=userTZ; sel.innerHTML='';
+    /* (#R15d) Preserve the CURRENTLY-selected value across re-filters — was resetting to the saved userTZ on
+       every keystroke, so picking a zone then typing more wiped the selection ("使っても設定できない"). */
+    const prev=(sel.value||userTZ); sel.innerHTML='';
     /* (#R15) search box filters the option list. "Auto" + UTC always stay; the current value is re-added
        even if it doesn't match so the selection is never lost. Expand to multi-row when actively searching. */
     const auto=document.createElement('option'); auto.value='auto'; auto.id='opt-tz-auto'; auto.textContent=i18n[currentLang].optLocal; sel.appendChild(auto);
@@ -5195,9 +5204,11 @@ window.addEventListener('DOMContentLoaded', () => {
     sel.size = q ? Math.min(10, Math.max(2, added+2)) : 1;
     sel.value=prev;
   }
-  (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'); if(!inp) return;
+  (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'), sel=document.getElementById('setting-tz'); if(!inp) return;
     inp.addEventListener('input',()=>populateTimezones(inp.value));
-    inp.addEventListener('focus',()=>{ const sel=document.getElementById('setting-tz'); if(sel&&!inp.value) populateTimezones(''); });
+    inp.addEventListener('focus',()=>{ if(sel&&!inp.value) populateTimezones(''); });
+    /* (#R15d) On pick, collapse the expanded list and echo the choice into the box so it's clearly set. */
+    if(sel) sel.addEventListener('change',()=>{ if(sel.value && sel.value!=='auto' && sel.value!=='UTC'){ inp.value=sel.value.replace(/_/g,' '); } sel.size=1; });
   })();
   const modal=document.getElementById('settings-modal');
   /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
@@ -10587,7 +10598,7 @@ window.addEventListener('DOMContentLoaded', () => {
       #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
       /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
          smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
-      @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 60px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
+      @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 18px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
         .coord-readout span{ white-space:nowrap; flex-shrink:0; } }`;
     document.head.appendChild(st);
     const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
@@ -10865,7 +10876,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
     if(typeof map==='undefined'||!map) return;
     const jp=()=>currentLang==='jp';
-    const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-pop','Population density','人口密度']];
+    const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-popgrid','Population density (1 km grid)','人口密度（1kmグリッド）']];
     /* don't start if a thematic layer is already on */
     if(document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
     let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
