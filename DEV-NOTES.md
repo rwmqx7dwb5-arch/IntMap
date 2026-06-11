@@ -1185,12 +1185,43 @@ DOM/CSS checks; the spinning WebGL globe still can't be screenshotted). Committe
 - **LICENSE added** — personal & research use permitted, **commercial use prohibited** without a written
   license; third-party data subject to its own terms.
 
+### R15d — re-report pass (mobile Köppen crash STILL, date-pickers→legends, TZ select, x-ray takeover)
+- **Mobile Köppen crash — ROOT CAUSE was the 8192² BASE texture, not the highlight.** A phone can't hold the
+  ~268 MB decoded 8192² base + the WebGL globe, so *any* extra allocation (even the tiny capped highlight)
+  OOM-kills the tab → 先祖返り (stale file:// cache reload). Generated bundled **4096² builds**
+  (`koppen_mercator_<period>_4k.png`, ~760 KB / 67 MB decoded, nearest-neighbour so KCOL round-trips) and
+  `koppenURLFor()` serves them on mobile only. Desktop keeps full 8192². (PNGs made with PIL; tracked in git.)
+- **Date / month / window / traffic-filter controls moved from the Layers panel INTO the legends.**
+  `_refreshLegendDates` now builds interactive controls: temp = `<input type=month>`, sst/snow/aod = date
+  picker, thermal = 24/48/72 h select; ships/planes = a military/civilian filter inside their generic legend;
+  sea-level + ECMWF time already in legends; precip's date is driven by the global timeline. Inline
+  `.lyr-extras` is hidden (`display:none`). Verified: temp/sst legends show date input, ships shows the filter,
+  inline extras `none`.
+- **Timezone search — "使っても設定できない" FIXED.** `populateTimezones` reset `sel.value` to the SAVED userTZ on
+  every keystroke, wiping the user's pick if they typed more. Now it preserves the current selection
+  (`prev = sel.value || userTZ`) and collapses the list on pick. Verified: pick survives re-filter.
+- **x-ray takeover / mobile compare "ほぼ使えない".** Mobile compare is now a clean full-width TOP panel (60 vh,
+  not resizable) with big tappable header buttons; x-ray keeps the full-cover overlay (for alignment) but its
+  header is a tall opaque bar and the controls dock at the bottom — so Close / X-ray are always reachable
+  (no more "どうにもできなくなる").
+- **Mobile panels were un-draggable** — the drag handles (`.tp-header`, `.dl-drag`, `.kl-drag`) lacked
+  `touch-action:none`, so a touch-drag was hijacked into a scroll. Added it → tool panels + legends drag on
+  phones.
+- **Mobile legends dock below the search bar** (`top:64px;left:6px`, stacking downward) instead of bottom-right.
+- **Mobile sheet starts at PEEK, no middle flash.** The CSS default `--sheet-ty` was `42dvh` (≈ half), so the
+  sheet flashed at the middle before JS snapped it to peek. Default is now `calc(92dvh - 196px)` (= peek).
+- **Misc.** Demo's last layer → 1 km population GRID (not the country choropleth); mobile coord readout tucked
+  lower (`+18px` above the sheet); Layers dropdown uses the shared `--glass-*` material/border so it matches
+  every other frosted surface; **radius tool got a km/mi selector** (imperial selectable even in metric default).
+- **Tools panel verified clean (again).** Measured on desktop AND mobile after 3 reorganize runs: single
+  `#layer-tools`, one Compare + one Upload button, full-width, no overflow, no duplicates. The persistent
+  "ぐちゃっと" report is a **file:// cache** of the pre-`box-sizing` build — hard-reload (Ctrl+Shift+R).
+
 ### Still open / documented (need engines, datasets, or a real browser to verify)
-- **Date/time PICKERS still in the Layers panel** (temp month, SST date, thermal window, traffic filter): the
-  OPACITY migration is done; moving these date selectors into the legends needs each legend to host the picker
-  (the legends already show the "as-of" line) — left as a focused follow-up to avoid breaking date control.
 - **ECMWF some-blank (#11):** every configured variable IS served by `ecmwf_ifs` (verified latest.json), so
   the blanks are the two VECTOR layers (isobars/arrows source-layer names) or genuinely-sparse fields
   (cape/precip/sst). Needs a real browser to see the `.om` compositing. Most are now in the Others(beta) group.
 - **LOS detail (#2), 3D speed+quality (#3), ghost layers (#10):** terrain/engine-scale or no-headless-repro —
-  carried over. (Sea route #5 was removed per request this round.)
+  carried over. (Sea route #5 was removed in R15c per request.) Köppen DESKTOP crash, if it persists, would
+  need the desktop base dropped below 8192² too (conflicts with the no-quality-loss ask) — mobile is the
+  reported case and is fixed.
