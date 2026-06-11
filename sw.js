@@ -25,6 +25,8 @@ const TILE_HOSTS = [
   'services.sentinel-hub.com',        // Sentinel Hub (BYOK)
   'basemaps.cartocdn.com',            // light/dark basemaps (a/b/c/d subdomains)
   'elevation-tiles-prod.s3.amazonaws.com', // terrarium DEM (instant elevation/depth)
+  'wmts.terrascope.be',               // (#R17) ESA WorldCover land-cover — single slow host, so cache hard → instant on revisit
+  'tiles.openfreemap.org',            // (#R17) vector place labels — cache so labels snap in on revisit
 ];
 function isTileRequest(url) {
   let h;
