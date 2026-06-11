@@ -1213,9 +1213,26 @@ DOM/CSS checks; the spinning WebGL globe still can't be screenshotted). Committe
 - **Misc.** Demo's last layer → 1 km population GRID (not the country choropleth); mobile coord readout tucked
   lower (`+18px` above the sheet); Layers dropdown uses the shared `--glass-*` material/border so it matches
   every other frosted surface; **radius tool got a km/mi selector** (imperial selectable even in metric default).
-- **Tools panel verified clean (again).** Measured on desktop AND mobile after 3 reorganize runs: single
-  `#layer-tools`, one Compare + one Upload button, full-width, no overflow, no duplicates. The persistent
-  "ぐちゃっと" report is a **file:// cache** of the pre-`box-sizing` build — hard-reload (Ctrl+Shift+R).
+- **Tools/Layers "ぐちゃっと" — the REAL bug (R15e), NOT cache (I was wrong to keep blaming cache).**
+  A **screenshot** showed it instantly: the geo/strategic rows (Northern Sea Route, Global Chokepoints,
+  island chains, BRI, pipelines, nuclear, FSU, …) had their **labels right-aligned with a huge gap** while
+  normal rows were left-aligned. Cause: `localizeGeoLabels()` migrates the bare trailing text node into a
+  `.geo-label` span via `label.appendChild(span)` — but `injectLayerStars()` had already appended the
+  favourite `★` (which has `margin-left:auto`), so the label landed AFTER the star and got shoved right.
+  Fix: insert `.geo-label` **before** the star (`insertBefore`). Verified by re-screenshot — rows now
+  left-aligned on desktop AND mobile. LESSON: a DOM-measurement "looks fine" missed this; SCREENSHOT the UI.
+
+### R15e — the user said "it's NOT cache" (and they were right) + x-ray
+- **Geo-row label right-alignment** — see the Tools note above. The actual long-standing "Layers ぐちゃっと".
+- **x-ray "どうにかしろ".** x-ray full-covers the map for pixel-alignment, which trapped the user. Added a
+  **fixed, always-on-top bar** (z-index 6000) with a big **Exit X-ray** + **Close** — appears whenever x-ray
+  is on, so it can never trap you. `close()` fully resets x-ray (class + checkbox + bar). Verified via
+  screenshot: the bar shows, Exit turns x-ray off cleanly. (The compare 2nd map DOES render fine over http;
+  earlier "can't verify" was the file:// fetch limit, not a bug.)
+- **Place search hung on "Loading…" (the real "結果が出てこない").** `doGeocode` awaited Nominatim with NO
+  timeout, so a slow/unreachable geocoder froze the box forever and the local fallback never ran. Now: strong
+  **local matches (countries/capitals/gazetteer) render INSTANTLY**, Nominatim is merged in with a **4.5 s
+  AbortController timeout**, and country data is kicked off so local matches exist. Never hangs.
 
 ### Still open / documented (need engines, datasets, or a real browser to verify)
 - **ECMWF some-blank (#11):** every configured variable IS served by `ecmwf_ifs` (verified latest.json), so
