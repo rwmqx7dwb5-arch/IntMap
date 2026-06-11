@@ -1023,6 +1023,9 @@ gtag('config', 'G-57X5MX0ZPW');
     .dl-op-extra input[type=date], .dl-op-extra select{ flex:1; min-width:0; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px; }
     /* Layers with a legend popup show opacity there → hide the inline dropdown slider (#17). */
     .lyr-row.has-legend .lyr-op{ display:none !important; }
+    /* (#R15d) Date / month / window / traffic-filter / sea-level controls all moved INTO the legends — no
+       sliders or date pickers in the Layers panel anymore (precip's date is driven by the global timeline). */
+    .lyr-row .lyr-extras{ display:none !important; }
     /* Generic control popup for layers that have no rich legend */
     .layer-ctrl{ display:none; position:absolute; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
     .layer-ctrl h4{ margin:0 0 4px; font-size:12px; padding-right:18px; }
@@ -5765,12 +5768,30 @@ window.addEventListener('DOMContentLoaded', () => {
       if(id==='temp') return (jp?'対象月: ':'Month: ')+String(d).slice(0,7);
       return (jp?'データ: ':'Data: ')+d;
     }
+    /* (#R15d) The date/window control now lives IN the legend (not the Layers panel). For radar (live) we
+       just show the as-of text; temp gets a month picker; sst/snow/aod a date picker; thermal a 24/48/72 h
+       window select. Each writes layerDates[id] / _thermalWindow and reloads the dated layer. */
+    const _today=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     function _refreshLegendDates(){
-      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST]].forEach(([id,lg])=>{
+      [['temp',lgdTemp],['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod]].forEach(([id,lg])=>{
         if(!lg) return;
         let w=lg.querySelector('.dl-when');
-        if(!w){ w=document.createElement('div'); w.className='dl-when'; w.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:3px;'; lg.appendChild(w); }
-        w.textContent='🕒 '+_legendWhenText(id);
+        if(!w){
+          w=document.createElement('div'); w.className='dl-when'; w.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
+          const inSty='padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;';
+          if(id==='radar'){ w.innerHTML='🕒 <span class="dl-when-t"></span>'; }
+          else if(id==='thermal'){ w.innerHTML='🕒 <span>'+(currentLang==='jp'?'期間':'Window')+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select>';
+            const s=w.querySelector('.dl-win'); s.value=window._thermalWindow||'24'; s.addEventListener('change',()=>{ window._thermalWindow=s.value; try{ window._refreshThermal&&window._refreshThermal(); }catch(_){} _refreshLegendDates(); }); }
+          else if(id==='temp'){ w.innerHTML='🕒 <input type="month" class="dl-date" style="'+inSty+'">';
+            const d=w.querySelector('.dl-date'); d.value=(layerDates[id]||'').slice(0,7); d.addEventListener('change',()=>{ if(!d.value)return; layerDates[id]=d.value+'-01'; if(map.getLayer('lyr-'+id)&&map.getLayoutProperty('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
+          else { w.innerHTML='🕒 <input type="date" class="dl-date" max="'+_today()+'" style="'+inSty+'">';
+            const d=w.querySelector('.dl-date'); d.value=layerDates[id]||_today(); d.addEventListener('change',()=>{ layerDates[id]=d.value||_today(); if(map.getLayer('lyr-'+id)&&map.getLayoutProperty('lyr-'+id,'visibility')==='visible') refreshDatedLayer(id); _refreshLegendDates(); }); }
+          lg.appendChild(w);
+        }
+        /* keep values in sync */
+        const dt=w.querySelector('.dl-date'); if(dt){ dt.value = id==='temp' ? (layerDates[id]||'').slice(0,7) : (layerDates[id]||_today()); }
+        const wn=w.querySelector('.dl-win'); if(wn) wn.value=window._thermalWindow||'24';
+        const tt=w.querySelector('.dl-when-t'); if(tt) tt.textContent=_legendWhenText(id);
       });
     }
     window._refreshLegendDates=_refreshLegendDates;
@@ -6613,6 +6634,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const nm=currentLang==='jp'?GENERIC_LEG[id][1]:GENERIC_LEG[id][0];
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+(currentLang==='jp'?'ドラッグして移動':'Drag to move')+'">⋮⋮</span><button class="layer-popup-x" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
+        /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
+        if(id==='ships'||id==='planes'){
+          const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
+          fr.innerHTML=(currentLang==='jp'?'絞り込み':'Filter')+' <select class="gl-filter" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"><option value="all">'+(currentLang==='jp'?'すべて':'All')+'</option><option value="civilian">'+(currentLang==='jp'?'民間':'Civilian')+'</option><option value="military">'+(currentLang==='jp'?'軍用':'Military')+'</option></select>';
+          el.appendChild(fr);
+          const s=fr.querySelector('.gl-filter'); try{ s.value=(trafficFilters&&trafficFilters[id])||'all'; }catch(_){}
+          s.addEventListener('change',()=>{ try{ trafficFilters[id]=s.value; }catch(_){} try{ refreshTrafficLayer(id); }catch(_){} });
+        }
       } else { el.querySelector('h4').textContent=nm; }
       return el;
     }
@@ -10490,8 +10519,22 @@ window.addEventListener('DOMContentLoaded', () => {
          the body fill, and let pointer events pass THROUGH the (transparent) map to the main map so you
          drive the main map and the overlay tracks it via sync (the controls stay clickable). */
       '#compare-window.cmp-xray .cmp-body{position:absolute !important;inset:0 !important;pointer-events:none;}'+
-      '#compare-window.cmp-xray .cmp-head{position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:auto;background:rgba(15,18,24,0.55);}'+
-      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;}';
+      '#compare-window.cmp-xray .cmp-head{position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:auto;background:rgba(15,18,24,0.72);}'+
+      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;}'+
+      /* (#R15d) MOBILE: the 440px resizable window + the full-cover x-ray were "ほぼ使えない / どうにもできない".
+         Make it a clean full-width TOP panel with big tappable header buttons; x-ray still overlays for
+         alignment but its header is a tall, opaque bar so Close/X-ray are always reachable. */
+      '@media(max-width:768px){'+
+      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:60vh !important;min-width:0 !important;resize:none !important;border-radius:14px;}'+
+      '.cmp-head{flex-wrap:wrap;padding:9px 10px;gap:7px;}'+
+      '.cmp-head .cmp-title{font-size:13px;width:100%;}'+
+      '.cmp-btn{padding:8px 11px;font-size:13px;min-height:38px;}'+
+      '#cmp-close,#cmp-min{min-width:42px;font-size:16px;}'+
+      '#compare-window.cmp-xray{border-radius:0 !important;}'+
+      '#compare-window.cmp-xray .cmp-head{padding:10px 10px;}'+
+      '.cmp-ctrls{top:auto;bottom:8px;left:8px;right:8px;max-width:none;}'+
+      '.cmp-ctrls select,.cmp-ctrls label{font-size:12px;padding:6px 9px;}'+
+      '}';
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
       return { version:8, glyphs:'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', sources:{
