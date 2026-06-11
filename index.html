@@ -11,6 +11,40 @@ gtag('config', 'G-57X5MX0ZPW');
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- (#R16) Never let a stale copy of this document persist (the "先祖返り" after a crash). -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+  /* (#R16) ANTI-"先祖返り" (time-slip-to-old-version) GUARD — the user's #1 complaint.
+     When the tab is OOM-killed on mobile, the browser sometimes reloaded a STALE cached/synced copy of
+     index.html, so removed features "came back". We stamp every build with a date-ordered id and remember
+     the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
+     we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
+     banner so it can never silently masquerade as the current app again. */
+  window.INTMAP_BUILD='2026-06-11-R16';
+  (function(){ try{
+    var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
+    if(seen && seen>window.INTMAP_BUILD){
+      if(!sessionStorage.getItem('intmap_stale_bust')){
+        sessionStorage.setItem('intmap_stale_bust','1');
+        try{ if('caches' in window){ caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }).then(function(){ location.reload(true); }); return; } }catch(e){}
+        location.reload(true); return;
+      }
+      window.__INTMAP_STALE=seen;   /* bust didn't help (e.g. the on-disk file itself is old) → banner below */
+    } else {
+      if(window.INTMAP_BUILD>seen) localStorage.setItem(KEY,window.INTMAP_BUILD);
+      sessionStorage.removeItem('intmap_stale_bust');
+    }
+  }catch(e){} })();
+  window.addEventListener('DOMContentLoaded',function(){ if(!window.__INTMAP_STALE) return;
+    try{ var b=document.createElement('div'); b.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#b00020;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:10px 14px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center;';
+      b.innerHTML='⚠️ 古いバージョンが表示されています (an old cached version loaded). <button style="margin-left:8px;background:#fff;color:#b00020;border:none;border-radius:6px;padding:5px 9px;font-weight:700;cursor:pointer;">再読み込み / Reload</button>';
+      b.querySelector('button').onclick=function(){ try{ if('caches' in window) caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(e){} location.reload(true); };
+      document.body.appendChild(b);
+    }catch(e){}
+  });
+  </script>
   <title>IntMap - Global Integrated Map</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
@@ -6342,12 +6376,15 @@ window.addEventListener('DOMContentLoaded', () => {
     window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator_1991-2020.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
     if(!window._koppenPeriod) window._koppenPeriod='1991-2020';
     function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; let u=e[1];
-      /* (#R15d) MOBILE crash fix: the real OOM/GPU killer on phones was the **8192² base texture** (~268 MB
-         decoded), not the (already tiny) highlight. Phones load the bundled **4096² build** (`_4k.png`,
-         ~67 MB) — visually identical on a phone screen, ~1/4 the memory, so selecting a climate no longer
-         crashes/先祖返り. Desktop keeps the full 8192². Nearest-neighbour downscale preserves the exact KCOL
-         palette so cursor sampling still round-trips. */
-      try{ if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); }catch(_){}
+      /* (#R16) The user insists: do NOT silently downgrade Köppen quality on mobile — but also don't let it
+         crash. Resolution is now MEMORY-AWARE instead of "all phones get 4k":
+           • A memory-rich phone (navigator.deviceMemory === 8, the capped maximum reported by every modern
+             flagship Android) keeps the FULL 8192² texture — no quality loss.
+           • A low-memory phone, or one that reports nothing (iOS Safari — which also kills tabs aggressively
+             and genuinely can't hold 268 MB), gets the bundled 4096² build so the tab is never OOM-killed
+             (the OOM is what reloaded a stale file:// page → "先祖返り"; see also the build-version guard).
+         The 4096² PNG is nearest-neighbour so the exact KCOL palette round-trips for cursor sampling. */
+      try{ if(typeof isMobile==='function'&&isMobile()){ const dm=(typeof navigator!=='undefined'&&navigator.deviceMemory)||0; if(dm<8) u=u.replace(/\.png$/,'_4k.png'); } }catch(_){}
       return u;
     }
     let KURL=koppenURLFor(window._koppenPeriod);
