@@ -3887,20 +3887,29 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
-    res.style.display='block'; res.innerHTML=`<div class="ms-loading">${t('loading')}</div>`;
-    /* Pre-process: turn abstract queries into something Nominatim can parse */
+    res.style.display='block';
+    /* (#R15e) Make sure the bundled country data is loading so local country/capital matches are available
+       (the gazetteer is always loaded; countryStats may not be until Stats is opened). Non-blocking. */
+    try{ if(typeof loadCountryData==='function' && (typeof countryStats==='undefined' || !countryStats || !Object.keys(countryStats).length)) loadCountryData(); }catch(_){}
     const pq=preprocessNLQuery(q);
     const local=localFuzzyPlaces(q);
-    let arr=[];
-    try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`); arr=r.ok?await r.json():[]; }catch(e){ arr=[]; }
-    res.innerHTML=''; const seen=new Set();
+    const seen=new Set();
     const addItem=(label,lng,lat,raw)=>{ if(isNaN(lng)||isNaN(lat))return; const key=label+'|'+lng.toFixed(2)+'|'+lat.toFixed(2); if(seen.has(key))return; seen.add(key);
       const d=document.createElement('div'); d.className='ms-item'; d.textContent=label; d.onclick=()=>{ gotoPlace(lng,lat,label,raw||null); res.style.display='none'; inp.value=String(label).split(',')[0].split(' · ')[0]; }; res.appendChild(d); };
-    /* Strong local matches (exact / prefix country or capital) lead; then the external geocoder. */
+    /* (#R15e) Show strong LOCAL matches IMMEDIATELY — was awaiting Nominatim with no timeout, so a slow /
+       unreachable geocoder left the box frozen on "Loading…" forever ("結果が出てこない"). Now local
+       (countries/capitals/gazetteer) appear instantly; the external geocoder is merged in with a hard
+       timeout so it can never hang the search. */
+    res.innerHTML='';
     local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,null));
+    if(!res.children.length) res.innerHTML=`<div class="ms-loading">${t('loading')}</div>`;
+    let arr=[];
+    try{ const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },4500);
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}); clearTimeout(to); arr=r.ok?await r.json():[]; }catch(e){ arr=[]; }
+    const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
     arr.forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl));
-    if(!res.children.length){ local.forEach(l=>addItem(l.name,l.lng,l.lat,null)); }   /* weak local fallback */
-    if(!res.children.length){ res.innerHTML=`<div class="ms-loading">${t('noMatch')}</div>`; }
+    if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,null)); }   /* weak local fallback */
+    if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${t('noMatch')}</div>`; }
   }
   let searchCardEl=null, searchCardData=null, searchCardOnMove=null;
   function closeSearchCard(){
