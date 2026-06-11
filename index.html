@@ -10817,10 +10817,42 @@ window.addEventListener('DOMContentLoaded', () => {
 
   loadSettings();
 
+  /* (#R15c) First-visit showcase — a new user reported the map "was initially just black". On the very
+     first visit (nothing seen before) we auto-cycle a few colourful layers with a bottom pill that names
+     the layer being shown + play/pause + dismiss. It stops the moment the user toggles any layer or hits ✕,
+     and remembers it's been seen so it never nags again. Purely additive; touches only its own pill. */
+  function _imStartDemo(){
+    try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
+    if(typeof map==='undefined'||!map) return;
+    const jp=()=>currentLang==='jp';
+    const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-pop','Population density','人口密度']];
+    /* don't start if a thematic layer is already on */
+    if(document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
+    let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
+    const gcb=(id)=>document.getElementById(id);
+    const pill=document.createElement('div'); pill.id='im-demo-pill';
+    pill.style.cssText='position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--sheet-cover, 20px) + 20px);z-index:1300;display:flex;align-items:center;gap:9px;padding:7px 13px;border-radius:999px;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.22);box-shadow:var(--shadow);backdrop-filter:blur(14px);font-size:12.5px;color:var(--text-main);max-width:92vw;';
+    (document.getElementById('map-container')||document.body).appendChild(pill);
+    const setOff=(id)=>{ const c=id&&gcb(id); if(c&&c.checked){ demoToggling=true; c.checked=false; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
+    const setOn=(id)=>{ const c=gcb(id); if(c&&!c.checked){ demoToggling=true; c.checked=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
+    function render(name){ pill.innerHTML='';
+      const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(jp()?'デモ表示:':'Showing:')+'</span> <b>'+name+'</b>'; pill.appendChild(t);
+      const pb=document.createElement('button'); pb.textContent=paused?'▶':'⏸'; pb.title=paused?(jp()?'再開':'Play'):(jp()?'一時停止':'Pause'); pb.style.cssText='background:none;border:none;color:var(--text-main);cursor:pointer;font-size:13px;padding:0 2px;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
+      const xb=document.createElement('button'); xb.textContent='✕'; xb.title=jp()?'閉じる':'Dismiss'; xb.style.cssText='background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
+    function schedule(){ clearTimeout(timer); timer=setTimeout(next,6500); }
+    function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(jp()?s[2]:s[1]); }catch(_){} schedule(); }
+    function stop(markSeen){ if(done) return; done=true; clearTimeout(timer); setOff(curId); try{ pill.remove(); }catch(_){} if(markSeen){ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} } }
+    const dd=document.getElementById('layer-dropdown');
+    if(dd) dd.addEventListener('change',(e)=>{ if(!demoToggling && e.target && e.target.type==='checkbox') stop(true); });
+    window._imDemoStop=()=>stop(true);
+    next();
+  }
+
   /* ===== Init ===== */
   try{ rebuildGeoIndex(); }catch(_){}   /* index the built-in gazetteer now so the non-AI locator works before Supabase loads (#11) */
   populateTimezones(); updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
+  try{ setTimeout(_imStartDemo,1400); }catch(_){}   /* (#R15c) first-visit showcase */
   try{ if(currentLang==='jp'){ document.getElementById('lang-jp').classList.add('active'); document.getElementById('lang-en').classList.remove('active'); } }catch(_){}
 });
 </script>
