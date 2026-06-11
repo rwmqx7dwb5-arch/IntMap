@@ -6236,7 +6236,15 @@ window.addEventListener('DOMContentLoaded', () => {
        1931-1960 & 1961-1990 now use the user's updated, distinct source TIFFs. */
     window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator_1991-2020.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
     if(!window._koppenPeriod) window._koppenPeriod='1991-2020';
-    function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; return e[1]; }
+    function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; let u=e[1];
+      /* (#R15d) MOBILE crash fix: the real OOM/GPU killer on phones was the **8192² base texture** (~268 MB
+         decoded), not the (already tiny) highlight. Phones load the bundled **4096² build** (`_4k.png`,
+         ~67 MB) — visually identical on a phone screen, ~1/4 the memory, so selecting a climate no longer
+         crashes/先祖返り. Desktop keeps the full 8192². Nearest-neighbour downscale preserves the exact KCOL
+         palette so cursor sampling still round-trips. */
+      try{ if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); }catch(_){}
+      return u;
+    }
     let KURL=koppenURLFor(window._koppenPeriod);
     const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
     const KOPPEN_LATMAX=85.0511287798066;
