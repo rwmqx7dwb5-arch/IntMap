@@ -1242,3 +1242,83 @@ DOM/CSS checks; the spinning WebGL globe still can't be screenshotted). Committe
   carried over. (Sea route #5 was removed in R15c per request.) Köppen DESKTOP crash, if it persists, would
   need the desktop base dropped below 8192² too (conflicts with the no-quality-loss ask) — mobile is the
   reported case and is fixed.
+
+---
+
+## 19. Round 16 — re-attack of the recurring fury list (tags `#R16`)
+
+Same standing constraints: additive/in-place, MapLibre stays the engine, commit per batch + push `main`.
+Verified in the headless preview via precise `getComputedStyle`/`getBoundingClientRect`/state assertions +
+console-error checks after each reload (screenshots still time out on the continuously-rendering globe — used
+geometry, which catches ordering/overflow/visibility bugs more reliably than eyeballing). Build stamp:
+`window.INTMAP_BUILD='2026-06-11-R16'`.
+
+### The "先祖返り" (time-slip to an old version) — finally given a real mechanism + guard
+The user's #1 fury: after a mobile crash the app "comes back as an old version" (removed features reappear).
+Two distinct mechanisms, both now handled:
+- **Stale CODE.** Added a date-ordered build stamp + a head-of-document guard: it remembers the newest build
+  ever loaded (`localStorage.intmap_build_seen`); if a load ever serves an OLDER build it purges caches +
+  hard-reloads ONCE, and if it's still old, shows a red "an old cached version loaded — Reload" banner. So an
+  old build can never silently masquerade as current again. Also `<meta http-equiv=Cache-Control no-store>` +
+  the SW now purges EVERY non-current cache on activate. Verified end-to-end (forced a newer `seen` → bust →
+  banner, no reload loop).
+- **Stale STATE = the "ghost layers" bug (#10).** `IntMapBookmark` saved the active-layer hash only on
+  `moveend`, so toggling a layer OFF without panning left it in the hash → `restore()` re-enabled it on the
+  next/crash reload. Now the hash is saved on EVERY layer change → a turned-off layer stays off. Verified
+  (toggle gdppc on → `&l=dl-gdppc`; off → removed).
+
+### Köppen — keep FULL quality, don't crash (memory-aware, not a blanket downgrade)
+The user rejected "all phones get 4k". `koppenURLFor` is now `navigator.deviceMemory`-aware: a memory-rich
+phone (`deviceMemory===8`, the capped max every modern flagship reports) keeps the FULL 8192² texture; only
+genuinely low-memory devices / iOS Safari (reports nothing AND kills tabs aggressively) get the bundled 4096².
+Desktop unchanged (8192²). The highlight stays capped (2048² mobile / 4096² desktop). Plus the auto-demo (which
+eagerly loaded 4 heavy layers incl. Köppen on first visit) is **skipped on mobile** → faster startup + less OOM
+pressure.
+
+### NO sliders/date-pickers in the Layers panel — for real this time (#sliders, re-reported 3×)
+Root cause the last "fix" missed: `.lyr-row.on .lyr-op{display:block}` re-showed the inline opacity slider for
+any layer NOT in `HAS_LEGEND` when it was toggled on. Now ALL `.lyr-op`/`.ec-op`/`.lyr-extras` are
+`display:none !important` in the panel unconditionally; opacity/date/filter live ONLY in each layer's legend
+(`ensureLegendOpacity`/`_refreshLegendDates`/generic legend). Verified: with climate+eez ON, 0 visible controls
+in the panel, mobile + desktop.
+
+### Mobile drag — the real reason popups "couldn't move / only moved left-right"
+The mobile `.tool-panel{left:12px!important; top:auto!important}` anchors silently beat the drag's plain inline
+styles. Fix: `makeDraggable` now writes position with **inline `!important`** (which beats stylesheet
+`!important`) + sets `data-dragged`; verified inline-99px overrides the `!important` 12px. `wireDrag` (legends)
+now grabs from the **whole header (h4)**, not just the tiny ⋮⋮ grip ("動かせる場所が左上しかない"), also with
+inline-!important. Covers measure/radius/draw/LOS/elevation/runway panels + every legend.
+
+### X-ray is a movable LENS, not a fullscreen takeover (#xray)
+The user: "なんで勝手に全画面にするねん。意味ないやろが". Removed the `inset:0` full-cover. The compare window
+stays floating/resizable; in x-ray its basemap goes transparent and the camera is synced so the window shows
+exactly the main-map geography BEHIND it (equal zoom ⇒ every pixel registers — a true x-ray lens), re-aimed on
+main-map move, window drag and resize. Dropped the floating exit-bar (the window header is always reachable now).
+Verified: x-ray no longer fills `#map-container` (`position:fixed`, not absolute-inset).
+
+### Other fixes
+- **Mobile place search "結果が出てこない".** On a fresh mobile load countryStats is empty so local matches were
+  empty and it depended entirely on Nominatim (rate-limited/blocked under file://). Now queries **Open-Meteo
+  geocoding AND Nominatim in parallel** behind one timeout (either yields results) + warms country data on
+  search focus. Verified: "Osaka"/"Reykjavik" return merged results.
+- **Map/Satellite "反応しないことがある".** Replaced the fixed 120/400/900 ms re-asserts with a bounded POLL that
+  re-applies `applyTheme()` every 150 ms until `layer-sat` visibility matches the chosen mode (catches a style
+  that loads later than the timers, where the globe never fires `idle`).
+- **Crosshair at the VISIBLE-map centre** (not the phone-screen centre): `top:calc((100% - --sheet-cover)/2)`;
+  `centerLL()` (Add-point + long-press target) uses the same pixel. **Long-press** on mobile now opens the
+  context menu AT the crosshair (always on-screen) instead of under the finger.
+- **"Summarize this view" startup flash** — the button defaulted to visible in HTML; now `style=display:none`
+  inline (JS shows it only on the News tab).
+- **Timezone search "使っても設定できない"** — typing an exact zone now SELECTS it (and Enter picks the best
+  match), so Apply actually saves it. Verified ("Asia/Tokyo", "reykjavik"+Enter → Atlantic/Reykjavik).
+- **Community post asks for the location FIRST** — "New post" arms a map-tap (collapses the sheet on mobile via
+  `__setDetent`) instead of silently defaulting to map centre.
+- **Compare on mobile** smaller default (44vh) + a touch resize grip (`.cmp-resize`) — was "大きすぎる・調節できない".
+- **Line of Sight** far finer: 240 rays × 120 steps, DEM z≤12, and proper **4/3-earth radar refraction**.
+- **"More transparent" glass** floor raised (10–14 %→24–34 %) so the layer panel reads as frosted glass, not
+  "完全に透明", uniform with every other surface.
+
+### Still open / carried
+- Köppen on a flagship **iPhone** still uses 4096² (iOS Safari exposes no `deviceMemory` and OOM-kills 268 MB
+  tabs); there is no safe way to push 8192² there. Documented, not a regression.
+- ECMWF vector-layer blanks, full 3D engine work — unchanged from R15e.
