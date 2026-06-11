@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-11-R16';
+  window.INTMAP_BUILD='2026-06-11-R17';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -799,7 +799,11 @@ gtag('config', 'G-57X5MX0ZPW');
          of the screen (the "画面外にはみ出す" bug) — it shrinks + scrolls to whatever map area is visible. */
       .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:min(34dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 76px)); overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
       /* Compact measurement/tool popup: shrink-to-content card on the left, not a full-width slab */
-      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:168px; max-width:calc(100vw - 24px); max-height:min(32dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 76px)); overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
+      /* (#R17) Tool/measurement panels START just below the search bar (top-left), NOT bottom-anchored —
+         the bottom anchor (sheet-cover + 58) could push a tall panel off the TOP of the screen ("初期位置が
+         画面からはみ出てる"). Top-anchored can never be off-screen; the drag (inline-!important) still moves it
+         anywhere, and max-height keeps it clear of the sheet. */
+      .tool-panel{ left:6px !important; right:auto !important; top:64px !important; bottom:auto !important; width:auto !important; min-width:168px; max-width:calc(100vw - 12px); max-height:calc(100dvh - var(--sheet-cover, var(--peek-h)) - 84px); overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
       .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
       .tool-panel .tp-row{ margin:2px 0 !important; }
       .tool-panel .tp-hint{ font-size:10.5px !important; margin-top:5px !important; line-height:1.35 !important; }
@@ -807,7 +811,7 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel .tp-clear, .tool-panel .tp-add-btn{ padding:7px !important; margin-top:6px !important; }
       .tool-panel .radius-list{ max-height:88px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
-      .map-container.sat-on .tool-panel{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; }
+      .map-container.sat-on .tool-panel{ top:64px !important; bottom:auto !important; }
       .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:min(30dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 78px)); overflow-y:auto; }
       .koppen-legend{ height:auto !important; min-height:0 !important; resize:none !important; top:auto; }   /* (#R8c) desktop full-height + resize is desktop-only */
       /* Default dock only applies until the user drags a legend — once dragged it carries data-dragged
@@ -5652,13 +5656,16 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R8b) Phones just enlarge the same drawn icons to 30px tap targets with a clear gap; the SHAPES
          (centred bars) come from the global rules above, so desktop & mobile are identical & aligned. */
       @media(max-width:768px){
+        /* (#R17) Bigger tap targets — the × was "小さくて押しにくい". 40px box, thicker strokes, more gap. */
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
-        .data-legend .legend-min, .koppen-legend .legend-min{ top:8px !important; width:30px !important; height:30px !important; border-radius:8px; }
-        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:8px !important; }
-        .data-legend .legend-min, .koppen-legend .legend-min{ right:46px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ top:7px !important; width:40px !important; height:40px !important; border-radius:10px; background:rgba(128,128,128,0.16); }
+        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:7px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ right:54px !important; }
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
-        .legend-min::before{ width:15px; height:2px; }   /* transform:translate(-50%,-50%) keeps them centred at any size */
+        .legend-min::before{ width:19px; height:2.4px; }   /* transform:translate(-50%,-50%) keeps them centred at any size */
+        .koppen-info-pop .kip-x, .pin-popup-close{ width:40px !important; height:40px !important; font-size:20px !important; display:flex; align-items:center; justify-content:center; }
+        .tool-panel .tp-close{ width:40px; height:40px; font-size:20px; display:flex; align-items:center; justify-content:center; }
         .legend-collapsed .legend-min::before{ width:13px; height:13px; }
         .data-legend .layer-popup-x:active, .koppen-legend .layer-popup-x:active,
         .data-legend .legend-min:active, .koppen-legend .legend-min:active{ background:var(--input-bg); color:var(--text-main); }
@@ -6386,18 +6393,14 @@ window.addEventListener('DOMContentLoaded', () => {
        1931-1960 & 1961-1990 now use the user's updated, distinct source TIFFs. */
     window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator_1991-2020.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
     if(!window._koppenPeriod) window._koppenPeriod='1991-2020';
-    function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; let u=e[1];
-      /* (#R16) The user insists: do NOT silently downgrade Köppen quality on mobile — but also don't let it
-         crash. Resolution is now MEMORY-AWARE instead of "all phones get 4k":
-           • A memory-rich phone (navigator.deviceMemory === 8, the capped maximum reported by every modern
-             flagship Android) keeps the FULL 8192² texture — no quality loss.
-           • A low-memory phone, or one that reports nothing (iOS Safari — which also kills tabs aggressively
-             and genuinely can't hold 268 MB), gets the bundled 4096² build so the tab is never OOM-killed
-             (the OOM is what reloaded a stale file:// page → "先祖返り"; see also the build-version guard).
-         The 4096² PNG is nearest-neighbour so the exact KCOL palette round-trips for cursor sampling. */
-      try{ if(typeof isMobile==='function'&&isMobile()){ const dm=(typeof navigator!=='undefined'&&navigator.deviceMemory)||0; if(dm<8) u=u.replace(/\.png$/,'_4k.png'); } }catch(_){}
-      return u;
-    }
+    /* (#R17) The DISPLAYED Köppen is ALWAYS the full 8192² PNG — on EVERY device, no silent downgrade
+       (the user: "画質を勝手に下げるな…画質は保持しろ"). The mobile OOM that crashed the tab was driven by a
+       SECOND full-res copy we kept ourselves (the ~268 MB cursor-sampling/highlight decode) on top of
+       MapLibre's own texture. So the DISPLAY uses the full 8192² here, while the sampling/highlight work
+       canvas is built from the bundled 4096² on phones (koppenWorkURL) — quality of what you SEE is
+       untouched, but peak memory drops by ~270 MB so it no longer crashes. */
+    function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; return e[1]; }
+    function koppenWorkURL(p){ let u=koppenURLFor(p); try{ if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); }catch(_){} return u; }
     let KURL=koppenURLFor(window._koppenPeriod);
     const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
     const KOPPEN_LATMAX=85.0511287798066;
@@ -6441,7 +6444,9 @@ window.addEventListener('DOMContentLoaded', () => {
           im2.onload=()=>{ _mkKoppenWork(im2); resolve(); };
           im2.onerror=()=>resolve(); im2.src=KURL_FALLBACK;
         };
-        im.src=KURL;
+        /* (#R17) sample/highlight from the lighter work image (4k on mobile); the DISPLAY source still uses
+           the full 8192² KURL, so on-screen quality is unchanged while we avoid a 2nd 268 MB decode. */
+        im.src=koppenWorkURL(window._koppenPeriod);
       });
     }
     function nearestKoppenCode(r,g,b,a){
@@ -8951,6 +8956,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
     if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }
     if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const sp=cb.closest('.layer-option')&&cb.closest('.layer-option').querySelector('span[data-i18n]'); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
+    /* (#R17) Some layer rows couldn't be favourited because their checkbox id isn't `dl-…` (the land-cover /
+       ecoregions `eco-dl-*` and the Round-9 `l9-dl-*` modules). Give EVERY labelled layer-row checkbox a
+       star, keyed by its id. (cb-grid is a utility → no star.) */
+    if(cb.id==='cb-grid') return null;
+    const opt=cb.closest('.layer-option');
+    if(opt && cb.id){ const sp=opt.querySelector('span[data-i18n], span.ec-lbl, span:not(.lyr-sw):not(.lfc-sw)'); const label=((sp?sp.textContent:cb.id)||'').trim(); if(label) return {key:'data:'+cb.id, label}; }
     return null;
   }
   function allLayerCbs(){ return Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]')).filter(cb=>cb.id!=='cb-names-x'); }
@@ -8990,7 +9001,9 @@ window.addEventListener('DOMContentLoaded', () => {
     renderLayerFavs();
   }
   /* layers are built by the GROUP-3 IIFE (already run) + static ones; inject now and once more after idle */
-  injectLayerStars(); setTimeout(injectLayerStars,1200);
+  injectLayerStars(); setTimeout(injectLayerStars,1200); setTimeout(injectLayerStars,2800);   /* (#R17) extra pass so late-mounted modules (eco/l9/ECMWF, ~1.5–1.6 s) all get fav stars */
+  /* (#R17) also (re)inject stars whenever the Layers panel is opened — covers any module that mounted late */
+  try{ const _bl=document.getElementById('btn-layers'); if(_bl) _bl.addEventListener('click',()=>setTimeout(injectLayerStars,40)); }catch(_){}
 
   /* ---------- Data sources & attribution modal (#37) ---------- */
   const DATA_SOURCES=[
@@ -10520,7 +10533,13 @@ window.addEventListener('DOMContentLoaded', () => {
       return sdkLoading; }
     function registerProto(){ if(protoReg||!sdk||!sdk.omProtocol) return protoReg; try{ maplibregl.addProtocol('om', sdk.omProtocol); protoReg=true; }catch(_){ protoReg=true; /* already added */ } return protoReg; }
     function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
-    function fetchMeta(){ return fetch(BASE).then(r=>r.json()).then(j=>{ validTimes=j.valid_times||[]; refTime=j.reference_time||''; if(!timeIdx&&validTimes.length){ /* default to the step nearest "now" */ const now=Date.now(); let bi=0,bd=Infinity; validTimes.forEach((t,i)=>{ const d=Math.abs(new Date(t.replace('Z','')+'Z')-now); if(d<bd){bd=d;bi=i;} }); timeIdx=bi; } }).catch(()=>{}); }
+    function fetchMeta(){ return fetch(BASE).then(r=>r.json()).then(j=>{
+      /* (#R17) The ECMWF feed publishes FORECAST steps into the future; the user doesn't want the slider to
+         scrub past "now". Keep only valid-times up to the current hour (+1 h grace). */
+      const all=j.valid_times||[]; const cut=Date.now()+3600e3;
+      validTimes=all.filter(tm=>{ try{ return new Date((''+tm).replace('Z','')+'Z').getTime()<=cut; }catch(_){ return true; } });
+      if(!validTimes.length) validTimes=all.slice();
+      refTime=j.reference_time||''; if(!timeIdx&&validTimes.length){ /* default to the step nearest "now" */ const now=Date.now(); let bi=0,bd=Infinity; validTimes.forEach((t,i)=>{ const d=Math.abs(new Date(t.replace('Z','')+'Z')-now); if(d<bd){bd=d;bi=i;} }); timeIdx=bi; } }).catch(()=>{}); }
     function omUrl(variable,extra){ const t=validTimes[timeIdx]; return 'om://'+BASE+'?variable='+encodeURIComponent(variable)+(extra||'')+(t?('&time='+encodeURIComponent(t)):''); }
     function addLayer(cfg){
       const sid=cfg.id+'-src'; const before=firstSymbolId();
@@ -10693,6 +10712,11 @@ window.addEventListener('DOMContentLoaded', () => {
     function setBase(kind){ if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false); return; } setVis('cmp-base-carto',kind==='map'&&document.documentElement.getAttribute('data-theme')!=='dark'); setVis('cmp-base-dark',kind==='map'&&document.documentElement.getAttribute('data-theme')==='dark'); setVis('cmp-base-sat',kind==='sat'); }
     function syncFromMain(){ if(!syncOn||!cmap||syncing) return; syncing=true;
       try{
+        /* (#R17) Match the main map's PROJECTION. The Köppen/land-cover/eco overlays are mercator-referenced,
+           so they only register on a mercator map — a globe compare over a flat main map (or vice-versa) put
+           every overlay "完全にずれる". When sync is on, the compare follows the main's flat/globe state. */
+        try{ const wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat'); let isGlobe=true; try{ const pj=cmap.getProjection&&cmap.getProjection(); if(pj&&pj.type) isGlobe=(pj.type==='globe'); }catch(_){}
+          if(wantGlobe!==isGlobe){ cmap.setProjection({type:wantGlobe?'globe':'mercator'}); const pf=win&&win.querySelector('[data-p="flat"]'), pg=win&&win.querySelector('[data-p="globe"]'); if(pf&&pg){ pf.classList.toggle('on',!wantGlobe); pg.classList.toggle('on',wantGlobe); } } }catch(_){}
         if(xray && win){
           /* (#R16) LENS sync: show, inside the compare window, exactly the main-map geography that sits
              BEHIND the window — so the compare layers register with the main map without going fullscreen.
@@ -10725,7 +10749,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '</div></div><div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false});
-      try{ cmap.setProjection({type:'globe'}); }catch(_){}
+      try{ cmap.setProjection({type:(typeof currentProj!=='undefined'&&currentProj==='flat')?'mercator':'globe'}); }catch(_){}
       cmap.on('load',()=>{ setBase('map'); });
       /* view buttons */
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
@@ -10784,10 +10808,14 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} syncFromMain(); },80); }
     function close(){ if(win){ win.style.display='none'; win.classList.remove('cmp-xray'); xray=false; const x=win.querySelector('#cmp-xray'); if(x) x.checked=false; } try{ const b=document.getElementById('cmp-xray-bar'); if(b) b.style.display='none'; }catch(_){} }
     /* entry button in the Layers dropdown */
-    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||dd.querySelector('#cmp-mount')) return;
+    /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
+       #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button
+       ("Tools二重" on mobile). Re-file into Tools right after mounting so the section never goes missing. */
+    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-compare')) return;
       const wrap=document.createElement('div'); wrap.id='cmp-mount'; wrap.style.marginTop='4px';
       wrap.innerHTML='<button id="btn-compare" class="ai-test-btn" style="width:100%;">🪟 <span>'+(jp()?'比較ビューを開く':'Open compare view')+'</span></button>';
-      dd.appendChild(wrap); wrap.querySelector('#btn-compare').onclick=open; }
+      dd.appendChild(wrap); wrap.querySelector('#btn-compare').onclick=open;
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1600);
     return { open, close, _map:()=>cmap };
   })();
@@ -10937,11 +10965,12 @@ window.addEventListener('DOMContentLoaded', () => {
         addFC(fc, f.name||'GeoJSON'); };
       r.readAsText(f); }); }
     fileInput.addEventListener('change',()=>{ handleFiles(fileInput.files); fileInput.value=''; });
-    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||dd.querySelector('#ugj-mount')) return;
+    function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-upload-geojson')) return;
       const wrap=document.createElement('div'); wrap.id='ugj-mount'; wrap.style.marginTop='6px';
       wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" class="ai-test-btn" style="width:100%;">📂 <span data-i18n="uploadGeoJSON">Upload GeoJSON</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
       dd.appendChild(wrap); listEl=wrap.querySelector('#ugj-list');
-      wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click(); }
+      wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click();
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1500);
     const mc=document.getElementById('map-container');
     if(mc){ mc.addEventListener('dragover',e=>{ if(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files')) e.preventDefault(); });
