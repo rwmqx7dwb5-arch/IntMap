@@ -426,7 +426,7 @@ gtag('config', 'G-57X5MX0ZPW');
     .ms-item:hover{ background:var(--input-bg); }
     .ms-loading{ padding:12px; font-size:12px; color:var(--text-muted); text-align:center; }
     .unit-sub{ font-size:0.82em; color:var(--text-muted); }
-    .tp-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:move; user-select:none; }
+    .tp-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:move; user-select:none; touch-action:none; }
     .tp-close{ background:none; border:none; color:var(--text-muted); font-size:14px; cursor:pointer; padding:0 2px; } .tp-close:hover{ color:var(--text-main); }
     .tp-select{ width:100%; padding:7px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; margin-bottom:8px; box-sizing:border-box; }
     .tp-sub{ font-size:11px; color:var(--text-muted); margin:6px 0 2px; }
@@ -574,7 +574,7 @@ gtag('config', 'G-57X5MX0ZPW');
 
     /* Legends made draggable + collapsible */
     .data-legend, .koppen-legend{ cursor:default; }
-    .data-legend .dl-drag, .koppen-legend .kl-drag{ position:absolute; top:6px; left:8px; color:var(--text-muted); font-size:13px; cursor:move; user-select:none; padding:2px 4px; border-radius:5px; }
+    .data-legend .dl-drag, .koppen-legend .kl-drag{ position:absolute; top:6px; left:8px; color:var(--text-muted); font-size:13px; cursor:move; user-select:none; padding:2px 4px; border-radius:5px; touch-action:none; }
     .data-legend .dl-drag:hover, .koppen-legend .kl-drag:hover{ background:var(--input-bg); color:var(--text-main); }
     .data-legend h4, .koppen-legend h4{ padding-left:18px; }
     .legend-collapsed .dl-bar, .legend-collapsed .dl-scale, .legend-collapsed .dl-hint, .legend-collapsed .kl-item, .legend-collapsed .kl-hint, .legend-collapsed .kl-clear, .legend-collapsed .dl-op-row, .legend-collapsed .dl-op-extra{ display:none !important; }
@@ -616,7 +616,9 @@ gtag('config', 'G-57X5MX0ZPW');
         background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(30px); -webkit-backdrop-filter:saturate(180%) blur(30px);
         box-shadow:0 -8px 36px rgba(0,0,0,0.22);
         z-index:1100; min-height:0; overflow:hidden;
-        transform:translateY(var(--sheet-ty,42dvh));
+        /* (#R15d) Default to the PEEK position (~196px of sheet visible) BEFORE JS computes the exact
+           detent — was 42dvh (~half), which is the "最初は真ん中で始まる" flash the user saw. */
+        transform:translateY(var(--sheet-ty,calc(92dvh - 196px)));
         transition:transform 0.46s var(--sheet-ease); will-change:transform;
       }
       .sidebar.sheet-dragging{ transition:none; }
@@ -776,7 +778,9 @@ gtag('config', 'G-57X5MX0ZPW');
       .koppen-legend{ height:auto !important; min-height:0 !important; resize:none !important; top:auto; }   /* (#R8c) desktop full-height + resize is desktop-only */
       /* Default dock only applies until the user drags a legend — once dragged it carries data-dragged
          and its inline left/top win, so legends are freely movable on phones too (#10). */
-      .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 60px) !important; right:10px !important; left:auto !important; }
+      /* (#R15d) Mobile legends dock at the TOP, just below the place-search bar (user request), instead of
+         the bottom-right above the sheet. tileLegends() stacks them downward from here. */
+      .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ bottom:auto !important; top:64px !important; left:6px !important; right:auto !important; }
       /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centred so they never collide. */
       .news-timeline{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
       /* !important: a later non-media rule (.ai-view-summary-btn{bottom:22px}) otherwise wins by source
@@ -6676,8 +6680,15 @@ window.addEventListener('DOMContentLoaded', () => {
       let leftBase=24;
       try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed')) leftBase=(sb.getBoundingClientRect().width||440)+24; } }catch(_){}
       const mobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
-      let bottom=140;
-      visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.top='auto'; if(mobile){ el.style.right='10px'; el.style.left='auto'; } else { el.style.left=leftBase+'px'; el.style.right='auto'; } bottom += el.getBoundingClientRect().height+10; });
+      if(mobile){
+        /* (#R15d) Stack legends DOWNWARD from just below the search bar (top:64), left-aligned. The CSS
+           default above is for the first paint; this keeps multiple open legends from overlapping. */
+        let top=64;
+        visible.forEach(el=>{ el.style.top=top+'px'; el.style.bottom='auto'; el.style.left='6px'; el.style.right='auto'; top += el.getBoundingClientRect().height+8; });
+      } else {
+        let bottom=140;
+        visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.top='auto'; el.style.left=leftBase+'px'; el.style.right='auto'; bottom += el.getBoundingClientRect().height+10; });
+      }
     }
     /* Mark a legend as user-dragged so tileLegends() leaves it alone. */
     document.addEventListener('mousedown', e=>{
