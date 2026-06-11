@@ -5306,8 +5306,19 @@ window.addEventListener('DOMContentLoaded', () => {
     sel.value=prev;
   }
   (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'), sel=document.getElementById('setting-tz'); if(!inp) return;
-    inp.addEventListener('input',()=>populateTimezones(inp.value));
+    const firstReal=()=>[...sel.options].find(o=>o.value!=='auto'&&o.value!=='UTC');
+    inp.addEventListener('input',()=>{ populateTimezones(inp.value);
+      /* (#R16) If the typed text matches exactly ONE zone, SELECT it immediately so Apply saves it even if
+         the user never clicks the list — "使っても設定できない" was caused by the <select> value never changing
+         from what was merely typed/filtered. */
+      const q=inp.value.trim().toLowerCase(); if(!q) return;
+      const reals=[...sel.options].filter(o=>o.value!=='auto'&&o.value!=='UTC');
+      const exact=reals.find(o=>o.value.toLowerCase()===q || o.textContent.toLowerCase()===q);
+      if(exact){ sel.value=exact.value; } else if(reals.length===1){ sel.value=reals[0].value; }
+    });
     inp.addEventListener('focus',()=>{ if(sel&&!inp.value) populateTimezones(''); });
+    /* (#R16) Enter picks the best (first) match so a keyboard user can set a zone without touching the list. */
+    inp.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return; e.preventDefault(); const o=firstReal(); if(o){ sel.value=o.value; inp.value=o.textContent; sel.size=1; sel.dispatchEvent(new Event('change',{bubbles:true})); } });
     /* (#R15d) On pick, collapse the expanded list and echo the choice into the box so it's clearly set. */
     if(sel) sel.addEventListener('change',()=>{ if(sel.value && sel.value!=='auto' && sel.value!=='UTC'){ inp.value=sel.value.replace(/_/g,' '); } sel.size=1; });
   })();
@@ -7753,9 +7764,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Toolbar wiring (rebuilds list on change — search updates list only, so its input keeps focus). */
     document.getElementById('comm-add-btn').onclick=()=>{
       if(!requireLogin()) return;
-      communityAddArmed=false;
-      if(!pendingPostLoc && map){ const c=map.getCenter(); pendingPostLoc=[c.lng,c.lat]; }
-      openComposeModal();
+      /* (#R16) "コミュニティで投稿するときは、まず初めに場所を選ばせろ" — pick the location on the map FIRST.
+         Arm a one-shot map tap (the communityAddArmed handler opens the composer at the tapped point); on
+         mobile collapse the sheet so the map is reachable, and guide with a toast. */
+      pendingPostLoc=null; communityAddArmed=true;
+      try{ if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('mini',true); }catch(_){}
+      imToast(currentLang==='jp'?'📍 地図をタップして投稿する場所を選んでください':'📍 Tap the map to choose where to post');
     };
     cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ communitySort=b.dataset.sort; renderCommunity(); });
     cont.querySelectorAll('.comm-cat-chip').forEach(b=>b.onclick=()=>{ commCatFilter=b.dataset.catf; renderCommunity(); });
