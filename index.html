@@ -717,9 +717,11 @@ gtag('config', 'G-57X5MX0ZPW');
       .map-controls-top{ display:none !important; }
 
       /* ---------- iOS round control FABs (top-right) ---------- */
+      /* (#R17) The always-visible Map/Tools FABs sit just ABOVE the bottom sheet (a small gap), low and
+         thumb-reachable — not pinned to the top ("常時表示箇所はもっと下方によせて"). */
       .m-fab-stack{ display:flex; flex-direction:column; gap:10px; position:fixed; right:14px;
-        top:max(12px,calc(env(safe-area-inset-top) + 4px)); z-index:1150;
-        transition:opacity 0.3s, transform 0.3s; }
+        bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); top:auto; z-index:1150;
+        transition:opacity 0.3s, transform 0.3s, bottom 0.2s; }
       .m-fab{ width:46px; height:46px; border-radius:23px; border:0.5px solid rgba(128,128,128,0.16);
         background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
         box-shadow:0 4px 16px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center;
@@ -5561,10 +5563,13 @@ window.addEventListener('DOMContentLoaded', () => {
     }).join('');
     m.querySelectorAll('button[data-act]').forEach(b=>{ b.onclick=()=>{ const i=+b.getAttribute('data-act'); items[i].action(); m.style.display='none'; }; });
     m.style.display='block';
+    /* (#R17) On mobile the bottom sheet covers the lower map; clamp the menu into the VISIBLE area above it
+       (and cap its height so a long menu scrolls) — it was overflowing behind the sheet / off-screen. */
+    let availBottom=mc.height; try{ const mcEl=document.getElementById('map-container'); const cover=parseFloat(getComputedStyle(mcEl).getPropertyValue('--sheet-cover'))||0; const isM=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; if(isM&&cover>0){ availBottom=mc.height-cover-8; m.style.maxHeight=Math.max(160,availBottom-56)+'px'; m.style.overflowY='auto'; } else { m.style.maxHeight=''; m.style.overflowY=''; } }catch(_){}
     const rect=m.getBoundingClientRect();
     let x=point.x, y=point.y;
     if(x+rect.width>mc.width) x=mc.width-rect.width-8;
-    if(y+rect.height>mc.height) y=mc.height-rect.height-8;
+    if(y+rect.height>availBottom) y=availBottom-rect.height-8;
     m.style.left=Math.max(8,x)+'px'; m.style.top=Math.max(8,y)+'px';
   }
   document.addEventListener('click',(e)=>{ const m=document.getElementById('ctx-menu'); if(m&&!m.contains(e.target)) m.style.display='none'; });
@@ -10268,7 +10273,7 @@ window.addEventListener('DOMContentLoaded', () => {
            • proper RADAR horizon: 4/3-earth-radius refraction (k=1.333) instead of the bare geometric drop.
          Sampling is local (warm the covering tiles once, then interpolate), so adding points costs almost
          nothing; only the tile fetch scales, so the zoom is still span-aware/capped. */
-      const RAYS=240, STEPS=120, R=6371000, REFF=R*4/3; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
+      const RAYS=360, STEPS=140, R=6371000, REFF=R*4/3; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
       const pts=[]; for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ const d=rangeKm*s/STEPS; let c; try{ c=turf.destination(turf.point(site),d,brg,{units:'kilometers'}).geometry.coordinates; }catch(_){ c=site; } pts.push({a,d,c}); } }
       /* (#R12) Sample the LOCAL cached terrarium DEM — warming the few tiles that cover the disk — instead
          of firing thousands of Open-Meteo requests at once (which were rate-limited to nulls → flat). */
@@ -11161,6 +11166,11 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Init ===== */
   try{ rebuildGeoIndex(); }catch(_){}   /* index the built-in gazetteer now so the non-AI locator works before Supabase loads (#11) */
   populateTimezones(); updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
+  /* (#R17) Warm the country gazetteer shortly AFTER first paint (idle, non-blocking) so place search has
+     strong LOCAL matches (countries/capitals/major places) even if the online geocoders are slow/blocked —
+     the search then practically never comes back empty, without delaying initial load. */
+  (function(){ const warm=()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} };
+    if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:4000}); else setTimeout(warm,3000); })();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
   try{ setTimeout(_imStartDemo,1400); }catch(_){}   /* (#R15c) first-visit showcase */
   try{ if(currentLang==='jp'){ document.getElementById('lang-jp').classList.add('active'); document.getElementById('lang-en').classList.remove('active'); } }catch(_){}
