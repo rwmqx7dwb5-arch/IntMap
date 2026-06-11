@@ -10605,14 +10605,26 @@ window.addEventListener('DOMContentLoaded', () => {
       win.querySelector('#cmp-sync').onchange=(e)=>{ syncOn=e.target.checked; if(syncOn) syncFromMain(); };
       /* X-ray: hide the compare basemap + go transparent so the MAIN map (with all its own layers) shows
          through at the same location; force sync so it really is the same place. */
+      /* (#R15e) X-ray full-covers the map for alignment, which trapped the user ("どうにもできなくなる").
+         A FIXED, always-on-top bar gives a big, unmissable "Exit X-ray" + "Close" no matter what. */
+      function xrayBar(show){ let b=document.getElementById('cmp-xray-bar');
+        if(show){ if(!b){ b=document.createElement('div'); b.id='cmp-xray-bar';
+            b.style.cssText='position:fixed;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6000;display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:999px;background:rgba(15,18,24,0.93);color:#fff;box-shadow:0 6px 28px rgba(0,0,0,0.5);font-size:13px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);max-width:calc(100vw - 16px);';
+            b.innerHTML='<span style="font-weight:700;color:#19c6ff;white-space:nowrap;">🔬 '+(jp()?'X線':'X-ray')+'</span><button id="cmp-xray-exit" style="background:#19c6ff;color:#04222e;border:none;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">'+(jp()?'X線を解除':'Exit X-ray')+'</button><button id="cmp-xray-closeall" style="background:rgba(255,255,255,0.16);color:#fff;border:none;border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap;">'+(jp()?'閉じる':'Close')+'</button>';
+            document.body.appendChild(b);
+            b.querySelector('#cmp-xray-exit').onclick=()=>{ const x=win.querySelector('#cmp-xray'); if(x){ x.checked=false; x.dispatchEvent(new Event('change',{bubbles:true})); } };
+            b.querySelector('#cmp-xray-closeall').onclick=()=>{ close(); };
+          } b.style.display='flex'; }
+        else if(b){ b.style.display='none'; } }
       win.querySelector('#cmp-xray').onchange=(e)=>{ xray=e.target.checked; win.classList.toggle('cmp-xray',xray);
         if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false);
-          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; }
-        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); win.style.right='24px'; win.style.bottom='24px'; win.style.left='auto'; win.style.top='auto'; }
+          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; xrayBar(true); }
+        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); win.style.right='24px'; win.style.bottom='24px'; win.style.left='auto'; win.style.top='auto'; xrayBar(false); }
         /* The window's rect changes (full-cover ↔ floating), so resize the GL canvas FIRST, then re-sync
            the camera so centre/zoom map to the new viewport — otherwise the overlay is offset (#18). */
         try{ cmap.resize(); }catch(_){}
         requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} syncFromMain(); }); };
+      window._cmpXrayBar=xrayBar;
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
       win.querySelector('#cmp-close').onclick=close;
@@ -10628,7 +10640,7 @@ window.addEventListener('DOMContentLoaded', () => {
       map.on('move',syncFromMain);
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} syncFromMain(); },80); }
-    function close(){ if(win) win.style.display='none'; }
+    function close(){ if(win){ win.style.display='none'; win.classList.remove('cmp-xray'); xray=false; const x=win.querySelector('#cmp-xray'); if(x) x.checked=false; } try{ const b=document.getElementById('cmp-xray-bar'); if(b) b.style.display='none'; }catch(_){} }
     /* entry button in the Layers dropdown */
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||dd.querySelector('#cmp-mount')) return;
       const wrap=document.createElement('div'); wrap.id='cmp-mount'; wrap.style.marginTop='4px';
