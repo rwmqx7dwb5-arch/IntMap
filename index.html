@@ -758,9 +758,11 @@ gtag('config', 'G-57X5MX0ZPW');
          visibility is driven by renderCoordReadout()'s inline display, like desktop. */
       /* Floating panels track the sheet's CURRENT top (--sheet-cover) so they stay visible at every
          detent, not just at peek (#32). They fall back to --peek-h before the first sheet layout. */
-      .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:34dvh; overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
+      /* (#R15c) max-height is sheet-aware so a panel docked above an EXPANDED sheet can't overflow the TOP
+         of the screen (the "画面外にはみ出す" bug) — it shrinks + scrolls to whatever map area is visible. */
+      .country-info{ left:auto !important; right:10px !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:220px; max-width:calc(100vw - 20px); max-height:min(34dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 76px)); overflow-y:auto; padding:12px 14px !important; font-size:12.5px !important; }
       /* Compact measurement/tool popup: shrink-to-content card on the left, not a full-width slab */
-      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:168px; max-width:calc(100vw - 24px); max-height:32dvh; overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
+      .tool-panel{ left:12px !important; right:auto !important; top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px); width:auto !important; min-width:168px; max-width:calc(100vw - 24px); max-height:min(32dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 76px)); overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
       .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
       .tool-panel .tp-row{ margin:2px 0 !important; }
       .tool-panel .tp-hint{ font-size:10.5px !important; margin-top:5px !important; line-height:1.35 !important; }
@@ -769,7 +771,7 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel .radius-list{ max-height:88px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 58px) !important; }
-      .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:30dvh; overflow-y:auto; }
+      .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:min(30dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 78px)); overflow-y:auto; }
       .koppen-legend{ height:auto !important; min-height:0 !important; resize:none !important; top:auto; }   /* (#R8c) desktop full-height + resize is desktop-only */
       /* Default dock only applies until the user drags a legend — once dragged it carries data-dragged
          and its inline left/top win, so legends are freely movable on phones too (#10). */
