@@ -10975,6 +10975,11 @@ window.addEventListener('DOMContentLoaded', () => {
       setTimeout(()=>{ restoring=false; },2400);
     }
     map.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
+    /* (#R16) GHOST-LAYER fix: the hash (which restore() re-applies on reload) used to update ONLY on pan,
+       so toggling a layer OFF without panning left it in the hash → it "came back" on the next/crash reload
+       ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
+       always matches what's actually on. */
+    document.addEventListener('change',(e)=>{ const el=e.target; if(el && (el.id&&/^dl-/.test(el.id) || (el.classList&&el.classList.contains('geo-layer-cb')))){ clearTimeout(t); t=setTimeout(save,300); } });
     if(map.isStyleLoaded()) restore(); else map.on('load',restore);
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
