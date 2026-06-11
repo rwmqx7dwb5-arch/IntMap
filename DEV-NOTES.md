@@ -1368,3 +1368,84 @@ build inherits it), so overlays line up.
 - **LOS** 240→**360 rays × 140 steps** (1° angular), still 4/3-earth refraction, DEM z≤12.
 - **SW caches** WorldCover (`wmts.terrascope.be`) + OpenFreeMap label tiles → instant land-cover/label
   revisits on the hosted site (the single slow land-cover host can't be parallelised, so cache it hard).
+
+---
+
+## 21. Round 18 — re-attack of the recurring fury list (tags `#R18`)
+
+Same standing constraints: additive/in-place, MapLibre stays the engine, NO excuses / NO blaming the
+platform. Verified in the headless preview via precise `getBoundingClientRect`/`getComputedStyle`/state
+assertions + 0 console errors (screenshots still time out on the continuously-rendering globe; the WebGL
+`map.load` never completes in the hidden preview, so map-layer *rendering* is verified by wiring + ramp
+math, not pixels). Build stamp `2026-06-12-R18`.
+
+### Köppen highlight — full 8192² on EVERY device, GPU, ZERO allocation (the crash vector is GONE)
+The user re-reported "画質を勝手に下げるな…ただモバイルでもブラウザは落とすな". R17 made the BASE full-8192
+everywhere, but the **highlight** still re-encoded a capped canvas (≤4096² → quality drop; the 8192² output
+canvas is ~268 MB → mobile OOM). Root fix: the Köppen palette is **categorical**, so `raster-color`
+(MapLibre v5) recolours each class **in the shader** on the original full-res texture — selected classes
+keep their vivid palette colour, the rest collapse to faded grey. `raster-color-mix [2.7,0.6,0.1]` maps
+every palette RGB to a unique scalar (the 30 classes separate by ≥1.16 % of the 0–3.3 range — solved offline,
+verified no collisions, min-gap 0.0117), normalised by `raster-color-range [0,3.3]`, and a `step` ramp assigns
+the per-class output (ocean/value≈0 → transparent). `raster-resampling:nearest` while highlighted keeps texels
+in their own bin; restored to `linear` when cleared. So: **no second decode, no canvas, no PNG encode** → the
+displayed quality is full 8192² on every device AND the OOM is impossible. `applyKoppenGPUHighlight()` returns
+`null` (layer not added yet → retry, don't disable), `true` (applied), or `false` (engine rejected → fall back
+to the proven canvas pipeline). `setKoppenPeriod` now swaps straight to the new era's image with no
+all-climate flash (the recolour paint survives the swap).
+
+### Compare x-ray — TRUE lens, registers pixel-perfect on the globe too
+"x-rayモードで…全く位置がずれる". The R16 lens recentred the compare map on the window-centre pixel — which only
+registers the SINGLE centre point on a curved globe. Rebuilt: in x-ray the compare map is pulled out to COVER
+the whole `#map-container` at the **exact same camera** as the main map (same centre/zoom/bearing/pitch/
+projection → identical projection math → pixel-perfect everywhere, globe OR flat) and is **clipped to the
+window rectangle via `clip-path: inset(...)`**. The window is just a moveable viewport onto a perfectly-
+registered overlay; the lens follows on main-map move, window drag and resize (`layoutXrayLens`). Header +
+controls float above (z-index); a cyan inset edge marks the lens; `clearXrayLens` restores the map into its
+window when x-ray is off.
+
+### Line of Sight — finer + a real progress bar + persisted settings
+"もっと詳細な地形分析を / 計算の進捗をパーセントで / 一度数値を設定したら新地点でも同じ数値に". Now **360 rays × 200
+steps**, DEM zoom cap **12→13** (terrarium's native max), and **bilinear DEM sampling** (`demElevBilinear`) so
+ridge heights aren't stair-stepped (ridges decide what's blocked). `warmDEMTiles` gained an `onProgress(frac)`
+that drives a **% + gradient bar** in the panel (0→85 % tile load, 85→100 % sightlines). The antenna height /
+range are remembered (`losH`/`losR`) so opening a NEW site reuses the last values.
+
+### Layers panel — frosted glass + desktop Tools can't disappear
+- **Frosted glass** ("今は完全に透明"): a `backdrop-filter` NESTED in another backdrop-filtered surface only
+  samples the parent's composited output (never the map) → the dropdown read as fully transparent in the
+  frosted modes. Fix: on open (desktop) the dropdown is **hoisted to `#map-container`** (top of the backdrop
+  tree) and aimed under the Layers button, so the shared `--glass-*` material frosts it exactly like every
+  other surface. Verified: `bg rgba(40,40,44,0.46)` + `blur(32px)` in translucent mode.
+- **Desktop Tools "そもそも消滅"**: `#layer-tools` is now `position:sticky; bottom` with the glass fill, so it
+  stays pinned at the bottom of the scrollable panel — verified visible with EVERY group expanded
+  (scrollHeight 2420 px) and scrolled to the very top.
+- **Mobile "Toolsがぐちゃっと"**: desktop group-collapse state could survive a resize/rotation into the mobile
+  sheet (display:none rows → missing/stacked). `_expandAllLayerGroups()` is now run on mobile entry AND on
+  opening the Map sheet. Verified: 0 hidden rows, single-column, all 8 headers incl. Tools, no overflow.
+
+### Mobile UI positions + unified ×
+- **FABs/compass BACK to top-right** ("前の位置に戻せ") — the R17 "lower the FABs to just above the sheet" was
+  rejected. The bottom-hugging treatment now applies ONLY to the always-on **coord readout**, which sits a
+  sliver above the sheet (`bottom:calc(--sheet-cover + 4px)` — "わずかに隙間がある程度まで下げて").
+- **× sizes unified to 32 px** ("×の大きさがバラバラ。凡例はデカすぎる") — the R17 40 px legend buttons dwarfed
+  everything else and bloated the minimised legend. Legend ×/–, popup ×, tool-panel close are now ONE 32 px
+  size (verified all three = 32×32); the collapsed-legend header is compact so the buttons don't dominate.
+- **Elevation profile / tool popups on-screen** — the inline desktop `transform:translateX(-50%)` combined with
+  the mobile `left:6px` shoved half the panel off-screen left. `.tool-panel` now forces `transform:none` on
+  mobile → every tool/measurement/elevation panel starts fully on-screen below the search bar, draggable.
+
+### Other
+- **Favourite stars on literally every layer** — `layerCbInfo`/`injectLayerStars` now accept rows that use
+  `.lyr-row` WITHOUT a `.layer-option` wrapper, so no checkbox is skipped. Verified: 56/56 layers starred,
+  0 without.
+- **3D — MSAA antialiasing on desktop** (`antialias:!isMobile()`): smooths the globe/terrain silhouette + the
+  satellite horizon for a clear quality jump with NO drop in tile resolution (quality up, nothing sacrificed),
+  left OFF on phones where the extra sample buffers risk the tab.
+- **Land cover** WorldCover maxzoom **13→14** (≈ native 10 m) on the main + compare maps — crisper close-ups
+  with no extra tiles at regional zooms; the R17 SW cache still makes revisits instant.
+- **Timezone search → iOS combobox** — the native `<select size>` was a single-line wheel on iOS ("検索窓が
+  使いにくい"). Replaced with a text input + a custom tappable dropdown of big rows; the hidden
+  `<select id=setting-tz>` is kept purely as the value store the Save pipeline reads. Verified: filter→tap sets
+  the value + closes; Enter picks the first; 420 zones in the store.
+- **Mobile place search** re-verified end-to-end at 375 px (expand→type→Enter→results for Osaka/Reykjavik).
