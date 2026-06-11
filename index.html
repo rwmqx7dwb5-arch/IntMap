@@ -5069,8 +5069,11 @@ window.addEventListener('DOMContentLoaded', () => {
      was already 'map', so if the state ever desynced from what's drawn (a style op overwrote the basemap
      visibility), clicking Map did nothing. Now both always re-assert, and schedule one more reassert on the
      next idle to win any race with a concurrent style/layer change. */
-  document.getElementById('btn-view-map').onclick=(e)=>{ currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); };
-  document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); };
+  /* (#R15c) "反応しないことがある" — re-assert a few times after the click too, so a click that lands while
+     the style is mid-swap (idle may have already passed) still takes effect. Cheap + idempotent. */
+  function _reassertBase(mode){ [120,400,900].forEach(ms=>setTimeout(()=>{ try{ if(currentMapType===mode) applyTheme(); }catch(_){} },ms)); }
+  document.getElementById('btn-view-map').onclick=(e)=>{ currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); };
+  document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
   if(map) map.on('styledata',()=>{ try{ if(!map.isStyleLoaded()||!map.getLayer('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
@@ -5884,7 +5887,15 @@ window.addEventListener('DOMContentLoaded', () => {
         let name=((sp?sp.textContent:lab.textContent)||'').trim();
         if(!name) return; chips.push({el:cb, name});
       });
-      if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; return; }
+      /* (#R15c) Skip the rebuild entirely when the active set is unchanged (kills needless flicker), and
+         compensate the panel's scroll for any height change so toggling a layer doesn't make the whole
+         list jump ("いちいち動いて目にうるさい"). */
+      const sig=chips.map(c=>c.name).join('|');
+      if(sec.dataset.sig===sig) return;
+      const beforeH=sec.offsetHeight, beforeTop=dd.scrollTop, secTop=sec.offsetTop;
+      sec.dataset.sig=sig;
+      const _restore=()=>{ const afterH=sec.offsetHeight; if(secTop < beforeTop && afterH!==beforeH){ dd.scrollTop = beforeTop + (afterH-beforeH); } };
+      if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
       sec.innerHTML=`<div class="lyr-head lyr-section-label" style="margin-top:2px;">${title} (${chips.length})</div><div class="active-lyr-chips"></div>`;
@@ -5897,6 +5908,7 @@ window.addEventListener('DOMContentLoaded', () => {
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
+      _restore();
     };
     /* Any layer checkbox toggle → refresh the active-layers list (deferred so toggleLayer runs first). */
     document.getElementById('layer-dropdown')&&document.getElementById('layer-dropdown').addEventListener('change',(e)=>{
@@ -6353,13 +6365,17 @@ window.addEventListener('DOMContentLoaded', () => {
        cache (the "old version revives" symptom). The output canvas alone is 4·W·H bytes (268 MB at 8192²),
        so on low-RAM machines we cap lower — keeping the highlight crisp but never crashing. 8 GB+ desktops
        keep full 8192² (no quality loss where it's safe). navigator.deviceMemory is coarse GB (or undefined). */
+    /* (#R15c) The OOM kills the tab BEFORE any try/catch can fire (Chrome's OOM killer), so the only
+       reliable fix is to never allocate the ~268 MB (8192²) output canvas + PNG buffer for the HIGHLIGHT.
+       Cap the highlight at 4096² desktop / 2048² mobile (out-canvas ≤67 MB / ≤16 MB). The BASE Köppen
+       image stays full 8192² (unhighlighted view = no quality loss); the greyed highlight at 4096² is
+       still crisp at any normal zoom. This is what finally stops the "選ぶと落ちて先祖返り" crash. */
     function _koppenFullCap(){ try{
-      if(typeof isMobile==='function'&&isMobile()) return 4096;
+      if(typeof isMobile==='function'&&isMobile()) return 2048;
       const dm=(typeof navigator!=='undefined'&&navigator.deviceMemory)||0;
-      if(dm && dm<=4) return 4096;        /* ≤4 GB → 4096² (still sharp, ~1/4 the peak RAM) */
-      if(dm && dm<=6) return 6144;
-      return 8192;                        /* 8 GB+ (or unknown-but-desktop) → full resolution */
-    }catch(_){ return 6144; } }
+      if(dm && dm<=4) return 3072;        /* ≤4 GB → 3072² */
+      return 4096;                        /* desktop → 4096² (≈67 MB out canvas — safe on any machine) */
+    }catch(_){ return 3072; } }
     /* (#R14) MEMORY-SAFE full-res highlight — the previous version OOM-crashed the tab (and the page
        reloaded → "先祖返り"): at 8192² it held the 268 MB source pixel array + a 268 MB output ImageData
        + a 268 MB output canvas + the PNG-encode buffer ALL AT ONCE (>1 GB peak). Two changes roughly
