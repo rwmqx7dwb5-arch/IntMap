@@ -1320,5 +1320,51 @@ Verified: x-ray no longer fills `#map-container` (`position:fixed`, not absolute
 
 ### Still open / carried
 - Köppen on a flagship **iPhone** still uses 4096² (iOS Safari exposes no `deviceMemory` and OOM-kills 268 MB
-  tabs); there is no safe way to push 8192² there. Documented, not a regression.
+  tabs); there is no safe way to push 8192² there. Documented, not a regression.  ← **superseded by R17 below.**
 - ECMWF vector-layer blanks, full 3D engine work — unchanged from R15e.
+
+---
+
+## 20. Round 17 — re-attack (tags `#R17`); user demand: NO excuses, NO blaming the platform
+
+Verified in the headless preview (geometry/state assertions + 0 console errors). Build stamp `2026-06-11-R17`.
+
+### Köppen — FULL 8192² on EVERY device (the deviceMemory 4k fallback is GONE)
+The user rejected any silent downgrade, iPhone included. Root insight: the mobile OOM wasn't the *displayed*
+texture alone — we kept a SECOND full-res 8192² decode of our own (`_koppenImg`, for cursor-sampling +
+the full-res highlight) ON TOP of MapLibre's image-source copy (~268 MB each + texture). So:
+`koppenURLFor()` now returns the full 8192² on ALL devices (display = full quality everywhere, no branch),
+and the **sampling/highlight work canvas loads the lighter 4096² on phones** (`koppenWorkURL`). Net: the
+on-screen Köppen is full 8192² on every device, peak memory drops ~270 MB (the redundant decode is gone),
+and the full-res highlight path naturally falls back to the small-canvas highlight on mobile. No resolution
+downgrade of what you SEE.
+
+### Layers Tools — doubled (mobile) / missing (desktop)
+The compare + upload `mountButton`s guarded on the `#cmp-mount`/`#ugj-mount` WRAPPER, but
+`reorganizeLayerPanel` MOVES the button into `#layer-tools` and deletes the wrapper — so a later mount made a
+SECOND button ("二重"), and if reorganize ran before the buttons existed the Tools section was skipped
+("消滅"). Fix: dedupe by the BUTTON id (`#btn-compare`/`#btn-upload-geojson`), and call reorganize right after
+mounting so Tools is filed immediately. Verified: exactly 1 of each.
+
+### Compare — "layers completely offset from the map"
+The compare map defaulted to **globe** while the main map can be **flat (mercator)**; the Köppen/land-cover/
+eco overlays are mercator-referenced images that only register on a mercator map → total misregistration
+(worst in x-ray). `syncFromMain` now matches the compare PROJECTION to the main map's flat/globe state (and
+build inherits it), so overlays line up.
+
+### Other
+- **Tool/measurement panels start BELOW the search bar** (`top:64px;left:6px` on mobile), never bottom-
+  anchored — the old `bottom:calc(sheet-cover+58)` could push a tall panel off the TOP ("初期位置が画面外").
+  Drag (inline-!important) still moves them anywhere; max-height keeps them clear of the sheet.
+- **Favourite stars on EVERY layer row** — `layerCbInfo` returned null for `eco-dl-*` / `l9-dl-*` (ids not
+  starting with `dl-`), so they had no star. Broadened to any labelled layer-row checkbox (keyed by id; the
+  old `dl-` keys are preserved so saved favourites survive) + an extra late inject pass + on panel open.
+- **Bigger mobile × / minimise** (40 px tap targets, thicker strokes) for legends/popups/tool panels.
+- **ECMWF slider can't scrub into the future** — `fetchMeta` filters `valid_times` to ≤ now (+1 h grace).
+- **Mobile Map/Tools FABs lowered** to just above the sheet (`bottom:calc(--sheet-cover + 12)`) — thumb-reach.
+- **Long-press menu clamped into the visible-above-sheet area** + max-height/scroll (no overflow behind sheet).
+- **Place search robustness** — warm the country gazetteer on idle after first paint so local matches exist
+  even if the online geocoders are slow/blocked (the real flow open→type→🔍 is verified returning results).
+- **LOS** 240→**360 rays × 140 steps** (1° angular), still 4/3-earth refraction, DEM z≤12.
+- **SW caches** WorldCover (`wmts.terrascope.be`) + OpenFreeMap label tiles → instant land-cover/label
+  revisits on the hosted site (the single slow land-cover host can't be parallelised, so cache it hard).
