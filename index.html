@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-12-R18';
+  window.INTMAP_BUILD='2026-06-12-R19';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -297,7 +297,11 @@ gtag('config', 'G-57X5MX0ZPW');
     .ai-test-btn{ box-sizing:border-box; margin-top:6px; padding:7px 14px; border-radius:9px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; font-weight:500; cursor:pointer; }
     /* (#R15c) Tools section: keep its buttons inside the panel (the 100%-width buttons were overflowing
        the dropdown padding → the "Tools 欄がぐちゃっと" report on both desktop and mobile). */
-    #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; }
+    /* (#R19) flex-shrink:0 is THE desktop-Tools fix: .layer-dropdown is a flex column, and overflow:hidden
+       gives #layer-tools an automatic minimum size of 0 — so whenever the expanded list overflowed the
+       panel, the ONLY shrinkable item (this one) absorbed the entire shortfall and squashed to a ~13px
+       sliver with its buttons clipped below the panel ("少しだけ見れるが隠れている／開けない"). */
+    #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; flex-shrink:0; }
     #layer-tools .ai-test-btn, #layer-tools button{ box-sizing:border-box; width:100%; max-width:100%; }
     /* (#R18) Desktop: pin Tools to the BOTTOM of the scrollable Layers panel (sticky), so it is ALWAYS
        visible — expanding a long group used to scroll it out of view ("デスクトップ版でそもそも消滅している").
@@ -725,10 +729,15 @@ gtag('config', 'G-57X5MX0ZPW');
       .map-search > button, .map-search #ms-btn{ width:46px; height:46px; flex:0 0 auto; border-radius:23px; }
       /* Expanded width stops short of the top-right FAB column so neither is clipped or pushed off-screen.
          Keeps a fixed 46px height + full pill radius so it morphs cleanly from the circle (no vertical squish). */
-      .map-search.ms-open{ width:calc(100vw - 14px - 14px - 56px); height:46px; border-radius:23px; padding:0 5px 0 16px; justify-content:flex-start; gap:6px; }
+      .map-search.ms-open{ width:calc(100vw - 14px - 14px - 56px); height:46px; border-radius:23px; padding:0 5px 0 16px; justify-content:flex-start; gap:6px;
+        /* (#R19) THE mobile-search root cause: the collapsed-pill morph needs overflow:hidden, but that
+           CLIPPED the absolutely-positioned #ms-results (top:54px in a 46px-tall parent) → results were
+           created yet invisible AND untappable (taps fell through to the map canvas). While the search is
+           OPEN the box must not clip its dropdown. */
+        overflow:visible; }
       .map-search.ms-open input{ width:auto; flex:1 1 auto; opacity:1; height:46px; padding:0 4px; }
       .map-search.ms-open > button, .map-search.ms-open #ms-btn{ width:38px; height:38px; flex:0 0 auto; border-radius:19px; font-size:15px; }
-      .map-search-results{ top:54px; }
+      .map-search-results{ top:54px; z-index:1400; max-height:min(300px, calc(100dvh - var(--sheet-cover,180px) - 132px)); }
 
       /* ---------- Hide the cramped desktop control cluster ---------- */
       .map-controls-top{ display:none !important; }
@@ -2378,7 +2387,10 @@ window.addEventListener('DOMContentLoaded', () => {
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
       pixelRatio:(isMobile()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),
       glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-      center:[10,20], zoom:1.7, minZoom:0, maxZoom:18,
+      /* (#R19) Desktop maxZoom 18→19: Esri World Imagery serves real z19 tiles over most urban areas,
+         so 3D/satellite close-ups gain a full extra level of native detail (no upscaling). Phones stay
+         at 18 — the extra tile set is pure GPU/RAM cost there ("ブラウザが落ちることがないように"). */
+      center:[10,20], zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'}},
@@ -2417,6 +2429,58 @@ window.addEventListener('DOMContentLoaded', () => {
     if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
     if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
   }catch(_){} }
+  /* ===== (#R19) iOS / Google-Earth wheel zoom — smooth glide, not "カチカチ" steps. =====
+     MapLibre's built-in scrollZoom applies each wheel notch as a discrete jump. Replaced (desktop
+     pointers only) with a TARGET-zoom accumulator + exponential rAF glide: each notch nudges the
+     target; every frame the camera eases ~22% of the remaining gap around the CURSOR anchor.
+     Successive notches accumulate into one continuous, decelerating glide — the iOS feel — and the
+     anchor keeps the point under the cursor fixed (Google-Earth behaviour). Trackpad pinches
+     (ctrlKey wheel events) get a finer rate so they stay precise. Mobile touch pinch is untouched. */
+  if(map){ (function(){
+    try{ map.scrollZoom.disable(); }catch(_){ return; }
+    let target=null, anchor=null, anim=0;
+    const step=()=>{ anim=0; if(target==null) return;
+      const cur=map.getZoom(), d=target-cur;
+      if(Math.abs(d)<0.003){ try{ map.easeTo({zoom:target, around:anchor, duration:0}); }catch(_){} target=null; return; }
+      try{ map.easeTo({zoom:cur+d*0.22, around:anchor, duration:0}); }catch(_){}
+      anim=requestAnimationFrame(step); };
+    map.getCanvasContainer().addEventListener('wheel',(e)=>{
+      e.preventDefault();
+      try{
+        const rect=map.getContainer().getBoundingClientRect();
+        anchor=map.unproject([e.clientX-rect.left, e.clientY-rect.top]);
+        const dy=(e.deltaMode===1)?e.deltaY*20:(e.deltaMode===2)?e.deltaY*120:e.deltaY;   /* lines/pages → px */
+        const rate=e.ctrlKey?(1/120):(1/170);                                              /* pinch-trackpad finer */
+        const base=(target==null)?map.getZoom():target;
+        target=Math.max(map.getMinZoom(),Math.min(map.getMaxZoom(), base - dy*rate));
+        if(!anim) anim=requestAnimationFrame(step);
+      }catch(_){}
+    },{passive:false});
+    /* a drag interaction mid-glide cancels the glide so it never fights the user */
+    map.on('dragstart',()=>{ target=null; });
+  })(); }
+  /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
+     最前部に"). Overlays are added/re-added at arbitrary times (toggles, basemap swaps, styledata
+     re-adds), so instead of chasing every add-site, re-assert the label/border stack on idle+styledata —
+     the same self-heal pattern as the country-isolation mask. They are slotted just BELOW the measurement
+     tool layers (your own drawings stay on top of everything). Guarded: only moves when actually out of
+     place, so there's no repaint loop. */
+  if(map){ (function(){
+    const STACK=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'];
+    function inPlace(){ try{ const ls=map.getStyle().layers.map(l=>l.id);
+      const present=STACK.filter(id=>ls.includes(id)); if(!present.length) return true;
+      const anchor=ls.includes('tool-poly')?ls.indexOf('tool-poly'):ls.length;
+      let want=anchor-present.length;
+      for(const id of present){ if(ls.indexOf(id)!==want) return false; want++; }
+      return true; }catch(_){ return true; } }
+    function raise(){ try{ if(inPlace()) return;
+      const hasAnchor=!!map.getLayer('tool-poly');
+      STACK.forEach(id=>{ if(!map.getLayer(id)) return; try{ hasAnchor?map.moveLayer(id,'tool-poly'):map.moveLayer(id); }catch(_){} });
+    }catch(_){} }
+    window._raiseLabelLayers=raise;
+    let t=null; const sched=()=>{ clearTimeout(t); t=setTimeout(raise,140); };
+    map.on('idle',sched); map.on('styledata',sched);
+  })(); }
 
   /* =============================================================================
    *  TILE ACCELERATION — persistent disk cache (Service Worker) + predictive
@@ -3698,7 +3762,8 @@ window.addEventListener('DOMContentLoaded', () => {
     parts.push(`<span>${fmtLL(_crLng,_crLat)}</span>`); parts.push(`<span class="cr-elev">${lastElev||'·····'}</span>`);
     if(lastLayerVal) parts.push(`<span class="cr-sat">${lastLayerVal}</span>`);
     /* (#R8c) Live wind speed/direction under the cursor while the Wind layer is on. */
-    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(_crLng,_crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s'); parts.push(`<span class="cr-wind">🌬 ${sp} ${card}</span>`); } } }catch(_){}
+    /* (#R19) No emoji in the always-on readout ("🌬みたいな絵文字は…いらない") — value + direction only. */
+    try{ if(window.Wind&&window.Wind.on&&window.Wind.on()){ const w=window.Wind.sampleAt(_crLng,_crLat); if(w){ const card=['N','NE','E','SE','S','SW','W','NW'][Math.round(w.dir/45)%8]; const sp=window.fmtWindSpeed?window.fmtWindSpeed(w.speed):(w.speed.toFixed(1)+' m/s'); parts.push(`<span class="cr-wind">${sp} ${card}</span>`); } } }catch(_){}
     /* Satellite-imagery chip removed from the readout per request — coords + elevation only. */
     if(!parts.length){ el.style.display='none'; return; }
     el.style.display='flex';
@@ -3706,6 +3771,19 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* === Instant elevation/depth from cached terrarium DEM tiles (includes ocean bathymetry) === */
   const _demCache=new Map();
+  /* (#R19) Hard cap on retained DEM tiles (LRU): a 400 km Line-of-Sight at z13 touches hundreds of
+     tiles; each cached 256² canvas+pixels is ~½ MB, and they previously accumulated FOREVER — a real
+     mobile OOM vector ("重い動作をすると頻繁にブラウザが落ちます"). Map preserves insertion order, so
+     evicting the first non-loading entries is a cheap LRU. */
+  const _DEM_CACHE_MAX=(typeof isMobile==='function'&&isMobile())?140:420;
+  function _demCacheTrim(){ if(_demCache.size<=_DEM_CACHE_MAX) return;
+    for(const k of _demCache.keys()){ if(_demCache.size<=_DEM_CACHE_MAX) break; const v=_demCache.get(k); if(v==='loading') continue; _demCache.delete(k); } }
+  /* (#R19) Per-tile decoded pixel buffer, extracted ONCE. demElevBilinear used to call a full 256×256
+     getImageData (a ~256 KB copy) for EVERY sample — ~72,000 samples per LOS run ≈ 18 GB of memory
+     traffic, which is exactly the "Line of sightを使うとパソコンでもブラウザがフリーズ" freeze. */
+  function _demPix(cv){ if(!cv||cv==='loading') return null;
+    if(!cv.__pix){ try{ cv.__pix=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,256,256).data; }catch(e){ return null; } }
+    return cv.__pix; }
   function _ll2tile(lng,lat,z){ const n=Math.pow(2,z); const x=(lng+180)/360*n; const lr=lat*Math.PI/180; const y=(1-Math.log(Math.tan(lr)+1/Math.cos(lr))/Math.PI)/2*n; return {x,y,n}; }
   /* Pick a DEM tile-zoom matched to the map zoom. Zoomed out → low z (a handful of tiles cover the
      whole view, so the readout is instant everywhere). Zoomed in → high z (sharper elevation). */
@@ -3715,6 +3793,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
     const key=z+'/'+xi+'/'+yi; let c=_demCache.get(key);
     if(c===undefined){
+      _demCacheTrim();
       _demCache.set(key,'loading');
       const img=new Image(); img.crossOrigin='anonymous';
       img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=256; cv.height=256; cv.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0); _demCache.set(key,cv); if(onReady) onReady(); }catch(e){ _demCache.set(key,null); } };
@@ -3723,8 +3802,10 @@ window.addEventListener('DOMContentLoaded', () => {
       return null;
     }
     if(c==='loading'||c===null) return null;
+    /* (#R19) read from the per-tile decoded buffer — no per-sample getImageData */
+    const d=_demPix(c); if(!d) return null;
     const px=Math.min(255,Math.max(0,Math.floor((tl.x-xi)*256))), py=Math.min(255,Math.max(0,Math.floor((tl.y-yi)*256)));
-    try{ const d=c.getContext('2d',{willReadFrequently:true}).getImageData(px,py,1,1).data; return (d[0]*256+d[1]+d[2]/256)-32768; }catch(e){ return null; }
+    const i=(py*256+px)*4; return (d[i]*256+d[i+1]+d[i+2]/256)-32768;
   }
   /* === Shared async DEM sampler (#R12) — used by the elevation profile and line-of-sight viewshed.
      Warms every terrarium tile covering a set of points, then samples them LOCALLY. The terrarium
@@ -3748,7 +3829,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
     const cv=_demCache.get(z+'/'+xi+'/'+yi); if(!cv||cv==='loading') return null;
-    let d; try{ d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,256,256).data; }catch(e){ return null; }
+    const d=_demPix(cv); if(!d) return null;   /* (#R19) decoded once per tile, not per sample */
     const fx=(tl.x-xi)*256-0.5, fy=(tl.y-yi)*256-0.5;
     const x0=Math.max(0,Math.min(255,Math.floor(fx))), y0=Math.max(0,Math.min(255,Math.floor(fy)));
     const x1=Math.min(255,x0+1), y1=Math.min(255,y0+1); const tx=Math.max(0,Math.min(1,fx-x0)), ty=Math.max(0,Math.min(1,fy-y0));
@@ -3983,17 +4064,22 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(en.startsWith(ql)) sc=86;
       else if(cap===ql){ sc=82; suffix=' · '+s.capital; }
       else if(en.includes(ql)||(jp&&jp.includes(q))) sc=72;
+      else if(en.split(/\s+/).some(w=>w.startsWith(ql))&&ql.length>=3) sc=66;   /* (#R19) word-prefix: "zeal"→New Zealand */
       else if(cap.includes(ql)&&ql.length>=3){ sc=58; suffix=' · '+s.capital; }
       else if(ql.length>=4 && _lev(en,ql)<=2) sc=62;
+      else if(ql.length>=5 && cap && _lev(cap,ql)<=2){ sc=56; suffix=' · '+s.capital; }   /* (#R19) misspelled capital */
       if(sc>0) push(s.nameEn+suffix, s.latlng[1], s.latlng[0], sc);
     }); }catch(_){}
     try{ const gz=(typeof BUILTIN_GAZETTEER!=='undefined')?BUILTIN_GAZETTEER:null;
       if(gz) for(const type in gz){ gz[type].forEach(e=>{ const terms=Array.isArray(e.terms)?e.terms.join(' '):String(e.terms||''); const tl=terms.toLowerCase(); const nm=(e.name&&(e.name[currentLang]||e.name.en))||terms;
-        let sc=0; if(tl.split(/[|,\s]+/).includes(ql)) sc=88; else if(tl.includes(ql)&&ql.length>=3) sc=64;
+        const words=tl.split(/[|,\s]+/);
+        let sc=0; if(words.includes(ql)) sc=88; else if(words.some(w=>w.startsWith(ql))&&ql.length>=3) sc=68;   /* (#R19) prefix */
+        else if(tl.includes(ql)&&ql.length>=3) sc=64;
+        else if(ql.length>=4 && words.some(w=>w.length>=4&&_lev(w,ql)<=2)) sc=58;   /* (#R19) per-word typo tolerance */
         if(sc>0 && e.loc) push(nm, e.loc[0], e.loc[1], sc); }); }
     }catch(_){}
     const seen=new Set();
-    return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,5);
+    return out.sort((a,b)=>b.score-a.score).filter(x=>{ const k=x.name+'|'+x.lng.toFixed(1)+'|'+x.lat.toFixed(1); if(seen.has(k))return false; seen.add(k); return true; }).slice(0,7);
   }
   async function doGeocode(){
     const inp=document.getElementById('ms-input'), q=inp.value.trim(), res=document.getElementById('ms-results'); if(!q)return;
@@ -4023,7 +4109,13 @@ window.addEventListener('DOMContentLoaded', () => {
       .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,address:{country:p.country}}); }); }).catch(()=>{});
     const nomP=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal})
       .then(r=>r.ok?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
-    await Promise.allSettled([omP,nomP]); clearTimeout(to);
+    /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
+       ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
+    const phP=fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=${currentLang==='jp'?'en':'en'}`,{signal:ctrl.signal})
+      .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.features||[]).forEach(f=>{ try{ const p=f.properties||{}, g=f.geometry; if(!g||!g.coordinates) return;
+        const label=[p.name,p.city,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+        if(label) addItem(label,+g.coordinates[0],+g.coordinates[1],{display_name:label,type:p.osm_value||p.type,address:{country:p.country}}); }catch(_){} }); }).catch(()=>{});
+    await Promise.allSettled([omP,nomP,phP]); clearTimeout(to);
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
     if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,null)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${t('noMatch')}</div>`; }
@@ -4164,6 +4256,18 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Former Soviet Union is a red country-fill (#15) — route it to its own toggle too. */
     if(cb.getAttribute('data-layer')==='fsu'){ if(window.imToggleFSU) window.imToggleFSU(cb.checked); return; }
     ensureGeoLayers(); updateGeoLayers();
+    /* (#R19) Every geo/strategic layer gets a floating legend with an opacity slider on toggle-ON
+       ("どのレイヤーも透明度選択ができるように"); hidden again on toggle-OFF. */
+    try{
+      const key=cb.getAttribute('data-layer'); if(!key) return;
+      if(!cb.id) cb.id='geocb-'+key;
+      if(cb.checked && window._registerLayerOpacity){
+        const lab=cb.closest('label');
+        const nameEl=lab&&(lab.querySelector('.geo-label')||lab.querySelector('span:not(.lyr-sw):not(.lfc-sw)'));
+        const name=((nameEl?nameEl.textContent:(lab?lab.textContent:key))||key).replace(/★/g,'').trim();
+        window._registerLayerOpacity('geo-'+key,[name,name],['-fill','-edge','-glow','-casing','-line','-pt','-label'].map(s=>key+s),cb.id);
+      } else if(!cb.checked && window._hideGenericLegend){ window._hideGenericLegend('geo-'+key); }
+    }catch(_){}
   }));
   document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme(); });
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
@@ -4467,8 +4571,9 @@ window.addEventListener('DOMContentLoaded', () => {
     { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (currentMode==='stats'||currentMode==='info') ? (currentLang==='jp'?'絞り込み...':'Filter…') : t('searchPh'); }
 
     /* (#R11) No tab selected → blank sidebar content (map stays prominent). News pins still load when the
-       user opens the News tab. */
-    if(!currentMode){ if(sb) sb.style.display='none'; try{ updateOcclusion(); }catch(_){} return; }
+       user opens the News tab. (#R19) The blank state now hosts the opt-in Apple-style widget board. */
+    if(!currentMode){ if(sb) sb.style.display='none'; try{ window.IntMapWidgets2&&window.IntMapWidgets2.sync(); }catch(_){} try{ updateOcclusion(); }catch(_){} return; }
+    try{ window.IntMapWidgets2&&window.IntMapWidgets2.sync(); }catch(_){}
     if(currentMode==='info'){ dash.style.display='flex'; sb.style.display='flex'; renderDashboard(); updateOcclusion(); return; }
     if(currentMode==='community'){ comm.style.display='flex'; sb.style.display='none'; loadCommunity(); updateOcclusion(); return; }
     if(currentMode==='stats'){ feed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
@@ -5291,7 +5396,11 @@ window.addEventListener('DOMContentLoaded', () => {
         'https://elevation-tiles-prod.s3.dualstack.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
         'https://elevation-tiles-prod.s3.us-east-1.amazonaws.com/terrarium/{z}/{x}/{y}.png',
         'https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
-      ],encoding:'terrarium',tileSize:256,maxzoom:13}); return true; }
+      /* (#R19) Desktop DEM maxzoom 13→14: terrarium serves up to z15, so tilted close-ups get ~2× finer
+         relief geometry (sharper ridgelines/valleys = the "画質を高めて" half) while the multi-host pool +
+         SW cache keep it fast (the "表示速度" half — neither sacrificed). Phones stay at 13: the extra
+         DEM tile set is real RAM that risks the tab. */
+      ],encoding:'terrarium',tileSize:256,maxzoom:(isMobile()?13:14)}); return true; }
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
   function set3D(on){
@@ -5758,6 +5867,13 @@ window.addEventListener('DOMContentLoaded', () => {
         .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centred at any size */
         .koppen-info-pop .kip-x, .pin-popup-close{ width:32px !important; height:32px !important; font-size:17px !important; display:flex; align-items:center; justify-content:center; }
         .tool-panel .tp-close{ width:32px; height:32px; font-size:17px; display:flex; align-items:center; justify-content:center; }
+        /* (#R19) The R18 32px unification covered legends/tool-panels but MISSED the other popups
+           ("凡例はちょうどいいが、その他ポップアップは大きさが変わっていない"): the place-search result card,
+           every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
+        .src-card-close{ width:32px !important; height:32px !important; font-size:17px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
+        .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; right:4px !important; top:4px !important; }
+        .country-popup .cp-close, .country-popup .country-close, #country-popup-close{ width:32px !important; height:32px !important; font-size:19px !important; display:flex; align-items:center; justify-content:center; }
+        .maplibregl-popup-content{ padding-right:40px; }
         .legend-collapsed .legend-min::before{ width:12px; height:12px; }
         /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
         .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ padding:6px 10px !important; min-width:150px; }
@@ -5924,10 +6040,13 @@ window.addEventListener('DOMContentLoaded', () => {
        .dl-drag or .kl-drag, so EEZ/Temp/Thermal/… AND the Köppen legend are all movable on phones. */
     function wireDrag(el){
       if(!el) return;
-      /* (#R16) Grab the legend from the WHOLE header (the ⋮⋮ grip AND the title h4), not just the tiny
-         top-left grip — the user asked to be able to move it "from other places too". The scrollable body
-         and interactive rows stay clickable/scrollable (we don't wire them). */
-      const handles=[...el.querySelectorAll('.dl-drag,.kl-drag,h4')];
+      /* (#R19) DELEGATED drag — the fix for "凡例が動かせなくなることがたまにある": the old code wired the
+         ⋮⋮/h4 handle NODES directly, but every innerHTML rebuild (date-pickers, opacity rows, language
+         switch, Köppen era swap…) REPLACED those nodes and the new ones were never re-wired → the legend
+         silently stopped moving. The listeners now live on the legend ROOT (which innerHTML rebuilds never
+         replace) and find the live handle via closest(), so drag survives every rebuild, forever. */
+      if(el.dataset.dragRootWired) return; el.dataset.dragRootWired='1';
+      const HANDLE='.dl-drag,.kl-drag,h4,.tp-header';
       const begin=(cx,cy)=>{
         const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
         const ox=cx-startRect.left, oy=cy-startRect.top;
@@ -5943,16 +6062,20 @@ window.addEventListener('DOMContentLoaded', () => {
           setp('left',x+'px'); setp('top',y+'px');
         };
       };
-      handles.forEach(handle=>{
-        if(!handle||handle.dataset.dragWired) return; handle.dataset.dragWired='1';
-        if(handle.tagName==='H4'){ handle.style.cursor='move'; handle.style.touchAction='none'; handle.style.userSelect='none'; }
-        handle.addEventListener('mousedown',ev=>{ ev.preventDefault(); const move=begin(ev.clientX,ev.clientY);
-          const mv=e=>move(e.clientX,e.clientY); const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
-          document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); });
-        handle.addEventListener('touchstart',ev=>{ const t0=ev.touches[0]; if(!t0) return; ev.preventDefault(); const move=begin(t0.clientX,t0.clientY);
-          const mv=e=>{ const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }; const up=()=>{ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
-          document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
-      });
+      const hitHandle=(t)=>{ const h=t&&t.closest&&t.closest(HANDLE); if(!h||!el.contains(h)) return null;
+        if(t.closest('button,input,select,a,.legend-min,.layer-popup-x,.tp-close')) return null;   /* keep controls tappable */
+        return h; };
+      el.addEventListener('mousedown',ev=>{ const h=hitHandle(ev.target); if(!h) return; ev.preventDefault();
+        const move=begin(ev.clientX,ev.clientY);
+        const mv=e=>move(e.clientX,e.clientY); const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+        document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); });
+      el.addEventListener('touchstart',ev=>{ const h=hitHandle(ev.target); if(!h) return; const t0=ev.touches[0]; if(!t0) return; ev.preventDefault();
+        const move=begin(t0.clientX,t0.clientY);
+        const mv=e=>{ const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }; const up=()=>{ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
+        document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
+      /* the h4 cursor/touch-action hints are cosmetic — set them now and after any rebuild on hover */
+      const hint=()=>{ el.querySelectorAll('h4').forEach(h=>{ h.style.cursor='move'; h.style.touchAction='none'; h.style.userSelect='none'; }); };
+      hint(); el.addEventListener('mouseenter',hint);
     }
     window._wireLegendDrag=wireDrag;
     wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
@@ -6155,7 +6278,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
-      sec.innerHTML=`<div class="lyr-head lyr-section-label" style="margin-top:2px;">${title} (${chips.length})</div><div class="active-lyr-chips"></div>`;
+      /* (#R19) One-tap deselect-ALL ("すべてのレイヤーを選択解除できるボタン") in the section header. */
+      sec.innerHTML=`<div class="lyr-head lyr-section-label" style="margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;">${title} (${chips.length})<button class="alc-clear-all" style="flex:0 0 auto;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:8px;padding:3px 9px;font-size:10.5px;cursor:pointer;">${lang==='jp'?'すべて解除':'Clear all'}</button></div><div class="active-lyr-chips"></div>`;
+      sec.querySelector('.alc-clear-all').onclick=(e)=>{ e.stopPropagation();
+        chips.forEach(c=>{ try{ if(c.el.checked){ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} });
+        setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
       const wrap=sec.querySelector('.active-lyr-chips');
       chips.forEach(c=>{
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
@@ -6246,7 +6373,12 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
     };
-    window.reorganizeLayerPanel();
+    /* (#R19) Mobile-start smoothness: the very first panel reorganisation (a few hundred DOM moves)
+       used to run synchronously inside the boot path and contributed to the "スタート時の動作がぎこちない"
+       jank. On phones it now waits for an idle slice (the panel is reorganised again on every open
+       anyway, so nothing can be stale); desktop keeps the immediate call. */
+    if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback){ requestIdleCallback(()=>{ try{ window.reorganizeLayerPanel(); }catch(_){} },{timeout:2500}); }
+    else window.reorganizeLayerPanel();
 
     const beforeId = map.getLayer('tool-poly') ? 'tool-poly' : undefined;
     const setVis=(l,on)=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',on?'visible':'none'); };
@@ -6764,6 +6896,10 @@ window.addEventListener('DOMContentLoaded', () => {
             if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
             try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(_){}
             freeKoppenFull();
+            /* (#R19) The shader path never touches the per-pixel code index / source-copy buffers —
+               drop them (up to ~270 MB desktop / ~80 MB mobile). The canvas fallback rebuilds them
+               on demand, and cursor sampling reads the (kept) work canvas directly. */
+            window._koppenCodeIdx=null; window._koppenSrcData=null;
             return;
           }
           if(ok===false){ window._koppenGPUOK=false; }   /* engine REJECTED raster-color → canvas pipeline below */
@@ -6903,15 +7039,20 @@ window.addEventListener('DOMContentLoaded', () => {
       hillshade:['Elevation relief (hillshade)','陰影起伏'], contours:['Contour lines','等高線'],
       night:['Day / night','昼/夜'], subcables:['Submarine cables','海底ケーブル'], nato:['NATO members','NATO加盟国']
     };
-    function ensureGenericLegend(id){
+    /* (#R19) `names`/`cbId` make this usable for ANY layer ("どのレイヤーも透明度選択ができるように"):
+       a caller can register a legend (with auto opacity row) for a layer that has none — geo/strategic
+       lines, l9 dams/volcanoes/aurora, plates, the new beta layers… — without touching GENERIC_LEG. */
+    function ensureGenericLegend(id, names, cbId){
+      if(names && !GENERIC_LEG[id]) GENERIC_LEG[id]=[names[0], names[1]||names[0]];
       if(!GENERIC_LEG[id]) return null;
       let el=document.getElementById('data-legend-'+id);
       if(!el){ el=document.createElement('div'); el.className='data-legend generic-legend'; el.id='data-legend-'+id; el.style.bottom='140px';
         (document.getElementById('map-container')||document.body).appendChild(el);
         try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
+      if(cbId) el.dataset.cbId=cbId;
       const nm=currentLang==='jp'?GENERIC_LEG[id][1]:GENERIC_LEG[id][0];
       if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+(currentLang==='jp'?'ドラッグして移動':'Drag to move')+'">⋮⋮</span><button class="layer-popup-x" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';
-        el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
+        el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
           const fr=document.createElement('div'); fr.className='gl-filter-row'; fr.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;';
@@ -7054,7 +7195,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Normalise an airplanes.live ADS-B record to our internal plane shape (units → m, m/s). */
     function adsbToPlane(a,nowMs){
       const FT=0.3048, KT=0.514444, FPM=0.00508, onGround=a.alt_baro==='ground';
-      const mil=!!((a.dbFlags|0)&1) || classifyAircraft(a.flight)==='military';
+      /* (#R19) Military = dbFlags bit 0 ONLY. That bit comes from the curated Mictronics/tar1090
+         registration database (per-airframe, not guessed), so it's trustworthy — which is why the
+         military/civilian Filter stays. The old callsign-prefix heuristic ("KING", "SHELL", "BLUE"…)
+         mislabelled ordinary airline callsigns as military and is dropped from the live path
+         (classifyAircraft is still used by the clearly-labelled offline synthetic fallback only). */
+      const mil=!!((a.dbFlags|0)&1);
       return {
         icao24:(a.hex||'').toUpperCase(), callsign:(a.flight||'').trim(), reg:a.r||'', acType:a.t||'', desc:a.desc||'',
         lng:a.lon, lat:a.lat,
@@ -7549,7 +7695,16 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='thermal'){ setThermalVis(false); }
         else if(id==='subcables'){ setVis('lyr-subcables',false); setVis('lyr-subcables-glow',false); setVis('lyr-subcables-pts',false); }
         else { setVis('lyr-'+id,false); }
-        if(id==='climate'){ legend.style.display='none'; }
+        if(id==='climate'){ legend.style.display='none';
+          /* (#R19) Phones: drop the Köppen sampling work-set (4096² canvas + pixel copies, ~150 MB)
+             the moment the layer is off — it lazily rebuilds on the next toggle. A big slice of the
+             "何か重い動作をすると頻繁にブラウザが落ちます" memory pressure. Desktop keeps it for instant
+             re-toggle. The GPU recolour path never needs these buffers at all. */
+          if(typeof isMobile==='function'&&isMobile()){
+            try{ window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
+                 window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; }catch(_){}
+          }
+        }
         if(id==='hdi') lgdHDI.style.display='none';
         if(id==='dem') lgdDem.style.display='none';
         if(id==='pop') lgdPop.style.display='none';
@@ -7608,8 +7763,27 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='wind'){ const wc=document.getElementById('wind-canvas'); if(wc) wc.style.opacity=Math.min(1,0.5+v*0.5); try{ window.Wind&&window.Wind.setOpacity&&window.Wind.setOpacity(v*0.82); }catch(_){} }   /* (#R8b) particle alpha barely dims; slider mainly drives the geo-anchored speed-field raster */
       else if(id==='subcables'){ if(map.getLayer('lyr-subcables'))map.setPaintProperty('lyr-subcables','line-opacity',v); }
       else if(id==='thermal'){ try{ window._setThermalOpacity(v); }catch(_){} }
+      else if(window._opacityTargets&&window._opacityTargets[id]){ _applyGenericOpacity(window._opacityTargets[id],v); }
       else { if(map.getLayer('lyr-'+id))map.setPaintProperty('lyr-'+id,'raster-opacity',v); }
     }
+    /* ===== (#R19) Opacity for EVERY layer ("どのレイヤーも透明度選択ができるように") =====
+       A type-aware setter + a registry mapping a legend id → its MapLibre layer ids. Any module can call
+       window._registerLayerOpacity(id,[en,jp],layerIds,cbId) on toggle-ON: it gets a floating generic
+       legend whose auto opacity row drives all its layers; _hideGenericLegend(id) on toggle-OFF. */
+    window._opacityTargets=window._opacityTargets||{};
+    const _OP_PROP={fill:'fill-opacity',line:'line-opacity',raster:'raster-opacity',circle:'circle-opacity',heatmap:'heatmap-opacity','fill-extrusion':'fill-extrusion-opacity',hillshade:'hillshade-exaggeration','color-relief':'color-relief-opacity'};
+    function _applyGenericOpacity(ids,v){ (ids||[]).forEach(lid=>{ try{ const L=map.getLayer(lid); if(!L) return;
+      if(L.type==='symbol'){ try{ map.setPaintProperty(lid,'icon-opacity',v); }catch(_){} try{ map.setPaintProperty(lid,'text-opacity',v); }catch(_){} return; }
+      const p=_OP_PROP[L.type]; if(!p) return;
+      map.setPaintProperty(lid,p,(p==='hillshade-exaggeration')?Math.max(0.05,v):v); }catch(_){} }); }
+    window._applyGenericOpacity=_applyGenericOpacity;
+    window._registerLayerOpacity=function(id,namesEnJp,layerIds,cbId){ try{
+      if(opacities[id]==null) opacities[id]=0.85;
+      window._opacityTargets[id]=layerIds||[];
+      const el=ensureGenericLegend(id,namesEnJp,cbId);
+      if(el){ el.style.display='block'; try{ ensureLegendOpacity(el); }catch(_){} try{ ensureLegendMinimize(el); }catch(_){} try{ tileLegends(); }catch(_){} }
+      return el; }catch(_){ return null; } };
+    window._hideGenericLegend=function(id){ const el=document.getElementById('data-legend-'+id); if(el) el.style.display='none'; try{ tileLegends(); }catch(_){} };
   })();
   /* ================ END GROUP 3 ================ */
 
@@ -10020,7 +10194,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked);
+        /* (#R19) opacity-in-legend for these point/heat layers too */
+        try{ if(e.target.checked&&window._registerLayerOpacity) window._registerLayerOpacity('l9-'+k,[L9LBL[k][1],L9LBL[k][0]],SETS[k],'l9-dl-'+k); else if(window._hideGenericLegend) window._hideGenericLegend('l9-'+k); }catch(_){} }); });
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=jp()?L9LBL[k][0]:L9LBL[k][1]; }); }
@@ -10138,6 +10314,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ map.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); wcLegend(on); }
       else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ map.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
       else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else setVis(SETS.ecoregions,false); }
+      /* (#R19) opacity slider for these too — worldcover reuses its own class legend, the rest get a generic one */
+      try{ const nm=[ECLBL[which][1],ECLBL[which][0]];
+        if(on&&window._registerLayerOpacity) window._registerLayerOpacity(which==='worldcover'?'worldcover':'eco-'+which, nm, SETS[which], 'eco-dl-'+which);
+        else if(!on&&window._hideGenericLegend&&which!=='worldcover') window._hideGenericLegend('eco-'+which);
+      }catch(_){}
     }
     map.on('styledata',()=>{ if(state.worldcover||state.plates||state.ecoregions){ setTimeout(()=>{ if(ensureRaster()&&ensurePlateLayers()){ setVis(SETS.worldcover,state.worldcover); setVis(SETS.plates,state.plates); if(state.plates) loadPlates(()=>{}); } if(state.ecoregions){ if(!map.getSource('eco-regions')&&window._ecoGJ){ ecoBuilt=false; addEcoLayers(window._ecoGJ); } setVis(SETS.ecoregions,true); } },60); } });
     const ECLBL={worldcover:['土地被覆 (ESA 2021)','Land cover (ESA 2021)'],ecoregions:['生態地域 (WWF/RESOLVE)','Ecoregions (WWF/RESOLVE)'],plates:['プレート境界','Tectonic plates']};
@@ -10154,9 +10335,260 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapEco={ toggle };
   })();
 
+  /* ===== (#R19) Beta layers — Ukraine frontline (LIVE, DeepState API) · 3D city buildings
+     (OpenFreeMap vector building footprints, fill-extrusion) · Historical borders time slider
+     (aourednik/historical-basemaps, 1900→2010 — ≥100 years back as requested).
+     All three rows are swept into "Others (beta)" by reorganizeLayerPanel. Each registers an
+     opacity legend via _registerLayerOpacity. Everything lazy-loads on first toggle. ===== */
+  (function(){
+    if(typeof map==='undefined'||!map) return;
+    const jp=()=>currentLang==='jp';
+    const state={ukr:false,bldg:false,hist:false};
+    const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
+    const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+
+    /* ---------- Ukraine frontline (DeepState — curl-verified 200 + Access-Control-Allow-Origin:*) ---------- */
+    const UKR_IDS=['ukr-fill','ukr-line','ukr-front'];
+    let ukrFC=null, ukrTimer=null;
+    function ukrEnsure(){ if(map.getSource('ukr-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        map.addSource('ukr-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'DeepStateMap'});
+        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
+        map.addLayer({id:'ukr-fill',type:'fill',source:'ukr-src',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':['*',0.32,['coalesce',['get','fill-opacity'],1]]}},before);
+        map.addLayer({id:'ukr-line',type:'line',source:'ukr-src',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.4,'line-opacity':0.9}},before);
+        map.addLayer({id:'ukr-front',type:'line',source:'ukr-src',filter:['any',['==',['geometry-type'],'LineString'],['==',['geometry-type'],'MultiLineString']],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','stroke'],'#ff3b30'],'line-width':2.4,'line-opacity':0.95}},before);
+        return true;
+      }catch(_){ return false; } }
+    async function ukrLoad(force){
+      if(ukrFC&&!force){ try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){} return true; }
+      for(const wrap of PROX){ try{
+        const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },15000);
+        const r=await fetch(wrap('https://deepstatemap.live/api/history/last'),{signal:ctrl.signal}); clearTimeout(to);
+        if(!r.ok) continue;
+        const j=await r.json();
+        let fc=(j&&j.map)?j.map:j; if(typeof fc==='string'){ try{ fc=JSON.parse(fc); }catch(_){ continue; } }
+        if(!fc||!Array.isArray(fc.features)) continue;
+        const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon|LineString/.test(f.geometry.type));
+        if(!feats.length) continue;
+        ukrFC={type:'FeatureCollection',features:feats};
+        try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){}
+        const when=j.createdAt||j.datetime||j.updatedAt||null;
+        const el=document.getElementById('data-legend-ukrfront');
+        if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
+          /* DeepState's datetime is a non-ISO string ("11.06 o 13:56") — show it verbatim if unparsable */
+          let ws=new Date().toLocaleString(); if(when){ const dt=new Date(when); ws=isNaN(dt.getTime())?String(when):dt.toLocaleString(); }
+          d.textContent=(jp()?'更新: ':'As of: ')+ws+' · DeepState'; }
+        return true;
+      }catch(_){} }
+      const el=document.getElementById('data-legend-ukrfront');
+      if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
+        d.textContent=jp()?'取得できませんでした — 後でもう一度オンにしてください。':'Could not load — toggle again later.'; }
+      return false;
+    }
+    function ukrToggle(on){ state.ukr=on;
+      const a=()=>{ if(!ukrEnsure()){ map.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false); };
+      a();
+      if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
+      else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
+      try{ if(on&&window._registerLayerOpacity) window._registerLayerOpacity('ukrfront',['Ukraine frontline (DeepState)','ウクライナ前線（DeepState）'],UKR_IDS,'beta-dl-ukrfront');
+           else if(window._hideGenericLegend) window._hideGenericLegend('ukrfront'); }catch(_){}
+    }
+
+    /* ---------- 3D city buildings (OpenFreeMap `building` source-layer → fill-extrusion) ---------- */
+    function bldgEnsure(){ if(map.getLayer('ofm-bldg-3d')) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
+        const before=map.getLayer('ofm-country')?'ofm-country':(map.getLayer('tool-poly')?'tool-poly':undefined);
+        map.addLayer({id:'ofm-bldg-3d',type:'fill-extrusion',source:'ofm','source-layer':'building',minzoom:13.5,layout:{visibility:'none'},paint:{
+          'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],8],0,'#c7cfdb',25,'#a8b3c5',80,'#8794ad',200,'#67759a',400,'#4d5c85'],
+          'fill-extrusion-height':['coalesce',['get','render_height'],8],
+          'fill-extrusion-base':['coalesce',['get','render_min_height'],0],
+          'fill-extrusion-opacity':0.88}},before);
+        return true;
+      }catch(_){ return false; } }
+    function bldgToggle(on){ state.bldg=on;
+      const a=()=>{ if(!bldgEnsure()){ map.once('idle',a); return; } setVis(['ofm-bldg-3d'],on); };
+      a();
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('bldg3d',['3D buildings (cities)','3D建物（都市）'],['ofm-bldg-3d'],'beta-dl-bldg3d');
+             if(el&&!el.querySelector('.bldg-hint')){ const d=document.createElement('div'); d.className='bldg-hint'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'ズーム14以上で表示。3D/ドラッグ右クリックで傾けると立体に。':'Shows from zoom 14. Tilt (3D button / right-drag) to see depth.'; el.appendChild(d); } }
+           else if(window._hideGenericLegend) window._hideGenericLegend('bldg3d'); }catch(_){}
+    }
+
+    /* ---------- Historical borders (aourednik/historical-basemaps; raw.githubusercontent = CORS*) ---------- */
+    const HB_IDS=['hb-fill','hb-line','hb-lbl'];
+    const HB_YEARS=[1900,1914,1920,1938,1945,1960,1970,1980,1994,2000,2010];
+    let hbYear=1920; const hbCache=new Map();
+    const HB_PAL=['#e6a176','#7eb6e8','#9fd29a','#e8a4c2','#cbb1e6','#ffd78a','#9adfd2','#e8938c','#b9c98a','#a7b8d9','#dcc4a1','#90c7e0'];
+    function hbEnsure(){ if(map.getSource('hb-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        map.addSource('hb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
+        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
+        map.addLayer({id:'hb-fill',type:'fill',source:'hb-src',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.30}},before);
+        map.addLayer({id:'hb-line',type:'line',source:'hb-src',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}},before);
+        map.addLayer({id:'hb-lbl',type:'symbol',source:'hb-src',minzoom:2.2,layout:{visibility:'none','symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-size':11,'text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#4a3a26','text-halo-color':'rgba(255,250,240,0.9)','text-halo-width':1.4}},before);
+        return true;
+      }catch(_){ return false; } }
+    async function hbLoad(year){
+      const lbl=document.querySelector('#data-legend-histb .hb-year-val'); if(lbl) lbl.textContent=year;
+      let fc=hbCache.get(year);
+      if(!fc){
+        const note=document.querySelector('#data-legend-histb .hb-note'); if(note) note.textContent=jp()?(year+'年の国境を取得中…'):('Loading '+year+' borders…');
+        for(const wrap of PROX){ try{
+          const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },20000);
+          const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson'),{signal:ctrl.signal}); clearTimeout(to);
+          if(!r.ok) continue;
+          const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
+          j.features.forEach((f,i)=>{ if(!f.properties) f.properties={}; const nm=f.properties.NAME||f.properties.name||String(i);
+            let h=0; for(let k=0;k<nm.length;k++) h=(h*31+nm.charCodeAt(k))>>>0; f.properties.__col=HB_PAL[h%HB_PAL.length]; });
+          fc=j; hbCache.set(year,fc); break;
+        }catch(_){} }
+        if(note) note.textContent=fc?(jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)'):(jp()?'取得できませんでした。':'Could not load.');
+      }
+      if(fc&&hbYear===year){ try{ map.getSource('hb-src').setData(fc); }catch(_){} }
+    }
+    function hbToggle(on){ state.hist=on;
+      const a=()=>{ if(!hbEnsure()){ map.once('idle',a); return; } setVis(HB_IDS,on); if(on) hbLoad(hbYear); };
+      a();
+      try{
+        if(on&&window._registerLayerOpacity){
+          const el=window._registerLayerOpacity('histb',['Historical borders','過去の国境'],HB_IDS,'beta-dl-histb');
+          if(el&&!el.querySelector('.hb-year-row')){
+            const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:7px;';
+            row.innerHTML=(jp()?'年代':'Year')+' <input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="flex:1;"> <b class="hb-year-val" style="color:var(--text-main);min-width:38px;text-align:right;">'+hbYear+'</b>';
+            const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;';
+            el.appendChild(row); el.appendChild(note);
+            row.querySelector('input').addEventListener('input',(e)=>{ hbYear=HB_YEARS[+e.target.value]||1920; const v=el.querySelector('.hb-year-val'); if(v) v.textContent=hbYear; clearTimeout(hbToggle._t); hbToggle._t=setTimeout(()=>hbLoad(hbYear),250); });
+          }
+        } else if(window._hideGenericLegend) window._hideGenericLegend('histb');
+      }catch(_){}
+    }
+
+    /* ---------- rows in the Layers panel (swept into Others(beta) by reorganizeLayerPanel) ---------- */
+    const BLBL={ukrfront:['ウクライナ前線（リアルタイム）','Ukraine frontline (live)'],bldg3d:['3D建物（都市）','3D buildings (cities)'],histb:['過去の国境（年代スライダー）','Historical borders (year slider)']};
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-ukrfront')) return;
+      function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
+      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['histb','#c9b18a',hbToggle]].forEach(([k,sw,fn])=>{
+        const cb=row('beta-dl-'+k, jp()?BLBL[k][0]:BLBL[k][1], sw);
+        cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
+      });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
+    }
+    if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
+    function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=jp()?BLBL[k][0]:BLBL[k][1]; }); }
+    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
+    /* self-heal across basemap swaps */
+    map.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist){ setTimeout(()=>{
+      if(state.ukr&&ukrEnsure()){ setVis(UKR_IDS,true); if(ukrFC){ try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){} } }
+      if(state.bldg&&bldgEnsure()) setVis(['ofm-bldg-3d'],true);
+      if(state.hist&&hbEnsure()){ setVis(HB_IDS,true); const fc=hbCache.get(hbYear); if(fc){ try{ map.getSource('hb-src').setData(fc); }catch(_){} } }
+    },80); } });
+    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle};
+  })();
+
   /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
      A no-op stub remains so any stray reference can't throw. ===== */
   window.IntMapWidgets={ toggle:function(){}, refresh:function(){} };
+
+  /* ===== (#R19) Apple-style SIDEBAR widgets — shown ONLY in the no-tab-selected blank state.
+     Per the spec: default = NONE; the user adds widgets from a gallery ("+"), iOS-widget look
+     (rounded glass cards, 2-col grid), removable (hover/tap ✕), prefs persist. Data: clock (user TZ),
+     weather (Open-Meteo @ map centre), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
+     stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labelled). ===== */
+  (function(){
+    const KEY='intmap_widgets2';
+    const jp=()=>currentLang==='jp';
+    let active=[]; try{ const s=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(s)) active=s.filter(x=>typeof x==='string'); }catch(_){}
+    const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} };
+    const DEFS={
+      clock:  { nm:()=>jp()?'時計':'Clock',        ic:'🕐', desc:()=>jp()?'現在時刻と日付':'Time & date' },
+      weather:{ nm:()=>jp()?'天気':'Weather',      ic:'🌤', desc:()=>jp()?'地図中心の現在の天気':'Current weather at map centre' },
+      fx:     { nm:()=>jp()?'為替':'Exchange',     ic:'💱', desc:()=>jp()?'米ドル基準の主要レート':'Major rates vs USD' },
+      markets:{ nm:()=>jp()?'マーケット（暗号資産）':'Markets (crypto)', ic:'📈', desc:()=>jp()?'BTC・ETH 価格と24h変動':'BTC & ETH price, 24h change' }
+    };
+    const css=document.createElement('style');
+    css.textContent=
+      '.wgt-board{display:none;flex:1 1 auto;min-height:0;overflow-y:auto;padding:2px 2px 14px;}'+
+      '.wgt-title{font-size:13px;font-weight:700;color:var(--text-muted);margin:2px 2px 10px;letter-spacing:0.2px;}'+
+      '.wgt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'+
+      '.wgt-card{position:relative;border-radius:18px;padding:13px 14px;min-height:104px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 6px 22px rgba(0,0,0,0.10);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;}'+
+      '.wgt-card .wgt-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;}'+
+      '.wgt-card .wgt-v{font-size:21px;font-weight:700;color:var(--text-main);line-height:1.18;font-variant-numeric:tabular-nums;margin-top:6px;word-break:break-word;}'+
+      '.wgt-card .wgt-s{font-size:10.5px;color:var(--text-muted);margin-top:4px;line-height:1.45;}'+
+      '.wgt-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;}'+
+      '.wgt-card:hover .wgt-x{opacity:1;}'+
+      '@media(max-width:768px){ .wgt-x{opacity:0.85;width:30px;height:30px;border-radius:15px;} }'+
+      '.wgt-add{border:1.5px dashed rgba(128,128,128,0.45);border-radius:18px;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-muted);cursor:pointer;font-size:12.5px;background:transparent;transition:background 0.15s;}'+
+      '.wgt-add:hover{background:rgba(128,128,128,0.08);}'+
+      '.wgt-add .plus{font-size:24px;line-height:1;}'+
+      '.wgt-gallery{margin-top:12px;border-radius:18px;padding:12px;background:var(--glass-fill);border:1px solid var(--glass-border);}'+
+      '.wgt-gallery h5{margin:0 0 8px;font-size:12.5px;color:var(--text-main);}'+
+      '.wgt-g-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:12px;cursor:pointer;}'+
+      '.wgt-g-row:hover{background:rgba(128,128,128,0.10);}'+
+      '.wgt-g-row .gi{font-size:20px;}'+
+      '.wgt-g-row .gn{font-size:13px;font-weight:600;color:var(--text-main);}'+
+      '.wgt-g-row .gd{font-size:10.5px;color:var(--text-muted);}'+
+      '.wgt-g-row .ga{margin-left:auto;font-size:18px;color:var(--primary-color);}';
+    document.head.appendChild(css);
+    let board=null, gallery=false, clockT=null, dataT=null;
+    function ensureBoard(){ if(board) return board;
+      const sb=document.querySelector('.sidebar'); if(!sb) return null;
+      board=document.createElement('div'); board.className='wgt-board'; board.id='widget-board';
+      const feed=document.getElementById('live-news-feed');
+      if(feed&&feed.parentElement===sb) sb.insertBefore(board,feed); else sb.appendChild(board);
+      return board; }
+    function card(id){ const d=DEFS[id]; if(!d) return '';
+      return '<div class="wgt-card" data-w="'+id+'"><button class="wgt-x" title="'+(jp()?'削除':'Remove')+'">✕</button>'+
+        '<div class="wgt-h"><span>'+d.ic+'</span>'+d.nm()+'</div><div class="wgt-v" id="wgtv-'+id+'">···</div><div class="wgt-s" id="wgts-'+id+'"></div></div>'; }
+    function render(){ const b=ensureBoard(); if(!b) return;
+      const cards=active.map(card).join('');
+      const addable=Object.keys(DEFS).filter(k=>!active.includes(k));
+      b.innerHTML='<div class="wgt-title">'+(jp()?'ウィジェット':'Widgets')+'</div>'+
+        '<div class="wgt-grid">'+cards+(addable.length?'<button class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(jp()?'ウィジェットを追加':'Add widget')+'</button>':'')+'</div>'+
+        (gallery&&addable.length?('<div class="wgt-gallery"><h5>'+(jp()?'追加できるウィジェット':'Available widgets')+'</h5>'+
+          addable.map(k=>'<div class="wgt-g-row" data-add="'+k+'"><span class="gi">'+DEFS[k].ic+'</span><span><div class="gn">'+DEFS[k].nm()+'</div><div class="gd">'+DEFS[k].desc()+'</div></span><span class="ga">＋</span></div>').join('')+'</div>'):'');
+      const add=b.querySelector('#wgt-add'); if(add) add.onclick=()=>{ gallery=!gallery; render(); };
+      b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-add'); if(k&&!active.includes(k)){ active.push(k); save(); gallery=false; render(); } });
+      b.querySelectorAll('.wgt-x').forEach(x=>x.onclick=(e)=>{ e.stopPropagation(); const c=x.closest('.wgt-card'); const k=c&&c.getAttribute('data-w'); if(k){ active=active.filter(a=>a!==k); save(); render(); } });
+      refreshAll(); }
+    function setV(id,v,s){ const ev=document.getElementById('wgtv-'+id); if(ev) ev.innerHTML=v; const es=document.getElementById('wgts-'+id); if(es) es.innerHTML=s||''; }
+    function tickClock(){ if(!active.includes('clock')||!visible()) return;
+      let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
+      const now=new Date(); let tstr,dstr;
+      try{ tstr=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
+      try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
+      setV('clock','<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); }
+    const wIco=(c)=>{ if(c==null)return '🌡'; if(c===0)return '☀️'; if(c<=3)return '⛅'; if(c<=48)return '🌫'; if(c<=67)return '🌧'; if(c<=77)return '❄️'; if(c<=82)return '🌦'; if(c<=99)return '⛈'; return '🌡'; };
+    async function refreshWeather(){ if(!active.includes('weather')||!visible()) return;
+      try{ const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
+        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
+        const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
+        const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
+        const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
+        setV('weather', wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map centre'));
+      }catch(_){ setV('weather','—', jp()?'取得できません':'unavailable'); } }
+    async function refreshFx(){ if(!active.includes('fx')||!visible()) return;
+      try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{};
+        const f=(v)=>v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2));
+        setV('fx','USD/JPY '+f(rt.JPY), 'EUR '+f(rt.EUR)+' · GBP '+f(rt.GBP)+' · CNY '+f(rt.CNY));
+      }catch(_){ setV('fx','—', jp()?'取得できません':'unavailable'); } }
+    async function refreshMkt(){ if(!active.includes('markets')||!visible()) return;
+      try{ const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+        const j=await r.json(); const b=j.bitcoin||{}, e=j.ethereum||{};
+        const pc=(v)=>v==null?'':('<span style="color:'+(v>=0?'#34c759':'#ff3b30')+';">'+(v>=0?'+':'')+v.toFixed(1)+'%</span>');
+        setV('markets','BTC $'+(b.usd!=null?b.usd.toLocaleString():'—')+' '+pc(b.usd_24h_change), 'ETH $'+(e.usd!=null?e.usd.toLocaleString():'—')+' '+pc(e.usd_24h_change)+' · CoinGecko');
+      }catch(_){ setV('markets','—', jp()?'取得できません':'unavailable'); } }
+    function refreshAll(){ tickClock(); refreshWeather(); refreshFx(); refreshMkt(); }
+    function visible(){ return board && board.style.display!=='none' && board.offsetParent!==null; }
+    function sync(){ const b=ensureBoard(); if(!b) return;
+      const noTab=(typeof currentMode==='undefined'||!currentMode);
+      if(noTab){ b.style.display='block'; if(!b.dataset.built){ b.dataset.built='1'; render(); } else refreshAll();
+        if(!clockT) clockT=setInterval(tickClock,30000);
+        if(!dataT) dataT=setInterval(()=>{ if(visible()){ refreshWeather(); refreshFx(); refreshMkt(); } },5*60*1000);
+      } else { b.style.display='none'; } }
+    window.addEventListener('intmap-lang',()=>{ if(board){ board.dataset.built=''; if(board.style.display!=='none'){ board.dataset.built='1'; render(); } } });
+    window.IntMapWidgets2={ sync, render };
+    if(document.readyState!=='loading') setTimeout(sync,0); else document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,0));
+  })();
   (function(){
     return; /* widgets disabled */
     if(typeof map==='undefined' || !map) return;
@@ -10430,44 +10862,72 @@ window.addEventListener('DOMContentLoaded', () => {
         map.addLayer({id:'los-site',type:'circle',source:'los-src',filter:['==',['get','kind'],'site'],paint:{'circle-radius':6,'circle-color':'#ffd23f','circle-stroke-color':'#3a2a00','circle-stroke-width':2}});
         return true; }catch(_){ return false; } }
     function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
-    async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()||busy) return; busy=true;
+    /* (#R19) Rebuilt around three reported failures:
+         1) "パソコンでもブラウザがフリーズ" — everything heavy is now CHUNKED with event-loop yields
+            (and the per-sample 256×256 getImageData hot spot is gone — see _demPix), so the page
+            stays responsive for the whole run.
+         2) "同地点でも数値を変えたら、再度analyzeを実行できるように" — the old `busy` flag stayed true
+            forever if any step threw mid-run. Replaced by a GENERATION counter: pressing Analyse
+            always starts a fresh run and silently cancels the previous one; Clear keeps the site so
+            the same point can be re-analysed with new values.
+         3) "もっと詳細な地形分析を" — desktop 480 rays (0.75°) × 260 steps (was 360×200), still bilinear
+            DEM + 4/3-earth refraction; the DEM zoom obeys a hard TILE BUDGET (small ranges get full z13
+            detail; huge ranges step down instead of fetching 600+ tiles → bounded time AND memory). */
+    let runSeq=0;
+    async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()) return;
       losH=obsHeight; losR=rangeKm;   /* (#R18) remember for the next site */
-      /* (#R18) Finer still + a real progress readout (the user: "もっと詳細な地形分析を" + "進捗をパーセントで"):
-           • 360 rays (1°) × 200 radial steps (was 140),
-           • DEM zoom cap 12→13 (terrarium's native max — ≈2× finer ridges),
-           • BILINEAR DEM sampling (demElevBilinear) so ridge heights aren't stair-stepped,
-           • 4/3-earth-radius refraction (k=1.333) for a physically-correct microwave horizon.
-         Sampling is local (warm the covering tiles ONCE, then interpolate), so the cost is the tile
-         fetch — which is exactly what the progress bar reflects. */
-      const RAYS=360, STEPS=200, R=6371000, REFF=R*4/3; const body=panel&&panel.querySelector('#los-body');
-      setProgress(0, jp()?'地形DEMを取得中…':'Loading terrain DEM…');
-      const pts=[]; for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ const d=rangeKm*s/STEPS; let c; try{ c=turf.destination(turf.point(site),d,brg,{units:'kilometers'}).geometry.coordinates; }catch(_){ c=site; } pts.push({a,d,c}); } }
-      const z=Math.min(13,_demZoomForSpan(rangeKm));
-      const all=[site].concat(pts.map(p=>p.c));
-      /* tile-load progress 0→85%, then geometry 85→100% */
-      await warmDEMTiles(all, z, 24000, (f)=>setProgress(f*0.85, jp()?'地形DEMを取得中…':'Loading terrain DEM…'));
-      setProgress(0.88, jp()?'視通を計算中…':'Computing sightlines…');
-      const elevs=all.map(p=>{ if(!p) return null; let v=demElevBilinear(p[0],p[1],z); if(v==null) v=demElevAt(p[0],p[1],null,z); return v; });
-      const okCount=elevs.filter(v=>v!=null).length;
-      if(okCount < elevs.length*0.3){ busy=false; if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度。':'Could not load enough terrain data — wait a moment and retry.'; return; }
+      const my=++runSeq, live=()=>my===runSeq;
+      const mob=(typeof isMobile==='function'&&isMobile());
+      const RAYS=mob?360:480, STEPS=mob?170:260, R=6371000, REFF=R*4/3;
+      const body=panel&&panel.querySelector('#los-body');
+      const tick=()=>new Promise(r=>setTimeout(r,0));
+      const loadLbl=jp()?'地形DEMを取得中…':'Loading terrain DEM…', calcLbl=jp()?'視通を計算中…':'Computing sightlines…';
+      setProgress(0, loadLbl);
+      let z=Math.min(13,_demZoomForSpan(rangeKm));
+      const budget=mob?110:320, latA=Math.abs(site[1]);
+      const estTiles=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(latA*Math.PI/180))/Math.pow(2,zz); const n=(2*rangeKm)/tk+1; return n*n*0.8; };
+      while(z>5 && estTiles(z)>budget) z--;
+      /* inline spherical destination — 125k turf.destination calls were themselves a stall */
+      const toR=Math.PI/180, la1=site[1]*toR, lo1=site[0]*toR, sLa1=Math.sin(la1), cLa1=Math.cos(la1);
+      const dest=(brg,dKm)=>{ const dR=dKm/6371, br=brg*toR, sDR=Math.sin(dR), cDR=Math.cos(dR);
+        const la2=Math.asin(sLa1*cDR + cLa1*sDR*Math.cos(br));
+        const lo2=lo1+Math.atan2(Math.sin(br)*sDR*cLa1, cDR-sLa1*Math.sin(la2));
+        let lg=lo2/toR; lg=((lg+540)%360)-180; return [lg, la2/toR]; };
+      const pts=new Array(RAYS*STEPS);
+      for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ pts[a*STEPS+s-1]=dest(brg, rangeKm*s/STEPS); }
+        if((a&63)===63){ await tick(); if(!live()) return; } }
+      const all=[site].concat(pts);
+      /* tile-load progress 0→80%, sampling 80→95%, sightlines 95→100% */
+      await warmDEMTiles(all, z, 30000, (f)=>{ if(live()) setProgress(f*0.80, loadLbl); });
+      if(!live()) return;
+      const elevs=new Array(all.length); let okCount=0;
+      const CH=9000;
+      for(let i=0;i<all.length;i+=CH){ const end=Math.min(all.length,i+CH);
+        for(let k=i;k<end;k++){ const p=all[k]; let v=demElevBilinear(p[0],p[1],z); if(v==null) v=demElevAt(p[0],p[1],null,z); elevs[k]=v; if(v!=null) okCount++; }
+        setProgress(0.80+0.15*(end/all.length), calcLbl);
+        await tick(); if(!live()) return; }
+      if(okCount < all.length*0.3){ if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度「解析する」を押してください。':'Could not load enough terrain data — wait a moment and press Analyse again.'; return; }
       const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
-      const rays=Array.from({length:RAYS},()=>[]); pts.forEach((p,i)=>rays[p.a].push({d:p.d,terr:(elevs[i+1]==null?0:elevs[i+1])}));
-      const visEnds=[];
-      for(let a=0;a<RAYS;a++){ let maxA=-Infinity, vd=rangeKm*(1/STEPS); rays[a].sort((x,y)=>x.d-y.d);
-        /* First-horizon (radar-shadow) model: walk outward; you can see a sample only while its elevation
+      const visEnds=new Array(RAYS);
+      for(let a=0;a<RAYS;a++){
+        /* First-horizon (radar-shadow) model: walk outward; a sample is visible only while its elevation
            angle from the antenna stays at/above every nearer sample's angle. The 4/3-earth drop makes the
            horizon physically correct for microwaves. Stop at the first ridge that occludes. */
-        for(const sm of rays[a]){ const dm=sm.d*1000, drop=dm*dm/(2*REFF), hd=(sm.terr-drop)-obsElev, ang=Math.atan2(hd,dm); if(ang>=maxA-1e-9){ maxA=ang; vd=sm.d; } else break; }
-        let end; try{ end=turf.destination(turf.point(site),vd,a*360/RAYS,{units:'kilometers'}).geometry.coordinates; }catch(_){ end=site; } visEnds.push(end); }
+        let maxA=-Infinity, vd=rangeKm/STEPS;
+        for(let s=1;s<=STEPS;s++){ const terr=elevs[a*STEPS+s], d=rangeKm*s/STEPS, dm=d*1000, drop=dm*dm/(2*REFF), hd=((terr==null?0:terr)-drop)-obsElev, ang=Math.atan2(hd,dm);
+          if(ang>=maxA-1e-9){ maxA=ang; vd=d; } else break; }
+        visEnds[a]=dest(a*360/RAYS, vd);
+        if((a&127)===127){ setProgress(0.95+0.05*(a/RAYS), calcLbl); await tick(); if(!live()) return; } }
       visEnds.push(visEnds[0]);
       let cover=null, shadow=null;
       try{ cover=turf.polygon([visEnds]); }catch(_){}
-      try{ const disk=turf.circle(site,rangeKm,{units:'kilometers',steps:RAYS}); if(cover) shadow=turf.difference(disk,cover); }catch(_){}
+      try{ const disk=turf.circle(site,rangeKm,{units:'kilometers',steps:360}); if(cover) shadow=turf.difference(disk,cover); }catch(_){}
+      if(!live()) return;
       const feats=[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}];
       if(cover) feats.push({type:'Feature',geometry:cover.geometry,properties:{kind:'cover'}});
       if(shadow) feats.push({type:'Feature',geometry:shadow.geometry,properties:{kind:'shadow'}});
-      setData(feats); busy=false;
-      if(body) body.innerHTML=jp()?'解析完了。<b style="color:#ff4d4d;">赤＝到達範囲</b> / <b style="color:#1fd65f;">緑＝レーダー死角</b>（地形遮蔽）。':'Done. <b style="color:#ff4d4d;">Red = reachable range</b> / <b style="color:#1fd65f;">green = radar shadow</b> (terrain-blocked).';
+      setData(feats);
+      if(body) body.innerHTML=jp()?'解析完了。<b style="color:#ff4d4d;">赤＝到達範囲</b> / <b style="color:#1fd65f;">緑＝レーダー死角</b>（地形遮蔽）。数値を変えて「解析する」を押せば同地点で再計算できます。':'Done. <b style="color:#ff4d4d;">Red = reachable range</b> / <b style="color:#1fd65f;">green = radar shadow</b> (terrain-blocked). Change the values and press Analyse to re-run at this site.';
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='los-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function open(lngLat){ site=[lngLat.lng,lngLat.lat]; const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:236px;';
@@ -10480,13 +10940,16 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyse. May take a moment (DEM sampling).')+'</div>';
       /* ✕ now also wipes the overlay — the "can't remove it" bug was that closing the panel left the
          shadow painted with no way to clear it. Clearing on close fixes that. */
-      p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
+      p.querySelector('.tp-close').onclick=()=>{ runSeq++; setData([]); p.style.display='none'; };   /* close = cancel + wipe overlay incl. site dot */
       p.querySelector('#los-go').onclick=()=>{ const h=+p.querySelector('#los-h').value||0, r=Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)); losH=h; losR=r; analyze(h,r); };
       p.querySelector('#los-clr').onclick=()=>clear();
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       setData([{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]);
     }
-    function clear(){ site=null; setData([]); const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=jp()?'消去しました。地図を右クリックして再配置できます。':'Cleared. Right-click the map to place again.'; }
+    /* (#R19) Clear wipes the OVERLAY but keeps the site + cancels any in-flight run, so "Analyse"
+       still works at the same point with new values (the old site=null made re-analysis impossible). */
+    function clear(){ runSeq++; setData(site?[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]:[]);
+      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=jp()?'消去しました。数値を変えて「解析する」で再計算、または地図を右クリックで再配置。':'Cleared. Press Analyse to re-run here (new values OK), or right-click the map to move the site.'; }
     return { open, clear };
   })();
 

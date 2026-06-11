@@ -1448,4 +1448,94 @@ range are remembered (`losH`/`losR`) so opening a NEW site reuses the last value
   使いにくい"). Replaced with a text input + a custom tappable dropdown of big rows; the hidden
   `<select id=setting-tz>` is kept purely as the value store the Save pipeline reads. Verified: filter→tap sets
   the value + closes; Enter picks the first; 420 zones in the store.
+
+---
+
+## 22. Round 19 — root causes found for the two long-running furies + big feature batch (tags `#R19`)
+
+Same standing constraints (additive/in-place, MapLibre stays, no excuses). Build stamp `2026-06-12-R19`.
+Verified live in the headless preview at BOTH widths (desktop 1366 / mobile 390): zero console errors,
+geometry/hit-testing assertions, and the two new data feeds curl-probed AND fetched in-page.
+
+### Mobile place search — the ACTUAL root cause after 3 re-reports
+`preview_resize(390)` + a synthetic search reproduced it instantly: results were CREATED (8 items) but
+`elementFromPoint` over the list hit the MAP CANVAS. The mobile pill-morph rule `.map-search{overflow:hidden}`
+**clips `#ms-results`** (absolutely positioned at top:54px inside a 46px-tall parent) → results render
+invisible AND untappable. Every earlier fix (expand-then-search, parallel geocoders, gazetteer warming) was
+real but upstream of this. Fix: `.map-search.ms-open{overflow:visible}` (+ results z-index/max-height vs the
+sheet). Verified: items hit-testable, coordinate-tap opens the result card.
+Also: **Photon (komoot)** added as a third parallel geocoder — typo-tolerant ("osakaa"→Osaka, curl-verified
+CORS\*) — and `localFuzzyPlaces` gained word-prefix + per-word Levenshtein scoring ("検索エンジンのように").
+
+### Desktop Layers→Tools — the ACTUAL root cause ("何回も言っている")
+`.layer-dropdown` is a **flex column**; `#layer-tools{overflow:hidden}` gives it an automatic minimum size of
+0, so whenever the expanded list overflowed the panel, the ONLY shrinkable flex item (Tools) absorbed the whole
+shortfall → squashed to a 13px sliver, buttons clipped below the dropdown and unclickable ("少しだけ見れるが
+隠れている／開けない"). The R18 sticky treatment was orthogonal. Fix: `flex-shrink:0`. Verified with every
+group expanded: Tools 111px tall, fully inside the panel, Compare/Upload hit-testable.
+
+### Line of Sight — freeze killed, always re-runnable, finer
+- **The freeze** (desktop AND the mobile crash pressure): `demElevBilinear` ran a full **256×256
+  `getImageData` (≈256 KB copy) per sample** — ~72k samples/run ≈ 18 GB of memory traffic. Now each DEM tile
+  decodes its pixel buffer ONCE (`_demPix`), and `_demCache` is LRU-capped (420 desktop / 140 mobile tiles)
+  so a big run can't hoard hundreds of MB.
+- **Re-analyze**: the old `busy` flag stayed true forever if any step threw, and Clear nulled the site →
+  "同地点で数値を変えて再実行" was impossible. Replaced with a **generation counter** (`runSeq`) — Analyse
+  always starts fresh + cancels the previous run; Clear keeps the site; panel ✕ cancels + wipes.
+- **Finer + bounded**: desktop 480 rays × 260 steps (mobile 360×170), bilinear DEM + 4/3-earth refraction
+  kept; DEM zoom now obeys a hard **tile budget** (small ranges get full z13; huge ranges step down instead
+  of fetching 600+ tiles). All heavy loops are chunked with event-loop yields + the progress bar now spans
+  load 0–80% → sampling 80–95% → sightlines 95–100%.
+
+### Köppen — full quality everywhere, even less memory
+Display stays full 8192² on every device (R18 GPU `raster-color` highlight). New: when the GPU path applies,
+the per-pixel code index + source-pixel copy are dropped (up to ~270 MB); on phones, toggling the layer OFF
+releases the whole sampling work-set (~150 MB) — it lazily rebuilds on the next toggle.
+
+### Other fixes
+- **Mobile ×**: the R18 32px unification missed non-legend popups — now also `.src-card-close`, every
+  `.maplibregl-popup-close-button`, and the country card (verified 32×32).
+- **Readout emoji removed** (🌬 chip → value only).
+- **Active layers: "Clear all"** button (verified: unchecks everything).
+- **Aircraft military flag**: now **dbFlags bit 0 only** (curated Mictronics/tar1090 registration DB —
+  reliable, so the Filter stays); the callsign-prefix guess ("KING", "SHELL"…) is out of the live path.
+- **Legend drag forever**: `wireDrag` listeners moved to the legend ROOT with `closest()` handle lookup —
+  innerHTML rebuilds (date pickers, era swaps, language switches) can no longer orphan the drag ("たまに
+  動かせなくなる" was rebuilt handles never re-wired).
+- **Smooth wheel zoom**: built-in scrollZoom replaced (desktop) with a target-zoom accumulator + exponential
+  rAF glide around the cursor anchor — continuous decelerating iOS/Google-Earth feel, trackpad pinch finer
+  (ctrlKey), touch pinch untouched.
+- **Labels/borders always on top**: `ofm-country/city/other` + `borders-only-line` + the satellite reference
+  raster re-asserted just below the measurement-tool layers on idle/styledata (guarded, no repaint loop).
+- **Opacity for EVERY layer**: type-aware `_applyGenericOpacity` + `_registerLayerOpacity(id,[en,jp],layerIds,
+  cbId)` → any layer gets a floating legend with an auto opacity row. Wired for: all geo/strategic lines,
+  l9 dams/volcanoes/aurora, ecoregions/plates/worldcover (reuses its class legend), and the new beta layers.
+  Verified: 4 legends each with a working slider.
+- **3D quality+speed (desktop, nothing sacrificed)**: map maxZoom 18→19 (Esri serves native z19 in cities) and
+  terrain DEM maxzoom 13→14 (terrarium native is 15) — phones keep 18/13 for RAM safety. R18 MSAA stays.
+- **Mobile start**: the first `reorganizeLayerPanel()` (hundreds of DOM moves) now runs in an idle slice on
+  phones.
+
+### New (all in "Others (beta)", each with an opacity legend)
+- **Ukraine frontline (LIVE)** — DeepState `api/history/last` (curl-verified 200 + CORS\*; in-page fetch:
+  522 features / 119 occupation polygons with their own fill/stroke props). Fill+outline+front-line layers,
+  10-min auto-refresh while on, "As of" line (DeepState's non-ISO datetime shown verbatim), proxy fallback.
+- **3D city buildings** — fill-extrusion from the already-used OpenFreeMap vector tiles (`building` layer,
+  `render_height`/`render_min_height`), minzoom 13.5, height-graded colour; legend hint to zoom/tilt.
+- **Historical borders (year slider, ≥100 years back)** — aourednik/historical-basemaps GeoJSON
+  (1900·1914·1920·1938·1945·1960·1970·1980·1994·2000·2010; raw.githubusercontent CORS\*, in-page fetch
+  verified: 1920 → 205 polities, NAME labels). Year slider lives in the layer's legend; per-year cache;
+  name-hashed pastel fills. (The separate NEWS timeline still drives news; a future round could bridge them.)
+- **Volcanoes**: already shipped (l9, in Others(beta)) — now gains the opacity legend; Smithsonian GVP WFS was
+  probed for the full Holocene list but the endpoint timed out → curated set stays, documented.
+- **Apple-style sidebar widgets (opt-in)** — the empty no-tab sidebar hosts a widget board: default NONE,
+  "+ Add widget" gallery (Clock / Weather @ map centre / FX / Markets-crypto via CoinGecko — stock APIs are
+  key-walled+CORS-blocked, so markets are honestly crypto-labelled), iOS-style rounded glass cards in a 2-col
+  grid, hover/tap ✕ to remove, prefs persist (`intmap_widgets2`), JP/EN, 5-min data refresh.
+
+### Verified-in-preview summary
+Desktop: Tools 111px + hittable with all groups expanded; clear-all unchecks all; widget board with gallery;
+beta rows present + swept into Others(beta); opacity legends (ukr/hist/volc/geo-BRI) each with slider; zero
+console errors. Mobile 390px: search results hit-testable + coordinate-tap opens the card; readout emoji-free;
+src-card ✕ 32×32. DeepState + historical-basemaps + Photon fetched live from the page.
 - **Mobile place search** re-verified end-to-end at 375 px (expand→type→Enter→results for Osaka/Reykjavik).
