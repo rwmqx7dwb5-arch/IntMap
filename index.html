@@ -1235,7 +1235,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <div id="tool-panel" class="tool-panel"></div>
     <div id="country-info" class="country-info"></div>
     <div id="coord-readout" class="coord-readout"></div>
-    <button id="ai-view-summary-btn" class="ai-view-summary-btn" type="button" data-i18n-title="aiViewSumBtn" title="Summarize the visible area">🛰️ <span data-i18n="aiViewSumBtn">Summarize this view</span></button>
+    <button id="ai-view-summary-btn" class="ai-view-summary-btn" type="button" style="display:none" data-i18n-title="aiViewSumBtn" title="Summarize the visible area">🛰️ <span data-i18n="aiViewSumBtn">Summarize this view</span></button>
     <div id="sat-controller" class="sat-controller"></div>
     <div id="measure-tooltip" class="measure-tooltip"></div>
     <div id="ctx-menu" class="ctx-menu"></div>
@@ -3922,11 +3922,18 @@ window.addEventListener('DOMContentLoaded', () => {
     res.innerHTML='';
     local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,null));
     if(!res.children.length) res.innerHTML=`<div class="ms-loading">${t('loading')}</div>`;
-    let arr=[];
-    try{ const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },4500);
-      const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}); clearTimeout(to); arr=r.ok?await r.json():[]; }catch(e){ arr=[]; }
+    /* (#R16) The mobile "no results" bug: under file:// / on mobile networks Nominatim is often rate-limited,
+       blocked (null Origin) or just slow, and on a fresh load countryStats isn't loaded yet, so there was
+       NOTHING to show. Now query TWO CORS-friendly geocoders in PARALLEL behind one hard timeout —
+       **Open-Meteo geocoding** (fast, robust, fuzzy, works where Nominatim doesn't) AND Nominatim (richer
+       coverage). Either one alone yields results, so the search practically never comes back empty. */
+    const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },5000);
+    const omP=fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=${currentLang==='jp'?'ja':'en'}&format=json`,{signal:ctrl.signal})
+      .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,address:{country:p.country}}); }); }).catch(()=>{});
+    const nomP=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${currentLang==='jp'?'ja':'en'}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal})
+      .then(r=>r.ok?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
+    await Promise.allSettled([omP,nomP]); clearTimeout(to);
     const lo=res.querySelector('.ms-loading'); if(lo) lo.remove();
-    arr.forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl));
     if(!res.querySelector('.ms-item')){ res.innerHTML=''; local.forEach(l=>addItem(l.name,l.lng,l.lat,null)); }   /* weak local fallback */
     if(!res.querySelector('.ms-item')){ res.innerHTML=`<div class="ms-loading">${t('noMatch')}</div>`; }
   }
@@ -4007,6 +4014,10 @@ window.addEventListener('DOMContentLoaded', () => {
       doGeocode();
     };
     inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') doGeocode(); });
+    /* (#R16) Warm the bundled country data the moment the user reaches for search, so country/capital
+       names match LOCALLY (instant, offline) by the time they finish typing — without slowing startup. */
+    inp.addEventListener('focus',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
+    btn.addEventListener('pointerdown',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
     document.addEventListener('click',(e)=>{ if(mob() && box.classList.contains('ms-open') && !box.contains(e.target) && !inp.value.trim()) collapse(); });
   })();
   document.addEventListener('click',(e)=>{ const ms=document.getElementById('map-search'); if(ms&&!ms.contains(e.target)) document.getElementById('ms-results').style.display='none'; });
@@ -5119,7 +5130,24 @@ window.addEventListener('DOMContentLoaded', () => {
      next idle to win any race with a concurrent style/layer change. */
   /* (#R15c) "反応しないことがある" — re-assert a few times after the click too, so a click that lands while
      the style is mid-swap (idle may have already passed) still takes effect. Cheap + idempotent. */
-  function _reassertBase(mode){ [120,400,900].forEach(ms=>setTimeout(()=>{ try{ if(currentMapType===mode) applyTheme(); }catch(_){} },ms)); }
+  /* (#R16) "反応しないことがある" for good: POLL until the basemap visibility actually matches the chosen
+     mode. Fixed-delay re-asserts (120/400/900 ms) all miss when the style finishes loading later than that
+     and the (continuously-rendering globe) never fires `idle`. This keeps re-applying every 150 ms until
+     layer-sat visibility == wanted (or the user switches again / a ~5 s cap), so the switch always lands. */
+  function _reassertBase(mode){
+    let n=0; clearInterval(window._baseReassertT);
+    window._baseReassertT=setInterval(()=>{
+      n++;
+      try{
+        if(typeof currentMapType==='undefined' || currentMapType!==mode){ clearInterval(window._baseReassertT); return; }
+        if(map && map.isStyleLoaded() && map.getLayer('layer-sat')){
+          const wantSat=(mode==='sat'), isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible');
+          if(wantSat!==isSat) applyTheme(); else { clearInterval(window._baseReassertT); }
+        }
+      }catch(_){}
+      if(n>34){ clearInterval(window._baseReassertT); }
+    },150);
+  }
   document.getElementById('btn-view-map').onclick=(e)=>{ currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); };
   document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); };
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
