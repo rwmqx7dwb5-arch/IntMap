@@ -1132,12 +1132,65 @@ DOM/CSS checks; the spinning WebGL globe still can't be screenshotted). Committe
 - Active-layers list below favourites + borders/grid toggles (#17, R14); numeric cursor readout (#12, R13c);
   time-varying legend "as-of" line (#13, R13c/R14); imperial everywhere (#14, R13c).
 
+### R15c — re-report pass (Köppen crash "まだ発生", sliders→legends, x-ray, Tools, LICENSE, demo)
+- **Sea-route feature removed.** The right-click "Sea route from here / Set end" menu entry is gone (the
+  IntMapRoute engine stays defined but unreachable). It repeatedly mis-routed (shallow endpoints / linear /
+  across land).
+- **Köppen crash — capped the HIGHLIGHT.** The OOM kills the tab BEFORE any try/catch can fire, so the only
+  reliable fix is to never allocate the ~268 MB (8192²) output canvas + PNG buffer. `_koppenFullCap` now caps
+  the highlight at **4096² desktop / 2048² mobile** (out canvas ≤67 MB / ≤16 MB); the BASE Köppen image stays
+  full 8192² (unhighlighted = no quality loss). This is what stops the "選ぶと落ちて先祖返り" crash (the revival
+  is the file:// disk cache reloading after the tab dies).
+- **ALL opacity sliders moved out of the Layers panel into legends (#R15c).** Every opacity layer now owns a
+  legend: specific ones already did; the legend-less ones (precip, clouds, ships, planes, hillshade, contours,
+  day/night, submarine cables, NATO) get a **generic legend** (`ensureGenericLegend` → `data-legend-<id>`,
+  added to `tileLegends` so `ensureLegendOpacity` auto-adds the opacity row); the wind legend was added to
+  `tileLegends` too. `HAS_LEGEND` expanded to every opacity layer → the inline `.lyr-op` slider is hidden for
+  all. Verified live: night/planes/wind/gdppc legends show one opacity row each (no dupes), inline sliders
+  `display:none`.
+- **ECMWF time slider out of the Layers tab.** It's now a floating draggable legend (`data-legend-ecmwf`,
+  shown only while an ECMWF layer is on) instead of the `lyrrow-ec-time` panel row.
+- **Layers panel no longer "jumps" on toggle.** `_refreshActiveLayers` skips the rebuild when the active set
+  is unchanged and compensates the panel scrollTop for any height change above the viewport — so toggling a
+  layer doesn't shove the list around ("いちいち動いて目にうるさい").
+- **Compare x-ray alignment + "compare bugs".** Even with the window at `inset:0`, the compare MAP body sat
+  below the header (offset down). X-ray now floats the header over a full-cover `.cmp-body` (`position:absolute;
+  inset:0`) and makes the transparent map `pointer-events:none` so you drive the MAIN map and the overlay
+  tracks it via sync → pixel-aligned.
+- **Tools-panel overflow (desktop+mobile).** `.ai-test-btn` lacked `box-sizing:border-box`, so the `width:100%`
+  Compare/Upload buttons overflowed the dropdown padding (the "ぐちゃっと"). Added border-box + clamped
+  `#layer-tools` to `width:100%;overflow:hidden`.
+- **Runway search imperial as an option.** Added an in-panel **Units** selector (Metric km/m · Imperial mi/ft)
+  defaulting to the global; `imp()` reads it so radius/min-length inputs, the search math AND the result rows
+  follow the panel choice regardless of the app default. Verified: km↔mi label + 300↔186 swap.
+- **News band on un-located pins (#R15c).** `news-labels` filter removed → the headline pill shows on every
+  news pin, including ones not yet geocoded.
+- **News-languages pulldown.** The multi-language checkbox grid is now the same `.nc-dd` dropdown as
+  news-by-country (button shows the live selection); Apply already refetched on change. Verified: 11 boxes,
+  live label.
+- **Timezone search robustness.** Reset the search box + repopulate the full list every time Settings opens, so
+  a stale filter from a prior session can't leave it showing 3 options (the "機能していない" report — the filter
+  itself tested fine: 420→3 on "tokyo").
+- **Mobile readout one line + smaller + corner.** `white-space:nowrap; flex-wrap:nowrap; overflow:hidden`,
+  font 9.5px, tucked to `left:6px`.
+- **Mobile floating panels can't overflow off-screen (#7).** tool-panel / legends / country-info max-height is
+  now `min(cap, calc(100dvh - var(--sheet-cover) - ~76px))`, so a panel docked above an EXPANDED sheet shrinks
+  + scrolls into the visible map area instead of running off the top.
+- **Map/Satellite reliability.** Both toggles now re-assert `applyTheme()` at 120/400/900 ms after the click
+  (covers a click that lands while the style is mid-swap), on top of the existing idle + styledata self-heal.
+- **First-visit demo (the "map was initially just black" feedback).** `_imStartDemo` auto-cycles Köppen →
+  Night-lights → Relief → Population on the very first visit with a bottom pill naming the current layer +
+  play/pause/✕; stops on any manual layer toggle or dismiss; remembers it's seen. Verified: pill in DOM, layers
+  cycle, dismiss cleans up.
+- **LICENSE added** — personal & research use permitted, **commercial use prohibited** without a written
+  license; third-party data subject to its own terms.
+
 ### Still open / documented (need engines, datasets, or a real browser to verify)
-- **All layers get legends + move time/opacity UI INTO the legends (#9/#38):** large — many layers already
-  have legends with opacity (`ensureLegendOpacity`); a full migration of every per-layer control into the
-  legend is the remaining big UX rework.
+- **Date/time PICKERS still in the Layers panel** (temp month, SST date, thermal window, traffic filter): the
+  OPACITY migration is done; moving these date selectors into the legends needs each legend to host the picker
+  (the legends already show the "as-of" line) — left as a focused follow-up to avoid breaking date control.
 - **ECMWF some-blank (#11):** every configured variable IS served by `ecmwf_ifs` (verified latest.json), so
   the blanks are the two VECTOR layers (isobars/arrows source-layer names) or genuinely-sparse fields
   (cape/precip/sst). Needs a real browser to see the `.om` compositing. Most are now in the Others(beta) group.
-- **LOS detail (#2), 3D speed+quality (#3), Sea route real-coastline behaviour (#5), mobile measurement
-  popup clamping (#7), ghost layers (#10):** terrain/engine-scale or no-headless-repro — carried over.
+- **LOS detail (#2), 3D speed+quality (#3), ghost layers (#10):** terrain/engine-scale or no-headless-repro —
+  carried over. (Sea route #5 was removed per request this round.)
