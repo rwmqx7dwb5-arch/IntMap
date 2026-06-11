@@ -10625,31 +10625,32 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-ctrls select,.cmp-ctrls label{font-size:10.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:3px 6px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
       /* (#R13) X-ray mode: the compare window goes transparent so the MAIN map shows through at the same
          location (like an X-ray) — only the compare window\'s own data layers paint on top. */
-      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.9) inset;}'+
-      /* (#R15 / #18) X-ray must OVERLAY the main map exactly, or the synced camera (same centre/zoom) lands
-         at the centre of a SMALL offset window instead of the full map → everything looked shifted. In
-         X-ray the window fills #map-container (same rect as the main #map), so it aligns pixel-for-pixel. */
-      '#compare-window.cmp-xray{position:absolute !important;inset:0 !important;left:0 !important;top:0 !important;right:0 !important;bottom:0 !important;width:auto !important;height:auto !important;border-radius:0 !important;resize:none !important;}'+
+      /* (#R16) X-ray is a movable LENS — NOT a fullscreen takeover (the user: "なんで勝手に全画面にするねん").
+         The window stays its normal floating/resizable size; only its basemap goes transparent so the MAIN
+         map shows through, and the camera is synced so the window shows exactly the main-map geography
+         BEHIND it (perfect register — see syncFromMain's lens branch). A cyan border marks the lens. */
+      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
-      /* (#R15c) In X-ray the compare MAP body must fill the whole container too — otherwise the header
-         pushed it down ~32px and the overlay sat OFFSET below the main map. Float the header on top, make
-         the body fill, and let pointer events pass THROUGH the (transparent) map to the main map so you
-         drive the main map and the overlay tracks it via sync (the controls stay clickable). */
-      '#compare-window.cmp-xray .cmp-body{position:absolute !important;inset:0 !important;pointer-events:none;}'+
-      '#compare-window.cmp-xray .cmp-head{position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:auto;background:rgba(15,18,24,0.72);}'+
+      /* Let pans/zooms pass THROUGH the lens to the main map (the lens tracks it via sync); header+controls stay clickable. */
+      '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
+      '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.82);}'+
       '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;}'+
       /* (#R15d) MOBILE: the 440px resizable window + the full-cover x-ray were "ほぼ使えない / どうにもできない".
          Make it a clean full-width TOP panel with big tappable header buttons; x-ray still overlays for
          alignment but its header is a tall, opaque bar so Close/X-ray are always reachable. */
+      /* (#R16) MOBILE compare: smaller default (44vh, was "大きすぎる") + a touch resize grip (.cmp-resize)
+         so the height IS adjustable ("大きさ調節できない" fixed). Native CSS resize ignores touch, hence the grip. */
+      '.cmp-resize{display:none;}'+
       '@media(max-width:768px){'+
-      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:60vh !important;min-width:0 !important;resize:none !important;border-radius:14px;}'+
+      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:44vh !important;min-width:0 !important;resize:none !important;border-radius:14px;padding-bottom:20px;}'+
+      '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:7;}'+
+      '.cmp-resize::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:42px;height:4px;border-radius:2px;background:rgba(150,160,175,0.7);}'+
       '.cmp-head{flex-wrap:wrap;padding:9px 10px;gap:7px;}'+
       '.cmp-head .cmp-title{font-size:13px;width:100%;}'+
       '.cmp-btn{padding:8px 11px;font-size:13px;min-height:38px;}'+
       '#cmp-close,#cmp-min{min-width:42px;font-size:16px;}'+
-      '#compare-window.cmp-xray{border-radius:0 !important;}'+
       '#compare-window.cmp-xray .cmp-head{padding:10px 10px;}'+
-      '.cmp-ctrls{top:auto;bottom:8px;left:8px;right:8px;max-width:none;}'+
+      '.cmp-ctrls{top:auto;bottom:26px;left:8px;right:8px;max-width:none;}'+
       '.cmp-ctrls select,.cmp-ctrls label{font-size:12px;padding:6px 9px;}'+
       '}';
       document.head.appendChild(st); }
@@ -10670,7 +10671,21 @@ window.addEventListener('DOMContentLoaded', () => {
       ] }; }
     function setVis(id,on){ try{ if(cmap.getLayer(id)) cmap.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }
     function setBase(kind){ if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false); return; } setVis('cmp-base-carto',kind==='map'&&document.documentElement.getAttribute('data-theme')!=='dark'); setVis('cmp-base-dark',kind==='map'&&document.documentElement.getAttribute('data-theme')==='dark'); setVis('cmp-base-sat',kind==='sat'); }
-    function syncFromMain(){ if(!syncOn||!cmap||syncing) return; syncing=true; try{ cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}); }catch(_){} syncing=false; }
+    function syncFromMain(){ if(!syncOn||!cmap||syncing) return; syncing=true;
+      try{
+        if(xray && win){
+          /* (#R16) LENS sync: show, inside the compare window, exactly the main-map geography that sits
+             BEHIND the window — so the compare layers register with the main map without going fullscreen.
+             Centre the compare map on the main-map lng/lat at the window's centre screen point; equal
+             zoom/bearing/pitch means every pixel in the window then lines up with the main map behind it. */
+          const mcEl=document.getElementById('map-container'); const wr=win.getBoundingClientRect(), mr=mcEl?mcEl.getBoundingClientRect():{left:0,top:0};
+          const cx=wr.left+wr.width/2-mr.left, cy=wr.top+wr.height/2-mr.top;
+          const ll=map.unproject([cx,cy]);
+          cmap.jumpTo({center:ll,zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
+        } else {
+          cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
+        }
+      }catch(_){} syncing=false; }
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
       win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較ビュー':'Compare view')+'</span>'+
@@ -10687,7 +10702,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<label><input type="checkbox" id="cmp-eco"> '+(jp()?'生態地域':'Ecoregions')+'</label>'+
         '<label><input type="checkbox" id="cmp-sync" checked> '+(jp()?'視点同期':'Sync view')+'</label>'+
         '<label title="'+(jp()?'透過してメイン地図を重ねる':'See the main map through')+'"><input type="checkbox" id="cmp-xray"> '+(jp()?'透過(X線)':'X-ray')+'</label>'+
-        '</div></div>';
+        '</div></div><div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false});
       try{ cmap.setProjection({type:'globe'}); }catch(_){}
@@ -10720,10 +10735,9 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(b){ b.style.display='none'; } }
       win.querySelector('#cmp-xray').onchange=(e)=>{ xray=e.target.checked; win.classList.toggle('cmp-xray',xray);
         if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false);
-          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; xrayBar(true); }
-        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); win.style.right='24px'; win.style.bottom='24px'; win.style.left='auto'; win.style.top='auto'; xrayBar(false); }
-        /* The window's rect changes (full-cover ↔ floating), so resize the GL canvas FIRST, then re-sync
-           the camera so centre/zoom map to the new viewport — otherwise the overlay is offset (#18). */
+          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; }
+        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); }
+        try{ xrayBar(false); }catch(_){}   /* (#R16) no fullscreen takeover → no floating exit bar needed; the window header stays reachable */
         try{ cmap.resize(); }catch(_){}
         requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} syncFromMain(); }); };
       window._cmpXrayBar=xrayBar;
@@ -10733,11 +10747,17 @@ window.addEventListener('DOMContentLoaded', () => {
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
         h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
-        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(0,Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; });
+        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(0,Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(xray) syncFromMain(); /* (#R16) lens follows the window */ });
         h.addEventListener('pointerup',()=>drag=false); h.addEventListener('pointercancel',()=>drag=false);
       })();
-      /* resize → resize the map */
-      try{ ro=new ResizeObserver(()=>{ try{ cmap.resize(); }catch(_){} }); ro.observe(win); }catch(_){}
+      /* resize → resize the map (+ re-aim the lens to the new window centre) */
+      try{ ro=new ResizeObserver(()=>{ try{ cmap.resize(); }catch(_){} if(xray) syncFromMain(); }); ro.observe(win); }catch(_){}
+      /* (#R16) touch resize grip — the user couldn't resize the compare window on mobile. Drag the grip to set height. */
+      (function(){ const g=win.querySelector('.cmp-resize'); if(!g) return; let rz=false,sy=0,sh=0;
+        g.addEventListener('pointerdown',e=>{ rz=true; sy=e.clientY; sh=win.getBoundingClientRect().height; try{g.setPointerCapture(e.pointerId);}catch(_){} e.preventDefault(); });
+        g.addEventListener('pointermove',e=>{ if(!rz) return; const h=Math.max(180,Math.min(window.innerHeight-40,sh+(e.clientY-sy))); win.style.setProperty('height',h+'px','important'); try{cmap.resize();}catch(_){} if(xray) syncFromMain(); });
+        const end=()=>{ rz=false; }; g.addEventListener('pointerup',end); g.addEventListener('pointercancel',end);
+      })();
       /* keep camera locked to the main map when sync is on */
       map.on('move',syncFromMain);
     }
