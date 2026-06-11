@@ -10249,22 +10249,28 @@ window.addEventListener('DOMContentLoaded', () => {
         return true; }catch(_){ return false; } }
     function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
     async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()||busy) return; busy=true;
-      const RAYS=96, STEPS=44, R=6371000; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
+      /* (#R16) Much finer terrain analysis (the user: "計算が雑すぎる / もっと詳細な地形分析を"):
+           • angular resolution 96→240 rays (1.5°), radial 44→120 steps,
+           • DEM zoom cap 10→12 (≈4× the spatial detail) — the local-tile sampler keeps it cheap,
+           • proper RADAR horizon: 4/3-earth-radius refraction (k=1.333) instead of the bare geometric drop.
+         Sampling is local (warm the covering tiles once, then interpolate), so adding points costs almost
+         nothing; only the tile fetch scales, so the zoom is still span-aware/capped. */
+      const RAYS=240, STEPS=120, R=6371000, REFF=R*4/3; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
       const pts=[]; for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ const d=rangeKm*s/STEPS; let c; try{ c=turf.destination(turf.point(site),d,brg,{units:'kilometers'}).geometry.coordinates; }catch(_){ c=site; } pts.push({a,d,c}); } }
       /* (#R12) Sample the LOCAL cached terrarium DEM — warming the few tiles that cover the disk — instead
-         of firing ~4,200 Open-Meteo requests at once (which were rate-limited to nulls → flat terrain →
-         no shadow → "Line of Sight doesn't work"). */
-      /* Cap the DEM zoom so the disk is covered by a manageable number of terrarium tiles — z12 over a
-         60 km disk is ~144 tiles that often don't all load in time (→ flat terrain → "doesn't work"). */
-      const z=Math.min(10,_demZoomForSpan(rangeKm));
-      const elevs=await demSampleAll([site].concat(pts.map(p=>p.c)), z, 16000);
+         of firing thousands of Open-Meteo requests at once (which were rate-limited to nulls → flat). */
+      const z=Math.min(12,_demZoomForSpan(rangeKm));
+      const elevs=await demSampleAll([site].concat(pts.map(p=>p.c)), z, 22000);
       const okCount=elevs.filter(v=>v!=null).length;
       if(okCount < elevs.length*0.3){ busy=false; if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度。':'Could not load enough terrain data — wait a moment and retry.'; return; }
       const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
       const rays=Array.from({length:RAYS},()=>[]); pts.forEach((p,i)=>rays[p.a].push({d:p.d,terr:(elevs[i+1]==null?0:elevs[i+1])}));
       const visEnds=[];
-      for(let a=0;a<RAYS;a++){ let maxA=-Infinity, vd=rangeKm*0.02; rays[a].sort((x,y)=>x.d-y.d);
-        for(const sm of rays[a]){ const dm=sm.d*1000, drop=dm*dm/(2*R), hd=(sm.terr-drop)-obsElev, ang=Math.atan2(hd,dm); if(ang>=maxA-1e-9){ maxA=ang; vd=sm.d; } else break; }
+      for(let a=0;a<RAYS;a++){ let maxA=-Infinity, vd=rangeKm*(1/STEPS); rays[a].sort((x,y)=>x.d-y.d);
+        /* First-horizon (radar-shadow) model: walk outward; you can see a sample only while its elevation
+           angle from the antenna stays at/above every nearer sample's angle. The 4/3-earth drop makes the
+           horizon physically correct for microwaves. Stop at the first ridge that occludes. */
+        for(const sm of rays[a]){ const dm=sm.d*1000, drop=dm*dm/(2*REFF), hd=(sm.terr-drop)-obsElev, ang=Math.atan2(hd,dm); if(ang>=maxA-1e-9){ maxA=ang; vd=sm.d; } else break; }
         let end; try{ end=turf.destination(turf.point(site),vd,a*360/RAYS,{units:'kilometers'}).geometry.coordinates; }catch(_){ end=site; } visEnds.push(end); }
       visEnds.push(visEnds[0]);
       let cover=null, shadow=null;
@@ -11089,6 +11095,10 @@ window.addEventListener('DOMContentLoaded', () => {
      and remembers it's been seen so it never nags again. Purely additive; touches only its own pill. */
   function _imStartDemo(){
     try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
+    /* (#R16) Skip the auto-demo on phones: it eagerly loaded 4 heavy layers (incl. Köppen) on the very
+       first visit — slowing the mobile startup the user called slow, and adding to the Köppen OOM risk.
+       Mobile gets a clean, fast first paint instead. Desktop keeps the showcase. */
+    try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return; }catch(_){}
     if(typeof map==='undefined'||!map) return;
     const jp=()=>currentLang==='jp';
     const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-popgrid','Population density (1 km grid)','人口密度（1kmグリッド）']];
