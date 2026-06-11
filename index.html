@@ -861,8 +861,11 @@ gtag('config', 'G-57X5MX0ZPW');
        "Frosted glass (more transparent)" is now GENUINELY see-through — minimal fill, light blur. */
     body.sidebar-translucent{ --glass-blur:32px; --glass-sat:195%; --glass-fill:rgba(255,255,255,0.42); --glass-border:rgba(255,255,255,0.34); }
     [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(40,40,44,0.46); --glass-border:rgba(255,255,255,0.10); }
-    body.sidebar-glass2{ --glass-blur:13px; --glass-sat:155%; --glass-fill:rgba(255,255,255,0.10); --glass-border:rgba(255,255,255,0.24); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(24,24,28,0.14); --glass-border:rgba(255,255,255,0.08); }
+    /* (#R16) "More transparent" was so low-fill (10–14 %) it read as COMPLETELY transparent over the dark
+       map — the layer panel looked like it had no material at all. Raise the floor so it is clearly frosted
+       glass (still markedly lighter than the standard frosted 0.42/0.46), uniform across every surface. */
+    body.sidebar-glass2{ --glass-blur:16px; --glass-sat:165%; --glass-fill:rgba(255,255,255,0.24); --glass-border:rgba(255,255,255,0.30); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(28,28,32,0.34); --glass-border:rgba(255,255,255,0.12); }
     /* In the genuinely-transparent mode the map shows through strongly, so add a readability shadow. */
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 1px 3px rgba(0,0,0,0.55); }
@@ -1025,11 +1028,13 @@ gtag('config', 'G-57X5MX0ZPW');
     .dl-op-extra{ margin-top:8px; }
     .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
     .dl-op-extra input[type=date], .dl-op-extra select{ flex:1; min-width:0; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px; }
-    /* Layers with a legend popup show opacity there → hide the inline dropdown slider (#17). */
-    .lyr-row.has-legend .lyr-op{ display:none !important; }
-    /* (#R15d) Date / month / window / traffic-filter / sea-level controls all moved INTO the legends — no
-       sliders or date pickers in the Layers panel anymore (precip's date is driven by the global timeline). */
-    .lyr-row .lyr-extras{ display:none !important; }
+    /* (#R16) ABSOLUTE RULE — NO sliders / date-pickers / filters anywhere in the Layers panel. Every such
+       control lives in that layer's LEGEND only (opacity via ensureLegendOpacity, dates/filters via
+       _refreshLegendDates / the generic legend). The previous `.lyr-row.on .lyr-op{display:block}` rule
+       re-showed the opacity slider for any layer not in HAS_LEGEND when it was toggled on — that was the
+       slider the user kept seeing. Hide ALL of them unconditionally (incl. the ECMWF `.ec-op`). */
+    .layer-dropdown .lyr-op, .layer-dropdown .ec-op, .layer-dropdown .lyr-extras,
+    .m-sheet .layer-dropdown .lyr-op, .m-sheet .layer-dropdown .ec-op, .m-sheet .layer-dropdown .lyr-extras{ display:none !important; }
     /* Generic control popup for layers that have no rich legend */
     .layer-ctrl{ display:none; position:absolute; right:24px; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
     .layer-ctrl h4{ margin:0 0 4px; font-size:12px; padding-right:18px; }
@@ -3387,7 +3392,15 @@ window.addEventListener('DOMContentLoaded', () => {
      off-screen and become unreachable (the other half of the mobile measure complaint, #7). */
   function makeDraggable(panel,handle){
     const clampTo=(l,t)=>{ const op=panel.offsetParent||document.documentElement; const ow=op.clientWidth||window.innerWidth, oh=op.clientHeight||window.innerHeight; const pw=panel.offsetWidth||0, ph=panel.offsetHeight||0; return [Math.max(6,Math.min(ow-Math.min(pw,ow)-6,l)), Math.max(6,Math.min(oh-Math.min(ph,oh)-6,t))]; };
-    const move=(cx,cy)=>{ if(!panelDrag)return; const c=clampTo(panelDrag.l+cx-panelDrag.x, panelDrag.t+cy-panelDrag.y); panel.style.left=c[0]+'px'; panel.style.top=c[1]+'px'; panel.style.right='auto'; panel.style.bottom='auto'; /* (#R9/#48) clear bottom too, else a CSS bottom anchor pins vertical drag */ };
+    /* (#R16) Write position with INLINE !important. On mobile the .tool-panel rule pins
+       `left:12px!important; top:auto!important`, which silently beat the drag's plain inline styles —
+       so panels "couldn't be moved" / "only moved left-right". Inline-!important beats stylesheet-
+       !important, so the drag now fully controls BOTH axes on phones. data-dragged lets any
+       :not([data-dragged]) auto-placement leave it alone. */
+    const move=(cx,cy)=>{ if(!panelDrag)return; const c=clampTo(panelDrag.l+cx-panelDrag.x, panelDrag.t+cy-panelDrag.y);
+      panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
+      panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
+      panel.setAttribute('data-dragged','1'); };
     handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
     handle.addEventListener('touchstart',(e)=>{ const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
@@ -3770,7 +3783,13 @@ window.addEventListener('DOMContentLoaded', () => {
       map.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
     });
     map.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
-    map.on('contextmenu',(e)=>{ e.preventDefault(); showContextMenu(e.point, e.lngLat); });
+    map.on('contextmenu',(e)=>{ e.preventDefault();
+      let pt=e.point, ll=e.lngLat;
+      /* (#R16) On mobile the interaction is centre-fixed (crosshair). A long-press anywhere acts on the
+         CROSSHAIR point and the menu opens there (always on-screen) — the old behaviour opened it under the
+         finger, often off the edge / behind the sheet ("画面からはみ出して何も見えない"). */
+      try{ if(window._mCenterLL && window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const c=window._mCenterLL(); pt={x:c.px.x,y:c.px.y}; ll={lng:c.lng,lat:c.lat}; } }catch(_){}
+      showContextMenu(pt, ll); });
     /* Long-press → context menu on touch devices */
     (function(){
       const canvas=map.getCanvas(); let pressTimer=null, startPt=null, fired=false;
@@ -5730,26 +5749,35 @@ window.addEventListener('DOMContentLoaded', () => {
        .dl-drag or .kl-drag, so EEZ/Temp/Thermal/… AND the Köppen legend are all movable on phones. */
     function wireDrag(el){
       if(!el) return;
-      const handle=el.querySelector('.dl-drag,.kl-drag'); if(!handle||handle.dataset.dragWired) return; handle.dataset.dragWired='1';
+      /* (#R16) Grab the legend from the WHOLE header (the ⋮⋮ grip AND the title h4), not just the tiny
+         top-left grip — the user asked to be able to move it "from other places too". The scrollable body
+         and interactive rows stay clickable/scrollable (we don't wire them). */
+      const handles=[...el.querySelectorAll('.dl-drag,.kl-drag,h4')];
       const begin=(cx,cy)=>{
         const startRect=el.getBoundingClientRect(), mcRect=mc.getBoundingClientRect();
         const ox=cx-startRect.left, oy=cy-startRect.top;
         /* Pin to the current on-screen spot BEFORE releasing the CSS bottom/right anchor, so the
-           legend never flashes to a default corner when the drag starts (esp. on mobile, #10). */
-        el.style.left=(startRect.left-mcRect.left)+'px'; el.style.top=(startRect.top-mcRect.top)+'px';
-        el.style.bottom='auto'; el.style.right='auto'; el.dataset.dragged='1';
+           legend never flashes to a default corner when the drag starts (esp. on mobile, #10). Use
+           inline !important so any mobile !important dock rule can't fight the drag. */
+        const setp=(k,v)=>el.style.setProperty(k,v,'important');
+        setp('left',(startRect.left-mcRect.left)+'px'); setp('top',(startRect.top-mcRect.top)+'px');
+        setp('bottom','auto'); setp('right','auto'); el.dataset.dragged='1';
         return (mx,my)=>{
           const x=Math.max(8,Math.min(mcRect.width-startRect.width-8, mx-mcRect.left-ox));
           const y=Math.max(8,Math.min(mcRect.height-startRect.height-8, my-mcRect.top-oy));
-          el.style.left=x+'px'; el.style.top=y+'px';
+          setp('left',x+'px'); setp('top',y+'px');
         };
       };
-      handle.addEventListener('mousedown',ev=>{ ev.preventDefault(); const move=begin(ev.clientX,ev.clientY);
-        const mv=e=>move(e.clientX,e.clientY); const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
-        document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); });
-      handle.addEventListener('touchstart',ev=>{ const t0=ev.touches[0]; if(!t0) return; ev.preventDefault(); const move=begin(t0.clientX,t0.clientY);
-        const mv=e=>{ const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }; const up=()=>{ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
-        document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
+      handles.forEach(handle=>{
+        if(!handle||handle.dataset.dragWired) return; handle.dataset.dragWired='1';
+        if(handle.tagName==='H4'){ handle.style.cursor='move'; handle.style.touchAction='none'; handle.style.userSelect='none'; }
+        handle.addEventListener('mousedown',ev=>{ ev.preventDefault(); const move=begin(ev.clientX,ev.clientY);
+          const mv=e=>move(e.clientX,e.clientY); const up=()=>{ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+          document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up); });
+        handle.addEventListener('touchstart',ev=>{ const t0=ev.touches[0]; if(!t0) return; ev.preventDefault(); const move=begin(t0.clientX,t0.clientY);
+          const mv=e=>{ const t=e.touches[0]; if(t) move(t.clientX,t.clientY); }; const up=()=>{ document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
+          document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
+      });
     }
     window._wireLegendDrag=wireDrag;
     wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
@@ -10678,7 +10706,10 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
          smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
       @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 18px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
-        .coord-readout span{ white-space:nowrap; flex-shrink:0; } }`;
+        .coord-readout span{ white-space:nowrap; flex-shrink:0; }
+        /* (#R16) The crosshair must mark the centre of the VISIBLE map space — the area NOT covered by the
+           bottom sheet — not the centre of the phone screen. Sit it halfway down the uncovered area. */
+        #m-crosshair{ top:calc((100% - var(--sheet-cover, var(--peek-h, 196px))) / 2) !important; } }`;
     document.head.appendChild(st);
     const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
     const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
@@ -10688,7 +10719,13 @@ window.addEventListener('DOMContentLoaded', () => {
        PADDED centre (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
        — adding measure points in the wrong place. Unproject the visual centre pixel instead so the
        crosshair's centre IS the exact point. */
-    function centerLL(){ const r=mc.getBoundingClientRect(); const px=[r.width/2, r.height/2]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
+    function centerLL(){ const r=mc.getBoundingClientRect();
+      /* (#R16) Match the crosshair: on mobile the target point is the centre of the UNCOVERED map area
+         (above the sheet), so unproject that exact pixel — keeps Add-point and long-press accurate. */
+      let cy=r.height/2;
+      if(mob()){ const cs=getComputedStyle(mc); const cover=parseFloat(cs.getPropertyValue('--sheet-cover'))||parseFloat(cs.getPropertyValue('--peek-h'))||0; cy=(r.height-cover)/2; }
+      const px=[r.width/2, cy]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
+    window._mCenterLL=centerLL;
     /* (#R13) The +Add point button (and the centre crosshair) now appear ONLY while a measurement tool
        is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
        drives the context menu instead. */
