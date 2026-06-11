@@ -5836,8 +5836,11 @@ window.addEventListener('DOMContentLoaded', () => {
            everything below that level floods blue. */
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${currentLang==='jp'?'海面変動':'Sea-level'}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,window._seaLevelM||0))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${((window._seaLevelM||0)>=0?'+':'')+(window._seaLevelM||0)} m</span></label></div>`;
       }
-      /* Layers that own a legend popup get their opacity slider THERE (#17); hide the inline one. */
-      const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel']);
+      /* (#R15c) EVERY opacity layer now owns a legend (specific, generic, or the wind legend), so the
+         opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
+      const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel',
+        'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
+        'precip','clouds','ships','planes','hillshade','contours','night','subcables','nato']);
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"> <span data-i18n="${key}">${i18n[currentLang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
       dd.appendChild(w);
@@ -6571,6 +6574,30 @@ window.addEventListener('DOMContentLoaded', () => {
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
     }
     window._ensureLegendOpacity=ensureLegendOpacity;
+    /* (#R15c) Generic legend for layers that previously had ONLY an inline opacity slider in the Layers
+       panel and no legend of their own (precip, clouds, ships, planes, hillshade, contours, day/night).
+       Now every opacity lives in a legend, so the Layers panel can drop its inline sliders. The opacity row
+       + minimise button are added automatically by tileLegends()/ensureLegendOpacity() (id matches
+       data-legend-<id> → opacities[<id>]). */
+    const GENERIC_LEG={
+      precip:['Precipitation (IMERG)','降水量 (IMERG)'], clouds:['Clouds (infrared)','雲（赤外）'],
+      ships:['Live ship traffic','船舶（リアルタイム）'], planes:['Live aircraft traffic','航空機（リアルタイム）'],
+      hillshade:['Elevation relief (hillshade)','陰影起伏'], contours:['Contour lines','等高線'],
+      night:['Day / night','昼/夜'], subcables:['Submarine cables','海底ケーブル'], nato:['NATO members','NATO加盟国']
+    };
+    function ensureGenericLegend(id){
+      if(!GENERIC_LEG[id]) return null;
+      let el=document.getElementById('data-legend-'+id);
+      if(!el){ el=document.createElement('div'); el.className='data-legend generic-legend'; el.id='data-legend-'+id; el.style.bottom='140px';
+        (document.getElementById('map-container')||document.body).appendChild(el);
+        try{ window._wireLegendDrag&&window._wireLegendDrag(el); }catch(_){} }
+      const nm=currentLang==='jp'?GENERIC_LEG[id][1]:GENERIC_LEG[id][0];
+      if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+(currentLang==='jp'?'ドラッグして移動':'Drag to move')+'">⋮⋮</span><button class="layer-popup-x" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';
+        el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
+      } else { el.querySelector('h4').textContent=nm; }
+      return el;
+    }
+    window._ensureGenericLegend=ensureGenericLegend;
     /* Minimize/expand a legend so a kept-open one doesn't hog the screen (esp. mobile Köppen). */
     function toggleLegendMin(el){
       const collapsed=el.classList.toggle('legend-collapsed');
@@ -6593,7 +6620,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
     };
     function tileLegends(){
-      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat];
+      const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
@@ -7178,6 +7205,8 @@ window.addEventListener('DOMContentLoaded', () => {
           withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
+        /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
+        { try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
       } else {
         if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setNatoVis(false); }
@@ -7206,6 +7235,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(id==='snow') lgdSnow.style.display='none';
         if(id==='aod') lgdAod.style.display='none';
         if(id==='nightsat') lgdNightsat.style.display='none';
+        if(GENERIC_LEG[id]){ const gl=document.getElementById('data-legend-'+id); if(gl){ gl.style.display='none'; tileLegends(); } }   /* (#R15c) */
         if((id==='radar'||id==='clouds')&&_rvTimer){ const other=(id==='radar')?'clouds':'radar';
           const otherVis=map.getLayer('lyr-'+other)&&map.getLayoutProperty('lyr-'+other,'visibility')==='visible';
           if(!otherVis){ clearInterval(_rvTimer); _rvTimer=null; } }
