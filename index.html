@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-11-R17';
+  window.INTMAP_BUILD='2026-06-12-R18';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -299,6 +299,13 @@ gtag('config', 'G-57X5MX0ZPW');
        the dropdown padding → the "Tools 欄がぐちゃっと" report on both desktop and mobile). */
     #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; }
     #layer-tools .ai-test-btn, #layer-tools button{ box-sizing:border-box; width:100%; max-width:100%; }
+    /* (#R18) Desktop: pin Tools to the BOTTOM of the scrollable Layers panel (sticky), so it is ALWAYS
+       visible — expanding a long group used to scroll it out of view ("デスクトップ版でそもそも消滅している").
+       Its own glass fill keeps the rows scrolling underneath readable. Mobile keeps normal flow (the
+       sheet shows everything expanded). */
+    @media(min-width:769px){
+      #layer-tools{ position:sticky; bottom:-12px; margin:0 -12px -12px; width:auto; max-width:none; padding:0 12px 12px; background:var(--glass-fill); border-top:1px solid var(--glass-border); }
+    }
     .ai-test-btn:hover{ border-color:var(--primary-color); } .ai-test-btn:disabled{ opacity:0.55; cursor:default; }
     .ai-test-msg{ font-size:11px; margin-top:6px; min-height:13px; line-height:1.4; }
     .ai-test-msg.ok{ color:#34c759; } .ai-test-msg.err{ color:#ff453a; }
@@ -332,6 +339,16 @@ gtag('config', 'G-57X5MX0ZPW');
     /* Dark-mode-aware native option dropdowns - browsers use system colors, force them */
     select{ color-scheme:light dark; }
     select option, select optgroup{ background-color:var(--card-bg); color:var(--text-main); }
+    /* (#R18) iOS-style timezone combobox — input + custom tappable dropdown (no native size-N select). */
+    .tz-combo input#setting-tz-search{ width:100%; padding:11px 12px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; font-size:14px; color:var(--text-main); box-sizing:border-box; outline:none; }
+    .tz-combo input#setting-tz-search:focus{ border-color:var(--primary-color); }
+    .tz-results{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:20; max-height:260px; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,0.22); }
+    .tz-results.show{ display:block; }
+    .tz-row{ padding:11px 13px; font-size:14px; color:var(--text-main); cursor:pointer; border-bottom:1px solid rgba(128,128,128,0.1); }
+    .tz-row:last-child{ border-bottom:none; }
+    .tz-row:hover{ background:var(--input-bg); }
+    .tz-row.sel{ color:var(--primary-color); font-weight:600; }
+    .tz-row.tz-empty{ color:var(--text-muted); cursor:default; }
     [data-theme="dark"] select option, [data-theme="dark"] select optgroup{ background-color:#1c1c1e; color:#f5f5f7; }
     [data-theme="dark"] select{ color-scheme:dark; }
     [data-theme="light"] select{ color-scheme:light; }
@@ -717,11 +734,12 @@ gtag('config', 'G-57X5MX0ZPW');
       .map-controls-top{ display:none !important; }
 
       /* ---------- iOS round control FABs (top-right) ---------- */
-      /* (#R17) The always-visible Map/Tools FABs sit just ABOVE the bottom sheet (a small gap), low and
-         thumb-reachable — not pinned to the top ("常時表示箇所はもっと下方によせて"). */
+      /* (#R18) Back to the ORIGINAL top-right position — the R17 "just above the sheet" move was rejected
+         ("レイヤーボタン、Tools、方位磁石のUIの位置がおかしくなってる。前の位置に戻せ"). The bottom-hugging
+         treatment now applies only to the always-on readout (see .coord-readout). */
       .m-fab-stack{ display:flex; flex-direction:column; gap:10px; position:fixed; right:14px;
-        bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); top:auto; z-index:1150;
-        transition:opacity 0.3s, transform 0.3s, bottom 0.2s; }
+        top:max(12px,calc(env(safe-area-inset-top) + 4px)); bottom:auto; z-index:1150;
+        transition:opacity 0.3s, transform 0.3s; }
       .m-fab{ width:46px; height:46px; border-radius:23px; border:0.5px solid rgba(128,128,128,0.16);
         background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px);
         box-shadow:0 4px 16px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center;
@@ -805,7 +823,10 @@ gtag('config', 'G-57X5MX0ZPW');
          the bottom anchor (sheet-cover + 58) could push a tall panel off the TOP of the screen ("初期位置が
          画面からはみ出てる"). Top-anchored can never be off-screen; the drag (inline-!important) still moves it
          anywhere, and max-height keeps it clear of the sheet. */
-      .tool-panel{ left:6px !important; right:auto !important; top:64px !important; bottom:auto !important; width:auto !important; min-width:168px; max-width:calc(100vw - 12px); max-height:calc(100dvh - var(--sheet-cover, var(--peek-h)) - 84px); overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
+      /* (#R18) transform:none is CRITICAL: the elevation profile sets an inline translateX(-50%) for its
+         desktop bottom-centre placement; with the mobile left:6px it shifted HALF THE PANEL OFF-SCREEN LEFT
+         (the "画面外にはみ出したりする" bug). Neutralising the transform keeps every tool panel fully on-screen. */
+      .tool-panel{ left:6px !important; right:auto !important; top:64px !important; bottom:auto !important; transform:none !important; width:auto !important; min-width:168px; max-width:calc(100vw - 12px); max-height:calc(100dvh - var(--sheet-cover, var(--peek-h)) - 84px); overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
       .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
       .tool-panel .tp-row{ margin:2px 0 !important; }
       .tool-panel .tp-hint{ font-size:10.5px !important; margin-top:5px !important; line-height:1.35 !important; }
@@ -1313,7 +1334,13 @@ gtag('config', 'G-57X5MX0ZPW');
       <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
     </div>
     <div class="setting-group"><label data-i18n="lblAiLocate">AI location analysis</label><select id="setting-ailocate"><option value="manual" data-i18n="aiLocManual">Manual (button)</option><option value="auto" data-i18n="aiLocAuto">Automatic for all news</option></select></div>
-    <div class="setting-group"><label id="lbl-tz">Timezone Setting</label><input type="text" id="setting-tz-search" autocomplete="off" placeholder="Search timezone…" style="margin-bottom:6px;"><select id="setting-tz" size="1"></select></div>
+    <div class="setting-group"><label id="lbl-tz">Timezone Setting</label>
+      <div class="tz-combo" id="tz-combo" style="position:relative;">
+        <input type="text" id="setting-tz-search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" placeholder="Search timezone…">
+        <div class="tz-results" id="tz-results"></div>
+        <select id="setting-tz" size="1" style="display:none;" aria-hidden="true"></select>
+      </div>
+    </div>
     <div class="setting-group" id="sat-keys-group">
       <label data-i18n="satKeysTitle">Satellite imagery (BYOK)</label>
       <div class="sat-keys-hint" data-i18n="satKeyHint">Enter an API key to unlock these providers in the Satellite panel.</div>
@@ -2332,6 +2359,12 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=128; }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
+      /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
+         horizon read jagged without it; MSAA smooths every polygon + terrain edge for a clear quality
+         jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
+         画質を高めて。どちらか一方犠牲はNG"). It's left OFF on phones, where the extra sample buffers are a
+         real GPU/VRAM cost that risks the tab ("ブラウザが落ちることがないように"). */
+      antialias:!isMobile(),
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
          and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
          works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
@@ -3698,13 +3731,31 @@ window.addEventListener('DOMContentLoaded', () => {
      DEM carries ocean bathymetry (negative = below sea level), so profiles dip under water and the
      viewshed reads real terrain — replacing the old per-point Open-Meteo fetch that fired hundreds
      of requests at once and silently failed (the root cause of "Line of Sight doesn't work"). */
-  function _demZoomForSpan(km){ return Math.max(5, Math.min(12, Math.round(Math.log2(481000/Math.max(1,km))))); }
-  function warmDEMTiles(points, z, timeoutMs){
+  function _demZoomForSpan(km){ return Math.max(5, Math.min(13, Math.round(Math.log2(481000/Math.max(1,km))))); }
+  /* (#R18) onProgress(frac 0..1) lets callers (Line of Sight / elevation profile) show a real % + bar
+     while the covering DEM tiles load — the slow part of a viewshed ("計算の進捗をパーセントで表示"). */
+  function warmDEMTiles(points, z, timeoutMs, onProgress){
     const keys=new Set();
     points.forEach(p=>{ if(!p) return; const tl=_ll2tile(p[0],p[1],z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y); if(xi>=0&&yi>=0&&xi<tl.n&&yi<tl.n){ keys.add(z+'/'+xi+'/'+yi); demElevAt(p[0],p[1],null,z); } });
-    return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,110); })(); });
+    const total=keys.size||1;
+    return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(onProgress){ try{ onProgress((total-pending)/total); }catch(_){} } if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,90); })(); });
   }
-  async function demSampleAll(points, z, timeoutMs){ await warmDEMTiles(points, z, timeoutMs); return points.map(p=>{ if(!p) return null; const v=demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
+  async function demSampleAll(points, z, timeoutMs, onProgress){ await warmDEMTiles(points, z, timeoutMs, onProgress); return points.map(p=>{ if(!p) return null; const v=demElevAt(p[0],p[1],null,z); return (v==null)?null:v; }); }
+  /* (#R18) Bilinear DEM sample for the viewshed — smooths the stair-stepping of nearest-pixel sampling so
+     ridge lines (which decide what's blocked) are physically truer. Reads the 4 surrounding texels and
+     interpolates; falls back to nearest at tile edges. Tiles must already be warm (LOS warms them first). */
+  function demElevBilinear(lng,lat,z){
+    const tl=_ll2tile(lng,lat,z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y);
+    if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
+    const cv=_demCache.get(z+'/'+xi+'/'+yi); if(!cv||cv==='loading') return null;
+    let d; try{ d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,256,256).data; }catch(e){ return null; }
+    const fx=(tl.x-xi)*256-0.5, fy=(tl.y-yi)*256-0.5;
+    const x0=Math.max(0,Math.min(255,Math.floor(fx))), y0=Math.max(0,Math.min(255,Math.floor(fy)));
+    const x1=Math.min(255,x0+1), y1=Math.min(255,y0+1); const tx=Math.max(0,Math.min(1,fx-x0)), ty=Math.max(0,Math.min(1,fy-y0));
+    const el=(px,py)=>{ const i=(py*256+px)*4; return (d[i]*256+d[i+1]+d[i+2]/256)-32768; };
+    const a=el(x0,y0), b=el(x1,y0), c=el(x0,y1), e=el(x1,y1);
+    return (a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+e*tx)*ty;
+  }
   /* Elevation/depth respects the measurement-units setting (#R13c): imperial → feet, both → "m (ft)". */
   function fmtElevVal(e){ const m=Math.round(e), ft=Math.round(e*3.28084); const um=(typeof unitMode!=='undefined')?unitMode:'both'; return um==='imperial'?(ft.toLocaleString()+' ft'):um==='metric'?(m.toLocaleString()+' m'):(m.toLocaleString()+' m ('+ft.toLocaleString()+' ft)'); }
   window.fmtElevVal=fmtElevVal;
@@ -4064,7 +4115,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Layer dropdown ===== */
   const layerDropdown=document.getElementById('layer-dropdown');
-  document.getElementById('btn-layers').addEventListener('click',(e)=>{ e.stopPropagation(); layerDropdown.classList.toggle('show'); });
+  document.getElementById('btn-layers').addEventListener('click',(e)=>{ e.stopPropagation(); layerDropdown.classList.toggle('show');
+    /* (#R18) Frosted-glass fix: a backdrop-filter NESTED inside another backdrop-filtered surface
+       (.map-view-group toolbar) can only sample within the parent's backdrop root — the map behind was
+       never blurred, so in the frosted modes the dropdown read as "完全に透明". Hoist it out to
+       #map-container (top of the stacking/backdrop tree) and aim it under the Layers button; the shared
+       --glass-* material then frosts it exactly like every other surface. Mobile keeps its sheet mount. */
+    try{
+      if(layerDropdown.classList.contains('show') && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)){
+        const mc=document.getElementById('map-container');
+        if(!layerDropdown.__home && layerDropdown.parentNode){ const ph=document.createComment('home'); layerDropdown.parentNode.insertBefore(ph,layerDropdown); layerDropdown.__home=ph; }
+        if(mc && layerDropdown.parentElement!==mc) mc.appendChild(layerDropdown);
+        const br=e.currentTarget.getBoundingClientRect(), mr=mc.getBoundingClientRect();
+        layerDropdown.style.top=(br.bottom-mr.top+8)+'px';
+        layerDropdown.style.right=Math.max(8,Math.round(mr.right-br.right))+'px';
+        layerDropdown.style.left='auto'; layerDropdown.style.marginTop='0'; layerDropdown.style.zIndex='1300';
+      }
+    }catch(_){}
+  });
   /* (#R7-legend-x) A click anywhere on the document used to collapse the Layers dropdown — including a
      click on a layer's legend ✕ (which sits OUTSIDE the dropdown). Keep the dropdown open when the
      click originates inside any legend / its controls, so toggling a legend off doesn't shut the tab. */
@@ -4076,6 +4144,13 @@ window.addEventListener('DOMContentLoaded', () => {
     _lyrGroupItems(header).forEach(el=>{ el.style.display=collapsed?'none':''; }); }
   function _collapseGroup(header){ if(header.classList.contains('lyr-collapsed')) return; header.classList.add('lyr-collapsed');
     _lyrGroupItems(header).forEach(el=>{ el.style.display='none'; }); }
+  /* (#R18) Mobile shows EVERY group expanded. If groups were collapsed on desktop and the layout then
+     crossed to mobile (rotation / resize / split-screen), the collapse's display:none rows survived the
+     move into the sheet → rows missing / headers stacked ("Toolsの欄がぐちゃっと"). Reset on mobile entry. */
+  window._expandAllLayerGroups=function(){ try{
+    layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
+    layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
+  }catch(_){} };
   layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
     /* Mobile shows all groups expanded (no carets) → headers are plain labels, not collapsers (#12). */
     if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return;
@@ -5294,39 +5369,45 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Settings + Timezones ===== */
   let _tzZones=null;
+  /* (#R18) iOS-friendly timezone COMBOBOX. A native `<select size>` is miserable on iOS (it renders a
+     single-line wheel even with size>1, so the "search" never showed a usable list — "検索窓が使いにくい").
+     Now: a text input + a custom tappable dropdown of big rows; the hidden `<select id=setting-tz>` is
+     kept purely as the value store the Save pipeline already reads, so nothing downstream changes.
+     populateTimezones(filter) rebuilds BOTH the hidden options (for value) and the visible rows. */
+  function _tzList(){ if(!_tzZones){ try{ _tzZones=Intl.supportedValuesOf('timeZone'); }catch(e){ _tzZones=['UTC','Asia/Tokyo','America/New_York','Europe/London','Europe/Moscow','Europe/Berlin','Asia/Shanghai','America/Los_Angeles','Asia/Kolkata','Australia/Sydney']; } } return _tzZones; }
+  function _tzSelect(val){ const sel=document.getElementById('setting-tz'), inp=document.getElementById('setting-tz-search'); if(!sel) return;
+    if(!sel.querySelector('option[value="'+(window.CSS&&CSS.escape?CSS.escape(val):val)+'"]')){ const o=document.createElement('option'); o.value=val; o.textContent=(val==='auto'?(i18n[currentLang].optLocal):val.replace(/_/g,' ')); sel.appendChild(o); }
+    sel.value=val; if(inp) inp.value=(val==='auto'?'':val.replace(/_/g,' ')); sel.dispatchEvent(new Event('change',{bubbles:true})); }
   function populateTimezones(filter){
     const sel=document.getElementById('setting-tz'); if(!sel) return;
-    if(!_tzZones){ try{ _tzZones=Intl.supportedValuesOf('timeZone'); }catch(e){ _tzZones=['UTC','Asia/Tokyo','America/New_York','Europe/London','Europe/Moscow','Europe/Berlin','Asia/Shanghai','America/Los_Angeles','Asia/Kolkata','Australia/Sydney']; } }
-    const q=(filter||'').trim().toLowerCase();
-    /* (#R15d) Preserve the CURRENTLY-selected value across re-filters — was resetting to the saved userTZ on
-       every keystroke, so picking a zone then typing more wiped the selection ("使っても設定できない"). */
-    const prev=(sel.value||userTZ); sel.innerHTML='';
-    /* (#R15) search box filters the option list. "Auto" + UTC always stay; the current value is re-added
-       even if it doesn't match so the selection is never lost. Expand to multi-row when actively searching. */
-    const auto=document.createElement('option'); auto.value='auto'; auto.id='opt-tz-auto'; auto.textContent=i18n[currentLang].optLocal; sel.appendChild(auto);
-    const utc=document.createElement('option'); utc.value='UTC'; utc.textContent='UTC'; sel.appendChild(utc);
-    let added=0;
-    _tzZones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(q && !disp.toLowerCase().includes(q) && !z.toLowerCase().includes(q)) return; const o=document.createElement('option'); o.value=z; o.textContent=disp; sel.appendChild(o); added++; });
-    if(prev && prev!=='auto' && prev!=='UTC' && !sel.querySelector('option[value="'+(window.CSS&&CSS.escape?CSS.escape(prev):prev)+'"]')){ const o=document.createElement('option'); o.value=prev; o.textContent=prev.replace(/_/g,' '); sel.appendChild(o); }
-    sel.size = q ? Math.min(10, Math.max(2, added+2)) : 1;
+    const res=document.getElementById('tz-results');
+    const zones=_tzList(); const q=(filter||'').trim().toLowerCase();
+    const prev=(sel.value||userTZ);
+    /* hidden <select> = the full set (so the saved value always resolves) */
+    sel.innerHTML='';
+    const addOpt=(v,label)=>{ const o=document.createElement('option'); o.value=v; o.textContent=label; sel.appendChild(o); };
+    addOpt('auto', i18n[currentLang].optLocal); addOpt('UTC','UTC');
+    zones.forEach(z=>{ if(z!=='UTC') addOpt(z, z.replace(/_/g,' ')); });
+    if(prev && !sel.querySelector('option[value="'+(window.CSS&&CSS.escape?CSS.escape(prev):prev)+'"]')) addOpt(prev, prev.replace(/_/g,' '));
     sel.value=prev;
+    /* visible tappable rows = filtered */
+    if(!res) return; res.innerHTML='';
+    const rows=[]; const add=(v,label)=>rows.push({v,label});
+    if(!q || 'auto'.includes(q) || (i18n[currentLang].optLocal||'').toLowerCase().includes(q)) add('auto', i18n[currentLang].optLocal);
+    if(!q || 'utc'.includes(q)) add('UTC','UTC');
+    zones.forEach(z=>{ if(z==='UTC')return; const disp=z.replace(/_/g,' '); if(!q || disp.toLowerCase().includes(q) || z.toLowerCase().includes(q)) add(z,disp); });
+    rows.slice(0,80).forEach(r=>{ const d=document.createElement('div'); d.className='tz-row'+(r.v===prev?' sel':''); d.textContent=r.label; d.setAttribute('role','option');
+      d.addEventListener('click',()=>{ _tzSelect(r.v); res.classList.remove('show'); }); res.appendChild(d); });
+    if(!rows.length){ const d=document.createElement('div'); d.className='tz-row tz-empty'; d.textContent=(currentLang==='jp'?'該当なし':'No match'); res.appendChild(d); }
   }
-  (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'), sel=document.getElementById('setting-tz'); if(!inp) return;
-    const firstReal=()=>[...sel.options].find(o=>o.value!=='auto'&&o.value!=='UTC');
-    inp.addEventListener('input',()=>{ populateTimezones(inp.value);
-      /* (#R16) If the typed text matches exactly ONE zone, SELECT it immediately so Apply saves it even if
-         the user never clicks the list — "使っても設定できない" was caused by the <select> value never changing
-         from what was merely typed/filtered. */
-      const q=inp.value.trim().toLowerCase(); if(!q) return;
-      const reals=[...sel.options].filter(o=>o.value!=='auto'&&o.value!=='UTC');
-      const exact=reals.find(o=>o.value.toLowerCase()===q || o.textContent.toLowerCase()===q);
-      if(exact){ sel.value=exact.value; } else if(reals.length===1){ sel.value=reals[0].value; }
-    });
-    inp.addEventListener('focus',()=>{ if(sel&&!inp.value) populateTimezones(''); });
-    /* (#R16) Enter picks the best (first) match so a keyboard user can set a zone without touching the list. */
-    inp.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return; e.preventDefault(); const o=firstReal(); if(o){ sel.value=o.value; inp.value=o.textContent; sel.size=1; sel.dispatchEvent(new Event('change',{bubbles:true})); } });
-    /* (#R15d) On pick, collapse the expanded list and echo the choice into the box so it's clearly set. */
-    if(sel) sel.addEventListener('change',()=>{ if(sel.value && sel.value!=='auto' && sel.value!=='UTC'){ inp.value=sel.value.replace(/_/g,' '); } sel.size=1; });
+  (function wireTzSearch(){ const inp=document.getElementById('setting-tz-search'), sel=document.getElementById('setting-tz'), res=document.getElementById('tz-results'); if(!inp||!res) return;
+    const open=()=>{ populateTimezones(inp.value); res.classList.add('show'); };
+    inp.addEventListener('input',open);
+    inp.addEventListener('focus',()=>{ inp.value=''; open(); });
+    /* Enter picks the first visible row (keyboard users) */
+    inp.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return; e.preventDefault(); const first=res.querySelector('.tz-row:not(.tz-empty)'); if(first){ first.click(); inp.blur(); } });
+    /* tapping outside the combo closes the list */
+    document.addEventListener('click',(e)=>{ const combo=document.getElementById('tz-combo'); if(combo && !combo.contains(e.target)) res.classList.remove('show'); });
   })();
   const modal=document.getElementById('settings-modal');
   /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
@@ -5338,9 +5419,13 @@ window.addEventListener('DOMContentLoaded', () => {
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
   document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme;
-    /* (#R15c) Reset the timezone search to the full list on every open, so a stale filter from a previous
-       session can't leave the dropdown showing only a few options (the "検索が機能していない" report). */
-    try{ const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.value=''; if(typeof populateTimezones==='function') populateTimezones(''); }catch(_){}
+    /* (#R18) Reflect the SAVED timezone in the combo input and rebuild the (closed) list on every open. */
+    try{ const tzs=document.getElementById('setting-tz-search'); const tzr=document.getElementById('tz-results');
+      if(typeof populateTimezones==='function') populateTimezones('');
+      document.getElementById('setting-tz').value=userTZ;
+      if(tzs) tzs.value=(userTZ&&userTZ!=='auto')?userTZ.replace(/_/g,' '):'';
+      if(tzr) tzr.classList.remove('show');
+    }catch(_){}
     document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
@@ -5661,21 +5746,26 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R8b) Phones just enlarge the same drawn icons to 30px tap targets with a clear gap; the SHAPES
          (centred bars) come from the global rules above, so desktop & mobile are identical & aligned. */
       @media(max-width:768px){
-        /* (#R17) Bigger tap targets — the × was "小さくて押しにくい". 40px box, thicker strokes, more gap. */
+        /* (#R18) ONE size for EVERY mobile ×/–: 32px. The R17 40px boxes made the legend buttons huge
+           while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimised
+           legend. 32px is still a comfortable tap target and identical across legends, popups and panels. */
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
-        .data-legend .legend-min, .koppen-legend .legend-min{ top:7px !important; width:40px !important; height:40px !important; border-radius:10px; background:rgba(128,128,128,0.16); }
-        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:7px !important; }
-        .data-legend .legend-min, .koppen-legend .legend-min{ right:54px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ top:6px !important; width:32px !important; height:32px !important; border-radius:9px; background:rgba(128,128,128,0.16); }
+        .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:6px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ right:42px !important; }
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
-        .legend-min::before{ width:19px; height:2.4px; }   /* transform:translate(-50%,-50%) keeps them centred at any size */
-        .koppen-info-pop .kip-x, .pin-popup-close{ width:40px !important; height:40px !important; font-size:20px !important; display:flex; align-items:center; justify-content:center; }
-        .tool-panel .tp-close{ width:40px; height:40px; font-size:20px; display:flex; align-items:center; justify-content:center; }
-        .legend-collapsed .legend-min::before{ width:13px; height:13px; }
+        .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centred at any size */
+        .koppen-info-pop .kip-x, .pin-popup-close{ width:32px !important; height:32px !important; font-size:17px !important; display:flex; align-items:center; justify-content:center; }
+        .tool-panel .tp-close{ width:32px; height:32px; font-size:17px; display:flex; align-items:center; justify-content:center; }
+        .legend-collapsed .legend-min::before{ width:12px; height:12px; }
+        /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
+        .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ padding:6px 10px !important; min-width:150px; }
+        .data-legend.legend-collapsed h4, .koppen-legend.legend-collapsed h4{ min-height:32px !important; display:flex; align-items:center; }
         .data-legend .layer-popup-x:active, .koppen-legend .layer-popup-x:active,
         .data-legend .legend-min:active, .koppen-legend .legend-min:active{ background:var(--input-bg); color:var(--text-main); }
-        .data-legend .dl-drag, .koppen-legend .kl-drag{ top:11px !important; left:9px !important; font-size:14px !important; }
-        .koppen-legend h4, .data-legend h4{ padding:0 84px 0 26px !important; min-height:30px !important; }
+        .data-legend .dl-drag, .koppen-legend .kl-drag{ top:10px !important; left:8px !important; font-size:13px !important; }
+        .koppen-legend h4, .data-legend h4{ padding:0 78px 0 24px !important; min-height:32px !important; }
         /* (#R10) Mobile Köppen legend ≈ square (width ≈ height) and the climate rows slide inside it. */
         .koppen-legend{ width:min(66vw,252px) !important; right:12px !important; height:auto !important; min-height:0 !important; max-height:min(72vw,330px) !important; resize:none !important; }
         .koppen-legend .kl-scroll{ max-height:none !important; }
@@ -6616,12 +6706,69 @@ window.addEventListener('DOMContentLoaded', () => {
         else { let u=null; try{ u=out.toDataURL('image/png'); }catch(_){} try{ out.width=out.height=0; }catch(_){} cb(u); }
       }catch(e){ cb(null); }
     }
-    window._koppenHLUrl=null; window._koppenHLSeq=0;
+    /* ===== (#R18) GPU highlight — FULL native resolution on EVERY device, ZERO allocation. =====
+       The canvas pipeline above re-encodes the whole image to highlight a class, which forced a
+       resolution cap (the 8192² output canvas alone is ~268 MB → mobile OOM). Instead: the Köppen
+       palette is CATEGORICAL, so `raster-color` (MapLibre ≥4.6 — we ship v5) can re-colour each class
+       IN THE SHADER on the original full-res texture: selected classes keep their vivid palette colour,
+       the rest collapse to faded grey. raster-color-mix maps each palette RGB to a unique scalar
+       (weights [2.7,0.6,0.1] separate all 30 classes by ≥1.1% of the 0–3.3 range — safe even in fp16),
+       and a `step` ramp assigns the output colour per class. No second decode, no canvas, no PNG encode →
+       the displayed quality is the full 8192² everywhere AND the crash vector is gone ("画質は保持しろ、
+       ただしモバイルでも落とすな" — both at once). raster-resampling:nearest while highlighted keeps
+       texels exact (no blended colours falling into the wrong bin); restored to linear when cleared.
+       Runtime feature-detect (window._koppenGPUOK) falls back to the proven canvas path on old engines. */
+    const KOPPEN_MIX=[2.7,0.6,0.1,0], KOPPEN_RANGE=[0,3.3];
+    function _kScalar(c){ return 2.7*c[0]/255+0.6*c[1]/255+0.1*c[2]/255; }
+    function koppenColorRamp(selectedSet){
+      /* a `step` over the normalised raster-value: ocean/transparent (value≈0) → fully transparent;
+         each class band → its colour (selected = vivid, else faded grey). Stops are the midpoints
+         between adjacent class scalars so every texel lands squarely in its own band. */
+      const entries=KCOL.map(([code,c])=>({code,c,v:_kScalar(c)/KOPPEN_RANGE[1]})).sort((a,b)=>a.v-b.v);
+      const colFor=(e)=>{ if(selectedSet.has(e.code)) return 'rgba('+e.c[0]+','+e.c[1]+','+e.c[2]+',1)';
+        const g=Math.round((e.c[0]+e.c[1]+e.c[2])/3*0.6); return 'rgba('+g+','+g+','+g+',0.28)'; };
+      const expr=['step',['raster-value'],'rgba(0,0,0,0)'];   /* below the first stop → transparent (ocean) */
+      for(let i=0;i<entries.length;i++){ const lo=(i===0)?entries[0].v/2:(entries[i-1].v+entries[i].v)/2; expr.push(lo, colFor(entries[i])); }
+      return expr;
+    }
+    /* Apply (or clear) the GPU recolour. Returns null if the layer isn't added yet (retry later, do NOT
+       disable GPU), true on success, false only if the engine actually rejects raster-color → canvas fallback. */
+    function applyKoppenGPUHighlight(){
+      if(!map.getLayer('lyr-climate')) return null;
+      try{
+        if(kSelected.size===0){
+          map.setPaintProperty('lyr-climate','raster-color', null);
+          map.setPaintProperty('lyr-climate','raster-color-mix', null);
+          map.setPaintProperty('lyr-climate','raster-color-range', null);
+          try{ map.setPaintProperty('lyr-climate','raster-resampling','linear'); }catch(_){}
+        } else {
+          map.setPaintProperty('lyr-climate','raster-color-mix', KOPPEN_MIX);
+          map.setPaintProperty('lyr-climate','raster-color-range', KOPPEN_RANGE);
+          map.setPaintProperty('lyr-climate','raster-color', koppenColorRamp(kSelected));
+          try{ map.setPaintProperty('lyr-climate','raster-resampling','nearest'); }catch(_){}
+        }
+        return true;
+      }catch(e){ return false; }
+    }
+    window._koppenHLUrl=null; window._koppenHLSeq=0; window._koppenGPUOK=undefined;
     window._refreshKoppenImage=function(){
       if(!map.getSource('src-climate')) return;
       /* Debounce so rapid multi-class selection coalesces into one rebuild (#12). */
       clearTimeout(window._koppenRefreshT);
       window._koppenRefreshT=setTimeout(()=>{
+        /* (#R18) GPU path first — full-res, instant, no allocation. */
+        if(window._koppenGPUOK!==false){
+          const ok=applyKoppenGPUHighlight();
+          if(ok===true){ window._koppenGPUOK=true;
+            /* the GPU recolours the live full-res texture, so the source image stays the plain era PNG */
+            if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
+            try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(_){}
+            freeKoppenFull();
+            return;
+          }
+          if(ok===false){ window._koppenGPUOK=false; }   /* engine REJECTED raster-color → canvas pipeline below */
+          else { return; }   /* ok===null: layer not added yet — addKoppen re-calls us once it is */
+        }
         const seq=++window._koppenHLSeq;
         const setImg=(url)=>{ try{ map.getSource('src-climate').updateImage({url:url,coordinates:KCOORDS}); }catch(e){} };
         if(kSelected.size===0){
@@ -6649,11 +6796,11 @@ window.addEventListener('DOMContentLoaded', () => {
       window._koppenCodeIdx=null; window._koppenSrcData=null;
       /* (#R13c) drop the full-res highlight buffers + objectURL so the new era rebuilds them */
       window._koppenFull=null; if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
-      /* (#R15 / #20) If a class is highlighted, do NOT swap to the full base image first — that flashed
-         ALL climates for a frame ("一瞬全気候が表示される"). Keep the current highlight on screen and swap
-         straight to the new era's highlight once it's built. Only swap to the plain base when nothing is
-         selected (then it's the correct, expected view). */
-      if(kSelected.size===0){ try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){} }
+      /* (#R18) With the GPU recolour the displayed texture IS the plain era PNG (the highlight is a shader
+         pass), so we can swap straight to the new era's image with no all-climate flash — the recolour
+         paint stays valid across the swap. On the canvas fallback we keep the R15/#20 behaviour: don't
+         swap to the full base first when a class is highlighted (that flashed every climate for a frame). */
+      if(window._koppenGPUOK || kSelected.size===0){ try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){} }
       loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(e){} });
       try{ buildLegend(); }catch(_){}
     };
@@ -8053,7 +8200,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const fabMap=document.getElementById('m-fab-map');
     const fabTools=document.getElementById('m-fab-tools');
     let openSheetEl=null;
-    function openSheet(el){ if(!el) return; if(openSheetEl && openSheetEl!==el) openSheetEl.classList.remove('show'); openSheetEl=el; syncControls(); if(scrim) scrim.classList.add('show'); el.classList.add('show'); }
+    function openSheet(el){ if(!el) return; if(openSheetEl && openSheetEl!==el) openSheetEl.classList.remove('show'); openSheetEl=el; syncControls(); if(scrim) scrim.classList.add('show'); el.classList.add('show');
+      /* (#R18) The Layers list inside the Map sheet must never carry desktop collapse state. */
+      if(el===moSheet){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
     function closeSheet(){ if(openSheetEl){ openSheetEl.classList.remove('show'); openSheetEl=null; } if(scrim) scrim.classList.remove('show'); }
     if(scrim) scrim.addEventListener('click',closeSheet);
     const moDone=document.getElementById('mo-done'); if(moDone) moDone.addEventListener('click',closeSheet);
@@ -8208,7 +8357,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(crossed){ applyLayout(isM); lastIsM=isM; }
       /* (#R15b) Entering the mobile layout (first load OR crossing 768px) snaps to PEEK — the requested
          default — synchronously, so there's no half→peek flash and no dependency on the rAF below firing. */
-      if(isM){ recompute(); setDetent(crossed?'peek':currentDetent,false); }
+      if(isM){ recompute(); setDetent(crossed?'peek':currentDetent,false); if(crossed){ try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){} } }
       else{ document.body.classList.remove('sheet-full'); if(map&&map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:0}); }catch(_){} } }
     }
     syncResponsive();                                                     // initial layout at load width
@@ -8960,13 +9109,14 @@ window.addEventListener('DOMContentLoaded', () => {
     if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
     if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }
-    if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const sp=cb.closest('.layer-option')&&cb.closest('.layer-option').querySelector('span[data-i18n]'); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
-    /* (#R17) Some layer rows couldn't be favourited because their checkbox id isn't `dl-…` (the land-cover /
-       ecoregions `eco-dl-*` and the Round-9 `l9-dl-*` modules). Give EVERY labelled layer-row checkbox a
-       star, keyed by its id. (cb-grid is a utility → no star.) */
+    if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const row=cb.closest('.layer-option')||cb.closest('.lyr-row'); const sp=row&&(row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
+    /* (#R17/#R18) Some layer rows couldn't be favourited because their checkbox id isn't `dl-…` (land-cover /
+       ecoregions `eco-dl-*`, Round-9 `l9-dl-*`) OR the row uses `.lyr-row` without a `.layer-option` wrapper.
+       Give EVERY layer-row checkbox that has an id a star, keyed by its id, sourcing the label from the
+       nearest label span in EITHER container. (cb-grid is a utility → no star.) */
     if(cb.id==='cb-grid') return null;
-    const opt=cb.closest('.layer-option');
-    if(opt && cb.id){ const sp=opt.querySelector('span[data-i18n], span.ec-lbl, span:not(.lyr-sw):not(.lfc-sw)'); const label=((sp?sp.textContent:cb.id)||'').trim(); if(label) return {key:'data:'+cb.id, label}; }
+    const row=cb.closest('.layer-option')||cb.closest('.lyr-row');
+    if(row && cb.id){ const sp=row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')||row.querySelector('span:not(.lyr-sw):not(.lfc-sw)'); const label=((sp?sp.textContent:cb.id)||'').trim(); if(label) return {key:'data:'+cb.id, label}; }
     return null;
   }
   function allLayerCbs(){ return Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]')).filter(cb=>cb.id!=='cb-names-x'); }
@@ -8990,7 +9140,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function injectLayerStars(){
     allLayerCbs().forEach(cb=>{
-      const opt=cb.closest('.layer-option'); if(!opt||opt.querySelector('.lyr-star')) return;
+      /* (#R18) accept rows that use .lyr-row without a .layer-option wrapper too, so no layer is left
+         without a favourite star ("お気に入りボタンをできないレイヤーがある"). */
+      const opt=cb.closest('.layer-option')||cb.closest('.lyr-row'); if(!opt||opt.querySelector('.lyr-star')) return;
       const info=layerCbInfo(cb); if(!info) return;
       const star=document.createElement('button'); star.className='lyr-star'+(window.imLayerFavs.includes(info.key)?' on':'');
       star.type='button'; star.title='Favorite'; star.dataset.key=info.key; star.textContent='★';
@@ -9887,7 +10039,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const PAL=['#e8590c','#1c7ed6','#2f9e44','#9c36b5','#f08c00','#0c8599','#e64980','#5c940d','#3b5bdb','#c2255c','#087f5b','#d9480f','#5f3dc4','#1971c2','#66a80f'];
     /* ---- ESA WorldCover (raster) ---- */
     function ensureRaster(){ if(map.getSource('eco-worldcover')) return true; if(!map.isStyleLoaded()) return false;
-      try{ map.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:13,attribution:'ESA WorldCover 2021 · Terrascope'});
+      /* (#R18) maxzoom 13→14: ESA WorldCover is 10 m/px (≈ native z14), so this keeps the classes crisp one
+         zoom deeper instead of upscaling a z13 tile ("画質も高めて"). At normal regional zooms the tile
+         count is unchanged (maxzoom only bites when zoomed right in), so it doesn't slow the common case;
+         the SW (R17) caches every Terrascope tile so revisits are instant — the controllable speed win on a
+         single slow host. */
+      try{ map.addSource('eco-worldcover',{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'});
         /* (#R15 / #19,#29) The Terrascope WMTS is a single slow host (can't multi-host it), so squeeze what
            we can: raster-fade-duration:0 shows each tile the instant it arrives (no 300 ms fade → feels
            faster); raster-resampling:nearest keeps the CATEGORICAL land-cover classes crisp instead of
@@ -10256,6 +10413,13 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map) return { open(){}, clear(){} };
     const jp=()=>currentLang==='jp';
     let site=null, panel=null, busy=false;
+    /* (#R18) Persist the last antenna height / range so a NEW site reuses the SAME values
+       ("一度数値を設定したら、新地点を押しても同じ数値になるように"). */
+    let losH=30, losR=60;
+    function setProgress(frac,label){ const body=panel&&panel.querySelector('#los-body'); if(!body) return;
+      const pct=Math.round(Math.max(0,Math.min(1,frac))*100);
+      body.innerHTML='<div style="margin-bottom:5px;">'+label+' <b>'+pct+'%</b></div>'+
+        '<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#ffd23f,#ff6b3d);transition:width 0.15s;"></div></div>'; }
     function ensureLayers(){ if(map.getSource('los-src')) return true; if(!map.isStyleLoaded()) return false;
       try{ map.addSource('los-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         /* (#R13) Per the user's spec: REACHABLE range = RED fill, radar BLIND SPOTS = GREEN fill
@@ -10267,18 +10431,23 @@ window.addEventListener('DOMContentLoaded', () => {
         return true; }catch(_){ return false; } }
     function setData(feats){ try{ if(ensureLayers()) map.getSource('los-src').setData({type:'FeatureCollection',features:feats}); }catch(_){} }
     async function analyze(obsHeight, rangeKm){ if(!site||!hasTurf()||busy) return; busy=true;
-      /* (#R16) Much finer terrain analysis (the user: "計算が雑すぎる / もっと詳細な地形分析を"):
-           • angular resolution 96→240 rays (1.5°), radial 44→120 steps,
-           • DEM zoom cap 10→12 (≈4× the spatial detail) — the local-tile sampler keeps it cheap,
-           • proper RADAR horizon: 4/3-earth-radius refraction (k=1.333) instead of the bare geometric drop.
-         Sampling is local (warm the covering tiles once, then interpolate), so adding points costs almost
-         nothing; only the tile fetch scales, so the zoom is still span-aware/capped. */
-      const RAYS=360, STEPS=140, R=6371000, REFF=R*4/3; const body=panel&&panel.querySelector('#los-body'); if(body) body.innerHTML=jp()?'地形を解析中…':'Analysing terrain…';
+      losH=obsHeight; losR=rangeKm;   /* (#R18) remember for the next site */
+      /* (#R18) Finer still + a real progress readout (the user: "もっと詳細な地形分析を" + "進捗をパーセントで"):
+           • 360 rays (1°) × 200 radial steps (was 140),
+           • DEM zoom cap 12→13 (terrarium's native max — ≈2× finer ridges),
+           • BILINEAR DEM sampling (demElevBilinear) so ridge heights aren't stair-stepped,
+           • 4/3-earth-radius refraction (k=1.333) for a physically-correct microwave horizon.
+         Sampling is local (warm the covering tiles ONCE, then interpolate), so the cost is the tile
+         fetch — which is exactly what the progress bar reflects. */
+      const RAYS=360, STEPS=200, R=6371000, REFF=R*4/3; const body=panel&&panel.querySelector('#los-body');
+      setProgress(0, jp()?'地形DEMを取得中…':'Loading terrain DEM…');
       const pts=[]; for(let a=0;a<RAYS;a++){ const brg=a*360/RAYS; for(let s=1;s<=STEPS;s++){ const d=rangeKm*s/STEPS; let c; try{ c=turf.destination(turf.point(site),d,brg,{units:'kilometers'}).geometry.coordinates; }catch(_){ c=site; } pts.push({a,d,c}); } }
-      /* (#R12) Sample the LOCAL cached terrarium DEM — warming the few tiles that cover the disk — instead
-         of firing thousands of Open-Meteo requests at once (which were rate-limited to nulls → flat). */
-      const z=Math.min(12,_demZoomForSpan(rangeKm));
-      const elevs=await demSampleAll([site].concat(pts.map(p=>p.c)), z, 22000);
+      const z=Math.min(13,_demZoomForSpan(rangeKm));
+      const all=[site].concat(pts.map(p=>p.c));
+      /* tile-load progress 0→85%, then geometry 85→100% */
+      await warmDEMTiles(all, z, 24000, (f)=>setProgress(f*0.85, jp()?'地形DEMを取得中…':'Loading terrain DEM…'));
+      setProgress(0.88, jp()?'視通を計算中…':'Computing sightlines…');
+      const elevs=all.map(p=>{ if(!p) return null; let v=demElevBilinear(p[0],p[1],z); if(v==null) v=demElevAt(p[0],p[1],null,z); return v; });
       const okCount=elevs.filter(v=>v!=null).length;
       if(okCount < elevs.length*0.3){ busy=false; if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度。':'Could not load enough terrain data — wait a moment and retry.'; return; }
       const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
@@ -10304,15 +10473,15 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(lngLat){ site=[lngLat.lng,lngLat.lat]; const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:236px;';
       p.innerHTML='<div class="tp-header"><span class="tp-title">📡 '+(jp()?'見通し線解析':'Line of sight')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
-        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'アンテナ高 (m)':'Antenna height (m)')+' <input id="los-h" type="number" value="30" min="0" step="5" style="width:72px;"></label>'
-        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'射程 (km)':'Range (km)')+' <input id="los-r" type="number" value="60" min="1" max="400" step="5" style="width:72px;"></label>'
+        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'アンテナ高 (m)':'Antenna height (m)')+' <input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="width:72px;"></label>'
+        +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'射程 (km)':'Range (km)')+' <input id="los-r" type="number" value="'+losR+'" min="1" max="400" step="5" style="width:72px;"></label>'
         +'</div><button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+(jp()?'解析する':'Analyse')+'</button>'
         +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
         +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyse. May take a moment (DEM sampling).')+'</div>';
       /* ✕ now also wipes the overlay — the "can't remove it" bug was that closing the panel left the
          shadow painted with no way to clear it. Clearing on close fixes that. */
       p.querySelector('.tp-close').onclick=()=>{ clear(); p.style.display='none'; };
-      p.querySelector('#los-go').onclick=()=>{ const h=+p.querySelector('#los-h').value||0, r=Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)); analyze(h,r); };
+      p.querySelector('#los-go').onclick=()=>{ const h=+p.querySelector('#los-h').value||0, r=Math.min(400,Math.max(1,+p.querySelector('#los-r').value||60)); losH=h; losR=r; analyze(h,r); };
       p.querySelector('#los-clr').onclick=()=>clear();
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       setData([{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]);
@@ -10677,8 +10846,11 @@ window.addEventListener('DOMContentLoaded', () => {
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       /* Let pans/zooms pass THROUGH the lens to the main map (the lens tracks it via sync); header+controls stay clickable. */
       '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
-      '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.82);}'+
-      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;}'+
+      '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.82);position:relative;z-index:5;}'+
+      '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;z-index:6;}'+
+      /* (#R18) In lens mode the compare map is pulled out to cover the whole container (clipped to the
+         window). Keep it BELOW the header/controls and give it a cyan edge so the lens boundary reads. */
+      '#compare-window.cmp-xray #compare-map{box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset;}'+
       /* (#R15d) MOBILE: the 440px resizable window + the full-cover x-ray were "ほぼ使えない / どうにもできない".
          Make it a clean full-width TOP panel with big tappable header buttons; x-ray still overlays for
          alignment but its header is a tall, opaque bar so Close/X-ray are always reachable. */
@@ -10704,7 +10876,7 @@ window.addEventListener('DOMContentLoaded', () => {
         'cmp-dark':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
         'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'© Esri'},
         'cmp-koppen':{type:'image',url:koppenUrl(),coordinates:KC},
-        'cmp-worldcover':{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:12,attribution:'ESA WorldCover 2021 · Terrascope'},
+        'cmp-worldcover':{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'},
         'cmp-relief':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256}
       }, layers:[
         {id:'cmp-base-carto',type:'raster',source:'cmp-carto',layout:{visibility:dark?'none':'visible'}},
@@ -10723,18 +10895,30 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ const wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat'); let isGlobe=true; try{ const pj=cmap.getProjection&&cmap.getProjection(); if(pj&&pj.type) isGlobe=(pj.type==='globe'); }catch(_){}
           if(wantGlobe!==isGlobe){ cmap.setProjection({type:wantGlobe?'globe':'mercator'}); const pf=win&&win.querySelector('[data-p="flat"]'), pg=win&&win.querySelector('[data-p="globe"]'); if(pf&&pg){ pf.classList.toggle('on',!wantGlobe); pg.classList.toggle('on',wantGlobe); } } }catch(_){}
         if(xray && win){
-          /* (#R16) LENS sync: show, inside the compare window, exactly the main-map geography that sits
-             BEHIND the window — so the compare layers register with the main map without going fullscreen.
-             Centre the compare map on the main-map lng/lat at the window's centre screen point; equal
-             zoom/bearing/pitch means every pixel in the window then lines up with the main map behind it. */
-          const mcEl=document.getElementById('map-container'); const wr=win.getBoundingClientRect(), mr=mcEl?mcEl.getBoundingClientRect():{left:0,top:0};
-          const cx=wr.left+wr.width/2-mr.left, cy=wr.top+wr.height/2-mr.top;
-          const ll=map.unproject([cx,cy]);
-          cmap.jumpTo({center:ll,zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
+          /* (#R18) TRUE LENS — the R16 "recenter to the window's centre pixel" only registered the single
+             centre point on a GLOBE (curvature offsets every other pixel → "x-rayモードで…全く位置がずれる").
+             Instead the compare map now COVERS the whole map-container at the EXACT same camera as the main
+             map (so it's literally the same projection/zoom/centre → pixel-perfect everywhere, globe OR
+             flat) and is CLIPPED to the window rectangle via clip-path. The window is just a moveable
+             viewport onto a perfectly-registered overlay. */
+          layoutXrayLens();
+          cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
         } else {
           cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
         }
       }catch(_){} syncing=false; }
+    /* (#R18) Size the compare map to the full map-container and clip it to the window rect → a lens. */
+    function layoutXrayLens(){
+      if(!xray||!win) return; const cm=document.getElementById('compare-map'); if(!cm) return;
+      const mcEl=document.getElementById('map-container')||document.body; const mr=mcEl.getBoundingClientRect(); const wr=win.getBoundingClientRect();
+      cm.style.position='fixed'; cm.style.inset='auto';
+      cm.style.left=mr.left+'px'; cm.style.top=mr.top+'px'; cm.style.width=mr.width+'px'; cm.style.height=mr.height+'px'; cm.style.zIndex='1';
+      const top=Math.max(0,wr.top-mr.top), left=Math.max(0,wr.left-mr.left), right=Math.max(0,mr.right-wr.right), bottom=Math.max(0,mr.bottom-wr.bottom);
+      const clip='inset('+top+'px '+right+'px '+bottom+'px '+left+'px round 12px)'; cm.style.clipPath=clip; cm.style.webkitClipPath=clip;
+      try{ cmap.resize(); }catch(_){}
+    }
+    function clearXrayLens(){ const cm=document.getElementById('compare-map'); if(!cm) return;
+      ['position','inset','left','top','width','height','zIndex','clipPath','webkitClipPath'].forEach(p=>cm.style[p]=''); try{ cmap.resize(); }catch(_){} }
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
       win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較ビュー':'Compare view')+'</span>'+
@@ -10785,7 +10969,7 @@ window.addEventListener('DOMContentLoaded', () => {
       win.querySelector('#cmp-xray').onchange=(e)=>{ xray=e.target.checked; win.classList.toggle('cmp-xray',xray);
         if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false);
           const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; }
-        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); }
+        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); try{ clearXrayLens(); }catch(_){} }   /* (#R18) restore the map into its window when x-ray off */
         try{ xrayBar(false); }catch(_){}   /* (#R16) no fullscreen takeover → no floating exit bar needed; the window header stays reachable */
         try{ cmap.resize(); }catch(_){}
         requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} syncFromMain(); }); };
@@ -10843,7 +11027,8 @@ window.addEventListener('DOMContentLoaded', () => {
       #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
       /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
          smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
-      @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 18px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
+      /* (#R18) The always-on readout hugs the sheet — only a sliver of a gap ("ボトムシートとの間にわずかに隙間がある程度まで下げて"). */
+      @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 4px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
         .coord-readout span{ white-space:nowrap; flex-shrink:0; }
         /* (#R16) The crosshair must mark the centre of the VISIBLE map space — the area NOT covered by the
            bottom sheet — not the centre of the phone screen. Sit it halfway down the uncovered area. */
