@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-12-R20';
+  window.INTMAP_BUILD='2026-06-12-R21';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -97,6 +97,36 @@ gtag('config', 'G-57X5MX0ZPW');
     /* decorative compass rose, lower-right of the map (purely cosmetic, never blocks input) */
     body.theme-classic .map-container::after{ content:''; position:absolute; right:18px; bottom:34px; width:118px; height:118px; opacity:0.34; pointer-events:none; z-index:6; background-repeat:no-repeat; background-size:contain; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg stroke='%236b4a23' stroke-width='1.1' fill='none'%3E%3Ccircle cx='60' cy='60' r='55'/%3E%3Ccircle cx='60' cy='60' r='45'/%3E%3C/g%3E%3Cg stroke='%236b4a23' stroke-width='0.7' opacity='0.8'%3E%3Cline x1='60' y1='5' x2='60' y2='115'/%3E%3Cline x1='5' y1='60' x2='115' y2='60'/%3E%3Cline x1='23' y1='23' x2='97' y2='97'/%3E%3Cline x1='97' y1='23' x2='23' y2='97'/%3E%3C/g%3E%3Cpolygon points='60,7 67,60 60,51 53,60' fill='%238a2b1e'/%3E%3Cpolygon points='60,113 53,60 60,69 67,60' fill='%236b4a23'/%3E%3Cpolygon points='113,60 60,53 69,60 60,67' fill='%236b4a23'/%3E%3Cpolygon points='7,60 60,67 51,60 60,53' fill='%236b4a23'/%3E%3C/svg%3E"); }
     @media(max-width:768px){ body.theme-classic .map-container::after{ display:none; } }
+    /* (#R21) Classic theme — richer, more ornamental ("より装飾的で豪華に") without touching layout:
+       gilt-edged parchment cards (double inner keyline), embossed brass buttons, engraved headers,
+       ornamental flourishes on section heads. Pure paint — every control keeps its size and place. */
+    body.theme-classic .news-item, body.theme-classic .wiki-card, body.theme-classic .stat-row, body.theme-classic .comm-post{
+      background:linear-gradient(180deg,#f8efd6,#efe1bd) !important;
+      border:1px solid rgba(138,90,43,0.42) !important;
+      box-shadow:inset 0 0 0 3px rgba(248,240,220,0.9), inset 0 0 0 4px rgba(138,90,43,0.30), 0 8px 22px rgba(80,55,20,0.20) !important;
+    }
+    body.theme-classic .map-view-group, body.theme-classic .map-search{
+      background:linear-gradient(180deg,rgba(246,237,214,0.96),rgba(233,217,182,0.96)) !important;
+      border:1px solid rgba(138,90,43,0.5) !important;
+      box-shadow:inset 0 1px 0 rgba(255,250,235,0.8), 0 6px 18px rgba(80,55,20,0.28) !important;
+    }
+    body.theme-classic .data-legend, body.theme-classic .koppen-legend, body.theme-classic .tool-panel{
+      background:linear-gradient(180deg,#f5ebd3,#ecdcba) !important;
+      border:1px solid rgba(138,90,43,0.5) !important;
+      box-shadow:inset 0 0 0 3px rgba(248,240,220,0.85), inset 0 0 0 4px rgba(138,90,43,0.26), 0 12px 30px rgba(80,55,20,0.28) !important;
+    }
+    body.theme-classic .ai-test-btn, body.theme-classic .view-btn, body.theme-classic .dash-nav-btn{
+      background:linear-gradient(180deg,#f3e7c8,#e6d2a8); border:1px solid rgba(138,90,43,0.45);
+      box-shadow:inset 0 1px 0 rgba(255,250,235,0.75), 0 1px 3px rgba(80,55,20,0.25); color:#4a341c;
+    }
+    body.theme-classic .view-btn.active, body.theme-classic .dash-nav-btn.active{
+      background:linear-gradient(180deg,#b98a4e,#8a5a2b) !important; color:#fdf6e6 !important;
+      box-shadow:inset 0 1px 0 rgba(255,235,200,0.45), 0 1px 4px rgba(80,55,20,0.4) !important;
+    }
+    body.theme-classic .lyr-head, body.theme-classic .layer-group-title{ border-bottom:double 3px rgba(138,90,43,0.45); }
+    body.theme-classic .dash-cards-container::before{ content:'❦'; display:block; text-align:center; color:rgba(138,90,43,0.6); font-size:15px; margin:0 0 2px; }
+    body.theme-classic .tp-title{ font-variant:small-caps; letter-spacing:0.05em; color:#5a3d1e; }
+    body.theme-classic .modal-content{ box-shadow:inset 0 0 0 4px rgba(248,240,220,0.9), inset 0 0 0 5px rgba(138,90,43,0.3), 0 18px 50px rgba(80,55,20,0.4) !important; }
     body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
     button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
@@ -500,15 +530,32 @@ gtag('config', 'G-57X5MX0ZPW');
         left:calc(var(--sidebar-w) + (100% - var(--sidebar-w))/2);
         max-width:min(380px, calc(100% - var(--sidebar-w) - 350px));
       }
+      /* (#R21) When the visible map gets NARROW (small window / wide sidebar) the centred pill can no
+         longer fit beside the view buttons — drop it to a second row below them so it always has the
+         full width and stays clickable ("つぶれて押せない" / "かぶる" fix). */
+      body.ms-narrow .map-search{ top:78px; max-width:min(380px, calc(100% - 24px)); }
+      body.ms-narrow.sidebar-glass:has(.sidebar:not(.collapsed)) .map-search{
+        max-width:min(380px, calc(100% - var(--sidebar-w) - 24px));
+      }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-grey slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
-    body.sidebar-translucent .news-item, body.sidebar-glass2 .news-item{
-      background:rgba(255,255,255,0.50); backdrop-filter:saturate(160%) blur(14px); -webkit-backdrop-filter:saturate(160%) blur(14px);
-      border:1px solid rgba(255,255,255,0.30);
+    /* (#R21) ONE unified Apple-style frost for EVERY sidebar card in the frosted modes
+       ("サイドバーのカードは質感を統一して"): news (was too transparent → a touch darker), information
+       (.wiki-card) and stats (.stat-row) (were a solid intimidating dark-grey slab → soft frost),
+       and community posts. */
+    body.sidebar-translucent .news-item, body.sidebar-glass2 .news-item,
+    body.sidebar-translucent .wiki-card, body.sidebar-glass2 .wiki-card,
+    body.sidebar-translucent .stat-row, body.sidebar-glass2 .stat-row,
+    body.sidebar-translucent .comm-post, body.sidebar-glass2 .comm-post{
+      background:rgba(255,255,255,0.58); backdrop-filter:saturate(160%) blur(14px); -webkit-backdrop-filter:saturate(160%) blur(14px);
+      border:1px solid rgba(255,255,255,0.32);
     }
-    [data-theme="dark"] body.sidebar-translucent .news-item, [data-theme="dark"] body.sidebar-glass2 .news-item{
-      background:rgba(58,58,64,0.38); border:1px solid rgba(255,255,255,0.10);
+    [data-theme="dark"] body.sidebar-translucent .news-item, [data-theme="dark"] body.sidebar-glass2 .news-item,
+    [data-theme="dark"] body.sidebar-translucent .wiki-card, [data-theme="dark"] body.sidebar-glass2 .wiki-card,
+    [data-theme="dark"] body.sidebar-translucent .stat-row, [data-theme="dark"] body.sidebar-glass2 .stat-row,
+    [data-theme="dark"] body.sidebar-translucent .comm-post, [data-theme="dark"] body.sidebar-glass2 .comm-post{
+      background:rgba(52,52,58,0.50); border:1px solid rgba(255,255,255,0.10);
     }
 
     /* === News pin mode toggle inside News tab === */
@@ -829,6 +876,9 @@ gtag('config', 'G-57X5MX0ZPW');
       /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
          (desktop keeps them) (#12). */
       .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
+      /* (#R21) …except the beta group, which IS a pulldown on mobile — keep its caret visible. */
+      .m-sheet .layer-dropdown .lyr-head[data-i18n="lyrGrpOthers"]::after{ content:'▾' !important; }
+      .m-sheet .layer-dropdown .lyr-head[data-i18n="lyrGrpOthers"].lyr-collapsed::after{ content:'▸' !important; }
       .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:4px 0 !important; }
       .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 0 !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
@@ -1346,6 +1396,8 @@ gtag('config', 'G-57X5MX0ZPW');
   <div class="modal-content" style="position:relative;">
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
+    <!-- (#R21) Tutorial button at the very top of Settings -->
+    <button type="button" id="btn-tutorial" class="ai-test-btn" style="width:100%;margin:0 0 16px;font-weight:600;">🎓 <span id="btn-tutorial-lbl">Tutorial — layer showcase</span></button>
     <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
     <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light</option><option value="dark" data-i18n="optDark">Dark</option><option value="classic" data-i18n="optClassic">Classic</option><option value="tactical" data-i18n="optTactical">Tactical</option></select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
@@ -1742,7 +1794,11 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ satRefreshReadout(); }catch(_){}
   }
   /* ===== Language-aware vector place labels (OpenFreeMap, free, no key) ===== */
-  function mapLabelsViaVector(){ const m=window.imLabelLang||'ui'; return m==='local' || (m==='ui' && currentLang==='jp'); }
+  /* (#R21) Map mode now ALWAYS uses the same crisp OFM vector labels as satellite mode ("mapを選択した
+     際も、同じ地名ラベルにして。（mapの旧来の地名ラベルは廃止）") — the labelled carto base is retired, the
+     basemap is always the _nolabels variant, and because the labels are vector layers the
+     label-raise self-heal keeps them above EVERY data layer. */
+  function mapLabelsViaVector(){ return true; }
   let _placeLabelsAdded=false;
   function ensurePlaceLabels(){
     if(!map||_placeLabelsAdded||!map.isStyleLoaded()) return;
@@ -2397,7 +2453,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R20) Mobile gets HALF the in-flight tile decodes (each request holds a decode buffer; 128
      simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
      Desktop keeps the full firehose. */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:128); }catch(_){}
+  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:192); }catch(_){}   /* (#R21) desktop 128→192: the user measures spare bandwidth + idle GPU in 3D — fill the pipe */
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
@@ -2413,7 +2469,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R8) Retain far more recently-seen tiles in RAM so panning/tilting back is instant and never
          refetches — the user measured spare bandwidth (<20 Mbps) and headroom, so trade memory for speed.
          Phones keep a tighter cap to stay within the mobile GPU/RAM budget. */
-      fadeDuration:0, maxTileCacheSize:(isMobile()?1024:6144), refreshExpiredTiles:false,   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); desktop 4096→6144 (pan/tilt-back in 3D re-hits cache instead of refetching → faster) */
+      fadeDuration:0, maxTileCacheSize:(isMobile()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):8192), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
@@ -2509,6 +2565,24 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('idle',sched); map.on('styledata',sched);
   })(); }
 
+  /* (#R21) Mobile memory-pressure guard: Chrome-on-Android exposes performance.memory; when the JS
+     heap nears its limit we proactively drop the big REBUILDABLE caches before the OS kills the tab
+     ("重い動作をすると頻繁にブラウザが落ちます") — display quality is untouched, everything lazily
+     reloads on next use. No-op where the API doesn't exist (iOS Safari). */
+  (function(){
+    if(!(typeof isMobile==='function'&&isMobile())) return;
+    const frac=()=>{ try{ const m=performance.memory; return m?m.usedJSHeapSize/m.jsHeapSizeLimit:0; }catch(_){ return 0; } };
+    let hot=0;
+    setInterval(()=>{ const f=frac(); if(!f) return;
+      if(f>0.85){ if(++hot<2) return; hot=0;
+        try{ const cb=document.getElementById('dl-climate'); if(!cb||!cb.checked){
+          window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
+          window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; } }catch(_){}
+        try{ window.dispatchEvent(new Event('intmap-mem-pressure')); }catch(_){}
+      } else hot=0;
+    },8000);
+  })();
+
   /* =============================================================================
    *  TILE ACCELERATION — persistent disk cache (Service Worker) + predictive
    *  pan/zoom prefetch. Quality is never reduced: identical tile URLs, just
@@ -2550,7 +2624,7 @@ window.addEventListener('DOMContentLoaded', () => {
        already resident (the user asked for "Unthinkable Speed" satellite). */
     for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
     if(!urls.length) return;
-    const uniq=[...new Set(urls)].slice(0,90);
+    const uniq=[...new Set(urls)].slice(0,(typeof isMobile==='function'&&isMobile())?60:150);   /* (#R21) spend more of the measured idle bandwidth on desktop */
     if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
@@ -3802,7 +3876,7 @@ window.addEventListener('DOMContentLoaded', () => {
      tiles; each cached 256² canvas+pixels is ~½ MB, and they previously accumulated FOREVER — a real
      mobile OOM vector ("重い動作をすると頻繁にブラウザが落ちます"). Map preserves insertion order, so
      evicting the first non-loading entries is a cheap LRU. */
-  const _DEM_CACHE_MAX=(typeof isMobile==='function'&&isMobile())?140:420;
+  const _DEM_CACHE_MAX=(typeof isMobile==='function'&&isMobile())?140:560;   /* (#R21) follows the raised desktop LOS tile budget */
   function _demCacheTrim(){ if(_demCache.size<=_DEM_CACHE_MAX) return;
     for(const k of _demCache.keys()){ if(_demCache.size<=_DEM_CACHE_MAX) break; const v=_demCache.get(k); if(v==='loading') continue; _demCache.delete(k); } }
   /* (#R19) Per-tile decoded pixel buffer, extracted ONCE. demElevBilinear used to call a full 256×256
@@ -4269,10 +4343,20 @@ window.addEventListener('DOMContentLoaded', () => {
   window._expandAllLayerGroups=function(){ try{
     layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
     layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
+    /* (#R21) MOBILE: the "Others (beta)" group alone stays a PULLDOWN — collapsed until tapped
+       ("モバイル版でも、beta layersだけは、プルダウンをクリックしないと中身が見れない形式に"). */
+    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){
+      const bh=layerDropdown.querySelector('.lyr-head[data-i18n="lyrGrpOthers"]');
+      if(bh && !bh.dataset.userToggled) _collapseGroup(bh);
+    }
   }catch(_){} };
   layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
-    /* Mobile shows all groups expanded (no carets) → headers are plain labels, not collapsers (#12). */
-    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return;
+    /* Mobile shows all groups expanded (no carets) → headers are plain labels, not collapsers (#12).
+       (#R21) EXCEPT the beta group, which is a tappable pulldown on mobile too. */
+    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){
+      if(h.getAttribute('data-i18n')==='lyrGrpOthers') _layerGroupToggle(h);
+      return;
+    }
     _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
   document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled && !h.classList.contains('lyr-section-label')) _collapseGroup(h); }); },30); });
@@ -5409,8 +5493,8 @@ window.addEventListener('DOMContentLoaded', () => {
      1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
-  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); };
-  document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); };
+  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} };
+  document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} };
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
   let terrain3D=false;
@@ -5561,6 +5645,14 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
+  /* (#R21) Tutorial button (top of Settings) — closes the panel and replays the layer showcase. */
+  (function(){ const tb=document.getElementById('btn-tutorial'); if(!tb) return;
+    const lbl=()=>{ const e=document.getElementById('btn-tutorial-lbl'); if(e) e.textContent=(currentLang==='jp')?'チュートリアル（レイヤー紹介ツアー）':'Tutorial — layer showcase'; };
+    lbl(); window.addEventListener('intmap-lang',lbl);
+    tb.onclick=(e)=>{ e.preventDefault(); settingsDirty=false; modal.style.display='none';
+      try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}
+      setTimeout(()=>{ try{ window._imStartDemo&&window._imStartDemo(true); }catch(_){} },150); };
+  })();
   document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme;
     /* (#R18) Reflect the SAVED timezone in the combo input and rebuild the (closed) list on every open. */
     try{ const tzs=document.getElementById('setting-tz-search'); const tzr=document.getElementById('tz-results');
@@ -5981,6 +6073,10 @@ window.addEventListener('DOMContentLoaded', () => {
            the country popup's × stayed tiny ("ポップアップの右上の×が小さすぎて押せない"). */
         .country-popup-close, #cp-close{ width:32px !important; height:32px !important; font-size:19px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); }
         .maplibregl-popup-content{ padding-right:40px; }
+        /* (#R21) the last stragglers — widget board ✕/⚙ and the widget-gallery ✕ join the ONE 32px size */
+        .wgt-x{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
+        .wgt-cfg{ width:32px !important; height:32px !important; border-radius:9px !important; right:44px !important; font-size:14px !important; }
+        #wgt-g-close{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .legend-collapsed .legend-min::before{ width:12px; height:12px; }
         /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
         .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ padding:6px 10px !important; min-width:150px; }
@@ -6198,7 +6294,7 @@ window.addEventListener('DOMContentLoaded', () => {
        on (#30). */
     const head=document.createElement('div'); head.className='lyr-head lyr-section-label'; head.setAttribute('data-i18n','lyrSection'); head.textContent=i18n[currentLang].lyrSection; dd.appendChild(head);
 
-    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:0.95,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95};
+    const opacities={climate:0.75,temp:0.62,precip:0.6,pop:0.7,hdi:0.65,dem:0.65,milSpend:0.7,milSpendGDP:0.7,gdppc:0.7,tfr:0.72,nato:0.55,night:0.4,nightsat:1,eez:0.7,ships:0.9,planes:0.9,thermal:0.75,radar:0.8,clouds:0.75,sst:0.7,snow:0.7,aod:0.7,popgrid:0.8,hillshade:0.55,contours:0.85,relief:0.7,sealevel:0.62,wind:0.9,subcables:0.95};
     if(window._seaLevelM==null) window._seaLevelM=2;   /* default +2 m sea-level rise (#24) */
     /* Default to the freshest GIBS day that is reliably processed (−2 days). */
     const GIBS_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
@@ -8542,6 +8638,8 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Mobile shows every layer group expanded (the carets are hidden there, #12) so nothing stays
            hidden behind a collapsed header the user can no longer toggle. */
         try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
+        /* (#R21) the beta group alone stays collapsed-by-default on mobile (a tappable pulldown) */
+        try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
       }
       else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full'); }
     }
@@ -8852,15 +8950,9 @@ window.addEventListener('DOMContentLoaded', () => {
     acct.onclick=()=>{ currentUser ? openAccountMenu() : openAuthModal(); };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(acct,settingsBtn);
     else document.body.appendChild(acct);
-    /* (#R12) "Support" button placed BETWEEN Login and Settings (per request), in addition to the one
-       in the Settings panel. Opens the same support modal. */
-    const sup=document.createElement('button');
-    sup.id='btn-support-hdr'; sup.className='btn-settings'; sup.style.marginRight='8px';
-    sup.setAttribute('data-i18n','blueberryBtn'); sup.textContent=t('blueberryBtn');
-    sup.onclick=()=>{ try{ window._openBlueberry&&window._openBlueberry(); }catch(_){} };
-    if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(sup,settingsBtn);
-    else document.body.appendChild(sup);
-    /* (#R20) Feedback button right NEXT to Support ("Supportの横に、フィードバックを送れるボタンを設置") */
+    /* (#R21) Header Support button RETIRED per request — support stays reachable from Settings
+       (the in-panel button) and from the feedback flow. */
+    /* (#R20) Feedback button in the header */
     const fb=document.createElement('button');
     fb.id='btn-feedback-hdr'; fb.className='btn-settings'; fb.style.marginRight='8px';
     fb.textContent=(currentLang==='jp'?'フィードバック':'Feedback');
@@ -9355,6 +9447,54 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }catch(_){}
   }
+
+  /* (#R21) Narrow-desktop watcher: body.ms-narrow drops the search pill to a second row whenever
+     the visible map area is too narrow for pill + view buttons side-by-side. */
+  (function(){
+    /* No isMobile() early-return — the page can LOAD at a mobile width and later widen (or vice
+       versa), so the check lives inside the handler and the observer runs for the page's life. */
+    function wire(){
+      const ms=document.querySelector('.map-search'); if(!ms||!ms.parentElement) return;
+      const host=ms.parentElement;
+      const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
+        document.body.classList.toggle('ms-narrow', desk && host.clientWidth<640); }catch(_){} };
+      try{ new ResizeObserver(upd).observe(host); }catch(_){ window.addEventListener('resize',upd); }
+      window.addEventListener('resize',upd); upd(); }
+    if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
+  })();
+
+  /* (#R21) Desktop sidebar width is user-resizable — a slim col-resize handle on the sidebar's
+     right edge drives --sidebar-w; persists in intmap_sidebar_w; camera padding re-follows. */
+  (function(){
+    function init(){
+      const sb=document.getElementById('sidebar'); if(!sb) return;
+      /* The width override lives in a DESKTOP-ONLY media rule (NOT an inline :root style — that
+         would beat the mobile @media :root{--sidebar-w:100vw} and shrink the bottom sheet). */
+      const styleEl=document.createElement('style'); styleEl.id='sb-w-style'; document.head.appendChild(styleEl);
+      const setW=(w)=>{ styleEl.textContent='@media(min-width:769px){ :root{ --sidebar-w:'+w+'px; } }'
+        +'@media(max-width:768px){ #sb-resizer{ display:none; } }'; };
+      styleEl.textContent='@media(max-width:768px){ #sb-resizer{ display:none; } }';
+      try{ const w=parseInt(localStorage.getItem('intmap_sidebar_w')||'',10); if(w>=320&&w<=760) setW(w); }catch(_){}
+      const h=document.createElement('div'); h.id='sb-resizer'; h.title='Drag to resize';
+      h.style.cssText='position:absolute;top:0;right:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;';
+      sb.appendChild(h);
+      let drag=false,sx=0,sw=0;
+      h.addEventListener('mouseenter',()=>{ h.style.background='linear-gradient(to right,transparent,rgba(0,122,255,0.35),transparent)'; });
+      h.addEventListener('mouseleave',()=>{ if(!drag) h.style.background=''; });
+      h.addEventListener('pointerdown',e=>{ drag=true; sx=e.clientX; sw=sb.offsetWidth;
+        try{ h.setPointerCapture(e.pointerId); }catch(_){}
+        document.body.style.userSelect='none'; sb.style.transition='none'; e.preventDefault(); });
+      h.addEventListener('pointermove',e=>{ if(!drag) return;
+        let w=sw+(e.clientX-sx); w=Math.max(320,Math.min(Math.min(760,window.innerWidth-380),w));
+        setW(w);
+        try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} });
+      h.addEventListener('pointerup',()=>{ if(!drag) return; drag=false;
+        document.body.style.userSelect=''; sb.style.transition=''; h.style.background='';
+        try{ localStorage.setItem('intmap_sidebar_w',String(sb.offsetWidth)); }catch(_){}
+        try{ applySidebarStyle(false); }catch(_){} });
+    }
+    if(document.readyState!=='loading') setTimeout(init,0); else document.addEventListener('DOMContentLoaded',init);
+  })();
 
   /* ---------- Custom scrollbars (#34) — non-Apple only; auto-hide ---------- */
   (function(){
@@ -10503,10 +10643,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const j=await r.json();
         let fc=(j&&j.map)?j.map:j; if(typeof fc==='string'){ try{ fc=JSON.parse(fc); }catch(_){ continue; } }
         if(!fc||!Array.isArray(fc.features)) continue;
-        const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon|LineString/.test(f.geometry.type));
+        /* (#R21) Keep only features around Ukraine ("表示するのはウクライナ周辺だけでよい") — any stray
+           far-away geometry in the feed is dropped via a cheap first-vertex bbox test. */
+        const firstLL=(g)=>{ try{ let c=g.coordinates; while(Array.isArray(c[0])) c=c[0]; return c; }catch(_){ return null; } };
+        const inUA=(f)=>{ const c=firstLL(f.geometry); return !c || (c[0]>20&&c[0]<42.5&&c[1]>42.5&&c[1]<54.5); };
+        const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon|LineString/.test(f.geometry.type)&&inUA(f));
         if(!feats.length) continue;
         ukrFC={type:'FeatureCollection',features:feats};
         try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){}
+        try{ ukrKeyFromData(feats); }catch(_){}
         const when=j.createdAt||j.datetime||j.updatedAt||null;
         const el=document.getElementById('data-legend-ukrfront');
         if(el){ let d=el.querySelector('.ukr-asof'); if(!d){ d=document.createElement('div'); d.className='ukr-asof'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(d); }
@@ -10520,9 +10665,32 @@ window.addEventListener('DOMContentLoaded', () => {
         d.textContent=jp()?'取得できませんでした — 後でもう一度オンにしてください。':'Could not load — toggle again later.'; }
       return false;
     }
+    /* (#R21) Legend mismatch fix ("凡例が、地図とあっていない") — the colour key is rebuilt FROM the
+       loaded DeepState data (its real per-feature fill/stroke colours), so legend === map, always. */
+    function ukrKeyFromData(feats){
+      const el=document.getElementById('data-legend-ukrfront'); if(!el) return;
+      const key=el.querySelector('.ukr-key'); if(!key) return;
+      const cnt=new Map();
+      feats.forEach(f=>{ const p=f.properties||{}; const poly=/Polygon/.test(f.geometry.type);
+        const c=String(poly?(p.fill||'#d62b2b'):(p.stroke||'#ff3b30')).toLowerCase();
+        const k=(poly?'P':'L')+c; const e=cnt.get(k)||{c,poly,n:0}; e.n++; cnt.set(k,e); });
+      const rows=[...cnt.values()].sort((a,b)=>(a.poly===b.poly?b.n-a.n:(a.poly?-1:1))).slice(0,5).map(e=>{
+        const hex=e.c.replace('#',''); const r=parseInt(hex.slice(0,2),16)||0,g=parseInt(hex.slice(2,4),16)||0,b=parseInt(hex.slice(4,6),16)||0;
+        let lbl;
+        if(!e.poly) lbl=jp()?'前線':'Front line';
+        else if(b>110&&r>80) lbl=jp()?'係争・不明確地域':'Contested / unclear';
+        else if(r>130&&g<110) lbl=jp()?'ロシア占領地域':'Russian-occupied area';
+        else lbl=jp()?'その他の区域':'Other zone';
+        return '<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:'+(e.poly?'10px':'3px')+';border-radius:2px;flex:none;background:'+e.c+';'+(e.poly?'opacity:0.55;':'')+'"></span>'+lbl+'</div>';
+      });
+      if(rows.length) key.innerHTML=rows.join('');
+    }
     function ukrToggle(on){ state.ukr=on;
-      const a=()=>{ if(!ukrEnsure()){ map.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false); };
+      const a=()=>{ if(!ukrEnsure()){ map.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false).then(()=>{ if(ukrFC) ukrKeyFromData(ukrFC.features); }); };
       a();
+      /* (#R21) The layer only exists around Ukraine — bring the camera there when it's far away. */
+      if(on){ try{ const c=map.getCenter();
+        if(c.lng<18||c.lng>46||c.lat<40||c.lat>57||map.getZoom()<3.4) map.flyTo({center:[33.2,48.6],zoom:5.2}); }catch(_){} }
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
       try{ if(on&&window._registerLayerOpacity){
@@ -10623,15 +10791,18 @@ window.addEventListener('DOMContentLoaded', () => {
         if(on&&window._registerLayerOpacity){
           const el=window._registerLayerOpacity('histb',['Historical borders','過去の国境'],HB_IDS,'beta-dl-histb');
           if(el&&!el.querySelector('.hb-year-row')){
-            const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:7px;';
-            row.innerHTML=(jp()?'年代':'Year')+' <input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="flex:1;"> <b class="hb-year-val" style="color:var(--text-main);min-width:38px;text-align:right;">'+hbYear+'</b>';
-            /* (#R20) the AVAILABLE years shown inside the slider ("availableな年数をスライダーの中に表示して") —
-               the slider is index-based (equal steps), so an equal-spaced tick row lines up exactly. */
-            const ticks=document.createElement('div'); ticks.className='hb-ticks';
-            ticks.style.cssText='display:flex;justify-content:space-between;font-size:8.5px;color:var(--text-muted);margin:2px 30px 0 '+(jp()?'34px':'34px')+';';
-            ticks.innerHTML=HB_YEARS.map(y=>'<span style="transform:rotate(-45deg);transform-origin:top left;white-space:nowrap;">'+String(y).slice(2)+'</span>').join('');
-            const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:12px;';
-            el.appendChild(row); el.appendChild(ticks); el.appendChild(note);
+            const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:flex-start;gap:7px;';
+            /* (#R21) Tick alignment fix ("目盛り、スライドと位置があっていない"): the ticks now live INSIDE
+               the same flex cell as the range input (identical width), and each tick is absolutely
+               positioned at calc(half-thumb + usable-width × i/(n−1)) with translateX(-50%) — i.e. the
+               exact centre of each thumb stop, instead of the old space-between row with guessed margins. */
+            row.innerHTML=(jp()?'年代':'Year')+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
+              '<input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
+              '<span class="hb-ticks" style="display:block;position:relative;height:15px;">'+
+              HB_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(HB_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8.5px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
+              '</span></span> <b class="hb-year-val" style="color:var(--text-main);min-width:38px;text-align:right;">'+hbYear+'</b>';
+            const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:8px;';
+            el.appendChild(row); el.appendChild(note);
             row.querySelector('input').addEventListener('input',(e)=>{ hbYear=HB_YEARS[+e.target.value]||1920; const v=el.querySelector('.hb-year-val'); if(v) v.textContent=hbYear; clearTimeout(hbToggle._t); hbToggle._t=setTimeout(()=>hbLoad(hbYear),250); });
           }
         } else if(window._hideGenericLegend) window._hideGenericLegend('histb');
@@ -10708,12 +10879,207 @@ window.addEventListener('DOMContentLoaded', () => {
       if(state.hist&&hbEnsure()){ setVis(HB_IDS,true); const fc=hbCache.get(hbYear); if(fc){ try{ map.getSource('hb-src').setData(fc); }catch(_){} } }
       if(state.volc&&volcEnsure()){ setVis(VL_IDS,true); if(volcFC){ try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} } }
     },80); } });
-    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle};
+    /* (#R21) under memory pressure, keep only the displayed year's borders */
+    window.addEventListener('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });
+    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
+  })();
+
+  /* ===== (#R21) Beta layer pack 2 — Data centres & AI infra · World railways by gauge · Pharma &
+     health (factory hubs + life-expectancy choropleth) · Corruption indicator (World Bank WGI,
+     live) · Globe tour (slow auto-rotation). All rows land in "Others (beta)" via the
+     reorganize sweep; data is lazy-loaded on first toggle and exposed through
+     window.IntMapBeta2.load(key,cb) so the Compare view reuses the same FeatureCollections. ===== */
+  (function(){
+    if(typeof map==='undefined'||!map) return;
+    const jp=()=>currentLang==='jp';
+    const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+    const before=()=>map.getLayer('tool-poly')?'tool-poly':undefined;
+    const state={rail:false,dc:false,pharma:false,cpi:false,lifeexp:false,spin:false};
+    const cache={};
+    let pop2=null;
+    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    /* ---------- curated datasets (city-level coordinates) ---------- */
+    const DC_COL={aws:'#ff9900',azure:'#0078d4',gcp:'#34a853',ai:'#af52de'};
+    const DC=[
+      [-77.49,39.04,'AWS us-east-1 · N. Virginia (Ashburn)','aws'],[-83.0,40.0,'AWS us-east-2 · Ohio','aws'],[-121.9,37.35,'AWS us-west-1 · N. California','aws'],[-119.7,45.84,'AWS us-west-2 · Oregon (Boardman)','aws'],[-73.57,45.5,'AWS ca-central-1 · Montréal','aws'],[-114.07,51.05,'AWS ca-west-1 · Calgary','aws'],[-46.63,-23.55,'AWS sa-east-1 · São Paulo','aws'],[-6.26,53.35,'AWS eu-west-1 · Dublin','aws'],[-0.1,51.5,'AWS eu-west-2 · London','aws'],[2.35,48.86,'AWS eu-west-3 · Paris','aws'],[8.68,50.11,'AWS eu-central-1 · Frankfurt','aws'],[8.54,47.37,'AWS eu-central-2 · Zürich','aws'],[18.07,59.33,'AWS eu-north-1 · Stockholm','aws'],[9.19,45.46,'AWS eu-south-1 · Milan','aws'],[-0.88,41.65,'AWS eu-south-2 · Spain (Aragón)','aws'],[50.58,26.23,'AWS me-south-1 · Bahrain','aws'],[54.37,24.45,'AWS me-central-1 · UAE','aws'],[34.78,32.08,'AWS il-central-1 · Tel Aviv','aws'],[18.42,-33.93,'AWS af-south-1 · Cape Town','aws'],[72.88,19.08,'AWS ap-south-1 · Mumbai','aws'],[78.49,17.38,'AWS ap-south-2 · Hyderabad','aws'],[103.85,1.29,'AWS ap-southeast-1 · Singapore','aws'],[151.21,-33.87,'AWS ap-southeast-2 · Sydney','aws'],[106.85,-6.21,'AWS ap-southeast-3 · Jakarta','aws'],[144.96,-37.81,'AWS ap-southeast-4 · Melbourne','aws'],[139.76,35.68,'AWS ap-northeast-1 · Tokyo','aws'],[126.98,37.57,'AWS ap-northeast-2 · Seoul','aws'],[135.5,34.69,'AWS ap-northeast-3 · Osaka','aws'],[114.17,22.32,'AWS ap-east-1 · Hong Kong','aws'],[116.4,39.9,'AWS cn-north-1 · Beijing','aws'],[106.27,38.47,'AWS cn-northwest-1 · Ningxia','aws'],
+      [-93.6,41.6,'Azure Central US · Iowa','azure'],[-119.85,47.23,'Azure West US 2 · Washington (Quincy)','azure'],[-98.49,29.42,'Azure South Central US · Texas','azure'],[-112.07,33.45,'Azure West US 3 · Arizona','azure'],[4.9,52.37,'Azure West Europe · Amsterdam','azure'],[17.14,60.67,'Azure Sweden Central · Gävle','azure'],[10.75,59.91,'Azure Norway East · Oslo','azure'],[21.01,52.23,'Azure Poland Central · Warsaw','azure'],[-3.7,40.42,'Azure Spain Central · Madrid','azure'],[55.27,25.2,'Azure UAE North · Dubai','azure'],[51.53,25.29,'Azure Qatar Central · Doha','azure'],[28.05,-26.2,'Azure South Africa North · Johannesburg','azure'],[73.86,18.52,'Azure Central India · Pune','azure'],[80.27,13.08,'Azure South India · Chennai','azure'],[129.07,35.18,'Azure Korea South · Busan','azure'],[149.13,-35.28,'Azure Australia Central · Canberra','azure'],[-100.39,20.59,'Azure Mexico Central · Querétaro','azure'],[121.47,31.23,'Azure China East · Shanghai','azure'],
+      [-95.86,41.26,'Google Cloud · Council Bluffs, Iowa','gcp'],[-121.18,45.59,'Google Cloud · The Dalles, Oregon','gcp'],[-81.54,35.91,'Google Cloud · Lenoir, N. Carolina','gcp'],[-80.06,33.06,'Google Cloud · Berkeley County, S. Carolina','gcp'],[-95.31,36.3,'Google Cloud · Pryor, Oklahoma','gcp'],[-115.0,36.04,'Google Cloud · Henderson, Nevada','gcp'],[-79.38,43.65,'Google Cloud · Toronto','gcp'],[-70.67,-33.45,'Google Cloud · Santiago','gcp'],[3.82,50.45,'Google Cloud · St-Ghislain, Belgium','gcp'],[27.2,60.57,'Google Cloud · Hamina, Finland','gcp'],[6.83,53.43,'Google Cloud · Eemshaven, Netherlands','gcp'],[50.1,26.43,'Google Cloud · Dammam, Saudi Arabia','gcp'],[77.1,28.7,'Google Cloud · Delhi NCR','gcp'],[120.43,24.08,'Google Cloud · Changhua, Taiwan','gcp'],
+      [-90.05,35.15,'xAI Colossus · Memphis, Tennessee','ai'],[-99.73,32.45,'Stargate (OpenAI/Oracle) · Abilene, Texas','ai'],[-120.8,44.3,'Meta · Prineville, Oregon','ai'],[-91.79,32.35,'Meta AI DC · Richland Parish, Louisiana','ai'],[-97.74,30.27,'Tesla Cortex · Austin, Texas','ai'],[-96.7,33.02,'CoreWeave · Plano, Texas','ai'],[-93.62,41.59,'Microsoft AI · West Des Moines, Iowa','ai'],[5.47,59.3,'AI DC cluster · Norway (hydro-powered)','ai']
+    ];
+    const PH=[
+      [7.59,47.56,'Basel — Novartis / Roche HQ & plants'],[6.99,51.03,'Leverkusen — Bayer'],[8.06,49.97,'Ingelheim — Boehringer Ingelheim'],[12.45,55.76,'Copenhagen — Novo Nordisk'],[11.09,55.68,'Kalundborg — Novo Nordisk API site'],[-0.31,51.48,'London/Brentford — GSK'],[0.13,52.2,'Cambridge — AstraZeneca'],[2.35,48.86,'Paris — Sanofi'],[-86.16,39.77,'Indianapolis — Eli Lilly'],[-74.45,40.49,'New Brunswick — Johnson & Johnson'],[-73.97,40.75,'New York — Pfizer HQ'],[-74.29,40.68,'Rahway/Kenilworth — Merck & Co.'],[-87.86,42.33,'North Chicago — AbbVie'],[-118.84,34.18,'Thousand Oaks — Amgen'],[-122.4,37.65,'South San Francisco — Genentech'],[-8.47,51.9,'Cork — Irish pharma cluster'],[103.64,1.32,'Singapore Tuas — biologics plants'],[78.6,17.6,'Hyderabad — Genome Valley (vaccines)'],[72.88,19.08,'Mumbai — Sun Pharma'],[72.57,23.02,'Ahmedabad — Zydus / Torrent'],[83.3,17.69,'Visakhapatnam — API hub'],[-66.54,18.45,'Barceloneta — Puerto Rico pharma'],[139.76,35.68,'Tokyo — Takeda / Astellas'],[135.5,34.69,'Osaka — Shionogi / Takeda'],[116.4,39.9,'Beijing — Sinopharm'],[121.47,31.23,'Shanghai — Fosun Pharma'],[126.64,37.39,'Songdo — Samsung Biologics'],[34.89,32.09,'Petah Tikva — Teva'],[-46.63,-23.55,'São Paulo — EMS / Eurofarma'],[28.05,-26.2,'Johannesburg — Aspen Pharmacare']
+    ];
+    const RAIL_COL={1435:'#3a7bd5',1520:'#e03131',1067:'#2f9e44',1000:'#12b886',1676:'#9c36b5',1668:'#f08c00',1600:'#d6336c',0:'#868e96'};
+    const RAIL_LBL=[[1435,'標準軌 1435mm','Standard 1435 mm'],[1520,'ロシア軌間 1520/1524mm','Russian 1520/1524 mm'],[1676,'広軌 1676mm（印・亜）','Broad 1676 mm (India, Argentina)'],[1668,'イベリア軌間 1668mm','Iberian 1668 mm'],[1600,'アイルランド軌間 1600mm','Irish 1600 mm'],[1067,'狭軌 1067mm（日本など）','Cape 1067 mm (Japan etc.)'],[1000,'メーターゲージ 1000mm','Metre 1000 mm'],[0,'不明・その他','Unknown / other']];
+    function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
+    function load(key,cb){
+      if(cache[key]){ cb(cache[key]); return; }
+      if(key==='dc'){ cache.dc=fcPoints(DC,d=>DC_COL[d[3]]||'#5e8bff'); cb(cache.dc); }
+      else if(key==='pharma'){ cache.pharma=fcPoints(PH,()=> '#2bb3a3'); cb(cache.pharma); }
+      else if(key==='rail'){ fetch('data/railways_gauge.json').then(r=>r.json()).then(j=>{ if(!j||!Array.isArray(j.features)) return;
+        j.features.forEach(f=>{ f.properties.col=RAIL_COL[f.properties.g]||RAIL_COL[0]; }); cache.rail=j; cb(j); }).catch(()=>{ try{ imToast(jp()?'鉄道データを読み込めませんでした':'Could not load railway data'); }catch(_){} }); }
+    }
+    function clickPop(layerId){
+      map.on('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+        try{ if(pop2) pop2.remove(); }catch(_){}
+        const kind=p.k?('<div style="font-size:11px;color:var(--text-muted);margin-top:2px;text-transform:uppercase;">'+esc(p.k)+'</div>'):'';
+        try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML('<div style="min-width:150px;font-weight:600;font-size:13px;color:var(--text-main);">'+esc(p.n)+'</div>'+kind).addTo(map); }catch(_){}
+      });
+      map.on('mouseenter',layerId,()=>{ map.getCanvas().style.cursor='pointer'; });
+      map.on('mouseleave',layerId,()=>{ map.getCanvas().style.cursor=''; });
+    }
+    /* ---------- point/line layer toggles ---------- */
+    function ptEnsure(key,src,ids){ if(map.getSource(src)) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        map.addSource(src,{type:'geojson',data:cache[key]||{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:ids[0],type:'circle',source:src,layout:{visibility:'none'},paint:{
+          'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,4.6,9,7.5],
+          'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#ffffff','circle-stroke-width':0.9,'circle-opacity':0.92}},before());
+        map.addLayer({id:ids[1],type:'symbol',source:src,minzoom:4.5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.0],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':16},paint:{'text-color':'#dce6f5','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before());
+        clickPop(ids[0]);
+        return true;
+      }catch(_){ return false; } }
+    function dcToggle(on){ state.dc=on;
+      const a=()=>{ if(!ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ map.once('idle',a); return; }
+        load('dc',fc=>{ try{ map.getSource('dc-src').setData(fc); }catch(_){} }); setVis(['dc-pt','dc-lbl'],on); };
+      a();
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',['Data centres & AI infra','データセンター・AIインフラ'],['dc-pt','dc-lbl'],'beta-dl-dc');
+            if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
+              k.innerHTML=[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['ai',jp()?'AIスーパークラスター':'AI superclusters']].map(([t,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+DC_COL[t]+';"></span>'+l+'</div>').join('');
+              el.appendChild(k); } }
+           else if(window._hideGenericLegend) window._hideGenericLegend('dc2'); }catch(_){}
+    }
+    function phToggle(on){ state.pharma=on;
+      const a=()=>{ if(!ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ map.once('idle',a); return; }
+        load('pharma',fc=>{ try{ map.getSource('ph-src').setData(fc); }catch(_){} }); setVis(['ph-pt','ph-lbl'],on); };
+      a();
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('ph2',['Pharma manufacturing hubs','製薬・医薬品製造拠点'],['ph-pt','ph-lbl'],'beta-dl-pharma');
+            if(el&&!el.querySelector('.ph-note')){ const d=document.createElement('div'); d.className='ph-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;'; d.textContent=jp()?'主要な製薬企業の本社・製造クラスター（代表地点）。平均寿命レイヤーと併用を。':'Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.'; el.appendChild(d); } }
+           else if(window._hideGenericLegend) window._hideGenericLegend('ph2'); }catch(_){}
+    }
+    function railEnsure(){ if(map.getSource('rail-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        map.addSource('rail-src',{type:'geojson',data:cache.rail||{type:'FeatureCollection',features:[]},attribution:'Natural Earth'});
+        map.addLayer({id:'rail-ln',type:'line',source:'rail-src',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#868e96'],'line-width':['interpolate',['linear'],['zoom'],2,0.7,6,1.5,10,2.6],'line-opacity':0.9}},before());
+        return true;
+      }catch(_){ return false; } }
+    function railToggle(on){ state.rail=on;
+      const a=()=>{ if(!railEnsure()){ map.once('idle',a); return; }
+        if(on) load('rail',fc=>{ try{ map.getSource('rail-src').setData(fc); }catch(_){} });
+        setVis(['rail-ln'],on); };
+      a();
+      /* (#R21) phones: toggling OFF releases the ~25k-feature parsed geojson + source copy (same
+         OOM-pressure policy as ecoregions); it lazily re-fetches on the next toggle. */
+      if(!on&&typeof isMobile==='function'&&isMobile()){ try{ if(map.getLayer('rail-ln')) map.removeLayer('rail-ln'); if(map.getSource('rail-src')) map.removeSource('rail-src'); }catch(_){} cache.rail=null; }
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',['World railways (by gauge)','世界の鉄道（軌間別）'],['rail-ln'],'beta-dl-rail');
+            if(el&&!el.querySelector('.rail-key')){ const k=document.createElement('div'); k.className='rail-key'; k.style.cssText='display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:11px;color:var(--text-main);';
+              k.innerHTML=RAIL_LBL.map(([g,ja,en])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:3px;border-radius:2px;flex:none;background:'+RAIL_COL[g]+';"></span>'+(jp()?ja:en)+'</div>').join('')+
+                '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">'+(jp()?'各国の主流軌間で分類（Natural Earth 10m）':'Classified by each country’s predominant gauge (Natural Earth 10m)')+'</div>';
+              el.appendChild(k); } }
+           else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}
+    }
+    /* ---------- World-Bank-backed country choropleths (live, keyless, CORS*) ---------- */
+    /* cpi: WGI "Control of Corruption" GOVERNANCE SCORE (0–100, higher = cleaner) — the WGI database
+       moved to GOV_WGI_* ids under source=3 (the old CC.EST id now returns 0 rows; curl-verified). */
+    const WB={cpi:{ind:'GOV_WGI_CC.SC',date:'2023',q:'&source=3',ids:['wb-cpi-f','wb-cpi-l'],src:'wb-cpi',
+        ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850'],
+        score:v=>Math.max(0,Math.min(100,v)),
+        nm:['Corruption (control, WGI)','汚職・腐敗指標（世界銀行WGI）'],
+        note:()=>jp()?'世界銀行ガバナンス指標「腐敗の統制」スコア（0–100、高い=クリーン）。TIのCPIに相当する公開API系指標。':'World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.'},
+      lifeexp:{ind:'SP.DYN.LE00.IN',date:'2022',q:'',ids:['wb-le-f','wb-le-l'],src:'wb-le',
+        ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
+        score:v=>v,
+        nm:['Life expectancy (years)','平均寿命（年）'],
+        note:()=>jp()?'出生時平均余命（世界銀行 2022）。':'Life expectancy at birth (World Bank, 2022).'}};
+    function wbToggle(key,on){ state[key]=on; const W=WB[key];
+      const show=()=>setVis(W.ids,on);
+      if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
+      const build=async()=>{
+        if(!map.isStyleLoaded()){ map.once('idle',build); return; }
+        if(map.getSource(W.src)){ show(); legend(); return; }
+        try{ await loadCountryData(); }catch(_){}
+        if(!countryGeo||!Array.isArray(countryGeo.features)){ setTimeout(build,1200); return; }
+        let vals=cache['wb_'+key];
+        if(!vals){ vals={};
+          try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&date='+W.date+'&per_page=400'+(W.q||''));
+            const j=await r.json(); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
+          }catch(_){}
+          if(!Object.keys(vals).length){ try{ imToast(jp()?'データを取得できませんでした':'Could not load the data'); }catch(_){} return; }
+          cache['wb_'+key]=vals;
+        }
+        try{
+          const feats=countryGeo.features.filter(f=>f.id!=null&&vals[f.id]!=null).map(f=>({type:'Feature',geometry:f.geometry,properties:{s:W.score(vals[f.id]),raw:vals[f.id],iso:f.id}}));
+          map.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
+          map.addLayer({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
+          map.addLayer({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
+          map.on('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+            let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
+            try{ if(pop2) pop2.remove(); }catch(_){}
+            const val=(key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs'));
+            try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+val+'</b></div>').addTo(map); }catch(_){}
+          });
+          show(); legend();
+        }catch(_){}
+      };
+      function legend(){ try{ if(window._registerLayerOpacity){ const el=window._registerLayerOpacity('wb-'+key,[W.nm[0],W.nm[1]],W.ids,'beta-dl-'+key);
+        if(el&&!el.querySelector('.wb-note')){ const d=document.createElement('div'); d.className='wb-note'; d.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5;'; d.textContent=W.note(); el.appendChild(d); } } }catch(_){} }
+      build();
+    }
+    /* ---------- Globe tour — slow endless rotation with the whole earth in view ---------- */
+    let spinRAF=null,lastT=0;
+    function spinStep(ts){ if(!state.spin) return;
+      if(lastT){ const dt=Math.min(100,ts-lastT); try{ const c=map.getCenter(); map.setCenter([c.lng+dt*0.0035,c.lat*0.999]); }catch(_){} }
+      lastT=ts; spinRAF=requestAnimationFrame(spinStep); }
+    function spinToggle(on){ state.spin=on;
+      const cb=document.getElementById('beta-dl-spin');
+      if(on){
+        try{ if(typeof currentProj!=='undefined'&&currentProj==='flat'){ const b=document.getElementById('btn-view-globe'); b&&b.click(); } }catch(_){}
+        try{ map.easeTo({zoom:Math.min(map.getZoom(),1.7),pitch:0,duration:1200}); }catch(_){}
+        lastT=0; if(!spinRAF) spinRAF=requestAnimationFrame(spinStep);
+        if(!spinToggle._wired){ spinToggle._wired=true;
+          ['pointerdown','wheel','touchstart'].forEach(ev=>map.getCanvas().addEventListener(ev,()=>{ if(state.spin){ state.spin=false; if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; } const c2=document.getElementById('beta-dl-spin'); if(c2){ c2.checked=false; const r=c2.closest('.lyr-row'); r&&r.classList.remove('on'); } } },{passive:true})); }
+      } else if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; }
+    }
+    /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
+    const B2LBL={dc:['データセンター・AIインフラ','Data centres & AI infra'],pharma:['製薬・医薬品製造拠点','Pharma manufacturing hubs'],lifeexp:['平均寿命','Life expectancy'],cpi:['汚職・腐敗指標','Corruption indicator'],rail:['世界の鉄道（軌間別）','World railways (by gauge)'],spin:['地球をゆっくり回す','Globe tour (slow spin)']};
+    const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',spin:'#ffd166'};
+    const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,spin:spinToggle};
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-dc')) return;
+      Object.keys(B2LBL).forEach(k=>{
+        const w=document.createElement('div'); w.className='lyr-row';
+        w.innerHTML='<label class="layer-option"><input type="checkbox" id="beta-dl-'+k+'"> <span class="lyr-sw" style="background:'+B2SW[k]+'"></span> <span id="beta-dl-'+k+'-lbl">'+(jp()?B2LBL[k][0]:B2LBL[k][1])+'</span></label>';
+        dd.appendChild(w);
+        w.querySelector('input').addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); B2FN[k](e.target.checked); });
+      });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
+    }
+    if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
+    function relabel(){ Object.keys(B2LBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=jp()?B2LBL[k][0]:B2LBL[k][1]; }); }
+    window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
+    /* self-heal across basemap swaps */
+    map.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp){ setTimeout(()=>{
+      if(state.dc&&ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ setVis(['dc-pt','dc-lbl'],true); load('dc',fc=>{ try{ map.getSource('dc-src').setData(fc); }catch(_){} }); }
+      if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ map.getSource('ph-src').setData(fc); }catch(_){} }); }
+      if(state.rail&&railEnsure()){ setVis(['rail-ln'],true); if(cache.rail){ try{ map.getSource('rail-src').setData(cache.rail); }catch(_){} } }
+      if(state.cpi) wbToggle('cpi',true);
+      if(state.lifeexp) wbToggle('lifeexp',true);
+    },90); } });
+    window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail) cache.rail=null; });
+    window.IntMapBeta2={load,_state:state};
   })();
 
   /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
      A no-op stub remains so any stray reference can't throw. ===== */
   window.IntMapWidgets={ toggle:function(){}, refresh:function(){} };
+
+  /* (#R21) Flag rendering that works on PCs: Windows has no colour-emoji flags (a 🇩🇪 renders as the
+     letters "DE"), so every flag display goes through this helper — it derives the ISO-2 code from the
+     flag emoji's regional-indicator pair and serves a flagcdn.com PNG, with the emoji as alt/fallback. */
+  window.imFlagISO2=function(fl){ try{ const cps=[...String(fl||'')].map(c=>c.codePointAt(0)).filter(c=>c>=0x1F1E6&&c<=0x1F1FF);
+    if(cps.length===2) return String.fromCharCode(cps[0]-0x1F1E6+65,cps[1]-0x1F1E6+65).toLowerCase(); }catch(_){} return null; };
+  window.imFlagHTML=function(fl,h){ const c=window.imFlagISO2(fl); h=h||20;
+    if(!c) return '<span>'+(fl||'🏳️')+'</span>';
+    return '<img src="https://flagcdn.com/h'+(h<=24?'24':h<=40?'40':'80')+'/'+c+'.png" alt="'+(fl||'')+'" style="height:'+h+'px;border-radius:3px;vertical-align:-3px;box-shadow:0 0 0 1px rgba(128,128,128,0.25);" loading="lazy">'; };
 
   /* ===== (#R19) Apple-style SIDEBAR widgets — shown ONLY in the no-tab-selected blank state.
      Per the spec: default = NONE; the user adds widgets from a gallery ("+"), iOS-widget look
@@ -10741,11 +11107,18 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){}
     active.forEach(e=>{ if(!e.u) e.u='w'+Math.random().toString(36).slice(2,8); if(!e.cfg) e.cfg={}; });
     const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} };
+    /* (#R21) Default board = Clock · FX · Featured layer · Random country · On this day.
+       Seeded ONCE (flagged) so the new defaults also appear for existing users; after that the
+       user's own add/remove choices win. */
+    try{ if(!localStorage.getItem('intmap_widgets_def21')){
+      ['clock','fx','featured','country','otd'].forEach(tp=>{ if(!active.some(e=>e.t===tp)) active.push({u:'w'+Math.random().toString(36).slice(2,8),t:tp,cfg:(tp==='fx'?{base:'USD',quote:(currentLang==='jp'?'JPY':'EUR')}:{})}); });
+      localStorage.setItem('intmap_widgets_def21','1'); save();
+    }}catch(_){}
     const FX_CCY=['USD','JPY','EUR','GBP','CNY','KRW','CHF','AUD','CAD','NZD','SGD','HKD','TWD','INR','BRL','MXN','RUB','TRY','ZAR','SEK','NOK','PLN','THB','IDR','PHP','VND','SAR','AED','ILS','EGP'];
     /* multi: more than one instance allowed (different pairs / countdowns) */
     const DEFS={
       clock:    { nm:()=>jp()?'時計':'Clock', ic:'🕐', desc:()=>jp()?'現在時刻と日付':'Time & date' },
-      weather:  { nm:()=>jp()?'天気':'Weather', ic:'🌤', desc:()=>jp()?'地図中心の現在の天気':'Current weather at map centre' },
+      weather:  { nm:()=>jp()?'天気（現在地）':'Weather (my location)', ic:'🌤', desc:()=>jp()?'現在地の天気（追加時に位置情報の許可を求めます）':'Weather at your location (asks for location permission when added)' },
       fx:       { nm:()=>jp()?'為替レート':'FX rate', ic:'💱', desc:()=>jp()?'好きな通貨ペアを選択':'Pick any currency pair', multi:true },
       crypto:   { nm:()=>jp()?'暗号資産（BTC・ETH）':'Crypto (BTC·ETH)', ic:'📈', desc:()=>jp()?'価格と24h変動':'Price & 24h change' },
       cryptocap:{ nm:()=>jp()?'暗号資産時価総額':'Crypto market cap', ic:'🪙', desc:()=>jp()?'総時価総額とBTCドミナンス':'Total cap & BTC dominance' },
@@ -10756,7 +11129,17 @@ window.addEventListener('DOMContentLoaded', () => {
       otd:      { nm:()=>jp()?'今日は何の日':'On this day', ic:'📅', desc:()=>jp()?'歴史上の今日の出来事':'A historical event from this date' },
       featured: { nm:()=>jp()?'おすすめレイヤー':'Featured layer', ic:'✨', desc:()=>jp()?'ランダムに紹介。押すと表示':'Random pick — tap to show it' },
       country:  { nm:()=>jp()?'ランダムな国':'Random country', ic:'🌍', desc:()=>jp()?'国旗と基礎データ':'Flag & key facts' },
-      countdown:{ nm:()=>jp()?'カウントダウン':'Countdown', ic:'⏳', desc:()=>jp()?'日付と題名を設定':'Set a date & title', multi:true }
+      countdown:{ nm:()=>jp()?'カウントダウン':'Countdown', ic:'⏳', desc:()=>jp()?'日付と題名を設定':'Set a date & title', multi:true },
+      /* (#R21) Board expansion — sun, moon, air quality, ISS, world clocks, year progress,
+         Wikipedia featured article, live world-population estimate. */
+      sun:      { nm:()=>jp()?'日の出・日の入り':'Sunrise & sunset', ic:'🌅', desc:()=>jp()?'現在地（許可時）または地図中心':'At your location (if allowed) or map centre' },
+      moon:     { nm:()=>jp()?'月相':'Moon phase', ic:'🌖', desc:()=>jp()?'今夜の月の満ち欠け':'Tonight’s phase & illumination' },
+      aqi:      { nm:()=>jp()?'大気質（AQI）':'Air quality (AQI)', ic:'😮‍💨', desc:()=>jp()?'US AQIとPM2.5':'US AQI & PM2.5' },
+      iss:      { nm:()=>jp()?'国際宇宙ステーション':'ISS tracker', ic:'🛰', desc:()=>jp()?'ISSの現在位置。タップで地図へ':'Live ISS position — tap to fly there' },
+      worldclock:{ nm:()=>jp()?'世界時計':'World clock', ic:'🌐', desc:()=>jp()?'好きな都市の現在時刻':'Pick a city / timezone', multi:true },
+      yearprog: { nm:()=>jp()?'今年の進捗':'Year progress', ic:'📆', desc:()=>jp()?'今年が何%過ぎたか':'How far through the year we are' },
+      wikifeat: { nm:()=>jp()?'今日の注目記事':'Featured article', ic:'📖', desc:()=>jp()?'Wikipediaの本日の注目記事':'Wikipedia’s article of the day' },
+      pop:      { nm:()=>jp()?'世界人口時計':'World population', ic:'👥', desc:()=>jp()?'国連推計ベースのライブ推定':'Live estimate (UN-based)' }
     };
     const css=document.createElement('style');
     css.textContent=
@@ -10791,7 +11174,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return board; }
     function hasType(t){ return active.some(e=>e.t===t); }
     function card(e){ const d=DEFS[e.t]; if(!d) return '';
-      const gear=(e.t==='fx'||e.t==='countdown')?'<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'" style="position:absolute;top:6px;right:36px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.18);color:var(--text-main);font-size:12px;cursor:pointer;">⚙</button>':'';
+      const gear=(e.t==='fx'||e.t==='countdown'||e.t==='worldclock')?'<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'" style="position:absolute;top:6px;right:36px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.18);color:var(--text-main);font-size:12px;cursor:pointer;">⚙</button>':'';
       return '<div class="wgt-card" data-u="'+e.u+'" data-w="'+e.t+'"><button class="wgt-x" title="'+(jp()?'削除':'Remove')+'">✕</button>'+gear+
         '<div class="wgt-h"><span>'+d.ic+'</span><span class="wgt-nm">'+d.nm()+'</span></div><div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
     function render(){ const b=ensureBoard(); if(!b) return;
@@ -10799,14 +11182,19 @@ window.addEventListener('DOMContentLoaded', () => {
       const addable=Object.keys(DEFS).filter(k=>DEFS[k].multi||!hasType(k));
       b.innerHTML='<div class="wgt-title">'+(jp()?'ウィジェット':'Widgets')+'</div>'+
         '<div class="wgt-grid">'+cards+(addable.length?'<button class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(jp()?'ウィジェットを追加':'Add widget')+'</button>':'')+'</div>'+
-        (gallery&&addable.length?('<div class="wgt-gallery"><h5>'+(jp()?'追加できるウィジェット':'Available widgets')+'</h5>'+
+        (gallery&&addable.length?('<div class="wgt-gallery"><h5 style="display:flex;align-items:center;">'+(jp()?'追加できるウィジェット':'Available widgets')+
+          '<button id="wgt-g-close" title="'+(jp()?'閉じる':'Close')+'" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;">✕</button></h5>'+
           addable.map(k=>'<div class="wgt-g-row" data-add="'+k+'"><span class="gi">'+DEFS[k].ic+'</span><span><div class="gn">'+DEFS[k].nm()+'</div><div class="gd">'+DEFS[k].desc()+'</div></span><span class="ga">＋</span></div>').join('')+'</div>'):'');
       const add=b.querySelector('#wgt-add'); if(add) add.onclick=()=>{ gallery=!gallery; render(); };
+      /* (#R21) Gallery can always be dismissed — explicit ✕ ("表示されっぱなし" fix). */
+      const gx=b.querySelector('#wgt-g-close'); if(gx) gx.onclick=(ev)=>{ ev.stopPropagation(); gallery=false; render(); };
       b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-add'); if(!k||!DEFS[k]) return;
         if(!DEFS[k].multi&&hasType(k)) return;
-        const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:{})};
+        const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:k==='worldclock'?{tz:'Asia/Tokyo'}:{})};
         active.push(e); save(); gallery=false; render();
-        if(k==='countdown') setTimeout(()=>openCfg(e.u),50); });
+        /* (#R21) Location permission is requested ONLY here — the moment a weather widget is added. */
+        if(k==='weather'||k==='aqi'||k==='sun'){ if(k==='weather') reqGeo(()=>refreshOne(e)); }
+        if(k==='countdown'||k==='worldclock') setTimeout(()=>openCfg(e.u),50); });
       b.querySelectorAll('.wgt-x').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); const c=x.closest('.wgt-card'); const u=c&&c.getAttribute('data-u'); if(u){ active=active.filter(a=>a.u!==u); save(); render(); } });
       b.querySelectorAll('.wgt-cfg').forEach(g=>g.onclick=(ev)=>{ ev.stopPropagation(); openCfg(g.getAttribute('data-u')); });
       refreshAll(); }
@@ -10831,6 +11219,12 @@ window.addEventListener('DOMContentLoaded', () => {
           '<div style="display:flex;gap:6px;"><input class="cdd" type="date" value="'+(e.cfg.date||'')+'" style="'+selStyle+'flex:1;">'+
           '<button class="cdok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div></div>';
         box.querySelector('.cdok').onclick=()=>{ e.cfg.title=box.querySelector('.cdt').value.trim(); e.cfg.date=box.querySelector('.cdd').value; save(); box.style.display='none'; refreshOne(e); };
+      } else if(e.t==='worldclock'){
+        const zones=['Asia/Tokyo','Asia/Seoul','Asia/Shanghai','Asia/Hong_Kong','Asia/Singapore','Asia/Kolkata','Asia/Dubai','Europe/Moscow','Europe/Istanbul','Europe/Berlin','Europe/Paris','Europe/London','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','America/Sao_Paulo','America/Mexico_City','Africa/Cairo','Africa/Johannesburg','Australia/Sydney','Pacific/Auckland','UTC'];
+        box.innerHTML='<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">'+
+          '<select class="wctz" style="'+selStyle+'flex:1;min-width:0;">'+zones.map(z=>'<option value="'+z+'"'+(z===(e.cfg.tz||'Asia/Tokyo')?' selected':'')+'>'+z.replace(/_/g,' ')+'</option>').join('')+'</select>'+
+          '<button class="wcok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div>';
+        box.querySelector('.wcok').onclick=()=>{ e.cfg.tz=box.querySelector('.wctz').value; save(); box.style.display='none'; tickClock(); };
       }
     }
     function tickClock(){ if(!visible()) return;
@@ -10841,21 +11235,94 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
         setV(e.u,'<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); });
       active.filter(e=>e.t==='countdown').forEach(e=>refreshCountdown(e));
+      /* (#R21) Locally-computed widgets ride the clock tick so they're always current. */
+      active.filter(e=>e.t==='worldclock').forEach(e=>{ const z=(e.cfg&&e.cfg.tz)||'Asia/Tokyo'; let ts,ds;
+        try{ ts=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:z}); ds=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',timeZone:z}); }catch(_){ ts='—'; ds=''; }
+        setV(e.u,'<span style="font-size:24px;">'+ts+'</span>', ds+' · '+z.split('/').pop().replace(/_/g,' '));
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'世界時計 ':'World clock ')+z.split('/').pop().replace(/_/g,' '); });
+      active.filter(e=>e.t==='pop').forEach(e=>{ /* UN WPP 2024: ~8.231B at mid-2025, ≈ +2.17 persons/sec */
+        const v=8.231e9+(Date.now()-Date.UTC(2025,6,1))/1000*2.17;
+        setV(e.u,(v/1e9).toFixed(6)+' <span style="font-size:13px;">B</span>', (jp()?'国連推計ベースのライブ推定':'live estimate, UN-based')); });
+      active.filter(e=>e.t==='yearprog').forEach(e=>{ const y=now.getFullYear(); const a=new Date(y,0,1), b=new Date(y+1,0,1);
+        const fr=Math.min(1,Math.max(0,(now-a)/(b-a))); const day=Math.ceil((now-a)/864e5);
+        setV(e.u,(fr*100).toFixed(1)+'%<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);margin-top:7px;overflow:hidden;"><div style="height:100%;width:'+(fr*100).toFixed(1)+'%;background:var(--primary-color);border-radius:4px;"></div></div>', y+' · '+(jp()?day+'日目':'day '+day)); });
     }
     const wIco=(c)=>{ if(c==null)return '🌡'; if(c===0)return '☀️'; if(c<=3)return '⛅'; if(c<=48)return '🌫'; if(c<=67)return '🌧'; if(c<=77)return '❄️'; if(c<=82)return '🌦'; if(c<=99)return '⛈'; return '🌡'; };
     const una=()=>jp()?'取得できません':'unavailable';
-    async function refreshWeather(e){ try{ const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
+    /* (#R21) Geolocation for the weather/AQI/sun widgets. The permission PROMPT fires only when a
+       weather widget is added (reqGeo); other paths use the position only if already granted. */
+    let geoPos=null, geoDenied=false;
+    function reqGeo(cb){ try{ if(!navigator.geolocation){ geoDenied=true; cb&&cb(); return; }
+        navigator.geolocation.getCurrentPosition(
+          p=>{ geoPos={lat:p.coords.latitude,lng:p.coords.longitude,ts:Date.now()}; cb&&cb(); },
+          ()=>{ geoDenied=true; cb&&cb(); },
+          {enableHighAccuracy:false,maximumAge:5*60*1000,timeout:9000}); }catch(_){ cb&&cb(); } }
+    async function widgetLoc(){
+      if(geoPos&&Date.now()-geoPos.ts<10*60*1000) return {lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'};
+      if(!geoDenied){ try{ const st=await navigator.permissions.query({name:'geolocation'});
+          if(st.state==='granted'){ await new Promise(res=>reqGeo(res)); if(geoPos) return {lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'}; }
+        }catch(_){} }
+      const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
+      return {lat:c.lat,lng:c.lng,lbl:jp()?'地図中心':'map centre'};
+    }
+    async function refreshWeather(e){ try{ const c=await widgetLoc();
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
         const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
-        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map centre'));
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+c.lbl);
       }catch(_){ setV(e.u,'—', una()); } }
+    /* (#R21) FX freshness: fxratesapi.com (keyless, CORS*, minute-fresh — curl-verified) is primary;
+       open.er-api.com (daily) stays as the fallback. */
     async function refreshFx(e){ try{ const base=(e.cfg&&e.cfg.base)||'USD', quote=(e.cfg&&e.cfg.quote)||'JPY';
-        const r=await fetch('https://open.er-api.com/v6/latest/'+base); const j=await r.json(); const v=j.rates&&j.rates[quote];
+        let v=null, when='', src='';
+        try{ const r=await fetch('https://api.fxratesapi.com/latest?base='+base+'&currencies='+quote);
+          const j=await r.json(); if(j&&j.rates&&j.rates[quote]!=null){ v=j.rates[quote]; when=asOf((j.timestamp||0)*1000); src='fxratesapi'; } }catch(_){}
+        if(v==null){ const r=await fetch('https://open.er-api.com/v6/latest/'+base); const j=await r.json();
+          v=j.rates&&j.rates[quote]; when=asOf(j.time_last_update_utc); src='ER-API'; }
         const f=(x)=>x==null?'—':(x<0.01?(+x).toFixed(6):x<10?(+x).toFixed(4):(+x).toFixed(2));
-        setV(e.u, base+'/'+quote+'<br><span style="font-size:24px;">'+f(v)+'</span>', asOf(j.time_last_update_utc)+' · ER-API');
+        setV(e.u, base+'/'+quote+'<br><span style="font-size:24px;">'+f(v)+'</span>', when+' · '+src);
         const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'為替 ':'FX ')+base+'/'+quote;
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshSun(e){ try{ const c=await widgetLoc();
+        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&daily=sunrise,sunset,daylight_duration&forecast_days=1&timezone=auto');
+        const j=await r.json(); const d=j.daily||{};
+        const sr=String(d.sunrise&&d.sunrise[0]||'').slice(11,16), ss=String(d.sunset&&d.sunset[0]||'').slice(11,16);
+        const dl=d.daylight_duration&&d.daylight_duration[0];
+        setV(e.u,'<span style="font-size:17px;">🌅 '+(sr||'—')+' · 🌇 '+(ss||'—')+'</span>',
+          (dl?((jp()?'昼の長さ ':'daylight ')+Math.floor(dl/3600)+'h '+Math.round(dl%3600/60)+'m · '):'')+c.lbl);
+      }catch(_){ setV(e.u,'—', una()); } }
+    function refreshMoon(e){ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14)/864e5;
+        let age=(Date.now()/864e5-ref)%syn; if(age<0)age+=syn; const ph=age/syn;
+        const idx=Math.round(ph*8)%8;
+        const ic=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'][idx];
+        const nmE=['New moon','Waxing crescent','First quarter','Waxing gibbous','Full moon','Waning gibbous','Last quarter','Waning crescent'];
+        const nmJ=['新月','三日月','上弦の月','十三夜月','満月','寝待月','下弦の月','有明月'];
+        const illum=Math.round((1-Math.cos(ph*2*Math.PI))/2*100);
+        setV(e.u,ic+' <span style="font-size:15px;">'+(jp()?nmJ[idx]:nmE[idx])+'</span>',(jp()?'月齢 ':'age ')+age.toFixed(1)+(jp()?'日':' d')+' · '+illum+'% '+(jp()?'照度':'lit'));
+      }catch(_){ setV(e.u,'—',''); } }
+    async function refreshAqi(e){ try{ const c=await widgetLoc();
+        const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=us_aqi,pm2_5');
+        const j=await r.json(); const cu=j.current||{}; const v=cu.us_aqi;
+        const col=v==null?'var(--text-main)':v<=50?'#34c759':v<=100?'#ffcc00':v<=150?'#ff9500':'#ff3b30';
+        const cls=v==null?'':v<=50?(jp()?'良好':'Good'):v<=100?(jp()?'普通':'Moderate'):v<=150?(jp()?'敏感な人は注意':'Unhealthy (sensitive)'):(jp()?'不健康':'Unhealthy');
+        setV(e.u,'<span style="color:'+col+';">'+(v!=null?Math.round(v):'—')+'</span> <span style="font-size:13px;">US AQI</span>',
+          cls+' · PM2.5 '+(cu.pm2_5!=null?(+cu.pm2_5).toFixed(1):'—')+' µg/m³ · '+c.lbl);
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshIss(e){ try{ const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544'); const j=await r.json();
+        setV(e.u,'🛰 '+(+j.latitude).toFixed(1)+'°, '+(+j.longitude).toFixed(1)+'°',
+          '<span class="iss-fly" style="color:var(--primary-color);cursor:pointer;font-weight:600;">'+(jp()?'地図で見る →':'Fly there →')+'</span> · '+Math.round(j.altitude)+' km · '+asOf((j.timestamp||0)*1000));
+        const fl=document.querySelector('#wgts-'+e.u+' .iss-fly'); if(fl) fl.onclick=()=>{ try{ map&&map.flyTo({center:[+j.longitude,+j.latitude],zoom:3}); }catch(_){} };
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshWikiFeat(e){ try{ const now=new Date();
+        const ymd=now.getFullYear()+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+String(now.getDate()).padStart(2,'0');
+        let tfa=null;
+        for(const wl of (jp()?['ja','en']:['en'])){ try{ const r=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/'+wl+'/featured/'+ymd); if(r.ok){ const j=await r.json(); if(j&&j.tfa){ tfa=j.tfa; break; } } }catch(_){} }
+        if(!tfa){ setV(e.u,'—', una()); return; }
+        const url=(tfa.content_urls&&tfa.content_urls.desktop&&tfa.content_urls.desktop.page)||'';
+        setV(e.u,'<span style="font-size:14px;line-height:1.4;font-weight:700;">'+String(tfa.normalizedtitle||tfa.title||'').slice(0,60)+'</span>',
+          String(tfa.extract||'').slice(0,90)+'… · Wikipedia');
+        const ev=document.getElementById('wgtv-'+e.u); if(ev&&url){ ev.style.cursor='pointer'; ev.onclick=()=>{ try{ window.open(url,'_blank','noopener'); }catch(_){} }; }
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshCrypto(e){ try{ const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true');
         const j=await r.json(); const b=j.bitcoin||{}, t=j.ethereum||{};
@@ -10920,7 +11387,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const s=all[Math.floor(Math.random()*all.length)];
         const nm=jp()?(s.nameJp||s.nameEn):s.nameEn;
         const fm=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return String(v); };
-        setV(e.u,'<span style="font-size:24px;">'+(s.flag||'🏳️')+'</span> <span style="font-size:15px;font-weight:700;">'+nm+'</span>',
+        setV(e.u,window.imFlagHTML(s.flag,22)+' <span style="font-size:15px;font-weight:700;">'+nm+'</span>',
           (jp()?'人口 ':'Pop ')+fm(s.pop)+(s.gdp!=null?' · GDP '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+fm(s.area)+' km²':'')+'<br><span style="color:var(--primary-color);cursor:pointer;font-weight:600;" class="wc-next">'+(jp()?'別の国 ↻':'Another ↻')+'</span>');
         const nx=document.querySelector('#wgts-'+e.u+' .wc-next'); if(nx) nx.onclick=()=>refreshCountry(e);
       }catch(_){ setV(e.u,'—',''); } }
@@ -10940,15 +11407,24 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'crypto': refreshCrypto(e); break; case 'cryptocap': refreshCryptoCap(e); break; case 'fng': refreshFng(e); break;
         case 'gold': refreshMetal(e,'XAU'); break; case 'silver': refreshMetal(e,'XAG'); break; case 'quake': refreshQuake(e); break;
         case 'otd': refreshOtd(e); break; case 'featured': refreshFeatured(e); break; case 'country': refreshCountry(e); break;
-        case 'countdown': refreshCountdown(e); break; } }
+        case 'countdown': refreshCountdown(e); break;
+        case 'sun': refreshSun(e); break; case 'moon': refreshMoon(e); break; case 'aqi': refreshAqi(e); break;
+        case 'iss': refreshIss(e); break; case 'wikifeat': refreshWikiFeat(e); break;
+        case 'worldclock': case 'pop': case 'yearprog': tickClock(); break; } }
     function refreshAll(){ if(!visible()) return; active.forEach(refreshOne); }
-    function refreshData(){ if(!visible()) return; active.forEach(e=>{ if(e.t!=='clock'&&e.t!=='countdown'&&e.t!=='featured'&&e.t!=='country'&&e.t!=='otd') refreshOne(e); }); }
+    /* (#R21) Market/fast data refreshes every 60 s (was one 5-min tick for everything — the
+       "数時間遅れ" was the daily ER-API source, now replaced; this keeps the board live). */
+    const FAST=new Set(['fx','crypto','cryptocap','fng','gold','silver','iss']);
+    const LOCAL=new Set(['clock','countdown','featured','country','otd','worldclock','pop','yearprog','moon']);
+    function refreshFast(){ if(!visible()) return; active.forEach(e=>{ if(FAST.has(e.t)) refreshOne(e); }); }
+    function refreshData(){ if(!visible()) return; active.forEach(e=>{ if(!FAST.has(e.t)&&!LOCAL.has(e.t)) refreshOne(e); }); }
     function visible(){ return board && board.style.display!=='none' && board.offsetParent!==null; }
     function sync(){ const b=ensureBoard(); if(!b) return;
       const noTab=(typeof currentMode==='undefined'||!currentMode);
       if(noTab){ b.style.display='block'; if(!b.dataset.built){ b.dataset.built='1'; render(); } else refreshAll();
         if(!clockT) clockT=setInterval(tickClock,30000);
-        if(!dataT) dataT=setInterval(refreshData,5*60*1000);
+        if(!dataT){ dataT=setInterval(refreshData,5*60*1000); setInterval(refreshFast,60*1000);
+          document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&visible()) refreshAll(); }); }
       } else { b.style.display='none'; } }
     window.addEventListener('intmap-lang',()=>{ if(board){ board.dataset.built=''; if(board.style.display!=='none'){ board.dataset.built='1'; render(); } } });
     window.IntMapWidgets2={ sync, render, _active:()=>active, _setActive:(a)=>{ if(Array.isArray(a)){ active=a; active.forEach(e=>{ if(!e.u) e.u='w'+Math.random().toString(36).slice(2,8); if(!e.cfg) e.cfg={}; }); try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} if(board){ board.dataset.built=''; sync(); } } } };
@@ -11243,16 +11719,18 @@ window.addEventListener('DOMContentLoaded', () => {
       losH=obsHeight; losR=rangeKm;   /* (#R18) remember for the next site */
       const my=++runSeq, live=()=>my===runSeq;
       const mob=(typeof isMobile==='function'&&isMobile());
-      /* (#R20) finer still: desktop 600 rays (0.6°) × 320 steps (~192k samples — fine since _demPix
-         decodes each tile once and the loops are chunked); mobile stays at the safe 360×170. */
-      const RAYS=mob?360:600, STEPS=mob?170:320, R=6371000, REFF=R*4/3;
+      /* (#R20) finer still: desktop 600 rays (0.6°) × 320 steps; mobile stays at the safe 360×170.
+         (#R21) desktop 720 rays (0.5°) × 420 steps (~302k samples) — the chunked loops + per-tile
+         single decode keep it smooth, and the budget below still bounds the network cost. */
+      const RAYS=mob?360:720, STEPS=mob?170:420, R=6371000, REFF=R*4/3;
       const body=panel&&panel.querySelector('#los-body');
       const tick=()=>new Promise(r=>setTimeout(r,0));
       const loadLbl=jp()?'地形DEMを取得中…':'Loading terrain DEM…', calcLbl=jp()?'視通を計算中…':'Computing sightlines…';
       setProgress(0, loadLbl);
-      /* (#R20) small ranges may now climb to z14 on desktop (the tile budget still bounds the fetch) */
-      let z=Math.min(mob?13:14,_demZoomForSpan(rangeKm)+(mob?0:1));
-      const budget=mob?110:380, latA=Math.abs(site[1]);
+      /* (#R20) small ranges may climb to z14 on desktop; (#R21) tiny ranges (≲12 km) now reach
+         z15 = terrarium's NATIVE maximum — the finest terrain data that exists. */
+      let z=Math.min(mob?13:15,_demZoomForSpan(rangeKm)+(mob?0:(rangeKm<=12?2:1)));
+      const budget=mob?110:520, latA=Math.abs(site[1]);
       const estTiles=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(latA*Math.PI/180))/Math.pow(2,zz); const n=(2*rangeKm)/tk+1; return n*n*0.8; };
       while(z>5 && estTiles(z)>budget) z--;
       /* inline spherical destination — 125k turf.destination calls were themselves a stall */
@@ -11746,7 +12224,10 @@ window.addEventListener('DOMContentLoaded', () => {
        load hit a missing layer and nothing retried). */
     function applyBase(){ if(!cmap) return;
       if(!cmap.getLayer('cmp-base-carto')){ try{ cmap.once('idle',applyBase); }catch(_){} return; }
-      if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false); return; }
+      /* (#R21) X-ray + SATELLITE now works ("x-rayで…satelliteが使えない"): picking Sat in x-ray paints
+         the satellite base inside the lens (an x-ray *to satellite imagery*); picking Map keeps the
+         transparent lens (the classic data-layers-over-the-main-map view). */
+      if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',baseKind==='sat'); return; }
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
       setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
     function setBase(kind){ baseKind=kind; applyBase(); }
@@ -11778,13 +12259,17 @@ window.addEventListener('DOMContentLoaded', () => {
         followProjection();
         if(xrayOn() && win){
           /* (#R18) TRUE LENS — compare covers the whole container at the EXACT main camera and is
-             clipped to the window rect → pixel-perfect register on globe AND flat. */
+             clipped to the window rect → pixel-perfect register on globe AND flat.
+             (#R21) Drift fix ("一定以上メインマップを動かすとずれる"): the main camera carries PADDING
+             (frosted sidebar / sheet detents shift its optical centre) — the lens must carry the SAME
+             padding or every padded pixel is offset. Mirror it on every sync. */
           layoutXrayLens();
-          cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
+          let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
+          cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
         } else {
           /* SYNC: centre the compare on the geography under the UNCOVERED-area centroid. */
           let target=null; try{ target=map.unproject(uncoveredCentroidPx()); }catch(_){}
-          cmap.jumpTo({center:target||map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
+          cmap.jumpTo({center:target||map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
         }
       }catch(_){} syncing=false; }
     /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
@@ -11857,7 +12342,79 @@ window.addEventListener('DOMContentLoaded', () => {
         fetch('data/volcanoes_gvp.json').then(r=>r.json()).then(j=>{ try{
           cmap.addSource('cmpx-volc',{type:'geojson',data:j});
           cmap.addLayer({id:'cmpx-volc',type:'circle',source:'cmpx-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2,6,5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff','circle-stroke-width':0.7,'circle-opacity':0.9}});
-          done&&done(); }catch(_){} }).catch(()=>{}); }}
+          done&&done(); }catch(_){} }).catch(()=>{}); }},
+      /* (#R21) "全部のレイヤーをcompare viewでも使えるように" — country CHOROPLETHS are now cloned:
+         the main map paints them via feature-state on its own 'countries' source (unshareable), so
+         the compare map gets ONE geojson with every metric baked into properties + the same ramps. */
+      ...(function(){
+        const RAMP={
+          pop:[2,'#ffffcc',20,'#fed976',100,'#fd8d3c',500,'#e31a1c',3000,'#800026'],
+          hdi:[.45,'#a50026',.6,'#f46d43',.7,'#fee08b',.8,'#a6d96a',.95,'#1a9850'],
+          dem:[1,'#a50026',4,'#f46d43',6,'#fee08b',8,'#74add1',10,'#313695'],
+          milSpend:[1,'#fff7ec',5,'#fdd49e',20,'#fc8d59',75,'#d7301f',300,'#7f0000',916,'#4d0000'],
+          milSpendGDP:[0.5,'#edf8fb',1,'#b2e2e2',2,'#66c2a4',3.5,'#2ca25f',6,'#006d2c'],
+          gdppc:[1000,'#fff7ec',5000,'#fee8c8',15000,'#fdbb84',30000,'#fc8d59',55000,'#e34a33',90000,'#7f0000'],
+          tfr:[1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02']};
+        function srcReady(done){
+          if(cmap.getSource('cmp-choro')){ done&&done(); return; }
+          try{
+            const cg=(typeof countryGeo!=='undefined'&&countryGeo)||window.countryGeo;
+            const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
+            if(!cg||!Array.isArray(cg.features)){ try{ typeof loadCountryData==='function'&&loadCountryData(); }catch(_){} setTimeout(()=>srcReady(done),1500); return; }
+            const feats=cg.features.map(f=>{ const s=cs[f.id]||{}; const msg=(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null;
+              const nv=(x)=>(x!=null&&!isNaN(x)&&x>0)?x:-1;
+              return {type:'Feature',geometry:f.geometry,properties:{pop:nv(s.density),hdi:nv(s.hdi),dem:nv(s.dem),milSpend:nv(s.milSpend),milSpendGDP:nv(msg),gdppc:nv(s.gdppc),tfr:nv(s.tfr)}}; });
+            cmap.addSource('cmp-choro',{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+            done&&done();
+          }catch(_){}
+        }
+        function mk(k,nm){ return {k:'ch-'+k, n:nm, ids:['cmp-ch-'+k], add(done){ srcReady(()=>{ try{
+          if(!cmap.getLayer('cmp-ch-'+k)){
+            const ramp=['interpolate',['linear'],['to-number',['get',k]]].concat(RAMP[k]);
+            cmap.addLayer({id:'cmp-ch-'+k,type:'fill',source:'cmp-choro',layout:{visibility:'none'},paint:{'fill-color':['case',['<=',['to-number',['get',k]],0],'rgba(128,128,128,0.25)',ramp],'fill-opacity':0.7}});
+          }
+          done&&done(); }catch(_){} }); }}; }
+        return [
+          mk('pop',()=>jp()?'人口密度':'Population density'),
+          mk('gdppc',()=>jp()?'1人当たりGDP':'GDP per capita'),
+          mk('hdi',()=>'HDI'),
+          mk('dem',()=>jp()?'民主主義指数':'Democracy Index'),
+          mk('tfr',()=>jp()?'合計特殊出生率':'Fertility rate'),
+          mk('milSpend',()=>jp()?'国防費（$B）':'Military spending ($B)'),
+          mk('milSpendGDP',()=>jp()?'国防費（対GDP）':'Military spending (%GDP)')
+        ];
+      })(),
+      {k:'histb', n:()=>jp()?'過去の国境':'Historical borders', ids:['cmp-hb-f','cmp-hb-l'], add(done){
+        const cur=(window.IntMapBeta&&window.IntMapBeta.hbCurrent)?window.IntMapBeta.hbCurrent():null;
+        if(cmap.getSource('cmp-hb')){ try{ if(cur&&cur.fc) cmap.getSource('cmp-hb').setData(cur.fc); }catch(_){} done&&done(); return; }
+        const use=(fc)=>{ try{ if(!fc||!Array.isArray(fc.features)) return;
+          cmap.addSource('cmp-hb',{type:'geojson',data:fc});
+          cmap.addLayer({id:'cmp-hb-f',type:'fill',source:'cmp-hb',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','__col'],'#c9b18a'],'fill-opacity':0.3}});
+          cmap.addLayer({id:'cmp-hb-l',type:'line',source:'cmp-hb',layout:{visibility:'none'},paint:{'line-color':'#5e4a33','line-width':0.9,'line-opacity':0.85}});
+          done&&done(); }catch(_){} };
+        if(cur&&cur.fc){ use(cur.fc); return; }
+        fetch('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+((cur&&cur.year)||1914)+'.geojson').then(r=>r.json()).then(use).catch(()=>{}); }},
+      {k:'rail', n:()=>jp()?'世界の鉄道（軌間別）':'Railways (by gauge)', ids:['cmp-rail'], add(done){
+        if(cmap.getSource('cmp-rail')){ done&&done(); return; }
+        if(!window.IntMapBeta2) return;
+        window.IntMapBeta2.load('rail',fc=>{ try{ if(cmap.getSource('cmp-rail')) { done&&done(); return; }
+          cmap.addSource('cmp-rail',{type:'geojson',data:fc});
+          cmap.addLayer({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','col'],'#888'],'line-width':1.3,'line-opacity':0.85}});
+          done&&done(); }catch(_){} }); }},
+      {k:'dc', n:()=>jp()?'データセンター':'Data centres / cloud', ids:['cmp-dc'], add(done){
+        if(cmap.getSource('cmp-dc')){ done&&done(); return; }
+        if(!window.IntMapBeta2) return;
+        window.IntMapBeta2.load('dc',fc=>{ try{ if(cmap.getSource('cmp-dc')) { done&&done(); return; }
+          cmap.addSource('cmp-dc',{type:'geojson',data:fc});
+          cmap.addLayer({id:'cmp-dc',type:'circle',source:'cmp-dc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#5e8bff'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
+          done&&done(); }catch(_){} }); }},
+      {k:'pharma', n:()=>jp()?'医療・製薬':'Pharma & health', ids:['cmp-ph'], add(done){
+        if(cmap.getSource('cmp-ph')){ done&&done(); return; }
+        if(!window.IntMapBeta2) return;
+        window.IntMapBeta2.load('pharma',fc=>{ try{ if(cmap.getSource('cmp-ph')) { done&&done(); return; }
+          cmap.addSource('cmp-ph',{type:'geojson',data:fc});
+          cmap.addLayer({id:'cmp-ph',type:'circle',source:'cmp-ph',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,6,5.5],'circle-color':['coalesce',['get','col'],'#2bb3a3'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.9}});
+          done&&done(); }catch(_){} }); }}
     ];
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
@@ -11878,7 +12435,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
-      cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false});
+      cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
       try{ cmap.setProjection({type:(typeof currentProj!=='undefined'&&currentProj==='flat')?'mercator':'globe'}); }catch(_){}
       cmap.on('load',()=>{ applyBase(); });
       cmap.on('styledata',()=>{ setTimeout(applyBase,60); });
@@ -11945,6 +12502,12 @@ window.addEventListener('DOMContentLoaded', () => {
          jumpTo streams can never feed back into each other (plus the syncing flag). */
       map.on('move',()=>{ if(mode!=='free') syncFromMain(); });
       map.on('moveend',followProjection);
+      /* (#R21) Flat/Globe button calls this hook directly — the compare projection flips the same
+         instant, in EVERY mode (incl. Free, where no camera sync runs). */
+      window._cmpFollowProj=()=>{ try{ followProjection(); if(mode!=='free') syncFromMain(); }catch(_){} };
+      /* (#R21) belt-and-braces: a final re-register once the main map settles (kills any residual
+         lens drift from camera clamping mid-gesture). */
+      map.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
       cmap.on('move',(ev)=>{ if(mode==='sync'&&!syncing&&ev&&ev.originalEvent) syncToMain(); });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} followProjection(); syncFromMain(); },80); }
@@ -12085,18 +12648,63 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const body=p.querySelector('#air-body');
       const news=lngLat?nearbyNews(lngLat):[];
+      /* (#R21) Sharper brief: today's date is injected, every claim should carry a concrete year/
+         date/figure, and "Recent developments" must prioritise the newest events the model knows +
+         the supplied nearby headlines ("できるだけ日付などを記載する等具体的に。最新の動向を意識"). */
+      const today=new Date().toISOString().slice(0,10);
       const sys=jp()
-        ?'あなたは地政学・地域研究のリサーチアシスタントです。事実に忠実に、簡潔な日本語で答えてください。不確かな点は不確かと明記してください。'
-        :'You are a geopolitical and area-studies research assistant. Be factual and concise; clearly flag anything uncertain.';
+        ?('あなたは地政学・地域研究のリサーチアシスタントです。本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。')
+        :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.');
       const prompt=(jp()
-        ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史\n## 経済\n## 軍事・戦略的意義\n## 最近の動向\n各セクション2〜4文。')
-        :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History\n## Economy\n## Military & strategic significance\n## Recent developments\n2–4 sentences per section.'))
-        +(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'For context, recent nearby news headlines:\n')+news.map(s=>'- '+s).join('\n')):'');
+        ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
+        :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
+        +(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し（「最近の動向」に反映すること）:\n':'Recent nearby news headlines — reflect these in "Recent developments":\n')+news.map(s=>'- '+s).join('\n')):'');
+      /* (#R21 beta) SUGGESTED QUESTIONS — auto-generated from the countries in the current viewport
+         ("AIに聞く質問を、現在表示中の領域に基づいて自動生成") + a free-question box. */
+      try{
+        let sug=p.querySelector('#air-sugg'); if(sug) sug.remove();
+        sug=document.createElement('div'); sug.id='air-sugg'; sug.style.cssText='margin-top:10px;border-top:1px solid rgba(128,128,128,0.2);padding-top:8px;';
+        const qs=suggestQs(name);
+        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'おすすめの質問（ベータ — 表示中の領域から自動生成）':'Suggested questions (beta — from the current view)')+'</div>'+
+          qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">💬 '+esc(s)+'</button>').join('')+
+          '<div style="display:flex;gap:6px;margin-top:6px;"><input class="air-free" type="text" placeholder="'+(jp()?'自由に質問…':'Ask anything…')+'" style="flex:1;min-width:0;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
+        p.appendChild(sug);
+        const ask=async(qq)=>{ body.innerHTML='<span style="color:var(--text-muted);">'+(jp()?'回答中…':'Thinking…')+'</span>';
+          try{ const out2=await askAI(qq+(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'Context — recent nearby headlines:\n')+news.map(s=>'- '+s).join('\n')):''),sys);
+            body.innerHTML=md(out2||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources.')+'</div>';
+          }catch(e2){ body.innerHTML='<span style="color:#ff453a;">'+esc(e2&&e2.message||'AI error')+'</span>'; } };
+        sug.querySelectorAll('.air-q').forEach(b2=>b2.onclick=()=>ask(qs[+b2.getAttribute('data-i')]));
+        const fr=sug.querySelector('.air-free'), go=sug.querySelector('.air-go');
+        const fire=()=>{ const v=fr.value.trim(); if(v){ ask(v); fr.value=''; } };
+        if(go) go.onclick=fire; if(fr) fr.addEventListener('keydown',e2=>{ if(e2.key==='Enter'){ e2.preventDefault(); fire(); } });
+      }catch(_){}
       try{
         const out=await askAI(prompt,sys);
         body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources for important decisions.')+'</div>';
       }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
       const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
+    }
+    /* questions templated from the most populous countries inside the current viewport */
+    function suggestQs(name){
+      let inView=[];
+      try{ const b=map.getBounds();
+        inView=Object.values(countryStats||{}).filter(s=>s&&s.latlng&&s.latlng[0]>b.getSouth()&&s.latlng[0]<b.getNorth()&&s.latlng[1]>b.getWest()&&s.latlng[1]<b.getEast());
+        inView.sort((a,b2)=>(b2.pop||0)-(a.pop||0));
+      }catch(_){}
+      const nm=(s)=>jp()?(s.nameJp||s.nameEn):s.nameEn;
+      const out=[];
+      if(jp()){
+        out.push(name+'の地政学的重要性を、直近の動向を踏まえて教えて');
+        if(inView[0]&&inView[1]&&inView[0]!==inView[1]) out.push(nm(inView[0])+'と'+nm(inView[1])+'の現在の関係と主要な懸案は？');
+        if(inView[0]) out.push(nm(inView[0])+'の経済の強みと弱みを最新の数値で教えて');
+        out.push(name+'周辺で今後12か月に注視すべきリスクは？');
+      } else {
+        out.push('Why does '+name+' matter geopolitically, given recent developments?');
+        if(inView[0]&&inView[1]&&inView[0]!==inView[1]) out.push('What is the current state of '+nm(inView[0])+'–'+nm(inView[1])+' relations, and the main friction points?');
+        if(inView[0]) out.push('What are '+nm(inView[0])+'’s economic strengths and weaknesses, with the latest figures?');
+        out.push('What risks around '+name+' should be watched over the next 12 months?');
+      }
+      return out.slice(0,4);
     }
     return { open };
   })();
@@ -12224,6 +12832,158 @@ window.addEventListener('DOMContentLoaded', () => {
     };
   })();
 
+  /* ===== (#R21) ACLED CONFLICT EVENTS — its own collapsible section inside the News tab (separate
+     from the news feed, per "ニュース欄の中でも、ニュースと別の場所に"). ACLED's API is key-gated
+     (free registration at acleddata.com) → email+key inputs persist locally; events of the last
+     14 days render as a list + map pins coloured by event type. Every fetch goes through the
+     direct URL first, then the CORS proxies. ===== */
+  (function(){
+    if(typeof map==='undefined'||!map) return;
+    const jp=()=>currentLang==='jp';
+    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    const KEY='intmap_acled';
+    let cred={email:'',key:''}; try{ const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s) cred=s; }catch(_){}
+    let card=null, open=false, events=[], pinsOn=true;
+    const TYPE_COL={'Battles':'#ff3b30','Explosions/Remote violence':'#ff9500','Violence against civilians':'#af52de','Protests':'#0a84ff','Riots':'#ffd60a','Strategic developments':'#8e8e93'};
+    function ensureLayer(){ if(map.getSource('acled-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        map.addSource('acled-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'ACLED'});
+        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
+        map.addLayer({id:'acled-pt',type:'circle',source:'acled-src',layout:{visibility:'none'},paint:{
+          'circle-radius':['interpolate',['linear'],['zoom'],1,2.4,5,4.4,9,7],
+          'circle-color':['coalesce',['get','col'],'#ff3b30'],'circle-stroke-color':'#fff','circle-stroke-width':0.8,'circle-opacity':0.88}},before);
+        map.on('click','acled-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          try{ new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'300px'}).setLngLat(f.geometry.coordinates)
+            .setHTML('<div style="min-width:170px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(p.tp)+'</div><div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">'+esc(p.d)+' · '+esc(p.loc)+', '+esc(p.cty)+(p.fat>0?(' · '+(jp()?'死者 ':'fatalities ')+p.fat):'')+'</div>'+(p.notes?'<div style="font-size:11px;color:var(--text-main);margin-top:5px;line-height:1.5;">'+esc(String(p.notes).slice(0,220))+'…</div>':'')+'</div>').addTo(map); }catch(_){}
+        });
+        map.on('mouseenter','acled-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
+        map.on('mouseleave','acled-pt',()=>{ map.getCanvas().style.cursor=''; });
+        return true;
+      }catch(_){ return false; } }
+    function setPins(on){ pinsOn=on; const a=()=>{ if(!ensureLayer()){ map.once('idle',a); return; } try{ map.setLayoutProperty('acled-pt','visibility',on&&events.length?'visible':'none'); }catch(_){} }; a(); }
+    function pushPins(){ const a=()=>{ if(!ensureLayer()){ map.once('idle',a); return; }
+      try{ map.getSource('acled-src').setData({type:'FeatureCollection',features:events.map(ev=>({type:'Feature',geometry:{type:'Point',coordinates:[+ev.longitude,+ev.latitude]},properties:{tp:ev.event_type,d:ev.event_date,loc:ev.location,cty:ev.country,fat:+ev.fatalities||0,notes:ev.notes||'',col:TYPE_COL[ev.event_type]||'#ff3b30'}}))}); }catch(_){}
+      setPins(pinsOn); }; a(); }
+    async function loadEvents(){
+      const st=card.querySelector('#acled-status'); const list=card.querySelector('#acled-list');
+      if(!cred.email||!cred.key){ st.textContent=jp()?'メールとAPIキーを入力してください（acleddata.comで無料登録）。':'Enter your email + API key (free registration at acleddata.com).'; return; }
+      st.textContent=jp()?'取得中…':'Loading…'; list.innerHTML='';
+      const d2=new Date(), d1=new Date(Date.now()-14*864e5);
+      const f=(d)=>d.toISOString().slice(0,10);
+      const url='https://api.acleddata.com/acled/read?key='+encodeURIComponent(cred.key)+'&email='+encodeURIComponent(cred.email)+
+        '&event_date='+f(d1)+'|'+f(d2)+'&event_date_where=BETWEEN&limit=400&fields=event_date|event_type|country|location|latitude|longitude|fatalities|notes';
+      let j=null;
+      for(const wrap of PROX){ try{
+        const ctrl=new AbortController(); const to=setTimeout(()=>{ try{ctrl.abort();}catch(_){} },20000);
+        const r=await fetch(wrap(url),{signal:ctrl.signal}); clearTimeout(to);
+        if(!r.ok) continue; j=await r.json(); if(j&&(j.data||j.success!==undefined)) break;
+      }catch(_){} }
+      const rows=(j&&j.data)||[];
+      if(!rows.length){ st.textContent=(j&&j.error)?((jp()?'エラー: ':'Error: ')+esc(j.error.message||JSON.stringify(j.error)).slice(0,160)):(jp()?'取得できませんでした。キー・メール・利用枠を確認してください。':'Nothing returned — check the key, email and your API quota.'); return; }
+      events=rows.filter(ev=>ev&&ev.latitude&&ev.longitude);
+      st.textContent=(jp()?('直近14日間: '+events.length+'件 · ACLED'):(events.length+' events, last 14 days · ACLED'));
+      const fmt=events.slice(0,40).map(ev=>'<div class="acled-row" data-ll="'+(+ev.longitude)+','+(+ev.latitude)+'" style="display:flex;gap:7px;align-items:flex-start;padding:6px 4px;border-bottom:1px solid rgba(128,128,128,0.12);cursor:pointer;font-size:11.5px;line-height:1.45;">'+
+        '<span style="width:9px;height:9px;border-radius:5px;flex:none;margin-top:3px;background:'+(TYPE_COL[ev.event_type]||'#ff3b30')+';"></span>'+
+        '<span><b style="color:var(--text-main);">'+esc(ev.event_type)+'</b> · '+esc(ev.event_date)+'<br><span style="color:var(--text-muted);">'+esc(ev.location)+', '+esc(ev.country)+(+ev.fatalities>0?(' · '+(jp()?'死者 ':'†')+ev.fatalities):'')+'</span></span></div>').join('');
+      list.innerHTML=fmt;
+      list.querySelectorAll('.acled-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); map.flyTo({center:[lng,lat],zoom:7}); }catch(_){} });
+      pushPins();
+    }
+    function build(){
+      if(card) return card;
+      const feed=document.getElementById('live-news-feed'); if(!feed||!feed.parentElement) return null;
+      card=document.createElement('div'); card.id='acled-card';
+      card.style.cssText='display:none;flex:0 0 auto;background:var(--card-bg);border:1px solid rgba(128,128,128,0.12);border-radius:14px;padding:10px 12px;margin:0 0 10px;box-shadow:var(--shadow);';
+      feed.parentElement.insertBefore(card,feed);
+      render();
+      return card;
+    }
+    function render(){
+      if(!card) return;
+      card.innerHTML='<div id="acled-head" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-main);">⚔ '+(jp()?'紛争イベント（ACLED）':'Conflict events (ACLED)')+'<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">beta</span><span style="opacity:0.6;font-size:10px;">'+(open?'▾':'▸')+'</span></div>'+
+        (open?('<div style="margin-top:8px;">'+
+          '<div style="display:flex;gap:6px;margin-bottom:6px;">'+
+          '<input id="acled-email" type="email" placeholder="email" value="'+esc(cred.email)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;">'+
+          '<input id="acled-key" type="password" placeholder="API key" value="'+esc(cred.key)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;"></div>'+
+          '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">'+
+          '<button id="acled-load" class="ai-test-btn" style="flex:1;">'+(jp()?'直近14日間を取得':'Load last 14 days')+'</button>'+
+          '<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer;"><input id="acled-pins" type="checkbox" '+(pinsOn?'checked':'')+'>'+(jp()?'ピン':'Pins')+'</label></div>'+
+          '<div id="acled-status" style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'ACLED（武力紛争位置・事件データ）。無料登録のメール+APIキーが必要です。':'Armed Conflict Location & Event Data. Needs the free-registration email + API key.')+'</div>'+
+          '<div id="acled-list" style="max-height:230px;overflow-y:auto;"></div></div>'):'');
+      card.querySelector('#acled-head').onclick=()=>{ open=!open; render(); };
+      if(open){
+        const em=card.querySelector('#acled-email'), ky=card.querySelector('#acled-key');
+        [em,ky].forEach(i=>i.addEventListener('change',()=>{ cred={email:em.value.trim(),key:ky.value.trim()}; try{ localStorage.setItem(KEY,JSON.stringify(cred)); }catch(_){} }));
+        card.querySelector('#acled-load').onclick=()=>{ cred={email:em.value.trim(),key:ky.value.trim()}; try{ localStorage.setItem(KEY,JSON.stringify(cred)); }catch(_){} loadEvents(); };
+        card.querySelector('#acled-pins').onchange=(e)=>setPins(e.target.checked);
+        if(events.length){ const st=card.querySelector('#acled-status'); st.textContent=(jp()?('直近14日間: '+events.length+'件 · ACLED'):(events.length+' events, last 14 days · ACLED')); }
+      }
+    }
+    function syncVis(){ const c=build(); if(!c) return;
+      c.style.display=(typeof currentMode!=='undefined'&&(currentMode==='news'||currentMode==='saved'))?'block':'none'; }
+    /* follow the tab switches */
+    try{ const orig=renderUI; renderUI=function(){ const r=orig.apply(this,arguments); try{ syncVis(); }catch(_){} return r; }; }catch(_){}
+    if(document.readyState!=='loading') setTimeout(syncVis,400); else document.addEventListener('DOMContentLoaded',()=>setTimeout(syncVis,400));
+    window.addEventListener('intmap-lang',()=>{ try{ render(); }catch(_){} });
+    window.IntMapACLED={load:loadEvents};
+  })();
+
+  /* ===== (#R21) LAYER SEARCH — a filter box pinned to the top of the Layers panel. Matches the
+     visible label text of every layer row (EN or JP), expands groups while filtering, hides section
+     headers with no hits, and restores the normal panel (incl. the mobile beta pulldown) on clear. ===== */
+  (function(){
+    const jp=()=>currentLang==='jp';
+    function dd(){ return document.getElementById('layer-dropdown'); }
+    function filter(qs){
+      const d=dd(); if(!d) return;
+      const q=String(qs||'').trim().toLowerCase();
+      const rows=d.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option');
+      const extras=d.querySelectorAll(':scope > hr, :scope > .lyr-others-note, :scope > #layer-fav-section, :scope > #layer-active-section, :scope > #layer-tools');
+      if(!q){
+        rows.forEach(r=>{ r.style.display=''; });
+        extras.forEach(el=>{ el.style.display=''; });
+        d.querySelectorAll(':scope > .lyr-head, :scope > .layer-group-title').forEach(h=>{ h.style.display=''; });
+        try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
+        return;
+      }
+      d.querySelectorAll(':scope > .lyr-head, :scope > .layer-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
+      rows.forEach(r=>{ const t=(r.textContent||'').toLowerCase(); r.style.display=t.indexOf(q)>=0?'':'none'; });
+      extras.forEach(el=>{ el.style.display='none'; });
+      d.querySelectorAll(':scope > .lyr-head, :scope > .layer-group-title').forEach(h=>{
+        let el=h.nextElementSibling, any=false;
+        while(el && !el.matches('.lyr-head,.layer-group-title') && el.tagName!=='HR'){
+          if((el.matches('.lyr-row')||el.matches('label.layer-option')) && el.style.display!=='none'){ any=true; break; }
+          el=el.nextElementSibling; }
+        h.style.display=any?'':'none';
+      });
+    }
+    function ensureBox(){
+      const d=dd(); if(!d) return;
+      let box=document.getElementById('layer-search-wrap');
+      if(!box){
+        box=document.createElement('div'); box.id='layer-search-wrap';
+        box.style.cssText='position:sticky;top:0;z-index:6;padding:2px 0 7px;';
+        box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">';
+        const inp=box.querySelector('input');
+        inp.placeholder=jp()?'🔍 レイヤーを検索…':'🔍 Search layers…';
+        inp.addEventListener('input',()=>filter(inp.value));
+        inp.addEventListener('click',e=>e.stopPropagation());
+        inp.addEventListener('keydown',e=>e.stopPropagation());
+        window.addEventListener('intmap-lang',()=>{ inp.placeholder=jp()?'🔍 レイヤーを検索…':'🔍 Search layers…'; });
+      }
+      if(d.firstChild!==box) d.insertBefore(box,d.firstChild);
+      /* re-apply an active query after a panel rebuild */
+      const inp=box.querySelector('input'); if(inp&&inp.value) filter(inp.value);
+    }
+    /* keep the box pinned across every reorganize (the panel is rebuilt on each open) */
+    function hook(){ const orig=window.reorganizeLayerPanel;
+      if(typeof orig!=='function'||orig.__lsWrapped){ setTimeout(hook,800); return; }
+      const w=function(){ const r=orig.apply(this,arguments); try{ ensureBox(); }catch(_){} return r; };
+      w.__lsWrapped=true; window.reorganizeLayerPanel=w; ensureBox(); }
+    if(document.readyState!=='loading') setTimeout(hook,600); else document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,600));
+  })();
+
   /* ===== (#R20) EDUCATION MODE — quizzes + learning cards built on the bundled country data
      ("世界地理…を学べるモード。クイズ、解説カード"). Entry: Layers → Tools → 🎓 Learn. Three quiz
      types: flag→country, capital→country, find-the-country-on-the-map (click; point-in-polygon). ===== */
@@ -12239,7 +12999,11 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.style.cssText='display:none;position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:1600;width:min(340px,calc(100vw - 24px));max-height:min(72vh,600px);overflow-y:auto;';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       return panel; }
-    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">🎓 '+(jp()?'学習モード':'Education mode')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+    /* (#R21) Renamed to QUIZ MODE; flags render via flagcdn images (Windows shows emoji flags as
+       bare letters like "DE"); 4 new quiz types: country→capital, population duel, area duel,
+       country silhouette. */
+    const flagH=(s,h)=>window.imFlagHTML?window.imFlagHTML(s&&s.flag,h||20):((s&&s.flag)||'');
+    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">🎓 '+(jp()?'クイズモード':'Quiz mode')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
       '<div style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">'+(jp()?'スコア ':'Score ')+score+'/'+total+' · '+(jp()?'連続正解 ':'streak ')+streak+'</div>'; }
     function wire(){ panel.querySelector('.tp-close').onclick=closeP; try{ makeDraggable(panel,panel.querySelector('.tp-header')); }catch(_){} }
     function menu(){ const p=ensure(); mapQuizArmed=false; p.style.display='block';
@@ -12247,37 +13011,102 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div style="display:flex;flex-direction:column;gap:7px;">'+
         '<button class="ai-test-btn" data-q="flag" style="width:100%;">🚩 '+(jp()?'国旗クイズ（国旗→国名）':'Flag quiz (flag → country)')+'</button>'+
         '<button class="ai-test-btn" data-q="capital" style="width:100%;">🏛 '+(jp()?'首都クイズ（首都→国名）':'Capital quiz (capital → country)')+'</button>'+
+        '<button class="ai-test-btn" data-q="capital2" style="width:100%;">🏙 '+(jp()?'首都クイズ（国名→首都）':'Capital quiz (country → capital)')+'</button>'+
         '<button class="ai-test-btn" data-q="map" style="width:100%;">🗺 '+(jp()?'地図クイズ（国を地図でクリック）':'Map quiz (click the country)')+'</button>'+
+        '<button class="ai-test-btn" data-q="shape" style="width:100%;">⬛ '+(jp()?'シルエットクイズ（国の形→国名）':'Silhouette quiz (shape → country)')+'</button>'+
+        '<button class="ai-test-btn" data-q="duelpop" style="width:100%;">👥 '+(jp()?'人口対決（どちらが多い?）':'Population duel (which is bigger?)')+'</button>'+
+        '<button class="ai-test-btn" data-q="duelarea" style="width:100%;">📐 '+(jp()?'面積対決（どちらが広い?）':'Area duel (which is larger?)')+'</button>'+
         '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'+(jp()?'正解すると、その国の解説カードが表示されます。':'Each answer shows a learning card about the country.')+'</div></div>';
       wire(); p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-q'); next(); }); }
+    /* country silhouette → compact SVG (equirectangular, cos-lat corrected; antimeridian spanners skipped) */
+    function shapeSVG(code){ try{
+      if(!window.countryGeo) return null;
+      const f=(countryGeo.features||[]).find(x=>{ try{ return resolveCountryId(x)===code; }catch(_){ return false; } });
+      if(!f||!f.geometry) return null;
+      const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[];
+      let minX=999,minY=999,maxX=-999,maxY=-999; const rings=[];
+      polys.forEach(p=>{ const r=p&&p[0]; if(!r||r.length<4) return; rings.push(r);
+        r.forEach(c=>{ if(c[0]<minX)minX=c[0]; if(c[0]>maxX)maxX=c[0]; if(c[1]<minY)minY=c[1]; if(c[1]>maxY)maxY=c[1]; }); });
+      if(!rings.length||maxX-minX<=0||maxY-minY<=0) return null;
+      if(maxX-minX>180) return null;
+      const cosm=Math.max(0.15,Math.cos((minY+maxY)/2*Math.PI/180));
+      const W=170,H=120,pad=8;
+      const s=Math.min((W-2*pad)/((maxX-minX)*cosm),(H-2*pad)/(maxY-minY));
+      const ox=(W-(maxX-minX)*cosm*s)/2, oy=(H-(maxY-minY)*s)/2;
+      let d='';
+      rings.forEach(r=>{ const step=Math.max(1,Math.floor(r.length/180));
+        for(let i=0;i<r.length;i+=step){ const c=r[i];
+          d+=(i===0?'M':'L')+((c[0]-minX)*cosm*s+ox).toFixed(1)+' '+((maxY-c[1])*s+oy).toFixed(1)+' '; }
+        d+='Z '; });
+      return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" style="display:block;margin:4px auto 10px;"><path d="'+d+'" fill="var(--primary-color)" fill-opacity="0.75" stroke="var(--text-main)" stroke-width="0.8" fill-rule="evenodd"/></svg>';
+    }catch(_){ return null; } }
     function card(s,ok,extra){ const f=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
       return '<div style="border:1px solid '+(ok?'rgba(52,199,89,0.5)':'rgba(255,69,58,0.5)')+';border-radius:12px;padding:10px 12px;margin-top:8px;background:'+(ok?'rgba(52,199,89,0.08)':'rgba(255,69,58,0.07)')+';font-size:12px;line-height:1.6;">'+
-        '<div style="font-weight:700;font-size:14px;">'+(ok?'⭕':'❌')+' '+s.flag+' '+esc(cname(s))+'</div>'+(extra||'')+
+        '<div style="font-weight:700;font-size:14px;">'+(ok?'⭕':'❌')+' '+flagH(s,18)+' '+esc(cname(s))+'</div>'+(extra||'')+
         '<div style="color:var(--text-muted);margin-top:3px;">'+(jp()?'首都':'Capital')+': '+esc(s.capital||'—')+' · '+(jp()?'人口':'Pop')+': '+f(s.pop)+(s.gdp!=null?' · GDP: '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+f(s.area)+' km²':'')+'</div></div>'; }
     function next(){ const p=ensure(); const all=pool();
       if(all.length<8){ p.innerHTML=header()+'<div style="font-size:12px;color:var(--text-muted);">'+(jp()?'国データを読み込み中です。少し待ってから開いてください。':'Country data is still loading — try again in a moment.')+'</div>'; wire(); return; }
-      const answer=pick(all);
+      let answer=pick(all);
       q={answer};
       if(mode==='map'){
         mapQuizArmed=true;
         p.innerHTML=header()+'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">🗺 '+(jp()?'地図上でクリック:':'Click on the map:')+'</div>'+
-          '<div style="font-size:17px;font-weight:800;color:var(--primary-color);margin-bottom:8px;">'+answer.flag+' '+esc(cname(answer))+'</div>'+
+          '<div style="font-size:17px;font-weight:800;color:var(--primary-color);margin-bottom:8px;">'+flagH(answer,18)+' '+esc(cname(answer))+'</div>'+
           '<div id="edu-map-res" style="font-size:12px;color:var(--text-muted);">'+(jp()?'地図のその国をクリックしてください…':'Click that country on the map…')+'</div>'+
           '<button class="ai-test-btn" id="edu-skip" style="width:100%;margin-top:8px;">'+(jp()?'スキップ':'Skip')+'</button>';
         wire(); p.querySelector('#edu-skip').onclick=()=>{ total++; streak=0; next(); };
         return;
       }
+      /* (#R21) DUEL quizzes — two countries, pick the one with the higher metric (≥20% apart so
+         the question is fair). */
+      if(mode==='duelpop'||mode==='duelarea'){
+        const metric=mode==='duelpop'?(s=>s.pop):(s=>s.area);
+        let a=null,b=null,tries=0;
+        while(tries++<60){ a=pick(all); b=pick(all);
+          const va=metric(a),vb=metric(b);
+          if(a!==b&&va&&vb&&Math.max(va,vb)/Math.min(va,vb)>=1.2) break; a=null; }
+        if(!a){ next(); return; }
+        const win=metric(a)>=metric(b)?a:b;
+        const fmt=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
+        const unit=mode==='duelarea'?' km²':'';
+        p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;margin-bottom:8px;">'+(mode==='duelpop'?(jp()?'👥 人口が多いのはどっち?':'👥 Which has the larger population?'):(jp()?'📐 面積が広いのはどっち?':'📐 Which is larger by area?'))+'</div>'+
+          '<div style="display:flex;flex-direction:column;gap:6px;">'+[a,b].map((o,i)=>'<button class="ai-test-btn" data-d="'+i+'" style="width:100%;text-align:left;">'+flagH(o,16)+' '+esc(cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
+        wire();
+        p.querySelectorAll('[data-d]').forEach(btn=>btn.onclick=()=>{
+          const chosen=[a,b][+btn.getAttribute('data-d')]; const ok=chosen===win; total++; if(ok){ score++; streak++; } else streak=0;
+          const both='<div style="font-size:11px;margin-top:3px;">'+esc(cname(a))+': <b>'+fmt(metric(a))+unit+'</b> · '+esc(cname(b))+': <b>'+fmt(metric(b))+unit+'</b></div>';
+          const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(win,ok,both)+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+          const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
+          p.querySelectorAll('[data-d]').forEach(x=>x.disabled=true);
+        });
+        return;
+      }
+      /* (#R21) SILHOUETTE quiz — the country's real outline from countryGeo. */
+      let shape=null;
+      if(mode==='shape'){
+        let tries=0; while(tries++<40){ shape=shapeSVG(answer.code); if(shape) break; answer=pick(all); }
+        if(!shape){ mode='flag'; }
+        q={answer};
+      }
       const wrong=[]; while(wrong.length<3){ const w=pick(all); if(w!==answer&&!wrong.includes(w)) wrong.push(w); }
       const opts=[answer,...wrong].sort(()=>Math.random()-0.5);
+      /* (#R21) country→capital variant: options are CAPITALS */
+      const cap2=(mode==='capital2');
       const qhtml=(mode==='flag')
-        ?'<div style="font-size:48px;text-align:center;margin:4px 0 10px;">'+answer.flag+'</div>'
+        ?'<div style="text-align:center;margin:6px 0 12px;">'+flagH(answer,56)+'</div>'
+        :(mode==='shape')?shape
+        :cap2?'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">'+flagH(answer,18)+' '+esc(cname(answer))+'</div>'
         :'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">🏛 '+esc(answer.capital||'?')+'</div>';
-      p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;">'+(mode==='flag'?(jp()?'この国旗はどこの国?':'Which country is this flag?'):(jp()?'この首都はどこの国?':'Which country has this capital?'))+'</div>'+qhtml+
-        '<div style="display:flex;flex-direction:column;gap:6px;">'+opts.map((o,i)=>'<button class="ai-test-btn" data-o="'+i+'" style="width:100%;text-align:left;">'+esc(cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
+      const title=(mode==='flag')?(jp()?'この国旗はどこの国?':'Which country is this flag?')
+        :(mode==='shape')?(jp()?'この形はどこの国?':'Which country is this shape?')
+        :cap2?(jp()?'この国の首都は?':'What is this country’s capital?')
+        :(jp()?'この首都はどこの国?':'Which country has this capital?');
+      p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;">'+title+'</div>'+qhtml+
+        '<div style="display:flex;flex-direction:column;gap:6px;">'+opts.map((o,i)=>'<button class="ai-test-btn" data-o="'+i+'" style="width:100%;text-align:left;">'+esc(cap2?(o.capital||'—'):cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
       wire();
       p.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
         const chosen=opts[+b.getAttribute('data-o')]; const ok=chosen===q.answer; total++; if(ok){ score++; streak++; } else streak=0;
-        const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(jp()?'あなたの回答: ':'You picked: ')+esc(cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+        const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(jp()?'あなたの回答: ':'You picked: ')+esc(cap2?(chosen.capital||'—'):cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
         const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
         p.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);
         try{ if(q.answer.latlng&&ok) map&&map.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
@@ -12303,14 +13132,14 @@ window.addEventListener('DOMContentLoaded', () => {
     function openP(){ score=0; streak=0; total=0; menu(); }
     function mount(){ if(document.getElementById('edu-mount')) return;
       const host=document.createElement('div'); host.id='edu-mount'; host.style.marginTop='6px';
-      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎓 <span>'+(jp()?'学習モード（クイズ）':'Education mode (quizzes)')+'</span></button>';
+      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎓 <span>'+(jp()?'クイズモード':'Quiz mode')+'</span></button>';
       const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
       (tools||dd||document.body).appendChild(host);
       host.querySelector('#btn-edu').onclick=openP;
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     if(map) map.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎓 <span>'+(jp()?'学習モード（クイズ）':'Education mode (quizzes)')+'</span>'; });
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎓 <span>'+(jp()?'クイズモード':'Quiz mode')+'</span>'; });
     return { open:openP, close:closeP };
   })();
 
@@ -12635,17 +13464,21 @@ window.addEventListener('DOMContentLoaded', () => {
      first visit (nothing seen before) we auto-cycle a few colourful layers with a bottom pill that names
      the layer being shown + play/pause + dismiss. It stops the moment the user toggles any layer or hits ✕,
      and remembers it's been seen so it never nags again. Purely additive; touches only its own pill. */
-  function _imStartDemo(){
-    try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
-    /* (#R16) Skip the auto-demo on phones: it eagerly loaded 4 heavy layers (incl. Köppen) on the very
-       first visit — slowing the mobile startup the user called slow, and adding to the Köppen OOM risk.
-       Mobile gets a clean, fast first paint instead. Desktop keeps the showcase. */
-    try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return; }catch(_){}
+  function _imStartDemo(force){
+    /* (#R21) force=true → the Settings "Tutorial" button re-runs the showcase on demand. */
+    if(!force){
+      try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
+      /* (#R16) Skip the auto-demo on phones: it eagerly loaded 4 heavy layers (incl. Köppen) on the very
+         first visit — slowing the mobile startup the user called slow, and adding to the Köppen OOM risk.
+         Mobile gets a clean, fast first paint instead. Desktop keeps the showcase. */
+      try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches) return; }catch(_){}
+    }
     if(typeof map==='undefined'||!map) return;
+    try{ const old=document.getElementById('im-demo-pill'); if(old) old.remove(); }catch(_){}
     const jp=()=>currentLang==='jp';
     const SHOW=[['dl-climate','Köppen climate','ケッペン気候区分'],['dl-nightsat','Night lights','夜間光（衛星）'],['dl-relief','Elevation relief','標高（段彩）'],['dl-popgrid','Population density (1 km grid)','人口密度（1kmグリッド）']];
     /* don't start if a thematic layer is already on */
-    if(document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
+    if(!force && document.querySelectorAll('#layer-dropdown .lyr-row.on, #layer-dropdown input.geo-layer-cb:checked').length) return;
     let idx=-1,timer=null,paused=false,demoToggling=false,done=false,curId=null;
     const gcb=(id)=>document.getElementById(id);
     const pill=document.createElement('div'); pill.id='im-demo-pill';
@@ -12665,10 +13498,15 @@ window.addEventListener('DOMContentLoaded', () => {
     window._imDemoStop=()=>stop(true);
     next();
   }
+  window._imStartDemo=_imStartDemo;
 
   /* ===== Init ===== */
-  try{ rebuildGeoIndex(); }catch(_){}   /* index the built-in gazetteer now so the non-AI locator works before Supabase loads (#11) */
-  populateTimezones(); updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
+  /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an
+     idle slice on phones (both are re-built on demand anyway — search warms the index, opening
+     Settings repopulates the list). Desktop keeps the synchronous boot. */
+  (function(){ const heavy=()=>{ try{ rebuildGeoIndex(); }catch(_){} try{ populateTimezones(); }catch(_){} };
+    if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback) requestIdleCallback(heavy,{timeout:3500}); else heavy(); })();
+  updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
   /* (#R17) Warm the country gazetteer shortly AFTER first paint (idle, non-blocking) so place search has
      strong LOCAL matches (countries/capitals/major places) even if the online geocoders are slow/blocked —
      the search then practically never comes back empty, without delaying initial load. */
