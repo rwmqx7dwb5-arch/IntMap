@@ -88,6 +88,7 @@
       <button class="tab active" data-tab="geo">Geo Pins</button>
       <button class="tab" data-tab="dash">Dashboard Cards</button>
       <button class="tab" data-tab="comm">Community</button>
+      <button class="tab" data-tab="fb">Feedback</button>
     </div>
 
     <!-- GEO PINS -->
@@ -128,6 +129,20 @@
         </div>
         <p class="muted" id="comm-note" style="margin:0 0 10px;">Tip: run <code>supabase_admin_moderation.sql</code> once so admins can see reports and delete any post/comment.</p>
         <div style="overflow:auto;"><table id="comm-table"><thead><tr id="comm-head"></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- FEEDBACK (#R20) -->
+    <section id="tab-fb" class="hide">
+      <div class="card">
+        <div class="bar">
+          <h2>User feedback <span class="count" id="fb-count"></span></h2>
+          <button class="btn sec sm" id="fb-refresh">Refresh</button>
+        </div>
+        <p class="muted" style="margin:0 0 10px;">Run <code>supabase_feedback.sql</code> once so the table exists and admins can read it.</p>
+        <div style="overflow:auto;"><table id="fb-table"><thead><tr>
+          <th>When</th><th>★</th><th>Comment</th><th>Lang</th><th>Email</th><th></th>
+        </tr></thead><tbody></tbody></table></div>
       </div>
     </section>
   </div>
@@ -228,8 +243,31 @@
     $('tab-geo').classList.toggle('hide',b.dataset.tab!=='geo');
     $('tab-dash').classList.toggle('hide',b.dataset.tab!=='dash');
     $('tab-comm').classList.toggle('hide',b.dataset.tab!=='comm');
+    $('tab-fb').classList.toggle('hide',b.dataset.tab!=='fb');
     if(b.dataset.tab==='comm') loadComm();
+    if(b.dataset.tab==='fb') loadFb();
   });
+
+  /* ---------------- FEEDBACK (#R20) ---------------- */
+  $('fb-refresh').onclick=()=>loadFb();
+  async function loadFb(){
+    const tb=$('fb-table').querySelector('tbody');
+    tb.innerHTML='<tr><td colspan="6" class="muted">Loading…</td></tr>';
+    try{
+      const {data,error}=await sb.from('feedback').select('*').order('created_at',{ascending:false}).limit(300);
+      if(error){ tb.innerHTML='<tr><td colspan="6" class="muted">'+esc(error.message)+' — did you run supabase_feedback.sql?</td></tr>'; return; }
+      $('fb-count').textContent=(data||[]).length;
+      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">No feedback yet.</td></tr>'; return; }
+      tb.innerHTML=data.map(r=>'<tr><td style="white-space:nowrap;">'+esc(new Date(r.created_at).toLocaleString())+'</td>'+
+        '<td style="white-space:nowrap;color:#ffcc00;">'+'★'.repeat(r.rating)+'<span style="opacity:0.3;">'+'★'.repeat(5-r.rating)+'</span></td>'+
+        '<td style="max-width:420px;">'+esc(r.comment||'')+'</td>'+
+        '<td>'+esc(r.lang||'')+'</td><td>'+esc(r.email||'')+'</td>'+
+        '<td><button class="btn sec sm" onclick="window._fbDel('+r.id+')">Delete</button></td></tr>').join('');
+    }catch(e){ tb.innerHTML='<tr><td colspan="6" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
+  }
+  window._fbDel=async function(id){ if(!confirm('Delete this feedback row?')) return;
+    try{ await sb.from('feedback').delete().eq('id',id); }catch(_){}
+    loadFb(); };
 
   /* ---------------- COMMUNITY MODERATION ---------------- */
   let commView='posts';

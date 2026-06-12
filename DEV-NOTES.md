@@ -1539,3 +1539,105 @@ beta rows present + swept into Others(beta); opacity legends (ukr/hist/volc/geo-
 console errors. Mobile 390px: search results hit-testable + coordinate-tap opens the card; readout emoji-free;
 src-card ✕ 32×32. DeepState + historical-basemaps + Photon fetched live from the page.
 - **Mobile place search** re-verified end-to-end at 375 px (expand→type→Enter→results for Osaka/Reykjavik).
+---
+
+## 23. Round 20 — navigation restore, widget board v3, compare rebuilt, feedback, new modes (tags `#R20`)
+
+Same standing constraints (additive/in-place, MapLibre stays, no excuses). Build stamp `2026-06-12-R20`.
+Verified in the headless preview (http://localhost:8765) at desktop 1100/1280 + mobile 375: zero console
+errors after every batch; every new feed exercised live in-page (USGS quakes, Wikimedia on-this-day,
+gold-api XAU, alternative.me F&G, er-api FX, CoinGecko). New external sources curl-probed first
+(stooq is behind an anti-bot PoW and Yahoo-finance proxying 403s → equity-index/oil widgets are
+deliberately ABSENT rather than faked).
+
+### Zoom restored + navigation sensitivity (Settings)
+- **Zoom-to-cursor is BACK.** The R19 custom wheel "glide" (per-frame `easeTo({around})` accumulator)
+  broke the universal cursor-anchored zoom on the globe. Removed; MapLibre's native `scrollZoom`
+  (cursor-anchored under every projection) is the single wheel path again.
+- **Settings → 地図操作の感度 / Map navigation sensitivity**: Zoom (25–300 %, multiplies wheel+pinch
+  rates) and Pan (drag-inertia maxSpeed/deceleration). Defaults = 100 % = the long-standing feel.
+  Persisted in `intmap_settings` (`navZoom`/`navPan`), applied via `_applyNavSens()`.
+
+### Widget board v3 (`intmap_widgets3`, v2 strings auto-migrate)
+13 widget types, every data widget shows an **"as of" timestamp**: Clock · Weather · **FX with a
+configurable pair** (⚙ → any of 30 currencies, multiple FX widgets allowed) · Crypto BTC/ETH ·
+Crypto market cap + BTC dominance · Crypto Fear & Greed · Gold · Silver (gold-api.com, CORS*) ·
+**Recent Earthquakes** (USGS 2.5_day; top-3 by magnitude, #1 large + #2/#3 small-equal, tap → fly
+to epicentre) · **On this day** (Wikimedia feed, ja→en fallback, tap for another) · **Featured layer**
+(random pick from the regular layer rows; tap turns it on) · **Random country** (flag + pop/GDP/area,
+re-roll) · **Countdown** (user title + date, multiple allowed).
+
+### Compare view REBUILT
+- Flat/Globe selector **gone** — projection always follows the main map (all modes).
+- **3 exclusive modes**: **Sync** (bidirectional: either map drives the other; the compare centre shows
+  the geography under the **centroid of the UNCOVERED main-map area** — implemented as the area-weighted
+  complement of the window rect, inverse-mapped via project/unproject for compare→main) · **Free**
+  (fully independent) · **X-ray** (the R18 pixel-registered clip-path lens, unchanged).
+- **Map/Sat couldn't switch** root cause: a click during style load hit missing layers and nothing
+  retried → `applyBase()` stores the wanted base and retries on `idle`/`styledata`.
+- **"Layers ▾" pulldown** with 15 portable layers (Köppen, land cover, ecoregions, plates, hillshade,
+  night lights, snow, AOD, SST, temp, precip, thermal, pop-grid, Ukraine frontline, volcanoes).
+  Country choropleths are main-map feature-state paints and are NOT cloned (documented limitation).
+- **Four-corner resize** (`.cmp-rz` pointer handles, works on touch) on top of the native se corner.
+
+### Feedback (+ admin)
+Header **Feedback** button next to Support → 5-star + textarea modal → INSERT into Supabase
+`feedback` (new `supabase_feedback.sql`: anon+auth insert, admin-only select/delete via
+`profiles.is_admin`). 4–5★ → thank-you + declinable Stripe support ask (records a `donations`
+intent on click-through); 1–3★ → plain thank-you. **admin.html got a Feedback tab** (list + delete).
+
+### Account sync + layer presets
+- `supabase_user_prefs.sql` → `user_prefs` (user_id PK, JSONB, own-row RLS). `_syncPrefsUp` (debounced)
+  mirrors settings/widgets/presets/news-langs/temp-unit on every save; `_syncPrefsDown` runs on sign-in
+  (seeds from the device when the row doesn't exist yet) and applies live (no reload).
+- **Layer presets** (Layers → Tools): save the current selection + ALL opacities under a name; apply
+  re-asserts opacities after the layers come up; delete per row. Local `intmap_layer_presets` + synced.
+
+### New modes
+- **AI Research Assistant** — place-label popup gained **🤖 AI brief** (and 📖 **Wikipedia**, shown only
+  when the article exists via REST summary probe). Brief = background/history/economy/military/recent
+  developments, seeded with geocoded news headlines within ~600 km (`item.analysis.loc`); BYOK `askAI()`;
+  no key → the standard aiNoKey toast.
+- **World Events Archive** — Information tab now has **📍 Places | 🗓 Events**. Events = 79 curated
+  moments (war/disaster/revolution/assassination/space/economic/geopolitics, 1492–2023), EN/JP, year-range
+  + text search, type-coloured pins through the existing dash-points source, per-event Wikipedia link.
+- **Education mode** — Layers → Tools → 🎓: flag→country, capital→country, and find-on-the-map (click;
+  point-in-polygon over countryGeo so it works with the hidden country-fill layer) with score/streak and
+  a learning card (capital/pop/GDP/area) after every answer.
+
+### Layers / UI fixes
+- Desktop **Tools un-stickied** (normal flow at the end of the list; the R19 `flex-shrink:0` remains the
+  real anti-squash fix).
+- **Tectonic plates default opacity 30 %** (`_registerLayerOpacity` per-layer default, now also APPLIES
+  the default on register instead of only showing it on the slider).
+- **Historical borders → promoted out of beta** into Geopolitics & defence (rowFor learned `beta-dl-*`),
+  label de-beta'd; **IndexedDB year cache** (`hb_<year>` via IntMapCache) + neighbour-year prefetch →
+  the "読み込みが遅い" repeat visits are now instant; **available years drawn as ticks inside the slider**.
+- **Volcanoes replaced**: the 42-point curated layer is gone; new beta layer = full **Smithsonian GVP
+  Holocene catalogue (1,215)** bundled at `data/volcanoes_gvp.json` (slimmed from the GVP WFS — the
+  endpoint answered this round), recency-coloured (≥1950 red / ≥1500 orange / older tan), popup with
+  country/type/elevation/last-eruption, legend with colour key.
+- **Ukraine frontline legend**: occupied-fill / front-line / contested colour key in its legend.
+- **Mobile ×**: the R19 selectors for the country popup (`.cp-close` as a class etc.) matched NOTHING —
+  real markup is `.country-popup-close` — fixed; verified 32×32 at 375 px (incl. `.maplibregl-popup-close-button`).
+- **Search pill can't overlap** the sidebar / right controls: container-relative cap
+  `max-width:min(380px, calc(100% - 330px))`, and in frosted (overlay) mode it re-centres within the
+  visible map area via `:has(.sidebar:not(.collapsed))`.
+- **Frosted news cards**: in the two frosted modes `.news-item` is a light Apple-style frost
+  (light 0.50 white / dark 0.38 grey + blur 14) instead of the solid dark slab.
+
+### Perf / stability
+- Mobile: `MAX_PARALLEL_IMAGE_REQUESTS` 128→48 (concurrent decode buffers were real OOM pressure),
+  `maxTileCacheSize` 1536→1024, ecoregions toggle-OFF releases the ~10 MB GeoJSON + source on phones.
+- Desktop: `maxTileCacheSize` 4096→6144 (3D pan/tilt-back re-hits cache), terrain DEM maxzoom 14→**15**
+  (terrarium native max → finest existing mesh in tilted close-ups; phones stay 13).
+- **LOS**: desktop 600 rays × 320 steps (was 480×260), small ranges may climb to z14 within the
+  (raised, 380-tile) budget; mobile unchanged.
+
+### Verified-in-preview summary (R20)
+Desktop: settings sliders reflect+persist; widget gallery=13, live values for quake/gold/fng/otd/
+country/fx/featured with as-of stamps; compare = 3 modes, 4 corner handles, 15-layer pulldown, sat
+toggle + koppen/hillshade/volcano overlays verified visible, x-ray clip-path applies+clears; feedback
+modal 5 stars; presets + 🎓 + AI panel mounted in Tools; events view renders 79 cards + 2 year inputs;
+Tools `position:static`; search pill 348 px at 1100 w. Mobile 375: country-popup × and maplibre popup ×
+both 32×32. Zero console errors throughout.

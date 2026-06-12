@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-12-R19';
+  window.INTMAP_BUILD='2026-06-12-R20';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -303,13 +303,9 @@ gtag('config', 'G-57X5MX0ZPW');
        sliver with its buttons clipped below the panel ("少しだけ見れるが隠れている／開けない"). */
     #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; flex-shrink:0; }
     #layer-tools .ai-test-btn, #layer-tools button{ box-sizing:border-box; width:100%; max-width:100%; }
-    /* (#R18) Desktop: pin Tools to the BOTTOM of the scrollable Layers panel (sticky), so it is ALWAYS
-       visible — expanding a long group used to scroll it out of view ("デスクトップ版でそもそも消滅している").
-       Its own glass fill keeps the rows scrolling underneath readable. Mobile keeps normal flow (the
-       sheet shows everything expanded). */
-    @media(min-width:769px){
-      #layer-tools{ position:sticky; bottom:-12px; margin:0 -12px -12px; width:auto; max-width:none; padding:0 12px 12px; background:var(--glass-fill); border-top:1px solid var(--glass-border); }
-    }
+    /* (#R20) Desktop Tools: NOT pinned/sticky any more — the user asked for it to sit in normal flow at
+       the end of the list ("下部にFixしなくていい。普通に置いて"). The R19 flex-shrink:0 above keeps it
+       from being squashed, which was the real disappearing bug. */
     .ai-test-btn:hover{ border-color:var(--primary-color); } .ai-test-btn:disabled{ opacity:0.55; cursor:default; }
     .ai-test-msg{ font-size:11px; margin-top:6px; min-height:13px; line-height:1.4; }
     .ai-test-msg.ok{ color:#34c759; } .ai-test-msg.err{ color:#ff453a; }
@@ -494,6 +490,26 @@ gtag('config', 'G-57X5MX0ZPW');
     [data-theme="dark"] .map-view-group{ background:rgba(28,28,30,0.62); border:1px solid rgba(255,255,255,0.06); }
     .map-search{ background:rgba(255,255,255,0.62); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); }
     [data-theme="dark"] .map-search{ background:rgba(28,28,30,0.62); }
+    /* (#R20) Keep the search pill clear of BOTH side control zones at every width. 55vw is viewport-
+       relative, so on a narrowed window it could span nearly the whole map and slide under the
+       map/satellite buttons (right) or the frosted sidebar (left). Cap it container-relative instead,
+       and in frosted (overlay-sidebar) mode centre it within the VISIBLE map area. */
+    @media(min-width:769px){
+      .map-search{ max-width:min(380px, calc(100% - 330px)); min-width:170px; }
+      body.sidebar-glass:has(.sidebar:not(.collapsed)) .map-search{
+        left:calc(var(--sidebar-w) + (100% - var(--sidebar-w))/2);
+        max-width:min(380px, calc(100% - var(--sidebar-w) - 350px));
+      }
+    }
+    /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
+       dark-grey slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
+    body.sidebar-translucent .news-item, body.sidebar-glass2 .news-item{
+      background:rgba(255,255,255,0.50); backdrop-filter:saturate(160%) blur(14px); -webkit-backdrop-filter:saturate(160%) blur(14px);
+      border:1px solid rgba(255,255,255,0.30);
+    }
+    [data-theme="dark"] body.sidebar-translucent .news-item, [data-theme="dark"] body.sidebar-glass2 .news-item{
+      background:rgba(58,58,64,0.38); border:1px solid rgba(255,255,255,0.10);
+    }
 
     /* === News pin mode toggle inside News tab === */
     .news-pin-toggle{ display:flex; align-items:center; gap:8px; margin:0 0 12px 0; padding:8px 12px; background:var(--card-bg); border-radius:12px; border:1px solid rgba(128,128,128,0.08); }
@@ -1368,6 +1384,19 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group"><label data-i18n="lblSidebarStyle">Sidebar appearance</label><select id="setting-sidebar-style"><option value="opaque" data-i18n="sidebarOpaque">Solid (default)</option><option value="translucent" data-i18n="sidebarTranslucent">Frosted glass</option><option value="glass2" data-i18n="sidebarGlass2">Frosted glass (more transparent)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
     <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centred)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
+    <!-- (#R20) Map navigation sensitivity — zoom (wheel/pinch rate) + pan (drag inertia). 100% = the long-standing default. -->
+    <div class="setting-group"><label data-i18n="lblNavSens">Map navigation sensitivity</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
+        <span data-i18n="lblNavZoom" style="font-size:12px;color:var(--text-muted);min-width:74px;">Zoom</span>
+        <input type="range" id="setting-zoom-sens" min="25" max="300" step="5" value="100" style="flex:1;">
+        <b id="zoom-sens-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span data-i18n="lblNavPan" style="font-size:12px;color:var(--text-muted);min-width:74px;">Pan</span>
+        <input type="range" id="setting-pan-sens" min="25" max="300" step="5" value="100" style="flex:1;">
+        <b id="pan-sens-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
+      </div>
+    </div>
     <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label>
       <div class="sat-keys-hint" data-i18n="newsCountriesHint">Also pull headlines from the national outlets of the countries you pick (multiple allowed).</div>
       <div id="newscountry-dd" class="nc-dd">
@@ -2365,7 +2394,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Saturate HTTP/2 / HTTP/3 multiplexing: one tile host can serve dozens of concurrent
      requests over a single connection, so lift MapLibre's default 16-request cap. This is
      the single biggest win for satellite-tile throughput (no quality change — same tiles). */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=128; }catch(_){}
+  /* (#R20) Mobile gets HALF the in-flight tile decodes (each request holds a decode buffer; 128
+     simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
+     Desktop keeps the full firehose. */
+  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:128); }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
@@ -2381,7 +2413,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R8) Retain far more recently-seen tiles in RAM so panning/tilting back is instant and never
          refetches — the user measured spare bandwidth (<20 Mbps) and headroom, so trade memory for speed.
          Phones keep a tighter cap to stay within the mobile GPU/RAM budget. */
-      fadeDuration:0, maxTileCacheSize:(isMobile()?1536:4096), refreshExpiredTiles:false,
+      fadeDuration:0, maxTileCacheSize:(isMobile()?1024:6144), refreshExpiredTiles:false,   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); desktop 4096→6144 (pan/tilt-back in 3D re-hits cache instead of refetching → faster) */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
@@ -2429,36 +2461,31 @@ window.addEventListener('DOMContentLoaded', () => {
     if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
     if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
   }catch(_){} }
-  /* ===== (#R19) iOS / Google-Earth wheel zoom — smooth glide, not "カチカチ" steps. =====
-     MapLibre's built-in scrollZoom applies each wheel notch as a discrete jump. Replaced (desktop
-     pointers only) with a TARGET-zoom accumulator + exponential rAF glide: each notch nudges the
-     target; every frame the camera eases ~22% of the remaining gap around the CURSOR anchor.
-     Successive notches accumulate into one continuous, decelerating glide — the iOS feel — and the
-     anchor keeps the point under the cursor fixed (Google-Earth behaviour). Trackpad pinches
-     (ctrlKey wheel events) get a finer rate so they stay precise. Mobile touch pinch is untouched. */
-  if(map){ (function(){
-    try{ map.scrollZoom.disable(); }catch(_){ return; }
-    let target=null, anchor=null, anim=0;
-    const step=()=>{ anim=0; if(target==null) return;
-      const cur=map.getZoom(), d=target-cur;
-      if(Math.abs(d)<0.003){ try{ map.easeTo({zoom:target, around:anchor, duration:0}); }catch(_){} target=null; return; }
-      try{ map.easeTo({zoom:cur+d*0.22, around:anchor, duration:0}); }catch(_){}
-      anim=requestAnimationFrame(step); };
-    map.getCanvasContainer().addEventListener('wheel',(e)=>{
-      e.preventDefault();
+  /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behaviour. =====
+     The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
+     zoom-toward-the-cursor UX on the globe ("カーソル地点へとズームされるというUXがなくなってしまった").
+     MapLibre's native scrollZoom zooms about the pointer correctly under every projection, so it is
+     back as the single wheel path. On top of it, a user-tunable NAVIGATION SENSITIVITY (Settings →
+     "Map navigation"): zoom multiplies the wheel/pinch rates, pan scales the drag inertia. Defaults
+     (1.0×) reproduce the long-standing feel exactly. */
+  try{ Object.assign(i18n.en,{ lblNavSens:'Map navigation sensitivity', lblNavZoom:'Zoom', lblNavPan:'Pan' });
+       Object.assign(i18n.jp,{ lblNavSens:'地図操作の感度', lblNavZoom:'ズーム', lblNavPan:'移動（パン）' }); }catch(_){}
+  if(map){
+    window.imNavZoomSens = window.imNavZoomSens || 1;
+    window.imNavPanSens  = window.imNavPanSens  || 1;
+    window._applyNavSens = function(){
+      const z=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      const p=Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
       try{
-        const rect=map.getContainer().getBoundingClientRect();
-        anchor=map.unproject([e.clientX-rect.left, e.clientY-rect.top]);
-        const dy=(e.deltaMode===1)?e.deltaY*20:(e.deltaMode===2)?e.deltaY*120:e.deltaY;   /* lines/pages → px */
-        const rate=e.ctrlKey?(1/120):(1/170);                                              /* pinch-trackpad finer */
-        const base=(target==null)?map.getZoom():target;
-        target=Math.max(map.getMinZoom(),Math.min(map.getMaxZoom(), base - dy*rate));
-        if(!anim) anim=requestAnimationFrame(step);
+        map.scrollZoom.enable();
+        map.scrollZoom.setWheelZoomRate(z*(1/300));   /* 1.0 = the long-standing default feel */
+        map.scrollZoom.setZoomRate(z*(1/90));         /* trackpad pinch */
       }catch(_){}
-    },{passive:false});
-    /* a drag interaction mid-glide cancels the glide so it never fights the user */
-    map.on('dragstart',()=>{ target=null; });
-  })(); }
+      try{ map.dragPan.enable({ linearity:0.3, maxSpeed:1400*p, deceleration:2500/Math.max(0.4,p) }); }catch(_){}
+      try{ if(map.touchZoomRotate&&map.touchZoomRotate.enable) map.touchZoomRotate.enable(); }catch(_){}
+    };
+    window._applyNavSens();
+  }
   /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
      最前部に"). Overlays are added/re-added at arbitrary times (toggles, basemap swaps, styledata
      re-adds), so instead of chasing every add-site, re-assert the label/border stack on idle+styledata —
@@ -5118,6 +5145,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function renderDashboard(){
     const dash=document.getElementById('info-dashboard'); clearMarkers(); const dict=i18n[currentLang];
     const q=(currentMode==='info')?searchVal():'';   /* live text filter (#27) */
+    /* (#R20) World Events Archive — the Information tab is split into Places (the original cards)
+       and Events (curated historical events, year-range + text searchable, plotted on the map). */
+    if(window._dashView==='events' && typeof window._renderEventsArchive==='function'){ window._renderEventsArchive(dash,q); return; }
     const filtered=extendedDashDB.filter(i=>activeDashCategories.has(i.cat) && (!q ||
       ((i.title.en+' '+(i.title.jp||'')+' '+(i.body.en||'')+' '+(i.body.jp||'')+' '+(i.badge||'')).toLowerCase().includes(q))));
     /* Push features into WebGL source. Pins are mathematically placed by the GPU. */
@@ -5142,8 +5172,10 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[currentLang]}</h4><p class="wiki-card-body">${info.body[currentLang]}</p>${specsHTML}<div class="wiki-card-footer"><a href="${info.wiki[currentLang]}" target="_blank" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
     });
     cards+='</div>';
+    /* (#R20) top-level Places | Events switch, then the existing category nav */
+    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${currentLang==='jp'?'📍 場所':'📍 Places'}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${currentLang==='jp'?'🗓 出来事':'🗓 Events'}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${activeDashCategories.has('mil')?'active':''}" onclick="toggleDashCat('mil')">${dict.dashCatMil}</button><button class="dash-nav-btn ${activeDashCategories.has('tech')?'active':''}" onclick="toggleDashCat('tech')">${dict.dashCatTech}</button><button class="dash-nav-btn ${activeDashCategories.has('maritime')?'active':''}" onclick="toggleDashCat('maritime')">${dict.dashCatMar}</button><button class="dash-nav-btn ${activeDashCategories.has('geo')?'active':''}" onclick="toggleDashCat('geo')">${dict.dashCatGeo}</button></div>`;
-    dash.innerHTML=nav+cards;
+    dash.innerHTML=seg+nav+cards;
     /* Mouse wheel → horizontal scroll on the category nav */
     const dnav=document.getElementById('dash-nav');
     if(dnav){ dnav.addEventListener('wheel',(e)=>{ if(e.deltaY===0)return; e.preventDefault(); dnav.scrollLeft+=e.deltaY+e.deltaX; },{passive:false}); }
@@ -5400,7 +5432,9 @@ window.addEventListener('DOMContentLoaded', () => {
          relief geometry (sharper ridgelines/valleys = the "画質を高めて" half) while the multi-host pool +
          SW cache keep it fast (the "表示速度" half — neither sacrificed). Phones stay at 13: the extra
          DEM tile set is real RAM that risks the tab. */
-      ],encoding:'terrarium',tileSize:256,maxzoom:(isMobile()?13:14)}); return true; }
+      /* (#R20) desktop 14→15 = terrarium's NATIVE max: tilted close-ups now load the finest mesh that
+         exists, a straight quality win with no downscale anywhere; phones stay at 13 for RAM safety. */
+      ],encoding:'terrarium',tileSize:256,maxzoom:(isMobile()?13:15)}); return true; }
     catch(e){ console.warn('terrain source failed',e); return false; }
   }
   function set3D(on){
@@ -5535,7 +5569,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tzs) tzs.value=(userTZ&&userTZ!=='auto')?userTZ.replace(/_/g,' '):'';
       if(tzr) tzr.classList.remove('show');
     }catch(_){}
-    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} settingsDirty=false; modal.style.display='flex';
+    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){}
+    /* (#R20) nav sensitivity sliders reflect the saved values + live % labels */
+    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens');
+      const zv=document.getElementById('zoom-sens-val'), pv=document.getElementById('pan-sens-val');
+      if(zs){ zs.value=Math.round((window.imNavZoomSens||1)*100); if(zv) zv.textContent=zs.value+'%'; zs.oninput=()=>{ if(zv) zv.textContent=zs.value+'%'; }; }
+      if(ps){ ps.value=Math.round((window.imNavPanSens||1)*100); if(pv) pv.textContent=ps.value+'%'; ps.oninput=()=>{ if(pv) pv.textContent=ps.value+'%'; }; }
+    }catch(_){}
+    settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
     try{ document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); }catch(_){}
@@ -5553,6 +5594,12 @@ window.addEventListener('DOMContentLoaded', () => {
     { const nld=document.getElementById('newslang-dd'); if(nld) nld.classList.remove('open'); try{ updateNewsLangLabel(); }catch(_){} }
     try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){}
     /* News pin position is chosen from the News tab's segmented control, not here. */
+    /* (#R20) nav sensitivity — read sliders, apply live, persist via saveSettings (called in applyTheme path below via imSaveSettings users) */
+    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens');
+      if(zs) window.imNavZoomSens=Math.max(0.25,Math.min(3,(+zs.value||100)/100));
+      if(ps) window.imNavPanSens=Math.max(0.25,Math.min(3,(+ps.value||100)/100));
+      window._applyNavSens&&window._applyNavSens();
+    }catch(_){}
     try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
     settingsDirty=false; modal.style.display='none'; applyTheme(); if(toolMode)updateToolPanel();
     renderUI();
@@ -5586,6 +5633,63 @@ window.addEventListener('DOMContentLoaded', () => {
     const go=document.getElementById('blueberry-go');
     if(go) go.addEventListener('click', ()=>{ try{ if(typeof DB!=='undefined' && DB && typeof currentUser!=='undefined' && currentUser){ DB.from('donations').insert({ user_id:currentUser.id, email:currentUser.email||null, locale:currentLang, source:'support_button', status:'initiated' }); } }catch(_){} });
     window._openBlueberry=open;
+  })();
+
+  /* ===== (#R20) Feedback — 5-star + free text, stored in Supabase (`feedback` table,
+     supabase_feedback.sql; admins read it in admin.html). 4–5 stars → thank-you + a gentle
+     donation ask (Stripe link, fully declinable); 1–3 stars → a plain thank-you. ===== */
+  (function(){
+    const jp=()=>currentLang==='jp';
+    let modal=null, rating=0;
+    function ensure(){ if(modal) return modal;
+      modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='feedback-modal';
+      modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
+      modal.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;width:100%;max-width:380px;box-sizing:border-box;position:relative;" id="fb-card"></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',(e)=>{ if(e.target===modal) closeM(); });
+      return modal; }
+    function star(n){ return '<button class="fb-star" data-n="'+n+'" style="background:none;border:none;font-size:30px;cursor:pointer;padding:2px 3px;line-height:1;color:'+(n<=rating?'#ffcc00':'rgba(128,128,128,0.45)')+';">'+(n<=rating?'★':'☆')+'</button>'; }
+    function renderForm(){ const c=modal.querySelector('#fb-card');
+      c.innerHTML='<button id="fb-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
+        '<h3 style="margin:0 0 6px;font-size:17px;">'+(jp()?'フィードバックを送る':'Send feedback')+'</h3>'+
+        '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(jp()?'IntMapの評価と、ご意見・ご要望をお聞かせください。':'Rate IntMap and tell us what to improve.')+'</p>'+
+        '<div id="fb-stars" style="display:flex;justify-content:center;margin-bottom:12px;">'+[1,2,3,4,5].map(star).join('')+'</div>'+
+        '<textarea id="fb-text" maxlength="2000" placeholder="'+(jp()?'ご意見・ご要望（任意）':'Comments (optional)')+'" style="width:100%;box-sizing:border-box;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
+        '<button id="fb-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit')+'</button>'+
+        '<p id="fb-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
+      c.querySelector('#fb-x').onclick=closeM;
+      c.querySelectorAll('.fb-star').forEach(b=>b.onclick=()=>{ rating=+b.getAttribute('data-n'); renderForm(); });
+      c.querySelector('#fb-send').onclick=submit; }
+    async function submit(){ const c=modal.querySelector('#fb-card'); const msg=c.querySelector('#fb-msg');
+      if(!rating){ msg.textContent=jp()?'星の数を選んでください。':'Please pick a star rating.'; return; }
+      const text=(c.querySelector('#fb-text').value||'').trim();
+      const btn=c.querySelector('#fb-send'); btn.disabled=true; btn.textContent=jp()?'送信中…':'Sending…';
+      let ok=false;
+      try{ if(typeof DB!=='undefined'&&DB){
+        const row={ rating, comment:text||null, lang:currentLang, ua:(navigator.userAgent||'').slice(0,250), page:location.pathname };
+        try{ if(typeof currentUser!=='undefined'&&currentUser){ row.user_id=currentUser.id; row.email=currentUser.email||null; } }catch(_){}
+        const {error}=await DB.from('feedback').insert(row); ok=!error;
+      } }catch(_){}
+      if(!ok){ btn.disabled=false; btn.textContent=jp()?'送信':'Submit'; msg.textContent=jp()?'送信できませんでした。時間をおいてもう一度お試しください。':'Could not send — please try again later.'; return; }
+      if(rating>=4) renderThanksHigh(); else renderThanksLow(); }
+    function renderThanksLow(){ const c=modal.querySelector('#fb-card');
+      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">🙏</div>'+
+        '<h3 style="margin:0 0 8px;font-size:17px;">'+(jp()?'フィードバックありがとうございます':'Thank you for your feedback')+'</h3>'+
+        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(jp()?'いただいたご意見は今後の改善に役立てます。':'We read every note and use it to improve IntMap.')+'</p>'+
+        '<button id="fb-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(jp()?'閉じる':'Close')+'</button></div>';
+      c.querySelector('#fb-done').onclick=closeM; }
+    function renderThanksHigh(){ const c=modal.querySelector('#fb-card');
+      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">💙</div>'+
+        '<h3 style="margin:0 0 8px;font-size:17px;">'+(jp()?'ありがとうございます！':'Thank you!')+'</h3>'+
+        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(jp()?'高い評価をいただき励みになります。もしよろしければ、IntMapの開発・運営をご支援いただけると嬉しいです。':'Your high rating means a lot. If you enjoy IntMap, you can support its development — entirely optional.')+'</p>'+
+        '<a id="fb-donate" href="'+window.stripeDonateURL()+'" target="_blank" rel="noopener" style="display:block;padding:12px;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;text-decoration:none;margin-bottom:8px;">'+(jp()?'支援する':'Support IntMap')+'</a>'+
+        '<button id="fb-later" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+(jp()?'また今度':'Maybe later')+'</button></div>';
+      c.querySelector('#fb-later').onclick=closeM;
+      const dn=c.querySelector('#fb-donate');
+      if(dn) dn.addEventListener('click',()=>{ try{ if(typeof DB!=='undefined'&&DB&&typeof currentUser!=='undefined'&&currentUser){ DB.from('donations').insert({user_id:currentUser.id,email:currentUser.email||null,locale:currentLang,source:'feedback_upsell',status:'initiated'}); } }catch(_){} setTimeout(closeM,400); }); }
+    function openM(){ ensure(); rating=0; renderForm(); modal.style.display='flex'; }
+    function closeM(){ if(modal) modal.style.display='none'; }
+    window._openFeedback=openM;
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
@@ -5872,7 +5976,10 @@ window.addEventListener('DOMContentLoaded', () => {
            every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
         .src-card-close{ width:32px !important; height:32px !important; font-size:17px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
         .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; right:4px !important; top:4px !important; }
-        .country-popup .cp-close, .country-popup .country-close, #country-popup-close{ width:32px !important; height:32px !important; font-size:19px !important; display:flex; align-items:center; justify-content:center; }
+        /* (#R20) the real close button is .country-popup-close / #cp-close — the R19 selectors
+           (.cp-close as a CLASS, .country-close, #country-popup-close) matched nothing, which is why
+           the country popup's × stayed tiny ("ポップアップの右上の×が小さすぎて押せない"). */
+        .country-popup-close, #cp-close{ width:32px !important; height:32px !important; font-size:19px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); }
         .maplibregl-popup-content{ padding-right:40px; }
         .legend-collapsed .legend-min::before{ width:12px; height:12px; }
         /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
@@ -6310,12 +6417,12 @@ window.addEventListener('DOMContentLoaded', () => {
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem']],
           ['lyrGrpHazard',['thermal','aurora','nightsat','night']],
-          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato']]
+          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','histb','ukrfront']]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
-        const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','seaRoute','chokepoints','dams','volcanoes','sahel','islandChain1','islandChain2','stringOfPearls','bri','pipelines','nuclear'];
+        const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','seaRoute','chokepoints','dams','sahel','islandChain1','islandChain2','stringOfPearls','bri','pipelines','nuclear'];
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
-          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');
+          el=document.getElementById('eco-dl-'+id)||document.getElementById('l9-dl-'+id)||document.getElementById('beta-dl-'+id); if(el) return el.closest('.lyr-row')||el.closest('label');   /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group */
           el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
           return null; };
         const lang=(typeof currentLang!=='undefined')?currentLang:'en';
@@ -6359,6 +6466,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const upBtn=document.getElementById('btn-upload-geojson');
         const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
         let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
+        const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
+        const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
         tools.innerHTML='';
         const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(lang==='jp'?'ツール':'Tools'); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
@@ -6366,6 +6475,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
         if(upBtn){ upBtn.style.display=''; upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
+        if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
+        if(_pr) tools.appendChild(_pr);   /* (#R20) layer presets live in Tools */
         if(cmpBtn||upBtn){ order.push(mkHr()); order.push(tools); }
         order.forEach(n=>dd.appendChild(n));
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
@@ -7778,10 +7889,14 @@ window.addEventListener('DOMContentLoaded', () => {
       map.setPaintProperty(lid,p,(p==='hillshade-exaggeration')?Math.max(0.05,v):v); }catch(_){} }); }
     window._applyGenericOpacity=_applyGenericOpacity;
     window._registerLayerOpacity=function(id,namesEnJp,layerIds,cbId){ try{
-      if(opacities[id]==null) opacities[id]=0.85;
+      /* (#R20) per-layer defaults: tectonic plates start at 30% per request. */
+      if(opacities[id]==null) opacities[id]=((id==='plates'||id==='eco-plates')?0.30:0.85);
       window._opacityTargets[id]=layerIds||[];
       const el=ensureGenericLegend(id,namesEnJp,cbId);
       if(el){ el.style.display='block'; try{ ensureLegendOpacity(el); }catch(_){} try{ ensureLegendMinimize(el); }catch(_){} try{ tileLegends(); }catch(_){} }
+      /* apply the registered default immediately so the layer paints at it (was: slider showed the
+         default but the layer kept its hard-coded paint until first slider move) */
+      try{ setTimeout(()=>{ try{ setLayerOpacity(id,opacities[id]); }catch(_){} },120); }catch(_){}
       return el; }catch(_){ return null; } };
     window._hideGenericLegend=function(id){ const el=document.getElementById('data-legend-'+id); if(el) el.style.display='none'; try{ tileLegends(); }catch(_){} };
   })();
@@ -8745,6 +8860,14 @@ window.addEventListener('DOMContentLoaded', () => {
     sup.onclick=()=>{ try{ window._openBlueberry&&window._openBlueberry(); }catch(_){} };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(sup,settingsBtn);
     else document.body.appendChild(sup);
+    /* (#R20) Feedback button right NEXT to Support ("Supportの横に、フィードバックを送れるボタンを設置") */
+    const fb=document.createElement('button');
+    fb.id='btn-feedback-hdr'; fb.className='btn-settings'; fb.style.marginRight='8px';
+    fb.textContent=(currentLang==='jp'?'フィードバック':'Feedback');
+    window.addEventListener('intmap-lang',()=>{ fb.textContent=(currentLang==='jp'?'フィードバック':'Feedback'); });
+    fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} };
+    if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(fb,settingsBtn);
+    else document.body.appendChild(fb);
 
     const m=document.createElement('div'); m.id='auth-modal';
     m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
@@ -8953,6 +9076,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!name) name=session.user.email.split('@')[0];
     currentUser={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin }; updateAccountButton();
     try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
+    try{ window._syncPrefsDown&&window._syncPrefsDown(); }catch(_){}   /* (#R20) pull the account's saved settings/presets/widgets */
   }
 
   /* ---------- FAVORITES (★ saved articles) ---------- */
@@ -9195,14 +9319,19 @@ window.addEventListener('DOMContentLoaded', () => {
     if(s.mapColor) window.imMapColor=s.mapColor;
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
     if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
+    if(s.navZoom) window.imNavZoomSens=+s.navZoom||1;   /* (#R20) nav sensitivity */
+    if(s.navPan)  window.imNavPanSens=+s.navPan||1;
+    try{ window._applyNavSens&&window._applyNavSens(); }catch(_){}
     applySidebarStyle();
   }
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode,
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor,
-      newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs
+      newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs,
+      navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1
     })); }catch(_){}
+    try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){}   /* (#R20) mirror to the account when logged in */
   }
   window.imSaveSettings=saveSettings;
   function applySidebarStyle(animate){ const s=window.imSidebarStyle;
@@ -10194,7 +10323,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      [['dams','#34c7ff'],['volcanoes','#ff6a3d'],['aurora','#34ffa6']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked);
+      /* (#R20) the curated 42-point volcano layer is REMOVED ("現状を削除したうえで新規追加して") —
+         replaced by the full Smithsonian GVP Holocene layer (1,215 volcanoes) in the beta module below. */
+      [['dams','#34c7ff'],['aurora','#34ffa6']].forEach(([k,sw])=>{ const cb=row('l9-dl-'+k, jp()?L9LBL[k][0]:L9LBL[k][1], sw); cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked);
         /* (#R19) opacity-in-legend for these point/heat layers too */
         try{ if(e.target.checked&&window._registerLayerOpacity) window._registerLayerOpacity('l9-'+k,[L9LBL[k][1],L9LBL[k][0]],SETS[k],'l9-dl-'+k); else if(window._hideGenericLegend) window._hideGenericLegend('l9-'+k); }catch(_){} }); });
     }
@@ -10313,7 +10444,11 @@ window.addEventListener('DOMContentLoaded', () => {
     function toggle(which,on){ state[which]=on;
       if(which==='worldcover'){ const a=()=>{ if(!ensureRaster()){ map.once('idle',a); return; } setVis(SETS.worldcover,on); }; a(); wcLegend(on); }
       else if(which==='plates'){ const a=()=>{ if(!ensurePlateLayers()){ map.once('idle',a); return; } if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); }; a(); }
-      else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else setVis(SETS.ecoregions,false); }
+      else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else { setVis(SETS.ecoregions,false);
+        /* (#R20) phones: toggling OFF releases the ~10 MB parsed GeoJSON + the source copy (OOM
+           pressure); it lazily re-fetches/re-parses on the next toggle. Desktop keeps the warm cache. */
+        if(typeof isMobile==='function'&&isMobile()){ try{ SETS.ecoregions.forEach(l=>{ if(map.getLayer(l)) map.removeLayer(l); }); if(map.getSource('eco-regions')) map.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window._ecoGJ=null; window.__ECOREGIONS_2017=null; }
+      } }
       /* (#R19) opacity slider for these too — worldcover reuses its own class legend, the rest get a generic one */
       try{ const nm=[ECLBL[which][1],ECLBL[which][0]];
         if(on&&window._registerLayerOpacity) window._registerLayerOpacity(which==='worldcover'?'worldcover':'eco-'+which, nm, SETS[which], 'eco-dl-'+which);
@@ -10343,7 +10478,7 @@ window.addEventListener('DOMContentLoaded', () => {
   (function(){
     if(typeof map==='undefined'||!map) return;
     const jp=()=>currentLang==='jp';
-    const state={ukr:false,bldg:false,hist:false};
+    const state={ukr:false,bldg:false,hist:false,volc:false};
     const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
     const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
 
@@ -10390,7 +10525,19 @@ window.addEventListener('DOMContentLoaded', () => {
       a();
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
-      try{ if(on&&window._registerLayerOpacity) window._registerLayerOpacity('ukrfront',['Ukraine frontline (DeepState)','ウクライナ前線（DeepState）'],UKR_IDS,'beta-dl-ukrfront');
+      try{ if(on&&window._registerLayerOpacity){
+            const el=window._registerLayerOpacity('ukrfront',['Ukraine frontline (DeepState)','ウクライナ前線（DeepState）'],UKR_IDS,'beta-dl-ukrfront');
+            /* (#R20) proper LEGEND ("Ukraine frontlineは、凡例を作って") — colour key for the DeepState classes */
+            if(el&&!el.querySelector('.ukr-key')){
+              const key=document.createElement('div'); key.className='ukr-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
+              const sw=(c,solid)=>'<span style="width:14px;height:'+(solid?'10px':'3px')+';border-radius:2px;flex:none;background:'+c+';'+(solid?'opacity:0.55;':'')+'"></span>';
+              key.innerHTML=
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#d62b2b',true)+(jp()?'ロシア占領地域':'Russian-occupied area')+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#ff3b30',false)+(jp()?'前線':'Front line')+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#8338ec',true)+(jp()?'係争・不明確地域':'Contested / unclear')+'</div>';
+              const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
+            }
+          }
            else if(window._hideGenericLegend) window._hideGenericLegend('ukrfront'); }catch(_){}
     }
 
@@ -10431,6 +10578,9 @@ window.addEventListener('DOMContentLoaded', () => {
     async function hbLoad(year){
       const lbl=document.querySelector('#data-legend-histb .hb-year-val'); if(lbl) lbl.textContent=year;
       let fc=hbCache.get(year);
+      /* (#R20) "読み込みが遅い" — persistent IndexedDB cache: after the first visit a year swaps in
+         instantly from disk, no network round-trip. */
+      if(!fc&&window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ fc=c; hbCache.set(year,fc); } }catch(_){} }
       if(!fc){
         const note=document.querySelector('#data-legend-histb .hb-note'); if(note) note.textContent=jp()?(year+'年の国境を取得中…'):('Loading '+year+' borders…');
         for(const wrap of PROX){ try{
@@ -10440,11 +10590,31 @@ window.addEventListener('DOMContentLoaded', () => {
           const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
           j.features.forEach((f,i)=>{ if(!f.properties) f.properties={}; const nm=f.properties.NAME||f.properties.name||String(i);
             let h=0; for(let k=0;k<nm.length;k++) h=(h*31+nm.charCodeAt(k))>>>0; f.properties.__col=HB_PAL[h%HB_PAL.length]; });
-          fc=j; hbCache.set(year,fc); break;
+          fc=j; hbCache.set(year,fc);
+          try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,fc); }catch(_){}
+          break;
         }catch(_){} }
-        if(note) note.textContent=fc?(jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)'):(jp()?'取得できませんでした。':'Could not load.');
+        const note2=document.querySelector('#data-legend-histb .hb-note');
+        if(note2) note2.textContent=fc?(jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)'):(jp()?'取得できませんでした。':'Could not load.');
+      } else {
+        const note=document.querySelector('#data-legend-histb .hb-note');
+        if(note) note.textContent=jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)';
       }
       if(fc&&hbYear===year){ try{ map.getSource('hb-src').setData(fc); }catch(_){} }
+      /* warm the neighbouring years in the background so slider scrubbing is instant */
+      try{ const i=HB_YEARS.indexOf(year); [HB_YEARS[i-1],HB_YEARS[i+1]].forEach(y=>{ if(y&&!hbCache.has(y)) setTimeout(()=>{ if(state.hist&&!hbCache.has(y)) hbPrefetch(y); },1200); }); }catch(_){}
+    }
+    async function hbPrefetch(year){
+      if(hbCache.has(year)) return;
+      try{ if(window.IntMapCache){ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ hbCache.set(year,c); return; } } }catch(_){}
+      for(const wrap of PROX){ try{
+        const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson')); if(!r.ok) continue;
+        const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
+        j.features.forEach((f,i)=>{ if(!f.properties) f.properties={}; const nm=f.properties.NAME||f.properties.name||String(i);
+          let h=0; for(let k=0;k<nm.length;k++) h=(h*31+nm.charCodeAt(k))>>>0; f.properties.__col=HB_PAL[h%HB_PAL.length]; });
+        hbCache.set(year,j); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,j); }catch(_){}
+        return;
+      }catch(_){} }
     }
     function hbToggle(on){ state.hist=on;
       const a=()=>{ if(!hbEnsure()){ map.once('idle',a); return; } setVis(HB_IDS,on); if(on) hbLoad(hbYear); };
@@ -10455,19 +10625,74 @@ window.addEventListener('DOMContentLoaded', () => {
           if(el&&!el.querySelector('.hb-year-row')){
             const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:7px;';
             row.innerHTML=(jp()?'年代':'Year')+' <input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="flex:1;"> <b class="hb-year-val" style="color:var(--text-main);min-width:38px;text-align:right;">'+hbYear+'</b>';
-            const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px;';
-            el.appendChild(row); el.appendChild(note);
+            /* (#R20) the AVAILABLE years shown inside the slider ("availableな年数をスライダーの中に表示して") —
+               the slider is index-based (equal steps), so an equal-spaced tick row lines up exactly. */
+            const ticks=document.createElement('div'); ticks.className='hb-ticks';
+            ticks.style.cssText='display:flex;justify-content:space-between;font-size:8.5px;color:var(--text-muted);margin:2px 30px 0 '+(jp()?'34px':'34px')+';';
+            ticks.innerHTML=HB_YEARS.map(y=>'<span style="transform:rotate(-45deg);transform-origin:top left;white-space:nowrap;">'+String(y).slice(2)+'</span>').join('');
+            const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:12px;';
+            el.appendChild(row); el.appendChild(ticks); el.appendChild(note);
             row.querySelector('input').addEventListener('input',(e)=>{ hbYear=HB_YEARS[+e.target.value]||1920; const v=el.querySelector('.hb-year-val'); if(v) v.textContent=hbYear; clearTimeout(hbToggle._t); hbToggle._t=setTimeout(()=>hbLoad(hbYear),250); });
           }
         } else if(window._hideGenericLegend) window._hideGenericLegend('histb');
       }catch(_){}
     }
 
-    /* ---------- rows in the Layers panel (swept into Others(beta) by reorganizeLayerPanel) ---------- */
-    const BLBL={ukrfront:['ウクライナ前線（リアルタイム）','Ukraine frontline (live)'],bldg3d:['3D建物（都市）','3D buildings (cities)'],histb:['過去の国境（年代スライダー）','Historical borders (year slider)']};
+    /* ---------- (#R20) Volcanoes — full Smithsonian GVP Holocene catalogue (1,215), bundled locally
+       (data/volcanoes_gvp.json, slimmed from the GVP WFS). Replaces the old 42-point curated layer. ---------- */
+    const VL_IDS=['volc2-pt','volc2-lbl'];
+    let volcFC=null, volcLoading=false;
+    function volcEnsure(){ if(map.getSource('volc2-src')) return true; if(!map.isStyleLoaded()) return false;
+      try{
+        map.addSource('volc2-src',{type:'geojson',data:volcFC||{type:'FeatureCollection',features:[]},attribution:'Smithsonian GVP'});
+        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
+        map.addLayer({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
+          'circle-radius':['interpolate',['linear'],['zoom'],1,2.2,5,4.6,9,8],
+          /* recently-erupted = hotter colour (y = last eruption year; null/old = grey-orange) */
+          'circle-color':['case',['>=',['coalesce',['get','y'],-99999],1950],'#ff3b30',['>=',['coalesce',['get','y'],-99999],1500],'#ff8a3d','#c98f6b'],
+          'circle-stroke-color':'#fff2e0','circle-stroke-width':0.9,'circle-opacity':0.92}},before);
+        map.addLayer({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
+        map.on('click','volc2-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          const yr=(p.y==null||p.y==='null')?(jp()?'噴火記録なし':'No dated eruption'):((p.y<0?(jp()?('紀元前'+(-p.y)):('BCE '+(-p.y))):p.y)+(jp()?'年に最終噴火':' last eruption'));
+          const html='<div style="min-width:160px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);">🌋 '+(p.n||'')+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+(p.c||'')+(p.e!=null&&p.e!=='null'?' · '+p.e+' m':'')+'<br>'+(p.t||'')+'<br>'+yr+'</div></div>';
+          try{ if(popup) popup.remove(); }catch(_){}
+          try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'280px'}).setLngLat(f.geometry.coordinates).setHTML(html).addTo(map); }catch(_){}
+        });
+        map.on('mouseenter','volc2-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
+        map.on('mouseleave','volc2-pt',()=>{ map.getCanvas().style.cursor=''; });
+        return true;
+      }catch(_){ return false; } }
+    let popup=null;
+    async function volcLoad(){ if(volcFC){ try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} return; }
+      if(volcLoading) return; volcLoading=true;
+      try{ const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
+        if(j&&Array.isArray(j.features)){ volcFC=j; try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} }
+      }catch(_){ try{ imToast(jp()?'火山データを読み込めませんでした':'Could not load volcano data'); }catch(_){} }
+      volcLoading=false; }
+    function volcToggle(on){ state.volc=on;
+      const a=()=>{ if(!volcEnsure()){ map.once('idle',a); return; } setVis(VL_IDS,on); if(on) volcLoad(); };
+      a();
+      try{ if(on&&window._registerLayerOpacity){
+            const el=window._registerLayerOpacity('volc2',['Volcanoes (GVP Holocene)','火山（GVP完新世）'],VL_IDS,'beta-dl-volc2');
+            if(el&&!el.querySelector('.volc-key')){
+              const key=document.createElement('div'); key.className='volc-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
+              const dot=(c)=>'<span style="width:11px;height:11px;border-radius:50%;flex:none;background:'+c+';border:1px solid rgba(255,255,255,0.5);"></span>';
+              key.innerHTML='<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff3b30')+(jp()?'1950年以降に噴火':'Erupted since 1950')+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#ff8a3d')+(jp()?'1500年以降に噴火':'Erupted since 1500')+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+dot('#c98f6b')+(jp()?'それ以前・記録なし':'Older / undated')+'</div>'+
+                '<div style="font-size:10px;color:var(--text-muted);">Smithsonian GVP · 1,215 Holocene volcanoes</div>';
+              const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
+            }
+          }
+           else if(window._hideGenericLegend) window._hideGenericLegend('volc2'); }catch(_){}
+    }
+
+    /* ---------- rows in the Layers panel (histb/ukrfront now file into "Strategic geography" via
+       reorganizeLayerPanel — promoted out of beta (#R20); bldg3d + volc2 stay in Others(beta)) ---------- */
+    const BLBL={ukrfront:['ウクライナ前線（リアルタイム）','Ukraine frontline (live)'],bldg3d:['3D建物（都市）','3D buildings (cities)'],histb:['過去の国境','Historical borders'],volc2:['火山（GVP完新世・全1,215座）','Volcanoes (GVP Holocene, all 1,215)']};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-ukrfront')) return;
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
-      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['histb','#c9b18a',hbToggle]].forEach(([k,sw,fn])=>{
+      [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['histb','#c9b18a',hbToggle],['volc2','#ff6a3d',volcToggle]].forEach(([k,sw,fn])=>{
         const cb=row('beta-dl-'+k, jp()?BLBL[k][0]:BLBL[k][1], sw);
         cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
       });
@@ -10477,12 +10702,13 @@ window.addEventListener('DOMContentLoaded', () => {
     function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=jp()?BLBL[k][0]:BLBL[k][1]; }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps */
-    map.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist){ setTimeout(()=>{
+    map.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist||state.volc){ setTimeout(()=>{
       if(state.ukr&&ukrEnsure()){ setVis(UKR_IDS,true); if(ukrFC){ try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){} } }
       if(state.bldg&&bldgEnsure()) setVis(['ofm-bldg-3d'],true);
       if(state.hist&&hbEnsure()){ setVis(HB_IDS,true); const fc=hbCache.get(hbYear); if(fc){ try{ map.getSource('hb-src').setData(fc); }catch(_){} } }
+      if(state.volc&&volcEnsure()){ setVis(VL_IDS,true); if(volcFC){ try{ map.getSource('volc2-src').setData(volcFC); }catch(_){} } }
     },80); } });
-    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle};
+    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle};
   })();
 
   /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
@@ -10495,15 +10721,42 @@ window.addEventListener('DOMContentLoaded', () => {
      weather (Open-Meteo @ map centre), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
      stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labelled). ===== */
   (function(){
-    const KEY='intmap_widgets2';
+    /* (#R20) Widget board v3 — big expansion ("ウィジェットの選択肢を大幅拡充して"):
+       configurable FX pairs, data "as of" stamps on every financial widget, Recent Earthquakes
+       (USGS, 24 h, top-3 by magnitude — #1 big, #2/#3 small+equal), On this day (Wikimedia),
+       Bloomberg-style one-indicator-per-widget cards (gold / silver via gold-api.com; BTC / ETH /
+       crypto market-cap+dominance via CoinGecko; Crypto Fear & Greed via alternative.me — every
+       source curl-verified keyless + CORS*; equity indices/oil need keyed APIs so they are honestly
+       absent rather than faked), Featured Layer (random regular layer, tap = turn it on),
+       Random Country (flag + key stats), and user-defined Countdown (title + date).
+       Storage: intmap_widgets3 = [{u,t,cfg}]; v2 string entries migrate automatically. */
+    const KEY='intmap_widgets3';
     const jp=()=>currentLang==='jp';
-    let active=[]; try{ const s=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(s)) active=s.filter(x=>typeof x==='string'); }catch(_){}
-    const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} };
+    let active=[];
+    try{
+      const s3=JSON.parse(localStorage.getItem(KEY)||'null');
+      if(Array.isArray(s3)) active=s3.filter(x=>x&&typeof x.t==='string');
+      else{ const s2=JSON.parse(localStorage.getItem('intmap_widgets2')||'[]');
+        if(Array.isArray(s2)) active=s2.filter(x=>typeof x==='string').map(t=>({u:'w'+Math.random().toString(36).slice(2,8),t:(t==='markets'?'crypto':t),cfg:{}})); }
+    }catch(_){}
+    active.forEach(e=>{ if(!e.u) e.u='w'+Math.random().toString(36).slice(2,8); if(!e.cfg) e.cfg={}; });
+    const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} };
+    const FX_CCY=['USD','JPY','EUR','GBP','CNY','KRW','CHF','AUD','CAD','NZD','SGD','HKD','TWD','INR','BRL','MXN','RUB','TRY','ZAR','SEK','NOK','PLN','THB','IDR','PHP','VND','SAR','AED','ILS','EGP'];
+    /* multi: more than one instance allowed (different pairs / countdowns) */
     const DEFS={
-      clock:  { nm:()=>jp()?'時計':'Clock',        ic:'🕐', desc:()=>jp()?'現在時刻と日付':'Time & date' },
-      weather:{ nm:()=>jp()?'天気':'Weather',      ic:'🌤', desc:()=>jp()?'地図中心の現在の天気':'Current weather at map centre' },
-      fx:     { nm:()=>jp()?'為替':'Exchange',     ic:'💱', desc:()=>jp()?'米ドル基準の主要レート':'Major rates vs USD' },
-      markets:{ nm:()=>jp()?'マーケット（暗号資産）':'Markets (crypto)', ic:'📈', desc:()=>jp()?'BTC・ETH 価格と24h変動':'BTC & ETH price, 24h change' }
+      clock:    { nm:()=>jp()?'時計':'Clock', ic:'🕐', desc:()=>jp()?'現在時刻と日付':'Time & date' },
+      weather:  { nm:()=>jp()?'天気':'Weather', ic:'🌤', desc:()=>jp()?'地図中心の現在の天気':'Current weather at map centre' },
+      fx:       { nm:()=>jp()?'為替レート':'FX rate', ic:'💱', desc:()=>jp()?'好きな通貨ペアを選択':'Pick any currency pair', multi:true },
+      crypto:   { nm:()=>jp()?'暗号資産（BTC・ETH）':'Crypto (BTC·ETH)', ic:'📈', desc:()=>jp()?'価格と24h変動':'Price & 24h change' },
+      cryptocap:{ nm:()=>jp()?'暗号資産時価総額':'Crypto market cap', ic:'🪙', desc:()=>jp()?'総時価総額とBTCドミナンス':'Total cap & BTC dominance' },
+      fng:      { nm:()=>jp()?'Fear & Greed指数':'Fear & Greed', ic:'🌡', desc:()=>jp()?'暗号資産市場の心理指数':'Crypto market sentiment index' },
+      gold:     { nm:()=>jp()?'金（ゴールド）':'Gold', ic:'🥇', desc:()=>jp()?'金スポット価格 (USD/oz)':'Gold spot (USD/oz)' },
+      silver:   { nm:()=>jp()?'銀（シルバー）':'Silver', ic:'🥈', desc:()=>jp()?'銀スポット価格 (USD/oz)':'Silver spot (USD/oz)' },
+      quake:    { nm:()=>jp()?'直近の地震':'Recent earthquakes', ic:'🌐', desc:()=>jp()?'直近24時間のM上位3（USGS）':'Top-3 magnitude, last 24 h (USGS)' },
+      otd:      { nm:()=>jp()?'今日は何の日':'On this day', ic:'📅', desc:()=>jp()?'歴史上の今日の出来事':'A historical event from this date' },
+      featured: { nm:()=>jp()?'おすすめレイヤー':'Featured layer', ic:'✨', desc:()=>jp()?'ランダムに紹介。押すと表示':'Random pick — tap to show it' },
+      country:  { nm:()=>jp()?'ランダムな国':'Random country', ic:'🌍', desc:()=>jp()?'国旗と基礎データ':'Flag & key facts' },
+      countdown:{ nm:()=>jp()?'カウントダウン':'Countdown', ic:'⏳', desc:()=>jp()?'日付と題名を設定':'Set a date & title', multi:true }
     };
     const css=document.createElement('style');
     css.textContent=
@@ -10536,57 +10789,169 @@ window.addEventListener('DOMContentLoaded', () => {
       const feed=document.getElementById('live-news-feed');
       if(feed&&feed.parentElement===sb) sb.insertBefore(board,feed); else sb.appendChild(board);
       return board; }
-    function card(id){ const d=DEFS[id]; if(!d) return '';
-      return '<div class="wgt-card" data-w="'+id+'"><button class="wgt-x" title="'+(jp()?'削除':'Remove')+'">✕</button>'+
-        '<div class="wgt-h"><span>'+d.ic+'</span>'+d.nm()+'</div><div class="wgt-v" id="wgtv-'+id+'">···</div><div class="wgt-s" id="wgts-'+id+'"></div></div>'; }
+    function hasType(t){ return active.some(e=>e.t===t); }
+    function card(e){ const d=DEFS[e.t]; if(!d) return '';
+      const gear=(e.t==='fx'||e.t==='countdown')?'<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'" style="position:absolute;top:6px;right:36px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.18);color:var(--text-main);font-size:12px;cursor:pointer;">⚙</button>':'';
+      return '<div class="wgt-card" data-u="'+e.u+'" data-w="'+e.t+'"><button class="wgt-x" title="'+(jp()?'削除':'Remove')+'">✕</button>'+gear+
+        '<div class="wgt-h"><span>'+d.ic+'</span><span class="wgt-nm">'+d.nm()+'</span></div><div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
     function render(){ const b=ensureBoard(); if(!b) return;
       const cards=active.map(card).join('');
-      const addable=Object.keys(DEFS).filter(k=>!active.includes(k));
+      const addable=Object.keys(DEFS).filter(k=>DEFS[k].multi||!hasType(k));
       b.innerHTML='<div class="wgt-title">'+(jp()?'ウィジェット':'Widgets')+'</div>'+
         '<div class="wgt-grid">'+cards+(addable.length?'<button class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(jp()?'ウィジェットを追加':'Add widget')+'</button>':'')+'</div>'+
         (gallery&&addable.length?('<div class="wgt-gallery"><h5>'+(jp()?'追加できるウィジェット':'Available widgets')+'</h5>'+
           addable.map(k=>'<div class="wgt-g-row" data-add="'+k+'"><span class="gi">'+DEFS[k].ic+'</span><span><div class="gn">'+DEFS[k].nm()+'</div><div class="gd">'+DEFS[k].desc()+'</div></span><span class="ga">＋</span></div>').join('')+'</div>'):'');
       const add=b.querySelector('#wgt-add'); if(add) add.onclick=()=>{ gallery=!gallery; render(); };
-      b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-add'); if(k&&!active.includes(k)){ active.push(k); save(); gallery=false; render(); } });
-      b.querySelectorAll('.wgt-x').forEach(x=>x.onclick=(e)=>{ e.stopPropagation(); const c=x.closest('.wgt-card'); const k=c&&c.getAttribute('data-w'); if(k){ active=active.filter(a=>a!==k); save(); render(); } });
+      b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-add'); if(!k||!DEFS[k]) return;
+        if(!DEFS[k].multi&&hasType(k)) return;
+        const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:{})};
+        active.push(e); save(); gallery=false; render();
+        if(k==='countdown') setTimeout(()=>openCfg(e.u),50); });
+      b.querySelectorAll('.wgt-x').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); const c=x.closest('.wgt-card'); const u=c&&c.getAttribute('data-u'); if(u){ active=active.filter(a=>a.u!==u); save(); render(); } });
+      b.querySelectorAll('.wgt-cfg').forEach(g=>g.onclick=(ev)=>{ ev.stopPropagation(); openCfg(g.getAttribute('data-u')); });
       refreshAll(); }
-    function setV(id,v,s){ const ev=document.getElementById('wgtv-'+id); if(ev) ev.innerHTML=v; const es=document.getElementById('wgts-'+id); if(es) es.innerHTML=s||''; }
-    function tickClock(){ if(!active.includes('clock')||!visible()) return;
+    function entry(u){ return active.find(e=>e.u===u); }
+    function setV(u,v,s){ const ev=document.getElementById('wgtv-'+u); if(ev) ev.innerHTML=v; const es=document.getElementById('wgts-'+u); if(es) es.innerHTML=s||''; }
+    /* "as of" stamp — every financial/data widget states WHEN its numbers are from (#R20). */
+    function asOf(ts){ try{ const d=(ts instanceof Date)?ts:new Date(ts); if(isNaN(d.getTime())) return '';
+      return (jp()?'取得時点 ':'as of ')+d.toLocaleString(jp()?'ja-JP':'en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
+    function openCfg(u){ const e=entry(u); if(!e) return; const box=document.getElementById('wgtc-'+u); if(!box) return;
+      const open=box.style.display!=='none'; if(open){ box.style.display='none'; return; }
+      box.style.display='block';
+      const selStyle='padding:4px 6px;border-radius:7px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12px;';
+      if(e.t==='fx'){
+        box.innerHTML='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);">'+
+          '<select class="fxb" style="'+selStyle+'">'+FX_CCY.map(c=>'<option'+(c===(e.cfg.base||'USD')?' selected':'')+'>'+c+'</option>').join('')+'</select> /'+
+          '<select class="fxq" style="'+selStyle+'">'+FX_CCY.map(c=>'<option'+(c===(e.cfg.quote||'JPY')?' selected':'')+'>'+c+'</option>').join('')+'</select>'+
+          '<button class="fxok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div>';
+        box.querySelector('.fxok').onclick=()=>{ e.cfg.base=box.querySelector('.fxb').value; e.cfg.quote=box.querySelector('.fxq').value; save(); box.style.display='none'; refreshOne(e); };
+      } else if(e.t==='countdown'){
+        box.innerHTML='<div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text-muted);">'+
+          '<input class="cdt" type="text" maxlength="40" placeholder="'+(jp()?'題名（例: オリンピック開幕）':'Title (e.g. Olympics opening)')+'" value="'+String(e.cfg.title||'').replace(/"/g,'&quot;')+'" style="'+selStyle+'width:100%;box-sizing:border-box;">'+
+          '<div style="display:flex;gap:6px;"><input class="cdd" type="date" value="'+(e.cfg.date||'')+'" style="'+selStyle+'flex:1;">'+
+          '<button class="cdok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div></div>';
+        box.querySelector('.cdok').onclick=()=>{ e.cfg.title=box.querySelector('.cdt').value.trim(); e.cfg.date=box.querySelector('.cdd').value; save(); box.style.display='none'; refreshOne(e); };
+      }
+    }
+    function tickClock(){ if(!visible()) return;
       let tz; try{ if(typeof userTZ!=='undefined'&&userTZ&&userTZ!=='auto') tz=userTZ; }catch(_){}
-      const now=new Date(); let tstr,dstr;
-      try{ tstr=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
-      try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
-      setV('clock','<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); }
+      const now=new Date();
+      active.filter(e=>e.t==='clock').forEach(e=>{ let tstr,dstr;
+        try{ tstr=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
+        try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
+        setV(e.u,'<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); });
+      active.filter(e=>e.t==='countdown').forEach(e=>refreshCountdown(e));
+    }
     const wIco=(c)=>{ if(c==null)return '🌡'; if(c===0)return '☀️'; if(c<=3)return '⛅'; if(c<=48)return '🌫'; if(c<=67)return '🌧'; if(c<=77)return '❄️'; if(c<=82)return '🌦'; if(c<=99)return '⛈'; return '🌡'; };
-    async function refreshWeather(){ if(!active.includes('weather')||!visible()) return;
-      try{ const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
+    const una=()=>jp()?'取得できません':'unavailable';
+    async function refreshWeather(e){ try{ const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
         const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
-        setV('weather', wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map centre'));
-      }catch(_){ setV('weather','—', jp()?'取得できません':'unavailable'); } }
-    async function refreshFx(){ if(!active.includes('fx')||!visible()) return;
-      try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{};
-        const f=(v)=>v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2));
-        setV('fx','USD/JPY '+f(rt.JPY), 'EUR '+f(rt.EUR)+' · GBP '+f(rt.GBP)+' · CNY '+f(rt.CNY));
-      }catch(_){ setV('fx','—', jp()?'取得できません':'unavailable'); } }
-    async function refreshMkt(){ if(!active.includes('markets')||!visible()) return;
-      try{ const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
-        const j=await r.json(); const b=j.bitcoin||{}, e=j.ethereum||{};
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map centre'));
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshFx(e){ try{ const base=(e.cfg&&e.cfg.base)||'USD', quote=(e.cfg&&e.cfg.quote)||'JPY';
+        const r=await fetch('https://open.er-api.com/v6/latest/'+base); const j=await r.json(); const v=j.rates&&j.rates[quote];
+        const f=(x)=>x==null?'—':(x<0.01?(+x).toFixed(6):x<10?(+x).toFixed(4):(+x).toFixed(2));
+        setV(e.u, base+'/'+quote+'<br><span style="font-size:24px;">'+f(v)+'</span>', asOf(j.time_last_update_utc)+' · ER-API');
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'為替 ':'FX ')+base+'/'+quote;
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshCrypto(e){ try{ const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true');
+        const j=await r.json(); const b=j.bitcoin||{}, t=j.ethereum||{};
         const pc=(v)=>v==null?'':('<span style="color:'+(v>=0?'#34c759':'#ff3b30')+';">'+(v>=0?'+':'')+v.toFixed(1)+'%</span>');
-        setV('markets','BTC $'+(b.usd!=null?b.usd.toLocaleString():'—')+' '+pc(b.usd_24h_change), 'ETH $'+(e.usd!=null?e.usd.toLocaleString():'—')+' '+pc(e.usd_24h_change)+' · CoinGecko');
-      }catch(_){ setV('markets','—', jp()?'取得できません':'unavailable'); } }
-    function refreshAll(){ tickClock(); refreshWeather(); refreshFx(); refreshMkt(); }
+        setV(e.u,'BTC $'+(b.usd!=null?b.usd.toLocaleString():'—')+' '+pc(b.usd_24h_change)+'<br><span style="font-size:14px;">ETH $'+(t.usd!=null?t.usd.toLocaleString():'—')+' '+pc(t.usd_24h_change)+'</span>', asOf((b.last_updated_at||0)*1000)+' · CoinGecko');
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshCryptoCap(e){ try{ const r=await fetch('https://api.coingecko.com/api/v3/global'); const j=(await r.json()).data||{};
+        const cap=j.total_market_cap&&j.total_market_cap.usd, dom=j.market_cap_percentage&&j.market_cap_percentage.btc, chg=j.market_cap_change_percentage_24h_usd;
+        const capS=cap==null?'—':('$'+(cap/1e12).toFixed(2)+'T');
+        const pc=(v)=>v==null?'':(' <span style="color:'+(v>=0?'#34c759':'#ff3b30')+';font-size:13px;">'+(v>=0?'+':'')+v.toFixed(1)+'%</span>');
+        setV(e.u,capS+pc(chg),'BTC '+(jp()?'ドミナンス':'dominance')+' '+(dom!=null?dom.toFixed(1)+'%':'—')+' · '+asOf((j.updated_at||0)*1000)+' · CoinGecko');
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshFng(e){ try{ const r=await fetch('https://api.alternative.me/fng/'); const j=await r.json(); const d=(j.data||[])[0]||{};
+        const v=+d.value; const col=v>=55?'#34c759':v<=45?'#ff3b30':'#ff9500';
+        const cls=jp()?({'Extreme Fear':'極度の恐怖','Fear':'恐怖','Neutral':'中立','Greed':'強欲','Extreme Greed':'極度の強欲'}[d.value_classification]||d.value_classification):d.value_classification;
+        setV(e.u,'<span style="color:'+col+';">'+(isNaN(v)?'—':v)+'</span> <span style="font-size:13px;">'+(cls||'')+'</span>', asOf((+d.timestamp||0)*1000)+' · alternative.me');
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshMetal(e,sym){ try{ const r=await fetch('https://api.gold-api.com/price/'+sym); const j=await r.json();
+        setV(e.u,'$'+(+j.price).toLocaleString(undefined,{maximumFractionDigits:2})+' <span style="font-size:12px;color:var(--text-muted);">/oz</span>', asOf(j.updatedAt)+' · gold-api');
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshQuake(e){ try{ const r=await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'); const j=await r.json();
+        const qs=(j.features||[]).filter(f=>f.properties&&f.properties.mag!=null).sort((a,b)=>b.properties.mag-a.properties.mag).slice(0,3);
+        if(!qs.length){ setV(e.u,'—', jp()?'M2.5以上なし（24h）':'None ≥ M2.5 (24 h)'); return; }
+        const row=(f,big)=>{ const p=f.properties, c=f.geometry.coordinates;
+          const ago=Math.max(0,Math.round((Date.now()-p.time)/36e5));
+          return '<div class="wq-row" data-ll="'+c[0]+','+c[1]+'" style="cursor:pointer;'+(big?'':'font-size:12px;color:var(--text-muted);')+'margin-top:'+(big?'0':'3px')+';">'+
+            '<span style="font-weight:800;'+(big?'font-size:24px;':'font-size:13px;')+'color:'+(p.mag>=6?'#ff3b30':p.mag>=5?'#ff9500':'var(--text-main)')+';">M'+p.mag.toFixed(1)+'</span> '+
+            '<span style="font-size:'+(big?'12px':'11px')+';">'+(p.place||'')+' · '+ago+'h</span></div>'; };
+        setV(e.u,row(qs[0],true)+(qs[1]?row(qs[1],false):'')+(qs[2]?row(qs[2],false):''), asOf(j.metadata&&j.metadata.generated)+' · USGS');
+        document.querySelectorAll('#wgtv-'+e.u+' .wq-row').forEach(rw=>rw.onclick=()=>{ try{ const [lng,lat]=rw.getAttribute('data-ll').split(',').map(Number); map&&map.flyTo({center:[lng,lat],zoom:5}); }catch(_){} });
+      }catch(_){ setV(e.u,'—', una()); } }
+    let otdList=null, otdDay='';
+    async function refreshOtd(e){ try{
+        const now=new Date(), key=(now.getMonth()+1)+'-'+now.getDate();
+        if(!otdList||otdDay!==key){
+          const mm=String(now.getMonth()+1).padStart(2,'0'), dd=String(now.getDate()).padStart(2,'0');
+          let j=null;
+          for(const wl of (jp()?['ja','en']:['en'])){ try{ const r=await fetch('https://api.wikimedia.org/feed/v1/wikipedia/'+wl+'/onthisday/events/'+mm+'/'+dd); if(r.ok){ j=await r.json(); if(j&&j.events&&j.events.length) break; } }catch(_){} }
+          if(j&&j.events&&j.events.length){ otdList=j.events; otdDay=key; }
+        }
+        if(!otdList||!otdList.length){ setV(e.u,'—', una()); return; }
+        const pick=otdList[Math.floor(Math.random()*otdList.length)];
+        setV(e.u,'<span style="font-size:13px;line-height:1.45;font-weight:600;">'+pick.year+' — '+String(pick.text||'').slice(0,150)+'</span>',
+          (jp()?'タップで別の出来事':'Tap for another')+' · Wikipedia');
+        const ev=document.getElementById('wgtv-'+e.u); if(ev){ ev.style.cursor='pointer'; ev.onclick=()=>refreshOtd(e); }
+      }catch(_){ setV(e.u,'—', una()); } }
+    /* Featured layer — random pick from the REGULAR layer rows; tap turns it on (#R20). */
+    const FEAT_IDS=['dl-climate','dl-wind','dl-radar','dl-snow','dl-aod','dl-sst','dl-eez','dl-subcables','dl-planes','eco-dl-worldcover','eco-dl-ecoregions','eco-dl-plates','dl-relief','dl-hillshade','dl-contours','dl-sealevel','dl-pop','dl-popgrid','dl-gdppc','dl-tfr','dl-hdi','dl-dem','dl-thermal','l9-dl-aurora','dl-nightsat','dl-night','dl-fsu','dl-milSpend','dl-milSpendGDP','dl-nato','beta-dl-histb','beta-dl-ukrfront','dl-nuclear'];
+    function refreshFeatured(e){ try{
+        const avail=FEAT_IDS.map(id=>document.getElementById(id)).filter(Boolean);
+        if(!avail.length){ setV(e.u,'—',''); return; }
+        const cb=avail[Math.floor(Math.random()*avail.length)];
+        const lab=cb.closest('label'); const sp=lab&&lab.querySelector('span:not(.lyr-sw)'); const name=((sp?sp.textContent:'')||cb.id).trim();
+        setV(e.u,'<span style="font-size:15px;font-weight:700;">'+name+'</span>','<span style="color:var(--primary-color);font-weight:600;cursor:pointer;">'+(jp()?'タップして地図に表示 →':'Tap to show on the map →')+'</span>');
+        const ev=document.getElementById('wgtv-'+e.u), es=document.getElementById('wgts-'+e.u);
+        const act=()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } try{ imToast((jp()?'レイヤーを表示: ':'Layer on: ')+name); }catch(_){} }catch(_){} };
+        [ev,es].forEach(x=>{ if(x){ x.style.cursor='pointer'; x.onclick=act; } });
+      }catch(_){ setV(e.u,'—',''); } }
+    function refreshCountry(e){ try{
+        const all=Object.values((typeof countryStats!=='undefined'&&countryStats)||{}).filter(s=>s&&s.nameEn);
+        if(!all.length){ setV(e.u,'…', jp()?'国データ読込中':'loading country data'); setTimeout(()=>refreshCountry(e),2500); return; }
+        const s=all[Math.floor(Math.random()*all.length)];
+        const nm=jp()?(s.nameJp||s.nameEn):s.nameEn;
+        const fm=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return String(v); };
+        setV(e.u,'<span style="font-size:24px;">'+(s.flag||'🏳️')+'</span> <span style="font-size:15px;font-weight:700;">'+nm+'</span>',
+          (jp()?'人口 ':'Pop ')+fm(s.pop)+(s.gdp!=null?' · GDP '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+fm(s.area)+' km²':'')+'<br><span style="color:var(--primary-color);cursor:pointer;font-weight:600;" class="wc-next">'+(jp()?'別の国 ↻':'Another ↻')+'</span>');
+        const nx=document.querySelector('#wgts-'+e.u+' .wc-next'); if(nx) nx.onclick=()=>refreshCountry(e);
+      }catch(_){ setV(e.u,'—',''); } }
+    function refreshCountdown(e){ try{
+        if(!e.cfg||!e.cfg.date){ setV(e.u,'<span style="font-size:13px;color:var(--text-muted);">'+(jp()?'⚙ から日付と題名を設定':'Set date & title via ⚙')+'</span>',''); return; }
+        const tgt=new Date(e.cfg.date+'T00:00:00'); const now=new Date();
+        const days=Math.ceil((tgt-now)/864e5);
+        const title=e.cfg.title||(jp()?'カウントダウン':'Countdown');
+        if(isNaN(days)){ setV(e.u,'—',''); return; }
+        const v=days>0?('<span style="font-size:26px;">'+days+'</span> '+(jp()?'日':'days'))
+               :days===0?(jp()?'<span style="font-size:20px;">今日！🎉</span>':'<span style="font-size:20px;">Today! 🎉</span>')
+               :('<span style="font-size:18px;">'+(jp()?(-days)+'日前':Math.abs(days)+' days ago')+'</span>');
+        setV(e.u,v,'<b style="color:var(--text-main);">'+String(title).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</b> · '+e.cfg.date);
+      }catch(_){ setV(e.u,'—',''); } }
+    function refreshOne(e){ if(!e) return;
+      switch(e.t){ case 'clock': tickClock(); break; case 'weather': refreshWeather(e); break; case 'fx': refreshFx(e); break;
+        case 'crypto': refreshCrypto(e); break; case 'cryptocap': refreshCryptoCap(e); break; case 'fng': refreshFng(e); break;
+        case 'gold': refreshMetal(e,'XAU'); break; case 'silver': refreshMetal(e,'XAG'); break; case 'quake': refreshQuake(e); break;
+        case 'otd': refreshOtd(e); break; case 'featured': refreshFeatured(e); break; case 'country': refreshCountry(e); break;
+        case 'countdown': refreshCountdown(e); break; } }
+    function refreshAll(){ if(!visible()) return; active.forEach(refreshOne); }
+    function refreshData(){ if(!visible()) return; active.forEach(e=>{ if(e.t!=='clock'&&e.t!=='countdown'&&e.t!=='featured'&&e.t!=='country'&&e.t!=='otd') refreshOne(e); }); }
     function visible(){ return board && board.style.display!=='none' && board.offsetParent!==null; }
     function sync(){ const b=ensureBoard(); if(!b) return;
       const noTab=(typeof currentMode==='undefined'||!currentMode);
       if(noTab){ b.style.display='block'; if(!b.dataset.built){ b.dataset.built='1'; render(); } else refreshAll();
         if(!clockT) clockT=setInterval(tickClock,30000);
-        if(!dataT) dataT=setInterval(()=>{ if(visible()){ refreshWeather(); refreshFx(); refreshMkt(); } },5*60*1000);
+        if(!dataT) dataT=setInterval(refreshData,5*60*1000);
       } else { b.style.display='none'; } }
     window.addEventListener('intmap-lang',()=>{ if(board){ board.dataset.built=''; if(board.style.display!=='none'){ board.dataset.built='1'; render(); } } });
-    window.IntMapWidgets2={ sync, render };
+    window.IntMapWidgets2={ sync, render, _active:()=>active, _setActive:(a)=>{ if(Array.isArray(a)){ active=a; active.forEach(e=>{ if(!e.u) e.u='w'+Math.random().toString(36).slice(2,8); if(!e.cfg) e.cfg={}; }); try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} if(board){ board.dataset.built=''; sync(); } } } };
     if(document.readyState!=='loading') setTimeout(sync,0); else document.addEventListener('DOMContentLoaded',()=>setTimeout(sync,0));
   })();
   (function(){
@@ -10878,13 +11243,16 @@ window.addEventListener('DOMContentLoaded', () => {
       losH=obsHeight; losR=rangeKm;   /* (#R18) remember for the next site */
       const my=++runSeq, live=()=>my===runSeq;
       const mob=(typeof isMobile==='function'&&isMobile());
-      const RAYS=mob?360:480, STEPS=mob?170:260, R=6371000, REFF=R*4/3;
+      /* (#R20) finer still: desktop 600 rays (0.6°) × 320 steps (~192k samples — fine since _demPix
+         decodes each tile once and the loops are chunked); mobile stays at the safe 360×170. */
+      const RAYS=mob?360:600, STEPS=mob?170:320, R=6371000, REFF=R*4/3;
       const body=panel&&panel.querySelector('#los-body');
       const tick=()=>new Promise(r=>setTimeout(r,0));
       const loadLbl=jp()?'地形DEMを取得中…':'Loading terrain DEM…', calcLbl=jp()?'視通を計算中…':'Computing sightlines…';
       setProgress(0, loadLbl);
-      let z=Math.min(13,_demZoomForSpan(rangeKm));
-      const budget=mob?110:320, latA=Math.abs(site[1]);
+      /* (#R20) small ranges may now climb to z14 on desktop (the tile budget still bounds the fetch) */
+      let z=Math.min(mob?13:14,_demZoomForSpan(rangeKm)+(mob?0:1));
+      const budget=mob?110:380, latA=Math.abs(site[1]);
       const estTiles=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(latA*Math.PI/180))/Math.pow(2,zz); const n=(2*rangeKm)/tk+1; return n*n*0.8; };
       while(z>5 && estTiles(z)>budget) z--;
       /* inline spherical destination — 125k turf.destination calls were themselves a stall */
@@ -11281,10 +11649,26 @@ window.addEventListener('DOMContentLoaded', () => {
      layers) minus the sidebar, and can optionally lock its camera to the main map. Independent layer state
      is intentional. (Full parity with every main-map tool isn't cloned — the app is single-instance — but
      the core comparison surface is here and behaves like the main map.) ===== */
+  /* (#R20) Compare REBUILT to the requested spec:
+     · NO Flat/Globe selector — the compare projection auto-follows the MAIN map in every mode.
+     · THREE exclusive modes ("二択なものです…三択にして"): SYNC / FREE (independent) / X-RAY.
+       - SYNC: bidirectional ("メインとサブ、どちらの地図を動かしても同期") and the compare window
+         shows, at its centre, the geography under the CENTROID OF THE UNCOVERED MAIN-MAP AREA
+         ("compare viewに隠れていない領域の中心を、compare viewの中心とする").
+       - FREE: fully independent camera, no interference with the main map.
+       - X-RAY: the R18 pixel-registered clip-path lens.
+     · Map/Satellite buttons now RETRY until the style is ready (the "押しても地図が変わらない" bug
+       was a click landing before cmap load → setVis silently no-oped with no retry).
+     · A "Layers ▾" pulldown with EVERY portable layer (Köppen, land cover, ecoregions, plates,
+       hillshade, night lights, snow, aerosol, SST, temperature, precipitation, thermal, population
+       grid, Ukraine frontline, volcanoes). Country choropleths are main-map feature-state layers and
+       are not cloned (documented in DEV-NOTES).
+     · Resizable from ALL FOUR corners ("四隅でできるように"). */
   window.IntMapCompare=(function(){
     if(!map || typeof maplibregl==='undefined') return { open(){}, close(){} };
     const jp=()=>currentLang==='jp';
-    let win=null, cmap=null, syncOn=true, minimized=false, built=false, ro=null, syncing=false, xray=false;
+    let win=null, cmap=null, mode='sync', minimized=false, built=false, ro=null, syncing=false, baseKind='map';
+    const xrayOn=()=>mode==='xray';
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
     function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); return p?p[1]:'koppen_mercator_1991-2020.png'; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
@@ -11320,6 +11704,14 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R16) MOBILE compare: smaller default (44vh, was "大きすぎる") + a touch resize grip (.cmp-resize)
          so the height IS adjustable ("大きさ調節できない" fixed). Native CSS resize ignores touch, hence the grip. */
       '.cmp-resize{display:none;}'+
+      /* (#R20) four-corner resize handles */
+      '.cmp-rz{position:absolute;width:18px;height:18px;z-index:8;touch-action:none;}'+
+      '.cmp-rz[data-c="nw"]{top:-4px;left:-4px;cursor:nwse-resize;}'+
+      '.cmp-rz[data-c="ne"]{top:-4px;right:-4px;cursor:nesw-resize;}'+
+      '.cmp-rz[data-c="sw"]{bottom:-4px;left:-4px;cursor:nesw-resize;}'+
+      '.cmp-rz[data-c="se"]{bottom:-4px;right:-4px;cursor:nwse-resize;}'+
+      '.cmp-rz::after{content:"";position:absolute;inset:5px;border-radius:3px;border:2px solid rgba(150,160,175,0.55);border-top:none;border-left:none;opacity:0;transition:opacity 0.15s;}'+
+      '#compare-window:hover .cmp-rz::after{opacity:1;}'+
       '@media(max-width:768px){'+
       '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:44vh !important;min-width:0 !important;resize:none !important;border-radius:14px;padding-bottom:20px;}'+
       '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:7;}'+
@@ -11349,30 +11741,67 @@ window.addEventListener('DOMContentLoaded', () => {
         {id:'cmp-lyr-koppen',type:'raster',source:'cmp-koppen',layout:{visibility:'none'},paint:{'raster-opacity':0.78}}
       ] }; }
     function setVis(id,on){ try{ if(cmap.getLayer(id)) cmap.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }
-    function setBase(kind){ if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false); return; } setVis('cmp-base-carto',kind==='map'&&document.documentElement.getAttribute('data-theme')!=='dark'); setVis('cmp-base-dark',kind==='map'&&document.documentElement.getAttribute('data-theme')==='dark'); setVis('cmp-base-sat',kind==='sat'); }
-    function syncFromMain(){ if(!syncOn||!cmap||syncing) return; syncing=true;
+    /* (#R20) Base swap that CANNOT silently no-op: remembers the wanted base and retries until the
+       style has the layers ("map/satellite切り替えが、押しても地図が変わらない" = a click during style
+       load hit a missing layer and nothing retried). */
+    function applyBase(){ if(!cmap) return;
+      if(!cmap.getLayer('cmp-base-carto')){ try{ cmap.once('idle',applyBase); }catch(_){} return; }
+      if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false); return; }
+      const dark=document.documentElement.getAttribute('data-theme')==='dark';
+      setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
+    function setBase(kind){ baseKind=kind; applyBase(); }
+    /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
+       (Köppen/land cover/eco) only register when both maps share the projection. */
+    function followProjection(){ try{ const wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat');
+      let isGlobe=true; try{ const pj=cmap.getProjection&&cmap.getProjection(); if(pj&&pj.type) isGlobe=(pj.type==='globe'); }catch(_){}
+      if(wantGlobe!==isGlobe) cmap.setProjection({type:wantGlobe?'globe':'mercator'}); }catch(_){} }
+    /* centroid (container px) of the main-map area NOT covered by the compare window */
+    function uncoveredCentroidPx(){
+      const mcEl=document.getElementById('map-container')||document.body;
+      const mr=mcEl.getBoundingClientRect();
+      let cx=mr.width/2, cy=mr.height/2;
+      try{ if(win&&win.style.display!=='none'&&!xrayOn()){
+        const wr=win.getBoundingClientRect();
+        const ix0=Math.max(mr.left,wr.left), iy0=Math.max(mr.top,wr.top), ix1=Math.min(mr.right,wr.right), iy1=Math.min(mr.bottom,wr.bottom);
+        const iw=Math.max(0,ix1-ix0), ih=Math.max(0,iy1-iy0);
+        const At=mr.width*mr.height, Aw=iw*ih;
+        if(Aw>0 && Aw<At*0.92){
+          const wx=(ix0+ix1)/2-mr.left, wy=(iy0+iy1)/2-mr.top;
+          cx=(cx*At - wx*Aw)/(At-Aw); cy=(cy*At - wy*Aw)/(At-Aw);
+          cx=Math.max(0,Math.min(mr.width,cx)); cy=Math.max(0,Math.min(mr.height,cy));
+        }
+      } }catch(_){}
+      return [cx,cy];
+    }
+    function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true;
       try{
-        /* (#R17) Match the main map's PROJECTION. The Köppen/land-cover/eco overlays are mercator-referenced,
-           so they only register on a mercator map — a globe compare over a flat main map (or vice-versa) put
-           every overlay "完全にずれる". When sync is on, the compare follows the main's flat/globe state. */
-        try{ const wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat'); let isGlobe=true; try{ const pj=cmap.getProjection&&cmap.getProjection(); if(pj&&pj.type) isGlobe=(pj.type==='globe'); }catch(_){}
-          if(wantGlobe!==isGlobe){ cmap.setProjection({type:wantGlobe?'globe':'mercator'}); const pf=win&&win.querySelector('[data-p="flat"]'), pg=win&&win.querySelector('[data-p="globe"]'); if(pf&&pg){ pf.classList.toggle('on',!wantGlobe); pg.classList.toggle('on',wantGlobe); } } }catch(_){}
-        if(xray && win){
-          /* (#R18) TRUE LENS — the R16 "recenter to the window's centre pixel" only registered the single
-             centre point on a GLOBE (curvature offsets every other pixel → "x-rayモードで…全く位置がずれる").
-             Instead the compare map now COVERS the whole map-container at the EXACT same camera as the main
-             map (so it's literally the same projection/zoom/centre → pixel-perfect everywhere, globe OR
-             flat) and is CLIPPED to the window rectangle via clip-path. The window is just a moveable
-             viewport onto a perfectly-registered overlay. */
+        followProjection();
+        if(xrayOn() && win){
+          /* (#R18) TRUE LENS — compare covers the whole container at the EXACT main camera and is
+             clipped to the window rect → pixel-perfect register on globe AND flat. */
           layoutXrayLens();
           cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
         } else {
-          cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
+          /* SYNC: centre the compare on the geography under the UNCOVERED-area centroid. */
+          let target=null; try{ target=map.unproject(uncoveredCentroidPx()); }catch(_){}
+          cmap.jumpTo({center:target||map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()});
         }
+      }catch(_){} syncing=false; }
+    /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
+       sync relation (compare centre = uncovered-area centroid geography) keeps holding. */
+    function syncToMain(){ if(mode!=='sync'||!cmap||syncing) return; syncing=true;
+      try{
+        const C=cmap.getCenter();
+        map.jumpTo({zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch()});
+        const tpx=uncoveredCentroidPx();
+        const p=map.project(C);                                  /* where C sits on the main map now */
+        const cpx=map.project(map.getCenter());                  /* main centre in screen px */
+        const next=map.unproject([cpx.x+(p.x-tpx[0]), cpx.y+(p.y-tpx[1])]);
+        map.jumpTo({center:next});
       }catch(_){} syncing=false; }
     /* (#R18) Size the compare map to the full map-container and clip it to the window rect → a lens. */
     function layoutXrayLens(){
-      if(!xray||!win) return; const cm=document.getElementById('compare-map'); if(!cm) return;
+      if(!xrayOn()||!win) return; const cm=document.getElementById('compare-map'); if(!cm) return;
       const mcEl=document.getElementById('map-container')||document.body; const mr=mcEl.getBoundingClientRect(); const wr=win.getBoundingClientRect();
       cm.style.position='fixed'; cm.style.inset='auto';
       cm.style.left=mr.left+'px'; cm.style.top=mr.top+'px'; cm.style.width=mr.width+'px'; cm.style.height=mr.height+'px'; cm.style.zIndex='1';
@@ -11382,83 +11811,145 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function clearXrayLens(){ const cm=document.getElementById('compare-map'); if(!cm) return;
       ['position','inset','left','top','width','height','zIndex','clipPath','webkitClipPath'].forEach(p=>cm.style[p]=''); try{ cmap.resize(); }catch(_){} }
+    /* ---------- (#R20) portable layer registry for the compare "Layers ▾" pulldown ---------- */
+    const CMP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+    const cmpGibs=(layer,lvl,ext,time)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/'+time+'/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
+    const cmpGibsStatic=(layer,lvl,ext)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
+    function ld(k,fb){ try{ if(typeof layerDates!=='undefined'&&layerDates&&layerDates[k]) return layerDates[k]; }catch(_){} return fb; }
+    function addR(id,tiles,maxz,op){ if(cmap.getSource('cmpx-'+id)) return; cmap.addSource('cmpx-'+id,{type:'raster',tiles:tiles,tileSize:256,maxzoom:maxz||9}); cmap.addLayer({id:'cmpx-'+id,type:'raster',source:'cmpx-'+id,layout:{visibility:'none'},paint:{'raster-opacity':op==null?0.78:op}}); }
+    const CMP_LAYERS=[
+      {k:'koppen', n:()=>jp()?'ケッペン気候区分':'Köppen climate', ids:['cmp-lyr-koppen'], add(){ try{ cmap.getSource('cmp-koppen').updateImage({url:koppenUrl(),coordinates:KC}); }catch(_){} }},
+      {k:'worldcover', n:()=>jp()?'土地被覆 (ESA 2021)':'Land cover (ESA 2021)', ids:['cmp-lyr-worldcover'], add(){}},
+      {k:'eco', n:()=>jp()?'生態地域':'Ecoregions', ids:['cmp-lyr-eco','cmp-lyr-eco-l'], add(done){
+        const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.getSource('cmp-eco')){ cmap.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.addLayer({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',layout:{visibility:'none'},paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.addLayer({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',layout:{visibility:'none'},paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } done&&done(); }catch(_){} };
+        if(window.__ECOREGIONS_2017) addEco(window.__ECOREGIONS_2017); else if(window.__loadEcoregions) window.__loadEcoregions(addEco); }},
+      {k:'plates', n:()=>jp()?'プレート境界':'Tectonic plates', ids:['cmpx-plates-f','cmpx-plates-l'], add(done){
+        if(cmap.getSource('cmpx-plates')){ done&&done(); return; }
+        Promise.all([
+          fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json').then(r=>r.json()),
+          fetch('https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json').then(r=>r.json()).catch(()=>null)
+        ]).then(([pl,bd])=>{ try{
+          cmap.addSource('cmpx-plates',{type:'geojson',data:pl}); cmap.addSource('cmpx-plates-b',{type:'geojson',data:bd||{type:'FeatureCollection',features:[]}});
+          cmap.addLayer({id:'cmpx-plates-f',type:'fill',source:'cmpx-plates',layout:{visibility:'none'},paint:{'fill-color':'#e8590c','fill-opacity':0.12}});
+          cmap.addLayer({id:'cmpx-plates-l',type:'line',source:'cmpx-plates-b',layout:{visibility:'none'},paint:{'line-color':'#ff5a3c','line-width':1.4,'line-opacity':0.9}});
+          done&&done(); }catch(_){} }).catch(()=>{}); }},
+      {k:'hillshade', n:()=>jp()?'陰影起伏':'Hillshade', ids:['cmpx-hill'], add(){ try{ if(!cmap.getSource('cmpx-dem')) cmap.addSource('cmpx-dem',{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:13});
+        if(!cmap.getLayer('cmpx-hill')) cmap.addLayer({id:'cmpx-hill',type:'hillshade',source:'cmpx-dem',layout:{visibility:'none'},paint:{'hillshade-exaggeration':0.55}}); }catch(_){} }},
+      {k:'nightsat', n:()=>jp()?'夜の光（衛星）':'Night lights (satellite)', ids:['cmpx-nightsat'], add(){ addR('nightsat',cmpGibsStatic('VIIRS_Black_Marble',8,'png').map(u=>u.replace('/default/','/default/2016-01-01/')),8,0.95); }},
+      {k:'snow', n:()=>jp()?'積雪':'Snow cover', ids:['cmpx-snow'], add(){ addR('snow',cmpGibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',ld('snow',CMP_DATE)),8); }},
+      {k:'aod', n:()=>jp()?'エアロゾル':'Aerosol (AOD)', ids:['cmpx-aod'], add(){ addR('aod',cmpGibs('MODIS_Combined_Value_Added_AOD',6,'png',ld('aod',CMP_DATE)),6); }},
+      {k:'sst', n:()=>jp()?'海面水温':'Sea-surface temp', ids:['cmpx-sst'], add(){ addR('sst',cmpGibs('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'png',ld('sst',CMP_DATE)),7); }},
+      {k:'temp', n:()=>jp()?'気温（月平均）':'Air temperature (monthly)', ids:['cmpx-temp'], add(){ addR('temp',cmpGibs('MERRA2_2m_Air_Temperature_Monthly',6,'png',ld('temp','2024-01-01')),6); }},
+      {k:'precip', n:()=>jp()?'降水量':'Precipitation', ids:['cmpx-precip'], add(){ addR('precip',cmpGibs('IMERG_Precipitation_Rate',6,'png',ld('precip',CMP_DATE)+'T12:00:00Z'),6); }},
+      {k:'thermal', n:()=>jp()?'熱異常（火災）':'Thermal anomalies', ids:['cmpx-thermal'], add(){ addR('thermal',['https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=VIIRS_NOAA20_Thermal_Anomalies_375m_All,VIIRS_SNPP_Thermal_Anomalies_375m_All&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+CMP_DATE],9,0.85); }},
+      {k:'popgrid', n:()=>jp()?'人口密度グリッド':'Population grid', ids:['cmpx-popgrid'], add(){ addR('popgrid',cmpGibsStatic('GPW_Population_Density_2020',7,'png'),7,0.8); }},
+      {k:'ukr', n:()=>jp()?'ウクライナ前線':'Ukraine frontline', ids:['cmpx-ukr-f','cmpx-ukr-l'], add(done){
+        if(cmap.getSource('cmpx-ukr')){ done&&done(); return; }
+        fetch('https://deepstatemap.live/api/history/last').then(r=>r.json()).then(j=>{ try{
+          let fc=(j&&j.map)?j.map:j; if(typeof fc==='string') fc=JSON.parse(fc);
+          if(!fc||!Array.isArray(fc.features)) return;
+          cmap.addSource('cmpx-ukr',{type:'geojson',data:{type:'FeatureCollection',features:fc.features.filter(f=>f&&f.geometry)}});
+          cmap.addLayer({id:'cmpx-ukr-f',type:'fill',source:'cmpx-ukr',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],layout:{visibility:'none'},paint:{'fill-color':['coalesce',['get','fill'],'#d62b2b'],'fill-opacity':0.3}});
+          cmap.addLayer({id:'cmpx-ukr-l',type:'line',source:'cmpx-ukr',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','stroke'],'#c01616'],'line-width':1.3}});
+          done&&done(); }catch(_){} }).catch(()=>{}); }},
+      {k:'volc', n:()=>jp()?'火山':'Volcanoes', ids:['cmpx-volc'], add(done){
+        if(cmap.getSource('cmpx-volc')){ done&&done(); return; }
+        fetch('data/volcanoes_gvp.json').then(r=>r.json()).then(j=>{ try{
+          cmap.addSource('cmpx-volc',{type:'geojson',data:j});
+          cmap.addLayer({id:'cmpx-volc',type:'circle',source:'cmpx-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2,6,5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff','circle-stroke-width':0.7,'circle-opacity':0.9}});
+          done&&done(); }catch(_){} }).catch(()=>{}); }}
+    ];
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
-      win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較ビュー':'Compare view')+'</span>'+
-        '<button class="cmp-btn" data-v="map">'+(jp()?'地図':'Map')+'</button>'+
+      win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較':'Compare')+'</span>'+
+        '<button class="cmp-btn on" data-v="map">'+(jp()?'地図':'Map')+'</button>'+
         '<button class="cmp-btn" data-v="sat">'+(jp()?'衛星':'Sat')+'</button>'+
-        '<button class="cmp-btn" data-p="flat">'+(jp()?'平面':'Flat')+'</button>'+
-        '<button class="cmp-btn on" data-p="globe">'+(jp()?'地球儀':'Globe')+'</button>'+
+        '<span style="width:6px;"></span>'+
+        '<button class="cmp-btn on" data-m="sync" title="'+(jp()?'両方向に視点同期':'Two-way view sync')+'">'+(jp()?'同期':'Sync')+'</button>'+
+        '<button class="cmp-btn" data-m="free" title="'+(jp()?'メイン地図と独立':'Independent of the main map')+'">'+(jp()?'独立':'Free')+'</button>'+
+        '<button class="cmp-btn" data-m="xray" title="'+(jp()?'メイン地図に重ねる透視レンズ':'Pixel-registered lens over the main map')+'">'+(jp()?'X線':'X-ray')+'</button>'+
         '<button class="cmp-btn" id="cmp-min" title="'+(jp()?'最小化':'Minimise')+'">—</button>'+
         '<button class="cmp-btn" id="cmp-close" title="'+t('close')+'">✕</button></div>'+
         '<div class="cmp-body"><div id="compare-map"></div>'+
         '<div class="cmp-ctrls">'+
-        '<label><input type="checkbox" id="cmp-koppen"> '+(jp()?'ケッペン':'Köppen')+'</label>'+
-        '<label><input type="checkbox" id="cmp-worldcover"> '+(jp()?'土地被覆':'Land cover')+'</label>'+
-        '<label><input type="checkbox" id="cmp-eco"> '+(jp()?'生態地域':'Ecoregions')+'</label>'+
-        '<label><input type="checkbox" id="cmp-sync" checked> '+(jp()?'視点同期':'Sync view')+'</label>'+
-        '<label title="'+(jp()?'透過してメイン地図を重ねる':'See the main map through')+'"><input type="checkbox" id="cmp-xray"> '+(jp()?'透過(X線)':'X-ray')+'</label>'+
-        '</div></div><div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
+        '<button class="cmp-btn" id="cmp-layers-btn" style="backdrop-filter:blur(8px);">🗂 '+(jp()?'レイヤー':'Layers')+' ▾</button>'+
+        '<div id="cmp-layers-dd" style="display:none;position:absolute;top:34px;left:0;z-index:7;max-height:min(260px,60%);overflow-y:auto;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.3);border-radius:10px;padding:8px 10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,0.3);min-width:190px;"></div>'+
+        '</div></div>'+
+        '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
+        '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false});
       try{ cmap.setProjection({type:(typeof currentProj!=='undefined'&&currentProj==='flat')?'mercator':'globe'}); }catch(_){}
-      cmap.on('load',()=>{ setBase('map'); });
-      /* view buttons */
+      cmap.on('load',()=>{ applyBase(); });
+      cmap.on('styledata',()=>{ setTimeout(applyBase,60); });
+      /* base buttons */
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
-      win.querySelector('[data-v="map"]').classList.add('on');
-      win.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-p]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); try{ cmap.setProjection({type:b.getAttribute('data-p')==='globe'?'globe':'mercator'}); }catch(_){} });
-      /* layer toggles */
-      win.querySelector('#cmp-koppen').onchange=(e)=>{ if(e.target.checked){ try{ cmap.getSource('cmp-koppen').updateImage({url:koppenUrl(),coordinates:KC}); }catch(_){} } setVis('cmp-lyr-koppen',e.target.checked); };
-      win.querySelector('#cmp-worldcover').onchange=(e)=>setVis('cmp-lyr-worldcover',e.target.checked);
-      /* Ecoregions (lazy-added from the bundled GeoJSON so the 10 MB only loads if used) */
-      win.querySelector('#cmp-eco').onchange=(e)=>{ if(e.target.checked){
-          const addEco=(gj)=>{ if(!gj) return; try{ if(!cmap.getSource('cmp-eco')){ cmap.addSource('cmp-eco',{type:'geojson',data:gj}); cmap.addLayer({id:'cmp-lyr-eco',type:'fill',source:'cmp-eco',paint:{'fill-color':['coalesce',['to-color',['get','COLOR']],'#4caf50'],'fill-opacity':0.55}}); cmap.addLayer({id:'cmp-lyr-eco-l',type:'line',source:'cmp-eco',paint:{'line-color':'rgba(0,0,0,0.22)','line-width':0.4}}); } setVis('cmp-lyr-eco',true); setVis('cmp-lyr-eco-l',true); }catch(_){} };
-          if(window.__ECOREGIONS_2017) addEco(window.__ECOREGIONS_2017); else if(window.__loadEcoregions) window.__loadEcoregions(addEco);
-        } else { setVis('cmp-lyr-eco',false); setVis('cmp-lyr-eco-l',false); } };
-      win.querySelector('#cmp-sync').onchange=(e)=>{ syncOn=e.target.checked; if(syncOn) syncFromMain(); };
-      /* X-ray: hide the compare basemap + go transparent so the MAIN map (with all its own layers) shows
-         through at the same location; force sync so it really is the same place. */
-      /* (#R15e) X-ray full-covers the map for alignment, which trapped the user ("どうにもできなくなる").
-         A FIXED, always-on-top bar gives a big, unmissable "Exit X-ray" + "Close" no matter what. */
-      function xrayBar(show){ let b=document.getElementById('cmp-xray-bar');
-        if(show){ if(!b){ b=document.createElement('div'); b.id='cmp-xray-bar';
-            b.style.cssText='position:fixed;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6000;display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:999px;background:rgba(15,18,24,0.93);color:#fff;box-shadow:0 6px 28px rgba(0,0,0,0.5);font-size:13px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);max-width:calc(100vw - 16px);';
-            b.innerHTML='<span style="font-weight:700;color:#19c6ff;white-space:nowrap;">🔬 '+(jp()?'X線':'X-ray')+'</span><button id="cmp-xray-exit" style="background:#19c6ff;color:#04222e;border:none;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">'+(jp()?'X線を解除':'Exit X-ray')+'</button><button id="cmp-xray-closeall" style="background:rgba(255,255,255,0.16);color:#fff;border:none;border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;white-space:nowrap;">'+(jp()?'閉じる':'Close')+'</button>';
-            document.body.appendChild(b);
-            b.querySelector('#cmp-xray-exit').onclick=()=>{ const x=win.querySelector('#cmp-xray'); if(x){ x.checked=false; x.dispatchEvent(new Event('change',{bubbles:true})); } };
-            b.querySelector('#cmp-xray-closeall').onclick=()=>{ close(); };
-          } b.style.display='flex'; }
-        else if(b){ b.style.display='none'; } }
-      win.querySelector('#cmp-xray').onchange=(e)=>{ xray=e.target.checked; win.classList.toggle('cmp-xray',xray);
-        if(xray){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',false);
-          const sc=win.querySelector('#cmp-sync'); if(sc&&!sc.checked) sc.checked=true; syncOn=true; }
-        else { const vb=win.querySelector('[data-v].on'); setBase(vb?vb.getAttribute('data-v'):'map'); try{ clearXrayLens(); }catch(_){} }   /* (#R18) restore the map into its window when x-ray off */
-        try{ xrayBar(false); }catch(_){}   /* (#R16) no fullscreen takeover → no floating exit bar needed; the window header stays reachable */
+      /* (#R20) three EXCLUSIVE modes */
+      function setMode(m){ const prev=mode; mode=m;
+        win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')===m));
+        win.classList.toggle('cmp-xray',m==='xray');
+        if(prev==='xray'&&m!=='xray'){ try{ clearXrayLens(); }catch(_){} }
+        applyBase();
         try{ cmap.resize(); }catch(_){}
-        requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} syncFromMain(); }); };
-      window._cmpXrayBar=xrayBar;
+        if(m!=='free') syncFromMain();   /* immediate (rAF never fires in a hidden tab) */
+        requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} if(m!=='free') syncFromMain(); });
+      }
+      win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.getAttribute('data-m')));
+      window._cmpSetMode=setMode;
+      /* layers pulldown */
+      const ldd=win.querySelector('#cmp-layers-dd');
+      function buildLayerDD(){ ldd.innerHTML=CMP_LAYERS.map(L=>'<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-main);padding:4px 2px;cursor:pointer;"><input type="checkbox" data-ck="'+L.k+'"> '+L.n()+'</label>').join('');
+        ldd.querySelectorAll('input[data-ck]').forEach(cb=>cb.onchange=()=>{ const L=CMP_LAYERS.find(x=>x.k===cb.getAttribute('data-ck')); if(!L) return;
+          if(cb.checked){ const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); }
+          else L.ids.forEach(id=>setVis(id,false)); }); }
+      buildLayerDD();
+      win.querySelector('#cmp-layers-btn').onclick=(e)=>{ e.stopPropagation(); ldd.style.display=(ldd.style.display==='none')?'block':'none'; };
+      document.addEventListener('click',(e)=>{ if(ldd.style.display!=='none'&&!e.target.closest('#cmp-layers-dd')&&!e.target.closest('#cmp-layers-btn')) ldd.style.display='none'; });
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
       win.querySelector('#cmp-close').onclick=close;
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
         h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
-        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(0,Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(xray) syncFromMain(); /* (#R16) lens follows the window */ });
+        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(0,Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(mode!=='free') syncFromMain(); /* lens/centroid follow the window */ });
         h.addEventListener('pointerup',()=>drag=false); h.addEventListener('pointercancel',()=>drag=false);
       })();
-      /* resize → resize the map (+ re-aim the lens to the new window centre) */
-      try{ ro=new ResizeObserver(()=>{ try{ cmap.resize(); }catch(_){} if(xray) syncFromMain(); }); ro.observe(win); }catch(_){}
-      /* (#R16) touch resize grip — the user couldn't resize the compare window on mobile. Drag the grip to set height. */
+      /* (#R20) FOUR-corner resize ("四隅でできるようにして") — pointer-driven so it also works on touch. */
+      (function(){ let rz=null,sx=0,sy=0,r0=null;
+        win.querySelectorAll('.cmp-rz').forEach(g=>{
+          g.addEventListener('pointerdown',e=>{ rz=g.getAttribute('data-c'); sx=e.clientX; sy=e.clientY; r0=win.getBoundingClientRect();
+            win.style.right='auto'; win.style.bottom='auto'; win.style.left=r0.left+'px'; win.style.top=r0.top+'px';
+            try{ g.setPointerCapture(e.pointerId); }catch(_){} e.preventDefault(); e.stopPropagation(); });
+          g.addEventListener('pointermove',e=>{ if(!rz) return; const dx=e.clientX-sx, dy=e.clientY-sy;
+            let L=r0.left,T=r0.top,W=r0.width,H=r0.height;
+            if(rz.includes('e')) W=r0.width+dx; if(rz.includes('s')) H=r0.height+dy;
+            if(rz.includes('w')){ W=r0.width-dx; L=r0.left+dx; } if(rz.includes('n')){ H=r0.height-dy; T=r0.top+dy; }
+            W=Math.max(240,Math.min(window.innerWidth-20,W)); H=Math.max(180,Math.min(window.innerHeight-20,H));
+            if(rz.includes('w')) L=r0.right-W; if(rz.includes('n')) T=r0.bottom-H;
+            win.style.left=Math.max(0,L)+'px'; win.style.top=Math.max(0,T)+'px';
+            win.style.setProperty('width',W+'px','important'); win.style.setProperty('height',H+'px','important');
+            try{ cmap.resize(); }catch(_){} if(mode!=='free') syncFromMain(); });
+          const end=()=>{ rz=null; }; g.addEventListener('pointerup',end); g.addEventListener('pointercancel',end);
+        });
+      })();
+      /* resize observer → resize the map (+ re-aim the lens/centroid) */
+      try{ ro=new ResizeObserver(()=>{ try{ cmap.resize(); }catch(_){} if(mode!=='free') syncFromMain(); }); ro.observe(win); }catch(_){}
+      /* (#R16) touch resize grip (mobile height) */
       (function(){ const g=win.querySelector('.cmp-resize'); if(!g) return; let rz=false,sy=0,sh=0;
         g.addEventListener('pointerdown',e=>{ rz=true; sy=e.clientY; sh=win.getBoundingClientRect().height; try{g.setPointerCapture(e.pointerId);}catch(_){} e.preventDefault(); });
-        g.addEventListener('pointermove',e=>{ if(!rz) return; const h=Math.max(180,Math.min(window.innerHeight-40,sh+(e.clientY-sy))); win.style.setProperty('height',h+'px','important'); try{cmap.resize();}catch(_){} if(xray) syncFromMain(); });
+        g.addEventListener('pointermove',e=>{ if(!rz) return; const h=Math.max(180,Math.min(window.innerHeight-40,sh+(e.clientY-sy))); win.style.setProperty('height',h+'px','important'); try{cmap.resize();}catch(_){} if(mode!=='free') syncFromMain(); });
         const end=()=>{ rz=false; }; g.addEventListener('pointerup',end); g.addEventListener('pointercancel',end);
       })();
-      /* keep camera locked to the main map when sync is on */
-      map.on('move',syncFromMain);
+      /* (#R20) BIDIRECTIONAL camera sync. Main→compare follows every main move (user or programmatic);
+         compare→main only on USER gestures on the compare map (originalEvent present) so the two
+         jumpTo streams can never feed back into each other (plus the syncing flag). */
+      map.on('move',()=>{ if(mode!=='free') syncFromMain(); });
+      map.on('moveend',followProjection);
+      cmap.on('move',(ev)=>{ if(mode==='sync'&&!syncing&&ev&&ev.originalEvent) syncToMain(); });
     }
-    function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} syncFromMain(); },80); }
-    function close(){ if(win){ win.style.display='none'; win.classList.remove('cmp-xray'); xray=false; const x=win.querySelector('#cmp-xray'); if(x) x.checked=false; } try{ const b=document.getElementById('cmp-xray-bar'); if(b) b.style.display='none'; }catch(_){} }
+    function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} followProjection(); syncFromMain(); },80); }
+    function close(){ if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
+      try{ win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')==='sync')); }catch(_){} applyBase(); } }
     /* entry button in the Layers dropdown */
     /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
        #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button
@@ -11470,6 +11961,357 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1600);
     return { open, close, _map:()=>cmap };
+  })();
+
+  /* ===== (#R20) LAYER PRESETS — save the current layer set (selection + opacities) under a name and
+     re-apply it in one tap ("レイヤーを自分の好きな設定や透明度、複数選択…で保存できる機能").
+     Lives in Layers → Tools; persists locally + (when logged in) in the account prefs blob. ===== */
+  (function(){
+    const jp=()=>currentLang==='jp';
+    const KEY='intmap_layer_presets';
+    let presets=[]; try{ const s=JSON.parse(localStorage.getItem(KEY)||'[]'); if(Array.isArray(s)) presets=s; }catch(_){}
+    function save(){ try{ localStorage.setItem(KEY,JSON.stringify(presets)); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} }
+    function cbKey(cb){ if(cb.id) return 'id:'+cb.id; const dl=cb.getAttribute&&cb.getAttribute('data-layer'); return dl?('dl:'+dl):null; }
+    function findCb(key){ if(!key) return null; if(key.startsWith('id:')) return document.getElementById(key.slice(3));
+      if(key.startsWith('dl:')){ const dd=document.getElementById('layer-dropdown'); return dd&&dd.querySelector('input[data-layer="'+key.slice(3)+'"]'); } return null; }
+    const SKIP=new Set(['cb-names','cb-borders','cb-grid','cb-countries']);
+    function capture(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return null;
+      const ids=[]; dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(!cb.checked||SKIP.has(cb.id)) return; const k=cbKey(cb); if(k&&!ids.includes(k)) ids.push(k); });
+      let ops={}; try{ ops=JSON.parse(JSON.stringify(opacities)); }catch(_){}
+      return { ids, ops }; }
+    function clearAll(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return;
+      dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(!cb.checked||SKIP.has(cb.id)) return; cb.checked=false; try{ cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }); }
+    function apply(p){ if(!p) return;
+      try{ if(p.ops) Object.keys(p.ops).forEach(k=>{ opacities[k]=p.ops[k]; }); }catch(_){}
+      clearAll();
+      setTimeout(()=>{ (p.ids||[]).forEach(k=>{ const cb=findCb(k); if(cb&&!cb.checked){ cb.checked=true; try{ cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
+        /* re-assert the saved opacities once the layers exist */
+        setTimeout(()=>{ try{ if(p.ops) Object.keys(p.ops).forEach(k=>{ try{ setLayerOpacity(k,p.ops[k]); }catch(_){} }); }catch(_){} },900);
+      },60); }
+    function render(){ const host=document.getElementById('lyr-presets'); if(!host) return;
+      host.innerHTML='<button id="lp-save" class="ai-test-btn" style="width:100%;">💾 <span>'+(jp()?'現在のレイヤー構成を保存':'Save current layers as preset')+'</span></button>'+
+        (presets.length?('<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">'+presets.map((p,i)=>
+          '<div style="display:flex;align-items:center;gap:6px;">'+
+          '<button data-ap="'+i+'" style="flex:1;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);color:var(--text-main);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">▶ '+String(p.name).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+' <span style="color:var(--text-muted);font-size:10px;">('+(p.ids||[]).length+')</span></button>'+
+          '<button data-del="'+i+'" title="'+(jp()?'削除':'Delete')+'" style="flex:0 0 auto;width:26px;height:26px;border:none;border-radius:7px;background:var(--input-bg);color:var(--text-muted);cursor:pointer;font-size:12px;">✕</button></div>').join('')+'</div>'):'');
+      const sv=host.querySelector('#lp-save');
+      if(sv) sv.onclick=()=>{ const snap=capture(); if(!snap||!snap.ids.length){ try{ imToast(jp()?'表示中のレイヤーがありません':'No layers are on'); }catch(_){} return; }
+        const name=prompt(jp()?'プリセット名:':'Preset name:', jp()?('プリセット '+(presets.length+1)):('Preset '+(presets.length+1)));
+        if(!name) return; presets.push({name:String(name).slice(0,40), ids:snap.ids, ops:snap.ops}); save(); render(); };
+      host.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{ apply(presets[+b.getAttribute('data-ap')]); try{ imToast(jp()?'プリセットを適用しました':'Preset applied'); }catch(_){} });
+      host.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ presets.splice(+b.getAttribute('data-del'),1); save(); render(); });
+    }
+    function mount(){ if(document.getElementById('lyr-presets')) { render(); return; }
+      const host=document.createElement('div'); host.id='lyr-presets'; host.style.marginTop='4px';
+      const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
+      (tools||dd||document.body).appendChild(host); render();
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
+    if(document.readyState!=='loading') setTimeout(mount,400); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,400));
+    window.addEventListener('intmap-lang',render);
+    window.IntMapPresets={ render, _get:()=>presets, _set:(a)=>{ if(Array.isArray(a)){ presets=a; try{ localStorage.setItem(KEY,JSON.stringify(presets)); }catch(_){} render(); } } };
+  })();
+
+  /* ===== (#R20) ACCOUNT PREFS SYNC — a logged-in user's settings / layer favourites / widget board /
+     layer presets live in Supabase `user_prefs` (supabase_user_prefs.sql, own-row RLS) so they follow
+     the account across devices ("ユーザーが設定できるものなどは、アカウント登録者では保持して"). ===== */
+  (function(){
+    let upT=null, applying=false;
+    function collect(){ const d={};
+      try{ d.settings=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); }catch(_){ d.settings={}; }
+      try{ d.widgets=JSON.parse(localStorage.getItem('intmap_widgets3')||'[]'); }catch(_){ d.widgets=[]; }
+      try{ d.presets=JSON.parse(localStorage.getItem('intmap_layer_presets')||'[]'); }catch(_){ d.presets=[]; }
+      try{ d.tempUnit=localStorage.getItem('intmap_temp_unit')||null; }catch(_){}
+      try{ d.newsLang=localStorage.getItem('intmap_news_lang')||null; d.newsLangs=JSON.parse(localStorage.getItem('intmap_news_langs')||'null'); }catch(_){}
+      try{ d.aiLocate=localStorage.getItem('intmap_ai_locate')||null; }catch(_){}
+      return d; }
+    window._syncPrefsUp=function(){ if(applying) return; clearTimeout(upT);
+      upT=setTimeout(async ()=>{ try{
+        if(typeof DB==='undefined'||!DB||typeof currentUser==='undefined'||!currentUser) return;
+        await DB.from('user_prefs').upsert({ user_id:currentUser.id, data:collect(), updated_at:new Date().toISOString() });
+      }catch(_){} },1500); };
+    window._syncPrefsDown=async function(){ try{
+      if(typeof DB==='undefined'||!DB||typeof currentUser==='undefined'||!currentUser) return;
+      const {data,error}=await DB.from('user_prefs').select('data').eq('user_id',currentUser.id).maybeSingle();
+      if(error||!data||!data.data){ window._syncPrefsUp(); return; }   /* nothing stored yet → seed from this device */
+      const d=data.data; applying=true;
+      try{
+        if(d.settings&&typeof d.settings==='object'){ localStorage.setItem('intmap_settings',JSON.stringify(d.settings)); try{ loadSettings(); }catch(_){} }
+        if(d.tempUnit){ localStorage.setItem('intmap_temp_unit',d.tempUnit); window.imUnitTemp=d.tempUnit; }
+        if(d.newsLang) localStorage.setItem('intmap_news_lang',d.newsLang);
+        if(Array.isArray(d.newsLangs)) localStorage.setItem('intmap_news_langs',JSON.stringify(d.newsLangs));
+        if(d.aiLocate) localStorage.setItem('intmap_ai_locate',d.aiLocate);
+        if(Array.isArray(d.presets)&&window.IntMapPresets) window.IntMapPresets._set(d.presets);
+        if(Array.isArray(d.widgets)&&window.IntMapWidgets2&&window.IntMapWidgets2._setActive) window.IntMapWidgets2._setActive(d.widgets);
+        try{ applyTheme(); }catch(_){} try{ updateI18n(); }catch(_){} try{ applySidebarStyle(); }catch(_){}
+      }finally{ applying=false; }
+    }catch(_){ applying=false; } };
+  })();
+
+  /* ===== (#R20) AI RESEARCH ASSISTANT — click a place label → "AI brief": the configured BYOK model
+     writes a structured brief (background · history · economy · military/strategic significance ·
+     recent developments), seeded with the nearby geocoded news headlines so it is stronger on "now"
+     than an encyclopedia. Needs an AI key (Settings → AI features); reuses askAI(). ===== */
+  window.IntMapAIResearch=(function(){
+    const jp=()=>currentLang==='jp';
+    let panel=null;
+    function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+    /* minimal safe markdown: ## headers, **bold**, bullet lines */
+    function md(s){ return esc(s)
+      .replace(/^#{1,6}\s*(.+)$/gm,'<h5 style="margin:12px 0 4px;font-size:13px;color:var(--primary-color);">$1</h5>')
+      .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+      .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:14px;text-indent:-10px;">• $1</div>')
+      .replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>'); }
+    function nearbyNews(lngLat,km){ const out=[];
+      try{ const R=km||600;
+        (globalData||[]).forEach(it=>{ const a=it&&it.analysis; if(!a||!a.loc) return;
+          const dx=(a.loc[0]-lngLat.lng)*111*Math.cos(lngLat.lat*Math.PI/180), dy=(a.loc[1]-lngLat.lat)*111;
+          if(Math.sqrt(dx*dx+dy*dy)<=R) out.push(it.title);
+        });
+      }catch(_){}
+      return out.slice(0,8); }
+    function ensure(){ if(panel) return panel;
+      panel=document.createElement('div'); panel.className='tool-panel'; panel.id='ai-research-panel';
+      panel.style.cssText='display:none;position:absolute;top:70px;right:24px;left:auto;bottom:auto;z-index:1600;width:min(380px,calc(100vw - 24px));max-height:min(70vh,640px);overflow-y:auto;';
+      (document.getElementById('map-container')||document.body).appendChild(panel);
+      return panel; }
+    async function open(name,lngLat){
+      try{ if(typeof aiReady==='function'&&!aiReady()){ try{ imToast(t('aiNoKey')); }catch(_){} return; } }catch(_){}
+      const p=ensure();
+      p.style.display='block';
+      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">🤖 '+(jp()?'AI調査: ':'AI brief: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+        '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;">'+(jp()?'<span style="color:var(--text-muted);">調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)</span>':'<span style="color:var(--text-muted);">Researching… (background, history, economy, military, recent developments)</span>')+'</div>'+
+        '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+(jp()?'再生成':'Regenerate')+'</button>';
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+      const body=p.querySelector('#air-body');
+      const news=lngLat?nearbyNews(lngLat):[];
+      const sys=jp()
+        ?'あなたは地政学・地域研究のリサーチアシスタントです。事実に忠実に、簡潔な日本語で答えてください。不確かな点は不確かと明記してください。'
+        :'You are a geopolitical and area-studies research assistant. Be factual and concise; clearly flag anything uncertain.';
+      const prompt=(jp()
+        ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史\n## 経済\n## 軍事・戦略的意義\n## 最近の動向\n各セクション2〜4文。')
+        :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History\n## Economy\n## Military & strategic significance\n## Recent developments\n2–4 sentences per section.'))
+        +(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'For context, recent nearby news headlines:\n')+news.map(s=>'- '+s).join('\n')):'');
+      try{
+        const out=await askAI(prompt,sys);
+        body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources for important decisions.')+'</div>';
+      }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
+      const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
+    }
+    return { open };
+  })();
+
+  /* ===== (#R20) WORLD EVENTS ARCHIVE — the Information tab gains a Places | Events split
+     ("既存カードをplaceとして中分類…eventとして新たな中分類を新設"). Events = curated key moments
+     (wars, disasters, revolutions, assassinations, space, economic crises) searchable by TEXT
+     (existing search box) and YEAR RANGE, each plotted on the map. ===== */
+  (function(){
+    const E=(y,lng,lat,tp,en,jpn,den,djp,wiki)=>({y,loc:[lng,lat],tp,en,jp:jpn,den,djp,wiki});
+    const EVENTS_DB=[
+      E(1492,-74.48,24.10,'geo','Columbus reaches the Americas','コロンブスのアメリカ到達','First Atlantic crossing opens the Columbian exchange.','大西洋横断により新旧両大陸の交流が始まる。','Voyages_of_Christopher_Columbus'),
+      E(1648,7.63,51.96,'geo','Peace of Westphalia','ウェストファリア条約','Birth of the modern sovereign-state order.','近代主権国家体制の起点。','Peace_of_Westphalia'),
+      E(1755,-9.14,38.71,'disaster','Great Lisbon Earthquake','リスボン大地震','Quake+tsunami killed tens of thousands; shook European thought.','地震と津波で数万人が犠牲。欧州思想にも衝撃。','1755_Lisbon_earthquake'),
+      E(1789,2.35,48.86,'revolution','French Revolution','フランス革命','Storming of the Bastille topples the old order.','バスティーユ襲撃で旧体制が崩壊。','French_Revolution'),
+      E(1815,16.37,48.21,'geo','Congress of Vienna','ウィーン会議','Post-Napoleonic balance-of-power settlement.','ナポレオン後の勢力均衡体制を構築。','Congress_of_Vienna'),
+      E(1842,118.80,32.06,'geo','Treaty of Nanking','南京条約','Ends the First Opium War; cedes Hong Kong.','アヘン戦争終結、香港割譲。','Treaty_of_Nanking'),
+      E(1865,-77.03,38.90,'assassination','Lincoln assassinated','リンカーン暗殺','US president shot at Ford’s Theatre.','フォード劇場で米大統領が撃たれる。','Assassination_of_Abraham_Lincoln'),
+      E(1868,135.77,35.01,'revolution','Meiji Restoration','明治維新','Japan’s rapid modernisation begins.','日本の近代化が始動。','Meiji_Restoration'),
+      E(1869,32.35,30.59,'economic','Suez Canal opens','スエズ運河開通','Europe–Asia sea route shortened by ~7,000 km.','欧亜航路を約7,000km短縮。','Suez_Canal'),
+      E(1883,105.42,-6.10,'disaster','Krakatoa eruption','クラカタウ大噴火','One of the deadliest volcanic events in history.','史上最悪級の火山災害。','1883_eruption_of_Krakatoa'),
+      E(1903,-75.67,36.02,'space','Wright brothers’ first flight','ライト兄弟初飛行','Powered flight begins at Kitty Hawk.','キティホークで動力飛行が実現。','Wright_Flyer'),
+      E(1906,-122.42,37.77,'disaster','San Francisco earthquake','サンフランシスコ地震','M7.9 quake and fires destroy the city.','M7.9の地震と火災で市街壊滅。','1906_San_Francisco_earthquake'),
+      E(1912,-49.95,41.73,'disaster','Titanic sinks','タイタニック号沈没','1,500+ die in the North Atlantic.','北大西洋で1,500人以上が犠牲。','Sinking_of_the_Titanic'),
+      E(1914,18.43,43.86,'assassination','Assassination in Sarajevo','サラエボ事件','Archduke Franz Ferdinand shot — WWI ignites.','フランツ・フェルディナント暗殺、第一次大戦の引き金。','Assassination_of_Archduke_Franz_Ferdinand'),
+      E(1914,-79.92,9.08,'economic','Panama Canal opens','パナマ運河開通','Atlantic and Pacific joined.','大西洋と太平洋を接続。','Panama_Canal'),
+      E(1917,30.31,59.94,'revolution','Russian Revolution','ロシア革命','Bolsheviks seize Petrograd.','ボリシェヴィキが権力掌握。','October_Revolution'),
+      E(1918,2.83,49.43,'war','WWI Armistice','第一次大戦休戦','Fighting ends in the Compiègne railway carriage.','コンピエーニュの森で休戦調印。','Armistice_of_11_November_1918'),
+      E(1918,-96.79,39.20,'disaster','1918 influenza pandemic','スペインかぜ','Tens of millions die worldwide.','世界で数千万人が死亡。','Spanish_flu'),
+      E(1919,2.13,48.80,'geo','Treaty of Versailles','ヴェルサイユ条約','Redraws Europe; seeds future conflict.','欧州の地図を書き換え、次の火種に。','Treaty_of_Versailles'),
+      E(1923,139.69,35.68,'disaster','Great Kantō earthquake','関東大震災','Tokyo–Yokohama devastated; ~105,000 dead.','東京・横浜壊滅、犠牲者約10万5千人。','1923_Great_Kant%C5%8D_earthquake'),
+      E(1929,-74.01,40.71,'economic','Wall Street Crash','ウォール街大暴落','Black Tuesday opens the Great Depression.','暗黒の木曜日から世界恐慌へ。','Wall_Street_Crash_of_1929'),
+      E(1939,18.67,54.41,'war','WWII begins','第二次世界大戦勃発','Germany attacks Westerplatte, invades Poland.','ドイツがポーランド侵攻。','Invasion_of_Poland'),
+      E(1941,-157.95,21.36,'war','Attack on Pearl Harbor','真珠湾攻撃','Japan strikes the US Pacific Fleet.','日本が米太平洋艦隊を奇襲。','Attack_on_Pearl_Harbor'),
+      E(1944,-0.85,49.34,'war','D-Day landings','ノルマンディー上陸','Largest amphibious invasion in history.','史上最大の上陸作戦。','Normandy_landings'),
+      E(1944,-71.30,44.26,'economic','Bretton Woods Conference','ブレトンウッズ会議','Dollar-centred postwar monetary order.','ドル基軸の戦後通貨体制を設計。','Bretton_Woods_Conference'),
+      E(1945,-106.47,33.68,'space','Trinity nuclear test','トリニティ核実験','First nuclear detonation.','人類初の核爆発。','Trinity_(nuclear_test)'),
+      E(1945,132.45,34.39,'war','Hiroshima','広島への原爆投下','First atomic bombing of a city.','史上初の都市への原爆投下。','Atomic_bombings_of_Hiroshima_and_Nagasaki'),
+      E(1945,-122.42,37.77,'geo','United Nations founded','国際連合発足','UN Charter signed in San Francisco.','サンフランシスコで国連憲章調印。','United_Nations'),
+      E(1947,77.21,28.61,'revolution','Indian independence','インド独立','End of the British Raj; Partition follows.','英領インド帝国の終焉と分離独立。','Indian_independence_movement'),
+      E(1948,77.21,28.61,'assassination','Gandhi assassinated','ガンディー暗殺','Shot in New Delhi.','ニューデリーで凶弾に倒れる。','Assassination_of_Mahatma_Gandhi'),
+      E(1949,116.39,39.91,'revolution','People’s Republic of China founded','中華人民共和国成立','Mao proclaims the PRC in Beijing.','毛沢東が建国を宣言。','Proclamation_of_the_People%27s_Republic_of_China'),
+      E(1949,-77.03,38.90,'geo','NATO founded','NATO発足','North Atlantic Treaty signed in Washington.','北大西洋条約に調印。','NATO'),
+      E(1950,126.98,38.0,'war','Korean War begins','朝鮮戦争勃発','North invades across the 38th parallel.','北朝鮮が38度線を越え南侵。','Korean_War'),
+      E(1956,32.35,30.59,'war','Suez Crisis','スエズ危機','Canal nationalisation triggers war; superpowers force a halt.','運河国有化が戦争に発展、米ソが停戦を強制。','Suez_Crisis'),
+      E(1957,63.31,45.92,'space','Sputnik 1','スプートニク1号','First artificial satellite — the space age begins.','人類初の人工衛星、宇宙時代の幕開け。','Sputnik_1'),
+      E(1957,12.48,41.89,'economic','Treaty of Rome','ローマ条約','European Economic Community founded.','EECが発足、欧州統合の礎に。','Treaty_of_Rome'),
+      E(1959,-82.36,23.11,'revolution','Cuban Revolution','キューバ革命','Castro takes Havana.','カストロがハバナを掌握。','Cuban_Revolution'),
+      E(1961,13.40,52.52,'geo','Berlin Wall built','ベルリンの壁構築','East Germany seals the inner-Berlin border.','東独が境界を封鎖。','Berlin_Wall'),
+      E(1961,63.31,45.92,'space','Gagarin orbits Earth','ガガーリン宇宙飛行','First human in space.','人類初の有人宇宙飛行。','Vostok_1'),
+      E(1962,-82.36,23.11,'war','Cuban Missile Crisis','キューバ危機','The Cold War’s closest brush with nuclear war.','核戦争に最も近づいた13日間。','Cuban_Missile_Crisis'),
+      E(1963,-96.81,32.78,'assassination','JFK assassinated','ケネディ大統領暗殺','Shot in Dallas.','ダラスで狙撃される。','Assassination_of_John_F._Kennedy'),
+      E(1967,35.23,31.78,'war','Six-Day War','第三次中東戦争','Israel takes Sinai, Golan, West Bank, Gaza.','イスラエルが六日間で広域を制圧。','Six-Day_War'),
+      E(1968,-90.05,35.13,'assassination','Martin Luther King Jr. assassinated','キング牧師暗殺','Shot in Memphis.','メンフィスで暗殺。','Assassination_of_Martin_Luther_King_Jr.'),
+      E(1969,-80.60,28.61,'space','Apollo 11','アポロ11号','Launch of the first crewed Moon landing.','人類初の月面着陸へ打ち上げ。','Apollo_11'),
+      E(1971,-77.03,38.90,'economic','Nixon shock','ニクソン・ショック','Dollar–gold convertibility ends.','金とドルの交換停止。','Nixon_shock'),
+      E(1973,46.72,24.69,'economic','1973 oil crisis','第一次石油危機','OPEC embargo quadruples oil prices.','OPEC禁輸で原油価格が4倍に。','1973_oil_crisis'),
+      E(1975,106.70,10.78,'war','Fall of Saigon','サイゴン陥落','Vietnam War ends.','ベトナム戦争終結。','Fall_of_Saigon'),
+      E(1979,51.39,35.69,'revolution','Iranian Revolution','イラン革命','Shah falls; Islamic Republic founded.','王制崩壊、イスラム共和国成立。','Iranian_Revolution'),
+      E(1979,69.17,34.53,'war','Soviet invasion of Afghanistan','ソ連のアフガン侵攻','A decade-long quagmire begins.','10年に及ぶ泥沼の始まり。','Soviet%E2%80%93Afghan_War'),
+      E(1984,77.41,23.26,'disaster','Bhopal gas disaster','ボパール化学工場事故','World’s worst industrial accident.','史上最悪の産業事故。','Bhopal_disaster'),
+      E(1985,-74.01,40.71,'economic','Plaza Accord','プラザ合意','Coordinated dollar depreciation; yen surges.','ドル高是正で円が急騰。','Plaza_Accord'),
+      E(1986,30.10,51.39,'disaster','Chernobyl disaster','チェルノブイリ原発事故','Worst nuclear accident in history.','史上最悪の原子力事故。','Chernobyl_disaster'),
+      E(1986,-80.60,28.61,'space','Challenger disaster','チャレンジャー号爆発','Shuttle lost 73 seconds after launch.','打ち上げ73秒後に空中分解。','Space_Shuttle_Challenger_disaster'),
+      E(1989,13.40,52.52,'revolution','Fall of the Berlin Wall','ベルリンの壁崩壊','The Iron Curtain cracks open.','鉄のカーテンが崩れる。','Fall_of_the_Berlin_Wall'),
+      E(1989,116.39,39.90,'revolution','Tiananmen Square crackdown','天安門事件','Pro-democracy protests suppressed.','民主化運動が武力鎮圧される。','1989_Tiananmen_Square_protests_and_massacre'),
+      E(1991,47.98,29.37,'war','Gulf War','湾岸戦争','Coalition liberates Kuwait.','多国籍軍がクウェートを解放。','Gulf_War'),
+      E(1991,37.62,55.75,'geo','Dissolution of the USSR','ソ連崩壊','The Soviet flag is lowered over the Kremlin.','クレムリンからソ連国旗が降ろされる。','Dissolution_of_the_Soviet_Union'),
+      E(1994,28.19,-25.75,'revolution','End of apartheid','アパルトヘイト終結','Mandela becomes president.','マンデラが大統領に就任。','1994_South_African_general_election'),
+      E(1995,34.78,32.08,'assassination','Rabin assassinated','ラビン首相暗殺','Israeli PM shot at a peace rally.','和平集会で銃撃される。','Assassination_of_Yitzhak_Rabin'),
+      E(1997,114.17,22.32,'geo','Hong Kong handover','香港返還','British rule ends after 156 years.','156年の英国統治が終了。','Handover_of_Hong_Kong'),
+      E(1997,100.50,13.75,'economic','Asian financial crisis','アジア通貨危機','Baht collapse cascades across Asia.','バーツ暴落がアジア全域へ連鎖。','1997_Asian_financial_crisis'),
+      E(1999,8.68,50.11,'economic','Euro launched','ユーロ誕生','Single currency for 11 EU states.','EU11か国の単一通貨が始動。','Euro'),
+      E(2001,-74.01,40.71,'war','September 11 attacks','アメリカ同時多発テロ','Al-Qaeda attacks New York and Washington.','アルカイダによる米本土攻撃。','September_11_attacks'),
+      E(2003,44.36,33.31,'war','Iraq War begins','イラク戦争開戦','US-led coalition invades Iraq.','米主導の有志連合が侵攻。','2003_invasion_of_Iraq'),
+      E(2004,95.85,3.32,'disaster','Indian Ocean tsunami','スマトラ沖地震・津波','~230,000 dead across 14 countries.','14か国で約23万人が犠牲。','2004_Indian_Ocean_earthquake_and_tsunami'),
+      E(2005,-90.07,29.95,'disaster','Hurricane Katrina','ハリケーン・カトリーナ','New Orleans flooded.','ニューオーリンズが水没。','Hurricane_Katrina'),
+      E(2008,-74.01,40.71,'economic','Lehman Brothers collapse','リーマン・ショック','Global financial crisis erupts.','世界金融危機が勃発。','Bankruptcy_of_Lehman_Brothers'),
+      E(2010,10.18,36.80,'revolution','Arab Spring begins','アラブの春','Tunisian uprising spreads across the region.','チュニジアから域内へ拡大。','Arab_Spring'),
+      E(2010,23.73,37.98,'economic','Greek debt crisis','ギリシャ債務危機','Eurozone sovereign-debt crisis begins.','ユーロ圏債務危機の発端。','Greek_government-debt_crisis'),
+      E(2010,-72.34,18.54,'disaster','Haiti earthquake','ハイチ地震','~200,000+ dead near Port-au-Prince.','首都近郊で20万人超が犠牲。','2010_Haiti_earthquake'),
+      E(2011,142.37,38.32,'disaster','Tōhoku earthquake & tsunami','東日本大震災','M9.1 quake, tsunami and the Fukushima accident.','M9.1の地震・津波と福島第一原発事故。','2011_T%C5%8Dhoku_earthquake_and_tsunami'),
+      E(2014,34.10,44.95,'war','Annexation of Crimea','クリミア併合','Russia seizes the peninsula from Ukraine.','ロシアがウクライナから半島を奪取。','Annexation_of_Crimea_by_the_Russian_Federation'),
+      E(2015,-80.57,28.49,'space','First orbital booster landing','ロケット第1段の着陸回収','SpaceX lands Falcon 9 — reusability era.','ファルコン9が着陸、再使用時代へ。','Falcon_9_flight_20'),
+      E(2016,-0.13,51.51,'geo','Brexit referendum','ブレグジット国民投票','UK votes to leave the EU.','英国がEU離脱を選択。','2016_United_Kingdom_European_Union_membership_referendum'),
+      E(2019,114.31,30.59,'disaster','COVID-19 outbreak','新型コロナ流行開始','Pandemic that reshaped the world.','世界を変えたパンデミック。','COVID-19_pandemic'),
+      E(2022,30.52,50.45,'war','Russia invades Ukraine','ロシアのウクライナ侵攻','Largest war in Europe since 1945.','1945年以降欧州最大の戦争。','Russian_invasion_of_Ukraine'),
+      E(2022,135.81,34.69,'assassination','Abe Shinzō assassinated','安倍晋三元首相銃撃事件','Former Japanese PM shot in Nara.','奈良で銃撃され死亡。','Assassination_of_Shinzo_Abe'),
+      E(2023,37.03,37.17,'disaster','Türkiye–Syria earthquakes','トルコ・シリア地震','M7.8 doublet; 55,000+ dead.','M7.8の連続地震、5万5千人超が犠牲。','2023_Turkey%E2%80%93Syria_earthquakes'),
+      E(2023,34.46,31.52,'war','October 7 attacks / Gaza war','10月7日攻撃とガザ戦争','Hamas attack and the war that followed.','ハマスの攻撃とそれに続く戦争。','October_7_attacks')
+    ];
+    const EV_COLORS={war:'#ff3b30',disaster:'#ff9500',revolution:'#af52de',assassination:'#8e8e93',space:'#5856d6',economic:'#34c759',geo:'#007aff'};
+    const EV_LBL={war:['War','戦争'],disaster:['Disaster','災害'],revolution:['Revolution','革命・政変'],assassination:['Assassination','暗殺'],space:['Space & science','宇宙・科学'],economic:['Economy','経済危機・転換点'],geo:['Geopolitics','地政学・条約']};
+    window._dashView=window._dashView||'places';
+    let yMin=1490, yMax=2026;
+    window._setDashView=function(v){ window._dashView=v; try{ renderDashboard(); }catch(_){} };
+    window._evYear=function(which,val){ if(which==='min') yMin=+val||1490; else yMax=+val||2026; try{ renderDashboard(); }catch(_){} };
+    /* renderDashboard delegates here when the Events view is active */
+    window._renderEventsArchive=function(dash,q){
+      const jp=currentLang==='jp';
+      const list=EVENTS_DB.filter(e=> e.y>=yMin && e.y<=yMax && (!q || ((e.en+' '+e.jp+' '+e.den+' '+e.djp+' '+e.y+' '+e.tp).toLowerCase().includes(q)))).sort((a,b)=>b.y-a.y);
+      /* pins */
+      try{
+        if(map&&map.isStyleLoaded()) setupIntelLayers();
+        const feats=list.map((e,i)=>({type:'Feature',id:'ev'+i,geometry:{type:'Point',coordinates:e.loc},properties:{fid:'ev'+i,type:e.tp,color:EV_COLORS[e.tp]||'#007aff',title:(jp?e.jp:e.en)+' ('+e.y+')',body:jp?e.djp:e.den,layerRef:''}}));
+        if(map&&map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:feats});
+      }catch(_){}
+      const seg='<div class="dash-nav"><button class="dash-nav-btn" onclick="_setDashView(\'places\')">'+(jp?'📍 場所':'📍 Places')+'</button><button class="dash-nav-btn active" onclick="_setDashView(\'events\')">'+(jp?'🗓 出来事':'🗓 Events')+'</button></div>';
+      const yr='<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;">'+(jp?'年代':'Years')+
+        ' <input type="number" value="'+yMin+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'min\',this.value)"> –'+
+        ' <input type="number" value="'+yMax+'" min="1400" max="2026" style="width:74px;padding:5px 7px;border-radius:8px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);" onchange="_evYear(\'max\',this.value)">'+
+        ' <span>'+list.length+(jp?'件':' events')+'</span></div>';
+      const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const cards=list.map(e=>{
+        const nm=jp?e.jp:e.en, d=jp?e.djp:e.den, tl=EV_LBL[e.tp]?(jp?EV_LBL[e.tp][1]:EV_LBL[e.tp][0]):e.tp;
+        const wiki='https://'+(jp?'ja':'en')+'.wikipedia.org/wiki/'+e.wiki;
+        return '<div class="wiki-card" onclick="flyToLoc('+e.loc[0]+','+e.loc[1]+')" style="cursor:pointer;">'+
+          '<div class="wiki-card-content"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'+
+          '<span style="font-weight:800;font-size:15px;color:var(--primary-color);">'+e.y+'</span>'+
+          '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+(EV_COLORS[e.tp]||'#007aff')+'22;color:'+(EV_COLORS[e.tp]||'#007aff')+';">'+esc(tl)+'</span></div>'+
+          '<h4 class="wiki-card-title" style="margin:0 0 4px;">'+esc(nm)+'</h4><p class="wiki-card-body" style="margin:0;">'+esc(d)+'</p>'+
+          '<div class="wiki-card-footer"><a href="'+wiki+'" target="_blank" rel="noopener" class="wiki-link" onclick="event.stopPropagation()">Wikipedia ↗</a></div></div></div>';
+      }).join('');
+      dash.innerHTML=seg+yr+'<div class="dash-cards-container">'+cards+'</div>';
+    };
+  })();
+
+  /* ===== (#R20) EDUCATION MODE — quizzes + learning cards built on the bundled country data
+     ("世界地理…を学べるモード。クイズ、解説カード"). Entry: Layers → Tools → 🎓 Learn. Three quiz
+     types: flag→country, capital→country, find-the-country-on-the-map (click; point-in-polygon). ===== */
+  window.IntMapEdu=(function(){
+    const jp=()=>currentLang==='jp';
+    let panel=null, mode=null, q=null, score=0, streak=0, total=0, mapQuizArmed=false;
+    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    function pool(){ try{ return Object.values(countryStats||{}).filter(s=>s&&s.nameEn&&s.flag&&(s.pop||0)>300000); }catch(_){ return []; } }
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+    function cname(s){ return jp()?(s.nameJp||s.nameEn):s.nameEn; }
+    function ensure(){ if(panel) return panel;
+      panel=document.createElement('div'); panel.className='tool-panel'; panel.id='edu-panel';
+      panel.style.cssText='display:none;position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:1600;width:min(340px,calc(100vw - 24px));max-height:min(72vh,600px);overflow-y:auto;';
+      (document.getElementById('map-container')||document.body).appendChild(panel);
+      return panel; }
+    function header(){ return '<div class="tp-header" style="cursor:move;"><span class="tp-title">🎓 '+(jp()?'学習モード':'Education mode')+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+      '<div style="font-size:11px;color:var(--text-muted);margin:0 0 8px;">'+(jp()?'スコア ':'Score ')+score+'/'+total+' · '+(jp()?'連続正解 ':'streak ')+streak+'</div>'; }
+    function wire(){ panel.querySelector('.tp-close').onclick=closeP; try{ makeDraggable(panel,panel.querySelector('.tp-header')); }catch(_){} }
+    function menu(){ const p=ensure(); mapQuizArmed=false; p.style.display='block';
+      p.innerHTML=header()+
+        '<div style="display:flex;flex-direction:column;gap:7px;">'+
+        '<button class="ai-test-btn" data-q="flag" style="width:100%;">🚩 '+(jp()?'国旗クイズ（国旗→国名）':'Flag quiz (flag → country)')+'</button>'+
+        '<button class="ai-test-btn" data-q="capital" style="width:100%;">🏛 '+(jp()?'首都クイズ（首都→国名）':'Capital quiz (capital → country)')+'</button>'+
+        '<button class="ai-test-btn" data-q="map" style="width:100%;">🗺 '+(jp()?'地図クイズ（国を地図でクリック）':'Map quiz (click the country)')+'</button>'+
+        '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:4px;">'+(jp()?'正解すると、その国の解説カードが表示されます。':'Each answer shows a learning card about the country.')+'</div></div>';
+      wire(); p.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ mode=b.getAttribute('data-q'); next(); }); }
+    function card(s,ok,extra){ const f=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; return Number(Math.round(v)).toLocaleString(); };
+      return '<div style="border:1px solid '+(ok?'rgba(52,199,89,0.5)':'rgba(255,69,58,0.5)')+';border-radius:12px;padding:10px 12px;margin-top:8px;background:'+(ok?'rgba(52,199,89,0.08)':'rgba(255,69,58,0.07)')+';font-size:12px;line-height:1.6;">'+
+        '<div style="font-weight:700;font-size:14px;">'+(ok?'⭕':'❌')+' '+s.flag+' '+esc(cname(s))+'</div>'+(extra||'')+
+        '<div style="color:var(--text-muted);margin-top:3px;">'+(jp()?'首都':'Capital')+': '+esc(s.capital||'—')+' · '+(jp()?'人口':'Pop')+': '+f(s.pop)+(s.gdp!=null?' · GDP: '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+f(s.area)+' km²':'')+'</div></div>'; }
+    function next(){ const p=ensure(); const all=pool();
+      if(all.length<8){ p.innerHTML=header()+'<div style="font-size:12px;color:var(--text-muted);">'+(jp()?'国データを読み込み中です。少し待ってから開いてください。':'Country data is still loading — try again in a moment.')+'</div>'; wire(); return; }
+      const answer=pick(all);
+      q={answer};
+      if(mode==='map'){
+        mapQuizArmed=true;
+        p.innerHTML=header()+'<div style="font-size:13px;font-weight:700;margin-bottom:6px;">🗺 '+(jp()?'地図上でクリック:':'Click on the map:')+'</div>'+
+          '<div style="font-size:17px;font-weight:800;color:var(--primary-color);margin-bottom:8px;">'+answer.flag+' '+esc(cname(answer))+'</div>'+
+          '<div id="edu-map-res" style="font-size:12px;color:var(--text-muted);">'+(jp()?'地図のその国をクリックしてください…':'Click that country on the map…')+'</div>'+
+          '<button class="ai-test-btn" id="edu-skip" style="width:100%;margin-top:8px;">'+(jp()?'スキップ':'Skip')+'</button>';
+        wire(); p.querySelector('#edu-skip').onclick=()=>{ total++; streak=0; next(); };
+        return;
+      }
+      const wrong=[]; while(wrong.length<3){ const w=pick(all); if(w!==answer&&!wrong.includes(w)) wrong.push(w); }
+      const opts=[answer,...wrong].sort(()=>Math.random()-0.5);
+      const qhtml=(mode==='flag')
+        ?'<div style="font-size:48px;text-align:center;margin:4px 0 10px;">'+answer.flag+'</div>'
+        :'<div style="font-size:17px;font-weight:800;color:var(--primary-color);text-align:center;margin:6px 0 10px;">🏛 '+esc(answer.capital||'?')+'</div>';
+      p.innerHTML=header()+'<div style="font-size:12.5px;font-weight:700;">'+(mode==='flag'?(jp()?'この国旗はどこの国?':'Which country is this flag?'):(jp()?'この首都はどこの国?':'Which country has this capital?'))+'</div>'+qhtml+
+        '<div style="display:flex;flex-direction:column;gap:6px;">'+opts.map((o,i)=>'<button class="ai-test-btn" data-o="'+i+'" style="width:100%;text-align:left;">'+esc(cname(o))+'</button>').join('')+'</div><div id="edu-res"></div>';
+      wire();
+      p.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+        const chosen=opts[+b.getAttribute('data-o')]; const ok=chosen===q.answer; total++; if(ok){ score++; streak++; } else streak=0;
+        const res=p.querySelector('#edu-res'); if(res) res.innerHTML=card(q.answer,ok,(!ok?'<div style="font-size:11px;">'+(jp()?'あなたの回答: ':'You picked: ')+esc(cname(chosen))+'</div>':''))+'<button class="ai-test-btn" id="edu-next" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+        const nx=p.querySelector('#edu-next'); if(nx) nx.onclick=next;
+        p.querySelectorAll('[data-o]').forEach(x=>x.disabled=true);
+        try{ if(q.answer.latlng&&ok) map&&map.flyTo({center:[q.answer.latlng[1],q.answer.latlng[0]],zoom:4}); }catch(_){}
+      });
+    }
+    /* map-quiz click resolution: point-in-polygon over countryGeo (works with the fill layer hidden) */
+    function countryAt(lngLat){ try{ if(!window.countryGeo||!hasTurf()) return null;
+      const pt=turf.point([lngLat.lng,lngLat.lat]);
+      for(const f of (countryGeo.features||[])){ try{ if(turf.booleanPointInPolygon(pt,f)) return f; }catch(_){} }
+      }catch(_){} return null; }
+    function onMapClick(e){ if(!mapQuizArmed||!q||!panel||panel.style.display==='none') return;
+      if(typeof toolMode!=='undefined'&&toolMode) return;
+      const f=countryAt(e.lngLat); const res=panel.querySelector('#edu-map-res'); if(!res) return;
+      if(!f){ res.innerHTML='<span style="color:var(--text-muted);">'+(jp()?'陸地（国）をクリックしてください':'Click on a country')+'</span>'; return; }
+      let id=null; try{ id=resolveCountryId(f); }catch(_){ }
+      const ok=id&&q.answer.code===id; total++; if(ok){ score++; streak++; } else streak=0;
+      mapQuizArmed=false;
+      const got=(id&&countryStats[id])?countryStats[id]:null;
+      res.innerHTML=card(q.answer,ok,(got&&!ok?'<div style="font-size:11px;">'+(jp()?'クリックした国: ':'You clicked: ')+esc(cname(got))+'</div>':''))+'<button class="ai-test-btn" id="edu-next2" style="width:100%;margin-top:8px;">'+(jp()?'次の問題 →':'Next →')+'</button>';
+      const nx=panel.querySelector('#edu-next2'); if(nx) nx.onclick=next;
+    }
+    function closeP(){ if(panel) panel.style.display='none'; mapQuizArmed=false; }
+    function openP(){ score=0; streak=0; total=0; menu(); }
+    function mount(){ if(document.getElementById('edu-mount')) return;
+      const host=document.createElement('div'); host.id='edu-mount'; host.style.marginTop='6px';
+      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎓 <span>'+(jp()?'学習モード（クイズ）':'Education mode (quizzes)')+'</span></button>';
+      const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
+      (tools||dd||document.body).appendChild(host);
+      host.querySelector('#btn-edu').onclick=openP;
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
+    if(map) map.on('click',onMapClick);
+    if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎓 <span>'+(jp()?'学習モード（クイズ）':'Education mode (quizzes)')+'</span>'; });
+    return { open:openP, close:closeP };
   })();
 
   /* ===== (#R11) Mobile measuring is CENTRE-FIXED: a subtle crosshair marks the map centre, a bottom-
@@ -11551,9 +12393,22 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; } }
     function showPopup(lngLat,name){ if(popup){ try{popup.remove();}catch(_){} } const jp=currentLang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-      const html=`<div style="display:flex;align-items:center;gap:9px;padding:1px 0;"><span style="font-weight:700;font-size:14px;color:var(--text-main);">${safe}</span><button class="plc-copy" style="background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📋 ${jp?'コピー':'Copy'}</button></div>`;
-      try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'280px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
-        setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; }; },0);
+      const html=`<div style="display:flex;align-items:center;gap:9px;padding:1px 0;flex-wrap:wrap;"><span style="font-weight:700;font-size:14px;color:var(--text-main);">${safe}</span><button class="plc-copy" style="background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.25),rgba(30,144,255,0.25));border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🤖 ${jp?'AI調査':'AI brief'}</button></div>`;
+      try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
+        setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
+          /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
+             (REST summary probe, CORS*). Opens the article in a new tab. */
+          const w=document.querySelector('.plc-wiki');
+          if(w){ const wl=jp?'ja':'en';
+            fetch('https://'+wl+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(String(name).replace(/ /g,'_')))
+              .then(r=>r.ok?r.json():null).then(j=>{
+                const url=j&&j.content_urls&&j.content_urls.desktop&&j.content_urls.desktop.page;
+                if(url){ w.style.display='inline-block'; w.onclick=()=>{ try{ window.open(url,'_blank','noopener'); }catch(_){} }; }
+              }).catch(()=>{}); }
+          /* (#R20) AI Research Assistant entry point */
+          const ai=document.querySelector('.plc-ai');
+          if(ai) ai.onclick=()=>{ try{ window.IntMapAIResearch&&window.IntMapAIResearch.open(name,lngLat); }catch(_){} };
+        },0);
       }catch(_){}
     }
     function highlight(lngLat,isCountry){ if(!ensureHL()) return; const set=(fc)=>{ try{ map.getSource('place-hl-src').setData(fc); }catch(_){} };
