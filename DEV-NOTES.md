@@ -1641,3 +1641,133 @@ toggle + koppen/hillshade/volcano overlays verified visible, x-ray clip-path app
 modal 5 stars; presets + 🎓 + AI panel mounted in Tools; events view renders 79 cards + 2 year inputs;
 Tools `position:static`; search pill 348 px at 1100 w. Mobile 375: country-popup × and maplibre popup ×
 both 32×32. Zero console errors throughout.
+
+---
+
+## 24. Round 21 — widget board v4, resizable sidebar, vector labels everywhere, beta pack 2, ACLED (tags `#R21`)
+
+Same standing constraints (additive/in-place, MapLibre stays, no excuses). Build stamp `2026-06-12-R21`.
+Verified in the headless preview (http://localhost:8765) at native desktop width AND 375 px: zero console
+errors after every reload; functional assertions below. New endpoints curl/in-page probed first
+(fxratesapi.com CORS\* minute-fresh; wheretheiss.at CORS\*; World Bank WGI; flagcdn).
+
+### Widgets v4
+- **Defaults seeded once** (flag `intmap_widgets_def21`): Clock · FX · Featured layer · Random country ·
+  On this day — appear for existing users too; afterwards the user's own add/remove wins.
+- **Weather = CURRENT LOCATION.** Geolocation permission is requested ONLY when a weather widget is
+  added (`reqGeo`); other widgets use the position only if already granted (`permissions.query`),
+  else map centre — the label says which. AQI/sunrise reuse the same `widgetLoc()`.
+- **FX freshness** ("数時間遅れ" = the daily ER-API source): primary is now **fxratesapi.com**
+  (keyless, CORS\*, minute-fresh — probed 200 with a same-minute timestamp), ER-API stays as fallback.
+  Market widgets (fx/crypto/cap/F&G/gold/silver/ISS) refresh every **60 s**; the rest keep 5 min;
+  everything refreshes on tab-visibility return.
+- **Gallery dismissable** (the "表示されっぱなし" fix): explicit ✕ in the gallery header (+ still
+  toggles via the Add tile, closes after adding).
+- **8 new widget types** (→ 22 total): Sunrise/sunset · Moon phase (local synodic calc) · Air quality
+  (Open-Meteo US AQI + PM2.5) · ISS tracker (wheretheiss.at, tap→fly) · World clock (multi, tz picker)
+  · Year progress · Wikipedia featured article · World population live estimate (UN-based).
+- **Flags render on Windows**: `window.imFlagHTML()` derives ISO-2 from the emoji's regional-indicator
+  pair → flagcdn.com PNG (emoji = alt). Used by the Random-country widget and the whole quiz mode
+  ("国旗が、パソコンだとドイツ国旗→DEのように文字となる" fix).
+
+### UI
+- **Night lights (satellite) default opacity 0.95 → 1.0.**
+- **Header Support button removed** (Settings + feedback flow keep the donate paths).
+- **Desktop sidebar is width-resizable**: an 8 px col-resize handle on the sidebar's right edge drives
+  a `@media(min-width:769px){:root{--sidebar-w:…}}` rule injected in `#sb-w-style` (NOT an inline
+  :root style — that would beat the mobile `--sidebar-w:100vw` and shrink the bottom sheet); persists
+  in `intmap_sidebar_w`; camera padding re-follows on release. Hidden on phones.
+- **Narrow-desktop search pill**: `body.ms-narrow` (ResizeObserver on the map container, checked
+  inside the handler so a mobile-width LOAD that later widens still works) drops the pill to a second
+  row (top 78 px) with near-full width — it can no longer collide with the view buttons or sidebar
+  ("つぶれて押せない／かぶる").
+- **Map mode = satellite labels** ("mapの旧来の地名ラベルは廃止"): `mapLabelsViaVector()` now returns
+  true always → the basemap is always the `_nolabels` carto variant and the OFM vector labels render
+  in EVERY mode, which also means the R19 label-raise keeps place names above every data layer.
+
+### Legends
+- **Historic borders year ticks aligned**: ticks live INSIDE the same flex cell as the range input and
+  each one sits at `calc(8px + (100%−16px)·i/(n−1))` `translateX(-50%)` — the exact thumb-stop centres
+  (the old space-between row with guessed margins drifted).
+- **Ukraine frontline**: the colour key is rebuilt FROM the loaded DeepState data (its real
+  fill/stroke colours) so legend === map; features outside a Ukraine bbox are dropped; toggling ON
+  flies to Ukraine when the camera is far away.
+
+### Compare
+- **X-ray + satellite works**: in x-ray, picking Sat paints the satellite base inside the lens
+  (an x-ray *to imagery*); Map keeps the transparent data-lens.
+- **X-ray drift fix**: the lens now mirrors the main camera's **padding** (frosted-sidebar/sheet
+  padding shifted the optical centre → cumulative-looking offset), syncs again on main-map `idle`,
+  and the compare map allows pitch 85.
+- **Projection follows instantly**: the Flat/Globe buttons call `window._cmpFollowProj()` directly
+  (works in Free mode too).
+- **Pulldown 15 → 26 layers**: country choropleths are now CLONED (one `cmp-choro` geojson with every
+  metric baked into properties + the main-map ramps — feature-state can't cross maps): population
+  density, GDP/capita, HDI, Democracy, TFR, mil-spend ×2; plus Historical borders (reuses the beta
+  module's year cache via `IntMapBeta.hbCurrent()`), Railways, Data centres, Pharma (via
+  `IntMapBeta2.load`).
+
+### Quiz mode (renamed from Education mode)
+- Title/button = クイズモード / Quiz mode; flags via flagcdn images.
+- **4 new quiz types** (→7): country→capital, population duel, area duel (pairs ≥20 % apart, both
+  values shown after), and **country silhouette** (real outline from countryGeo → cos-lat-corrected
+  SVG; antimeridian-spanning countries skipped).
+
+### Beta pack 2 (`IntMapBeta2`, all in Others(beta), geojson shared with Compare)
+- **Data centres & AI infra** — ~85 curated points: AWS/Azure/GCP regions + AI superclusters
+  (Colossus Memphis, Stargate Abilene, …), provider-coloured key, click popups.
+- **Pharma & health** — 30 pharma HQ/manufacturing hubs + **Life expectancy** choropleth
+  (World Bank SP.DYN.LE00.IN 2022, live, click popup shows the value).
+- **Corruption indicator** — World Bank **WGI Control of Corruption score** (0–100, higher=cleaner).
+  GOTCHA: the WGI rows moved to `GOV_WGI_*` indicator ids under `source=3` — the classic `CC.EST`
+  id now returns **0 rows** (probed); honest labelling notes it's the open-API counterpart of TI's CPI.
+- **World railways by gauge** — `data/railways_gauge.json` (3.9 MB) built OFFLINE from Natural Earth
+  10m railroads by `_rail_convert.py`: Douglas-Peucker 0.012°, 2-dp rounding, and each segment
+  classified by the predominant national gauge of the country its midpoint falls in (ray-cast PIP
+  over NE 110m). 7-colour gauge key (1435/1520/1676/1668/1600/1067/1000). 25,242 features verified
+  loading in-page. Phones release the parsed FC on toggle-off.
+- **Globe tour** — checkbox: eases out to z≤1.7 and slowly rotates (rAF, ~3°/s, dt-scaled);
+  any map gesture stops it and unchecks the box.
+- **Mobile beta pulldown** — the Others(beta) group alone is collapsed-by-default + tappable on
+  mobile (caret restored just for it); `_expandAllLayerGroups` re-collapses it (unless user-opened).
+
+### News
+- **ACLED conflict events** — a collapsible card pinned above the news feed (separate from news,
+  News tab only — visibility follows `renderUI` via a wrapper). Email+API-key inputs persist
+  (`intmap_acled`; ACLED is registration-gated), Load = last 14 days (≤400 events) via direct URL →
+  CORS-proxy fallbacks; list rows fly to the event; map pins coloured by event type with popups.
+
+### AI
+- **Brief sharpened**: today's date injected; every section must carry concrete years/dates/figures;
+  "Recent developments" prioritises the last 1–2 years + the supplied nearby headlines.
+- **Suggested questions (beta)**: templated from the most-populous countries inside the current
+  viewport + a free-question input, in the AI brief panel; answers reuse the same context.
+
+### Themes
+- **One unified Apple frost** for every sidebar card in the frosted modes (news slightly darker than
+  R20; information/stats/community cards soft frost instead of the dark slab).
+- **Classic luxe**: gilt-edged parchment cards (double inner keyline), embossed brass buttons,
+  double-rule section heads, ❦ flourish, engraved small-caps panel titles — pure paint, no layout change.
+
+### Perf / stability
+- Desktop: `MAX_PARALLEL_IMAGE_REQUESTS` 128→**192**, `maxTileCacheSize` 6144→**8192**, prefetch cap
+  90→150. LOS desktop **720 rays × 420 steps**, tiny ranges reach **z15** (terrarium native max),
+  tile budget 380→520, DEM LRU 420→560.
+- Mobile: **memory-pressure guard** (performance.memory @8 s; >85 % twice → drops the Köppen work-set
+  when the layer is off + broadcasts `intmap-mem-pressure`, which trims the historic-borders year
+  cache and the railways FC); `deviceMemory≤4` phones get a 640-tile cache; gazetteer + timezone-list
+  builds moved to an idle slice ("スタート時の動作がぎこちない"); rail/eco FCs released on toggle-off.
+- **Settings tutorial button** (top of Settings) replays the first-visit layer showcase
+  (`_imStartDemo(force)`); **Layer search** box pinned (sticky) atop the Layers panel — filters all
+  66 rows, hides empty section headers, restores the panel (incl. the mobile beta pulldown) on clear.
+
+### Verified-in-preview summary (R21)
+Desktop: defaults seeded (5 widgets), gallery 17 rows + ✕ closes; layer search "köppen"→1 row, clear→66;
+quiz panel = 7 modes titled "Quiz mode"; compare opens with 26-layer pulldown + `_cmpFollowProj` live;
+ACLED card hidden with no tab, shown on News, inputs+Load present; sb-resizer + #sb-w-style mounted;
+ms-narrow toggles with map width; railways FC loads in-page (25,242 features, gauge 1520 coloured);
+World Bank life-expectancy (266 rows) and WGI score (215 non-null) probed. Mobile 375: `--sidebar-w`
+still 100vw (style-injection safe), resizer hidden, beta group collapsed→tap-expands→re-collapses,
+widget ✕ 32 px. Zero console errors throughout. GOTCHA logged: a module that early-returns on
+`isMobile()` at LOAD time dies forever if the page loads narrow and then widens — put the check
+inside the handler, not around the wiring (bit the sb-resizer + ms-narrow watchers this round).
