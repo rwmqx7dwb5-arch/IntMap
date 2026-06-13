@@ -129,8 +129,11 @@ gtag('config', 'G-57X5MX0ZPW');
     .sidebar{ width:var(--sidebar-w); max-width:100vw; flex-shrink:0; background-color:var(--sidebar-bg); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px); border-right:1px solid rgba(128,128,128,0.15); padding:24px; padding-top:max(24px,env(safe-area-inset-top)); display:flex; flex-direction:column; box-sizing:border-box; z-index:1000; transition:margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1); min-height:0; }
     .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }
     .map-container{ flex:1; height:100%; position:relative; background:var(--bg-color); overflow:hidden; }
-    .header-area{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-    .title-group{ display:flex; align-items:center; gap:12px; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
+    /* (#R22) flex-wrap + gap so a narrowed (resized) sidebar wraps the Settings button below the title
+       instead of shoving it OUTSIDE the sidebar ("幅を短くするとボタンがサイドバー外にはみ出す"). */
+    .header-area{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+    .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
+    .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
     .lang-toggle{ display:none !important; }
     .lang-btn{ background:transparent; border:none; padding:4px 8px; font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer; border-radius:6px; transition:0.2s; }
@@ -2615,11 +2618,14 @@ window.addEventListener('DOMContentLoaded', () => {
      place, so there's no repaint loop. */
   if(map){ (function(){
     const STACK=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'];
+    /* (#R22) Stronger test: scanning from the TOP, the first layer that isn't one of our own
+       drawing/mask layers MUST be a label/border layer. This catches the real "labels hidden behind a
+       layer" case (a data layer added above the labels) that the old contiguity-only check missed. */
     function inPlace(){ try{ const ls=map.getStyle().layers.map(l=>l.id);
       const present=STACK.filter(id=>ls.includes(id)); if(!present.length) return true;
-      const anchor=ls.includes('tool-poly')?ls.indexOf('tool-poly'):ls.length;
-      let want=anchor-present.length;
-      for(const id of present){ if(ls.indexOf(id)!==want) return false; want++; }
+      for(let i=ls.length-1;i>=0;i--){ const id=ls[i];
+        if(/^tool-/.test(id)||id==='iso-mask'||id==='place-hl-fill'||id==='place-hl-line') continue;
+        return STACK.includes(id); }
       return true; }catch(_){ return true; } }
     function raise(){ try{ if(inPlace()) return;
       const hasAnchor=!!map.getLayer('tool-poly');
@@ -9560,8 +9566,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function wire(){
       const ms=document.querySelector('.map-search'); if(!ms||!ms.parentElement) return;
       const host=ms.parentElement;
+      /* (#R22) Trigger the second-row drop sooner (640→760) so the centerd pill can never graze the
+         map/satellite view buttons or the sidebar at in-between widths ("画面幅によってはかぶる"). */
       const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
-        document.body.classList.toggle('ms-narrow', desk && host.clientWidth<640); }catch(_){} };
+        document.body.classList.toggle('ms-narrow', desk && host.clientWidth<760); }catch(_){} };
       try{ new ResizeObserver(upd).observe(host); }catch(_){ window.addEventListener('resize',upd); }
       window.addEventListener('resize',upd); upd(); }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
