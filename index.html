@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-14-R23';
+  window.INTMAP_BUILD='2026-06-14-R24';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -212,7 +212,9 @@ gtag('config', 'G-57X5MX0ZPW');
     .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:12px; padding:4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
     .view-btn{ background:transparent; border:none; padding:8px 12px; font-size:12px; font-weight:500; color:var(--text-main); border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
     .view-btn.active{ background:var(--card-bg); box-shadow:0 2px 8px rgba(0,0,0,0.1); color:var(--primary-color); } .view-btn.tool-on{ background:var(--primary-color); color:#fff; }
-    .compass-btn{ width:40px; display:flex; align-items:center; justify-content:center; } .compass-svg{ transition:transform 0.2s; display:block; }
+    /* (#R24) zero vertical padding + capped height so the (deliberately large) compass icon doesn't
+       inflate the Flat/Globe/3D row — that extra height read as "無駄に上下に余白" around the text buttons. */
+    .compass-btn{ width:40px; padding:0 6px !important; height:33px; display:flex; align-items:center; justify-content:center; overflow:visible; } .compass-svg{ transition:transform 0.2s; display:block; }
     .layer-menu-container{ position:relative; }
     /* (#R9) Measurement tools collapsed under one "Measure ▾" trigger (Radius stays standalone). */
     .measure-menu-container{ position:relative; display:inline-block; }
@@ -223,8 +225,12 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R15d) Use the shared glass border so the Layers dropdown matches every other frosted surface. */
     .layer-dropdown{ display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--glass-fill); border-radius:12px; padding:12px; box-shadow:var(--shadow); border:1px solid var(--glass-border); min-width:210px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; }
     .layer-dropdown.show{ display:flex; }
-    .layer-option{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; padding:6px; border-radius:8px; transition:0.2s; } .layer-option:hover{ background:var(--input-bg); }
-    .layer-option input[type="checkbox"]{ accent-color:var(--primary-color); width:16px; height:16px; cursor:pointer; }
+    /* (#R24) touch-action:manipulation kills the iOS ~300ms delayed SYNTHETIC click. Without it, tapping a
+       row fired its change handler, the Active-layers section appeared and shoved the rows DOWN, and the
+       late synthetic click then landed on the row that slid into that spot — the one ABOVE — so pressing
+       "Country borders" auto-checked "Place names" ("勝手にplace namesがチェックされる"). */
+    .layer-option{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; padding:6px; border-radius:8px; transition:0.2s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; } .layer-option:hover{ background:var(--input-bg); }
+    .layer-option input[type="checkbox"]{ accent-color:var(--primary-color); width:16px; height:16px; cursor:pointer; touch-action:manipulation; }
     .lyr-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset; }
     .layer-group-title{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); margin:8px 2px 2px; }
     /* Collapsible layer groups (accordion) — keeps a long layer list tidy */
@@ -559,17 +565,23 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R22) ONE Apple-style soft frost for ALL sidebar cards. A heavier blur + softer fill + nearly
        invisible hairline border replaces the old "dark-gray slab" (info/stats read as intimidating) and
        firms up the over-transparent news cards — every card now shares the exact same gentle material. */
+    /* (#R24) the Stats COMPARISON cards (.stats-compare-bar / .cmp-section) join the same one Apple frost
+       as every other sidebar card ("comparisonのカードも他のカードと同じ質感に"). */
     body.sidebar-translucent .news-item, body.sidebar-glass2 .news-item,
     body.sidebar-translucent .wiki-card, body.sidebar-glass2 .wiki-card,
     body.sidebar-translucent .stat-row, body.sidebar-glass2 .stat-row,
-    body.sidebar-translucent .comm-post, body.sidebar-glass2 .comm-post{
+    body.sidebar-translucent .comm-post, body.sidebar-glass2 .comm-post,
+    body.sidebar-translucent .stats-compare-bar, body.sidebar-glass2 .stats-compare-bar,
+    body.sidebar-translucent .cmp-section, body.sidebar-glass2 .cmp-section{
       background:rgba(255,255,255,0.46); backdrop-filter:saturate(150%) blur(20px); -webkit-backdrop-filter:saturate(150%) blur(20px);
       border:1px solid rgba(255,255,255,0.22);
     }
     [data-theme="dark"] body.sidebar-translucent .news-item, [data-theme="dark"] body.sidebar-glass2 .news-item,
     [data-theme="dark"] body.sidebar-translucent .wiki-card, [data-theme="dark"] body.sidebar-glass2 .wiki-card,
     [data-theme="dark"] body.sidebar-translucent .stat-row, [data-theme="dark"] body.sidebar-glass2 .stat-row,
-    [data-theme="dark"] body.sidebar-translucent .comm-post, [data-theme="dark"] body.sidebar-glass2 .comm-post{
+    [data-theme="dark"] body.sidebar-translucent .comm-post, [data-theme="dark"] body.sidebar-glass2 .comm-post,
+    [data-theme="dark"] body.sidebar-translucent .stats-compare-bar, [data-theme="dark"] body.sidebar-glass2 .stats-compare-bar,
+    [data-theme="dark"] body.sidebar-translucent .cmp-section, [data-theme="dark"] body.sidebar-glass2 .cmp-section{
       background:rgba(58,60,70,0.42); border:1px solid rgba(255,255,255,0.07);
     }
 
@@ -1035,8 +1047,10 @@ gtag('config', 'G-57X5MX0ZPW');
        (~0.10) — never fully clear, and glass2's blur is raised (26px) so controls stay readable. */
     body.sidebar-translucent{ --glass-blur:30px; --glass-sat:190%; --glass-fill:rgba(255,255,255,0.18); --glass-border:rgba(255,255,255,0.30); }
     [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(34,34,40,0.26); --glass-border:rgba(255,255,255,0.10); }
-    body.sidebar-glass2{ --glass-blur:26px; --glass-sat:175%; --glass-fill:rgba(255,255,255,0.10); --glass-border:rgba(255,255,255,0.26); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(26,26,32,0.16); --glass-border:rgba(255,255,255,0.12); }
+    /* (#R24) "more transparent" pushed further still (0.10→0.05 light, 0.16→0.10 dark); blur 26→30 keeps
+       controls legible so it never goes fully clear. */
+    body.sidebar-glass2{ --glass-blur:30px; --glass-sat:180%; --glass-fill:rgba(255,255,255,0.05); --glass-border:rgba(255,255,255,0.22); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(26,26,32,0.10); --glass-border:rgba(255,255,255,0.10); }
     /* In the genuinely-transparent mode the map shows through strongly, so add a readability shadow. */
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 1px 3px rgba(0,0,0,0.55); }
@@ -2153,7 +2167,16 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function satSetup(){
     if(!map) return;
-    if(!satSetup._wired){ satSetup._wired=true; try{ map.on('error',satOnError); }catch(_){} }
+    if(!satSetup._wired){ satSetup._wired=true; try{ map.on('error',satOnError); }catch(_){}
+      /* (#R24) auto-dismiss the FLOATING satellite controller when the user starts operating elsewhere
+         ("それ以外の場所を操作し始めたら自動で消える"); it re-opens via the Satellite button (which resets
+         satPanelDismissed). On mobile it lives inside the sheet (not floating), so leave that one alone. */
+      const _satDismiss=()=>{ try{ const p=document.getElementById('sat-controller');
+        if(p && p.style.display==='block' && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)){ satPanelDismissed=true; p.style.display='none'; } }catch(_){} };
+      try{ map.on('dragstart',_satDismiss); map.on('zoomstart',(e)=>{ if(e&&e.originalEvent) _satDismiss(); }); }catch(_){}
+      document.addEventListener('pointerdown',(e)=>{ try{ const p=document.getElementById('sat-controller');
+        if(p && p.style.display==='block' && e.target && !e.target.closest('#sat-controller') && !e.target.closest('#btn-view-sat')) _satDismiss(); }catch(_){} }, true);
+    }
     if(currentMapType==='sat') satReady(()=>{ satRenderController(); satApply(false); });
   }
   /* Debug aid (same spirit as window.__imap / window.refreshDatedLayer): inspect the sat engine. */
@@ -2582,10 +2605,12 @@ window.addEventListener('DOMContentLoaded', () => {
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'}},
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95}},
-          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:isInitiallyDark?'visible':'none'}},
-          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:'none'}},
-          {id:'layer-light',type:'raster',source:'bl',layout:{visibility:isInitiallyDark?'none':'visible'}},
-          {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:'none'}},
+          /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
+             baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
+          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'}},
+          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'}},
+          {id:'layer-light',type:'raster',source:'bl',layout:{visibility:'none'}},
+          {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:isInitiallyDark?'none':'visible'}},
           {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
           {id:'grid-equator',type:'line',source:'grid-source',filter:['==','kind','equator'],paint:{'line-color':'#ff3b30','line-opacity':0.95,'line-width':2.0}},
           {id:'grid-prime',type:'line',source:'grid-source',filter:['==','kind','prime'],paint:{'line-color':'#ff9500','line-opacity':0.85,'line-width':1.6}},
@@ -4117,7 +4142,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
         if(typeof v==='number'){ const um=window.imUnitTemp||'both'; const txt = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* unit-aware (#R13c); no leading emoji (#34) */
       }catch(_){}
-    },120);   /* (#R22) 220→120ms: the SST/temp value follows the cursor/crosshair more promptly ("反応が悪い") */
+    },70);   /* (#R24) 120→70ms: SST/temp value follows the cursor even more promptly ("変わるのが遅い"). The
+                climate/choropleth classification is already synchronous per move (sampleKoppenAt/choroValueAt). */
   }
   function updateCoord(lng,lat){
     if(isMobile()) return;
@@ -6685,7 +6711,10 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     /* Any layer checkbox toggle → refresh the active-layers list (deferred so toggleLayer runs first). */
     document.getElementById('layer-dropdown')&&document.getElementById('layer-dropdown').addEventListener('change',(e)=>{
-      if(e.target&&e.target.type==='checkbox') setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0);
+      if(e.target&&e.target.type==='checkbox'){ setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0);
+        /* (#R24) re-assert the label/border stack to the top after ANY layer toggle so no overlay (Köppen
+           "等") can leave the country labels hidden behind it; staggered to catch async layer adds. */
+        [60,400,1200].forEach(d=>setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },d)); }
     });
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
@@ -7364,8 +7393,12 @@ window.addEventListener('DOMContentLoaded', () => {
       KURL=koppenDisplayURL(window._koppenPeriod);   /* (#R23) recompute now that isMobile() is reliable → phones get the 4k texture */
       if(!map.getSource('src-climate')){
         map.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
-        map.addLayer({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},beforeId);
+        /* (#R24) insert the raster BELOW the place-name / border label stack so Köppen never hides the
+           country labels ("ケッペンを重ねると国名ラベルが後ろに隠れる"); raise() still self-heals as a backstop. */
+        const _lblAnchor=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>map.getLayer(id))||beforeId;
+        map.addLayer({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},_lblAnchor);
       } else { setVis('lyr-climate',true); }
+      try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
       buildLegend();
       if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
     }
@@ -7381,7 +7414,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${(typeof isMobile==='function'&&isMobile())?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':'Click to highlight • right-click for criteria')}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -12632,7 +12665,10 @@ window.addEventListener('DOMContentLoaded', () => {
       '#cmp-min::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:13px;height:2px;border-radius:1px;background:var(--text-main);}'+
       '.cmp-head{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--sidebar-bg);cursor:move;flex:0 0 auto;border-bottom:1px solid rgba(128,128,128,0.18);}'+
       '.cmp-head .cmp-title{font-weight:700;font-size:12px;margin-right:auto;color:var(--text-main);}'+
-      '.cmp-btn{background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;}'+
+      /* (#R24) touch-action:manipulation → compare buttons (Map/Sat/Sync/Free/X-ray/min/close) fire on the
+         FIRST tap with no iOS 300ms delayed/retargeted click — a big reason map/satellite "押しても変わらない"
+         and the close "終了できない" on mobile. */
+      '.cmp-btn{background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}'+
       '.cmp-btn.on{background:var(--primary-color);color:#fff;}'+
       '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
       '#compare-map{position:absolute;inset:0;}'+
@@ -12676,7 +12712,10 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-head{flex-wrap:wrap;padding:8px 52px 8px 10px;gap:6px;align-items:center;}'+
       '.cmp-head .cmp-title{font-size:13px;width:auto;margin-right:6px;}'+
       '.cmp-btn{padding:6px 9px;font-size:12px;min-height:32px;}'+
-      '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:11;background:#ff3b30 !important;color:#fff !important;min-width:40px;height:40px;border-radius:20px;font-size:18px;padding:0;display:flex;align-items:center;justify-content:center;}'+
+      /* (#R24) close pinned ABOVE everything in the window and always hit-takeable — it sits in its own
+         reserved 52px gutter (the header has padding-right:52px) so no wrapped header/ctrls button can land
+         on top of it ("×がボタンと重なって終了できない"). */
+      '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:30 !important;pointer-events:auto !important;background:#ff3b30 !important;color:#fff !important;min-width:40px;height:40px;border-radius:20px;font-size:18px;padding:0;display:flex;align-items:center;justify-content:center;}'+
       '#cmp-min{min-width:38px;font-size:16px;}'+
       '#compare-window.cmp-xray .cmp-head{padding:8px 52px 8px 10px;}'+
       '.cmp-ctrls{top:auto;bottom:28px;left:8px;right:8px;max-width:none;}'+
@@ -12715,9 +12754,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function setBase(kind){ baseKind=kind; applyBase(); }
     /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
        (Köppen/land cover/eco) only register when both maps share the projection. */
+    /* (#R24) Track the compare projection with OUR OWN flag instead of cmap.getProjection() — the latter
+       returned an unreliable type, so when the MAIN map was Globe and compare was Flat the old code thought
+       they already matched (isGlobe defaulted true) and never switched. That's why "Flatに戻してからGlobeに
+       しないと反映されない". Now it always syncs whenever the wanted projection differs from what we last set. */
     function followProjection(){ try{ const wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat');
-      let isGlobe=true; try{ const pj=cmap.getProjection&&cmap.getProjection(); if(pj&&pj.type) isGlobe=(pj.type==='globe'); }catch(_){}
-      if(wantGlobe!==isGlobe) cmap.setProjection({type:wantGlobe?'globe':'mercator'}); }catch(_){} }
+      if(cmap.__wantGlobe!==wantGlobe){ cmap.__wantGlobe=wantGlobe; cmap.setProjection({type:wantGlobe?'globe':'mercator'}); } }catch(_){} }
     /* centroid (container px) of the main-map area NOT covered by the compare window */
     function uncoveredCentroidPx(){
       const mcEl=document.getElementById('map-container')||document.body;
@@ -12919,7 +12961,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
-      try{ cmap.setProjection({type:(typeof currentProj!=='undefined'&&currentProj==='flat')?'mercator':'globe'}); }catch(_){}
+      try{ cmap.__wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat'); cmap.setProjection({type:cmap.__wantGlobe?'globe':'mercator'}); }catch(_){}
       cmap.on('load',()=>{ applyBase(); });
       cmap.on('styledata',()=>{ setTimeout(applyBase,60); });
       /* base buttons */
