@@ -883,7 +883,10 @@ gtag('config', 'G-57X5MX0ZPW');
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
       .m-sheet .layer-dropdown .lyr-op{ margin:0 0 4px 22px !important; height:18px; }
       .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:3px !important; }
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:7px 2px 0 !important; padding:3px 2px !important; font-size:10.5px; min-height:0; cursor:default; }
+      /* (#R22) iOS-style grouped-list headers: category names noticeably BIGGER + bolder + higher
+         contrast than the rows (they were 10.5px, smaller than the 13.5px rows — "分類名を大きくして
+         コントラストを"). A hairline separator + extra top margin makes each section read as a group. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:18px 2px 5px !important; padding:0 4px 6px !important; font-size:15px !important; font-weight:800 !important; color:var(--text-main) !important; text-transform:uppercase; letter-spacing:0.03em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.22); }
       /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
          (desktop keeps them) (#12). */
       .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
@@ -933,7 +936,9 @@ gtag('config', 'G-57X5MX0ZPW');
       /* !important: a later non-media rule (.ai-view-summary-btn{bottom:22px}) otherwise wins by source
          order and parks this button at bottom:22px — i.e. BEHIND the bottom sheet, which is exactly why
          it "disappeared" on phones (#13). Force it to ride just above the sheet's current top instead. */
-      .ai-view-summary-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; top:auto !important; font-size:12px; padding:8px 14px; z-index:1200; }
+      /* (#R22) Lifted ABOVE the always-on coord readout (which hugs the sheet at +4px) so the two no
+         longer overlap on mobile ("カーソル位置情報とsummarize this viewが重なる"). */
+      .ai-view-summary-btn{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 44px) !important; top:auto !important; font-size:12px; padding:8px 14px; z-index:1200; }
       body.sheet-full .ai-view-summary-btn{ display:none; }
       /* (#R13c) Country-isolation "Exit" pill used a fixed bottom:96px → hidden behind the bottom sheet
          on phones. Ride just above the sheet's current top like the other floating controls. */
@@ -2605,7 +2610,10 @@ window.addEventListener('DOMContentLoaded', () => {
         map.scrollZoom.setWheelZoomRate(z*(1/300));   /* 1.0 = the long-standing default feel */
         map.scrollZoom.setZoomRate(z*(1/90));         /* trackpad pinch */
       }catch(_){}
-      try{ map.dragPan.enable({ linearity:0.3, maxSpeed:1400*p, deceleration:2500/Math.max(0.4,p) }); }catch(_){}
+      /* (#R22) iOS-like momentum: a longer, smoother glide after a flick (lower deceleration), scaled
+         by the Pan setting so the slider has a clearly-felt effect on touch too — on a 1:1 touch drag
+         the only thing a "pan sensitivity" CAN change is the inertia glide distance. */
+      try{ map.dragPan.enable({ linearity:0.25, maxSpeed:Math.round(2200*p), deceleration:Math.round(1500/Math.max(0.4,p)) }); }catch(_){}
       try{ if(map.touchZoomRotate&&map.touchZoomRotate.enable) map.touchZoomRotate.enable(); }catch(_){}
     };
     window._applyNavSens();
@@ -4069,7 +4077,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
         if(typeof v==='number'){ const um=window.imUnitTemp||'both'; const txt = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* unit-aware (#R13c); no leading emoji (#34) */
       }catch(_){}
-    },220);
+    },120);   /* (#R22) 220→120ms: the SST/temp value follows the cursor/crosshair more promptly ("反応が悪い") */
   }
   function updateCoord(lng,lat){
     if(isMobile()) return;
@@ -6585,9 +6593,15 @@ window.addEventListener('DOMContentLoaded', () => {
          list jump ("いちいち動いて目にうるさい"). */
       const sig=chips.map(c=>c.name).join('|');
       if(sec.dataset.sig===sig) return;
-      const beforeH=sec.offsetHeight, beforeTop=dd.scrollTop, secTop=sec.offsetTop;
+      /* (#R22) Compensate the ACTUAL scroll container's scrollTop. On mobile the layer-dropdown is
+         position:static and the m-sheet body scrolls, so the old dd.scrollTop math was a no-op there →
+         the list jerked on every toggle ("チェックをつけると視点位置がパチっと移動"). Walk up to the real
+         scroller and, since the Active-layers section sits near the top, just add the height delta. */
+      const scrollParent=(el)=>{ let n=el&&el.parentElement; while(n){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2) return n; n=n.parentElement; } return dd; };
+      const scroller=scrollParent(sec);
+      const beforeH=sec.offsetHeight, beforeTop=scroller.scrollTop;
       sec.dataset.sig=sig;
-      const _restore=()=>{ const afterH=sec.offsetHeight; if(secTop < beforeTop && afterH!==beforeH){ dd.scrollTop = beforeTop + (afterH-beforeH); } };
+      const _restore=()=>{ const afterH=sec.offsetHeight; if(beforeTop>0 && afterH!==beforeH){ scroller.scrollTop = beforeTop + (afterH-beforeH); } };
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
@@ -8766,11 +8780,15 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tabs && tabs.offsetParent!==null){ peek=tabs.offsetTop+tabs.offsetHeight+10; }
       else { const vis=['live-news-feed','info-dashboard','community-feed','news-reader-pane'].map(id=>document.getElementById(id)).find(e=>e && e.offsetParent!==null); peek=vis?vis.offsetTop:196; }
       peek=Math.min(Math.max(peek,120),Math.round(H*0.62));
-      /* MINI: drag even lower so the tabs (News/Info/Stats/Community) AND everything below hide —
-         only the grip + the IntMap header remain (#16). */
+      /* (#R22) MINI now collapses BELOW the IntMap logo too ("ロゴが見えなくなるまで格納できるように") —
+         only the drag grip stays, maximising the map. The grip remains the handle to pull it back up. */
+      const grip=sidebar.querySelector('.sheet-grip');
       const header=sidebar.querySelector('.header-area');
-      let mini=(header && header.offsetParent!==null) ? (header.offsetTop+header.offsetHeight+12) : 96;
-      mini=Math.min(Math.max(mini,64), Math.max(64,peek-24));
+      let mini;
+      if(header && header.offsetParent!==null) mini=Math.max(26, header.offsetTop - 4);   /* cut just ABOVE the logo */
+      else if(grip && grip.offsetParent!==null) mini=grip.offsetTop+grip.offsetHeight+10;
+      else mini=40;
+      mini=Math.min(Math.max(mini,26), Math.max(40,peek-24));
       const tyPeek=Math.max(0,H-peek); const tyHalf=Math.min(Math.round(H*0.5),tyPeek); const tyMini=Math.max(0,H-mini);
       return { full:0, half:tyHalf, peek:tyPeek, mini:tyMini, H:H, peekH:peek };
     }
@@ -13435,7 +13453,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let _roT=0;
     map.on('moveend',()=>{ readout(); update(); });
     /* Live readout while panning on mobile (throttled so the DEM/layer sampling stays cheap). */
-    map.on('move',()=>{ update(); if(mob()){ const now=performance.now(); if(now-_roT>120){ _roT=now; readout(); } } });
+    map.on('move',()=>{ update(); if(mob()){ const now=performance.now(); if(now-_roT>60){ _roT=now; readout(); } } });   /* (#R22) 120→60ms: coords/elevation/choropleth value track the crosshair more responsively */
     window.addEventListener('resize',update);
     btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
     setTimeout(()=>{ update(); readout(); },400);
