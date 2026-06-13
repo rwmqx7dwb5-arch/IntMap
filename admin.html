@@ -141,7 +141,7 @@
         </div>
         <p class="muted" style="margin:0 0 10px;">Run <code>supabase_feedback.sql</code> once so the table exists and admins can read it.</p>
         <div style="overflow:auto;"><table id="fb-table"><thead><tr>
-          <th>When</th><th>★</th><th>Comment</th><th>Lang</th><th>Email</th><th></th>
+          <th>When</th><th>★</th><th>Comment</th><th>Lang</th><th>Email</th><th>User ID</th><th></th>
         </tr></thead><tbody></tbody></table></div>
       </div>
     </section>
@@ -252,18 +252,19 @@
   $('fb-refresh').onclick=()=>loadFb();
   async function loadFb(){
     const tb=$('fb-table').querySelector('tbody');
-    tb.innerHTML='<tr><td colspan="6" class="muted">Loading…</td></tr>';
+    tb.innerHTML='<tr><td colspan="7" class="muted">Loading…</td></tr>';
     try{
       const {data,error}=await sb.from('feedback').select('*').order('created_at',{ascending:false}).limit(300);
-      if(error){ tb.innerHTML='<tr><td colspan="6" class="muted">'+esc(error.message)+' — did you run supabase_feedback.sql?</td></tr>'; return; }
+      if(error){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(error.message)+' — did you run supabase_feedback.sql?</td></tr>'; return; }
       $('fb-count').textContent=(data||[]).length;
-      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="muted">No feedback yet.</td></tr>'; return; }
+      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="7" class="muted">No feedback yet.</td></tr>'; return; }
       tb.innerHTML=data.map(r=>'<tr><td style="white-space:nowrap;">'+esc(new Date(r.created_at).toLocaleString())+'</td>'+
         '<td style="white-space:nowrap;color:#ffcc00;">'+'★'.repeat(r.rating)+'<span style="opacity:0.3;">'+'★'.repeat(5-r.rating)+'</span></td>'+
         '<td style="max-width:420px;">'+esc(r.comment||'')+'</td>'+
         '<td>'+esc(r.lang||'')+'</td><td>'+esc(r.email||'')+'</td>'+
+        '<td style="font-family:monospace;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:'+(r.user_id?'copy':'default')+';" title="'+esc(r.user_id||'(not logged in)')+'"'+(r.user_id?' onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(r.user_id)+'\')"':'')+'>'+esc(r.user_id||'—')+'</td>'+
         '<td><button class="btn sec sm" onclick="window._fbDel('+r.id+')">Delete</button></td></tr>').join('');
-    }catch(e){ tb.innerHTML='<tr><td colspan="6" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
+    }catch(e){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
   }
   window._fbDel=async function(id){ if(!confirm('Delete this feedback row?')) return;
     try{ await sb.from('feedback').delete().eq('id',id); }catch(_){}
@@ -279,7 +280,7 @@
   function fmtTime(t){ try{ return new Date(t).toLocaleString(); }catch(_){ return t; } }
   async function loadComm(){
     const head=$('comm-head'), tb=$('comm-table').querySelector('tbody');
-    tb.innerHTML='<tr><td colspan="6" class="muted">Loading…</td></tr>';
+    tb.innerHTML='<tr><td colspan="7" class="muted">Loading…</td></tr>';
     try{
       if(commView==='comments'){
         head.innerHTML='<th>When</th><th>Author</th><th>Comment</th><th></th>';
@@ -326,7 +327,7 @@
         <td style="max-width:420px;color:var(--muted)">${esc((p.body||'').slice(0,160))}</td>
         <td><button class="btn danger sm" data-del-post="${p.id}">Del</button></td></tr>`).join(''):'<tr><td colspan="5" class="muted">No posts.</td></tr>';
       tb.querySelectorAll('[data-del-post]').forEach(b=>b.onclick=()=>delPost(b.dataset.delPost));
-    }catch(e){ tb.innerHTML='<tr><td colspan="6">'+esc(e.message||e)+'</td></tr>'; }
+    }catch(e){ tb.innerHTML='<tr><td colspan="7">'+esc(e.message||e)+'</td></tr>'; }
   }
   async function delPost(id){ if(!confirm('Delete this post (and its comments)?'))return;
     const {error}=await sb.from('community_posts').delete().eq('id',id);
