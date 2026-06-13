@@ -1978,3 +1978,48 @@ needs a real Edge session to confirm — flagged, not faked.
 → true); #21 crosshair debounce already 60/120 ms; #22 radius mobile compact (R22); #25 place-label popup +
 vertical buttons (R22); #32 layer-toggle scroll-jump targets the real m-sheet scroller (R22).
 **Honestly still needing a real device/Edge: #5 #8 #14 #15 #17 #29 #33 + the pinch-zoom limit in #30.**
+
+---
+
+## 27. Round 24 — real-device feedback: many R23 fixes didn't land + new items (tags `#R24`)
+
+Build `2026-06-14-R24`. The user re-tested on device; several R23 fixes needed deeper root-causing, plus new
+asks. Same constraints. Zero console errors after every batch; whole-script parse verified via late-EOF globals
+(the hidden-tab GL map still won't finish `load`, so DOM/state/console only; screenshots time out even with the
+canvas hidden this session).
+
+### Root causes found this round
+- **#2 "Country borders auto-checks Place names" (mobile)** — iOS fires a ~300 ms DELAYED synthetic click. The
+  row's change handler made the Active-layers section appear and shove the rows DOWN, so the late click landed on
+  the row that slid into that screen spot — the one directly ABOVE (Place names). Fix: `touch-action:manipulation`
+  on `.layer-option` + its checkbox (fires on first tap, no delayed retarget). Same fix on `.cmp-btn` → compare
+  Map/Sat/close/mode buttons that "押しても変わらない/終了できない" on mobile, and it also helps #32.
+- **#9 Köppen hides labels** — every overlay is added at `beforeId='tool-poly'` (ABOVE labels) and relied on the
+  idle `raise()` self-heal. addKoppen now inserts the raster BELOW the label stack explicitly + calls
+  `_raiseLabelLayers()`, and EVERY layer toggle re-asserts labels (staggered 60/400/1200 ms) for the "等" overlays.
+- **#11 compare projection** — `cmap.getProjection()` returned an unreliable type, so when MAIN=Globe and
+  compare=Flat the old diff thought they matched (isGlobe defaulted true) → never switched ("Flatに戻してから
+  Globeにしないと反映されない"). Replaced with our own `cmap.__wantGlobe` flag, set in build + followProjection.
+- **#19 old labels flash at startup** — `layer-light` (the LABELED carto base) was `visibility:visible` by default;
+  swapped so the `*-nl` no-label bases are the startup default (vector labels are always used now).
+- **#new2 Flat/Globe/3D wasted vertical padding** — the R23 34px compass icon inflated the row above the text
+  buttons; capped `.compass-btn{height:33px;padding:0 6px;overflow:visible}` so the big icon no longer adds height.
+- **#20 gray rectangle behind cards** — DOM scan found NO gray-bg child on any tab; the culprit is the big
+  `0 8px 30px rgba(0,0,0,.08)` drop-shadow reading as a soft gray rectangle halo behind each card. Tightened to
+  `0 1px 3px` on the card classes. (Best hypothesis — could not screenshot; re-confirm.)
+
+### Other fixes
+- #7 tool-panel × (measure/radius/draw/LOS/route) gets the legend's gray box on mobile.
+- #14 close pinned z:30 in its 52px gutter; minimize works after resize (R23) + centered bar (R23).
+- #22 radius readouts re-organized into a compact 3-up `.rad-stats` strip (+ opacity on its own mobile line).
+- #26 "more transparent" glass → 0.05/0.10 (blur 30).
+- #new1 Stats `.stats-compare-bar`/`.cmp-section` join the unified card frost.
+- #new3 Köppen legend hint is device-aware (desktop: "Click to highlight • right-click for criteria").
+- #new4 admin.html feedback table shows the **User ID** column (the row already stored `user_id`).
+- #new5 floating satellite controller auto-dismisses on outside interaction (map drag / zoom / pointerdown
+  outside it); re-opens via the Satellite button. Mobile keeps it in the sheet.
+- #21 SST/temp readout debounce 120→70 ms (climate/choropleth were already synchronous per move).
+- #4 widget data tick 5→3 min + refresh on window `focus` (board only refreshes while the home view is visible;
+  fetches were already fresh — no long cache).
+
+### Still need a real device / 2nd-GL-instance (can't exercise headless): #15 X-ray drift, #29 fps/choppiness.

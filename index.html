@@ -11945,8 +11945,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const noTab=(typeof currentMode==='undefined'||!currentMode);
       if(noTab){ b.style.display='block'; if(!b.dataset.built){ b.dataset.built='1'; render(); } else refreshAll();
         if(!clockT) clockT=setInterval(tickClock,30000);
-        if(!dataT){ dataT=setInterval(refreshData,5*60*1000); setInterval(refreshFast,60*1000);
-          document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&visible()) refreshAll(); }); }
+        if(!dataT){ dataT=setInterval(refreshData,3*60*1000); setInterval(refreshFast,60*1000);   /* (#R24) 5→3 min data tick, fresher widgets */
+          document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&visible()) refreshAll(); });
+          window.addEventListener('focus',()=>{ if(visible()) refreshAll(); }); }   /* (#R24) also refresh the moment the window regains focus, so returning to the tab is never hours-stale */
       } else { b.style.display='none'; } }
     window.addEventListener('intmap-lang',()=>{ if(board){ board.dataset.built=''; if(board.style.display!=='none'){ board.dataset.built='1'; render(); } } });
     window.IntMapWidgets2={ sync, render, _active:()=>active, _setActive:(a)=>{ if(Array.isArray(a)){ active=a; active.forEach(e=>{ if(!e.u) e.u='w'+Math.random().toString(36).slice(2,8); if(!e.cfg) e.cfg={}; }); try{ localStorage.setItem(KEY,JSON.stringify(active)); }catch(_){} if(board){ board.dataset.built=''; sync(); } } } };
