@@ -6660,7 +6660,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const scroller=scrollParent(sec);
       const beforeH=sec.offsetHeight, beforeTop=scroller.scrollTop;
       sec.dataset.sig=sig;
-      const _restore=()=>{ const afterH=sec.offsetHeight; if(beforeTop>0 && afterH!==beforeH){ scroller.scrollTop = beforeTop + (afterH-beforeH); } };
+      /* (#R23) compensate even when the list is at the TOP (beforeTop===0) — that is the FIRST-selection
+         case the user still saw snap ("一つ目を選択時にパチッとなる"): the Active-layers section appears at
+         the top and shoves the rows down, so we scroll down by its height to keep the tapped row put. */
+      const _restore=()=>{ const afterH=sec.offsetHeight; if(afterH!==beforeH){ scroller.scrollTop = Math.max(0, beforeTop + (afterH-beforeH)); } };
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
@@ -9674,7 +9677,12 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R22) Trigger the second-row drop sooner (640→760) so the centerd pill can never graze the
          map/satellite view buttons or the sidebar at in-between widths ("画面幅によってはかぶる"). */
       const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
-        document.body.classList.toggle('ms-narrow', desk && host.clientWidth<760); }catch(_){} };
+        /* (#R23) In frosted overlay mode the sidebar floats OVER the map-container, so host.clientWidth is
+           the FULL window — subtract the open sidebar so the row-2 drop fires on the truly-VISIBLE map width
+           ("画面幅が狭いと検索バーが使用不能 / サイドバーにかぶる"). */
+        let avail=host.clientWidth;
+        try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed')) avail-=(sb.getBoundingClientRect().width||0); } }catch(_){}
+        document.body.classList.toggle('ms-narrow', desk && avail<760); }catch(_){} };
       try{ new ResizeObserver(upd).observe(host); }catch(_){ window.addEventListener('resize',upd); }
       window.addEventListener('resize',upd); upd(); }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
