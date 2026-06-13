@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-14-R22';
+  window.INTMAP_BUILD='2026-06-14-R23';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -177,6 +177,10 @@ gtag('config', 'G-57X5MX0ZPW');
     .wiki-card:hover,.wiki-card.hovered{ transform:translateY(-4px); box-shadow:0 12px 30px rgba(0,0,0,0.15); border-color:var(--primary-color); }
     .wiki-card-img{ height:120px; position:relative; background-size:cover; background-position:center; background-blend-mode:multiply; }
     .wiki-card-img::before{ content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.42) 100%); pointer-events:none; }
+    /* (#R23) no image yet → no dark gradient (it read as a faint gray square over the card); a typeless +
+       imageless header collapses entirely so there's no empty gray block. */
+    .wiki-card-img.wc-noimg::before{ display:none; }
+    .wiki-card-img.wc-noimg[data-type=""]{ display:none; }
     .wiki-card-img[data-type="hub"]{background-color:#5856d6;} .wiki-card-img[data-type="mil"]{background-color:#ff3b30;} .wiki-card-img[data-type="tech"]{background-color:#007aff;} .wiki-card-img[data-type="maritime"]{background-color:#30b0c7;} .wiki-card-img[data-type="energy"]{background-color:#34c759;} .wiki-card-img[data-type="space"]{background-color:#af52de;} .wiki-card-img[data-type="choke"]{background-color:#ff9500;}
     .wiki-card-badge{ position:absolute; top:16px; left:16px; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); color:white; padding:4px 10px; font-size:10px; font-weight:600; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px; border:1px solid rgba(255,255,255,0.2); }
     .wiki-card-locate{ position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.9); color:#1d1d1f; width:28px; height:28px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:14px; box-shadow:0 2px 10px rgba(0,0,0,0.2); transition:0.2s; }
@@ -828,7 +832,10 @@ gtag('config', 'G-57X5MX0ZPW');
         box-shadow:0 4px 16px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center;
         color:var(--text-main); padding:0; transition:transform 0.14s, background 0.2s, color 0.2s; }
       .m-fab:active{ transform:scale(0.9); }
-      .m-fab.on{ background:var(--primary-color); color:#fff; border-color:transparent; }
+      /* (#R23) the active background MUST be !important — the frosted-mode rule forces .m-fab's
+         background to glass-fill !important, which beat this blue and left a white icon on a light
+         glass FAB (invisible in light mode → "レイヤーアイコンが真っ白になる"). */
+      .m-fab.on{ background:var(--primary-color) !important; color:#fff; border-color:transparent; }
       .m-fab svg{ display:block; }
       /* compass is always available on mobile (like desktop); it simply counter-rotates */
       .m-fab-compass{ display:flex; }
@@ -876,7 +883,10 @@ gtag('config', 'G-57X5MX0ZPW');
          column is predictable, legible and consistent on every phone, matching the Apple-like brief. */
       #mo-mount-layers .layer-dropdown{ display:flex !important; flex-direction:column !important; gap:1px !important; align-items:stretch; }
       #mo-mount-layers .layer-dropdown > *{ width:100% !important; box-sizing:border-box; }
-      #mo-mount-layers .layer-dropdown > #layer-tools{ display:block; }
+      /* (#R23) keep the Tools section a flex column with an EVEN gap on mobile too — the old display:block
+         let the parent's gap:1px collapse, so after the per-button margins were zeroed the 4 Tools buttons
+         touched with random-looking spacing ("間隔がランダムで不自然"). */
+      #mo-mount-layers .layer-dropdown > #layer-tools{ display:flex !important; flex-direction:column !important; gap:8px !important; }
       #mo-mount-layers #layer-tools .btn-settings, #mo-mount-layers #layer-tools button{ width:100% !important; box-sizing:border-box; }
       /* tighter layer rows — kills the wasted line spacing in the layer list */
       .m-sheet .layer-dropdown .layer-option{ padding:6px 6px; font-size:13.5px; min-height:32px; gap:9px; line-height:1.2; }
@@ -1020,14 +1030,13 @@ gtag('config', 'G-57X5MX0ZPW');
        AND every floating popup, panel, legend, timeline and control — so the whole UI
        shares one consistent glass texture (#1). ------------------------------------- */
     :root{ --glass-blur:16px; --glass-sat:150%; --glass-fill:var(--card-bg); --glass-border:rgba(128,128,128,0.16); }
-    /* (#R22) Both frosted tiers pushed MORE transparent per request ("Frosted Glass を全体的に透明寄りに、
-       more transparent はさらに透明に"): the standard "Frosted glass" now sits where the old
-       "more transparent" was (~0.26), and "Frosted glass (more transparent)" goes lighter still (~0.16) —
-       but never fully clear, so controls stay readable (a heavier blur keeps the map legible behind them). */
-    body.sidebar-translucent{ --glass-blur:30px; --glass-sat:190%; --glass-fill:rgba(255,255,255,0.30); --glass-border:rgba(255,255,255,0.32); }
-    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(34,34,40,0.34); --glass-border:rgba(255,255,255,0.10); }
-    body.sidebar-glass2{ --glass-blur:22px; --glass-sat:170%; --glass-fill:rgba(255,255,255,0.18); --glass-border:rgba(255,255,255,0.28); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(26,26,32,0.22); --glass-border:rgba(255,255,255,0.12); }
+    /* (#R23) Pushed further per the re-report: the plain "Frosted glass" now sits where the old
+       "more transparent" was (~0.18 fill), and "Frosted glass (more transparent)" goes lighter still
+       (~0.10) — never fully clear, and glass2's blur is raised (26px) so controls stay readable. */
+    body.sidebar-translucent{ --glass-blur:30px; --glass-sat:190%; --glass-fill:rgba(255,255,255,0.18); --glass-border:rgba(255,255,255,0.30); }
+    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(34,34,40,0.26); --glass-border:rgba(255,255,255,0.10); }
+    body.sidebar-glass2{ --glass-blur:26px; --glass-sat:175%; --glass-fill:rgba(255,255,255,0.10); --glass-border:rgba(255,255,255,0.26); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(26,26,32,0.16); --glass-border:rgba(255,255,255,0.12); }
     /* In the genuinely-transparent mode the map shows through strongly, so add a readability shadow. */
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 1px 3px rgba(0,0,0,0.55); }
@@ -1345,7 +1354,7 @@ gtag('config', 'G-57X5MX0ZPW');
         <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
         <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain">⛰️ 3D</button>
         <button class="view-btn compass-btn" id="btn-compass" title="Reset North">
-          <svg class="compass-svg" width="28" height="28" viewBox="0 0 24 24">
+          <svg class="compass-svg" width="34" height="34" viewBox="0 0 24 24">
             <polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/>
             <polygon points="12,22 9,12 12,14.5 15,12" fill="#9aa0a6"/>
           </svg>
@@ -1423,7 +1432,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option></select></div>
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
     <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light</option><option value="dark" data-i18n="optDark">Dark</option><option value="classic" data-i18n="optClassic">Classic</option><option value="cyber" data-i18n="optCyber">Cyber</option></select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
@@ -1472,6 +1481,12 @@ gtag('config', 'G-57X5MX0ZPW');
         <span data-i18n="lblNavPan" style="font-size:12px;color:var(--text-muted);min-width:74px;">Pan</span>
         <input type="range" id="setting-pan-sens" min="25" max="300" step="5" value="100" style="flex:1;">
         <b id="pan-sens-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
+      </div>
+      <!-- (#R23) inertia / momentum glide: 0 = stop instantly, 100% = current default. Works on touch too. -->
+      <div style="display:flex;align-items:center;gap:10px;margin-top:7px;">
+        <span data-i18n="lblNavInertia" style="font-size:12px;color:var(--text-muted);min-width:74px;">Inertia</span>
+        <input type="range" id="setting-inertia" min="0" max="150" step="5" value="100" style="flex:1;">
+        <b id="inertia-val" style="font-size:12px;color:var(--text-main);min-width:42px;text-align:right;">100%</b>
       </div>
     </div>
     <div class="setting-group"><label data-i18n="lblNewsCountries">News by country media</label>
@@ -1568,7 +1583,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 3.3a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L8.6 21 3 21l0-5.6L14.7 3.3Z"/><path d="m11.5 6.5 6 6M8 10l2 2M5.5 12.5l2 2"/></svg>
   </button>
   <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" title="Compass">
-    <svg class="m-compass-svg" viewBox="0 0 24 24" width="30" height="30"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
+    <svg class="m-compass-svg" viewBox="0 0 24 24" width="38" height="38"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
   </button>
 </div>
 <div class="m-scrim" id="m-scrim"></div>
@@ -1632,7 +1647,7 @@ window.addEventListener('DOMContentLoaded', () => {
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
-  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R23) DE/RU removed from UI language → only en/jp persist; older de/ru fall back to en */
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false;
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -2608,26 +2623,35 @@ window.addEventListener('DOMContentLoaded', () => {
      back as the single wheel path. On top of it, a user-tunable NAVIGATION SENSITIVITY (Settings →
      "Map navigation"): zoom multiplies the wheel/pinch rates, pan scales the drag inertia. Defaults
      (1.0×) reproduce the long-standing feel exactly. */
-  try{ Object.assign(i18n.en,{ lblNavSens:'Map navigation sensitivity', lblNavZoom:'Zoom', lblNavPan:'Pan' });
-       Object.assign(i18n.jp,{ lblNavSens:'地図操作の感度', lblNavZoom:'ズーム', lblNavPan:'移動（パン）' }); }catch(_){}
+  try{ Object.assign(i18n.en,{ lblNavSens:'Map navigation sensitivity', lblNavZoom:'Zoom', lblNavPan:'Pan', lblNavInertia:'Inertia' });
+       Object.assign(i18n.jp,{ lblNavSens:'地図操作の感度', lblNavZoom:'ズーム', lblNavPan:'移動（パン）', lblNavInertia:'慣性（0で無効）' }); }catch(_){}
   if(map){
     window.imNavZoomSens = window.imNavZoomSens || 1;
     window.imNavPanSens  = window.imNavPanSens  || 1;
+    if(window.imNavInertia==null) window.imNavInertia=1;   /* (#R23) 1=default glide, 0=instant stop */
     window._applyNavSens = function(){
       const z=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const p=Math.max(0.25,Math.min(3,+window.imNavPanSens||1));
+      const iner=Math.max(0,Math.min(1.5, window.imNavInertia==null?1:+window.imNavInertia));
       try{
         map.scrollZoom.enable();
         map.scrollZoom.setWheelZoomRate(z*(1/300));   /* 1.0 = the long-standing default feel */
         map.scrollZoom.setZoomRate(z*(1/90));         /* trackpad pinch */
       }catch(_){}
-      /* (#R22) iOS-like momentum: a longer, smoother glide after a flick (lower deceleration), scaled
-         by the Pan setting so the slider has a clearly-felt effect on touch too — on a 1:1 touch drag
-         the only thing a "pan sensitivity" CAN change is the inertia glide distance. */
-      try{ map.dragPan.enable({ linearity:0.25, maxSpeed:Math.round(2200*p), deceleration:Math.round(1500/Math.max(0.4,p)) }); }catch(_){}
+      /* (#R22/#R23) iOS-like momentum, now with a dedicated INERTIA control ("慣性を0から既定まで調整可能に"):
+         Pan scales the fling speed, Inertia scales the glide DURATION and can disable it entirely (0). On a
+         1:1 touch/mouse drag the glide is the only thing these sliders can change — so this is also what makes
+         the Pan/Inertia sliders visibly affect MOBILE behavior. */
+      try{
+        if(iner<=0.02){ map.dragPan.enable({ linearity:1, maxSpeed:1, deceleration:100000 }); }   /* glide off → stops on release */
+        else { map.dragPan.enable({ linearity:0.25, maxSpeed:Math.round(2200*p), deceleration:Math.round(1500/Math.max(0.3,iner)) }); }
+      }catch(_){}
       try{ if(map.touchZoomRotate&&map.touchZoomRotate.enable) map.touchZoomRotate.enable(); }catch(_){}
     };
     window._applyNavSens();
+    /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
+       dragPan with defaults, which would silently drop the user's inertia choice. */
+    try{ map.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
   }
   /* ===== (#R19) Place names + borders ALWAYS above every data layer ("地名や国境はどのレイヤーよりも
      最前部に"). Overlays are added/re-added at arbitrary times (toggles, basemap swaps, styledata
@@ -3162,7 +3186,11 @@ window.addEventListener('DOMContentLoaded', () => {
             const pop=+p.POP_EST||0;
             const gdp=(GDP[code]!=null)?GDP[code]:(p.GDP_MD!=null?+p.GDP_MD/1000:(p.GDP_MD_EST!=null?+p.GDP_MD_EST/1000:null));
             const a2=(p.ISO_A2_EH&&p.ISO_A2_EH!=='-99')?p.ISO_A2_EH:p.ISO_A2;
+            /* (#R23) flag non-sovereign / unrecognized features (Scarborough Shoal, Bir Tawil, Bajo Nuevo,
+               ice fields …) so "Random country" + quizzes never serve them as if they were states. */
+            const _nonSov=(p.TYPE==='Indeterminate')||/indetermin|unrecogn/i.test(String(p.FCLASS_TLC||p.featurecla||p.FEATURECLA||''));
             countryStats[code]={ code, ccn3:String(p.ISO_N3||''), nameEn:p.NAME_EN||p.ADMIN||p.NAME||code, nameJp:p.NAME_JA||p.NAME_EN||p.ADMIN||code,
+              sov:!_nonSov,
               pop, area:Math.round(area), _area:area, density:(pop&&area)?pop/area:null, region:p.CONTINENT||'', subregion:p.SUBREGION||'',
               capital:CAPITAL[code]||'', latlng:(p.LABEL_Y!=null&&p.LABEL_X!=null)?[+p.LABEL_Y,+p.LABEL_X]:null, flag:flagFromISO2(a2),
               currency:CURRENCY[code]||'', languages:LANGS[code]||'', gdp, gdppc:(gdp&&pop)?(gdp*1e9/pop):null,
@@ -4179,6 +4207,13 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
       map.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
     });
+    /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
+       context and leave a BLACK canvas ("Edgeでは地図が黒くて見えない"). Preventing the default lets the
+       browser restore the context, and on restore we force a fresh repaint + re-assert our layers. */
+    try{ const _cv=map.getCanvas&&map.getCanvas(); if(_cv&&_cv.addEventListener){
+      _cv.addEventListener('webglcontextlost',(ev)=>{ try{ ev.preventDefault(); }catch(_){} },false);
+      _cv.addEventListener('webglcontextrestored',()=>{ try{ map.resize(); map.triggerRepaint(); ensureGeoLayers(); applyTheme(); }catch(_){} },false);
+    } }catch(_){}
     map.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
     map.on('contextmenu',(e)=>{ e.preventDefault();
       let pt=e.point, ll=e.lngLat;
@@ -4512,7 +4547,10 @@ window.addEventListener('DOMContentLoaded', () => {
       loadCountryData().then(()=>{
         if(!map.getSource('countries') && countryGeo) addCountryLayers();
         if(map.getSource('countries') && !map.getLayer('borders-only-line')){
-          map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},'tool-poly');
+          /* (#R23) guard the beforeId — addLayer(...,'tool-poly') THROWS if the tool layer isn't on the
+             map yet, which silently aborted the borders toggle on mobile ("country bordersのチェックでバグる"). */
+          const anchor=map.getLayer('tool-poly')?'tool-poly':undefined;
+          try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},anchor); }catch(_){ try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}}); }catch(__){} }
         }
         applyTheme();
       });
@@ -4551,6 +4589,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let y=Math.max(160, Math.min(mc.height-h-12, point.y));   /* (#R14/#7) clamp to the bottom too */
     el.style.left=x+'px'; el.style.top=y+'px';
   }
+  window.ensureMapTooltip=ensureMapTooltip; window.positionTooltip=positionTooltip;   /* (#R23) beta choropleths reuse the same hover tooltip as HDI */
   /* iOS-style frosted "pill" behind news labels — generated as a stretchable sprite. */
   function ensureLabelPill(){
     if(!map || map.hasImage('news-pill')) return;
@@ -5349,7 +5388,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!url) return;
       const card=document.getElementById('card-'+info.id); if(!card) return;
       const img=card.querySelector('.wiki-card-img');
-      if(img) img.style.backgroundImage=`url('${url}')`;
+      if(img){ img.style.backgroundImage=`url('${url}')`; img.classList.remove('wc-noimg'); }   /* (#R23) real image loaded → restore the gradient */
     });
   }
   function renderDashboard(){
@@ -5377,8 +5416,12 @@ window.addEventListener('DOMContentLoaded', () => {
         const items=Object.entries(info.specs).map(([k,v])=>`<div class="spec-item"><span class="spec-label">${dict[k]||k}</span><span class="spec-value">${v[currentLang]||v.en||'—'}</span></div>`).join('');
         if(items) specsHTML=`<div class="wiki-card-specs">${items}</div>`;
       }
+      /* (#R23) imageless cards must NOT emit background-image:url('') and must NOT paint the dark ::before
+         gradient over the bare card — that overlay over the white card read as "うっすらグレーの四角いもの".
+         The wc-noimg class drops the gradient; the real image (+ its gradient) returns once it lazy-loads. */
+      const _cimg=info.img||'';
       cards+=`<div class="wiki-card" id="card-${info.id}" onclick="flyToLoc(${info.loc[0]},${info.loc[1]})" onmouseenter="triggerLayerHover('${info.layerRef||''}',true); highlightDashMarker('${info.id}',true)" onmouseleave="triggerLayerHover('${info.layerRef||''}',false); highlightDashMarker('${info.id}',false)">
-        <div class="wiki-card-img" data-type="${info.type}" style="background-image:url('${info.img||''}');"><span class="wiki-card-badge">${info.badge}</span></div>
+        <div class="wiki-card-img${_cimg?'':' wc-noimg'}" data-type="${info.type||''}"${_cimg?` style="background-image:url('${_cimg}');"`:''}><span class="wiki-card-badge">${info.badge}</span></div>
         <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[currentLang]}</h4><p class="wiki-card-body">${info.body[currentLang]}</p>${specsHTML}<div class="wiki-card-footer"><a href="${info.wiki[currentLang]}" target="_blank" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
     });
     cards+='</div>';
@@ -5686,7 +5729,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Language ===== */
   function setLang(lang){
-    if((lang!=='en'&&lang!=='jp'&&lang!=='de'&&lang!=='ru') || currentLang===lang) return;   /* (#R22) DE/RU added */
+    if((lang!=='en'&&lang!=='jp') || currentLang===lang) return;   /* (#R23) DE/RU removed from UI language */
     currentLang=lang;
     document.getElementById('lang-en').classList.toggle('active',lang==='en');
     document.getElementById('lang-jp').classList.toggle('active',lang==='jp');
@@ -5789,10 +5832,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){}
     document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){}
     /* (#R20) nav sensitivity sliders reflect the saved values + live % labels */
-    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens');
-      const zv=document.getElementById('zoom-sens-val'), pv=document.getElementById('pan-sens-val');
+    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens'), is=document.getElementById('setting-inertia');
+      const zv=document.getElementById('zoom-sens-val'), pv=document.getElementById('pan-sens-val'), iv=document.getElementById('inertia-val');
       if(zs){ zs.value=Math.round((window.imNavZoomSens||1)*100); if(zv) zv.textContent=zs.value+'%'; zs.oninput=()=>{ if(zv) zv.textContent=zs.value+'%'; }; }
       if(ps){ ps.value=Math.round((window.imNavPanSens||1)*100); if(pv) pv.textContent=ps.value+'%'; ps.oninput=()=>{ if(pv) pv.textContent=ps.value+'%'; }; }
+      if(is){ is.value=Math.round((window.imNavInertia==null?1:window.imNavInertia)*100); if(iv) iv.textContent=is.value+'%'; is.oninput=()=>{ if(iv) iv.textContent=is.value+'%'; }; }
     }catch(_){}
     settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
@@ -5813,9 +5857,10 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){}
     /* News pin position is chosen from the News tab's segmented control, not here. */
     /* (#R20) nav sensitivity — read sliders, apply live, persist via saveSettings (called in applyTheme path below via imSaveSettings users) */
-    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens');
+    try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens'), is=document.getElementById('setting-inertia');
       if(zs) window.imNavZoomSens=Math.max(0.25,Math.min(3,(+zs.value||100)/100));
       if(ps) window.imNavPanSens=Math.max(0.25,Math.min(3,(+ps.value||100)/100));
+      if(is) window.imNavInertia=Math.max(0,Math.min(1.5,(+is.value||100)/100));   /* (#R23) 0 → no inertia */
       window._applyNavSens&&window._applyNavSens();
     }catch(_){}
     try{ satSaveKeyInputs(); }catch(_){} try{ aiSaveSettings(); }catch(_){}
@@ -6187,13 +6232,15 @@ window.addEventListener('DOMContentLoaded', () => {
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
         .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centerd at any size */
-        .koppen-info-pop .kip-x, .pin-popup-close{ width:32px !important; height:32px !important; font-size:17px !important; display:flex; align-items:center; justify-content:center; }
+        /* (#R23) match the LEGEND ×'s exact look (gray rounded box) on EVERY popup × so they read as the
+           same UI ("ポップアップの×は凡例と同じUIに") — not just the same size. */
+        .koppen-info-pop .kip-x, .pin-popup-close{ width:32px !important; height:32px !important; font-size:17px !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
         .tool-panel .tp-close{ width:32px; height:32px; font-size:17px; display:flex; align-items:center; justify-content:center; }
         /* (#R19) The R18 32px unification covered legends/tool-panels but MISSED the other popups
            ("凡例はちょうどいいが、その他ポップアップは大きさが変わっていない"): the place-search result card,
            every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
         .src-card-close{ width:32px !important; height:32px !important; font-size:17px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
-        .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; right:4px !important; top:4px !important; }
+        .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16) !important; right:6px !important; top:6px !important; }
         /* (#R20) the real close button is .country-popup-close / #cp-close — the R19 selectors
            (.cp-close as a CLASS, .country-close, #country-popup-close) matched nothing, which is why
            the country popup's × stayed tiny ("ポップアップの右上の×が小さすぎて押せない"). */
@@ -6970,8 +7017,13 @@ window.addEventListener('DOMContentLoaded', () => {
        canvas is built from the bundled 4096² on phones (koppenWorkURL) — quality of what you SEE is
        untouched, but peak memory drops by ~270 MB so it no longer crashes. */
     function koppenURLFor(p){ const e=window.KOPPEN_PERIODS.find(x=>x[0]===p)||window.KOPPEN_PERIODS[0]; return e[1]; }
-    function koppenWorkURL(p){ let u=koppenURLFor(p); try{ if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); }catch(_){} return u; }
-    let KURL=koppenURLFor(window._koppenPeriod);
+    /* (#R23) The DISPLAY texture is the lighter 4k PNG on phones — the full 8192² PNG is a ~268 MB GPU
+       texture that crashes iPhone Safari ("重い動作でブラウザが落ちる"); desktops keep the full 8192². */
+    function koppenDisplayURL(p){ let u=koppenURLFor(p||window._koppenPeriod); try{ if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); }catch(_){} return u; }
+    /* The sampling/highlight WORK image is ALWAYS the 4k PNG (downscaled to ≤2048² for CPU pixel ops):
+       decoding the 8192² just to read a 2048² work canvas wasted ~200 MB on desktop too. */
+    function koppenWorkURL(p){ return koppenURLFor(p).replace(/\.png$/,'_4k.png'); }
+    let KURL=koppenDisplayURL(window._koppenPeriod);
     const KURL_FALLBACK='https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Koppen-Geiger_Map_World_present.svg/1920px-Koppen-Geiger_Map_World_present.svg.png';
     const KOPPEN_LATMAX=85.0511287798066;
     window.KCOORDS=[[-180,KOPPEN_LATMAX],[180,KOPPEN_LATMAX],[180,-KOPPEN_LATMAX],[-180,-KOPPEN_LATMAX]];
@@ -7032,10 +7084,11 @@ window.addEventListener('DOMContentLoaded', () => {
        Lazily loads the canvas on first call so the cursor-readout shows climate even
        when the Köppen overlay isn't enabled. */
     window._koppenLoadStarted=false;
-    /* (#R22) Backend-raster Köppen: cursor sampling is OFF (it required decoding the full ~8192² image
-       into a canvas — a major memory hit + OOM risk on phones). Returns null so the climate cursor
-       readout and click-to-highlight simply don't run. */
-    window.sampleKoppenAt=function(lng,lat){ return null; };
+    /* (#R23) Cursor/click climate sampling RESTORED — memory-safe: it reads the ≤2048² work canvas
+       (~16 MB), never the full 8192² image (the 268 MB decode that caused the OOM). The big full-res
+       highlight path (_koppenFull) stays disabled; only this cheap sampling + the small-canvas highlight
+       come back, which is what the user asked to restore ("以前まであった…復活させて"). */
+    window.sampleKoppenAt=function(lng,lat){ try{ return window.sampleKoppenAt_LEGACY(lng,lat); }catch(_){ return null; } };
     window.sampleKoppenAt_LEGACY=function(lng,lat){
       if(!window._koppenReady){
         if(!window._koppenLoadStarted){ window._koppenLoadStarted=true; loadKoppenCanvas(); }
@@ -7232,9 +7285,19 @@ window.addEventListener('DOMContentLoaded', () => {
     window._koppenHLUrl=null; window._koppenHLSeq=0; window._koppenGPUOK=undefined;
     /* (#R22) Highlight recolor retired (backend raster only) — keep the function as a safe no-op so the
        many existing callers don't need touching; it just guarantees the plain era PNG is shown. */
+    /* (#R23) Class highlight RESTORED — memory-safe small-canvas recolor only (≤2048² → ≤16 MB out).
+       The big full-res highlight (_koppenFull / GPU path, 67-268 MB) stays OFF: that was the OOM source,
+       not this cheap work-canvas. No selection → restore the plain display PNG. */
     window._refreshKoppenImage=function(){
-      try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(_){}
-      return;
+      if(!map.getSource('src-climate')) return;
+      clearTimeout(window._koppenRefreshT);
+      window._koppenRefreshT=setTimeout(()=>{
+        const setImg=(url)=>{ try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:url,coordinates:KCOORDS}); }catch(e){} };
+        if(!window.kSelected || window.kSelected.size===0){ setImg(KURL); return; }
+        if(!window._koppenReady){ if(!window._koppenLoadStarted){ window._koppenLoadStarted=true; loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(_){} }); } return; }
+        let u=null; try{ u=buildKoppenHighlightURL(window.kSelected); }catch(_){}
+        setImg(u||KURL);
+      },45);
     };
     window._refreshKoppenImage_LEGACY=function(){
       if(!map.getSource('src-climate')) return;
@@ -7279,11 +7342,15 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
        cursor sampling and class-highlighting reflect the chosen period, then swaps the map image. */
     window.setKoppenPeriod=function(period){
-      /* (#R22) Backend-raster era switch = just swap to that era's pre-rendered PNG. No canvas reload. */
       if(!window.KOPPEN_PERIODS.some(x=>x[0]===period)) return;
-      window._koppenPeriod=period; KURL=koppenURLFor(period);
+      window._koppenPeriod=period; KURL=koppenDisplayURL(period);
+      /* (#R23) era changed → invalidate the cached sampling canvas + per-pixel code index so cursor
+         sampling and the class highlight reflect the chosen period (they lazily reload the new era). */
+      window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
+      window._koppenCodeIdx=null; window._koppenSrcData=null;
       try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){}
       try{ buildLegend(); }catch(_){}
+      if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
     };
 
     function addKoppen(){
@@ -7291,11 +7358,13 @@ window.addEventListener('DOMContentLoaded', () => {
          We add the pre-rendered era PNG straight to the map — NO in-browser canvas decode, pixel
          sampling, or client-side highlight recolor (that whole pipeline was the recurring OOM / iPhone
          crash source). The legend stays as a color key (+ era switch + right-click criteria). */
+      KURL=koppenDisplayURL(window._koppenPeriod);   /* (#R23) recompute now that isMobile() is reliable → phones get the 4k texture */
       if(!map.getSource('src-climate')){
         map.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
         map.addLayer({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},beforeId);
       } else { setVis('lyr-climate',true); }
       buildLegend();
+      if(window.kSelected && window.kSelected.size>0 && window._refreshKoppenImage) window._refreshKoppenImage();
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
@@ -7307,14 +7376,20 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R12) Period pulldown — default present-day, switch to historical eras. */
       const perLabel=currentLang==='jp'?'期間':'Period';
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
-      /* (#R22) Backend raster → the legend is a COLOR KEY (no click-to-highlight recolor). Tapping a
-         class shows its criteria (was right-click only; now also tap, since highlight is gone). */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+`<div class="kl-hint">${currentLang==='jp'?'クリックで気候区分の定義を表示':'Tap a class for its criteria'}</div>`;
+      /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
+         .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
+      const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
-        const showInfo=(x,y)=>showKoppenInfo(it.dataset.c, x, y);
-        it.onclick=(e)=>{ showInfo(e.clientX,e.clientY); };
-        it.oncontextmenu=(e)=>{ e.preventDefault(); showInfo(e.clientX,e.clientY); };
+        const code=it.dataset.c;
+        const crit=(x,y)=>showKoppenInfo(code,x,y);
+        let lpT=null, lpFired=false;
+        it.onclick=()=>{ if(lpFired){ lpFired=false; return; } kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
+        it.oncontextmenu=(e)=>{ e.preventDefault(); crit(e.clientX,e.clientY); };
+        it.addEventListener('touchstart',(e)=>{ lpFired=false; const tt=e.touches&&e.touches[0]; lpT=setTimeout(()=>{ lpT=null; lpFired=true; crit(tt?tt.clientX:0,tt?tt.clientY:0); },480); },{passive:true});
+        it.addEventListener('touchmove',()=>{ if(lpT){ clearTimeout(lpT); lpT=null; } },{passive:true});
+        it.addEventListener('touchend',()=>{ if(lpT){ clearTimeout(lpT); lpT=null; } },{passive:true});
       });
       const xb=lg.querySelector('#kl-close'); if(xb) xb.onclick=()=>{ /* × also disables the layer (user request) */ const cb2=document.getElementById('dl-climate'); if(cb2){ cb2.checked=false; cb2.dispatchEvent(new Event('change')); } };
       try{ window._ensureLegendOpacity&&window._ensureLegendOpacity(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
@@ -9542,7 +9617,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
-    if(s.lang==='en'||s.lang==='jp'||s.lang==='de'||s.lang==='ru'){ currentLang=s.lang; const le=document.getElementById('lang-en'),lj=document.getElementById('lang-jp'); if(le) le.classList.toggle('active',currentLang==='en'); if(lj) lj.classList.toggle('active',currentLang==='jp'); }
+    if(s.lang==='en'||s.lang==='jp'){ currentLang=s.lang; const le=document.getElementById('lang-en'),lj=document.getElementById('lang-jp'); if(le) le.classList.toggle('active',currentLang==='en'); if(lj) lj.classList.toggle('active',currentLang==='jp'); }   /* (#R23) DE/RU removed from UI language */
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -9552,6 +9627,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
     if(s.navZoom) window.imNavZoomSens=+s.navZoom||1;   /* (#R20) nav sensitivity */
     if(s.navPan)  window.imNavPanSens=+s.navPan||1;
+    if(s.navInertia!=null) window.imNavInertia=+s.navInertia;   /* (#R23) inertia (0..1.5); 0 allowed */
     try{ window._applyNavSens&&window._applyNavSens(); }catch(_){}
     applySidebarStyle();
   }
@@ -9560,7 +9636,7 @@ window.addEventListener('DOMContentLoaded', () => {
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode,
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor,
       newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs,
-      navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1
+      navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
     try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){}   /* (#R20) mirror to the account when logged in */
   }
@@ -10887,7 +10963,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
     /* ---------- Historical borders (aourednik/historical-basemaps; raw.githubusercontent = CORS*) ---------- */
     const HB_IDS=['hb-fill','hb-line','hb-lbl'];
-    const HB_YEARS=[1900,1914,1920,1938,1945,1960,1970,1980,1994,2000,2010];
+    /* (#R23) 1970 & 1980 REMOVED — they return 404 from aourednik/historical-basemaps (the upstream repo
+       has no world_1970/1980.geojson), so those years silently showed nothing ("1970,1980が機能していない").
+       Mapping them to a nearby year would misrepresent the borders, so we drop the two dead years and add
+       1930 (which exists) — every offered year now actually loads. */
+    const HB_YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     let hbYear=1920; const hbCache=new Map();
     const HB_PAL=['#e6a176','#7eb6e8','#9fd29a','#e8a4c2','#cbb1e6','#ffd78a','#9adfd2','#e8938c','#b9c98a','#a7b8d9','#dcc4a1','#90c7e0'];
     function hbEnsure(){ if(map.getSource('hb-src')) return true; if(!map.isStyleLoaded()) return false;
@@ -11193,12 +11273,20 @@ window.addEventListener('DOMContentLoaded', () => {
           map.addSource(W.src,{type:'geojson',data:{type:'FeatureCollection',features:feats},attribution:'World Bank'});
           map.addLayer({id:W.ids[0],type:'fill',source:W.src,layout:{visibility:'none'},paint:{'fill-color':W.ramp,'fill-opacity':0.68}},before());
           map.addLayer({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
+          const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs')));
+          const _nmOf=(p)=>{ let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){} return nm; };
           map.on('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
-            let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
             try{ if(pop2) pop2.remove(); }catch(_){}
-            const val=W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs')));
-            try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+val+'</b></div>').addTo(map); }catch(_){}
+            try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>').addTo(map); }catch(_){}
           });
+          /* (#R23) per-country HOVER like HDI ("国別の数値があるレイヤーは…ホバーで表示") — reuses the shared
+             map tooltip (desktop pointer; mobile keeps the tap popup above). */
+          map.on('mousemove',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+            try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(!el) return; el.style.display='block';
+              el.innerHTML='<div style="font-weight:600;font-size:14px;">'+esc(_nmOf(p))+'</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>';
+              window.positionTooltip&&window.positionTooltip(e.point); map.getCanvas().style.cursor='pointer'; }catch(_){}
+          });
+          map.on('mouseleave',W.ids[0],()=>{ try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el) el.style.display='none'; map.getCanvas().style.cursor=''; }catch(_){} });
           show(); legend();
         }catch(_){}
       };
@@ -11715,7 +11803,8 @@ window.addEventListener('DOMContentLoaded', () => {
         [ev,es].forEach(x=>{ if(x){ x.style.cursor='pointer'; x.onclick=act; } });
       }catch(_){ setV(e.u,'—',''); } }
     function refreshCountry(e){ try{
-        const all=Object.values((typeof countryStats!=='undefined'&&countryStats)||{}).filter(s=>s&&s.nameEn);
+        /* (#R23) only real sovereign states — skip uninhabited reefs/banks/ice fields (sov===false or pop 0) */
+        const all=Object.values((typeof countryStats!=='undefined'&&countryStats)||{}).filter(s=>s&&s.nameEn&&s.sov!==false&&s.pop>0);
         if(!all.length){ setV(e.u,'…', jp()?'国データ読込中':'loading country data'); setTimeout(()=>refreshCountry(e),2500); return; }
         const s=all[Math.floor(Math.random()*all.length)];
         const nm=jp()?(s.nameJp||s.nameEn):s.nameEn;
@@ -12580,9 +12669,8 @@ window.addEventListener('DOMContentLoaded', () => {
       '#compare-window.cmp-xray .cmp-head{padding:8px 52px 8px 10px;}'+
       '.cmp-ctrls{top:auto;bottom:28px;left:8px;right:8px;max-width:none;}'+
       '.cmp-ctrls select,.cmp-ctrls label{font-size:12px;padding:6px 9px;}'+
-      /* layers dropdown opens UPWARD on mobile (it sits at the bottom) and is large/readable. */
-      '#cmp-layers-dd{top:auto !important;bottom:42px !important;left:0;right:0;max-height:52vh !important;min-width:0 !important;font-size:13px;}'+
-      '#cmp-layers-dd label{padding:8px 4px !important;font-size:13px !important;}'+
+      /* (#R23) compare layer picker = full-width native select on mobile (iOS shows its own wheel UI). */
+      '#cmp-layers-sel{width:100% !important;max-width:none !important;font-size:13px;min-height:38px;}'+
       '}';
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -12811,8 +12899,9 @@ window.addEventListener('DOMContentLoaded', () => {
         '<button class="cmp-btn" id="cmp-close" title="'+t('close')+'">✕</button></div>'+
         '<div class="cmp-body"><div id="compare-map"></div>'+
         '<div class="cmp-ctrls">'+
-        '<button class="cmp-btn" id="cmp-layers-btn" style="backdrop-filter:blur(8px);">🗂 '+(jp()?'レイヤー':'Layers')+' ▾</button>'+
-        '<div id="cmp-layers-dd" style="display:none;position:absolute;top:34px;left:0;z-index:7;max-height:min(460px,80vh);overflow-y:auto;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.3);border-radius:10px;padding:10px 12px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,0.3);min-width:240px;columns:1;"></div>'+
+        /* (#R23) native <select> pulldown — iOS-friendly AND scrolls on every platform (the old checkbox
+           list could not scroll on desktop, so the bottom layers were unreachable). One layer at a time. */
+        '<select class="cmp-btn" id="cmp-layers-sel" title="'+(jp()?'比較レイヤー':'Compare layer')+'" style="max-width:64%;"></select>'+
         '</div></div>'+
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
@@ -12836,14 +12925,15 @@ window.addEventListener('DOMContentLoaded', () => {
       win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.getAttribute('data-m')));
       window._cmpSetMode=setMode;
       /* layers pulldown */
-      const ldd=win.querySelector('#cmp-layers-dd');
-      function buildLayerDD(){ ldd.innerHTML=CMP_LAYERS.map(L=>'<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-main);padding:4px 2px;cursor:pointer;"><input type="checkbox" data-ck="'+L.k+'"> '+L.n()+'</label>').join('');
-        ldd.querySelectorAll('input[data-ck]').forEach(cb=>cb.onchange=()=>{ const L=CMP_LAYERS.find(x=>x.k===cb.getAttribute('data-ck')); if(!L) return;
-          if(cb.checked){ const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); }
-          else L.ids.forEach(id=>setVis(id,false)); }); }
+      /* (#R23) compare layer picker = native <select> (one layer at a time). buildLayerDD repopulates it;
+         picking a layer hides the previous one and lazily adds + shows the new one. */
+      const sel=win.querySelector('#cmp-layers-sel');
+      let curCmpLayer='';
+      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(jp()?'🗂 レイヤーを選択…':'🗂 Select a layer…')+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
       buildLayerDD();
-      win.querySelector('#cmp-layers-btn').onclick=(e)=>{ e.stopPropagation(); ldd.style.display=(ldd.style.display==='none')?'block':'none'; };
-      document.addEventListener('click',(e)=>{ if(ldd.style.display!=='none'&&!e.target.closest('#cmp-layers-dd')&&!e.target.closest('#cmp-layers-btn')) ldd.style.display='none'; });
+      if(sel) sel.onchange=()=>{ const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false));
+        curCmpLayer=sel.value; const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(!L) return;
+        const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); };
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
       win.querySelector('#cmp-close').onclick=close;
@@ -13348,7 +13438,9 @@ window.addEventListener('DOMContentLoaded', () => {
       let box=document.getElementById('layer-search-wrap');
       if(!box){
         box=document.createElement('div'); box.id='layer-search-wrap';
-        box.style.cssText='position:sticky;top:0;z-index:6;padding:2px 0 7px;';
+        /* (#R23) NO longer pinned/sticky — the user asked the desktop layer-search box to sit in normal
+           flow and scroll with the list ("レイヤー検索窓の上部固定はやめて"). */
+        box.style.cssText='position:relative;z-index:6;padding:2px 0 7px;';
         box.innerHTML='<input id="layer-search" type="search" autocomplete="off" style="width:100%;box-sizing:border-box;padding:7px 11px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;">';
         const inp=box.querySelector('input');
         inp.placeholder=jp()?'🔍 レイヤーを検索…':'🔍 Search layers…';
@@ -13714,7 +13806,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){} return ids; }
     function encode(){ try{ const c=map.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),map.getZoom().toFixed(2),Math.round(map.getBearing()),Math.round(map.getPitch()),(currentProj==='globe'?'g':'f')].join(',');
       const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(','); return h; }catch(_){ return ''; } }
-    function save(){ if(restoring) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
+    /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
+       lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
+       on its own ("なにも操作していないのに勝手にレイヤーがオンになる"). */
+    function save(){ if(restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
     function restore(){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
       try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
         if(proj==='f'&&currentProj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
@@ -13885,10 +13980,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const xb=document.createElement('button'); xb.textContent=jp()?'終了 ✕':'End tour ✕'; xb.title=jp()?'デモを終了':'End the intro demo'; xb.style.cssText='background:var(--input-bg);border:none;border-radius:999px;color:var(--text-main);cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
     function schedule(){ clearTimeout(timer); timer=setTimeout(next,6500); }
     function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(jp()?s[2]:s[1]); }catch(_){} schedule(); }
-    function stop(markSeen){ if(done) return; done=true; clearTimeout(timer); setOff(curId); try{ pill.remove(); }catch(_){} if(markSeen){ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} } }
+    function stop(markSeen){ if(done) return; done=true; clearTimeout(timer);
+      /* (#R23) turn off EVERY layer the demo could have switched on (not just the current one) so it can
+         never leave an orphan layer behind ("オンのままで active layers に出ず消せない"). */
+      try{ SHOW.forEach(s=>setOff(s[0])); }catch(_){ setOff(curId); }
+      window._imDemoActive=false;
+      try{ pill.remove(); }catch(_){} if(markSeen){ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} }
+      try{ const sv=window.IntMapBookmark&&window.IntMapBookmark.save; if(sv) sv(); }catch(_){}   /* re-sync the hash to the real (demo-free) layer set */ }
     const dd=document.getElementById('layer-dropdown');
     if(dd) dd.addEventListener('change',(e)=>{ if(!demoToggling && e.target && e.target.type==='checkbox') stop(true); });
     window._imDemoStop=()=>stop(true);
+    window._imDemoActive=true;
     next();
   }
   window._imStartDemo=_imStartDemo;

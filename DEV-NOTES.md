@@ -1883,3 +1883,98 @@ religion choropleth paints correctly (China=unaffiliated, India=Hindu, SE-Asia/J
 Russia=Christian); Tools 4 buttons even spacing; narrow-sidebar header no longer overflows. Mobile 375:
 widget add `<select>` (24 opts), category headers 15px/800, no console errors. **GOTCHA**: `setLang` now
 persists, so testing a language via eval sticks in localStorage for that preview profile (reset to en).
+
+---
+
+## 26. Round 23 — re-reported batch: Köppen interactivity restored, DE/RU out, compare pulldown, inertia, mobile fixes (tags `#R23`)
+
+Same standing constraints (additive/in-place, MapLibre stays, real data only, no excuses; never dismiss a
+re-report as "already done" without re-checking the live code). Build stamp `2026-06-14-R23`. The whole
+inline script re-parses with **zero console errors** after every batch (verified late-EOF globals all defined);
+the headless preview tab is `document.hidden` so the GL map frequently never finishes `load` — verification is
+via DOM/state/console + curl probes, NOT screenshots (which time out on the WebGL canvas this session).
+
+### Köppen — interactivity RESTORED without the OOM (the user: "前回削除された機能を復活させて")
+- The R22 "pure backend raster" rip-out also killed the cheap, SAFE parts. Restored **memory-safely**:
+  - `sampleKoppenAt` re-points to the legacy sampler, which reads the **≤2048² work canvas (~16 MB)** — NOT
+    the full 8192² decode (the 268 MB OOM). Verified live: Amazon→Af, Sahara→BWh, London→Cfb, Greenland→EF,
+    India→Aw, Siberia→Dfc (all correct).
+  - Class **highlight** restored via the small-canvas `buildKoppenHighlightURL` ONLY (≤2048² → ≤16 MB out).
+    The big full-res path (`_koppenFull`/GPU, 67–268 MB) STAYS disabled — that was the real OOM, not this.
+  - Legend **click = highlight** that one climate again (+ `.sel` outline + a **Clear button** that the R22
+    rewrite computed but never inserted — latent bug); long-press / right-click shows the criteria popup.
+  - Map-click + cursor-readout consumers already existed (3928 / 4078) → now live again.
+- `koppenWorkURL` always uses the 4k PNG (sampling decode 67 MB not 268 MB even on desktop).
+- **Mobile DISPLAY texture → 4k** (`koppenDisplayURL`): the full 8192² PNG is a ~268 MB GPU texture that
+  crashes iPhone Safari ("重い動作で落ちる"); desktops keep 8192². addKoppen/setKoppenPeriod recompute it.
+
+### Removed / reversed from R22
+- **DE + RU dropped from the UI language selector** (the user reversed the R22 addition — "設定言語から削除").
+  Selector now en/jp only; `setLang`/loadSettings/initial-read migrate any saved de/ru → en. The DE/RU **news**
+  feeds (a separate feature) stay. The dead `t()` de/ru objects are left in place (harmless, unreachable).
+
+### Frosted glass (#R23 push) — the plain "Frosted glass" now sits at the OLD "more transparent" level
+(0.18 fill light), "more transparent" goes to 0.10 with blur raised 22→26 so controls stay legible.
+
+### Compass — desktop SVG 28→34, mobile 30→38 (same shape, same button size; "もっと大きく").
+
+### Random country (#34) — `countryStats` now carries a **`sov` flag**: features with `TYPE==='Indeterminate'`
+or unrecognized featurecla (Scarborough Shoal, Bir Tawil, Bajo Nuevo, Serranilla, S. Patagonian Ice Field,
+Heard I.) are flagged; the random-country widget filters `sov!==false && pop>0`. Verified those 6 are all
+`pop:0`. (Quiz pool already filtered `pop>300000`.)
+
+### Tools 4-button spacing (#24) — ROOT CAUSE found: on mobile `#mo-mount-layers .layer-dropdown > #layer-tools`
+was forced `display:block`, so the flex `gap:8px` was ignored and (after R22 zeroed the margins) the buttons
+touched with **0 gap**. Made it `display:flex;gap:8px !important`. Desktop was already flex (verified 8px).
+
+### Historical borders 1970/1980 (#10) — **curl-verified those years 404 upstream** (aourednik repo has no
+`world_1970/1980.geojson`; only 1945/1960/1994 exist in that span). Mapping them to a nearby year would
+misrepresent borders → removed the 2 dead years, **added 1930** (exists) so every offered year actually loads.
+
+### Layer-search box (#18) — un-pinned on desktop (`position:sticky`→`relative`); scrolls with the list now.
+
+### Sidebar card gray square (#20) — imageless `.wiki-card-img` painted a dark `::before` gradient over the
+white card (a faint gray rectangle) and emitted `url('')`. Now `wc-noimg` drops the gradient (and collapses a
+typeless+imageless header); the gradient returns when the real thumbnail lazy-loads. *(Visual — could not
+screenshot this session; targeted the most-likely cause; re-confirm on device.)*
+
+### Compare view (#12/#13) — the layer picker is now a **native `<select>`** (iOS-friendly + scrolls on every
+platform; the old checkbox-list-in-a-div couldn't scroll on desktop so the bottom layers were unreachable).
+Verified: 27 options (placeholder + 26 layers, Köppen…Pharma). One layer at a time; reuses the proven add/show.
+(#11 projection-follow and #16 base-swap retry logic from R20/R21 read correct; the 2nd GL instance can't be
+exercised headlessly.)
+
+### Nav inertia (#28) — NEW **Inertia slider** (0–150 %, default 100; "0で無効"). `_applyNavSens`: Pan scales the
+fling speed, Inertia scales the glide DURATION and **0 = stop on release** (`deceleration:100000`). Persisted as
+`navInertia`; re-asserted on first idle (the Draw tool re-enables dragPan with defaults otherwise). This is also
+what makes the sliders affect MOBILE (touch drag is 1:1, so glide is the only tunable). **Pinch-zoom rate stays
+a documented MapLibre limit** (#30 partial — pan/inertia DO apply on touch, pinch can't).
+
+### Mobile (#2/#7/#31)
+- **borders toggle** (#2): `addLayer(...,'tool-poly')` THREW when the tool layer wasn't on the map yet →
+  guarded the beforeId (+ try/catch fallback).
+- **popup × = legend UI** (#7): all 32px already (R18-R22); added the legend's gray rounded-box background to
+  `.kip-x` / `.pin-popup-close` / `.maplibregl-popup-close-button` so they read as the same control.
+- **layer FAB white in light mode** (#31): ROOT CAUSE — the frosted `.m-fab{background:glass-fill !important}`
+  beat the non-important `.m-fab.on{background:primary}`, so in satellite mode the icon went white on a light
+  glass FAB. Made `.m-fab.on` background `!important`.
+
+### Phantom layers (#36) — the AUTO intro-demo's layer toggles were saved into the URL hash, so a demo layer
+landed in the bookmark and got **restored on the next load** as a layer the user never chose. `save()` now skips
+while `window._imDemoActive`; the demo turns OFF **every** SHOW layer on stop (not just the current) and re-syncs
+the hash. (Demo still runs once on desktop first-visit.)
+
+### Per-country hover (#23) — the R22 **beta** World-Bank choropleths (corruption, life-exp, unemployment,
+internet, precipitation) were click-only; added a **hover tooltip** (reusing the exported `ensureMapTooltip`/
+`positionTooltip`, same as HDI). Main choropleths already hovered via `wireChoroHover`.
+
+### Edge black map (#33) — added a **WebGL context-loss/restore** handler (preventDefault + repaint + re-assert
+layers). Helps the "goes black" case; an initial-black-in-Edge is most likely a GPU/hardware-accel issue that
+needs a real Edge session to confirm — flagged, not faked.
+
+### Re-checked, code already correct (no change needed; flagged for device re-test if still seen)
+#3 UV widget already uses `widgetLoc()` geolocation; #4 widgets already 60 s/5 min/on-visible (R21);
+#9 labels-on-top self-heal (R22 top-scan) intact; #19 map labels already the OFM vector set (`mapLabelsViaVector`
+→ true); #21 crosshair debounce already 60/120 ms; #22 radius mobile compact (R22); #25 place-label popup +
+vertical buttons (R22); #32 layer-toggle scroll-jump targets the real m-sheet scroller (R22).
+**Honestly still needing a real device/Edge: #5 #8 #14 #15 #17 #29 #33 + the pinch-zoom limit in #30.**
