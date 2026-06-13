@@ -12618,6 +12618,10 @@ window.addEventListener('DOMContentLoaded', () => {
       '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:both;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
       '#compare-window.cmp-min .cmp-body{display:none;}'+
+      /* (#R23) draw the minimize bar as a perfectly CENTERED line (the "—" glyph sat on the text baseline,
+         so the line was not vertically centered in the button — "横線がボタン内の中間にない"). */
+      '#cmp-min{position:relative;color:transparent !important;display:flex;align-items:center;justify-content:center;}'+
+      '#cmp-min::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:13px;height:2px;border-radius:1px;background:var(--text-main);}'+
       '.cmp-head{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--sidebar-bg);cursor:move;flex:0 0 auto;border-bottom:1px solid rgba(128,128,128,0.18);}'+
       '.cmp-head .cmp-title{font-weight:700;font-size:12px;margin-right:auto;color:var(--text-main);}'+
       '.cmp-btn{background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;}'+
@@ -12935,7 +12939,13 @@ window.addEventListener('DOMContentLoaded', () => {
         curCmpLayer=sel.value; const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(!L) return;
         const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); };
       /* min / close */
-      win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized; win.classList.toggle('cmp-min',minimized); if(!minimized) setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); };
+      win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized;
+        /* (#R23) the four-corner/grip resizers set an inline height:Xpx !important, which BEAT the
+           .cmp-min{height:auto !important} rule → after any resize the minimize button "did nothing".
+           Stash + clear the inline height when collapsing, restore it when expanding. */
+        if(minimized){ win.dataset.prevH=win.style.getPropertyValue('height'); win.style.removeProperty('height'); win.classList.add('cmp-min'); }
+        else { win.classList.remove('cmp-min'); if(win.dataset.prevH){ win.style.setProperty('height',win.dataset.prevH,'important'); } setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); }
+      };
       win.querySelector('#cmp-close').onclick=close;
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
@@ -13734,7 +13744,20 @@ window.addEventListener('DOMContentLoaded', () => {
       map.on('click','ofm-country',onLabel(true)); map.on('click','ofm-city',onLabel(false)); map.on('click','ofm-other',onLabel(false));
       ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ map.on('mouseenter',id,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',id,()=>{ map.getCanvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
-      map.on('click',(e)=>{ try{ const ls=['ofm-country','ofm-city','ofm-other'].filter(id=>map.getLayer(id)); const hit=ls.length?map.queryRenderedFeatures(e.point,{layers:ls}):[]; if(!hit.length) clearHL(); }catch(_){} });
+      map.on('click',(e)=>{ try{
+        const ls=['ofm-country','ofm-city','ofm-other'].filter(id=>map.getLayer(id)); if(!ls.length) return;
+        const hit=map.queryRenderedFeatures(e.point,{layers:ls});
+        if(hit.length) return;   /* exact glyph hit → the per-layer onLabel handler already opened the popup */
+        /* (#R23) PADDED hit-box: a finger tap almost never lands on the exact label glyph, so the popup
+           "モバイル版では出ない". Re-query a small box around the tap (bigger on touch) and open the nearest
+           label's popup. Skipped while a measurement/draw tool owns the gesture. */
+        if(typeof toolMode==='undefined' || !toolMode){
+          const pad=(typeof isMobile==='function'&&isMobile())?15:6;
+          const near=map.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
+          if(near.length){ const p=near[0].properties||{}; const nm=p.name||p['name:en']||p.name_en||p['name_en']||''; if(nm){ showPopup(e.lngLat,nm); return; } }
+        }
+        clearHL();
+      }catch(_){} });
     }
     function tryWire(n){ if(map.getLayer('ofm-country')) wire(); else if((n||0)<60) setTimeout(()=>tryWire((n||0)+1),200); }
     if(map.isStyleLoaded()) tryWire(0); else map.on('load',()=>tryWire(0));
