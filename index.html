@@ -11155,7 +11155,23 @@ window.addEventListener('DOMContentLoaded', () => {
         ramp:['interpolate',['linear'],['get','s'],52,'#a50026',62,'#f46d43',70,'#fee08b',78,'#74add1',85,'#313695'],
         score:v=>v,
         nm:['Life expectancy (years)','平均寿命（年）'],
-        note:()=>jp()?'出生時平均余命（世界銀行 2022）。':'Life expectancy at birth (World Bank, 2022).'}};
+        note:()=>jp()?'出生時平均余命（世界銀行 2022）。':'Life expectancy at birth (World Bank, 2022).'},
+      /* (#R22) New beta choropleths — all live World Bank, keyless + CORS, latest value per country. */
+      unemp:{ind:'SL.UEM.TOTL.ZS',date:'',q:'&mrnev=1',ids:['wb-unemp-f','wb-unemp-l'],src:'wb-unemp',
+        ramp:['interpolate',['linear'],['get','s'],2,'#1a9850',5,'#a6d96a',9,'#fee08b',15,'#f46d43',25,'#a50026'],
+        score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
+        nm:['Unemployment rate (%)','失業率（%）'],
+        note:()=>jp()?'失業率（労働力人口比、ILO推計・世界銀行、最新年）。':'Unemployment, total (% of labor force; modeled ILO / World Bank, latest year).'},
+      internet:{ind:'IT.NET.USER.ZS',date:'',q:'&mrnev=1',ids:['wb-internet-f','wb-internet-l'],src:'wb-internet',
+        ramp:['interpolate',['linear'],['get','s'],10,'#a50026',30,'#f46d43',55,'#fee08b',75,'#74c476',95,'#1a9850'],
+        score:v=>v, fmt:v=>(+v).toFixed(1)+'%',
+        nm:['Internet users (%)','インターネット普及率（%）'],
+        note:()=>jp()?'人口に占めるインターネット利用者の割合（世界銀行、最新年）。':'Individuals using the Internet (% of population; World Bank, latest year).'},
+      precip:{ind:'AG.LND.PRCP.MM',date:'',q:'&mrnev=1',ids:['wb-precip-f','wb-precip-l'],src:'wb-precip',
+        ramp:['interpolate',['linear'],['get','s'],100,'#f6e8c3',400,'#c7eae5',800,'#80cdc1',1500,'#35978f',2800,'#01665e'],
+        score:v=>v, fmt:v=>Math.round(v)+' mm',
+        nm:['Annual precipitation (mm)','年降水量（mm）'],
+        note:()=>jp()?'年間平均降水量（深さmm、長期平均・世界銀行）。':'Average annual precipitation (depth in mm, long-term; World Bank).'}};
     function wbToggle(key,on){ state[key]=on; const W=WB[key];
       const show=()=>setVis(W.ids,on);
       if(!on){ show(); try{ window._hideGenericLegend&&window._hideGenericLegend('wb-'+key); }catch(_){} return; }
@@ -11166,7 +11182,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!countryGeo||!Array.isArray(countryGeo.features)){ setTimeout(build,1200); return; }
         let vals=cache['wb_'+key];
         if(!vals){ vals={};
-          try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&date='+W.date+'&per_page=400'+(W.q||''));
+          try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+W.ind+'?format=json&per_page=400'+(W.date?('&date='+W.date):'')+(W.q||''));
             const j=await r.json(); (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) vals[iso]=+row.value; } });
           }catch(_){}
           if(!Object.keys(vals).length){ try{ imToast(jp()?'データを取得できませんでした':'Could not load the data'); }catch(_){} return; }
@@ -11180,7 +11196,7 @@ window.addEventListener('DOMContentLoaded', () => {
           map.on('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
             let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
             try{ if(pop2) pop2.remove(); }catch(_){}
-            const val=(key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs'));
+            const val=W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs')));
             try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+val+'</b></div>').addTo(map); }catch(_){}
           });
           show(); legend();
@@ -11206,9 +11222,9 @@ window.addEventListener('DOMContentLoaded', () => {
       } else if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; }
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
-    const B2LBL={dc:['データセンター・AIインフラ','Data centers & AI infra'],pharma:['製薬・医薬品製造拠点','Pharma manufacturing hubs'],lifeexp:['平均寿命','Life expectancy'],cpi:['汚職・腐敗指標','Corruption indicator'],rail:['世界の鉄道（軌間別）','World railways (by gauge)'],spin:['地球をゆっくり回す','Globe tour (slow spin)']};
-    const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',spin:'#ffd166'};
-    const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,spin:spinToggle};
+    const B2LBL={dc:['データセンター・AIインフラ','Data centers & AI infra'],pharma:['製薬・医薬品製造拠点','Pharma manufacturing hubs'],lifeexp:['平均寿命','Life expectancy'],cpi:['汚職・腐敗指標','Corruption indicator'],rail:['世界の鉄道（軌間別）','World railways (by gauge)'],unemp:['失業率','Unemployment rate'],internet:['インターネット普及率','Internet penetration'],precip:['年降水量','Annual precipitation'],spin:['地球をゆっくり回す','Globe tour (slow spin)']};
+    const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',unemp:'#f46d43',internet:'#1a9850',precip:'#35978f',spin:'#ffd166'};
+    const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,unemp:(on)=>wbToggle('unemp',on),internet:(on)=>wbToggle('internet',on),precip:(on)=>wbToggle('precip',on),spin:spinToggle};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-dc')) return;
       Object.keys(B2LBL).forEach(k=>{
         const w=document.createElement('div'); w.className='lyr-row';
