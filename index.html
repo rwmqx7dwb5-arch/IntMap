@@ -7032,7 +7032,11 @@ window.addEventListener('DOMContentLoaded', () => {
        Lazily loads the canvas on first call so the cursor-readout shows climate even
        when the Köppen overlay isn't enabled. */
     window._koppenLoadStarted=false;
-    window.sampleKoppenAt=function(lng,lat){
+    /* (#R22) Backend-raster Köppen: cursor sampling is OFF (it required decoding the full ~8192² image
+       into a canvas — a major memory hit + OOM risk on phones). Returns null so the climate cursor
+       readout and click-to-highlight simply don't run. */
+    window.sampleKoppenAt=function(lng,lat){ return null; };
+    window.sampleKoppenAt_LEGACY=function(lng,lat){
       if(!window._koppenReady){
         if(!window._koppenLoadStarted){ window._koppenLoadStarted=true; loadKoppenCanvas(); }
         return null;
@@ -7226,7 +7230,13 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(e){ return false; }
     }
     window._koppenHLUrl=null; window._koppenHLSeq=0; window._koppenGPUOK=undefined;
+    /* (#R22) Highlight recolor retired (backend raster only) — keep the function as a safe no-op so the
+       many existing callers don't need touching; it just guarantees the plain era PNG is shown. */
     window._refreshKoppenImage=function(){
+      try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(_){}
+      return;
+    };
+    window._refreshKoppenImage_LEGACY=function(){
       if(!map.getSource('src-climate')) return;
       /* Debounce so rapid multi-class selection coalesces into one rebuild (#12). */
       clearTimeout(window._koppenRefreshT);
@@ -7269,35 +7279,23 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Switch the active Köppen era (#R12). Resets the cached sampling canvas + per-pixel code index so
        cursor sampling and class-highlighting reflect the chosen period, then swaps the map image. */
     window.setKoppenPeriod=function(period){
+      /* (#R22) Backend-raster era switch = just swap to that era's pre-rendered PNG. No canvas reload. */
       if(!window.KOPPEN_PERIODS.some(x=>x[0]===period)) return;
       window._koppenPeriod=period; KURL=koppenURLFor(period);
-      window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
-      window._koppenCodeIdx=null; window._koppenSrcData=null;
-      /* (#R13c) drop the full-res highlight buffers + objectURL so the new era rebuilds them */
-      window._koppenFull=null; if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
-      /* (#R18) With the GPU recolor the displayed texture IS the plain era PNG (the highlight is a shader
-         pass), so we can swap straight to the new era's image with no all-climate flash — the recolor
-         paint stays valid across the swap. On the canvas fallback we keep the R15/#20 behavior: don't
-         swap to the full base first when a class is highlighted (that flashed every climate for a frame). */
-      if(window._koppenGPUOK || kSelected.size===0){ try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){} }
-      loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(e){} });
+      try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){}
       try{ buildLegend(); }catch(_){}
     };
 
     function addKoppen(){
+      /* (#R22) Köppen is now a PURE BACKEND-RENDERED raster ("フロントエンドではなくバックエンドに戻して").
+         We add the pre-rendered era PNG straight to the map — NO in-browser canvas decode, pixel
+         sampling, or client-side highlight recolor (that whole pipeline was the recurring OOM / iPhone
+         crash source). The legend stays as a color key (+ era switch + right-click criteria). */
       if(!map.getSource('src-climate')){
-        /* Load the source image into a hidden canvas first, so we can sample pixels and
-           build highlight overlays. Then add the MapLibre image source. */
-        loadKoppenCanvas().then(()=>{
-          if(map.getSource('src-climate')) return;
-          map.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
-          map.addLayer({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},beforeId);
-          /* If selection already exists, immediately swap to highlight image */
-          if(kSelected.size>0) window._refreshKoppenImage();
-        });
+        map.addSource('src-climate',{type:'image',url:KURL,coordinates:KCOORDS});
+        map.addLayer({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},beforeId);
       } else { setVis('lyr-climate',true); }
       buildLegend();
-      try{ window._refreshKoppenImage(); }catch(_){}
     }
     function buildLegend(){
       const lg=document.getElementById('koppen-legend');
@@ -7309,14 +7307,15 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R12) Period pulldown — default present-day, switch to historical eras. */
       const perLabel=currentLang==='jp'?'期間':'Period';
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item ${kSelected.has(code)?'sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${currentLang==='jp'?'クリックで強調 / 右クリックで解説':'Click to highlight · right-click for criteria'}</div>`;
+      /* (#R22) Backend raster → the legend is a COLOR KEY (no click-to-highlight recolor). Tapping a
+         class shows its criteria (was right-click only; now also tap, since highlight is gone). */
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+`<div class="kl-hint">${currentLang==='jp'?'クリックで気候区分の定義を表示':'Tap a class for its criteria'}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
-        it.onclick=()=>{ const sc=lg.querySelector('.kl-scroll'); const top=sc?sc.scrollTop:0; const code=it.dataset.c; kSelected.has(code)?kSelected.delete(code):kSelected.add(code); buildLegend(); const ns=lg.querySelector('.kl-scroll'); if(ns) ns.scrollTop=top; window._refreshKoppenImage(); };
-        /* Right-click a climate → popup explaining how that Köppen class is determined (#25). */
-        it.oncontextmenu=(e)=>{ e.preventDefault(); showKoppenInfo(it.dataset.c, e.clientX, e.clientY); };
+        const showInfo=(x,y)=>showKoppenInfo(it.dataset.c, x, y);
+        it.onclick=(e)=>{ showInfo(e.clientX,e.clientY); };
+        it.oncontextmenu=(e)=>{ e.preventDefault(); showInfo(e.clientX,e.clientY); };
       });
-      const cb=lg.querySelector('#kl-clear'); if(cb) cb.onclick=()=>{ kSelected.clear(); buildLegend(); window._refreshKoppenImage(); };
       const xb=lg.querySelector('#kl-close'); if(xb) xb.onclick=()=>{ /* × also disables the layer (user request) */ const cb2=document.getElementById('dl-climate'); if(cb2){ cb2.checked=false; cb2.dispatchEvent(new Event('change')); } };
       try{ window._ensureLegendOpacity&&window._ensureLegendOpacity(lg); window._ensureLegendMinimize&&window._ensureLegendMinimize(lg); }catch(_){}
       try{ window._wireLegendDrag&&window._wireLegendDrag(lg); }catch(_){}
