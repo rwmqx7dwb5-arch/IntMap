@@ -2537,7 +2537,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R20) Mobile gets HALF the in-flight tile decodes (each request holds a decode buffer; 128
      simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
      Desktop keeps the full firehose. */
-  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:192); }catch(_){}   /* (#R21) desktop 128→192: the user measures spare bandwidth + idle GPU in 3D — fill the pipe */
+  try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
@@ -12098,7 +12098,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R20) finer still: desktop 600 rays (0.6°) × 320 steps; mobile stays at the safe 360×170.
          (#R21) desktop 720 rays (0.5°) × 420 steps (~302k samples) — the chunked loops + per-tile
          single decode keep it smooth, and the budget below still bounds the network cost. */
-      const RAYS=mob?360:720, STEPS=mob?170:420, R=6371000, REFF=R*4/3;
+      const RAYS=mob?360:900, STEPS=mob?170:480, R=6371000, REFF=R*4/3;   /* (#R22) desktop 720×420→900×480 (0.4° rays) for finer terrain analysis; mobile unchanged for RAM safety */
       const body=panel&&panel.querySelector('#los-body');
       const tick=()=>new Promise(r=>setTimeout(r,0));
       const loadLbl=jp()?'地形DEMを取得中…':'Loading terrain DEM…', calcLbl=jp()?'視通を計算中…':'Computing sightlines…';

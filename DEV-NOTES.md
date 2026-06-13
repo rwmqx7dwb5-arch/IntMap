@@ -1771,3 +1771,115 @@ still 100vw (style-injection safe), resizer hidden, beta group collapsed→tap-e
 widget ✕ 32 px. Zero console errors throughout. GOTCHA logged: a module that early-returns on
 `isMobile()` at LOAD time dies forever if the page loads narrow and then widens — put the check
 inside the handler, not around the wiring (bit the sb-resizer + ms-narrow watchers this round).
+
+---
+
+## 25. Round 22 — themes, widgets v5, Köppen→backend, DE/RU, PPP, beta pack 3, compare/mobile fixes (tags `#R22`)
+
+Same standing constraints (additive/in-place, MapLibre stays, real data only, no excuses). Build stamp
+`2026-06-14-R22`. Verified live in the headless preview at desktop + mobile 375 (zero console errors after
+every batch; new World-Bank indicators curl-probed first; widget endpoints CORS-probed).
+
+### Themes & appearance
+- **"Tactical" retired → "Cyber"**: a retro-computer / cyberpunk terminal look (deep indigo-black, neon
+  CYAN primary + MAGENTA accent, monospace, glow text, CRT scanlines, sharp corners). `theme-tactical`
+  class + `optTactical` key fully replaced by `theme-cyber`/`optCyber`; saved `theme:'tactical'` migrates
+  to `cyber` (applyTheme + loadSettings).
+- **Frosted-glass tiers pushed more transparent** ("単に Frosted Glass を透明寄りに、more transparent はさらに"):
+  translucent 0.42→0.30 (dark 0.34), glass2 0.24→0.18 (dark 0.22); heavier blur keeps controls legible.
+- **Sidebar cards = one soft Apple frost** (info/stats no longer a dark slab, news slightly firmer): 0.46
+  light / 0.42 dark, blur 20, hairline border.
+
+### Settings
+- **Tutorial button removed** (the first-visit auto demo stays; now clearly badged — see below).
+- **Blueberry emoji removed** from the Support modal everywhere (was EN-only).
+- **Language: German + Russian added.** `t()` + `updateI18n` fall back to English for missing keys, so
+  the de/ru objects translate the static UI (~110 visible keys each) while the many hardcoded
+  `currentLang==='jp'?jp:en` ternaries fall back to EN. setLang/loadSettings accept de/ru (+ persist).
+
+### Widgets (board v5)
+- **Edit mode** replaces the per-card hover ✕: an "Edit/Done" button drives ↑/↓ reorder + ✕ delete.
+- **Mobile add = iOS-native `<select>`** overlaid on the Add tile (the gallery stays on desktop).
+- **Weather "my location" fix** (root cause): Safari has no `navigator.permissions` for geolocation, so
+  the old `permissions.query` threw and fell straight to map centre. `widgetLoc()` now also tries
+  `getCurrentPosition` when the permission state is unknown (Safari) → real location after grant.
+- **AQI + Sunrise also request geolocation on add** (was weather-only).
+- **+6 live widgets** (→28): UV index, Aurora/Kp (NOAA SWPC), Hacker News top story, Next public holiday
+  (Nager.Date, per-country ⚙), Next rocket launch (LL2, 30-min cache), Bitcoin network (mempool.space).
+  All keyless + CORS-probed.
+
+### Köppen → BACKEND (the recurring OOM source, finally removed)
+- Reverted to a **pure backend-rendered raster**: `addKoppen` adds the pre-rendered era PNG straight to
+  the map — NO in-browser canvas decode (`loadKoppenCanvas`), per-pixel indexing (`ensureKoppenFull`),
+  cursor sampling (`sampleKoppenAt`→null), or client-side highlight recolor. The legend is now a color
+  key + era pulldown + tap-for-criteria. Kills the Köppen OOM/iPhone-crash vector entirely.
+
+### Stats / layers
+- **GDP (PPP) + GDP-per-capita (PPP)** via live World Bank (`NY.GDP.MKTP.PP.CD`/`PCAP.PP.CD`, mrnev,
+  30-day cache) merged into countryStats (`gdpPPP` billions / `gdppcPPP`), shown in the country hover
+  card, detail popup, both compare views, and the GDP-per-capita layer readout.
+- **Promoted out of beta** into real groups: Volcanoes (Hazards), Railways + Ukraine frontline (already)
+  (Geopolitics), Corruption (Population & economy). via the `GROUPS` map in reorganizeLayerPanel.
+- **Beta pack 3** (task "betaに追加"): Unemployment rate, Internet penetration, Annual precipitation
+  (live World Bank choropleths) + Religion distribution + Language distribution (curated categorical
+  choropleths, ISO-3 dominant religion / primary language, real data; uncolored = no entry). The 3 not
+  shipped — annual MEAN temperature, permafrost, no-fly zones — need raster datasets that aren't freely
+  tile-served (would violate "real data only" to fake) → deferred, documented.
+
+### Ukraine frontline
+- **Legend rebuilt from DeepState's OWN status token** (`geoJSON.status.<key>` in `name`): real classes
+  are Occupied / Liberated / Unknown / Crimea-Donbas (the feed has NO LineStrings — the old "Front line"
+  row never matched → legend≠map). **Abkhazia + South Ossetia dropped** by raising the bbox min-lat
+  42.5→43.9 (Crimea's south tip is 44.4 N, so all of Ukraine is kept).
+
+### Compare view
+- **Mobile**: compact header (the wrapping 7-button bar read as a big gray top strip — task "上部がグレー")
+  + a pinned red **Close** that can't hide behind other buttons (z 4200); layers dropdown bigger
+  (460px desktop / 52vh mobile, opens upward); extra resize-on-open passes so the GL canvas always fills
+  (no unsized gray map).
+
+### Mobile UX
+- **iOS-like pan inertia** (longer glide, lower deceleration, scales with the Pan setting). (Pinch-zoom
+  rate has no MapLibre API — documented platform limit.)
+- **Layer category headers** big + bold + contrast (15px/800, was 10.5px) with a hairline separator.
+- **Layer-toggle scroll jump fixed**: the scroll compensation now targets the REAL scroll container
+  (the m-sheet body), not the position:static layer-dropdown (the old dd.scrollTop math was a no-op on
+  mobile → list jerked on every toggle).
+- **Bottom sheet collapses past the logo** (grip-only MINI detent).
+- **Summarize button lifted above the coord readout** (+44px) so they don't overlap.
+- **Faster crosshair readout** (60ms move / 120ms wx debounce, was 120/220).
+- **Radius panel** compact mobile layout (capped width/height, tighter rows, scrollable).
+- **Historic-borders year control = native iOS pulldown** on mobile (slider stays on desktop).
+- **Popup × 32px safety net**: satellite-panel close + any `[aria-label="Close"]` get a 32px tap target.
+
+### Desktop / labels / search
+- **Narrow-sidebar header wraps** (flex-wrap) — the Settings button no longer spills outside the sidebar
+  when the resizable sidebar is dragged narrow.
+- **Search pill drops to row 2 sooner** (map < 760px, was 640) so it can't graze the view buttons/sidebar.
+- **Labels-always-on-top** strengthened: the re-assert check now detects ANY data layer sitting above the
+  labels (scan from top, skip tool/mask layers), not just label-stack contiguity.
+- **Place-label popup**: name on its own line + an even button row (Copy / Wikipedia / AI brief),
+  vertical-stacked on mobile.
+- **Suggested questions** now render AFTER the AI brief finishes (were shown from the start).
+
+### i18n / spelling
+- **All British spellings → American** (colour→color, centre→center, favourite→favorite, defence→defense,
+  grey→gray, metre→meter, analyse→analyze verb-only, etc.) — text/comments only; verified none were code
+  identifiers / CSS props / DOM ids first.
+
+### Perf
+- Desktop `MAX_PARALLEL_IMAGE_REQUESTS` 192→256 (user still measures spare 3D bandwidth/GPU).
+- LOS desktop 720×420 → **900×480 rays×steps** (0.4° rays, z15 native-max DEM); mobile unchanged.
+
+### Removed
+- **ACLED** conflict-events card retired from the News tab (early-return IIFE).
+
+### Verified-in-preview summary (R22)
+Desktop: build R22; theme list auto/light/dark/classic/**cyber** (no tactical); lang en/jp/**de/ru**
+(DE switch → "Nachrichten/Einstellungen", RU → full Cyrillic UI); widgets=5 + Edit mode reorder/delete +
+no hover ✕; gallery 23 rows; compare 26-layer pulldown 460px; Köppen renders as backend raster + legend
+tap-for-criteria, sampleKoppenAt→null; PPP cached (247 countries) + shown; 5 new beta layers present,
+religion choropleth paints correctly (China=unaffiliated, India=Hindu, SE-Asia/JP=Buddhist, C-Asia=Muslim,
+Russia=Christian); Tools 4 buttons even spacing; narrow-sidebar header no longer overflows. Mobile 375:
+widget add `<select>` (24 opts), category headers 15px/800, no console errors. **GOTCHA**: `setLang` now
+persists, so testing a language via eval sticks in localStorage for that preview profile (reset to en).
