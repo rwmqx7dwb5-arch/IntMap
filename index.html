@@ -259,6 +259,12 @@ gtag('config', 'G-57X5MX0ZPW');
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
+    /* (#R24) radius readouts reorganized into a compact 3-up stat strip (was 3 full rows that made the
+       panel tall + "ほとんど使えない" on mobile). */
+    .rad-stats{ display:flex; gap:6px; margin:6px 0; }
+    .rad-stat{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:1px; background:var(--input-bg); border-radius:8px; padding:5px 7px; }
+    .rad-stat label{ font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
+    .rad-stat b{ font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .radius-color-row input[type=color]{ width:34px; height:28px; padding:0; border:1px solid rgba(128,128,128,0.2); border-radius:6px; cursor:pointer; background:transparent; }
     .rad-presets{ display:flex; gap:5px; }
     .rad-preset{ width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,0.65); box-shadow:0 0 0 1px rgba(0,0,0,0.18); cursor:pointer; padding:0; transition:transform 0.12s ease; }
@@ -584,6 +590,10 @@ gtag('config', 'G-57X5MX0ZPW');
     [data-theme="dark"] body.sidebar-translucent .cmp-section, [data-theme="dark"] body.sidebar-glass2 .cmp-section{
       background:rgba(58,60,70,0.42); border:1px solid rgba(255,255,255,0.07);
     }
+    /* (#R24) the big 30px-blur drop-shadow read as a faint gray RECTANGLE sitting behind each sidebar card
+       ("カードの背景にうっすらグレーの四角い背景"). Tighten it to a crisp hairline lift — cards keep depth,
+       the gray halo is gone. Function untouched (purely the box-shadow). */
+    .wiki-card, .news-item, .stat-row, .comm-post, .stats-compare-bar, .cmp-section{ box-shadow:0 1px 3px rgba(0,0,0,0.07); }
 
     /* === News pin mode toggle inside News tab === */
     .news-pin-toggle{ display:flex; align-items:center; gap:8px; margin:0 0 12px 0; padding:8px 12px; background:var(--card-bg); border-radius:12px; border:1px solid rgba(128,128,128,0.08); }
@@ -954,6 +964,12 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel.tp-radius .rad-preset{ width:26px !important; height:26px !important; }
       .tool-panel.tp-radius input[type=color]{ width:30px !important; height:26px !important; }
       .tool-panel.tp-radius .tp-hint{ font-size:10px !important; margin-top:4px !important; }
+      /* (#R24) compact stat strip + opacity drops to its own line so the radius panel fits a phone. */
+      .tool-panel.tp-radius .rad-stats{ gap:4px !important; margin:4px 0 !important; }
+      .tool-panel.tp-radius .rad-stat{ padding:4px 5px !important; }
+      .tool-panel.tp-radius .rad-stat label{ font-size:8.5px !important; }
+      .tool-panel.tp-radius .rad-stat b{ font-size:10.5px !important; }
+      .tool-panel.tp-radius #radius-op{ flex:1 0 100% !important; margin-top:2px !important; }
       .tool-panel.tp-radius .ai-action-btn{ padding:7px !important; margin-top:5px !important; font-size:11.5px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ top:64px !important; bottom:auto !important; }
@@ -3877,9 +3893,7 @@ window.addEventListener('DOMContentLoaded', () => {
       body=`<div class="tp-sub">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
         <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><input type="number" id="radius-num" min="1" value="${radiusKm}"><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
         <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':'Custom color'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
-        <div class="tp-row"><span>${t('radius')}</span><b id="rad-r">${distHTML(radiusKm)}</b></div>
-        <div class="tp-row"><span>${t('circumference')}</span><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div>
-        <div class="tp-row"><span>${t('area')}</span><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div>
+        <div class="rad-stats"><div class="rad-stat"><label>${t('radius')}</label><b id="rad-r">${distHTML(radiusKm)}</b></div><div class="rad-stat"><label>${t('circumference')}</label><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div><div class="rad-stat"><label>${t('area')}</label><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div></div>
         <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${t('finalizeMeas')}</button>`:''}`;
     }
     const footBtns = (toolMode!=='radius')
@@ -6261,7 +6275,9 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R23) match the LEGEND ×'s exact look (gray rounded box) on EVERY popup × so they read as the
            same UI ("ポップアップの×は凡例と同じUIに") — not just the same size. */
         .koppen-info-pop .kip-x, .pin-popup-close{ width:32px !important; height:32px !important; font-size:17px !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
-        .tool-panel .tp-close{ width:32px; height:32px; font-size:17px; display:flex; align-items:center; justify-content:center; }
+        /* (#R24) tool-panel × (measure / radius / draw / LOS / route …) gets the SAME gray rounded box as
+           the legend × so every popup close reads as one UI ("測定機能などの×も凡例と同じUIに"). */
+        .tool-panel .tp-close{ width:32px !important; height:32px !important; font-size:17px; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); position:relative; top:0; right:0; }
         /* (#R19) The R18 32px unification covered legends/tool-panels but MISSED the other popups
            ("凡例はちょうどいいが、その他ポップアップは大きさが変わっていない"): the place-search result card,
            every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
