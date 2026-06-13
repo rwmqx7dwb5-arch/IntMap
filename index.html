@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-12-R21';
+  window.INTMAP_BUILD='2026-06-14-R22';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -51,33 +51,28 @@ gtag('config', 'G-57X5MX0ZPW');
   <style>
     :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#86868b; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px; }
     [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#8e8e93; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
-    /* ===== (#R9/#58) TACTICAL / MILITARY theme — Settings → Appearance → "Tactical". Phosphor-green HUD
-       on near-black olive, monospace type, sharp corners, neon accents. Built on the dark theme. ===== */
-    body.theme-tactical{ --bg-color:#060a06; --sidebar-bg:rgba(9,14,9,0.93); --primary-color:#19e676; --text-main:#d8ffd8; --text-muted:#6f9a6f; --card-bg:#0c120b; --input-bg:rgba(120,220,120,0.09); --popup-bg:rgba(8,13,8,0.93); --shadow:0 6px 26px rgba(0,0,0,0.78); --info-hub:#19e676; --glass-border:rgba(80,200,120,0.28); }
-    body.theme-tactical, body.theme-tactical input, body.theme-tactical select, body.theme-tactical button, body.theme-tactical textarea{ font-family:ui-monospace,'SFMono-Regular','Consolas','Courier New',monospace !important; }
-    body.theme-tactical h2,body.theme-tactical h3,body.theme-tactical h4,body.theme-tactical .dash-nav-btn,body.theme-tactical .mode-btn,body.theme-tactical .layer-group-title,body.theme-tactical .lyr-head,body.theme-tactical .m-sheet-title{ text-transform:uppercase; letter-spacing:0.06em; }
-    body.theme-tactical h2{ text-shadow:0 0 9px rgba(25,230,118,0.5); }
-    body.theme-tactical .sidebar,body.theme-tactical .modal-content,body.theme-tactical .layer-dropdown,body.theme-tactical .measure-dropdown,body.theme-tactical .tool-panel,body.theme-tactical .data-legend,body.theme-tactical .koppen-legend,body.theme-tactical .country-info,body.theme-tactical .pin-popup,body.theme-tactical .country-popup,body.theme-tactical .news-item,body.theme-tactical .m-sheet,body.theme-tactical .ctx-menu,body.theme-tactical .coord-readout{ border:1px solid rgba(80,200,120,0.22); border-radius:5px !important; }
-    body.theme-tactical .search-bar,body.theme-tactical input,body.theme-tactical select,body.theme-tactical .view-btn,body.theme-tactical .mode-btn,body.theme-tactical .ai-action-btn,body.theme-tactical .ai-test-btn{ border-radius:5px !important; }
-    body.theme-tactical .btn-settings,body.theme-tactical .modal-close-btn,body.theme-tactical .mode-btn.active,body.theme-tactical .search-btn{ background:linear-gradient(180deg,#19e676,#0fa551) !important; color:#04210f !important; box-shadow:0 0 10px rgba(25,230,118,0.4); font-weight:700; }
-    body.theme-tactical .news-item{ border-left:2px solid rgba(25,230,118,0.55); }
-    body.theme-tactical .lang-btn.active{ background:#19e676; color:#04210f; }
-    body.theme-tactical .loc-chip{ background:rgba(25,230,118,0.16); color:#a9ffcf; }
-    body.theme-tactical ::selection{ background:#19e676; color:#04210f; }
-    body.theme-tactical .control-panel{ background:rgba(20,44,20,0.5); border:1px solid rgba(80,200,120,0.2); }
-    body.theme-tactical .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(25,230,118,0.06) 0 1px,transparent 1px 3px); z-index:9; }
-    /* (#R11) HARDER military aesthetic — sharp frames, amber warning accent, hazard stripes, NV phosphor. */
-    body.theme-tactical{ --amber:#ffb000; }
-    body.theme-tactical .sidebar{ border-right:2px solid rgba(25,230,118,0.5) !important; box-shadow:inset 0 0 0 1px rgba(25,230,118,0.12); }
-    body.theme-tactical .sidebar,body.theme-tactical .modal-content,body.theme-tactical .layer-dropdown,body.theme-tactical .measure-dropdown,body.theme-tactical .tool-panel,body.theme-tactical .data-legend,body.theme-tactical .koppen-legend,body.theme-tactical .country-info,body.theme-tactical .pin-popup,body.theme-tactical .country-popup,body.theme-tactical .news-item,body.theme-tactical .m-sheet,body.theme-tactical .ctx-menu,body.theme-tactical .coord-readout,body.theme-tactical .view-btn,body.theme-tactical .search-bar,body.theme-tactical input,body.theme-tactical select,body.theme-tactical .ai-action-btn,body.theme-tactical .ai-test-btn,body.theme-tactical .btn-settings,body.theme-tactical .modal-close-btn{ border-radius:2px !important; }
-    body.theme-tactical .sidebar,body.theme-tactical .modal-content,body.theme-tactical .layer-dropdown,body.theme-tactical .tool-panel,body.theme-tactical .data-legend,body.theme-tactical .koppen-legend,body.theme-tactical .country-popup,body.theme-tactical .pin-popup,body.theme-tactical .m-sheet,body.theme-tactical .ctx-menu{ border-color:rgba(25,230,118,0.42) !important; }
-    body.theme-tactical h2,body.theme-tactical h3,body.theme-tactical h4,body.theme-tactical .layer-group-title,body.theme-tactical .lyr-head,body.theme-tactical .mode-btn,body.theme-tactical .dash-nav-btn{ letter-spacing:0.12em !important; }
-    body.theme-tactical h2::before{ content:'▌ '; color:#19e676; }
-    body.theme-tactical .layer-group-title,body.theme-tactical .lyr-head{ color:var(--amber) !important; border-bottom:1px dashed rgba(255,176,0,0.32); padding-bottom:2px; }
-    body.theme-tactical .mode-btn.active,body.theme-tactical .btn-settings,body.theme-tactical .modal-close-btn,body.theme-tactical .search-btn{ background:repeating-linear-gradient(135deg,#19e676 0 9px,#0f9b50 9px 18px) !important; color:#04210f !important; text-shadow:none; }
-    body.theme-tactical .loc-chip.unmapped{ background:rgba(255,176,0,0.18) !important; color:var(--amber) !important; }
-    body.theme-tactical .btn-bookmark.active{ color:var(--amber); }
-    body.theme-tactical .lang-btn.active{ background:#19e676; color:#04210f; }
+    /* ===== (#R22) CYBER theme — Settings → Appearance → "Cyber". A retro-computer / cyberpunk terminal
+       look (replaces the old "Tactical" military HUD): deep indigo-black, neon CYAN primary with a MAGENTA
+       accent, monospace type, glowing text, CRT scanlines, sharp corners. Built on the dark theme. ===== */
+    body.theme-cyber{ --bg-color:#05070f; --sidebar-bg:rgba(8,11,24,0.94); --primary-color:#00e5ff; --text-main:#d6f6ff; --text-muted:#7c93c4; --card-bg:#0b1024; --input-bg:rgba(0,210,255,0.08); --popup-bg:rgba(8,11,24,0.95); --shadow:0 6px 30px rgba(0,0,0,0.82); --info-hub:#00e5ff; --glass-border:rgba(0,210,255,0.30); --neon:#ff39e6; }
+    body.theme-cyber, body.theme-cyber input, body.theme-cyber select, body.theme-cyber button, body.theme-cyber textarea{ font-family:ui-monospace,'SFMono-Regular','Consolas','Courier New',monospace !important; }
+    body.theme-cyber h2,body.theme-cyber h3,body.theme-cyber h4,body.theme-cyber .dash-nav-btn,body.theme-cyber .mode-btn,body.theme-cyber .layer-group-title,body.theme-cyber .lyr-head,body.theme-cyber .m-sheet-title{ text-transform:uppercase; letter-spacing:0.10em; }
+    body.theme-cyber h2{ text-shadow:0 0 10px rgba(0,229,255,0.55), 0 0 3px rgba(0,229,255,0.8); }
+    body.theme-cyber h2::before{ content:'▌ '; color:var(--neon); }
+    body.theme-cyber .sidebar,body.theme-cyber .modal-content,body.theme-cyber .layer-dropdown,body.theme-cyber .measure-dropdown,body.theme-cyber .tool-panel,body.theme-cyber .data-legend,body.theme-cyber .koppen-legend,body.theme-cyber .country-info,body.theme-cyber .pin-popup,body.theme-cyber .country-popup,body.theme-cyber .news-item,body.theme-cyber .m-sheet,body.theme-cyber .ctx-menu,body.theme-cyber .coord-readout,body.theme-cyber .view-btn,body.theme-cyber .search-bar,body.theme-cyber input,body.theme-cyber select,body.theme-cyber .ai-action-btn,body.theme-cyber .ai-test-btn,body.theme-cyber .btn-settings,body.theme-cyber .modal-close-btn{ border-radius:3px !important; }
+    body.theme-cyber .sidebar,body.theme-cyber .modal-content,body.theme-cyber .layer-dropdown,body.theme-cyber .measure-dropdown,body.theme-cyber .tool-panel,body.theme-cyber .data-legend,body.theme-cyber .koppen-legend,body.theme-cyber .country-info,body.theme-cyber .pin-popup,body.theme-cyber .country-popup,body.theme-cyber .news-item,body.theme-cyber .m-sheet,body.theme-cyber .ctx-menu,body.theme-cyber .coord-readout{ border:1px solid rgba(0,210,255,0.28); }
+    body.theme-cyber .sidebar{ border-right:2px solid rgba(0,229,255,0.5) !important; box-shadow:inset 0 0 0 1px rgba(0,229,255,0.10); }
+    body.theme-cyber .btn-settings,body.theme-cyber .modal-close-btn,body.theme-cyber .mode-btn.active,body.theme-cyber .search-btn{ background:linear-gradient(135deg,#00e5ff,#7a2bff) !important; color:#02121c !important; box-shadow:0 0 12px rgba(0,229,255,0.5); font-weight:700; text-shadow:none; }
+    body.theme-cyber .news-item{ border-left:2px solid var(--neon); }
+    body.theme-cyber .loc-chip{ background:rgba(0,210,255,0.16); color:#aef0ff; }
+    body.theme-cyber .loc-chip.unmapped{ background:rgba(255,57,230,0.18) !important; color:#ff9cf2 !important; }
+    body.theme-cyber ::selection{ background:#00e5ff; color:#02121c; }
+    body.theme-cyber .control-panel{ background:rgba(14,20,46,0.55); border:1px solid rgba(0,210,255,0.22); }
+    body.theme-cyber .layer-group-title,body.theme-cyber .lyr-head{ color:var(--neon) !important; border-bottom:1px dashed rgba(255,57,230,0.30); padding-bottom:2px; text-shadow:0 0 7px rgba(255,57,230,0.35); }
+    body.theme-cyber .btn-bookmark.active{ color:var(--neon); }
+    body.theme-cyber .lang-btn.active{ background:#00e5ff; color:#02121c; }
+    /* CRT scanlines over the sidebar (cyan, very subtle). */
+    body.theme-cyber .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(0,229,255,0.05) 0 1px,transparent 1px 3px); z-index:9; }
     /* ===== (#R13c) CLASSIC theme — Age-of-Discovery parchment / nautical chart. Built on the LIGHT
        base: warm sepia surfaces, serif type, brass accents, an aged-paper tint over the basemap and a
        decorative compass rose on the map. Settings → Appearance → "Classic". ===== */
@@ -271,6 +266,7 @@ gtag('config', 'G-57X5MX0ZPW');
     .intel-marker:hover{ z-index:100; }
     .intel-marker:hover .intel-dot,.intel-marker.hovered .intel-dot{ transform:scale(1.4); }
     @keyframes pulse{ 0%{transform:scale(0.6);opacity:0.7;} 100%{transform:scale(1.6);opacity:0;} }
+    @keyframes imDemoPulse{ 0%,100%{opacity:1;} 50%{opacity:0.45;} }   /* (#R22) intro-demo AUTO badge */
     .hover-tooltip{ display:none; position:absolute; bottom:22px; left:50%; transform:translateX(-50%); background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); color:var(--text-main); font-size:13px; border-radius:12px; padding:14px; box-shadow:var(--shadow); white-space:normal; width:280px; backdrop-filter:blur(15px); z-index:1000; text-align:left; pointer-events:none; }
     .intel-marker:hover .hover-tooltip,.intel-marker.hovered .hover-tooltip{ display:block; }
     .country-info{ display:none; position:absolute; bottom:60px; left:24px; z-index:1200; width:260px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:13px; }
@@ -544,18 +540,21 @@ gtag('config', 'G-57X5MX0ZPW');
        ("サイドバーのカードは質感を統一して"): news (was too transparent → a touch darker), information
        (.wiki-card) and stats (.stat-row) (were a solid intimidating dark-grey slab → soft frost),
        and community posts. */
+    /* (#R22) ONE Apple-style soft frost for ALL sidebar cards. A heavier blur + softer fill + nearly
+       invisible hairline border replaces the old "dark-grey slab" (info/stats read as intimidating) and
+       firms up the over-transparent news cards — every card now shares the exact same gentle material. */
     body.sidebar-translucent .news-item, body.sidebar-glass2 .news-item,
     body.sidebar-translucent .wiki-card, body.sidebar-glass2 .wiki-card,
     body.sidebar-translucent .stat-row, body.sidebar-glass2 .stat-row,
     body.sidebar-translucent .comm-post, body.sidebar-glass2 .comm-post{
-      background:rgba(255,255,255,0.58); backdrop-filter:saturate(160%) blur(14px); -webkit-backdrop-filter:saturate(160%) blur(14px);
-      border:1px solid rgba(255,255,255,0.32);
+      background:rgba(255,255,255,0.46); backdrop-filter:saturate(150%) blur(20px); -webkit-backdrop-filter:saturate(150%) blur(20px);
+      border:1px solid rgba(255,255,255,0.22);
     }
     [data-theme="dark"] body.sidebar-translucent .news-item, [data-theme="dark"] body.sidebar-glass2 .news-item,
     [data-theme="dark"] body.sidebar-translucent .wiki-card, [data-theme="dark"] body.sidebar-glass2 .wiki-card,
     [data-theme="dark"] body.sidebar-translucent .stat-row, [data-theme="dark"] body.sidebar-glass2 .stat-row,
     [data-theme="dark"] body.sidebar-translucent .comm-post, [data-theme="dark"] body.sidebar-glass2 .comm-post{
-      background:rgba(52,52,58,0.50); border:1px solid rgba(255,255,255,0.10);
+      background:rgba(58,60,70,0.42); border:1px solid rgba(255,255,255,0.07);
     }
 
     /* === News pin mode toggle inside News tab === */
@@ -993,15 +992,14 @@ gtag('config', 'G-57X5MX0ZPW');
        AND every floating popup, panel, legend, timeline and control — so the whole UI
        shares one consistent glass texture (#1). ------------------------------------- */
     :root{ --glass-blur:16px; --glass-sat:150%; --glass-fill:var(--card-bg); --glass-border:rgba(128,128,128,0.16); }
-    /* (#R9) "Frosted glass" is the proper frosted material (was the old "more transparent" look);
-       "Frosted glass (more transparent)" is now GENUINELY see-through — minimal fill, light blur. */
-    body.sidebar-translucent{ --glass-blur:32px; --glass-sat:195%; --glass-fill:rgba(255,255,255,0.42); --glass-border:rgba(255,255,255,0.34); }
-    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(40,40,44,0.46); --glass-border:rgba(255,255,255,0.10); }
-    /* (#R16) "More transparent" was so low-fill (10–14 %) it read as COMPLETELY transparent over the dark
-       map — the layer panel looked like it had no material at all. Raise the floor so it is clearly frosted
-       glass (still markedly lighter than the standard frosted 0.42/0.46), uniform across every surface. */
-    body.sidebar-glass2{ --glass-blur:16px; --glass-sat:165%; --glass-fill:rgba(255,255,255,0.24); --glass-border:rgba(255,255,255,0.30); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(28,28,32,0.34); --glass-border:rgba(255,255,255,0.12); }
+    /* (#R22) Both frosted tiers pushed MORE transparent per request ("Frosted Glass を全体的に透明寄りに、
+       more transparent はさらに透明に"): the standard "Frosted glass" now sits where the old
+       "more transparent" was (~0.26), and "Frosted glass (more transparent)" goes lighter still (~0.16) —
+       but never fully clear, so controls stay readable (a heavier blur keeps the map legible behind them). */
+    body.sidebar-translucent{ --glass-blur:30px; --glass-sat:190%; --glass-fill:rgba(255,255,255,0.30); --glass-border:rgba(255,255,255,0.32); }
+    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(34,34,40,0.34); --glass-border:rgba(255,255,255,0.10); }
+    body.sidebar-glass2{ --glass-blur:22px; --glass-sat:170%; --glass-fill:rgba(255,255,255,0.18); --glass-border:rgba(255,255,255,0.28); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(26,26,32,0.22); --glass-border:rgba(255,255,255,0.12); }
     /* In the genuinely-transparent mode the map shows through strongly, so add a readability shadow. */
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 1px 3px rgba(0,0,0,0.55); }
@@ -1396,10 +1394,9 @@ gtag('config', 'G-57X5MX0ZPW');
   <div class="modal-content" style="position:relative;">
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
-    <!-- (#R21) Tutorial button at the very top of Settings -->
-    <button type="button" id="btn-tutorial" class="ai-test-btn" style="width:100%;margin:0 0 16px;font-weight:600;">🎓 <span id="btn-tutorial-lbl">Tutorial — layer showcase</span></button>
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
-    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light</option><option value="dark" data-i18n="optDark">Dark</option><option value="classic" data-i18n="optClassic">Classic</option><option value="tactical" data-i18n="optTactical">Tactical</option></select></div>
+    <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option></select></div>
+    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light</option><option value="dark" data-i18n="optDark">Dark</option><option value="classic" data-i18n="optClassic">Classic</option><option value="cyber" data-i18n="optCyber">Cyber</option></select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
@@ -1476,7 +1473,7 @@ gtag('config', 'G-57X5MX0ZPW');
 <div class="modal-overlay" id="blueberry-modal">
   <div class="modal-content" style="position:relative;max-width:440px;text-align:center;">
     <button id="blueberry-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
-    <div id="blueberry-emoji" style="font-size:46px;line-height:1;margin:6px 0 12px;">🫐</div>
+    <div id="blueberry-emoji" style="display:none;font-size:46px;line-height:1;margin:6px 0 12px;"></div>
     <h3 id="blueberry-title" style="margin:0 0 12px;font-size:17px;">Support IntMap</h3>
     <p id="blueberry-body" style="font-size:13.5px;line-height:1.65;color:var(--text-main);white-space:pre-line;margin:0 0 18px;"></p>
     <a id="blueberry-go" href="#" target="_blank" rel="noopener" class="modal-close-btn" style="display:block;text-decoration:none;box-sizing:border-box;">Continue ↗</a>
@@ -1607,7 +1604,7 @@ window.addEventListener('DOMContentLoaded', () => {
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
-  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&(_s0.lang==='en'||_s0.lang==='jp')) currentLang=_s0.lang; }catch(_){}
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false;
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -1627,7 +1624,9 @@ window.addEventListener('DOMContentLoaded', () => {
   if(!Array.isArray(newsLangs)||!newsLangs.length) newsLangs=Object.keys(NEWS_LANG_NAMES);   /* default: all */
   const KM2MI=0.621371;
   const saveBookmarks=()=>localStorage.setItem('intmap_bookmarks',JSON.stringify(bookmarks));
-  const t=(k)=>i18n[currentLang][k];
+  /* (#R22) Fall back to English when a key is missing in the active language (so newly-added DE/RU,
+     which only translate the static UI, never render `undefined`). */
+  const t=(k)=>{ const o=i18n[currentLang]||i18n.en; const v=o[k]; return (v!==undefined?v:i18n.en[k]); };
   const hasTurf=()=>typeof turf!=='undefined';
   const searchVal=()=>document.getElementById('search-input').value.toLowerCase();
   const GDP_YEAR='2023', POP_YEAR='2024';
@@ -1702,13 +1701,70 @@ window.addEventListener('DOMContentLoaded', () => {
       aiTranslate:"AI翻訳", aiShowOriginal:"原文", aiTransNoText:"翻訳できる本文がありません（ページ表示をお試しください）。",
       aiSumBtn:"この範囲をAIで要約", newsInArea:"この範囲のニュース", elevProfile:"標高断面", finalizeMeas:"地図に残す", aiSumTitle:"エリア地政学ブリーフィング", aiSumSub:"選択範囲内のニュース {n}件", aiSumNoArea:"先に範囲を描画するか円を配置してください。", aiSumNoNews:"この範囲内にニュースピンがありません。",
       aiViewSumBtn:"今の表示エリアを要約", aiViewSumTitle:"画面内で起きていること",
-      aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。" }
+      aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。" },
+    /* (#R22) German + Russian cover the visible static UI; anything not listed falls back to English
+       (the long tail of dynamically-built strings is still EN/JP only — see t() fallback). */
+    de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabStats:"Statistik", tabCommunity:"Community",
+      searchPh:"Nachrichten / Orte suchen...", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
+      viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
+      settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
+      lblTheme:"Darstellung", optAuto:"Systemstandard", optLight:"Hell", optDark:"Dunkel", optClassic:"Klassisch", optCyber:"Cyber",
+      lblMapColor:"Kartenfarbe", mapColorAuto:"Wie Darstellung", mapColorLight:"Hell (weiß)", mapColorDark:"Dunkel (schwarz)",
+      lblUnits:"Maßeinheiten", unitBoth:"Metrisch + Imperial", unitMetric:"Nur metrisch", unitImperial:"Nur imperial",
+      lblTempUnit:"Temperatur", tempBoth:"°C + °F", tempC:"Nur °C", tempF:"Nur °F",
+      lblTz:"Zeitzone", tzSearch:"Zeitzone suchen…", optLocal:"Lokal (Systemstandard)",
+      lblNewsLang:"Nachrichtensprachen", newsLangUi:"Nur aktuelle Sprache", newsLangMultiSel:"Mehrere Sprachen…", newsLangMulti:"Alle Sprachen (Titel automatisch übersetzen)", newsLangHint:"Schlagzeilen aller Sprachen erscheinen gemeinsam; mit einem KI-Schlüssel werden die Titel automatisch übersetzt.",
+      lblAiLocate:"KI-Standortanalyse", aiLocManual:"Manuell (Schaltfläche)", aiLocAuto:"Automatisch für alle Nachrichten",
+      lblSidebarStyle:"Seitenleiste", sidebarOpaque:"Solide (Standard)", sidebarTranslucent:"Mattglas", sidebarGlass2:"Mattglas (transparenter)",
+      lblLabelLang:"Ortsbeschriftungen", labelLangUi:"Wie App-Sprache", labelLangLocal:"Lokale Sprache (Originalschrift)", labelLangEn:"Immer Englisch",
+      lblFlatPan:"Flache Kartenansicht", flatPanFixed:"Fester Ausschnitt (Europa)", flatPanFree:"Frei schwenken (Welt umrunden)",
+      lblNavSens:"Navigationsempfindlichkeit", lblNavZoom:"Zoom", lblNavPan:"Schwenken",
+      satKeysTitle:"Satellitenbilder (BYOK)", satKeyHint:"Geben Sie einen API-Schlüssel ein, um diese Anbieter im Satelliten-Panel freizuschalten. Schlüssel werden nur in diesem Browser gespeichert.",
+      aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
+      aiSecTitle:"KI-Funktionen (BYOK / auf dem Gerät)", aiSecHint:"Verwenden Sie Ihren eigenen API-Schlüssel — Anfragen gehen direkt von diesem Browser an den Anbieter; der Schlüssel wird nur hier gespeichert.",
+      blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", favLayers:"★ Favoriten",
+      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
+      lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
+      lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
+      filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",
+      tlTitle:"Zeitreise-Nachrichten", tlToday:"Heute", tl10y:"−10 J", tl5y:"−5 J", tlNow:"Jetzt",
+      lblPinMode:"Nachrichten-Pin-Position", pinModeLoc:"Ort des Themas", pinModePub:"Ort des Herausgebers",
+      aiTranslateTitles:"Titel übersetzen", aiViewSumBtn:"Diese Ansicht zusammenfassen",
+      mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
+    ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabStats:"Статистика", tabCommunity:"Сообщество",
+      searchPh:"Поиск новостей / мест...", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
+      viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
+      settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
+      lblTheme:"Оформление", optAuto:"Как в системе", optLight:"Светлая", optDark:"Тёмная", optClassic:"Классика", optCyber:"Кибер",
+      lblMapColor:"Цвет карты", mapColorAuto:"Как оформление", mapColorLight:"Светлый (белый)", mapColorDark:"Тёмный (чёрный)",
+      lblUnits:"Единицы измерения", unitBoth:"Метрические + имперские", unitMetric:"Только метрические", unitImperial:"Только имперские",
+      lblTempUnit:"Температура", tempBoth:"°C + °F", tempC:"Только °C", tempF:"Только °F",
+      lblTz:"Часовой пояс", tzSearch:"Поиск часового пояса…", optLocal:"Локальное (как в системе)",
+      lblNewsLang:"Языки новостей", newsLangUi:"Только текущий язык", newsLangMultiSel:"Несколько языков…", newsLangMulti:"Все языки (автоперевод заголовков)", newsLangHint:"Заголовки на всех языках показываются вместе; с ключом ИИ их названия переводятся автоматически.",
+      lblAiLocate:"ИИ-анализ местоположения", aiLocManual:"Вручную (кнопка)", aiLocAuto:"Автоматически для всех новостей",
+      lblSidebarStyle:"Вид боковой панели", sidebarOpaque:"Непрозрачная (по умолчанию)", sidebarTranslucent:"Матовое стекло", sidebarGlass2:"Матовое стекло (прозрачнее)",
+      lblLabelLang:"Подписи мест", labelLangUi:"Как язык приложения", labelLangLocal:"Местный язык (родной алфавит)", labelLangEn:"Всегда английский",
+      lblFlatPan:"Плоская карта", flatPanFixed:"Фикс. область (Европа)", flatPanFree:"Свободно (вокруг мира)",
+      lblNavSens:"Чувствительность навигации", lblNavZoom:"Зум", lblNavPan:"Перемещение",
+      satKeysTitle:"Спутниковые снимки (BYOK)", satKeyHint:"Введите ключ API, чтобы разблокировать этих провайдеров в панели спутника. Ключи хранятся только в этом браузере.",
+      aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
+      aiSecTitle:"ИИ-функции (BYOK / на устройстве)", aiSecHint:"Используйте свой ключ API — запросы идут напрямую из браузера к провайдеру, ключ хранится только здесь.",
+      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", favLayers:"★ Избранное",
+      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", mScreenshot:"Снимок", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
+      lblDataSources:"Источники данных", viewDataSources:"Показать источники данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
+      lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
+      filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
+      tlTitle:"Новости прошлого", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
+      lblPinMode:"Положение метки новости", pinModeLoc:"Место события", pinModePub:"Место издателя",
+      aiTranslateTitles:"Перевести заголовки", aiViewSumBtn:"Сводка по этому виду",
+      mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" }
   };
 
   function updateI18n(){
-    const d=i18n[currentLang];
+    /* (#R22) Merge English under the active language so DE/RU (static-UI only) fall back cleanly. */
+    const base=i18n.en, lang=i18n[currentLang]||base, d=(currentLang==='en')?base:Object.assign({},base,lang);
     document.querySelectorAll('[data-i18n]').forEach(el=>{ if(d[el.getAttribute('data-i18n')]!==undefined) el.innerText=d[el.getAttribute('data-i18n')]; });
-    document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=d[el.getAttribute('data-i18n-ph')]; });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ if(d[el.getAttribute('data-i18n-ph')]!==undefined) el.placeholder=d[el.getAttribute('data-i18n-ph')]; });
     document.querySelectorAll('[data-i18n-title]').forEach(el=>{ if(d[el.getAttribute('data-i18n-title')]!==undefined) el.title=d[el.getAttribute('data-i18n-title')]; });
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
@@ -1755,11 +1811,11 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
        sepia surfaces, serif type, brass accents, and a parchment tint over the (light) basemap. */
-    const tactical=(userTheme==='tactical');
+    const cyber=(userTheme==='cyber'||userTheme==='tactical');   /* (#R22) Tactical retired → migrate to Cyber */
     const classic=(userTheme==='classic');
-    const isLight=!tactical && (classic || (userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
+    const isLight=!cyber && (classic || (userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
     document.documentElement.setAttribute('data-theme', isLight?'light':'dark');
-    document.body.classList.toggle('theme-tactical', tactical);
+    document.body.classList.toggle('theme-cyber', cyber);
     document.body.classList.toggle('theme-classic', classic);
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
@@ -5560,12 +5616,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Language ===== */
   function setLang(lang){
-    if((lang!=='en'&&lang!=='jp') || currentLang===lang) return;
+    if((lang!=='en'&&lang!=='jp'&&lang!=='de'&&lang!=='ru') || currentLang===lang) return;   /* (#R22) DE/RU added */
     currentLang=lang;
     document.getElementById('lang-en').classList.toggle('active',lang==='en');
     document.getElementById('lang-jp').classList.toggle('active',lang==='jp');
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
-    globalData=[]; updateI18n(); fetchData();
+    globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
   }
   document.getElementById('lang-en').onclick=()=>setLang('en');
   document.getElementById('lang-jp').onclick=()=>setLang('jp');
@@ -5713,8 +5769,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function fill(){ const set=(id,key)=>{ const el=document.getElementById(id); if(el) el.textContent=t(key); };
       set('blueberry-title','blueberryTitle'); set('blueberry-body','blueberryBody'); set('blueberry-go','blueberryGo'); set('blueberry-note','blueberryNote');
       const go=document.getElementById('blueberry-go'); if(go) go.href=window.stripeDonateURL();
-      /* JP support page hides the blueberry emoji (per request); EN keeps it. */
-      const em=document.getElementById('blueberry-emoji'); if(em) em.style.display=(currentLang==='jp')?'none':'block'; }
+      /* (#R22) Blueberry emoji removed everywhere per request (was EN-only before). */
+      const em=document.getElementById('blueberry-emoji'); if(em) em.style.display='none'; }
     function open(){ fill(); bm.style.display='flex'; }
     function close(){ bm.style.display='none'; }
     const btn=document.getElementById('btn-blueberry'); if(btn) btn.onclick=open;
@@ -5967,8 +6023,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optTactical:"Tactical", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optTactical:"タクティカル", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバー", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     /* (#R12) New layer-category labels for the re-organised panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defence", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
@@ -9402,8 +9458,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window.NEWS_COUNTRY_FEEDS=NEWS_COUNTRY_FEEDS;
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
-    if(s.theme) userTheme=s.theme; if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;
-    if(s.lang==='en'||s.lang==='jp'){ currentLang=s.lang; document.getElementById('lang-en').classList.toggle('active',currentLang==='en'); document.getElementById('lang-jp').classList.toggle('active',currentLang==='jp'); }
+    if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
+    if(s.lang==='en'||s.lang==='jp'||s.lang==='de'||s.lang==='ru'){ currentLang=s.lang; const le=document.getElementById('lang-en'),lj=document.getElementById('lang-jp'); if(le) le.classList.toggle('active',currentLang==='en'); if(lj) lj.classList.toggle('active',currentLang==='jp'); }
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -11139,7 +11195,14 @@ window.addEventListener('DOMContentLoaded', () => {
       worldclock:{ nm:()=>jp()?'世界時計':'World clock', ic:'🌐', desc:()=>jp()?'好きな都市の現在時刻':'Pick a city / timezone', multi:true },
       yearprog: { nm:()=>jp()?'今年の進捗':'Year progress', ic:'📆', desc:()=>jp()?'今年が何%過ぎたか':'How far through the year we are' },
       wikifeat: { nm:()=>jp()?'今日の注目記事':'Featured article', ic:'📖', desc:()=>jp()?'Wikipediaの本日の注目記事':'Wikipedia’s article of the day' },
-      pop:      { nm:()=>jp()?'世界人口時計':'World population', ic:'👥', desc:()=>jp()?'国連推計ベースのライブ推定':'Live estimate (UN-based)' }
+      pop:      { nm:()=>jp()?'世界人口時計':'World population', ic:'👥', desc:()=>jp()?'国連推計ベースのライブ推定':'Live estimate (UN-based)' },
+      /* (#R22) Board expansion #2 — all keyless + CORS-verified live sources. */
+      uv:       { nm:()=>jp()?'UV指数':'UV index', ic:'🔆', desc:()=>jp()?'現在地の紫外線指数':'UV index at your location' },
+      kp:       { nm:()=>jp()?'地磁気・オーロラ':'Aurora (Kp)', ic:'🌌', desc:()=>jp()?'地磁気活動（NOAA SWPC）':'Geomagnetic activity (NOAA SWPC)' },
+      hn:       { nm:()=>jp()?'Hacker News':'Hacker News', ic:'💻', desc:()=>jp()?'技術系トップ記事':'Top technology story' },
+      holiday:  { nm:()=>jp()?'次の祝日':'Next holiday', ic:'🎌', desc:()=>jp()?'指定国の次の祝日':'Next public holiday (pick a country)', multi:true },
+      launch:   { nm:()=>jp()?'次のロケット打上げ':'Next rocket launch', ic:'🚀', desc:()=>jp()?'世界の次の打上げ予定':'The next spaceflight launch' },
+      btc:      { nm:()=>jp()?'ビットコイン網':'Bitcoin network', ic:'₿', desc:()=>jp()?'ブロック高と手数料':'Block height & fees' }
     };
     const css=document.createElement('style');
     css.textContent=
@@ -11153,7 +11216,17 @@ window.addEventListener('DOMContentLoaded', () => {
       '.wgt-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;}'+
       '.wgt-card:hover .wgt-x{opacity:1;}'+
       '@media(max-width:768px){ .wgt-x{opacity:0.85;width:30px;height:30px;border-radius:15px;} }'+
-      '.wgt-add{border:1.5px dashed rgba(128,128,128,0.45);border-radius:18px;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-muted);cursor:pointer;font-size:12.5px;background:transparent;transition:background 0.15s;}'+
+      '.wgt-add{position:relative;overflow:hidden;border:1.5px dashed rgba(128,128,128,0.45);border-radius:18px;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-muted);cursor:pointer;font-size:12.5px;background:transparent;transition:background 0.15s;}'+
+      /* (#R22) Edit mode: per-card delete + reorder controls replace the old hover ✕. */
+      '.wgt-title-row{display:flex;align-items:center;margin:2px 2px 10px;}'+
+      '.wgt-edit-btn{margin-left:auto;border:none;background:rgba(128,128,128,0.16);color:var(--text-main);font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;}'+
+      '.wgt-edit-btn.on{background:var(--primary-color);color:#fff;}'+
+      '.wgt-card.editing{outline:1.5px solid var(--glass-border);}'+
+      '.wgt-ectrls{position:absolute;top:6px;right:6px;display:flex;gap:5px;z-index:2;}'+
+      '.wgt-ectrls button{width:28px;height:28px;border:none;border-radius:14px;background:rgba(128,128,128,0.28);color:var(--text-main);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}'+
+      '.wgt-ectrls .wgt-del{background:#ff3b30;color:#fff;}'+
+      '.wgt-ectrls button:disabled{opacity:0.3;cursor:default;}'+
+      '@media(max-width:768px){ .wgt-ectrls button{width:34px;height:34px;border-radius:17px;font-size:16px;} }'+
       '.wgt-add:hover{background:rgba(128,128,128,0.08);}'+
       '.wgt-add .plus{font-size:24px;line-height:1;}'+
       '.wgt-gallery{margin-top:12px;border-radius:18px;padding:12px;background:var(--glass-fill);border:1px solid var(--glass-border);}'+
@@ -11173,29 +11246,56 @@ window.addEventListener('DOMContentLoaded', () => {
       if(feed&&feed.parentElement===sb) sb.insertBefore(board,feed); else sb.appendChild(board);
       return board; }
     function hasType(t){ return active.some(e=>e.t===t); }
+    let editing=false;
     function card(e){ const d=DEFS[e.t]; if(!d) return '';
-      const gear=(e.t==='fx'||e.t==='countdown'||e.t==='worldclock')?'<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'" style="position:absolute;top:6px;right:36px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.18);color:var(--text-main);font-size:12px;cursor:pointer;">⚙</button>':'';
-      return '<div class="wgt-card" data-u="'+e.u+'" data-w="'+e.t+'"><button class="wgt-x" title="'+(jp()?'削除':'Remove')+'">✕</button>'+gear+
+      const i=active.indexOf(e);
+      let topright='';
+      if(editing){
+        /* (#R22) Edit mode: reorder (↑↓) + delete (✕) — the per-card hover ✕ is retired. */
+        topright='<div class="wgt-ectrls">'+
+          '<button class="wgt-up" data-u="'+e.u+'" title="'+(jp()?'上へ':'Move up')+'"'+(i<=0?' disabled':'')+'>↑</button>'+
+          '<button class="wgt-dn" data-u="'+e.u+'" title="'+(jp()?'下へ':'Move down')+'"'+(i>=active.length-1?' disabled':'')+'>↓</button>'+
+          '<button class="wgt-del" data-u="'+e.u+'" title="'+(jp()?'削除':'Remove')+'">✕</button></div>';
+      } else if(e.t==='fx'||e.t==='countdown'||e.t==='worldclock'||e.t==='holiday'){
+        topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.18);color:var(--text-main);font-size:12px;cursor:pointer;z-index:2;">⚙</button>';
+      }
+      return '<div class="wgt-card'+(editing?' editing':'')+'" data-u="'+e.u+'" data-w="'+e.t+'">'+topright+
         '<div class="wgt-h"><span>'+d.ic+'</span><span class="wgt-nm">'+d.nm()+'</span></div><div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
+    function moveWidget(u,dir){ const i=active.findIndex(e=>e.u===u); if(i<0) return; const j=i+dir; if(j<0||j>=active.length) return;
+      const tmp=active[i]; active[i]=active[j]; active[j]=tmp; save(); render(); }
+    function doAdd(k){ if(!k||!DEFS[k]) return; if(!DEFS[k].multi&&hasType(k)) return;
+      const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:k==='worldclock'?{tz:'Asia/Tokyo'}:k==='holiday'?{cc:(jp()?'JP':'US')}:{})};
+      active.push(e); save(); gallery=false; render();
+      /* (#R22) Location permission requested when a location-based widget (weather/AQI/sunrise) is added. */
+      if(k==='weather'||k==='aqi'||k==='sun') reqGeo(()=>refreshOne(e));
+      if(k==='countdown'||k==='worldclock'||k==='holiday') setTimeout(()=>openCfg(e.u),50); }
     function render(){ const b=ensureBoard(); if(!b) return;
+      const isMob=(typeof isMobile==='function'&&isMobile());
       const cards=active.map(card).join('');
       const addable=Object.keys(DEFS).filter(k=>DEFS[k].multi||!hasType(k));
-      b.innerHTML='<div class="wgt-title">'+(jp()?'ウィジェット':'Widgets')+'</div>'+
-        '<div class="wgt-grid">'+cards+(addable.length?'<button class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(jp()?'ウィジェットを追加':'Add widget')+'</button>':'')+'</div>'+
-        (gallery&&addable.length?('<div class="wgt-gallery"><h5 style="display:flex;align-items:center;">'+(jp()?'追加できるウィジェット':'Available widgets')+
+      /* (#R22) An "Edit" button (top-right of the board) drives reorder/remove — no more per-card ✕. */
+      const editBtn=active.length?'<button id="wgt-edit" class="wgt-edit-btn'+(editing?' on':'')+'">'+(editing?(jp()?'完了':'Done'):(jp()?'編集':'Edit'))+'</button>':'';
+      let addCell='';
+      if(!editing && addable.length){
+        /* (#R22) Mobile: the Add tile is an iOS-native <select> wheel overlaid on the tile. Desktop keeps the gallery. */
+        addCell='<div class="wgt-add" id="wgt-add"><span class="plus">＋</span>'+(jp()?'ウィジェットを追加':'Add widget')+
+          (isMob?('<select id="wgt-add-sel" aria-label="'+(jp()?'ウィジェットを追加':'Add widget')+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;">'+
+            '<option value="">'+(jp()?'追加するウィジェット…':'Add a widget…')+'</option>'+
+            addable.map(k=>'<option value="'+k+'">'+DEFS[k].nm()+'</option>').join('')+'</select>'):'')+'</div>';
+      }
+      b.innerHTML='<div class="wgt-title-row"><span class="wgt-title" style="margin:0;">'+(jp()?'ウィジェット':'Widgets')+'</span>'+editBtn+'</div>'+
+        '<div class="wgt-grid">'+cards+addCell+'</div>'+
+        (!isMob&&gallery&&!editing&&addable.length?('<div class="wgt-gallery"><h5 style="display:flex;align-items:center;">'+(jp()?'追加できるウィジェット':'Available widgets')+
           '<button id="wgt-g-close" title="'+(jp()?'閉じる':'Close')+'" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;">✕</button></h5>'+
           addable.map(k=>'<div class="wgt-g-row" data-add="'+k+'"><span class="gi">'+DEFS[k].ic+'</span><span><div class="gn">'+DEFS[k].nm()+'</div><div class="gd">'+DEFS[k].desc()+'</div></span><span class="ga">＋</span></div>').join('')+'</div>'):'');
-      const add=b.querySelector('#wgt-add'); if(add) add.onclick=()=>{ gallery=!gallery; render(); };
-      /* (#R21) Gallery can always be dismissed — explicit ✕ ("表示されっぱなし" fix). */
+      const eb=b.querySelector('#wgt-edit'); if(eb) eb.onclick=()=>{ editing=!editing; gallery=false; render(); };
+      const add=b.querySelector('#wgt-add'); if(add && !isMob) add.onclick=()=>{ gallery=!gallery; render(); };
+      const addSel=b.querySelector('#wgt-add-sel'); if(addSel) addSel.onchange=()=>{ const k=addSel.value; if(k&&DEFS[k]) doAdd(k); };
       const gx=b.querySelector('#wgt-g-close'); if(gx) gx.onclick=(ev)=>{ ev.stopPropagation(); gallery=false; render(); };
-      b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ const k=r.getAttribute('data-add'); if(!k||!DEFS[k]) return;
-        if(!DEFS[k].multi&&hasType(k)) return;
-        const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:k==='worldclock'?{tz:'Asia/Tokyo'}:{})};
-        active.push(e); save(); gallery=false; render();
-        /* (#R21) Location permission is requested ONLY here — the moment a weather widget is added. */
-        if(k==='weather'||k==='aqi'||k==='sun'){ if(k==='weather') reqGeo(()=>refreshOne(e)); }
-        if(k==='countdown'||k==='worldclock') setTimeout(()=>openCfg(e.u),50); });
-      b.querySelectorAll('.wgt-x').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); const c=x.closest('.wgt-card'); const u=c&&c.getAttribute('data-u'); if(u){ active=active.filter(a=>a.u!==u); save(); render(); } });
+      b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ doAdd(r.getAttribute('data-add')); });
+      b.querySelectorAll('.wgt-del').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); const u=x.getAttribute('data-u'); if(u){ active=active.filter(a=>a.u!==u); save(); if(!active.length) editing=false; render(); } });
+      b.querySelectorAll('.wgt-up').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); moveWidget(x.getAttribute('data-u'),-1); });
+      b.querySelectorAll('.wgt-dn').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); moveWidget(x.getAttribute('data-u'),1); });
       b.querySelectorAll('.wgt-cfg').forEach(g=>g.onclick=(ev)=>{ ev.stopPropagation(); openCfg(g.getAttribute('data-u')); });
       refreshAll(); }
     function entry(u){ return active.find(e=>e.u===u); }
@@ -11225,6 +11325,12 @@ window.addEventListener('DOMContentLoaded', () => {
           '<select class="wctz" style="'+selStyle+'flex:1;min-width:0;">'+zones.map(z=>'<option value="'+z+'"'+(z===(e.cfg.tz||'Asia/Tokyo')?' selected':'')+'>'+z.replace(/_/g,' ')+'</option>').join('')+'</select>'+
           '<button class="wcok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div>';
         box.querySelector('.wcok').onclick=()=>{ e.cfg.tz=box.querySelector('.wctz').value; save(); box.style.display='none'; tickClock(); };
+      } else if(e.t==='holiday'){
+        const HC=[['US','United States','アメリカ'],['JP','Japan','日本'],['GB','United Kingdom','イギリス'],['DE','Germany','ドイツ'],['FR','France','フランス'],['CA','Canada','カナダ'],['AU','Australia','オーストラリア'],['IN','India','インド'],['BR','Brazil','ブラジル'],['MX','Mexico','メキシコ'],['IT','Italy','イタリア'],['ES','Spain','スペイン'],['NL','Netherlands','オランダ'],['SE','Sweden','スウェーデン'],['PL','Poland','ポーランド'],['RU','Russia','ロシア'],['KR','South Korea','韓国'],['CN','China','中国'],['SG','Singapore','シンガポール'],['NZ','New Zealand','ニュージーランド'],['ZA','South Africa','南アフリカ'],['AR','Argentina','アルゼンチン'],['TR','Turkey','トルコ'],['CH','Switzerland','スイス'],['AT','Austria','オーストリア'],['IE','Ireland','アイルランド'],['NO','Norway','ノルウェー'],['FI','Finland','フィンランド'],['PT','Portugal','ポルトガル'],['BE','Belgium','ベルギー']];
+        box.innerHTML='<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">'+
+          '<select class="hcc" style="'+selStyle+'flex:1;min-width:0;">'+HC.map(c=>'<option value="'+c[0]+'"'+(c[0]===(e.cfg.cc||'US')?' selected':'')+'>'+(jp()?c[2]:c[1])+'</option>').join('')+'</select>'+
+          '<button class="hcok" style="'+selStyle+'cursor:pointer;font-weight:600;">OK</button></div>';
+        box.querySelector('.hcok').onclick=()=>{ e.cfg.cc=box.querySelector('.hcc').value; save(); box.style.display='none'; refreshOne(e); };
       }
     }
     function tickClock(){ if(!visible()) return;
@@ -11258,10 +11364,17 @@ window.addEventListener('DOMContentLoaded', () => {
           ()=>{ geoDenied=true; cb&&cb(); },
           {enableHighAccuracy:false,maximumAge:5*60*1000,timeout:9000}); }catch(_){ cb&&cb(); } }
     async function widgetLoc(){
-      if(geoPos&&Date.now()-geoPos.ts<10*60*1000) return {lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'};
-      if(!geoDenied){ try{ const st=await navigator.permissions.query({name:'geolocation'});
-          if(st.state==='granted'){ await new Promise(res=>reqGeo(res)); if(geoPos) return {lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'}; }
-        }catch(_){} }
+      const mine=()=>({lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'});
+      if(geoPos&&Date.now()-geoPos.ts<10*60*1000) return mine();
+      /* (#R22) "Weather shows map centre despite my location" root cause: Safari/iOS has no
+         navigator.permissions for geolocation, so the old `permissions.query` threw and we fell
+         straight through to map centre. Now: if state is granted OR unknown (Safari), still try to
+         get the position — it won't re-prompt once granted, and location widgets already prompted on add. */
+      if(!geoDenied && navigator.geolocation){
+        let state='unknown';
+        try{ const st=await navigator.permissions.query({name:'geolocation'}); state=st.state; }catch(_){ state='unknown'; }
+        if(state==='granted'||state==='unknown'){ await new Promise(res=>reqGeo(res)); if(geoPos) return mine(); }
+      }
       const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
       return {lat:c.lat,lng:c.lng,lbl:jp()?'地図中心':'map centre'};
     }
@@ -11402,6 +11515,47 @@ window.addEventListener('DOMContentLoaded', () => {
                :('<span style="font-size:18px;">'+(jp()?(-days)+'日前':Math.abs(days)+' days ago')+'</span>');
         setV(e.u,v,'<b style="color:var(--text-main);">'+String(title).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</b> · '+e.cfg.date);
       }catch(_){ setV(e.u,'—',''); } }
+    /* (#R22) New live widgets — all keyless + CORS-verified. */
+    async function refreshUv(e){ try{ const c=await widgetLoc();
+        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=uv_index&daily=uv_index_max&forecast_days=1&timezone=auto');
+        const j=await r.json(); const uv=j.current&&j.current.uv_index, mx=j.daily&&j.daily.uv_index_max&&j.daily.uv_index_max[0];
+        const lvl=(v)=>v==null?'':v<3?(jp()?'低い':'Low'):v<6?(jp()?'中程度':'Moderate'):v<8?(jp()?'高い':'High'):v<11?(jp()?'非常に高い':'Very high'):(jp()?'極端':'Extreme');
+        const col=(v)=>v==null?'var(--text-main)':v<3?'#34c759':v<6?'#ffcc00':v<8?'#ff9500':v<11?'#ff3b30':'#af52de';
+        setV(e.u,'<span style="color:'+col(uv)+';">'+(uv!=null?(+uv).toFixed(1):'—')+'</span> <span style="font-size:13px;">UV</span>', lvl(uv)+(mx!=null?' · '+(jp()?'本日最大 ':'max ')+(+mx).toFixed(1):'')+' · '+c.lbl);
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
+        const a=await r.json(); const rows=a.slice(1); const last=rows[rows.length-1]||[]; const kp=parseFloat(last[1]); const when=(last[0]||'').replace(' ','T');
+        const col=kp>=7?'#af52de':kp>=5?'#ff3b30':kp>=4?'#ff9500':'#34c759';
+        const note=kp>=5?(jp()?'地磁気嵐（オーロラの可能性）':'Storm — aurora likely'):kp>=4?(jp()?'活発':'Active'):(jp()?'静穏':'Quiet');
+        setV(e.u,'Kp <span style="color:'+col+';">'+(isNaN(kp)?'—':kp.toFixed(0))+'</span>', note+' · '+asOf(when)+' · NOAA');
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshHn(e){ try{ const ids=await (await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')).json();
+        const it=await (await fetch('https://hacker-news.firebaseio.com/v0/item/'+ids[0]+'.json')).json();
+        const url=it.url||('https://news.ycombinator.com/item?id='+it.id);
+        setV(e.u,'<span style="font-size:14px;line-height:1.4;font-weight:700;">'+String(it.title||'').slice(0,80)+'</span>','▲ '+(it.score||0)+' · '+(it.by||'')+' · Hacker News');
+        const ev=document.getElementById('wgtv-'+e.u); if(ev){ ev.style.cursor='pointer'; ev.onclick=()=>{ try{ window.open(url,'_blank','noopener'); }catch(_){} }; }
+      }catch(_){ setV(e.u,'—', una()); } }
+    let holCache={};
+    async function refreshHoliday(e){ try{ const cc=(e.cfg&&e.cfg.cc)||'US';
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'次の祝日 ':'Next holiday ')+cc;
+        let list=holCache[cc];
+        if(!list||Date.now()-list.ts>6*3600*1000){ const r=await fetch('https://date.nager.at/api/v3/NextPublicHolidays/'+cc); list={data:await r.json(),ts:Date.now()}; holCache[cc]=list; }
+        const h=(list.data||[])[0]; if(!h){ setV(e.u,'—', una()); return; }
+        const d=new Date(h.date+'T00:00:00'); const days=Math.ceil((d-new Date())/864e5);
+        setV(e.u,'<span style="font-size:15px;font-weight:700;">'+(h.localName||h.name)+'</span>', h.date+' · '+(days<=0?(jp()?'本日':'today'):(jp()?('あと'+days+'日'):('in '+days+' days'))));
+      }catch(_){ setV(e.u,'—', una()); } }
+    let launchCache=null;
+    async function refreshLaunch(e){ try{
+        if(!launchCache||Date.now()-launchCache.ts>30*60*1000){ const r=await fetch('https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=1&mode=list'); const j=await r.json(); launchCache={data:(j.results||[])[0],ts:Date.now()}; }
+        const L=launchCache.data; if(!L){ setV(e.u,'—', una()); return; }
+        const net=L.net?new Date(L.net):null; const days=net?Math.ceil((net-new Date())/864e5):null;
+        setV(e.u,'🚀 <span style="font-size:14px;font-weight:700;">'+String(L.name||'').slice(0,70)+'</span>',(net?net.toLocaleDateString(jp()?'ja-JP':'en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+(days!=null&&days>=0?' · '+(jp()?('あと'+days+'日'):('in '+days+' d')):'')+' · LL2');
+      }catch(_){ setV(e.u,'—', una()); } }
+    async function refreshBtc(e){ try{
+        const h=await (await fetch('https://mempool.space/api/blocks/tip/height')).json();
+        let fee=null; try{ fee=await (await fetch('https://mempool.space/api/v1/fees/recommended')).json(); }catch(_){}
+        setV(e.u,'₿ <span style="font-size:18px;">#'+(+h).toLocaleString()+'</span>',(fee?((jp()?'手数料 ':'fee ')+fee.fastestFee+' sat/vB · '):'')+(jp()?'ブロック高':'block height')+' · mempool.space');
+      }catch(_){ setV(e.u,'—', una()); } }
     function refreshOne(e){ if(!e) return;
       switch(e.t){ case 'clock': tickClock(); break; case 'weather': refreshWeather(e); break; case 'fx': refreshFx(e); break;
         case 'crypto': refreshCrypto(e); break; case 'cryptocap': refreshCryptoCap(e); break; case 'fng': refreshFng(e); break;
@@ -11410,6 +11564,8 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'countdown': refreshCountdown(e); break;
         case 'sun': refreshSun(e); break; case 'moon': refreshMoon(e); break; case 'aqi': refreshAqi(e); break;
         case 'iss': refreshIss(e); break; case 'wikifeat': refreshWikiFeat(e); break;
+        case 'uv': refreshUv(e); break; case 'kp': refreshKp(e); break; case 'hn': refreshHn(e); break;
+        case 'holiday': refreshHoliday(e); break; case 'launch': refreshLaunch(e); break; case 'btc': refreshBtc(e); break;
         case 'worldclock': case 'pop': case 'yearprog': tickClock(); break; } }
     function refreshAll(){ if(!visible()) return; active.forEach(refreshOne); }
     /* (#R21) Market/fast data refreshes every 60 s (was one 5-min tick for everything — the
@@ -11598,7 +11754,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapIsolate=(function(){
     if(!map) return { enter(){}, exit(){}, active:()=>false };
     const jp=()=>currentLang==='jp'; let active=false, btn=null;
-    function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark' || document.body.classList.contains('theme-tactical')) ? '#05060a' : '#f2f2f4'; }
+    function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark' || document.body.classList.contains('theme-cyber')) ? '#05060a' : '#f2f2f4'; }
     function ensure(){ if(map.getSource('iso-src')) return true; if(!map.isStyleLoaded()) return false;
       try{ map.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
@@ -13487,9 +13643,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const setOff=(id)=>{ const c=id&&gcb(id); if(c&&c.checked){ demoToggling=true; c.checked=false; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
     const setOn=(id)=>{ const c=gcb(id); if(c&&!c.checked){ demoToggling=true; c.checked=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ demoToggling=false; },0); } };
     function render(name){ pill.innerHTML='';
-      const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(jp()?'デモ表示:':'Showing:')+'</span> <b>'+name+'</b>'; pill.appendChild(t);
+      /* (#R22) Make it unmistakable this is a TEMPORARY one-time intro auto-play, not a permanent state —
+         a pulsing "AUTO" badge + "intro demo" wording + an explicit "End tour" button. */
+      const badge=document.createElement('span'); badge.textContent=jp()?'自動再生':'AUTO';
+      badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-color);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
+      pill.appendChild(badge);
+      const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(jp()?'初回デモ:':'Intro demo:')+'</span> <b>'+name+'</b>'; pill.appendChild(t);
       const pb=document.createElement('button'); pb.textContent=paused?'▶':'⏸'; pb.title=paused?(jp()?'再開':'Play'):(jp()?'一時停止':'Pause'); pb.style.cssText='background:none;border:none;color:var(--text-main);cursor:pointer;font-size:13px;padding:0 2px;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
-      const xb=document.createElement('button'); xb.textContent='✕'; xb.title=jp()?'閉じる':'Dismiss'; xb.style.cssText='background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
+      const xb=document.createElement('button'); xb.textContent=jp()?'終了 ✕':'End tour ✕'; xb.title=jp()?'デモを終了':'End the intro demo'; xb.style.cssText='background:var(--input-bg);border:none;border-radius:999px;color:var(--text-main);cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
     function schedule(){ clearTimeout(timer); timer=setTimeout(next,6500); }
     function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(jp()?s[2]:s[1]); }catch(_){} schedule(); }
     function stop(markSeen){ if(done) return; done=true; clearTimeout(timer); setOff(curId); try{ pill.remove(); }catch(_){} if(markSeen){ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} } }
