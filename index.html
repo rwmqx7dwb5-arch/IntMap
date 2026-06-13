@@ -277,7 +277,7 @@ gtag('config', 'G-57X5MX0ZPW');
     .ci-name{ font-weight:700; font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px; } .ci-row{ display:flex; justify-content:space-between; margin:3px 0; color:var(--text-muted); } .ci-row b{ color:var(--text-main); }
     .ci-details{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--primary-color); color:#fff; font-weight:600; cursor:pointer; }
     .coord-readout{ display:none; position:absolute; bottom:16px; left:16px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
-    /* Always-present "summarize what's on screen now" button (bottom-centre of the map) */
+    /* Always-present "summarize what's on screen now" button (bottom-center of the map) */
     .ai-view-summary-btn{ position:absolute; left:50%; bottom:22px; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:7px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; box-shadow:var(--shadow); cursor:pointer; transition:0.15s; white-space:nowrap; }
     .ai-view-summary-btn:hover{ filter:brightness(1.06); }
     .ai-view-summary-btn:disabled{ opacity:0.45; cursor:default; }
@@ -528,14 +528,14 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R20) Keep the search pill clear of BOTH side control zones at every width. 55vw is viewport-
        relative, so on a narrowed window it could span nearly the whole map and slide under the
        map/satellite buttons (right) or the frosted sidebar (left). Cap it container-relative instead,
-       and in frosted (overlay-sidebar) mode centre it within the VISIBLE map area. */
+       and in frosted (overlay-sidebar) mode center it within the VISIBLE map area. */
     @media(min-width:769px){
       .map-search{ max-width:min(380px, calc(100% - 330px)); min-width:170px; }
       body.sidebar-glass:has(.sidebar:not(.collapsed)) .map-search{
         left:calc(var(--sidebar-w) + (100% - var(--sidebar-w))/2);
         max-width:min(380px, calc(100% - var(--sidebar-w) - 350px));
       }
-      /* (#R21) When the visible map gets NARROW (small window / wide sidebar) the centred pill can no
+      /* (#R21) When the visible map gets NARROW (small window / wide sidebar) the centerd pill can no
          longer fit beside the view buttons — drop it to a second row below them so it always has the
          full width and stays clickable ("つぶれて押せない" / "かぶる" fix). */
       body.ms-narrow .map-search{ top:78px; max-width:min(380px, calc(100% - 24px)); }
@@ -544,13 +544,13 @@ gtag('config', 'G-57X5MX0ZPW');
       }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
-       dark-grey slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
+       dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
     /* (#R21) ONE unified Apple-style frost for EVERY sidebar card in the frosted modes
        ("サイドバーのカードは質感を統一して"): news (was too transparent → a touch darker), information
-       (.wiki-card) and stats (.stat-row) (were a solid intimidating dark-grey slab → soft frost),
+       (.wiki-card) and stats (.stat-row) (were a solid intimidating dark-gray slab → soft frost),
        and community posts. */
     /* (#R22) ONE Apple-style soft frost for ALL sidebar cards. A heavier blur + softer fill + nearly
-       invisible hairline border replaces the old "dark-grey slab" (info/stats read as intimidating) and
+       invisible hairline border replaces the old "dark-gray slab" (info/stats read as intimidating) and
        firms up the over-transparent news cards — every card now shares the exact same gentle material. */
     body.sidebar-translucent .news-item, body.sidebar-glass2 .news-item,
     body.sidebar-translucent .wiki-card, body.sidebar-glass2 .wiki-card,
@@ -719,7 +719,7 @@ gtag('config', 'G-57X5MX0ZPW');
        three detents (peek / half / full), frosted "liquid glass" materials,
        safe-area aware, 44pt+ touch targets, SF system typography. The dozen
        map controls are condensed into 2–3 round iOS FABs that open slide-up
-       option sheets. All behaviour lives in initMobileUI() (see script).
+       option sheets. All behavior lives in initMobileUI() (see script).
        ===================================================================== */
     .sheet-grip{ display:none; }                       /* shown only on phones */
     .m-fab-stack, .m-sheet, .m-scrim{ display:none; }  /* mobile-only chrome   */
@@ -907,7 +907,7 @@ gtag('config', 'G-57X5MX0ZPW');
          画面からはみ出てる"). Top-anchored can never be off-screen; the drag (inline-!important) still moves it
          anywhere, and max-height keeps it clear of the sheet. */
       /* (#R18) transform:none is CRITICAL: the elevation profile sets an inline translateX(-50%) for its
-         desktop bottom-centre placement; with the mobile left:6px it shifted HALF THE PANEL OFF-SCREEN LEFT
+         desktop bottom-center placement; with the mobile left:6px it shifted HALF THE PANEL OFF-SCREEN LEFT
          (the "画面外にはみ出したりする" bug). Neutralising the transform keeps every tool panel fully on-screen. */
       .tool-panel{ left:6px !important; right:auto !important; top:64px !important; bottom:auto !important; transform:none !important; width:auto !important; min-width:168px; max-width:calc(100vw - 12px); max-height:calc(100dvh - var(--sheet-cover, var(--peek-h)) - 84px); overflow-y:auto; padding:9px 11px !important; font-size:12px !important; border-radius:12px !important; }
       .tool-panel .tp-title{ margin-bottom:5px !important; font-size:12.5px !important; }
@@ -925,7 +925,7 @@ gtag('config', 'G-57X5MX0ZPW');
       /* (#R15d) Mobile legends dock at the TOP, just below the place-search bar (user request), instead of
          the bottom-right above the sheet. tileLegends() stacks them downward from here. */
       .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ bottom:auto !important; top:64px !important; left:6px !important; right:auto !important; }
-      /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centred so they never collide. */
+      /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centerd so they never collide. */
       .news-timeline{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
       /* !important: a later non-media rule (.ai-view-summary-btn{bottom:22px}) otherwise wins by source
          order and parks this button at bottom:22px — i.e. BEHIND the bottom sheet, which is exactly why
@@ -1024,7 +1024,7 @@ gtag('config', 'G-57X5MX0ZPW');
     }
 
     /* (#R7-glass-text) On a FROSTED material the surface shows the (usually dark) map behind it, so
-       the default grey "muted" text turns low-contrast. In any frosted mode every floating glass
+       the default gray "muted" text turns low-contrast. In any frosted mode every floating glass
        surface promotes its muted text to near-white (with a faint shadow so it also reads over the
        rare light patch). Solid mode is untouched. */
     body.sidebar-translucent :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,
@@ -1042,9 +1042,9 @@ gtag('config', 'G-57X5MX0ZPW');
 
     /* ---- Sidebar material (matches the floating surfaces above) ---- */
     .sidebar{ background-color:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
-    /* Desktop: SOLID keeps the sidebar in normal flex flow (map centred beside it, no shift).
+    /* Desktop: SOLID keeps the sidebar in normal flex flow (map centerd beside it, no shift).
        A FROSTED mode overlays the sidebar on the map so the glass actually has the map behind it
-       to blur (#23); the map keeps its optical centre via JS padding (applySidebarStyle). */
+       to blur (#23); the map keeps its optical center via JS padding (applySidebarStyle). */
     @media(min-width:769px){
       .sidebar{ position:relative; }
       body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }
@@ -1125,7 +1125,7 @@ gtag('config', 'G-57X5MX0ZPW');
        CONTROL — and the data time now also shows in the legends — so hide it entirely during capture,
        matching "Screenshot (hides controls, keeps legends)". No more ghost button shadow. */
     body.capture-mode .news-timeline{ visibility:hidden !important; }
-    /* The map container + #map have an OPAQUE background; html2canvas was painting that solid colour
+    /* The map container + #map have an OPAQUE background; html2canvas was painting that solid color
        over the captured WebGL frame, producing a blank screenshot (#20). Make them transparent during
        capture so only the real map pixels (drawn separately) and the DOM overlays composite. */
     body.capture-mode .map-container, body.capture-mode #map{ background:transparent !important; }
@@ -1156,7 +1156,7 @@ gtag('config', 'G-57X5MX0ZPW');
     .lyr-star.on{ color:#ffcc00; }
     .layer-option{ position:relative; }
 
-    /* --- Currently-active layers list, pinned below the favourites + top toggles (#R14 / #17) --- */
+    /* --- Currently-active layers list, pinned below the favorites + top toggles (#R14 / #17) --- */
     #layer-active-section{ margin:2px 0 4px; }
     .active-lyr-chips{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 2px 2px; }
     .active-lyr-chip{ display:inline-flex; align-items:center; gap:5px; background:var(--primary-color); border:1px solid var(--primary-color); color:#fff; font-size:11px; font-weight:600; padding:4px 5px 4px 10px; border-radius:999px; white-space:nowrap; max-width:100%; }
@@ -1202,7 +1202,7 @@ gtag('config', 'G-57X5MX0ZPW');
     .acct-color.sel{ border-color:var(--text-main); }
 
     /* --- Animated wind canvas overlay (#7) --- */
-    /* (#R7) Windy model: a wind-SPEED colour field (#wind-bg-canvas) under WHITE particle streaks (#wind-canvas). */
+    /* (#R7) Windy model: a wind-SPEED color field (#wind-bg-canvas) under WHITE particle streaks (#wind-canvas). */
     #wind-bg-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:4; display:none; }
     #wind-canvas{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; display:none; }
 
@@ -1219,7 +1219,7 @@ gtag('config', 'G-57X5MX0ZPW');
     input[type=range]:focus{ outline:none; }
     [data-theme="dark"] input[type=range]{ background:rgba(255,255,255,0.2); }
     /* the layer-opacity + radius + timebar fills keep a blue track via a value gradient where set;
-       all others use this clean Apple-style grey-track / white-thumb look. */
+       all others use this clean Apple-style gray-track / white-thumb look. */
 
     /* --- Compact sidebar search box (#News/Info/Stats) --- */
     .search-bar{ padding:3px 4px 3px 12px; }  /* (#R9/#21) margin handled per-breakpoint so the two gaps stay swappable */
@@ -1441,7 +1441,7 @@ gtag('config', 'G-57X5MX0ZPW');
     </div>
     <div class="setting-group"><label data-i18n="lblSidebarStyle">Sidebar appearance</label><select id="setting-sidebar-style"><option value="opaque" data-i18n="sidebarOpaque">Solid (default)</option><option value="translucent" data-i18n="sidebarTranslucent">Frosted glass</option><option value="glass2" data-i18n="sidebarGlass2">Frosted glass (more transparent)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLabelLang">Place-name labels</label><select id="setting-label-lang"><option value="ui" data-i18n="labelLangUi">Match app language</option><option value="local" data-i18n="labelLangLocal">Local language (native script)</option><option value="en" data-i18n="labelLangEn">Always English</option></select></div>
-    <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centred)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
+    <div class="setting-group"><label data-i18n="lblFlatPan">Flat map view</label><select id="setting-flat-pan"><option value="fixed" data-i18n="flatPanFixed">Fixed extent (Europe-centerd)</option><option value="free" data-i18n="flatPanFree">Free pan (wrap around the world)</option></select></div>
     <!-- (#R20) Map navigation sensitivity — zoom (wheel/pinch rate) + pan (drag inertia). 100% = the long-standing default. -->
     <div class="setting-group"><label data-i18n="lblNavSens">Map navigation sensitivity</label>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">
@@ -1657,7 +1657,7 @@ window.addEventListener('DOMContentLoaded', () => {
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
       measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
       placeNames:"Place names", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
-      statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
+      statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"GDP per capita (PPP)", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
       flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
@@ -1689,7 +1689,7 @@ window.addEventListener('DOMContentLoaded', () => {
       readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
       measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
       placeNames:"地名表示", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
-      statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
+      statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
       flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
@@ -1805,7 +1805,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!span){ /* migrate the bare trailing text node into a span we can re-localize */
         Array.from(label.childNodes).forEach(n=>{ if(n.nodeType===3 && n.textContent.trim()) n.remove(); });
         span=document.createElement('span'); span.className='geo-label';
-        /* (#R15e) Insert the label BEFORE the favourite star — appending it to the end put it AFTER the
+        /* (#R15e) Insert the label BEFORE the favorite star — appending it to the end put it AFTER the
            star (which has margin-left:auto), shoving the text to the right with a big gap ("ぐちゃっと"). */
         const star=label.querySelector('.lyr-star');
         if(star) label.insertBefore(span,star); else label.appendChild(span);
@@ -1828,9 +1828,9 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.classList.toggle('theme-classic', classic);
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
-       chosen map colour always lands. */
+       chosen map color always lands. */
     if(!map||!map.isStyleLoaded()){ if(map) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); return; }
-    /* Map base colour can be chosen independently of the UI theme (#map-color). */
+    /* Map base color can be chosen independently of the UI theme (#map-color). */
     const mc=(window.imMapColor||'auto'); const mapLight = (mc==='light')?true:(mc==='dark')?false:isLight;
     const sat=currentMapType==='sat', light=!sat&&mapLight, dark=!sat&&!mapLight;
     map.setLayoutProperty('layer-sat','visibility',sat?'visible':'none');
@@ -1838,7 +1838,7 @@ window.addEventListener('DOMContentLoaded', () => {
        satellite mode and provide Japanese / native-script labels on the map (#41/#42/#43). The
        reliable CartoDB English labels stay as the default for EN map view. */
     const vecMap = namesOn && mapLabelsViaVector();        /* vector labels on the (non-sat) map */
-    const showCartoLabels = namesOn && !vecMap;            /* labelled carto basemap */
+    const showCartoLabels = namesOn && !vecMap;            /* labeled carto basemap */
     if(map.getLayer('layer-sat-labels')) map.setLayoutProperty('layer-sat-labels','visibility','none');  /* Esri labels retired */
     map.setLayoutProperty('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
     map.setLayoutProperty('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
@@ -1860,7 +1860,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   /* ===== Language-aware vector place labels (OpenFreeMap, free, no key) ===== */
   /* (#R21) Map mode now ALWAYS uses the same crisp OFM vector labels as satellite mode ("mapを選択した
-     際も、同じ地名ラベルにして。（mapの旧来の地名ラベルは廃止）") — the labelled carto base is retired, the
+     際も、同じ地名ラベルにして。（mapの旧来の地名ラベルは廃止）") — the labeled carto base is retired, the
      basemap is always the _nolabels variant, and because the labels are vector layers the
      label-raise self-heal keeps them above EVERY data layer. */
   function mapLabelsViaVector(){ return true; }
@@ -1875,7 +1875,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const before = map.getLayer('grid-lines') ? 'grid-lines' : undefined;
       if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-transform':'uppercase','text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
       if(!map.getLayer('ofm-city')) map.addLayer({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],4,11,10,15],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
-      if(!map.getLayer('ofm-other')) map.addLayer({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighbourhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
+      if(!map.getLayer('ofm-other')) map.addLayer({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
       _placeLabelsAdded=true;
     }catch(e){ console.warn('ensurePlaceLabels',e); }
   }
@@ -1914,13 +1914,13 @@ window.addEventListener('DOMContentLoaded', () => {
          the browser's per-host connection cap no longer throttles high-res imagery in 3D (#2,#18). */
       tiles:()=>['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'] },
     { id:'gibs-modis', tier:'free', short:'MODIS Terra', name:{en:'NASA GIBS · MODIS Terra',jp:'NASA GIBS · MODIS Terra'},
-      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — MODIS Terra true colour',
+      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — MODIS Terra true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
     { id:'gibs-viirs', tier:'free', short:'VIIRS SNPP', name:{en:'NASA GIBS · VIIRS (SNPP)',jp:'NASA GIBS · VIIRS (SNPP)'},
-      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS SNPP true colour',
+      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS SNPP true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
     { id:'gibs-viirs-n20', tier:'free', short:'VIIRS N20', name:{en:'NASA GIBS · VIIRS (NOAA-20)',jp:'NASA GIBS · VIIRS (NOAA-20)'},
-      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS NOAA-20 true colour',
+      dated:true, dateMode:'day', maxzoom:9, attribution:'NASA EOSDIS GIBS — VIIRS NOAA-20 true color',
       tiles:(d)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/'+d+'/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg'] },
     { id:'s2cloudless', tier:'free', short:'Sentinel-2', name:{en:'Sentinel-2 cloudless (EOX)',jp:'Sentinel-2 雲なし (EOX)'},
       dated:true, dateMode:'year', years:[2024,2023,2022,2021,2020,2019,2018,2017], maxzoom:16,
@@ -2482,9 +2482,9 @@ window.addEventListener('DOMContentLoaded', () => {
     sidebar.classList.toggle('collapsed');
     try{ applySidebarStyle(true); }catch(_){}   /* frosted: animate the overlay map-padding with the slide (#4) */
     /* SOLID mode: the map-container is a flex child that physically grows/shrinks as the sidebar
-       slides, so resize every frame keeps the camera centred in the remaining area. In FROSTED mode
+       slides, so resize every frame keeps the camera centerd in the remaining area. In FROSTED mode
        the container size is unchanged (the sidebar overlays it) — the animated setPadding above already
-       glides the centre, so the per-frame resize would only fight that ease; skip it. */
+       glides the center, so the per-frame resize would only fight that ease; skip it. */
     const frosted=document.body.classList.contains('sidebar-glass');
     if(!frosted || isMobile()){
       const start = performance.now();
@@ -2573,7 +2573,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
   window.addEventListener('resize',coalescedResize);
 
-  /* Google-Earth-style navigation feel: stepless wheel zoom centred on the cursor, a little
+  /* Google-Earth-style navigation feel: stepless wheel zoom centerd on the cursor, a little
      snappier than the default, plus a low-angle tilt limit so you can lean into the horizon. */
   if(map){ try{
     map.scrollZoom.setWheelZoomRate(1/300);   /* default 1/450 → a touch more responsive */
@@ -2582,7 +2582,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(map.keyboard&&map.keyboard.enable) map.keyboard.enable();
     if(map.dragRotate&&map.dragRotate.enable) map.dragRotate.enable();
   }catch(_){} }
-  /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behaviour. =====
+  /* ===== (#R20) Wheel zoom RESTORED to the built-in cursor-anchored behavior. =====
      The R19 custom "glide" accumulator (easeTo + around per frame) broke the universal
      zoom-toward-the-cursor UX on the globe ("カーソル地点へとズームされるというUXがなくなってしまった").
      MapLibre's native scrollZoom zooms about the pointer correctly under every projection, so it is
@@ -2685,7 +2685,7 @@ window.addEventListener('DOMContentLoaded', () => {
     else if(dx<0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x0-k,y);
     if(dy>0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y1+k);
     else if(dy<0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y0-k);
-    /* (#R8) Anticipate a zoom-IN: warm the centre tiles one AND two levels deeper so the next pinch is
+    /* (#R8) Anticipate a zoom-IN: warm the center tiles one AND two levels deeper so the next pinch is
        already resident (the user asked for "Unthinkable Speed" satellite). */
     for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
     if(!urls.length) return;
@@ -2709,7 +2709,7 @@ window.addEventListener('DOMContentLoaded', () => {
        thrash that made globe pan/zoom stutter on mobile (#3). */
     const c=map.getCenter(), r=Math.PI/180, cla=c.lat*r, clo=c.lng*r;
     const cx=Math.cos(cla)*Math.cos(clo), cy=Math.cos(cla)*Math.sin(clo), cz=Math.sin(cla);
-    const TH=Math.cos(88*r);   /* dot >= TH ⇒ within ~88° of centre ⇒ on the near side */
+    const TH=Math.cos(88*r);   /* dot >= TH ⇒ within ~88° of center ⇒ on the near side */
     markersArray.forEach(m=>{ const ll=m.getLngLat(), la=ll.lat*r, lo=ll.lng*r, cla2=Math.cos(la);
       const dot=cla2*Math.cos(lo)*cx + cla2*Math.sin(lo)*cy + Math.sin(la)*cz;
       const el=m.getElement(), vis=dot>TH?'visible':'hidden'; if(el.style.visibility!==vis) el.style.visibility=vis; });
@@ -2936,7 +2936,7 @@ window.addEventListener('DOMContentLoaded', () => {
       {label:"Cape of Good Hope", at:[19.5,-34.8]}
     ]},
     /* NATO "Posture"/deployment layer removed per request (#14). NATO is now ONLY the members
-       country-fill (data layer "nato") with accession-year + defence-spend (%GDP) on hover. */
+       country-fill (data layer "nato") with accession-year + defense-spend (%GDP) on hover. */
     bri:{ color:"#e8590c", name:{en:"Belt & Road (BRI)",jp:"一帯一路"}, lines:[
       /* (#R13c) Densified along the REAL overland route — every vertex is a named city the corridor
          actually passes through (Xi'an→Lanzhou→Urumqi→Khorgos→Almaty→Tashkent→Samarkand→Ashgabat→Tehran
@@ -3049,9 +3049,9 @@ window.addEventListener('DOMContentLoaded', () => {
           /* soft, fuzzy zone edge — no hard outline (zones are conceptual, not borders) */
           map.addLayer({id:key+'-edge',type:'line',source:key,filter:['==','$type','Polygon'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':data.color,'line-width':16,'line-opacity':0.18,'line-blur':8}});
         }
-        /* (#R8) High-quality pipeline network: two-tone OIL/GAS colour, a crisp dark casing and
+        /* (#R8) High-quality pipeline network: two-tone OIL/GAS color, a crisp dark casing and
            zoom-scaled width = an "infrastructure map" look. Other geo lines (theory corridors) carry
-           kind:'' so the match falls through to their single conceptual colour — unchanged. */
+           kind:'' so the match falls through to their single conceptual color — unchanged. */
         const _pipe=key==='pipelines';
         const _lineColor=_pipe?['match',['get','kind'],'oil','#d6451f','gas','#f4a72c',data.color]:data.color;
         map.addLayer({id:key+'-glow',type:'line',source:key,filter:['==','$type','LineString'],layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':_lineColor,'line-width':_pipe?['interpolate',['linear'],['zoom'],1,7,5,14]:10,'line-opacity':_pipe?0.22:0.18,'line-blur':4}});
@@ -3081,14 +3081,14 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Country data & extended stats ===== */
   const GDP={USA:27361,CHN:17795,JPN:4213,DEU:4456,IND:3550,GBR:3340,FRA:3031,ITA:2255,BRA:2174,CAN:2140,RUS:2021,MEX:1789,AUS:1724,KOR:1713,ESP:1581,IDN:1371,TUR:1108,NLD:1118,SAU:1068,CHE:884,POL:811,TWN:790,BEL:632,SWE:593,ARG:641,IRL:545,NOR:486,AUT:516,ISR:510,ARE:504,THA:515,SGP:501,BGD:446,PHL:437,VNM:430,DNK:404,MYS:400,HKG:382,EGY:396,IRN:388,ZAF:378,COL:364,ROU:351,CHL:335,CZE:330,FIN:300,PRT:287,PER:268,IRQ:264,KAZ:261,NZL:251,GRC:238,QAT:235,DZA:240,HUN:213,UKR:179,KWT:162,ETH:156,MAR:142,SVK:132,ECU:119,KEN:108,OMN:108,GTM:102,BGR:101,VEN:92,CRI:86,LUX:86,PAN:82,CIV:79,HRV:80,LTU:79,UZB:90,TZA:76,GHA:76,SRB:75,LKA:74,BLR:73,SVN:68,COD:67,MMR:65,TKM:56,JOR:50,CMR:49,UGA:49,TUN:47,BOL:45,LBY:45,PRY:43,NPL:41,ZWE:32,CYP:32,ISL:30,GEO:30,SEN:31,KHM:31,PNG:31,ZMB:28,BIH:27,ARM:24,LBN:23,ALB:23,HTI:20,MOZ:21,YEM:21,GAB:21,BWA:20,MLT:20,BFA:20,MLI:20,BEN:19,PRK:18,MNG:18,NIC:17,NER:17,MDG:16,MDA:16,LAO:15,BRN:15,MUS:14,AFG:14,RWA:14,MWI:13,TCD:13,KGZ:12,TJK:12,NAM:12,SOM:11,CUB:107,SDN:109,FJI:5};
   /* HDI 2022, Democracy Index 2023, Military spending 2023 ($B SIPRI), Life expectancy 2022, Internet users % 2023 */
-  /* HDI 2022 (UNDP) — broad coverage so very few countries fall back to the "no data" grey fill. */
+  /* HDI 2022 (UNDP) — broad coverage so very few countries fall back to the "no data" gray fill. */
   const HDI={NOR:.966,CHE:.967,ISL:.959,HKG:.956,DNK:.952,SWE:.952,DEU:.950,IRL:.950,SGP:.949,AUS:.946,NLD:.946,BEL:.942,FIN:.942,LIE:.942,GBR:.940,NZL:.939,ARE:.937,CAN:.935,KOR:.929,TWN:.926,LUX:.927,USA:.927,AUT:.926,SVN:.926,JPN:.920,MLT:.915,ISR:.915,ESP:.911,FRA:.910,CYP:.907,ITA:.906,EST:.899,CZE:.895,GRC:.893,BHR:.888,AND:.884,POL:.881,LVA:.879,LTU:.879,HRV:.878,QAT:.875,SAU:.875,PRT:.874,SVK:.855,CHL:.860,TUR:.855,HUN:.851,ARG:.849,KWT:.847,MNE:.844,KNA:.838,URY:.830,ATG:.826,PAN:.820,ROU:.827,RUS:.821,OMN:.819,GEO:.814,TTO:.814,KAZ:.811,BHS:.812,BRB:.809,MYS:.807,CRI:.806,SRB:.805,THA:.803,MUS:.802,SYC:.802,BLR:.801,GRD:.793,ALB:.789,CHN:.788,ARM:.786,MEX:.781,MDA:.763,IRN:.780,LKA:.780,BIH:.779,DOM:.766,MKD:.765,ECU:.765,CUB:.764,MDV:.762,PER:.762,AZE:.760,BRA:.760,COL:.758,VCT:.751,LBY:.746,TKM:.744,GUY:.742,MNG:.741,DMA:.740,JOR:.736,UKR:.734,TUN:.732,SUR:.730,PRY:.731,FJI:.729,EGY:.728,UZB:.727,VNM:.726,LCA:.725,LBN:.723,ZAF:.717,PSE:.716,IDN:.713,PHL:.710,BWA:.708,JAM:.706,KGZ:.701,BLZ:.700,VEN:.699,BOL:.698,MAR:.698,GAB:.693,BTN:.681,TJK:.679,SLV:.674,IRQ:.673,BGD:.670,NIC:.669,IND:.644,GTM:.629,KIR:.628,HND:.624,LAO:.620,NAM:.610,SWZ:.610,MMR:.608,GHA:.602,KEN:.601,NPL:.601,KHM:.600,COG:.593,AGO:.591,CMR:.587,ZMB:.569,PNG:.568,COM:.558,SYR:.557,HTI:.552,ZWE:.550,UGA:.550,RWA:.548,NGA:.548,TGO:.547,MRT:.540,PAK:.540,CIV:.534,TZA:.532,LSO:.521,SEN:.517,SDN:.516,DJI:.515,MWI:.508,BEN:.504,GMB:.500,ERI:.493,ETH:.492,LBR:.487,GNB:.483,COD:.481,SLE:.477,GIN:.471,AFG:.462,MOZ:.461,GNQ:.650,BFA:.438,MLI:.428,YEM:.424,BDI:.420,NER:.394,TCD:.394,CAF:.387,SSD:.381,SOM:.380};
-  /* EIU Democracy Index 2023 — broad coverage (the EIU rates 167 states; the rest fall back to grey). */
+  /* EIU Democracy Index 2023 — broad coverage (the EIU rates 167 states; the rest fall back to gray). */
   const DEM={NOR:9.81,NZL:9.61,ISL:9.45,SWE:9.39,FIN:9.30,DNK:9.28,IRL:9.19,CHE:9.14,NLD:9.00,TWN:8.92,LUX:8.81,DEU:8.80,CAN:8.69,AUS:8.66,URY:8.66,JPN:8.40,CRI:8.29,GBR:8.28,AUT:8.28,CHL:8.22,MUS:8.14,KOR:8.09,FRA:8.07,ESP:8.07,EST:8.06,CZE:7.97,PRT:7.95,USA:7.85,ISR:7.80,BWA:7.73,ITA:7.69,CPV:7.65,BEL:7.64,MLT:7.57,GRC:7.50,SVN:7.46,LVA:7.38,LTU:7.31,MYS:7.30,POL:7.18,IND:7.18,TTO:7.16,JAM:7.13,PAN:7.10,SVK:7.07,ZAF:7.05,BRA:6.68,DOM:6.62,ARG:6.62,COL:6.55,IDN:6.53,NAM:6.52,MNG:6.50,HRV:6.50,HUN:6.50,ROU:6.48,BGR:6.45,ALB:6.41,PHL:6.36,THA:6.35,SRB:6.33,PRY:6.22,SGP:6.18,LKA:6.17,ECU:6.13,MKD:6.13,LSO:6.11,MDA:6.09,SUR:6.06,MNE:6.02,PER:5.99,PNG:5.97,SEN:5.96,MWI:5.91,BGD:5.87,ZMB:5.80,BTN:5.54,TUN:5.51,ARM:5.42,LBR:5.43,FJI:5.40,HKG:5.28,GEO:5.20,TZA:5.10,MDG:5.10,UKR:5.06,KEN:5.05,MAR:5.04,BIH:5.00,SLV:4.97,HND:4.83,BOL:4.65,GTM:4.62,UGA:4.49,TUR:4.33,NGA:4.23,CIV:4.22,BEN:4.20,NPL:4.07,AGO:3.96,MRT:3.92,PSE:3.86,KWT:3.83,DZA:3.66,QAT:3.65,KGZ:3.62,LBN:3.56,MOZ:3.51,IRQ:3.51,PAK:3.25,MLI:3.23,JOR:3.17,OMN:3.12,RWA:3.10,KAZ:3.08,ETH:3.06,TGO:2.99,SWZ:2.96,EGY:2.93,ZWE:2.92,BFA:2.91,ARE:2.90,AZE:2.80,GAB:2.79,CUB:2.65,GIN:2.65,COG:2.61,VNM:2.62,CMR:2.56,KHM:2.55,HTI:2.50,NIC:2.26,LBY:2.25,VEN:2.23,RUS:2.22,NER:2.20,UZB:2.12,SAU:2.08,ERI:2.03,YEM:1.95,IRN:1.96,TJK:1.94,CHN:1.94,BLR:1.99,GNQ:1.92,SDN:1.76,LAO:1.71,TCD:1.67,TKM:1.66,SYR:1.43,COD:1.40,CAF:1.18,SSD:1.16,PRK:1.08,MMR:0.85,AFG:0.26};
   /* Military expenditure, latest available year, current USD $B (SIPRI 2023 where covered; IISS
      Military Balance estimates for the handful SIPRI omits). (#R14) Expanded from ~58 to ~150 states so
-     far fewer countries fall to "No data" grey. Genuinely unpublished spenders (DPRK, Syria, Eritrea,
-     Turkmenistan, Somalia, Yemen) are deliberately left out rather than fabricated → they stay grey. */
+     far fewer countries fall to "No data" gray. Genuinely unpublished spenders (DPRK, Syria, Eritrea,
+     Turkmenistan, Somalia, Yemen) are deliberately left out rather than fabricated → they stay gray. */
   const MILSPEND={USA:916,CHN:296,RUS:109,IND:84,SAU:75,UKR:65,GBR:75,DEU:67,FRA:61,JPN:50,KOR:48,ITA:36,AUS:32,POL:32,ISR:27,CAN:27,ESP:24,BRA:23,NLD:19,TUR:16,SGP:14,IDN:9,IRN:10,PAK:9,EGY:5,GRC:7,NOR:9,SWE:9,FIN:7,DNK:9,BEL:8,NZL:3,PRT:4,CZE:5,HUN:3,ROU:4,VNM:6,THA:5,COL:9,MEX:8,DZA:18,ARE:23,QAT:11,KWT:8,IRQ:11,LBY:3,MMR:2,VEN:1,CUB:1,NGA:3,ZAF:2,KEN:1,CHL:4,ARG:3,PER:2,PHL:4,MYS:4,TWN:14,
     OMN:6,BHR:1.5,JOR:2,LBN:0.7,MAR:5,TUN:1.2,SDN:1.5,AGO:1.6,ETH:1,TZA:0.9,UGA:1,COD:0.5,GHA:0.3,CIV:0.6,CMR:0.5,MLI:0.6,TCD:0.4,NER:0.3,SEN:0.5,BWA:0.5,NAM:0.4,ZMB:0.3,ZWE:0.5,MOZ:0.2,MRT:0.2,BFA:0.4,RWA:0.2,MWI:0.05,TGO:0.1,BEN:0.1,GIN:0.2,GAB:0.3,COG:0.3,MDG:0.1,SSD:0.5,LBR:0.05,SLE:0.05,GMB:0.03,BDI:0.07,DJI:0.1,GNQ:0.1,LSO:0.05,SWZ:0.08,
     BGD:4,LKA:1.3,NPL:0.5,AFG:0.3,KAZ:1.5,UZB:2,KGZ:0.13,TJK:0.08,MNG:0.1,KHM:0.6,LAO:0.02,BRN:0.5,
@@ -3097,7 +3097,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ECU:2.4,BOL:0.6,PRY:0.4,URY:1.2,DOM:0.6,GTM:0.4,HND:0.5,SLV:0.4,NIC:0.1,TTO:0.3,JAM:0.2,GUY:0.1,SUR:0.05,FJI:0.1,PNG:0.3,
     /* (#R15 / #8) Further reduce "No data": IISS Military Balance estimates for states SIPRI omits, plus
        near-zero for countries with no standing army (security/coast-guard budgets). Genuinely-unknowable
-       ones with NO credible figure stay grey rather than fabricated. */
+       ones with NO credible figure stay gray rather than fabricated. */
     PRK:4,SYR:2.5,TKM:1.5,YEM:1.4,ERI:0.1,SOM:0.2,CRI:0.05,PAN:0.7,ISL:0.05,CAF:0.07,BTN:0.1,MDV:0.13,HTI:0.05,BLZ:0.03,BHS:0.07,BRB:0.02,GNB:0.04,CPV:0.01,COM:0.02,STP:0.005,MUS:0.03,SYC:0.02,TLS:0.04,XKX:0.09,HKG:0};
   const LIFE={JPN:84.0,CHE:83.6,KOR:83.6,SGP:83.5,AUS:83.3,ISL:83.0,ITA:82.9,ESP:82.8,SWE:83.0,FRA:82.5,NOR:83.2,IRL:82.6,NZL:82.5,DEU:80.8,CAN:81.5,GBR:80.7,FIN:81.8,NLD:81.5,BEL:81.6,AUT:81.1,DNK:81.5,GRC:80.1,PRT:81.1,USA:77.4,POL:77.5,CHN:78.2,TUR:76.0,SAU:77.9,BRA:75.9,MEX:70.2,RUS:69.4,IRN:76.7,ARG:75.9,VNM:74.6,THA:78.7,COL:73.7,IDN:71.3,PHL:69.3,EGY:70.2,IND:67.3,BGD:72.4,PAK:66.2,ZAF:62.3,KEN:61.4,NGA:53.6,ETH:65.0,COD:59.2,IRQ:70.4,UKR:71.6,AFG:62.0,MMR:65.7,YEM:63.7,SDN:65.3};
   const INTERNET={NOR:99,DNK:99,KOR:97,SWE:98,JPN:84,USA:91,GBR:97,DEU:93,FRA:86,CAN:93,ITA:84,ESP:94,SGP:96,AUS:96,NZL:91,RUS:88,CHN:73,IND:46,BRA:81,MEX:78,ARG:88,KOR2:97,IDN:62,VNM:73,THA:85,PHL:67,EGY:72,SAU:99,UAE2:0,ARE:100,ISR:90,TUR:83,POL:88,ZAF:72,KEN:32,NGA:55,BGD:39,PAK:36,ETH:17,COD:23,IRN:79,IRQ:75,AFG:18};
@@ -3147,7 +3147,36 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(e){ console.warn('country load failed',e); }
       finally{ countryDataLoaded=true; if(map&&map.isStyleLoaded()) addCountryLayers(); }
     })();
+    countryDataPromise.then(()=>{ try{ loadGdpPPP(); }catch(_){} });   /* (#R22) enrich with PPP once base stats exist */
     return countryDataPromise;
+  }
+  /* (#R22) GDP (PPP) + GDP-per-capita (PPP), live from the World Bank (NY.GDP.MKTP.PP.CD /
+     NY.GDP.PCAP.PP.CD, most-recent value per country), merged into countryStats as gdpPPP (billions)
+     and gdppcPPP (current international $). Cached 30 days. Used by Stats, the country popup, compare
+     and the GDP-per-capita layer (its readout shows nominal + PPP). */
+  let gdpPPPLoaded=false, gdpPPPPromise=null;
+  function _mergePPP(pc,tot){ try{
+      Object.keys(countryStats).forEach(code=>{ const s=countryStats[code];
+        if(pc&&pc[code]!=null) s.gdppcPPP=pc[code];
+        if(tot&&tot[code]!=null) s.gdpPPP=tot[code]/1e9; });
+      gdpPPPLoaded=true;
+      /* refresh anything currently showing GDP */
+      try{ const cp=document.getElementById('country-popup'); if(cp&&cp.style.display==='block'&&window._cpCurrent){ const s=countryStats[window._cpCurrent.code]; const body=document.getElementById('cp-body'); if(s&&body) body.innerHTML=topBtns()+renderCountryDetailBody(s); } }catch(_){}
+      try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(); }catch(_){}
+      try{ if(map&&map.getLayer('gdppc-fill')) { /* readout fmt already reads the new field */ } }catch(_){}
+    }catch(_){} }
+  function loadGdpPPP(){
+    if(gdpPPPPromise) return gdpPPPPromise;
+    gdpPPPPromise=(async()=>{
+      try{ const c=JSON.parse(localStorage.getItem('intmap_gdpppp')||'null');
+        if(c&&c.ts&&(Date.now()-c.ts<30*864e5)&&c.pc){ _mergePPP(c.pc,c.tot); return; } }catch(_){}
+      const fetchInd=async(ind)=>{ try{ const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+ind+'?format=json&per_page=400&mrnev=1');
+          const j=await r.json(); const out={}; (j&&j[1]||[]).forEach(d=>{ if(d&&d.countryiso3code&&d.value!=null) out[d.countryiso3code]=d.value; }); return out; }catch(_){ return {}; } };
+      const [pc,tot]=await Promise.all([fetchInd('NY.GDP.PCAP.PP.CD'),fetchInd('NY.GDP.MKTP.PP.CD')]);
+      if(Object.keys(pc).length||Object.keys(tot).length){ try{ localStorage.setItem('intmap_gdpppp',JSON.stringify({ts:Date.now(),pc,tot})); }catch(_){} }
+      _mergePPP(pc,tot);
+    })();
+    return gdpPPPPromise;
   }
   let hoveredCid=null;
   function addCountryLayers(){
@@ -3173,7 +3202,9 @@ window.addEventListener('DOMContentLoaded', () => {
     p.innerHTML=`<div class="ci-name">${s&&s.flag?s.flag+' ':'🏳️ '}${name}</div>
       <div class="ci-row"><span>${t('statPop')} (${POP_YEAR})</span><b>${s&&s.pop?fmtNum(s.pop):t('dataNA')}</b></div>
       <div class="ci-row"><span>${t('statGdp')} (${GDP_YEAR})</span><b>${s&&s.gdp?fmtMoney(s.gdp):t('dataNA')}</b></div>
+      <div class="ci-row"><span>${t('statGdpPPP')}</span><b>${s&&s.gdpPPP?fmtMoney(s.gdpPPP):t('dataNA')}</b></div>
       <div class="ci-row"><span>${t('statGdpPc')}</span><b>${s&&s.gdppc?fmtPc(s.gdppc):t('dataNA')}</b></div>
+      <div class="ci-row"><span>${t('statGdpPcPPP')}</span><b>${s&&s.gdppcPPP?fmtPc(s.gdppcPPP):t('dataNA')}</b></div>
       <div class="ci-row"><span>${t('statHDI')}</span><b>${s&&s.hdi?s.hdi.toFixed(3):t('dataNA')}</b></div>
       <div class="ci-row"><span>${t('statDem')}</span><b>${s&&s.dem?s.dem.toFixed(2):t('dataNA')}</b></div>
       <div class="ci-row"><span>${t('statMil')}</span><b>${s&&s.milSpend?'$'+s.milSpend+'B':t('dataNA')}</b></div>
@@ -3231,7 +3262,9 @@ window.addEventListener('DOMContentLoaded', () => {
       [t('statDensity'), s.density?fmtNum(s.density)+' /km²':'—'],
       [t('statArea'), fmtArea(s.area)],
       [t('statGdp')+` (${GDP_YEAR})`, fmtMoney(s.gdp)],
+      [t('statGdpPPP'), s.gdpPPP?fmtMoney(s.gdpPPP):'—'],
       [t('statGdpPc'), fmtPc(s.gdppc)],
+      [t('statGdpPcPPP'), s.gdppcPPP?fmtPc(s.gdppcPPP):'—'],
       [t('statHDI')+' (2022)', s.hdi?s.hdi.toFixed(3):'—'],
       [t('statDem')+' (2023)', s.dem?s.dem.toFixed(2):'—'],
       [t('statMil')+' (2023)', s.milSpend?'$'+s.milSpend+'B':'—'],
@@ -3464,7 +3497,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {g:{en:"Ballistic missiles",jp:"弾道ミサイル"},items:[["ATACMS",300],["Iskander",500],["DF-21D",1500],["DF-26",4000],["Minuteman III",13000],["Trident II",12000]]},
     {g:{en:"Air defense",jp:"防空"},items:[["Patriot PAC-3",35],["THAAD",200],["S-400",400]]}
   ];
-  /* Radius colour quick-presets (#R7): R / G / B one-tap swatches alongside the custom colour picker. */
+  /* Radius color quick-presets (#R7): R / G / B one-tap swatches alongside the custom color picker. */
   const RADIUS_COLOR_PRESETS=[{col:'#ff3b30',lbl:'R'},{col:'#34c759',lbl:'G'},{col:'#007aff',lbl:'B'}];
 
   let measureSnapClose=false;        /* true while the cursor hovers the first measure vertex */
@@ -3714,11 +3747,11 @@ window.addEventListener('DOMContentLoaded', () => {
   window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); if(window._activeRadiusId===id) window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   window.clearAllRadius=function(){ radiusItems=[]; window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   /* Radius from an already-chosen point (right-click menu + map-click popup, #54): drop the circle at
-     a fixed centre, then let the user tune radius / colour in the tool panel. */
+     a fixed center, then let the user tune radius / color in the tool panel. */
   window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); const id='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); radiusItems.push({id,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=id; refreshTool(); updateToolPanel(); };
   /* Measure: step back one point (#38). If a closed area drops below 3 points it re-opens as a line. */
   window._measureUndo=function(){ if(!measurePoints.length) return; measurePoints.pop(); if(toolMode==='area' && measurePoints.length<3){ toolMode='measure'; _syncToolBtns(); } liveCursor=null; refreshTool(); updateToolPanel(); };
-  /* (#R9/#51) "News in this area": filter the analysed news to the drawn radius/polygon and show it in
+  /* (#R9/#51) "News in this area": filter the analyzed news to the drawn radius/polygon and show it in
      the News feed, with a dismissable banner. Reuses the same geometry as the AI area-summary. */
   window._searchNewsInArea=function(){
     if(!hasTurf()){ try{ imToast('Turf.js unavailable'); }catch(_){} return; }
@@ -3765,7 +3798,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       body=`<div class="tp-sub">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
         <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><input type="number" id="radius-num" min="1" value="${radiusKm}"><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
-        <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':'Custom colour'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
+        <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':'Custom color'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
         <div class="tp-row"><span>${t('radius')}</span><b id="rad-r">${distHTML(radiusKm)}</b></div>
         <div class="tp-row"><span>${t('circumference')}</span><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div>
         <div class="tp-row"><span>${t('area')}</span><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div>
@@ -3784,7 +3817,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(toolMode==='radius'){
       const r=p.querySelector('#radius-range'), n=p.querySelector('#radius-num'), op=p.querySelector('#radius-op'), pre=p.querySelector('#radius-preset'), col=p.querySelector('#radius-color');
       /* (#R11) When a circle is "active" (just dropped, esp. from a pin / map-click popup), the slider /
-         colour / opacity edit THAT circle live — not just the defaults for the next one. */
+         color / opacity edit THAT circle live — not just the defaults for the next one. */
       const applyActive=()=>{ if(!window._activeRadiusId) return; const c=radiusItems.find(x=>x.id===window._activeRadiusId); if(c){ c.radiusKm=radiusKm; c.color=radiusColor; c.opacity=radiusOpacity; refreshTool(); } };
       /* (#R15d) Radius input unit toggle (km/mi) — imperial is selectable even when the app default is
          metric. The slider stays km internally; only the number field + its unit follow the toggle. */
@@ -3799,8 +3832,8 @@ window.addEventListener('DOMContentLoaded', () => {
       op.oninput=()=>{ radiusOpacity=parseFloat(op.value); applyActive(); };
       const markPreset=()=>{ p.querySelectorAll('.rad-preset').forEach(b=>b.classList.toggle('on',(b.getAttribute('data-col')||'').toLowerCase()===radiusColor.toLowerCase())); };
       col.oninput=()=>{ radiusColor=col.value; markPreset(); applyActive(); };
-      /* R / G / B quick presets (#R7) — one tap sets the circle colour; the swatch ring shows the
-         active choice. The colour picker remains for any custom colour. */
+      /* R / G / B quick presets (#R7) — one tap sets the circle color; the swatch ring shows the
+         active choice. The color picker remains for any custom color. */
       p.querySelectorAll('.rad-preset').forEach(b=>{ b.onclick=()=>{ radiusColor=b.getAttribute('data-col'); col.value=radiusColor; markPreset(); applyActive(); }; });
       pre.onchange=()=>{ const v=parseFloat(pre.value); if(v>0) setR(v); };
     }
@@ -3879,8 +3912,8 @@ window.addEventListener('DOMContentLoaded', () => {
        covering the map (#29). */
     try{ if(isMobile() && window._minimizeOpenLegends) window._minimizeOpenLegends(); }catch(_){}
     if(!toolMode||!hasTurf())return;
-    /* (#R11) On mobile, measuring is centre-fixed: a tap does NOT add a point — only the "Add point"
-       button (which calls this with viaBtn=true) adds the map-centre coordinate. */
+    /* (#R11) On mobile, measuring is center-fixed: a tap does NOT add a point — only the "Add point"
+       button (which calls this with viaBtn=true) adds the map-center coordinate. */
     if(isMobile() && !viaBtn) return;
     /* Polar safety (#10): the poles AND their surroundings are singular for great-circle / area
        math and make turf emit NaN or globe-wrapping geometry. Clamp out of the polar caps. */
@@ -4123,8 +4156,8 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('styledata',()=>{ ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); });
     map.on('contextmenu',(e)=>{ e.preventDefault();
       let pt=e.point, ll=e.lngLat;
-      /* (#R16) On mobile the interaction is centre-fixed (crosshair). A long-press anywhere acts on the
-         CROSSHAIR point and the menu opens there (always on-screen) — the old behaviour opened it under the
+      /* (#R16) On mobile the interaction is center-fixed (crosshair). A long-press anywhere acts on the
+         CROSSHAIR point and the menu opens there (always on-screen) — the old behavior opened it under the
          finger, often off the edge / behind the sheet ("画面からはみ出して何も見えない"). */
       try{ if(window._mCenterLL && window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const c=window._mCenterLL(); pt={x:c.px.x,y:c.px.y}; ll={lng:c.lng,lat:c.lat}; } }catch(_){}
       showContextMenu(pt, ll); });
@@ -4136,7 +4169,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
         const rect=canvas.getBoundingClientRect();
         startPt={x:tx-rect.left,y:ty-rect.top}; fired=false;
-        /* (#R13) Long-press → context menu re-enabled. The centre "Add point" button now only appears
+        /* (#R13) Long-press → context menu re-enabled. The center "Add point" button now only appears
            while a measurement tool is active (per the user), so long-press is again the way to reach the
            right-click menu on touch when idle. Suppressed while a tool is active (the button handles that). */
         if(typeof toolMode!=='undefined' && toolMode) return;
@@ -5214,7 +5247,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(compareShown && items.length>=2){
       const bar=(it,i,val,max,fmt)=>{ const w=val>0&&max>0?Math.min(100,(val/max)*100):0; return `<div class="cmp-bar-row"><span class="cmp-bar-flag">${it.flag||'🏳️'}</span><span class="cmp-bar-name">${cName(it)}</span><span class="cmp-bar-wrap"><span class="cmp-bar-fill" style="width:${w}%;background:${COLORS[i%COLORS.length]};"></span></span><span class="cmp-bar-val">${val!=null?fmt(val):'—'}</span></div>`; };
       const sec=(title,key,fmt)=>{ const vals=items.map(s=>s[key]).filter(v=>v!=null&&!isNaN(v)); if(!vals.length) return ''; const max=Math.max(...vals); return `<div class="cmp-section" style="padding:10px 12px;"><h4 style="margin:0 0 8px;">${title}</h4><div class="cmp-bars">${items.map((it,i)=>bar(it,i,it[key],max,fmt)).join('')}</div></div>`; };
-      body+=`<div class="compare-panel" style="max-height:46vh;overflow-y:auto;margin-top:8px;">${sec(t('statGdp'),'gdp',v=>fmtMoney(v))}${sec(t('statGdpPc'),'gdppc',v=>fmtPc(v))}${sec(t('statPop'),'pop',v=>fmtNum(v))}${sec(t('statArea'),'area',v=>fmtArea(v))}${sec(t('statMil'),'milSpend',v=>'$'+v+'B')}${sec(t('statHDI'),'hdi',v=>v.toFixed(3))}${sec(t('statDem'),'dem',v=>v.toFixed(2))}${sec(t('statLife'),'lifeExp',v=>v.toFixed(1)+'yr')}${sec(t('statInet'),'internet',v=>v+'%')}</div>`;
+      body+=`<div class="compare-panel" style="max-height:46vh;overflow-y:auto;margin-top:8px;">${sec(t('statGdp'),'gdp',v=>fmtMoney(v))}${sec(t('statGdpPPP'),'gdpPPP',v=>fmtMoney(v))}${sec(t('statGdpPc'),'gdppc',v=>fmtPc(v))}${sec(t('statGdpPcPPP'),'gdppcPPP',v=>fmtPc(v))}${sec(t('statPop'),'pop',v=>fmtNum(v))}${sec(t('statArea'),'area',v=>fmtArea(v))}${sec(t('statMil'),'milSpend',v=>'$'+v+'B')}${sec(t('statHDI'),'hdi',v=>v.toFixed(3))}${sec(t('statDem'),'dem',v=>v.toFixed(2))}${sec(t('statLife'),'lifeExp',v=>v.toFixed(1)+'yr')}${sec(t('statInet'),'internet',v=>v+'%')}</div>`;
     }
     panel.innerHTML=head+body;
   }
@@ -5248,7 +5281,9 @@ window.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="compare-panel">
         ${section(t('statGdp')+` (${GDP_YEAR})`,'gdp',v=>fmtMoney(v))}
+        ${section(t('statGdpPPP'),'gdpPPP',v=>fmtMoney(v))}
         ${section(t('statGdpPc'),'gdppc',v=>fmtPc(v))}
+        ${section(t('statGdpPcPPP'),'gdppcPPP',v=>fmtPc(v))}
         ${section(t('statPop')+` (${POP_YEAR})`,'pop',v=>fmtNum(v))}
         ${section(t('statArea'),'area',v=>fmtArea(v))}
         ${section(t('statMil')+' (2023)','milSpend',v=>'$'+v+'B')}
@@ -5465,7 +5500,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ globalData=cached; if(currentMode==='news'||currentMode==='saved') startNews(); } }
     if((currentMode==='news'||currentMode==='saved')&&feed&&globalData.length===0) feed.innerHTML=`<div class="empty-msg">${t('loading')}</div>`;
-    /* 1b) FAST PATH: pre-analysed news from Supabase. If it returns rows we're done — no client scoring. */
+    /* 1b) FAST PATH: pre-analyzed news from Supabase. If it returns rows we're done — no client scoring. */
     if(await loadNewsFromSupabase()) return;
     /* 2) FALLBACK: live RSS via CORS proxies + client-side analysis (function not deployed, or search/time-travel/multi-lang). */
     const parser=new DOMParser(); const byLink=new Map(); let any=false;
@@ -5868,7 +5903,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Acceptance.</b> By using IntMap (the "Service") you agree to these Terms. If you do not agree, do not use the Service.</p>
     <p><b>2. The Service.</b> IntMap is an informational geopolitical map that aggregates third-party news, map tiles and open data. It is provided for general information on an "as is" and "as available" basis and is not professional, legal, financial or navigational advice.</p>
     <p><b>3. Accounts.</b> You must provide accurate information, keep your password secure, are responsible for activity on your account, and must be at least 13 years old.</p>
-    <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a licence to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts.</p>
+    <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a license to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts.</p>
     <p><b>5. Acceptable use.</b> No scraping, abuse, reverse engineering, disrupting the Service, or misusing third-party APIs.</p>
     <p><b>6. Third-party services & BYOK.</b> News, tiles, imagery and AI features rely on third parties under their own terms. Any AI key you enter is stored only in your browser and used to call that provider directly.</p>
     <p><b>7. Intellectual property.</b> IntMap's code and design are protected. Third-party data belongs to its respective owners.</p>
@@ -5987,9 +6022,9 @@ window.addEventListener('DOMContentLoaded', () => {
   window._closePinPopup=()=>{ activePinId=null; document.getElementById('pin-popup').style.display='none'; };
   window._removePin=(id)=>removePin(id);
   window._measureFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(toolMode!=='measure') setTool('measure'); measurePoints=[[p.lng,p.lat]]; refreshTool(); updateToolPanel(); _closePinPopup(); };
-  /* Radius from this pin (#54) — fixed centre, tune radius/colour in the tool panel. */
+  /* Radius from this pin (#54) — fixed center, tune radius/color in the tool panel. */
   window._radiusFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; try{ window._radiusFromPoint(p.lng,p.lat); }catch(_){} _closePinPopup(); };
-  /* #17 — open the azimuthal-equidistant viewer centred on this pin (true distances/bearings from it). */
+  /* #17 — open the azimuthal-equidistant viewer centerd on this pin (true distances/bearings from it). */
   window._azimuthalFromPin=(id)=>{ const p=userPins.find(x=>x.id===id); if(!p)return; if(window.ProjView) window.ProjView.open('azimuthal',[p.lng,p.lat]); };
 
   /* Context menu */
@@ -6034,10 +6069,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!map) return;
     Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
     Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバー", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
-    /* (#R12) New layer-category labels for the re-organised panel. */
-    Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defence", lyrGrpOthers:"Others (beta)" });
+    /* (#R12) New layer-category labels for the re-organized panel. */
+    Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
-    Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (colour relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
+    Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
 
     const style=document.createElement('style');
@@ -6058,7 +6093,7 @@ window.addEventListener('DOMContentLoaded', () => {
          scrolls, footer (opacity slider + hint) pinned bottom — so the opacity slider & minimise button
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
       /* (#R13c) Width is LOCKED (min=max=216) so the native resize grabber can only change HEIGHT — the
-         user reported the legend "stretching left-right"; vertical-only resize is the requested behaviour. */
+         user reported the legend "stretching left-right"; vertical-only resize is the requested behavior. */
       .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; min-width:216px; max-width:216px; font-size:11px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
@@ -6089,12 +6124,12 @@ window.addEventListener('DOMContentLoaded', () => {
       .koppen-legend h4, .data-legend h4{ padding:0 56px 0 22px !important; min-height:18px; display:flex; align-items:center; }
       /* (#R8b) Minimize/close icons are DRAWN as CSS shapes at EVERY width (desktop · tablet · phone) —
          NOT font glyphs. ▢ / – / ✕ have different ink positions, so as glyphs they never quite line up;
-         as identical centred bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
+         as identical centerd bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
          leaving tablet/landscape-phone widths with the misaligned glyphs the user still saw.) */
       /* (#R8c) ONE shared declaration for the box, so close & min cannot diverge in top/size — only the
          horizontal offset differs. Verified on a live legend: both buttons share top and height exactly. */
-      /* (#R9/#25) Centre EVERY icon with transform:translate(-50%,-50%) — size-INDEPENDENT, so close (×),
-         minimise (–) and collapsed (▢) share one pixel-exact centre at any box size / DPR. This removes
+      /* (#R9/#25) Center EVERY icon with transform:translate(-50%,-50%) — size-INDEPENDENT, so close (×),
+         minimise (–) and collapsed (▢) share one pixel-exact center at any box size / DPR. This removes
          the last sub-pixel vertical drift between □ and × (the negative-margin centring rounded the 1.8px
          bar and the 12px square differently). Larger sizes below change ONLY width/height. */
       .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:7px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; line-height:0; box-sizing:border-box; }
@@ -6114,7 +6149,7 @@ window.addEventListener('DOMContentLoaded', () => {
       .koppen-info-pop .kip-h{ display:flex; align-items:center; gap:7px; font-weight:600; font-size:13px; padding-right:22px; margin-bottom:6px; }
       .koppen-info-pop ul{ margin:0; padding-left:16px; color:var(--text-muted); line-height:1.5; } .koppen-info-pop li{ margin:2px 0; }
       /* (#R8b) Phones just enlarge the same drawn icons to 30px tap targets with a clear gap; the SHAPES
-         (centred bars) come from the global rules above, so desktop & mobile are identical & aligned. */
+         (centerd bars) come from the global rules above, so desktop & mobile are identical & aligned. */
       @media(max-width:768px){
         /* (#R18) ONE size for EVERY mobile ×/–: 32px. The R17 40px boxes made the legend buttons huge
            while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimised
@@ -6125,7 +6160,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .data-legend .legend-min, .koppen-legend .legend-min{ right:42px !important; }
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
-        .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centred at any size */
+        .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centerd at any size */
         .koppen-info-pop .kip-x, .pin-popup-close{ width:32px !important; height:32px !important; font-size:17px !important; display:flex; align-items:center; justify-content:center; }
         .tool-panel .tp-close{ width:32px; height:32px; font-size:17px; display:flex; align-items:center; justify-content:center; }
         /* (#R19) The R18 32px unification covered legends/tool-panels but MISSED the other popups
@@ -6190,7 +6225,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdNightsat=makeLegend('nightsat',140,(currentLang==='jp'?'夜間光（衛星）':'Night lights'),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[currentLang==='jp'?'暗':'Dark',currentLang==='jp'?'明':'Bright'], 'VIIRS Black Marble');
     /* EEZ legend — single-color line indicator */
     const lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
-    /* Native legend whose line colours/dashes mirror the actual MarineRegions eez_boundaries style
+    /* Native legend whose line colors/dashes mirror the actual MarineRegions eez_boundaries style
        (taken from the layer's own GetLegendGraphic JSON), so every drawn boundary type is keyed. */
     const EEZ_CATS=[
       {c:'#122a2a',n:{en:'EEZ — 200 NM',jp:'EEZ（200海里）'}},
@@ -6208,7 +6243,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};flex-shrink:0;"></span><span>${cat.n[currentLang]||cat.n.en}</span></div>`).join('');
     lgdEEZ.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海洋管轄区域':'Maritime zones'}</h4>
       <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け。重なりは領有権紛争の目安。':'EEZ = Exclusive Economic Zone (coastal-state control of fishing & seabed to 200 nm). Lines coloured by boundary type; overlaps flag disputed claims.'}</div>
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け。重なりは領有権紛争の目安。':'EEZ = Exclusive Economic Zone (coastal-state control of fishing & seabed to 200 nm). Lines colored by boundary type; overlaps flag disputed claims.'}</div>
       <div class="dl-hint">${currentLang==='jp'?'出典: MarineRegions WMS':'Source: MarineRegions WMS'}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -6253,9 +6288,9 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="dl-hint">${currentLang==='jp'?'NASA SEDAC GPW v4（2020・約1km）。国境に依存しない実分布。':'NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.'}</div>`;
     mc.appendChild(lgdPopGrid);
     lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
-    /* Colour-relief elevation legend (#5) */
+    /* Color-relief elevation legend (#5) */
     const lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
-    lgdRelief.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'標高（カラー段彩）':'Elevation (colour)'}</h4>
+    lgdRelief.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'標高（カラー段彩）':'Elevation (color)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
       <div class="dl-scale"><span>${currentLang==='jp'?'深海':'Deep sea'}</span><span>${currentLang==='jp'?'高峰':'Peaks'}</span></div>
       <div class="dl-hint">${currentLang==='jp'?'AWS Terrain（terrarium DEM）':'AWS Terrain (terrarium DEM)'}</div>`;
@@ -6269,7 +6304,7 @@ window.addEventListener('DOMContentLoaded', () => {
       <label style="display:flex; align-items:center; gap:8px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">-150<input type="range" class="sl-legend-range" min="-150" max="70" step="1" value="${Math.max(-150,Math.min(70,slL))}" style="flex:1; accent-color:var(--primary-color);">+70 m</label>
       <div style="display:flex; gap:6px; margin:4px 0 2px;"><input type="number" class="sl-num" min="-11000" max="9000" step="1" value="${slL}" placeholder="m" style="flex:1; min-width:0; padding:5px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px;"><button class="sl-set" style="padding:5px 12px; border:none; border-radius:8px; background:var(--primary-color); color:#fff; font-size:11px; font-weight:600; cursor:pointer;">${currentLang==='jp'?'設定':'Set'}</button></div>
       <div class="sl-err" style="display:none; color:var(--info-mil); font-size:10px; margin:0 0 2px;"></div>
-      <div class="dl-hint">${currentLang==='jp'?'スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。':'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defences.'}</div>`;
+      <div class="dl-hint">${currentLang==='jp'?'スライダーまたは数値（-11000〜9000 m、マイナス=海面低下）。AWS Terrain DEM に基づく簡易浸水。潮汐・防潮堤は未考慮。':'Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve "bathtub" fill from the AWS Terrain DEM — ignores tides & defenses.'}</div>`;
     mc.appendChild(lgdSeaLevel);
     lgdSeaLevel.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sealevel'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level slider lives in the legend too (#11) — control the simulation straight from the legend. */
@@ -6282,9 +6317,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(setb) setb.onclick=apply;
       if(num) num.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); apply(); } });
     }
-    /* === Wind legend (#R12 / #19,#22) — replaces the floating top-centre valid-time pill that overlapped
+    /* === Wind legend (#R12 / #19,#22) — replaces the floating top-center valid-time pill that overlapped
        the search box. Same draggable data-legend format as every other layer, carries the GFS valid time,
-       a speed colour ramp, AND a UNIT pulldown (m/s · km/h · kn · mph). === */
+       a speed color ramp, AND a UNIT pulldown (m/s · km/h · kn · mph). === */
     window.WIND_UNITS=[['ms','m/s',1],['kmh','km/h',3.6],['kn','kn',1.94384],['mph','mph',2.23694]];
     try{ window.windUnit=localStorage.getItem('intmap_wind_unit')||'ms'; }catch(_){ window.windUnit='ms'; }
     if(!window.WIND_UNITS.some(u=>u[0]===window.windUnit)) window.windUnit='ms';
@@ -6445,9 +6480,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const was=_thermalOn;
       try{ addFirmsThermal(); setThermalVis(was); }catch(e){ console.warn('thermal rebuild fail',e); }
     };
-    /* (#R12) Layer taxonomy re-organised into clearer, purpose-built categories (per request to
+    /* (#R12) Layer taxonomy re-organized into clearer, purpose-built categories (per request to
        re-classify the panel): Climate & weather · Terrain & elevation · Oceans & maritime ·
-       Hazards & night sky · Population & economy · Geopolitics & defence. */
+       Hazards & night sky · Population & economy · Geopolitics & defense. */
     [
       ['__grp','lyrGrpClimate'],
       ['climate','lyrClimate'],['temp','lyrTemp'],['precip','lyrPrecip'],['radar','lyrRadar'],['wind','lyrWind'],['sst','lyrSST'],['snow','lyrSnow'],['aod','lyrAOD'],
@@ -6479,7 +6514,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       const isSeaLevel=(id==='sealevel');
       if(isSeaLevel){
-        /* Sea-level-rise simulator (#24): slider chooses a +rise in metres; the DEM recolours so
+        /* Sea-level-rise simulator (#24): slider chooses a +rise in meters; the DEM recolors so
            everything below that level floods blue. */
         extra=`<div class="lyr-extras" style="display:none; padding:4px 0 6px 24px; font-size:11px;"><label style="display:flex; align-items:center; gap:8px; color:var(--text-muted);">${currentLang==='jp'?'海面変動':'Sea-level'}: <input type="range" id="sl-${id}" min="-150" max="70" value="${Math.max(-150,Math.min(70,window._seaLevelM||0))}" step="1" style="flex:1; accent-color:var(--primary-color);"><span id="sllbl-${id}" style="min-width:52px; text-align:right; font-variant-numeric:tabular-nums;">${((window._seaLevelM||0)>=0?'+':'')+(window._seaLevelM||0)} m</span></label></div>`;
       }
@@ -6522,7 +6557,7 @@ window.addEventListener('DOMContentLoaded', () => {
        Also moves "Open compare view" + "Upload GeoJSON" into a tidy Tools section at the very bottom
        (the user disliked them sitting mid-list). The old "Data layers" section label is dropped. */
     /* (#R14 / #17) "Active layers" — a live list of every currently-ON thematic layer, shown in the
-       Layers panel just below the favourites bar and the Country-borders/Grid toggles. Each entry is a
+       Layers panel just below the favorites bar and the Country-borders/Grid toggles. Each entry is a
        chip: click the name to scroll to its row, click ✕ to switch it off. Rebuilt whenever any layer
        checkbox changes and on every panel open. (The 4 utility toggles names/borders/grid/countries are
        excluded — they sit right above and would be redundant.) */
@@ -6535,7 +6570,7 @@ window.addEventListener('DOMContentLoaded', () => {
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
         const lab=cb.closest('label'); if(!lab) return;
-        const sp=lab.querySelector('span:not(.lyr-sw):not(.lfc-sw)');   /* the name span, not a colour-swatch span */
+        const sp=lab.querySelector('span:not(.lyr-sw):not(.lfc-sw)');   /* the name span, not a color-swatch span */
         let name=((sp?sp.textContent:lab.textContent)||'').trim();
         if(!name) return; chips.push({el:cb, name});
       });
@@ -6573,7 +6608,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       try{
-        /* (#R15 / #26) Curated taxonomy. Only the layers the user wants front-and-centre live in these
+        /* (#R15 / #26) Curated taxonomy. Only the layers the user wants front-and-center live in these
            categories; every other (beta / incomplete) layer is swept into the "Others (beta)" group at the
            bottom so the panel reads cleanly. (#R15c) ec-time moved OUT of the panel into a floating legend. */
         const GROUPS=[
@@ -6592,14 +6627,14 @@ window.addEventListener('DOMContentLoaded', () => {
           return null; };
         const lang=(typeof currentLang!=='undefined')?currentLang:'en';
         const T=(k)=>{ try{ return (i18n[lang]&&i18n[lang][k])||k; }catch(_){ return k; } };
-        /* strip old headers + top-level dividers (favourites' inner <hr> is nested, so it survives) */
+        /* strip old headers + top-level dividers (favorites' inner <hr> is nested, so it survives) */
         dd.querySelectorAll(':scope > .layer-group-title, :scope > .lyr-head').forEach(n=>n.remove());
         dd.querySelectorAll(':scope > hr').forEach(n=>n.remove());
         dd.querySelectorAll(':scope > .lyr-others-note').forEach(n=>n.remove());   /* (#R15b) was accumulating one note per run */
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         ['cb-names','cb-borders','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
-        /* (#R14 / #17) the live "Active layers" list sits right below the favourites + top toggles */
+        /* (#R14 / #17) the live "Active layers" list sits right below the favorites + top toggles */
         let act=document.getElementById('layer-active-section'); if(!act){ act=document.createElement('div'); act.id='layer-active-section'; act.style.display='none'; }
         order.push(act);
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
@@ -6649,9 +6684,9 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
     };
-    /* (#R19) Mobile-start smoothness: the very first panel reorganisation (a few hundred DOM moves)
+    /* (#R19) Mobile-start smoothness: the very first panel reorganization (a few hundred DOM moves)
        used to run synchronously inside the boot path and contributed to the "スタート時の動作がぎこちない"
-       jank. On phones it now waits for an idle slice (the panel is reorganised again on every open
+       jank. On phones it now waits for an idle slice (the panel is reorganized again on every open
        anyway, so nothing can be stale); desktop keeps the immediate call. */
     if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback){ requestIdleCallback(()=>{ try{ window.reorganizeLayerPanel(); }catch(_){} },{timeout:2500}); }
     else window.reorganizeLayerPanel();
@@ -6703,8 +6738,8 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Military spending choropleths (#26) — absolute (SIPRI 2023, $B) and as a share of GDP. */
       milSpend:{label:()=>currentLang==='jp'?'国防費 (2023)':'Mil. spending (2023)', fmt:s=>s.milSpend!=null?'$'+s.milSpend+'B':'—'},
       milSpendGDP:{label:()=>currentLang==='jp'?'国防費 (対GDP)':'Mil. spending (% GDP)', fmt:s=>{ const p=(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null; return p!=null?p.toFixed(2)+'%':'—'; }},
-      /* GDP per capita (#R9) — nominal USD, derived from bundled GDP × 1e9 / population. */
-      gdppc:{label:()=>currentLang==='jp'?'1人当たりGDP':'GDP per capita', fmt:s=>s.gdppc!=null?fmtPc(s.gdppc):'—'},
+      /* GDP per capita (#R9) — nominal USD; (#R22) the readout also shows the PPP figure when loaded. */
+      gdppc:{label:()=>currentLang==='jp'?'1人当たりGDP':'GDP per capita', fmt:s=>s.gdppc!=null?(fmtPc(s.gdppc)+(s.gdppcPPP!=null?' · PPP '+fmtPc(s.gdppcPPP):'')):'—'},
       tfr:{label:()=>currentLang==='jp'?'合計特殊出生率':'Total fertility rate', fmt:s=>s.tfr!=null?s.tfr.toFixed(2):'—'}
     };
     /* (#R13c) Value of the active choropleth under the cursor, for the bottom-left coord readout —
@@ -6744,14 +6779,14 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(id==='gdppc') ramp=['interpolate',['linear'],['to-number',['feature-state','gdppc'],-1],1000,'#fff7ec',5000,'#fee8c8',15000,'#fdbb84',30000,'#fc8d59',55000,'#e34a33',90000,'#7f0000'];
       else if(id==='tfr') ramp=['interpolate',['linear'],['to-number',['feature-state','tfr'],-1],1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02'];
       else ramp=['interpolate',['linear'],['to-number',['feature-state','pop'],-1],2,'#ffffcc',20,'#fed976',100,'#fd8d3c',500,'#e31a1c',3000,'#800026'];
-      /* Countries WITHOUT data are painted neutral grey. NOTE: an UNSET feature-state reads as
+      /* Countries WITHOUT data are painted neutral gray. NOTE: an UNSET feature-state reads as
          null, and MapLibre's to-number(null) is 0 (NOT the -1 fallback) — so we must test "<= 0",
          and applyChoro also writes an explicit -1 sentinel for no-data countries. All real metric
          values (HDI, Democracy 0–10, pop-density) are > 0, so "<= 0" cleanly means "no data". */
       const noData=['<=',['to-number',['feature-state',id],0],0];
       map.addLayer({id:id+'-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{
         'fill-color':['case',noData,'#9aa0a6',ramp],
-        /* No-data grey now scales with the opacity slider too (#44) — slightly subtler than data fills. */
+        /* No-data gray now scales with the opacity slider too (#44) — slightly subtler than data fills. */
         'fill-opacity':['case',noData,Math.max(0,opacities[id]*0.75),opacities[id]]
       }},beforeId);
       wireChoroHover(id);
@@ -6764,7 +6799,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const s=countryStats[f.id];
         const v=s?valFn(s):null;
         if(v!=null && !isNaN(v) && v>0){ map.setFeatureState({source:'countries',id:f.id},{[id]:v}); count++; }
-        else { map.setFeatureState({source:'countries',id:f.id},{[id]:-1}); }   /* explicit no-data → grey */
+        else { map.setFeatureState({source:'countries',id:f.id},{[id]:-1}); }   /* explicit no-data → gray */
       });
       /* If no data made it through, the layer would be invisible — warn and bail. */
       if(count===0) console.warn('applyChoro: no feature-state set for',id);
@@ -6773,7 +6808,7 @@ window.addEventListener('DOMContentLoaded', () => {
        outline. Built from a DEDICATED geojson (not the shared country feature-state) so we can drop the
        two member territories that lie SOUTH of the Tropic of Cancer — French Guiana (France) and Hawaii
        (USA) — which fall outside NATO's Article-6 treaty area. The Tropic of Cancer (23.4366°N) is drawn
-       as a labelled gold line so the exclusion is self-explanatory. */
+       as a labeled gold line so the exclusion is self-explanatory. */
     const TROPIC_CANCER=23.4366;
     /* (#R7) NATO Article 6 limits the treaty area to Europe/North America and North-Atlantic islands
        NORTH of the Tropic of Cancer. So we drop EVERY member sub-polygon whose centroid is south of that
@@ -6810,18 +6845,18 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function applyNato(){ const src=map.getSource('src-nato'); if(src){ try{ src.setData(buildNatoFC()); }catch(_){} } }
     function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
-    /* NATO accession years (#14) — shown on hover alongside the member's defence spend as % of GDP. */
+    /* NATO accession years (#14) — shown on hover alongside the member's defense spend as % of GDP. */
     const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
-    function defencePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
+    function defensePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
     function wireNatoHover(){
       if(map.__natoHover) return; map.__natoHover=true;
       map.on('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
-        const yr=NATO_JOIN[s.code], pct=defencePctGDP(s);
+        const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); el.style.display='block';
         el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'NATO加盟年':'Joined NATO'}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費':'Defence spending'}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費 (対GDP)':'Defence (% GDP)'}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
+          `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費':'Defense spending'}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
+          `<div style="color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'国防費 (対GDP)':'Defense (% GDP)'}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
         positionTooltip(e.point);
       });
       map.on('mouseleave','nato-fill',()=>{ if(mapTooltipEl) mapTooltipEl.style.display='none'; });
@@ -6848,12 +6883,12 @@ window.addEventListener('DOMContentLoaded', () => {
     window.imToggleFSU=function(on){ if(on){ withCountries(()=>{ try{ addFSU(); applyFSU(); setVis('fsu-fill',true); setVis('fsu-line',true); }catch(e){ console.warn('fsu fail',e); } }); } else { setVis('fsu-fill',false); setVis('fsu-line',false); } };
 
     /* Sea-level-rise simulator (#24): a color-relief layer over the DEM that floods everything at or
-       below the chosen +rise (window._seaLevelM, metres) in blue, leaving higher land transparent so
+       below the chosen +rise (window._seaLevelM, meters) in blue, leaving higher land transparent so
        the basemap shows through. The slider rebuilds the ramp live via _refreshSeaLevel. */
     function seaLevelRamp(){
       const L=window._seaLevelM||0;
       /* (#R9) Works for ANY offset incl. NEGATIVE (sea-level fall, the slider's minus side): build the
-         candidate depth→colour stops, then keep only strictly-ASCENDING ones so MapLibre's interpolate
+         candidate depth→color stops, then keep only strictly-ASCENDING ones so MapLibre's interpolate
          never receives a non-monotonic input (which threw with the old fixed -50 stop at low L). */
       const cand=[[-11000,'rgba(5,40,90,0.92)'],[L-50,'rgba(25,95,175,0.82)'],[L-1.5,'rgba(45,125,205,0.72)'],[L,'rgba(120,180,235,0.60)'],[L+0.6,'rgba(0,0,0,0)'],[12000,'rgba(0,0,0,0)']];
       const out=[]; let last=-Infinity;
@@ -6869,7 +6904,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window._refreshSeaLevel=function(){
       if(map.getLayer('lyr-sealevel')){ try{ map.setPaintProperty('lyr-sealevel','color-relief-color',seaLevelRamp()); }catch(_){} }
       const L=window._seaLevelM||0, clamp=Math.max(-150,Math.min(70,L));
-      /* (#R13c) imperial → show the offset in feet (slider stays in metres internally) */
+      /* (#R13c) imperial → show the offset in feet (slider stays in meters internally) */
       const _um=(typeof unitMode!=='undefined')?unitMode:'both';
       const slDisp=(L>=0?'+':'')+(_um==='imperial'?(Math.round(L*3.28084)+' ft'):(L+' m'));
       const sgn=slDisp;
@@ -6891,7 +6926,7 @@ window.addEventListener('DOMContentLoaded', () => {
        published. The palette below is byte-identical to the PNGs so cursor pixel-sampling
        (Mercator-inverse) round-trips perfectly. */
     /* (#R12/#R13c) Multi-period Köppen. Default stays present-day (1991-2020). All four eras are
-       reprojected by _koppen_convert.py to Web Mercator at 8192² (nearest-neighbour, crisp class
+       reprojected by _koppen_convert.py to Web Mercator at 8192² (nearest-neighbor, crisp class
        boundaries) and named koppen_mercator_<period>.png (the old koppen_mercator.png was retired);
        1931-1960 & 1961-1990 now use the user's updated, distinct source TIFFs. */
     window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator_1991-2020.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
@@ -6921,7 +6956,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window._koppenCanvas=null; window._koppenImg=null; window._koppenReady=false;
     /* PERF (#R13): the DISPLAYED Köppen raster is the full-res 8192² PNG (composited on the GPU). But
        cursor-sampling and class highlighting are CPU pixel ops, so they run on a small capped
-       work-canvas (≤2048, nearest-neighbour so the exact KCOL palette is preserved). ~19 km/px is
+       work-canvas (≤2048, nearest-neighbor so the exact KCOL palette is preserved). ~19 km/px is
        plenty to classify a point, and it makes the per-pixel index + highlight ~16× cheaper → the
        laggy period-switch / class-select the user reported is gone. */
     const KWORK_CAP=2048;
@@ -6981,15 +7016,15 @@ window.addEventListener('DOMContentLoaded', () => {
       catch(e){ return null; }
     };
     /* PERF (#12): classify every pixel into a Köppen-code index ONCE. The previous code ran a
-       30-colour nearest-match for every pixel on every highlight rebuild (W·H·30 ops per click,
+       30-color nearest-match for every pixel on every highlight rebuild (W·H·30 ops per click,
        tens of millions), which is why per-climate highlighting felt heavy. With the index cached,
-       each rebuild is a single cheap pass (no nearest-colour search), ~30× faster. */
+       each rebuild is a single cheap pass (no nearest-color search), ~30× faster. */
     window._koppenCodeIdx=null; window._koppenSrcData=null;
     function ensureKoppenCodeIndex(){
       if(window._koppenCodeIdx || !window._koppenCanvas) return;
       const c=window._koppenCanvas, W=c.width, H=c.height;
       let d; try{ d=c.getContext('2d').getImageData(0,0,W,H).data; }catch(e){ return; }
-      const idx=new Uint8Array(W*H), cache=new Map();      /* RGB→code-index cache (only ~30 colours) */
+      const idx=new Uint8Array(W*H), cache=new Map();      /* RGB→code-index cache (only ~30 colors) */
       for(let p=0,i=0;p<idx.length;p++,i+=4){
         if(d[i+3]<32){ idx[p]=255; continue; }
         const key=(d[i]<<16)|(d[i+1]<<8)|d[i+2];
@@ -7001,13 +7036,13 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         idx[p]=ci;
       }
-      window._koppenCodeIdx=idx; window._koppenSrcData=d;   /* keep the original pixels for fast recolour */
+      window._koppenCodeIdx=idx; window._koppenSrcData=d;   /* keep the original pixels for fast recolor */
     }
-    /* Highlight = recolour the climate image so SELECTED classes stay vivid and the rest is greyed +
+    /* Highlight = recolor the climate image so SELECTED classes stay vivid and the rest is grayed +
        faded, then feed it back into the SAME image source (the proven R12 approach the user was happy
        with — no separate overlay layer). It's computed on the small work-canvas, so the per-pixel pass
        and the toDataURL are ~16× cheaper than on the full 8192² image → the class-select lag is gone but
-       the behaviour/appearance matches the version that worked. When nothing is selected we restore the
+       the behavior/appearance matches the version that worked. When nothing is selected we restore the
        full-res KURL. */
     function buildKoppenHighlightURL(selectedSet){
       if(!window._koppenReady||!window._koppenCanvas) return null;
@@ -7022,14 +7057,14 @@ window.addEventListener('DOMContentLoaded', () => {
       for(let p=0,i=0;p<idx.length;p++,i+=4){
         const ci=idx[p];
         if(ci!==255 && selIdx[ci]){ o[i]=src[i]; o[i+1]=src[i+1]; o[i+2]=src[i+2]; o[i+3]=src[i+3]; }   /* selected: keep */
-        else { const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.28); }   /* rest: grey + faded */
+        else { const g=(src[i]+src[i+1]+src[i+2])/3; o[i]=g*0.6; o[i+1]=g*0.6; o[i+2]=g*0.6; o[i+3]=Math.floor(src[i+3]*0.28); }   /* rest: gray + faded */
       }
       octx.putImageData(img,0,0);
       try{ return out.toDataURL('image/png'); }catch(e){ return null; }
     }
     /* (#R13c) FULL-RES highlight. The user asked us to STOP dropping resolution when a class is
        highlighted: the small 2048² work-canvas is kept ONLY for fast cursor sampling, while the
-       DISPLAYED highlight is now recoloured at the source image's native resolution (8192² desktop /
+       DISPLAYED highlight is now recolored at the source image's native resolution (8192² desktop /
        4096² mobile cap) and encoded ASYNCHRONOUSLY (toBlob → objectURL) so the map never blurs and the
        UI never freezes. Built lazily on first highlight, freed when the selection clears / era changes.
        Graceful fallback to the small-canvas highlight if the full path can't run (file:// taint / OOM). */
@@ -7042,7 +7077,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R15c) The OOM kills the tab BEFORE any try/catch can fire (Chrome's OOM killer), so the only
        reliable fix is to never allocate the ~268 MB (8192²) output canvas + PNG buffer for the HIGHLIGHT.
        Cap the highlight at 4096² desktop / 2048² mobile (out-canvas ≤67 MB / ≤16 MB). The BASE Köppen
-       image stays full 8192² (unhighlighted view = no quality loss); the greyed highlight at 4096² is
+       image stays full 8192² (unhighlighted view = no quality loss); the grayed highlight at 4096² is
        still crisp at any normal zoom. This is what finally stops the "選ぶと落ちて先祖返り" crash. */
     function _koppenFullCap(){ try{
       if(typeof isMobile==='function'&&isMobile()) return 2048;
@@ -7056,7 +7091,7 @@ window.addEventListener('DOMContentLoaded', () => {
        HALVE the peak so it no longer crashes, while keeping the SAME 8192²/4096² resolution (画質維持):
        (1) The Köppen image is a CATEGORICAL palette, so we never keep the raw RGBA — we keep only a
            1-byte-per-pixel class index (`idx`), built in horizontal STRIPS (peak ≈ one strip, not the
-           whole image), and reconstruct every colour from KCOL.
+           whole image), and reconstruct every color from KCOL.
        (2) The output is written in STRIPS too (one small ImageData per strip, blitted onto the canvas),
            so we never allocate a second full-frame ImageData.
        Any allocation/taint failure is caught → the caller falls back to the small-canvas highlight. */
@@ -7095,7 +7130,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const f=ensureKoppenFull(); if(!f){ cb(null); return; }
       try{
         const idx=f.idx, W=f.W, H=f.H, N=KCOL.length;
-        /* per-class colour LUT (selected→vivid KCOL, else grey+faded); index 255 → transparent */
+        /* per-class color LUT (selected→vivid KCOL, else gray+faded); index 255 → transparent */
         const LR=new Uint8Array(256),LG=new Uint8Array(256),LB=new Uint8Array(256),LA=new Uint8Array(256);
         for(let k=0;k<N;k++){ const c=KCOL[k][1];
           if(selectedSet.has(KCOL[k][0])){ LR[k]=c[0];LG[k]=c[1];LB[k]=c[2];LA[k]=255; }
@@ -7117,20 +7152,20 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ===== (#R18) GPU highlight — FULL native resolution on EVERY device, ZERO allocation. =====
        The canvas pipeline above re-encodes the whole image to highlight a class, which forced a
        resolution cap (the 8192² output canvas alone is ~268 MB → mobile OOM). Instead: the Köppen
-       palette is CATEGORICAL, so `raster-color` (MapLibre ≥4.6 — we ship v5) can re-colour each class
-       IN THE SHADER on the original full-res texture: selected classes keep their vivid palette colour,
-       the rest collapse to faded grey. raster-color-mix maps each palette RGB to a unique scalar
+       palette is CATEGORICAL, so `raster-color` (MapLibre ≥4.6 — we ship v5) can re-color each class
+       IN THE SHADER on the original full-res texture: selected classes keep their vivid palette color,
+       the rest collapse to faded gray. raster-color-mix maps each palette RGB to a unique scalar
        (weights [2.7,0.6,0.1] separate all 30 classes by ≥1.1% of the 0–3.3 range — safe even in fp16),
-       and a `step` ramp assigns the output colour per class. No second decode, no canvas, no PNG encode →
+       and a `step` ramp assigns the output color per class. No second decode, no canvas, no PNG encode →
        the displayed quality is the full 8192² everywhere AND the crash vector is gone ("画質は保持しろ、
        ただしモバイルでも落とすな" — both at once). raster-resampling:nearest while highlighted keeps
-       texels exact (no blended colours falling into the wrong bin); restored to linear when cleared.
+       texels exact (no blended colors falling into the wrong bin); restored to linear when cleared.
        Runtime feature-detect (window._koppenGPUOK) falls back to the proven canvas path on old engines. */
     const KOPPEN_MIX=[2.7,0.6,0.1,0], KOPPEN_RANGE=[0,3.3];
     function _kScalar(c){ return 2.7*c[0]/255+0.6*c[1]/255+0.1*c[2]/255; }
     function koppenColorRamp(selectedSet){
       /* a `step` over the normalised raster-value: ocean/transparent (value≈0) → fully transparent;
-         each class band → its colour (selected = vivid, else faded grey). Stops are the midpoints
+         each class band → its color (selected = vivid, else faded gray). Stops are the midpoints
          between adjacent class scalars so every texel lands squarely in its own band. */
       const entries=KCOL.map(([code,c])=>({code,c,v:_kScalar(c)/KOPPEN_RANGE[1]})).sort((a,b)=>a.v-b.v);
       const colFor=(e)=>{ if(selectedSet.has(e.code)) return 'rgba('+e.c[0]+','+e.c[1]+','+e.c[2]+',1)';
@@ -7139,7 +7174,7 @@ window.addEventListener('DOMContentLoaded', () => {
       for(let i=0;i<entries.length;i++){ const lo=(i===0)?entries[0].v/2:(entries[i-1].v+entries[i].v)/2; expr.push(lo, colFor(entries[i])); }
       return expr;
     }
-    /* Apply (or clear) the GPU recolour. Returns null if the layer isn't added yet (retry later, do NOT
+    /* Apply (or clear) the GPU recolor. Returns null if the layer isn't added yet (retry later, do NOT
        disable GPU), true on success, false only if the engine actually rejects raster-color → canvas fallback. */
     function applyKoppenGPUHighlight(){
       if(!map.getLayer('lyr-climate')) return null;
@@ -7168,7 +7203,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(window._koppenGPUOK!==false){
           const ok=applyKoppenGPUHighlight();
           if(ok===true){ window._koppenGPUOK=true;
-            /* the GPU recolours the live full-res texture, so the source image stays the plain era PNG */
+            /* the GPU recolors the live full-res texture, so the source image stays the plain era PNG */
             if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
             try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(_){}
             freeKoppenFull();
@@ -7208,9 +7243,9 @@ window.addEventListener('DOMContentLoaded', () => {
       window._koppenCodeIdx=null; window._koppenSrcData=null;
       /* (#R13c) drop the full-res highlight buffers + objectURL so the new era rebuilds them */
       window._koppenFull=null; if(window._koppenHLUrl){ try{ URL.revokeObjectURL(window._koppenHLUrl); }catch(_){} window._koppenHLUrl=null; }
-      /* (#R18) With the GPU recolour the displayed texture IS the plain era PNG (the highlight is a shader
-         pass), so we can swap straight to the new era's image with no all-climate flash — the recolour
-         paint stays valid across the swap. On the canvas fallback we keep the R15/#20 behaviour: don't
+      /* (#R18) With the GPU recolor the displayed texture IS the plain era PNG (the highlight is a shader
+         pass), so we can swap straight to the new era's image with no all-climate flash — the recolor
+         paint stays valid across the swap. On the canvas fallback we keep the R15/#20 behavior: don't
          swap to the full base first when a class is highlighted (that flashed every climate for a frame). */
       if(window._koppenGPUOK || kSelected.size===0){ try{ if(map.getSource('src-climate')) map.getSource('src-climate').updateImage({url:KURL,coordinates:KCOORDS}); }catch(e){} }
       loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(e){} });
@@ -7437,7 +7472,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Live aircraft = airplanes.live (free, key-less, CORS-enabled community ADS-B network).
        OpenSky's REST API is CORS-blocked from browsers and now rate-limits/auth-gates anonymous
        access, so it cannot be reached client-side; airplanes.live serves the SAME real live ADS-B
-       data with proper CORS headers (and richer fields). We query the current viewport (centre +
+       data with proper CORS headers (and richer fields). We query the current viewport (center +
        radius, capped at the API's 250 nm max) so the aircraft match what's on screen, capturing
        every field for the tooltip + the exact data timestamp. Synthetic data is now a last resort
        only when the device is offline / the feed is unreachable. */
@@ -7474,8 +7509,8 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R19) Military = dbFlags bit 0 ONLY. That bit comes from the curated Mictronics/tar1090
          registration database (per-airframe, not guessed), so it's trustworthy — which is why the
          military/civilian Filter stays. The old callsign-prefix heuristic ("KING", "SHELL", "BLUE"…)
-         mislabelled ordinary airline callsigns as military and is dropped from the live path
-         (classifyAircraft is still used by the clearly-labelled offline synthetic fallback only). */
+         mislabeled ordinary airline callsigns as military and is dropped from the live path
+         (classifyAircraft is still used by the clearly-labeled offline synthetic fallback only). */
       const mil=!!((a.dbFlags|0)&1);
       return {
         icao24:(a.hex||'').toUpperCase(), callsign:(a.flight||'').trim(), reg:a.r||'', acType:a.t||'', desc:a.desc||'',
@@ -7506,7 +7541,7 @@ window.addEventListener('DOMContentLoaded', () => {
           refreshTrafficLayer('planes'); return;
         }
       }catch(e){ console.warn('airplanes.live fetch failed',e); }
-      /* feed unreachable (offline / blocked) → clearly-labelled synthetic placeholder so the layer isn't empty */
+      /* feed unreachable (offline / blocked) → clearly-labeled synthetic placeholder so the layer isn't empty */
       console.warn('Live aircraft feed unavailable — using synthetic placeholder'); genSyntheticPlanes();
     }
     /* Synthetic ship demo data — real-time AIS is paywalled. Distributes ships GLOBALLY along major sea lanes + chokepoints. */
@@ -7584,7 +7619,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const en=['Under way (engine)','At anchor','Not under command','Restricted manoeuvrability','Constrained by draught','Moored','Aground','Fishing','Under way (sailing)'];
       const ja=['航行中(機走)','錨泊','操縦不能','操縦制限','喫水制限','係留','座礁','漁労中','航行中(帆走)'];
       return (c>=0&&c<=8)?(jp?ja[c]:en[c]):''; }
-    /* Ship glyphs (top-view hull) — coloured + rotated by heading/COG, like the plane icons. */
+    /* Ship glyphs (top-view hull) — colored + rotated by heading/COG, like the plane icons. */
     function ensureShipIcons(){
       if(!map) return;
       const make=(color)=>{ const s=40, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
@@ -7624,7 +7659,7 @@ window.addEventListener('DOMContentLoaded', () => {
       });
       src.setData({type:'FeatureCollection',features});
     }
-    /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can colour +
+    /* Plane glyphs (top-view silhouette) generated on a canvas, one per class, so we can color +
        rotate them by heading. Pointing "up" = heading 0; MapLibre icon-rotate is clockwise-from-north. */
     function ensurePlaneIcons(){
       if(!map) return;
@@ -7743,7 +7778,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* === Submarine cables (#36) — TeleGeography "Submarine Cable Map" open data ===
        Their public API serves all cable routes + landing points as GeoJSON; each cable
-       carries its own colour. Loaded lazily with the same CORS-proxy fallbacks used elsewhere. */
+       carries its own color. Loaded lazily with the same CORS-proxy fallbacks used elsewhere. */
     let _subcablesLoading=false;
     async function fetchSubcables(){
       const cableUrl='https://www.submarinecablemap.com/api/v3/cable/cable-geo.json';
@@ -7807,7 +7842,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const frames=(kind==='radar') ? (_rvData.radar&&_rvData.radar.past) : (_rvData.satellite&&_rvData.satellite.infrared);
       if(!frames||!frames.length) return null;
       const path=frames[frames.length-1].path;  /* the most recent available frame */
-      /* radar: colour scheme 4 (blue→red), smoothed + snow; clouds: IR scheme 0 */
+      /* radar: color scheme 4 (blue→red), smoothed + snow; clouds: IR scheme 0 */
       return (kind==='radar') ? [host+path+'/256/{z}/{x}/{y}/4/1_1.png'] : [host+path+'/256/{z}/{x}/{y}/0/0_0.png'];
     }
     function addRainViewer(kind){
@@ -7886,7 +7921,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         else if(id==='wind'){ try{ const l=document.getElementById('data-legend-wind'); if(l){ l.style.display='block'; tileLegends(); window._updateWindLegend&&window._updateWindLegend(); } window.Wind&&window.Wind.toggle(true); }catch(_){} }
         else if(id==='relief'){
-          /* Colour elevation relief (#5) — MapLibre v5 color-relief over the DEM, hypsometric tint. */
+          /* Color elevation relief (#5) — MapLibre v5 color-relief over the DEM, hypsometric tint. */
           whenStyleReady().then(()=>{ try{
             ensureTerrainSource();
             if(!map.getLayer('lyr-relief')){
@@ -7896,7 +7931,7 @@ window.addEventListener('DOMContentLoaded', () => {
                   0,'#1a7a3c',150,'#4fae5b',500,'#a6d96a',1000,'#e6e08b',1800,'#d9a066',2800,'#a87b52',3800,'#9b6b4a',4800,'#cdbfb4',6000,'#ffffff']}},beforeId);
             }
             setVis('lyr-relief',true); if(lgdRelief){ lgdRelief.style.display='block'; tileLegends(); }
-          }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'カラー標高を初期化できませんでした':'Colour relief unavailable'); }catch(_){} } });
+          }catch(e){ console.warn('relief fail',e); const cb=document.getElementById('dl-relief'); if(cb){cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on');} try{ satToast(currentLang==='jp'?'カラー標高を初期化できませんでした':'Color relief unavailable'); }catch(_){} } });
         }
         else if(id==='sealevel'){
           lgdSeaLevel.style.display='block'; tileLegends();
@@ -7956,7 +7991,7 @@ window.addEventListener('DOMContentLoaded', () => {
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){
-          /* NATO members fill only (#14) — no legend; accession year + defence %GDP show on hover. */
+          /* NATO members fill only (#14) — no legend; accession year + defense %GDP show on hover. */
           withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
@@ -7975,7 +8010,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R19) Phones: drop the Köppen sampling work-set (4096² canvas + pixel copies, ~150 MB)
              the moment the layer is off — it lazily rebuilds on the next toggle. A big slice of the
              "何か重い動作をすると頻繁にブラウザが落ちます" memory pressure. Desktop keeps it for instant
-             re-toggle. The GPU recolour path never needs these buffers at all. */
+             re-toggle. The GPU recolor path never needs these buffers at all. */
           if(typeof isMobile==='function'&&isMobile()){
             try{ window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
                  window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; }catch(_){}
@@ -8025,7 +8060,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window._trafficFilters=trafficFilters;
     function setLayerOpacity(id,v){ opacities[id]=v;
       if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){
-        /* Keep no-data countries grey (0.45) — see addChoro for the "<= 0" reasoning. */
+        /* Keep no-data countries gray (0.45) — see addChoro for the "<= 0" reasoning. */
         if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',v); }
@@ -8184,7 +8219,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let commSearch='', commCatFilter='all', commInView=false;
   let composeEditId=null, composeCat='general', replyingTo=null;
   let commCollapsed={};              /* postId -> true when its comment thread is collapsed */
-  /* Post categories — drive the composer chips, feed filter, card chip and pin colour. */
+  /* Post categories — drive the composer chips, feed filter, card chip and pin color. */
   const COMM_CATEGORIES=[
     { id:'general',  emoji:'💬', color:'#8e8e93', label:{en:'General',  jp:'全般'} },
     { id:'conflict', emoji:'⚔️', color:'#ff3b30', label:{en:'Conflict', jp:'紛争'} },
@@ -8197,7 +8232,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ];
   const commCatById=(id)=>COMM_CATEGORIES.find(c=>c.id===id)||COMM_CATEGORIES[0];
   const commCatLabel=(id)=>{ const c=commCatById(id); return c.label[currentLang]||c.label.en; };
-  /* Deterministic avatar (coloured initial) from a display name. */
+  /* Deterministic avatar (colored initial) from a display name. */
   function commAvatar(name){
     const s=(name||'?').trim(); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0;
     const hue=Math.abs(h)%360, init=escapeHtml(s.slice(0,/[A-Za-z0-9]/.test(s[0]||'')?2:1).toUpperCase()||'?');
@@ -8230,7 +8265,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
   /* Square-crop modal shown AFTER picking an avatar image (#12): drag to pan, slider to zoom, then
-     Apply renders the visible square to a 256² JPEG. Resolves null if cancelled. */
+     Apply renders the visible square to a 256² JPEG. Resolves null if canceled. */
   window.imCropImage=function(file){
     return new Promise((resolve)=>{
       const url=URL.createObjectURL(file); const SIZE=260;
@@ -8285,7 +8320,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function setupCommunityLayer(){
     if(!map||!map.isStyleLoaded()) return;
     if(!map.getSource('community-points')){
-      /* Colour pins by post category (falls back to green for un-categorised). */
+      /* Color pins by post category (falls back to green for un-categorised). */
       const catColor=['match',['get','cat']].concat(COMM_CATEGORIES.flatMap(c=>[c.id,c.color])).concat(['#34c759']);
       map.addSource('community-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
       map.addLayer({id:'community-pulse',type:'circle',source:'community-points',paint:{
@@ -8585,7 +8620,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const title=document.getElementById('compose-post-title').value.trim();
     const body=document.getElementById('compose-post-body').value.trim();
     if(!title && !body){ imToast(currentLang==='jp'?'タイトルか本文を入力してください。':'Enter a title or some text.'); return; }
-    /* never dead-end on a missing location: fall back to the current map centre */
+    /* never dead-end on a missing location: fall back to the current map center */
     if(!pendingPostLoc){ if(map){ const c=map.getCenter(); pendingPostLoc=[c.lng,c.lat]; } else { imToast(currentLang==='jp'?'位置が設定されていません。':'Location not set.'); return; } }
     const loc=[pendingPostLoc[0],pendingPostLoc[1]], img=pendingImg||'';
     const btn=document.getElementById('compose-submit'); btn.disabled=true;
@@ -8741,9 +8776,9 @@ window.addEventListener('DOMContentLoaded', () => {
       sidebar.style.setProperty('--sheet-ty',ty+'px');
       if(!animate){ void sidebar.offsetHeight; sidebar.classList.remove('sheet-dragging'); }
       document.body.classList.toggle('sheet-full', name==='full');
-      /* keep the map's optical centre inside the area visible ABOVE the sheet — but ONLY on mobile.
+      /* keep the map's optical center inside the area visible ABOVE the sheet — but ONLY on mobile.
          (#R13) On desktop there is no bottom sheet; if this ever runs there it must not pad the bottom,
-         which was dropping the map's optical centre toward the bottom of the screen. */
+         which was dropping the map's optical center toward the bottom of the screen. */
       const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
       /* --sheet-cover tracks how much the sheet currently covers, so floating controls (timebar,
          Summarize, legends) sit just above the sheet's CURRENT top — not the fixed peek line — and
@@ -8754,10 +8789,10 @@ window.addEventListener('DOMContentLoaded', () => {
     window.__setDetent=setDetent;
 
     let dragging=false,startY=0,startTy=0,lastY=0,lastT=0,vel=0,maxTy=0,dragD=null,_padRAF=0,_lastPad=-1;
-    /* Keep the map's optical centre inside the area visible ABOVE the sheet, live (no animation)
-       so the centred point never drifts while the sheet is being dragged.
+    /* Keep the map's optical center inside the area visible ABOVE the sheet, live (no animation)
+       so the centerd point never drifts while the sheet is being dragged.
        (#R12) map.setPadding reprojects the whole camera — doing it 60×/s on a WebGL globe is what made
-       the live re-centre feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
+       the live re-center feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
        floating controls glide), but the expensive setPadding is gated to ≥5px movement and one call/rAF. */
     function liveMapPad(ty,d){ d=d||dragD||recompute();
       const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
@@ -8863,7 +8898,7 @@ window.addEventListener('DOMContentLoaded', () => {
     _dc('d-siachen','mil','mil',77.0,35.3,'Siachen Glacier','シアチェン氷河','World’s highest militarised zone, contested by India & Pakistan.','印パが対峙する世界最高所の軍事地帯。','Siachen_Glacier','Disputed'),
     _dc('d-fierycross','mil','maritime',112.89,9.55,'Fiery Cross Reef','永暑礁','Militarised Chinese artificial island in the Spratlys.','南沙諸島の中国の人工島・軍事拠点。','Fiery_Cross_Reef','PLA'),
     _dc('d-svalbard','geo','geo',15.6,78.22,'Svalbard','スヴァールバル','Arctic archipelago under a unique demilitarised treaty regime.','独特の非武装条約下にある北極の群島。','Svalbard','Arctic'),
-    _dc('d-svm','tech','tech',-122.08,37.39,'Silicon Valley','シリコンバレー','Global epicentre of semiconductors, software and venture capital.','半導体・ソフト・VCの世界的中心地。','Silicon_Valley','Tech'),
+    _dc('d-svm','tech','tech',-122.08,37.39,'Silicon Valley','シリコンバレー','Global epicenter of semiconductors, software and venture capital.','半導体・ソフト・VCの世界的中心地。','Silicon_Valley','Tech'),
     _dc('d-hsinchu','tech','tech',120.99,24.78,'Hsinchu Science Park','新竹サイエンスパーク','Heart of Taiwan’s chip industry — home of TSMC fabs.','台湾半導体の中心。TSMCの拠点。','Hsinchu_Science_Park','Semis'),
     _dc('d-shenzhen','tech','tech',114.06,22.54,'Shenzhen','深セン','China’s hardware & electronics manufacturing powerhouse.','中国のハードウェア製造の中枢。','Shenzhen','Tech'),
     _dc('d-bangalore','tech','tech',77.59,12.97,'Bengaluru','ベンガルール','India’s IT & software services capital.','インドのIT・ソフト産業の中心。','Bangalore','IT'),
@@ -8873,11 +8908,11 @@ window.addEventListener('DOMContentLoaded', () => {
     _dc('d-pinegap','tech','space',133.74,-23.8,'Pine Gap','パインギャップ','US-Australia satellite intelligence ground station.','米豪の衛星情報地上局。','Pine_Gap','Intel'),
     _dc('d-canaveral','tech','space',-80.6,28.49,'Cape Canaveral','ケープカナベラル','Primary US east-coast spaceport.','米東海岸の主要宇宙基地。','Cape_Canaveral_Space_Force_Station','Space'),
     _dc('d-baikonur','tech','space',63.34,45.92,'Baikonur Cosmodrome','バイコヌール宇宙基地','World’s oldest & largest operational spaceport (Russia/Kazakhstan).','世界最古・最大の運用中の宇宙基地。','Baikonur_Cosmodrome','Space'),
-    _dc('d-jiuquan','tech','space',100.29,40.96,'Jiuquan','酒泉衛星発射センター','China’s crewed-spaceflight launch centre.','中国の有人宇宙飛行の発射拠点。','Jiuquan_Satellite_Launch_Center','Space'),
-    _dc('d-kourou','tech','space',-52.77,5.24,'Guiana Space Centre','ギアナ宇宙センター','Europe’s spaceport near the equator (Kourou).','赤道近くの欧州の宇宙基地（クールー）。','Guiana_Space_Centre','ESA'),
+    _dc('d-jiuquan','tech','space',100.29,40.96,'Jiuquan','酒泉衛星発射センター','China’s crewed-spaceflight launch center.','中国の有人宇宙飛行の発射拠点。','Jiuquan_Satellite_Launch_Center','Space'),
+    _dc('d-kourou','tech','space',-52.77,5.24,'Guiana Space Center','ギアナ宇宙センター','Europe’s spaceport near the equator (Kourou).','赤道近くの欧州の宇宙基地（クールー）。','Guiana_Space_Center','ESA'),
     _dc('d-vandenberg','tech','space',-120.6,34.74,'Vandenberg SFB','ヴァンデンバーグ','US polar-orbit launches & missile testing.','米の極軌道打上げ・ミサイル試験。','Vandenberg_Space_Force_Base','USSF'),
     _dc('d-tanegashima','tech','space',130.97,30.39,'Tanegashima','種子島宇宙センター','Japan’s main rocket launch site.','日本の主要ロケット発射場。','Tanegashima_Space_Center','JAXA'),
-    _dc('d-sriharikota','tech','space',80.23,13.72,'Satish Dhawan (Sriharikota)','サティシュ・ダワン','India’s spaceport (ISRO).','インドの宇宙基地（ISRO）。','Satish_Dhawan_Space_Centre','ISRO'),
+    _dc('d-sriharikota','tech','space',80.23,13.72,'Satish Dhawan (Sriharikota)','サティシュ・ダワン','India’s spaceport (ISRO).','インドの宇宙基地（ISRO）。','Satish_Dhawan_Space_Center','ISRO'),
     _dc('d-hormuz','maritime','choke',56.3,26.57,'Strait of Hormuz','ホルムズ海峡','~20% of global oil passes this 33 km-wide chokepoint.','世界石油の約2割が通る要衝。','Strait_of_Hormuz','Chokepoint'),
     _dc('d-malacca','maritime','choke',100.4,2.5,'Strait of Malacca','マラッカ海峡','Vital Asia–Europe shipping lane; ~25% of traded goods.','アジア欧州を結ぶ最重要航路。','Strait_of_Malacca','Chokepoint'),
     _dc('d-suez','maritime','choke',32.35,30.6,'Suez Canal','スエズ運河','Egypt’s canal linking the Mediterranean and Red Sea.','地中海と紅海を結ぶ運河。','Suez_Canal','Chokepoint'),
@@ -8919,7 +8954,7 @@ window.addEventListener('DOMContentLoaded', () => {
     _dc('d-kunsan','mil','mil',126.62,35.9,'Kunsan Air Base','群山空軍基地','US fighter base on Korea’s west coast.','韓国西岸の米戦闘機基地。','Kunsan_Air_Base','USAF'),
     _dc('d-aviano','mil','mil',12.6,46.03,'Aviano Air Base','アヴィアーノ空軍基地','Key US/NATO air base in northern Italy.','北イタリアの米・NATO重要基地。','Aviano_Air_Base','USAF'),
     _dc('d-sigonella','mil','maritime',14.92,37.4,'NAS Sigonella','シゴネラ航空基地','“Hub of the Med” — US naval air station in Sicily.','地中海の要、シチリアの米海軍航空基地。','Naval_Air_Station_Sigonella','USN'),
-    _dc('d-rota','mil','maritime',-6.35,36.62,'Naval Station Rota','ロタ海軍基地','US/Spanish base hosting missile-defence destroyers on the Atlantic.','弾道ミサイル防衛艦が展開する米西基地。','Naval_Station_Rota','USN'),
+    _dc('d-rota','mil','maritime',-6.35,36.62,'Naval Station Rota','ロタ海軍基地','US/Spanish base hosting missile-defense destroyers on the Atlantic.','弾道ミサイル防衛艦が展開する米西基地。','Naval_Station_Rota','USN'),
     _dc('d-souda','mil','maritime',24.15,35.53,'Souda Bay','スーダ湾','US/NATO naval base on Crete commanding the eastern Med.','東地中海を扼するクレタ島の米・NATO基地。','Naval_Support_Activity_Souda_Bay','NATO'),
     _dc('d-lakenheath','mil','mil',0.561,52.41,'RAF Lakenheath','レイクンヒース空軍基地','Largest US Air Force base in England (F-35).','英国最大の米空軍基地（F-35）。','RAF_Lakenheath','USAF'),
     _dc('d-menwith','mil','tech',-1.69,54.01,'RAF Menwith Hill','メンウィズヒル基地','Major US/UK signals-intelligence ground station.','米英の主要な信号情報傍受局。','RAF_Menwith_Hill','SIGINT'),
@@ -8962,7 +8997,7 @@ window.addEventListener('DOMContentLoaded', () => {
     _dc('d2-mayport','mil','maritime',-81.4,30.39,'Naval Station Mayport','メイポート海軍基地','Atlantic surface-fleet & carrier-capable base in Florida.','大西洋水上艦隊の基地（フロリダ）。','Naval_Station_Mayport','USN'),
     _dc('d2-offutt','mil','mil',-95.91,41.12,'Offutt AFB','オファット空軍基地','Headquarters of US Strategic Command (STRATCOM).','米戦略軍（STRATCOM）の司令部。','Offutt_Air_Force_Base','STRATCOM'),
     _dc('d2-creech','mil','mil',-115.67,36.58,'Creech AFB','クリーチ空軍基地','Hub of US remotely-piloted (drone) operations.','米無人機（ドローン）作戦の中枢。','Creech_Air_Force_Base','USAF'),
-    _dc('d2-edwards','mil','space',-117.88,34.9,'Edwards AFB','エドワーズ空軍基地','US flight-test centre on a Mojave dry lakebed.','モハーベ砂漠の米飛行試験センター。','Edwards_Air_Force_Base','USAF'),
+    _dc('d2-edwards','mil','space',-117.88,34.9,'Edwards AFB','エドワーズ空軍基地','US flight-test center on a Mojave dry lakebed.','モハーベ砂漠の米飛行試験センター。','Edwards_Air_Force_Base','USAF'),
     _dc('d2-fairford','mil','mil',-1.79,51.68,'RAF Fairford','フェアフォード空軍基地','US strategic-bomber forward base in England.','英国の米戦略爆撃機前方基地。','RAF_Fairford','USAF'),
     _dc('d2-grafenwoehr','mil','mil',11.94,49.7,'Grafenwöhr','グラーフェンヴェーア','Largest US Army training area in Europe.','在欧米陸軍最大の訓練場。','Grafenwöhr_Training_Area','US Army'),
     _dc('d2-mkair','mil','mil',28.49,44.36,'Mihail Kogălniceanu','コガルニチェアヌ基地','Expanding US/NATO air hub on Romania’s Black Sea coast.','黒海沿岸の拡張中の米・NATO空軍拠点。','Mihail_Kogălniceanu_International_Airport','NATO'),
@@ -9126,7 +9161,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <button id="acct-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:6px;padding:6px;cursor:pointer;font-size:13px;">${currentLang==='jp'?'閉じる':'Close'}</button>
       </div>`;
       document.body.appendChild(m);
-      /* Avatar picker (#28): emoji + colour, stored locally (and used as the account-button icon). */
+      /* Avatar picker (#28): emoji + color, stored locally (and used as the account-button icon). */
       const AV_EMOJI=['👤','🌍','🛰️','⚓','✈️','🛡️','📡','⛰️','🗺️','🔭','📰','🏛️','🦅','🐻','🐉','🌐'];
       const pick=document.getElementById('acct-avatar-pick');
       pick.innerHTML=AV_EMOJI.map(e=>`<button class="acct-emoji" data-e="${e}">${e}</button>`).join('');
@@ -9435,7 +9470,7 @@ window.addEventListener('DOMContentLoaded', () => {
   Object.assign(i18n.en,{ favLayers:"Favorite layers", uploadGeoJSON:"Upload GeoJSON", screenshotBtn:"Screenshot (hides controls, keeps legends)",
     lblSidebarStyle:"Sidebar appearance", sidebarOpaque:"Solid (default)", sidebarTranslucent:"Frosted glass", sidebarGlass2:"Frosted glass (more transparent)",
     lblLabelLang:"Place-name labels", labelLangUi:"Match app language", labelLangLocal:"Local language (native script)", labelLangEn:"Always English",
-    lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centred)", flatPanFree:"Free pan (wrap around the world)",
+    lblFlatPan:"Flat map view", flatPanFixed:"Fixed extent (Europe-centerd)", flatPanFree:"Free pan (wrap around the world)",
     lblNewsCountries:"News by country media", newsCountriesHint:"Pull headlines from the media of the countries you pick (multiple allowed).",
     lblDataSources:"Data & attribution", viewDataSources:"View all data sources ↗", srcModalTitle:"Data sources & attribution", srcModalSub:"IntMap aggregates the following third-party data, imagery and APIs. All trademarks belong to their owners.",
     screenshotSaved:"Screenshot saved ✓", screenshotBusy:"Capturing…", measureClickClose:"Click the first point to close", lyrSubcables:"Submarine cables",
@@ -9501,8 +9536,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.body.classList.toggle('sidebar-glass2', s==='glass2');
     document.body.classList.toggle('sidebar-glass', frosted);   /* drives the desktop overlay-frost */
     /* Desktop frosted mode overlays the sidebar on the map so the glass has the map behind it to
-       blur (#23). Keep the map's optical centre in the area to the RIGHT of the glass by padding the
-       camera by the sidebar width — ANIMATED so the centred point glides with the 0.4s slide instead
+       blur (#23). Keep the map's optical center in the area to the RIGHT of the glass by padding the
+       camera by the sidebar width — ANIMATED so the centerd point glides with the 0.4s slide instead
        of snapping (#4). Mobile padding is owned by the bottom-sheet detents — leave it. */
     try{
       if(map && map.setPadding && !isMobile()){
@@ -9510,7 +9545,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const collapsed=sb && sb.classList.contains('collapsed');
         const pad=(frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0;
         /* Match the sidebar's CSS transition (margin-left 0.4s cubic-bezier(0.25,1,0.5,1) ≈ easeOutCubic)
-           so the optical centre GLIDES in perfect lock-step with the slide — no lag, no snap (#R7). */
+           so the optical center GLIDES in perfect lock-step with the slide — no lag, no snap (#R7). */
         map.setPadding({top:0,right:0,bottom:0,left:pad}, {duration:animate?400:0, easing:x=>1-Math.pow(1-x,3)});
         if(!animate) requestAnimationFrame(()=>{ try{ map.resize(); }catch(_){} });
       }
@@ -9622,7 +9657,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
     if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }
     if(cb.id&&cb.id.indexOf('dl-')===0){ const k=cb.id.slice(3); const row=cb.closest('.layer-option')||cb.closest('.lyr-row'); const sp=row&&(row.querySelector('span[data-i18n]')||row.querySelector('span.ec-lbl')); return {key:'data:'+k, label:(sp?sp.textContent:k)}; }
-    /* (#R17/#R18) Some layer rows couldn't be favourited because their checkbox id isn't `dl-…` (land-cover /
+    /* (#R17/#R18) Some layer rows couldn't be favorited because their checkbox id isn't `dl-…` (land-cover /
        ecoregions `eco-dl-*`, Round-9 `l9-dl-*`) OR the row uses `.lyr-row` without a `.layer-option` wrapper.
        Give EVERY layer-row checkbox that has an id a star, keyed by its id, sourcing the label from the
        nearest label span in EITHER container. (cb-grid is a utility → no star.) */
@@ -9653,7 +9688,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function injectLayerStars(){
     allLayerCbs().forEach(cb=>{
       /* (#R18) accept rows that use .lyr-row without a .layer-option wrapper too, so no layer is left
-         without a favourite star ("お気に入りボタンをできないレイヤーがある"). */
+         without a favorite star ("お気に入りボタンをできないレイヤーがある"). */
       const opt=cb.closest('.layer-option')||cb.closest('.lyr-row'); if(!opt||opt.querySelector('.lyr-star')) return;
       const info=layerCbInfo(cb); if(!info) return;
       const star=document.createElement('button'); star.className='lyr-star'+(window.imLayerFavs.includes(info.key)?' on':'');
@@ -9925,7 +9960,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R7-proj) The Flat-view no longer carries a projection SELECTOR — Flat = real Mercator and Globe
        stay in perfect lock-step with the live map (the user disliked a separate "blank" projection
        window hijacking the Flat toggle). The alternative projections live in the right-click context
-       menu instead: Azimuthal-equidistant is centred on the clicked point, and an "All projections…"
+       menu instead: Azimuthal-equidistant is centerd on the clicked point, and an "All projections…"
        entry opens the viewer (whose own bar still switches between Equal Earth / Robinson / Winkel /
        Mollweide / Equirectangular / Azimuthal). So buildEntries no longer injects any selector. */
     function buildEntries(){ /* intentionally empty — see note above */ }
@@ -9938,7 +9973,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ---------- Animated wind layer (#9) ---------- */
   /* REAL global 10 m wind field from Open-Meteo (GFS), no key, CORS-enabled (Access-Control-Allow-
      Origin:* — works from file:// too). The previous version advected particles in SCREEN space using a
-     single centre-based px/degree, which is badly wrong everywhere except the centre on the globe (the
+     single center-based px/degree, which is badly wrong everywhere except the center on the globe (the
      projection curves and the bearing rotates north away from "up") — that is why it looked like
      nonsense. This version keeps every particle as a true GEOGRAPHIC coordinate (lng/lat), advects it
      through the wind field in degrees, and PROJECTS it with the live map each frame — so the flow is
@@ -9946,11 +9981,11 @@ window.addEventListener('DOMContentLoaded', () => {
   window.Wind=(function(){
     const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){},setOpacity(){}};
     const ctx=cv.getContext('2d');
-    /* (#R8b) ARCHITECTURE CHANGE. The speed-colour FIELD is no longer a screen-space canvas — that was
+    /* (#R8b) ARCHITECTURE CHANGE. The speed-color FIELD is no longer a screen-space canvas — that was
        the cause of "画面全体が光る while scrolling", was heavy (unproject every pixel every ~100 ms), and
        painted into SPACE on the globe. It is now a GEO-ANCHORED MapLibre raster: a Web-Mercator-
        parameterised image fed to an image source, so MapLibre reprojects it for Flat AND Globe, CLIPS it
-       to the sphere (no space colour, ever), pans/zooms locked to the map with ZERO per-frame cost, and
+       to the sphere (no space color, ever), pans/zooms locked to the map with ZERO per-frame cost, and
        the GPU composites it. Only the WHITE particle streaks remain on #wind-canvas. */
     const oldBg=document.getElementById('wind-bg-canvas'); if(oldBg) oldBg.style.display='none';
     let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false, gridTime=null;
@@ -10056,7 +10091,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return d.toLocaleString(currentLang==='jp'?'ja-JP':'en-GB',{timeZone:tz,month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return iso; } }
     window._fmtWindTime=fmtWindTime;
     /* (#R12) The valid time now lives in the draggable Wind legend (data-legend-wind), like every other
-       layer — the old floating top-centre pill overlapped the search box. Just refresh the legend. */
+       layer — the old floating top-center pill overlapped the search box. Just refresh the legend. */
     function updateTimePill(){ const old=document.getElementById('wind-ts'); if(old) old.remove(); try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ try{ updateTimePill(); }catch(_){} });
     /* Re-attach the field after a style reload (theme/basemap switch drops custom sources). */
@@ -10088,7 +10123,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!on) return;
       refreshView();
       /* WHITE particle streaks. Clear fully while the map moves so trails track the map; fade when idle so
-         the streaks flow (the classic Windy trail). The colour FIELD underneath is the geo-anchored raster
+         the streaks flow (the classic Windy trail). The color FIELD underneath is the geo-anchored raster
          (it pans/zooms with the map natively now — no screen-space "glow on scroll"). */
       if(moving){ ctx.clearRect(0,0,cssW,cssH); }
       else { ctx.globalCompositeOperation='destination-out'; ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.fillRect(0,0,cssW,cssH); ctx.globalCompositeOperation='source-over'; }
@@ -10289,7 +10324,7 @@ window.addEventListener('DOMContentLoaded', () => {
      every feature; the app is instead made modular so a Cesium globe can later be fed through IntMapSim):
        (A) IndexedDB persistence  (B) per-frame simulation bridge for external Wasm fluid/ballistic compute
        (C) Web-Worker offload bridge  (D) speculative camera-lookahead tile prefetch
-       (E) new overlays: sovereignty-dispute lines + geodesic air-defence coverage "domes". */
+       (E) new overlays: sovereignty-dispute lines + geodesic air-defense coverage "domes". */
   (function(){
     if(!map) return;
 
@@ -10362,7 +10397,7 @@ window.addEventListener('DOMContentLoaded', () => {
       { name:{en:'Taiwan Strait median line',jp:'台湾海峡中間線'}, c:[[120.4,26.8],[120.0,25.7],[119.5,24.5],[119.0,23.3],[118.6,22.4],[118.4,21.6]] }
     ];
     function disputesFC(){ return {type:'FeatureCollection',features:DISPUTES.map(d=>({type:'Feature',geometry:{type:'LineString',coordinates:d.c},properties:{label:d.name[jp()?'jp':'en']}}))}; }
-    /* Geodesic air-defence coverage "domes" — reuse the radius tool's geodesic-disk builders. */
+    /* Geodesic air-defense coverage "domes" — reuse the radius tool's geodesic-disk builders. */
     const AD_SITES=[
       {n:'Moscow · S-400',at:[37.6,55.75],r:400,c:'#e0312e'},{n:'St Petersburg · S-400',at:[30.3,59.95],r:400,c:'#e0312e'},
       {n:'Kaliningrad · S-400',at:[20.5,54.7],r:400,c:'#e0312e'},{n:'Khmeimim · S-400',at:[35.95,35.41],r:380,c:'#e0312e'},
@@ -10448,19 +10483,19 @@ window.addEventListener('DOMContentLoaded', () => {
       if(state.langs){ setTimeout(()=>{ ensureLangSource(ok=>{ if(ok) setVis(LSET,true); }); },80); } });
 
     /* dropdown UI — appended after the existing layer groups, non-destructive */
-    /* (#R10) The "Intelligence (advanced)" category (disputes / air-defence / languages) was removed per
+    /* (#R10) The "Intelligence (advanced)" category (disputes / air-defense / languages) was removed per
        request. The toggle/state machinery is kept (harmless, unused) so nothing else needs touching. */
     function buildUI(){ return; }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
-    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defence coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
+    function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defense coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
     ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
 
   /* ===== (#R9b/#40/#41/#42/#14) Earth, sky & airspace: major dams, active volcanoes, NOAA aurora
-     forecast (live), and approximate Air-Defence Identification Zones. Self-contained, additive. ===== */
+     forecast (live), and approximate Air-Defense Identification Zones. Self-contained, additive. ===== */
   (function(){
     if(!map) return;
     const jp=()=>currentLang==='jp';
@@ -10469,7 +10504,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Curated point datasets (famous, well-located). dam: capacity MW; volcano: summit m. */
     const DAMS=[['Three Gorges','China',22500,111.003,30.823],['Itaipú','Brazil/Paraguay',14000,-54.589,-25.408],['Xiluodu','China',13860,103.65,28.25],['Belo Monte','Brazil',11233,-51.79,-3.13],['Guri','Venezuela',10235,-62.999,7.766],['Tucuruí','Brazil',8370,-49.64,-3.83],['Grand Coulee','USA',6809,-118.982,47.957],['Xiangjiaba','China',6448,104.42,28.64],['Longtan','China',6426,107.04,25.02],['Sayano-Shushenskaya','Russia',6400,91.37,52.83],['Krasnoyarsk','Russia',6000,92.30,55.93],['Robert-Bourassa','Canada',5616,-77.44,53.79],['Churchill Falls','Canada',5428,-64.10,53.53],['Bratsk','Russia',4500,101.77,56.28],['Jinping-I','China',3600,101.63,28.19],['Aswan High','Egypt',2100,32.877,23.971],['GERD','Ethiopia',5150,35.093,11.215],['Kariba','Zambia/Zimbabwe',1830,28.762,-16.522],['Cahora Bassa','Mozambique',2075,32.70,-15.585],['Akosombo','Ghana',1020,0.06,6.30],['Tarbela','Pakistan',4888,72.69,34.09],['Bhakra','India',1325,76.43,31.41],['Sardar Sarovar','India',1450,73.75,21.83],['Atatürk','Türkiye',2400,38.32,37.49],['Hoover','USA',2078,-114.738,36.016],['Glen Canyon','USA',1320,-111.485,36.937],['Oroville','USA',819,-121.49,39.54],['Nurek','Tajikistan',3015,69.35,38.37],['Rogun','Tajikistan',3600,69.77,38.69],['Merowe','Sudan',1250,31.84,18.68],['Daniel-Johnson','Canada',2660,-68.74,50.66],['Mosul','Iraq',1052,42.82,36.63]];
     const VOLC=[['Etna','Italy',3357,14.999,37.748],['Stromboli','Italy',924,15.213,38.789],['Vesuvius','Italy',1281,14.426,40.821],['Mt Fuji','Japan',3776,138.728,35.361],['Sakurajima','Japan',1117,130.657,31.585],['Aso','Japan',1592,131.104,32.884],['Kīlauea','USA',1247,-155.287,19.421],['Mauna Loa','USA',4169,-155.608,19.475],['Mt St. Helens','USA',2549,-122.18,46.20],['Yellowstone','USA',2805,-110.67,44.43],['Popocatépetl','Mexico',5426,-98.622,19.023],['Colima','Mexico',3850,-103.62,19.514],['Fuego','Guatemala',3763,-90.88,14.473],['Pacaya','Guatemala',2552,-90.601,14.381],['Arenal','Costa Rica',1670,-84.703,10.463],['Cotopaxi','Ecuador',5897,-78.437,-0.677],['Villarrica','Chile',2860,-71.93,-39.42],['Nevado del Ruiz','Colombia',5321,-75.324,4.892],['Cumbre Vieja','Spain',1949,-17.84,28.57],['Merapi','Indonesia',2910,110.446,-7.54],['Anak Krakatau','Indonesia',155,105.423,-6.102],['Sinabung','Indonesia',2460,98.392,3.17],['Semeru','Indonesia',3676,112.92,-8.108],['Tambora','Indonesia',2850,118.0,-8.25],['Rinjani','Indonesia',3726,116.47,-8.42],['Pinatubo','Philippines',1486,120.35,15.13],['Mayon','Philippines',2462,123.685,13.257],['Taal','Philippines',311,120.993,14.002],['Erebus','Antarctica',3794,167.17,-77.53],['Nyiragongo','DR Congo',3470,29.25,-1.52],['Ol Doinyo Lengai','Tanzania',2962,35.914,-2.764],['Erta Ale','Ethiopia',613,40.67,13.6],['Piton de la Fournaise','Réunion',2632,55.708,-21.244],['Eyjafjallajökull','Iceland',1651,-19.62,63.63],['Grímsvötn','Iceland',1725,-17.33,64.42],['Hekla','Iceland',1491,-19.70,63.98],['Bárðarbunga','Iceland',2009,-17.53,64.64],['Klyuchevskoy','Russia',4750,160.642,56.056],['Shiveluch','Russia',3283,161.36,56.653],['Whakaari','New Zealand',321,177.18,-37.52],['Ruapehu','New Zealand',2797,175.57,-39.28],['Kelud','Indonesia',1731,112.31,-7.93]];
-    /* Approximate ADIZ extents (labelled ≈) — illustrative, not survey-grade. */
+    /* Approximate ADIZ extents (labeled ≈) — illustrative, not survey-grade. */
     const ADIZ=[
       {n:'China ECS ADIZ',c:'#ff453a',ring:[[121.9,33.2],[125.0,33.2],[128.3,31.0],[127.5,29.0],[123.0,25.8],[120.6,27.4],[120.0,30.2],[121.9,33.2]]},
       {n:'KADIZ (Korea)',c:'#ffcc00',ring:[[124.0,39.6],[129.5,39.6],[131.5,37.0],[131.0,33.8],[127.0,32.2],[124.5,33.0],[123.0,35.5],[124.0,39.6]]},
@@ -10528,7 +10563,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=setInterval(loadAurora,300000); } else if(auroraTimer){ clearInterval(auroraTimer); auroraTimer=null; } } };
       apply(); }
     map.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
-    const L9LBL={dams:['主要ダム・水インフラ','Major dams'],volcanoes:['活火山','Active volcanoes'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)'],seaice:['海氷（北極・南極）','Sea ice (Arctic/Antarctic)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defence zones (ADIZ ≈)']};
+    const L9LBL={dams:['主要ダム・水インフラ','Major dams'],volcanoes:['活火山','Active volcanoes'],aurora:['オーロラ予測（NOAA）','Aurora forecast (NOAA)'],seaice:['海氷（北極・南極）','Sea ice (Arctic/Antarctic)'],adiz:['防空識別圏 (ADIZ ≈)','Air-defense zones (ADIZ ≈)']};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('l9-dl-dams')) return;
       const head=document.createElement('div'); head.className='lyr-head'; head.setAttribute('data-l9head','1'); head.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; dd.appendChild(head);
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
@@ -10737,8 +10772,8 @@ window.addEventListener('DOMContentLoaded', () => {
         d.textContent=jp()?'取得できませんでした — 後でもう一度オンにしてください。':'Could not load — toggle again later.'; }
       return false;
     }
-    /* (#R21) Legend mismatch fix ("凡例が、地図とあっていない") — the colour key is rebuilt FROM the
-       loaded DeepState data (its real per-feature fill/stroke colours), so legend === map, always. */
+    /* (#R21) Legend mismatch fix ("凡例が、地図とあっていない") — the color key is rebuilt FROM the
+       loaded DeepState data (its real per-feature fill/stroke colors), so legend === map, always. */
     /* (#R22) Classify each polygon by DeepState's OWN status token in `name`
        ("Ukr /// English /// geoJSON.status.<key>") so the legend is the ground truth. The feed has NO
        LineStrings (the old "Front line" row never matched anything → "凡例が地図とあっていない"); the real
@@ -10779,7 +10814,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
       try{ if(on&&window._registerLayerOpacity){
             const el=window._registerLayerOpacity('ukrfront',['Ukraine frontline (DeepState)','ウクライナ前線（DeepState）'],UKR_IDS,'beta-dl-ukrfront');
-            /* (#R20) proper LEGEND ("Ukraine frontlineは、凡例を作って") — colour key for the DeepState classes */
+            /* (#R20) proper LEGEND ("Ukraine frontlineは、凡例を作って") — color key for the DeepState classes */
             if(el&&!el.querySelector('.ukr-key')){
               const key=document.createElement('div'); key.className='ukr-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               const sw=(c,solid)=>'<span style="width:14px;height:'+(solid?'10px':'3px')+';border-radius:2px;flex:none;background:'+c+';'+(solid?'opacity:0.55;':'')+'"></span>';
@@ -10853,7 +10888,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(note) note.textContent=jp()?'出典: historical-basemaps（境界は概略）':'Source: historical-basemaps (boundaries approximate)';
       }
       if(fc&&hbYear===year){ try{ map.getSource('hb-src').setData(fc); }catch(_){} }
-      /* warm the neighbouring years in the background so slider scrubbing is instant */
+      /* warm the neighboring years in the background so slider scrubbing is instant */
       try{ const i=HB_YEARS.indexOf(year); [HB_YEARS[i-1],HB_YEARS[i+1]].forEach(y=>{ if(y&&!hbCache.has(y)) setTimeout(()=>{ if(state.hist&&!hbCache.has(y)) hbPrefetch(y); },1200); }); }catch(_){}
     }
     async function hbPrefetch(year){
@@ -10879,7 +10914,7 @@ window.addEventListener('DOMContentLoaded', () => {
             /* (#R21) Tick alignment fix ("目盛り、スライドと位置があっていない"): the ticks now live INSIDE
                the same flex cell as the range input (identical width), and each tick is absolutely
                positioned at calc(half-thumb + usable-width × i/(n−1)) with translateX(-50%) — i.e. the
-               exact centre of each thumb stop, instead of the old space-between row with guessed margins. */
+               exact center of each thumb stop, instead of the old space-between row with guessed margins. */
             row.innerHTML=(jp()?'年代':'Year')+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
               '<input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
               '<span class="hb-ticks" style="display:block;position:relative;height:15px;">'+
@@ -10893,7 +10928,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(_){}
     }
 
-    /* ---------- (#R20) Volcanoes — full Smithsonian GVP Holocene catalogue (1,215), bundled locally
+    /* ---------- (#R20) Volcanoes — full Smithsonian GVP Holocene catalog (1,215), bundled locally
        (data/volcanoes_gvp.json, slimmed from the GVP WFS). Replaces the old 42-point curated layer. ---------- */
     const VL_IDS=['volc2-pt','volc2-lbl'];
     let volcFC=null, volcLoading=false;
@@ -10903,7 +10938,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const before=map.getLayer('tool-poly')?'tool-poly':undefined;
         map.addLayer({id:'volc2-pt',type:'circle',source:'volc2-src',layout:{visibility:'none'},paint:{
           'circle-radius':['interpolate',['linear'],['zoom'],1,2.2,5,4.6,9,8],
-          /* recently-erupted = hotter colour (y = last eruption year; null/old = grey-orange) */
+          /* recently-erupted = hotter color (y = last eruption year; null/old = gray-orange) */
           'circle-color':['case',['>=',['coalesce',['get','y'],-99999],1950],'#ff3b30',['>=',['coalesce',['get','y'],-99999],1500],'#ff8a3d','#c98f6b'],
           'circle-stroke-color':'#fff2e0','circle-stroke-width':0.9,'circle-opacity':0.92}},before);
         map.addLayer({id:'volc2-lbl',type:'symbol',source:'volc2-src',minzoom:5,layout:{visibility:'none','text-field':['get','n'],'text-size':10,'text-offset':[0,1.05],'text-anchor':'top','text-font':['literal',['Noto Sans Regular']]},paint:{'text-color':'#ffc8ad','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
@@ -10968,7 +11003,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
   })();
 
-  /* ===== (#R21) Beta layer pack 2 — Data centres & AI infra · World railways by gauge · Pharma &
+  /* ===== (#R21) Beta layer pack 2 — Data centers & AI infra · World railways by gauge · Pharma &
      health (factory hubs + life-expectancy choropleth) · Corruption indicator (World Bank WGI,
      live) · Globe tour (slow auto-rotation). All rows land in "Others (beta)" via the
      reorganize sweep; data is lazy-loaded on first toggle and exposed through
@@ -10994,7 +11029,7 @@ window.addEventListener('DOMContentLoaded', () => {
       [7.59,47.56,'Basel — Novartis / Roche HQ & plants'],[6.99,51.03,'Leverkusen — Bayer'],[8.06,49.97,'Ingelheim — Boehringer Ingelheim'],[12.45,55.76,'Copenhagen — Novo Nordisk'],[11.09,55.68,'Kalundborg — Novo Nordisk API site'],[-0.31,51.48,'London/Brentford — GSK'],[0.13,52.2,'Cambridge — AstraZeneca'],[2.35,48.86,'Paris — Sanofi'],[-86.16,39.77,'Indianapolis — Eli Lilly'],[-74.45,40.49,'New Brunswick — Johnson & Johnson'],[-73.97,40.75,'New York — Pfizer HQ'],[-74.29,40.68,'Rahway/Kenilworth — Merck & Co.'],[-87.86,42.33,'North Chicago — AbbVie'],[-118.84,34.18,'Thousand Oaks — Amgen'],[-122.4,37.65,'South San Francisco — Genentech'],[-8.47,51.9,'Cork — Irish pharma cluster'],[103.64,1.32,'Singapore Tuas — biologics plants'],[78.6,17.6,'Hyderabad — Genome Valley (vaccines)'],[72.88,19.08,'Mumbai — Sun Pharma'],[72.57,23.02,'Ahmedabad — Zydus / Torrent'],[83.3,17.69,'Visakhapatnam — API hub'],[-66.54,18.45,'Barceloneta — Puerto Rico pharma'],[139.76,35.68,'Tokyo — Takeda / Astellas'],[135.5,34.69,'Osaka — Shionogi / Takeda'],[116.4,39.9,'Beijing — Sinopharm'],[121.47,31.23,'Shanghai — Fosun Pharma'],[126.64,37.39,'Songdo — Samsung Biologics'],[34.89,32.09,'Petah Tikva — Teva'],[-46.63,-23.55,'São Paulo — EMS / Eurofarma'],[28.05,-26.2,'Johannesburg — Aspen Pharmacare']
     ];
     const RAIL_COL={1435:'#3a7bd5',1520:'#e03131',1067:'#2f9e44',1000:'#12b886',1676:'#9c36b5',1668:'#f08c00',1600:'#d6336c',0:'#868e96'};
-    const RAIL_LBL=[[1435,'標準軌 1435mm','Standard 1435 mm'],[1520,'ロシア軌間 1520/1524mm','Russian 1520/1524 mm'],[1676,'広軌 1676mm（印・亜）','Broad 1676 mm (India, Argentina)'],[1668,'イベリア軌間 1668mm','Iberian 1668 mm'],[1600,'アイルランド軌間 1600mm','Irish 1600 mm'],[1067,'狭軌 1067mm（日本など）','Cape 1067 mm (Japan etc.)'],[1000,'メーターゲージ 1000mm','Metre 1000 mm'],[0,'不明・その他','Unknown / other']];
+    const RAIL_LBL=[[1435,'標準軌 1435mm','Standard 1435 mm'],[1520,'ロシア軌間 1520/1524mm','Russian 1520/1524 mm'],[1676,'広軌 1676mm（印・亜）','Broad 1676 mm (India, Argentina)'],[1668,'イベリア軌間 1668mm','Iberian 1668 mm'],[1600,'アイルランド軌間 1600mm','Irish 1600 mm'],[1067,'狭軌 1067mm（日本など）','Cape 1067 mm (Japan etc.)'],[1000,'メーターゲージ 1000mm','Meter 1000 mm'],[0,'不明・その他','Unknown / other']];
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
     function load(key,cb){
       if(cache[key]){ cb(cache[key]); return; }
@@ -11027,7 +11062,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const a=()=>{ if(!ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ map.once('idle',a); return; }
         load('dc',fc=>{ try{ map.getSource('dc-src').setData(fc); }catch(_){} }); setVis(['dc-pt','dc-lbl'],on); };
       a();
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',['Data centres & AI infra','データセンター・AIインフラ'],['dc-pt','dc-lbl'],'beta-dl-dc');
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('dc2',['Data centers & AI infra','データセンター・AIインフラ'],['dc-pt','dc-lbl'],'beta-dl-dc');
             if(el&&!el.querySelector('.dc-key')){ const k=document.createElement('div'); k.className='dc-key'; k.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               k.innerHTML=[['aws','AWS'],['azure','Azure'],['gcp','Google Cloud'],['ai',jp()?'AIスーパークラスター':'AI superclusters']].map(([t,l])=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:6px;flex:none;background:'+DC_COL[t]+';"></span>'+l+'</div>').join('');
               el.appendChild(k); } }
@@ -11125,7 +11160,7 @@ window.addEventListener('DOMContentLoaded', () => {
       } else if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; }
     }
     /* ---------- rows (swept into Others(beta) by reorganizeLayerPanel) ---------- */
-    const B2LBL={dc:['データセンター・AIインフラ','Data centres & AI infra'],pharma:['製薬・医薬品製造拠点','Pharma manufacturing hubs'],lifeexp:['平均寿命','Life expectancy'],cpi:['汚職・腐敗指標','Corruption indicator'],rail:['世界の鉄道（軌間別）','World railways (by gauge)'],spin:['地球をゆっくり回す','Globe tour (slow spin)']};
+    const B2LBL={dc:['データセンター・AIインフラ','Data centers & AI infra'],pharma:['製薬・医薬品製造拠点','Pharma manufacturing hubs'],lifeexp:['平均寿命','Life expectancy'],cpi:['汚職・腐敗指標','Corruption indicator'],rail:['世界の鉄道（軌間別）','World railways (by gauge)'],spin:['地球をゆっくり回す','Globe tour (slow spin)']};
     const B2SW={dc:'#5e8bff',pharma:'#2bb3a3',lifeexp:'#74add1',cpi:'#f46d43',rail:'#3a7bd5',spin:'#ffd166'};
     const B2FN={dc:dcToggle,pharma:phToggle,lifeexp:(on)=>wbToggle('lifeexp',on),cpi:(on)=>wbToggle('cpi',on),rail:railToggle,spin:spinToggle};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-dc')) return;
@@ -11156,7 +11191,7 @@ window.addEventListener('DOMContentLoaded', () => {
      A no-op stub remains so any stray reference can't throw. ===== */
   window.IntMapWidgets={ toggle:function(){}, refresh:function(){} };
 
-  /* (#R21) Flag rendering that works on PCs: Windows has no colour-emoji flags (a 🇩🇪 renders as the
+  /* (#R21) Flag rendering that works on PCs: Windows has no color-emoji flags (a 🇩🇪 renders as the
      letters "DE"), so every flag display goes through this helper — it derives the ISO-2 code from the
      flag emoji's regional-indicator pair and serves a flagcdn.com PNG, with the emoji as alt/fallback. */
   window.imFlagISO2=function(fl){ try{ const cps=[...String(fl||'')].map(c=>c.codePointAt(0)).filter(c=>c>=0x1F1E6&&c<=0x1F1FF);
@@ -11168,8 +11203,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== (#R19) Apple-style SIDEBAR widgets — shown ONLY in the no-tab-selected blank state.
      Per the spec: default = NONE; the user adds widgets from a gallery ("+"), iOS-widget look
      (rounded glass cards, 2-col grid), removable (hover/tap ✕), prefs persist. Data: clock (user TZ),
-     weather (Open-Meteo @ map centre), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
-     stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labelled). ===== */
+     weather (Open-Meteo @ map center), FX (open.er-api.com), markets (CoinGecko — keyless+CORS;
+     stock APIs are key-walled/CORS-blocked, so markets = crypto majors, honestly labeled). ===== */
   (function(){
     /* (#R20) Widget board v3 — big expansion ("ウィジェットの選択肢を大幅拡充して"):
        configurable FX pairs, data "as of" stamps on every financial widget, Recent Earthquakes
@@ -11216,7 +11251,7 @@ window.addEventListener('DOMContentLoaded', () => {
       countdown:{ nm:()=>jp()?'カウントダウン':'Countdown', ic:'⏳', desc:()=>jp()?'日付と題名を設定':'Set a date & title', multi:true },
       /* (#R21) Board expansion — sun, moon, air quality, ISS, world clocks, year progress,
          Wikipedia featured article, live world-population estimate. */
-      sun:      { nm:()=>jp()?'日の出・日の入り':'Sunrise & sunset', ic:'🌅', desc:()=>jp()?'現在地（許可時）または地図中心':'At your location (if allowed) or map centre' },
+      sun:      { nm:()=>jp()?'日の出・日の入り':'Sunrise & sunset', ic:'🌅', desc:()=>jp()?'現在地（許可時）または地図中心':'At your location (if allowed) or map center' },
       moon:     { nm:()=>jp()?'月相':'Moon phase', ic:'🌖', desc:()=>jp()?'今夜の月の満ち欠け':'Tonight’s phase & illumination' },
       aqi:      { nm:()=>jp()?'大気質（AQI）':'Air quality (AQI)', ic:'😮‍💨', desc:()=>jp()?'US AQIとPM2.5':'US AQI & PM2.5' },
       iss:      { nm:()=>jp()?'国際宇宙ステーション':'ISS tracker', ic:'🛰', desc:()=>jp()?'ISSの現在位置。タップで地図へ':'Live ISS position — tap to fly there' },
@@ -11394,9 +11429,9 @@ window.addEventListener('DOMContentLoaded', () => {
     async function widgetLoc(){
       const mine=()=>({lat:geoPos.lat,lng:geoPos.lng,lbl:jp()?'現在地':'my location'});
       if(geoPos&&Date.now()-geoPos.ts<10*60*1000) return mine();
-      /* (#R22) "Weather shows map centre despite my location" root cause: Safari/iOS has no
+      /* (#R22) "Weather shows map center despite my location" root cause: Safari/iOS has no
          navigator.permissions for geolocation, so the old `permissions.query` threw and we fell
-         straight through to map centre. Now: if state is granted OR unknown (Safari), still try to
+         straight through to map center. Now: if state is granted OR unknown (Safari), still try to
          get the position — it won't re-prompt once granted, and location widgets already prompted on add. */
       if(!geoDenied && navigator.geolocation){
         let state='unknown';
@@ -11404,7 +11439,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(state==='granted'||state==='unknown'){ await new Promise(res=>reqGeo(res)); if(geoPos) return mine(); }
       }
       const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
-      return {lat:c.lat,lng:c.lng,lbl:jp()?'地図中心':'map centre'};
+      return {lat:c.lat,lng:c.lng,lbl:jp()?'地図中心':'map center'};
     }
     async function refreshWeather(e){ try{ const c=await widgetLoc();
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
@@ -11641,7 +11676,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function wIcon(c){ if(c==null) return '🌡'; if(c===0) return '☀️'; if(c<=3) return '⛅'; if(c<=48) return '🌫'; if(c<=67) return '🌧'; if(c<=77) return '❄️'; if(c<=82) return '🌦'; if(c<=99) return '⛈'; return '🌡'; }
     function fxF(v){ return v==null?'—':(v<10?(+v).toFixed(3):(+v).toFixed(2)); }
     async function refreshData(){
-      if(cfg.weather && panel){ try{ const c=map?map.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map centre')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
+      if(cfg.weather && panel){ try{ const c=map?map.getCenter():{lat:35.68,lng:139.76}; const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m'); const j=await r.json(); const cu=j.current||{}; const el=panel.querySelector('#wdg-weather'); if(el) el.innerHTML='<b style="color:var(--text-main);font-size:14px;">'+wIcon(cu.weather_code)+' '+(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C')+'</b><br><span style="font-size:10.5px;">'+(jp()?'風 ':'wind ')+Math.round(cu.wind_speed_10m)+' km/h · '+(jp()?'地図中心':'map center')+'</span>'; }catch(_){ const el=panel.querySelector('#wdg-weather'); if(el) el.textContent=jp()?'天気を取得できません':'Weather unavailable'; } }
       if(cfg.fx && panel){ try{ const r=await fetch('https://open.er-api.com/v6/latest/USD'); const j=await r.json(); const rt=j.rates||{}; const el=panel.querySelector('#wdg-fx'); if(el) el.innerHTML='<b style="color:var(--text-main);">USD</b> → JPY '+fxF(rt.JPY)+' · EUR '+fxF(rt.EUR)+' · CNY '+fxF(rt.CNY)+' · GBP '+fxF(rt.GBP); }catch(_){ const el=panel.querySelector('#wdg-fx'); if(el) el.textContent=jp()?'為替を取得できません':'FX unavailable'; } }
     }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display){ render(); if(!tick) tick=setInterval(updateClock,1000); if(!dataTick) dataTick=setInterval(()=>{ if(panel&&panel.style.display!=='none') refreshData(); },300000); } else { p.style.display='none'; } }
@@ -11652,7 +11687,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== (#R9b/#55) Persistent measurement annotations — finalise a measure/area/radius as a pin-less
-     line/polygon that stays on the map; small popup to rename / recolour / delete; multiple allowed. ===== */
+     line/polygon that stays on the map; small popup to rename / recolor / delete; multiple allowed. ===== */
   window.IntMapAnnotations=(function(){
     if(!map) return { add(){}, remove(){}, clear(){}, _items:[] };
     const SRC='annot-src'; let seq=0, popup=null; const items=[];
@@ -11674,7 +11709,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
       const at=ll||repr(it.geom);
       const valHtml = it.value ? '<div style="font-size:13px;color:var(--primary-color);font-weight:700;margin:0 0 6px;">'+it.value+'</div>' : '';
-      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Colour')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
+      const html='<div style="min-width:172px;">'+valHtml+'<input class="annot-name" value="'+String(it.name).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;font-weight:700;font-size:13px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.25);border-radius:7px;color:var(--text-main);padding:5px 7px;margin-bottom:6px;"><div style="display:flex;align-items:center;gap:8px;"><input type="color" class="annot-color" value="'+it.color+'"><span style="font-size:11px;color:var(--text-muted);">'+(jp()?'色':'Color')+'</span><button class="annot-del" style="margin-left:auto;background:var(--info-mil);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;">'+(jp()?'削除':'Delete')+'</button></div></div>';
       popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,className:'plc-popup',maxWidth:'260px'}).setLngLat(at).setHTML(html).addTo(map);
       setTimeout(()=>{ const el=popup&&popup.getElement&&popup.getElement(); if(!el) return;
         const nm=el.querySelector('.annot-name'); if(nm) nm.oninput=()=>{ it.name=nm.value; };
@@ -11683,7 +11718,7 @@ window.addEventListener('DOMContentLoaded', () => {
       },0);
     }
     /* (#R11) No auto-popup on finalize — the shape just stays on the map; clicking it later opens the
-       dismissable popup with the measured value + rename/recolour/delete. */
+       dismissable popup with the measured value + rename/recolor/delete. */
     function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((jp()?'注記 ':'Annotation ')+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
     return { add, remove, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };
@@ -11796,7 +11831,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function bbox(feat){ let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=ring=>ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; });
       const g=feat.geometry; if(g.type==='Polygon') g.coordinates.forEach(eat); else g.coordinates.forEach(poly=>poly.forEach(eat)); return [[mnx,mny],[mxx,mxy]]; }
     function exitBtn(){ if(btn) return btn; btn=document.createElement('button'); btn.id='iso-exit-btn';
-      /* (#R11) Exit pill lives at the BOTTOM-centre, clear of the timebar / mobile sheet / other UI. */
+      /* (#R11) Exit pill lives at the BOTTOM-center, clear of the timebar / mobile sheet / other UI. */
       btn.style.cssText='display:none;position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:999px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);';
       btn.onclick=exit; (document.getElementById('map-container')||document.body).appendChild(btn); return btn; }
     /* (#R12) The mask must sit ABOVE every data overlay or surrounding layers bleed through. Layers
@@ -11892,9 +11927,9 @@ window.addEventListener('DOMContentLoaded', () => {
             (and the per-sample 256×256 getImageData hot spot is gone — see _demPix), so the page
             stays responsive for the whole run.
          2) "同地点でも数値を変えたら、再度analyzeを実行できるように" — the old `busy` flag stayed true
-            forever if any step threw mid-run. Replaced by a GENERATION counter: pressing Analyse
+            forever if any step threw mid-run. Replaced by a GENERATION counter: pressing Analyze
             always starts a fresh run and silently cancels the previous one; Clear keeps the site so
-            the same point can be re-analysed with new values.
+            the same point can be re-analyzed with new values.
          3) "もっと詳細な地形分析を" — desktop 480 rays (0.75°) × 260 steps (was 360×200), still bilinear
             DEM + 4/3-earth refraction; the DEM zoom obeys a hard TILE BUDGET (small ranges get full z13
             detail; huge ranges step down instead of fetching 600+ tiles → bounded time AND memory). */
@@ -11936,7 +11971,7 @@ window.addEventListener('DOMContentLoaded', () => {
         for(let k=i;k<end;k++){ const p=all[k]; let v=demElevBilinear(p[0],p[1],z); if(v==null) v=demElevAt(p[0],p[1],null,z); elevs[k]=v; if(v!=null) okCount++; }
         setProgress(0.80+0.15*(end/all.length), calcLbl);
         await tick(); if(!live()) return; }
-      if(okCount < all.length*0.3){ if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度「解析する」を押してください。':'Could not load enough terrain data — wait a moment and press Analyse again.'; return; }
+      if(okCount < all.length*0.3){ if(body) body.innerHTML=jp()?'地形データを十分に取得できませんでした。少し待ってもう一度「解析する」を押してください。':'Could not load enough terrain data — wait a moment and press Analyze again.'; return; }
       const obsBase=(elevs[0]==null?0:elevs[0]); const obsElev=obsBase+obsHeight;
       const visEnds=new Array(RAYS);
       for(let a=0;a<RAYS;a++){
@@ -11957,7 +11992,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(cover) feats.push({type:'Feature',geometry:cover.geometry,properties:{kind:'cover'}});
       if(shadow) feats.push({type:'Feature',geometry:shadow.geometry,properties:{kind:'shadow'}});
       setData(feats);
-      if(body) body.innerHTML=jp()?'解析完了。<b style="color:#ff4d4d;">赤＝到達範囲</b> / <b style="color:#1fd65f;">緑＝レーダー死角</b>（地形遮蔽）。数値を変えて「解析する」を押せば同地点で再計算できます。':'Done. <b style="color:#ff4d4d;">Red = reachable range</b> / <b style="color:#1fd65f;">green = radar shadow</b> (terrain-blocked). Change the values and press Analyse to re-run at this site.';
+      if(body) body.innerHTML=jp()?'解析完了。<b style="color:#ff4d4d;">赤＝到達範囲</b> / <b style="color:#1fd65f;">緑＝レーダー死角</b>（地形遮蔽）。数値を変えて「解析する」を押せば同地点で再計算できます。':'Done. <b style="color:#ff4d4d;">Red = reachable range</b> / <b style="color:#1fd65f;">green = radar shadow</b> (terrain-blocked). Change the values and press Analyze to re-run at this site.';
     }
     function buildPanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='los-panel'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function open(lngLat){ site=[lngLat.lng,lngLat.lat]; const p=buildPanel(); p.style.cssText='display:block;left:24px;top:74px;right:auto;bottom:auto;z-index:1600;width:236px;';
@@ -11965,9 +12000,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:6px;">'
         +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'アンテナ高 (m)':'Antenna height (m)')+' <input id="los-h" type="number" value="'+losH+'" min="0" step="5" style="width:72px;"></label>'
         +'<label style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">'+(jp()?'射程 (km)':'Range (km)')+' <input id="los-r" type="number" value="'+losR+'" min="1" max="400" step="5" style="width:72px;"></label>'
-        +'</div><button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+(jp()?'解析する':'Analyse')+'</button>'
+        +'</div><button class="tp-clear" id="los-go" style="width:100%;margin-top:6px;">'+(jp()?'解析する':'Analyze')+'</button>'
         +'<button class="tp-clear" id="los-clr" style="width:100%;margin-top:6px;">'+(jp()?'消去':'Clear')+'</button>'
-        +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyse. May take a moment (DEM sampling).')+'</div>';
+        +'<div id="los-body" style="margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5;">'+(jp()?'高さと射程を設定して解析。DEM取得のため少し時間がかかります。':'Set height & range, then analyze. May take a moment (DEM sampling).')+'</div>';
       /* ✕ now also wipes the overlay — the "can't remove it" bug was that closing the panel left the
          shadow painted with no way to clear it. Clearing on close fixes that. */
       p.querySelector('.tp-close').onclick=()=>{ runSeq++; setData([]); p.style.display='none'; };   /* close = cancel + wipe overlay incl. site dot */
@@ -11976,10 +12011,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       setData([{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]);
     }
-    /* (#R19) Clear wipes the OVERLAY but keeps the site + cancels any in-flight run, so "Analyse"
+    /* (#R19) Clear wipes the OVERLAY but keeps the site + cancels any in-flight run, so "Analyze"
        still works at the same point with new values (the old site=null made re-analysis impossible). */
     function clear(){ runSeq++; setData(site?[{type:'Feature',geometry:{type:'Point',coordinates:site},properties:{kind:'site'}}]:[]);
-      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=jp()?'消去しました。数値を変えて「解析する」で再計算、または地図を右クリックで再配置。':'Cleared. Press Analyse to re-run here (new values OK), or right-click the map to move the site.'; }
+      const b=panel&&panel.querySelector('#los-body'); if(b) b.innerHTML=jp()?'消去しました。数値を変えて「解析する」で再計算、または地図を右クリックで再配置。':'Cleared. Press Analyze to re-run here (new values OK), or right-click the map to move the site.'; }
     return { open, clear };
   })();
 
@@ -12158,7 +12193,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== (#R12 / #20,#21) ECMWF (Open-Meteo data_spatial) weather suite — the official Open-Meteo
      weather-map-layer SDK decodes the ECMWF IFS .om tiles through a MapLibre `om://` protocol and applies
-     Windy-style colour scales per variable. We lazy-load the UMD build, register the protocol once, and
+     Windy-style color scales per variable. We lazy-load the UMD build, register the protocol once, and
      add each variable as a raster (or vector contours for isobars) BETWEEN the basemap and the labels via
      beforeId. Hourly time selection comes from latest.json's valid_times; the active valid-time is shown.
      Everything is guarded — if the SDK/endpoint fails, the rest of the app is unaffected. Exposes
@@ -12169,7 +12204,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const BASE='https://map-tiles.open-meteo.com/data_spatial/ecmwf_ifs/latest.json';
     const SDK_URL='https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js';
     /* Variable names + types validated LIVE against what ecmwf_ifs actually serves (probed the om://
-       protocol → real ImageBitmap tiles). type:'raster' uses the SDK's built-in per-variable colour ramp;
+       protocol → real ImageBitmap tiles). type:'raster' uses the SDK's built-in per-variable color ramp;
        'isobars' = vector contour lines (source-layer 'contours'); 'arrows' = vector wind barbs
        (variable wind_u_component_10m + &arrows=true, source-layer 'wind-arrows'). NOTE: ecmwf_ifs spatial
        does NOT serve precipitation or relative_humidity_2m — precip is covered by the app's IMERG/radar
@@ -12216,7 +12251,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
           if(!map.getLayer(cfg.id+'-lbl')) map.addLayer({id:cfg.id+'-lbl',type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':10},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
         } else if(cfg.type==='arrows'){
-          /* Wind directional barbs (vector 'wind-arrows' layer; needs &arrows=true). Colour darkens with speed. */
+          /* Wind directional barbs (vector 'wind-arrows' layer; needs &arrows=true). Color darkens with speed. */
           if(!map.getSource(sid)) map.addSource(sid,{type:'vector',url:omUrl(cfg.variable,'&arrows=true')});
           if(!map.getLayer(cfg.id)) map.addLayer({id:cfg.id,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);
         } else {
@@ -12266,7 +12301,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(){ refreshPanel(); }
     /* Per the user: ECMWF must be treated like every other layer — NOT a separate button/panel. So each
        variable is injected as a normal lyr-row (checkbox + opacity) into the Layers dropdown, plus one
-       shared "valid time" row driving the hourly time slider. The taxonomy reorganiser then files these
+       shared "valid time" row driving the hourly time slider. The taxonomy reorganizer then files these
        rows into the Climate & weather / Oceans groups alongside the other weather layers. */
     function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=(jp()?l.label[1]:l.label[0]); }); const tl=document.querySelector('#data-legend-ecmwf .ec-time-cap'); if(tl) tl.textContent=(jp()?'時刻（1時間毎）':'Valid time (hourly)'); updateTimeLabel(); }
     function mountRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('lyrrow-ec-temp')) return;
@@ -12315,7 +12350,7 @@ window.addEventListener('DOMContentLoaded', () => {
      · NO Flat/Globe selector — the compare projection auto-follows the MAIN map in every mode.
      · THREE exclusive modes ("二択なものです…三択にして"): SYNC / FREE (independent) / X-RAY.
        - SYNC: bidirectional ("メインとサブ、どちらの地図を動かしても同期") and the compare window
-         shows, at its centre, the geography under the CENTROID OF THE UNCOVERED MAIN-MAP AREA
+         shows, at its center, the geography under the CENTROID OF THE UNCOVERED MAIN-MAP AREA
          ("compare viewに隠れていない領域の中心を、compare viewの中心とする").
        - FREE: fully independent camera, no interference with the main map.
        - X-RAY: the R18 pixel-registered clip-path lens.
@@ -12445,26 +12480,26 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R18) TRUE LENS — compare covers the whole container at the EXACT main camera and is
              clipped to the window rect → pixel-perfect register on globe AND flat.
              (#R21) Drift fix ("一定以上メインマップを動かすとずれる"): the main camera carries PADDING
-             (frosted sidebar / sheet detents shift its optical centre) — the lens must carry the SAME
+             (frosted sidebar / sheet detents shift its optical center) — the lens must carry the SAME
              padding or every padded pixel is offset. Mirror it on every sync. */
           layoutXrayLens();
           let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
           cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
         } else {
-          /* SYNC: centre the compare on the geography under the UNCOVERED-area centroid. */
+          /* SYNC: center the compare on the geography under the UNCOVERED-area centroid. */
           let target=null; try{ target=map.unproject(uncoveredCentroidPx()); }catch(_){}
           cmap.jumpTo({center:target||map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
         }
       }catch(_){} syncing=false; }
     /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
-       sync relation (compare centre = uncovered-area centroid geography) keeps holding. */
+       sync relation (compare center = uncovered-area centroid geography) keeps holding. */
     function syncToMain(){ if(mode!=='sync'||!cmap||syncing) return; syncing=true;
       try{
         const C=cmap.getCenter();
         map.jumpTo({zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch()});
         const tpx=uncoveredCentroidPx();
         const p=map.project(C);                                  /* where C sits on the main map now */
-        const cpx=map.project(map.getCenter());                  /* main centre in screen px */
+        const cpx=map.project(map.getCenter());                  /* main center in screen px */
         const next=map.unproject([cpx.x+(p.x-tpx[0]), cpx.y+(p.y-tpx[1])]);
         map.jumpTo({center:next});
       }catch(_){} syncing=false; }
@@ -12585,7 +12620,7 @@ window.addEventListener('DOMContentLoaded', () => {
           cmap.addSource('cmp-rail',{type:'geojson',data:fc});
           cmap.addLayer({id:'cmp-rail',type:'line',source:'cmp-rail',layout:{visibility:'none'},paint:{'line-color':['coalesce',['get','col'],'#888'],'line-width':1.3,'line-opacity':0.85}});
           done&&done(); }catch(_){} }); }},
-      {k:'dc', n:()=>jp()?'データセンター':'Data centres / cloud', ids:['cmp-dc'], add(done){
+      {k:'dc', n:()=>jp()?'データセンター':'Data centers / cloud', ids:['cmp-dc'], add(done){
         if(cmap.getSource('cmp-dc')){ done&&done(); return; }
         if(!window.IntMapBeta2) return;
         window.IntMapBeta2.load('dc',fc=>{ try{ if(cmap.getSource('cmp-dc')) { done&&done(); return; }
@@ -12758,7 +12793,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapPresets={ render, _get:()=>presets, _set:(a)=>{ if(Array.isArray(a)){ presets=a; try{ localStorage.setItem(KEY,JSON.stringify(presets)); }catch(_){} render(); } } };
   })();
 
-  /* ===== (#R20) ACCOUNT PREFS SYNC — a logged-in user's settings / layer favourites / widget board /
+  /* ===== (#R20) ACCOUNT PREFS SYNC — a logged-in user's settings / layer favorites / widget board /
      layer presets live in Supabase `user_prefs` (supabase_user_prefs.sql, own-row RLS) so they follow
      the account across devices ("ユーザーが設定できるものなどは、アカウント登録者では保持して"). ===== */
   (function(){
@@ -12926,7 +12961,7 @@ window.addEventListener('DOMContentLoaded', () => {
       E(1939,18.67,54.41,'war','WWII begins','第二次世界大戦勃発','Germany attacks Westerplatte, invades Poland.','ドイツがポーランド侵攻。','Invasion_of_Poland'),
       E(1941,-157.95,21.36,'war','Attack on Pearl Harbor','真珠湾攻撃','Japan strikes the US Pacific Fleet.','日本が米太平洋艦隊を奇襲。','Attack_on_Pearl_Harbor'),
       E(1944,-0.85,49.34,'war','D-Day landings','ノルマンディー上陸','Largest amphibious invasion in history.','史上最大の上陸作戦。','Normandy_landings'),
-      E(1944,-71.30,44.26,'economic','Bretton Woods Conference','ブレトンウッズ会議','Dollar-centred postwar monetary order.','ドル基軸の戦後通貨体制を設計。','Bretton_Woods_Conference'),
+      E(1944,-71.30,44.26,'economic','Bretton Woods Conference','ブレトンウッズ会議','Dollar-centerd postwar monetary order.','ドル基軸の戦後通貨体制を設計。','Bretton_Woods_Conference'),
       E(1945,-106.47,33.68,'space','Trinity nuclear test','トリニティ核実験','First nuclear detonation.','人類初の核爆発。','Trinity_(nuclear_test)'),
       E(1945,132.45,34.39,'war','Hiroshima','広島への原爆投下','First atomic bombing of a city.','史上初の都市への原爆投下。','Atomic_bombings_of_Hiroshima_and_Nagasaki'),
       E(1945,-122.42,37.77,'geo','United Nations founded','国際連合発足','UN Charter signed in San Francisco.','サンフランシスコで国連憲章調印。','United_Nations'),
@@ -13326,9 +13361,9 @@ window.addEventListener('DOMContentLoaded', () => {
     return { open:openP, close:closeP };
   })();
 
-  /* ===== (#R11) Mobile measuring is CENTRE-FIXED: a subtle crosshair marks the map centre, a bottom-
-     centre "Add point" button adds the centre coordinate (for measure / area / radius), and a small
-     bottom-left readout shows the centre's coords + active-layer value. The button also replaces the
+  /* ===== (#R11) Mobile measuring is CENTER-FIXED: a subtle crosshair marks the map center, a bottom-
+     center "Add point" button adds the center coordinate (for measure / area / radius), and a small
+     bottom-left readout shows the center's coords + active-layer value. The button also replaces the
      (now-disabled) long-press context menu when no tool is active. On desktop it shows only while a
      measurement tool is active (so right-click still drives the menu). ===== */
   (function(){
@@ -13347,33 +13382,33 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R18) The always-on readout hugs the sheet — only a sliver of a gap ("ボトムシートとの間にわずかに隙間がある程度まで下げて"). */
       @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 4px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
         .coord-readout span{ white-space:nowrap; flex-shrink:0; }
-        /* (#R16) The crosshair must mark the centre of the VISIBLE map space — the area NOT covered by the
-           bottom sheet — not the centre of the phone screen. Sit it halfway down the uncovered area. */
+        /* (#R16) The crosshair must mark the center of the VISIBLE map space — the area NOT covered by the
+           bottom sheet — not the center of the phone screen. Sit it halfway down the uncovered area. */
         #m-crosshair{ top:calc((100% - var(--sheet-cover, var(--peek-h, 196px))) / 2) !important; } }`;
     document.head.appendChild(st);
     const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
     const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
     function setLabel(){ btn.textContent=(currentLang==='jp'?'＋ 地点を追加':'＋ Add point'); }
     setLabel(); window.addEventListener('intmap-lang',setLabel);
-    /* (#R12) The crosshair sits at the GEOMETRIC centre of the map (50%/50%). map.getCenter() returns the
-       PADDED centre (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
-       — adding measure points in the wrong place. Unproject the visual centre pixel instead so the
-       crosshair's centre IS the exact point. */
+    /* (#R12) The crosshair sits at the GEOMETRIC center of the map (50%/50%). map.getCenter() returns the
+       PADDED center (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
+       — adding measure points in the wrong place. Unproject the visual center pixel instead so the
+       crosshair's center IS the exact point. */
     function centerLL(){ const r=mc.getBoundingClientRect();
-      /* (#R16) Match the crosshair: on mobile the target point is the centre of the UNCOVERED map area
+      /* (#R16) Match the crosshair: on mobile the target point is the center of the UNCOVERED map area
          (above the sheet), so unproject that exact pixel — keeps Add-point and long-press accurate. */
       let cy=r.height/2;
       if(mob()){ const cs=getComputedStyle(mc); const cover=parseFloat(cs.getPropertyValue('--sheet-cover'))||parseFloat(cs.getPropertyValue('--peek-h'))||0; cy=(r.height-cover)/2; }
       const px=[r.width/2, cy]; const ll=map.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
     window._mCenterLL=centerLL;
-    /* (#R13) The +Add point button (and the centre crosshair) now appear ONLY while a measurement tool
+    /* (#R13) The +Add point button (and the center crosshair) now appear ONLY while a measurement tool
        is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
        drives the context menu instead. */
-    /* (#R15 / #1) The crosshair is now ALWAYS visible on mobile (the user wants the centre point's
+    /* (#R15 / #1) The crosshair is now ALWAYS visible on mobile (the user wants the center point's
        coords/elevation/layer value shown at all times), while the +Add-point button stays tool-only. */
     function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=m?'block':'none'; btn.style.display=tool?'block':'none'; }
     /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
-       centre, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
+       center, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
     function readout(){ if(!mob()) return; try{ const c=centerLL();
       const dem=demElevAt(c.lng,c.lat,()=>{ const d2=demElevAt(c.lng,c.lat); if(d2!=null){ lastElev=elevText(d2); renderCoordReadout(c.lng,c.lat); } });
       if(dem!=null) lastElev=elevText(dem);
@@ -13501,7 +13536,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, _items:items };
   })();
 
-  /* ===== (#R8c) View bookmarks — the live map state (centre, zoom, bearing, pitch, projection AND the
+  /* ===== (#R8c) View bookmarks — the live map state (center, zoom, bearing, pitch, projection AND the
      set of active data layers) is mirrored into the URL hash, so the address bar is a shareable permalink
      and a reload restores the exact analysis view. "Copy link to this view" lives in the right-click menu. ===== */
   (function(){
@@ -13647,7 +13682,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
 
   /* (#R15c) First-visit showcase — a new user reported the map "was initially just black". On the very
-     first visit (nothing seen before) we auto-cycle a few colourful layers with a bottom pill that names
+     first visit (nothing seen before) we auto-cycle a few colorful layers with a bottom pill that names
      the layer being shown + play/pause + dismiss. It stops the moment the user toggles any layer or hits ✕,
      and remembers it's been seen so it never nags again. Purely additive; touches only its own pill. */
   function _imStartDemo(force){
