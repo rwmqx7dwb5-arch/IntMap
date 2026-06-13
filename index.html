@@ -11238,15 +11238,110 @@ window.addEventListener('DOMContentLoaded', () => {
     function relabel(){ Object.keys(B2LBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=jp()?B2LBL[k][0]:B2LBL[k][1]; }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
     /* self-heal across basemap swaps */
-    map.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp){ setTimeout(()=>{
+    map.on('styledata',()=>{ if(state.dc||state.pharma||state.rail||state.cpi||state.lifeexp||state.unemp||state.internet||state.precip){ setTimeout(()=>{
       if(state.dc&&ptEnsure('dc','dc-src',['dc-pt','dc-lbl'])){ setVis(['dc-pt','dc-lbl'],true); load('dc',fc=>{ try{ map.getSource('dc-src').setData(fc); }catch(_){} }); }
       if(state.pharma&&ptEnsure('pharma','ph-src',['ph-pt','ph-lbl'])){ setVis(['ph-pt','ph-lbl'],true); load('pharma',fc=>{ try{ map.getSource('ph-src').setData(fc); }catch(_){} }); }
       if(state.rail&&railEnsure()){ setVis(['rail-ln'],true); if(cache.rail){ try{ map.getSource('rail-src').setData(cache.rail); }catch(_){} } }
-      if(state.cpi) wbToggle('cpi',true);
-      if(state.lifeexp) wbToggle('lifeexp',true);
+      ['cpi','lifeexp','unemp','internet','precip'].forEach(k=>{ if(state[k]) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
     },90); } });
     window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail) cache.rail=null; });
     window.IntMapBeta2={load,_state:state};
+  })();
+
+  /* ===== (#R22) Religion & language distribution — categorical country choropleths (beta). Each
+     country is shaded by its DOMINANT religion / PRIMARY official language (well-established facts;
+     ISO-3 keyed; countries without an entry stay neutral gray — real data, nothing fabricated). ===== */
+  (function(){
+    if(typeof map==='undefined'||!map) return;
+    const jp=()=>currentLang==='jp';
+    const before=()=>map.getLayer('tool-poly')?'tool-poly':undefined;
+    const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    let pop=null;
+    const expand=(o)=>{ const m={}; Object.keys(o).forEach(cat=>String(o[cat]).split(/\s+/).forEach(iso=>{ if(iso) m[iso]=cat; })); return m; };
+    /* dominant religion by population */
+    const REL=expand({
+      christian:'USA CAN MEX BRA ARG COL CHL PER VEN ECU BOL PRY URY GTM HND SLV NIC CRI PAN CUB DOM HTI JAM GBR FRA DEU ITA ESP PRT POL ROU GRC HUN AUT BEL IRL CHE HRV SVK SVN SRB BGR GEO ARM RUS UKR BLR MDA AUS NZL FJI ZAF COD ETH KEN GHA UGA TZA AGO MOZ ZMB ZWE NGA CMR RWA BDI MWI MDG NAM BWA LSO SWZ SSD CAF GAB COG PHL TLS PNG',
+      muslim:'SAU IRN IRQ EGY TUR PAK BGD IDN MYS AFG DZA MAR TUN LBY SDN SOM YEM JOR SYR KWT ARE QAT OMN BHR KAZ UZB TKM TJK KGZ AZE MLI NER SEN TCD MRT GMB GIN GNB SLE BRN MDV DJI COM',
+      hindu:'IND NPL MUS',
+      buddhist:'THA MMR KHM LAO LKA BTN MNG JPN VNM',
+      jewish:'ISR',
+      unaffiliated:'CHN KOR PRK CZE EST NLD SWE'
+    });
+    const REL_COL={christian:'#4e79a7',muslim:'#59a14f',hindu:'#e15759',buddhist:'#f0a93b',jewish:'#76b7b2',unaffiliated:'#9aa0a6'};
+    const REL_LBL={christian:['Christianity','キリスト教'],muslim:['Islam','イスラム教'],hindu:['Hinduism','ヒンドゥー教'],buddhist:['Buddhism','仏教'],jewish:['Judaism','ユダヤ教'],unaffiliated:['Unaffiliated','無宗教']};
+    /* primary official / most-used language */
+    const LANG=expand({
+      english:'USA GBR CAN AUS NZL IRL NGA GHA KEN UGA ZAF ZWE ZMB BWA NAM SSD LBR SLE GMB MWI PNG FJI JAM TTO GUY',
+      spanish:'MEX ESP ARG COL PER VEN ECU BOL PRY URY GTM HND SLV NIC CRI PAN CUB DOM',
+      portuguese:'BRA PRT AGO MOZ TLS GNB CPV',
+      french:'FRA COD CIV CMR SEN MLI NER BFA BEN GIN TGO BDI RWA GAB COG MDG TCD DJI HTI LUX',
+      arabic:'SAU EGY IRQ DZA MAR TUN LBY SDN SYR JOR YEM ARE KWT QAT OMN BHR LBN MRT',
+      chinese:'CHN TWN SGP',
+      russian:'RUS BLR KAZ KGZ',
+      hindi:'IND',
+      bengali:'BGD',
+      german:'DEU AUT CHE',
+      japanese:'JPN',
+      korean:'KOR PRK',
+      turkish:'TUR',
+      persian:'IRN AFG TJK',
+      malay:'IDN MYS BRN',
+      italian:'ITA'
+    });
+    const LANG_COL={english:'#4e79a7',spanish:'#f28e2b',arabic:'#59a14f',chinese:'#e15759',french:'#76b7b2',portuguese:'#edc948',russian:'#b07aa1',hindi:'#ff9da7',bengali:'#9c755f',german:'#bab0ac',japanese:'#86bcb6',korean:'#d37295',turkish:'#a0cbe8',persian:'#8cd17d',malay:'#e377c2',italian:'#79706e'};
+    const LANG_LBL={english:['English','英語'],spanish:['Spanish','スペイン語'],arabic:['Arabic','アラビア語'],chinese:['Chinese','中国語'],french:['French','フランス語'],portuguese:['Portuguese','ポルトガル語'],russian:['Russian','ロシア語'],hindi:['Hindi','ヒンディー語'],bengali:['Bengali','ベンガル語'],german:['German','ドイツ語'],japanese:['Japanese','日本語'],korean:['Korean','韓国語'],turkish:['Turkish','トルコ語'],persian:['Persian','ペルシャ語'],malay:['Malay/Indonesian','マレー・インドネシア語'],italian:['Italian','イタリア語']};
+    const CFG={
+      religion:{map:REL,col:REL_COL,lbl:REL_LBL,ids:['cat-rel-f','cat-rel-l'],src:'cat-rel',nm:['Dominant religion','宗教分布（主流）']},
+      language:{map:LANG,col:LANG_COL,lbl:LANG_LBL,ids:['cat-lang-f','cat-lang-l'],src:'cat-lang',nm:['Primary language','言語分布（主要）']}
+    };
+    const state={religion:false,language:false};
+    function colorExpr(C){ const e=['match',['get','cat']]; Object.keys(C.col).forEach(cat=>{ e.push(cat, C.col[cat]); }); e.push('#9aa0a6'); return e; }
+    async function build(key){ const C=CFG[key];
+      if(map.getSource(C.src)){ setVis(key,true); legend(key); return; }
+      try{ await loadCountryData(); }catch(_){}
+      const cg=(typeof countryGeo!=='undefined'&&countryGeo)||window.countryGeo;
+      if(!cg||!Array.isArray(cg.features)){ setTimeout(()=>build(key),1200); return; }
+      const feats=cg.features.filter(f=>f.id!=null&&C.map[f.id]).map(f=>({type:'Feature',geometry:f.geometry,properties:{cat:C.map[f.id],iso:f.id}}));
+      try{
+        map.addSource(C.src,{type:'geojson',data:{type:'FeatureCollection',features:feats}});
+        map.addLayer({id:C.ids[0],type:'fill',source:C.src,layout:{visibility:'none'},paint:{'fill-color':colorExpr(C),'fill-opacity':0.62}},before());
+        map.addLayer({id:C.ids[1],type:'line',source:C.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
+        map.on('click',C.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){}
+          const catLbl=(C.lbl[p.cat]?(jp()?C.lbl[p.cat][1]:C.lbl[p.cat][0]):p.cat);
+          try{ if(pop) pop.remove(); }catch(_){}
+          try{ pop=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?C.nm[1]:C.nm[0])+': <b style="color:var(--text-main);">'+esc(catLbl)+'</b></div>').addTo(map); }catch(_){}
+        });
+        map.on('mouseenter',C.ids[0],()=>{ map.getCanvas().style.cursor='pointer'; });
+        map.on('mouseleave',C.ids[0],()=>{ map.getCanvas().style.cursor=''; });
+        setVis(key,true); legend(key);
+      }catch(_){}
+    }
+    function setVis(key,on){ const C=CFG[key]; C.ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} }); }
+    function legend(key){ const C=CFG[key];
+      try{ if(!window._registerLayerOpacity) return;
+        const el=window._registerLayerOpacity('cat-'+key,[C.nm[0],C.nm[1]],C.ids,'beta-dl-cat-'+key);
+        if(el&&!el.querySelector('.cat-key')){ const k=document.createElement('div'); k.className='cat-key'; k.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:6px;font-size:10.5px;color:var(--text-main);';
+          k.innerHTML=Object.keys(C.col).map(cat=>'<div style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;flex:none;background:'+C.col[cat]+';"></span>'+(jp()?C.lbl[cat][1]:C.lbl[cat][0])+'</div>').join('');
+          el.appendChild(k); }
+      }catch(_){} }
+    function toggle(key,on){ state[key]=on;
+      if(!on){ setVis(key,false); try{ window._hideGenericLegend&&window._hideGenericLegend('cat-'+key); }catch(_){} return; }
+      if(!map.isStyleLoaded()){ map.once('idle',()=>toggle(key,true)); return; }
+      build(key);
+    }
+    const CLBL={religion:['宗教分布','Religion distribution'],language:['言語分布','Language distribution']};
+    const CSW={religion:'#4e79a7',language:'#f28e2b'};
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-cat-religion')) return;
+      Object.keys(CLBL).forEach(k=>{ const w=document.createElement('div'); w.className='lyr-row';
+        w.innerHTML='<label class="layer-option"><input type="checkbox" id="beta-dl-cat-'+k+'"> <span class="lyr-sw" style="background:'+CSW[k]+'"></span> <span id="beta-dl-cat-'+k+'-lbl">'+(jp()?CLBL[k][0]:CLBL[k][1])+'</span></label>';
+        dd.appendChild(w);
+        w.querySelector('input').addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); toggle(k,e.target.checked); }); });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
+    }
+    if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
+    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ Object.keys(CLBL).forEach(k=>{ const e=document.getElementById('beta-dl-cat-'+k+'-lbl'); if(e) e.textContent=jp()?CLBL[k][0]:CLBL[k][1]; }); },20));
+    map.on('styledata',()=>{ if(state.religion||state.language){ setTimeout(()=>{ ['religion','language'].forEach(k=>{ if(state[k]){ if(map.getSource(CFG[k].src)) setVis(k,true); else build(k); } }); },90); } });
   })();
 
   /* ===== Widgets retired (#R15) — the clock/weather/FX widget panel was removed per user request.
