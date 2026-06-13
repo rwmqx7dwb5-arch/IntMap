@@ -922,6 +922,17 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel .tp-header{ margin-bottom:5px !important; }
       .tool-panel .tp-clear, .tool-panel .tp-add-btn{ padding:7px !important; margin-top:6px !important; }
       .tool-panel .radius-list{ max-height:88px !important; }
+      /* (#R22) Radius panel was too tall/wide to use on a phone ("凡例が大きすぎてほとんど使えない"): cap the
+         width, tighten the stat rows, let the color swatches + opacity sit on one wrapping line, and keep
+         the whole panel inside a scroll box so the map (and the circle being placed) stays visible. */
+      .tool-panel.tp-radius{ width:min(290px, calc(100vw - 12px)) !important; max-height:calc(100dvh - var(--sheet-cover, var(--peek-h)) - 96px) !important; padding:8px 10px !important; }
+      .tool-panel.tp-radius .tp-sub{ margin:4px 0 2px !important; font-size:10px !important; }
+      .tool-panel.tp-radius .tp-row{ margin:1px 0 !important; font-size:11px !important; }
+      .tool-panel.tp-radius .radius-color-row{ margin:5px 0 !important; gap:6px !important; }
+      .tool-panel.tp-radius .rad-preset{ width:26px !important; height:26px !important; }
+      .tool-panel.tp-radius input[type=color]{ width:30px !important; height:26px !important; }
+      .tool-panel.tp-radius .tp-hint{ font-size:10px !important; margin-top:4px !important; }
+      .tool-panel.tp-radius .ai-action-btn{ padding:7px !important; margin-top:5px !important; font-size:11.5px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ top:64px !important; bottom:auto !important; }
       .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:min(30dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 78px)); overflow-y:auto; }
@@ -3822,6 +3833,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
       : '';
     p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[toolMode]}</span><button class="tp-close" title="${t('close')}">✕</button></div>${body}${footBtns}`;
+    p.classList.toggle('tp-radius', toolMode==='radius');   /* (#R22) drives the compact mobile radius layout */
     p.querySelector('.tp-close').onclick=exitTool; makeDraggable(p,p.querySelector('.tp-header'));
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
@@ -10936,19 +10948,28 @@ window.addEventListener('DOMContentLoaded', () => {
         if(on&&window._registerLayerOpacity){
           const el=window._registerLayerOpacity('histb',['Historical borders','過去の国境'],HB_IDS,'beta-dl-histb');
           if(el&&!el.querySelector('.hb-year-row')){
-            const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:flex-start;gap:7px;';
-            /* (#R21) Tick alignment fix ("目盛り、スライドと位置があっていない"): the ticks now live INSIDE
-               the same flex cell as the range input (identical width), and each tick is absolutely
-               positioned at calc(half-thumb + usable-width × i/(n−1)) with translateX(-50%) — i.e. the
-               exact center of each thumb stop, instead of the old space-between row with guessed margins. */
-            row.innerHTML=(jp()?'年代':'Year')+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
-              '<input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
-              '<span class="hb-ticks" style="display:block;position:relative;height:15px;">'+
-              HB_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(HB_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8.5px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
-              '</span></span> <b class="hb-year-val" style="color:var(--text-main);min-width:38px;text-align:right;">'+hbYear+'</b>';
+            const row=document.createElement('div'); row.className='hb-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:7px;';
             const note=document.createElement('div'); note.className='hb-note'; note.style.cssText='font-size:10px;color:var(--text-muted);margin-top:8px;';
-            el.appendChild(row); el.appendChild(note);
-            row.querySelector('input').addEventListener('input',(e)=>{ hbYear=HB_YEARS[+e.target.value]||1920; const v=el.querySelector('.hb-year-val'); if(v) v.textContent=hbYear; clearTimeout(hbToggle._t); hbToggle._t=setTimeout(()=>hbLoad(hbYear),250); });
+            const isMob=(typeof isMobile==='function'&&isMobile());
+            if(isMob){
+              /* (#R22) MOBILE: a native iOS pulldown of the available years instead of the fiddly slider
+                 ("Historic bordersの凡例は、モバイル版ではiOS対応のプルダウンに"). */
+              row.innerHTML=(jp()?'年代':'Year')+' <select class="hb-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+                HB_YEARS.map(y=>'<option value="'+y+'"'+(y===hbYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
+              el.appendChild(row); el.appendChild(note);
+              row.querySelector('.hb-year-sel').addEventListener('change',(e)=>{ hbYear=+e.target.value||1920; hbLoad(hbYear); });
+            } else {
+              /* (#R21) Tick alignment fix: ticks live INSIDE the same flex cell as the range input,
+                 each positioned at the exact center of its thumb stop. */
+              row.style.alignItems='flex-start';
+              row.innerHTML=(jp()?'年代':'Year')+' <span class="hb-slider-wrap" style="flex:1;position:relative;display:block;min-width:0;">'+
+                '<input type="range" min="0" max="'+(HB_YEARS.length-1)+'" step="1" value="'+HB_YEARS.indexOf(hbYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
+                '<span class="hb-ticks" style="display:block;position:relative;height:15px;">'+
+                HB_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(HB_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8.5px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
+                '</span></span> <b class="hb-year-val" style="color:var(--text-main);min-width:38px;text-align:right;">'+hbYear+'</b>';
+              el.appendChild(row); el.appendChild(note);
+              row.querySelector('input').addEventListener('input',(e)=>{ hbYear=HB_YEARS[+e.target.value]||1920; const v=el.querySelector('.hb-year-val'); if(v) v.textContent=hbYear; clearTimeout(hbToggle._t); hbToggle._t=setTimeout(()=>hbLoad(hbYear),250); });
+            }
           }
         } else if(window._hideGenericLegend) window._hideGenericLegend('histb');
       }catch(_){}
