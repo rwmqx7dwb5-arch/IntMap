@@ -239,6 +239,10 @@ gtag('config', 'G-57X5MX0ZPW');
     .plc-popup .maplibregl-popup-content{ background:var(--popup-bg) !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:9px 12px; }
     .plc-popup .maplibregl-popup-tip{ display:none; }
     .plc-popup .maplibregl-popup-close-button{ color:var(--text-muted); font-size:17px; padding:0 6px; }
+    /* (#R22) Place-label popup action buttons: even row on desktop, vertical stack on mobile. */
+    .plc-popup .plc-acts{ display:flex; gap:6px; flex-wrap:wrap; }
+    .plc-popup .plc-acts button{ flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; }
+    @media(max-width:768px){ .plc-popup .plc-acts{ flex-direction:column; } .plc-popup .plc-acts button{ width:100%; flex:none; } }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
@@ -327,7 +331,12 @@ gtag('config', 'G-57X5MX0ZPW');
        gives #layer-tools an automatic minimum size of 0 — so whenever the expanded list overflowed the
        panel, the ONLY shrinkable item (this one) absorbed the entire shortfall and squashed to a ~13px
        sliver with its buttons clipped below the panel ("少しだけ見れるが隠れている／開けない"). */
-    #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; flex-shrink:0; }
+    #layer-tools{ box-sizing:border-box; width:100%; max-width:100%; overflow:hidden; flex-shrink:0; display:flex; flex-direction:column; gap:8px; }
+    /* (#R22) Even, uniform gaps between the Tools buttons (Compare / Upload / Quiz / Presets) — the old
+       per-button inline margins (4/6/0 px) made the spacing look haphazard ("間隔が不自然"). */
+    #layer-tools > *{ margin:0 !important; }
+    #layer-tools > *:empty{ display:none; }
+    #layer-tools .lyr-head{ margin-bottom:0 !important; }
     #layer-tools .ai-test-btn, #layer-tools button{ box-sizing:border-box; width:100%; max-width:100%; }
     /* (#R20) Desktop Tools: NOT pinned/sticky any more — the user asked for it to sit in normal flow at
        the end of the list ("下部にFixしなくていい。普通に置いて"). The R19 flex-shrink:0 above keeps it
@@ -1317,7 +1326,7 @@ gtag('config', 'G-57X5MX0ZPW');
         <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
         <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain">⛰️ 3D</button>
         <button class="view-btn compass-btn" id="btn-compass" title="Reset North">
-          <svg class="compass-svg" width="20" height="20" viewBox="0 0 24 24">
+          <svg class="compass-svg" width="28" height="28" viewBox="0 0 24 24">
             <polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/>
             <polygon points="12,22 9,12 12,14.5 15,12" fill="#9aa0a6"/>
           </svg>
@@ -1540,7 +1549,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 3.3a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L8.6 21 3 21l0-5.6L14.7 3.3Z"/><path d="m11.5 6.5 6 6M8 10l2 2M5.5 12.5l2 2"/></svg>
   </button>
   <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" title="Compass">
-    <svg class="m-compass-svg" viewBox="0 0 24 24" width="22" height="22"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
+    <svg class="m-compass-svg" viewBox="0 0 24 24" width="30" height="30"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
   </button>
 </div>
 <div class="m-scrim" id="m-scrim"></div>
@@ -6129,6 +6138,10 @@ window.addEventListener('DOMContentLoaded', () => {
            the country popup's × stayed tiny ("ポップアップの右上の×が小さすぎて押せない"). */
         .country-popup-close, #cp-close{ width:32px !important; height:32px !important; font-size:19px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); }
         .maplibregl-popup-content{ padding-right:40px; }
+        /* (#R22) Catch-all so NO popup/panel × can stay tiny again — the satellite controller (was 26px)
+           and every "Close" button get the same 32px tap target ("×が小さすぎて押せない" re-report). */
+        .satc-close{ width:32px !important; height:32px !important; font-size:20px !important; display:flex !important; align-items:center; justify-content:center; }
+        button[aria-label="Close"], .ai-panel-close, .ai-x, .nrp-close, .fb-x, #fb-x{ min-width:32px !important; min-height:32px !important; }
         /* (#R21) the last stragglers — widget board ✕/⚙ and the widget-gallery ✕ join the ONE 32px size */
         .wgt-x{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .wgt-cfg{ width:32px !important; height:32px !important; border-radius:9px !important; right:44px !important; font-size:14px !important; }
@@ -6567,9 +6580,9 @@ window.addEventListener('DOMContentLoaded', () => {
           ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod']],
           ['lyrGrpMaritime',['sst','eez','subcables','planes']],
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
-          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem']],
-          ['lyrGrpHazard',['thermal','aurora','nightsat','night']],
-          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','histb','ukrfront']]
+          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi']],
+          ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2']],
+          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','histb','ukrfront','rail']]   /* (#R22) volcanoes/railways/corruption promoted out of beta */
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
         const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','seaRoute','chokepoints','dams','sahel','islandChain1','islandChain2','stringOfPearls','bri','pipelines','nuclear'];
@@ -10702,8 +10715,11 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R21) Keep only features around Ukraine ("表示するのはウクライナ周辺だけでよい") — any stray
            far-away geometry in the feed is dropped via a cheap first-vertex bbox test. */
         const firstLL=(g)=>{ try{ let c=g.coordinates; while(Array.isArray(c[0])) c=c[0]; return c; }catch(_){ return null; } };
-        const inUA=(f)=>{ const c=firstLL(f.geometry); return !c || (c[0]>20&&c[0]<42.5&&c[1]>42.5&&c[1]<54.5); };
-        const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon|LineString/.test(f.geometry.type)&&inUA(f));
+        /* (#R22) Min latitude raised 42.5 → 43.9 so DeepState's "Occupied Abkhazia" (~43.0 N) and
+           "South Ossetia / Tskhinvali" (~42.2 N) polygons are dropped — they are NOT the Ukraine front
+           ("アブハジアは表示しなくて良い"). Crimea's southern tip is 44.4 N, so all of Ukraine is kept. */
+        const inUA=(f)=>{ const c=firstLL(f.geometry); return !c || (c[0]>20&&c[0]<42.5&&c[1]>43.9&&c[1]<54.5); };
+        const feats=fc.features.filter(f=>f&&f.geometry&&/Polygon/.test(f.geometry.type)&&inUA(f));
         if(!feats.length) continue;
         ukrFC={type:'FeatureCollection',features:feats};
         try{ map.getSource('ukr-src').setData(ukrFC); }catch(_){}
@@ -10723,22 +10739,34 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* (#R21) Legend mismatch fix ("凡例が、地図とあっていない") — the colour key is rebuilt FROM the
        loaded DeepState data (its real per-feature fill/stroke colours), so legend === map, always. */
+    /* (#R22) Classify each polygon by DeepState's OWN status token in `name`
+       ("Ukr /// English /// geoJSON.status.<key>") so the legend is the ground truth. The feed has NO
+       LineStrings (the old "Front line" row never matched anything → "凡例が地図とあっていない"); the real
+       polygon classes are Occupied / Liberated / Unknown status / Crimea-Donbas. */
+    function ukrStatusOf(p){ const n=String((p&&p.name)||'');
+      if(/status\.occupied/i.test(n)) return 'occupied';
+      if(/status\.liberated/i.test(n)) return 'liberated';
+      if(/status\.unknown/i.test(n)) return 'unknown';
+      if(/crimea|cadr|calr|donbas/i.test(n)) return 'crimea';
+      if(/liberated|deoccup/i.test(n)) return 'liberated';
+      if(/occupied/i.test(n)) return 'occupied';
+      return 'other'; }
     function ukrKeyFromData(feats){
       const el=document.getElementById('data-legend-ukrfront'); if(!el) return;
       const key=el.querySelector('.ukr-key'); if(!key) return;
-      const cnt=new Map();
-      feats.forEach(f=>{ const p=f.properties||{}; const poly=/Polygon/.test(f.geometry.type);
-        const c=String(poly?(p.fill||'#d62b2b'):(p.stroke||'#ff3b30')).toLowerCase();
-        const k=(poly?'P':'L')+c; const e=cnt.get(k)||{c,poly,n:0}; e.n++; cnt.set(k,e); });
-      const rows=[...cnt.values()].sort((a,b)=>(a.poly===b.poly?b.n-a.n:(a.poly?-1:1))).slice(0,5).map(e=>{
-        const hex=e.c.replace('#',''); const r=parseInt(hex.slice(0,2),16)||0,g=parseInt(hex.slice(2,4),16)||0,b=parseInt(hex.slice(4,6),16)||0;
-        let lbl;
-        if(!e.poly) lbl=jp()?'前線':'Front line';
-        else if(b>110&&r>80) lbl=jp()?'係争・不明確地域':'Contested / unclear';
-        else if(r>130&&g<110) lbl=jp()?'ロシア占領地域':'Russian-occupied area';
-        else lbl=jp()?'その他の区域':'Other zone';
-        return '<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:'+(e.poly?'10px':'3px')+';border-radius:2px;flex:none;background:'+e.c+';'+(e.poly?'opacity:0.55;':'')+'"></span>'+lbl+'</div>';
-      });
+      const polys=feats.filter(f=>f.geometry&&/Polygon/.test(f.geometry.type));
+      const groups=new Map();
+      polys.forEach(f=>{ const p=f.properties||{}; const s=ukrStatusOf(p); const c=String(p.fill||'#a52714').toLowerCase();
+        const g=groups.get(s)||{n:0,colors:{}}; g.n++; g.colors[c]=(g.colors[c]||0)+1; groups.set(s,g); });
+      groups.forEach(g=>{ g.color=Object.entries(g.colors).sort((a,b)=>b[1]-a[1])[0][0]; });
+      const label=(s)=>({ occupied:jp()?'ロシア占領地域':'Russian-occupied',
+                          crimea:jp()?'クリミア・ドンバス（2022年以前）':'Crimea / Donbas (pre-2022)',
+                          liberated:jp()?'解放地域':'Liberated',
+                          unknown:jp()?'状況不明の区域':'Unknown status',
+                          other:jp()?'その他の主張地域':'Other claimed area' }[s]||s);
+      const order=['occupied','crimea','liberated','unknown','other'];
+      const rows=order.filter(s=>groups.has(s)).map(s=>{ const g=groups.get(s);
+        return '<div style="display:flex;align-items:center;gap:7px;"><span style="width:14px;height:10px;border-radius:2px;flex:none;background:'+g.color+';opacity:0.6;"></span>'+label(s)+' <span style="opacity:0.5;font-size:10px;">('+g.n+')</span></div>'; });
       if(rows.length) key.innerHTML=rows.join('');
     }
     function ukrToggle(on){ state.ukr=on;
@@ -10756,9 +10784,9 @@ window.addEventListener('DOMContentLoaded', () => {
               const key=document.createElement('div'); key.className='ukr-key'; key.style.cssText='display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:11px;color:var(--text-main);';
               const sw=(c,solid)=>'<span style="width:14px;height:'+(solid?'10px':'3px')+';border-radius:2px;flex:none;background:'+c+';'+(solid?'opacity:0.55;':'')+'"></span>';
               key.innerHTML=
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#d62b2b',true)+(jp()?'ロシア占領地域':'Russian-occupied area')+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#ff3b30',false)+(jp()?'前線':'Front line')+'</div>'+
-                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#8338ec',true)+(jp()?'係争・不明確地域':'Contested / unclear')+'</div>';
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#a52714',true)+(jp()?'ロシア占領地域':'Russian-occupied')+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#0f9d58',true)+(jp()?'解放地域':'Liberated')+'</div>'+
+                '<div style="display:flex;align-items:center;gap:7px;">'+sw('#bcaaa4',true)+(jp()?'状況不明の区域':'Unknown status')+'</div>';
               const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
             }
           }
@@ -12815,8 +12843,15 @@ window.addEventListener('DOMContentLoaded', () => {
         ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
         :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
         +(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し（「最近の動向」に反映すること）:\n':'Recent nearby news headlines — reflect these in "Recent developments":\n')+news.map(s=>'- '+s).join('\n')):'');
+      /* (#R22) The brief runs FIRST; the suggested-questions block is appended only AFTER it finishes
+         ("Suggested questions は AI brief が終わってから最後に表示") — it used to render immediately. */
+      try{
+        const out=await askAI(prompt,sys);
+        body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources for important decisions.')+'</div>';
+      }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
+      const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
       /* (#R21 beta) SUGGESTED QUESTIONS — auto-generated from the countries in the current viewport
-         ("AIに聞く質問を、現在表示中の領域に基づいて自動生成") + a free-question box. */
+         ("AIに聞く質問を、現在表示中の領域に基づいて自動生成") + a free-question box. Shown last. */
       try{
         let sug=p.querySelector('#air-sugg'); if(sug) sug.remove();
         sug=document.createElement('div'); sug.id='air-sugg'; sug.style.cssText='margin-top:10px;border-top:1px solid rgba(128,128,128,0.2);padding-top:8px;';
@@ -12834,11 +12869,6 @@ window.addEventListener('DOMContentLoaded', () => {
         const fire=()=>{ const v=fr.value.trim(); if(v){ ask(v); fr.value=''; } };
         if(go) go.onclick=fire; if(fr) fr.addEventListener('keydown',e2=>{ if(e2.key==='Enter'){ e2.preventDefault(); fire(); } });
       }catch(_){}
-      try{
-        const out=await askAI(prompt,sys);
-        body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources for important decisions.')+'</div>';
-      }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
-      const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
     }
     /* questions templated from the most populous countries inside the current viewport */
     function suggestQs(name){
@@ -12988,12 +13018,9 @@ window.addEventListener('DOMContentLoaded', () => {
     };
   })();
 
-  /* ===== (#R21) ACLED CONFLICT EVENTS — its own collapsible section inside the News tab (separate
-     from the news feed, per "ニュース欄の中でも、ニュースと別の場所に"). ACLED's API is key-gated
-     (free registration at acleddata.com) → email+key inputs persist locally; events of the last
-     14 days render as a list + map pins coloured by event type. Every fetch goes through the
-     direct URL first, then the CORS proxies. ===== */
+  /* ===== (#R22) ACLED CONFLICT EVENTS card removed from the News tab per request ("News欄のACLEDは削除"). ===== */
   (function(){
+    return; /* ACLED card retired (#R22) */
     if(typeof map==='undefined'||!map) return;
     const jp=()=>currentLang==='jp';
     const esc=(s)=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -13378,7 +13405,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; } }
     function showPopup(lngLat,name){ if(popup){ try{popup.remove();}catch(_){} } const jp=currentLang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-      const html=`<div style="display:flex;align-items:center;gap:9px;padding:1px 0;flex-wrap:wrap;"><span style="font-weight:700;font-size:14px;color:var(--text-main);">${safe}</span><button class="plc-copy" style="background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.25),rgba(30,144,255,0.25));border:none;color:var(--text-main);border-radius:7px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🤖 ${jp?'AI調査':'AI brief'}</button></div>`;
+      /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
+         stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
+      const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:18px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">🤖 ${jp?'AI調査':'AI brief'}</button></div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
