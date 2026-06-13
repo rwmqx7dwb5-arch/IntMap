@@ -12410,16 +12410,22 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-rz::after{content:"";position:absolute;inset:5px;border-radius:3px;border:2px solid rgba(150,160,175,0.55);border-top:none;border-left:none;opacity:0;transition:opacity 0.15s;}'+
       '#compare-window:hover .cmp-rz::after{opacity:1;}'+
       '@media(max-width:768px){'+
-      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:44vh !important;min-width:0 !important;resize:none !important;border-radius:14px;padding-bottom:20px;}'+
+      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:14px;padding-bottom:20px;z-index:4200;}'+
       '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:7;}'+
       '.cmp-resize::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:42px;height:4px;border-radius:2px;background:rgba(150,160,175,0.7);}'+
-      '.cmp-head{flex-wrap:wrap;padding:9px 10px;gap:7px;}'+
-      '.cmp-head .cmp-title{font-size:13px;width:100%;}'+
-      '.cmp-btn{padding:8px 11px;font-size:13px;min-height:38px;}'+
-      '#cmp-close,#cmp-min{min-width:42px;font-size:16px;}'+
-      '#compare-window.cmp-xray .cmp-head{padding:10px 10px;}'+
-      '.cmp-ctrls{top:auto;bottom:26px;left:8px;right:8px;max-width:none;}'+
+      /* (#R22) Compact header (the wrapping 7-button bar looked like a big gray top strip — "上部がグレー")
+         + a clearly-pinned red Close so it never hides behind other buttons ("compare viewを終了できない"). */
+      '.cmp-head{flex-wrap:wrap;padding:8px 52px 8px 10px;gap:6px;align-items:center;}'+
+      '.cmp-head .cmp-title{font-size:13px;width:auto;margin-right:6px;}'+
+      '.cmp-btn{padding:6px 9px;font-size:12px;min-height:32px;}'+
+      '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:11;background:#ff3b30 !important;color:#fff !important;min-width:40px;height:40px;border-radius:20px;font-size:18px;padding:0;display:flex;align-items:center;justify-content:center;}'+
+      '#cmp-min{min-width:38px;font-size:16px;}'+
+      '#compare-window.cmp-xray .cmp-head{padding:8px 52px 8px 10px;}'+
+      '.cmp-ctrls{top:auto;bottom:28px;left:8px;right:8px;max-width:none;}'+
       '.cmp-ctrls select,.cmp-ctrls label{font-size:12px;padding:6px 9px;}'+
+      /* layers dropdown opens UPWARD on mobile (it sits at the bottom) and is large/readable. */
+      '#cmp-layers-dd{top:auto !important;bottom:42px !important;left:0;right:0;max-height:52vh !important;min-width:0 !important;font-size:13px;}'+
+      '#cmp-layers-dd label{padding:8px 4px !important;font-size:13px !important;}'+
       '}';
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -12649,7 +12655,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-body"><div id="compare-map"></div>'+
         '<div class="cmp-ctrls">'+
         '<button class="cmp-btn" id="cmp-layers-btn" style="backdrop-filter:blur(8px);">🗂 '+(jp()?'レイヤー':'Layers')+' ▾</button>'+
-        '<div id="cmp-layers-dd" style="display:none;position:absolute;top:34px;left:0;z-index:7;max-height:min(260px,60%);overflow-y:auto;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.3);border-radius:10px;padding:8px 10px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,0.3);min-width:190px;"></div>'+
+        '<div id="cmp-layers-dd" style="display:none;position:absolute;top:34px;left:0;z-index:7;max-height:min(460px,80vh);overflow-y:auto;background:var(--popup-bg);border:1px solid rgba(128,128,128,0.3);border-radius:10px;padding:10px 12px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,0.3);min-width:240px;columns:1;"></div>'+
         '</div></div>'+
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
@@ -12729,7 +12735,11 @@ window.addEventListener('DOMContentLoaded', () => {
       map.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
       cmap.on('move',(ev)=>{ if(mode==='sync'&&!syncing&&ev&&ev.originalEvent) syncToMain(); });
     }
-    function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min'); setTimeout(()=>{ try{cmap.resize();}catch(_){} followProjection(); syncFromMain(); },80); }
+    function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
+      /* (#R22) Resize several times after the window becomes visible so the GL canvas always fills the
+         body — a single deferred resize sometimes left an unsized gray strip at the top ("上部がグレー"). */
+      const fit=()=>{ try{cmap.resize();}catch(_){} followProjection(); if(mode!=='free') syncFromMain(); };
+      requestAnimationFrame(fit); setTimeout(fit,80); setTimeout(fit,300); try{ cmap.once('idle',fit); }catch(_){} }
     function close(){ if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
       try{ win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')==='sync')); }catch(_){} applyBase(); } }
     /* entry button in the Layers dropdown */
