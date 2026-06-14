@@ -1090,17 +1090,15 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R23) Pushed further per the re-report: the plain "Frosted glass" now sits where the old
        "more transparent" was (~0.18 fill), and "Frosted glass (more transparent)" goes lighter still
        (~0.10) — never fully clear, and glass2's blur is raised (26px) so controls stay readable. */
-    body.sidebar-translucent{ --glass-blur:30px; --glass-sat:190%; --glass-fill:rgba(255,255,255,0.18); --glass-border:rgba(255,255,255,0.30); }
-    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(34,34,40,0.26); --glass-border:rgba(255,255,255,0.10); }
-    /* (#R25) The two tiers felt "ほとんど差がない" because BOTH used blur:30px — so only the fill differed and
-       both still read as milky frost. Differentiate by BLUR: "Frosted glass" stays a true 30px frost, while
-       "more transparent" drops to a near-clear 7px glass (map shows through sharply) with a tiny 0.03 fill.
-       Readability is carried by the crisp text-shadow block below, NOT by an opaque fill. */
-    body.sidebar-glass2{ --glass-blur:7px; --glass-sat:135%; --glass-fill:rgba(255,255,255,0.03); --glass-border:rgba(255,255,255,0.22); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(20,20,26,0.06); --glass-border:rgba(255,255,255,0.10); }
-    /* In the genuinely-transparent mode the map shows through strongly, so add a CRISP readability halo. */
-    body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
-      .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 0 1px rgba(0,0,0,0.85), 0 1px 1px rgba(0,0,0,0.6); }
+    /* (#R26) Differentiate the two frosted tiers by FILL, not by blur. R25 dropped "more transparent" to a
+       7px blur, which let the busy map show through SHARPLY behind the text — so the text anti-aliased
+       against high-frequency map detail and read as BLURRY (the user is right; my "never blurred" was wrong).
+       Both tiers now keep a HIGH, UNIFORM blur (so the backdrop is a smooth wash and text stays crisp); the
+       tiers differ clearly by fill: "Frosted glass" is milky (0.34), "more transparent" is see-through (0.12). */
+    body.sidebar-translucent{ --glass-blur:26px; --glass-sat:185%; --glass-fill:rgba(255,255,255,0.34); --glass-border:rgba(255,255,255,0.34); }
+    [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(30,30,38,0.42); --glass-border:rgba(255,255,255,0.12); }
+    body.sidebar-glass2{ --glass-blur:22px; --glass-sat:165%; --glass-fill:rgba(255,255,255,0.12); --glass-border:rgba(255,255,255,0.24); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(20,20,26,0.16); --glass-border:rgba(255,255,255,0.10); }
 
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
@@ -1124,18 +1122,22 @@ gtag('config', 'G-57X5MX0ZPW');
       .news-timeline,.src-card,.map-search-results,.search-result-card){
       --text-muted:rgba(255,255,255,0.9);
     }
-    /* (#R25) "frosted glass がテキストまでぼかして読みづらい": the text is never actually blurred (no `filter`
-       on any ancestor — confirmed) — it just lost contrast against the see-through panel. Give EVERY frosted
-       floating surface (both tiers, incl. the layer panel which had NO shadow) a CRISP contrast halo: a tight
-       1px dark outline, not a soft 3px glow, so the type stays sharp AND legible over any map color. */
+    /* (#R26) The R25 "crisp halo" used `0 0 1px` — a 1px-BLUR glow around the glyphs, which on near-white
+       text reads as exactly the fuzzy "blurred text" the user (correctly) complained about. Replace it with a
+       HARD, zero-blur 1px drop: it gives definition over a light map patch without any glow/blur. */
     body.sidebar-translucent :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.src-card,
       .map-search-results,.search-result-card,.coord-readout),
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.src-card,
       .map-search-results,.search-result-card,.coord-readout){
-      text-shadow:0 0 1px rgba(0,0,0,0.85), 0 1px 1px rgba(0,0,0,0.6);
+      text-shadow:0 1px 0 rgba(0,0,0,0.38);
     }
+    /* (#R26) "文字の色がグループとレイヤー名で違う" — the group headers used --text-muted (promoted to white)
+       while layer names used --text-main, so in frosted modes they were different colors. Force the group
+       headers to the SAME color as the layer names so the panel reads as one consistent set. */
+    body.sidebar-translucent .lyr-head, body.sidebar-glass2 .lyr-head,
+    body.sidebar-translucent .layer-group-title, body.sidebar-glass2 .layer-group-title{ color:var(--text-main); }
 
     /* ---- Sidebar material (matches the floating surfaces above) ---- */
     .sidebar{ background-color:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
@@ -2789,9 +2791,15 @@ window.addEventListener('DOMContentLoaded', () => {
       if(lowestStack===Infinity) return true;     /* no labels present yet */
       return lowestStack>highestData;             /* all labels above all data → nothing to do */
     }catch(_){ return true; } }
+    /* (#R26) ROOT CAUSE the labels STAYED buried: the old raise moved labels to just-below `tool-poly`, but a
+       raster added with NO beforeId (or above tool-poly) then sat ABOVE the labels — and re-raising kept
+       putting them below it (and could thrash). Now: move the labels to the ABSOLUTE TOP, THEN lift the
+       user's own overlays (tools/drawings/mask) back above the labels in their existing order. Result:
+       data BELOW labels BELOW your own drawings — labels are visible over EVERY data layer, every time. */
     function raise(){ try{ if(inPlace()) return;
-      const hasAnchor=!!map.getLayer('tool-poly');
-      STACK.forEach(id=>{ if(!map.getLayer(id)) return; try{ hasAnchor?map.moveLayer(id,'tool-poly'):map.moveLayer(id); }catch(_){} });
+      STACK.forEach(id=>{ if(map.getLayer(id)) try{ map.moveLayer(id); }catch(_){} });   /* labels → top */
+      const ls=map.getStyle().layers.map(l=>l.id);
+      ls.forEach(id=>{ if(isOwn(id) && map.getLayer(id)) try{ map.moveLayer(id); }catch(_){} });   /* own overlays back above labels */
     }catch(_){} }
     window._raiseLabelLayers=raise;
     let t=null; const sched=()=>{ clearTimeout(t); t=setTimeout(raise,140); };
@@ -3400,6 +3408,12 @@ window.addEventListener('DOMContentLoaded', () => {
     map.addSource('countries',{type:'geojson',data:countryGeo,promoteId:'__code'});
     map.addLayer({id:'country-fill',type:'fill',source:'countries',layout:{visibility:'none'},paint:{'fill-color':'#007aff','fill-opacity':['case',['boolean',['feature-state','hover'],false],0.30,0]}},'tool-poly');
     map.addLayer({id:'country-line',type:'line',source:'countries',layout:{visibility:'none'},paint:{'line-color':'#007aff','line-opacity':0.7,'line-width':['case',['boolean',['feature-state','hover'],false],2.4,0.6]}},'tool-poly');
+    /* (#R26) Create the always-on country-BORDERS line HERE (when the countries source first exists), not
+       only inside the cb-borders change handler — that lazy-create meant borders were checked-by-default but
+       NOT drawn on load until you re-toggled them ("デフォルト選択されているのに表示されない"). applyTheme()
+       sets its visibility from bordersOn (default true). */
+    if(!map.getLayer('borders-only-line')){ const _ba=map.getLayer('tool-poly')?'tool-poly':undefined;
+      try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{visibility:bordersOn?'visible':'none'},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},_ba); }catch(_){ try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{visibility:bordersOn?'visible':'none'},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}}); }catch(__){} } }
     map.on('mousemove','country-fill',(e)=>{ if(!countryInfoOn||toolMode||!e.features.length)return; const f=e.features[0]; if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; map.setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
     map.on('mouseleave','country-fill',()=>{ if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=null; hideCountryInfo(); });
     map.on('click','country-fill',(e)=>{ if(countryInfoOn&&!toolMode&&e.features.length){ const f=e.features[0]; const p=f.properties||{}; const id=resolveCountryId(f); showCountryDetail(id, p.NAME_EN||p.ADMIN||p.NAME); } });
@@ -4388,6 +4402,14 @@ window.addEventListener('DOMContentLoaded', () => {
       ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
       map.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
+      /* (#R26) "デフォルト選択なのに地名ラベル/国境が出ない、再チェックで初めて出る": both default ON but
+         occasionally weren't DRAWN on first load (OFM vector source + country data settle after the first
+         idle). Re-assert the place labels + borders visibility a few times, and the moment the OFM source's
+         tiles arrive — so names/borders appear on load without the user toggling them. */
+      const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang();
+        if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',bordersOn?'visible':'none'); }catch(_){} };
+      [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
+      map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ applyLabelLang(); }catch(_){} } });
     });
     /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
        context and leave a BLACK canvas ("Edgeでは地図が黒くて見えない"). Preventing the default lets the
@@ -6433,19 +6455,13 @@ window.addEventListener('DOMContentLoaded', () => {
            every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
         .src-card-close{ width:32px !important; height:32px !important; font-size:17px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
         .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16) !important; right:6px !important; top:6px !important; }
-        /* (#R25 / #4) "×のタップ判定位置がずれていて閉じにくい": kill the iOS click-delay/retarget on EVERY
-           close control (touch-action:manipulation) AND extend the hit area to a forgiving ~44px without
-           growing the visual box — a transparent inset border lets a slightly-off tap still land on the ×.
-           (z-index keeps it above any sibling that drew over its corner.) */
+        /* (#R26 FIX) R25 added `position:relative` here, which OVERRODE the `position:absolute` these close
+           buttons rely on for their top/right corner placement — so they jumped out of position and taps
+           missed them entirely ("×を押しても反応しない"). Keep ONLY touch-action (kills the iOS click delay);
+           never touch `position` (each button keeps its own absolute corner rule). */
         .maplibregl-popup-close-button, .layer-popup-x, .legend-min, .kip-x, .pin-popup-close,
         .country-popup-close, #cp-close, .src-card-close, .tp-close, .satc-close, .wgt-x{
-          touch-action:manipulation !important; position:relative; z-index:6;
-          background-clip:padding-box; }
-        /* NB: .layer-popup-x uses ::before/::after to DRAW the × strokes, so it can't take a hit-area
-           pseudo — its 32px box is already the target. These (text-glyph) closes get the +6px halo. */
-        .maplibregl-popup-close-button::after, .kip-x::after, .pin-popup-close::after,
-        .country-popup-close::after, #cp-close::after, .src-card-close::after{
-          content:''; position:absolute; top:-6px; left:-6px; right:-6px; bottom:-6px; }
+          touch-action:manipulation !important; }
         /* (#R20) the real close button is .country-popup-close / #cp-close — the R19 selectors
            (.cp-close as a CLASS, .country-close, #country-popup-close) matched nothing, which is why
            the country popup's × stayed tiny ("ポップアップの右上の×が小さすぎて押せない"). */
@@ -12953,16 +12969,17 @@ window.addEventListener('DOMContentLoaded', () => {
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       /* Let pans/zooms pass THROUGH the lens to the main map (the lens tracks it via sync); header+controls stay clickable. */
       '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
-      /* (#R25) "x-rayにすると上部が暗転してボタン位置が分からない": the header was semi-transparent dark over a
-         transparent window, so the buttons sank into the map behind. Make it a SOLID opaque bar with a cyan
-         keyline, and force every header button to a clearly-visible high-contrast chip. */
-      '#compare-window.cmp-xray .cmp-head{background:#0f1218 !important;position:relative;z-index:7;border-bottom:2px solid rgba(25,198,255,0.9);box-shadow:0 2px 10px rgba(0,0,0,0.5);}'+
-      '#compare-window.cmp-xray .cmp-head .cmp-title{color:#fff !important;}'+
-      '#compare-window.cmp-xray .cmp-btn{background:rgba(255,255,255,0.16) !important;color:#fff !important;}'+
+      /* (#R26) x-ray needs the header SOLID (the window goes transparent for alignment) so the buttons stay
+         visible — but it must MATCH THE THEME, not force black in light mode ("Light modeで黒くなる謎システムは
+         いらない。テーマに合わせろ"). Solid theme surface + theme-colored chips; only the cyan keyline marks the lens. */
+      '#compare-window.cmp-xray .cmp-head{background:#f3f4f7 !important;position:relative;z-index:7;border-bottom:2px solid rgba(25,198,255,0.9);box-shadow:0 2px 10px rgba(0,0,0,0.18);}'+
+      '[data-theme="dark"] #compare-window.cmp-xray .cmp-head{background:#1a1c22 !important;box-shadow:0 2px 10px rgba(0,0,0,0.45);}'+
+      '#compare-window.cmp-xray .cmp-head .cmp-title{color:var(--text-main) !important;}'+
+      '#compare-window.cmp-xray .cmp-btn{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
       '#compare-window.cmp-xray .cmp-btn.on{background:var(--primary-color) !important;color:#fff !important;}'+
       '#compare-window.cmp-xray #cmp-close{background:#ff3b30 !important;color:#fff !important;}'+
       '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;z-index:6;}'+
-      '#compare-window.cmp-xray .cmp-ctrls select{background:#0f1218 !important;color:#fff !important;}'+
+      '#compare-window.cmp-xray .cmp-ctrls select{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
       /* (#R18) In lens mode the compare map is pulled out to cover the whole container (clipped to the
          window). Keep it BELOW the header/controls and give it a cyan edge so the lens boundary reads. */
       '#compare-window.cmp-xray #compare-map{box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset;}'+
