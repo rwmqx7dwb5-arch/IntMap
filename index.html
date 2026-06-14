@@ -976,23 +976,30 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel .tp-header{ margin-bottom:5px !important; }
       .tool-panel .tp-clear, .tool-panel .tp-add-btn{ padding:7px !important; margin-top:6px !important; }
       .tool-panel .radius-list{ max-height:88px !important; }
-      /* (#R22) Radius panel was too tall/wide to use on a phone ("凡例が大きすぎてほとんど使えない"): cap the
-         width, tighten the stat rows, let the color swatches + opacity sit on one wrapping line, and keep
-         the whole panel inside a scroll box so the map (and the circle being placed) stays visible. */
-      .tool-panel.tp-radius{ width:min(290px, calc(100vw - 12px)) !important; max-height:calc(100dvh - var(--sheet-cover, var(--peek-h)) - 96px) !important; padding:8px 10px !important; }
-      .tool-panel.tp-radius .tp-sub{ margin:4px 0 2px !important; font-size:10px !important; }
-      .tool-panel.tp-radius .tp-row{ margin:1px 0 !important; font-size:11px !important; }
-      .tool-panel.tp-radius .radius-color-row{ margin:5px 0 !important; gap:6px !important; }
-      .tool-panel.tp-radius .rad-preset{ width:26px !important; height:26px !important; }
-      .tool-panel.tp-radius input[type=color]{ width:30px !important; height:26px !important; }
-      .tool-panel.tp-radius .tp-hint{ font-size:10px !important; margin-top:4px !important; }
-      /* (#R24) compact stat strip + opacity drops to its own line so the radius panel fits a phone. */
-      .tool-panel.tp-radius .rad-stats{ gap:4px !important; margin:4px 0 !important; }
-      .tool-panel.tp-radius .rad-stat{ padding:4px 5px !important; }
-      .tool-panel.tp-radius .rad-stat label{ font-size:8.5px !important; }
-      .tool-panel.tp-radius .rad-stat b{ font-size:10.5px !important; }
-      .tool-panel.tp-radius #radius-op{ flex:1 0 100% !important; margin-top:2px !important; }
-      .tool-panel.tp-radius .ai-action-btn{ padding:7px !important; margin-top:5px !important; font-size:11.5px !important; }
+      /* (#R25) RADIUS panel REORGANIZED for phones (not just shrunk — "単にサイズ変更ではなく再編成"): instead
+         of a cramped 290px floating box in the middle of the map, DOCK it as a full-width card just above
+         the bottom sheet. Full width gives every control real room (slider, color, the 3 stats inline), it
+         never covers the circle being placed, and the saved list scrolls. */
+      .tool-panel.tp-radius{ position:fixed !important; left:6px !important; right:6px !important; width:auto !important;
+        top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h, 0px)) + 10px) !important;
+        max-height:min(48dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 80px)) !important;
+        overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 12px !important; border-radius:16px !important; }
+      .tool-panel.tp-radius .tp-header{ position:sticky; top:-10px; margin:-10px -12px 6px; padding:10px 12px 6px; background:var(--glass-fill,var(--popup-bg)); z-index:2; }
+      .tool-panel.tp-radius .tp-sub{ margin:6px 0 2px !important; font-size:10.5px !important; }
+      .tool-panel.tp-radius .tp-row{ margin:2px 0 !important; font-size:12px !important; }
+      .tool-panel.tp-radius #radius-range{ width:100% !important; height:26px; }
+      .tool-panel.tp-radius .radius-color-row{ margin:7px 0 !important; gap:8px !important; flex-wrap:wrap; align-items:center; }
+      .tool-panel.tp-radius .rad-preset{ width:30px !important; height:30px !important; }
+      .tool-panel.tp-radius input[type=color]{ width:34px !important; height:30px !important; }
+      .tool-panel.tp-radius .tp-hint{ font-size:10.5px !important; margin-top:5px !important; }
+      /* stats span the full width in one even 3-up strip (now there's room). */
+      .tool-panel.tp-radius .rad-stats{ gap:6px !important; margin:7px 0 !important; }
+      .tool-panel.tp-radius .rad-stat{ flex:1 1 0; padding:6px 6px !important; text-align:center; }
+      .tool-panel.tp-radius .rad-stat label{ font-size:9.5px !important; }
+      .tool-panel.tp-radius .rad-stat b{ font-size:12px !important; }
+      .tool-panel.tp-radius #radius-op{ flex:1 0 100% !important; margin-top:3px !important; }
+      .tool-panel.tp-radius .radius-list{ max-height:104px !important; }
+      .tool-panel.tp-radius .ai-action-btn{ padding:9px !important; margin-top:6px !important; font-size:12.5px !important; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ top:64px !important; bottom:auto !important; }
       .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:min(30dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 78px)); overflow-y:auto; }
@@ -4189,6 +4196,12 @@ window.addEventListener('DOMContentLoaded', () => {
       lastLayerVal = code ? (code+(window.KNAME&&window.KNAME[code]?' · '+(window.KNAME[code][currentLang]||window.KNAME[code].en):'')) : ''; return; }
     const key=lyr+':'+lat.toFixed(1)+','+lng.toFixed(1);
     if(_wxCache.has(key)){ lastLayerVal=_wxCache.get(key); return; }
+    /* (#R25) "数値が変わるのが遅い": a brand-new 0.1° cell used to show the STALE previous value for the
+       whole debounce + network round-trip. Instead show the nearest already-cached neighbor INSTANTLY
+       (so the readout tracks the cursor immediately), then the exact fetch refines it below. */
+    try{ let best=null,bd=1e9; const la=+lat.toFixed(1),lo=+lng.toFixed(1);
+      for(const k of _wxCache.keys()){ if(k.slice(0,key.indexOf(':'))!==lyr) continue; const m=k.split(':')[1].split(','); const d=Math.abs(+m[0]-la)+Math.abs(+m[1]-lo); if(d<bd){ bd=d; best=k; } }
+      if(best&&bd<=0.6){ lastLayerVal=_wxCache.get(best); } }catch(_){}
     clearTimeout(_wxTimer);
     _wxTimer=setTimeout(async()=>{
       try{
@@ -4198,10 +4211,16 @@ window.addEventListener('DOMContentLoaded', () => {
         const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
         if(typeof v==='number'){ const um=window.imUnitTemp||'both'; const txt = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* unit-aware (#R13c); no leading emoji (#34) */
       }catch(_){}
-    },70);   /* (#R24) 120→70ms: SST/temp value follows the cursor even more promptly ("変わるのが遅い"). The
-                climate/choropleth classification is already synchronous per move (sampleKoppenAt/choroValueAt). */
+    },35);   /* (#R25) 70→35ms: SST/temp fetch fires faster; the nearest-cache fill above shows a value
+                instantly. Climate/choropleth classification is already synchronous per move. */
   }
-  function updateCoord(lng,lat){
+  /* (#R25) Coalesce the per-move readout to ONE animation frame with the LATEST cursor position, so fast
+     mouse movement can't build a backlog of heavy updateCoord calls (queryRenderedFeatures + DEM + DOM)
+     that made the value/classification visibly lag behind the cursor ("カーソルを動かしているのに遅い"). */
+  let _ucRAF=0,_ucLng=null,_ucLat=null;
+  function updateCoord(lng,lat){ if(isMobile()) return; _ucLng=lng; _ucLat=lat; if(_ucRAF) return;
+    _ucRAF=requestAnimationFrame(()=>{ _ucRAF=0; try{ _updateCoordNow(_ucLng,_ucLat); }catch(_){} }); }
+  function _updateCoordNow(lng,lat){
     if(isMobile()) return;
     try{ updateLayerReadout(lng,lat); }catch(_){}
     /* Instant: read elevation/depth straight from a cached DEM tile (no network). */
@@ -6757,10 +6776,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const scroller=scrollParent(sec);
       const beforeH=sec.offsetHeight, beforeTop=scroller.scrollTop;
       sec.dataset.sig=sig;
-      /* (#R23) compensate even when the list is at the TOP (beforeTop===0) — that is the FIRST-selection
-         case the user still saw snap ("一つ目を選択時にパチッとなる"): the Active-layers section appears at
-         the top and shoves the rows down, so we scroll down by its height to keep the tapped row put. */
-      const _restore=()=>{ const afterH=sec.offsetHeight; if(afterH!==beforeH){ scroller.scrollTop = Math.max(0, beforeTop + (afterH-beforeH)); } };
+      /* (#R25) On MOBILE the section now lives at the BOTTOM of the list, so growing/shrinking it never
+         pushes the rows the user is tapping — compensating the scroll there would itself MOVE the view
+         ("まだ動く"). So skip compensation on mobile; on desktop (section at top) keep it to hold the tapped
+         row put. */
+      const _skipComp=(typeof isMobile==='function'&&isMobile());
+      const _restore=()=>{ if(_skipComp) return; const afterH=sec.offsetHeight; if(afterH!==beforeH){ scroller.scrollTop = Math.max(0, beforeTop + (afterH-beforeH)); } };
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
@@ -6842,9 +6863,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         ['cb-names','cb-borders','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
-        /* (#R14 / #17) the live "Active layers" list sits right below the favorites + top toggles */
+        /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
+           (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
+           FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
+           which read as "視点位置がパチっと移動". At the bottom it never pushes the rows you're tapping, so the
+           list truly doesn't move on check/uncheck. */
         let act=document.getElementById('layer-active-section'); if(!act){ act=document.createElement('div'); act.id='layer-active-section'; act.style.display='none'; }
-        order.push(act);
+        const _actAtBottom=(typeof isMobile==='function'&&isMobile());
+        if(!_actAtBottom) order.push(act);
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         order.push(mkHr());
         const placed=new Set();
@@ -6885,6 +6911,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
         if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
         if(_pr) tools.appendChild(_pr);   /* (#R20) layer presets live in Tools */
+        if(_actAtBottom){ order.push(mkHr()); order.push(act); }   /* (#R25) mobile: Active layers sits at the bottom (no list jump on toggle) */
         if(cmpBtn||upBtn){ order.push(mkHr()); order.push(tools); }
         order.forEach(n=>dd.appendChild(n));
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
@@ -12807,8 +12834,16 @@ window.addEventListener('DOMContentLoaded', () => {
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       /* Let pans/zooms pass THROUGH the lens to the main map (the lens tracks it via sync); header+controls stay clickable. */
       '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
-      '#compare-window.cmp-xray .cmp-head{background:rgba(15,18,24,0.82);position:relative;z-index:5;}'+
+      /* (#R25) "x-rayにすると上部が暗転してボタン位置が分からない": the header was semi-transparent dark over a
+         transparent window, so the buttons sank into the map behind. Make it a SOLID opaque bar with a cyan
+         keyline, and force every header button to a clearly-visible high-contrast chip. */
+      '#compare-window.cmp-xray .cmp-head{background:#0f1218 !important;position:relative;z-index:7;border-bottom:2px solid rgba(25,198,255,0.9);box-shadow:0 2px 10px rgba(0,0,0,0.5);}'+
+      '#compare-window.cmp-xray .cmp-head .cmp-title{color:#fff !important;}'+
+      '#compare-window.cmp-xray .cmp-btn{background:rgba(255,255,255,0.16) !important;color:#fff !important;}'+
+      '#compare-window.cmp-xray .cmp-btn.on{background:var(--primary-color) !important;color:#fff !important;}'+
+      '#compare-window.cmp-xray #cmp-close{background:#ff3b30 !important;color:#fff !important;}'+
       '#compare-window.cmp-xray .cmp-ctrls{pointer-events:auto;z-index:6;}'+
+      '#compare-window.cmp-xray .cmp-ctrls select{background:#0f1218 !important;color:#fff !important;}'+
       /* (#R18) In lens mode the compare map is pulled out to cover the whole container (clipped to the
          window). Keep it BELOW the header/controls and give it a cyan edge so the lens boundary reads. */
       '#compare-window.cmp-xray #compare-map{box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset;}'+
@@ -12942,7 +12977,12 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ cmap.resize(); }catch(_){}
     }
     function clearXrayLens(){ const cm=document.getElementById('compare-map'); if(!cm) return;
-      ['position','inset','left','top','width','height','zIndex','clipPath','webkitClipPath'].forEach(p=>cm.style[p]=''); try{ cmap.resize(); }catch(_){} }
+      /* (#R25) Fully restore the canvas to its in-window CSS box (position:absolute;inset:0) and resize a
+         few times — a single resize sometimes left the compare map mis-sized after x-ray, showing as a dark
+         strip at the top ("x-ray後に上部が暗転"). */
+      ['position','inset','left','top','width','height','zIndex','clipPath','webkitClipPath','boxShadow'].forEach(p=>cm.style[p]='');
+      const r=()=>{ try{ cmap.resize(); }catch(_){} };
+      r(); requestAnimationFrame(r); setTimeout(r,80); setTimeout(r,300); }
     /* ---------- (#R20) portable layer registry for the compare "Layers ▾" pulldown ---------- */
     const CMP_DATE=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
     const cmpGibs=(layer,lvl,ext,time)=>['https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+layer+'/default/'+time+'/GoogleMapsCompatible_Level'+lvl+'/{z}/{y}/{x}.'+ext];
@@ -13085,7 +13125,13 @@ window.addEventListener('DOMContentLoaded', () => {
       (document.getElementById('map-container')||document.body).appendChild(win);
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
       try{ cmap.__wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat'); cmap.setProjection({type:cmap.__wantGlobe?'globe':'mercator'}); }catch(_){}
-      cmap.on('load',()=>{ applyBase(); });
+      /* (#R25) ROOT CAUSE of "メインマップがGlobeでもcompareはFlatのまま / Flatに戻してからGlobeにしないと反映
+         されない": MapLibre's default projection is MERCATOR, and the setProjection() above runs BEFORE the
+         cmap style loads, so it silently no-ops — yet __wantGlobe was left = true, so the followProjection()
+         guard thought it already matched and never re-applied. Force a clean re-apply once the style is
+         actually ready (and again on first idle as a backstop). */
+      cmap.on('load',()=>{ applyBase(); try{ cmap.__wantGlobe=null; }catch(_){} followProjection(); });
+      cmap.once('idle',()=>{ try{ cmap.__wantGlobe=null; }catch(_){} followProjection(); });
       cmap.on('styledata',()=>{ setTimeout(applyBase,60); });
       /* base buttons */
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
