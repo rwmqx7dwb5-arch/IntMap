@@ -5572,10 +5572,11 @@ window.addEventListener('DOMContentLoaded', () => {
         ${section(t('statInet'),'internet',v=>v+'%')}
       </div>`;
     feed.innerHTML=html;
-    /* (#R25) Start the comparison at the TOP — it used to inherit the stats list's scroll position, so it
-       "下の方の位置から始まる" if you were scrolled down when you tapped Compare. Reset the feed and its real
-       scroll container (sidebar content / mobile sheet body). */
-    try{ feed.scrollTop=0; let n=feed.parentElement; for(let i=0;i<6&&n;i++){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2){ n.scrollTop=0; break; } n=n.parentElement; } }catch(_){}
+    /* (#R26) Start the comparison at the TOP with NO VISIBLE scroll. The container (.content-area) has
+       scroll-behavior:smooth, so a plain scrollTop=0 ANIMATED — the user saw a "gross auto-scroll move".
+       Temporarily force instant ('auto') so the comparison simply appears at the top. */
+    try{ const setTop=(el)=>{ if(!el) return; const prev=el.style.scrollBehavior; el.style.scrollBehavior='auto'; el.scrollTop=0; el.style.scrollBehavior=prev||''; };
+      setTop(feed); let n=feed.parentElement; for(let i=0;i<6&&n;i++){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2){ setTop(n); break; } n=n.parentElement; } }catch(_){}
   }
 
   /* ===== Information Dashboard data
@@ -13316,7 +13317,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-ctrls">'+
         /* (#R23) native <select> pulldown — iOS-friendly AND scrolls on every platform (the old checkbox
            list could not scroll on desktop, so the bottom layers were unreachable). One layer at a time. */
-        '<select class="cmp-btn" id="cmp-layers-sel" title="'+(jp()?'比較レイヤー':'Compare layer')+'" style="max-width:64%;"></select>'+
+        '<select class="cmp-btn" id="cmp-layers-sel" title="'+(jp()?'比較レイヤー':'Compare layer')+'" style="min-width:190px;max-width:none;flex:1 1 auto;"></select>'+
         '</div></div>'+
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
@@ -13364,10 +13365,13 @@ window.addEventListener('DOMContentLoaded', () => {
         else { win.classList.remove('cmp-min'); if(win.dataset.prevH){ win.style.setProperty('height',win.dataset.prevH,'important'); } setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); }
       };
       win.querySelector('#cmp-close').onclick=close;
+      /* (#R26) The compare window must not sit ON TOP OF the sidebar — clamp its left edge to the sidebar's
+         right edge (desktop, sidebar visible on the left). On mobile it's a full-width sheet → no clamp. */
+      const _sbRight=()=>{ try{ if(window.matchMedia('(max-width:768px)').matches) return 0; const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return 0; const r=sb.getBoundingClientRect(); return (r.width>0 && r.left<=2)?(r.right+8):0; }catch(_){ return 0; } };
       /* drag by header */
       (function(){ const h=win.querySelector('.cmp-head'); let dx=0,dy=0,drag=false;
         h.addEventListener('pointerdown',e=>{ if(e.target.closest('.cmp-btn')) return; drag=true; const r=win.getBoundingClientRect(); dx=e.clientX-r.left; dy=e.clientY-r.top; win.style.right='auto'; win.style.bottom='auto'; win.style.left=r.left+'px'; win.style.top=r.top+'px'; try{h.setPointerCapture(e.pointerId);}catch(_){} });
-        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(0,Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(mode!=='free') syncFromMain(); /* lens/centroid follow the window */ });
+        h.addEventListener('pointermove',e=>{ if(!drag) return; win.style.left=Math.max(_sbRight(),Math.min(window.innerWidth-60,e.clientX-dx))+'px'; win.style.top=Math.max(0,Math.min(window.innerHeight-30,e.clientY-dy))+'px'; if(mode!=='free') syncFromMain(); /* lens/centroid follow the window */ });
         h.addEventListener('pointerup',()=>drag=false); h.addEventListener('pointercancel',()=>drag=false);
       })();
       /* (#R20) FOUR-corner resize ("四隅でできるようにして") — pointer-driven so it also works on touch. */
@@ -13410,6 +13414,11 @@ window.addEventListener('DOMContentLoaded', () => {
       cmap.on('move',(ev)=>{ if(mode==='sync'&&!syncing&&ev&&ev.originalEvent) syncToMain(); });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
+      /* (#R26) Make sure the default (bottom-right) position doesn't land ON TOP OF the sidebar on a narrow
+         desktop / wide sidebar — nudge the window right of the sidebar if it would overlap. */
+      try{ if(!window.matchMedia('(max-width:768px)').matches){ const sb=document.getElementById('sidebar');
+        if(sb && !sb.classList.contains('collapsed')){ const sr=sb.getBoundingClientRect(); const wr=win.getBoundingClientRect();
+          if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; } } } }catch(_){}
       /* (#R22) Resize several times after the window becomes visible so the GL canvas always fills the
          body — a single deferred resize sometimes left an unsized gray strip at the top ("上部がグレー"). */
       const fit=()=>{ try{cmap.resize();}catch(_){} followProjection(); if(mode!=='free') syncFromMain(); };
