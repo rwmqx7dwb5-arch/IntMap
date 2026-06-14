@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
   const imgs = (Array.isArray(payload.images) ? payload.images : [])
     .map(parseDataUrl).filter((x): x is ImgPart => !!x).slice(0, MAX_IMAGES);
   if (!prompt && !imgs.length) {
-    await db.rpc("refund_ai_usage", { p_user: user.id }).catch(() => {});
+    try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
     return json({ error: "empty" }, 400);
   }
 
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
     return json({ text, used, limit, remaining: Math.max(0, limit - used) });
   } catch (e) {
     // Provider failed → refund the consumed slot so the user isn't charged a use.
-    await db.rpc("refund_ai_usage", { p_user: user.id }).catch(() => {});
+    try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
     return json({ error: "provider", message: String((e as Error)?.message || e) }, 502);
   }
 });
