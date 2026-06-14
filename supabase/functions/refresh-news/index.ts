@@ -71,6 +71,35 @@ const SOURCE_DICT: Record<string, [number, number]> = {
   "CBC": [-79.38, 43.65], "Globe and Mail": [-79.38, 43.65], "Toronto Star": [-79.38, 43.65], "CTV": [-79.38, 43.65], "Folha": [-46.63, -23.55], "O Globo": [-43.17, -22.91], "Clarín": [-58.38, -34.60], "News24": [18.42, -33.92], "Mail & Guardian": [28.05, -26.20], "The East African": [36.82, -1.29],
 };
 
+// ---- (#R27) Demonym gazetteer — a large share of geopolitical headlines name a country by its
+//      ADJECTIVE ("Ukrainian", "Israeli", "Iranian", "Chinese") rather than its name. These map the
+//      demonym → the country's representative point as a LOW-CONFIDENCE subject (docked in scoreGeo so
+//      an explicit place from geo_pins always wins). Mirrors the client _DEMONYM_GZ. Big coverage gain.
+const DEMONYM_DICT: Record<string, [number, number, string, string]> = {
+  Ukrainian: [30.52, 50.45, "Ukraine", "ウクライナ"], Russian: [37.62, 55.75, "Russia", "ロシア"],
+  Israeli: [35.21, 31.77, "Israel", "イスラエル"], Palestinian: [34.47, 31.50, "Palestinian territories", "パレスチナ"],
+  Iranian: [51.39, 35.69, "Iran", "イラン"], Chinese: [116.40, 39.90, "China", "中国"],
+  American: [-77.04, 38.91, "United States", "アメリカ"], British: [-0.13, 51.51, "United Kingdom", "イギリス"],
+  French: [2.35, 48.85, "France", "フランス"], German: [13.40, 52.52, "Germany", "ドイツ"],
+  Japanese: [139.69, 35.69, "Japan", "日本"], "South Korean": [126.98, 37.57, "South Korea", "韓国"],
+  "North Korean": [125.76, 39.04, "North Korea", "北朝鮮"], Indian: [77.21, 28.61, "India", "インド"],
+  Pakistani: [73.06, 33.69, "Pakistan", "パキスタン"], Taiwanese: [121.56, 25.03, "Taiwan", "台湾"],
+  Syrian: [36.30, 33.51, "Syria", "シリア"], Lebanese: [35.50, 33.89, "Lebanon", "レバノン"],
+  Turkish: [32.86, 39.93, "Turkey", "トルコ"], Saudi: [46.72, 24.69, "Saudi Arabia", "サウジアラビア"],
+  Egyptian: [31.24, 30.04, "Egypt", "エジプト"], Yemeni: [44.21, 15.35, "Yemen", "イエメン"],
+  Afghan: [69.18, 34.53, "Afghanistan", "アフガニスタン"], Sudanese: [32.53, 15.50, "Sudan", "スーダン"],
+  Venezuelan: [-66.90, 10.49, "Venezuela", "ベネズエラ"], Mexican: [-99.13, 19.43, "Mexico", "メキシコ"],
+  Brazilian: [-47.88, -15.79, "Brazil", "ブラジル"], Iraqi: [44.36, 33.31, "Iraq", "イラク"],
+  Polish: [21.01, 52.23, "Poland", "ポーランド"], Greek: [23.73, 37.98, "Greece", "ギリシャ"],
+  Nigerian: [7.49, 9.06, "Nigeria", "ナイジェリア"], Ethiopian: [38.74, 9.03, "Ethiopia", "エチオピア"],
+  Thai: [100.50, 13.75, "Thailand", "タイ"], Vietnamese: [105.83, 21.03, "Vietnam", "ベトナム"],
+  Indonesian: [106.85, -6.21, "Indonesia", "インドネシア"], Filipino: [120.98, 14.60, "Philippines", "フィリピン"],
+  Qatari: [51.53, 25.29, "Qatar", "カタール"], Jordanian: [35.94, 31.95, "Jordan", "ヨルダン"],
+  Argentine: [-58.38, -34.60, "Argentina", "アルゼンチン"], Colombian: [-74.07, 4.71, "Colombia", "コロンビア"],
+  Serbian: [20.46, 44.79, "Serbia", "セルビア"], Belarusian: [27.57, 53.90, "Belarus", "ベラルーシ"],
+  Armenian: [44.51, 40.18, "Armenia", "アルメニア"], Azerbaijani: [49.87, 40.41, "Azerbaijan", "アゼルバイジャン"],
+};
+
 // ---------------------------------------------------------------------------
 //  Text helpers
 // ---------------------------------------------------------------------------
@@ -122,6 +151,7 @@ interface GeoEntry {
   type: string; lng: number; lat: number; name_en: string; name_jp: string;
   terms: { term: string; jp: boolean; matchRe: RegExp | null; ctxRe: RegExp }[];
   maxLen: number;
+  demonym?: boolean;   // (#R27) low-confidence adjective match → docked in scoreGeo
 }
 function compileGeo(rows: any[]): GeoEntry[] {
   const list: GeoEntry[] = (rows || []).map((r) => {
@@ -150,7 +180,22 @@ function scoreGeo(g: GeoEntry, title: string, desc: string): number {
     if (desc && (t.jp ? desc.includes(t.term) : t.matchRe!.test(desc))) { descHit = true; if (!ctx && t.ctxRe.test(desc)) ctx = true; }
   }
   if (!titleHit && !descHit) return 0;
-  return (titleHit ? 10 : 0) + (descHit ? 3 : 0) + (TYPE_SCORE[g.type] || 0) + (ctx ? 4 : 0);
+  // (#R27) corroboration bonus (title AND desc) + demonym penalty so explicit places always outrank a demonym.
+  const corro = (titleHit && descHit) ? 2 : 0;
+  const demPen = g.demonym ? 3 : 0;
+  return (titleHit ? 10 : 0) + (descHit ? 3 : 0) + (TYPE_SCORE[g.type] || 0) + (ctx ? 4 : 0) + corro - demPen;
+}
+
+// (#R27) Compile the demonym dictionary into low-confidence GeoEntry rows appended to the gazetteer.
+function compileDemonyms(): GeoEntry[] {
+  return Object.entries(DEMONYM_DICT).map(([dem, v]) => {
+    const e = esc(dem);
+    return {
+      type: "country", lng: v[0], lat: v[1], name_en: v[2], name_jp: v[3], demonym: true,
+      maxLen: dem.length,
+      terms: [{ term: dem, jp: false, matchRe: new RegExp(`\\b${e}\\b`, "i"), ctxRe: new RegExp(`\\b(?:in|at|to|from|near|into)\\s+${e}\\b`, "i") }],
+    };
+  });
 }
 
 // Publisher matcher — longest key first, word-boundary for Latin, substring for CJK.
@@ -235,7 +280,8 @@ Deno.serve(async (req) => {
   // Gazetteer straight from the table the client also uses.
   const { data: geoRows, error: geoErr } = await db.from("geo_pins").select("type,terms,name_en,name_jp,lng,lat");
   if (geoErr) console.warn("[refresh-news] geo_pins read failed:", geoErr.message);
-  const geo = compileGeo(geoRows || []);
+  // (#R27) gazetteer = geo_pins + the embedded demonym entries (low-confidence, docked in scoreGeo).
+  const geo = compileGeo(geoRows || []).concat(compileDemonyms());
 
   const fetchedAt = new Date().toISOString();
   const counts: Record<string, number> = {};
