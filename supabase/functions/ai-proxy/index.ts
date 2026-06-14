@@ -19,8 +19,9 @@
 //  Secrets:  supabase secrets set ANTHROPIC_API_KEY=sk-ant-...      (default provider)
 //            # optional overrides:
 //            supabase secrets set AI_MODEL=claude-3-5-haiku-latest
-//            supabase secrets set AI_PROVIDER=anthropic              (anthropic | openai)
+//            supabase secrets set AI_PROVIDER=anthropic              (anthropic | openai | gemini)
 //            supabase secrets set OPENAI_API_KEY=sk-...              (if AI_PROVIDER=openai)
+//            supabase secrets set GEMINI_API_KEY=AIza...             (if AI_PROVIDER=gemini; AI_MODEL default gemini-2.0-flash)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY are injected.)
 //
 //  Run supabase_ai_usage.sql once to create the ai_usage table + RPCs + the
@@ -87,6 +88,21 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   return (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
 }
 
+async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[]): Promise<string> {
+  const parts: unknown[] = [{ text: prompt }];
+  for (const ip of imgs) parts.push({ inline_data: { mime_type: ip.mime, data: ip.b64 } });
+  const body: Record<string, unknown> = { contents: [{ role: "user", parts }], generationConfig: { temperature: 0.3, maxOutputTokens: MAX_TOKENS } };
+  if (system) body.systemInstruction = { parts: [{ text: system }] };
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(key), {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("gemini " + r.status + ": " + (await r.text().catch(() => "")).slice(0, 200));
+  const j = await r.json();
+  const c = j.candidates && j.candidates[0];
+  if (c && c.finishReason === "SAFETY") throw new Error("gemini: blocked by safety filter");
+  return (c && c.content && c.content.parts && c.content.parts.map((p: { text?: string }) => p.text || "").join("")) || "";
+}
+
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -146,6 +162,10 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new Error("OPENAI_API_KEY not set");
       text = await callOpenAI(Deno.env.get("AI_MODEL") || "gpt-4o-mini", key, prompt, system, imgs);
+    } else if (provider === "gemini") {
+      const key = Deno.env.get("GEMINI_API_KEY");
+      if (!key) throw new Error("GEMINI_API_KEY not set");
+      text = await callGemini(Deno.env.get("AI_MODEL") || "gemini-2.0-flash", key, prompt, system, imgs);
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new Error("ANTHROPIC_API_KEY not set");
