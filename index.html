@@ -5459,6 +5459,10 @@ window.addEventListener('DOMContentLoaded', () => {
         ${section(t('statInet'),'internet',v=>v+'%')}
       </div>`;
     feed.innerHTML=html;
+    /* (#R25) Start the comparison at the TOP — it used to inherit the stats list's scroll position, so it
+       "下の方の位置から始まる" if you were scrolled down when you tapped Compare. Reset the feed and its real
+       scroll container (sidebar content / mobile sheet body). */
+    try{ feed.scrollTop=0; let n=feed.parentElement; for(let i=0;i<6&&n;i++){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2){ n.scrollTop=0; break; } n=n.parentElement; } }catch(_){}
   }
 
   /* ===== Information Dashboard data
@@ -7063,6 +7067,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const feats=[];
       if(countryGeo&&countryGeo.features){
         countryGeo.features.forEach(f=>{ const code=String(f.id); if(!NATO.has(code)) return;
+          /* (#R25) Time-travel like Historical borders: only show members who had ALREADY joined by the
+             selected year (based on each country's real accession year). */
+          const jy=NATO_JOIN[code]; if(jy && _natoYear && jy>_natoYear) return;
           const g=_dropSouthOfTropic(f.geometry);
           if(g) feats.push({type:'Feature',id:code,properties:{__code:code},geometry:g});
         });
@@ -7082,6 +7089,32 @@ window.addEventListener('DOMContentLoaded', () => {
     function setNatoVis(on){ ['nato-fill','nato-line','nato-tropic-line','nato-tropic-label'].forEach(l=>setVis(l,on)); }
     /* NATO accession years (#14) — shown on hover alongside the member's defense spend as % of GDP. */
     const NATO_JOIN={USA:1949,CAN:1949,GBR:1949,FRA:1949,ITA:1949,NLD:1949,BEL:1949,LUX:1949,DNK:1949,NOR:1949,ISL:1949,PRT:1949,GRC:1952,TUR:1952,DEU:1955,ESP:1982,CZE:1999,HUN:1999,POL:1999,BGR:2004,EST:2004,LVA:2004,LTU:2004,ROU:2004,SVK:2004,SVN:2004,ALB:2009,HRV:2009,MNE:2017,MKD:2020,FIN:2023,SWE:2024};
+    /* (#R25 / #24) NATO enlargement time-travel: a year control (like Historical borders) filters the
+       members fill to those who had joined by the chosen year. NATO_YEARS = the distinct accession years. */
+    const NATO_YEARS=[...new Set(Object.values(NATO_JOIN))].sort((a,b)=>a-b);
+    let _natoYear=NATO_YEARS[NATO_YEARS.length-1];   /* default: latest = all current members */
+    function natoMemberCount(){ try{ return Object.values(NATO_JOIN).filter(y=>y<=_natoYear).length; }catch(_){ return ''; } }
+    function natoLegend(){
+      try{
+        const el=window._registerLayerOpacity&&window._registerLayerOpacity('nato',['NATO members','NATO加盟国'],['nato-fill','nato-line'],'dl-nato');
+        if(!el || el.querySelector('.nato-year-row')) { const lbl=el&&el.querySelector('.nato-year-val'); if(lbl) lbl.textContent=_natoYear; return; }
+        const jp=currentLang==='jp';
+        const row=document.createElement('div'); row.className='nato-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
+        if(typeof isMobile==='function'&&isMobile()){
+          row.innerHTML=(jp?'加盟年':'Year')+' <select class="nato-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+            NATO_YEARS.map(y=>'<option value="'+y+'"'+(y===_natoYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
+          row.querySelector('.nato-year-sel').addEventListener('change',(e)=>{ _natoYear=+e.target.value||_natoYear; applyNato(); const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; });
+        } else {
+          row.innerHTML=(jp?'加盟年':'Year')+' <span style="position:relative;flex:1;min-width:80px;"><span style="display:block;position:relative;padding-bottom:12px;">'+
+            '<input type="range" min="0" max="'+(NATO_YEARS.length-1)+'" step="1" value="'+NATO_YEARS.indexOf(_natoYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
+            '<span style="position:absolute;left:0;right:0;top:18px;height:0;">'+
+            NATO_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(NATO_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
+            '</span></span> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_natoYear+'</b>';
+          row.querySelector('input').addEventListener('input',(e)=>{ _natoYear=NATO_YEARS[+e.target.value]||_natoYear; const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; clearTimeout(natoLegend._t); natoLegend._t=setTimeout(applyNato,120); });
+        }
+        el.appendChild(row);
+      }catch(_){}
+    }
     function defensePctGDP(s){ if(!s||s.milSpend==null||!s.gdp) return null; const p=(s.milSpend/s.gdp)*100; return isFinite(p)?p:null; }
     function wireNatoHover(){
       if(map.__natoHover) return; map.__natoHover=true;
@@ -8257,15 +8290,16 @@ window.addEventListener('DOMContentLoaded', () => {
           }catch(e){ console.warn('tfr choro fail',e); } });
         }
         else if(id==='nato'){
-          /* NATO members fill only (#14) — no legend; accession year + defense %GDP show on hover. */
-          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); }catch(e){ console.warn('nato fail',e); } });
+          /* NATO members fill (#14) + accession-year time-travel control (#R25/#24); accession year +
+             defense %GDP also show on hover. */
+          withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend(); }catch(e){ console.warn('nato fail',e); } });
         }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
         /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
         { try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
       } else {
         if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
-        else if(id==='nato'){ setNatoVis(false); }
+        else if(id==='nato'){ setNatoVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('nato'); }catch(_){} }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
@@ -14220,9 +14254,18 @@ window.addEventListener('DOMContentLoaded', () => {
       const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(jp()?'初回デモ:':'Intro demo:')+'</span> <b>'+name+'</b>'; pill.appendChild(t);
       const pb=document.createElement('button'); pb.textContent=paused?'▶':'⏸'; pb.title=paused?(jp()?'再開':'Play'):(jp()?'一時停止':'Pause'); pb.style.cssText='background:none;border:none;color:var(--text-main);cursor:pointer;font-size:13px;padding:0 2px;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
       const xb=document.createElement('button'); xb.textContent=jp()?'終了 ✕':'End tour ✕'; xb.title=jp()?'デモを終了':'End the intro demo'; xb.style.cssText='background:var(--input-bg);border:none;border-radius:999px;color:var(--text-main);cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
-    function schedule(){ clearTimeout(timer); timer=setTimeout(next,6500); }
+    /* (#R25) 6.5s → 9s dwell: the GIBS night-lights raster and the DEM color-relief need longer to fetch
+       + paint than the instant Köppen image, so at 6.5s they were toggled OFF before they finished loading
+       ("night lights と elevation relief が表示されない"). 9s gives every showcase layer time to appear. */
+    function schedule(){ clearTimeout(timer); timer=setTimeout(next,9000); }
     function next(){ if(done||paused) return; try{ setOff(curId); idx=(idx+1)%SHOW.length; const s=SHOW[idx]; curId=s[0]; setOn(curId); render(jp()?s[2]:s[1]); }catch(_){} schedule(); }
+    /* (#R25) Pressing the × on ANY layer legend ends the demo too ("どれかのレイヤの凡例の×を押せばintro demoも
+       終了"). Some legend ×'s only hide the legend without firing a checkbox change, so the dropdown-change
+       listener below wouldn't catch them — hook the close controls explicitly (capture phase). */
+    const onLegendX=(e)=>{ try{ if(e.target&&e.target.closest&&e.target.closest('.layer-popup-x,.kip-x')) stop(true); }catch(_){} };
+    document.addEventListener('click',onLegendX,true);
     function stop(markSeen){ if(done) return; done=true; clearTimeout(timer);
+      try{ document.removeEventListener('click',onLegendX,true); }catch(_){}
       /* (#R23) turn off EVERY layer the demo could have switched on (not just the current one) so it can
          never leave an orphan layer behind ("オンのままで active layers に出ず消せない"). */
       try{ SHOW.forEach(s=>setOff(s[0])); }catch(_){ setOff(curId); }
