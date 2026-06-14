@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-15-R27';
+  window.INTMAP_BUILD='2026-06-15-R28';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -393,14 +393,14 @@ gtag('config', 'G-57X5MX0ZPW');
        display:contents dissolves those wrappers; the button height is forced so a wrapped label can't change
        it. This is why the spacing kept reading "ランダム". */
     #layer-tools > #edu-mount, #layer-tools > #lyr-presets{ display:contents !important; }
-    /* (#R27) The 50px fixed height read as "縦幅が大きすぎて不自然" — that height only existed to hold a
-       2-line wrapped label. Drop to a normal single-line button height (38px) and keep labels to ONE
-       line with an ellipsis, so they stay a tidy equal-height group without the chunky tall blocks. */
+    /* (#R28) 38px STILL read as "縦幅が大きくて不自然" next to the compact layer rows above. Tighten to a
+       slim 34px single-line button (labels stay 1 line + ellipsis) so the four tools sit as a neat, low
+       group rather than chunky tall blocks. */
     #layer-tools > #btn-compare, #layer-tools > #btn-upload-geojson,
     #layer-tools #btn-edu, #layer-tools #lp-save{
-      height:38px !important; min-height:38px !important; box-sizing:border-box;
+      height:34px !important; min-height:34px !important; box-sizing:border-box;
       display:flex !important; align-items:center; justify-content:center; gap:7px;
-      text-align:center; line-height:1.2; padding:0 12px; overflow:hidden; margin:0 !important; font-size:12.5px;
+      text-align:center; line-height:1.15; padding:0 12px; overflow:hidden; margin:0 !important; font-size:12.5px;
     }
     #layer-tools #btn-compare > span, #layer-tools #btn-upload-geojson > span,
     #layer-tools #btn-edu > span, #layer-tools #lp-save > span{
@@ -955,7 +955,7 @@ gtag('config', 'G-57X5MX0ZPW');
       /* (#R23) keep the Tools section a flex column with an EVEN gap on mobile too — the old display:block
          let the parent's gap:1px collapse, so after the per-button margins were zeroed the 4 Tools buttons
          touched with random-looking spacing ("間隔がランダムで不自然"). */
-      #mo-mount-layers .layer-dropdown > #layer-tools{ display:flex !important; flex-direction:column !important; gap:8px !important; }
+      #mo-mount-layers .layer-dropdown > #layer-tools{ display:flex !important; flex-direction:column !important; gap:6px !important; }
       #mo-mount-layers #layer-tools .btn-settings, #mo-mount-layers #layer-tools button{ width:100% !important; box-sizing:border-box; }
       /* (#R25) layer rows = a proper 44px iOS tap target. ROOT CAUSE of "Country borders を押すと place names
          がチェックされる / 勝手にレイヤーがオンになる": the rows were 32px tall (centers ~33px apart) — well below
@@ -976,9 +976,8 @@ gtag('config', 'G-57X5MX0ZPW');
       /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
          (desktop keeps them) (#12). */
       .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
-      /* (#R21) …except the beta group, which IS a pulldown on mobile — keep its caret visible. */
-      .m-sheet .layer-dropdown .lyr-head[data-i18n="lyrGrpOthers"]::after{ content:'▾' !important; }
-      .m-sheet .layer-dropdown .lyr-head[data-i18n="lyrGrpOthers"].lyr-collapsed::after{ content:'▸' !important; }
+      /* (#R28) The "Others (beta)" group is NO LONGER a pulldown on mobile ("Others(beta)だけプルダウン…
+         元に戻せ"). It now shows fully expanded like every other group — no caret, no collapse. */
       .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:4px 0 !important; }
       .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 0 !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
@@ -1012,7 +1011,10 @@ gtag('config', 'G-57X5MX0ZPW');
          of a cramped 290px floating box in the middle of the map, DOCK it as a full-width card just above
          the bottom sheet. Full width gives every control real room (slider, color, the 3 stats inline), it
          never covers the circle being placed, and the saved list scrolls. */
-      .tool-panel.tp-radius{ position:fixed !important; left:6px !important; right:6px !important; width:auto !important;
+      .tool-panel.tp-radius{ position:fixed !important; left:6px !important; right:6px !important;
+        /* (#R28) explicit full width — the base mobile rule's `right:auto` was overriding the `right:6px`
+           here, so `width:auto` shrink-fit to ~233px and left the panel narrow + left-stranded. */
+        width:calc(100vw - 12px) !important; max-width:calc(100vw - 12px) !important;
         top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h, 0px)) + 10px) !important;
         max-height:min(48dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 80px)) !important;
         overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 12px !important; border-radius:16px !important; }
@@ -1024,11 +1026,13 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel.tp-radius .rad-preset{ width:30px !important; height:30px !important; }
       .tool-panel.tp-radius input[type=color]{ width:34px !important; height:30px !important; }
       .tool-panel.tp-radius .tp-hint{ font-size:10.5px !important; margin-top:5px !important; }
-      /* stats span the full width in one even 3-up strip (now there's room). */
-      .tool-panel.tp-radius .rad-stats{ gap:6px !important; margin:7px 0 !important; }
-      .tool-panel.tp-radius .rad-stat{ flex:1 1 0; padding:6px 6px !important; text-align:center; }
-      .tool-panel.tp-radius .rad-stat label{ font-size:9.5px !important; }
-      .tool-panel.tp-radius .rad-stat b{ font-size:12px !important; }
+      /* (#R28) Vertical full-width stat ROWS on mobile. The 3-up strip's ~53px columns were far too narrow
+         for values like "3,141,593 km² (1,212,975 mi²)" — they clipped/spilled out of the card ("一部テキスト
+         がUIからはみ出して不格好"). Each stat is now its own full-width row: label on the left, value on the
+         right, and the value WRAPS instead of overflowing. */
+      .tool-panel.tp-radius .rad-stats{ flex-direction:column; gap:4px !important; margin:7px 0 !important; }
+      .tool-panel.tp-radius .rad-stat{ flex:1 1 auto; flex-direction:row !important; align-items:baseline; justify-content:space-between; gap:10px; padding:5px 9px !important; text-align:left; }
+      .tool-panel.tp-radius .rad-stat label{ font-size:10px !important; flex:0 0 auto; }
       .tool-panel.tp-radius #radius-op{ flex:1 0 100% !important; margin-top:3px !important; }
       .tool-panel.tp-radius .radius-list{ max-height:104px !important; }
       .tool-panel.tp-radius .ai-action-btn{ padding:9px !important; margin-top:6px !important; font-size:12.5px !important; }
@@ -1041,7 +1045,8 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel.tp-radius .radius-row{ flex-wrap:wrap; min-width:0; }
       .tool-panel.tp-radius .radius-row input[type=number]{ min-width:0; flex:1 1 60px; max-width:100%; }
       .tool-panel.tp-radius .rad-stat{ min-width:0; overflow:hidden; }
-      .tool-panel.tp-radius .rad-stat b{ display:block; min-width:0; font-size:11px !important; line-height:1.15; word-break:break-word; }
+      /* value wraps inside its row (override the base white-space:nowrap/ellipsis) so nothing spills out */
+      .tool-panel.tp-radius .rad-stat b{ min-width:0; flex:1 1 auto; text-align:right; font-size:11.5px !important; line-height:1.2; white-space:normal !important; word-break:break-word; overflow:visible; text-overflow:clip; }
       .tool-panel.tp-radius .radius-list-item{ min-width:0; }
       .tool-panel.tp-radius .rl-main{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
@@ -3188,7 +3193,221 @@ window.addEventListener('DOMContentLoaded', () => {
     ['city',['Brasília','ブラジリア','Brasilia'],-47.88,-15.79,'Brasília','ブラジリア'],
     ['city',['São Paulo','サンパウロ','Sao Paulo'],-46.63,-23.55,'São Paulo','サンパウロ']
   ];
-  const BUILTIN_GAZETTEER=_BUILTIN_GZ.reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
+  /* (#R28) ===== MAJOR coverage expansion for the non-AI news locator =====
+     The locator already auto-adds every COUNTRY + its CAPITAL from countryStats, so the real gaps were:
+     (1) large NON-capital metros (Lagos, Kolkata, Guangzhou, Osaka, Houston…), (2) subnational regions /
+     US states / conflict regions (Donbas, Kurdistan, Xinjiang, Texas, Catalonia…), and (3) government-seat
+     metonyms (Kremlin, Pentagon, White House, Downing Street…). Same row format as _BUILTIN_GZ:
+     [type, [match terms…], lng, lat, nameEn, nameJp]. Government seats are type 'city' (a precise location
+     reference). Word boundaries (Latin) / substring (CJK) are compiled in rebuildGeoIndex. */
+  const _EXTRA_GZ=[
+    /* — Europe (secondary metros not already covered) — */
+    ['city',['Amsterdam','アムステルダム'],4.90,52.37,'Amsterdam','アムステルダム'],
+    ['city',['Rotterdam','ロッテルダム'],4.48,51.92,'Rotterdam','ロッテルダム'],
+    ['city',['Munich','ミュンヘン','Muenchen'],11.58,48.14,'Munich','ミュンヘン'],
+    ['city',['Frankfurt','フランクフルト'],8.68,50.11,'Frankfurt','フランクフルト'],
+    ['city',['Hamburg','ハンブルク'],9.99,53.55,'Hamburg','ハンブルク'],
+    ['city',['Cologne','ケルン'],6.96,50.94,'Cologne','ケルン'],
+    ['city',['Milan','ミラノ','Milano'],9.19,45.46,'Milan','ミラノ'],
+    ['city',['Naples','ナポリ','Napoli'],14.27,40.85,'Naples','ナポリ'],
+    ['city',['Venice','ベネチア','ヴェネツィア','Venezia'],12.32,45.44,'Venice','ヴェネツィア'],
+    ['city',['Barcelona','バルセロナ'],2.17,41.39,'Barcelona','バルセロナ'],
+    ['city',['Lisbon','リスボン','Lisboa'],-9.14,38.72,'Lisbon','リスボン'],
+    ['city',['Porto','ポルト'],-8.61,41.15,'Porto','ポルト'],
+    ['city',['Dublin','ダブリン'],-6.26,53.35,'Dublin','ダブリン'],
+    ['city',['Edinburgh','エディンバラ'],-3.19,55.95,'Edinburgh','エディンバラ'],
+    ['city',['Manchester','マンチェスター'],-2.24,53.48,'Manchester','マンチェスター'],
+    ['city',['Marseille','マルセイユ'],5.37,43.30,'Marseille','マルセイユ'],
+    ['city',['Lyon','リヨン'],4.83,45.76,'Lyon','リヨン'],
+    ['city',['Stockholm','ストックホルム'],18.07,59.33,'Stockholm','ストックホルム'],
+    ['city',['Oslo','オスロ'],10.75,59.91,'Oslo','オスロ'],
+    ['city',['Copenhagen','コペンハーゲン'],12.57,55.68,'Copenhagen','コペンハーゲン'],
+    ['city',['Helsinki','ヘルシンキ'],24.94,60.17,'Helsinki','ヘルシンキ'],
+    ['city',['Athens','アテネ'],23.73,37.98,'Athens','アテネ'],
+    ['city',['Vienna','ウィーン','Wien'],16.37,48.21,'Vienna','ウィーン'],
+    ['city',['Zurich','チューリッヒ','Zuerich'],8.54,47.37,'Zurich','チューリッヒ'],
+    ['city',['Prague','プラハ','Praha'],14.42,50.09,'Prague','プラハ'],
+    ['city',['Budapest','ブダペスト'],19.04,47.50,'Budapest','ブダペスト'],
+    ['city',['Bucharest','ブカレスト'],26.10,44.43,'Bucharest','ブカレスト'],
+    ['city',['Belgrade','ベオグラード'],20.46,44.79,'Belgrade','ベオグラード'],
+    ['city',['Zagreb','ザグレブ'],15.98,45.81,'Zagreb','ザグレブ'],
+    ['city',['Sofia','ソフィア'],23.32,42.70,'Sofia','ソフィア'],
+    ['city',['Sarajevo','サラエボ'],18.41,43.86,'Sarajevo','サラエボ'],
+    ['city',['Krakow','クラクフ','Krakow','Cracow'],19.94,50.06,'Krakow','クラクフ'],
+    ['city',['Minsk','ミンスク'],27.57,53.90,'Minsk','ミンスク'],
+    /* — Russia / Caucasus / Central Asia — */
+    ['city',['Saint Petersburg','サンクトペテルブルク','St Petersburg','St. Petersburg'],30.36,59.93,'Saint Petersburg','サンクトペテルブルク'],
+    ['city',['Kazan','カザン'],49.12,55.79,'Kazan','カザン'],
+    ['city',['Yekaterinburg','エカテリンブルク'],60.61,56.84,'Yekaterinburg','エカテリンブルク'],
+    ['city',['Novosibirsk','ノヴォシビルスク'],82.92,55.03,'Novosibirsk','ノヴォシビルスク'],
+    ['city',['Vladivostok','ウラジオストク'],131.89,43.12,'Vladivostok','ウラジオストク'],
+    ['city',['Sochi','ソチ'],39.73,43.60,'Sochi','ソチ'],
+    ['flashpoint',['Grozny','グロズヌイ'],45.70,43.32,'Grozny','グロズヌイ'],
+    ['city',['Tbilisi','トビリシ'],44.83,41.72,'Tbilisi','トビリシ'],
+    ['city',['Yerevan','エレバン'],44.51,40.18,'Yerevan','エレバン'],
+    ['city',['Baku','バクー'],49.87,40.41,'Baku','バクー'],
+    ['city',['Almaty','アルマトイ'],76.89,43.24,'Almaty','アルマトイ'],
+    ['city',['Tashkent','タシケント'],69.24,41.31,'Tashkent','タシケント'],
+    /* — Middle East — */
+    ['city',['Amman','アンマン'],35.94,31.95,'Amman','アンマン'],
+    ['city',['Ramallah','ラマラ'],35.21,31.90,'Ramallah','ラマラ'],
+    ['flashpoint',['Hebron','ヘブロン'],35.10,31.53,'Hebron','ヘブロン'],
+    ['flashpoint',['Jenin','ジェニン'],35.30,32.46,'Jenin','ジェニン'],
+    ['flashpoint',['Nablus','ナブルス'],35.26,32.22,'Nablus','ナブルス'],
+    ['city',['Mecca','メッカ'],39.83,21.42,'Mecca','メッカ'],
+    ['city',['Medina','メディナ'],39.61,24.47,'Medina','メディナ'],
+    ['city',['Kuwait City','クウェート市'],47.98,29.38,'Kuwait City','クウェート市'],
+    ['city',['Muscat','マスカット'],58.41,23.59,'Muscat','マスカット'],
+    ['city',['Manama','マナーマ'],50.59,26.23,'Manama','マナーマ'],
+    ['flashpoint',['Basra','バスラ'],47.78,30.51,'Basra','バスラ'],
+    ['flashpoint',['Erbil','アルビル','Irbil'],44.01,36.19,'Erbil','アルビル'],
+    ['flashpoint',['Kirkuk','キルクーク'],44.39,35.47,'Kirkuk','キルクーク'],
+    ['flashpoint',['Deir ez-Zor','デリゾール','Deir ez Zor'],40.15,35.34,'Deir ez-Zor','デリゾール'],
+    ['city',['Latakia','ラタキア'],35.78,35.52,'Latakia','ラタキア'],
+    ['city',['Gaziantep','ガジアンテプ'],37.38,37.07,'Gaziantep','ガジアンテプ'],
+    ['city',['Izmir','イズミル'],27.14,38.42,'Izmir','イズミル'],
+    ['city',['Isfahan','イスファハン','Esfahan'],51.68,32.65,'Isfahan','イスファハン'],
+    ['city',['Mashhad','マシュハド'],59.61,36.30,'Mashhad','マシュハド'],
+    ['flashpoint',['Tabriz','タブリーズ'],46.29,38.08,'Tabriz','タブリーズ'],
+    ['city',['Shiraz','シーラーズ'],52.53,29.59,'Shiraz','シーラーズ'],
+    /* — Africa (major non-capitals / hotspots) — */
+    ['city',['Lagos','ラゴス'],3.38,6.52,'Lagos','ラゴス'],
+    ['city',['Kano','カノ'],8.52,12.00,'Kano','カノ'],
+    ['city',['Casablanca','カサブランカ'],-7.59,33.57,'Casablanca','カサブランカ'],
+    ['city',['Marrakech','マラケシュ','Marrakesh'],-7.98,31.63,'Marrakech','マラケシュ'],
+    ['flashpoint',['Benghazi','ベンガジ'],20.07,32.12,'Benghazi','ベンガジ'],
+    ['city',['Alexandria','アレクサンドリア'],29.92,31.20,'Alexandria','アレクサンドリア'],
+    ['city',['Johannesburg','ヨハネスブルグ'],28.05,-26.20,'Johannesburg','ヨハネスブルグ'],
+    ['city',['Cape Town','ケープタウン'],18.42,-33.92,'Cape Town','ケープタウン'],
+    ['city',['Durban','ダーバン'],31.02,-29.86,'Durban','ダーバン'],
+    ['city',['Mombasa','モンバサ'],39.66,-4.04,'Mombasa','モンバサ'],
+    ['city',['Dar es Salaam','ダルエスサラーム'],39.28,-6.79,'Dar es Salaam','ダルエスサラーム'],
+    ['city',['Douala','ドゥアラ'],9.77,4.05,'Douala','ドゥアラ'],
+    /* — South / Southeast / East Asia (major non-capitals) — */
+    ['city',['Chittagong','チッタゴン'],91.78,22.36,'Chittagong','チッタゴン'],
+    ['city',['Peshawar','ペシャワール'],71.58,34.01,'Peshawar','ペシャワール'],
+    ['flashpoint',['Quetta','クエッタ'],67.00,30.18,'Quetta','クエッタ'],
+    ['city',['Rawalpindi','ラワルピンディ'],73.07,33.60,'Rawalpindi','ラワルピンディ'],
+    ['city',['Kolkata','コルカタ','Calcutta'],88.36,22.57,'Kolkata','コルカタ'],
+    ['city',['Chennai','チェンナイ','Madras'],80.27,13.08,'Chennai','チェンナイ'],
+    ['city',['Bengaluru','ベンガルール','Bangalore'],77.59,12.97,'Bengaluru','ベンガルール'],
+    ['city',['Hyderabad','ハイデラバード'],78.47,17.38,'Hyderabad','ハイデラバード'],
+    ['city',['Ahmedabad','アーメダバード'],72.57,23.03,'Ahmedabad','アーメダバード'],
+    ['city',['Pune','プネー'],73.86,18.52,'Pune','プネー'],
+    ['flashpoint',['Srinagar','スリナガル'],74.80,34.08,'Srinagar','スリナガル'],
+    ['city',['Guangzhou','広州'],113.26,23.13,'Guangzhou','広州'],
+    ['city',['Shenzhen','深圳','深セン'],114.06,22.54,'Shenzhen','深圳'],
+    ['city',['Chengdu','成都'],104.07,30.57,'Chengdu','成都'],
+    ['city',['Chongqing','重慶'],106.55,29.56,'Chongqing','重慶'],
+    ['city',['Wuhan','武漢'],114.30,30.59,'Wuhan','武漢'],
+    ['city',["Xi'an",'西安'],108.95,34.27,"Xi'an",'西安'],
+    ['city',['Tianjin','天津'],117.36,39.34,'Tianjin','天津'],
+    ['flashpoint',['Urumqi','ウルムチ'],87.62,43.83,'Urumqi','ウルムチ'],
+    ['flashpoint',['Lhasa','ラサ'],91.17,29.65,'Lhasa','ラサ'],
+    ['city',['Macau','マカオ','Macao'],113.54,22.20,'Macau','マカオ'],
+    ['city',['Kaohsiung','高雄'],120.31,22.63,'Kaohsiung','高雄'],
+    ['city',['Busan','釜山','Pusan'],129.08,35.18,'Busan','釜山'],
+    ['city',['Incheon','仁川'],126.71,37.46,'Incheon','仁川'],
+    ['city',['Osaka','大阪'],135.50,34.69,'Osaka','大阪'],
+    ['city',['Kyoto','京都'],135.77,35.01,'Kyoto','京都'],
+    ['city',['Nagoya','名古屋'],136.91,35.18,'Nagoya','名古屋'],
+    ['city',['Yokohama','横浜'],139.64,35.44,'Yokohama','横浜'],
+    ['city',['Fukuoka','福岡'],130.40,33.59,'Fukuoka','福岡'],
+    ['city',['Hiroshima','広島'],132.46,34.39,'Hiroshima','広島'],
+    ['city',['Sapporo','札幌'],141.35,43.06,'Sapporo','札幌'],
+    ['city',['Okinawa','沖縄','Naha','那覇'],127.68,26.21,'Okinawa','沖縄'],
+    ['city',['Ho Chi Minh City','ホーチミン','Saigon'],106.66,10.82,'Ho Chi Minh City','ホーチミン'],
+    ['city',['Da Nang','ダナン'],108.22,16.05,'Da Nang','ダナン'],
+    ['city',['Kuala Lumpur','クアラルンプール'],101.69,3.14,'Kuala Lumpur','クアラルンプール'],
+    ['city',['Surabaya','スラバヤ'],112.75,-7.26,'Surabaya','スラバヤ'],
+    ['city',['Cebu','セブ'],123.89,10.32,'Cebu','セブ'],
+    ['city',['Davao','ダバオ'],125.61,7.07,'Davao','ダバオ'],
+    ['flashpoint',['Mandalay','マンダレー'],96.08,21.97,'Mandalay','マンダレー'],
+    /* — Americas (major non-capitals) — */
+    ['city',['Guadalajara','グアダラハラ'],-103.35,20.67,'Guadalajara','グアダラハラ'],
+    ['city',['Monterrey','モンテレイ'],-100.32,25.69,'Monterrey','モンテレイ'],
+    ['flashpoint',['Tijuana','ティファナ'],-117.04,32.51,'Tijuana','ティファナ'],
+    ['flashpoint',['Ciudad Juarez','シウダー・フアレス','Ciudad Juárez'],-106.49,31.74,'Ciudad Juarez','シウダー・フアレス'],
+    ['city',['Rio de Janeiro','リオデジャネイロ'],-43.20,-22.91,'Rio de Janeiro','リオデジャネイロ'],
+    ['city',['Medellin','メデジン','Medellín'],-75.56,6.24,'Medellin','メデジン'],
+    ['city',['Guayaquil','グアヤキル'],-79.89,-2.19,'Guayaquil','グアヤキル'],
+    ['city',['Houston','ヒューストン'],-95.37,29.76,'Houston','ヒューストン'],
+    ['city',['Miami','マイアミ'],-80.19,25.76,'Miami','マイアミ'],
+    ['city',['Atlanta','アトランタ'],-84.39,33.75,'Atlanta','アトランタ'],
+    ['city',['Boston','ボストン'],-71.06,42.36,'Boston','ボストン'],
+    ['city',['Seattle','シアトル'],-122.33,47.61,'Seattle','シアトル'],
+    ['city',['San Francisco','サンフランシスコ'],-122.42,37.77,'San Francisco','サンフランシスコ'],
+    ['city',['Dallas','ダラス'],-96.80,32.78,'Dallas','ダラス'],
+    ['city',['Philadelphia','フィラデルフィア'],-75.16,39.95,'Philadelphia','フィラデルフィア'],
+    ['city',['Detroit','デトロイト'],-83.05,42.33,'Detroit','デトロイト'],
+    ['city',['Montreal','モントリオール','Montréal'],-73.57,45.50,'Montreal','モントリオール'],
+    ['city',['Vancouver','バンクーバー'],-123.12,49.28,'Vancouver','バンクーバー'],
+    /* — Oceania — */
+    ['city',['Melbourne','メルボルン'],144.96,-37.81,'Melbourne','メルボルン'],
+    ['city',['Brisbane','ブリスベン'],153.03,-27.47,'Brisbane','ブリスベン'],
+    ['city',['Perth','パース'],115.86,-31.95,'Perth','パース'],
+    ['city',['Auckland','オークランド'],174.76,-36.85,'Auckland','オークランド'],
+    /* — Subnational regions / US states / conflict regions (type 'city' so they out-rank a bare country) — */
+    ['city',['Donbas','ドンバス','Donbass'],37.80,48.30,'Donbas','ドンバス'],
+    ['city',['Kurdistan','クルディスタン'],44.0,36.5,'Kurdistan','クルディスタン'],
+    ['city',['Xinjiang','新疆','ウイグル'],85.0,41.0,'Xinjiang','新疆'],
+    ['city',['Tibet','チベット'],88.0,31.5,'Tibet','チベット'],
+    ['city',['Catalonia','カタルーニャ','Catalunya'],1.5,41.8,'Catalonia','カタルーニャ'],
+    ['city',['Bavaria','バイエルン','Bayern'],11.5,48.8,'Bavaria','バイエルン'],
+    ['city',['Sicily','シチリア','Sicilia'],14.0,37.5,'Sicily','シチリア'],
+    ['city',['Siberia','シベリア'],90.0,60.0,'Siberia','シベリア'],
+    ['city',['Punjab','パンジャブ'],75.0,31.0,'Punjab','パンジャブ'],
+    ['city',['Balochistan','バロチスタン','Baluchistan'],65.0,28.0,'Balochistan','バロチスタン'],
+    ['city',['Darfur','ダルフール'],24.0,13.5,'Darfur','ダルフール'],
+    ['city',['California','カリフォルニア'],-119.4,36.8,'California','カリフォルニア'],
+    ['city',['Texas','テキサス'],-99.0,31.5,'Texas','テキサス'],
+    ['city',['Florida','フロリダ'],-81.5,28.0,'Florida','フロリダ'],
+    ['city',['Alaska','アラスカ'],-152.0,64.0,'Alaska','アラスカ'],
+    ['city',['Hawaii','ハワイ'],-156.3,20.8,'Hawaii','ハワイ'],
+    /* — Government-seat metonyms (a precise location reference, NOT docked) — */
+    ['city',['Kremlin','クレムリン'],37.62,55.75,'Kremlin','クレムリン'],
+    ['city',['Pentagon','ペンタゴン','米国防総省'],-77.06,38.87,'Pentagon','ペンタゴン'],
+    ['city',['White House','ホワイトハウス'],-77.04,38.90,'White House','ホワイトハウス'],
+    ['city',['Downing Street','ダウニング街'],-0.13,51.50,'Downing Street','ダウニング街'],
+    ['city',['Capitol Hill'],-77.01,38.89,'Capitol Hill','米連邦議会'],
+    ['city',['Zhongnanhai','中南海'],116.38,39.91,'Zhongnanhai','中南海'],
+    ['city',['Blue House','青瓦台'],126.97,37.59,'Blue House','青瓦台'],
+    ['city',['Elysee','エリゼ宮','Élysée'],2.32,48.87,'Elysee','エリゼ宮']
+  ];
+  const BUILTIN_GAZETTEER=_BUILTIN_GZ.concat(_EXTRA_GZ).reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
+  /* (#R28) ORGANIZATIONS / INSTITUTIONS / militant & political GROUPS → a representative location.
+     Flagged org:true and docked below an explicit place (like demonyms, see scoreGeo) so a headline that
+     also names a real city/country pins THERE, while a headline naming only the org still gets placed.
+     Row = [[match terms…], lng, lat, nameEn, nameJp]. Avoids acronyms that collide with common English
+     words (no bare "WHO"/"US" here). */
+  const _ORG_GZ=[
+    /* international institutions → HQ */
+    [['United Nations','U.N.','国連','国際連合'],-73.97,40.75,'United Nations','国連'],
+    [['NATO','北大西洋条約機構'],4.42,50.88,'NATO','NATO'],
+    [['IMF','国際通貨基金'],-77.04,38.90,'IMF','IMF'],
+    [['World Bank','世界銀行'],-77.04,38.90,'World Bank','世界銀行'],
+    [['OPEC','石油輸出国機構'],16.37,48.21,'OPEC','OPEC'],
+    [['European Commission','欧州委員会'],4.38,50.84,'European Commission','欧州委員会'],
+    [['World Health Organization','世界保健機関'],6.14,46.23,'WHO','世界保健機関'],
+    [['African Union'],38.74,9.03,'African Union','アフリカ連合'],
+    [['ASEAN','東南アジア諸国連合'],106.83,-6.21,'ASEAN','ASEAN'],
+    /* state security forces (metonyms for their country's seat) */
+    [['IRGC','Revolutionary Guard','革命防衛隊'],51.39,35.69,'Iran (IRGC)','イラン（革命防衛隊）'],
+    [['IDF','Israel Defense Forces'],34.78,32.08,'Israel (IDF)','イスラエル（IDF）'],
+    /* militant / armed groups → their stronghold */
+    [['Hamas','ハマス'],34.45,31.50,'Gaza (Hamas)','ガザ（ハマス）'],
+    [['Hezbollah','Hizbollah','ヒズボラ'],35.50,33.85,'Lebanon (Hezbollah)','レバノン（ヒズボラ）'],
+    [['Houthi','Houthis','フーシ'],44.21,15.35,'Yemen (Houthis)','イエメン（フーシ）'],
+    [['Taliban','タリバン'],69.18,34.53,'Afghanistan (Taliban)','アフガニスタン（タリバン）'],
+    [['Wagner','ワグネル'],37.62,55.75,'Russia (Wagner)','ロシア（ワグネル）'],
+    [['Islamic State','ISIL','Daesh','イスラム国'],38.99,35.95,'Islamic State (Raqqa)','イスラム国'],
+    [['Al-Qaeda','Al Qaeda','アルカイダ'],65.0,33.0,'Al-Qaeda','アルカイダ'],
+    [['Boko Haram','ボコ・ハラム'],13.0,11.5,'Boko Haram (NE Nigeria)','ボコ・ハラム'],
+    [['Al-Shabaab','Al Shabaab','アルシャバブ'],45.0,2.5,'Al-Shabaab (Somalia)','アルシャバブ'],
+    [['Islamic Jihad','イスラム聖戦'],34.45,31.50,'Gaza (Islamic Jihad)','ガザ（イスラム聖戦）'],
+    [['Polisario'],-13.0,24.5,'Western Sahara (Polisario)','西サハラ'],
+    [['Wagner Group'],37.62,55.75,'Russia (Wagner)','ロシア（ワグネル）']
+  ];
   /* (#R27) DEMONYM gazetteer — a very large share of geopolitical headlines reference a country by its
      ADJECTIVE/people ("Ukrainian drone", "Israeli strike", "Iranian-backed", "Chinese vessels") rather
      than the country NAME, which the old locator missed entirely. These map the demonym → the country's
@@ -3227,7 +3446,32 @@ window.addEventListener('DOMContentLoaded', () => {
     ['Hungarian',19.04,47.50,'Hungary','ハンガリー'],['Czech',14.42,50.09,'Czechia','チェコ'],
     ['Romanian',26.10,44.43,'Romania','ルーマニア'],['Serbian',20.46,44.79,'Serbia','セルビア'],
     ['Belarusian',27.57,53.90,'Belarus','ベラルーシ'],['Armenian',44.51,40.18,'Armenia','アルメニア'],
-    ['Azerbaijani',49.87,40.41,'Azerbaijan','アゼルバイジャン']
+    ['Azerbaijani',49.87,40.41,'Azerbaijan','アゼルバイジャン'],
+    /* (#R28) many more nationalities — a huge share of headlines name a country only by its adjective */
+    ['Algerian',3.06,36.75,'Algeria','アルジェリア'],['Moroccan',-6.84,34.02,'Morocco','モロッコ'],
+    ['Tunisian',10.18,36.81,'Tunisia','チュニジア'],['Libyan',13.19,32.89,'Libya','リビア'],
+    ['Malian',-8.00,12.65,'Mali','マリ'],['Somali',45.34,2.05,'Somalia','ソマリア'],
+    ['Congolese',15.27,-4.44,'DR Congo','コンゴ民主共和国'],['Angolan',13.23,-8.84,'Angola','アンゴラ'],
+    ['Zimbabwean',31.05,-17.83,'Zimbabwe','ジンバブエ'],['Ghanaian',-0.19,5.60,'Ghana','ガーナ'],
+    ['Ivorian',-4.01,5.36,"Cote d'Ivoire",'コートジボワール'],['Senegalese',-17.45,14.69,'Senegal','セネガル'],
+    ['Ugandan',32.58,0.35,'Uganda','ウガンダ'],['Rwandan',30.06,-1.94,'Rwanda','ルワンダ'],
+    ['Chilean',-70.65,-33.45,'Chile','チリ'],['Peruvian',-77.04,-12.05,'Peru','ペルー'],
+    ['Bolivian',-68.15,-16.50,'Bolivia','ボリビア'],['Ecuadorian',-78.47,-0.18,'Ecuador','エクアドル'],
+    ['Uruguayan',-56.16,-34.90,'Uruguay','ウルグアイ'],['Paraguayan',-57.58,-25.30,'Paraguay','パラグアイ'],
+    ['Bangladeshi',90.41,23.81,'Bangladesh','バングラデシュ'],['Sri Lankan',79.86,6.93,'Sri Lanka','スリランカ'],
+    ['Nepali',85.32,27.70,'Nepal','ネパール'],['Burmese',96.08,21.97,'Myanmar','ミャンマー'],
+    ['Malaysian',101.69,3.14,'Malaysia','マレーシア'],['Singaporean',103.85,1.29,'Singapore','シンガポール'],
+    ['Cambodian',104.92,11.56,'Cambodia','カンボジア'],['Mongolian',106.92,47.92,'Mongolia','モンゴル'],
+    ['Kazakh',71.45,51.18,'Kazakhstan','カザフスタン'],['Uzbek',69.24,41.31,'Uzbekistan','ウズベキスタン'],
+    ['Georgian',44.83,41.72,'Georgia','ジョージア'],['Kurdish',44.00,36.50,'Kurdistan','クルド'],
+    ['Catalan',2.17,41.39,'Catalonia','カタルーニャ'],['Portuguese',-9.14,38.72,'Portugal','ポルトガル'],
+    ['Irish',-6.26,53.35,'Ireland','アイルランド'],['Danish',12.57,55.68,'Denmark','デンマーク'],
+    ['Bulgarian',23.32,42.70,'Bulgaria','ブルガリア'],['Croatian',15.98,45.81,'Croatia','クロアチア'],
+    ['Slovak',17.11,48.15,'Slovakia','スロバキア'],['Slovenian',14.51,46.05,'Slovenia','スロベニア'],
+    ['Estonian',24.75,59.44,'Estonia','エストニア'],['Latvian',24.11,56.95,'Latvia','ラトビア'],
+    ['Lithuanian',25.28,54.69,'Lithuania','リトアニア'],['Kuwaiti',47.98,29.38,'Kuwait','クウェート'],
+    ['Omani',58.41,23.59,'Oman','オマーン'],['Bahraini',50.59,26.23,'Bahrain','バーレーン'],
+    ['Tanzanian',39.28,-6.79,'Tanzania','タンザニア'],['Nigerien',2.12,13.51,'Niger','ニジェール']
   ];
 
   /* Publisher HQ gazetteer — drives the "Publisher" pin mode. Expanded from 24 → ~130 outlets
@@ -3282,6 +3526,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R27) demonyms join as low-confidence country entries (flagged so scoreGeo ranks them below a real
        place name) — coverage for "Ukrainian/Israeli/Iranian…" headlines that name no explicit place. */
     try{ for(const [dem,lng,lat,en,jp] of _DEMONYM_GZ){ (merged.country=merged.country||[]).push({terms:[dem], loc:[lng,lat], name:{en,jp}, demonym:true}); } }catch(_){}
+    /* (#R28) organizations / institutions / armed groups join as flagged org:true entries — docked below an
+       explicit place (see scoreGeo) so they only place a story that names no explicit city/country. */
+    try{ for(const [terms,lng,lat,en,jp] of _ORG_GZ){ (merged.country=merged.country||[]).push({terms:terms.slice(), loc:[lng,lat], name:{en,jp}, org:true}); } }catch(_){}
     geoDB=Object.entries(merged).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
@@ -4939,20 +5186,13 @@ window.addEventListener('DOMContentLoaded', () => {
   window._expandAllLayerGroups=function(){ try{
     layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
     layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
-    /* (#R21) MOBILE: the "Others (beta)" group alone stays a PULLDOWN — collapsed until tapped
-       ("モバイル版でも、beta layersだけは、プルダウンをクリックしないと中身が見れない形式に"). */
-    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){
-      const bh=layerDropdown.querySelector('.lyr-head[data-i18n="lyrGrpOthers"]');
-      if(bh && !bh.dataset.userToggled) _collapseGroup(bh);
-    }
+    /* (#R28) The "Others (beta)" group is no longer collapsed on mobile — every group is expanded
+       ("Others(beta)だけプルダウン…元に戻せ"). The line above already cleared its display:none rows. */
   }catch(_){} };
   layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
-    /* Mobile shows all groups expanded (no carets) → headers are plain labels, not collapsers (#12).
-       (#R21) EXCEPT the beta group, which is a tappable pulldown on mobile too. */
-    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){
-      if(h.getAttribute('data-i18n')==='lyrGrpOthers') _layerGroupToggle(h);
-      return;
-    }
+    /* Mobile shows ALL groups expanded (no carets) → headers are plain labels, not collapsers (#12).
+       (#R28) The Others(beta) group is no longer a special pulldown on mobile — nothing collapses there. */
+    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ return; }
     _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
   document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled && !h.classList.contains('lyr-section-label')) _collapseGroup(h); }); },30); });
@@ -5224,7 +5464,9 @@ window.addEventListener('DOMContentLoaded', () => {
        signal (+2). Demonym entries ("Ukrainian"…) are docked 3 so an explicit place name always outranks
        them — they only win when nothing more specific matched, preserving precision while adding coverage. */
     const corro = (titleHit&&descHit) ? 2 : 0;
-    const demPen = g.demonym ? 3 : 0;
+    /* (#R28) demonyms AND organizations/groups are docked so an explicit place name always outranks them
+       (an "Ukrainian"/"Hamas"/"NATO" mention only places a story that names no explicit city/country). */
+    const demPen = (g.demonym||g.org) ? 3 : 0;
     return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0)+posBonus+corro-demPen;
   }
   function analyzeContext(title,publisher,seed,desc){
@@ -7160,19 +7402,24 @@ window.addEventListener('DOMContentLoaded', () => {
            The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. */
         if(!window._imDemoActive) setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
     });
-    /* (#R27) SCROLL-CANCEL guard (replaces the old pointerdown→click RETARGET heuristic, which was
-       itself the cause of "なにも操作してないのに勝手にレイヤーが追加される": after a scroll/fat-finger it
-       toggled whatever label the finger went DOWN on, switching a layer the user never meant to touch).
-       The correct model: a checkbox is a SINGLE label-driven toggle (pointer-events:none above), and a
-       gesture that MOVED (a scroll/drag) must NOT toggle anything. So here we only SUPPRESS a click that
-       followed a real move — we never synthesize a toggle. No retargeting, no phantom layers. */
+    /* (#R28) SCROLL-CANCEL guard — only cancel a layer toggle when the gesture was a REAL scroll/drag,
+       NOT a tap that jittered a little. The R27 version cancelled ANY click after a >10px pointer move,
+       which silently DROPPED legitimate taps (a finger tap easily moves >10px on a phone) → that was the
+       "チェックの動作が不安定" / "デスクトップでもチェックを付けても動かない" instability. The right signal is
+       whether the LIST actually scrolled: remember the scroll container's scrollTop on pointer-down, and on
+       click cancel ONLY if it moved (a real scroll) or the pointer travelled a long way (>26px = a drag, not
+       a tap). A clean tap ALWAYS toggles; a scroll NEVER toggles. We only ever SUPPRESS — we never synthesize
+       a toggle — so this can never turn a layer on by itself (no phantom layers). */
     (function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
-      let downX=0, downY=0, moved=false;
-      dd.addEventListener('pointerdown',(e)=>{ downX=e.clientX; downY=e.clientY; moved=false; },true);
-      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>10||Math.abs(e.clientY-downY)>10) moved=true; },true);
+      const scrollerOf=(el)=>{ let n=el; while(n&&n!==document.body){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2) return n; n=n.parentElement; } return dd; };
+      let downX=0, downY=0, sc=null, sTop=0, far=false;
+      dd.addEventListener('pointerdown',(e)=>{ downX=e.clientX; downY=e.clientY; far=false; sc=scrollerOf(e.target); sTop=sc?sc.scrollTop:0; },true);
+      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>26||Math.abs(e.clientY-downY)>26) far=true; },true);
       dd.addEventListener('click',(e)=>{
-        try{ if(moved && e.target.closest && e.target.closest('label.layer-option, .lyr-row')){ e.preventDefault(); e.stopPropagation(); } }catch(_){}
+        try{ const scrolled = sc && Math.abs(sc.scrollTop - sTop) > 3;
+          if((scrolled||far) && e.target.closest && e.target.closest('label.layer-option, .lyr-row')){ e.preventDefault(); e.stopPropagation(); }
+        }catch(_){}
       },true);
     })();
     window.reorganizeLayerPanel=function(){
@@ -7210,7 +7457,12 @@ window.addEventListener('DOMContentLoaded', () => {
            which read as "視点位置がパチっと移動". At the bottom it never pushes the rows you're tapping, so the
            list truly doesn't move on check/uncheck. */
         let act=document.getElementById('layer-active-section'); if(!act){ act=document.createElement('div'); act.id='layer-active-section'; act.style.display='none'; }
-        const _actAtBottom=(typeof isMobile==='function'&&isMobile());
+        /* (#R28) Active layers is ALWAYS at the TOP now (right below the 4 utility toggles) on EVERY platform.
+           The R25 move-to-bottom on mobile read as "active layers欄が消えた" — the list was buried below the
+           whole layer list + Tools, so it looked removed. Back at the top it's always visible. (The iOS
+           delayed-click retarget that the bottom-placement worked around is already killed by
+           touch-action:manipulation, so growing this section no longer mis-targets a tap.) */
+        const _actAtBottom=false;
         if(!_actAtBottom) order.push(act);
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         order.push(mkHr());
@@ -9437,7 +9689,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Mobile shows every layer group expanded (the carets are hidden there, #12) so nothing stays
            hidden behind a collapsed header the user can no longer toggle. */
         try{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ h.classList.remove('lyr-collapsed'); let el=h.nextElementSibling; while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ if(el.style) el.style.display=''; el=el.nextElementSibling; } }); }catch(_){}
-        /* (#R21) the beta group alone stays collapsed-by-default on mobile (a tappable pulldown) */
+        /* (#R28) every group (incl. Others(beta)) shows fully expanded on mobile — no pulldown. */
         try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
       }
       else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full'); }
@@ -10568,6 +10820,8 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ map.setMaxBounds(null); }catch(_){}
     if(currentProj!=='flat') return;
     try{ map.setRenderWorldCopies(window.imFlatPan==='free'); }catch(_){}
+    /* (#R28) keep the compare map's world-copies in step with the main map's free-pan setting */
+    try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){}
   }
   window.applyFlatPanSetting=applyFlatPanSetting;
 
@@ -13336,7 +13590,9 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R24) close pinned ABOVE everything in the window and always hit-takeable — it sits in its own
          reserved 52px gutter (the header has padding-right:52px) so no wrapped header/ctrls button can land
          on top of it ("×がボタンと重なって終了できない"). */
-      '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:30 !important;pointer-events:auto !important;background:#ff3b30 !important;color:#fff !important;min-width:40px;height:40px;border-radius:20px;font-size:18px;padding:0;display:flex;align-items:center;justify-content:center;}'+
+      '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:30 !important;pointer-events:auto !important;background:#ff3b30 !important;color:#fff !important;min-width:44px;height:44px;border-radius:22px;font-size:20px;padding:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.35);}'+
+      /* (#R28) hide the main-map FAB stack while compare is open so nothing sits under/over the close × */
+      'body.cmp-open .m-fab-stack{opacity:0 !important;pointer-events:none !important;}'+
       '#cmp-min{min-width:38px;font-size:16px;}'+
       '#compare-window.cmp-xray .cmp-head{padding:8px 52px 8px 10px;}'+
       '.cmp-ctrls{top:auto;bottom:28px;left:8px;right:8px;max-width:none;}'+
@@ -13406,7 +13662,16 @@ window.addEventListener('DOMContentLoaded', () => {
        the equivalent in-range value keeps the compare basemap + its data layers registered together. */
     const _wrapLng=(lng)=>{ let x=((lng+180)%360+360)%360-180; return x; };
     const _normCenter=()=>{ const c=map.getCenter(); return {lng:_wrapLng(c.lng), lat:c.lat}; };
-    function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true;
+    const _rawCenter=()=>{ const c=map.getCenter(); return {lng:c.lng, lat:c.lat}; };
+    /* (#R28) The compare map must render the SAME world copies as the main map or it drifts on big
+       horizontal scrolls. The main flat map wraps ONLY in free-pan ("free"); globe and fixed-flat don't.
+       When the main wraps, the compare must wrap too — so its basemap + overlays repeat across copies and
+       stay registered with the main map's copies — and we sync the RAW (unwrapped) center so both cameras
+       sit in the SAME copy. Fix for "free panのflat mapで大きくスクロールするとレイヤーと地図がずれる" (#5)
+       and the zoomed-out X-ray drift (#8). */
+    function _cmpWorldCopies(){ try{ return (typeof currentProj!=='undefined'&&currentProj==='flat'&&window.imFlatPan==='free'); }catch(_){ return false; } }
+    function _syncCopies(){ const want=_cmpWorldCopies(); try{ if(cmap.__copies!==want){ cmap.__copies=want; cmap.setRenderWorldCopies(want); } }catch(_){} return want; }
+    function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true; const _copies=_syncCopies();
       try{
         followProjection();
         if(xrayOn() && win){
@@ -13417,11 +13682,11 @@ window.addEventListener('DOMContentLoaded', () => {
              padding or every padded pixel is offset. Mirror it on every sync. */
           layoutXrayLens();
           let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
-          cmap.jumpTo({center:_normCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
+          cmap.jumpTo({center:_copies?_rawCenter():_normCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
         } else {
           /* SYNC: center the compare on the geography under the UNCOVERED-area centroid. */
-          let target=null; try{ const u=map.unproject(uncoveredCentroidPx()); target={lng:_wrapLng(u.lng),lat:u.lat}; }catch(_){}
-          cmap.jumpTo({center:target||_normCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
+          let target=null; try{ const u=map.unproject(uncoveredCentroidPx()); target={lng:_copies?u.lng:_wrapLng(u.lng),lat:u.lat}; }catch(_){}
+          cmap.jumpTo({center:target||(_copies?_rawCenter():_normCenter()),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
         }
       }catch(_){} syncing=false; }
     /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
@@ -13690,6 +13955,11 @@ window.addEventListener('DOMContentLoaded', () => {
       cmap.on('move',(ev)=>{ if(mode==='sync'&&!syncing&&ev&&ev.originalEvent) syncToMain(); });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
+      /* (#R28) While compare is open on mobile, HIDE the main-map FAB stack. The compare window is a
+         full-width top panel and its close × sits top-right — exactly where the Layers/Map FABs live, so
+         they overlapped and "compare viewを終了できない / ×がレイヤー選択ボタンと重なる". With the FABs hidden
+         the × is the only thing in that corner; they reappear the instant compare closes. */
+      try{ document.body.classList.add('cmp-open'); }catch(_){}
       /* (#R26) Make sure the default (bottom-right) position doesn't land ON TOP OF the sidebar on a narrow
          desktop / wide sidebar — nudge the window right of the sidebar if it would overlap. */
       try{ if(!window.matchMedia('(max-width:768px)').matches){ const sb=document.getElementById('sidebar');
@@ -13699,7 +13969,8 @@ window.addEventListener('DOMContentLoaded', () => {
          body — a single deferred resize sometimes left an unsized gray strip at the top ("上部がグレー"). */
       const fit=()=>{ try{cmap.resize();}catch(_){} followProjection(); if(mode!=='free') syncFromMain(); };
       requestAnimationFrame(fit); setTimeout(fit,80); setTimeout(fit,300); try{ cmap.once('idle',fit); }catch(_){} }
-    function close(){ if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
+    function close(){ try{ document.body.classList.remove('cmp-open'); }catch(_){}   /* (#R28) restore the main-map FABs */
+      if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
       try{ win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')==='sync')); }catch(_){} applyBase(); } }
     /* (#R27) Re-clamp the window OFF the sidebar whenever the sidebar WIDTH changes — the open/drag clamps
        didn't cover a LIVE sidebar resize, so widening the sidebar slid it under the window ("サイドバーを
@@ -14738,6 +15009,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R23) turn off EVERY layer the demo could have switched on (not just the current one) so it can
          never leave an orphan layer behind ("オンのままで active layers に出ず消せない"). */
       try{ SHOW.forEach(s=>setOff(s[0])); }catch(_){ setOff(curId); }
+      /* (#R28) belt-and-suspenders: force-hide the demo's MAP layers directly too. If a setOff change handler
+         ran while the map was still busy (the demo starts ~1.4s after load), the checkbox could end up OFF
+         while the raster stayed VISIBLE — a true orphan ("オンなのにactive layersに出ず消せない"). Hiding the
+         actual layers here guarantees the demo can never strand one. */
+      try{ ['lyr-climate','lyr-nightsat','lyr-relief','lyr-popgrid'].forEach(l=>{ if(map.getLayer&&map.getLayer(l)) map.setLayoutProperty(l,'visibility','none'); }); }catch(_){}
       window._imDemoActive=false;
       /* (#R27) Re-assert place labels after the demo so the default names aren't left hidden by the
          demo's layer cycling ("デフォルトで地名ラベルが出ない"). */
