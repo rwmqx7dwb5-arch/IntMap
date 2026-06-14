@@ -208,7 +208,12 @@ gtag('config', 'G-57X5MX0ZPW');
     .btn-toggle-sidebar:hover{ background:var(--card-bg); color:var(--primary-color); transform:translateY(-50%) scale(1.08); }
     .btn-toggle-sidebar .chev{ width:7px; height:7px; border-left:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); transition:transform 0.4s cubic-bezier(0.25,1,0.5,1); }
     .sidebar.collapsed ~ .map-container .btn-toggle-sidebar .chev{ transform:rotate(-135deg); }
-    .map-controls-top{ position:absolute; top:24px; right:24px; z-index:1000; display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+    /* (#R25) align-items:flex-end leaves a wide EMPTY left region in this flex column, but the container
+       (z-index:1000, later in DOM than the centered search) still hit-tested ON TOP of the search input —
+       so on a narrow desktop the search box "couldn't be typed in" even when visually clear. Make the
+       container click-through; only its actual controls capture pointer events. */
+    .map-controls-top{ position:absolute; top:24px; right:24px; z-index:1000; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none; }
+    .map-controls-top > *, .map-controls-top .layer-dropdown{ pointer-events:auto; }
     .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:12px; padding:4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
     .view-btn{ background:transparent; border:none; padding:8px 12px; font-size:12px; font-weight:500; color:var(--text-main); border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
     .view-btn.active{ background:var(--card-bg); box-shadow:0 2px 8px rgba(0,0,0,0.1); color:var(--primary-color); } .view-btn.tool-on{ background:var(--primary-color); color:#fff; }
@@ -255,7 +260,10 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R22) Place-label popup action buttons: even row on desktop, vertical stack on mobile. */
     .plc-popup .plc-acts{ display:flex; gap:6px; flex-wrap:wrap; }
     .plc-popup .plc-acts button{ flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; }
-    @media(max-width:768px){ .plc-popup .plc-acts{ flex-direction:column; } .plc-popup .plc-acts button{ width:100%; flex:none; } }
+    @media(max-width:768px){ .plc-popup .plc-acts{ flex-direction:column; } .plc-popup .plc-acts button{ width:100%; flex:none; }
+      /* (#R25 / #18) Reserve room for the 32px close button so the name/Copy buttons never sit UNDER the ×
+         ("×とcopyボタンが重なってUIが汚い"): pad the content top+right past the close target. */
+      .plc-popup .maplibregl-popup-content{ padding-top:14px !important; padding-right:44px !important; } }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
@@ -357,6 +365,20 @@ gtag('config', 'G-57X5MX0ZPW');
     #layer-tools > *:empty{ display:none; }
     #layer-tools .lyr-head{ margin-bottom:0 !important; }
     #layer-tools .ai-test-btn, #layer-tools button{ box-sizing:border-box; width:100%; max-width:100%; }
+    /* (#R25) The 8px gaps were already even — but the FOUR primary tool buttons had wildly different
+       HEIGHTS (compare 80px / upload 64px / quiz 70px / save 92px) because their labels wrapped to a
+       different number of lines, which read as "間隔がランダムで不自然". Normalize into one tidy, equal-height
+       group: a FIXED height (not min-height, so they're identical) with the icon+label centered and the
+       label clamped to ≤2 lines so a long string can't blow the height out. */
+    #layer-tools > #btn-compare, #layer-tools > #btn-upload-geojson,
+    #layer-tools #btn-edu, #layer-tools #lp-save{
+      height:50px; display:flex; align-items:center; justify-content:center; gap:7px;
+      text-align:center; line-height:1.18; padding:4px 12px; overflow:hidden;
+    }
+    #layer-tools #btn-compare > span, #layer-tools #btn-upload-geojson > span,
+    #layer-tools #btn-edu > span, #layer-tools #lp-save > span{
+      overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+    }
     /* (#R20) Desktop Tools: NOT pinned/sticky any more — the user asked for it to sit in normal flow at
        the end of the list ("下部にFixしなくていい。普通に置いて"). The R19 flex-shrink:0 above keeps it
        from being squashed, which was the real disappearing bug. */
@@ -554,13 +576,11 @@ gtag('config', 'G-57X5MX0ZPW');
         left:calc(var(--sidebar-w) + (100% - var(--sidebar-w))/2);
         max-width:min(380px, calc(100% - var(--sidebar-w) - 350px));
       }
-      /* (#R21) When the visible map gets NARROW (small window / wide sidebar) the centerd pill can no
-         longer fit beside the view buttons — drop it to a second row below them so it always has the
-         full width and stays clickable ("つぶれて押せない" / "かぶる" fix). */
-      body.ms-narrow .map-search{ top:78px; max-width:min(380px, calc(100% - 24px)); }
-      body.ms-narrow.sidebar-glass:has(.sidebar:not(.collapsed)) .map-search{
-        max-width:min(380px, calc(100% - var(--sidebar-w) - 24px));
-      }
+      /* (#R25) Narrow desktop: the JS watcher computes a left/right that ALWAYS clears the (multi-row)
+         right-hand view buttons and the left sidebar, so the search can never overlap them or get crushed
+         ("つぶれて押せない" / "かぶる"). It anchors left+right (no centering) and stretches between. */
+      body.ms-narrow .map-search{ position:fixed; z-index:1002; top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
+        width:auto; max-width:none; transform:none; }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
@@ -910,8 +930,10 @@ gtag('config', 'G-57X5MX0ZPW');
          touched with random-looking spacing ("間隔がランダムで不自然"). */
       #mo-mount-layers .layer-dropdown > #layer-tools{ display:flex !important; flex-direction:column !important; gap:8px !important; }
       #mo-mount-layers #layer-tools .btn-settings, #mo-mount-layers #layer-tools button{ width:100% !important; box-sizing:border-box; }
-      /* tighter layer rows — kills the wasted line spacing in the layer list */
-      .m-sheet .layer-dropdown .layer-option{ padding:6px 6px; font-size:13.5px; min-height:32px; gap:9px; line-height:1.2; }
+      /* (#R25) layer rows = a proper 44px iOS tap target. ROOT CAUSE of "Country borders を押すと place names
+         がチェックされる / 勝手にレイヤーがオンになる": the rows were 32px tall (centers ~33px apart) — well below
+         the 44pt minimum — so a finger aimed at one toggle routinely registered on the adjacent row. */
+      .m-sheet .layer-dropdown .layer-option{ padding:8px 6px; font-size:13.5px; min-height:44px; gap:10px; line-height:1.2; }
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
       .m-sheet .layer-dropdown .lyr-op{ margin:0 0 4px 22px !important; height:18px; }
       .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:3px !important; }
@@ -1063,13 +1085,15 @@ gtag('config', 'G-57X5MX0ZPW');
        (~0.10) — never fully clear, and glass2's blur is raised (26px) so controls stay readable. */
     body.sidebar-translucent{ --glass-blur:30px; --glass-sat:190%; --glass-fill:rgba(255,255,255,0.18); --glass-border:rgba(255,255,255,0.30); }
     [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(34,34,40,0.26); --glass-border:rgba(255,255,255,0.10); }
-    /* (#R24) "more transparent" pushed further still (0.10→0.05 light, 0.16→0.10 dark); blur 26→30 keeps
-       controls legible so it never goes fully clear. */
-    body.sidebar-glass2{ --glass-blur:30px; --glass-sat:180%; --glass-fill:rgba(255,255,255,0.05); --glass-border:rgba(255,255,255,0.22); }
-    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(26,26,32,0.10); --glass-border:rgba(255,255,255,0.10); }
-    /* In the genuinely-transparent mode the map shows through strongly, so add a readability shadow. */
+    /* (#R25) The two tiers felt "ほとんど差がない" because BOTH used blur:30px — so only the fill differed and
+       both still read as milky frost. Differentiate by BLUR: "Frosted glass" stays a true 30px frost, while
+       "more transparent" drops to a near-clear 7px glass (map shows through sharply) with a tiny 0.03 fill.
+       Readability is carried by the crisp text-shadow block below, NOT by an opaque fill. */
+    body.sidebar-glass2{ --glass-blur:7px; --glass-sat:135%; --glass-fill:rgba(255,255,255,0.03); --glass-border:rgba(255,255,255,0.22); }
+    [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(20,20,26,0.06); --glass-border:rgba(255,255,255,0.10); }
+    /* In the genuinely-transparent mode the map shows through strongly, so add a CRISP readability halo. */
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
-      .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 1px 3px rgba(0,0,0,0.55); }
+      .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.sidebar){ text-shadow:0 0 1px rgba(0,0,0,0.85), 0 1px 1px rgba(0,0,0,0.6); }
 
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
@@ -1093,9 +1117,17 @@ gtag('config', 'G-57X5MX0ZPW');
       .news-timeline,.src-card,.map-search-results,.search-result-card){
       --text-muted:rgba(255,255,255,0.9);
     }
-    body.sidebar-translucent :is(.koppen-legend,.data-legend,.koppen-info-pop,.tool-panel,.pin-popup,.country-popup) :is(h4,.dl-scale,.dl-hint,.kl-hint,span,small,label),
-    body.sidebar-glass2 :is(.koppen-legend,.data-legend,.koppen-info-pop,.tool-panel,.pin-popup,.country-popup) :is(h4,.dl-scale,.dl-hint,.kl-hint,span,small,label){
-      text-shadow:0 1px 2px rgba(0,0,0,0.32);
+    /* (#R25) "frosted glass がテキストまでぼかして読みづらい": the text is never actually blurred (no `filter`
+       on any ancestor — confirmed) — it just lost contrast against the see-through panel. Give EVERY frosted
+       floating surface (both tiers, incl. the layer panel which had NO shadow) a CRISP contrast halo: a tight
+       1px dark outline, not a soft 3px glow, so the type stays sharp AND legible over any map color. */
+    body.sidebar-translucent :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
+      .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.src-card,
+      .map-search-results,.search-result-card,.coord-readout),
+    body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
+      .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.src-card,
+      .map-search-results,.search-result-card,.coord-readout){
+      text-shadow:0 0 1px rgba(0,0,0,0.85), 0 1px 1px rgba(0,0,0,0.6);
     }
 
     /* ---- Sidebar material (matches the floating surfaces above) ---- */
@@ -1708,6 +1740,11 @@ window.addEventListener('DOMContentLoaded', () => {
      script and CSS can never disagree by a scrollbar width or a rounding pixel. */
   const MOBILE_MQ=window.matchMedia('(max-width:768px)');
   const isMobile=()=>MOBILE_MQ.matches;
+  /* (#R25) Touch-vs-mouse for WORDING (e.g. Köppen "tap/long-press" vs "click/right-click"). isMobile()
+     is width-only, so a desktop with a narrow window wrongly got the touch wording. A machine that has a
+     fine pointer (a mouse/trackpad) — even a touchscreen laptop — should read as a "click" device. */
+  const _imTouchPrimary=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
+  window._imTouchPrimary=_imTouchPrimary;
 
   /* ===== i18n ===== */
   const i18n={
@@ -2702,15 +2739,20 @@ window.addEventListener('DOMContentLoaded', () => {
      place, so there's no repaint loop. */
   if(map){ (function(){
     const STACK=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'];
-    /* (#R22) Stronger test: scanning from the TOP, the first layer that isn't one of our own
-       drawing/mask layers MUST be a label/border layer. This catches the real "labels hidden behind a
-       layer" case (a data layer added above the labels) that the old contiguity-only check missed. */
+    /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
+       the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
+       user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
+    const isOwn=(id)=>/^(tool|draw|los|route|place-hl)-/.test(id)||id==='iso-mask';
+    /* (#R25) ROOT CAUSE labels kept getting buried by land-cover/relief/etc.: the old top-scan declared
+       "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
+       label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
+       re-raising. Now require EVERY label layer to sit above EVERY data layer. */
     function inPlace(){ try{ const ls=map.getStyle().layers.map(l=>l.id);
-      const present=STACK.filter(id=>ls.includes(id)); if(!present.length) return true;
-      for(let i=ls.length-1;i>=0;i--){ const id=ls[i];
-        if(/^tool-/.test(id)||id==='iso-mask'||id==='place-hl-fill'||id==='place-hl-line') continue;
-        return STACK.includes(id); }
-      return true; }catch(_){ return true; } }
+      let lowestStack=Infinity, highestData=-1;
+      ls.forEach((id,i)=>{ if(STACK.includes(id)){ if(i<lowestStack) lowestStack=i; } else if(!isOwn(id)){ if(i>highestData) highestData=i; } });
+      if(lowestStack===Infinity) return true;     /* no labels present yet */
+      return lowestStack>highestData;             /* all labels above all data → nothing to do */
+    }catch(_){ return true; } }
     function raise(){ try{ if(inPlace()) return;
       const hasAnchor=!!map.getLayer('tool-poly');
       STACK.forEach(id=>{ if(!map.getLayer(id)) return; try{ hasAnchor?map.moveLayer(id,'tool-poly'):map.moveLayer(id); }catch(_){} });
@@ -6283,6 +6325,19 @@ window.addEventListener('DOMContentLoaded', () => {
            every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
         .src-card-close{ width:32px !important; height:32px !important; font-size:17px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
         .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16) !important; right:6px !important; top:6px !important; }
+        /* (#R25 / #4) "×のタップ判定位置がずれていて閉じにくい": kill the iOS click-delay/retarget on EVERY
+           close control (touch-action:manipulation) AND extend the hit area to a forgiving ~44px without
+           growing the visual box — a transparent inset border lets a slightly-off tap still land on the ×.
+           (z-index keeps it above any sibling that drew over its corner.) */
+        .maplibregl-popup-close-button, .layer-popup-x, .legend-min, .kip-x, .pin-popup-close,
+        .country-popup-close, #cp-close, .src-card-close, .tp-close, .satc-close, .wgt-x{
+          touch-action:manipulation !important; position:relative; z-index:6;
+          background-clip:padding-box; }
+        /* NB: .layer-popup-x uses ::before/::after to DRAW the × strokes, so it can't take a hit-area
+           pseudo — its 32px box is already the target. These (text-glyph) closes get the +6px halo. */
+        .maplibregl-popup-close-button::after, .kip-x::after, .pin-popup-close::after,
+        .country-popup-close::after, #cp-close::after, .src-card-close::after{
+          content:''; position:absolute; top:-6px; left:-6px; right:-6px; bottom:-6px; }
         /* (#R20) the real close button is .country-popup-close / #cp-close — the R19 selectors
            (.cp-close as a CLASS, .country-close, #country-popup-close) matched nothing, which is why
            the country popup's × stayed tiny ("ポップアップの右上の×が小さすぎて押せない"). */
@@ -6735,6 +6790,29 @@ window.addEventListener('DOMContentLoaded', () => {
            The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. */
         if(!window._imDemoActive) setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
     });
+    /* (#R25) Tap-target safety net for the recurring "勝手に別のレイヤーがオン/Country borders→place names"
+       cross-wiring. Even with 44px rows, an iOS synthetic click fires AFTER any layout shift (the
+       Active-layers / favorites section growing when a layer is toggled), so the click can hit-test a
+       DIFFERENT row than the finger went down on. We record the label under the finger at pointerdown and,
+       if the click resolves to a different label, cancel the (wrong) native toggle and toggle the original. */
+    (function(){
+      const dd=document.getElementById('layer-dropdown'); if(!dd) return;
+      let downLab=null, downT=0;
+      dd.addEventListener('pointerdown',(e)=>{ try{ downLab=e.target.closest&&e.target.closest('label.layer-option'); downT=Date.now(); }catch(_){ downLab=null; } },true);
+      dd.addEventListener('click',(e)=>{
+        try{
+          if(e.target.closest&&e.target.closest('.lyr-star')){ downLab=null; return; }   /* star handles itself */
+          const start=downLab; downLab=null;
+          if(!start || (Date.now()-downT)>1500) return;                                   /* no/stale gesture */
+          const hit=e.target.closest&&e.target.closest('label.layer-option');
+          if(hit===start) return;                                                          /* correct row → native toggle is right */
+          /* Mismatch: a reflow retargeted the tap. Honor where the finger went DOWN. */
+          e.preventDefault(); e.stopPropagation();
+          const cb=start.querySelector('input[type=checkbox]');
+          if(cb){ cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+        }catch(_){}
+      },true);
+    })();
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       try{
@@ -6745,7 +6823,7 @@ window.addEventListener('DOMContentLoaded', () => {
           ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod']],
           ['lyrGrpMaritime',['sst','eez','subcables','planes']],
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
-          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi']],
+          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet']],   /* (#R25) Life expectancy / Unemployment / Internet promoted out of beta into real layers */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2']],
           ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','histb','ukrfront','rail']]   /* (#R22) volcanoes/railways/corruption promoted out of beta */
         ];
@@ -7433,7 +7511,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${(typeof isMobile==='function'&&isMobile())?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':'Click to highlight • right-click for criteria')}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':'Click to highlight • right-click for criteria')}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -9728,15 +9806,36 @@ window.addEventListener('DOMContentLoaded', () => {
       const host=ms.parentElement;
       /* (#R22) Trigger the second-row drop sooner (640→760) so the centerd pill can never graze the
          map/satellite view buttons or the sidebar at in-between widths ("画面幅によってはかぶる"). */
+      /* (#R25) ROOT CAUSE of "still overlaps / can't type at narrow desktop": the old fixed 760px width
+         threshold did NOT fire at e.g. 820px even though the CENTERED pill physically collided with the
+         right-hand view buttons (measured overlap; the input then hit-tested under map-controls-top). Drop
+         to row 2 based on REAL collision geometry instead — would a centered pill cross the right controls'
+         left edge or the left controls' right edge? (The controls don't move when the pill drops, so this
+         is stable — no flicker loop.) */
       const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
-        /* (#R23) In frosted overlay mode the sidebar floats OVER the map-container, so host.clientWidth is
-           the FULL window — subtract the open sidebar so the row-2 drop fires on the truly-VISIBLE map width
-           ("画面幅が狭いと検索バーが使用不能 / サイドバーにかぶる"). */
-        let avail=host.clientWidth;
-        try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed')) avail-=(sb.getBoundingClientRect().width||0); } }catch(_){}
-        document.body.classList.toggle('ms-narrow', desk && avail<760); }catch(_){} };
-      try{ new ResizeObserver(upd).observe(host); }catch(_){ window.addEventListener('resize',upd); }
-      window.addEventListener('resize',upd); upd(); }
+        if(!desk){ document.body.classList.remove('ms-narrow'); return; }
+        const winW=window.innerWidth;
+        let rightLeft=winW, stackBottom=66;
+        document.querySelectorAll('.map-controls-top .map-view-group, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
+        let leftRight=0;
+        try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
+        try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
+        const half=110, margin=14;   /* half = half of a comfortable ~220px centered pill */
+        const collide = ((winW/2 + half + margin) > rightLeft) || ((winW/2 - half - margin) < leftRight);
+        const bs=document.body.style;
+        if(collide){
+          const sideGap = rightLeft - leftRight;   /* clear room on row 2 BESIDE the right controls */
+          bs.setProperty('--ms-left', (leftRight+14)+'px');
+          if(sideGap < 210){ /* not enough room beside the (multi-row) controls → go BELOW the whole stack, full width */
+            bs.setProperty('--ms-top', (stackBottom+10)+'px'); bs.setProperty('--ms-right','14px');
+          } else { /* sit on row 2, ending before the right controls' leftmost edge */
+            bs.setProperty('--ms-top','78px'); bs.setProperty('--ms-right', (winW - rightLeft + 14)+'px');
+          }
+          document.body.classList.add('ms-narrow');
+        } else { document.body.classList.remove('ms-narrow'); }
+      }catch(_){} };
+      try{ const ro=new ResizeObserver(upd); ro.observe(host); const sb=document.querySelector('.sidebar'); if(sb) ro.observe(sb); }catch(_){ window.addEventListener('resize',upd); }
+      window.addEventListener('resize',upd); window.addEventListener('intmap-sidebar-resize',upd); setTimeout(upd,300); upd(); }
     if(document.readyState!=='loading') setTimeout(wire,0); else document.addEventListener('DOMContentLoaded',wire);
   })();
 
@@ -11335,7 +11434,10 @@ window.addEventListener('DOMContentLoaded', () => {
           map.addLayer({id:W.ids[1],type:'line',source:W.src,layout:{visibility:'none'},paint:{'line-color':'rgba(40,40,46,0.35)','line-width':0.5}},before());
           const _valOf=(p)=>W.fmt?W.fmt(p.raw):((key==='cpi')?(Math.round(p.s)+' / 100'):((+p.raw).toFixed(1)+(jp()?' 年':' yrs')));
           const _nmOf=(p)=>{ let nm=p.iso; try{ const s=countryStats[p.iso]; if(s) nm=(jp()?(s.nameJp||s.nameEn):s.nameEn)||p.iso; }catch(_){} return nm; };
-          map.on('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
+          /* (#R25) Only show the TAP popup on touch devices. On a hover device the mousemove tooltip below
+             already shows the exact same value, so a click popup was redundant ("ホバーでポップアップが出る
+             レイヤーは、クリック時に新たなポップアップも出さなくていい"). Touch has no hover → keep it there. */
+          if(!window._imTouchPrimary||window._imTouchPrimary()) map.on('click',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
             try{ if(pop2) pop2.remove(); }catch(_){}
             try{ pop2=new maplibregl.Popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'260px'}).setLngLat(e.lngLat).setHTML('<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(_nmOf(p))+'</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>').addTo(map); }catch(_){}
           });
@@ -11634,8 +11736,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function doAdd(k){ if(!k||!DEFS[k]) return; if(!DEFS[k].multi&&hasType(k)) return;
       const e={u:'w'+Math.random().toString(36).slice(2,8),t:k,cfg:(k==='fx'?{base:'USD',quote:jp()?'JPY':'EUR'}:k==='worldclock'?{tz:'Asia/Tokyo'}:k==='holiday'?{cc:(jp()?'JP':'US')}:{})};
       active.push(e); save(); gallery=false; render();
-      /* (#R22) Location permission requested when a location-based widget (weather/AQI/sunrise) is added. */
-      if(k==='weather'||k==='aqi'||k==='sun') reqGeo(()=>refreshOne(e));
+      /* (#R25) Request the location permission for EVERY widget that uses widgetLoc() on add — UV index
+         was missing, so it silently fell back to map center ("位置情報を使用するウィジェットは追加時に許可を求めて"). */
+      if(['weather','aqi','sun','uv'].includes(k)) reqGeo(()=>refreshOne(e));
       if(k==='countdown'||k==='worldclock'||k==='holiday') setTimeout(()=>openCfg(e.u),50); }
     function render(){ const b=ensureBoard(); if(!b) return;
       const isMob=(typeof isMobile==='function'&&isMobile());
