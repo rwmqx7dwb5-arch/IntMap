@@ -940,6 +940,11 @@ gtag('config', 'G-57X5MX0ZPW');
          がチェックされる / 勝手にレイヤーがオンになる": the rows were 32px tall (centers ~33px apart) — well below
          the 44pt minimum — so a finger aimed at one toggle routinely registered on the adjacent row. */
       .m-sheet .layer-dropdown .layer-option{ padding:8px 6px; font-size:13.5px; min-height:44px; gap:10px; line-height:1.2; }
+      /* (#R26) Kill the toggle "ちらつき" (flicker): a tap on a <label> that wraps a checkbox can fire the
+         change TWICE on mobile (label forwards to the input AND the input gets the tap) → the box toggles
+         on→off. Making the input pointer-events:none routes EVERY tap through the label exactly once, so it
+         toggles a single time. (The visible box still renders; the label still toggles it.) */
+      .m-sheet .layer-dropdown .layer-option input[type=checkbox]{ pointer-events:none; }
       .m-sheet .layer-dropdown .lyr-row{ gap:0 !important; }
       .m-sheet .layer-dropdown .lyr-op{ margin:0 0 4px 22px !important; height:18px; }
       .m-sheet .layer-dropdown .lyr-extras{ padding-top:0 !important; padding-bottom:3px !important; }
@@ -1006,6 +1011,18 @@ gtag('config', 'G-57X5MX0ZPW');
       .tool-panel.tp-radius #radius-op{ flex:1 0 100% !important; margin-top:3px !important; }
       .tool-panel.tp-radius .radius-list{ max-height:104px !important; }
       .tool-panel.tp-radius .ai-action-btn{ padding:9px !important; margin-top:6px !important; font-size:12.5px !important; }
+      /* (#R26) "一部テキストがUIからはみ出して不格好": contain every child so long values (a big area/
+         circumference, long coords, long preset names) wrap or ellipsize INSIDE the card instead of
+         spilling out. */
+      .tool-panel.tp-radius, .tool-panel.tp-radius *{ box-sizing:border-box; }
+      .tool-panel.tp-radius{ overflow-x:hidden !important; }
+      .tool-panel.tp-radius #radius-preset, .tool-panel.tp-radius .tp-select{ width:100% !important; max-width:100% !important; }
+      .tool-panel.tp-radius .radius-row{ flex-wrap:wrap; min-width:0; }
+      .tool-panel.tp-radius .radius-row input[type=number]{ min-width:0; flex:1 1 60px; max-width:100%; }
+      .tool-panel.tp-radius .rad-stat{ min-width:0; overflow:hidden; }
+      .tool-panel.tp-radius .rad-stat b{ display:block; min-width:0; font-size:11px !important; line-height:1.15; word-break:break-word; }
+      .tool-panel.tp-radius .radius-list-item{ min-width:0; }
+      .tool-panel.tp-radius .rl-main{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .measure-tooltip{ font-size:11px; padding:4px 8px; }
       .map-container.sat-on .tool-panel{ top:64px !important; bottom:auto !important; }
       .koppen-legend, .data-legend{ max-width:calc(100vw - 20px); width:auto; max-height:min(30dvh, calc(100dvh - var(--sheet-cover, var(--peek-h)) - 78px)); overflow-y:auto; }
