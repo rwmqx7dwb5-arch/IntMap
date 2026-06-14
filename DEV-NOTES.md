@@ -2023,3 +2023,85 @@ canvas hidden this session).
   fetches were already fresh — no long cache).
 
 ### Still need a real device / 2nd-GL-instance (can't exercise headless): #15 X-ray drift, #29 fps/choppiness.
+
+---
+
+## 28. Round 25 — re-reported batch, root-caused not re-skinned (tags `#R25`)
+
+Build `2026-06-14-R25`. The user re-sent the SAME list yet again, so this round was about finding the
+ACTUAL root cause for each recurring item (several earlier "fixes" were aimed at the wrong cause) and not
+dismissing any report. Verified live in the headless preview where the DOM/CSS/state is observable (the
+spinning WebGL globe + closure-scoped map instance + 2nd compare GL instance still can't be screenshotted
+or fully exercised — those are flagged). Zero console errors after every batch.
+
+### Root causes found (the ones earlier rounds missed)
+- **#1/#23 mobile checkbox cross-wiring** — R24 blamed an "active-layers reflow", but toggling names/borders
+  is in the skip-set and early-returns WITHOUT reflowing, so that fix couldn't work. REAL cause: the mobile
+  `.layer-option` rows were **32px** tall (centers ~33px apart) — below the 44px iOS target — so a finger
+  aimed at one toggle landed on its neighbor. Fix: rows → **44px**, gap 10px. Plus a **pointerdown-target
+  capture** safety net on `#layer-dropdown`: record the label the finger goes DOWN on; if the click resolves
+  to a different label (any reflow/fat-finger retarget), cancel the wrong native toggle and toggle the
+  original. This also covers "勝手に別のレイヤーがオン".
+- **#5 labels buried by land-cover/relief** — `inPlace()` returned "ok" the moment the first non-tool layer
+  from the TOP was ANY one label layer, so a SPLIT stack (one label on top, the rest under a raster) never
+  re-raised. Rewrote it to require EVERY label layer above EVERY data layer; broadened the "own/above" set
+  to `tool|draw|los|route|place-hl|iso-mask`.
+- **#3/#12 narrow-desktop search unusable** — two real bugs: (1) `.map-controls-top` (a flex column,
+  `align-items:flex-end`) hit-tested ON TOP of the centered search even in its empty left region → the input
+  "couldn't be typed in". Made the container `pointer-events:none` with its buttons `pointer-events:auto`.
+  (2) the row-drop used a fixed 760px width threshold that did NOT fire at e.g. 820px even though the pill
+  physically overlapped the view buttons. Replaced with **real collision geometry**, and the narrow search
+  is now `position:fixed` with JS-computed left/right that always clear the side controls (or drops below the
+  whole control stack when there's no room beside it). Verified: input hit-tests to itself at 820px & 1280px.
+- **#6/#7 compare projection** — `cmap.setProjection({globe})` runs BEFORE the compare style loads (MapLibre
+  default is mercator), so it silently no-ops, yet `__wantGlobe` was left true → the followProjection guard
+  thought it matched and never re-applied (the "Flatに戻してからGlobeにしないと反映されない" bug). Fix: force a
+  clean re-apply on `cmap.load` + first `idle`.
+- **#13 frosted text "blurred"** — confirmed NO `filter` on any ancestor (text was never actually blurred);
+  it just lost contrast over the see-through panel, and the layer panel had NO readability shadow at all.
+  Gave every frosted surface a CRISP 1px contrast halo (not a soft 3px glow).
+- **#14/#19 two glass tiers felt identical** — both used `blur:30px`, so only fill differed. Differentiated
+  by BLUR: "Frosted glass" stays a 30px frost; "more transparent" drops to a near-clear **7px / 0.03 fill**.
+
+### Other fixes
+- **#11 x-ray header darkened, buttons lost** → solid opaque `#0f1218` header bar + high-contrast chips in
+  x-ray; `clearXrayLens` now fully restores + multi-resizes the canvas on exit.
+- **#15 cursor readout lag** → `updateCoord` coalesced to one rAF (kills mousemove backlog); SST/temp shows
+  the nearest already-cached cell instantly then refines; debounce 70→35 ms.
+- **#16 radius mobile** → genuinely RE-ORGANIZED (not just shrunk): full-width bottom-docked card above the
+  sheet, sticky header, even 3-up stat strip — never covers the circle being placed.
+- **#17 Tools buttons** → gaps were already even; the BUTTONS were different heights (labels wrapped to
+  different line counts). Fixed height 50px + 2-line clamp → one tidy group.
+- **#20 pan/zoom stutter** → mobile move-readout coalesced to rAF + heavier sampling throttled to ~110 ms
+  during motion (precise value still on moveend). (Continuous WebGL tile render remains engine-bound.)
+- **#21 mobile zoom sensitivity** → double-tap/-click zoom now scales by the Zoom slider on touch (the one
+  zoom gesture we CAN tune). Continuous **pinch rate has no MapLibre API** — documented platform limit.
+- **#22 layer-toggle list jump** → on mobile the Active-layers section now sits at the BOTTOM of the list, so
+  toggling never pushes the rows you tap; scroll-compensation skipped on mobile. Verified before==after==0.
+- **#24 NATO** → accession-year time-travel control (slider/select) like Historical borders; `buildNatoFC`
+  filters members by `NATO_JOIN[code] <= year`.
+- **#25 Köppen wording** → now keys off pointer type (`_imTouchPrimary`), so a desktop with a narrow window
+  (where `isMobile()` width-check was true) still gets "Click • right-click".
+- **#26 intro demo** → dwell 6.5→9 s so the GIBS night-lights + DEM relief have time to paint (tiles verified
+  200 OK; it was a load-timing race); pressing ANY legend × now ends the demo.
+- **#27 stats comparison** → resets the feed + its scroll container to top on render.
+- **#28 non-AI news locator** → lead-position scoring bonus; +~30 curated cities/aliases (US/UK/UAE/EU/DPRK…)
+  /flashpoints; AUTO-adds every country + capital from the bundled `countryStats` (~75 → ~275+ places),
+  rebuilt once country data loads.
+- **#29 first-party AI prep** → `window.INTMAP_AI_PROXY.url` routes ALL `askAI()` calls through a server that
+  holds the key; empty by default → identical BYOK behavior today, one-line flip later. `aiReady()` returns
+  true when the proxy is on so buttons light up with no BYOK key. No visible change now.
+- **#30 hover layers** → the WB beta choropleths' tap popup is now touch-only (hover already shows the value
+  on a mouse device).
+- **#31** → Life expectancy / Unemployment / Internet promoted out of beta into "Population & economy"
+  (unemployment's WB API verified 200/235 rows — it was a findability problem, now in a real group).
+- **#2** → UV-index widget joins weather/AQI/sunrise in requesting geolocation on add.
+- **#4/#18** → place-label popup gets mobile top/right padding so × never overlaps Copy; all close buttons
+  get `touch-action:manipulation` + a +6px invisible hit halo (text-glyph closes).
+
+### Still genuinely device/2nd-GL bound (flagged honestly, not dismissed)
+- #9 x-ray lens drift when panning far at low globe zoom (two independent GL instances; camera/padding are
+  mirrored every sync — added resize robustness, but sub-pixel globe divergence needs an on-device check).
+- #8/#10 compare close-overlap + map/sat swap read correct in code (z:30 pinned gutter; applyBase retry) but
+  can't be exercised headlessly.
+- #20/#21 the continuous-render fps floor and pinch-zoom rate are MapLibre engine limits.
