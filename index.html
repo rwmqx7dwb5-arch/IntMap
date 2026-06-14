@@ -6728,9 +6728,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Any layer checkbox toggle → refresh the active-layers list (deferred so toggleLayer runs first). */
     document.getElementById('layer-dropdown')&&document.getElementById('layer-dropdown').addEventListener('change',(e)=>{
       if(e.target&&e.target.type==='checkbox'){ setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0);
-        /* (#R24) re-assert the label/border stack to the top after ANY layer toggle so no overlay (Köppen
-           "等") can leave the country labels hidden behind it; staggered to catch async layer adds. */
-        [60,400,1200].forEach(d=>setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },d)); }
+        /* (#R24 fix) ONE deferred label re-assert, and NOT during the intro demo. The old 60/400/1200 ms burst
+           spammed moveLayer → styledata, which kept the map from reaching 'idle' — and the GIBS overlays
+           (nightsat/relief/popgrid) add inside `whenStyleReady()` (resolves on idle), so during the demo's
+           rapid cycling their add was delayed past the 6.5 s window → "ケッペン以外のレイヤーが表示されない".
+           The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. */
+        if(!window._imDemoActive) setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
     });
     window.reorganizeLayerPanel=function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
