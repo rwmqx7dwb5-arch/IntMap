@@ -2280,7 +2280,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function aiModelFor(p){ return (aiConfig.models&&aiConfig.models[p.id]&&String(aiConfig.models[p.id]).trim())||p.fallbackModel||''; }
   function aiCurrent(){ const p=aiProviderById(aiConfig.provider); return {p, model:aiModelFor(p)}; }
   function aiKeyFor(p){ return (aiConfig.keys&&aiConfig.keys[p.id]&&String(aiConfig.keys[p.id]).trim())||''; }
-  function aiReady(){ const {p}=aiCurrent(); return p.needsKey? !!aiKeyFor(p) : true; }
+  function aiReady(){ if(typeof aiProxyOn==='function'&&aiProxyOn()) return true; const {p}=aiCurrent(); return p.needsKey? !!aiKeyFor(p) : true; }
   function aiVisionReady(){ const {p}=aiCurrent(); return !!p.vision && aiReady(); }
   function aiErrSnippet(txt){ try{ const j=JSON.parse(txt); return (j.error&&(j.error.message||j.error.code))||JSON.stringify(j).slice(0,180); }catch(_){ return String(txt||'').slice(0,180); } }
 
@@ -2315,10 +2315,36 @@ window.addEventListener('DOMContentLoaded', () => {
     return pool.sort().reverse()[0];
   }
 
+  /* ---- (#R25/#29) First-party AI proxy prep ----------------------------------------------------
+     The user plans to host AI on their own side later. Everything already funnels through askAI(), so the
+     ONLY thing needed to migrate from BYOK → a server-held key is to set window.INTMAP_AI_PROXY.url (e.g. a
+     Supabase Edge Function like the existing refresh-news one). When that url is empty (today) NOTHING
+     changes — every AI feature keeps using the user's BYOK key exactly as before. When it's set, every AI
+     call (brief, locate, translate, summarize, suggested questions, sat-change) routes to the server, which
+     holds the key; aiReady() then returns true with no BYOK key so the buttons light up automatically.
+     The server may answer with {text}, or an OpenAI/Anthropic-style envelope — all accepted below. */
+  window.INTMAP_AI_PROXY = window.INTMAP_AI_PROXY || { url:'', headerName:'', headerValue:'', model:'' };
+  function aiProxyOn(){ try{ return !!(window.INTMAP_AI_PROXY && window.INTMAP_AI_PROXY.url); }catch(_){ return false; } }
+  async function aiCallServer(prompt, system, imgs){
+    const cfg=window.INTMAP_AI_PROXY||{};
+    const headers={'Content-Type':'application/json'};
+    if(cfg.headerName && cfg.headerValue) headers[cfg.headerName]=cfg.headerValue;
+    const body={ prompt, system:system||'', images:(imgs||[]), model:cfg.model||'', lang:(typeof currentLang!=='undefined'?currentLang:'en') };
+    const r=await fetch(cfg.url,{method:'POST',headers,body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('AI proxy '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
+    const j=await r.json().catch(()=>null);
+    if(j==null) return '';
+    if(typeof j==='string') return j;
+    if(typeof j.text==='string') return j.text;
+    if(j.content&&Array.isArray(j.content)) return j.content.map(b=>b.text||'').join('');
+    if(j.choices&&j.choices[0]) return (j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
+    return '';
+  }
   /* ---- Unified entry point used by every AI feature ---- */
   async function askAI(prompt, systemPrompt, imageDatas){
-    const {p,model}=aiCurrent();
     const imgs=(imageDatas||[]).filter(Boolean);
+    if(aiProxyOn()) return aiCallServer(prompt, systemPrompt, imgs);   /* (#R29) first-party server path */
+    const {p,model}=aiCurrent();
     if(p.needsKey && !aiKeyFor(p)) throw new Error(t('aiNoKey'));
     if(imgs.length && !p.vision) throw new Error(t('aiNoVision'));
     if(p.id==='openai')    return aiCallOpenAI(model, aiKeyFor(p), prompt, systemPrompt, imgs);
@@ -2954,7 +2980,38 @@ window.addEventListener('DOMContentLoaded', () => {
     ['country',['Sudan','スーダン'],30.0,15.5,'Sudan','スーダン'],
     ['country',['Venezuela','ベネズエラ'],-66.0,8.0,'Venezuela','ベネズエラ'],
     ['country',['Poland','ポーランド'],19.5,52.0,'Poland','ポーランド'],
-    ['country',['Sahel','サヘル'],10.0,15.0,'Sahel','サヘル']
+    ['country',['Sahel','サヘル'],10.0,15.0,'Sahel','サヘル'],
+    /* (#R25/#28) Aliases the formal country names don't catch — big accuracy win for the non-AI locator. */
+    ['country',['U.S.','US','U.S.A.','USA','America','American'],-98.0,39.0,'United States','アメリカ'],
+    ['country',['U.K.','UK','Britain','British','Great Britain'],-1.5,52.5,'United Kingdom','イギリス'],
+    ['country',['UAE','U.A.E.','Emirates'],54.0,24.0,'United Arab Emirates','アラブ首長国連邦'],
+    ['country',['EU','European Union','欧州連合'],4.35,50.85,'European Union','欧州連合'],
+    ['country',['DPRK'],127.5,40.0,'North Korea','北朝鮮'],
+    ['country',['PRC'],104.0,35.0,'China','中国'],
+    /* (#R25/#28) Additional high-news-frequency cities (precise coords) + current flashpoints. */
+    ['city',['Dubai','ドバイ'],55.27,25.20,'Dubai','ドバイ'],
+    ['city',['Abu Dhabi','アブダビ'],54.37,24.45,'Abu Dhabi','アブダビ'],
+    ['city',['Doha','ドーハ'],51.53,25.29,'Doha','ドーハ'],
+    ['city',['Jeddah','ジッダ'],39.20,21.49,'Jeddah','ジッダ'],
+    ['city',['Aleppo','アレッポ'],37.16,36.20,'Aleppo','アレッポ'],
+    ['city',['Mosul','モスル'],43.13,36.34,'Mosul','モスル'],
+    ['city',['Kandahar','カンダハル'],65.71,31.61,'Kandahar','カンダハル'],
+    ['city',['Karachi','カラチ'],67.01,24.86,'Karachi','カラチ'],
+    ['city',['Lahore','ラホール'],74.34,31.55,'Lahore','ラホール'],
+    ['city',['Singapore','シンガポール'],103.85,1.29,'Singapore','シンガポール'],
+    ['city',['Bangkok','バンコク'],100.50,13.75,'Bangkok','バンコク'],
+    ['city',['Jakarta','ジャカルタ'],106.85,-6.21,'Jakarta','ジャカルタ'],
+    ['city',['Manila','マニラ'],120.98,14.60,'Manila','マニラ'],
+    ['city',['Sydney','シドニー'],151.21,-33.87,'Sydney','シドニー'],
+    ['city',['Toronto','トロント'],-79.38,43.65,'Toronto','トロント'],
+    ['city',['Los Angeles','ロサンゼルス'],-118.24,34.05,'Los Angeles','ロサンゼルス'],
+    ['city',['Chicago','シカゴ'],-87.63,41.88,'Chicago','シカゴ'],
+    ['city',['Geneva','ジュネーブ'],6.14,46.20,'Geneva','ジュネーブ'],
+    ['city',['Brussels','ブリュッセル'],4.35,50.85,'Brussels','ブリュッセル'],
+    ['flashpoint',['Kherson','ヘルソン'],32.62,46.64,'Kherson','ヘルソン'],
+    ['flashpoint',['Kursk','クルスク'],36.19,51.73,'Kursk','クルスク'],
+    ['flashpoint',['Khan Younis','ハンユニス','Khan Yunis'],34.30,31.34,'Khan Younis','ハンユニス'],
+    ['flashpoint',['Lebanon border','南レバノン'],35.4,33.2,'South Lebanon','南レバノン']
   ];
   const BUILTIN_GAZETTEER=_BUILTIN_GZ.reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
 
@@ -2997,6 +3054,16 @@ window.addEventListener('DOMContentLoaded', () => {
        is strong even before/without server data. */
     const merged={};
     [BUILTIN_GAZETTEER, geoRaw].forEach(src=>{ for(const type in src){ (merged[type]=merged[type]||[]).push(...src[type]); } });
+    /* (#R25/#28) MASSIVE coverage boost for the non-AI locator: auto-add EVERY country (+ its capital name)
+       from the already-bundled countryStats — ~200 countries with real EN/JP names and a representative
+       point. Curated cities/flashpoints still outrank these (higher TYPE_SCORE + lead-position bonus), so
+       precision is unchanged; this just means almost any country/capital mention now places. */
+    try{ if(typeof countryStats==='object'&&countryStats){ for(const code in countryStats){ const s=countryStats[code];
+      if(!s||!s.latlng||s.latlng[0]==null||s.latlng[1]==null) continue;
+      const terms=[]; if(s.nameEn) terms.push(s.nameEn); if(s.nameJp&&s.nameJp!==s.nameEn) terms.push(s.nameJp);
+      if(s.capital&&String(s.capital).length>=4) terms.push(s.capital);
+      if(!terms.length) continue;
+      (merged.country=merged.country||[]).push({terms, loc:[s.latlng[1],s.latlng[0]], name:{en:s.nameEn||code, jp:s.nameJp||s.nameEn||code}}); } } }catch(_){}
     geoDB=Object.entries(merged).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
@@ -3291,7 +3358,10 @@ window.addEventListener('DOMContentLoaded', () => {
           });
         }
       }catch(e){ console.warn('country load failed',e); }
-      finally{ countryDataLoaded=true; if(map&&map.isStyleLoaded()) addCountryLayers(); }
+      finally{ countryDataLoaded=true; if(map&&map.isStyleLoaded()) addCountryLayers();
+        /* (#R25/#28) now that countryStats exists, rebuild the geo index so the auto-country/capital
+           entries join the gazetteer → the non-AI news locator gains full global coverage. */
+        try{ rebuildGeoIndex(); }catch(_){} }
     })();
     countryDataPromise.then(()=>{ try{ loadGdpPPP(); }catch(_){} });   /* (#R22) enrich with PPP once base stats exist */
     return countryDataPromise;
@@ -4885,13 +4955,17 @@ window.addEventListener('DOMContentLoaded', () => {
   const TYPE_SCORE={ flashpoint:5, city:2, country:0, region:0 };
   const TYPE_LOCAL={ flashpoint:4, city:3, country:2, region:1 };
   function scoreGeo(g,title,desc){
-    let titleHit=false, descHit=false, ctx=false;
+    let titleHit=false, descHit=false, ctx=false, firstIdx=Infinity;
     for(const t of g._terms){
-      if(t.jp?title.includes(t.term):t.matchRe.test(title)){ titleHit=true; if(!ctx&&t.ctxRe.test(title)) ctx=true; }
+      if(t.jp){ const i=title.indexOf(t.term); if(i>=0){ titleHit=true; if(i<firstIdx) firstIdx=i; if(!ctx&&t.ctxRe.test(title)) ctx=true; } }
+      else { const i=title.search(t.matchRe); if(i>=0){ titleHit=true; if(i<firstIdx) firstIdx=i; if(!ctx&&t.ctxRe.test(title)) ctx=true; } }
       if(desc&&(t.jp?desc.includes(t.term):t.matchRe.test(desc))){ descHit=true; if(!ctx&&t.ctxRe.test(desc)) ctx=true; }
     }
     if(!titleHit&&!descHit) return 0;
-    return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0);
+    /* (#R25/#28) Lead-subject bonus: a place named EARLY in the headline is much more likely to be what the
+       story is about (e.g. "Kyiv strikes …" → Kyiv, not a country mentioned at the end). Up to +3. */
+    const tl=title.length||1; const posBonus = titleHit ? Math.max(0, 3-Math.floor((Math.min(firstIdx,tl)/tl)*4)) : 0;
+    return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0)+posBonus;
   }
   function analyzeContext(title,publisher,seed,desc){
     desc=desc||'';
