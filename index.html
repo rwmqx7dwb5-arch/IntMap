@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-14-R26';
+  window.INTMAP_BUILD='2026-06-15-R27';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -235,7 +235,11 @@ gtag('config', 'G-57X5MX0ZPW');
        late synthetic click then landed on the row that slid into that spot — the one ABOVE — so pressing
        "Country borders" auto-checked "Place names" ("勝手にplace namesがチェックされる"). */
     .layer-option{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; padding:6px; border-radius:8px; transition:0.2s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; } .layer-option:hover{ background:var(--input-bg); }
-    .layer-option input[type="checkbox"]{ accent-color:var(--primary-color); width:16px; height:16px; cursor:pointer; touch-action:manipulation; }
+    /* (#R27) pointer-events:none on the checkbox itself — on BOTH desktop and mobile — so a click/tap
+       anywhere on the row routes through the <label> exactly ONCE (the checkbox + label were each
+       receiving the event = a double-toggle that read as "チェックを付けても動かない" / unstable). The label
+       still toggles the (nested) checkbox via native label activation. */
+    .layer-option input[type="checkbox"]{ accent-color:var(--primary-color); width:16px; height:16px; cursor:pointer; touch-action:manipulation; pointer-events:none; }
     .lyr-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset; }
     .layer-group-title{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); margin:8px 2px 2px; }
     /* Collapsible layer groups (accordion) — keeps a long layer list tidy */
@@ -254,16 +258,21 @@ gtag('config', 'G-57X5MX0ZPW');
     .ai-needs-key{ opacity:0.6; }
     /* (#R9/#12) Place-label "copy" popup: self-themed so its text is readable in DARK mode (the default
        MapLibre popup is white with dark text → invisible name on the app's dark popup surface). */
-    .plc-popup .maplibregl-popup-content{ background:var(--popup-bg) !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:9px 12px; }
+    .plc-popup .maplibregl-popup-content{ background:var(--popup-bg) !important; color:var(--text-main); border-radius:10px; box-shadow:var(--shadow); padding:10px 12px; }
     .plc-popup .maplibregl-popup-tip{ display:none; }
-    .plc-popup .maplibregl-popup-close-button{ color:var(--text-muted); font-size:17px; padding:0 6px; }
+    /* (#R27) Align the × with the RIGHT EDGE of the action buttons beneath it. The buttons fill the
+       content width, so their right edge sits at the content's 12px inner padding → place the × there
+       (right:12px) with a tidy square hit-box. The old corner placement + the mobile padding-right:44px
+       left a visible gap / dead space ("×は各ボタンの右端に合わせるべき。余分な空白がある"). */
+    .plc-popup .maplibregl-popup-close-button{ top:8px; right:12px; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; padding:0; color:var(--text-muted); border-radius:7px; }
+    .plc-popup .maplibregl-popup-close-button:hover{ background:var(--input-bg); color:var(--text-main); }
     /* (#R22) Place-label popup action buttons: even row on desktop, vertical stack on mobile. */
     .plc-popup .plc-acts{ display:flex; gap:6px; flex-wrap:wrap; }
     .plc-popup .plc-acts button{ flex:1 1 auto; display:inline-flex; align-items:center; justify-content:center; }
     @media(max-width:768px){ .plc-popup .plc-acts{ flex-direction:column; } .plc-popup .plc-acts button{ width:100%; flex:none; }
-      /* (#R25 / #18) Reserve room for the 32px close button so the name/Copy buttons never sit UNDER the ×
-         ("×とcopyボタンが重なってUIが汚い"): pad the content top+right past the close target. */
-      .plc-popup .maplibregl-popup-content{ padding-top:14px !important; padding-right:44px !important; } }
+      /* Keep the close × aligned to the buttons' right edge on mobile too; only the top needs clearing. */
+      .plc-popup .maplibregl-popup-content{ padding-top:14px !important; }
+      .plc-popup .maplibregl-popup-close-button{ width:30px; height:30px; top:9px; right:12px; } }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
@@ -273,6 +282,15 @@ gtag('config', 'G-57X5MX0ZPW');
     .rad-stat{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:1px; background:var(--input-bg); border-radius:8px; padding:5px 7px; }
     .rad-stat label{ font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
     .rad-stat b{ font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* (#R27) Radius card containment at ALL widths (R26 only contained it under 768px, so tablets and
+       landscape phones >768px still spilled long values/coords out of the card — "一部テキストがUIから
+       はみ出して不格好"). Nothing may exceed the card width; rows wrap, values ellipsize/break inside. */
+    .tool-panel.tp-radius, .tool-panel.tp-radius *{ box-sizing:border-box; }
+    .tool-panel.tp-radius{ overflow-x:hidden; }
+    .tool-panel.tp-radius .radius-row, .tool-panel.tp-radius .radius-color-row{ flex-wrap:wrap; min-width:0; }
+    .tool-panel.tp-radius .tp-row{ min-width:0; gap:8px; }
+    .tool-panel.tp-radius .tp-row > b{ min-width:0; overflow-wrap:anywhere; text-align:right; }
+    .tool-panel.tp-radius .rl-main{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .radius-color-row input[type=color]{ width:34px; height:28px; padding:0; border:1px solid rgba(128,128,128,0.2); border-radius:6px; cursor:pointer; background:transparent; }
     .rad-presets{ display:flex; gap:5px; }
     .rad-preset{ width:22px; height:22px; border-radius:50%; border:2px solid rgba(255,255,255,0.65); box-shadow:0 0 0 1px rgba(0,0,0,0.18); cursor:pointer; padding:0; transition:transform 0.12s ease; }
@@ -375,15 +393,18 @@ gtag('config', 'G-57X5MX0ZPW');
        display:contents dissolves those wrappers; the button height is forced so a wrapped label can't change
        it. This is why the spacing kept reading "ランダム". */
     #layer-tools > #edu-mount, #layer-tools > #lyr-presets{ display:contents !important; }
+    /* (#R27) The 50px fixed height read as "縦幅が大きすぎて不自然" — that height only existed to hold a
+       2-line wrapped label. Drop to a normal single-line button height (38px) and keep labels to ONE
+       line with an ellipsis, so they stay a tidy equal-height group without the chunky tall blocks. */
     #layer-tools > #btn-compare, #layer-tools > #btn-upload-geojson,
     #layer-tools #btn-edu, #layer-tools #lp-save{
-      height:50px !important; min-height:50px !important; box-sizing:border-box;
+      height:38px !important; min-height:38px !important; box-sizing:border-box;
       display:flex !important; align-items:center; justify-content:center; gap:7px;
-      text-align:center; line-height:1.18; padding:4px 12px; overflow:hidden; margin:0 !important;
+      text-align:center; line-height:1.2; padding:0 12px; overflow:hidden; margin:0 !important; font-size:12.5px;
     }
     #layer-tools #btn-compare > span, #layer-tools #btn-upload-geojson > span,
     #layer-tools #btn-edu > span, #layer-tools #lp-save > span{
-      overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+      overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0;
     }
     /* (#R20) Desktop Tools: NOT pinned/sticky any more — the user asked for it to sit in normal flow at
        the end of the list ("下部にFixしなくていい。普通に置いて"). The R19 flex-shrink:0 above keeps it
@@ -1145,16 +1166,17 @@ gtag('config', 'G-57X5MX0ZPW');
       .news-timeline,.src-card,.map-search-results,.search-result-card){
       --text-muted:rgba(255,255,255,0.9);
     }
-    /* (#R26) The R25 "crisp halo" used `0 0 1px` — a 1px-BLUR glow around the glyphs, which on near-white
-       text reads as exactly the fuzzy "blurred text" the user (correctly) complained about. Replace it with a
-       HARD, zero-blur 1px drop: it gives definition over a light map patch without any glow/blur. */
+    /* (#R27) The user does NOT want shadows added to text ("テキストに勝手に影を付けるのをやめろ"). The
+       R25/R26 frosted-glass "contrast halo / hard drop" on every panel, legend and popup is removed —
+       text now renders flat. (Readability over the see-through map is carried by the higher panel FILL
+       set per frosted tier below, not by a glyph shadow.) Forced to none so no other rule re-adds it. */
     body.sidebar-translucent :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.src-card,
       .map-search-results,.search-result-card,.coord-readout),
     body.sidebar-glass2 :is(.layer-dropdown,.tool-panel,.country-info,.country-popup,.pin-popup,.koppen-legend,
       .data-legend,.koppen-info-pop,.ctx-menu,.map-tooltip,.hover-tooltip,.sat-controller,.news-timeline,.src-card,
       .map-search-results,.search-result-card,.coord-readout){
-      text-shadow:0 1px 0 rgba(0,0,0,0.38);
+      text-shadow:none !important;
     }
     /* (#R26) "文字の色がグループとレイヤー名で違う" — the group headers used --text-muted (promoted to white)
        while layer names used --text-main, so in frosted modes they were different colors. Force the group
@@ -1474,7 +1496,7 @@ gtag('config', 'G-57X5MX0ZPW');
                <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
              </div>
              <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-borders"> <span data-i18n="borders">Country borders</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
              <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
@@ -1557,8 +1579,8 @@ gtag('config', 'G-57X5MX0ZPW');
       <input type="text" id="setting-ais-key" placeholder="aisstream.io API key" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.18);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">
     </div>
     <div class="setting-group" id="ai-settings-group">
-      <label data-i18n="aiSecTitle">AI features (BYOK / on-device)</label>
-      <div class="ai-hint" data-i18n="aiSecHint">Bring your own API key — requests go directly from this browser to the provider and the key is stored only here.</div>
+      <label data-i18n="aiSecTitle">AI features</label>
+      <div class="ai-hint" data-i18n="aiSecHint">Built-in AI — free for logged-in users (up to 5 uses per day). No API key needed.</div>
       <div id="ai-settings-body"></div>
     </div>
     <div class="setting-group"><label data-i18n="lblSidebarStyle">Sidebar appearance</label><select id="setting-sidebar-style"><option value="opaque" data-i18n="sidebarOpaque">Solid (default)</option><option value="translucent" data-i18n="sidebarTranslucent">Frosted glass</option><option value="glass2" data-i18n="sidebarGlass2">Frosted glass (more transparent)</option></select></div>
@@ -1800,7 +1822,7 @@ window.addEventListener('DOMContentLoaded', () => {
       filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date", thermWin24:"Last 24 h", thermWin48:"Last 48 h", thermWin72:"Last 72 h",
       tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap rows to select 2–3 countries to compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
       satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
-      aiSecTitle:"AI features (BYOK / on-device)", aiSecHint:"Bring your own API key — requests go directly from this browser to the provider and the key is stored only here. Or pick Chrome Built-in AI to run on-device with no key.",
+      aiSecTitle:"AI features", aiSecHint:"Built-in AI — free for logged-in users (up to 5 uses per day). No API key needed.",
       aiProvider:"AI provider", aiModel:"Model", aiApiKey:"API key", aiKeyConnected:"Connected", aiKeyNone:"No key", aiGetKey:"Get a key ↗", aiOnDevice:"Runs on-device in Chrome — no API key needed.",
       aiTest:"Test connection", aiTesting:"Testing…", aiTestOk:"Connection OK ✓",
       aiNoKey:"Add an AI API key in Settings → AI features first.", aiNoVision:"This model can't read images. Choose GPT-4o, Claude 3.5 Sonnet, or Gemini 1.5 Pro.",
@@ -1832,7 +1854,7 @@ window.addEventListener('DOMContentLoaded', () => {
       filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付", thermWin24:"過去24時間", thermWin48:"過去48時間", thermWin72:"過去72時間",
       tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして2〜3カ国を選択し比較できます", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
       satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
-      aiSecTitle:"AI機能 (BYOK / 端末内)", aiSecHint:"自分のAPIキーを使用します。通信はこのブラウザから各プロバイダへ直接行われ、キーはこの端末にのみ保存されます。Chrome内蔵AIを選べばキー不要で端末内実行できます。",
+      aiSecTitle:"AI機能", aiSecHint:"内蔵AI — ログインすると無料でご利用いただけます（1日5回まで）。APIキーは不要です。",
       aiProvider:"AIプロバイダ", aiModel:"モデル", aiApiKey:"APIキー", aiKeyConnected:"接続済み", aiKeyNone:"未登録", aiGetKey:"キーを取得 ↗", aiOnDevice:"Chrome内で端末内実行されます（APIキー不要）。",
       aiTest:"接続テスト", aiTesting:"テスト中…", aiTestOk:"接続に成功しました ✓",
       aiNoKey:"先に 設定 → AI機能 でAPIキーを登録してください。", aiNoVision:"このモデルは画像を解析できません。GPT-4o / Claude 3.5 Sonnet / Gemini 1.5 Pro を選択してください。",
@@ -1948,7 +1970,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===== Theme ===== */
-  let bordersOn=true;
+  let bordersOn=false;   /* (#R27) Country borders default OFF — they were checked-by-default but not drawn, so the default no longer claims a layer that isn't showing. */
   function applyTheme(){
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
@@ -1998,8 +2020,13 @@ window.addEventListener('DOMContentLoaded', () => {
      label-raise self-heal keeps them above EVERY data layer. */
   function mapLabelsViaVector(){ return true; }
   let _placeLabelsAdded=false;
+  /* (#R27) IDEMPOTENT now. The old `_placeLabelsAdded` early-return made this a one-shot: if the very
+     first call added the layers a hair before the OFM source/style was truly ready, they were never
+     re-added — which is exactly why labels were missing on first load but appeared after toggling
+     names off/on ("デフォルト選択なのに地名ラベルが出ない、再チェックで出る"). The per-source / per-layer
+     `if(!getLayer)` guards already make repeated calls safe, so we just re-attempt every time. */
   function ensurePlaceLabels(){
-    if(!map||_placeLabelsAdded||!map.isStyleLoaded()) return;
+    if(!map||!map.isStyleLoaded()) return;
     try{
       /* Use the TileJSON URL (not a hardcoded tile path) — OpenFreeMap serves versioned tiles, so
          the bare /planet/{z}/{x}/{y}.pbf path 404s at real zooms and labels never appear. */
@@ -2305,8 +2332,12 @@ window.addEventListener('DOMContentLoaded', () => {
   function aiModelFor(p){ return (aiConfig.models&&aiConfig.models[p.id]&&String(aiConfig.models[p.id]).trim())||p.fallbackModel||''; }
   function aiCurrent(){ const p=aiProviderById(aiConfig.provider); return {p, model:aiModelFor(p)}; }
   function aiKeyFor(p){ return (aiConfig.keys&&aiConfig.keys[p.id]&&String(aiConfig.keys[p.id]).trim())||''; }
-  function aiReady(){ if(typeof aiProxyOn==='function'&&aiProxyOn()) return true; const {p}=aiCurrent(); return p.needsKey? !!aiKeyFor(p) : true; }
-  function aiVisionReady(){ const {p}=aiCurrent(); return !!p.vision && aiReady(); }
+  /* (#R27) Account-based AI: the first-party server proxy is ALWAYS configured (see INTMAP_AI_PROXY
+     below), so the engine is always "ready" to RECEIVE a click. The real gate — login required + the
+     per-day free quota — is enforced in aiGate() at click time and authoritatively re-checked on the
+     server. Buttons therefore never appear greyed-out as "needs key" (BYOK is retired). */
+  function aiReady(){ return (typeof aiProxyOn==='function') ? aiProxyOn() : true; }
+  function aiVisionReady(){ return aiReady(); }
   function aiErrSnippet(txt){ try{ const j=JSON.parse(txt); return (j.error&&(j.error.message||j.error.code))||JSON.stringify(j).slice(0,180); }catch(_){ return String(txt||'').slice(0,180); } }
 
   /* Fetch the CURRENT model list straight from the provider with the user's key, so
@@ -2340,25 +2371,69 @@ window.addEventListener('DOMContentLoaded', () => {
     return pool.sort().reverse()[0];
   }
 
-  /* ---- (#R25/#29) First-party AI proxy prep ----------------------------------------------------
-     The user plans to host AI on their own side later. Everything already funnels through askAI(), so the
-     ONLY thing needed to migrate from BYOK → a server-held key is to set window.INTMAP_AI_PROXY.url (e.g. a
-     Supabase Edge Function like the existing refresh-news one). When that url is empty (today) NOTHING
-     changes — every AI feature keeps using the user's BYOK key exactly as before. When it's set, every AI
-     call (brief, locate, translate, summarize, suggested questions, sat-change) routes to the server, which
-     holds the key; aiReady() then returns true with no BYOK key so the buttons light up automatically.
-     The server may answer with {text}, or an OpenAI/Anthropic-style envelope — all accepted below. */
-  window.INTMAP_AI_PROXY = window.INTMAP_AI_PROXY || { url:'', headerName:'', headerValue:'', model:'' };
+  /* ---- (#R27) FIRST-PARTY, ACCOUNT-BASED AI -----------------------------------------------------
+     BYOK is retired. Every AI call now routes through a Supabase Edge Function (ai-proxy) that holds
+     the provider key SERVER-SIDE, identifies the user from their Supabase session JWT, and enforces a
+     per-day free-use quota (default 5/day, reset daily, stored in the `ai_usage` table). The model is
+     fixed on the server — users never see a key or a model picker. Login is REQUIRED: an un-logged-in
+     click opens the auth modal; an over-quota click shows the "本日の無料AI使用回数に達しました" message.
+     See supabase/functions/ai-proxy/index.ts + supabase_ai_usage.sql for the server half. */
+  const AI_FREE_DAILY = 5;                                   /* free plan daily quota (display + pre-check) */
+  window.INTMAP_AI_PROXY = window.INTMAP_AI_PROXY || {};
+  if(!window.INTMAP_AI_PROXY.url){
+    try{ window.INTMAP_AI_PROXY.url = (window.SUPABASE_URL||'').replace(/\/$/,'') + '/functions/v1/ai-proxy'; }catch(_){ window.INTMAP_AI_PROXY.url=''; }
+  }
   function aiProxyOn(){ try{ return !!(window.INTMAP_AI_PROXY && window.INTMAP_AI_PROXY.url); }catch(_){ return false; } }
+  const aiJP=()=>(typeof currentLang!=='undefined'&&currentLang==='jp');
+  function aiToday(){ try{ return new Date().toISOString().slice(0,10); }catch(_){ return ''; } }   /* UTC date — matches the server */
+  /* Quota state, kept in sync from each server response + an on-login fetch. limit is plan-driven
+     (the server is the source of truth); aiDailyLimit() centralizes the number for easy plan tiers. */
+  let aiUsage = { date:'', used:0, limit:AI_FREE_DAILY };
+  function aiDailyLimit(){ return (aiUsage && aiUsage.limit) || AI_FREE_DAILY; }
+  function aiUsesLeft(){ if(aiUsage.date!==aiToday()) return aiDailyLimit(); return Math.max(0, aiDailyLimit() - (aiUsage.used||0)); }
+  function aiSetUsage(used, limit){
+    aiUsage.date=aiToday();
+    if(typeof used==='number') aiUsage.used=used;
+    if(typeof limit==='number' && limit>0) aiUsage.limit=limit;
+    try{ aiRenderSettings(); }catch(_){}
+  }
+  function aiLoginMsg(){ return aiJP()?'AI機能を使うにはログインが必要です。':'Please log in to use AI features.'; }
+  function aiLimitMsg(){ return aiJP()?'本日の無料AI使用回数に達しました。':'You have reached today’s free AI limit.'; }
+  /* Fetch today's usage for the logged-in user (RLS lets a user read only their own row). Lets the
+     gate block + the Settings panel show "残り N/5" BEFORE any AI request is spent. */
+  async function aiFetchUsage(){
+    try{
+      if(!currentUser || !window.sb){ return; }
+      const { data } = await window.sb.from('ai_usage').select('count').eq('user_id',currentUser.id).eq('usage_date',aiToday()).maybeSingle();
+      aiSetUsage(data && typeof data.count==='number' ? data.count : 0, aiDailyLimit());
+    }catch(_){}
+  }
+  window.aiFetchUsage=aiFetchUsage;
+  /* The single click-time gate every AI feature runs FIRST. Extensible: future paid plans only need to
+     raise the limit the server returns (aiUsage.limit) — no per-feature change. */
+  function aiGate(){
+    if(typeof currentUser==='undefined' || !currentUser){ try{ openAuthModal(aiLoginMsg()); }catch(_){ try{ aiToast(aiLoginMsg()); }catch(__){} } return false; }
+    if(aiUsage.date===aiToday() && aiUsesLeft()<=0){ try{ aiToast(aiLimitMsg()); }catch(_){} return false; }
+    return true;
+  }
+  window.aiGate=aiGate;
   async function aiCallServer(prompt, system, imgs){
     const cfg=window.INTMAP_AI_PROXY||{};
     const headers={'Content-Type':'application/json'};
     if(cfg.headerName && cfg.headerValue) headers[cfg.headerName]=cfg.headerValue;
-    const body={ prompt, system:system||'', images:(imgs||[]), model:cfg.model||'', lang:(typeof currentLang!=='undefined'?currentLang:'en') };
+    /* Attach the Supabase session JWT + anon apikey so the function can identify the user + enforce quota. */
+    let token='';
+    try{ const r=await window.sb.auth.getSession(); token=(r&&r.data&&r.data.session&&r.data.session.access_token)||''; }catch(_){}
+    if(window.SUPABASE_ANON_KEY){ headers['apikey']=window.SUPABASE_ANON_KEY; if(!token) headers['Authorization']='Bearer '+window.SUPABASE_ANON_KEY; }
+    if(token) headers['Authorization']='Bearer '+token;
+    const body={ prompt, system:system||'', images:(imgs||[]), lang:(typeof currentLang!=='undefined'?currentLang:'en') };
     const r=await fetch(cfg.url,{method:'POST',headers,body:JSON.stringify(body)});
-    if(!r.ok) throw new Error('AI proxy '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
+    if(r.status===401){ try{ openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
+    if(r.status===429){ let j=null; try{ j=await r.json(); }catch(_){} if(j&&typeof j.used==='number') aiSetUsage(j.used, j.limit); else { aiUsage.date=aiToday(); aiUsage.used=aiDailyLimit(); } throw new Error(aiLimitMsg()); }
+    if(!r.ok) throw new Error('AI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
     const j=await r.json().catch(()=>null);
     if(j==null) return '';
+    if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
     if(typeof j==='string') return j;
     if(typeof j.text==='string') return j.text;
     if(j.content&&Array.isArray(j.content)) return j.content.map(b=>b.text||'').join('');
@@ -2368,15 +2443,12 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ---- Unified entry point used by every AI feature ---- */
   async function askAI(prompt, systemPrompt, imageDatas){
     const imgs=(imageDatas||[]).filter(Boolean);
-    if(aiProxyOn()) return aiCallServer(prompt, systemPrompt, imgs);   /* (#R29) first-party server path */
-    const {p,model}=aiCurrent();
-    if(p.needsKey && !aiKeyFor(p)) throw new Error(t('aiNoKey'));
-    if(imgs.length && !p.vision) throw new Error(t('aiNoVision'));
-    if(p.id==='openai')    return aiCallOpenAI(model, aiKeyFor(p), prompt, systemPrompt, imgs);
-    if(p.id==='anthropic') return aiCallAnthropic(model, aiKeyFor(p), prompt, systemPrompt, imgs);
-    if(p.id==='gemini')    return aiCallGemini(model, aiKeyFor(p), prompt, systemPrompt, imgs);
-    if(p.id==='chrome')    return aiCallChrome(prompt, systemPrompt);
-    throw new Error('Unknown AI provider');
+    /* Account-based path (always on). Gate first so we never spend a network round-trip when the user
+       is logged out / over quota, and so the auth modal opens immediately. */
+    if(!currentUser){ try{ openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
+    if(aiUsage.date===aiToday() && aiUsesLeft()<=0){ throw new Error(aiLimitMsg()); }
+    if(aiProxyOn()) return aiCallServer(prompt, systemPrompt, imgs);
+    throw new Error(aiLimitMsg());
   }
   async function askAIJSON(prompt, systemPrompt, imageDatas){ return aiParseJSON(await askAI(prompt, systemPrompt, imageDatas)); }
   function aiParseJSON(raw){
@@ -2481,32 +2553,37 @@ window.addEventListener('DOMContentLoaded', () => {
     return api;
   }
 
-  /* ---- Settings modal: AI section (provider + model + key + connection test) ---- */
+  /* ---- (#R27) Settings modal: AI section — account-based, NO key/provider/model picker ----
+     Built-in AI: nothing to configure. We only show login state + today's free-use counter. */
   function aiRenderSettings(){
     const wrap=document.getElementById('ai-settings-body'); if(!wrap) return;
-    const p=aiProviderById(aiConfig.provider);
-    const provOpts=AI_PROVIDERS.map(pr=>`<option value="${pr.id}"${pr.id===p.id?' selected':''}>${pr.name[currentLang]||pr.name.en}</option>`).join('');
-    const hasKey=!!aiKeyFor(p);
-    const keyBlock = p.needsKey
-      ? `<div class="ai-row"><div class="ai-key-top"><span class="ai-key-name">${t('aiApiKey')}</span><span class="ai-status ${hasKey?'on':''}">${hasKey?'● '+t('aiKeyConnected'):'○ '+t('aiKeyNone')}</span></div>
-          <input type="password" class="sat-key-input" id="ai-key-input" value="${aiEsc(aiKeyFor(p))}" placeholder="${aiEsc(p.keyPh||'')}" autocomplete="off" autocapitalize="off" spellcheck="false">
-          <a href="${p.getKey}" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;display:inline-block;margin-top:5px;">${t('aiGetKey')}</a></div>`
-      : `<div class="ai-row" style="font-size:11.5px;color:var(--text-muted);line-height:1.45;">${t('aiOnDevice')} <a href="${p.getKey}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${t('aiGetKey')}</a></div>`;
-    const modelLabel = currentLang==='jp' ? 'モデル（プロバイダから自動取得）' : 'Model (loaded live from provider)';
-    const modelHint  = hasKey ? (currentLang==='jp'?'読み込み中…':'Loading…') : (currentLang==='jp'?'先にAPIキーを入力してください':'Enter your API key first');
-    const modelBlock = p.onDevice ? ''
-      : `<div class="ai-row"><label style="font-size:12px;margin-bottom:6px;display:block;color:var(--text-muted);">${modelLabel}</label>
-          <div id="ai-model-wrap"><select id="ai-model" disabled><option>${modelHint}</option></select></div></div>`;
+    const jp=aiJP();
+    if(typeof currentUser==='undefined' || !currentUser){
+      wrap.innerHTML=
+        `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
+          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）はログインすると無料でご利用いただけます（1日'+AI_FREE_DAILY+'回まで）。APIキーは不要です。'
+                  :'AI features (summaries, translation, locating, image compare…) are free once you log in — up to '+AI_FREE_DAILY+' uses per day. No API key needed.')+
+        `</div>`+
+        `<button class="ai-test-btn" id="ai-login-btn" style="margin-top:4px;">`+aiEsc(jp?'ログイン / 新規登録':'Log in / Sign up')+`</button>`;
+      const lb=wrap.querySelector('#ai-login-btn'); if(lb) lb.onclick=()=>{ try{ openAuthModal(aiLoginMsg()); }catch(_){} };
+      return;
+    }
+    const left=aiUsesLeft(), lim=aiDailyLimit(), used=Math.max(0, lim-left);
+    const pct=lim>0?Math.round((used/lim)*100):0;
+    const bar=`<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:${pct}%;background:${left>0?'var(--primary-color)':'#ff453a'};transition:width .25s;"></div></div>`;
     wrap.innerHTML=
-      `<div class="ai-row"><label style="font-size:12px;margin-bottom:6px;display:block;color:var(--text-muted);">${t('aiProvider')}</label><select id="ai-provider">${provOpts}</select></div>`+
-      keyBlock+
-      modelBlock+
-      `<button class="ai-test-btn" id="ai-test-btn">${t('aiTest')}</button><div class="ai-test-msg" id="ai-test-msg"></div>`;
-    wrap.querySelector('#ai-provider').onchange=ev=>{ aiReadKeyInput(); aiConfig.provider=ev.target.value; saveAIConfig(); aiRenderSettings(); };
-    const ki=wrap.querySelector('#ai-key-input'); if(ki) ki.addEventListener('change',()=>{ aiReadKeyInput(); saveAIConfig(); aiLoadModelsIntoSelect(); });
-    wrap.querySelector('#ai-test-btn').onclick=aiTestConnection;
-    if(!p.onDevice) aiLoadModelsIntoSelect();   /* fetch the live model list now */
+      `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
+        aiEsc(jp?'✨ 内蔵AIをご利用いただけます。APIキーやモデルの設定は不要です。'
+                :'✨ Built-in AI is ready. No API key or model setup required.')+
+      `</div>`+
+      `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+
+        aiEsc(jp?('本日の無料利用： 残り '+left+' / '+lim+' 回')
+                :('Today’s free uses: '+left+' / '+lim+' left'))+
+        bar+
+        (left<=0?`<div style="font-size:11.5px;color:#ff453a;margin-top:7px;font-weight:500;">`+aiEsc(aiLimitMsg())+`</div>`:'')+
+      `</div>`;
   }
+  window.aiRenderSettings=aiRenderSettings;
   /* Populate the model dropdown from the provider's live list; never blocks the user. */
   async function aiLoadModelsIntoSelect(){
     const p=aiProviderById(aiConfig.provider); if(p.onDevice) return;
@@ -2603,7 +2680,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
   async function aiSatChangeDetect(){
-    if(!aiVisionReady()){ aiToast(aiReady()?t('aiNoVision'):t('aiNoKey')); return; }
+    if(!aiGate()) return;
     if(currentMapType!=='sat'){ aiToast(t('aiVisNeedsDated')); return; }
     const p=satProviderById(satState.providerId);
     if(!p||!p.dated){ aiToast(t('aiVisNeedsDated')); return; }
@@ -2788,6 +2865,32 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map.doubleClickZoom.disable(); }catch(_){}
     };
     window._applyNavSens();
+    /* (#R27) MOBILE PINCH-ZOOM sensitivity. MapLibre exposes no pinch-rate API, so the slider used to do
+       NOTHING for the most common mobile zoom gesture ("zoomの感度設定をしても動作に反映されない"). This is a
+       custom 2-finger pinch that scales the zoom delta by the slider. It engages ONLY when the user has
+       CHANGED the setting (sens !== 1) — at the default, MapLibre's native pinch is left fully intact, so
+       there is zero regression risk for everyone who never touched the slider. */
+    (function(){
+      const cv=map.getCanvasContainer&&map.getCanvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
+      let active=false, startDist=0, startZoom=0;
+      const sens=()=>Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+      const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return map.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
+      cv.addEventListener('touchstart',(e)=>{
+        if(sens()===1) return;                                 /* default feel → MapLibre handles it */
+        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=map.getZoom();
+          try{ map.touchZoomRotate.disable(); }catch(_){} }
+      },{passive:true});
+      cv.addEventListener('touchmove',(e)=>{
+        if(!active||!e.touches||e.touches.length!==2) return;
+        const d=dist(e.touches); if(startDist<=0) return;
+        const z=startZoom + Math.log2(d/startDist)*sens();
+        try{ map.easeTo({zoom:Math.max(map.getMinZoom(),Math.min(map.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
+        if(e.cancelable) e.preventDefault();
+      },{passive:false});
+      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ map.touchZoomRotate.enable(); }catch(_){} } };
+      cv.addEventListener('touchend',end); cv.addEventListener('touchcancel',end);
+    })();
     /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
        dragPan with defaults, which would silently drop the user's inertia choice. */
     try{ map.once('idle',()=>{ try{ window._applyNavSens(); }catch(_){} }); }catch(_){}
@@ -3042,9 +3145,90 @@ window.addEventListener('DOMContentLoaded', () => {
     ['flashpoint',['Kherson','ヘルソン'],32.62,46.64,'Kherson','ヘルソン'],
     ['flashpoint',['Kursk','クルスク'],36.19,51.73,'Kursk','クルスク'],
     ['flashpoint',['Khan Younis','ハンユニス','Khan Yunis'],34.30,31.34,'Khan Younis','ハンユニス'],
-    ['flashpoint',['Lebanon border','南レバノン'],35.4,33.2,'South Lebanon','南レバノン']
+    ['flashpoint',['Lebanon border','南レバノン'],35.4,33.2,'South Lebanon','南レバノン'],
+    /* (#R27) Greatly expanded coverage — current conflict/flashpoint cities + high-news-frequency hubs. */
+    ['flashpoint',['Odesa','オデーサ','Odessa'],30.73,46.48,'Odesa','オデーサ'],
+    ['flashpoint',['Lviv','リヴィウ'],24.03,49.84,'Lviv','リヴィウ'],
+    ['flashpoint',['Dnipro','ドニプロ'],35.05,48.46,'Dnipro','ドニプロ'],
+    ['flashpoint',['Sumy','スームィ'],34.80,50.91,'Sumy','スームィ'],
+    ['flashpoint',['Belgorod','ベルゴロド'],36.59,50.60,'Belgorod','ベルゴロド'],
+    ['flashpoint',['Sevastopol','セヴァストポリ'],33.53,44.62,'Sevastopol','セヴァストポリ'],
+    ['flashpoint',['Idlib','イドリブ'],36.63,35.93,'Idlib','イドリブ'],
+    ['flashpoint',['Homs','ホムス'],36.72,34.73,'Homs','ホムス'],
+    ['flashpoint',['Raqqa','ラッカ'],38.99,35.95,'Raqqa','ラッカ'],
+    ['flashpoint',['Sanaa','サナア',"Sana'a"],44.21,15.35,'Sanaa','サナア'],
+    ['flashpoint',['Hodeidah','ホデイダ','Hudaydah'],42.95,14.80,'Hodeidah','ホデイダ'],
+    ['flashpoint',['Aden','アデン'],45.04,12.79,'Aden','アデン'],
+    ['flashpoint',['El Fasher','エルファシル','Al-Fashir'],25.35,13.63,'El Fasher','エルファシル'],
+    ['flashpoint',['Port Sudan','ポートスーダン'],37.22,19.62,'Port Sudan','ポートスーダン'],
+    ['flashpoint',['Goma','ゴマ'],29.23,-1.68,'Goma','ゴマ'],
+    ['flashpoint',['Tigray','ティグレ'],38.50,13.50,'Tigray','ティグレ'],
+    ['flashpoint',['Nagorno-Karabakh','ナゴルノ・カラバフ','Nagorno Karabakh'],46.75,39.82,'Nagorno-Karabakh','ナゴルノ・カラバフ'],
+    ['flashpoint',['Taiwan','台湾'],120.96,23.70,'Taiwan','台湾'],
+    ['flashpoint',['Senkaku','尖閣'],123.47,25.74,'Senkaku Islands','尖閣諸島'],
+    ['city',['Taipei','台北'],121.56,25.03,'Taipei','台北'],
+    ['city',['Pyongyang','平壌'],125.76,39.04,'Pyongyang','平壌'],
+    ['city',['Seoul','ソウル'],126.98,37.57,'Seoul','ソウル'],
+    ['city',['Baghdad','バグダッド'],44.36,33.31,'Baghdad','バグダッド'],
+    ['city',['Riyadh','リヤド'],46.72,24.69,'Riyadh','リヤド'],
+    ['city',['Ankara','アンカラ'],32.86,39.93,'Ankara','アンカラ'],
+    ['city',['Istanbul','イスタンブール'],28.98,41.01,'Istanbul','イスタンブール'],
+    ['city',['Cairo','カイロ'],31.24,30.04,'Cairo','カイロ'],
+    ['city',['Khartoum','ハルツーム'],32.53,15.50,'Khartoum','ハルツーム'],
+    ['city',['Tripoli','トリポリ'],13.19,32.89,'Tripoli (Libya)','トリポリ'],
+    ['city',['Caracas','カラカス'],-66.90,10.49,'Caracas','カラカス'],
+    ['city',['Kabul','カブール'],69.18,34.53,'Kabul','カブール'],
+    ['city',['Islamabad','イスラマバード'],73.06,33.69,'Islamabad','イスラマバード'],
+    ['city',['New Delhi','ニューデリー','Delhi','デリー'],77.21,28.61,'New Delhi','ニューデリー'],
+    ['city',['Mumbai','ムンバイ'],72.88,19.08,'Mumbai','ムンバイ'],
+    ['city',['Beijing','北京'],116.40,39.90,'Beijing','北京'],
+    ['city',['Shanghai','上海'],121.47,31.23,'Shanghai','上海'],
+    ['city',['Hong Kong','香港'],114.16,22.28,'Hong Kong','香港'],
+    ['city',['Washington','ワシントン','Washington DC','Washington, D.C.'],-77.04,38.91,'Washington, D.C.','ワシントンD.C.'],
+    ['city',['Brasília','ブラジリア','Brasilia'],-47.88,-15.79,'Brasília','ブラジリア'],
+    ['city',['São Paulo','サンパウロ','Sao Paulo'],-46.63,-23.55,'São Paulo','サンパウロ']
   ];
   const BUILTIN_GAZETTEER=_BUILTIN_GZ.reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
+  /* (#R27) DEMONYM gazetteer — a very large share of geopolitical headlines reference a country by its
+     ADJECTIVE/people ("Ukrainian drone", "Israeli strike", "Iranian-backed", "Chinese vessels") rather
+     than the country NAME, which the old locator missed entirely. These map the demonym → the country's
+     representative point. They are flagged demonym:true and scored a notch BELOW an explicit place name
+     (see scoreGeo) so precision is preserved — an explicit city/country in the headline always wins, and
+     a demonym only places a story that would otherwise be "location unknown". Big coverage + accuracy gain. */
+  const _DEMONYM_GZ=[
+    ['Ukrainian',30.52,50.45,'Ukraine','ウクライナ'],['Russian',37.62,55.75,'Russia','ロシア'],
+    ['Israeli',35.21,31.77,'Israel','イスラエル'],['Palestinian',34.47,31.50,'Palestinian territories','パレスチナ'],
+    ['Iranian',51.39,35.69,'Iran','イラン'],['Chinese',116.40,39.90,'China','中国'],
+    ['American',-77.04,38.91,'United States','アメリカ'],['British',-0.13,51.51,'United Kingdom','イギリス'],
+    ['French',2.35,48.85,'France','フランス'],['German',13.40,52.52,'Germany','ドイツ'],
+    ['Japanese',139.69,35.69,'Japan','日本'],['South Korean',126.98,37.57,'South Korea','韓国'],
+    ['North Korean',125.76,39.04,'North Korea','北朝鮮'],['Indian',77.21,28.61,'India','インド'],
+    ['Pakistani',73.06,33.69,'Pakistan','パキスタン'],['Taiwanese',121.56,25.03,'Taiwan','台湾'],
+    ['Syrian',36.30,33.51,'Syria','シリア'],['Lebanese',35.50,33.89,'Lebanon','レバノン'],
+    ['Turkish',32.86,39.93,'Turkey','トルコ'],['Saudi',46.72,24.69,'Saudi Arabia','サウジアラビア'],
+    ['Egyptian',31.24,30.04,'Egypt','エジプト'],['Yemeni',44.21,15.35,'Yemen','イエメン'],
+    ['Afghan',69.18,34.53,'Afghanistan','アフガニスタン'],['Sudanese',32.53,15.50,'Sudan','スーダン'],
+    ['Venezuelan',-66.90,10.49,'Venezuela','ベネズエラ'],['Mexican',-99.13,19.43,'Mexico','メキシコ'],
+    ['Brazilian',-47.88,-15.79,'Brazil','ブラジル'],['Italian',12.50,41.90,'Italy','イタリア'],
+    ['Spanish',-3.70,40.42,'Spain','スペイン'],['Polish',21.01,52.23,'Poland','ポーランド'],
+    ['Greek',23.73,37.98,'Greece','ギリシャ'],['Dutch',4.90,52.37,'Netherlands','オランダ'],
+    ['Australian',149.13,-35.28,'Australia','オーストラリア'],['Canadian',-75.70,45.42,'Canada','カナダ'],
+    ['Nigerian',7.49,9.06,'Nigeria','ナイジェリア'],['Ethiopian',38.74,9.03,'Ethiopia','エチオピア'],
+    ['Kenyan',36.82,-1.29,'Kenya','ケニア'],['South African',28.19,-25.75,'South Africa','南アフリカ'],
+    ['Thai',100.50,13.75,'Thailand','タイ'],['Vietnamese',105.83,21.03,'Vietnam','ベトナム'],
+    ['Indonesian',106.85,-6.21,'Indonesia','インドネシア'],['Filipino',120.98,14.60,'Philippines','フィリピン'],
+    ['Iraqi',44.36,33.31,'Iraq','イラク'],['Qatari',51.53,25.29,'Qatar','カタール'],
+    ['Emirati',54.37,24.45,'United Arab Emirates','UAE'],['Jordanian',35.94,31.95,'Jordan','ヨルダン'],
+    ['Cuban',-82.38,23.13,'Cuba','キューバ'],['Argentine',-58.38,-34.60,'Argentina','アルゼンチン'],
+    ['Argentinian',-58.38,-34.60,'Argentina','アルゼンチン'],['Colombian',-74.07,4.71,'Colombia','コロンビア'],
+    ['Swedish',18.07,59.33,'Sweden','スウェーデン'],['Finnish',24.94,60.17,'Finland','フィンランド'],
+    ['Norwegian',10.75,59.91,'Norway','ノルウェー'],['Swiss',7.45,46.95,'Switzerland','スイス'],
+    ['Belgian',4.35,50.85,'Belgium','ベルギー'],['Austrian',16.37,48.21,'Austria','オーストリア'],
+    ['Hungarian',19.04,47.50,'Hungary','ハンガリー'],['Czech',14.42,50.09,'Czechia','チェコ'],
+    ['Romanian',26.10,44.43,'Romania','ルーマニア'],['Serbian',20.46,44.79,'Serbia','セルビア'],
+    ['Belarusian',27.57,53.90,'Belarus','ベラルーシ'],['Armenian',44.51,40.18,'Armenia','アルメニア'],
+    ['Azerbaijani',49.87,40.41,'Azerbaijan','アゼルバイジャン']
+  ];
 
   /* Publisher HQ gazetteer — drives the "Publisher" pin mode. Expanded from 24 → ~130 outlets
      so most stories resolve to a real source location (so the Subject/Publisher toggle actually
@@ -3095,6 +3279,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(s.capital&&String(s.capital).length>=4) terms.push(s.capital);
       if(!terms.length) continue;
       (merged.country=merged.country||[]).push({terms, loc:[s.latlng[1],s.latlng[0]], name:{en:s.nameEn||code, jp:s.nameJp||s.nameEn||code}}); } } }catch(_){}
+    /* (#R27) demonyms join as low-confidence country entries (flagged so scoreGeo ranks them below a real
+       place name) — coverage for "Ukrainian/Israeli/Iranian…" headlines that name no explicit place. */
+    try{ for(const [dem,lng,lat,en,jp] of _DEMONYM_GZ){ (merged.country=merged.country||[]).push({terms:[dem], loc:[lng,lat], name:{en,jp}, demonym:true}); } }catch(_){}
     geoDB=Object.entries(merged).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
@@ -3980,6 +4167,14 @@ window.addEventListener('DOMContentLoaded', () => {
      moved" — only onmousedown was wired) and CLAMP to the offset-parent so a panel can never be dragged
      off-screen and become unreachable (the other half of the mobile measure complaint, #7). */
   function makeDraggable(panel,handle){
+    /* (#R27) ROOT CAUSE of "ポップアップや凡例の×を押しても反応しない" on mobile: the drag handle is the
+       panel HEADER, which CONTAINS the close ×. The touchstart below calls preventDefault() — and on
+       touch devices preventDefault on touchstart CANCELS the synthesized click, so the ×'s onclick never
+       fired. (On desktop, mousedown-preventDefault does NOT cancel click, which is why it worked there.)
+       Fix: if the gesture STARTS on a button / control, don't start a drag and don't preventDefault —
+       let the tap become a normal click. Dragging from the empty header area still works. */
+    const NODRAG='button, input, select, textarea, a, label, [role="button"], .layer-popup-x, .legend-min, .tp-close, .kip-x, .country-popup-close, .pin-popup-close, .src-card-close, .satc-close, .wgt-x, .wgt-cfg';
+    const onCtl=(e)=>{ try{ return !!(e.target&&e.target.closest&&e.target.closest(NODRAG)); }catch(_){ return false; } };
     const clampTo=(l,t)=>{ const op=panel.offsetParent||document.documentElement; const ow=op.clientWidth||window.innerWidth, oh=op.clientHeight||window.innerHeight; const pw=panel.offsetWidth||0, ph=panel.offsetHeight||0; return [Math.max(6,Math.min(ow-Math.min(pw,ow)-6,l)), Math.max(6,Math.min(oh-Math.min(ph,oh)-6,t))]; };
     /* (#R16) Write position with INLINE !important. On mobile the .tool-panel rule pins
        `left:12px!important; top:auto!important`, which silently beat the drag's plain inline styles —
@@ -3990,8 +4185,8 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
       panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
       panel.setAttribute('data-dragged','1'); };
-    handle.onmousedown=(e)=>{ panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
-    handle.addEventListener('touchstart',(e)=>{ const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
+    handle.onmousedown=(e)=>{ if(onCtl(e)) return; panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
+    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)) return; const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
       const up=()=>{ panelDrag=null; document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
       document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
@@ -4094,7 +4289,7 @@ window.addEventListener('DOMContentLoaded', () => {
      Collect the news pins whose coordinates fall inside the drawn circle(s) or polygon,
      then ask the LLM for a ~3-line geopolitical read on the region. */
   async function aiSummarizeArea(){
-    if(!aiReady()){ aiToast(t('aiNoKey')); return; }
+    if(!aiGate()) return;
     if(!hasTurf()){ aiToast('Turf.js unavailable'); return; }
     let inside=null;
     if(toolMode==='radius'){
@@ -4130,7 +4325,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* AI FEATURE 3b: summarize the news pins inside the CURRENT camera viewport (always-on button,
      no measure tool needed). Uses the rendered pins, falling back to all analyzed stories. */
   async function aiSummarizeView(){
-    if(!aiReady()){ aiToast(t('aiNoKey')); return; }
+    if(!aiGate()) return;
     if(!map) return;
     const b=map.getBounds(); if(!b) return;
     const seen=new Set(), picked=[];
@@ -4304,25 +4499,29 @@ window.addEventListener('DOMContentLoaded', () => {
     if(lyr==='climate'){ let code=null; try{ code=window.sampleKoppenAt&&window.sampleKoppenAt(lng,lat); }catch(_){}
       /* no leading emoji on the layer value (#34) */
       lastLayerVal = code ? (code+(window.KNAME&&window.KNAME[code]?' · '+(window.KNAME[code][currentLang]||window.KNAME[code].en):'')) : ''; return; }
-    const key=lyr+':'+lat.toFixed(1)+','+lng.toFixed(1);
+    /* (#R27) Cache on a COARSER 0.25° grid (was 0.1°). SST / air-temp barely change over ~28 km, so a
+       coarser grid means the cursor lands on an ALREADY-cached cell far more often → the value is shown
+       instantly (no fetch) across a whole local area, and far fewer network calls fire. This is the main
+       "数値が変わるのが遅い" lever — the per-cell fetch was the only real latency. */
+    const q=(v)=>(Math.round(v*4)/4);                        /* snap to 0.25° */
+    const qla=q(lat), qlo=q(lng), key=lyr+':'+qla.toFixed(2)+','+qlo.toFixed(2);
     if(_wxCache.has(key)){ lastLayerVal=_wxCache.get(key); return; }
-    /* (#R25) "数値が変わるのが遅い": a brand-new 0.1° cell used to show the STALE previous value for the
-       whole debounce + network round-trip. Instead show the nearest already-cached neighbor INSTANTLY
-       (so the readout tracks the cursor immediately), then the exact fetch refines it below. */
-    try{ let best=null,bd=1e9; const la=+lat.toFixed(1),lo=+lng.toFixed(1);
-      for(const k of _wxCache.keys()){ if(k.slice(0,key.indexOf(':'))!==lyr) continue; const m=k.split(':')[1].split(','); const d=Math.abs(+m[0]-la)+Math.abs(+m[1]-lo); if(d<bd){ bd=d; best=k; } }
-      if(best&&bd<=0.6){ lastLayerVal=_wxCache.get(best); } }catch(_){}
+    /* (#R25/#R27) Show the nearest already-cached neighbor INSTANTLY so the readout tracks the cursor with
+       no blank/stale gap; the exact fetch refines it below. Tolerance widened (0.6°→1.5°) so the readout
+       stays populated while panning into a new region. */
+    try{ let best=null,bd=1e9;
+      for(const k of _wxCache.keys()){ if(k.slice(0,key.indexOf(':'))!==lyr) continue; const m=k.split(':')[1].split(','); const d=Math.abs(+m[0]-qla)+Math.abs(+m[1]-qlo); if(d<bd){ bd=d; best=k; } }
+      if(best&&bd<=1.5){ lastLayerVal=_wxCache.get(best); } }catch(_){}
     clearTimeout(_wxTimer);
     _wxTimer=setTimeout(async()=>{
       try{
-        let url,pick;
-        if(lyr==='sst'){ url=`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=sea_surface_temperature`; pick=j=>j&&j.current&&j.current.sea_surface_temperature; }
-        else { url=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}&current=temperature_2m`; pick=j=>j&&j.current&&j.current.temperature_2m; }
+        let url,pick;   /* fetch the CELL CENTER so the cached value matches the key */
+        if(lyr==='sst'){ url=`https://marine-api.open-meteo.com/v1/marine?latitude=${qla.toFixed(3)}&longitude=${qlo.toFixed(3)}&current=sea_surface_temperature`; pick=j=>j&&j.current&&j.current.sea_surface_temperature; }
+        else { url=`https://api.open-meteo.com/v1/forecast?latitude=${qla.toFixed(3)}&longitude=${qlo.toFixed(3)}&current=temperature_2m`; pick=j=>j&&j.current&&j.current.temperature_2m; }
         const r=await fetch(url); if(!r.ok) return; const j=await r.json(); const v=pick(j);
         if(typeof v==='number'){ const um=window.imUnitTemp||'both'; const txt = um==='f' ? (v*9/5+32).toFixed(1)+'°F' : um==='c' ? v.toFixed(1)+'°C' : v.toFixed(1)+'°C ('+(v*9/5+32).toFixed(1)+'°F)'; _wxCache.set(key,txt); lastLayerVal=txt; renderCoordReadout(lng,lat); }   /* unit-aware (#R13c); no leading emoji (#34) */
       }catch(_){}
-    },35);   /* (#R25) 70→35ms: SST/temp fetch fires faster; the nearest-cache fill above shows a value
-                instantly. Climate/choropleth classification is already synchronous per move. */
+    },30);
   }
   /* (#R25) Coalesce the per-move readout to ONE animation frame with the LATEST cursor position, so fast
      mouse movement can't build a backlog of heavy updateCoord calls (queryRenderedFeatures + DEM + DOM)
@@ -4432,7 +4631,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang();
         if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',bordersOn?'visible':'none'); }catch(_){} };
       [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
-      map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ applyLabelLang(); }catch(_){} } });
+      map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
     });
     /* (#R23) WebGL context-loss recovery — some browsers (notably Edge on flaky GPU drivers) drop the GL
        context and leave a BLACK canvas ("Edgeでは地図が黒くて見えない"). Preventing the default lets the
@@ -4716,6 +4915,17 @@ window.addEventListener('DOMContentLoaded', () => {
      click on a layer's legend ✕ (which sits OUTSIDE the dropdown). Keep the dropdown open when the
      click originates inside any legend / its controls, so toggling a legend off doesn't shut the tab. */
   document.addEventListener('click',(e)=>{ if(e.target.closest&&e.target.closest('.data-legend,.koppen-legend,.koppen-info-pop,.layer-popup-x,.legend-min')) return; layerDropdown.classList.remove('show'); });
+  /* (#R27) Robust, idempotent fallback for every legend × that carries a data-x layer id. A legend's
+     innerHTML is rebuilt on date/opacity/era changes, which replaces the × node and can drop its direct
+     .onclick — leaving "凡例の×を押しても反応しない". This delegated listener survives every rebuild. It is
+     idempotent (acts only if the layer is still checked), so it never double-fires with a surviving
+     direct onclick (that one runs first and unchecks; this then sees checked===false and no-ops). */
+  document.addEventListener('click',(e)=>{
+    const x=e.target.closest&&e.target.closest('.layer-popup-x'); if(!x) return;
+    const id=x.getAttribute('data-x'); if(!id) return;
+    const cb=document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]')||document.getElementById(id);
+    if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+  });
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
   function _lyrGroupItems(header){ const out=[]; let el=header.nextElementSibling;
     while(el && !el.matches('.layer-group-title,.lyr-head,.premium-group-title') && el.tagName!=='HR'){ out.push(el); el=el.nextElementSibling; } return out; }
@@ -5010,7 +5220,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R25/#28) Lead-subject bonus: a place named EARLY in the headline is much more likely to be what the
        story is about (e.g. "Kyiv strikes …" → Kyiv, not a country mentioned at the end). Up to +3. */
     const tl=title.length||1; const posBonus = titleHit ? Math.max(0, 3-Math.floor((Math.min(firstIdx,tl)/tl)*4)) : 0;
-    return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0)+posBonus;
+    /* (#R27) Corroboration bonus: a place named in BOTH the title AND the description is a stronger subject
+       signal (+2). Demonym entries ("Ukrainian"…) are docked 3 so an explicit place name always outranks
+       them — they only win when nothing more specific matched, preserving precision while adding coverage. */
+    const corro = (titleHit&&descHit) ? 2 : 0;
+    const demPen = g.demonym ? 3 : 0;
+    return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0)+posBonus+corro-demPen;
   }
   function analyzeContext(title,publisher,seed,desc){
     desc=desc||'';
@@ -5123,7 +5338,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* Manual "Translate titles" button (#28) — translates the visible headlines into the UI language. */
     const tb=document.getElementById('ai-translate-btn');
-    if(tb) tb.onclick=()=>{ try{ if(!aiReady()){ openAISettingsOrToast(); return; } aiTranslateTitles(); }catch(_){} };
+    if(tb) tb.onclick=()=>{ try{ if(!aiGate()) return; aiTranslateTitles(); }catch(_){} };
     aiButtonSyncers.push(function(){ const b=document.getElementById('ai-translate-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   })();
   function openAISettingsOrToast(){ try{ imToast(t('aiNoKey')); }catch(_){} }
@@ -5150,7 +5365,7 @@ window.addEventListener('DOMContentLoaded', () => {
      it geocodes the outlet's HQ. `force` (the button) re-analyses EVERY filtered story incl.
      already-pinned ones; auto mode passes force=false and only fills the gaps. */
   async function aiGeocodeNews(force){
-    if(!aiReady()){ aiToast(t('aiNoKey')); return; }
+    if(!aiGate()) return;
     const mode=newsPinMode, pub=(mode==='publisher'), cacheKey=pub?'_aiPub':'_aiGeo';
     const need=it=>{ const a=it.analysis; if(!a) return false;
       if(force) return true;
@@ -5237,7 +5452,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if(currentMode!=='news'&&currentMode!=='saved') return;
     clearTimeout(_autoEnrichT);
     _autoEnrichT=setTimeout(()=>{
-      try{ if(aiLocateMode==='auto' && aiReady()) aiGeocodeNews(false); }catch(_){}
+      /* (#R27) Account AI: only auto-run for a logged-in user who still has free quota, and NEVER from
+         this background pass open the auth modal / spend a surprise quota — that's why we check
+         currentUser + aiUsesLeft() here instead of calling the gated aiGeocodeNews unconditionally. */
+      try{ if(aiLocateMode==='auto' && currentUser && aiUsesLeft()>0) aiGeocodeNews(false); }catch(_){}
       /* (#R15) Titles are NO LONGER auto-translated on load — the user found the automatic translation
          intrusive. Translation now runs ONLY when the "Translate titles" button is pressed. */
     }, 600);
@@ -5254,7 +5472,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let _translateBusy=false;
   async function aiTranslateTitles(){
     if(_translateBusy) return;
-    if(!aiReady()){ aiToast(t('aiNoKey')); return; }
+    if(!aiGate()) return;
     const target=currentLang==='jp'?'Japanese':'English';
     const todo=computeFilteredNews().filter(it=>it.analysis && !it.analysis._titleTried).slice(0,120);
     /* (#R9/#20) Spinner + progress + result toast — mirrors the AI-locate "detecting" UI so it's
@@ -5449,7 +5667,7 @@ window.addEventListener('DOMContentLoaded', () => {
      Translates the extracted reader text (res.blocks); toggles original/translated and
      caches the result on `res` so flipping back and forth is instant. */
   async function aiTranslateReader(item,res,btn){
-    if(!aiReady()){ aiToast(t('aiNoKey')); return; }
+    if(!aiGate()) return;
     const bodyEl=document.querySelector('#news-reader-pane .nrp-body'); if(!bodyEl||!btn) return;
     const setLbl=on=>{ btn.innerHTML = on ? '↩ '+aiEsc(t('aiShowOriginal')) : '✨ '+aiEsc(t('aiTranslate')); };
     if(bodyEl.dataset.translated==='1'){ if(res._origHTML!=null) bodyEl.innerHTML=res._origHTML; bodyEl.dataset.translated='0'; setLbl(false); return; }
@@ -6066,7 +6284,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tzs) tzs.value=(userTZ&&userTZ!=='auto')?userTZ.replace(/_/g,' '):'';
       if(tzr) tzr.classList.remove('show');
     }catch(_){}
-    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){}
+    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} try{ aiFetchUsage(); }catch(_){}
     /* (#R20) nav sensitivity sliders reflect the saved values + live % labels */
     try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens'), is=document.getElementById('setting-inertia');
       const zv=document.getElementById('zoom-sens-val'), pv=document.getElementById('pan-sens-val'), iv=document.getElementById('inertia-val');
@@ -6942,27 +7160,19 @@ window.addEventListener('DOMContentLoaded', () => {
            The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. */
         if(!window._imDemoActive) setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
     });
-    /* (#R25) Tap-target safety net for the recurring "勝手に別のレイヤーがオン/Country borders→place names"
-       cross-wiring. Even with 44px rows, an iOS synthetic click fires AFTER any layout shift (the
-       Active-layers / favorites section growing when a layer is toggled), so the click can hit-test a
-       DIFFERENT row than the finger went down on. We record the label under the finger at pointerdown and,
-       if the click resolves to a different label, cancel the (wrong) native toggle and toggle the original. */
+    /* (#R27) SCROLL-CANCEL guard (replaces the old pointerdown→click RETARGET heuristic, which was
+       itself the cause of "なにも操作してないのに勝手にレイヤーが追加される": after a scroll/fat-finger it
+       toggled whatever label the finger went DOWN on, switching a layer the user never meant to touch).
+       The correct model: a checkbox is a SINGLE label-driven toggle (pointer-events:none above), and a
+       gesture that MOVED (a scroll/drag) must NOT toggle anything. So here we only SUPPRESS a click that
+       followed a real move — we never synthesize a toggle. No retargeting, no phantom layers. */
     (function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
-      let downLab=null, downT=0;
-      dd.addEventListener('pointerdown',(e)=>{ try{ downLab=e.target.closest&&e.target.closest('label.layer-option'); downT=Date.now(); }catch(_){ downLab=null; } },true);
+      let downX=0, downY=0, moved=false;
+      dd.addEventListener('pointerdown',(e)=>{ downX=e.clientX; downY=e.clientY; moved=false; },true);
+      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>10||Math.abs(e.clientY-downY)>10) moved=true; },true);
       dd.addEventListener('click',(e)=>{
-        try{
-          if(e.target.closest&&e.target.closest('.lyr-star')){ downLab=null; return; }   /* star handles itself */
-          const start=downLab; downLab=null;
-          if(!start || (Date.now()-downT)>1500) return;                                   /* no/stale gesture */
-          const hit=e.target.closest&&e.target.closest('label.layer-option');
-          if(hit===start) return;                                                          /* correct row → native toggle is right */
-          /* Mismatch: a reflow retargeted the tap. Honor where the finger went DOWN. */
-          e.preventDefault(); e.stopPropagation();
-          const cb=start.querySelector('input[type=checkbox]');
-          if(cb){ cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true})); }
-        }catch(_){}
+        try{ if(moved && e.target.closest && e.target.closest('label.layer-option, .lyr-row')){ e.preventDefault(); e.stopPropagation(); } }catch(_){}
       },true);
     })();
     window.reorganizeLayerPanel=function(){
@@ -7232,11 +7442,14 @@ window.addEventListener('DOMContentLoaded', () => {
             NATO_YEARS.map(y=>'<option value="'+y+'"'+(y===_natoYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
           row.querySelector('.nato-year-sel').addEventListener('change',(e)=>{ _natoYear=+e.target.value||_natoYear; applyNato(); const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; });
         } else {
-          row.innerHTML=(jp?'加盟年':'Year')+' <span style="position:relative;flex:1;min-width:80px;"><span style="display:block;position:relative;padding-bottom:12px;">'+
+          /* (#R27) Only the START and END years are labeled (a flex space-between row), not every
+             accession year — the dense per-year ticks collided (1999/2004/2009/2017/2020/2023/2024 all
+             bunched at the right) which was the "範囲のテキストが重なるクソUI". The selected year shows in
+             the <b> readout, so no information is lost. */
+          row.innerHTML=(jp?'加盟年':'Year')+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
             '<input type="range" min="0" max="'+(NATO_YEARS.length-1)+'" step="1" value="'+NATO_YEARS.indexOf(_natoYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
-            '<span style="position:absolute;left:0;right:0;top:18px;height:0;">'+
-            NATO_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(NATO_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
-            '</span></span> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_natoYear+'</b>';
+            '<span style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+NATO_YEARS[0]+'</span><span>'+NATO_YEARS[NATO_YEARS.length-1]+'</span></span>'+
+            '</span> <b class="nato-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_natoYear+'</b>';
           row.querySelector('input').addEventListener('input',(e)=>{ _natoYear=NATO_YEARS[+e.target.value]||_natoYear; const v=el.querySelector('.nato-year-val'); if(v) v.textContent=_natoYear; clearTimeout(natoLegend._t); natoLegend._t=setTimeout(applyNato,120); });
         }
         el.appendChild(row);
@@ -7284,11 +7497,12 @@ window.addEventListener('DOMContentLoaded', () => {
             EU_YEARS.map(y=>'<option value="'+y+'"'+(y===_euYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
           row.querySelector('.eu-year-sel').addEventListener('change',(e)=>{ _euYear=+e.target.value||_euYear; applyEu(); const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; });
         } else {
-          row.innerHTML=(jp?'加盟年':'Year')+' <span style="position:relative;flex:1;min-width:80px;"><span style="display:block;position:relative;padding-bottom:12px;">'+
+          /* (#R27) Same fix as NATO: label only the first/last year (space-between), not every dense
+             enlargement year, so the range text no longer overlaps. */
+          row.innerHTML=(jp?'加盟年':'Year')+' <span style="flex:1;min-width:90px;display:flex;flex-direction:column;gap:1px;">'+
             '<input type="range" min="0" max="'+(EU_YEARS.length-1)+'" step="1" value="'+EU_YEARS.indexOf(_euYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
-            '<span style="position:absolute;left:0;right:0;top:18px;height:0;">'+
-            EU_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(EU_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
-            '</span></span> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_euYear+'</b>';
+            '<span style="display:flex;justify-content:space-between;font-size:8px;line-height:1;color:var(--text-muted);"><span>'+EU_YEARS[0]+'</span><span>'+EU_YEARS[EU_YEARS.length-1]+'</span></span>'+
+            '</span> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_euYear+'</b>';
           row.querySelector('input').addEventListener('input',(e)=>{ _euYear=EU_YEARS[+e.target.value]||_euYear; const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; clearTimeout(euLegend._t); euLegend._t=setTimeout(applyEu,120); });
         }
         el.appendChild(row);
@@ -9601,8 +9815,9 @@ window.addEventListener('DOMContentLoaded', () => {
           const {error}=await DB.auth.signUp({email,password,options:{data:{display_name:name}}}); if(error) throw error;
           msg.textContent='Account created. If email confirmation is required, confirm via the link we emailed you, then log in.'; setTab('login');
         } else {
-          const {error}=await DB.auth.signInWithPassword({email,password}); if(error) throw error;
+          const {data,error}=await DB.auth.signInWithPassword({email,password}); if(error) throw error;
           m.style.display='none';
+          try{ recordLogin(data&&data.user&&data.user.id); }catch(_){}   /* (#R27) genuine login → count for the 3rd-login feedback nudge */
         }
       }catch(e){ msg.textContent='Error: '+((e&&e.message)||e); }
       finally{ $am('am-submit').disabled=false; }
@@ -9620,7 +9835,12 @@ window.addEventListener('DOMContentLoaded', () => {
     $am('am-oauth-google').onclick=()=>oauth('google');
     window.__amSetTab=setTab;
   }
-  function openAuthModal(){ const m=document.getElementById('auth-modal'); if(m){ if(window.__amSetTab) window.__amSetTab('login'); m.style.display='flex'; } }
+  function openAuthModal(contextMsg){ const m=document.getElementById('auth-modal'); if(!m) return; if(window.__amSetTab) window.__amSetTab('login');
+    try{ const sub=document.getElementById('am-sub');
+      if(sub){ if(contextMsg){ sub.dataset.ctx='1'; sub.textContent=contextMsg; }
+        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(currentLang==='jp'?'ログインまたは新規登録で、投稿・コメント・お気に入りを端末間で共有できます。':'Log in or create an account to post, comment and save favorites across devices.'); } }
+    }catch(_){}
+    m.style.display='flex'; }
   function openAccountMenu(){
     if(!currentUser) return openAuthModal();
     let m=document.getElementById('acct-modal');
@@ -9883,6 +10103,23 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(e){ console.warn('[IntMap] realtime subscribe failed:', e&&e.message); }
   }
 
+  /* (#R27) Count a genuine, user-initiated login (email submit success OR an OAuth return — NOT a
+     session restore on reload, NOT a token refresh) and, on the user's 3rd login, show the feedback
+     popup once. _loginCounted caps it at one per page load so OAuth's double signal can't double-count.
+     Stored per-user in localStorage and mirrored best-effort to profiles.login_count (column optional). */
+  let _loginCounted=false;
+  function recordLogin(uid){
+    try{
+      uid=uid||(currentUser&&currentUser.id); if(_loginCounted||!uid) return; _loginCounted=true;
+      const key='intmap_login_count_'+uid; let n=parseInt(localStorage.getItem(key)||'0',10)||0; n++;
+      try{ localStorage.setItem(key,String(n)); }catch(_){}
+      try{ if(window.sb) window.sb.from('profiles').update({login_count:n}).eq('id',uid); }catch(_){}
+      if(n===3){ const dk='intmap_fb_prompted_'+uid; let done=false; try{ done=!!localStorage.getItem(dk); }catch(_){}
+        if(!done){ try{ localStorage.setItem(dk,'1'); }catch(_){} setTimeout(()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} },1500); } }
+    }catch(_){}
+  }
+  window.recordLogin=recordLogin;
+
   /* ---------- BOOT ---------- */
   async function bootSupabase(){
     if(!DB){ console.warn('[IntMap] Supabase unavailable — load supabase.js / supabase-config.js. Running with empty data.'); return; }
@@ -9914,6 +10151,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ renderUI(); }catch(_){}            /* reflect the new auth state in the active tab immediately */
         /* Pro entitlement may have changed → re-check satellite provider access */
         try{ if(currentMapType==='sat'){ const cur=satProviderById(satState.providerId); if(cur&&cur.tier==='pro'&&!satHasKey(cur)) satRevertToFallback(); else satRenderController(); } }catch(_){}
+        try{ if(currentUser) aiFetchUsage(); }catch(_){}   /* (#R27) refresh today's AI-quota for the signed-in user */
       },0);
     });
     await refreshCurrentUser();
@@ -9925,6 +10163,7 @@ window.addEventListener('DOMContentLoaded', () => {
          parse is near-instant, but a ?code= exchange needs a network hop to Supabase. Reflect each tick. */
       for(let i=0;i<16 && !currentUser;i++){ await new Promise(r=>setTimeout(r,400)); try{ await refreshCurrentUser(); }catch(_){} if(currentUser){ try{ updateAccountButton(); renderUI(); }catch(_){} } }
       try{ if(currentUser){ await loadFavorites(); renderUI(); } }catch(_){}
+      try{ if(currentUser){ recordLogin(); aiFetchUsage(); } }catch(_){}   /* (#R27) an OAuth return is a genuine login */
       /* (#R8) Only scrub the token AFTER a session is in hand. Scrubbing while the exchange is still
          pending throws away the code and forces a manual reload — the exact "戻ると未ログイン" symptom. */
       try{ if(currentUser && (location.protocol==='http:'||location.protocol==='https:')) history.replaceState(null,'',location.origin+location.pathname); }catch(_){}
@@ -13028,8 +13267,12 @@ window.addEventListener('DOMContentLoaded', () => {
          so the line was not vertically centered in the button — "横線がボタン内の中間にない"). */
       '#cmp-min{position:relative;color:transparent !important;display:flex;align-items:center;justify-content:center;}'+
       '#cmp-min::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:13px;height:2px;border-radius:1px;background:var(--text-main);}'+
-      '.cmp-head{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--sidebar-bg);cursor:move;flex:0 0 auto;border-bottom:1px solid rgba(128,128,128,0.18);}'+
+      '.cmp-head{display:flex;align-items:center;gap:6px;padding:6px 40px 6px 8px;background:var(--sidebar-bg);cursor:move;flex:0 0 auto;border-bottom:1px solid rgba(128,128,128,0.18);}'+
       '.cmp-head .cmp-title{font-weight:700;font-size:12px;margin-right:auto;color:var(--text-main);}'+
+      /* (#R27) Close × is a direct child of the window now (relocated out of the header), pinned top-right
+         above all header/controls so nothing can overlap it. Mobile media query enlarges it below. */
+      '#cmp-close{position:absolute;top:7px;right:8px;z-index:30;background:var(--input-bg);}'+
+      '#cmp-close:hover{background:#ff3b30;color:#fff;}'+
       /* (#R24) touch-action:manipulation → compare buttons (Map/Sat/Sync/Free/X-ray/min/close) fire on the
          FIRST tap with no iOS 300ms delayed/retargeted click — a big reason map/satellite "押しても変わらない"
          and the close "終了できない" on mobile. */
@@ -13038,7 +13281,11 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
       '#compare-map{position:absolute;inset:0;}'+
       '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:5;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
-      '.cmp-ctrls select,.cmp-ctrls label{font-size:10.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:3px 6px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
+      '.cmp-ctrls label{font-size:11px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:4px 7px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
+      /* (#R27) The select had display:flex applied to a NATIVE <select>, which collapsed its text box so
+         "レイヤーを選択" rendered crushed. Give the select its own comfortable rule (no flex, bigger font,
+         real padding + a min-width so the placeholder always fits). */
+      '.cmp-ctrls select{font-size:12.5px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:5px 9px;line-height:1.35;backdrop-filter:blur(8px);min-width:200px;}'+
       /* (#R13) X-ray mode: the compare window goes transparent so the MAIN map shows through at the same
          location (like an X-ray) — only the compare window\'s own data layers paint on top. */
       /* (#R16) X-ray is a movable LENS — NOT a fullscreen takeover (the user: "なんで勝手に全画面にするねん").
@@ -13152,6 +13399,13 @@ window.addEventListener('DOMContentLoaded', () => {
       } }catch(_){}
       return [cx,cy];
     }
+    /* (#R27) Normalize longitude to [-180,180]. The main flat map in FREE-PAN wraps the world (renders
+       copies past ±180°), but the compare map is renderWorldCopies:false — so once the main scrolled into
+       a wrapped copy, the synced center longitude (e.g. 200°) put the compare camera somewhere its basemap
+       couldn't follow → "レイヤーと地図がずれる" on big scrolls / zoomed-out X-ray. Wrapping the synced lng to
+       the equivalent in-range value keeps the compare basemap + its data layers registered together. */
+    const _wrapLng=(lng)=>{ let x=((lng+180)%360+360)%360-180; return x; };
+    const _normCenter=()=>{ const c=map.getCenter(); return {lng:_wrapLng(c.lng), lat:c.lat}; };
     function syncFromMain(){ if(mode==='free'||!cmap||syncing) return; syncing=true;
       try{
         followProjection();
@@ -13163,11 +13417,11 @@ window.addEventListener('DOMContentLoaded', () => {
              padding or every padded pixel is offset. Mirror it on every sync. */
           layoutXrayLens();
           let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
-          cmap.jumpTo({center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
+          cmap.jumpTo({center:_normCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:pad});
         } else {
           /* SYNC: center the compare on the geography under the UNCOVERED-area centroid. */
-          let target=null; try{ target=map.unproject(uncoveredCentroidPx()); }catch(_){}
-          cmap.jumpTo({center:target||map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
+          let target=null; try{ const u=map.unproject(uncoveredCentroidPx()); target={lng:_wrapLng(u.lng),lat:u.lat}; }catch(_){}
+          cmap.jumpTo({center:target||_normCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),padding:{top:0,right:0,bottom:0,left:0}});
         }
       }catch(_){} syncing=false; }
     /* (#R20) the REVERSE direction: the user drags the compare map → drive the main map so the
@@ -13339,6 +13593,11 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
+      /* (#R27) Pull the close × OUT of the wrapping header flow and make it a direct child of the window,
+         pinned top-right above everything. On mobile the 7-button header wraps, and a wrapped row could
+         land on top of the × ("×がレイヤー選択ボタンと重なって終了できない") — now nothing in the header/controls
+         can ever overlap it, on ANY platform. (Base + mobile CSS position #cmp-close absolutely.) */
+      try{ const _x=win.querySelector('#cmp-close'); if(_x) win.appendChild(_x); }catch(_){}
       cmap=new maplibregl.Map({container:'compare-map',style:compareStyle(),center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),attributionControl:{compact:true},renderWorldCopies:false,maxPitch:85});
       try{ cmap.__wantGlobe=(typeof currentProj==='undefined'||currentProj!=='flat'); cmap.setProjection({type:cmap.__wantGlobe?'globe':'mercator'}); }catch(_){}
       /* (#R25) ROOT CAUSE of "メインマップがGlobeでもcompareはFlatのまま / Flatに戻してからGlobeにしないと反映
@@ -13442,6 +13701,14 @@ window.addEventListener('DOMContentLoaded', () => {
       requestAnimationFrame(fit); setTimeout(fit,80); setTimeout(fit,300); try{ cmap.once('idle',fit); }catch(_){} }
     function close(){ if(win){ if(xrayOn()){ try{ clearXrayLens(); }catch(_){} } win.style.display='none'; win.classList.remove('cmp-xray'); mode='sync';
       try{ win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')==='sync')); }catch(_){} applyBase(); } }
+    /* (#R27) Re-clamp the window OFF the sidebar whenever the sidebar WIDTH changes — the open/drag clamps
+       didn't cover a LIVE sidebar resize, so widening the sidebar slid it under the window ("サイドバーを
+       広げるとCompare view windowがサイドバーの上に載る"). Pushes the window right if the now-wider sidebar
+       would overlap it. */
+    window._cmpReclamp=function(){ try{ if(!win||win.style.display==='none') return; if(window.matchMedia('(max-width:768px)').matches) return;
+      const sb=document.getElementById('sidebar'); if(!sb||sb.classList.contains('collapsed')) return;
+      const sr=sb.getBoundingClientRect(), wr=win.getBoundingClientRect();
+      if(sr.width>0 && sr.left<=2 && wr.left < sr.right+8){ win.style.right='auto'; win.style.left=(sr.right+12)+'px'; try{ cmap.resize(); }catch(_){} if(mode!=='free') syncFromMain(); } }catch(_){} };
     /* entry button in the Layers dropdown */
     /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
        #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button
@@ -13452,6 +13719,15 @@ window.addEventListener('DOMContentLoaded', () => {
       dd.appendChild(wrap); wrap.querySelector('#btn-compare').onclick=open;
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1600);
+    /* (#R27) Re-clamp the compare window off the sidebar whenever the sidebar slides open/closed or is
+       resized (covers "サイドバーを広げるとcompare viewがサイドバーの上に載る"). The 450ms re-run waits out the
+       0.4s sidebar slide so the final geometry is clamped, not the mid-transition one. */
+    try{
+      const _reclampSoon=()=>{ try{ window._cmpReclamp&&window._cmpReclamp(); }catch(_){} setTimeout(()=>{ try{ window._cmpReclamp&&window._cmpReclamp(); }catch(_){} },450); };
+      window.addEventListener('intmap-sidebar-resize',_reclampSoon);
+      document.addEventListener('click',(e)=>{ try{ if(e.target.closest&&e.target.closest('.btn-toggle-sidebar')) _reclampSoon(); }catch(_){} });
+      const _sbEl=document.getElementById('sidebar'); if(_sbEl) _sbEl.addEventListener('transitionend',(e)=>{ if(e.propertyName==='margin-left'||e.propertyName==='width') _reclampSoon(); });
+    }catch(_){}
     return { open, close, _map:()=>cmap };
   })();
 
@@ -13567,7 +13843,7 @@ window.addEventListener('DOMContentLoaded', () => {
       (document.getElementById('map-container')||document.body).appendChild(panel);
       return panel; }
     async function open(name,lngLat){
-      try{ if(typeof aiReady==='function'&&!aiReady()){ try{ imToast(t('aiNoKey')); }catch(_){} return; } }catch(_){}
+      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const p=ensure();
       p.style.display='block';
       p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">🤖 '+(jp()?'AI調査: ':'AI brief: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
@@ -14158,7 +14434,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:18px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">🤖 ${jp?'AI調査':'AI brief'}</button></div></div>`;
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">🤖 ${jp?'AI調査':'AI brief'}</button></div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
@@ -14463,6 +14739,9 @@ window.addEventListener('DOMContentLoaded', () => {
          never leave an orphan layer behind ("オンのままで active layers に出ず消せない"). */
       try{ SHOW.forEach(s=>setOff(s[0])); }catch(_){ setOff(curId); }
       window._imDemoActive=false;
+      /* (#R27) Re-assert place labels after the demo so the default names aren't left hidden by the
+         demo's layer cycling ("デフォルトで地名ラベルが出ない"). */
+      try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
       try{ pill.remove(); }catch(_){} if(markSeen){ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} }
       try{ const sv=window.IntMapBookmark&&window.IntMapBookmark.save; if(sv) sv(); }catch(_){}   /* re-sync the hash to the real (demo-free) layer set */ }
     const dd=document.getElementById('layer-dropdown');

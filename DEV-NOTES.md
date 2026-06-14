@@ -2163,3 +2163,79 @@ RUNS (~72 layer rows), not just parses.**
   in-demo render couldn't be confirmed headless (the hidden tab never completes WebGL load).
 - #active-layers desync — driven by checkbox⇄map state; the cross-wiring + phantom-layer fixes target the
   root causes; flagged for device re-confirm.
+
+---
+
+## 30. Round 27 — account-based AI migration + recurring-bug root-causes (tags `#R27`)
+
+Build `2026-06-15-R27`. Big batch: the AI feature was migrated off BYOK onto an account-gated, quota-limited
+first-party server, plus root-cause passes on the recurring mobile/UI bugs. Standing lessons kept: no
+back-ticks inside CSS template literals (verified the page RUNS — 72 layer rows, zero console errors after
+every batch); changes additive/in-place.
+
+### AI: BYOK → account-based built-in AI (the headline feature)
+- **Server (`supabase/functions/ai-proxy/index.ts`, new)** holds the provider key SERVER-SIDE, verifies the
+  user's Supabase JWT (login REQUIRED → 401), enforces a per-day free quota via the `increment_ai_usage`
+  RPC (atomic), calls the provider (Anthropic default, model fixed by `AI_MODEL` secret), and returns
+  `{text, used, limit, remaining}`. A failed provider call REFUNDS the consumed slot. Limit is plan-driven
+  (`PLAN_LIMITS = {free:5, plus:50, pro:200, …}` keyed on `profiles.plan`) → trivially extensible to paid tiers.
+- **SQL (`supabase_ai_usage.sql`, new)**: `ai_usage(user_id, usage_date, count)` (the date IS the key → daily
+  reset is automatic), RLS read-own, `increment_ai_usage` / `refund_ai_usage` (SECURITY DEFINER, service-role
+  only), and optional `profiles.plan` / `profiles.login_count` columns.
+- **Client**: removed the BYOK provider/key/model UI from Settings (the section now shows login state +
+  "today's N / 5 free"); `askAI()` now ALWAYS routes through the proxy (`window.INTMAP_AI_PROXY.url` defaults
+  to `<SUPABASE_URL>/functions/v1/ai-proxy`) with the session JWT + anon apikey. New `aiGate()` runs at every
+  AI-feature click: not-logged-in → opens the auth modal with an AI-context message; over quota → toasts
+  「本日の無料AI使用回数に達しました」. `aiReady()`/`aiVisionReady()` now just mean "proxy configured" so buttons
+  never grey out. Auto-locate news no longer silently burns quota (gated on `currentUser && aiUsesLeft()>0`).
+- **DEPLOY STEPS the user must run once** (front-end is fully wired and degrades gracefully until then):
+  `supabase functions deploy ai-proxy`  ·  run `supabase_ai_usage.sql` in the SQL editor  ·
+  `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...` (optional `AI_MODEL`, `AI_PROVIDER`).
+
+### #3rd-login feedback — `recordLogin()` counts a GENUINE login (email-submit success or OAuth return, NOT a
+  session restore / token refresh; `_loginCounted` caps one per page-load) per-user in localStorage (mirrored
+  best-effort to `profiles.login_count`); on the 3rd it opens the existing feedback modal once.
+
+### Recurring-bug ROOT CAUSES (the ones earlier rounds skinned)
+- **Close × unresponsive on mobile (#×反応しない)** — `makeDraggable`'s touchstart handler is on the panel
+  HEADER which CONTAINS the ×, and it `preventDefault()`s every touchstart; on touch, preventDefault on
+  touchstart CANCELS the synthesized click → the ×'s onclick never fired (desktop's mousedown-preventDefault
+  does NOT cancel click, which is why it worked there). Fix: drag now ignores gestures that start on a control
+  (button/×/input…). Plus an idempotent delegated fallback for every legend × with a `data-x` (survives the
+  innerHTML rebuilds that were dropping the direct onclick).
+- **Layer checkbox instability / 勝手にレイヤーがオン** — the R25 pointerdown→click RETARGET heuristic was ITSELF
+  the phantom-toggle cause (after a scroll/fat-finger it toggled whatever label the finger went DOWN on).
+  Replaced with the correct model: checkbox `pointer-events:none` on BOTH platforms → exactly ONE label-driven
+  toggle (verified: 2 clicks = 2 change events), and a SCROLL-CANCEL guard that only SUPPRESSES a click after a
+  real move (never synthesizes a toggle). Deterministic checkbox⇄map⇄active-layers state.
+- **Default place labels missing** — `ensurePlaceLabels` is now IDEMPOTENT (dropped the `_placeLabelsAdded`
+  one-shot guard that blocked re-adding when the first add beat the OFM source ready) + re-asserted on `ofm`
+  sourcedata and after the intro demo. Country borders default OFF (they were checked-by-default but undrawn).
+
+### Other fixes
+- **Text shadows removed** — the R25/R26 frosted "contrast halo / hard drop" on every panel/legend/popup is
+  gone (`text-shadow:none`), per "テキストに勝手に影を付けるな". (verified computed `text-shadow:none`.)
+- **Tools buttons** 50px→38px single-line+ellipsis (the 50px only existed to hold a 2-line label = "縦幅が
+  大きすぎて不自然"). **EU/NATO** year slider now labels only the start/end years (the dense per-accession-year
+  ticks collided = "範囲のテキストが重なる"). **Place-label popup** × aligned to the action-buttons' right edge,
+  mobile dead-space padding removed. **Radius** containment moved to base rules (R26 only did it <768px, so
+  tablets/landscape still spilled).
+- **Compare**: layer-select no longer crushed (a native `<select>` had `display:flex` collapsing its text box);
+  close × relocated OUT of the wrapping header to a direct child of the window (nothing can overlap it on any
+  platform — the durable fix for "×がレイヤー選択ボタンと重なって終了できない"); `_cmpReclamp` re-clamps off the
+  sidebar on expand/collapse/resize; synced longitude normalized to [-180,180] so a free-pan wrapped main map
+  no longer drifts the compare basemap/layers.
+- **Cursor readout** SST/temp cache coarsened 0.1°→0.25° (far more instant cache hits in a local area, fewer
+  fetches) + nearest-fill widened to 1.5° so the readout never blanks while panning.
+- **Mobile pinch-zoom sensitivity** — implemented a custom 2-finger pinch that scales the zoom delta by the
+  slider; it engages ONLY when the user CHANGED the setting (sens≠1), so the default pinch is 100% untouched.
+- **Non-AI news locator (大幅増強)** — added a DEMONYM gazetteer (~65 client / ~43 server: "Ukrainian/Israeli/
+  Iranian…" → the country, flagged + score-docked so explicit places always win) — a large share of headlines
+  name a country only by its adjective; +~40 curated conflict/hub cities; corroboration bonus (title AND desc).
+  Mirrored into the `refresh-news` Edge Function (redeploy to apply to the pre-baked feeds).
+
+### Still genuinely device/2nd-GL-bound (flagged honestly, not dismissed)
+- Mobile touch behaviors (checkbox taps, close-× taps, pinch feel, radius render) — root-caused in code; the
+  hidden preview's WebGL `load` never fires so touch/mobile rendering can't be exercised headless.
+- Compare X-ray drift at very low globe zoom (two GL instances) — lng-normalize + padding-mirror help; needs a
+  real device. Free-pan flat drift mitigated by the lng wrap.
