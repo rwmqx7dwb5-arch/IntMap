@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-14-R25';
+  window.INTMAP_BUILD='2026-06-14-R26';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -370,10 +370,16 @@ gtag('config', 'G-57X5MX0ZPW');
        different number of lines, which read as "間隔がランダムで不自然". Normalize into one tidy, equal-height
        group: a FIXED height (not min-height, so they're identical) with the icon+label centered and the
        label clamped to ≤2 lines so a long string can't blow the height out. */
+    /* (#R26) Make the 4 Tools buttons TRUE direct flex children so the one 8px gap applies uniformly to all
+       of them (quiz + presets were wrapped in #edu-mount / #lyr-presets, whose box added irregular spacing).
+       display:contents dissolves those wrappers; the button height is forced so a wrapped label can't change
+       it. This is why the spacing kept reading "ランダム". */
+    #layer-tools > #edu-mount, #layer-tools > #lyr-presets{ display:contents !important; }
     #layer-tools > #btn-compare, #layer-tools > #btn-upload-geojson,
     #layer-tools #btn-edu, #layer-tools #lp-save{
-      height:50px; display:flex; align-items:center; justify-content:center; gap:7px;
-      text-align:center; line-height:1.18; padding:4px 12px; overflow:hidden;
+      height:50px !important; min-height:50px !important; box-sizing:border-box;
+      display:flex !important; align-items:center; justify-content:center; gap:7px;
+      text-align:center; line-height:1.18; padding:4px 12px; overflow:hidden; margin:0 !important;
     }
     #layer-tools #btn-compare > span, #layer-tools #btn-upload-geojson > span,
     #layer-tools #btn-edu > span, #layer-tools #lp-save > span{
@@ -6350,8 +6356,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバー", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバー", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
@@ -6455,10 +6461,11 @@ window.addEventListener('DOMContentLoaded', () => {
            every MapLibre popup (place-label / pin / news), and the country info card. One 32px size for all. */
         .src-card-close{ width:32px !important; height:32px !important; font-size:17px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16); top:6px !important; right:6px !important; }
         .maplibregl-popup-close-button{ width:32px !important; height:32px !important; font-size:19px !important; line-height:1 !important; padding:0 !important; display:flex; align-items:center; justify-content:center; border-radius:9px; background:rgba(128,128,128,0.16) !important; right:6px !important; top:6px !important; }
-        /* (#R26 FIX) R25 added `position:relative` here, which OVERRODE the `position:absolute` these close
+        /* (#R26 FIX) R25 added position:relative here, which OVERRODE the position:absolute these close
            buttons rely on for their top/right corner placement — so they jumped out of position and taps
            missed them entirely ("×を押しても反応しない"). Keep ONLY touch-action (kills the iOS click delay);
-           never touch `position` (each button keeps its own absolute corner rule). */
+           never set position here (each button keeps its own absolute corner rule).
+           NOTE: this comment lives INSIDE a style.textContent=` ` template literal — NO back-ticks allowed. */
         .maplibregl-popup-close-button, .layer-popup-x, .legend-min, .kip-x, .pin-popup-close,
         .country-popup-close, #cp-close, .src-card-close, .tp-close, .satc-close, .wgt-x{
           touch-action:manipulation !important; }
@@ -6789,7 +6796,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ['__grp','lyrGrpDemo'],
       ['pop','lyrPop'],['popgrid','lyrPopGrid'],['gdppc','lyrGDPpc'],['tfr','lyrTFR'],['hdi','lyrHDI'],['dem','lyrDem'],
       ['__grp','lyrGrpGeoPol'],
-      ['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO']
+      ['milSpend','lyrMilSpend'],['milSpendGDP','lyrMilSpendGDP'],['nato','lyrNATO'],['eu','lyrEU']
     ].forEach(([id,key])=>{
       if(id==='__grp'){ const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=i18n[currentLang][key]||''; dd.appendChild(h); return; }
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+id;
@@ -6816,7 +6823,7 @@ window.addEventListener('DOMContentLoaded', () => {
          opacity control lives THERE and the inline Layers-panel slider is hidden for all of them. */
       const HAS_LEGEND=new Set(['climate','hdi','dem','pop','popgrid','eez','temp','thermal','radar','sst','relief','sealevel',
         'gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','wind',
-        'precip','clouds','ships','planes','hillshade','contours','night','subcables','nato']);
+        'precip','clouds','ships','planes','hillshade','contours','night','subcables','nato','eu']);
       if(HAS_LEGEND.has(id)) w.classList.add('has-legend');
       w.innerHTML=`<label class="layer-option"><input type="checkbox" id="dl-${id}"> <span data-i18n="${key}">${i18n[currentLang][key]}</span></label><input type="range" class="lyr-op" id="op-${id}" min="0" max="1" step="0.05" value="${opacities[id]}">${extra}`;
       dd.appendChild(w);
@@ -6951,7 +6958,7 @@ window.addEventListener('DOMContentLoaded', () => {
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet']],   /* (#R25) Life expectancy / Unemployment / Internet promoted out of beta into real layers */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2']],
-          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','histb','ukrfront','rail']]   /* (#R22) volcanoes/railways/corruption promoted out of beta */
+          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','eu','histb','ukrfront','rail']]   /* (#R26) EU members layer added beside NATO */
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
         const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','seaRoute','chokepoints','dams','sahel','islandChain1','islandChain2','stringOfPearls','bri','pipelines','nuclear'];
@@ -7229,6 +7236,54 @@ window.addEventListener('DOMContentLoaded', () => {
         positionTooltip(e.point);
       });
       map.on('mouseleave','nato-fill',()=>{ if(mapTooltipEl) mapTooltipEl.style.display='none'; });
+    }
+
+    /* (#R26 / EU) European Union members fill + accession-year time-travel control (mirrors NATO). Real
+       enlargement years; the UK is dropped from 2020 (Brexit). EU outermost regions are NOT clipped. */
+    const EU=new Set(['BEL','FRA','DEU','ITA','LUX','NLD','DNK','IRL','GBR','GRC','ESP','PRT','AUT','FIN','SWE','CYP','CZE','EST','HUN','LVA','LTU','MLT','POL','SVK','SVN','BGR','ROU','HRV']);
+    const EU_JOIN={BEL:1958,FRA:1958,DEU:1958,ITA:1958,LUX:1958,NLD:1958,DNK:1973,IRL:1973,GBR:1973,GRC:1981,ESP:1986,PRT:1986,AUT:1995,FIN:1995,SWE:1995,CYP:2004,CZE:2004,EST:2004,HUN:2004,LVA:2004,LTU:2004,MLT:2004,POL:2004,SVK:2004,SVN:2004,BGR:2007,ROU:2007,HRV:2013};
+    const EU_LEFT={GBR:2020};
+    const EU_YEARS=[1958,1973,1981,1986,1995,2004,2007,2013,2020,2024];
+    let _euYear=EU_YEARS[EU_YEARS.length-1];
+    function euMemberAt(code,y){ const j=EU_JOIN[code]; if(j==null||j>y) return false; const l=EU_LEFT[code]; if(l&&y>=l) return false; return true; }
+    function buildEuFC(){ const feats=[]; if(countryGeo&&countryGeo.features){ countryGeo.features.forEach(f=>{ const code=String(f.id); if(!EU.has(code)) return; if(!euMemberAt(code,_euYear)) return; feats.push({type:'Feature',id:code,properties:{__code:code},geometry:f.geometry}); }); } return {type:'FeatureCollection',features:feats}; }
+    function addEu(){
+      if(!map.getSource('src-eu')) map.addSource('src-eu',{type:'geojson',data:buildEuFC(),promoteId:'__code'});
+      if(!map.getLayer('eu-fill')) map.addLayer({id:'eu-fill',type:'fill',source:'src-eu',layout:{visibility:'none'},paint:{'fill-color':'#1c3faa','fill-opacity':opacities.eu!=null?opacities.eu:0.5}},beforeId);
+      if(!map.getLayer('eu-line')) map.addLayer({id:'eu-line',type:'line',source:'src-eu',layout:{visibility:'none'},paint:{'line-color':'#ffd617','line-width':1.5}},beforeId);
+    }
+    function applyEu(){ const s=map.getSource('src-eu'); if(s){ try{ s.setData(buildEuFC()); }catch(_){} } }
+    function setEuVis(on){ ['eu-fill','eu-line'].forEach(l=>setVis(l,on)); }
+    function euLegend(){
+      try{
+        const el=window._registerLayerOpacity&&window._registerLayerOpacity('eu',['EU members','EU加盟国'],['eu-fill','eu-line'],'dl-eu');
+        if(!el || el.querySelector('.eu-year-row')){ const lbl=el&&el.querySelector('.eu-year-val'); if(lbl) lbl.textContent=_euYear; return; }
+        const jp=currentLang==='jp';
+        const row=document.createElement('div'); row.className='eu-year-row'; row.style.cssText='font-size:11px;color:var(--text-muted);margin-top:7px;display:flex;align-items:center;gap:7px;';
+        if(typeof isMobile==='function'&&isMobile()){
+          row.innerHTML=(jp?'加盟年':'Year')+' <select class="eu-year-sel" style="flex:1;min-width:0;font-size:14px;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);">'+
+            EU_YEARS.map(y=>'<option value="'+y+'"'+(y===_euYear?' selected':'')+'>'+y+'</option>').join('')+'</select>';
+          row.querySelector('.eu-year-sel').addEventListener('change',(e)=>{ _euYear=+e.target.value||_euYear; applyEu(); const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; });
+        } else {
+          row.innerHTML=(jp?'加盟年':'Year')+' <span style="position:relative;flex:1;min-width:80px;"><span style="display:block;position:relative;padding-bottom:12px;">'+
+            '<input type="range" min="0" max="'+(EU_YEARS.length-1)+'" step="1" value="'+EU_YEARS.indexOf(_euYear)+'" style="width:100%;display:block;margin:0;box-sizing:border-box;">'+
+            '<span style="position:absolute;left:0;right:0;top:18px;height:0;">'+
+            EU_YEARS.map((y,i)=>'<span style="position:absolute;top:1px;left:calc(8px + (100% - 16px) * '+(i/(EU_YEARS.length-1)).toFixed(4)+');transform:translateX(-50%);font-size:8px;color:var(--text-muted);white-space:nowrap;">'+String(y).slice(2)+'</span>').join('')+
+            '</span></span> <b class="eu-year-val" style="color:var(--text-main);min-width:34px;text-align:right;">'+_euYear+'</b>';
+          row.querySelector('input').addEventListener('input',(e)=>{ _euYear=EU_YEARS[+e.target.value]||_euYear; const v=el.querySelector('.eu-year-val'); if(v) v.textContent=_euYear; clearTimeout(euLegend._t); euLegend._t=setTimeout(applyEu,120); });
+        }
+        el.appendChild(row);
+      }catch(_){}
+    }
+    function wireEuHover(){
+      if(map.__euHover) return; map.__euHover=true;
+      map.on('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
+        const el=ensureMapTooltip(); el.style.display='block';
+        el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${currentLang==='jp'?'EU加盟年':'Joined EU'}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(currentLang==='jp'?' 離脱':' left')):''}</b></div>`;
+        positionTooltip(e.point);
+      });
+      map.on('mouseleave','eu-fill',()=>{ if(mapTooltipEl) mapTooltipEl.style.display='none'; });
     }
 
     /* Rimland (#15,#17) — Spykman's coastal crescent as a LAND-only country fill (no sea painted). */
@@ -8395,12 +8450,17 @@ window.addEventListener('DOMContentLoaded', () => {
              defense %GDP also show on hover. */
           withCountries(()=>{ try{ addNato(); applyNato(); wireNatoHover(); setNatoVis(true); natoLegend(); }catch(e){ console.warn('nato fail',e); } });
         }
+        else if(id==='eu'){
+          /* (#R26) EU members fill + accession-year time-travel control (mirrors NATO). */
+          withCountries(()=>{ try{ addEu(); applyEu(); wireEuHover(); setEuVis(true); euLegend(); }catch(e){ console.warn('eu fail',e); } });
+        }
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
         /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
         { try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
       } else {
         if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setNatoVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('nato'); }catch(_){} }
+        else if(id==='eu'){ setEuVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('eu'); }catch(_){} }
         else if(id==='ships'||id==='planes'){ stopTraffic(id); }
         else if(id==='contours'){ setVis('contour-lines',false); setVis('contour-labels',false); }
         else if(id==='wind'){ try{ window.Wind&&window.Wind.toggle(false); const l=document.getElementById('data-legend-wind'); if(l) l.style.display='none'; }catch(_){} }
@@ -8465,6 +8525,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(map.getLayer(id+'-fill')) map.setPaintProperty(id+'-fill','fill-opacity',['case',['<=',['to-number',['feature-state',id],0],0],Math.max(0,v*0.75),v]);
       }
       else if(id==='nato'){ if(map.getLayer('nato-fill'))map.setPaintProperty('nato-fill','fill-opacity',v); }
+      else if(id==='eu'){ if(map.getLayer('eu-fill'))map.setPaintProperty('eu-fill','fill-opacity',v); }
       else if(id==='night'){ if(map.getLayer('lyr-night'))map.setPaintProperty('lyr-night','fill-opacity',v); }
       else if(id==='planes'){ if(map.getLayer('lyr-planes'))map.setPaintProperty('lyr-planes','icon-opacity',v); }
       else if(id==='ships'){ if(map.getLayer('lyr-ships'))map.setPaintProperty('lyr-ships','icon-opacity',v); }
@@ -12116,7 +12177,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const ev=document.getElementById('wgtv-'+e.u); if(ev){ ev.style.cursor='pointer'; ev.onclick=()=>refreshOtd(e); }
       }catch(_){ setV(e.u,'—', una()); } }
     /* Featured layer — random pick from the REGULAR layer rows; tap turns it on (#R20). */
-    const FEAT_IDS=['dl-climate','dl-wind','dl-radar','dl-snow','dl-aod','dl-sst','dl-eez','dl-subcables','dl-planes','eco-dl-worldcover','eco-dl-ecoregions','eco-dl-plates','dl-relief','dl-hillshade','dl-contours','dl-sealevel','dl-pop','dl-popgrid','dl-gdppc','dl-tfr','dl-hdi','dl-dem','dl-thermal','l9-dl-aurora','dl-nightsat','dl-night','dl-fsu','dl-milSpend','dl-milSpendGDP','dl-nato','beta-dl-histb','beta-dl-ukrfront','dl-nuclear'];
+    const FEAT_IDS=['dl-climate','dl-wind','dl-radar','dl-snow','dl-aod','dl-sst','dl-eez','dl-subcables','dl-planes','eco-dl-worldcover','eco-dl-ecoregions','eco-dl-plates','dl-relief','dl-hillshade','dl-contours','dl-sealevel','dl-pop','dl-popgrid','dl-gdppc','dl-tfr','dl-hdi','dl-dem','dl-thermal','l9-dl-aurora','dl-nightsat','dl-night','dl-fsu','dl-milSpend','dl-milSpendGDP','dl-nato','dl-eu','beta-dl-histb','beta-dl-ukrfront','dl-nuclear'];
     function refreshFeatured(e){ try{
         const avail=FEAT_IDS.map(id=>document.getElementById(id)).filter(Boolean);
         if(!avail.length){ setV(e.u,'—',''); return; }
