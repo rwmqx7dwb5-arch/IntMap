@@ -2105,3 +2105,61 @@ or fully exercised — those are flagged). Zero console errors after every batch
 - #8/#10 compare close-overlap + map/sat swap read correct in code (z:30 pinned gutter; applyBase retry) but
   can't be exercised headlessly.
 - #20/#21 the continuous-render fps floor and pinch-zoom rate are MapLibre engine limits.
+
+---
+
+## 29. Round 26 — re-reported batch + EU layer; CRITICAL self-inflicted blank-site fix (tags `#R26`)
+
+Build `2026-06-14-R26`. The user re-tested R25 on device: a few R25 changes regressed or were wrong-
+direction, and they (correctly) corrected me that the frosted text IS genuinely blurred. Treated every
+report as real. **Standing lesson burned in:** see [[intmap-template-literal-css-backtick]].
+
+### CRITICAL: blank-site parse/runtime bug (my fault, twice)
+My R25 close-button COMMENT contained back-ticks (`` `position:relative` ``) and lived INSIDE the GROUP 3
+`style.textContent=` template literal → it closed the string early and broke the WHOLE inline script → blank
+site (no map, only 14 static checkboxes, no globals). My first "fix" comment ALSO contained back-ticks
+(``style.textContent=` ` ``) and re-broke it as a *runtime* TypeError (so `new Function` reported PARSE OK
+while the page was dead). Fixed by removing ALL back-ticks from that comment. Diagnosis tool: a temporary
+`window.onerror` trap (the preview console doesn't surface uncaught errors) pinpointed it. **Verify the page
+RUNS (~72 layer rows), not just parses.**
+
+### R25 regressions fixed
+- **Close buttons unresponsive (#×反応しない)** — R25 added `position:relative` to all close buttons, which
+  overrode their `position:absolute` corner placement → they jumped off-target and taps missed. Reverted to
+  touch-action only.
+- **Frosted text really IS blurred (I was wrong)** — two causes: (1) my "crisp halo" used `0 0 1px`, a
+  1px-BLUR glow that reads as fuzz; (2) R25 dropped "more transparent" to a 7px blur, so the busy map showed
+  through SHARP behind the text → it anti-aliased against high-frequency detail. Fix: hard `0 1px 0` shadow
+  (no blur), and BOTH tiers keep a high uniform blur (26/22px) differentiated by FILL (0.34 vs 0.12) so the
+  backdrop is a smooth wash and text stays crisp.
+- **X-ray header forced black in light mode** — made it theme-aware (light surface in light theme) with
+  theme-colored chips; only the cyan keyline marks the lens.
+
+### New / other fixes
+- **EU members layer + accession-year slider** (mirrors NATO; Brexit-aware: UK dropped from 2020). New
+  `dl-eu` row in Geopolitics & defense, `euLegend` year control (1958…2024), hover shows joined/left year.
+- **Group-header vs layer-name color unified** in frosted modes (headers used --text-muted→white, names
+  used --text-main → different colors; both now --text-main).
+- **Default-load names/borders** — `borders-only-line` is now created in addCountryLayers (was lazy-created
+  only in the cb-borders change handler, so borders were checked-by-default but undrawn until re-toggled);
+  names re-asserted on load + ofm `sourcedata` + a few timed passes.
+- **Labels-on-top rewritten** — raise() now lifts the label stack to the ABSOLUTE TOP, then re-lifts the
+  user's own tool/draw layers above them (old code moved labels to just-below tool-poly, so a raster added
+  above tool-poly stayed over the labels and could thrash).
+- **Tools buttons** — wrappers (#edu-mount/#lyr-presets) set `display:contents` so all 4 buttons are true
+  flex children with one 8px gap; fixed 50px height. Verified uniform.
+- **Compare**: layer-select widened (text no longer crushed); window clamped off the sidebar (drag + open);
+  stats comparison scroll-to-top made INSTANT (was animating via `.content-area{scroll-behavior:smooth}`).
+- **Radius mobile** — long values/coords now wrap/ellipsize inside the bottom card (no overflow).
+- **Mobile layer-toggle flicker** — checkbox `pointer-events:none` so a tap routes through the label exactly
+  once (label+checkbox double-fire was toggling on→off = flicker).
+
+### Re-reports already addressed in R25 / platform limits (re-verified, honest)
+- #cursor-readout lag, #news-locator coverage — the R25 work stands.
+- #x-ray drift (#9), #compare map/sat & close-overlap (#8/#10) — code reads correct; need the 2nd GL
+  instance on a real device.
+- #mobile pinch-zoom rate — no MapLibre API (documented); double-tap zoom does respect the setting.
+- #intro-demo night-lights/pop-density — GIBS rasters; dwell is 9s and tiles curl-verified 200, but the
+  in-demo render couldn't be confirmed headless (the hidden tab never completes WebGL load).
+- #active-layers desync — driven by checkbox⇄map state; the cross-wiring + phantom-layer fixes target the
+  root causes; flagged for device re-confirm.
