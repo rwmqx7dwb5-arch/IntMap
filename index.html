@@ -2732,6 +2732,9 @@ window.addEventListener('DOMContentLoaded', () => {
         else { map.dragPan.enable({ linearity:0.25, maxSpeed:Math.round(2200*p), deceleration:Math.round(1500/Math.max(0.3,iner)) }); }
       }catch(_){}
       try{ if(map.touchZoomRotate&&map.touchZoomRotate.enable) map.touchZoomRotate.enable(); }catch(_){}
+      /* (#R25/#21) Take over double-tap zoom so its amount follows the Zoom slider on touch (built-in is a
+         fixed +1). The custom dblclick handler does the sensitivity-scaled easeTo. */
+      try{ map.doubleClickZoom.disable(); }catch(_){}
     };
     window._applyNavSens();
     /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
@@ -3856,7 +3859,7 @@ window.addEventListener('DOMContentLoaded', () => {
     toolMode=null; liveCursor=null; measureSnapClose=false;
     _syncToolBtns();
     measurePoints=[]; hideMeasureTip(); refreshTool();
-    document.getElementById('map-container').classList.remove('tool-active'); if(map)map.doubleClickZoom.enable();
+    document.getElementById('map-container').classList.remove('tool-active');   /* (#R25) double-tap zoom is now the custom sensitivity-aware handler (built-in stays off) */
     document.getElementById('tool-panel').style.display='none';
   }
   function setTool(mode){
@@ -4274,7 +4277,15 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== Map event wiring ===== */
   if(map){
     map.on('click',(e)=>handleMapClick(e.lngLat.lng,e.lngLat.lat,e.point));
-    map.on('dblclick',()=>{ refreshTool(); hideMeasureTip(); });
+    /* (#R25 / #21) Double-tap / double-click zoom now respects the Zoom-sensitivity setting — this is the
+       ONE zoom gesture whose amount we CAN tune on touch (MapLibre exposes no pinch-rate API, so continuous
+       pinch stays 1:1 — a documented platform limit). The built-in doubleClickZoom is disabled in
+       _applyNavSens so this is the sole double-tap zoom path. */
+    map.on('dblclick',(e)=>{ refreshTool(); hideMeasureTip();
+      if(typeof toolMode!=='undefined' && toolMode) return;
+      try{ const s=Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
+        map.easeTo({zoom:map.getZoom()+s, around:(e&&e.lngLat)||map.getCenter(), duration:Math.round(260/Math.max(0.6,s))}); }catch(_){}
+    });
     map.on('mousemove',(e)=>{
       updateCoord(e.lngLat.lng,e.lngLat.lat);
       if(!toolMode||!hasTurf())return;
@@ -13936,10 +13947,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(dem!=null) lastElev=elevText(dem);
       try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
       renderCoordReadout(c.lng,c.lat); }catch(_){} }
-    let _roT=0;
+    let _roT=0,_updRAF=0,_roRAF=0;
     map.on('moveend',()=>{ readout(); update(); });
-    /* Live readout while panning on mobile (throttled so the DEM/layer sampling stays cheap). */
-    map.on('move',()=>{ update(); if(mob()){ const now=performance.now(); if(now-_roT>60){ _roT=now; readout(); } } });   /* (#R22) 120→60ms: coords/elevation/choropleth value track the crosshair more responsively */
+    /* (#R25) Smoother pan/zoom ("動きがカクツク"): coalesce the per-move DOM work to ONE frame, and run the
+       heavier readout (DEM + queryRenderedFeatures) at most ~every 110ms during motion (the precise final
+       value still lands on moveend). The crosshair stays live without sampling on every single move event. */
+    map.on('move',()=>{ if(!_updRAF) _updRAF=requestAnimationFrame(()=>{ _updRAF=0; update(); });
+      if(mob()){ const now=performance.now(); if(now-_roT>110 && !_roRAF){ _roRAF=requestAnimationFrame(()=>{ _roRAF=0; _roT=performance.now(); readout(); }); } } });
     window.addEventListener('resize',update);
     btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
     setTimeout(()=>{ update(); readout(); },400);
