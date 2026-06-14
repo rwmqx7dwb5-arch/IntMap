@@ -98,7 +98,124 @@ const DEMONYM_DICT: Record<string, [number, number, string, string]> = {
   Argentine: [-58.38, -34.60, "Argentina", "アルゼンチン"], Colombian: [-74.07, 4.71, "Colombia", "コロンビア"],
   Serbian: [20.46, 44.79, "Serbia", "セルビア"], Belarusian: [27.57, 53.90, "Belarus", "ベラルーシ"],
   Armenian: [44.51, 40.18, "Armenia", "アルメニア"], Azerbaijani: [49.87, 40.41, "Azerbaijan", "アゼルバイジャン"],
+  // (#R28) full parity with the client _DEMONYM_GZ — many more nationalities (a huge share of headlines
+  // name a country only by its adjective).
+  Australian: [149.13, -35.28, "Australia", "オーストラリア"], Canadian: [-75.70, 45.42, "Canada", "カナダ"],
+  Kenyan: [36.82, -1.29, "Kenya", "ケニア"], "South African": [28.19, -25.75, "South Africa", "南アフリカ"],
+  Cuban: [-82.38, 23.13, "Cuba", "キューバ"], Argentinian: [-58.38, -34.60, "Argentina", "アルゼンチン"],
+  Swedish: [18.07, 59.33, "Sweden", "スウェーデン"], Finnish: [24.94, 60.17, "Finland", "フィンランド"],
+  Norwegian: [10.75, 59.91, "Norway", "ノルウェー"], Swiss: [7.45, 46.95, "Switzerland", "スイス"],
+  Belgian: [4.35, 50.85, "Belgium", "ベルギー"], Austrian: [16.37, 48.21, "Austria", "オーストリア"],
+  Hungarian: [19.04, 47.50, "Hungary", "ハンガリー"], Czech: [14.42, 50.09, "Czechia", "チェコ"],
+  Romanian: [26.10, 44.43, "Romania", "ルーマニア"], Dutch: [4.90, 52.37, "Netherlands", "オランダ"],
+  Spanish: [-3.70, 40.42, "Spain", "スペイン"], Italian: [12.50, 41.90, "Italy", "イタリア"],
+  Emirati: [54.37, 24.45, "United Arab Emirates", "UAE"],
+  Algerian: [3.06, 36.75, "Algeria", "アルジェリア"], Moroccan: [-6.84, 34.02, "Morocco", "モロッコ"],
+  Tunisian: [10.18, 36.81, "Tunisia", "チュニジア"], Libyan: [13.19, 32.89, "Libya", "リビア"],
+  Malian: [-8.00, 12.65, "Mali", "マリ"], Somali: [45.34, 2.05, "Somalia", "ソマリア"],
+  Congolese: [15.27, -4.44, "DR Congo", "コンゴ民主共和国"], Angolan: [13.23, -8.84, "Angola", "アンゴラ"],
+  Zimbabwean: [31.05, -17.83, "Zimbabwe", "ジンバブエ"], Ghanaian: [-0.19, 5.60, "Ghana", "ガーナ"],
+  Ivorian: [-4.01, 5.36, "Cote d'Ivoire", "コートジボワール"], Senegalese: [-17.45, 14.69, "Senegal", "セネガル"],
+  Ugandan: [32.58, 0.35, "Uganda", "ウガンダ"], Rwandan: [30.06, -1.94, "Rwanda", "ルワンダ"],
+  Chilean: [-70.65, -33.45, "Chile", "チリ"], Peruvian: [-77.04, -12.05, "Peru", "ペルー"],
+  Bolivian: [-68.15, -16.50, "Bolivia", "ボリビア"], Ecuadorian: [-78.47, -0.18, "Ecuador", "エクアドル"],
+  Uruguayan: [-56.16, -34.90, "Uruguay", "ウルグアイ"], Paraguayan: [-57.58, -25.30, "Paraguay", "パラグアイ"],
+  Bangladeshi: [90.41, 23.81, "Bangladesh", "バングラデシュ"], "Sri Lankan": [79.86, 6.93, "Sri Lanka", "スリランカ"],
+  Nepali: [85.32, 27.70, "Nepal", "ネパール"], Burmese: [96.08, 21.97, "Myanmar", "ミャンマー"],
+  Malaysian: [101.69, 3.14, "Malaysia", "マレーシア"], Singaporean: [103.85, 1.29, "Singapore", "シンガポール"],
+  Cambodian: [104.92, 11.56, "Cambodia", "カンボジア"], Mongolian: [106.92, 47.92, "Mongolia", "モンゴル"],
+  Kazakh: [71.45, 51.18, "Kazakhstan", "カザフスタン"], Uzbek: [69.24, 41.31, "Uzbekistan", "ウズベキスタン"],
+  Georgian: [44.83, 41.72, "Georgia", "ジョージア"], Kurdish: [44.00, 36.50, "Kurdistan", "クルド"],
+  Catalan: [2.17, 41.39, "Catalonia", "カタルーニャ"], Portuguese: [-9.14, 38.72, "Portugal", "ポルトガル"],
+  Irish: [-6.26, 53.35, "Ireland", "アイルランド"], Danish: [12.57, 55.68, "Denmark", "デンマーク"],
+  Bulgarian: [23.32, 42.70, "Bulgaria", "ブルガリア"], Croatian: [15.98, 45.81, "Croatia", "クロアチア"],
+  Slovak: [17.11, 48.15, "Slovakia", "スロバキア"], Slovenian: [14.51, 46.05, "Slovenia", "スロベニア"],
+  Estonian: [24.75, 59.44, "Estonia", "エストニア"], Latvian: [24.11, 56.95, "Latvia", "ラトビア"],
+  Lithuanian: [25.28, 54.69, "Lithuania", "リトアニア"], Kuwaiti: [47.98, 29.38, "Kuwait", "クウェート"],
+  Omani: [58.41, 23.59, "Oman", "オマーン"], Bahraini: [50.59, 26.23, "Bahrain", "バーレーン"],
+  Tanzanian: [39.28, -6.79, "Tanzania", "タンザニア"], Nigerien: [2.12, 13.51, "Niger", "ニジェール"],
 };
+
+// (#R28) Embedded PLACES gazetteer (mirror of the client _EXTRA_GZ) — secondary metros, subnational
+// regions / US states, and government-seat metonyms. These give the server strong coverage even when the
+// geo_pins table is sparse. Row = [type, [terms…], lng, lat, name_en, name_jp].
+const EMBEDDED_PLACES: [string, string[], number, number, string, string][] = [
+  ["city", ["Amsterdam", "アムステルダム"], 4.90, 52.37, "Amsterdam", "アムステルダム"],
+  ["city", ["Munich", "ミュンヘン"], 11.58, 48.14, "Munich", "ミュンヘン"],
+  ["city", ["Frankfurt", "フランクフルト"], 8.68, 50.11, "Frankfurt", "フランクフルト"],
+  ["city", ["Milan", "ミラノ"], 9.19, 45.46, "Milan", "ミラノ"],
+  ["city", ["Barcelona", "バルセロナ"], 2.17, 41.39, "Barcelona", "バルセロナ"],
+  ["city", ["Athens", "アテネ"], 23.73, 37.98, "Athens", "アテネ"],
+  ["city", ["Vienna", "ウィーン"], 16.37, 48.21, "Vienna", "ウィーン"],
+  ["city", ["Saint Petersburg", "サンクトペテルブルク", "St Petersburg"], 30.36, 59.93, "Saint Petersburg", "サンクトペテルブルク"],
+  ["flashpoint", ["Belgorod", "ベルゴロド"], 36.59, 50.60, "Belgorod", "ベルゴロド"],
+  ["city", ["Tbilisi", "トビリシ"], 44.83, 41.72, "Tbilisi", "トビリシ"],
+  ["city", ["Baku", "バクー"], 49.87, 40.41, "Baku", "バクー"],
+  ["city", ["Amman", "アンマン"], 35.94, 31.95, "Amman", "アンマン"],
+  ["flashpoint", ["Hebron", "ヘブロン"], 35.10, 31.53, "Hebron", "ヘブロン"],
+  ["flashpoint", ["Jenin", "ジェニン"], 35.30, 32.46, "Jenin", "ジェニン"],
+  ["flashpoint", ["Basra", "バスラ"], 47.78, 30.51, "Basra", "バスラ"],
+  ["flashpoint", ["Erbil", "アルビル"], 44.01, 36.19, "Erbil", "アルビル"],
+  ["city", ["Lagos", "ラゴス"], 3.38, 6.52, "Lagos", "ラゴス"],
+  ["flashpoint", ["Benghazi", "ベンガジ"], 20.07, 32.12, "Benghazi", "ベンガジ"],
+  ["city", ["Johannesburg", "ヨハネスブルグ"], 28.05, -26.20, "Johannesburg", "ヨハネスブルグ"],
+  ["city", ["Cape Town", "ケープタウン"], 18.42, -33.92, "Cape Town", "ケープタウン"],
+  ["city", ["Kolkata", "コルカタ", "Calcutta"], 88.36, 22.57, "Kolkata", "コルカタ"],
+  ["city", ["Chennai", "チェンナイ"], 80.27, 13.08, "Chennai", "チェンナイ"],
+  ["city", ["Bengaluru", "ベンガルール", "Bangalore"], 77.59, 12.97, "Bengaluru", "ベンガルール"],
+  ["flashpoint", ["Srinagar", "スリナガル"], 74.80, 34.08, "Srinagar", "スリナガル"],
+  ["city", ["Guangzhou", "広州"], 113.26, 23.13, "Guangzhou", "広州"],
+  ["city", ["Shenzhen", "深圳"], 114.06, 22.54, "Shenzhen", "深圳"],
+  ["city", ["Chengdu", "成都"], 104.07, 30.57, "Chengdu", "成都"],
+  ["city", ["Wuhan", "武漢"], 114.30, 30.59, "Wuhan", "武漢"],
+  ["flashpoint", ["Urumqi", "ウルムチ"], 87.62, 43.83, "Urumqi", "ウルムチ"],
+  ["flashpoint", ["Lhasa", "ラサ"], 91.17, 29.65, "Lhasa", "ラサ"],
+  ["city", ["Osaka", "大阪"], 135.50, 34.69, "Osaka", "大阪"],
+  ["city", ["Busan", "釜山"], 129.08, 35.18, "Busan", "釜山"],
+  ["city", ["Ho Chi Minh City", "ホーチミン", "Saigon"], 106.66, 10.82, "Ho Chi Minh City", "ホーチミン"],
+  ["city", ["Kuala Lumpur", "クアラルンプール"], 101.69, 3.14, "Kuala Lumpur", "クアラルンプール"],
+  ["flashpoint", ["Mandalay", "マンダレー"], 96.08, 21.97, "Mandalay", "マンダレー"],
+  ["city", ["Houston", "ヒューストン"], -95.37, 29.76, "Houston", "ヒューストン"],
+  ["city", ["Miami", "マイアミ"], -80.19, 25.76, "Miami", "マイアミ"],
+  ["city", ["Rio de Janeiro", "リオデジャネイロ"], -43.20, -22.91, "Rio de Janeiro", "リオデジャネイロ"],
+  ["flashpoint", ["Tijuana", "ティファナ"], -117.04, 32.51, "Tijuana", "ティファナ"],
+  ["city", ["Melbourne", "メルボルン"], 144.96, -37.81, "Melbourne", "メルボルン"],
+  ["city", ["Donbas", "ドンバス", "Donbass"], 37.80, 48.30, "Donbas", "ドンバス"],
+  ["city", ["Kurdistan", "クルディスタン"], 44.0, 36.5, "Kurdistan", "クルディスタン"],
+  ["city", ["Xinjiang", "新疆"], 85.0, 41.0, "Xinjiang", "新疆"],
+  ["city", ["Tibet", "チベット"], 88.0, 31.5, "Tibet", "チベット"],
+  ["city", ["Catalonia", "カタルーニャ"], 1.5, 41.8, "Catalonia", "カタルーニャ"],
+  ["city", ["Darfur", "ダルフール"], 24.0, 13.5, "Darfur", "ダルフール"],
+  ["city", ["California", "カリフォルニア"], -119.4, 36.8, "California", "カリフォルニア"],
+  ["city", ["Texas", "テキサス"], -99.0, 31.5, "Texas", "テキサス"],
+  ["city", ["Florida", "フロリダ"], -81.5, 28.0, "Florida", "フロリダ"],
+  ["city", ["Kremlin", "クレムリン"], 37.62, 55.75, "Kremlin", "クレムリン"],
+  ["city", ["Pentagon", "ペンタゴン"], -77.06, 38.87, "Pentagon", "ペンタゴン"],
+  ["city", ["White House", "ホワイトハウス"], -77.04, 38.90, "White House", "ホワイトハウス"],
+  ["city", ["Downing Street", "ダウニング街"], -0.13, 51.50, "Downing Street", "ダウニング街"],
+];
+
+// (#R28) Organizations / institutions / militant groups → a representative location. Flagged org:true and
+// docked below an explicit place (like demonyms). Mirror of the client _ORG_GZ. Row = [[terms…],lng,lat,en,jp].
+const ORG_DICT: [string[], number, number, string, string][] = [
+  [["United Nations", "U.N.", "国連", "国際連合"], -73.97, 40.75, "United Nations", "国連"],
+  [["NATO", "北大西洋条約機構"], 4.42, 50.88, "NATO", "NATO"],
+  [["IMF", "国際通貨基金"], -77.04, 38.90, "IMF", "IMF"],
+  [["World Bank", "世界銀行"], -77.04, 38.90, "World Bank", "世界銀行"],
+  [["OPEC", "石油輸出国機構"], 16.37, 48.21, "OPEC", "OPEC"],
+  [["European Commission", "欧州委員会"], 4.38, 50.84, "European Commission", "欧州委員会"],
+  [["African Union"], 38.74, 9.03, "African Union", "アフリカ連合"],
+  [["IRGC", "Revolutionary Guard", "革命防衛隊"], 51.39, 35.69, "Iran (IRGC)", "イラン（革命防衛隊）"],
+  [["IDF", "Israel Defense Forces"], 34.78, 32.08, "Israel (IDF)", "イスラエル（IDF）"],
+  [["Hamas", "ハマス"], 34.45, 31.50, "Gaza (Hamas)", "ガザ（ハマス）"],
+  [["Hezbollah", "Hizbollah", "ヒズボラ"], 35.50, 33.85, "Lebanon (Hezbollah)", "レバノン（ヒズボラ）"],
+  [["Houthi", "Houthis", "フーシ"], 44.21, 15.35, "Yemen (Houthis)", "イエメン（フーシ）"],
+  [["Taliban", "タリバン"], 69.18, 34.53, "Afghanistan (Taliban)", "アフガニスタン（タリバン）"],
+  [["Wagner", "ワグネル"], 37.62, 55.75, "Russia (Wagner)", "ロシア（ワグネル）"],
+  [["Islamic State", "ISIL", "Daesh", "イスラム国"], 38.99, 35.95, "Islamic State", "イスラム国"],
+  [["Boko Haram", "ボコ・ハラム"], 13.0, 11.5, "Boko Haram", "ボコ・ハラム"],
+  [["Al-Shabaab", "Al Shabaab", "アルシャバブ"], 45.0, 2.5, "Al-Shabaab", "アルシャバブ"],
+];
 
 // ---------------------------------------------------------------------------
 //  Text helpers
@@ -152,6 +269,7 @@ interface GeoEntry {
   terms: { term: string; jp: boolean; matchRe: RegExp | null; ctxRe: RegExp }[];
   maxLen: number;
   demonym?: boolean;   // (#R27) low-confidence adjective match → docked in scoreGeo
+  org?: boolean;       // (#R28) organization/institution/group → docked like a demonym
 }
 function compileGeo(rows: any[]): GeoEntry[] {
   const list: GeoEntry[] = (rows || []).map((r) => {
@@ -182,7 +300,7 @@ function scoreGeo(g: GeoEntry, title: string, desc: string): number {
   if (!titleHit && !descHit) return 0;
   // (#R27) corroboration bonus (title AND desc) + demonym penalty so explicit places always outrank a demonym.
   const corro = (titleHit && descHit) ? 2 : 0;
-  const demPen = g.demonym ? 3 : 0;
+  const demPen = (g.demonym || g.org) ? 3 : 0;  // (#R28) orgs docked like demonyms
   return (titleHit ? 10 : 0) + (descHit ? 3 : 0) + (TYPE_SCORE[g.type] || 0) + (ctx ? 4 : 0) + corro - demPen;
 }
 
@@ -196,6 +314,21 @@ function compileDemonyms(): GeoEntry[] {
       terms: [{ term: dem, jp: false, matchRe: new RegExp(`\\b${e}\\b`, "i"), ctxRe: new RegExp(`\\b(?:in|at|to|from|near|into)\\s+${e}\\b`, "i") }],
     };
   });
+}
+// (#R28) Compile the embedded PLACES (cities/regions/metonyms) — reuse compileGeo's row shape.
+function compileEmbedded(): GeoEntry[] {
+  return compileGeo(EMBEDDED_PLACES.map(([type, terms, lng, lat, en, jp]) => ({ type, terms, lng, lat, name_en: en, name_jp: jp })));
+}
+// (#R28) Compile the org/institution/group dictionary into docked GeoEntry rows.
+function compileOrgs(): GeoEntry[] {
+  return ORG_DICT.map(([terms, lng, lat, en, jp]) => ({
+    type: "city", lng, lat, name_en: en, name_jp: jp, org: true, maxLen: Math.max(1, ...terms.map((t) => t.length)),
+    terms: terms.map((term) => {
+      const jpT = isCJK(term), e = esc(term);
+      return { term, jp: jpT, matchRe: jpT ? null : new RegExp(`\\b${e}\\b`, "i"),
+        ctxRe: jpT ? new RegExp(`${e}(?:で|へ|に|を|から|では)`) : new RegExp(`\\b(?:in|at|to|from|near|into)\\s+${e}\\b`, "i") };
+    }),
+  }));
 }
 
 // Publisher matcher — longest key first, word-boundary for Latin, substring for CJK.
@@ -280,8 +413,9 @@ Deno.serve(async (req) => {
   // Gazetteer straight from the table the client also uses.
   const { data: geoRows, error: geoErr } = await db.from("geo_pins").select("type,terms,name_en,name_jp,lng,lat");
   if (geoErr) console.warn("[refresh-news] geo_pins read failed:", geoErr.message);
-  // (#R27) gazetteer = geo_pins + the embedded demonym entries (low-confidence, docked in scoreGeo).
-  const geo = compileGeo(geoRows || []).concat(compileDemonyms());
+  // (#R27/#R28) gazetteer = geo_pins + embedded places (cities/regions/metonyms) + orgs + demonyms.
+  // Orgs and demonyms are docked in scoreGeo so an explicit place (geo_pins or embedded) always wins.
+  const geo = compileGeo(geoRows || []).concat(compileEmbedded()).concat(compileOrgs()).concat(compileDemonyms());
 
   const fetchedAt = new Date().toISOString();
   const counts: Record<string, number> = {};

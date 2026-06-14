@@ -2239,3 +2239,76 @@ every batch); changes additive/in-place.
   hidden preview's WebGL `load` never fires so touch/mobile rendering can't be exercised headless.
 - Compare X-ray drift at very low globe zoom (two GL instances) — lng-normalize + padding-mirror help; needs a
   real device. Free-pan flat drift mitigated by the lng wrap.
+
+---
+
+## 31. Round 28 — re-reported checkbox/active-layers/compare batch + news locator overhaul (tags `#R28`)
+
+Build `2026-06-15-R28`. The user re-reported the recurring layer-checkbox instability, two explicit
+REGRESSIONS to revert, the compare close-overlap (「永遠に改善されない」), compare drift, two small UI items,
+and asked to drastically strengthen the non-AI news locator. Verified live in the headless preview (DOM/CSS/
+state + a temporary `analyzeContext` hook to confirm locator accuracy on real headlines, then removed). 72
+layer rows + zero console errors after every batch.
+
+### Root causes found this round
+- **Checkbox instability (#1 mobile / #3 desktop) — the SCROLL-CANCEL guard was itself dropping good taps.**
+  The R27 guard cancelled ANY click after a >10px pointer move. A finger tap easily jitters >10px, so it
+  silently DROPPED legitimate taps → "チェックの動作が不安定 / デスクトップでもチェックを付けても動かない".
+  REAL signal = did the LIST actually scroll. Now records the scroll container's `scrollTop` on pointerdown
+  and cancels a click ONLY if it scrolled (>3px) or the pointer travelled far (>26px = a drag). **Verified in
+  preview:** clean click → toggles; 15px jitter (no scroll) → toggles (old guard cancelled this); after a real
+  scrollTop change → cancelled. Still only SUPPRESSES, never synthesizes → no phantom toggles.
+- **Active layers vanished on mobile (#2) — it was moved to the BOTTOM (R25), below the whole list + Tools, so
+  it read as removed.** Now ALWAYS at the TOP (below the 4 utility toggles) on every platform (`_actAtBottom`
+  hard-false). The iOS delayed-click retarget the bottom-placement worked around is already killed by
+  `touch-action:manipulation`, so growing the section no longer mis-targets a tap. **Verified:** section at
+  child-index 6 (top), `display:block`, chip rendered.
+- **Others(beta) pulldown (#7) — REVERTED.** R21 made the Others group a tappable collapse on mobile; the user:
+  「Others(beta)だけプルダウン…元に戻せ」. Removed the mobile collapse in `_expandAllLayerGroups` + the click
+  handler + the caret CSS — every group (incl. Others) is fully expanded on mobile now.
+- **Compare close × overlap (#6, 「永遠に改善されない」) — the × shares the top-right corner with the main-map FAB
+  stack.** No amount of z-index juggling fixed it because the compare window lives inside `#map-container`
+  while the FAB stack is a body child. Decisive fix: toggle `body.cmp-open` in compare open()/close() and
+  `@media(max-width:768px){ body.cmp-open .m-fab-stack{opacity:0;pointer-events:none} }` — the FABs are simply
+  GONE while compare is open, so the × is the only thing in that corner. × also enlarged to 44px. **Verified:**
+  body class toggles on open/close; CSS rule present.
+
+### Compare drift (#5 free-pan flat / #8 zoomed-out X-ray)
+- The compare map was always `renderWorldCopies:false` while the MAIN flat map wraps the world in free-pan
+  (`renderWorldCopies:true`). Past ±180° the compare basemap/overlays had no copy to follow → drift. Now the
+  compare map's world-copies FOLLOW the main map (`_cmpWorldCopies` = flat && free-pan), and when copies are on
+  the sync uses the RAW (unwrapped) center so both cameras sit in the SAME copy → basemap + data layers stay
+  registered. `applyFlatPanSetting` re-syncs the compare on a free-pan toggle. (Globe sub-pixel divergence at
+  very low zoom is still 2-GL-bound.)
+
+### Small UI
+- **Tools 4 buttons (#10)** 38px → **34px** (the user still found 38 "縦幅が大きくて不自然"); mobile gap 8→6px.
+- **Radius mobile (#9)** the 3-up stat strip's ~53px columns clipped/overflowed long values
+  ("3,141,593 km² (1,212,975 mi²)"). Now a VERTICAL full-width list (label left, value right, value wraps);
+  also gave the panel an explicit `width:calc(100vw-12px)` (the base mobile rule's `right:auto` had been
+  shrinking it to ~233px, left-stranded). **Verified in preview:** 0 overflowing elements, panel full width.
+- **Phantom/orphan layers (#4/#11)** the intro demo's `stop()` now ALSO force-hides its map layers
+  (`lyr-climate/nightsat/relief/popgrid`) directly — if a setOff change handler ran while the map was busy
+  (~1.4s after load) the checkbox could be OFF while the raster stayed VISIBLE = an orphan you can't remove.
+
+### News locator — drastically strengthened (#12)
+- **geoDB ~275 → ~989 entries.** Added (all additive, precision-preserving):
+  - `_EXTRA_GZ`: ~115 secondary/major NON-capital metros worldwide (capitals already auto-load from
+    countryStats), subnational regions / US states / conflict regions (Donbas, Kurdistan, Xinjiang, Tibet,
+    Catalonia, Texas, California, Darfur…), and government-seat metonyms (Kremlin, Pentagon, White House,
+    Downing Street, Capitol Hill, Zhongnanhai, Blue House, Élysée) — all precise.
+  - `_ORG_GZ`: ~22 organizations/institutions/armed groups (UN, NATO, IMF, OPEC, EU Commission, IRGC, IDF,
+    Hamas, Hezbollah, Houthis, Taliban, Wagner, ISIS, Boko Haram…) → a representative location, flagged
+    `org:true` and DOCKED below an explicit place (like demonyms) so an explicit city/country always wins.
+  - `_DEMONYM_GZ`: +~46 nationalities (now ~100 total).
+  - `scoreGeo` dock now applies to `demonym || org`.
+  - **Verified accuracy in preview on 14 headlines:** "Israeli strikes hit southern Lebanon as Hezbollah
+    responds" → Lebanon (explicit place beats docked demonym+org); "Houthis…Red Sea" → Red Sea; "Taliban…
+    Kabul" → Kabul; "Wagner…Mali" → Mali; while org/region/metonym fallbacks fire only when no explicit place
+    is named (Pentagon→DC, NATO→Brussels, Texas, Catalonia, Lagos, Osaka, Kremlin, Guangzhou).
+  - **Mirrored into `supabase/functions/refresh-news/index.ts`** (full demonym parity + embedded places + org
+    dict + org dock). **Redeploy that function** to apply to the pre-baked server feeds.
+
+### Verify-on-device list (honest)
+- The mobile-only renderings (checkbox tap feel, compare-× tap, radius card) are root-caused + verified in DOM/
+  CSS/state, but the headless preview never finishes WebGL `load`, so on-phone confirmation is still welcome.
