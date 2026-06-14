@@ -6465,7 +6465,8 @@ window.addEventListener('DOMContentLoaded', () => {
            buttons rely on for their top/right corner placement — so they jumped out of position and taps
            missed them entirely ("×を押しても反応しない"). Keep ONLY touch-action (kills the iOS click delay);
            never set position here (each button keeps its own absolute corner rule).
-           NOTE: this comment lives INSIDE a style.textContent=` ` template literal — NO back-ticks allowed. */
+           NOTE: this whole CSS block is a JS template-literal string, so this comment must contain NO
+           back-tick characters (one would close the string early and break the entire script). */
         .maplibregl-popup-close-button, .layer-popup-x, .legend-min, .kip-x, .pin-popup-close,
         .country-popup-close, #cp-close, .src-card-close, .tp-close, .satc-close, .wgt-x{
           touch-action:manipulation !important; }
