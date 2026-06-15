@@ -1721,6 +1721,10 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
     </div>
+    <!-- (#R29.1) Playground (beta) — experimental interactive modes (World Explorer + simulators). -->
+    <div class="setting-group" id="playground-group"><label data-i18n="lblPlayground">Playground (beta)</label>
+      <button type="button" id="btn-playground" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="playgroundBtn">🎮 Open Playground</button>
+    </div>
     <!-- (#R29.1) Feedback & bug report — open the existing feedback flow or the new bug reporter anytime. -->
     <div class="setting-group" id="feedback-group"><label data-i18n="lblFeedback">Feedback &amp; bug report</label>
       <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;" data-i18n="sendFeedbackBtn">⭐ Send feedback</button>
@@ -6743,6 +6747,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R29.1) Settings → Feedback & bug report entry points. */
     { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
+    { const pg=document.getElementById('btn-playground'); if(pg) pg.onclick=()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
@@ -6875,6 +6880,289 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(){ ensure(); renderForm(); modal.style.display='flex'; }
     function close(){ if(modal) modal.style.display='none'; }
     window._openBugReport=open;
+  })();
+
+  /* ============================================================================
+     (#R29.1) PLAYGROUND (beta) — experimental interactive modes, all in one hub:
+       1) World Explorer  — satellite "where am I?" GeoGuessr
+       2) Pandemic Simulator — Plague-Inc-style world spread on real countries
+       3) Nation Sim — lead a real country (1900–2026), dictator or democracy
+     All built with createElement + inline styles (no CSS-in-template-literal). ===========*/
+  (function(){
+    const jp=()=>currentLang==='jp';
+    const haversine=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
+    function ensureCountries(cb){ try{ if(window.countryGeo&&window.countryGeo.features){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb()); } else cb(); }catch(_){ cb(); } }
+    // ---- shared modal shell ----
+    function shell(maxw){ const ov=document.createElement('div'); ov.className='pg-overlay';
+      ov.style.cssText='position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);padding:18px;';
+      const card=document.createElement('div'); card.style.cssText='position:relative;width:min('+(maxw||520)+'px,100%);max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card-bg);color:var(--text-main);border-radius:18px;box-shadow:var(--shadow);padding:22px 22px max(22px,env(safe-area-inset-bottom));box-sizing:border-box;';
+      ov.appendChild(card); ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); }); document.body.appendChild(ov); return {ov,card}; }
+    function xbtn(onclick){ const b=document.createElement('button'); b.textContent='✕'; b.style.cssText='position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;z-index:2;'; b.onclick=onclick; return b; }
+    function pill(txt,bg){ const s=document.createElement('span'); s.textContent=txt; s.style.cssText='display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:'+(bg||'var(--primary-color)')+';color:#fff;'; return s; }
+
+    /* ===================== HUB ===================== */
+    window._openPlayground=function(){
+      try{ document.getElementById('settings-modal')&&(document.getElementById('settings-modal').style.display='none'); }catch(_){}
+      const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
+      const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:10px;margin:0 0 4px;';
+      const t=document.createElement('h3'); t.textContent=jp()?'プレイグラウンド':'Playground'; t.style.cssText='margin:0;font-size:21px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); card.appendChild(h);
+      const sub=document.createElement('p'); sub.textContent=jp()?'実データを使った実験的なインタラクティブモード。':'Experimental interactive modes built on real data.'; sub.style.cssText='margin:0 0 16px;color:var(--text-muted);font-size:13px;'; card.appendChild(sub);
+      const modes=[
+        {icon:'🌍',bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真版GeoGuessr。ランダムな地点へ飛び、現在地を当てる。':'Satellite GeoGuessr — dropped somewhere on Earth, guess where you are.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
+        {icon:'🦠',bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を可視化。ワクチン開発まで。':'Seed an outbreak and watch it spread across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
+        {icon:'🏛️',bg:'linear-gradient(135deg,#5856d6,#af52de)',t:jp()?'ネイション・シミュレーター':'Nation Sim',d:jp()?'1900〜2026年、任意の国家の元首に。独裁か民主かで制約が変わる。':'Lead a real nation (1900–2026) as dictator or democrat — each has its own constraints.',go:()=>{ ov.remove(); window._pgNationSim&&window._pgNationSim(); }}
+      ];
+      modes.forEach(m=>{ const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-radius:14px;padding:14px;margin-bottom:11px;cursor:pointer;color:var(--text-main);';
+        const ic=document.createElement('div'); ic.textContent=m.icon; ic.style.cssText='width:48px;height:48px;border-radius:13px;background:'+m.bg+';display:flex;align-items:center;justify-content:center;font-size:25px;flex-shrink:0;';
+        const tx=document.createElement('div'); const tt=document.createElement('div'); tt.textContent=m.t; tt.style.cssText='font-size:15px;font-weight:700;'; const dd=document.createElement('div'); dd.textContent=m.d; dd.style.cssText='font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.35;'; tx.appendChild(tt); tx.appendChild(dd);
+        row.appendChild(ic); row.appendChild(tx); row.onclick=m.go; card.appendChild(row); });
+    };
+
+    /* ===================== floating toast / breaking-news ===================== */
+    function pgNews(html, kind){ let host=document.getElementById('pg-news-host'); if(!host){ host=document.createElement('div'); host.id='pg-news-host'; host.style.cssText='position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(440px,92vw);'; document.body.appendChild(host); }
+      const n=document.createElement('div'); n.style.cssText='pointer-events:auto;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-left:4px solid '+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';border-radius:12px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:10px 14px;font-size:12.5px;line-height:1.4;opacity:0;transform:translateY(-8px);transition:opacity .3s,transform .3s;max-width:100%;';
+      n.innerHTML='<b style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:'+(kind==='alert'?'#ff3b30':kind==='good'?'#34c759':'#0a84ff')+';">'+(jp()?'速報':'Breaking')+'</b><br>'+html;
+      host.appendChild(n); requestAnimationFrame(()=>{ n.style.opacity='1'; n.style.transform='none'; }); setTimeout(()=>{ n.style.opacity='0'; n.style.transform='translateY(-8px)'; setTimeout(()=>n.remove(),350); }, 5200);
+    }
+    window._pgNews=pgNews;
+
+    // shared point-in-polygon (local copy)
+    function pir(x,y,r){let i,j,c=false;for(i=0,j=r.length-1;i<r.length;j=i++){const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi))c=!c;}return c;}
+    function pig(x,y,g){if(!g)return false;const ps=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]);for(const poly of ps){if(poly&&poly.length&&pir(x,y,poly[0])){let h=false;for(let k=1;k<poly.length;k++){if(pir(x,y,poly[k])){h=true;break;}}if(!h)return true;}}return false;}
+    function bboxOf(f){let mnx=180,mny=90,mxx=-180,mxy=-90;const eat=r=>r.forEach(p=>{if(p[0]<mnx)mnx=p[0];if(p[0]>mxx)mxx=p[0];if(p[1]<mny)mny=p[1];if(p[1]>mxy)mxy=p[1];});const g=f.geometry;if(!g)return[0,0,0,0];if(g.type==='Polygon')g.coordinates.forEach(eat);else if(g.type==='MultiPolygon')g.coordinates.forEach(poly=>poly.forEach(eat));return[mnx,mny,mxx,mxy];}
+    function cName(f){ const p=f&&f.properties||{}; return p.NAME_EN||p.ADMIN||p.NAME||p.name||''; }
+
+    /* ===================== WORLD EXPLORER ===================== */
+    window._pgWorldExplorer=function(){
+      if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      ensureCountries(()=>{
+        const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
+        // pick a random LAND point (never open ocean)
+        let target=null; for(let tr=0;tr<500&&!target;tr++){ const f=feats[Math.floor(Math.random()*feats.length)]; const bb=bboxOf(f); if(bb[2]-bb[0]>40||bb[3]-bb[1]>40){ /* skip huge multi-territory shells half the time for fairer spots */ if(Math.random()<0.5) continue; } const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(pig(lng,lat,f.geometry)) target={lng,lat,country:cName(f)}; }
+        if(!target){ try{ imToast(jp()?'地点を選べませんでした':'Could not pick a spot'); }catch(_){} return; }
+        // save state to restore on exit
+        const saved={ c:map.getCenter(), z:map.getZoom(), proj:(typeof currentProj!=='undefined'?currentProj:'globe'), mt:(typeof currentMapType!=='undefined'?currentMapType:'map'), names:(typeof namesOn!=='undefined'?namesOn:true), borders:(typeof bordersOn!=='undefined'?bordersOn:false) };
+        // turn OFF every data layer + labels + borders, switch to satellite
+        try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked').forEach(cb=>{ if(['cb-grid'].includes(cb.id)) return; if(cb.id==='cb-names'||cb.id==='cb-borders'||!['cb-countries'].includes(cb.id)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); }catch(_){}
+        try{ const sat=document.getElementById('btn-view-sat'); if(sat&&typeof currentMapType!=='undefined'&&currentMapType!=='sat') sat.click(); }catch(_){}
+        // blackout while we jump so the route to the target is never shown
+        const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:5800;background:#000;transition:opacity .6s;'; black.textContent=''; document.body.appendChild(black);
+        const bt=document.createElement('div'); bt.textContent=jp()?'どこかへ移動中…':'Dropping you somewhere…'; bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
+        setTimeout(()=>{ try{ map.jumpTo({center:[target.lng,target.lat],zoom:15.4,bearing:0,pitch:0}); }catch(_){} setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
+        // control panel
+        const panel=document.createElement('div'); panel.id='pg-we-panel';
+        panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom));z-index:5810;display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;';
+        const lab=document.createElement('span'); lab.textContent='🌍 '+(jp()?'ここはどこ？':'Where are you?'); panel.appendChild(lab);
+        const guessB=document.createElement('button'); guessB.textContent=jp()?'回答する':'Make a guess'; guessB.style.cssText='border:none;border-radius:999px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;'; panel.appendChild(guessB);
+        const exitB=document.createElement('button'); exitB.textContent='✕'; exitB.title=jp()?'終了':'Exit'; exitB.style.cssText='border:none;border-radius:50%;width:30px;height:30px;background:var(--input-bg);color:var(--text-main);font-size:14px;cursor:pointer;'; panel.appendChild(exitB);
+        (document.getElementById('map-container')||document.body).appendChild(panel);
+        function restore(){ try{ panel.remove(); }catch(_){} try{ black.remove(); }catch(_){}
+          try{ const cb=document.getElementById('cb-names'); if(cb&&!!saved.names!==cb.checked){ cb.checked=!!saved.names; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
+          try{ const mt=document.getElementById(saved.mt==='sat'?'btn-view-sat':'btn-view-map'); if(mt&&typeof currentMapType!=='undefined'&&currentMapType!==saved.mt) mt.click(); }catch(_){}
+          try{ map.flyTo({center:saved.c,zoom:saved.z,duration:900}); }catch(_){}
+        }
+        exitB.onclick=restore;
+        guessB.onclick=()=>openGuess(target,restore);
+      });
+    };
+    function openGuess(target,restore){
+      const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
+      const t=document.createElement('h3'); t.textContent=jp()?'現在地はどこ？地図をタップ':'Click the map to drop your guess'; t.style.cssText='margin:0 0 10px;font-size:16px;'; card.appendChild(t);
+      const mapDiv=document.createElement('div'); mapDiv.id='pg-guess-map'; mapDiv.style.cssText='width:100%;height:300px;border-radius:12px;overflow:hidden;background:var(--input-bg);'; card.appendChild(mapDiv);
+      const result=document.createElement('div'); result.style.cssText='margin-top:12px;font-size:13.5px;line-height:1.6;'; card.appendChild(result);
+      const answerB=document.createElement('button'); answerB.textContent=jp()?'回答':'Answer'; answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
+      let gmap=null, guess=null, gmarker=null, answered=false;
+      try{
+        gmap=new maplibregl.Map({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.6,attributionControl:{compact:true},renderWorldCopies:true});
+        gmap.on('click',(e)=>{ if(answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=new maplibregl.Marker({element:el}).setLngLat(guess).addTo(gmap); answerB.disabled=false; answerB.style.opacity='1'; });
+      }catch(err){ result.textContent='Guess map failed.'; }
+      answerB.onclick=()=>{
+        if(answered||!guess) return; answered=true; answerB.style.display='none';
+        const dist=haversine(guess,[target.lng,target.lat]); const score=Math.round(1000*Math.exp(-dist/1500));
+        try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; new maplibregl.Marker({element:el}).setLngLat([target.lng,target.lat]).addTo(gmap);
+          gmap.fitBounds([[Math.min(guess[0],target.lng),Math.min(guess[1],target.lat)],[Math.max(guess[0],target.lng),Math.max(guess[1],target.lat)]],{padding:60,maxZoom:6,duration:800}); }catch(_){}
+        result.innerHTML='<b style="font-size:22px;color:var(--primary-color);">'+score+' / 1000</b><br>'+(jp()?'距離: ':'Distance: ')+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(jp()?'正解: ':'Actual: ')+target.country:'');
+        const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;margin-top:12px;padding:11px;border:none;border-radius:11px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:700;cursor:pointer;'; card.appendChild(again);
+        again.onclick=()=>{ try{ gmap&&gmap.remove(); }catch(_){} ov.remove(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
+      };
+      ov.addEventListener('click',e=>{ if(e.target===ov){ try{ gmap&&gmap.remove(); }catch(_){} } });
+    }
+
+    /* ===================== PANDEMIC SIMULATOR ===================== */
+    const PG_PRESETS={
+      flu:{ n:{en:'Influenza',jp:'インフルエンザ'}, inf:0.55, leth:0.001, inc:2 },
+      covid:{ n:{en:'COVID-19',jp:'COVID-19'}, inf:0.78, leth:0.012, inc:5 },
+      ebola:{ n:{en:'Ebola',jp:'エボラ出血熱'}, inf:0.35, leth:0.5, inc:8 },
+      measles:{ n:{en:'Measles',jp:'麻疹'}, inf:0.92, leth:0.002, inc:11 }
+    };
+    window._pgPandemic=function(){
+      if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      ensureCountries(()=>{
+        const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
+        const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
+        const resolve=(p)=>{ const c=[p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3,p.SOV_A3].map(String).find(x=>cs[x]); return c?cs[c]:null; };
+        // build sim state per feature
+        const N=feats.length; const cent=[], pop=[], hyg=[], st=[];
+        feats.forEach((f,i)=>{ const bb=bboxOf(f); cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{}); const P=(s&&s.pop&&s.pop>0)?s.pop:5e6; pop[i]=P; const dev=(s&&s.gdppc)?Math.min(1,s.gdppc/60000):(s&&s.hdi?s.hdi:0.5); hyg[i]=0.35+0.6*dev; /* 0.35..0.95 — higher=slower spread, faster care */ st[i]={S:P,I:0,R:0,D:0,on:false}; });
+        // map layer (separate source so it never clobbers the real country layers)
+        const fc={type:'FeatureCollection',features:feats.map((f,i)=>({type:'Feature',id:i,geometry:f.geometry,properties:{}}))};
+        try{ if(map.getLayer('pg-pan-fill')) map.removeLayer('pg-pan-fill'); if(map.getLayer('pg-pan-line')) map.removeLayer('pg-pan-line'); if(map.getSource('pg-pan')) map.removeSource('pg-pan'); }catch(_){}
+        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
+        try{ map.addSource('pg-pan',{type:'geojson',data:fc});
+          map.addLayer({id:'pg-pan-fill',type:'fill',source:'pg-pan',paint:{'fill-color':['interpolate',['linear'],['coalesce',['feature-state','inf'],0],0,'#2ca25f',0.02,'#ffeda0',0.2,'#feb24c',0.5,'#f03b20',1,'#7a0010'],'fill-opacity':['interpolate',['linear'],['coalesce',['feature-state','inf'],0],0,0,0.01,0.3,1,0.78]}},before);
+          map.addLayer({id:'pg-pan-line',type:'line',source:'pg-pan',paint:{'line-color':'rgba(0,0,0,0.25)','line-width':0.3}},before);
+        }catch(e){ console.warn('pandemic layer',e); }
+        let day=0,timer=null,running=false,speed=1,vaccine=0,vaxDay=0,startedAt=-1,emergency=false,vaxAnnounced=false,P=PG_PRESETS.covid,picking=true;
+        const totals=()=>{ let I=0,D=0,R=0,aff=0; for(let i=0;i<N;i++){ I+=st[i].I; D+=st[i].D; R+=st[i].R; if(st[i].on) aff++; } return {I,D,R,aff}; };
+        function paint(){ for(let i=0;i<N;i++){ const s=st[i]; const inf=s.on?Math.max(s.I/Math.max(1,pop[i]), s.D>0?0.02:0):0; try{ map.setFeatureState({source:'pg-pan',id:i},{inf:Math.min(1,inf)}); }catch(_){} } }
+        function seed(i){ if(st[i].on) return; st[i].on=true; const k=Math.min(st[i].S,Math.max(50,pop[i]*0.00002)); st[i].S-=k; st[i].I+=k; if(startedAt<0){ startedAt=day; vaxDay=day+60+Math.floor(Math.random()*70); } }
+        function step(){ day++; const aff0=totals().aff;
+          for(let i=0;i<N;i++){ const s=st[i]; if(!s.on) continue; const Pn=pop[i]||1;
+            const beta=P.inf*(1.25-hyg[i])*(vaccine?0.45:1); const gamma=(0.07+hyg[i]*0.08)*(vaccine?2.2:1); const mu=P.leth*(vaccine?0.4:1)*(1.1-hyg[i]);
+            const newInf=Math.min(s.S, beta*s.I*s.S/Pn); const out=gamma*s.I; const deaths=mu*s.I;
+            s.S-=newInf; s.I+=newInf-out-deaths; if(s.I<0)s.I=0; s.R+=out; s.D+=deaths;
+            // spread to other countries by distance (air/sea/land) + rare global hub jump
+            if(s.I>Pn*0.0008){ const tries=1+Math.floor(P.inf*3); for(let t=0;t<tries;t++){ let j=Math.floor(Math.random()*N); if(j===i||st[j].on) continue; const d=haversine(cent[i],cent[j]); const pHop=P.inf*(Math.exp(-d/3500)*0.6+0.04); if(Math.random()<pHop*speed*0.5) seed(j); } }
+          }
+          if(!vaccine && startedAt>=0 && day>=vaxDay){ vaccine=1; if(!vaxAnnounced){ vaxAnnounced=true; pgNews((jp()?'ワクチンが緊急承認されました。回復が加速し、新規感染が減少します。':'A vaccine has been approved — recoveries accelerate and new infections fall.'),'good'); } }
+          const T=totals(); if(!emergency && T.I+T.R+T.D>2e7){ emergency=true; pgNews((jp()?'WHOが「国際的に懸念される公衆衛生上の緊急事態」を宣言。':'WHO declares a Public Health Emergency of International Concern.'),'alert'); }
+          if(T.aff>aff0 && T.aff===10) pgNews((jp()?'感染が10カ国に拡大。':'Outbreak has reached 10 countries.'),'alert');
+          paint(); updateHud(T);
+          if(T.I<1 && startedAt>=0 && day>startedAt+5){ stop(); pgNews((jp()?'流行は終息しました。':'The outbreak has ended.'),'good'); }
+        }
+        function loop(){ clearTimeout(timer); if(!running) return; step(); timer=setTimeout(loop, Math.max(120,560/speed)); }
+        function start(){ if(running) return; running=true; loop(); }
+        function stop(){ running=false; clearTimeout(timer); }
+        // HUD
+        const hud=document.createElement('div'); hud.id='pg-pan-hud';
+        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(520px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;';
+        (document.getElementById('map-container')||document.body).appendChild(hud);
+        function fmt(n){ n=Math.round(n); if(n>=1e9)return (n/1e9).toFixed(2)+'B'; if(n>=1e6)return (n/1e6).toFixed(2)+'M'; if(n>=1e3)return (n/1e3).toFixed(1)+'k'; return ''+n; }
+        function updateHud(T){ const el=hud.querySelector('#pg-pan-stats'); if(el) el.innerHTML=
+          '<span style="color:#f03b20;">'+(jp()?'感染':'Infected')+': <b>'+fmt(T.I)+'</b></span> · '+
+          '<span style="color:#7a0010;">'+(jp()?'死亡':'Dead')+': <b>'+fmt(T.D)+'</b></span> · '+
+          '<span style="color:#2ca25f;">'+(jp()?'回復':'Recovered')+': <b>'+fmt(T.R)+'</b></span> · '+
+          '<span>'+(jp()?'国':'Countries')+': <b>'+T.aff+'</b></span> · '+(jp()?'経過':'Day')+' <b>'+day+'</b>'+(vaccine?' · 💉':''); }
+        function renderConfig(){ hud.innerHTML='';
+          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent='🦠 '+(jp()?'パンデミック設定':'Outbreak setup'); tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
+          const presetRow=document.createElement('div'); presetRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+          Object.keys(PG_PRESETS).forEach(k=>{ const b=document.createElement('button'); b.textContent=PG_PRESETS[k].n[jp()?'jp':'en']; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(P===PG_PRESETS[k]?'var(--primary-color)':'var(--input-bg)')+';color:'+(P===PG_PRESETS[k]?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ P=PG_PRESETS[k]; renderConfig(); }; presetRow.appendChild(b); }); hud.appendChild(presetRow);
+          const mk=(lab,val,min,max,step,set)=>{ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 96px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=step; r.value=val; r.style.flex='1'; const v=document.createElement('b'); v.textContent=val; v.style.cssText='flex:0 0 42px;text-align:right;'; r.oninput=()=>{ v.textContent=(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); };
+          mk(jp()?'感染力':'Infectivity',Math.round(P.inf*100),5,100,1,v=>P={...P,inf:v/100});
+          mk(jp()?'致死率%':'Lethality %',+(P.leth*100).toFixed(1),0,80,0.5,v=>P={...P,leth:v/100});
+          mk(jp()?'潜伏(日)':'Incubation',P.inc,0,21,1,v=>P={...P,inc:v});
+          const hint=document.createElement('div'); hint.style.cssText='margin-top:8px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=jp()?'▶ 地図で感染源となる国をタップ':'▶ Tap a country on the map to place patient zero'; hud.appendChild(hint);
+        }
+        function renderRun(){ hud.innerHTML='';
+          const stats=document.createElement('div'); stats.id='pg-pan-stats'; stats.style.cssText='margin-bottom:9px;line-height:1.6;'; hud.appendChild(stats);
+          const row=document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center;';
+          const play=document.createElement('button'); const setPlay=()=>play.textContent=running?(jp()?'⏸ 一時停止':'⏸ Pause'):(jp()?'▶ 再開':'▶ Play'); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
+          const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=4?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd);
+          const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;cursor:pointer;'; ex.onclick=exit; row.appendChild(ex);
+          hud.appendChild(row); updateHud(totals());
+        }
+        function onPick(e){ if(!picking) return; let hit=null; try{ const pt=map.queryRenderedFeatures(e.point,{layers:['pg-pan-fill']}); if(pt&&pt[0]&&pt[0].id!=null) hit=pt[0].id; }catch(_){}
+          if(hit==null){ /* fallback: point-in-polygon */ for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } } }
+          if(hit==null) return; picking=false; seed(hit); paint(); renderRun(); start();
+          pgNews((jp()?'最初の感染者が確認されました — ':'Patient zero confirmed in ')+(cName(feats[hit])||'?')+'.','alert');
+        }
+        map.on('click',onPick);
+        function exit(){ stop(); try{ map.off('click',onPick); }catch(_){} try{ if(map.getLayer('pg-pan-fill'))map.removeLayer('pg-pan-fill'); if(map.getLayer('pg-pan-line'))map.removeLayer('pg-pan-line'); if(map.getSource('pg-pan'))map.removeSource('pg-pan'); }catch(_){} try{ hud.remove(); }catch(_){} }
+        window._pgPandemicExit=exit;
+        renderConfig();
+      });
+    };
+
+    /* ===================== NATION SIM ===================== */
+    window._pgNationSim=function(){
+      ensureCountries(()=>{
+        const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
+        const list=Object.keys(cs).map(code=>({code,s:cs[code],name:(cs[code].nameEn||code)})).filter(x=>x.s&&(x.s.gdp||x.s.pop)).sort((a,b)=>a.name.localeCompare(b.name));
+        if(!list.length){ try{ imToast(jp()?'国データを読み込めません':'Country data unavailable'); }catch(_){} return; }
+        const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
+        let G=null;
+        function setup(){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove());
+          const wrap=document.createElement('div'); wrap.className='pg-ns';
+          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:9px;margin:0 0 6px;'; const t=document.createElement('h3'); t.textContent='🏛️ '+(jp()?'ネイション・シミュレーター':'Nation Sim'); t.style.cssText='margin:0;font-size:19px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); wrap.appendChild(h);
+          const p=document.createElement('p'); p.style.cssText='margin:0 0 14px;color:var(--text-muted);font-size:12.5px;line-height:1.5;'; p.textContent=jp()?'国家の元首として、実データを起点に国を導きます。':'Lead a real nation forward from its real-world figures.'; wrap.appendChild(p);
+          const mklabel=(s)=>{ const l=document.createElement('div'); l.textContent=s; l.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin:10px 0 5px;'; return l; };
+          wrap.appendChild(mklabel(jp()?'国':'Country'));
+          const sel=document.createElement('select'); sel.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; list.forEach(x=>{ const o=document.createElement('option'); o.value=x.code; o.textContent=(x.s.flag?x.s.flag+' ':'')+x.name; sel.appendChild(o); }); const def=list.find(x=>x.code==='JPN')||list.find(x=>x.code==='USA')||list[0]; sel.value=def.code; wrap.appendChild(sel);
+          wrap.appendChild(mklabel(jp()?'開始年':'Start year'));
+          const yr=document.createElement('input'); yr.type='number'; yr.min=1900; yr.max=2026; yr.value=2026; yr.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; wrap.appendChild(yr);
+          wrap.appendChild(mklabel(jp()?'統治形態':'Government'));
+          const seg=document.createElement('div'); seg.className='ios-segment'; seg.style.cssText='display:flex;width:100%;'; let gov='democracy';
+          [['democracy',jp()?'民主主義':'Democracy'],['dictator',jp()?'独裁':'Dictatorship']].forEach(([v,lab],i)=>{ const b=document.createElement('button'); b.className='ios-segment-btn'+(i===0?' active':''); b.style.flex='1'; b.textContent=lab; b.onclick=()=>{ gov=v; seg.querySelectorAll('.ios-segment-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }; seg.appendChild(b); }); wrap.appendChild(seg);
+          const go=document.createElement('button'); go.textContent=jp()?'就任する':'Take power'; go.style.cssText='width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:var(--primary-color);color:#fff;font-size:15px;font-weight:700;cursor:pointer;'; wrap.appendChild(go);
+          go.onclick=()=>{ const x=cs[sel.value]; G={ code:sel.value, name:(x.nameEn||sel.value), flag:x.flag||'🏳️', gov, year:Math.max(1900,Math.min(2026,+yr.value||2026)),
+            gdp:(x.gdp||500), hdi:(x.hdi||0.7), dem:(x.dem||(gov==='dictator'?3:6.5)), pop:(x.pop||1e7),
+            approval:gov==='dictator'?55:58, stability:62, treasury:50, unrest:gov==='dictator'?28:18, sanctions:10, log:[] };
+            play(); };
+          card.appendChild(wrap);
+        }
+        function bar(label,val,max,color){ const pct=Math.max(0,Math.min(100,(val/max)*100)); return '<div style="margin:5px 0;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span style="color:var(--text-muted);">'+label+'</span><b>'+(max===10?val.toFixed(1):max===1?val.toFixed(3):Math.round(val))+'</b></div><div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.2);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';transition:width .4s;"></div></div></div>'; }
+        function clamp(){ ['approval','stability','treasury','unrest','sanctions'].forEach(k=>G[k]=Math.max(0,Math.min(100,G[k]))); G.hdi=Math.max(0,Math.min(1,G.hdi)); G.dem=Math.max(0,Math.min(10,G.dem)); }
+        const POLICIES=()=>[
+          {t:jp()?'景気刺激策':'Economic stimulus', pop:14, ef:{gdp:+0.06,treasury:-12,approval:+6,unrest:-4}},
+          {t:jp()?'緊縮財政':'Austerity', pop:-16, ef:{treasury:+16,approval:-8,unrest:+7,gdp:-0.02}},
+          {t:jp()?'社会福祉の拡大':'Expand welfare', pop:12, ef:{hdi:+0.015,approval:+8,treasury:-10,unrest:-6}},
+          {t:jp()?'再軍備':'Rearmament', pop:-4, ef:{treasury:-9,stability:+5,sanctions:+8}},
+          {t:jp()?'国際協調・同盟参加':'Join alliance / open up', pop:6, ef:{sanctions:-14,stability:+6,gdp:+0.03}},
+          {t:jp()?'反体制派の弾圧':'Crack down on dissent', pop:-10, ef:{unrest:-18,approval:-6,dem:-0.5,sanctions:+10,stability:+4}},
+          {t:jp()?'教育・インフラ投資':'Education & infrastructure', pop:10, ef:{hdi:+0.02,gdp:+0.04,treasury:-11}},
+          {t:jp()?'増税':'Raise taxes', pop:-14, ef:{treasury:+15,approval:-7,gdp:-0.02}}
+        ];
+        const EVENTS=()=>[
+          {p:0.10,m:jp()?'世界的な好況。':'A global boom lifts the economy.',ef:{gdp:+0.05,treasury:+6,approval:+4}},
+          {p:0.10,m:jp()?'景気後退に見舞われた。':'A recession hits.',ef:{gdp:-0.06,treasury:-8,approval:-6,unrest:+6}},
+          {p:0.08,m:jp()?'汚職スキャンダルが発覚。':'A corruption scandal erupts.',ef:{approval:-10,unrest:+6}},
+          {p:0.07,m:jp()?'自然災害が発生。':'A natural disaster strikes.',ef:{treasury:-9,hdi:-0.01,approval:+3,unrest:+4}},
+          {p:0.07,m:jp()?'技術革新で生産性が向上。':'A tech breakthrough boosts productivity.',ef:{gdp:+0.05,hdi:+0.01}}
+        ];
+        function apply(ef){ for(const k in ef){ if(k==='gdp') G.gdp*=(1+ef.gdp); else G[k]+=ef[k]; } clamp(); }
+        function play(){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); const wrap=document.createElement('div'); wrap.className='pg-ns';
+          const head=document.createElement('div'); head.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;'; const tt=document.createElement('h3'); tt.style.cssText='margin:0;font-size:18px;'; tt.textContent=G.flag+' '+G.name; head.appendChild(tt); head.appendChild(pill(G.gov==='dictator'?(jp()?'独裁':'Dictator'):(jp()?'民主':'Democracy'), G.gov==='dictator'?'#ff3b30':'#0a84ff')); const ys=document.createElement('span'); ys.style.cssText='margin-left:auto;font-weight:700;font-size:15px;'; ys.textContent=G.year; head.appendChild(ys); wrap.appendChild(head);
+          const stats=document.createElement('div'); stats.innerHTML=
+            bar(jp()?'支持率':'Approval',G.approval,100,'#34c759')+bar(jp()?'安定度':'Stability',G.stability,100,'#0a84ff')+
+            bar(jp()?'財政':'Treasury',G.treasury,100,'#ffcc00')+bar(jp()?'国内不安':'Unrest',G.unrest,100,'#ff3b30')+
+            bar(jp()?'国際的圧力':'Sanctions',G.sanctions,100,'#af52de')+
+            '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--text-muted);margin-top:8px;">'+
+            '<span>GDP <b style="color:var(--text-main);">$'+(G.gdp>=1000?(G.gdp/1000).toFixed(2)+'T':Math.round(G.gdp)+'B')+'</b></span>'+
+            '<span>HDI <b style="color:var(--text-main);">'+G.hdi.toFixed(3)+'</b></span>'+
+            '<span>'+(jp()?'民主指数':'Dem. Index')+' <b style="color:var(--text-main);">'+G.dem.toFixed(1)+'</b></span></div>';
+          wrap.appendChild(stats);
+          const pl=document.createElement('div'); pl.style.cssText='margin-top:12px;'; const plh=document.createElement('div'); plh.textContent=jp()?'今年の政策（1つ選択）':'Pick a policy this year'; plh.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;'; pl.appendChild(plh);
+          const choices=POLICIES().sort(()=>Math.random()-0.5).slice(0,4);
+          choices.forEach(c=>{ const b=document.createElement('button'); b.textContent=c.t; b.style.cssText='display:block;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.18);border-radius:10px;padding:10px 12px;margin-bottom:7px;cursor:pointer;color:var(--text-main);font-size:13px;font-weight:600;';
+            b.onclick=()=>turn(c); pl.appendChild(b); });
+          const skip=document.createElement('button'); skip.textContent=jp()?'何もしない（次の年へ）':'Do nothing — next year'; skip.style.cssText='display:block;width:100%;background:transparent;border:1px dashed rgba(128,128,128,0.4);border-radius:10px;padding:9px;margin-top:2px;cursor:pointer;color:var(--text-muted);font-size:12.5px;'; skip.onclick=()=>turn(null); pl.appendChild(skip);
+          wrap.appendChild(pl);
+          if(G.log.length){ const lg=document.createElement('div'); lg.style.cssText='margin-top:12px;font-size:11.5px;color:var(--text-muted);line-height:1.5;max-height:90px;overflow:auto;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;'; lg.innerHTML=G.log.slice(-6).reverse().map(x=>'• '+x).join('<br>'); wrap.appendChild(lg); }
+          card.appendChild(wrap);
+        }
+        function turn(policy){
+          let msg='';
+          if(policy){ if(G.gov==='democracy'){ const blockP=Math.max(0,(-policy.pop)/100 + (10-G.dem)*0.03 + (G.approval<45?0.15:0)); if(Math.random()<blockP){ msg=(jp()?'議会が否決: ':'Parliament blocked: ')+policy.t; G.approval-=2; } else { apply(policy.ef); G.approval+=policy.pop*0.3; msg=(jp()?'可決: ':'Passed: ')+policy.t; } }
+            else { apply(policy.ef); G.approval+=policy.pop*0.15; if(policy.pop<0){ G.unrest+=Math.abs(policy.pop)*0.4; G.dem-=0.1; } msg=(jp()?'強行: ':'Enacted by decree: ')+policy.t; } }
+          // yearly drift + random event
+          G.year++; G.gdp*=1.01; G.treasury+=2; G.unrest+=(G.approval<40?4:-2)+(G.sanctions>50?3:0); G.stability+=(G.unrest>60?-5:2); G.sanctions-=1;
+          const ev=EVENTS().find(e=>Math.random()<e.p); if(ev){ apply(ev.ef); G.log.push(G.year+': '+ev.m); }
+          if(msg) G.log.push(G.year+': '+msg);
+          clamp();
+          // end conditions
+          if(G.gov==='dictator' && G.unrest>82 && G.stability<26 && Math.random()<0.5){ return gameover(jp()?'クーデターにより政権は崩壊した。':'A coup d\'état topples your regime.'); }
+          if(G.gov==='democracy' && G.year%4===0){ if(G.approval<42){ return gameover(jp()?'選挙に敗北。政権を去ることに。':'You lost the election and leave office.'); } else { G.log.push(G.year+': '+(jp()?'選挙に勝利！':'Re-elected!')); G.approval=Math.min(100,G.approval+5); } }
+          if(G.year>2060){ return gameover(jp()?'長期にわたり国を導きました。':'You led the nation for a long era.'); }
+          play();
+        }
+        function gameover(reason){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); const wrap=document.createElement('div'); wrap.className='pg-ns'; wrap.style.textAlign='center';
+          wrap.innerHTML='<div style="font-size:34px;margin:6px 0;">🏁</div><h3 style="margin:0 0 8px;font-size:18px;">'+(jp()?'ゲーム終了':'Game over')+'</h3><p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin:0 0 8px;">'+reason+'</p>'+
+            '<p style="font-size:12.5px;margin:0 0 16px;">'+G.flag+' '+G.name+' · '+G.year+'<br>'+(jp()?'最終支持率':'Final approval')+' '+Math.round(G.approval)+' · GDP $'+(G.gdp>=1000?(G.gdp/1000).toFixed(2)+'T':Math.round(G.gdp)+'B')+'</p>';
+          const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-weight:700;cursor:pointer;'; again.onclick=setup; wrap.appendChild(again); card.appendChild(wrap);
+        }
+        setup();
+      });
+    };
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
