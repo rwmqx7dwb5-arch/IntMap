@@ -23,6 +23,13 @@ gtag('config', 'G-57X5MX0ZPW');
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
   window.INTMAP_BUILD='2026-06-15-R29.1';
+  /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
+     tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
+  window.__imErrors=window.__imErrors||[];
+  (function(){ function push(kind,msg,extra){ try{ window.__imErrors.push({t:Date.now(),kind:kind,msg:String(msg||'').slice(0,400),extra:extra?String(extra).slice(0,300):''}); if(window.__imErrors.length>25) window.__imErrors.shift(); }catch(e){} }
+    window.addEventListener('error',function(e){ push('error', e&&e.message, e&&e.filename?((e.filename||'').split('/').pop()+':'+e.lineno):''); });
+    window.addEventListener('unhandledrejection',function(e){ var r=e&&e.reason; push('promise', (r&&(r.message||r))||'unhandledrejection'); });
+  })();
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -1713,6 +1720,11 @@ gtag('config', 'G-57X5MX0ZPW');
     </div>
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
+    </div>
+    <!-- (#R29.1) Feedback & bug report — open the existing feedback flow or the new bug reporter anytime. -->
+    <div class="setting-group" id="feedback-group"><label data-i18n="lblFeedback">Feedback &amp; bug report</label>
+      <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;" data-i18n="sendFeedbackBtn">⭐ Send feedback</button>
+      <button type="button" id="btn-report-bug" class="ai-test-btn" style="width:100%;" data-i18n="reportBugBtn">🐞 Report a bug</button>
     </div>
     <!-- (#R9) Support button — always the last item before Apply, so future settings push it down but it
          stays directly above Apply. -->
@@ -6728,6 +6740,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function close(){ bm.style.display='none'; }
     const btn=document.getElementById('btn-blueberry'); if(btn) btn.onclick=open;
     const x=document.getElementById('blueberry-close-x'); if(x) x.onclick=close;
+    /* (#R29.1) Settings → Feedback & bug report entry points. */
+    { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
+    { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */
@@ -6791,6 +6806,75 @@ window.addEventListener('DOMContentLoaded', () => {
     function openM(){ ensure(); rating=0; renderForm(); modal.style.display='flex'; }
     function closeM(){ if(modal) modal.style.display='none'; }
     window._openFeedback=openM;
+  })();
+
+  /* ===== (#R29.1) BUG REPORT system =====
+     A one-tap reporter that auto-captures diagnostics (build, theme, language, viewport, current mode,
+     active layers, the recent-error ring buffer, UA) and submits to Supabase `bug_reports`
+     (supabase_bug_reports.sql; admins read it in admin.html). Degrades gracefully: if the DB/insert
+     fails it stores locally AND copies the full report to the clipboard so nothing is ever lost. */
+  function _imDiag(){
+    const d={ build:window.INTMAP_BUILD||'?', when:new Date().toISOString(), lang:(typeof currentLang!=='undefined'?currentLang:'?'),
+      theme:(typeof userTheme!=='undefined'?userTheme:'?'), mode:(typeof currentMode!=='undefined'?currentMode:null),
+      viewport:(innerWidth+'x'+innerHeight), dpr:(window.devicePixelRatio||1), mobile:(typeof isMobile==='function'?isMobile():null),
+      proj:(typeof currentProj!=='undefined'?currentProj:null), mapType:(typeof currentMapType!=='undefined'?currentMapType:null),
+      ua:(navigator.userAgent||'').slice(0,250), errors:(window.__imErrors||[]).slice(-12) };
+    try{ d.layers=Array.from(document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked')).map(cb=>{ const l=cb.closest('label')||cb.closest('.lyr-row'); const sp=l&&l.querySelector('span'); return (sp?sp.textContent:cb.id||'?').trim(); }).filter(Boolean).slice(0,40); }catch(_){ d.layers=[]; }
+    try{ d.view=(map?[+map.getCenter().lng.toFixed(3),+map.getCenter().lat.toFixed(3),+map.getZoom().toFixed(2)]:null); }catch(_){}
+    return d;
+  }
+  (function(){
+    const jp=()=>currentLang==='jp';
+    let modal=null;
+    function ensure(){ if(modal) return modal;
+      modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='bug-modal';
+      modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
+      modal.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;width:100%;max-width:420px;box-sizing:border-box;position:relative;max-height:88dvh;overflow-y:auto;" id="bug-card"></div>';
+      document.body.appendChild(modal);
+      modal.addEventListener('click',(e)=>{ if(e.target===modal) close(); });
+      return modal; }
+    function cats(){ return jp()
+      ? [['ui','UI・表示'],['map','地図・レイヤー'],['news','ニュース'],['ai','AI機能'],['account','アカウント・ログイン'],['perf','動作が重い・落ちる'],['other','その他']]
+      : [['ui','UI / display'],['map','Map & layers'],['news','News'],['ai','AI features'],['account','Account / login'],['perf','Performance / crash'],['other','Other']]; }
+    function renderForm(){ const c=modal.querySelector('#bug-card'); const diag=_imDiag();
+      c.innerHTML='<button id="bug-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
+        '<h3 style="margin:0 0 6px;font-size:17px;">🐞 '+(jp()?'バグを報告':'Report a bug')+'</h3>'+
+        '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(jp()?'不具合の内容をできるだけ具体的に教えてください。再現手順があると助かります。':'Describe what went wrong — steps to reproduce help a lot.')+'</p>'+
+        '<select id="bug-cat" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:9px 11px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;">'+cats().map(c=>'<option value="'+c[0]+'">'+c[1]+'</option>').join('')+'</select>'+
+        '<textarea id="bug-text" maxlength="3000" placeholder="'+(jp()?'例: モバイルで○○を押すと△△になる…':'e.g. On mobile, tapping X causes Y…')+'" style="width:100%;box-sizing:border-box;min-height:110px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
+        '<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;color:var(--text-muted);">'+(jp()?'添付される診断情報':'Diagnostics attached')+'</summary>'+
+          '<pre style="white-space:pre-wrap;word-break:break-word;font-size:10.5px;color:var(--text-muted);background:var(--input-bg);border-radius:8px;padding:9px;margin:8px 0 0;max-height:150px;overflow:auto;">'+escapeHtml(JSON.stringify(diag,null,1))+'</pre></details>'+
+        '<button id="bug-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit report')+'</button>'+
+        '<button id="bug-copy" style="width:100%;margin-top:8px;padding:9px;border:1px solid rgba(128,128,128,0.25);border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:12.5px;font-weight:600;cursor:pointer;">'+(jp()?'内容をコピー':'Copy report to clipboard')+'</button>'+
+        '<p id="bug-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
+      c.querySelector('#bug-x').onclick=close;
+      c.querySelector('#bug-copy').onclick=()=>{ const payload=buildRow(); try{ navigator.clipboard.writeText(JSON.stringify(payload,null,2)); c.querySelector('#bug-msg').textContent=jp()?'コピーしました。':'Copied.'; }catch(_){ c.querySelector('#bug-msg').textContent=jp()?'コピーできませんでした。':'Could not copy.'; } };
+      c.querySelector('#bug-send').onclick=submit; }
+    function buildRow(){ const c=modal.querySelector('#bug-card');
+      const cat=c?c.querySelector('#bug-cat').value:'other'; const text=c?(c.querySelector('#bug-text').value||'').trim():'';
+      const row={ category:cat, description:text.slice(0,3000), diagnostics:_imDiag(), lang:currentLang, build:window.INTMAP_BUILD||null, ua:(navigator.userAgent||'').slice(0,250), page:location.pathname, created_at:new Date().toISOString() };
+      try{ if(typeof currentUser!=='undefined'&&currentUser){ row.user_id=currentUser.id; row.email=currentUser.email||null; } }catch(_){}
+      return row; }
+    async function submit(){ const c=modal.querySelector('#bug-card'); const msg=c.querySelector('#bug-msg');
+      const text=(c.querySelector('#bug-text').value||'').trim();
+      if(text.length<5){ msg.textContent=jp()?'不具合の内容を入力してください。':'Please describe the bug.'; return; }
+      const btn=c.querySelector('#bug-send'); btn.disabled=true; btn.textContent=jp()?'送信中…':'Sending…';
+      const row=buildRow(); let ok=false;
+      try{ if(typeof DB!=='undefined'&&DB){ const {error}=await DB.from('bug_reports').insert(row); ok=!error; } }catch(_){}
+      if(!ok){ /* graceful fallback — never lose the report */
+        try{ const k='intmap_bug_reports'; const arr=JSON.parse(localStorage.getItem(k)||'[]'); arr.push(row); localStorage.setItem(k,JSON.stringify(arr.slice(-20))); }catch(_){}
+        try{ await navigator.clipboard.writeText(JSON.stringify(row,null,2)); }catch(_){}
+      }
+      renderThanks(ok); }
+    function renderThanks(sent){ const c=modal.querySelector('#bug-card');
+      c.innerHTML='<div style="text-align:center;padding:8px 0 2px;"><div style="font-size:34px;margin-bottom:8px;">'+(sent?'✅':'📋')+'</div>'+
+        '<h3 style="margin:0 0 8px;font-size:17px;">'+(sent?(jp()?'レポートを送信しました':'Report sent'):(jp()?'レポートを保存しました':'Report saved'))+'</h3>'+
+        '<p style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.6;">'+(sent?(jp()?'ご報告ありがとうございます。確認して対応します。':'Thank you — we will look into it.'):(jp()?'オフラインのため端末に保存し、内容をクリップボードにコピーしました。':'Saved on this device and copied to your clipboard (offline).'))+'</p>'+
+        '<button id="bug-done" style="padding:10px 26px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:600;cursor:pointer;">'+(jp()?'閉じる':'Close')+'</button></div>';
+      c.querySelector('#bug-done').onclick=close; }
+    function open(){ ensure(); renderForm(); modal.style.display='flex'; }
+    function close(){ if(modal) modal.style.display='none'; }
+    window._openBugReport=open;
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
@@ -6976,8 +7060,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 World Explorer" });
+    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 ワールドエクスプローラー" });
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
