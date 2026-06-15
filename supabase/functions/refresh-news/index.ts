@@ -2,24 +2,33 @@
 //  IntMap · refresh-news  —  Supabase Edge Function (Deno)
 // ----------------------------------------------------------------------------
 //  Runs on a schedule (every ~20 min via pg_cron, see supabase_news_setup.sql).
-//  It does ALL the heavy news work that used to run in every visitor's browser
-//  on startup (the 150-articles × 130-gazetteer-entries scoring loop):
+//  It does ALL the news work that used to run in every visitor's browser on
+//  startup — fetch, parse, AND geolocate — so the browser just does ONE
+//  `select * from current_news` (a few ms) and pins appear instantly.
 //
 //    1. Fetch Google News RSS server-side (no CORS, no proxy needed).
-//    2. Resolve each story's SUBJECT location with the same scoring model the
-//       client used, reading the gazetteer straight from the `geo_pins` table
-//       (single source of truth) + an embedded publisher-HQ gazetteer.
-//    3. OPTIONAL LLM pass (OPENAI_API_KEY secret) to geocode whatever the
-//       dictionary missed — degrades gracefully when no key is set.
-//    4. Write the clean, pre-analysed result into `current_news`.
-//
-//  The browser then does ONE `select * from current_news` (a few ms) instead
-//  of fetching + parsing + scoring 150 articles on the main thread.
+//    2. GEOLOCATE each story's SUBJECT.  (#R29) AI is now the PRIMARY locator
+//       for the English + Japanese editions: every article is sent to the AI
+//       (server-held key — same provider/env convention as ai-proxy) which
+//       returns the specific place the event is ABOUT. The dictionary scorer
+//       (gazetteer from `geo_pins` + embedded places/orgs/demonyms) is the
+//       FALLBACK — used only when the AI fails, is not configured, or for a
+//       non-en/jp article. Already-AI-located articles are NEVER re-analysed.
+//    3. Resolve the publisher HQ from the embedded publisher gazetteer.
+//    4. Upsert into `current_news` (deduped by lang+link — same URL never
+//       stored twice), stamping `analyzed_by` = 'ai' | 'dict' | 'none'.
+//    5. Prune anything older than 72 h (by pub_date) from the table.
 //
 //  Deploy:   supabase functions deploy refresh-news --no-verify-jwt
 //  Secrets:  supabase secrets set REFRESH_SECRET=<random>   (optional but recommended)
-//            supabase secrets set OPENAI_API_KEY=sk-...      (optional — enables LLM geocoding)
+//            # AI geocoding reuses the SAME server-held key/provider as ai-proxy:
+//            supabase secrets set AI_PROVIDER=anthropic        (anthropic | openai | gemini)
+//            supabase secrets set ANTHROPIC_API_KEY=sk-ant-... (or OPENAI_API_KEY / GEMINI_API_KEY)
+//            supabase secrets set AI_MODEL=claude-3-5-haiku-latest   (optional override)
+//            supabase secrets set NEWS_AI=off                  (optional kill-switch → dictionary only)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
+//  Run supabase_news_setup.sql once to create/extend current_news (incl. the
+//  analyzed_by column) + the pg_cron schedule.
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -193,6 +202,32 @@ const EMBEDDED_PLACES: [string, string[], number, number, string, string][] = [
   ["city", ["Pentagon", "ペンタゴン"], -77.06, 38.87, "Pentagon", "ペンタゴン"],
   ["city", ["White House", "ホワイトハウス"], -77.04, 38.90, "White House", "ホワイトハウス"],
   ["city", ["Downing Street", "ダウニング街"], -0.13, 51.50, "Downing Street", "ダウニング街"],
+  // (#R29) maritime/strait flashpoints, contested regions + the war cities that dominate headlines.
+  ["flashpoint", ["Strait of Hormuz", "ホルムズ海峡"], 56.5, 26.6, "Strait of Hormuz", "ホルムズ海峡"],
+  ["flashpoint", ["Taiwan Strait", "台湾海峡"], 119.5, 24.5, "Taiwan Strait", "台湾海峡"],
+  ["flashpoint", ["South China Sea", "南シナ海"], 114.0, 15.0, "South China Sea", "南シナ海"],
+  ["flashpoint", ["Suez Canal", "スエズ運河"], 32.35, 30.7, "Suez Canal", "スエズ運河"],
+  ["flashpoint", ["Bab el-Mandeb", "バブ・エル・マンデブ"], 43.33, 12.58, "Bab el-Mandeb", "バブ・エル・マンデブ"],
+  ["flashpoint", ["Golan Heights", "ゴラン高原"], 35.74, 32.95, "Golan Heights", "ゴラン高原"],
+  ["flashpoint", ["West Bank", "ヨルダン川西岸"], 35.30, 31.95, "West Bank", "ヨルダン川西岸"],
+  ["flashpoint", ["Nagorno-Karabakh", "ナゴルノ・カラバフ", "Artsakh"], 46.75, 39.82, "Nagorno-Karabakh", "ナゴルノ・カラバフ"],
+  ["city", ["Kashmir", "カシミール"], 76.0, 34.0, "Kashmir", "カシミール"],
+  ["city", ["Kaliningrad", "カリーニングラード"], 20.51, 54.71, "Kaliningrad", "カリーニングラード"],
+  ["city", ["Transnistria", "沿ドニエストル"], 29.48, 46.84, "Transnistria", "沿ドニエストル"],
+  ["flashpoint", ["Zaporizhzhia", "ザポリージャ"], 35.14, 47.84, "Zaporizhzhia", "ザポリージャ"],
+  ["flashpoint", ["Kherson", "ヘルソン"], 32.62, 46.64, "Kherson", "ヘルソン"],
+  ["flashpoint", ["Bakhmut", "バフムート"], 38.0, 48.6, "Bakhmut", "バフムート"],
+  ["flashpoint", ["Avdiivka", "アウディーイウカ"], 37.74, 48.14, "Avdiivka", "アウディーイウカ"],
+  ["city", ["Kursk", "クルスク"], 36.19, 51.73, "Kursk", "クルスク"],
+  ["city", ["Sevastopol", "セヴァストポリ"], 33.52, 44.60, "Sevastopol", "セヴァストポリ"],
+  ["city", ["Aleppo", "アレッポ"], 37.16, 36.20, "Aleppo", "アレッポ"],
+  ["flashpoint", ["Idlib", "イドリブ"], 36.63, 35.93, "Idlib", "イドリブ"],
+  ["city", ["Mosul", "モスル"], 43.13, 36.34, "Mosul", "モスル"],
+  ["city", ["Kandahar", "カンダハル"], 65.71, 31.61, "Kandahar", "カンダハル"],
+  ["flashpoint", ["Hodeidah", "ホデイダ", "Al Hudaydah"], 42.95, 14.80, "Hodeidah", "ホデイダ"],
+  ["city", ["Tigray", "ティグレ"], 38.5, 14.0, "Tigray", "ティグレ"],
+  ["city", ["Goma", "ゴマ"], 29.22, -1.68, "Goma", "ゴマ"],
+  ["city", ["Port Sudan", "ポートスーダン"], 37.22, 19.62, "Port Sudan", "ポートスーダン"],
 ];
 
 // (#R28) Organizations / institutions / militant groups → a representative location. Flagged org:true and
@@ -351,37 +386,75 @@ function safeISO(s: string, fallback: string): string {
 }
 
 // ---------------------------------------------------------------------------
-//  Optional LLM geocoding for whatever the dictionary missed
+//  AI geocoding — PRIMARY locator for en/jp.  (#R29)
+//  Uses the SAME server-held key + provider convention as the ai-proxy function
+//  (AI_PROVIDER ∈ anthropic|openai|gemini; key never leaves the server). The
+//  result OVERRIDES the dictionary for en/jp; the dictionary is the fallback.
 // ---------------------------------------------------------------------------
-async function llmGeocode(unmapped: { i: number; title: string }[], lang: string) {
-  const key = Deno.env.get("OPENAI_API_KEY");
-  if (!key || !unmapped.length) return new Map<number, { lng: number; lat: number; name: string }>();
-  const result = new Map<number, { lng: number; lat: number; name: string }>();
-  const batch = unmapped.slice(0, 40); // cap cost per run
-  const list = batch.map((u) => `${u.i}. ${u.title}`).join("\n");
-  const sys = "You geolocate news headlines. For each numbered headline, return the single most relevant real-world place (city/region/country) the story is ABOUT. Reply with ONLY a JSON array: [{\"i\":<number>,\"lat\":<deg>,\"lng\":<deg>,\"name\":\"<place>\"}]. Omit a headline if there is no clear geographic subject.";
-  try {
+function aiProviderConfig(): { provider: string; key: string; model: string } | null {
+  if ((Deno.env.get("NEWS_AI") || "").toLowerCase() === "off") return null;
+  let provider = (Deno.env.get("AI_PROVIDER") || "").toLowerCase();
+  // Infer the provider from whichever key the operator already set for ai-proxy.
+  if (!provider) {
+    if (Deno.env.get("ANTHROPIC_API_KEY")) provider = "anthropic";
+    else if (Deno.env.get("OPENAI_API_KEY")) provider = "openai";
+    else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
+  }
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini" }; }
+  else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || "gemini-2.0-flash" }; }
+  else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || "claude-3-5-haiku-latest" }; }
+  return null;
+}
+
+const AI_SYS =
+  "You are a precise geocoder for a world news map. For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event actually happens. RULES: (1) NOT the news outlet's HQ or dateline. (2) NOT where someone merely SPOKE about it — if an official in Washington comments on the Middle East, return the Middle-East place the event concerns. (3) Be as SPECIFIC as the headline allows (city/landmark over country). Reply with ONLY a JSON array, one object per locatable item: [{\"i\":<number>,\"name\":\"<short English place name>\",\"lat\":<deg>,\"lng\":<deg>}]. Omit any item with no clear subject location. No commentary, no code fences.";
+
+async function callProvider(cfg: { provider: string; key: string; model: string }, sys: string, user: string): Promise<string> {
+  if (cfg.provider === "openai") {
     const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini",
-        temperature: 0,
-        messages: [{ role: "system", content: sys }, { role: "user", content: list }],
-      }),
+      method: "POST", headers: { "Authorization": `Bearer ${cfg.key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: cfg.model, temperature: 0, max_tokens: 1500, messages: [{ role: "system", content: sys }, { role: "user", content: user }] }),
     });
-    if (!r.ok) return result;
-    const j = await r.json();
-    let txt = j?.choices?.[0]?.message?.content || "";
-    txt = txt.replace(/```json/gi, "").replace(/```/g, "");
-    const arr = JSON.parse(txt.slice(txt.indexOf("["), txt.lastIndexOf("]") + 1));
+    if (!r.ok) throw new Error("openai " + r.status);
+    const j = await r.json(); return j?.choices?.[0]?.message?.content || "";
+  }
+  if (cfg.provider === "gemini") {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent?key=" + encodeURIComponent(cfg.key), {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: user }] }], systemInstruction: { parts: [{ text: sys }] }, generationConfig: { temperature: 0, maxOutputTokens: 1500 } }),
+    });
+    if (!r.ok) throw new Error("gemini " + r.status);
+    const j = await r.json(); const c = j?.candidates?.[0];
+    return (c?.content?.parts || []).map((p: { text?: string }) => p.text || "").join("");
+  }
+  // anthropic (default)
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-api-key": cfg.key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: cfg.model, max_tokens: 1500, system: sys, messages: [{ role: "user", content: user }] }),
+  });
+  if (!r.ok) throw new Error("anthropic " + r.status);
+  const j = await r.json(); return (j?.content || []).map((b: { text?: string }) => b.text || "").join("");
+}
+
+// Geolocate a batch of headlines with the AI. Returns index → {lng,lat,name}. Degrades to an
+// empty map (→ dictionary fallback stands) on any failure so a hiccup never blanks the feed.
+async function aiGeocode(cfg: { provider: string; key: string; model: string }, items: { i: number; title: string; desc?: string }[]) {
+  const out = new Map<number, { lng: number; lat: number; name: string }>();
+  if (!items.length) return out;
+  const list = items.map((u) => `${u.i}. ${u.title}${u.desc ? " — " + String(u.desc).slice(0, 160) : ""}`).join("\n");
+  try {
+    let txt = await callProvider(cfg, AI_SYS, "Headlines:\n" + list);
+    txt = (txt || "").replace(/```json/gi, "").replace(/```/g, "");
+    const lo = txt.indexOf("["), hi = txt.lastIndexOf("]");
+    if (lo < 0 || hi < lo) return out;
+    const arr = JSON.parse(txt.slice(lo, hi + 1));
     for (const e of arr) {
       const i = Number(e.i), lat = Number(e.lat), lng = Number(e.lng);
       if (Number.isFinite(i) && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180)
-        result.set(i, { lat, lng, name: String(e.name || "").slice(0, 80) });
+        out.set(i, { lat, lng, name: String(e.name || "").slice(0, 80) });
     }
   } catch (_) { /* degrade silently — dictionary result still stands */ }
-  return result;
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -418,7 +491,12 @@ Deno.serve(async (req) => {
   const geo = compileGeo(geoRows || []).concat(compileEmbedded()).concat(compileOrgs()).concat(compileDemonyms());
 
   const fetchedAt = new Date().toISOString();
-  const counts: Record<string, number> = {};
+  const CUTOFF_MS = 72 * 3600 * 1000;                 // 72-hour display/storage window (#R29)
+  const cutoffISO = new Date(Date.now() - CUTOFF_MS).toISOString();
+  const aiCfg = aiProviderConfig();                   // null → AI off / not configured → dictionary only
+  const AI_CAP = 120;                                 // max NEW articles AI-located per lang per run (cost bound)
+  const AI_BATCH = 15;
+  const counts: Record<string, { total: number; ai: number; dict: number; reused: number }> = {};
 
   for (const ed of EDITIONS) {
     const byLink = new Map<string, RawItem & { topic: string }>();
@@ -431,56 +509,91 @@ Deno.serve(async (req) => {
       .sort((a, b) => (Date.parse(b.pubDate) || 0) - (Date.parse(a.pubDate) || 0))
       .slice(0, MAX_ITEMS);
 
+    // Reuse map: rows we already stored (within the 72h window) keyed by link. An article that
+    // was already AI-located is NEVER re-sent to the AI ("すでにAI解析済みの記事は再解析しない").
+    const existing = new Map<string, any>();
+    try {
+      const { data: prev } = await db.from("current_news")
+        .select("link,analyzed_by,subject_lng,subject_lat,subject_name_en,subject_name_jp")
+        .eq("lang", ed.lang).gte("pub_date", cutoffISO);
+      for (const p of prev || []) existing.set(p.link, p);
+    } catch (_) { /* table may lack analyzed_by on first deploy → treated as no reuse */ }
+
+    let reused = 0, aiCount = 0, dictCount = 0;
     const rows = items.map((it) => {
       // Google News title = "Headline - Publisher"; prefer the explicit <source>.
       const sp = it.title.split(" - ");
       const publisher = it.source || (sp.length > 1 ? sp[sp.length - 1] : (ed.lang === "en" ? "News" : "報道"));
       const title = it.source ? it.title.replace(new RegExp("\\s*-\\s*" + esc(it.source) + "\\s*$"), "") : (sp.length > 1 ? sp.slice(0, -1).join(" - ") : it.title);
       const desc = it.description || "";
+      const pm = matchPublisher(publisher);
+      const base = {
+        lang: ed.lang, topic: it.topic, title, publisher, link: it.link,
+        pub_date: safeISO(it.pubDate, fetchedAt),
+        description: desc.slice(0, 600),
+        pub_lng: pm ? pm.loc[0] : null, pub_lat: pm ? pm.loc[1] : null, pub_label: pm ? pm.label : null,
+        short_en: shortLabel(title, "en"), short_jp: shortLabel(title, "jp"),
+        fetched_at: fetchedAt,
+      };
 
-      // Subject — best-scoring gazetteer entry over title + description.
+      // 1) REUSE a prior AI result for the same URL — no re-analysis, no duplicate.
+      const ex = existing.get(it.link);
+      if (ex && ex.analyzed_by === "ai" && ex.subject_lng != null && ex.subject_lat != null) {
+        reused++;
+        return { ...base, subject_lng: ex.subject_lng, subject_lat: ex.subject_lat,
+          subject_name_en: ex.subject_name_en, subject_name_jp: ex.subject_name_jp, mapped: true, analyzed_by: "ai", _desc: desc };
+      }
+
+      // 2) DICTIONARY (fallback) — best-scoring gazetteer entry over title + description.
       let best: GeoEntry | null = null, bestScore = 0;
       for (const g of geo) {
         const s = scoreGeo(g, title, desc);
         if (s <= 0) continue;
         if (s > bestScore || (s === bestScore && (!best || (TYPE_LOCAL[g.type] || 0) > (TYPE_LOCAL[best.type] || 0)))) { best = g; bestScore = s; }
       }
-      const pm = matchPublisher(publisher);
-      return {
-        lang: ed.lang, topic: it.topic, title, publisher, link: it.link,
-        pub_date: safeISO(it.pubDate, fetchedAt),
-        description: desc.slice(0, 600),
+      return { ...base,
         subject_lng: best ? best.lng : null, subject_lat: best ? best.lat : null,
         subject_name_en: best ? best.name_en : null, subject_name_jp: best ? best.name_jp : null,
-        mapped: !!best,
-        pub_lng: pm ? pm.loc[0] : null, pub_lat: pm ? pm.loc[1] : null, pub_label: pm ? pm.label : null,
-        short_en: shortLabel(title, "en"), short_jp: shortLabel(title, "jp"),
-        fetched_at: fetchedAt,
-      };
+        mapped: !!best, analyzed_by: best ? "dict" : "none", _desc: desc };
     });
 
-    // LLM fallback for unmatched subjects (optional).
-    const unmapped = rows.map((r, i) => ({ i, title: r.title, mapped: r.mapped })).filter((x) => !x.mapped);
-    if (unmapped.length) {
-      const geoMap = await llmGeocode(unmapped.map((u) => ({ i: u.i, title: u.title })), ed.lang);
-      for (const [i, g] of geoMap) {
-        rows[i].subject_lng = g.lng; rows[i].subject_lat = g.lat;
-        rows[i].subject_name_en = rows[i].subject_name_en || g.name;
-        rows[i].subject_name_jp = rows[i].subject_name_jp || g.name;
-        rows[i].mapped = true;
+    // 3) AI is PRIMARY for en/jp — analyse EVERY not-yet-AI-located article (dictionary result is
+    //    overridden when the AI returns a place). Capped per run; the rest stay on the dictionary
+    //    fallback and get AI-located on a later run. Other languages keep the dictionary only.
+    if (aiCfg && (ed.lang === "en" || ed.lang === "jp")) {
+      const todo = rows.map((r, i) => ({ i, title: r.title, desc: r._desc as string }))
+        .filter((x) => rows[x.i].analyzed_by !== "ai").slice(0, AI_CAP);
+      for (let i = 0; i < todo.length; i += AI_BATCH) {
+        const chunk = todo.slice(i, i + AI_BATCH);
+        const located = await aiGeocode(aiCfg, chunk.map((c) => ({ i: c.i, title: c.title, desc: c.desc })));
+        for (const [idx, g] of located) {
+          rows[idx].subject_lng = g.lng; rows[idx].subject_lat = g.lat;
+          rows[idx].subject_name_en = g.name || rows[idx].subject_name_en;
+          rows[idx].subject_name_jp = g.name || rows[idx].subject_name_jp;
+          rows[idx].mapped = true; rows[idx].analyzed_by = "ai";
+        }
       }
     }
 
+    rows.forEach((r) => { delete (r as { _desc?: string })._desc;
+      if (r.analyzed_by === "ai") aiCount++; else if (r.analyzed_by === "dict") dictCount++; });
+
     if (rows.length) {
-      // Upsert by (lang, link), then drop anything from a previous run for this lang.
+      // Upsert by (lang, link) — the same URL is never stored twice ("同じURLの記事は重複保存しない").
       const { error: upErr } = await db.from("current_news").upsert(rows, { onConflict: "lang,link" });
       if (upErr) { console.error("[refresh-news] upsert failed:", upErr.message); continue; }
-      await db.from("current_news").delete().eq("lang", ed.lang).lt("fetched_at", fetchedAt);
-      counts[ed.lang] = rows.length;
+      counts[ed.lang] = { total: rows.length, ai: aiCount, dict: dictCount, reused };
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, fetchedAt, counts }), {
+  // 4) Prune everything older than 72 h from the table (every lang) — by pub_date, with a
+  //    fetched_at safety net for rows whose pub_date never parsed. ("72時間以上前のニュースは…削除")
+  try {
+    await db.from("current_news").delete().lt("pub_date", cutoffISO);
+    await db.from("current_news").delete().lt("fetched_at", new Date(Date.now() - CUTOFF_MS - 6 * 3600 * 1000).toISOString());
+  } catch (e) { console.warn("[refresh-news] prune failed:", (e as Error)?.message); }
+
+  return new Response(JSON.stringify({ ok: true, fetchedAt, ai: !!aiCfg, provider: aiCfg?.provider || null, counts }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 });
