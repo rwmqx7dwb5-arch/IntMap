@@ -235,6 +235,10 @@ gtag('config', 'G-57X5MX0ZPW');
        late synthetic click then landed on the row that slid into that spot — the one ABOVE — so pressing
        "Country borders" auto-checked "Place names" ("勝手にplace namesがチェックされる"). */
     .layer-option{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; color:var(--text-main); cursor:pointer; padding:6px; border-radius:8px; transition:0.2s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; } .layer-option:hover{ background:var(--input-bg); }
+    /* (#R29.1) On TOUCH devices :hover STICKS after a tap, leaving a layer row highlighted as if it were
+       checked/flickering ("隣の行をタップしてないのに…チラついたり誤チェックが入る"). Kill the hover paint where
+       there's no real hover so a tapped row never keeps a phantom highlight. */
+    @media (hover:none){ .layer-option:hover, .lyr-row:hover{ background:transparent !important; } }
     /* (#R27) pointer-events:none on the checkbox itself — on BOTH desktop and mobile — so a click/tap
        anywhere on the row routes through the <label> exactly ONCE (the checkbox + label were each
        receiving the event = a double-toggle that read as "チェックを付けても動かない" / unstable). The label
@@ -653,16 +657,14 @@ gtag('config', 'G-57X5MX0ZPW');
     .news-pin-toggle{ display:flex; align-items:center; gap:8px; margin:0 0 12px 0; padding:8px 12px; background:var(--card-bg); border-radius:12px; border:1px solid rgba(128,128,128,0.08); }
     .news-pin-toggle-label{ font-size:11px; color:var(--text-muted); font-weight:600; }
     /* #28 — AI-locate (with a Subject/Publisher dropdown) on the left half, Translate-titles on the right half */
-    .news-ai-actions{ display:flex; gap:8px; align-items:stretch; }
-    .ai-locate-wrap{ position:relative; flex:1 1 50%; display:flex; min-width:0; }
-    .ai-locate-wrap .ai-locate-main{ flex:1 1 auto; min-width:0; margin-top:0 !important; border-top-right-radius:0; border-bottom-right-radius:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .ai-locate-caret{ flex:0 0 auto; width:28px; margin-top:0; border:1px solid rgba(128,128,128,0.18); border-left:none; border-radius:0 10px 10px 0; background:var(--input-bg); color:var(--text-main); font-size:11px; cursor:pointer; }
-    .ai-locate-caret:hover{ background:rgba(128,128,128,0.15); }
-    .ai-locate-menu{ display:none; position:absolute; bottom:calc(100% + 6px); left:0; min-width:190px; z-index:60; background:var(--glass-fill); border:1px solid var(--glass-border); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); padding:9px; }
-    .ai-locate-menu.show{ display:block; }
-    .ai-locate-menu-h{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; color:var(--text-muted); margin:0 2px 6px; }
-    .ai-locate-menu .ios-segment-btn{ display:block; width:100%; text-align:left; padding:9px 11px; margin:3px 0; border-radius:8px; }
-    .ai-locate-menu .ios-segment-btn.active{ background:var(--primary-color); color:#fff; }
+    /* (#R29.1) News actions = a full-width [ Subject | Publisher ] segmented control, with the Translate
+       button stacked beneath it. The old side-by-side .ai-locate-wrap structure was removed when news
+       location went server-side; the translate button's width:100% then squashed the inline segment and its
+       buttons overflowed/overlapped ("UIが崩壊"). Stacking is the clean iOS layout and can't squash. */
+    .news-ai-actions{ display:flex; flex-direction:column; gap:8px; }
+    .news-ai-actions > #news-pinmode-seg{ display:flex; width:100%; box-sizing:border-box; }
+    .news-ai-actions > #news-pinmode-seg .ios-segment-btn{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .news-ai-actions > #ai-translate-btn{ width:100%; margin-top:0 !important; }
     #ai-translate-btn{ flex:1 1 50%; min-width:0; margin-top:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* === Stats compare bar (pinned to top of Stats list) === */
@@ -1022,10 +1024,12 @@ gtag('config', 'G-57X5MX0ZPW');
          ("でかすぎ / 地図が見えない / 他のボタンが使えない"). Now a COMPACT card pinned to the bottom-LEFT:
          it leaves the right side (map + the FAB column at right:14px) clear, and a shorter max-height keeps
          the map visible. Still draggable if the user wants to reposition it. */
+      /* (#R29.1) Initial position at the TOP-LEFT corner (per request), compact, leaving the map + the
+         right-side FAB column visible. Still draggable to anywhere. */
       .tool-panel.tp-radius{ position:fixed !important; left:8px !important; right:auto !important;
-        width:min(80vw, 320px) !important; max-width:min(80vw, 320px) !important;
-        top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h, 0px)) + 12px) !important;
-        max-height:min(40dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 110px)) !important;
+        width:min(78vw, 310px) !important; max-width:min(78vw, 310px) !important;
+        top:max(8px, env(safe-area-inset-top)) !important; bottom:auto !important;
+        max-height:min(42dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 90px)) !important;
         overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 12px !important; border-radius:16px !important; }
       .tool-panel.tp-radius .tp-header{ position:sticky; top:-10px; margin:-10px -12px 6px; padding:10px 12px 6px; background:var(--glass-fill,var(--popup-bg)); z-index:2; }
       .tool-panel.tp-radius .tp-sub{ margin:6px 0 2px !important; font-size:10.5px !important; }
@@ -13051,6 +13055,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const n=String(name).trim().toLowerCase(); const NF=(p)=>[p.NAME_EN,p.ADMIN,p.NAME,p.name,p.name_en,p['name:en'],p.NAME_LONG,p.BRK_NAME,p.FORMAL_EN,p.SOVEREIGNT,p.nameEn,p.nameJp];
       return cg.features.find(f=>NF(f.properties||{}).some(v=>v&&String(v).trim().toLowerCase()===n))
           || (n.length>3 && cg.features.find(f=>NF(f.properties||{}).some(v=>v&&String(v).trim().toLowerCase().includes(n)))) || null; }
+    /* (#R29.1) Resolve a country by the CLICK POINT (point-in-polygon). This is the RELIABLE path — matching
+       OFM label text to the border GeoJSON's name fields failed ("country border not found"). The tapped
+       label sits inside (or beside) its country, so ray-casting the lng/lat against the polygons finds it. */
+    function pointInRing(x,y,ring){ let inside=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1]; if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; } return inside; }
+    function pointInGeom(x,y,g){ if(!g) return false; const polys=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]);
+      for(const poly of polys){ if(!poly||!poly.length) continue; if(pointInRing(x,y,poly[0])){ let hole=false; for(let h=1;h<poly.length;h++){ if(pointInRing(x,y,poly[h])){ hole=true; break; } } if(!hole) return true; } } return false; }
+    function findByLngLat(lng,lat){ const cg=window.countryGeo; if(!cg||!cg.features) return null; for(const f of cg.features){ if(pointInGeom(lng,lat,f.geometry)) return f; } return null; }
     function maskFC(feat){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry;
       if(g.type==='Polygon') holes.push(g.coordinates[0]); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(poly[0]));
       return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[world,...holes]},properties:{}}]}; }
@@ -13082,11 +13093,13 @@ window.addEventListener('DOMContentLoaded', () => {
        border GeoJSON first if it isn't in memory yet so isolate works even before Countries(info) is used. */
     function enter(id){ const go=()=>applyFeature(findFeature(id)); if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
     function enterByName(name){ const go=()=>applyFeature(findByName(name)); if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
+    /* (#R29.1) enter by the tapped point first (reliable), fall back to the label name. */
+    function enterAt(lng,lat,name){ const go=()=>{ let f=findByLngLat(lng,lat); if(!f && name) f=findByName(name); applyFeature(f); }; if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
     function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
     map.on('idle',()=>{ if(active) toTop(); });
-    return { enter, enterByName, exit, active:()=>active };
+    return { enter, enterByName, enterAt, exit, active:()=>active };
   })();
 
   /* (#R29) "通常の状態でも、国名の地名ラベルを押したら、isolate機能を使えるボタンが出るように。"
@@ -13096,8 +13109,10 @@ window.addEventListener('DOMContentLoaded', () => {
   (function(){
     if(!map) return; let pop=null, hideT=null;
     function hide(){ if(pop) pop.style.display='none'; clearTimeout(hideT); }
+    /* (#R29.1) Styled to MATCH the map's iOS control language (frosted `--popup-bg` pill, the same border
+       & shadow as the view buttons / coord readout, primary-tinted icon) — not a foreign-looking chip. */
     function ensurePop(){ if(pop) return pop; pop=document.createElement('button'); pop.id='label-isolate-btn';
-      pop.style.cssText='display:none;position:absolute;z-index:1650;transform:translate(-50%,-130%);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);white-space:nowrap;';
+      pop.style.cssText='display:none;position:absolute;z-index:1650;transform:translate(-50%,calc(-100% - 12px));background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.18);border-radius:11px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);white-space:nowrap;display:none;align-items:center;gap:7px;letter-spacing:0.01em;';
       (document.getElementById('map-container')||document.body).appendChild(pop); return pop; }
     map.on('movestart',hide);
     map.on('click',(e)=>{
@@ -13110,10 +13125,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!hits||!hits.length){ hide(); return; }
         const p=hits[0].properties||{}; const name=p.name||p['name:en']||p.name_en||p['name:latin']||'';
         if(!name){ hide(); return; }
-        const b=ensurePop(); b.textContent='🔍 '+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name));
-        b.style.left=e.point.x+'px'; b.style.top=e.point.y+'px'; b.style.display='block';
-        b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterByName(name); }catch(_){} };
-        clearTimeout(hideT); hideT=setTimeout(hide,4200);   /* auto-dismiss if ignored */
+        const ll=e.lngLat;   /* isolate by the tapped POINT (reliable) — name is just the label */
+        const b=ensurePop();
+        b.innerHTML='<span style="color:var(--primary-color);font-size:13px;">🔍</span><span>'+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name))+'</span>';
+        b.style.left=e.point.x+'px'; b.style.top=Math.max(48,e.point.y)+'px'; b.style.display='inline-flex';
+        b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(ll.lng,ll.lat,name); }catch(_){} };
+        clearTimeout(hideT); hideT=setTimeout(hide,4500);   /* auto-dismiss if ignored */
       }catch(_){ hide(); }
     });
   })();
@@ -13630,7 +13647,10 @@ window.addEventListener('DOMContentLoaded', () => {
     let win=null, cmap=null, mode='sync', minimized=false, built=false, ro=null, syncing=false, baseKind='map';
     const xrayOn=()=>mode==='xray';
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
-    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); return p?p[1]:'koppen_mercator_1991-2020.png'; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
+    /* (#R29.1) Use the MOBILE 4k texture on phones — exactly like the main map's koppenDisplayURL().
+       The compare map is a SECOND WebGL context; loading the full-res Köppen PNG there (on top of the main
+       map's) doubled GPU memory and OOM-crashed iPhone Safari ("iPhoneでcompare viewでケッペン…ブラウザが落ちる"). */
+    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
       '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:both;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
@@ -13643,8 +13663,13 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-head .cmp-title{font-weight:700;font-size:12px;margin-right:auto;color:var(--text-main);}'+
       /* (#R27) Close × is a direct child of the window now (relocated out of the header), pinned top-right
          above all header/controls so nothing can overlap it. Mobile media query enlarges it below. */
-      '#cmp-close{position:absolute;top:7px;right:8px;z-index:30;background:var(--input-bg);}'+
+      /* (#R29.1) Clean circular close + grouped iOS segments so the header reads regular, not "並びが不規則でダサい". */
+      '#cmp-close{position:absolute;top:6px;right:7px;z-index:30;width:28px;height:28px;border-radius:50%;background:rgba(128,128,128,0.16);font-size:13px;}'+
       '#cmp-close:hover{background:#ff3b30;color:#fff;}'+
+      '.cmp-seg{display:inline-flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;flex:0 0 auto;}'+
+      '.cmp-seg .cmp-btn{background:transparent;border-radius:7px;padding:4px 9px;}'+
+      '.cmp-seg .cmp-btn.on{background:var(--primary-color);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);}'+
+      '.cmp-icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:8px;flex:0 0 auto;}'+
       /* (#R24) touch-action:manipulation → compare buttons (Map/Sat/Sync/Free/X-ray/min/close) fire on the
          FIRST tap with no iOS 300ms delayed/retargeted click — a big reason map/satellite "押しても変わらない"
          and the close "終了できない" on mobile. */
@@ -13666,8 +13691,10 @@ window.addEventListener('DOMContentLoaded', () => {
          BEHIND it (perfect register — see syncFromMain's lens branch). A cyan border marks the lens. */
       '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
-      /* Let pans/zooms pass THROUGH the lens to the main map (the lens tracks it via sync); header+controls stay clickable. */
+      /* (#R29.1) The lens MAP is now draggable inside the window (it drives the main map 1:1); empty body
+         areas still pass through so you can also pan the main map outside the window. */
       '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
+      '#compare-window.cmp-xray #compare-map{pointer-events:auto;}'+
       /* (#R26) x-ray needs the header SOLID (the window goes transparent for alignment) so the buttons stay
          visible — but it must MATCH THE THEME, not force black in light mode ("Light modeで黒くなる謎システムは
          いらない。テーマに合わせろ"). Solid theme surface + theme-colored chips; only the cyan keyline marks the lens. */
@@ -13741,7 +13768,10 @@ window.addEventListener('DOMContentLoaded', () => {
        style has the layers ("map/satellite切り替えが、押しても地図が変わらない" = a click during style
        load hit a missing layer and nothing retried). */
     function applyBase(){ if(!cmap) return;
-      if(!cmap.getLayer('cmp-base-carto')){ try{ cmap.once('idle',applyBase); }catch(_){} return; }
+      /* (#R29.1) POLL until the base layers exist instead of waiting for `idle` — a globe renders
+         continuously and never goes idle, so the old `cmap.once('idle',applyBase)` could never fire and the
+         Map/Sat switch "押しても地図が変わらない". A bounded 120ms poll always lands once the style is ready. */
+      if(!cmap.getLayer('cmp-base-carto')){ clearTimeout(cmap.__baseRetryT); cmap.__baseRetryT=setTimeout(applyBase,120); return; }
       /* (#R21) X-ray + SATELLITE now works ("x-rayで…satelliteが使えない"): picking Sat in x-ray paints
          the satellite base inside the lens (an x-ray *to satellite imagery*); picking Map keeps the
          transparent lens (the classic data-layers-over-the-main-map view). */
@@ -13961,14 +13991,17 @@ window.addEventListener('DOMContentLoaded', () => {
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
       win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較':'Compare')+'</span>'+
-        '<button class="cmp-btn on" data-v="map">'+(jp()?'地図':'Map')+'</button>'+
-        '<button class="cmp-btn" data-v="sat">'+(jp()?'衛星':'Sat')+'</button>'+
-        '<span style="width:6px;"></span>'+
-        '<button class="cmp-btn on" data-m="sync" title="'+(jp()?'両方向に視点同期':'Two-way view sync')+'">'+(jp()?'同期':'Sync')+'</button>'+
-        '<button class="cmp-btn" data-m="free" title="'+(jp()?'メイン地図と独立':'Independent of the main map')+'">'+(jp()?'独立':'Free')+'</button>'+
-        '<button class="cmp-btn" data-m="xray" title="'+(jp()?'メイン地図に重ねる透視レンズ':'Pixel-registered lens over the main map')+'">'+(jp()?'X線':'X-ray')+'</button>'+
-        '<button class="cmp-btn" id="cmp-min" title="'+(jp()?'最小化':'Minimise')+'">—</button>'+
-        '<button class="cmp-btn" id="cmp-close" title="'+t('close')+'">✕</button></div>'+
+        '<span class="cmp-seg">'+
+          '<button class="cmp-btn on" data-v="map">'+(jp()?'地図':'Map')+'</button>'+
+          '<button class="cmp-btn" data-v="sat">'+(jp()?'衛星':'Sat')+'</button>'+
+        '</span>'+
+        '<span class="cmp-seg">'+
+          '<button class="cmp-btn on" data-m="sync" title="'+(jp()?'両方向に視点同期':'Two-way view sync')+'">'+(jp()?'同期':'Sync')+'</button>'+
+          '<button class="cmp-btn" data-m="free" title="'+(jp()?'メイン地図と独立':'Independent of the main map')+'">'+(jp()?'独立':'Free')+'</button>'+
+          '<button class="cmp-btn" data-m="xray" title="'+(jp()?'メイン地図に重ねる透視レンズ':'Pixel-registered lens over the main map')+'">'+(jp()?'X線':'X-ray')+'</button>'+
+        '</span>'+
+        '<button class="cmp-btn cmp-icon" id="cmp-min" title="'+(jp()?'最小化':'Minimise')+'">—</button>'+
+        '<button class="cmp-btn cmp-icon" id="cmp-close" title="'+t('close')+'">✕</button></div>'+
         '<div class="cmp-body"><div id="compare-map"></div>'+
         '<div class="cmp-ctrls">'+
         /* (#R23) native <select> pulldown — iOS-friendly AND scrolls on every platform (the old checkbox
@@ -14072,7 +14105,17 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R21) belt-and-braces: a final re-register once the main map settles (kills any residual
          lens drift from camera clamping mid-gesture). */
       map.on('idle',()=>{ if(xrayOn()) syncFromMain(); });
-      cmap.on('move',(ev)=>{ if(mode==='sync'&&!syncing&&ev&&ev.originalEvent) syncToMain(); });
+      cmap.on('move',(ev)=>{ if(syncing||!ev||!ev.originalEvent) return;   /* user-driven compare drags only */
+        if(mode==='sync'){ syncToMain(); }
+        else if(mode==='xray'){
+          /* (#R29.1) Let the user pan/zoom the map from INSIDE the X-ray window. The lens is 1:1 registered
+             with the main camera, so a drag in the window drives the MAIN map by the same amount and both
+             stay locked together ("compare viewのウィンドウ内からもX-ray時に地図を動かせるように"). */
+          syncing=true; try{ let pad; try{ pad=map.getPadding?map.getPadding():undefined; }catch(_){}
+            map.jumpTo({center:cmap.getCenter(),zoom:cmap.getZoom(),bearing:cmap.getBearing(),pitch:cmap.getPitch(),padding:pad}); }catch(_){}
+          syncing=false;
+        }
+      });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
       /* (#R28) While compare is open on mobile, HIDE the main-map FAB stack. The compare window is a
