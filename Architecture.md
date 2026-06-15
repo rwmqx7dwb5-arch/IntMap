@@ -35,6 +35,10 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **統計(Stats)・情報(Information)ダッシュボード・コミュニティ** タブ。
 - **サイドバー・ウィジェット**（FX・ランダム国など、追加/並べ替え可）。
 - **アカウント/AI機能** — ログインで使えるアカウント制AI（翻訳・要約・画像解析など。1日上限つき）。
+- **テーマ (Theme)** — 10種（System/Light/Dark + Age of Discovery / Cyber Terminal / Psychedelic / Military /
+  Medical / Baroque / Taishō）。テーマ変更でサイドバー外観（solid/frosted/transparent）を自動選択。
+- **Playground (beta)** — World Explorer（衛星GeoGuessr）/ Pandemic Simulator / Nation Sim の3モード（実データ）。
+- **Bug Report** — 診断情報を自動添付してSupabase `bug_reports` に送信（オフライン時はローカル+クリップボード）。
 - **お気に入りレイヤー、レイヤープリセット、共有パーマリンク（URLハッシュ）、スクリーンショット、PWA(Service Worker)**。
 - **多言語ニュース翻訳**（任意）・**寄付(Stripe)**・**フィードバック**・**管理コンソール(admin.html)**。
 
@@ -65,6 +69,7 @@ supabase/
   functions/ai-proxy/index.ts       アカウント制AIプロキシ（鍵はサーバー側、1日上限）
   functions/refresh-news/index.ts   ニュース取得＋AI地点解析＋current_news 書き込み（cron）
   supabase_news_setup.sql           current_news スキーマ＋index＋RLS＋cron例（一度だけ実行）
+  supabase_bug_reports.sql          bug_reports スキーマ＋RLS（一度だけ実行）
   .temp/linked-project.json         supabase CLI のリンク先（project ref）
 ```
 
@@ -132,7 +137,8 @@ supabase/
 | `dashboard_cards` | 情報(Information)ダッシュボードのカード（管理コンソールで編集） |
 | `ai_usage` | AI利用量（1日あたりの消費）。`increment_ai_usage` / `refund_ai_usage` RPC で操作 |
 | `community_posts` / `community_comments` / `community_votes` / `community_comment_votes` / `community_reports` | コミュニティ |
-| `feedback` | フィードバック（3回目ログインで誘導） |
+| `feedback` | フィードバック（3回目ログイン誘導＋設定からいつでも） |
+| `bug_reports` | バグ報告（診断情報JSON付き。`supabase_bug_reports.sql`。anon が insert 可・admin が閲覧） |
 | `donations` | 寄付記録 |
 
 ### 6.2 Edge Functions
@@ -176,6 +182,10 @@ supabase/
 - **iOS風の作法**：セグメントコントロール、角丸カード、ボトムシート、初回ウェルカムカード(`_imWelcome`)。
 - **初回ウェルカムカード(R29)**：旧「自動でレイヤーをON/OFFするデモ」（バグと誤認された）を廃し、
   iOS風の説明カードに変更。レイヤー紹介ツアー(`_imStartDemo`)は明示ボタン（カード内・設定内）からの任意起動に。
+- **テーマ**：`applyTheme()` が `userTheme` から `body.theme-<id>` を排他トグル＋light/darkベースを設定（skin registry）。
+  CSSはすべて静的 `<style>` 内（テンプレートリテラル不使用＝バッククォート罠なし）。テーマ変更時に最適サイドバー外観を自動適用。
+- **Playground/Bug Report**：設定から起動。`window._openPlayground` / `window._openBugReport` / `window._openFeedback`。
+  Playgroundの各モードは createElement+インラインstyleで構築（CSS-in-template-literal を避ける）。
 - **テキストに影を付けない**（`text-shadow:none` を徹底）。
 
 ---

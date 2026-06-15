@@ -2393,3 +2393,65 @@ proven (1 tap = 1 toggle, drag/cross-row = no toggle); Others-only pulldown on m
 ### Redeploy needed
 - `supabase functions deploy refresh-news --no-verify-jwt` and run `supabase/supabase_news_setup.sql` once
   (adds the `analyzed_by` column) to activate the new server pipeline. Set `AI_PROVIDER` + the matching key.
+
+---
+
+## 33. Round 29.1 — re-reported regressions + themes + Playground + bug-report (tags `#R29.1`)
+
+Build `2026-06-15-R29.1`. A large batch: fix the regressions R29 introduced, restyle/extend the theme
+system, add a Playground (3 games), a Bug Report system, and harden maintainability. Verified live in the
+headless preview after every change (72 layer rows + zero console errors; geometry/state probes for the
+DOM-driven pieces).
+
+### Regressions & re-reports (root-caused, verified)
+- **News actions UI "崩壊"** — the R29 change removed the old `.ai-locate-wrap` flex structure but left its
+  CSS; the translate button's `width:100%` then squashed the Subject/Publisher segment and its buttons
+  overflowed/overlapped. Rebuilt as a **stacked iOS layout** (full-width segment + Translate below).
+  Verified: segment 381px, Subject/Publisher 188px each, translate stacked below.
+- **Isolate "country border not found" + ugly button** — name-matching the OFM label to the border GeoJSON
+  failed. Added **point-in-polygon** resolution (`IntMapIsolate.enterAt(lng,lat,name)` → ray-cast the tapped
+  point; name is only a fallback). Verified France/Japan/Brazil/Egypt/USA resolve correctly. Button restyled
+  to the map's iOS pill language (frosted, primary-tinted icon).
+- **Compare Köppen OOM on iPhone** — compare's `koppenUrl()` loaded the FULL-res PNG into a 2nd WebGL context;
+  now uses the `_4k.png` on mobile like the main map. **Map/Sat switch** now poll-retries (a spinning globe
+  never `idle`s, so the old `once('idle')` could never apply). **X-ray** is now pannable from inside the
+  window (drags drive the main map 1:1). Header restyled into clean iOS segmented groups + circular close.
+- **Compare FABs vs timebar** — R29 moved the FAB stack to the bottom while compare is open, which then
+  covered the time-slider. Moved to **vertical center-right**, clear of both the top × and the bottom timebar.
+- **Radius mobile** initial position → **top-left** (per request).
+- **Checkbox flicker / 誤チェック** — on touch, `:hover` STICKS after a tap and leaves a row highlighted as if
+  checked. Added `@media(hover:none){ .layer-option:hover,.lyr-row:hover{background:transparent} }`. Combined
+  with the R29 deterministic single-toggle (verified: 1 tap=1 toggle, drag/cross-row=no toggle) and the
+  welcome-card replacing the auto-demo, the phantom-on/flicker sources are removed.
+
+### Themes ("Appearance" → "Theme")
+- `applyTheme` generalised to a skin registry (any number of themes, each on the light or dark base).
+- **Cyber → "Cyber Terminal"** (blinking cursor, `>` / `C:\>` prompts, brighter phosphor); **Classic → "Age of
+  Discovery"** (portolan rhumb-lines + anchor). New: **Psychedelic** (animated rainbow + hue-rotating map),
+  **Military** (olive HUD, condensed caps, NV map, crosshair), **Medical** (clinical teal, red cross, animated
+  EKG line), **Baroque** (ivory+gilt+burgundy Didone), **Taishō Japan** (indigo+crimson Mincho, asanoha).
+- Changing the theme **auto-selects the optimal sidebar** (solid/frosted/more-transparent). Verified all 7
+  skins set the right body class, light/dark base and sidebar.
+
+### Playground (beta) — Settings → Open Playground
+- **World Explorer**: satellite GeoGuessr — random LAND point (never open ocean), all layers/labels off,
+  satellite, blackout during the jump; guess on a separate world map; 0–1000 score by great-circle distance.
+- **Pandemic Simulator**: seed patient zero on a real country; SIR-ish spread via distance-weighted transport
+  hops; hygiene from HDI/GDPpc; country choropleth + live infected/dead/recovered/day; random vaccine;
+  presets (flu/COVID/Ebola/measles) + infectivity/lethality/incubation; Breaking-News notifications.
+- **Nation Sim**: lead a real nation (1900–2026) as democracy/dictator from real figures; turn-based policies
+  with governance constraints (parliament blocks vs decree→unrest/coup risk), random events, elections/coups.
+  Verified end-to-end (246 countries; take power; turn advances; stats update).
+
+### Bug Report + maintainability
+- Global error ring buffer (`window.__imErrors`, last 25, error+unhandledrejection).
+- Bug Report modal (Settings) auto-attaches diagnostics (build/theme/lang/viewport/mode/active layers/recent
+  errors/view/UA), submits to Supabase `bug_reports` (new `supabase/supabase_bug_reports.sql`; RLS: anyone
+  files, admins read), graceful offline fallback (localStorage + clipboard). Feedback now openable anytime.
+
+### Honest / still-open
+- World Explorer + Pandemic need the real WebGL map; verified they launch cleanly + Nation Sim plays fully,
+  but the headless preview can't finish WebGL `load`, so on-device playtesting is welcome.
+- Compare "Ukraine frontline / use the same layer": the picker logic is correct (one layer at a time, no
+  leak; both fetch DeepStateMap). The report is ambiguous — left intact rather than risk breaking it; needs a
+  concrete repro / device.
