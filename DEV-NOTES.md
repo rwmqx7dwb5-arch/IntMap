@@ -2312,3 +2312,84 @@ layer rows + zero console errors after every batch.
 ### Verify-on-device list (honest)
 - The mobile-only renderings (checkbox tap feel, compare-× tap, radius card) are root-caused + verified in DOM/
   CSS/state, but the headless preview never finishes WebGL `load`, so on-phone confirmation is still welcome.
+
+---
+
+## 32. Round 29 — server-side AI news pipeline + deterministic checkboxes + docs (tags `#R29`)
+
+Build `2026-06-15-R29`. Re-reported recurring batch + a major architectural change: news location analysis
+moves ENTIRELY server-side (AI-primary), and two new spec files were created. Verified live in the headless
+preview (DOM/CSS/state): 72 layer rows + zero console errors after every batch; deterministic checkbox toggle
+proven (1 tap = 1 toggle, drag/cross-row = no toggle); Others-only pulldown on mobile proven; privacy +
+27-entry data-sources modal proven.
+
+### News → fully server-side AI geolocation (the big one)
+- **`refresh-news` reworked.** AI is now the PRIMARY locator for en/jp (every article is sent to the AI, not
+  just dictionary-misses). Uses the SAME provider abstraction as ai-proxy (`AI_PROVIDER` ∈ anthropic|openai|
+  gemini, server-held key; infers provider from whichever key is set; `NEWS_AI=off` kill-switch). Dictionary
+  (geo_pins + embedded places/orgs/demonyms) is the FALLBACK (AI fail / non-en-jp / API down).
+  - **Dedupe by (lang,link)** (upsert) → same URL never stored twice. **Reuse**: rows already `analyzed_by='ai'`
+    within 72h are NOT re-sent to the AI. New `analyzed_by` column ('ai'|'dict'|'none').
+  - **72h retention**: prune `current_news` by `pub_date < now-72h` (fetched_at safety net).
+  - Added `supabase/supabase_news_setup.sql` (creates/extends current_news incl. the analyzed_by migration).
+- **Frontend**: removed the client `✨ AI-locate` button + caret + auto-enrich (`maybeAutoEnrich` is now a
+  no-op for location). The pin row is now just the Subject/Publisher DISPLAY toggle (both coords come from the
+  server) + Translate titles. Removed the "AI location analysis" Settings dropdown (`setting-ailocate`).
+  Added a **72h client display filter** (`computeFilteredNews`, exempts saved/time-travel). Frontend never
+  calls the AI for news location now; pre-analysed pins show instantly via the existing `current_news` fast path.
+
+### Checkbox determinism (#1 mobile flicker/misfire / #2,#3 zero-scroll) — re-root-caused
+- The R28 suppress-only guard still allowed the native label toggle to fire, which could double-fire on touch
+  or land on a row a mid-tap reflow had shifted ("チラついたり誤チェックが入る"). **New model: we OWN the
+  toggle.** On a `label.layer-option` click we `preventDefault()` the native toggle and toggle EXACTLY the row
+  the finger went DOWN on, exactly once, and only if it wasn't a scroll/drag/cross-row drift. `.lyr-row`s with
+  sub-controls keep suppress-only. **Verified:** clean tap→toggles (2 taps = 2 change events); >24px drag→no
+  toggle; pointerdown-on-borders + click-on-names → neither toggles.
+- **Zero movement**: re-enabled scroll compensation on BOTH platforms in `_refreshActiveLayers` (the R25/R28
+  mobile-skip was for the old bottom placement; the section is at the TOP now so compensation is correct and
+  was exactly what was missing → mobile list lurch fixed). preventDefault on the label click also kills the
+  focus-scroll source on desktop.
+
+### Reverts / restorations the user re-asked for
+- **Others(beta) pulldown (mobile)** — RESTORED as a pulldown, **only** Others (collapsed by default; other
+  groups stay expanded; caret hidden on non-Others headers on mobile). R28 had wrongly removed ALL pulldowns.
+- **Compare close-× overlap** — STOP hiding the main-map FAB stack (R28 hid it; the user: "勝手に消すな…下に
+  移動させるだけ"). Now `body.cmp-open .m-fab-stack` is MOVED to the bottom-right (still fully usable, clear of
+  the top compare window + its ×).
+- **Countries(info) broken** — the cb-countries handler now RE-ENSURES `country-fill` exists (a Map↔Sat style
+  swap drops the source while countryDataLoaded stays true → the old else-branch was a no-op = "使えなくなって
+  いた"). Self-heals by re-running addCountryLayers.
+
+### Isolate integration
+- **isolate → auto-deselect Countries(info)** (dispatches change so checkbox/map/active-layers all update).
+- **country NAME label tap → isolate button** in the normal state (Countries-info OFF, no tool, not isolated):
+  a click handler queries `ofm-country` and pops a "🔍 Isolate <country>" button at the tap; `IntMapIsolate`
+  gained `enterByName()` + `findByName()` (loads countryGeo on demand, matches across NAME_EN/ADMIN/name…).
+
+### Intro demo → iOS welcome card (#9)
+- The auto-cycling-layers "demo" (mistaken for a bug) is replaced on first visit by `_imWelcome()`: a clean
+  iOS-style card (centered on desktop, bottom sheet on mobile) explaining IntMap, with an EXPLICIT opt-in
+  "Watch the layer tour" button (the old `_imStartDemo` showcase, kept, no longer auto-running). Built with
+  createElement + inline styles only (no CSS-in-template-literal). rAF + setTimeout fallback so it can't stick
+  at opacity 0 when the tab is backgrounded.
+
+### Locator strengthening (#11, additive)
+- +25 high-frequency entries to BOTH client `_EXTRA_GZ` and server `EMBEDDED_PLACES`: maritime/strait
+  flashpoints (Hormuz, Taiwan Strait, South China Sea, Suez, Bab el-Mandeb), contested regions (Golan, West
+  Bank, Nagorno-Karabakh, Kashmir, Kaliningrad, Transnistria) and war cities (Zaporizhzhia, Kherson, Bakhmut,
+  Avdiivka, Kursk, Sevastopol, Aleppo, Idlib, Mosul, Kandahar, Hodeidah, Tigray, Goma, Port Sudan).
+
+### Docs + accuracy (#12, new files)
+- **`CONSTITUTION.md`** — the user's standing directives, systematised (prime directives, change rules, the
+  backtick trap, map/interaction unwritten rules, mobile, AI/news/keys, docs). Outranks DEV-NOTES.
+- **`Architecture.md`** — current-state spec (overview, features, file roles, news flow, AI/key policy,
+  Supabase schema/functions/env, map/layers/globe/widgets, UI/UX, mobile, i18n, feedback/donation/admin,
+  fragile areas, safe-vs-careful, restore-from-scratch steps).
+- **Privacy/ToS + data sources updated to the current state**: BYOK retired → account-based server-side AI
+  (daily limit, key held server-side); news fetched + AI-geolocated server-side; data-sources modal +Google
+  News, OpenFreeMap/OpenMapTiles, ESA WorldCover, RESOLVE/WWF Ecoregions, Smithsonian GVP, DeepStateMap,
+  historical-basemaps, World Bank Open Data, and the AI provider (27 entries). LEGAL_DATE → 2026-06-15.
+
+### Redeploy needed
+- `supabase functions deploy refresh-news --no-verify-jwt` and run `supabase/supabase_news_setup.sql` once
+  (adds the `analyzed_by` column) to activate the new server pipeline. Set `AI_PROVIDER` + the matching key.

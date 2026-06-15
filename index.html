@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-15-R28';
+  window.INTMAP_BUILD='2026-06-15-R29';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -249,6 +249,13 @@ gtag('config', 'G-57X5MX0ZPW');
     /* The "Data layers" section label is not a collapsible group — no arrow, not clickable (#30). */
     .lyr-head.lyr-section-label{ cursor:default; }
     .lyr-head.lyr-section-label::after{ content:none !important; }
+    /* (#R29) Mobile: only "Others (beta)" is a pulldown. Hide the (non-functional) carets on every other
+       group header so they read as plain section labels, and keep the caret on Others as its affordance. */
+    @media(max-width:768px){
+      .layer-group-title::after, .lyr-head::after, .premium-group-title::after{ content:none; }
+      .lyr-head[data-i18n="lyrGrpOthers"]::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
+      .lyr-head[data-i18n="lyrGrpOthers"].lyr-collapsed::after{ content:'▸'; }
+    }
     .tool-panel{ display:none; position:absolute; top:200px; right:24px; z-index:1000; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:248px; font-size:13px; }
     .tp-title{ font-weight:600; margin-bottom:8px; } .tp-row{ display:flex; justify-content:space-between; margin:4px 0; } .tp-hint{ font-size:11px; color:var(--text-muted); margin-top:8px; line-height:1.4; }
     .tp-clear{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--input-bg); color:var(--text-main); font-weight:600; cursor:pointer; } .tp-clear:hover{ background:rgba(128,128,128,0.15); }
@@ -1011,12 +1018,14 @@ gtag('config', 'G-57X5MX0ZPW');
          of a cramped 290px floating box in the middle of the map, DOCK it as a full-width card just above
          the bottom sheet. Full width gives every control real room (slider, color, the 3 stats inline), it
          never covers the circle being placed, and the saved list scrolls. */
-      .tool-panel.tp-radius{ position:fixed !important; left:6px !important; right:6px !important;
-        /* (#R28) explicit full width — the base mobile rule's `right:auto` was overriding the `right:6px`
-           here, so `width:auto` shrink-fit to ~233px and left the panel narrow + left-stranded. */
-        width:calc(100vw - 12px) !important; max-width:calc(100vw - 12px) !important;
-        top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h, 0px)) + 10px) !important;
-        max-height:min(48dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 80px)) !important;
+      /* (#R29) The radius panel was full-width + up to 48dvh tall = it covered the map and the FABs
+         ("でかすぎ / 地図が見えない / 他のボタンが使えない"). Now a COMPACT card pinned to the bottom-LEFT:
+         it leaves the right side (map + the FAB column at right:14px) clear, and a shorter max-height keeps
+         the map visible. Still draggable if the user wants to reposition it. */
+      .tool-panel.tp-radius{ position:fixed !important; left:8px !important; right:auto !important;
+        width:min(80vw, 320px) !important; max-width:min(80vw, 320px) !important;
+        top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h, 0px)) + 12px) !important;
+        max-height:min(40dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 110px)) !important;
         overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 12px !important; border-radius:16px !important; }
       .tool-panel.tp-radius .tp-header{ position:sticky; top:-10px; margin:-10px -12px 6px; padding:10px 12px 6px; background:var(--glass-fill,var(--popup-bg)); z-index:2; }
       .tool-panel.tp-radius .tp-sub{ margin:6px 0 2px !important; font-size:10.5px !important; }
@@ -1436,17 +1445,14 @@ gtag('config', 'G-57X5MX0ZPW');
         <button class="ios-segment-btn" id="newsfilter-saved" style="flex:1;">★ Saved</button>
       </div>
     </div>
-    <!-- News pin-position is now a compact dropdown on the AI-locate button; right half = translate (#28) -->
+    <!-- (#R29) News location is pre-analysed server-side (refresh-news → current_news) and shown
+         instantly — there is NO client AI-locate button anymore. This row is just the display
+         toggle (event Subject vs Publisher HQ, both pre-computed by the server) + Translate. -->
     <div id="ai-geocode-row" style="display:none; margin:0 0 8px 0;">
       <div class="news-ai-actions">
-        <div class="ai-locate-wrap">
-          <button class="ai-action-btn ai-locate-main" id="ai-geocode-btn">✨ AI-locate subject</button>
-          <button class="ai-locate-caret" id="ai-locate-caret" aria-haspopup="true" title="Subject / Publisher">▾</button>
-          <div class="ai-locate-menu" id="ai-locate-menu" role="menu">
-            <div class="ai-locate-menu-h" data-i18n="lblPinMode">News pin position</div>
-            <button class="ios-segment-btn active" id="pinmode-loc" data-i18n="pinModeLoc">Subject</button>
-            <button class="ios-segment-btn" id="pinmode-pub" data-i18n="pinModePub">Publisher</button>
-          </div>
+        <div class="ios-segment" id="news-pinmode-seg" role="tablist" style="flex:1;min-width:0;" title="Map pin position">
+          <button class="ios-segment-btn active" id="pinmode-loc" style="flex:1;" data-i18n="pinModeLoc">Subject</button>
+          <button class="ios-segment-btn" id="pinmode-pub" style="flex:1;" data-i18n="pinModePub">Publisher</button>
         </div>
         <button class="ai-action-btn" id="ai-translate-btn">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
       </div>
@@ -1565,7 +1571,8 @@ gtag('config', 'G-57X5MX0ZPW');
       </div>
       <div id="newslang-hint" class="sat-keys-hint" data-i18n="newsLangHint" style="display:none; margin-top:6px;">Headlines from each language appear together; with an AI key their titles are auto-translated.</div>
     </div>
-    <div class="setting-group"><label data-i18n="lblAiLocate">AI location analysis</label><select id="setting-ailocate"><option value="manual" data-i18n="aiLocManual">Manual (button)</option><option value="auto" data-i18n="aiLocAuto">Automatic for all news</option></select></div>
+    <!-- (#R29) "AI location analysis" setting removed — news location is now always pre-analysed
+         server-side, so there is nothing for the user to choose here. -->
     <div class="setting-group"><label id="lbl-tz">Timezone Setting</label>
       <div class="tz-combo" id="tz-combo" style="position:relative;">
         <input type="text" id="setting-tz-search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search" placeholder="Search timezone…">
@@ -3372,7 +3379,35 @@ window.addEventListener('DOMContentLoaded', () => {
     ['city',['Capitol Hill'],-77.01,38.89,'Capitol Hill','米連邦議会'],
     ['city',['Zhongnanhai','中南海'],116.38,39.91,'Zhongnanhai','中南海'],
     ['city',['Blue House','青瓦台'],126.97,37.59,'Blue House','青瓦台'],
-    ['city',['Elysee','エリゼ宮','Élysée'],2.32,48.87,'Elysee','エリゼ宮']
+    ['city',['Elysee','エリゼ宮','Élysée'],2.32,48.87,'Elysee','エリゼ宮'],
+    /* (#R29) Strengthened fallback locator: maritime/strait flashpoints, contested regions and the war
+       cities that dominate world headlines (the AI is primary now; these raise the FALLBACK's coverage
+       for non-en/jp items, time-travel/search, and any AI outage). */
+    ['flashpoint',['Strait of Hormuz','ホルムズ海峡'],56.5,26.6,'Strait of Hormuz','ホルムズ海峡'],
+    ['flashpoint',['Taiwan Strait','台湾海峡'],119.5,24.5,'Taiwan Strait','台湾海峡'],
+    ['flashpoint',['South China Sea','南シナ海'],114.0,15.0,'South China Sea','南シナ海'],
+    ['flashpoint',['Suez Canal','スエズ運河'],32.35,30.7,'Suez Canal','スエズ運河'],
+    ['flashpoint',['Bab el-Mandeb','バブ・エル・マンデブ'],43.33,12.58,'Bab el-Mandeb','バブ・エル・マンデブ'],
+    ['flashpoint',['Golan Heights','ゴラン高原'],35.74,32.95,'Golan Heights','ゴラン高原'],
+    ['flashpoint',['West Bank','ヨルダン川西岸'],35.30,31.95,'West Bank','ヨルダン川西岸'],
+    ['flashpoint',['Nagorno-Karabakh','ナゴルノ・カラバフ','Artsakh'],46.75,39.82,'Nagorno-Karabakh','ナゴルノ・カラバフ'],
+    ['city',['Kashmir','カシミール'],76.0,34.0,'Kashmir','カシミール'],
+    ['city',['Kaliningrad','カリーニングラード'],20.51,54.71,'Kaliningrad','カリーニングラード'],
+    ['city',['Transnistria','沿ドニエストル'],29.48,46.84,'Transnistria','沿ドニエストル'],
+    ['flashpoint',['Zaporizhzhia','ザポリージャ'],35.14,47.84,'Zaporizhzhia','ザポリージャ'],
+    ['flashpoint',['Kherson','ヘルソン'],32.62,46.64,'Kherson','ヘルソン'],
+    ['flashpoint',['Bakhmut','バフムート'],38.0,48.6,'Bakhmut','バフムート'],
+    ['flashpoint',['Avdiivka','アウディーイウカ'],37.74,48.14,'Avdiivka','アウディーイウカ'],
+    ['city',['Kursk','クルスク'],36.19,51.73,'Kursk','クルスク'],
+    ['city',['Sevastopol','セヴァストポリ'],33.52,44.60,'Sevastopol','セヴァストポリ'],
+    ['city',['Aleppo','アレッポ'],37.16,36.20,'Aleppo','アレッポ'],
+    ['flashpoint',['Idlib','イドリブ'],36.63,35.93,'Idlib','イドリブ'],
+    ['city',['Mosul','モスル'],43.13,36.34,'Mosul','モスル'],
+    ['city',['Kandahar','カンダハル'],65.71,31.61,'Kandahar','カンダハル'],
+    ['flashpoint',['Hodeidah','ホデイダ','Al Hudaydah'],42.95,14.80,'Hodeidah','ホデイダ'],
+    ['city',['Tigray','ティグレ'],38.5,14.0,'Tigray','ティグレ'],
+    ['city',['Goma','ゴマ'],29.22,-1.68,'Goma','ゴマ'],
+    ['city',['Port Sudan','ポートスーダン'],37.22,19.62,'Port Sudan','ポートスーダン']
   ];
   const BUILTIN_GAZETTEER=_BUILTIN_GZ.concat(_EXTRA_GZ).reduce((acc,[type,terms,lng,lat,en,jp])=>{ (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); return acc; },{});
   /* (#R28) ORGANIZATIONS / INSTITUTIONS / militant & political GROUPS → a representative location.
@@ -5186,13 +5221,14 @@ window.addEventListener('DOMContentLoaded', () => {
   window._expandAllLayerGroups=function(){ try{
     layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>h.classList.remove('lyr-collapsed'));
     layerDropdown.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option, :scope > hr, :scope > .lyr-others-note, :scope > .lyr-head, :scope > .layer-group-title').forEach(el=>{ if(el.style && el.style.display==='none') el.style.display=''; });
-    /* (#R28) The "Others (beta)" group is no longer collapsed on mobile — every group is expanded
-       ("Others(beta)だけプルダウン…元に戻せ"). The line above already cleared its display:none rows. */
+    /* (#R29) On mobile, re-collapse ONLY "Others (beta)" so it stays a pulldown ("Others(beta)だけプルダウン")
+       — unless the user has explicitly opened it this session. Every other group stays expanded. */
+    try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const oh=Array.from(layerDropdown.querySelectorAll('.lyr-head')).find(h=>h.getAttribute('data-i18n')==='lyrGrpOthers'); if(oh && !oh.dataset.userToggled) _collapseGroup(oh); } }catch(_){}
   }catch(_){} };
   layerDropdown.addEventListener('click',(e)=>{ const h=e.target.closest('.layer-group-title,.lyr-head,.premium-group-title'); if(h && !h.classList.contains('lyr-section-label') && layerDropdown.contains(h)){ e.stopPropagation();
-    /* Mobile shows ALL groups expanded (no carets) → headers are plain labels, not collapsers (#12).
-       (#R28) The Others(beta) group is no longer a special pulldown on mobile — nothing collapses there. */
-    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ return; }
+    /* (#R29) Mobile: every group is expanded EXCEPT "Others (beta)", which IS a pulldown the user can
+       collapse/expand ("Others(beta)だけプルダウン…元に戻せ"). Other headers stay plain labels on mobile. */
+    if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ if(h.getAttribute('data-i18n')!=='lyrGrpOthers') return; }
     _layerGroupToggle(h); } });
   /* On each open, collapse any group the user hasn't explicitly opened (covers late-added groups). */
   document.getElementById('btn-layers').addEventListener('click',()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} setTimeout(()=>{ layerDropdown.querySelectorAll('.layer-group-title,.lyr-head,.premium-group-title').forEach(h=>{ if(!h.dataset.userToggled && !h.classList.contains('lyr-section-label')) _collapseGroup(h); }); },30); });
@@ -5233,7 +5269,13 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     } else { applyTheme(); }
   });
-  document.getElementById('cb-countries').addEventListener('change',(e)=>{ countryInfoOn=e.target.checked; if(countryInfoOn&&!countryDataLoaded){ loadCountryData().then(applyCountryVisibility); } else applyCountryVisibility(); if(!countryInfoOn)hideCountryInfo(); });
+  document.getElementById('cb-countries').addEventListener('change',(e)=>{ countryInfoOn=e.target.checked;
+    /* (#R29) ROBUST: a basemap style swap (Map↔Sat) drops the `countries` source + `country-fill` layer,
+       but countryDataLoaded stays true — so the old `else applyCountryVisibility()` path was a no-op and
+       Countries(info) "使えなくなっていた". Always RE-ENSURE the layers exist before showing them. */
+    const ensure=()=>{ try{ if(countryInfoOn && countryGeo && map && map.isStyleLoaded() && !map.getSource('countries')) addCountryLayers(); }catch(_){} applyCountryVisibility(); };
+    if(countryInfoOn && !countryDataLoaded){ loadCountryData().then(ensure); } else ensure();
+    if(!countryInfoOn) hideCountryInfo(); });
 
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
@@ -5652,7 +5694,15 @@ window.addEventListener('DOMContentLoaded', () => {
     b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey');
     b.textContent = newsPinMode==='publisher' ? t('aiGeoBtnPub') : t('aiGeoBtnSub'); });
 
-  function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest; return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false; if(q&&!it.title.toLowerCase().includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
+  /* (#R29) Hide anything older than 72h from the live feed — the server also deletes >72h rows, this is
+     the matching client guard (covers the live-RSS fallback + any stale cache). Saved/bookmarked items
+     and explicit time-travel (newsDate) are exempt so the user never loses what they deliberately kept. */
+  const NEWS_MAX_AGE_MS=72*3600e3;
+  function computeFilteredNews(){ const q=searchVal(), at=window._newsAreaTest;
+    const ageCut=(currentMode==='saved'||newsDate)?0:(Date.now()-NEWS_MAX_AGE_MS);
+    return globalData.filter(it=>{ if(currentMode==='saved'&&!bookmarks.includes(it.link))return false;
+      if(ageCut&&it.pubDate){ const pd=parseDate(it.pubDate).getTime(); if(pd&&pd<ageCut) return false; }
+      if(q&&!it.title.toLowerCase().includes(q))return false; if(at){ const a=it.analysis, c=a&&a.loc; if(!c||!at(c[0],c[1])) return false; } return true; }); }
   /* Title shown on a news card. When the translation pass (Settings → multi-language) has
      produced a translated title in the current UI language, show it plus a '(原文: …)' note. */
   function newsTitleHTML(item){
@@ -5691,16 +5741,11 @@ window.addEventListener('DOMContentLoaded', () => {
      Gated on Settings (AI location = automatic / News languages = all) AND a saved API key. */
   let _autoEnrichT=null;
   function maybeAutoEnrich(){
-    if(currentMode!=='news'&&currentMode!=='saved') return;
-    clearTimeout(_autoEnrichT);
-    _autoEnrichT=setTimeout(()=>{
-      /* (#R27) Account AI: only auto-run for a logged-in user who still has free quota, and NEVER from
-         this background pass open the auth modal / spend a surprise quota — that's why we check
-         currentUser + aiUsesLeft() here instead of calling the gated aiGeocodeNews unconditionally. */
-      try{ if(aiLocateMode==='auto' && currentUser && aiUsesLeft()>0) aiGeocodeNews(false); }catch(_){}
-      /* (#R15) Titles are NO LONGER auto-translated on load — the user found the automatic translation
-         intrusive. Translation now runs ONLY when the "Translate titles" button is pressed. */
-    }, 600);
+    /* (#R29) News location analysis now runs ENTIRELY server-side (refresh-news pre-AI-locates every
+       en/jp article into current_news; the dictionary is the server's fallback). The browser never
+       calls the AI for news geocoding anymore, so there is no client auto-enrich pass to run here.
+       Kept as a no-op hook so existing callers (startNews) stay intact.
+       (#R15) Titles are still translated ONLY on the explicit "Translate titles" button. */
   }
   /* ===== AI title translation (multi-language news mode) =====
      Foreign-language headlines (non-English in EN UI / non-Japanese in JP UI) are translated
@@ -6526,7 +6571,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tzs) tzs.value=(userTZ&&userTZ!=='auto')?userTZ.replace(/_/g,' '):'';
       if(tzr) tzr.classList.remove('show');
     }catch(_){}
-    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } document.getElementById('setting-ailocate').value=aiLocateMode; document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} try{ aiFetchUsage(); }catch(_){}
+    document.getElementById('setting-tz').value=userTZ; document.getElementById('setting-units').value=unitMode; { const tu=document.getElementById('setting-temp-unit'); if(tu) tu.value=window.imUnitTemp||'both'; } { const al=document.getElementById('setting-ailocate'); if(al) al.value=aiLocateMode; } document.getElementById('setting-newslang').value=newsLangMode; try{ renderNewsLangChecks(); }catch(_){} try{ satRenderKeyInputs(); }catch(_){} try{ aiRenderSettings(); }catch(_){} try{ aiFetchUsage(); }catch(_){}
     /* (#R20) nav sensitivity sliders reflect the saved values + live % labels */
     try{ const zs=document.getElementById('setting-zoom-sens'), ps=document.getElementById('setting-pan-sens'), is=document.getElementById('setting-inertia');
       const zv=document.getElementById('zoom-sens-val'), pv=document.getElementById('pan-sens-val'), iv=document.getElementById('inertia-val');
@@ -6543,7 +6588,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-close-settings').onclick=()=>{
     userTheme=document.getElementById('setting-theme').value; userTZ=document.getElementById('setting-tz').value; unitMode=document.getElementById('setting-units').value;
     { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} } }
-    aiLocateMode=document.getElementById('setting-ailocate').value; localStorage.setItem('intmap_ai_locate',aiLocateMode);
+    { const al=document.getElementById('setting-ailocate'); if(al){ aiLocateMode=al.value; localStorage.setItem('intmap_ai_locate',aiLocateMode); } }
     const prevNewsLang=newsLangMode; newsLangMode=document.getElementById('setting-newslang').value; localStorage.setItem('intmap_news_lang',newsLangMode);
     /* Read the individually-selected news languages (when in "multiple languages" mode). */
     const prevNewsLangs=newsLangs.slice();
@@ -6652,7 +6697,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-06-01';
+  const LEGAL_DATE='2026-06-15';
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -6660,7 +6705,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>3. アカウント</b> — 正確な情報を登録し、パスワードとアカウントの管理責任を負うものとします。13歳以上である必要があります。</p>
     <p><b>4. ユーザー投稿</b> — コミュニティ投稿・コメント・画像の権利は投稿者に帰属しますが、本サービス上での表示に必要な範囲のライセンスを当方に許諾するものとします。違法・権利侵害・差別的・有害な内容を投稿してはなりません。当方は投稿の削除やアカウント停止を行う場合があります。</p>
     <p><b>5. 禁止事項</b> — スクレイピング、不正利用、リバースエンジニアリング、サービス妨害、第三者APIの濫用を禁じます。</p>
-    <p><b>6. 第三者サービス・BYOK</b> — ニュース、タイル、衛星画像、AI機能は各第三者の規約に従います。入力したAIキーはお使いのブラウザ内にのみ保存され、各プロバイダへ直接送信されます。</p>
+    <p><b>6. 第三者サービス・AI</b> — ニュース、地図・衛星タイル、AI機能は各第三者の規約に従います。AI機能はサーバー側（Supabase Edge Function）が当方の管理するキーで実行し、無料利用枠（1日あたりの上限）が適用されます。ブラウザにAIキーを入力・保存することはありません。衛星タイルのキー等を任意で入力した場合は、お使いのブラウザ内にのみ保存されます。</p>
     <p><b>7. 知的財産</b> — 本サービスのコード・デザインは保護されています。第三者データの権利は各権利者に帰属します。</p>
     <p><b>8. 免責</b> — データは不正確・遅延・利用不可となる場合があり、いかなる保証も行いません。</p>
     <p><b>9. 責任の制限</b> — 法律で認められる範囲で、本サービス利用に起因する損害について当方は責任を負いません。</p>
@@ -6672,7 +6717,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>3. Accounts.</b> You must provide accurate information, keep your password secure, are responsible for activity on your account, and must be at least 13 years old.</p>
     <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a license to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts.</p>
     <p><b>5. Acceptable use.</b> No scraping, abuse, reverse engineering, disrupting the Service, or misusing third-party APIs.</p>
-    <p><b>6. Third-party services & BYOK.</b> News, tiles, imagery and AI features rely on third parties under their own terms. Any AI key you enter is stored only in your browser and used to call that provider directly.</p>
+    <p><b>6. Third-party services & AI.</b> News, map/satellite tiles and AI features rely on third parties under their own terms. AI features run server-side (a Supabase Edge Function) using our own key, subject to a free daily usage limit — you never enter or store an AI key in your browser. Any satellite-tile key you optionally enter is stored only in your browser.</p>
     <p><b>7. Intellectual property.</b> IntMap's code and design are protected. Third-party data belongs to its respective owners.</p>
     <p><b>8. Disclaimers.</b> Data may be inaccurate, delayed or unavailable; no warranties are given.</p>
     <p><b>9. Limitation of liability.</b> To the maximum extent permitted by law, we are not liable for damages arising from your use of the Service.</p>
@@ -6680,9 +6725,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function legalPrivacyHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">プライバシーポリシー</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
-    <p><b>2. ローカル保存</b> — 設定、AI・衛星画像のAPIキー（BYOK）、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。</p>
+    <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング）、Google/Apple（OAuth利用時）、Google News RSS（CORSプロキシ経由）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API、及び設定したAIプロバイダ（OpenAI/Anthropic/Google — リクエストはあなたのキーでブラウザから直接送信）。各社のプライバシーポリシーが適用されます。</p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されます）。各社のプライバシーポリシーが適用されます。</p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -6692,9 +6737,9 @@ window.addEventListener('DOMContentLoaded', () => {
     : `
     <h3 style="margin:0 0 4px;font-size:17px;">Privacy Policy</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">Last updated: ${LEGAL_DATE}</p>
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
-    <p><b>2. Local storage.</b> Your settings, AI & satellite API keys (BYOK) and news cache stay in your browser's local storage and are not sent to us.</p>
+    <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side).</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting); Google/Apple (if you use OAuth); news via Google News RSS through CORS proxies; map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs; and AI providers you configure (OpenAI/Anthropic/Google — requests go directly from your browser using your key). Each has its own privacy policy.</p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation). Each has its own privacy policy.</p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -7367,12 +7412,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const scroller=scrollParent(sec);
       const beforeH=sec.offsetHeight, beforeTop=scroller.scrollTop;
       sec.dataset.sig=sig;
-      /* (#R25) On MOBILE the section now lives at the BOTTOM of the list, so growing/shrinking it never
-         pushes the rows the user is tapping — compensating the scroll there would itself MOVE the view
-         ("まだ動く"). So skip compensation on mobile; on desktop (section at top) keep it to hold the tapped
-         row put. */
-      const _skipComp=(typeof isMobile==='function'&&isMobile());
-      const _restore=()=>{ if(_skipComp) return; const afterH=sec.offsetHeight; if(afterH!==beforeH){ scroller.scrollTop = Math.max(0, beforeTop + (afterH-beforeH)); } };
+      /* (#R29) The Active-layers section is at the TOP on EVERY platform now (R28), so its growth/shrink
+         pushes the rows BELOW it. Compensate the real scroller's scrollTop by the height delta on BOTH
+         desktop AND mobile so the row the user just tapped does not move ("チェックを付けても1pxたりとも
+         動かない" / "視点を一切動かしてはいけない"). The R25/R28 mobile-skip was for the old bottom placement
+         and is exactly what made the mobile list lurch on toggle — removed. */
+      const _restore=()=>{ const afterH=sec.offsetHeight; if(afterH!==beforeH){ scroller.scrollTop = Math.max(0, beforeTop + (afterH-beforeH)); } };
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
@@ -7410,15 +7455,34 @@ window.addEventListener('DOMContentLoaded', () => {
        click cancel ONLY if it moved (a real scroll) or the pointer travelled a long way (>26px = a drag, not
        a tap). A clean tap ALWAYS toggles; a scroll NEVER toggles. We only ever SUPPRESS — we never synthesize
        a toggle — so this can never turn a layer on by itself (no phantom layers). */
+    /* (#R29) DETERMINISTIC single-toggle for the simple layer rows (the 4 utility toggles + every
+       strategic/geo `label.layer-option`). The user re-reported the 4 checks "チラついたり誤チェックが入る".
+       Root model: a tap can (a) double-fire on touch, or (b) land on a row a mid-tap reflow shifted →
+       the WRONG row toggles. Fix: we OWN the toggle — preventDefault the native label toggle and toggle
+       EXACTLY the row the FINGER WENT DOWN ON, exactly once, and only if the gesture was a real tap (no
+       scroll, no drag, didn't drift to another row). Interactive sub-controls (color/opacity/buttons)
+       are left alone. Rows with sub-controls (.lyr-row) keep suppress-only so their controls still work. */
     (function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       const scrollerOf=(el)=>{ let n=el; while(n&&n!==document.body){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2) return n; n=n.parentElement; } return dd; };
-      let downX=0, downY=0, sc=null, sTop=0, far=false;
-      dd.addEventListener('pointerdown',(e)=>{ downX=e.clientX; downY=e.clientY; far=false; sc=scrollerOf(e.target); sTop=sc?sc.scrollTop:0; },true);
-      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>26||Math.abs(e.clientY-downY)>26) far=true; },true);
+      const SUBCTRL='button, input[type=color], input[type=range], select, a, textarea, [role="button"], .alc-x, .alc-name, .alc-clear-all';
+      let downLabel=null, downX=0, downY=0, sc=null, sTop=0, far=false;
+      dd.addEventListener('pointerdown',(e)=>{ downLabel=e.target.closest?e.target.closest('label.layer-option'):null; downX=e.clientX; downY=e.clientY; far=false; sc=scrollerOf(e.target); sTop=sc?sc.scrollTop:0; },true);
+      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>24||Math.abs(e.clientY-downY)>24) far=true; },true);
       dd.addEventListener('click',(e)=>{
-        try{ const scrolled = sc && Math.abs(sc.scrollTop - sTop) > 3;
-          if((scrolled||far) && e.target.closest && e.target.closest('label.layer-option, .lyr-row')){ e.preventDefault(); e.stopPropagation(); }
+        try{
+          if(e.target.closest && e.target.closest(SUBCTRL)) return;     /* a real control handles itself */
+          const scrolled = sc && Math.abs(sc.scrollTop - sTop) > 3;
+          const lab = e.target.closest ? e.target.closest('label.layer-option') : null;
+          if(lab){
+            e.preventDefault(); e.stopPropagation();                    /* never let the native label toggle fire */
+            if(scrolled || far) return;                                 /* a scroll/drag → no toggle */
+            if(downLabel && downLabel!==lab) return;                    /* finger drifted to another row → no misfire */
+            const cb=lab.querySelector('input[type=checkbox]'); if(!cb||cb.disabled) return;
+            cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
+            return;
+          }
+          if((scrolled||far) && e.target.closest && e.target.closest('.lyr-row')){ e.preventDefault(); e.stopPropagation(); }
         }catch(_){}
       },true);
     })();
@@ -7509,6 +7573,8 @@ window.addEventListener('DOMContentLoaded', () => {
         order.forEach(n=>dd.appendChild(n));
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
         ['ec-mount','cmp-mount','ugj-mount'].forEach(id=>{ const w=document.getElementById(id); if(w) w.remove(); });
+        /* (#R29) Mobile: "Others (beta)" is a pulldown — collapse it by default (unless the user opened it). */
+        try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const _oh=dd.querySelector(':scope > .lyr-head[data-i18n="lyrGrpOthers"]'); if(_oh && !_oh.dataset.userToggled) _collapseGroup(_oh); } }catch(_){}
         try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
     };
@@ -10733,7 +10799,16 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'AISstream.io',u:'https://aisstream.io/',use:{en:'Live ship AIS traffic (your key)',jp:'船舶AIS（ユーザーキー）'}},
     {n:'OpenSky Network',u:'https://opensky-network.org/',use:{en:'Live aircraft traffic',jp:'航空機トラフィック'}},
     {n:'Natural Earth',u:'https://www.naturalearthdata.com/',use:{en:'Country borders & polygons',jp:'国境・国ポリゴン'}},
-    {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/',use:{en:'Information cards & imagery',jp:'情報カード・画像'}}
+    {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/',use:{en:'Information cards & imagery',jp:'情報カード・画像'}},
+    {n:'Google News',u:'https://news.google.com/',use:{en:'News headlines (RSS) — fetched & geolocated server-side',jp:'ニュース見出し（RSS）。サーバー側で取得・地点解析'}},
+    {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/',use:{en:'Vector place labels & 3D building footprints',jp:'地名ラベル・3D建物'}},
+    {n:'ESA WorldCover',u:'https://esa-worldcover.org/',use:{en:'10 m global land-cover classification',jp:'土地被覆（10m）'}},
+    {n:'RESOLVE / WWF Ecoregions 2017',u:'https://ecoregions.appspot.com/',use:{en:'Terrestrial ecoregions',jp:'生態地域（エコリージョン）'}},
+    {n:'Smithsonian GVP',u:'https://volcano.si.edu/',use:{en:'Holocene volcanoes',jp:'火山（完新世）'}},
+    {n:'DeepStateMap',u:'https://deepstatemap.live/',use:{en:'Ukraine frontline (beta layer)',jp:'ウクライナ前線（ベータ）'}},
+    {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders (beta layer)',jp:'過去の国境（ベータ）'}},
+    {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators',jp:'国別の時系列指標'}},
+    {n:'AI provider (Anthropic / OpenAI / Google)',u:'https://www.anthropic.com/',use:{en:'Server-side AI: news geolocation + in-app AI features (key held server-side)',jp:'サーバー側AI：ニュース地点解析・アプリ内AI機能（キーはサーバー側で管理）'}}
   ];
   function openSourcesModal(){
     const m=document.getElementById('sources-modal'); if(!m) return;
@@ -12970,6 +13045,12 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(_){ return false; } }
     function findFeature(id){ const cg=window.countryGeo; if(!cg||!cg.features) return null;
       return cg.features.find(f=>String(f.id)===String(id)) || cg.features.find(f=>{ const p=f.properties||{}; return [p.__code,p.ISO_A3,p.iso_a3,p.ADM0_A3,p.id].map(String).includes(String(id)); }); }
+    /* (#R29) Resolve a country feature by NAME — used when a place-NAME label is tapped (the label gives a
+       name, not a code). Tries exact match across the GeoJSON's name fields, then a loose contains match. */
+    function findByName(name){ const cg=window.countryGeo; if(!cg||!cg.features||!name) return null;
+      const n=String(name).trim().toLowerCase(); const NF=(p)=>[p.NAME_EN,p.ADMIN,p.NAME,p.name,p.name_en,p['name:en'],p.NAME_LONG,p.BRK_NAME,p.FORMAL_EN,p.SOVEREIGNT,p.nameEn,p.nameJp];
+      return cg.features.find(f=>NF(f.properties||{}).some(v=>v&&String(v).trim().toLowerCase()===n))
+          || (n.length>3 && cg.features.find(f=>NF(f.properties||{}).some(v=>v&&String(v).trim().toLowerCase().includes(n)))) || null; }
     function maskFC(feat){ const world=[[-180,-89],[180,-89],[180,89],[-180,89],[-180,-89]]; const holes=[]; const g=feat.geometry;
       if(g.type==='Polygon') holes.push(g.coordinates[0]); else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>holes.push(poly[0]));
       return {type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[world,...holes]},properties:{}}]}; }
@@ -12983,9 +13064,13 @@ window.addEventListener('DOMContentLoaded', () => {
        toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
        very top whenever the map settles — guarded so it only moves when not already last (no repaint loop). */
     function toTop(){ try{ if(!map.getLayer('iso-mask')) return; const ls=map.getStyle().layers; if(ls&&ls.length&&ls[ls.length-1].id!=='iso-mask') map.moveLayer('iso-mask'); }catch(_){} }
-    function enter(id){ const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
-        const feat=findFeature(id); if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
+    function applyFeature(feat){ const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
+        if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
         try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){}
+        /* (#R29) Isolating a country auto-deselects "Countries (info)" — its hover-fill / info card would
+           fight the isolate mask ("isolateを押したらCountries (info)は選択解除"). Dispatch change so the
+           checkbox, the map layer and the Active-layers list all update together. */
+        try{ const cc=document.getElementById('cb-countries'); if(cc&&cc.checked){ cc.checked=false; cc.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
         active=true; const b=exitBtn(); b.textContent='✕ '+(jp()?'全体表示に戻る':'Exit country view'); b.style.display='block';
         try{ const bb=bbox(feat); if(bb[0][0]>-179&&bb[1][0]<179){ map.fitBounds(bb,{padding:60,duration:800});
           /* (#R11) Restrict panning to roughly the country's extent so you can only roam that country. */
@@ -12993,11 +13078,44 @@ window.addEventListener('DOMContentLoaded', () => {
           map.setMaxBounds([[bb[0][0]-padX,Math.max(-85,bb[0][1]-padY)],[bb[1][0]+padX,Math.min(85,bb[1][1]+padY)]]); } }catch(_){}
         try{ document.getElementById('country-popup').style.display='none'; }catch(_){}
       }; apply(); }
+    /* enter by COUNTRY CODE (the country detail popup) or by NAME (a tapped place label). Both load the
+       border GeoJSON first if it isn't in memory yet so isolate works even before Countries(info) is used. */
+    function enter(id){ const go=()=>applyFeature(findFeature(id)); if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
+    function enterByName(name){ const go=()=>applyFeature(findByName(name)); if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
     function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
     map.on('idle',()=>{ if(active) toTop(); });
-    return { enter, exit, active:()=>active };
+    return { enter, enterByName, exit, active:()=>active };
+  })();
+
+  /* (#R29) "通常の状態でも、国名の地名ラベルを押したら、isolate機能を使えるボタンが出るように。"
+     In the NORMAL state (Countries(info) OFF, no measuring tool, not already isolated), tapping a country
+     NAME place-label pops a small "🔍 Isolate <country>" button at the tap point. Tapping it isolates that
+     country. (When Countries(info) is ON, the country detail popup already carries its own Isolate button.) */
+  (function(){
+    if(!map) return; let pop=null, hideT=null;
+    function hide(){ if(pop) pop.style.display='none'; clearTimeout(hideT); }
+    function ensurePop(){ if(pop) return pop; pop=document.createElement('button'); pop.id='label-isolate-btn';
+      pop.style.cssText='display:none;position:absolute;z-index:1650;transform:translate(-50%,-130%);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(12px);white-space:nowrap;';
+      (document.getElementById('map-container')||document.body).appendChild(pop); return pop; }
+    map.on('movestart',hide);
+    map.on('click',(e)=>{
+      try{
+        if(typeof toolMode!=='undefined' && toolMode){ hide(); return; }                 /* measuring/drawing → ignore */
+        if(typeof countryInfoOn!=='undefined' && countryInfoOn){ hide(); return; }        /* its popup already has Isolate */
+        if(window.IntMapIsolate && window.IntMapIsolate.active && window.IntMapIsolate.active()){ hide(); return; }
+        if(!map.getLayer('ofm-country')){ hide(); return; }
+        const hits=map.queryRenderedFeatures(e.point,{layers:['ofm-country']});
+        if(!hits||!hits.length){ hide(); return; }
+        const p=hits[0].properties||{}; const name=p.name||p['name:en']||p.name_en||p['name:latin']||'';
+        if(!name){ hide(); return; }
+        const b=ensurePop(); b.textContent='🔍 '+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name));
+        b.style.left=e.point.x+'px'; b.style.top=e.point.y+'px'; b.style.display='block';
+        b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterByName(name); }catch(_){} };
+        clearTimeout(hideT); hideT=setTimeout(hide,4200);   /* auto-dismiss if ignored */
+      }catch(_){ hide(); }
+    });
   })();
 
   /* ===== (#R9b/#9) Per-country time-series graphs from the World Bank Open Data API (CORS *). Opened
@@ -13591,8 +13709,10 @@ window.addEventListener('DOMContentLoaded', () => {
          reserved 52px gutter (the header has padding-right:52px) so no wrapped header/ctrls button can land
          on top of it ("×がボタンと重なって終了できない"). */
       '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:30 !important;pointer-events:auto !important;background:#ff3b30 !important;color:#fff !important;min-width:44px;height:44px;border-radius:22px;font-size:20px;padding:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.35);}'+
-      /* (#R28) hide the main-map FAB stack while compare is open so nothing sits under/over the close × */
-      'body.cmp-open .m-fab-stack{opacity:0 !important;pointer-events:none !important;}'+
+      /* (#R29) Do NOT hide the main-map FAB stack while compare is open ("メインマップのボタンを勝手に消すな").
+         The compare window is anchored to the TOP (its red × lives top-right), so MOVE the FAB stack to the
+         BOTTOM-right where it stays fully usable and can never sit under/over the × ("下に移動させるだけにしろ"). */
+      'body.cmp-open .m-fab-stack{top:auto !important;bottom:calc(env(safe-area-inset-bottom,0px) + 92px) !important;transform:none !important;opacity:1 !important;pointer-events:auto !important;}'+
       '#cmp-min{min-width:38px;font-size:16px;}'+
       '#compare-window.cmp-xray .cmp-head{padding:8px 52px 8px 10px;}'+
       '.cmp-ctrls{top:auto;bottom:28px;left:8px;right:8px;max-width:none;}'+
@@ -15028,6 +15148,65 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window._imStartDemo=_imStartDemo;
 
+  /* (#R29) iOS-style first-run WELCOME card. Replaces the old auto-cycling layer "demo" that toggled
+     layers on/off by itself — users mistook that for a bug ("バグと誤認") and on mobile it looked crushed.
+     This is a clean, dismissible intro that explains what IntMap is, renders as a centered card on desktop
+     and a bottom sheet on mobile, and offers the old showcase as an EXPLICIT, clearly-labelled opt-in
+     "Watch the layer tour" button (so the feature is kept, not deleted). Built with createElement + inline
+     styles only — no CSS-in-template-literal, so it can never blank the page. */
+  function _imWelcome(){
+    try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
+    if(document.getElementById('im-welcome')) return;
+    const jp=currentLang==='jp';
+    const isM=(typeof isMobile==='function' && isMobile());
+    const ov=document.createElement('div'); ov.id='im-welcome';
+    ov.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;justify-content:center;'+(isM?'align-items:flex-end;':'align-items:center;')+'background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;transition:opacity 0.28s ease;';
+    const card=document.createElement('div');
+    card.style.cssText='width:min(440px,100%);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--popup-bg);color:var(--text-main);box-shadow:0 18px 60px rgba(0,0,0,0.4);padding:26px 24px max(24px,env(safe-area-inset-bottom)) 24px;box-sizing:border-box;'+(isM?'border-radius:22px 22px 0 0;animation:mSheetUp 0.42s var(--sheet-ease);':'border-radius:22px;margin:16px;');
+    if(isM){ const g=document.createElement('div'); g.style.cssText='width:38px;height:5px;border-radius:3px;background:rgba(128,128,128,0.4);margin:-8px auto 14px;'; card.appendChild(g); }
+    const head=document.createElement('div'); head.style.cssText='display:flex;align-items:center;gap:14px;margin:0 0 18px;';
+    const icon=document.createElement('div'); icon.textContent='🌍'; icon.style.cssText='width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--primary-color),#5856d6);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,0.22);';
+    const ht=document.createElement('div');
+    const h1=document.createElement('div'); h1.textContent='IntMap'; h1.style.cssText='font-size:23px;font-weight:700;line-height:1.15;';
+    const h2=document.createElement('div'); h2.textContent=jp?'世界を、地図で読み解く':'Explore the world, one layer at a time'; h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
+    ht.appendChild(h1); ht.appendChild(h2); head.appendChild(icon); head.appendChild(ht); card.appendChild(head);
+    const feats=jp?[
+      ['🗺️','70以上のデータレイヤー','気候・人口・経済・地政学などを地図に重ねて表示'],
+      ['📰','ライブニュースマップ','世界のニュースを「発生した場所」にピン表示'],
+      ['🌐','3D地球儀・衛星画像','地球儀／衛星・3D地形・過去にさかのぼる表示'],
+      ['📊','国データ','国をタップして統計・時系列・比較を表示']
+    ]:[
+      ['🗺️','70+ data layers','Climate, population, economy & geopolitics on the map'],
+      ['📰','Live news map','World headlines pinned to where they actually happen'],
+      ['🌐','Globe & satellite','3D globe, satellite imagery, terrain & time travel'],
+      ['📊','Country data','Tap any country for stats, time-series & comparisons']
+    ];
+    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:14px;margin:0 0 22px;';
+    const tints=['rgba(0,122,255,0.15)','rgba(255,59,48,0.15)','rgba(52,199,89,0.15)','rgba(175,82,222,0.15)'];
+    feats.forEach((f,i)=>{ const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:13px;';
+      const ic=document.createElement('div'); ic.textContent=f[0]; ic.style.cssText='width:38px;height:38px;border-radius:10px;background:'+tints[i%tints.length]+';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;';
+      const tx=document.createElement('div');
+      const t1=document.createElement('div'); t1.textContent=f[1]; t1.style.cssText='font-size:14.5px;font-weight:600;line-height:1.2;';
+      const t2=document.createElement('div'); t2.textContent=f[2]; t2.style.cssText='font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.3;';
+      tx.appendChild(t1); tx.appendChild(t2); row.appendChild(ic); row.appendChild(tx); list.appendChild(row); });
+    card.appendChild(list);
+    const close=()=>{ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} ov.style.opacity='0'; setTimeout(()=>{ try{ ov.remove(); }catch(_){} },280); };
+    const primary=document.createElement('button'); primary.textContent=jp?'使ってみる':'Start exploring';
+    primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-color);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
+    primary.onclick=close; card.appendChild(primary);
+    const tour=document.createElement('button'); tour.textContent=jp?'▶ レイヤー紹介ツアーを見る':'▶ Watch the layer tour';
+    tour.style.cssText='width:100%;padding:11px;margin-top:8px;border:none;border-radius:13px;background:transparent;color:var(--primary-color);font-size:13.5px;font-weight:600;cursor:pointer;';
+    tour.onclick=()=>{ close(); setTimeout(()=>{ try{ _imStartDemo(true); }catch(_){} },360); }; card.appendChild(tour);
+    ov.appendChild(card);
+    ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
+    (document.body||document.documentElement).appendChild(ov);
+    /* Fade in — rAF for the smooth case + a setTimeout fallback so the card can NEVER get stuck at
+       opacity:0 (rAF is paused while the tab is backgrounded). */
+    requestAnimationFrame(()=>{ ov.style.opacity='1'; });
+    setTimeout(()=>{ try{ ov.style.opacity='1'; }catch(_){} },80);
+  }
+  window._imWelcome=_imWelcome;
+
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an
      idle slice on phones (both are re-built on demand anyway — search warms the index, opening
@@ -15041,7 +15220,7 @@ window.addEventListener('DOMContentLoaded', () => {
   (function(){ const warm=()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} };
     if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:4000}); else setTimeout(warm,3000); })();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
-  try{ setTimeout(_imStartDemo,1400); }catch(_){}   /* (#R15c) first-visit showcase */
+  try{ setTimeout(_imWelcome,900); }catch(_){}   /* (#R29) first-visit iOS welcome card (replaces the confusing auto-demo) */
   try{ if(currentLang==='jp'){ document.getElementById('lang-jp').classList.add('active'); document.getElementById('lang-en').classList.remove('active'); } }catch(_){}
 });
 </script>
