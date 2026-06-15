@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-15-R29';
+  window.INTMAP_BUILD='2026-06-15-R29.1';
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
@@ -122,6 +122,78 @@ gtag('config', 'G-57X5MX0ZPW');
     body.theme-classic .dash-cards-container::before{ content:'❦'; display:block; text-align:center; color:rgba(138,90,43,0.6); font-size:15px; margin:0 0 2px; }
     body.theme-classic .tp-title{ font-variant:small-caps; letter-spacing:0.05em; color:#5a3d1e; }
     body.theme-classic .modal-content{ box-shadow:inset 0 0 0 4px rgba(248,240,220,0.9), inset 0 0 0 5px rgba(138,90,43,0.3), 0 18px 50px rgba(80,55,20,0.4) !important; }
+    /* (#R29.1) CYBER — pushed further toward a cmd/terminal look ("もっとcmdのように"): a blinking block
+       cursor after the title, a `>` command prompt before every section header, and a brighter phosphor. */
+    body.theme-cyber{ --primary-color:#00ff9c; --neon:#00e5ff; }
+    @keyframes cyberBlink{ 50%{ opacity:0; } }
+    body.theme-cyber h2::after{ content:'_'; color:#00ff9c; margin-left:3px; animation:cyberBlink 1.05s steps(1) infinite; text-shadow:0 0 8px rgba(0,255,156,0.8); }
+    body.theme-cyber .lyr-head::before, body.theme-cyber .layer-group-title::before, body.theme-cyber .m-sheet-title::before{ content:'> '; color:#00ff9c; }
+    body.theme-cyber .news-item::before{ content:'C:\\> '; color:rgba(0,255,156,0.6); font-size:10px; }
+    body.theme-cyber .mode-btn.active{ box-shadow:0 0 10px rgba(0,255,156,0.55) !important; }
+    /* (#R29.1) CLASSIC = "Age of Discovery" (大航海時代) — add a portolan rhumb-line wash + ornament so it
+       reads more like an antique sea chart. */
+    body.theme-classic .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:0.5; background-image:repeating-linear-gradient(60deg,rgba(138,90,43,0.05) 0 1px,transparent 1px 26px),repeating-linear-gradient(-60deg,rgba(138,90,43,0.05) 0 1px,transparent 1px 26px); }
+    body.theme-classic h2::before{ content:'⚓ '; font-size:15px; color:#7a4a1e; }
+
+    /* ===== (#R29.1) PSYCHEDELIC — "薬中でキマリまくった幻覚" — animated rainbow everything ===== */
+    body.theme-psychedelic{ --bg-color:#160028; --sidebar-bg:rgba(38,0,64,0.80); --primary-color:#ff2bd6; --text-main:#fdeaff; --text-muted:#cf9bf0; --card-bg:rgba(70,0,110,0.55); --input-bg:rgba(255,120,255,0.14); --popup-bg:rgba(40,0,70,0.86); --shadow:0 10px 44px rgba(180,0,255,0.55); --glass-border:rgba(255,90,255,0.55); --info-hub:#ff2bd6; }
+    @keyframes psyShift{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+    @keyframes psyHue{ to{ filter:saturate(2.1) hue-rotate(360deg) contrast(1.08); } }
+    @keyframes psyText{ to{ background-position:300% center; } }
+    body.theme-psychedelic .map-container::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(45deg,#ff0080,#ff8c00,#ffee00,#00ff8c,#00d4ff,#8c00ff,#ff0080); background-size:420% 420%; animation:psyShift 13s ease infinite; mix-blend-mode:overlay; opacity:0.45; }
+    body.theme-psychedelic .maplibregl-canvas{ filter:saturate(2.1) hue-rotate(0deg) contrast(1.08); animation:psyHue 16s linear infinite; }
+    body.theme-psychedelic h2,body.theme-psychedelic .mode-btn.active,body.theme-psychedelic .btn-settings{ background:linear-gradient(90deg,#ff0080,#00d4ff,#ffee00,#00ff8c,#ff0080); background-size:300% auto; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; animation:psyText 5s linear infinite; }
+    body.theme-psychedelic .btn-settings,body.theme-psychedelic .mode-btn.active,body.theme-psychedelic .search-btn{ -webkit-text-fill-color:#fff; color:#fff; background:linear-gradient(120deg,#ff2bd6,#7a2bff,#00d4ff); background-size:200% auto; animation:psyShift 8s ease infinite; box-shadow:0 0 18px rgba(255,43,214,0.6); }
+    body.theme-psychedelic .news-item,body.theme-psychedelic .wiki-card,body.theme-psychedelic .stat-row{ border:1px solid rgba(255,120,255,0.3); box-shadow:0 0 14px rgba(180,0,255,0.25); }
+    body.theme-psychedelic ::selection{ background:#00ff8c; color:#160028; }
+
+    /* ===== (#R29.1) MILITARY — olive-drab command HUD, stencil caps, NV-tinted map ===== */
+    body.theme-military{ --bg-color:#171b12; --sidebar-bg:rgba(28,34,22,0.95); --primary-color:#7d8c3a; --text-main:#e2e8d2; --text-muted:#9aa57e; --card-bg:#222a1a; --input-bg:rgba(160,180,90,0.10); --popup-bg:rgba(26,32,20,0.96); --shadow:0 6px 24px rgba(0,0,0,0.62); --glass-border:rgba(150,170,80,0.38); --info-hub:#a8b84a; }
+    body.theme-military,body.theme-military input,body.theme-military select,body.theme-military button,body.theme-military textarea{ font-family:"Roboto Condensed","Arial Narrow",'DIN Condensed',sans-serif !important; }
+    body.theme-military h2,body.theme-military h3,body.theme-military h4,body.theme-military .lyr-head,body.theme-military .layer-group-title,body.theme-military .mode-btn,body.theme-military .m-sheet-title,body.theme-military .dash-nav-btn{ text-transform:uppercase; letter-spacing:0.14em; font-weight:800; }
+    body.theme-military h2::before{ content:'★ '; color:#a8b84a; }
+    body.theme-military .btn-settings,body.theme-military .mode-btn.active,body.theme-military .search-btn,body.theme-military .lang-btn.active{ background:#566321 !important; color:#eef2dd !important; border:1px solid #39431a !important; border-radius:3px !important; box-shadow:inset 0 0 0 1px rgba(168,184,74,0.25); }
+    body.theme-military .sidebar{ border-right:3px solid #4a5520 !important; background-image:repeating-linear-gradient(45deg,rgba(0,0,0,0.06) 0 8px,transparent 8px 16px); }
+    body.theme-military .maplibregl-canvas{ filter:saturate(0.62) brightness(0.92) sepia(0.22) hue-rotate(40deg); }
+    body.theme-military .lyr-head,body.theme-military .layer-group-title{ color:#a8b84a !important; border-bottom:1px dashed rgba(168,184,74,0.4); }
+    body.theme-military .news-item{ border-left:3px solid #7d8c3a; }
+    body.theme-military ::selection{ background:#7d8c3a; color:#171b12; }
+    body.theme-military .map-container::after{ content:''; position:absolute; right:20px; top:80px; width:54px; height:54px; pointer-events:none; z-index:6; opacity:0.5; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 54 54'%3E%3Cg stroke='%23a8b84a' stroke-width='1.4' fill='none'%3E%3Ccircle cx='27' cy='27' r='22'/%3E%3Cline x1='27' y1='1' x2='27' y2='15'/%3E%3Cline x1='27' y1='39' x2='27' y2='53'/%3E%3Cline x1='1' y1='27' x2='15' y2='27'/%3E%3Cline x1='39' y1='27' x2='53' y2='27'/%3E%3C/g%3E%3Ccircle cx='27' cy='27' r='2' fill='%23a8b84a'/%3E%3C/svg%3E"); }
+
+    /* ===== (#R29.1) MEDICAL — clinical white/teal, red cross, animated EKG vitals line ===== */
+    body.theme-medical{ --bg-color:#eaf3f5; --sidebar-bg:rgba(255,255,255,0.97); --primary-color:#00a6a6; --text-main:#163138; --text-muted:#5d7a82; --card-bg:#ffffff; --input-bg:rgba(0,150,160,0.07); --popup-bg:rgba(255,255,255,0.98); --shadow:0 8px 28px rgba(20,80,90,0.16); --glass-border:rgba(0,166,166,0.32); --info-hub:#00a6a6; }
+    body.theme-medical h2::before{ content:'✚'; color:#e2453a; font-weight:800; margin-right:7px; }
+    @keyframes ekgMove{ to{ background-position:-260px 0; } }
+    body.theme-medical .sidebar::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:26px; pointer-events:none; opacity:0.7; background-repeat:repeat-x; background-position:0 0; background-size:260px 26px; animation:ekgMove 2.6s linear infinite; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='26' viewBox='0 0 260 26'%3E%3Cpath d='M0 13 H80 l6 -10 l6 20 l5 -16 l5 6 H140 l6 -10 l6 20 l5 -16 l5 6 H260' fill='none' stroke='%2300a6a6' stroke-width='1.6'/%3E%3C/svg%3E"); }
+    body.theme-medical .btn-settings,body.theme-medical .mode-btn.active,body.theme-medical .search-btn,body.theme-medical .lang-btn.active{ background:linear-gradient(135deg,#00a6a6,#0089b3) !important; color:#fff !important; }
+    body.theme-medical .sidebar{ border-right:3px solid #e2453a !important; }
+    body.theme-medical .news-item{ border-left:3px solid #00a6a6; }
+    body.theme-medical .lyr-head,body.theme-medical .layer-group-title{ color:#0089a0 !important; }
+    body.theme-medical ::selection{ background:#00a6a6; color:#fff; }
+
+    /* ===== (#R29.1) BAROQUE — opulent European salon: ivory + gilt gold + burgundy, Didone serif ===== */
+    body.theme-baroque{ --bg-color:#ece1c8; --sidebar-bg:rgba(248,241,225,0.97); --primary-color:#9c1f2e; --text-main:#3a2a14; --text-muted:#7a5c34; --card-bg:#fbf5e6; --input-bg:rgba(156,31,46,0.07); --popup-bg:rgba(250,244,230,0.98); --shadow:0 14px 44px rgba(90,60,20,0.34); --glass-border:rgba(168,134,58,0.55); --info-hub:#9c1f2e; }
+    body.theme-baroque,body.theme-baroque input,body.theme-baroque select,body.theme-baroque button,body.theme-baroque textarea{ font-family:"Didot","Bodoni MT","Hoefler Text",Garamond,"Times New Roman",serif !important; }
+    body.theme-baroque h2,body.theme-baroque h3,body.theme-baroque h4,body.theme-baroque .lyr-head,body.theme-baroque .layer-group-title,body.theme-baroque .m-sheet-title{ letter-spacing:0.03em; color:#5a3010; }
+    body.theme-baroque h2::before{ content:'❧ '; color:#a8863a; }
+    body.theme-baroque h2::after{ content:' ❧'; color:#a8863a; }
+    body.theme-baroque .btn-settings,body.theme-baroque .mode-btn.active,body.theme-baroque .search-btn,body.theme-baroque .lang-btn.active{ background:linear-gradient(180deg,#caa54e,#9c7a2b) !important; color:#fff7e6 !important; border:1px solid #6e5320 !important; box-shadow:0 1px 5px rgba(80,55,20,0.45),inset 0 1px 0 rgba(255,245,210,0.5); }
+    body.theme-baroque .sidebar{ border-right:3px solid #a8863a !important; background-image:radial-gradient(rgba(168,134,58,0.07) 1.5px,transparent 1.5px); background-size:14px 14px; }
+    body.theme-baroque .modal-content,body.theme-baroque .country-popup{ box-shadow:inset 0 0 0 3px rgba(250,244,230,0.95), inset 0 0 0 5px rgba(168,134,58,0.6), 0 18px 50px rgba(90,60,20,0.45) !important; }
+    body.theme-baroque .news-item,body.theme-baroque .wiki-card,body.theme-baroque .stat-row{ border:1px solid rgba(168,134,58,0.4); }
+    body.theme-baroque ::selection{ background:#9c1f2e; color:#fff7e6; }
+
+    /* ===== (#R29.1) TAISHO — 大正ロマン: warm paper, indigo+crimson, Mincho serif, asanoha pattern ===== */
+    body.theme-taisho{ --bg-color:#efe6d6; --sidebar-bg:rgba(244,237,225,0.97); --primary-color:#9b2335; --text-main:#2b2733; --text-muted:#6d5d6e; --card-bg:#faf4e8; --input-bg:rgba(48,42,86,0.07); --popup-bg:rgba(247,240,228,0.98); --shadow:0 10px 32px rgba(40,20,50,0.24); --glass-border:rgba(120,40,60,0.38); --info-hub:#2b3a67; }
+    body.theme-taisho,body.theme-taisho input,body.theme-taisho select,body.theme-taisho button,body.theme-taisho textarea{ font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",'游明朝',serif !important; }
+    body.theme-taisho h2,body.theme-taisho h3,body.theme-taisho .lyr-head,body.theme-taisho .layer-group-title,body.theme-taisho .m-sheet-title{ letter-spacing:0.06em; color:#2b3a67; }
+    body.theme-taisho h2::before{ content:'❖ '; color:#9b2335; }
+    body.theme-taisho .btn-settings,body.theme-taisho .mode-btn.active,body.theme-taisho .search-btn,body.theme-taisho .lang-btn.active{ background:linear-gradient(180deg,#b3324a,#7d1a2c) !important; color:#f6ece0 !important; border:1px solid #5a1320 !important; }
+    body.theme-taisho .sidebar{ border-right:3px solid #2b3a67 !important; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='24' viewBox='0 0 40 24'%3E%3Cg stroke='%239b2335' stroke-width='0.5' fill='none' opacity='0.18'%3E%3Cpath d='M0 12 L10 6 L20 12 L10 18 Z M20 12 L30 6 L40 12 L30 18 Z M10 6 L10 -6 M30 6 L30 -6 M10 18 L10 30 M30 18 L30 30'/%3E%3C/g%3E%3C/svg%3E"); background-size:40px 24px; }
+    body.theme-taisho .news-item{ border-left:3px solid #9b2335; }
+    body.theme-taisho .lyr-head,body.theme-taisho .layer-group-title{ color:#9b2335 !important; border-bottom:1px solid rgba(43,58,103,0.3); }
+    body.theme-taisho ::selection{ background:#9b2335; color:#f6ece0; }
+
     body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
     button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
     body{ overflow:hidden; transition:background-color 0.4s; }
@@ -1564,7 +1636,18 @@ gtag('config', 'G-57X5MX0ZPW');
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
     <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
-    <div class="setting-group"><label id="lbl-theme">Appearance</label><select id="setting-theme"><option value="auto" id="opt-theme-auto">System Default</option><option value="light" data-i18n="optLight">Light</option><option value="dark" data-i18n="optDark">Dark</option><option value="classic" data-i18n="optClassic">Classic</option><option value="cyber" data-i18n="optCyber">Cyber</option></select></div>
+    <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
+      <option value="auto" id="opt-theme-auto">System Default</option>
+      <option value="light" data-i18n="optLight">Light</option>
+      <option value="dark" data-i18n="optDark">Dark</option>
+      <option value="classic" data-i18n="optClassic">Age of Discovery</option>
+      <option value="cyber" data-i18n="optCyber">Cyber Terminal</option>
+      <option value="psychedelic" data-i18n="optPsychedelic">Psychedelic</option>
+      <option value="military" data-i18n="optMilitary">Military</option>
+      <option value="medical" data-i18n="optMedical">Medical</option>
+      <option value="baroque" data-i18n="optBaroque">Baroque (European)</option>
+      <option value="taisho" data-i18n="optTaisho">Taishō Japan</option>
+    </select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
@@ -1823,7 +1906,7 @@ window.addEventListener('DOMContentLoaded', () => {
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
-      lblTheme:"Appearance", lblTz:"Timezone Setting", tzSearch:"Search timezone…", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
+      lblTheme:"Theme", lblTz:"Timezone Setting", tzSearch:"Search timezone…", btnApply:"Apply", optAuto:"System Default", optLocal:"Local (System Default)",
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
       measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
@@ -1855,7 +1938,7 @@ window.addEventListener('DOMContentLoaded', () => {
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
-      lblTheme:"UIテーマ", lblTz:"基準タイムゾーン", tzSearch:"タイムゾーンを検索…", btnApply:"適用", optAuto:"システム標準", optLocal:"ローカル標準時 (端末依存)",
+      lblTheme:"テーマ", lblTz:"基準タイムゾーン", tzSearch:"タイムゾーンを検索…", btnApply:"適用", optAuto:"システム標準", optLocal:"ローカル標準時 (端末依存)",
       dashCatMil:"軍事・戦略拠点", dashCatTech:"技術・サイバー", dashCatMar:"海上輸送・要衝", dashCatGeo:"地政学・気候",
       readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
       measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
@@ -1991,12 +2074,13 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
        sepia surfaces, serif type, brass accents, and a parchment tint over the (light) basemap. */
-    const cyber=(userTheme==='cyber'||userTheme==='tactical');   /* (#R22) Tactical retired → migrate to Cyber */
-    const classic=(userTheme==='classic');
-    const isLight=!cyber && (classic || (userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
+    /* (#R29.1) Skin themes registry — each builds on the light OR dark base. `tactical` (retired) → cyber. */
+    const SKIN_THEMES={ cyber:false, classic:true, psychedelic:false, military:false, medical:true, baroque:true, taisho:true };
+    const tk=(userTheme==='tactical')?'cyber':userTheme;
+    const skin=Object.prototype.hasOwnProperty.call(SKIN_THEMES,tk)?tk:null;
+    const isLight = skin ? SKIN_THEMES[skin] : ((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
     document.documentElement.setAttribute('data-theme', isLight?'light':'dark');
-    document.body.classList.toggle('theme-cyber', cyber);
-    document.body.classList.toggle('theme-classic', classic);
+    Object.keys(SKIN_THEMES).forEach(k=>document.body.classList.toggle('theme-'+k, skin===k));
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
        chosen map color always lands. */
@@ -6590,7 +6674,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const _mc=modal.querySelector('.modal-content'); if(_mc){ _mc.scrollTop=0; requestAnimationFrame(()=>{ _mc.scrollTop=0; modal.scrollTop=0; }); }
   };
   document.getElementById('btn-close-settings').onclick=()=>{
+    const _prevTheme=userTheme;
     userTheme=document.getElementById('setting-theme').value; userTZ=document.getElementById('setting-tz').value; unitMode=document.getElementById('setting-units').value;
+    /* (#R29.1) When the THEME changes, auto-pick the sidebar appearance that suits it (solid / frosted /
+       more-transparent) — "各Appearanceに最適なサイドバーの選択にして". Writes the select so the value the
+       Save pipeline reads below stays consistent. */
+    if(userTheme!==_prevTheme){
+      const THEME_SIDEBAR={ cyber:'opaque', classic:'opaque', military:'opaque', taisho:'opaque', medical:'translucent', baroque:'translucent', psychedelic:'glass2', light:'opaque', dark:'opaque', auto:'opaque' };
+      const pref=THEME_SIDEBAR[userTheme]; const ss=document.getElementById('setting-sidebar-style');
+      if(pref && ss){ ss.value=pref; window.imSidebarStyle=pref; }
+    }
     { const tu=document.getElementById('setting-temp-unit'); if(tu){ window.imUnitTemp=tu.value; try{ localStorage.setItem('intmap_temp_unit',window.imUnitTemp); }catch(_){} } }
     { const al=document.getElementById('setting-ailocate'); if(al){ aiLocateMode=al.value; localStorage.setItem('intmap_ai_locate',aiLocateMode); } }
     const prevNewsLang=newsLangMode; newsLangMode=document.getElementById('setting-newslang').value; localStorage.setItem('intmap_news_lang',newsLangMode);
@@ -6883,8 +6976,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber", optClassic:"Classic", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
-    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバー", optClassic:"クラシック", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
+    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed" });
+    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速" });
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
