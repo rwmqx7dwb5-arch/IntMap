@@ -3679,7 +3679,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Asia-Pacific */
     "NHK":{loc:[139.69,35.66]},"日経":{loc:[139.76,35.68]},"Nikkei Asia":{loc:[139.76,35.68]},"Nikkei":{loc:[139.76,35.68]},"朝日":{loc:[139.69,35.66]},"Asahi":{loc:[139.69,35.66]},"読売":{loc:[139.76,35.68]},"Yomiuri":{loc:[139.76,35.68]},"毎日":{loc:[139.76,35.69]},"Mainichi":{loc:[139.76,35.69]},"産経":{loc:[139.74,35.66]},"Japan Times":{loc:[139.76,35.68]},"Kyodo":{loc:[139.76,35.68]},"Xinhua":{loc:[116.40,39.90]},"CGTN":{loc:[116.40,39.90]},"Global Times":{loc:[116.40,39.90]},"People's Daily":{loc:[116.40,39.90]},"South China Morning Post":{loc:[114.16,22.28]},"SCMP":{loc:[114.16,22.28]},"Yonhap":{loc:[126.97,37.56]},"Korea Herald":{loc:[126.97,37.56]},"Korea Times":{loc:[126.97,37.56]},"Straits Times":{loc:[103.85,1.29]},"Channel News Asia":{loc:[103.85,1.29]},"CNA":{loc:[103.85,1.29]},"The Hindu":{loc:[80.27,13.08]},"Times of India":{loc:[72.88,19.08]},"Hindustan Times":{loc:[77.21,28.61]},"NDTV":{loc:[77.21,28.61]},"Indian Express":{loc:[77.21,28.61]},"India Today":{loc:[77.21,28.61]},"Dawn":{loc:[67.01,24.86]},"Jakarta Post":{loc:[106.85,-6.21]},"Bangkok Post":{loc:[100.50,13.75]},"Sydney Morning Herald":{loc:[151.21,-33.87]},"The Age":{loc:[144.96,-37.81]},
     /* Americas (non-US) / Africa */
-    "CBC":{loc:[-79.38,43.65]},"Globe and Mail":{loc:[-79.38,43.65]},"Toronto Star":{loc:[-79.38,43.65]},"CTV":{loc:[-79.38,43.65]},"Folha":{loc:[-46.63,-23.55]},"O Globo":{loc:[-43.17,-22.91]},"Clarín":{loc:[-58.38,-34.60]},"News24":{loc:[18.42,-33.92]},"Mail & Guardian":{loc:[28.05,-26.20]},"The East African":{loc:[36.82,-1.29]}
+    "CBC":{loc:[-79.38,43.65]},"Globe and Mail":{loc:[-79.38,43.65]},"Toronto Star":{loc:[-79.38,43.65]},"CTV":{loc:[-79.38,43.65]},"Folha":{loc:[-46.63,-23.55]},"O Globo":{loc:[-43.17,-22.91]},"Clarín":{loc:[-58.38,-34.60]},"News24":{loc:[18.42,-33.92]},"Mail & Guardian":{loc:[28.05,-26.20]},"The East African":{loc:[36.82,-1.29]},
+    /* (#R32) more high-frequency Google-News sources whose name carries no place token */
+    "TechCrunch":{loc:[-122.27,37.80]},"The Verge":{loc:[-74.00,40.71]},"Wired":{loc:[-122.42,37.77]},"Ars Technica":{loc:[-87.63,41.88]},"Vox":{loc:[-74.00,40.71]},"Vice":{loc:[-74.00,40.71]},"The Daily Beast":{loc:[-74.00,40.71]},"Time":{loc:[-74.00,40.71]},"The Atlantic":{loc:[-77.03,38.90]},"ProPublica":{loc:[-74.00,40.71]},"The Conversation":{loc:[144.96,-37.81]},"Engadget":{loc:[-74.00,40.71]},"Gizmodo":{loc:[-74.00,40.71]},"The Register":{loc:[-0.12,51.50]},"POLITICO Europe":{loc:[4.35,50.85]},"EUobserver":{loc:[4.35,50.85]},"Euractiv":{loc:[4.35,50.85]},"The Local":{loc:[18.07,59.33]},"Irish Times":{loc:[-6.26,53.35]},"RTÉ":{loc:[-6.26,53.35]},"The Print":{loc:[77.21,28.61]},"Scroll.in":{loc:[72.88,19.08]},"Firstpost":{loc:[72.88,19.08]},"Economic Times":{loc:[72.88,19.08]},"Mint":{loc:[77.21,28.61]},"Al-Monitor":{loc:[35.21,31.77]},"Middle East Monitor":{loc:[-0.12,51.50]},"Premium Times":{loc:[7.49,9.06]},"Daily Nation":{loc:[36.82,-1.29]},"AllAfrica":{loc:[18.42,-33.92]},"MercoPress":{loc:[-57.95,-34.92]},"NZ Herald":{loc:[174.76,-36.85]},"Stuff":{loc:[174.78,-41.29]},"The Diplomat":{loc:[-77.03,38.90]},"Foreign Policy":{loc:[-77.03,38.90]},"Defense News":{loc:[-77.03,38.90]},"Barron's":{loc:[-74.00,40.71]},"MarketWatch":{loc:[-74.00,40.71]},"Semafor":{loc:[-74.00,40.71]}
   };
   /* Precompiled longest-first matchers. Latin keys use word boundaries so short acronyms
      ("AP","RT") don't match inside unrelated words; CJK keys use substring. */
@@ -3688,7 +3690,20 @@ window.addEventListener('DOMContentLoaded', () => {
       return { loc:v.loc, label:k, cjk:isC, re:isC?null:new RegExp('\\b'+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i') }; })
       .sort((a,b)=>b.label.length-a.label.length); })();
   function matchPublisher(publisher){ if(!publisher) return null;
-    for(const m of _pubMatchers){ if(m.cjk?publisher.includes(m.label):m.re.test(publisher)) return m; } return null; }
+    for(const m of _pubMatchers){ if(m.cjk?publisher.includes(m.label):m.re.test(publisher)) return m; }
+    /* (#R32) Non-AI publisher-location BOOST ("AIを用いない発信地解析を強化 / 位置不明のピンが多い"): a huge
+       share of Google-News sources are LOCAL outlets whose name embeds their city/region/country
+       ("Manila Bulletin", "Kashmir Observer", "Texas Tribune", "Nairobi News"…). When the curated dict
+       misses, scan the publisher string against the place gazetteer and use the most specific match, so far
+       fewer publisher pins land "unknown". Skip demonyms/orgs and very short terms to avoid false hits. */
+    try{ if(typeof geoDB!=='undefined' && geoDB){ let best=null,bestLen=0,bestLocal=-1;
+      for(const g of geoDB){ if(g.demonym||g.org||!g._terms) continue;
+        for(const t of g._terms){ const term=t.term; if(!term||term.length<4) continue;
+          const hit = t.jp ? publisher.includes(term) : (t.matchRe&&t.matchRe.test(publisher));
+          if(hit){ const loc=(typeof TYPE_LOCAL!=='undefined'?(TYPE_LOCAL[g.type]||0):0);
+            if(term.length>bestLen || (term.length===bestLen && loc>bestLocal)){ best=g; bestLen=term.length; bestLocal=loc; } } } }
+      if(best) return { loc:best.loc, label:(best.name&&(best.name[currentLang]||best.name.en))||'', cjk:false }; } }catch(_){}
+    return null; }
 
   /* Precompile per-term matchers once (runs ≈290 entries × N news items on every refresh):
        jp      — CJK terms match by substring; Latin terms match on word boundaries
@@ -5572,13 +5587,15 @@ window.addEventListener('DOMContentLoaded', () => {
         'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left',
         'text-offset':[1.25,0],
-        'text-allow-overlap':false,
+        /* (#R32) "ズームしても帯が表示されない" — at low zoom the bands collide and drop; once zoomed IN
+           (z≥5) allow overlap so the band of a pin you zoomed to ALWAYS shows. Decluttered world view kept. */
+        'text-allow-overlap':['step',['zoom'],false,5,true],
         'text-optional':true,
         'text-max-width':14,
         'icon-image':'news-pill',
         'icon-text-fit':'both',
         'icon-text-fit-padding':[2,9,2,9],
-        'icon-allow-overlap':false,
+        'icon-allow-overlap':['step',['zoom'],false,5,true],
         'icon-optional':true
       },paint:{
         'text-color':'#ffffff',
