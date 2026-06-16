@@ -13237,15 +13237,24 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R31) Pointer-based drag-and-drop reorder (works on touch & desktop). The dragged card is lifted and
        set pointer-events:none so elementFromPoint finds the card beneath; the DOM order is committed to
        `active` on drop. */
+    /* (#R32) iOS-home-screen-style reorder ("滑らかに移動させられる形式に"): the lifted card FOLLOWS the finger
+       (translate) and the displaced cards GLIDE to their new slots via a FLIP animation, instead of jumping. */
     function enableDnD(b){ const grid=b.querySelector('.wgt-grid'); if(!grid) return;
       grid.querySelectorAll('.wgt-card').forEach(card=>{
-        let dragging=false;
-        card.addEventListener('pointerdown',(e)=>{ if(!editing) return; if(e.target.closest&&e.target.closest('button')) return; dragging=true;
-          try{ card.setPointerCapture(e.pointerId); }catch(_){} card.style.opacity='0.65'; card.style.transform='scale(1.03)'; card.style.transition='none'; card.style.zIndex='6'; card.style.pointerEvents='none'; e.preventDefault(); });
+        let dragging=false, hx=0, hy=0;
+        const flip=(mut)=>{ const sibs=[].slice.call(grid.children).filter(c=>c!==card&&c.classList&&c.classList.contains('wgt-card'));
+          const first=new Map(); sibs.forEach(c=>first.set(c,c.getBoundingClientRect())); mut();
+          sibs.forEach(c=>{ const f=first.get(c), l=c.getBoundingClientRect(); const dx=f.left-l.left, dy=f.top-l.top; if(dx||dy){ c.style.transition='none'; c.style.transform='translate('+dx+'px,'+dy+'px)'; c.getBoundingClientRect(); requestAnimationFrame(()=>{ c.style.transition='transform 0.24s cubic-bezier(0.2,0.7,0.2,1)'; c.style.transform=''; }); } }); };
+        card.addEventListener('pointerdown',(e)=>{ if(!editing) return; if(e.target.closest&&e.target.closest('button')) return; dragging=true; hx=e.clientX; hy=e.clientY;
+          try{ card.setPointerCapture(e.pointerId); }catch(_){} card.style.zIndex='8'; card.style.pointerEvents='none'; card.style.opacity='0.96'; card.style.boxShadow='0 16px 38px rgba(0,0,0,0.30)'; card.style.transition='transform 0.12s ease'; card.style.transform='scale(1.05)'; e.preventDefault(); });
         card.addEventListener('pointermove',(e)=>{ if(!dragging) return;
+          card.style.transition='none'; card.style.transform='translate('+(e.clientX-hx)+'px,'+(e.clientY-hy)+'px) scale(1.05)';
           const under=document.elementFromPoint(e.clientX,e.clientY); const over=under&&under.closest&&under.closest('.wgt-card');
-          if(over&&over!==card&&over.parentElement===grid){ const r=over.getBoundingClientRect(); const before=(e.clientY< r.top+r.height/2); grid.insertBefore(card, before?over:over.nextSibling); } });
-        const end=()=>{ if(!dragging) return; dragging=false; card.style.opacity=''; card.style.transform=''; card.style.zIndex=''; card.style.pointerEvents=''; card.style.transition='';
+          if(over&&over!==card&&over.parentElement===grid){ const r=over.getBoundingClientRect(); const before=(e.clientY< r.top+r.height/2);
+            flip(()=>grid.insertBefore(card, before?over:over.nextSibling));
+            hx=e.clientX; hy=e.clientY; card.style.transform='translate(0px,0px) scale(1.05)';   /* re-anchor to the new slot under the finger */
+          } });
+        const end=()=>{ if(!dragging) return; dragging=false; card.style.transition='transform 0.2s cubic-bezier(0.2,0.7,0.2,1),opacity 0.2s,box-shadow 0.2s'; card.style.transform=''; card.style.opacity=''; card.style.boxShadow=''; card.style.zIndex=''; setTimeout(()=>{ card.style.pointerEvents=''; card.style.transition=''; },220);
           const order=[].map.call(grid.querySelectorAll('.wgt-card'),c=>c.getAttribute('data-u'));
           active.sort((a,b2)=>order.indexOf(a.u)-order.indexOf(b2.u)); try{ save(); }catch(_){} };
         card.addEventListener('pointerup',end); card.addEventListener('pointercancel',end);
@@ -13842,9 +13851,16 @@ window.addEventListener('DOMContentLoaded', () => {
       const X=y=>padL+((y-y0)/((y1-y0)||1))*(W-padL-padR), Y=v=>padT+(1-(v-minV)/((maxV-minV)||1))*(H-padT-padB);
       let d=''; series.forEach((s,i)=>{ d+=(i?'L':'M')+X(s.y).toFixed(1)+' '+Y(s.v).toFixed(1)+' '; });
       const last=series[series.length-1];
+      /* (#R32) Hover values ("Statsのグラフは、ホバーして数値が出るように"): a visible dot per year + a
+         full-height transparent band per year carrying a native <title> "year: value" tooltip, so hovering
+         anywhere along a year shows its figure. Bands render LAST so they win the hover. */
+      let dots='', bands='';
+      series.forEach((s,i)=>{ const x=X(s.y), y=Y(s.v); const xl=i>0?(x+X(series[i-1].y))/2:x-6, xr=i<series.length-1?(x+X(series[i+1].y))/2:x+6;
+        dots+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.3" fill="var(--primary-color)" vector-effect="non-scaling-stroke"/>';
+        bands+='<rect x="'+xl.toFixed(1)+'" y="0" width="'+Math.max(1,(xr-xl)).toFixed(1)+'" height="'+H+'" fill="transparent" style="cursor:crosshair;"><title>'+s.y+': '+fmt(s.v)+'</title></rect>'; });
       return '<div style="margin:0 0 12px;"><div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px;"><b style="color:var(--text-main);">'+label+'</b><span style="color:var(--primary-color);font-weight:700;">'+fmt(last.v)+' <span style="color:var(--text-muted);font-weight:400;">('+last.y+')</span></span></div>'
-        +'<svg width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;"><path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
-        +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text></svg></div>';
+        +'<svg width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;"><path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'+dots
+        +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'+bands+'</svg></div>';
     }
     async function open(){ const cur=window._cpCurrent||{}; const code=cur.code; if(!code) return;
       const m=ensureModal(); m.style.display='flex';
