@@ -12585,9 +12585,13 @@ window.addEventListener('DOMContentLoaded', () => {
     function ukrToggle(on){ state.ukr=on;
       const a=()=>{ if(!ukrEnsure()){ map.once('idle',a); return; } setVis(UKR_IDS,on); if(on) ukrLoad(false).then(()=>{ if(ukrFC) ukrKeyFromData(ukrFC.features); }); };
       a();
-      /* (#R21) The layer only exists around Ukraine — bring the camera there when it's far away. */
+      /* (#R30) NEVER move the camera on a layer toggle ("レイヤーを選択しても視点を一切動かさない") — the
+         R21 auto-flyTo to Ukraine violated that. The layer only exists around Ukraine, so instead of moving
+         the view we just HINT (once) that the user can pan there. */
       if(on){ try{ const c=map.getCenter();
-        if(c.lng<18||c.lng>46||c.lat<40||c.lat>57||map.getZoom()<3.4) map.flyTo({center:[33.2,48.6],zoom:5.2}); }catch(_){} }
+        if((c.lng<18||c.lng>46||c.lat<40||c.lat>57||map.getZoom()<3.4) && !window._ukrHinted){ window._ukrHinted=true;
+          const t=(currentLang==='jp'?'ウクライナ前線を表示中（ウクライナ周辺へ移動すると見えます）':'Ukraine frontline on — pan to Ukraine to see it');
+          try{ if(typeof imToast==='function') imToast(t); else if(typeof satToast==='function') satToast(t); }catch(_){} } }catch(_){} }
       if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
       else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
       try{ if(on&&window._registerLayerOpacity){
