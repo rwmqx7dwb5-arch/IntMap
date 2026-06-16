@@ -316,6 +316,12 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R31) Kill browser scroll-anchoring inside the scrollers that host the layer list — it fought the
        manual active-layers compensation and produced the "toggling a layer scrolls the panel" jump. */
     .m-sheet-scroll{ overflow-anchor:none; }
+    /* (#R32) Definitive fix for "toggling a layer moves the panel (even 1px, desktop too)".
+       Root cause: the Active-layers list sat ABOVE the rows, so its growth on the first/any toggle reflowed
+       (or scroll-compensated) the rows under the finger. Now it is the LAST element AND position:sticky to
+       the bottom — content added at the bottom never moves the rows above (0px on desktop AND mobile), while
+       sticky keeps it pinned visible. Frosted like the dropdown so rows scroll cleanly beneath it. */
+    #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); padding-top:7px; margin-top:6px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); }
     .layer-dropdown.show{ display:flex; }
     /* (#R24) touch-action:manipulation kills the iOS ~300ms delayed SYNTHETIC click. Without it, tapping a
        row fired its change handler, the Active-layers section appeared and shoved the rows DOWN, and the
@@ -945,10 +951,16 @@ gtag('config', 'G-57X5MX0ZPW');
       .title-group{ gap:10px; flex:0 1 auto; min-width:0; }
       .title-group h2{ overflow:hidden; text-overflow:ellipsis; }
       .btn-settings{ padding:7px 12px; font-size:12.5px; min-height:34px; border-radius:17px; flex:0 0 auto; white-space:nowrap; }
-      /* avatar-only round button on mobile (the long name forced the header to wrap). */
-      #btn-account{ padding:5px; width:36px; height:36px; min-height:36px; border-radius:50%; justify-content:center; }
-      #btn-account .acct-name{ display:none; }
-      #btn-account .acct-av{ width:26px; height:26px; font-size:15px; }
+      /* (#R32) Two DISTINCT mobile states, fixing two re-reported bugs:
+         (a) Logged OUT — "Log in" must stay a proper iOS PILL. The old rule forced EVERY #btn-account to a
+             36px circle, so "Log in" text was crammed into a circle and overflowed ("文字がボタンからはみ出そう").
+         (b) Logged IN — the AVATAR fills the whole round button. The old rule put a small 26px avatar centred
+             inside a 36px pill with its own ring = "アイコンがボタンの中央に来ている" (icon centred in the button).
+         :has() distinguishes them: logged-in buttons contain .acct-av, logged-out ones are plain text. */
+      #btn-account{ padding:7px 14px; min-height:34px; border-radius:17px; justify-content:center; white-space:nowrap; }
+      #btn-account:has(.acct-av){ padding:0; width:34px; height:34px; min-height:34px; border-radius:50%; background:transparent; overflow:hidden; }
+      #btn-account:has(.acct-av) .acct-name{ display:none; }
+      #btn-account:has(.acct-av) .acct-av{ width:34px; height:34px; font-size:18px; background:rgba(128,128,128,0.20); border-radius:50%; }
 
       .search-bar{ flex:0 0 auto; margin:0 0 10px; padding:5px 5px 5px 14px; border-radius:12px; }
       .search-input{ font-size:16px; padding:10px 4px; }     /* 16px stops iOS focus-zoom */
@@ -1620,6 +1632,9 @@ gtag('config', 'G-57X5MX0ZPW');
              <label class="layer-option"><input type="checkbox" id="cb-borders"> <span data-i18n="borders">Country borders</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-admin1"> <span data-i18n="adminBounds">State / province borders</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-roads"> <span data-i18n="roadsLayer">Roads</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-rail2"> <span data-i18n="railLayer">Railways</span></label>
              <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
              <div class="layer-group-title" data-i18n="lyrGrpGeo">Strategic geography</div>
              <label class="layer-option"><input type="checkbox" data-layer="fsu" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e0312e"></span> Former Soviet Union</label>
@@ -1951,7 +1966,7 @@ window.addEventListener('DOMContentLoaded', () => {
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
       measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
-      placeNames:"Place names", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
+      placeNames:"Place names", adminBounds:"State / province borders", roadsLayer:"Roads", railLayer:"Railways", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"GDP per capita (PPP)", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
@@ -1983,7 +1998,7 @@ window.addEventListener('DOMContentLoaded', () => {
       dashCatMil:"軍事・戦略拠点", dashCatTech:"技術・サイバー", dashCatMar:"海上輸送・要衝", dashCatGeo:"地政学・気候",
       readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
       measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
-      placeNames:"地名表示", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
+      placeNames:"地名表示", adminBounds:"州・県境", roadsLayer:"道路網", railLayer:"鉄道", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
@@ -2026,7 +2041,7 @@ window.addEventListener('DOMContentLoaded', () => {
       satKeysTitle:"Satellitenbilder (BYOK)", satKeyHint:"Geben Sie einen API-Schlüssel ein, um diese Anbieter im Satelliten-Panel freizuschalten. Schlüssel werden nur in diesem Browser gespeichert.",
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
       aiSecTitle:"KI-Funktionen (BYOK / auf dem Gerät)", aiSecHint:"Verwenden Sie Ihren eigenen API-Schlüssel — Anfragen gehen direkt von diesem Browser an den Anbieter; der Schlüssel wird nur hier gespeichert.",
-      blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", favLayers:"★ Favoriten",
+      blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
       measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
       lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
@@ -2053,7 +2068,7 @@ window.addEventListener('DOMContentLoaded', () => {
       satKeysTitle:"Спутниковые снимки (BYOK)", satKeyHint:"Введите ключ API, чтобы разблокировать этих провайдеров в панели спутника. Ключи хранятся только в этом браузере.",
       aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
       aiSecTitle:"ИИ-функции (BYOK / на устройстве)", aiSecHint:"Используйте свой ключ API — запросы идут напрямую из браузера к провайдеру, ключ хранится только здесь.",
-      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", favLayers:"★ Избранное",
+      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
       measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", mScreenshot:"Снимок", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
       lblDataSources:"Источники данных", viewDataSources:"Показать источники данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
       lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
@@ -2129,6 +2144,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Map base color can be chosen independently of the UI theme (#map-color). */
     const mc=(window.imMapColor||'auto'); const mapLight = (mc==='light')?true:(mc==='dark')?false:isLight;
     const sat=currentMapType==='sat', light=!sat&&mapLight, dark=!sat&&!mapLight;
+    try{ window.refreshNewsPill&&window.refreshNewsPill(); }catch(_){}   /* (#R32) flip the news band color with the theme */
     map.setLayoutProperty('layer-sat','visibility',sat?'visible':'none');
     /* Place labels: nicer crisp VECTOR labels (OpenFreeMap) replace the old Esri raster labels in
        satellite mode and provide Japanese / native-script labels on the map (#41/#42/#43). The
@@ -2941,8 +2957,11 @@ window.addEventListener('DOMContentLoaded', () => {
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
              baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
-          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'}},
-          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'}},
+          /* (#R32) Boost land/sea contrast on the dark base — Carto dark tiles render water and land at very
+             similar near-black greys ("陸地と海のコントラストが弱く、視認性が悪い"). raster-contrast stretches
+             them apart; a slight brightness lift keeps coastlines readable without washing the map out. */
+          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-contrast':0.3,'raster-brightness-min':0.06}},
+          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-contrast':0.3,'raster-brightness-min':0.06}},
           {id:'layer-light',type:'raster',source:'bl',layout:{visibility:'none'}},
           {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:isInitiallyDark?'none':'visible'}},
           {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
@@ -5414,6 +5433,40 @@ window.addEventListener('DOMContentLoaded', () => {
     if(countryInfoOn && !countryDataLoaded){ loadCountryData().then(ensure); } else ensure();
     if(!countryInfoOn) hideCountryInfo(); });
 
+  /* (#R32) State/prefecture borders + road network + railways ("州界、県界や道路網、鉄道なども表示できるように").
+     Drawn from the SAME OpenFreeMap/OpenMapTiles vector source already used for labels — `boundary`
+     (admin_level 3–4 = states/provinces/prefectures) and `transportation` (road classes + rail). Rendered
+     UNDER the place labels so names stay readable. Theme-independent muted colors that read on light & dark. */
+  function ensureRefLayers(){
+    try{
+      if(!map||!map.isStyleLoaded()) return false;
+      ensurePlaceLabels();                                  /* guarantees the `ofm` vector source exists */
+      if(!map.getSource('ofm')) return false;
+      const before = map.getLayer('ofm-country') ? 'ofm-country' : undefined;   /* keep lines below labels */
+      if(!map.getLayer('ref-admin1')) map.addLayer({id:'ref-admin1',type:'line',source:'ofm','source-layer':'boundary',
+        filter:['all',['>=',['get','admin_level'],3],['<=',['get','admin_level'],4],['!=',['get','maritime'],1]],
+        layout:{visibility:'none','line-join':'round'},
+        paint:{'line-color':'#b07fd6','line-opacity':0.65,'line-dasharray':[3,2],'line-width':['interpolate',['linear'],['zoom'],3,0.4,7,1.1,11,1.8]}}, before);
+      if(!map.getLayer('ref-roads')) map.addLayer({id:'ref-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:4,
+        filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
+        layout:{visibility:'none','line-join':'round','line-cap':'round'},
+        paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.4,10,1.6,14,3.4]}}, before);
+      if(!map.getLayer('ref-rail')) map.addLayer({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
+        filter:['==',['get','class'],'rail'],
+        layout:{visibility:'none','line-join':'round'},
+        paint:{'line-color':'#9aa0a6','line-opacity':0.85,'line-dasharray':[2,2.2],'line-width':['interpolate',['linear'],['zoom'],6,0.5,12,1.7]}}, before);
+      return true;
+    }catch(e){ console.warn('ensureRefLayers',e); return false; }
+  }
+  window.ensureRefLayers=ensureRefLayers;
+  function _wireRef(cbId,layerId){ const cb=document.getElementById(cbId); if(!cb) return;
+    cb.addEventListener('change',(e)=>{ const on=e.target.checked;
+      const apply=()=>{ try{ if(on) ensureRefLayers(); if(map.getLayer(layerId)) map.setLayoutProperty(layerId,'visibility',on?'visible':'none'); }catch(_){} };
+      if(on && (!map||!map.isStyleLoaded())){ map&&map.once&&map.once('idle',apply); } apply();
+      /* re-assert shortly after in case the vector source/layer was still being created */
+      if(on) setTimeout(apply,400); }); }
+  _wireRef('cb-admin1','ref-admin1'); _wireRef('cb-roads','ref-roads'); _wireRef('cb-rail2','ref-rail');
+
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
   const tzOpt=()=>(userTZ==='auto'?undefined:userTZ);
@@ -5446,22 +5499,43 @@ window.addEventListener('DOMContentLoaded', () => {
     el.style.left=x+'px'; el.style.top=y+'px';
   }
   window.ensureMapTooltip=ensureMapTooltip; window.positionTooltip=positionTooltip;   /* (#R23) beta choropleths reuse the same hover tooltip as HDI */
-  /* iOS-style frosted "pill" behind news labels — generated as a stretchable sprite. */
-  function ensureLabelPill(){
-    if(!map || map.hasImage('news-pill')) return;
+  /* (#R32) Is the current UI/map dark? The news band must FLIP color by theme — a dark pill is invisible on
+     the dark map ("ダークモードでは視認性が悪い"). */
+  function _newsUIDark(){ try{ if(document.documentElement.getAttribute('data-theme')==='dark') return true;
+      return ['theme-cyber','theme-military','theme-psychedelic'].some(c=>document.body.classList.contains(c)); }catch(_){ return false; } }
+  /* iOS-style frosted "pill" behind news labels — generated as a stretchable sprite. Theme-aware (#R32):
+     LIGHT map → near-black pill + white text; DARK map → near-white pill + dark text, so the band is always
+     legible. A subtle 1px border defines it against same-tone backgrounds. */
+  function ensureLabelPill(force){
+    if(!map) return;
+    if(force && map.hasImage('news-pill')){ try{ map.removeImage('news-pill'); }catch(_){} }
+    if(map.hasImage('news-pill')) return;
     try{
+      const dark=_newsUIDark();
       const dpr=2, w=40, h=30, r=12;
       const cv=document.createElement('canvas'); cv.width=w*dpr; cv.height=h*dpr;
       const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
-      ctx.fillStyle='rgba(18,18,20,0.80)';
       const rr=(x,y,ww,hh,rad)=>{ ctx.beginPath(); ctx.moveTo(x+rad,y); ctx.arcTo(x+ww,y,x+ww,y+hh,rad); ctx.arcTo(x+ww,y+hh,x,y+hh,rad); ctx.arcTo(x,y+hh,x,y,rad); ctx.arcTo(x,y,x+ww,y,rad); ctx.closePath(); };
+      ctx.fillStyle = dark ? 'rgba(244,244,247,0.94)' : 'rgba(18,18,20,0.82)';
       rr(0.5,0.5,w-1,h-1,r); ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle = dark ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.40)';
+      rr(0.5,0.5,w-1,h-1,r); ctx.stroke();
       const data=ctx.getImageData(0,0,w*dpr,h*dpr).data;
       map.addImage('news-pill',{width:w*dpr,height:h*dpr,data},{
         pixelRatio:dpr, stretchX:[[r*dpr,(w-r)*dpr]], stretchY:[[r*dpr,(h-r)*dpr]], content:[8*dpr,6*dpr,(w-8)*dpr,(h-6)*dpr]
       });
     }catch(_){}
   }
+  /* (#R32) Re-skin the news band when the theme flips (called from applyTheme). Regenerates the sprite and
+     flips the text + halo colors so the band stays readable in every theme. */
+  function refreshNewsPill(){ try{ if(!map) return; ensureLabelPill(true);
+      const dark=_newsUIDark();
+      if(map.getLayer('news-labels')){
+        map.setPaintProperty('news-labels','text-color', dark?'#15151a':'#ffffff');
+        map.setPaintProperty('news-labels','text-halo-color', dark?'rgba(255,255,255,0.55)':'rgba(0,0,0,0.55)');
+      }
+    }catch(_){} }
+  window.refreshNewsPill=refreshNewsPill;
   function setupIntelLayers(){
     if(!map||!map.isStyleLoaded()) return;
     ensureLabelPill();
@@ -5513,6 +5587,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }});
       /* If pins were accumulated before map.load, flush them now. */
       if(newsFeatures.length) map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures});
+      try{ refreshNewsPill(); }catch(_){}   /* (#R32) set the band's initial colors for the current theme */
     }
     if(!map.getSource('dash-points')){
       map.addSource('dash-points',{type:'geojson',data:{type:'FeatureCollection',features:[]},promoteId:'fid'});
@@ -6973,11 +7048,10 @@ window.addEventListener('DOMContentLoaded', () => {
         cap:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 5 2 9l10 4 10-4Z"/><path d="M6 11v5c0 1.2 2.7 2.6 6 2.6s6-1.4 6-2.6v-5"/><path d="M22 9v5"/></svg>',
         sandbox:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a13 13 0 0 1 0 16M11 3a13 13 0 0 0 0 16M3 11h16"/><path d="m18.5 18.5 3 3"/></svg>'
       };
+      /* (#R32) Statecraft & World Sandbox ABOLISHED per request — removed from the hub. */
       const modes=[
-        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真版GeoGuessr。ランダムな地点へ飛び、現在地を当てる。':'Satellite GeoGuessr — dropped somewhere on Earth, guess where you are.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
-        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を可視化。ワクチン開発まで。':'Seed an outbreak and watch it spread across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
-        {svg:SV.capitol,bg:'linear-gradient(135deg,#5856d6,#af52de)',t:jp()?'ステイトクラフト（国家運営）':'Statecraft',d:jp()?'1900〜2026年、任意の国家の元首に。経済・世論・議会・国際情勢が絡み合う。':'Lead a real nation (1900–2026); economy, opinion, parliament & geopolitics all interact.',go:()=>{ ov.remove(); window._pgNationSim&&window._pgNationSim(); }},
-        {svg:SV.sandbox,bg:'linear-gradient(135deg,#0a84ff,#5856d6)',t:jp()?'ワールド・サンドボックス':'World Sandbox',d:jp()?'世界を編集する地図。新国家・都市・海面上昇・航路封鎖とその影響。':'Edit the world: found nations, raise the sea, block straits — and see the effects.',go:()=>{ ov.remove(); window._pgWorldSandbox&&window._pgWorldSandbox(); }},
+        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。':'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
+        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。':'Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
         {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove(); try{ window.IntMapEdu&&window.IntMapEdu.open(); }catch(_){} }}
       ];
       modes.forEach(m=>{ const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-radius:14px;padding:14px;margin-bottom:11px;cursor:pointer;color:var(--text-main);';
@@ -7239,238 +7313,7 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     };
 
-    /* ===================== NATION SIM ===================== */
-    /* ===================== STATECRAFT (grand-strategy, real data) ===================== */
-    /* (#R30) Expanded from "Nation Sim": lead any real nation (1900–2026) as a democracy or an
-       authoritarian regime. Deep model — 7 national gauges + 5 power FACTIONS (parliament, military,
-       business, public, courts) that gate what you can actually do. In a democracy unpopular bills are
-       BLOCKED by the factions that lose out; an autocrat can DECREE anything but pays in unrest, sanctions
-       and a falling Democracy Index (→ coups, isolation, exile). Real GDP/HDI/Dem-index/pop/military are
-       the starting point; the economy compounds with tech/stability/sanctions; random events + wars +
-       elections produce varied endings. */
-    window._pgNationSim=function(){
-      ensureCountries(()=>{
-        const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
-        const list=Object.keys(cs).map(code=>({code,s:cs[code],name:(cs[code].nameEn||code)})).filter(x=>x.s&&(x.s.gdp||x.s.pop)).sort((a,b)=>a.name.localeCompare(b.name));
-        if(!list.length){ try{ imToast(jp()?'国データを読み込めません':'Country data unavailable'); }catch(_){} return; }
-        const {ov,card}=shell(580); card.appendChild(xbtn(()=>ov.remove()));
-        let G=null;
-        const money=(b)=>'$'+(b>=1000?(b/1000).toFixed(2)+'T':Math.round(b)+'B');
-        const popf=(n)=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':Math.round(n);
-        const govLbl=()=>G.gov==='authoritarian'?(jp()?'権威主義':'Authoritarian'):(jp()?'民主主義':'Democracy');
-        const pt=(p)=>p.t[jp()?'jp':'en']; const et=(e)=>e.m[jp()?'jp':'en'];
-        function setup(){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove());
-          const wrap=document.createElement('div'); wrap.className='pg-ns';
-          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:9px;margin:0 0 6px;'; const t=document.createElement('h3'); t.textContent=jp()?'ステイトクラフト':'Statecraft'; t.style.cssText='margin:0;font-size:20px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); wrap.appendChild(h);
-          const p=document.createElement('p'); p.style.cssText='margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;'; p.textContent=jp()?'実在の国家の元首として、経済・世論・議会・軍・国際情勢を動かしながら国を導く。':'Lead a real nation: balance the economy, public opinion, parliament, the military and the world.'; wrap.appendChild(p);
-          const mklabel=(s)=>{ const l=document.createElement('div'); l.textContent=s; l.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin:10px 0 5px;'; return l; };
-          wrap.appendChild(mklabel(jp()?'国':'Country'));
-          const sel=document.createElement('select'); sel.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; list.forEach(x=>{ const o=document.createElement('option'); o.value=x.code; o.textContent=(x.s.flag?x.s.flag+' ':'')+x.name; sel.appendChild(o); }); const def=list.find(x=>x.code==='JPN')||list.find(x=>x.code==='USA')||list[0]; sel.value=def.code; wrap.appendChild(sel);
-          wrap.appendChild(mklabel(jp()?'開始年':'Start year'));
-          const yr=document.createElement('input'); yr.type='number'; yr.min=1900; yr.max=2026; yr.value=2026; yr.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; wrap.appendChild(yr);
-          wrap.appendChild(mklabel(jp()?'統治形態':'Government'));
-          const seg=document.createElement('div'); seg.className='ios-segment'; seg.style.cssText='display:flex;width:100%;'; let gov='democracy';
-          [['democracy',jp()?'民主主義':'Democracy'],['authoritarian',jp()?'権威主義':'Authoritarian']].forEach(([v,lab],i)=>{ const b=document.createElement('button'); b.className='ios-segment-btn'+(i===0?' active':''); b.style.flex='1'; b.textContent=lab; b.onclick=()=>{ gov=v; seg.querySelectorAll('.ios-segment-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }; seg.appendChild(b); }); wrap.appendChild(seg);
-          const go=document.createElement('button'); go.textContent=jp()?'就任する':'Take power'; go.style.cssText='width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:var(--primary-color);color:#fff;font-size:15px;font-weight:700;cursor:pointer;'; wrap.appendChild(go);
-          go.onclick=()=>{ const x=cs[sel.value]||{}; const yy=Math.max(1900,Math.min(2026,+yr.value||2026));
-            const gdp=(x.gdp||500), pop=(x.pop||1e7), gdppc=(x.gdppc|| (gdp*1e9/Math.max(1,pop)));
-            const mil=Math.max(8,Math.min(95, 30 + (x.milSpend? Math.log10(x.milSpend+1)*16 : 18) ));
-            const tech=Math.max(12,Math.min(96, 28 + Math.min(55, (gdppc||8000)/1400) ));
-            const dem=(x.dem|| (gov==='authoritarian'?3:6.5));
-            G={ code:sel.value, name:(x.nameEn||sel.value), flag:x.flag||'🏳️', gov, year:yy, startYear:yy, turnCount:0,
-              gdp, startGdp:gdp, gdpGrowth:0.02, pop, hdi:(x.hdi||0.7), dem, gdppc,
-              approval:gov==='authoritarian'?56:58, stability:Math.round(54+(dem-5)*2), treasury:50,
-              unrest:gov==='authoritarian'?30:18, sanctions:8, military:Math.round(mil), tech:Math.round(tech),
-              tension:18, atWar:false, allies:0,
-              factions:{ parliament:Math.round(dem*9), military:55, business:55, public:gov==='authoritarian'?56:58, courts:Math.round(dem*8) },
-              log:[] };
-            play(); };
-          card.appendChild(wrap);
-        }
-        function clampG(){ ['approval','stability','treasury','unrest','sanctions','military','tech','tension'].forEach(k=>G[k]=Math.max(0,Math.min(100,G[k]))); for(const k in G.factions) G.factions[k]=Math.max(0,Math.min(100,G.factions[k])); G.hdi=Math.max(0,Math.min(0.99,G.hdi)); G.dem=Math.max(0,Math.min(10,G.dem)); }
-        function bar(label,val,color,extra){ const pct=Math.max(0,Math.min(100,val)); return '<div style="margin:4px 0;"><div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:2px;"><span style="color:var(--text-muted);">'+label+'</span><b>'+Math.round(val)+(extra||'')+'</b></div><div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.18);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';transition:width .45s;"></div></div></div>'; }
-        const CATC={econ:'#34c759',mil:'#ff3b30',soc:'#5856d6',dip:'#0a84ff',tech:'#ff9500'};
-        const POLICIES=[
-          {cat:'econ',t:{en:'Economic stimulus',jp:'景気刺激策'},pop:13,ef:{gdpMul:1.04,treasury:-12,approval:5,unrest:-3},fac:{business:4,public:5}},
-          {cat:'econ',t:{en:'Austerity package',jp:'緊縮財政'},pop:-15,ef:{treasury:16,approval:-8,unrest:7,gdpMul:0.99},fac:{business:4,public:-8}},
-          {cat:'econ',t:{en:'Raise taxes on the rich',jp:'富裕層への増税'},pop:-6,ef:{treasury:15,approval:-4,gdpMul:0.99},fac:{business:-9,public:5}},
-          {cat:'econ',t:{en:'Cut taxes & deregulate',jp:'減税・規制緩和'},pop:8,ef:{treasury:-9,gdpMul:1.035,approval:4},fac:{business:10,public:-3}},
-          {cat:'econ',t:{en:'Nationalize key industry',jp:'基幹産業の国有化'},pop:5,ef:{treasury:6,gdpMul:0.98,sanctions:5},fac:{business:-13,public:6}},
-          {cat:'mil',t:{en:'Rearmament program',jp:'再軍備計画'},pop:-3,ef:{military:11,treasury:-9,tension:6},fac:{military:11,public:-3}},
-          {cat:'mil',t:{en:'Cut defense spending',jp:'国防費削減'},pop:4,ef:{military:-8,treasury:8,tension:-5},fac:{military:-12,public:5}},
-          {cat:'mil',t:{en:'Introduce conscription',jp:'徴兵制の導入'},pop:-7,ef:{military:8,unrest:5},fac:{military:7,public:-8}},
-          {cat:'soc',t:{en:'Expand welfare state',jp:'社会福祉の拡大'},pop:12,ef:{hdi:0.015,approval:8,treasury:-10,unrest:-6},fac:{public:10,business:-4}},
-          {cat:'soc',t:{en:'Education & infrastructure',jp:'教育・インフラ投資'},pop:10,ef:{hdi:0.02,tech:4,gdpMul:1.03,treasury:-11},fac:{public:6,business:3}},
-          {cat:'soc',t:{en:'Universal healthcare',jp:'国民皆保険'},pop:11,ef:{hdi:0.02,approval:7,treasury:-10},fac:{public:9,business:-3}},
-          {cat:'soc',t:{en:'Crack down on dissent',jp:'反体制派の弾圧'},pop:-11,ef:{unrest:-17,approval:-5,dem:-0.6,sanctions:8,stability:5},fac:{military:6,courts:-9,public:-11}},
-          {cat:'soc',t:{en:'Expand civil rights',jp:'市民的自由の拡大'},pop:8,ef:{dem:0.5,approval:5,hdi:0.01},fac:{courts:9,public:7,military:-3}},
-          {cat:'dip',t:{en:'Join an alliance / open up',jp:'同盟参加・国際協調'},pop:6,ef:{sanctions:-15,tension:-9,gdpMul:1.03,stability:4},fac:{business:6,military:3}},
-          {cat:'dip',t:{en:'Sign a free-trade deal',jp:'自由貿易協定'},pop:6,ef:{gdpMul:1.04,treasury:4,sanctions:-6},fac:{business:9,public:2}},
-          {cat:'dip',t:{en:'Defy the international order',jp:'国際秩序への対抗'},pop:3,ef:{tension:12,sanctions:10,approval:4,military:3},fac:{military:7,business:-6}},
-          {cat:'tech',t:{en:'Crash R&D program',jp:'科学技術への大型投資'},pop:4,ef:{tech:9,treasury:-9,gdpMul:1.02},fac:{business:5,public:2}},
-          {cat:'tech',t:{en:'Digital & green transition',jp:'デジタル・脱炭素転換'},pop:5,ef:{tech:7,hdi:0.01,gdpMul:1.02,treasury:-7},fac:{public:5,business:2}}
-        ];
-        const EVENTS=[
-          {p:0.08,m:{en:'A global boom lifts the economy.',jp:'世界的な好況。'},ef:{gdpMul:1.05,treasury:6,approval:4}},
-          {p:0.08,m:{en:'A recession bites.',jp:'景気後退に見舞われた。'},ef:{gdpMul:0.94,treasury:-8,approval:-6,unrest:6}},
-          {p:0.06,m:{en:'A corruption scandal erupts.',jp:'汚職スキャンダルが発覚。'},ef:{approval:-10,unrest:6},fac:{public:-7,courts:-4}},
-          {p:0.05,m:{en:'A natural disaster strikes.',jp:'大規模な自然災害。'},ef:{treasury:-9,hdi:-0.01,unrest:4}},
-          {p:0.05,m:{en:'A technological breakthrough.',jp:'技術的ブレークスルー。'},ef:{tech:6,gdpMul:1.03}},
-          {p:0.04,m:{en:'Major resource discovery.',jp:'大規模な資源発見。'},ef:{gdpMul:1.04,treasury:8},fac:{business:5}},
-          {p:0.05,m:{en:'Mass protests sweep the capital.',jp:'首都で大規模デモ。'},ef:{stability:-6,approval:-4},fac:{public:-5},cond:()=>G.unrest>50},
-          {p:0.04,m:{en:'An allied nation offers a pact.',jp:'同盟国が協定を提案。'},ef:{tension:-8},fac:{military:5},go:()=>{ G.allies++; }},
-          {p:0.04,m:{en:'A pandemic spreads.',jp:'感染症が流行。'},ef:{hdi:-0.02,gdpMul:0.96,approval:3,unrest:4}},
-          {p:0.035,m:{en:'Brain drain weakens industry.',jp:'頭脳流出が産業を弱体化。'},ef:{tech:-4,gdpMul:0.99},cond:()=>G.hdi<0.7||G.unrest>55},
-          {p:0.03,m:{en:'A corruption probe targets your circle.',jp:'側近への汚職捜査。'},ef:{approval:-5},fac:{courts:-6}},
-          {p:0.04,m:{en:'A rival escalates tensions.',jp:'対立国が緊張を高めた。'},ef:{tension:14}}
-        ];
-        function apply(ef){ if(!ef) return; for(const k in ef){ if(k==='gdpMul') G.gdp*=ef.gdpMul; else G[k]+=ef[k]; } }
-        function applyFac(fac,scale){ if(!fac) return; for(const k in fac){ if(G.factions[k]!=null) G.factions[k]+=fac[k]*(scale==null?1:scale); } }
-        function play(){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); const wrap=document.createElement('div'); wrap.className='pg-ns';
-          const head=document.createElement('div'); head.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px;'; const tt=document.createElement('h3'); tt.style.cssText='margin:0;font-size:18px;'; tt.textContent=G.flag+' '+G.name; head.appendChild(tt); head.appendChild(pill(govLbl(), G.gov==='authoritarian'?'#ff3b30':'#0a84ff')); if(G.atWar) head.appendChild(pill(jp()?'戦争':'AT WAR','#7a0010')); const ys=document.createElement('span'); ys.style.cssText='margin-left:auto;font-weight:700;font-size:15px;'; ys.textContent=G.year; head.appendChild(ys); wrap.appendChild(head);
-          const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:0 14px;';
-          grid.innerHTML=
-            bar(jp()?'支持率':'Approval',G.approval,'#34c759')+bar(jp()?'安定度':'Stability',G.stability,'#0a84ff')+
-            bar(jp()?'財政':'Treasury',G.treasury,'#ffcc00')+bar(jp()?'国内不安':'Unrest',G.unrest,'#ff3b30')+
-            bar(jp()?'軍事力':'Military',G.military,'#8e8e93')+bar(jp()?'技術':'Tech',G.tech,'#ff9500')+
-            bar(jp()?'制裁・圧力':'Sanctions',G.sanctions,'#af52de')+bar(jp()?'国際緊張':'Tension',G.tension,'#ff6a3d');
-          wrap.appendChild(grid);
-          const nums=document.createElement('div'); nums.style.cssText='display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);margin:8px 0 4px;';
-          nums.innerHTML='<span>GDP <b style="color:var(--text-main);">'+money(G.gdp)+'</b> ('+(G.gdpGrowth>=0?'+':'')+(G.gdpGrowth*100).toFixed(1)+'%)</span>'+
-            '<span>'+(jp()?'1人当':'PPP/cap')+' <b style="color:var(--text-main);">$'+Math.round(G.gdppc).toLocaleString()+'</b></span>'+
-            '<span>'+(jp()?'人口':'Pop')+' <b style="color:var(--text-main);">'+popf(G.pop)+'</b></span>'+
-            '<span>HDI <b style="color:var(--text-main);">'+G.hdi.toFixed(3)+'</b></span>'+
-            '<span>'+(jp()?'民主指数':'Dem')+' <b style="color:var(--text-main);">'+G.dem.toFixed(1)+'</b></span>';
-          wrap.appendChild(nums);
-          const facWrap=document.createElement('div'); facWrap.style.cssText='display:flex;gap:6px;margin:6px 0 2px;';
-          const FAC=[['parliament',jp()?'議会':'Parl.'],['military',jp()?'軍':'Mil.'],['business',jp()?'財界':'Biz'],['public',jp()?'世論':'Public'],['courts',jp()?'司法':'Courts']];
-          facWrap.innerHTML=FAC.map(([k,l])=>{ const v=Math.round(G.factions[k]); const col=v>=55?'#34c759':v>=35?'#ffcc00':'#ff3b30'; return '<div style="flex:1;text-align:center;"><div style="font-size:9.5px;color:var(--text-muted);">'+l+'</div><div style="font-size:12px;font-weight:700;color:'+col+';">'+v+'</div></div>'; }).join('');
-          const facLab=document.createElement('div'); facLab.textContent=jp()?'勢力の支持（民主制では政策を左右）':'Factions (gate your bills in a democracy)'; facLab.style.cssText='font-size:10px;color:var(--text-muted);margin-top:8px;'; wrap.appendChild(facLab); wrap.appendChild(facWrap);
-          const pl=document.createElement('div'); pl.style.cssText='margin-top:10px;'; const plh=document.createElement('div'); plh.textContent=jp()?'今年の政策（1つ選択）':'Choose this year’s policy'; plh.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;'; pl.appendChild(plh);
-          const pool=POLICIES.slice().sort(()=>Math.random()-0.5); const seen={}; const choices=[]; for(const c of pool){ if(choices.length>=5) break; if(!seen[c.cat]||Math.random()<0.4){ seen[c.cat]=1; choices.push(c); } } while(choices.length<5 && choices.length<pool.length){ const c=pool[choices.length]; if(choices.indexOf(c)<0) choices.push(c); }
-          choices.forEach(c=>{ const b=document.createElement('button'); b.style.cssText='display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-left:3px solid '+CATC[c.cat]+';border-radius:10px;padding:9px 11px;margin-bottom:6px;cursor:pointer;color:var(--text-main);font-size:13px;font-weight:600;';
-            b.innerHTML='<span style="flex:1;">'+pt(c)+'</span><span style="font-size:10px;color:'+(c.pop>=0?'#34c759':'#ff3b30')+';">'+(c.pop>=0?'▲':'▼')+'</span>'; b.onclick=()=>turn(c); pl.appendChild(b); });
-          const skip=document.createElement('button'); skip.textContent=jp()?'何もしない（次の年へ）':'Do nothing — advance a year'; skip.style.cssText='display:block;width:100%;background:transparent;border:1px dashed rgba(128,128,128,0.4);border-radius:10px;padding:9px;margin-top:2px;cursor:pointer;color:var(--text-muted);font-size:12.5px;'; skip.onclick=()=>turn(null); pl.appendChild(skip);
-          wrap.appendChild(pl);
-          if(G.log.length){ const lg=document.createElement('div'); lg.style.cssText='margin-top:12px;font-size:11.5px;color:var(--text-muted);line-height:1.5;max-height:96px;overflow:auto;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;'; lg.innerHTML=G.log.slice(-7).reverse().map(x=>'• '+x).join('<br>'); wrap.appendChild(lg); }
-          card.appendChild(wrap);
-        }
-        function turn(policy){ G.turnCount++; let msg='';
-          if(policy){
-            if(G.gov==='democracy'){
-              let oppose=0; for(const k in (policy.fac||{})){ if(policy.fac[k]<0) oppose += -policy.fac[k]*(G.factions[k]/100); }
-              const blockP=Math.max(0,Math.min(0.85, oppose/55 + (55-G.approval)/260 + (7-G.dem)*0.025 ));
-              if(Math.random()<blockP){ msg=(jp()?'阻止: ':'Blocked: ')+pt(policy)+(jp()?'（議会・利害関係者）':' (parliament/stakeholders)'); G.approval-=2; applyFac(policy.fac,0.3); }
-              else { apply(policy.ef); applyFac(policy.fac,1); G.approval+=policy.pop*0.3; msg=(jp()?'可決: ':'Passed: ')+pt(policy); }
-            } else {
-              apply(policy.ef); applyFac(policy.fac,1); G.approval+=policy.pop*0.16;
-              let resent=0; for(const k in (policy.fac||{})){ if(policy.fac[k]<0) resent+=-policy.fac[k]; }
-              G.unrest+= resent*0.25 + (policy.pop<0?-policy.pop*0.3:0); G.dem-=0.08; if(policy.pop<-8) G.sanctions+=2;
-              msg=(jp()?'勅令で強行: ':'Enacted by decree: ')+pt(policy);
-            }
-          }
-          // yearly economic + social drift
-          G.year++;
-          const gr=0.02 + (G.tech-50)*0.0006 + (G.stability-50)*0.0005 + (G.treasury-50)*0.0004 - G.sanctions*0.0006 - (G.unrest-30)*0.0004 + (Math.random()-0.5)*0.03;
-          G.gdpGrowth=gr; G.gdp*=Math.max(0.85,1+gr);
-          G.pop*= 1 + (0.012 - G.hdi*0.012) + (Math.random()-0.5)*0.002;
-          G.gdppc=G.gdp*1e9/Math.max(1,G.pop);
-          G.hdi += (Math.min(0.96, 0.32+Math.log10(Math.max(1,G.gdppc))/6) - G.hdi)*0.06;
-          G.factions.public += (G.approval - G.factions.public)*0.4;
-          ['parliament','military','business','courts'].forEach(k=>{ G.factions[k] += (55 - G.factions[k])*0.06; });
-          G.unrest += (G.approval<40?4:-3) + (G.sanctions>50?3:0) + (G.atWar?2:0);
-          G.stability += (G.unrest>60?-5:(G.unrest<25?3:1));
-          G.sanctions = Math.max(0,G.sanctions-1.5);
-          G.tension += (Math.random()-0.5)*6 - 1 + (G.military>72?1:0);
-          // war
-          if(G.atWar){ const power=G.military+G.allies*8-50; G.treasury-=6; G.approval+= power>15?2:-3;
-            if(Math.random()<0.28){ if(power+Math.random()*45>40){ G.atWar=false; G.military-=8; G.approval+=8; G.log.push(G.year+': '+(jp()?'戦争に勝利。':'You won the war.')); } else { return gameover(jp()?'戦争に敗北し、政権は崩壊した。':'You lost the war; your government falls.'); } } }
-          else if(G.tension>72 && Math.random()<0.12){ G.atWar=true; G.log.push(G.year+': '+(jp()?'戦争が勃発した。':'War breaks out.')); }
-          // random event
-          const ev=EVENTS.filter(e=>!e.cond||e.cond()).find(e=>Math.random()<e.p);
-          if(ev){ apply(ev.ef); applyFac(ev.fac,1); if(ev.go){ try{ ev.go(); }catch(_){} } G.log.push(G.year+': '+et(ev)); }
-          if(msg) G.log.push(G.year+': '+msg);
-          clampG();
-          // endings
-          if(G.gov==='authoritarian' && G.unrest>84 && G.stability<24 && Math.random()<0.5) return gameover(jp()?'クーデターにより政権は崩壊した。':'A coup d’état topples your regime.');
-          if(G.gov==='authoritarian' && G.sanctions>86 && Math.random()<0.25) return gameover(jp()?'国際的孤立と経済崩壊で亡命を余儀なくされた。':'Isolation and collapse force you into exile.');
-          if(G.gov==='democracy' && (G.year-G.startYear)%4===0){ if(G.approval<42) return gameover(jp()?'選挙に敗北。政権を去ることに。':'You lost the election.'); else { G.log.push(G.year+': '+(jp()?'選挙に勝利！':'Re-elected!')); G.approval=Math.min(100,G.approval+5); } }
-          if(G.gdp < G.startGdp*0.4) return gameover(jp()?'経済が崩壊した。':'The economy has collapsed.');
-          if(G.year>2100) return gameover(jp()?'歴史的な長期政権を築き上げた。':'You built an era-defining government.');
-          play();
-        }
-        function gameover(reason){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); clampG(); const wrap=document.createElement('div'); wrap.className='pg-ns'; wrap.style.textAlign='center';
-          const yrs=G.year-G.startYear;
-          wrap.innerHTML='<div style="font-size:34px;margin:6px 0;">🏁</div><h3 style="margin:0 0 8px;font-size:18px;">'+(jp()?'ゲーム終了':'Game over')+'</h3><p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin:0 0 10px;">'+reason+'</p>'+
-            '<div style="font-size:12px;line-height:1.7;margin:0 0 14px;">'+G.flag+' '+G.name+' · '+G.startYear+'–'+G.year+' ('+yrs+(jp()?'年在任':' yrs')+')<br>'+
-            (jp()?'最終GDP ':'Final GDP ')+money(G.gdp)+' · HDI '+G.hdi.toFixed(3)+'<br>'+(jp()?'民主指数 ':'Dem index ')+G.dem.toFixed(1)+' · '+(jp()?'支持率 ':'Approval ')+Math.round(G.approval)+'</div>';
-          const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-weight:700;cursor:pointer;'; again.onclick=setup; wrap.appendChild(again); card.appendChild(wrap);
-        }
-        setup();
-      });
-    };
-
-    /* ===================== WORLD SANDBOX ===================== */
-    /* (#R31) Turn the map into an EDITABLE world: raise the sea, found new nations (draw a border → real
-       area), drop cities, block straits — and read the derived effects. v1: real geometry (turf area, the
-       DEM sea-level recolor) + qualitative impact notes. */
-    window._pgWorldSandbox=function(){
-      if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
-      _pgWeStyle(); try{ document.body.classList.add('pg-sim'); }catch(_){}
-      const SRC='pg-sbx', feats=[]; let mode=null, draw=[], nations=0, cities=0, blocks=0;
-      const prevSea=(window._seaLevelM||0), prevSeaCB=(()=>{ try{ const c=document.getElementById('dl-sealevel'); return c?c.checked:false; }catch(_){ return false; } })();
-      try{ ['pg-sbx-fill','pg-sbx-line','pg-sbx-vtx','pg-sbx-pt'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); }); if(map.getSource(SRC)) map.removeSource(SRC); }catch(_){}
-      try{ map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'pg-sbx-fill',type:'fill',source:SRC,filter:['==',['geometry-type'],'Polygon'],paint:{'fill-color':['coalesce',['get','color'],'#af52de'],'fill-opacity':0.4}});
-        map.addLayer({id:'pg-sbx-line',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],paint:{'line-color':['coalesce',['get','color'],'#af52de'],'line-width':2,'line-dasharray':[2,1]}});
-        map.addLayer({id:'pg-sbx-pt',type:'circle',source:SRC,filter:['==',['geometry-type'],'Point'],paint:{'circle-radius':['coalesce',['get','r'],6],'circle-color':['coalesce',['get','color'],'#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.6}});
-      }catch(_){}
-      const sync=()=>{ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} };
-      function setSea(v){ window._seaLevelM=v; try{ const c=document.getElementById('dl-sealevel'); if(c&&!c.checked){ c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} try{ window._refreshSeaLevel&&window._refreshSeaLevel(); }catch(_){} }
-      function onClick(e){ const ll=[e.lngLat.lng,e.lngLat.lat];
-        if(mode==='city'){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:ll},properties:{color:'#0a84ff',r:6}}); cities++; sync(); info(); }
-        else if(mode==='nation'){ draw.push(ll); feats.push({type:'Feature',geometry:{type:'Point',coordinates:ll},properties:{color:'#af52de',r:4}});
-          const d=feats.filter(f=>f.properties&&f.properties._draft); d.forEach(p=>feats.splice(feats.indexOf(p),1));
-          if(draw.length>=2) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:draw},properties:{_draft:1,color:'#af52de'}});
-          sync(); info(); }
-        else if(mode==='strait'){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:ll},properties:{color:'#ff3b30',r:7}}); blocks++; sync(); pgNews((jp()?'海上交通路を封鎖 — 周辺の貿易・エネルギー輸送に影響。':'Maritime route blocked — regional trade & energy flows disrupted.'),'alert'); mode=null; setBtns(); info(); }
-      }
-      map.on('click',onClick);
-      function finishNation(){ if(draw.length<3){ mode=null; setBtns(); return; }
-        feats.filter(f=>f.properties&&(f.properties._draft||f.properties.color==='#af52de'&&f.geometry.type==='Point')).slice().forEach(p=>feats.splice(feats.indexOf(p),1));
-        const ring=draw.concat([draw[0]]); const poly={type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{color:'#af52de'}};
-        let area=0; try{ area=turf.area(poly)/1e6; }catch(_){}
-        feats.push(poly); nations++; draw=[]; mode=null; setBtns(); sync();
-        pgNews((jp()?('新国家を建国。面積 約'+Math.round(area).toLocaleString()+' km²。'):('A new nation is founded — area ≈ '+Math.round(area).toLocaleString()+' km².')),'good'); info();
-      }
-      // HUD
-      const hud=document.createElement('div'); hud.id='pg-sbx-hud';
-      hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;';
-      (document.getElementById('map-container')||document.body).appendChild(hud);
-      let btnRow;
-      function info(){ const el=hud.querySelector('#pg-sbx-info'); if(!el) return; const sea=window._seaLevelM||0;
-        el.innerHTML='<span>'+(jp()?'新国家':'Nations')+' <b>'+nations+'</b></span> · <span>'+(jp()?'都市':'Cities')+' <b>'+cities+'</b></span> · <span>'+(jp()?'封鎖':'Blocks')+' <b>'+blocks+'</b></span> · <span style="color:#0a84ff;">'+(jp()?'海面':'Sea')+' <b>'+(sea>=0?'+':'')+sea+' m</b></span>'+(sea>0?(' — <span style="color:var(--text-muted);">'+(jp()?'沿岸低地が浸水':'low-lying coasts flood')+'</span>'):''); }
-      function setBtns(){ if(!btnRow) return; btnRow.querySelectorAll('button[data-m]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-m')===mode)); const fin=btnRow.querySelector('#sbx-finish'); if(fin) fin.style.display=(mode==='nation')?'inline-flex':'none'; }
-      function render(){ hud.innerHTML='';
-        const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=jp()?'ワールド・サンドボックス':'World Sandbox'; tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
-        const info0=document.createElement('div'); info0.id='pg-sbx-info'; info0.style.cssText='margin-bottom:9px;line-height:1.6;'; hud.appendChild(info0);
-        const sea=document.createElement('div'); sea.style.cssText='display:flex;align-items:center;gap:8px;margin:4px 0 8px;font-size:11.5px;'; sea.innerHTML='<span style="flex:0 0 70px;color:var(--text-muted);">'+(jp()?'海面変動':'Sea level')+'</span>'; const r=document.createElement('input'); r.type='range'; r.min=-10; r.max=90; r.step=1; r.value=(window._seaLevelM||0); r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.style.cssText='flex:0 0 48px;text-align:right;'; v.textContent=((window._seaLevelM||0)>=0?'+':'')+(window._seaLevelM||0)+'m'; r.oninput=()=>{ v.textContent=(+r.value>=0?'+':'')+r.value+'m'; setSea(+r.value); info(); }; sea.appendChild(r); sea.appendChild(v); hud.appendChild(sea);
-        btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px;flex-wrap:wrap;';
-        const mk=(label,m)=>{ const b=document.createElement('button'); b.textContent=label; b.setAttribute('data-m',m); b.style.cssText='flex:1 1 0;min-width:90px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:9px;padding:8px 6px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ mode=(mode===m?null:m); if(m==='nation'&&mode==='nation') draw=[]; setBtns(); }; return b; };
-        btnRow.appendChild(mk(jp()?'＋新国家を描く':'＋ Draw nation','nation'));
-        btnRow.appendChild(mk(jp()?'＋都市':'＋ City','city'));
-        btnRow.appendChild(mk(jp()?'航路を封鎖':'Block strait','strait'));
-        const fin=document.createElement('button'); fin.id='sbx-finish'; fin.textContent=jp()?'✓ 国境を確定':'✓ Finish border'; fin.style.cssText='flex:1 1 100%;display:none;border:none;border-radius:9px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;margin-top:2px;'; fin.onclick=finishNation; btnRow.appendChild(fin);
-        const reset=document.createElement('button'); reset.textContent=jp()?'リセット':'Reset'; reset.style.cssText='flex:1 1 100%;border:1px dashed rgba(128,128,128,0.4);background:transparent;color:var(--text-muted);border-radius:9px;padding:8px;font-size:11.5px;cursor:pointer;margin-top:4px;'; reset.onclick=()=>{ feats.length=0; draw=[]; mode=null; nations=cities=blocks=0; sync(); setSea(0); setBtns(); info(); }; btnRow.appendChild(reset);
-        hud.appendChild(btnRow);
-        const hint=document.createElement('div'); hint.style.cssText='margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.4;'; hint.textContent=jp()?'ツールを選んで地図をタップ。新国家は頂点を順にタップし「国境を確定」。':'Pick a tool and tap the map. For a nation, tap vertices in order then “Finish border”.'; hud.appendChild(hint);
-        info(); setBtns();
-      }
-      function exit(){ try{ map.off('click',onClick); }catch(_){} try{ ['pg-sbx-fill','pg-sbx-line','pg-sbx-pt'].forEach(id=>{ if(map.getLayer(id))map.removeLayer(id); }); if(map.getSource(SRC))map.removeSource(SRC); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){}
-        try{ window._seaLevelM=prevSea; window._refreshSeaLevel&&window._refreshSeaLevel(); const c=document.getElementById('dl-sealevel'); if(c&&c.checked!==prevSeaCB){ c.checked=prevSeaCB; c.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
-      window._pgWorldSandboxExit=exit;
-      render();
-    };
+    /* (#R32) Statecraft (_pgNationSim) & World Sandbox (_pgWorldSandbox) ABOLISHED per request. */
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
@@ -8167,7 +8010,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       const sec=document.getElementById('layer-active-section'); if(!sec) return;
       const lang=(typeof currentLang!=='undefined')?currentLang:'en';
-      const skip=new Set(['cb-names','cb-borders','cb-grid','cb-countries']);
+      const skip=new Set(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
@@ -8187,14 +8030,13 @@ window.addEventListener('DOMContentLoaded', () => {
          scroller and, since the Active-layers section sits near the top, just add the height delta. */
       const scrollParent=(el)=>{ let n=el&&el.parentElement; while(n){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2) return n; n=n.parentElement; } return dd; };
       const scroller=scrollParent(sec);
-      const beforeH=sec.offsetHeight, beforeTop=scroller.scrollTop;
+      const beforeTop=scroller.scrollTop;
       sec.dataset.sig=sig;
-      /* (#R29) The Active-layers section is at the TOP on EVERY platform now (R28), so its growth/shrink
-         pushes the rows BELOW it. Compensate the real scroller's scrollTop by the height delta on BOTH
-         desktop AND mobile so the row the user just tapped does not move ("チェックを付けても1pxたりとも
-         動かない" / "視点を一切動かしてはいけない"). The R25/R28 mobile-skip was for the old bottom placement
-         and is exactly what made the mobile list lurch on toggle — removed. */
-      const _restore=()=>{ const afterH=sec.offsetHeight; if(afterH!==beforeH){ scroller.scrollTop = Math.max(0, beforeTop + (afterH-beforeH)); } };
+      /* (#R32) Active layers is now a sticky-BOTTOM bar (pushed last in flow), so its growth/shrink no
+         longer reflows the rows above. The old TOP-placement compensation (scrollTop += heightDelta) would
+         NOW itself scroll the panel — so it is removed. Instead we simply PIN the scroller to exactly where
+         it was, a pure no-move guard ("チェックを付けても1pxたりとも動かない / 視点を一切動かさない"). */
+      const _restore=()=>{ try{ if(scroller && scroller.scrollTop!==beforeTop) scroller.scrollTop=beforeTop; }catch(_){} };
       if(!chips.length){ sec.style.display='none'; sec.innerHTML=''; _restore(); return; }
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':'Active layers');
@@ -8257,12 +8099,13 @@ window.addEventListener('DOMContentLoaded', () => {
             if(downLabel && downLabel!==lab) return;                    /* finger drifted to another row → no misfire */
             const cb=lab.querySelector('input[type=checkbox]'); if(!cb||cb.disabled) return;
             const scNow=scrollerOf(lab);
+            const t=scNow?scNow.scrollTop:0;   /* (#R32) capture scroll BEFORE the toggle, re-assert after → 0px move */
             cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
-            /* (#R31) Compensate the panel scroll SYNCHRONOUSLY (active-layers grows at the top → rows shift),
-               then re-assert on the next frame so neither the async rebuild NOR browser scroll-anchoring can
-               move the list ("チェックを付けても1pxたりとも動かない / 視点を一切動かさない"). */
+            /* (#R32) Active layers is a sticky-BOTTOM bar now, so a toggle reflows nothing above. Re-assert the
+               pre-toggle scrollTop on this frame + next so neither the async rebuild NOR scroll-anchoring can
+               nudge the list ("チェックを付けても1pxたりとも動かない / 視点を一切動かさない"). */
             try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
-            if(scNow){ const t=scNow.scrollTop; requestAnimationFrame(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} }); setTimeout(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} },0); }
+            if(scNow){ scNow.scrollTop=t; requestAnimationFrame(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} }); setTimeout(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} },0); }
             return;
           }
           if((scrolled||far) && e.target.closest && e.target.closest('.lyr-row')){ e.preventDefault(); e.stopPropagation(); }
@@ -8297,7 +8140,7 @@ window.addEventListener('DOMContentLoaded', () => {
         dd.querySelectorAll(':scope > .lyr-others-note').forEach(n=>n.remove());   /* (#R15b) was accumulating one note per run */
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
-        ['cb-names','cb-borders','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        ['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -8309,8 +8152,9 @@ window.addEventListener('DOMContentLoaded', () => {
            whole layer list + Tools, so it looked removed. Back at the top it's always visible. (The iOS
            delayed-click retarget that the bottom-placement worked around is already killed by
            touch-action:manipulation, so growing this section no longer mis-targets a tap.) */
-        const _actAtBottom=false;
-        if(!_actAtBottom) order.push(act);
+        /* (#R32) Active layers is NO LONGER at the top. It is pushed LAST as a position:sticky;bottom:0 bar
+           (see end of this fn + the #layer-active-section CSS) so adding/removing chips never reflows the
+           rows above → a layer toggle moves the panel 0px on desktop AND mobile, while it stays pinned visible. */
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         order.push(mkHr());
         const placed=new Set();
@@ -8328,7 +8172,7 @@ window.addEventListener('DOMContentLoaded', () => {
         dd.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option').forEach(r=>{
           if(placed.has(r)) return;
           const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
-          if(['cb-names','cb-borders','cb-grid','cb-countries'].includes(cb.id)) return;
+          if(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
           otherRows.push(r); placed.add(r);
         });
         if(otherRows.length){
@@ -8351,8 +8195,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
         if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
         if(_pr) tools.appendChild(_pr);   /* (#R20) layer presets live in Tools */
-        if(_actAtBottom){ order.push(mkHr()); order.push(act); }   /* (#R25) mobile: Active layers sits at the bottom (no list jump on toggle) */
         if(cmpBtn||upBtn){ order.push(mkHr()); order.push(tools); }
+        order.push(act);   /* (#R32) ALWAYS LAST → sticky-bottom; never reflows the rows above (zero-movement toggle) */
         order.forEach(n=>dd.appendChild(n));
         /* drop the now-emptied module wrappers (their buttons/lists were moved into Tools above) */
         ['ec-mount','cmp-mount','ugj-mount'].forEach(id=>{ const w=document.getElementById(id); if(w) w.remove(); });
@@ -13944,15 +13788,19 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!name){ hide(); return; }
         const ll=e.lngLat;   /* isolate by the tapped POINT (reliable) — name is just the label */
         const b=ensurePop();
-        b.innerHTML='<span style="color:var(--primary-color);display:inline-flex;align-items:center;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span><span>'+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name))+'</span>';
-        /* (#R31) Clamp inside the map area and clear the top control cluster so it never overflows the edge
-           or covers other buttons ("ボタンがはみ出している / ほかのボタンを隠している"). */
+        b.innerHTML='<span style="color:var(--primary-color);display:inline-flex;align-items:center;flex:0 0 auto;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">'+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name))+'</span>';
+        /* (#R32) Definitive overflow fix ("ボタンがはみ出している / ほかのボタンを隠している"): CAP the pill width
+           to the map width (long country names with nowrap were wider than a phone screen → it overflowed and
+           covered other buttons), let the name ellipsis, and clamp inside the map clearing BOTH the top control
+           cluster AND the bottom controls (timebar/coord readout). */
         b.style.transform='none'; b.style.display='inline-flex'; b.style.left='-9999px'; b.style.top='0px';
         const mc=document.getElementById('map-container')||document.body; const mr=mc.getBoundingClientRect();
-        const bw=b.offsetWidth, bh=b.offsetHeight, topGuard=96, pad=8;
+        const pad=10, topGuard=96, bottomGuard=70;
+        b.style.maxWidth=Math.max(120,(mr.width-2*pad))+'px';            /* never wider than the map */
+        const bw=Math.min(b.offsetWidth, mr.width-2*pad), bh=b.offsetHeight;
         let lx=e.point.x-bw/2, ty=e.point.y-bh-12;
         if(ty<topGuard) ty=e.point.y+16;                                   /* no room above → drop below the tap */
-        lx=Math.max(pad,Math.min(mr.width-pad-bw,lx)); ty=Math.max(topGuard,Math.min(mr.height-pad-bh,ty));
+        lx=Math.max(pad,Math.min(mr.width-pad-bw,lx)); ty=Math.max(topGuard,Math.min(mr.height-bottomGuard-bh,ty));
         b.style.left=lx+'px'; b.style.top=ty+'px';
         b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(ll.lng,ll.lat,name); }catch(_){} };
         clearTimeout(hideT); hideT=setTimeout(hide,4500);   /* auto-dismiss if ignored */
@@ -15007,7 +14855,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function cbKey(cb){ if(cb.id) return 'id:'+cb.id; const dl=cb.getAttribute&&cb.getAttribute('data-layer'); return dl?('dl:'+dl):null; }
     function findCb(key){ if(!key) return null; if(key.startsWith('id:')) return document.getElementById(key.slice(3));
       if(key.startsWith('dl:')){ const dd=document.getElementById('layer-dropdown'); return dd&&dd.querySelector('input[data-layer="'+key.slice(3)+'"]'); } return null; }
-    const SKIP=new Set(['cb-names','cb-borders','cb-grid','cb-countries']);
+    const SKIP=new Set(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
     function capture(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return null;
       const ids=[]; dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(!cb.checked||SKIP.has(cb.id)) return; const k=cbKey(cb); if(k&&!ids.includes(k)) ids.push(k); });
       let ops={}; try{ ops=JSON.parse(JSON.stringify(opacities)); }catch(_){}
@@ -15111,7 +14959,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const p=ensure();
       p.style.display='block';
-      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">🤖 '+(jp()?'AI調査: ':'AI brief: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+(jp()?'AI調査: ':'AI brief: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
         '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;">'+(jp()?'<span style="color:var(--text-muted);">調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)</span>':'<span style="color:var(--text-muted);">Researching… (background, history, economy, military, recent developments)</span>')+'</div>'+
         '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+(jp()?'再生成':'Regenerate')+'</button>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
@@ -15714,7 +15562,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">🤖 ${jp?'AI調査':'AI brief'}</button></div></div>`;
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}"><svg viewBox='0 0 24 24' width='12' height='12' fill='currentColor' style='vertical-align:-2px;margin-right:4px;'><path d='M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z'/></svg>${jp?'AI調査':'AI brief'}</button></div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
@@ -16001,8 +15849,12 @@ window.addEventListener('DOMContentLoaded', () => {
       badge.style.cssText='font-size:9.5px;font-weight:800;letter-spacing:0.06em;padding:2px 6px;border-radius:999px;background:var(--primary-color);color:#fff;text-transform:uppercase;animation:imDemoPulse 1.6s ease-in-out infinite;';
       pill.appendChild(badge);
       const t=document.createElement('span'); t.innerHTML='<span style="opacity:0.7;">'+(jp()?'初回デモ:':'Intro demo:')+'</span> <b>'+name+'</b>'; pill.appendChild(t);
-      const pb=document.createElement('button'); pb.textContent=paused?'▶':'⏸'; pb.title=paused?(jp()?'再開':'Play'):(jp()?'一時停止':'Pause'); pb.style.cssText='background:none;border:none;color:var(--text-main);cursor:pointer;font-size:13px;padding:0 2px;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
-      const xb=document.createElement('button'); xb.textContent=jp()?'終了 ✕':'End tour ✕'; xb.title=jp()?'デモを終了':'End the intro demo'; xb.style.cssText='background:var(--input-bg);border:none;border-radius:999px;color:var(--text-main);cursor:pointer;font-size:11px;font-weight:600;padding:3px 9px;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
+      /* (#R32) iOS-clean controls — SVG play/pause + a circular × instead of the ▶ ⏸ ✕ emoji
+         ("中途半端にダサい絵文字を入れるな / iOS風にしろ"). */
+      const _svgPlay='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+      const _svgPause='<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+      const pb=document.createElement('button'); pb.innerHTML=paused?_svgPlay:_svgPause; pb.title=paused?(jp()?'再開':'Play'):(jp()?'一時停止':'Pause'); pb.style.cssText='background:var(--input-bg);border:none;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;flex:0 0 auto;'; pb.onclick=()=>{ paused=!paused; if(!paused) schedule(); else clearTimeout(timer); render(name); }; pill.appendChild(pb);
+      const xb=document.createElement('button'); xb.innerHTML='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; xb.title=jp()?'デモを終了':'End the intro demo'; xb.setAttribute('aria-label',jp()?'終了':'End tour'); xb.style.cssText='background:var(--input-bg);border:none;border-radius:50%;color:var(--text-main);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:0 0 auto;margin-left:2px;'; xb.onclick=()=>stop(true); pill.appendChild(xb); }
     /* (#R25) 6.5s → 9s dwell: the GIBS night-lights raster and the DEM color-relief need longer to fetch
        + paint than the instant Köppen image, so at 6.5s they were toggled OFF before they finished loading
        ("night lights と elevation relief が表示されない"). 9s gives every showcase layer time to appear. */

@@ -128,9 +128,11 @@ Deno.serve(async (req) => {
     const { data: prof } = await db.from("profiles").select("plan").eq("id", user.id).maybeSingle();
     if (prof && typeof prof.plan === "string" && prof.plan) plan = prof.plan;
   } catch (_) { /* profiles.plan may not exist yet → default free */ }
-  // (#R31) Developer override → UNLIMITED AI, quota never consumed. Set the DEV_EMAILS and/or DEV_USER_IDS
-  // secrets (comma-separated) to your own account so the developer has no AI limit ("AI機能の使用は無制限に").
-  const devEmails = (Deno.env.get("DEV_EMAILS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+  // (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
+  // The owner's account email is hard-coded as a default so it works even before the DEV_EMAILS /
+  // DEV_USER_IDS secrets are set; the secrets (comma-separated) extend the dev allow-list further.
+  const DEFAULT_DEV_EMAILS = ["2ppzc4kk6r@privaterelay.appleid.com"];
+  const devEmails = [...DEFAULT_DEV_EMAILS, ...(Deno.env.get("DEV_EMAILS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean)];
   const devIds = (Deno.env.get("DEV_USER_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
   const isDev = (user.email && devEmails.includes(user.email.toLowerCase())) || devIds.includes(user.id);
   if (isDev) plan = "unlimited";
