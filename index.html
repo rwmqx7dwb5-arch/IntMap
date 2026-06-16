@@ -321,7 +321,11 @@ gtag('config', 'G-57X5MX0ZPW');
        (or scroll-compensated) the rows under the finger. Now it is the LAST element AND position:sticky to
        the bottom — content added at the bottom never moves the rows above (0px on desktop AND mobile), while
        sticky keeps it pinned visible. Frosted like the dropdown so rows scroll cleanly beneath it. */
-    #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); padding-top:7px; margin-top:6px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); }
+    /* (#R32b) Negative L/R/B margins cancel the dropdown's 12px padding so the bar is FLUSH with the panel's
+       bottom + side edges — no unnatural gap below it ("Active layersの下に隙間があるのが不自然"). */
+    #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:6px -12px -12px; padding:7px 12px 11px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:0 0 12px 12px; }
+    /* Mobile: the in-sheet dropdown has no padding, so don't pull the bar outside it. */
+    .m-sheet #layer-active-section{ margin:6px 0 0; padding:7px 0 4px; border-radius:0; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; }
     .layer-dropdown.show{ display:flex; }
     /* (#R24) touch-action:manipulation kills the iOS ~300ms delayed SYNTHETIC click. Without it, tapping a
        row fired its change handler, the Active-layers section appeared and shoved the rows DOWN, and the
@@ -2730,6 +2734,18 @@ window.addEventListener('DOMContentLoaded', () => {
         `</div>`+
         `<button class="ai-test-btn" id="ai-login-btn" style="margin-top:4px;">`+aiEsc(jp?'ログイン / 新規登録':'Log in / Sign up')+`</button>`;
       const lb=wrap.querySelector('#ai-login-btn'); if(lb) lb.onclick=()=>{ try{ openAuthModal(aiLoginMsg()); }catch(_){} };
+      return;
+    }
+    /* (#R32b) Developer = UNLIMITED — show that instead of the broken "∞ / 5" quota bar
+       ("開発者なので無制限に / 設定欄のグラフに反映されていない"). */
+    if(aiDev()){
+      wrap.innerHTML=
+        `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
+          aiEsc(jp?'✨ 内蔵AIをご利用いただけます。APIキーやモデルの設定は不要です。':'✨ Built-in AI is ready. No API key or model setup required.')+`</div>`+
+        `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+
+          aiEsc(jp?'開発者アカウント — AI利用は無制限です。':'Developer account — unlimited AI usage.')+
+          `<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:100%;background:linear-gradient(90deg,#34c759,#0a84ff);"></div></div>`+
+        `</div>`;
       return;
     }
     const left=aiUsesLeft(), lim=aiDailyLimit(), used=Math.max(0, lim-left);
@@ -8156,12 +8172,14 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R15 / #26) Curated taxonomy. Only the layers the user wants front-and-center live in these
            categories; every other (beta / incomplete) layer is swept into the "Others (beta)" group at the
            bottom so the panel reads cleanly. (#R15c) ec-time moved OUT of the panel into a floating legend. */
+        /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
+           groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod']],
+          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','wbco2','wbforest']],
           ['lyrGrpMaritime',['sst','eez','subcables','planes']],
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel']],
-          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet']],   /* (#R25) Life expectancy / Unemployment / Internet promoted out of beta into real layers */
-          ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2']],
+          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl']],
+          ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
           ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','eu','histb','ukrfront','rail']]   /* (#R26) EU members layer added beside NATO */
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
@@ -10927,9 +10945,9 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Account avatar (#28) — chosen emoji icon, persisted locally. */
   window.imGetAvatar=function(){ try{ return localStorage.getItem('intmap_avatar')||'👤'; }catch(_){ return '👤'; } };
   window.imGetAvatarImg=function(){ try{ return localStorage.getItem('intmap_avatar_img')||''; }catch(_){ return ''; } };
-  window.imSetAvatarImg=function(d){ try{ if(d) localStorage.setItem('intmap_avatar_img',d); else localStorage.removeItem('intmap_avatar_img'); }catch(_){} try{ updateAccountButton(); }catch(_){} };
+  window.imSetAvatarImg=function(d){ try{ if(d) localStorage.setItem('intmap_avatar_img',d); else localStorage.removeItem('intmap_avatar_img'); }catch(_){} try{ updateAccountButton(); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} };
   window.imAvatarHue=function(){ const s=(currentUser&&(currentUser.name||currentUser.email))||'?'; let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return Math.abs(h)%360; };
-  window.imSetAvatar=function(e){ try{ localStorage.setItem('intmap_avatar',e); }catch(_){} try{ updateAccountButton(); }catch(_){} };
+  window.imSetAvatar=function(e){ try{ localStorage.setItem('intmap_avatar',e); }catch(_){} try{ updateAccountButton(); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} };
   function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b){
       if(!currentUser){ b.textContent=(currentLang==='jp'?'ログイン':'Log in'); }
       else { const nm=(currentUser.name||currentUser.email.split('@')[0]), img=window.imGetAvatarImg();
@@ -13836,19 +13854,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const ll=e.lngLat;   /* isolate by the tapped POINT (reliable) — name is just the label */
         const b=ensurePop();
         b.innerHTML='<span style="color:var(--primary-color);display:inline-flex;align-items:center;flex:0 0 auto;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">'+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name))+'</span>';
-        /* (#R32) Definitive overflow fix ("ボタンがはみ出している / ほかのボタンを隠している"): CAP the pill width
-           to the map width (long country names with nowrap were wider than a phone screen → it overflowed and
-           covered other buttons), let the name ellipsis, and clamp inside the map clearing BOTH the top control
-           cluster AND the bottom controls (timebar/coord readout). */
-        b.style.transform='none'; b.style.display='inline-flex'; b.style.left='-9999px'; b.style.top='0px';
+        /* (#R32b) Pin to a RELIABLY-CLEAR bottom-centre slot (iOS contextual-action style) instead of the tap
+           point — guarantees it never overflows the edge nor covers the top/right controls or the FAB stack
+           ("はみ出している / ほかのボタンを隠している / 周りのUIと同一にしろ"). Width-capped + ellipsis for long names. */
         const mc=document.getElementById('map-container')||document.body; const mr=mc.getBoundingClientRect();
-        const pad=10, topGuard=96, bottomGuard=70;
-        b.style.maxWidth=Math.max(120,(mr.width-2*pad))+'px';            /* never wider than the map */
-        const bw=Math.min(b.offsetWidth, mr.width-2*pad), bh=b.offsetHeight;
-        let lx=e.point.x-bw/2, ty=e.point.y-bh-12;
-        if(ty<topGuard) ty=e.point.y+16;                                   /* no room above → drop below the tap */
-        lx=Math.max(pad,Math.min(mr.width-pad-bw,lx)); ty=Math.max(topGuard,Math.min(mr.height-bottomGuard-bh,ty));
-        b.style.left=lx+'px'; b.style.top=ty+'px';
+        const pad=12;
+        b.style.maxWidth=Math.max(160,(mr.width-2*pad))+'px';
+        b.style.display='inline-flex'; b.style.left='50%'; b.style.right='auto'; b.style.top='auto';
+        b.style.bottom='calc(env(safe-area-inset-bottom, 0px) + 92px)';
+        b.style.transform='translateX(-50%)';
         b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(ll.lng,ll.lat,name); }catch(_){} };
         clearTimeout(hideT); hideT=setTimeout(hide,4500);   /* auto-dismiss if ignored */
       }catch(_){ hide(); }
@@ -14505,7 +14519,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',baseKind==='sat'); return; }
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
       setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
-    function setBase(kind){ baseKind=kind; applyBase(); setTimeout(applyBase,180); setTimeout(applyBase,600); }   /* (#R32) re-assert so a styledata/idle race can't leave the Map/Sat switch unswitched ("切り替えができないバグ") */
+    function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600); }   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
     /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
        (Köppen/land cover/eco) only register when both maps share the projection. */
     /* (#R24) Track the compare projection with OUR OWN flag instead of cmap.getProjection() — the latter
@@ -14762,14 +14776,19 @@ window.addEventListener('DOMContentLoaded', () => {
       /* base buttons */
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
       /* (#R20) three EXCLUSIVE modes */
+      /* (#R32b) Re-assert the currently-picked layer's visibility (x-ray was losing it on mode/base changes). */
+      function _reshowCmpLayer(){ try{ const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(L){ L.ids.forEach(id=>setVis(id,true)); } }catch(_){} }
       function setMode(m){ const prev=mode; mode=m;
         win.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x.getAttribute('data-m')===m));
         win.classList.toggle('cmp-xray',m==='xray');
         if(prev==='xray'&&m!=='xray'){ try{ clearXrayLens(); }catch(_){} }
-        applyBase();
+        applyBase(); _reshowCmpLayer();
         try{ cmap.resize(); }catch(_){}
         if(m!=='free') syncFromMain();   /* immediate (rAF never fires in a hidden tab) */
         requestAnimationFrame(()=>{ try{ cmap.resize(); }catch(_){} if(m!=='free') syncFromMain(); });
+        /* (#R32b) X-ray needs the canvas reflowed to its fixed full-container box a few times before the lens
+           registers + the base/layer paint ("x-rayだけバグが多発"). Re-layout + re-assert base/layer/sync. */
+        if(m==='xray'){ [60,200,500].forEach(ms=>setTimeout(()=>{ try{ layoutXrayLens(); applyBase(); _reshowCmpLayer(); syncFromMain(); cmap.resize(); }catch(_){} },ms)); }
       }
       win.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>setMode(b.getAttribute('data-m')));
       window._cmpSetMode=setMode;
@@ -14778,22 +14797,17 @@ window.addEventListener('DOMContentLoaded', () => {
          picking a layer hides the previous one and lazily adds + shows the new one. */
       const sel=win.querySelector('#cmp-layers-sel');
       let curCmpLayer='';
-      /* (#R32) MAIN→COMPARE layer mirror ("compare viewでも同一のレイヤーを使うように"). The compare map is a
-         SEPARATE WebGL instance so it can't share the main map's source/feature-state, but CMP_LAYERS already
-         clones each layer — so we just pick the matching key. "↔ Match main map" in the picker (and an auto-
-         mirror on first open) copies whatever thematic layer is active on the MAIN map onto the compare map. */
-      const MAIN2CMP={ 'dl-climate':'koppen','eco-dl-worldcover':'worldcover','eco-dl-ecoregions':'eco','eco-dl-plates':'plates','dl-hillshade':'hillshade','dl-nightsat':'nightsat','dl-snow':'snow','dl-aod':'aod','dl-sst':'sst','dl-temp':'temp','dl-precip':'precip','dl-thermal':'thermal','dl-popgrid':'popgrid','beta-dl-ukrfront':'ukr','beta-dl-volc2':'volc','dl-pop':'ch-pop','dl-hdi':'ch-hdi','dl-dem':'ch-dem','dl-gdppc':'ch-gdppc','dl-tfr':'ch-tfr','dl-milSpend':'ch-milSpend','dl-milSpendGDP':'ch-milSpendGDP' };
-      function activeMainCmpKey(){ for(const id in MAIN2CMP){ const cb=document.getElementById(id); if(cb&&cb.checked&&CMP_LAYERS.some(x=>x.k===MAIN2CMP[id])) return MAIN2CMP[id]; } return ''; }
-      function selectCmpLayer(k){ const L=CMP_LAYERS.find(x=>x.k===k); if(!L) return false; const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false)); curCmpLayer=k; try{ sel.value=k; }catch(_){} const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); return true; }
-      function mirrorMain(){ const k=activeMainCmpKey(); if(!k){ try{ if(typeof imToast==='function') imToast(jp()?'メイン地図に対応するレイヤーが見つかりません':'No matching main-map layer is active'); }catch(_){} buildLayerDD(); return; } selectCmpLayer(k); }
-      window._cmpMirrorMain=mirrorMain;
-      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(jp()?'🗂 レイヤーを選択…':'🗂 Select a layer…')+'</option>'+'<option value="__match">'+(jp()?'↔ メイン地図に合わせる':'↔ Match main map')+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
+      /* (#R32b) The compare picker offers the SAME high-quality layers as the main map for FREE selection
+         (the user's clarification: "同一条件・クオリティのものを選択できるように" — NOT auto-reflect the main
+         map's current selection). No auto-mirror; pick any CMP_LAYER (each is the full-quality clone). */
+      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(jp()?'レイヤーを選択…':'Select a layer…')+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
       buildLayerDD();
-      try{ const _mk=activeMainCmpKey(); if(_mk) selectCmpLayer(_mk); }catch(_){}   /* auto-mirror the main map's active layer on first open */
-      if(sel) sel.onchange=()=>{ if(sel.value==='__match'){ mirrorMain(); return; }
+      if(sel) sel.onchange=()=>{
         const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false));
         curCmpLayer=sel.value; const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(!L) return;
-        const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); };
+        const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500);
+        if(xrayOn()) setTimeout(()=>{ try{ layoutXrayLens(); }catch(_){} },120);   /* (#R32b) re-fit the lens so a newly-picked layer paints inside x-ray */
+      };
       /* min / close */
       win.querySelector('#cmp-min').onclick=()=>{ minimized=!minimized;
         /* (#R23) the four-corner/grip resizers set an inline height:Xpx !important, which BEAT the
@@ -14969,6 +14983,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ d.tempUnit=localStorage.getItem('intmap_temp_unit')||null; }catch(_){}
       try{ d.newsLang=localStorage.getItem('intmap_news_lang')||null; d.newsLangs=JSON.parse(localStorage.getItem('intmap_news_langs')||'null'); }catch(_){}
       try{ d.aiLocate=localStorage.getItem('intmap_ai_locate')||null; }catch(_){}
+      /* (#R32b) Avatar (emoji + cropped image) now syncs with the account so it follows across devices and
+         never silently reverts to the default ("デバイス間で共有されておらず…デフォルトに戻ってしまう"). */
+      try{ d.avatar=localStorage.getItem('intmap_avatar')||null; d.avatarImg=localStorage.getItem('intmap_avatar_img')||null; }catch(_){}
       return d; }
     window._syncPrefsUp=function(){ if(applying) return; clearTimeout(upT);
       upT=setTimeout(async ()=>{ try{
@@ -14986,6 +15003,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(d.newsLang) localStorage.setItem('intmap_news_lang',d.newsLang);
         if(Array.isArray(d.newsLangs)) localStorage.setItem('intmap_news_langs',JSON.stringify(d.newsLangs));
         if(d.aiLocate) localStorage.setItem('intmap_ai_locate',d.aiLocate);
+        if(d.avatar){ localStorage.setItem('intmap_avatar',d.avatar); } if(d.avatarImg){ localStorage.setItem('intmap_avatar_img',d.avatarImg); } try{ if(d.avatar||d.avatarImg) updateAccountButton(); }catch(_){}
         if(Array.isArray(d.presets)&&window.IntMapPresets) window.IntMapPresets._set(d.presets);
         if(Array.isArray(d.widgets)&&window.IntMapWidgets2&&window.IntMapWidgets2._setActive) window.IntMapWidgets2._setActive(d.widgets);
         try{ applyTheme(); }catch(_){} try{ updateI18n(); }catch(_){} try{ applySidebarStyle(); }catch(_){}
@@ -15627,7 +15645,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}"><svg viewBox='0 0 24 24' width='12' height='12' fill='currentColor' style='vertical-align:-2px;margin-right:4px;'><path d='M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z'/></svg>${jp?'AI調査':'AI brief'}</button></div></div>`;
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${jp?'AI調査':'AI brief'}</button></div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
