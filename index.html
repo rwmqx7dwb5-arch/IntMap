@@ -7717,7 +7717,7 @@ window.addEventListener('DOMContentLoaded', () => {
         button[aria-label="Close"], .ai-panel-close, .ai-x, .nrp-close, .fb-x, #fb-x{ min-width:32px !important; min-height:32px !important; }
         /* (#R21) the last stragglers — widget board ✕/⚙ and the widget-gallery ✕ join the ONE 32px size */
         .wgt-x{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
-        .wgt-cfg{ width:32px !important; height:32px !important; border-radius:9px !important; right:44px !important; font-size:14px !important; }
+        .wgt-cfg{ width:32px !important; height:32px !important; border-radius:16px !important; right:6px !important; }
         #wgt-g-close{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .legend-collapsed .legend-min::before{ width:12px; height:12px; }
         /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
@@ -13233,12 +13233,14 @@ window.addEventListener('DOMContentLoaded', () => {
       '.wgt-title-row{display:flex;align-items:center;margin:2px 2px 10px;}'+
       '.wgt-edit-btn{margin-left:auto;border:none;background:rgba(128,128,128,0.16);color:var(--text-main);font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;}'+
       '.wgt-edit-btn.on{background:var(--primary-color);color:#fff;}'+
-      '.wgt-card.editing{outline:1.5px solid var(--glass-border);}'+
-      '.wgt-ectrls{position:absolute;top:6px;right:6px;display:flex;gap:5px;z-index:2;}'+
-      '.wgt-ectrls button{width:28px;height:28px;border:none;border-radius:14px;background:rgba(128,128,128,0.28);color:var(--text-main);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}'+
-      '.wgt-ectrls .wgt-del{background:#ff3b30;color:#fff;}'+
-      '.wgt-ectrls button:disabled{opacity:0.3;cursor:default;}'+
-      '@media(max-width:768px){ .wgt-ectrls button{width:34px;height:34px;border-radius:17px;font-size:16px;} }'+
+      '.wgt-card.editing{outline:1.5px solid var(--glass-border);cursor:grab;touch-action:none;}'+
+      '.wgt-card.editing:active{cursor:grabbing;}'+
+      /* (#R31) edit-mode: grip (drag) top-left, delete top-right; config gear restyled (SVG). */
+      '.wgt-grip{position:absolute;top:7px;left:7px;z-index:2;display:flex;align-items:center;justify-content:center;color:var(--text-muted);opacity:0.7;}'+
+      '.wgt-del{position:absolute;top:6px;right:6px;z-index:2;width:26px;height:26px;border:none;border-radius:13px;background:#ff3b30;color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}'+
+      '.wgt-cfg{position:absolute;top:6px;right:6px;z-index:2;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.16);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}'+
+      '.wgt-cfg:hover{background:rgba(128,128,128,0.28);color:var(--text-main);}'+
+      '@media(max-width:768px){ .wgt-del{width:32px;height:32px;border-radius:16px;font-size:15px;} .wgt-grip svg{width:18px;height:18px;} }'+
       '.wgt-add:hover{background:rgba(128,128,128,0.08);}'+
       '.wgt-add .plus{font-size:24px;line-height:1;}'+
       '.wgt-gallery{margin-top:12px;border-radius:18px;padding:12px;background:var(--glass-fill);border:1px solid var(--glass-border);}'+
@@ -13263,13 +13265,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const i=active.indexOf(e);
       let topright='';
       if(editing){
-        /* (#R22) Edit mode: reorder (↑↓) + delete (✕) — the per-card hover ✕ is retired. */
-        topright='<div class="wgt-ectrls">'+
-          '<button class="wgt-up" data-u="'+e.u+'" title="'+(jp()?'上へ':'Move up')+'"'+(i<=0?' disabled':'')+'>↑</button>'+
-          '<button class="wgt-dn" data-u="'+e.u+'" title="'+(jp()?'下へ':'Move down')+'"'+(i>=active.length-1?' disabled':'')+'>↓</button>'+
-          '<button class="wgt-del" data-u="'+e.u+'" title="'+(jp()?'削除':'Remove')+'">✕</button></div>';
+        /* (#R31) Edit mode: DRAG-AND-DROP reorder (iOS-style) + delete (✕). The ↑↓ buttons are gone — a
+           grip handle (the whole card is draggable) replaces them ("↓↑ではなく、ドラッグアンドドロップで"). */
+        topright='<span class="wgt-grip" title="'+(jp()?'ドラッグで並べ替え':'Drag to reorder')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>'+
+          '<button class="wgt-del" data-u="'+e.u+'" title="'+(jp()?'削除':'Remove')+'">✕</button>';
       } else if(e.t==='fx'||e.t==='countdown'||e.t==='worldclock'||e.t==='holiday'){
-        topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.18);color:var(--text-main);font-size:12px;cursor:pointer;z-index:2;">⚙</button>';
+        /* (#R31) cleaner SF-Symbol-style gear (the old ⚙ glyph looked "ダサい"). */
+        topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>';
       }
       return '<div class="wgt-card'+(editing?' editing':'')+'" data-u="'+e.u+'" data-w="'+e.t+'">'+topright+
         '<div class="wgt-h"><span>'+d.ic+'</span><span class="wgt-nm">'+d.nm()+'</span></div><div class="wgt-v" id="wgtv-'+e.u+'">···</div><div class="wgt-s" id="wgts-'+e.u+'"></div><div class="wgt-cfgbox" id="wgtc-'+e.u+'" style="display:none;margin-top:7px;"></div></div>'; }
@@ -13307,10 +13309,26 @@ window.addEventListener('DOMContentLoaded', () => {
       const gx=b.querySelector('#wgt-g-close'); if(gx) gx.onclick=(ev)=>{ ev.stopPropagation(); gallery=false; render(); };
       b.querySelectorAll('.wgt-g-row').forEach(r=>r.onclick=()=>{ doAdd(r.getAttribute('data-add')); });
       b.querySelectorAll('.wgt-del').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); const u=x.getAttribute('data-u'); if(u){ active=active.filter(a=>a.u!==u); save(); if(!active.length) editing=false; render(); } });
-      b.querySelectorAll('.wgt-up').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); moveWidget(x.getAttribute('data-u'),-1); });
-      b.querySelectorAll('.wgt-dn').forEach(x=>x.onclick=(ev)=>{ ev.stopPropagation(); moveWidget(x.getAttribute('data-u'),1); });
       b.querySelectorAll('.wgt-cfg').forEach(g=>g.onclick=(ev)=>{ ev.stopPropagation(); openCfg(g.getAttribute('data-u')); });
+      if(editing) enableDnD(b);
       refreshAll(); }
+    /* (#R31) Pointer-based drag-and-drop reorder (works on touch & desktop). The dragged card is lifted and
+       set pointer-events:none so elementFromPoint finds the card beneath; the DOM order is committed to
+       `active` on drop. */
+    function enableDnD(b){ const grid=b.querySelector('.wgt-grid'); if(!grid) return;
+      grid.querySelectorAll('.wgt-card').forEach(card=>{
+        let dragging=false;
+        card.addEventListener('pointerdown',(e)=>{ if(!editing) return; if(e.target.closest&&e.target.closest('button')) return; dragging=true;
+          try{ card.setPointerCapture(e.pointerId); }catch(_){} card.style.opacity='0.65'; card.style.transform='scale(1.03)'; card.style.transition='none'; card.style.zIndex='6'; card.style.pointerEvents='none'; e.preventDefault(); });
+        card.addEventListener('pointermove',(e)=>{ if(!dragging) return;
+          const under=document.elementFromPoint(e.clientX,e.clientY); const over=under&&under.closest&&under.closest('.wgt-card');
+          if(over&&over!==card&&over.parentElement===grid){ const r=over.getBoundingClientRect(); const before=(e.clientY< r.top+r.height/2); grid.insertBefore(card, before?over:over.nextSibling); } });
+        const end=()=>{ if(!dragging) return; dragging=false; card.style.opacity=''; card.style.transform=''; card.style.zIndex=''; card.style.pointerEvents=''; card.style.transition='';
+          const order=[].map.call(grid.querySelectorAll('.wgt-card'),c=>c.getAttribute('data-u'));
+          active.sort((a,b2)=>order.indexOf(a.u)-order.indexOf(b2.u)); try{ save(); }catch(_){} };
+        card.addEventListener('pointerup',end); card.addEventListener('pointercancel',end);
+      });
+    }
     function entry(u){ return active.find(e=>e.u===u); }
     function setV(u,v,s){ const ev=document.getElementById('wgtv-'+u); if(ev) ev.innerHTML=v; const es=document.getElementById('wgts-'+u); if(es) es.innerHTML=s||''; }
     /* "as of" stamp — every financial/data widget states WHEN its numbers are from (#R20). */
