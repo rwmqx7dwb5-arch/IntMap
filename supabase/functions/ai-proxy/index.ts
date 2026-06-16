@@ -128,11 +128,17 @@ Deno.serve(async (req) => {
     const { data: prof } = await db.from("profiles").select("plan").eq("id", user.id).maybeSingle();
     if (prof && typeof prof.plan === "string" && prof.plan) plan = prof.plan;
   } catch (_) { /* profiles.plan may not exist yet → default free */ }
+  // (#R31) Developer override → UNLIMITED AI, quota never consumed. Set the DEV_EMAILS and/or DEV_USER_IDS
+  // secrets (comma-separated) to your own account so the developer has no AI limit ("AI機能の使用は無制限に").
+  const devEmails = (Deno.env.get("DEV_EMAILS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
+  const devIds = (Deno.env.get("DEV_USER_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const isDev = (user.email && devEmails.includes(user.email.toLowerCase())) || devIds.includes(user.id);
+  if (isDev) plan = "unlimited";
   const limit = PLAN_LIMITS[plan] ?? DEFAULT_LIMIT;
 
-  // 3) Atomically consume one use for today.
+  // 3) Atomically consume one use for today (the developer is exempt — no consumption).
   let used = 0;
-  try {
+  if (!isDev) try {
     const { data: dec, error } = await db.rpc("increment_ai_usage", { p_user: user.id, p_limit: limit });
     if (error) throw error;
     const row = Array.isArray(dec) ? dec[0] : dec;
@@ -150,7 +156,7 @@ Deno.serve(async (req) => {
   const imgs = (Array.isArray(payload.images) ? payload.images : [])
     .map(parseDataUrl).filter((x): x is ImgPart => !!x).slice(0, MAX_IMAGES);
   if (!prompt && !imgs.length) {
-    try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
+    if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
     return json({ error: "empty" }, 400);
   }
 
@@ -174,8 +180,8 @@ Deno.serve(async (req) => {
     // 5) Success.
     return json({ text, used, limit, remaining: Math.max(0, limit - used) });
   } catch (e) {
-    // Provider failed → refund the consumed slot so the user isn't charged a use.
-    try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
+    // Provider failed → refund the consumed slot so the user isn't charged a use (dev never consumed one).
+    if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
     return json({ error: "provider", message: String((e as Error)?.message || e) }, 502);
   }
 });
