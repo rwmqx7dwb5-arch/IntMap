@@ -2978,8 +2978,11 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R32) Boost land/sea contrast on the dark base — Carto dark tiles render water and land at very
              similar near-black greys ("陸地と海のコントラストが弱く、視認性が悪い"). raster-contrast stretches
              them apart; a slight brightness lift keeps coastlines readable without washing the map out. */
-          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-contrast':0.3,'raster-brightness-min':0.06}},
-          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-contrast':0.3,'raster-brightness-min':0.06}},
+          /* (#R32b) STRONGER land/sea separation. The R32 brightness-min LIFTED the near-black water toward
+             the land grey → less contrast ("むしろ弱くなっている"). Now: high raster-contrast with the black
+             floor kept at 0 (water stays dark) and a small saturation bump, so land reads clearly lighter. */
+          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-contrast':0.45,'raster-saturation':0.15}},
+          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-contrast':0.45,'raster-saturation':0.15}},
           {id:'layer-light',type:'raster',source:'bl',layout:{visibility:'none'}},
           {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:isInitiallyDark?'none':'visible'}},
           {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
@@ -7246,7 +7249,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let tries=0; while(out.length<n && tries<n*16){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(pig(lng,lat,f.geometry)) out.push([lng,lat]); } if(!out.length) out.push(cent[i]); return out; }
 
         let P=Object.assign({},PG_PRESETS.covid), immMo=P.immMo, seasAmp=P.seas;
-        let day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='';
+        let day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', R0_BASE=P.r0;
         let vaxProg=0, vaxDay=-1, vaxRate=0, treat=false, pheic=false, hit10=false, variants=0, closeAnn=0, lockAnn=0, d1m=false, d10m=false;
         const vaxDifficulty=0.7+Math.random()*0.9;   // luck: some runs get a fast vaccine, some slow
         const peakDay=(lat)=> lat>=0 ? 20 : 202;
@@ -7281,12 +7284,14 @@ window.addEventListener('DOMContentLoaded', () => {
             /* between-country spread — gravity + transport, throttled by border closures */
             if(s.I>live*0.0004){ const tries=2+Math.floor(P.r0/2); for(let t=0;t<tries;t++){ const j=Math.floor(Math.random()*N); if(j===i) continue; const d=haversine(cent[i],cent[j])+1; const air=Math.exp(-d/3200)*0.55, hub=0.04*dev[j]; let pHop=(P.r0/3)*(air+hub)*Math.min(1,s.I/live*120); if(s.closed) pHop*=0.18; if(st[j].closed) pHop*=0.25; if(Math.random()<pHop*speed*0.12){ if(!st[j].seeded) seed(j,Math.max(20,pop[j]*4e-7)); else st[j].E+=Math.min(st[j].S,30); } } }
           }
-          /* VARIANTS — random emergence with immune escape → new waves (chaos + variety + length) */
-          if(variants<6 && totI>5e5 && Math.random()<0.0016*speed){ variants++;
+          /* VARIANTS — random emergence with immune escape → new waves. (#R32b) REALISM: a real variant
+             raises R0 ~1.1–1.4× (Omicron-ish), not 1.6× repeatedly, and the cumulative R0 is capped so it
+             can't balloon to impossible values ("ありえないことが多すぎる"). Cap 4 variants. */
+          if(variants<4 && totI>5e5 && Math.random()<0.0014*speed){ variants++;
             let best=-1,bv=-1; for(let i=0;i<N;i++){ if(st[i].I>bv){bv=st[i].I;best=i;} }
-            const moreInf=Math.random()<0.75; P.r0=Math.max(0.8,P.r0*(moreInf?(1.12+Math.random()*0.5):(0.85+Math.random()*0.1)));
-            const escape=0.2+Math.random()*0.4; for(let i=0;i<N;i++){ const mv=st[i].R*escape; st[i].R-=mv; st[i].S+=mv; const vv=st[i].V*escape*0.6; st[i].V-=vv; st[i].S+=vv; }
-            if(Math.random()<0.4) P.ifr*=(0.7+Math.random()*0.7);
+            const moreInf=Math.random()<0.7; P.r0=Math.min(R0_BASE*2.2,16,Math.max(0.8,P.r0*(moreInf?(1.08+Math.random()*0.3):(0.88+Math.random()*0.08))));
+            const escape=0.15+Math.random()*0.3; for(let i=0;i<N;i++){ const mv=st[i].R*escape; st[i].R-=mv; st[i].S+=mv; const vv=st[i].V*escape*0.5; st[i].V-=vv; st[i].S+=vv; }
+            if(Math.random()<0.4) P.ifr*=(0.7+Math.random()*0.6);
             const gl=String.fromCharCode(944+variants);
             news((jp()?('新変異株（'+gl+'）を'+(best>=0?nm[best]:'?')+'で確認。'+(moreInf?'感染力が上昇。':'')):('New variant ('+gl+') detected in '+(best>=0?nm[best]:'?')+'.'+(moreInf?' More transmissible.':''))),'alert');
           }
@@ -7353,7 +7358,7 @@ window.addEventListener('DOMContentLoaded', () => {
           hud.appendChild(row); updateHud(totals());
         }
         function onPick(e){ if(!picking) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
-          if(hit==null) return; picking=false; seed(hit,Math.max(60,pop[hit]*2e-6)); buildDots(); renderRun(false); start();
+          if(hit==null) return; picking=false; R0_BASE=P.r0; seed(hit,Math.max(60,pop[hit]*2e-6)); buildDots(); renderRun(false); start();
           news((jp()?'最初の感染者が確認されました — ':'Patient zero confirmed in ')+nm[hit]+'.','alert');
         }
         map.on('click',onPick);
@@ -8616,7 +8621,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const KCOORDS=window.KCOORDS;
     window.KCOL=[['Af',[0,0,255]],['Am',[0,120,255]],['Aw',[70,170,250]],['BWh',[255,0,0]],['BWk',[255,150,150]],['BSh',[245,165,0]],['BSk',[255,220,100]],['Csa',[255,255,0]],['Csb',[200,200,0]],['Csc',[150,150,0]],['Cwa',[150,255,150]],['Cwb',[100,200,100]],['Cwc',[50,150,50]],['Cfa',[200,255,80]],['Cfb',[100,255,80]],['Cfc',[50,200,0]],['Dsa',[255,0,255]],['Dsb',[200,0,200]],['Dsc',[150,50,150]],['Dsd',[150,100,150]],['Dwa',[170,175,255]],['Dwb',[90,120,220]],['Dwc',[75,80,180]],['Dwd',[50,0,135]],['Dfa',[0,255,255]],['Dfb',[55,200,255]],['Dfc',[0,125,125]],['Dfd',[0,70,95]],['ET',[178,178,178]],['EF',[102,102,102]]];
     window.KNAME={Af:{en:'Tropical rainforest',jp:'熱帯雨林'},Am:{en:'Tropical monsoon',jp:'熱帯モンスーン'},Aw:{en:'Savanna',jp:'サバナ'},BWh:{en:'Hot desert',jp:'砂漠(高温)'},BWk:{en:'Cold desert',jp:'砂漠(寒冷)'},BSh:{en:'Hot steppe',jp:'ステップ(高温)'},BSk:{en:'Cold steppe',jp:'ステップ(寒冷)'},Csa:{en:'Mediterranean, hot summer',jp:'地中海性(高温夏)'},Csb:{en:'Mediterranean, warm summer',jp:'地中海性(温暖夏)'},Csc:{en:'Mediterranean, cold summer',jp:'地中海性(冷涼夏)'},Cwa:{en:'Humid subtropical, dry winter',jp:'温暖冬季少雨'},Cwb:{en:'Subtropical highland',jp:'温帯高地'},Cwc:{en:'Subtropical highland, dry winter',jp:'温帯高地(冬季少雨)'},Cfa:{en:'Humid subtropical',jp:'温暖湿潤'},Cfb:{en:'Oceanic',jp:'西岸海洋性'},Cfc:{en:'Subpolar oceanic',jp:'亜寒帯海洋性'},Dsa:{en:'Continental, dry-hot summer',jp:'大陸性夏季少雨(高温)'},Dsb:{en:'Continental, dry-warm summer',jp:'大陸性夏季少雨(温暖)'},Dsc:{en:'Continental, dry summer (cold)',jp:'大陸性夏季少雨(冷涼)'},Dsd:{en:'Continental, dry summer (severe)',jp:'大陸性夏季少雨(厳寒)'},Dwa:{en:'Continental, dry winter (hot summer)',jp:'大陸性冬季少雨(高温夏)'},Dwb:{en:'Continental, dry winter (warm summer)',jp:'大陸性冬季少雨(温暖夏)'},Dwc:{en:'Subarctic, dry winter',jp:'亜寒帯冬季少雨'},Dwd:{en:'Subarctic, dry winter (severe)',jp:'亜寒帯冬季少雨(厳寒)'},Dfa:{en:'Humid continental, hot summer',jp:'亜寒帯湿潤(高温夏)'},Dfb:{en:'Humid continental, warm summer',jp:'亜寒帯湿潤(温暖夏)'},Dfc:{en:'Subarctic',jp:'亜寒帯'},Dfd:{en:'Subarctic, severe winter',jp:'亜寒帯(厳寒)'},ET:{en:'Tundra',jp:'ツンドラ'},EF:{en:'Ice cap',jp:'氷雪'}};
+    /* (#R32b) German Köppen climate names ("ケッペンでは気候名が書かれていない" — DE showed undefined). */
+    try{ const _kde={Af:'Tropischer Regenwald',Am:'Tropisches Monsunklima',Aw:'Savanne',BWh:'Heißwüste',BWk:'Kaltwüste',BSh:'Heiße Steppe',BSk:'Kalte Steppe',Csa:'Mediterran, heißer Sommer',Csb:'Mediterran, warmer Sommer',Csc:'Mediterran, kühler Sommer',Cwa:'Feuchtsubtropisch, trockener Winter',Cwb:'Subtropisches Hochland',Cwc:'Subtropisches Hochland, trockener Winter',Cfa:'Feuchtsubtropisch',Cfb:'Ozeanisch',Cfc:'Subpolar-ozeanisch',Dsa:'Kontinental, trocken-heißer Sommer',Dsb:'Kontinental, trocken-warmer Sommer',Dsc:'Kontinental, trockener Sommer (kühl)',Dsd:'Kontinental, trockener Sommer (streng)',Dwa:'Kontinental, trockener Winter (heißer Sommer)',Dwb:'Kontinental, trockener Winter (warmer Sommer)',Dwc:'Subarktisch, trockener Winter',Dwd:'Subarktisch, trockener Winter (streng)',Dfa:'Feuchtkontinental, heißer Sommer',Dfb:'Feuchtkontinental, warmer Sommer',Dfc:'Subarktisch',Dfd:'Subarktisch, strenger Winter',ET:'Tundra',EF:'Eiskappe'}; for(const k in _kde){ if(window.KNAME[k]) window.KNAME[k].de=_kde[k]; } }catch(_){}
     const KCOL=window.KCOL, KNAME=window.KNAME;
+    /* safe name lookup: current language → English fallback (never "undefined") */
+    window.kName=function(code){ const e=window.KNAME&&window.KNAME[code]; return e?(e[currentLang]||e.en||code):code; };
     const kSelected=window.kSelected||(window.kSelected=new Set());
     window.kSelected=kSelected;
     /* === Köppen image → hidden canvas
@@ -8968,7 +8977,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+KNAME[code][currentLang]:''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':'Click to highlight • right-click for criteria')}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+(KNAME[code][currentLang]||KNAME[code].en):''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':'Click to highlight • right-click for criteria')}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -9005,7 +9014,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return {en,jp};
     }
     function showKoppenInfo(code,x,y){
-      const info=koppenCriteria(code), nm=KNAME[code]?KNAME[code][currentLang]:code;
+      const info=koppenCriteria(code), nm=KNAME[code]?(KNAME[code][currentLang]||KNAME[code].en):code;
       const lines=(currentLang==='jp'?info.jp:info.en).map(s=>`<li>${convTempText(s)}</li>`).join('');
       const col=(KCOL.find(k=>k[0]===code)||[,[150,150,150]])[1];
       let pop=document.getElementById('koppen-info-pop');
