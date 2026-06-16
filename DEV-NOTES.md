@@ -2596,3 +2596,78 @@ Playground modes launch & play; screenshots confirm the iOS look).
 - **Economic widgets** are already rich (FX, crypto, market cap, Fear&Greed, gold, silver); further ones
   (oil, equity indices) need keyed APIs, which the real-data/no-key policy precludes.
 - **Redeploy** `ai-proxy` and set `DEV_EMAILS`/`DEV_USER_IDS` for server-side unlimited AI.
+
+---
+
+## 36. Round 32 — re-reported bug root-causes + big feature batch (tags `#R32`)
+
+Build `2026-06-17-R32`. The user re-reported a batch of bugs as STILL broken (with new specifics) and asked
+for new features. Verified live in the headless preview after every change (85 layer rows, zero console
+errors; new layers render; compare/pandemic/German verified by state probes + screenshots).
+
+### Re-reported bugs — fixed at the ROOT
+- **Layer toggle STILL moved the panel (even 1px, desktop too).** Real root cause finally pinned: the
+  "Active layers" section sat ABOVE the rows, so its appearance/growth on the first/any toggle reflowed the
+  rows (desktop: panel grows down; mobile: scroll-compensation hid the favorites). **Fix: the Active-layers
+  section is now the LAST element + `position:sticky;bottom:0`.** Content added at the BOTTOM never moves the
+  rows above → measured **0px** movement on desktop AND mobile (scrollDelta 0, rowMoved 0), while the bar
+  stays pinned visible. The old top-placement scroll-compensation (which would now itself scroll) was removed;
+  the toggle handler now just PINS the pre-toggle scrollTop.
+- **Orphan / phantom layers.** Verified the rapid ON→OFF race no longer strands a layer (checkbox off, map
+  layer hidden, not in the list) — the R30 re-assert guards + the sticky-bottom list (reads checkbox truth) +
+  the deterministic 1-tap toggle + `pointer-events:none` iOS checkbox together keep map ⇄ checkbox ⇄ list in sync.
+- **Compare view.** Sat/Map switch made bulletproof (re-assert at 0/180/600 ms beats the styledata/idle race);
+  **"use the same layers"** delivered: compare AUTO-MIRRORS the main map's active thematic layer on open + a
+  **"↔ Match main map"** picker entry (verified: opening with Köppen on → compare picker = Köppen, and Sat
+  shows satellite + the Köppen overlay). X-ray Sat path already handled by applyBase; picker works in every mode.
+- **Account avatar centred / mobile Login overflow.** The mobile rule forced EVERY `#btn-account` to a 36px
+  circle → "Log in" text overflowed AND the small avatar sat in a larger ring. Split with `:has(.acct-av)`:
+  logged-OUT = proper iOS pill (no overflow), logged-IN = the avatar FILLS a 34px round chip.
+- **Isolate button overflow.** CAP the pill width to the map width (long country names + nowrap were wider
+  than a phone) + ellipsis + clamp clearing top AND bottom controls.
+- **Intro demo UI.** The auto-tour pill's ▶ ⏸ ✕ emoji → clean SVG play/pause + circular ×.
+- **Earthquake popup invisible in dark mode.** It used the DEFAULT white maplibre popup but inherited the
+  page text colour (near-white in dark) = white-on-white. Gave it `className:'plc-popup'` (themed bg + text).
+- **Dark-map land/sea contrast.** `raster-contrast:0.3` + slight brightness lift on the Carto dark base.
+- **News band invisible in dark mode + not shown when zoomed.** The band pill is now THEME-AWARE (light pill
+  + dark text on dark UI, refreshed on theme change), and `text/icon-allow-overlap` is a zoom-step (false
+  below z5, true at z≥5) so the band of a pin you zoomed to always shows.
+
+### Removals / wording (explicit asks)
+- **Statecraft + World Sandbox ABOLISHED** — removed from the Playground hub AND their 231-line function
+  bodies deleted (`_pgNationSim`, `_pgWorldSandbox`). Hub now: World Explorer, Pandemic, Quiz.
+- **"GeoGuessr / Geo Guesser" wording removed** from World Explorer (→ "a satellite where-am-I geography game").
+- **🤖 emoji removed from the AI brief** (header + the place-popup trigger button → a clean SVG sparkle).
+
+### Features
+- **State/province borders + roads + railways** (`cb-admin1` / `cb-roads` / `cb-rail2`) drawn from the SAME
+  OpenFreeMap/OpenMapTiles vector source already used for labels (`boundary` admin 3–4, `transportation`
+  road classes + rail). Verified over Tokyo: prefecture borders (purple dashed), roads (amber), rail (gray
+  dashed), all under the place labels. EN/JP/DE/RU labels added.
+- **Data layers fixed.** CO₂/capita was a DEAD World Bank indicator (`EN.ATM.CO2E.PC` → "deleted or
+  archived", 0 rows) → switched to `EN.GHG.CO2.PC.CE.AR5`; and `wbFetch` now FALLS BACK from `mrnev=1`
+  (which server-errors for the AR5 series) to a `date=2010:2024` range (most-recent per country) — verified
+  247 countries. Resilient retry/non-empty-only caching fixes the intermittent "電力/再エネ/インフレが映らない"
+  (WB API throttling). **Hover values added to ALL beta choropleths** (country + metric + value tooltip).
+- **Pandemic.** Dots now scale with the ACTUAL case count (≈1 dot / 60 cases, global budget 4800, up to 80
+  per country on real cities) so they GROW visibly with the outbreak (verified 20→44…), uniform size, more
+  of them. Model made less uniformly catastrophic + more realistic: gentler hospital overload, a falling
+  CFR as care improves, varied end-states (contained / minor / devastating / endemic with the final toll +
+  attack rate) and 1M/10M death-toll breaking-news milestones.
+- **Widgets** reorder is now iOS-home-screen smooth: the lifted card FOLLOWS the finger and displaced cards
+  GLIDE via a FLIP animation (no more jump). **Stats time-series charts show per-year values on hover**
+  (visible dots + full-height transparent bands with native `<title>` tooltips).
+- **German RE-ENABLED as a first-class UI language** (was removed in R23): settings selector + persistence +
+  `<html lang>` + German vector map labels (`name:de`) + a German dictionary for the layer panel, themes,
+  sections and the new toggles. NOTE: the app has ~800 inline `currentLang==='jp'?…:…` bilingual literals;
+  those dynamic strings still fall back to English in DE — the dictionary-driven chrome + layer panel + map
+  are German, and the system is in place to extend the remaining inline strings.
+- **Developer = unlimited AI** hardened: the owner's email is now a hard-coded default in `ai-proxy`'s dev
+  allow-list (works even before the `DEV_EMAILS`/`DEV_USER_IDS` secrets are set) + the client `aiDev()` gate.
+
+### Honest / still-open
+- German: dictionary + layer panel + map labels are DE; ~800 inline `jp?:` ternaries (country popup detail
+  rows, some toasts) still fall back to English — progressively localizable, not yet exhaustive.
+- **Köppen 1980–2016**: the multi-period mechanism + UI already exist (1901–2020); the specific Beck-2018
+  1980–2016 period still needs its reprojected PNG asset (same pipeline; can't be generated in-app).
+- **Redeploy** `supabase functions deploy ai-proxy` to activate the hard-coded dev-unlimited default.
