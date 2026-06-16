@@ -14451,7 +14451,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',baseKind==='sat'); return; }
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
       setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
-    function setBase(kind){ baseKind=kind; applyBase(); }
+    function setBase(kind){ baseKind=kind; applyBase(); setTimeout(applyBase,180); setTimeout(applyBase,600); }   /* (#R32) re-assert so a styledata/idle race can't leave the Map/Sat switch unswitched ("切り替えができないバグ") */
     /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
        (Köppen/land cover/eco) only register when both maps share the projection. */
     /* (#R24) Track the compare projection with OUR OWN flag instead of cmap.getProjection() — the latter
@@ -14669,7 +14669,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
     function build(){ if(built) return; built=true; injectCSS();
       win=document.createElement('div'); win.id='compare-window';
-      win.innerHTML='<div class="cmp-head"><span class="cmp-title">🪟 '+(jp()?'比較':'Compare')+'</span>'+
+      win.innerHTML='<div class="cmp-head"><span class="cmp-title">'+(jp()?'比較':'Compare')+'</span>'+
         '<span class="cmp-seg">'+
           '<button class="cmp-btn on" data-v="map">'+(jp()?'地図':'Map')+'</button>'+
           '<button class="cmp-btn" data-v="sat">'+(jp()?'衛星':'Sat')+'</button>'+
@@ -14724,9 +14724,20 @@ window.addEventListener('DOMContentLoaded', () => {
          picking a layer hides the previous one and lazily adds + shows the new one. */
       const sel=win.querySelector('#cmp-layers-sel');
       let curCmpLayer='';
-      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(jp()?'🗂 レイヤーを選択…':'🗂 Select a layer…')+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
+      /* (#R32) MAIN→COMPARE layer mirror ("compare viewでも同一のレイヤーを使うように"). The compare map is a
+         SEPARATE WebGL instance so it can't share the main map's source/feature-state, but CMP_LAYERS already
+         clones each layer — so we just pick the matching key. "↔ Match main map" in the picker (and an auto-
+         mirror on first open) copies whatever thematic layer is active on the MAIN map onto the compare map. */
+      const MAIN2CMP={ 'dl-climate':'koppen','eco-dl-worldcover':'worldcover','eco-dl-ecoregions':'eco','eco-dl-plates':'plates','dl-hillshade':'hillshade','dl-nightsat':'nightsat','dl-snow':'snow','dl-aod':'aod','dl-sst':'sst','dl-temp':'temp','dl-precip':'precip','dl-thermal':'thermal','dl-popgrid':'popgrid','beta-dl-ukrfront':'ukr','beta-dl-volc2':'volc','dl-pop':'ch-pop','dl-hdi':'ch-hdi','dl-dem':'ch-dem','dl-gdppc':'ch-gdppc','dl-tfr':'ch-tfr','dl-milSpend':'ch-milSpend','dl-milSpendGDP':'ch-milSpendGDP' };
+      function activeMainCmpKey(){ for(const id in MAIN2CMP){ const cb=document.getElementById(id); if(cb&&cb.checked&&CMP_LAYERS.some(x=>x.k===MAIN2CMP[id])) return MAIN2CMP[id]; } return ''; }
+      function selectCmpLayer(k){ const L=CMP_LAYERS.find(x=>x.k===k); if(!L) return false; const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false)); curCmpLayer=k; try{ sel.value=k; }catch(_){} const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); return true; }
+      function mirrorMain(){ const k=activeMainCmpKey(); if(!k){ try{ if(typeof imToast==='function') imToast(jp()?'メイン地図に対応するレイヤーが見つかりません':'No matching main-map layer is active'); }catch(_){} buildLayerDD(); return; } selectCmpLayer(k); }
+      window._cmpMirrorMain=mirrorMain;
+      function buildLayerDD(){ if(!sel) return; sel.innerHTML='<option value="">'+(jp()?'🗂 レイヤーを選択…':'🗂 Select a layer…')+'</option>'+'<option value="__match">'+(jp()?'↔ メイン地図に合わせる':'↔ Match main map')+'</option>'+CMP_LAYERS.map(L=>'<option value="'+L.k+'">'+L.n()+'</option>').join(''); try{ sel.value=curCmpLayer; }catch(_){} }
       buildLayerDD();
-      if(sel) sel.onchange=()=>{ const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false));
+      try{ const _mk=activeMainCmpKey(); if(_mk) selectCmpLayer(_mk); }catch(_){}   /* auto-mirror the main map's active layer on first open */
+      if(sel) sel.onchange=()=>{ if(sel.value==='__match'){ mirrorMain(); return; }
+        const prev=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(prev) prev.ids.forEach(id=>setVis(id,false));
         curCmpLayer=sel.value; const L=CMP_LAYERS.find(x=>x.k===curCmpLayer); if(!L) return;
         const show=()=>L.ids.forEach(id=>setVis(id,true)); try{ L.add(show); }catch(_){} show(); setTimeout(show,400); setTimeout(show,1500); };
       /* min / close */
