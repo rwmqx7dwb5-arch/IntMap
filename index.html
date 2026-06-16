@@ -2530,8 +2530,13 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Quota state, kept in sync from each server response + an on-login fetch. limit is plan-driven
      (the server is the source of truth); aiDailyLimit() centralizes the number for easy plan tiers. */
   let aiUsage = { date:'', used:0, limit:AI_FREE_DAILY };
+  /* (#R31) Developer = unlimited AI. Enabled by localStorage intmap_dev='1' or the owner's account email.
+     This lifts the CLIENT-side gate; for a truly unlimited server quota, the ai-proxy function also grants
+     the dev user id/email an unlimited plan (DEV_USER_IDS / DEV_EMAILS secret) — see DEV-NOTES. */
+  function aiDev(){ try{ if(localStorage.getItem('intmap_dev')==='1') return true; const e=(typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||''; return /2ppzc4kk6r@privaterelay\.appleid\.com/i.test(e); }catch(_){ return false; } }
+  window.aiDev=aiDev;
   function aiDailyLimit(){ return (aiUsage && aiUsage.limit) || AI_FREE_DAILY; }
-  function aiUsesLeft(){ if(aiUsage.date!==aiToday()) return aiDailyLimit(); return Math.max(0, aiDailyLimit() - (aiUsage.used||0)); }
+  function aiUsesLeft(){ if(aiDev()) return Infinity; if(aiUsage.date!==aiToday()) return aiDailyLimit(); return Math.max(0, aiDailyLimit() - (aiUsage.used||0)); }
   function aiSetUsage(used, limit){
     aiUsage.date=aiToday();
     if(typeof used==='number') aiUsage.used=used;
@@ -15048,14 +15053,27 @@ window.addEventListener('DOMContentLoaded', () => {
         let sug=p.querySelector('#air-sugg'); if(sug) sug.remove();
         sug=document.createElement('div'); sug.id='air-sugg'; sug.style.cssText='margin-top:10px;border-top:1px solid rgba(128,128,128,0.2);padding-top:8px;';
         const qs=suggestQs(name);
-        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'おすすめの質問（ベータ — 表示中の領域から自動生成）':'Suggested questions (beta — from the current view)')+'</div>'+
-          qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">💬 '+esc(s)+'</button>').join('')+
-          '<div style="display:flex;gap:6px;margin-top:6px;"><input class="air-free" type="text" placeholder="'+(jp()?'自由に質問…':'Ask anything…')+'" style="flex:1;min-width:0;padding:7px 9px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
+        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'おすすめの質問':'Suggested questions')+'</div>'+
+          qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(s)+'</button>').join('')+
+          '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>'+
+          '<div style="display:flex;gap:6px;margin-top:8px;position:sticky;bottom:0;background:var(--card-bg);padding:6px 0 2px;"><input class="air-free" type="text" placeholder="'+(jp()?'続けて質問…':'Ask a follow-up…')+'" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
         p.appendChild(sug);
-        const ask=async(qq)=>{ body.innerHTML='<span style="color:var(--text-muted);">'+(jp()?'回答中…':'Thinking…')+'</span>';
-          try{ const out2=await askAI(qq+(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'Context — recent nearby headlines:\n')+news.map(s=>'- '+s).join('\n')):''),sys);
-            body.innerHTML=md(out2||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources.')+'</div>';
-          }catch(e2){ body.innerHTML='<span style="color:#ff453a;">'+esc(e2&&e2.message||'AI error')+'</span>'; } };
+        /* (#R31) CHAT-style thread — the user's message stays visible as a bubble after the AI replies
+           ("主要なAIチャットアプリのようなUIに"), and the conversation accumulates with context continuity. */
+        const chat=sug.querySelector('#air-chat'); const convo=[];
+        const bubble=(who,html)=>{ const d=document.createElement('div'); d.style.cssText=(who==='user'
+          ?'align-self:flex-end;max-width:88%;background:var(--primary-color);color:#fff;border-radius:14px 14px 5px 14px;'
+          :'align-self:flex-start;max-width:93%;background:var(--input-bg);color:var(--text-main);border-radius:14px 14px 14px 5px;')+'padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word;'; d.innerHTML=html; chat.appendChild(d); try{ p.scrollTop=p.scrollHeight; }catch(_){} return d; };
+        const ask=async(qq)=>{
+          bubble('user',esc(qq));
+          const ai=bubble('ai','<span style="color:var(--text-muted);">'+(jp()?'回答中…':'Thinking…')+'</span>');
+          convo.push('User: '+qq);
+          try{ const ctx=(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'Context — recent nearby headlines:\n')+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(jp()?'これまでの会話:\n':'Conversation so far:\n')+convo.slice(-6).join('\n')):'');
+            const out2=await askAI(qq+ctx,sys);
+            ai.innerHTML=md(out2||''); convo.push('Assistant: '+String(out2||'').slice(0,600));
+          }catch(e2){ ai.innerHTML='<span style="color:#ff453a;">'+esc(e2&&e2.message||'AI error')+'</span>'; }
+          try{ p.scrollTop=p.scrollHeight; }catch(_){}
+        };
         sug.querySelectorAll('.air-q').forEach(b2=>b2.onclick=()=>ask(qs[+b2.getAttribute('data-i')]));
         const fr=sug.querySelector('.air-free'), go=sug.querySelector('.air-go');
         const fire=()=>{ const v=fr.value.trim(); if(v){ ask(v); fr.value=''; } };
@@ -15996,6 +16014,89 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(()=>{ try{ ov.style.opacity='1'; }catch(_){} },80);
   }
   window._imWelcome=_imWelcome;
+
+  /* ===== (#R31) NEW BETA LAYERS — 10 real-data additions (≥10 to β, per request) =====
+     Self-contained: each row owns a change handler (no edits to the big toggleLayer switch); rows are
+     swept into "Others (beta)" by reorganizeLayerPanel; active-layers + the deterministic toggle pick them
+     up automatically. Data: World Bank Open Data (latest value per country, CORS) + USGS earthquakes
+     (realtime feed + historical query) + a news-density "Heat of Attention" heatmap. */
+  (function(){
+    if(typeof map==='undefined'||!map) return;
+    const jp=()=>currentLang==='jp';
+    function ensureGeo(cb){ try{ if(window.countryGeo&&window.countryGeo.features) return cb(window.countryGeo); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb(window.countryGeo)); return; } }catch(_){} cb(null); }
+    const iso=(p)=>{ p=p||{}; return p.ISO_A3_EH||p.ISO_A3||p.ADM0_A3||p.SOV_A3||p.iso_a3||p.ADM0_A3_US||''; };
+    const wbCache={};
+    function wbFetch(code){ if(wbCache[code]) return Promise.resolve(wbCache[code]);
+      return fetch('https://api.worldbank.org/v2/country/all/indicator/'+code+'?format=json&mrnev=1&per_page=400')
+        .then(r=>r.json()).then(j=>{ const arr=(j&&j[1])||[]; const m={}; arr.forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:d.date}; }); wbCache[code]=m; return m; }).catch(()=>({})); }
+    const WB=[
+      {id:'wbco2', code:'EN.ATM.CO2E.PC', n:{en:'CO₂ per capita',jp:'1人当たりCO₂排出'}, ramp:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026'], unit:' t'},
+      {id:'wburb', code:'SP.URB.TOTL.IN.ZS', n:{en:'Urban population %',jp:'都市人口率'}, ramp:[20,'#fee08b',40,'#a6d96a',60,'#66bd63',80,'#1a9850',95,'#006837'], unit:'%'},
+      {id:'wbelec', code:'EG.ELC.ACCS.ZS', n:{en:'Electricity access %',jp:'電力アクセス率'}, ramp:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbhealth', code:'SH.XPD.CHEX.GD.ZS', n:{en:'Health spend %GDP',jp:'医療支出 対GDP'}, ramp:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000'], unit:'%'},
+      {id:'wbforest', code:'AG.LND.FRST.ZS', n:{en:'Forest area %',jp:'森林面積率'}, ramp:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e'], unit:'%'},
+      {id:'wbrenew', code:'EG.FEC.RNEW.ZS', n:{en:'Renewable energy %',jp:'再エネ比率'}, ramp:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837'], unit:'%'},
+      {id:'wbmobile', code:'IT.CEL.SETS.P2', n:{en:'Mobile subs /100',jp:'携帯契約 /100人'}, ramp:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837'], unit:''},
+      {id:'wbinfl', code:'FP.CPI.TOTL.ZG', n:{en:'Inflation % (CPI)',jp:'インフレ率 (CPI)'}, ramp:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026'], unit:'%'}
+    ];
+    function choroOn(L){ ensureGeo(geo=>{ if(!geo) return; wbFetch(L.code).then(m=>{
+      const feats=[]; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; if(d&&d.v!=null) feats.push({type:'Feature',geometry:f.geometry,properties:{v:d.v}}); });
+      const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
+      try{ if(map.getSource(src)) map.getSource(src).setData(fc); else { map.addSource(src,{type:'geojson',data:fc});
+        map.addLayer({id:fill,type:'fill',source:src,paint:{'fill-color':['interpolate',['linear'],['get','v']].concat(L.ramp),'fill-opacity':0.62}});
+        map.addLayer({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); } }catch(_){}
+      const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
+      [fill,line].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,[L.n.en,L.n.jp],[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join(''); } } }catch(_){}
+    }); }); }
+    function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
+
+    /* ---------- Earthquakes (USGS realtime feed + historical query) ---------- */
+    let eqWin='week', eqClickWired=false;
+    function eqUrl(){ if(eqWin==='year') return 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime='+new Date(Date.now()-365*864e5).toISOString().slice(0,10)+'&minmagnitude=6&orderby=time&limit=2000';
+      return 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/'+({day:'all_day',week:'all_week',month:'4.5_month'}[eqWin]||'all_week')+'.geojson'; }
+    function eqOn(){ fetch(eqUrl()).then(r=>r.json()).then(j=>{ const src='src-eq';
+      try{ if(map.getSource(src)) map.getSource(src).setData(j); else { map.addSource(src,{type:'geojson',data:j});
+        map.addLayer({id:'eq-pt',type:'circle',source:src,paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}}); } }catch(_){}
+      const cb=document.getElementById('bx-eq'), on=cb?cb.checked:true; try{ if(map.getLayer('eq-pt')) map.setLayoutProperty('eq-pt','visibility',on?'visible':'none'); }catch(_){}
+      if(!eqClickWired){ eqClickWired=true; try{ map.on('click','eq-pt',(e)=>{ const p=(e.features&&e.features[0]&&e.features[0].properties)||{}; const when=p.time?new Date(+p.time).toLocaleString():''; new maplibregl.Popup({closeButton:true}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;"><b style="color:#ff3b30;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+(p.place||'')+'<br><span style="color:#888;">'+when+'</span></div>').addTo(map); }); map.on('mouseenter','eq-pt',()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave','eq-pt',()=>{ map.getCanvas().style.cursor=''; }); }catch(_){} }
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('eq',['Earthquakes (USGS)','地震（USGS）'],['eq-pt'],'bx-eq');
+        if(el){ let ctl=el.querySelector('.bx-eqwin'); if(!ctl){ ctl=document.createElement('div'); ctl.className='bx-eqwin'; ctl.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;'; el.appendChild(ctl); }
+          const opts=[['day',jp()?'24時間':'24h'],['week',jp()?'7日':'7d'],['month',jp()?'30日(M4.5+)':'30d M4.5+'],['year',jp()?'1年(M6+)':'1yr M6+']];
+          ctl.innerHTML=opts.map(o=>'<button data-w="'+o[0]+'" style="border:1px solid rgba(128,128,128,0.3);background:'+(eqWin===o[0]?'var(--primary-color)':'var(--input-bg)')+';color:'+(eqWin===o[0]?'#fff':'var(--text-main)')+';border-radius:7px;padding:4px 7px;font-size:10.5px;font-weight:600;cursor:pointer;">'+o[1]+'</button>').join('');
+          ctl.querySelectorAll('button').forEach(b=>b.onclick=()=>{ eqWin=b.getAttribute('data-w'); eqOn(); }); } } }catch(_){}
+    }).catch(()=>{ try{ if(typeof imToast==='function') imToast(jp()?'地震データを取得できませんでした':'Could not load earthquake data'); }catch(_){} }); }
+    function eqOff(){ try{ if(map.getLayer('eq-pt')) map.setLayoutProperty('eq-pt','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('eq'); }catch(_){} }
+
+    /* ---------- Heat of Attention (news-density heatmap) ---------- */
+    function heatPts(){ const pts=[]; try{ (window.newsFeatures||[]).forEach(f=>{ if(f&&f.geometry&&f.geometry.coordinates) pts.push({type:'Feature',geometry:{type:'Point',coordinates:f.geometry.coordinates},properties:{}}); }); }catch(_){}
+      if(pts.length<5){ try{ const list=(typeof computeFilteredNews==='function')?computeFilteredNews():[]; list.forEach(it=>{ const a=it&&it.analysis; if(a&&a.loc) pts.push({type:'Feature',geometry:{type:'Point',coordinates:a.loc},properties:{}}); }); }catch(_){} }
+      return {type:'FeatureCollection',features:pts}; }
+    function heatOn(){ const fc=heatPts(), src='src-heat';
+      try{ if(map.getSource(src)) map.getSource(src).setData(fc); else { map.addSource(src,{type:'geojson',data:fc});
+        map.addLayer({id:'heat-h',type:'heatmap',source:src,paint:{'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,18,4,42],'heatmap-opacity':0.72,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,255,0)',0.2,'#3b82f6',0.4,'#22c55e',0.6,'#eab308',0.8,'#f97316',1,'#ef4444']}}); } }catch(_){}
+      const cb=document.getElementById('bx-heat'), on=cb?cb.checked:true; try{ if(map.getLayer('heat-h')) map.setLayoutProperty('heat-h','visibility',on?'visible':'none'); }catch(_){}
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('heat',['Heat of Attention','注目度ヒートマップ'],['heat-h'],'bx-heat'); if(el){ let h=el.querySelector('.bx-note'); if(!h){ h=document.createElement('div'); h.className='bx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=jp()?'世界のニュース密度から推定（概算）':'Estimated from world news density (approximate)'; } } }catch(_){}
+    }
+    function heatOff(){ try{ if(map.getLayer('heat-h')) map.setLayoutProperty('heat-h','visibility','none'); }catch(_){} try{ window._hideGenericLegend&&window._hideGenericLegend('heat'); }catch(_){} }
+
+    const ALL=WB.map(L=>({id:L.id,n:L.n,on:()=>choroOn(L),off:()=>choroOff(L)}))
+      .concat([{id:'eq',n:{en:'Earthquakes (live + history)',jp:'地震（ライブ＋過去）'},on:eqOn,off:eqOff},
+               {id:'heat',n:{en:'Heat of Attention',jp:'注目度ヒートマップ'},on:heatOn,off:heatOff}]);
+    function buildRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('bx-eq')) return;
+      ALL.forEach(L=>{ const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+L.id;
+        const lab=document.createElement('label'); lab.className='layer-option';
+        const cb=document.createElement('input'); cb.type='checkbox'; cb.id='bx-'+L.id;
+        const sp=document.createElement('span'); sp.className='bx-name'; sp.textContent=L.n[jp()?'jp':'en'];
+        lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp); w.appendChild(lab); dd.appendChild(w);
+        cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); if(e.target.checked){ try{ L.on(); }catch(_){} } else { try{ L.off(); }catch(_){} } });
+      });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){}
+    }
+    /* keep labels in sync with UI language */
+    window.addEventListener('intmap-lang',()=>{ ALL.forEach(L=>{ const r=document.getElementById('lyrrow-'+L.id); const sp=r&&r.querySelector('.bx-name'); if(sp) sp.textContent=L.n[jp()?'jp':'en']; }); });
+    if(document.readyState!=='loading') setTimeout(buildRows,700); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildRows,700));
+  })();
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an
