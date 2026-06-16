@@ -2455,3 +2455,79 @@ DOM-driven pieces).
 - Compare "Ukraine frontline / use the same layer": the picker logic is correct (one layer at a time, no
   leak; both fetch DeepStateMap). The report is ambiguous — left intact rather than risk breaking it; needs a
   concrete repro / device.
+
+---
+
+## 34. Round 30 — recurring-bug root causes + Playground overhaul (tags `#R30`)
+
+Build `2026-06-16-R30`. A very large batch: the recurring layer/checkbox/compare/mobile complaints, plus a
+deep overhaul of the Playground (scientific Pandemic model, "Statecraft" grand-strategy, World-Explorer
+scoring, Quiz moved in). Verified live in the headless preview after every change (72 layer rows + zero
+console errors; the two simulators run end-to-end; key DOM/CSS/state probes).
+
+### Recurring bugs — new ROOT CAUSES
+- **Orphan layers ("オンなのにactive layersに無い/消せない", "勝手にオンになる", "消したのに表示されたまま") — ASYNC RACE.**
+  Almost every layer adds+shows inside `whenStyleReady()/poll` callbacks that resolve LATER. If the user
+  UNCHECKED before that resolved, the deferred `setVis(...,true)` re-showed a layer whose checkbox is now OFF
+  → a visible-but-unremovable orphan (the Active-layers list reads the checkbox, so it never lists it). Fix:
+  `toggleLayer`'s ON branch now re-asserts OFF at 600/1500/3200 ms if the box went off in the meantime
+  (`toggleLayer(id,false)` runs the full per-id hide path) → map ⇄ checkbox ⇄ Active-list stay in sync.
+- **iOS checkbox** — `.layer-option input` is now `appearance:none` rounded box that fills with the accent +
+  white tick when checked ("モバイルのチェックボックスをiOS風に"). Same footprint, keeps `pointer-events:none`
+  (the deterministic single-toggle is unchanged), so no list reflow / no scroll-on-toggle regressions.
+
+### Compare view (mobile) — finally clean
+- Header rebuilt: NO chaotic flex-wrap ("並びが不規則でダサい") — title on its own line, the two segmented
+  controls fill an even second row, Close + Minimise are tasteful **frosted circular** icons (the old alarming
+  red ✕ was "×のUIがダサい"), in a reserved 96px gutter so nothing overlaps Close.
+- **Main-map FABs MOVED to the bottom-LEFT** while compare is open (`body.cmp-open`) — provably clear of the
+  compare × (top-right), the layer picker, AND the bottom-RIGHT timebar (root of "×がボタンと重なる" /
+  "タイムスライダーのボタンが消える"). Moved, not hidden ("勝手に消すな").
+- Sat/Map switch (poll-retry) + X-ray pan-from-inside kept from R29.1. Ukraine-frontline "leak": the compare
+  map is a SEPARATE GL instance (no real leak; in X-ray the lens overlay is by design) — documented, left intact.
+
+### Other UI
+- **Header (logged-in) one row** — account button collapses to the avatar only on mobile (the long display
+  name forced the wrap "横一列に並ばず改行"); feedback+settings stay compact; `.header-area` is `nowrap`.
+- **Intro/welcome card** — emojis replaced with clean SF-Symbol-style **SVG** icons (globe/layers/pin/chart),
+  more breathing room (no "つぶれてダサい"). (Verified by screenshot.)
+- **Isolate button** (country-name tap + country popup) — 🔍/📈 emojis → clean line SVGs, primary-tinted,
+  matching the map's iOS pill language ("周りのUIに合わせろ").
+- **News controls** — All/Saved AND Subject/Publisher now share ONE row (`.news-seg-row`, equal halves).
+  **Translate titles** only shows when the news set actually carries a non-UI language (`_newsHasForeignLang`)
+  and only translates those — hidden entirely for "current-language only" ("設定言語のみなら表示しない").
+- **Feedback strengthened** — category chips (General/Idea/Bug/Praise; Bug links to the diagnostic Bug
+  Reporter), optional reply-email for logged-out users, category embedded in the comment (no schema change).
+
+### Playground overhaul
+- **Quiz mode MOVED INTO the Playground hub**; the Playground entry MOVED OUT of Settings → Layers ▸ Tools
+  (the old Quiz-mode button spot). Hub tiles are clean SVG app-icons (no emojis).
+- **World Explorer**: truly-random spots — area-weighted uniform over the sphere accepted only on land (kills
+  "毎回似たような場所"); on start it COLLAPSES the sidebar + DESELECTS all tabs/layers; a pulsing **home pin**
+  marks the drop point; **zoom-out scoring** — the round tracks the most-zoomed-out level and DEDUCTS from the
+  distance score ("ズームアウトせずに当てるほど高得点"). Mobile chrome hidden (`body.pg-we`) so the panel isn't
+  covered.
+- **Pandemic Simulator — rebuilt as a scientific SEIR metapopulation model.** Per-country S/E/I/R/D/V; R0 +
+  incubation + infectious period + IFR; sanitation (HDI/GDP) → healthcare overload & care speed; seasonality
+  + behavioural distancing + automatic **lockdowns / border closures** + **waning immunity** + random
+  **VARIANTS** (immune escape → new waves) → long, chaotic, VARIED outcomes (eradication OR endemic
+  equilibrium), not the old short "everyone dies" curve. Spread shows as **red CASE DOTS** that multiply &
+  spread (no country-wide red fill, per spec). Luck-driven **vaccine** (R&D gauge) + **treatment**.
+  **Breaking-News** toasts: patient-zero, 10-country, WHO PHEIC, border closures (real names), variants,
+  vaccine approval, treatment. Mobile chrome hidden (`body.pg-sim`).
+- **Nation Sim → "Statecraft"** (renamed + greatly deepened). 7 national gauges + 5 power **FACTIONS**
+  (parliament/military/business/public/courts) that GATE policy: in a democracy unpopular bills are BLOCKED by
+  the factions that lose out; an autocrat can DECREE anything but pays in unrest/sanctions/falling Dem-index
+  (→ coups, isolation→exile). 18 policies across 5 categories, ~12 events, war/diplomacy (tension→war,
+  alliances), elections/coups, real GDP/HDI/Dem/pop/military starting data, varied endings. NOTE: a literal
+  global GRID/cellular world model (the "supercomputer" ask) is not feasible in a single-file front-end; the
+  systems-model DEPTH was greatly increased instead.
+
+### Maintenance
+- Restored `supabase/supabase_bug_reports.sql` (it had been deleted in the working tree — likely an OneDrive
+  hiccup; the Bug Reporter needs that table's schema).
+
+### Verify-on-device (honest)
+- The two simulators + World Explorer are verified to launch & play in the headless preview (no WebGL needed
+  for the logic), but the dot-rendering / pin / satellite visuals need a real device. Mobile compare/FAB
+  geometry is root-caused in CSS + measured, but a phone confirmation is welcome.
