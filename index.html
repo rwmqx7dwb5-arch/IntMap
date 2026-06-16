@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-15-R29.1';
+  window.INTMAP_BUILD='2026-06-16-R30';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -219,6 +219,7 @@ gtag('config', 'G-57X5MX0ZPW');
     .lang-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
     .btn-settings{ background:var(--input-bg); border:none; color:var(--text-main); padding:8px 14px; cursor:pointer; font-size:13px; font-weight:500; border-radius:20px; transition:0.2s; }
     .btn-settings:hover{ background:rgba(128,128,128,0.1); }
+    #btn-account .acct-av{ margin-right:5px; } #btn-account .acct-name{ vertical-align:middle; }
     .control-panel{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }  /* (#R9/#21) tabs→search gap swapped with search→All/Saved */
     .mode-btn{ flex:1 1 auto; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 6px; cursor:pointer; font-size:12px; font-weight:500; border-radius:10px; transition:0.3s; min-width:70px; }
     .mode-btn.active{ background:var(--primary-color); color:#fff; box-shadow:0 4px 12px rgba(0,122,255,0.3); }
@@ -322,7 +323,13 @@ gtag('config', 'G-57X5MX0ZPW');
        anywhere on the row routes through the <label> exactly ONCE (the checkbox + label were each
        receiving the event = a double-toggle that read as "チェックを付けても動かない" / unstable). The label
        still toggles the (nested) checkbox via native label activation. */
-    .layer-option input[type="checkbox"]{ accent-color:var(--primary-color); width:16px; height:16px; cursor:pointer; touch-action:manipulation; pointer-events:none; }
+    /* (#R30) iOS-style refined checkbox — a rounded square that fills with the accent + a white tick when
+       checked. appearance:none replaces the OS default (the "ダサい" native box). Same compact footprint so
+       no list row reflows; keeps pointer-events:none so the <label> still owns the single toggle. */
+    .layer-option input[type="checkbox"]{ -webkit-appearance:none; appearance:none; width:20px; height:20px; flex-shrink:0; border-radius:6px; border:1.5px solid var(--glass-border,rgba(128,128,128,0.5)); background:var(--input-bg); position:relative; cursor:pointer; touch-action:manipulation; pointer-events:none; transition:background .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .layer-option input[type="checkbox"]:checked{ background:var(--primary-color); border-color:var(--primary-color); box-shadow:0 1px 4px rgba(10,132,255,0.3); }
+    .layer-option input[type="checkbox"]:checked::after{ content:''; position:absolute; left:6.5px; top:2.5px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); box-sizing:border-box; }
+    .layer-option:active input[type="checkbox"]:not(:checked){ border-color:var(--primary-color); }
     .lyr-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset; }
     .layer-group-title{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); margin:8px 2px 2px; }
     /* Collapsible layer groups (accordion) — keeps a long layer list tidy */
@@ -744,6 +751,10 @@ gtag('config', 'G-57X5MX0ZPW');
     .news-ai-actions > #news-pinmode-seg{ display:flex; width:100%; box-sizing:border-box; }
     .news-ai-actions > #news-pinmode-seg .ios-segment-btn{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; }
     .news-ai-actions > #ai-translate-btn{ width:100%; margin-top:0 !important; }
+    /* (#R30) All/Saved + Subject/Publisher segments side-by-side in one row. */
+    .news-seg-row{ display:flex; gap:8px; align-items:stretch; }
+    .news-seg-row > .ios-segment{ display:flex; flex:1 1 0; min-width:0; box-sizing:border-box; }
+    .news-seg-row .ios-segment-btn{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     #ai-translate-btn{ flex:1 1 50%; min-width:0; margin-top:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* === Stats compare bar (pinned to top of Stats list) === */
@@ -919,10 +930,17 @@ gtag('config', 'G-57X5MX0ZPW');
       .sheet-grip::before{ content:''; position:absolute; top:20px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; background:rgba(128,128,128,0.45); transition:background 0.2s; }
       .sheet-grip:active::before{ background:rgba(128,128,128,0.72); width:54px; }
 
-      .header-area{ flex:0 0 auto; margin:0 0 10px; }
-      h2{ font-size:24px; font-weight:700; letter-spacing:-0.4px; }
-      .title-group{ gap:10px; }
-      .btn-settings{ padding:7px 13px; font-size:13px; min-height:34px; border-radius:17px; }
+      /* (#R30) Keep account / feedback / settings on ONE row — never wrap ("横一列に並ばず改行されてしまう").
+         The logged-in account button collapses to the avatar only (the long display name was forcing the
+         wrap); feedback + settings stay compact. iOS top-bar feel: title left, action chips right. */
+      .header-area{ flex:0 0 auto; margin:0 0 10px; flex-wrap:nowrap; gap:6px; }
+      h2{ font-size:22px; font-weight:700; letter-spacing:-0.4px; }
+      .title-group{ gap:10px; flex:0 1 auto; min-width:0; }
+      .title-group h2{ overflow:hidden; text-overflow:ellipsis; }
+      .btn-settings{ padding:7px 12px; font-size:12.5px; min-height:34px; border-radius:17px; flex:0 0 auto; white-space:nowrap; }
+      #btn-account{ padding:6px 9px; display:inline-flex; align-items:center; }
+      #btn-account .acct-name{ display:none; }
+      #btn-account .acct-av{ font-size:16px; line-height:1; }
 
       .search-bar{ flex:0 0 auto; margin:0 0 10px; padding:5px 5px 5px 14px; border-radius:12px; }
       .search-input{ font-size:16px; padding:10px 4px; }     /* 16px stops iOS focus-zoom */
@@ -1522,23 +1540,24 @@ gtag('config', 'G-57X5MX0ZPW');
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
       <button class="search-btn" id="btn-search" data-i18n="searchLoadBtn" title="Search if the box has text, otherwise reload with the current news settings">Search / Load</button>
     </div>
-    <div class="news-filter-toggle" id="news-filter-toggle" style="display:none; margin:0 0 12px 0;">
-      <div class="ios-segment" role="tablist" style="width:100%;">
-        <button class="ios-segment-btn active" id="newsfilter-all" style="flex:1;">All</button>
-        <button class="ios-segment-btn" id="newsfilter-saved" style="flex:1;">★ Saved</button>
+    <!-- (#R30) All/Saved AND Subject/Publisher share ONE row ("Newsのall/saved, subject/publisher locationは
+         一列に"). News location is pre-analysed server-side (refresh-news → current_news); no client AI-locate. -->
+    <div class="news-filter-toggle" id="news-filter-toggle" style="display:none; margin:0 0 10px 0;">
+      <div class="news-seg-row">
+        <div class="ios-segment" role="tablist">
+          <button class="ios-segment-btn active" id="newsfilter-all">All</button>
+          <button class="ios-segment-btn" id="newsfilter-saved">★ Saved</button>
+        </div>
+        <div class="ios-segment" id="news-pinmode-seg" role="tablist" title="Map pin position">
+          <button class="ios-segment-btn active" id="pinmode-loc" data-i18n="pinModeLoc">Subject</button>
+          <button class="ios-segment-btn" id="pinmode-pub" data-i18n="pinModePub">Publisher</button>
+        </div>
       </div>
     </div>
-    <!-- (#R29) News location is pre-analysed server-side (refresh-news → current_news) and shown
-         instantly — there is NO client AI-locate button anymore. This row is just the display
-         toggle (event Subject vs Publisher HQ, both pre-computed by the server) + Translate. -->
-    <div id="ai-geocode-row" style="display:none; margin:0 0 8px 0;">
-      <div class="news-ai-actions">
-        <div class="ios-segment" id="news-pinmode-seg" role="tablist" style="flex:1;min-width:0;" title="Map pin position">
-          <button class="ios-segment-btn active" id="pinmode-loc" style="flex:1;" data-i18n="pinModeLoc">Subject</button>
-          <button class="ios-segment-btn" id="pinmode-pub" style="flex:1;" data-i18n="pinModePub">Publisher</button>
-        </div>
-        <button class="ai-action-btn" id="ai-translate-btn">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
-      </div>
+    <!-- (#R30) Translate titles only appears when the news set actually contains a language other than the
+         UI language ("設定言語のみなら表示しない"); it translates only those non-UI-language headlines. -->
+    <div id="ai-geocode-row" style="display:none; margin:0 0 10px 0;">
+      <button class="ai-action-btn" id="ai-translate-btn" style="margin-top:0;">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
     </div>
     <div class="content-area" id="live-news-feed"></div>
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
@@ -1721,10 +1740,8 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group"><label data-i18n="lblDataSources">Data &amp; attribution</label>
       <button type="button" id="btn-data-sources" class="ai-test-btn" style="width:100%;" data-i18n="viewDataSources">View all data sources ↗</button>
     </div>
-    <!-- (#R29.1) Playground (beta) — experimental interactive modes (World Explorer + simulators). -->
-    <div class="setting-group" id="playground-group"><label data-i18n="lblPlayground">Playground (beta)</label>
-      <button type="button" id="btn-playground" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="playgroundBtn">🎮 Open Playground</button>
-    </div>
+    <!-- (#R30) Playground moved OUT of Settings → Layers ▸ Tools (the old Quiz-mode spot). Quiz mode now
+         lives INSIDE the Playground hub. -->
     <!-- (#R29.1) Feedback & bug report — open the existing feedback flow or the new bug reporter anytime. -->
     <div class="setting-group" id="feedback-group"><label data-i18n="lblFeedback">Feedback &amp; bug report</label>
       <button type="button" id="btn-send-feedback" class="ai-test-btn" style="width:100%;margin-bottom:8px;" data-i18n="sendFeedbackBtn">⭐ Send feedback</button>
@@ -4112,9 +4129,12 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cp-title').innerHTML=(s&&s.flag?s.flag+' ':'🏳️ ')+name;
     const body=document.getElementById('cp-body');
     window._cpCurrent={code:idStr,name:name};   /* read by the isolate + time-series buttons */
+    const _isoSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
+    const _tsSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>';
+    const _topBtnCss='flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;';
     const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
-      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="flex:1;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;">🔍 ${currentLang==='jp'?'この国だけ':'Isolate'}</button>`
-      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="flex:1;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;">📈 ${currentLang==='jp'?'時系列グラフ':'Time-series'}</button>`
+      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${currentLang==='jp'?'この国だけ':'Isolate'}</button>`
+      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${currentLang==='jp'?'時系列グラフ':'Time-series'}</button>`
       +`</div>`;
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
@@ -5655,6 +5675,17 @@ window.addEventListener('DOMContentLoaded', () => {
   window.toggleDashCat=function(cat){ if(activeDashCategories.has(cat))activeDashCategories.delete(cat); else activeDashCategories.add(cat); renderDashboard(); };
   window.setStatsSort=function(k){ statsSort=k; renderStats(searchVal()); };
 
+  /* (#R30) Does the active news-language setting include a language OTHER than the UI language? If not
+     (Current-language-only, or Multi with only the UI language ticked) there is nothing to translate, so
+     the Translate-titles button is hidden entirely. UI 'jp' maps to news code 'ja'. */
+  function _newsHasForeignLang(){
+    try{ const ui = currentLang==='jp' ? 'ja' : 'en';
+      if(newsLangMode!=='multi') return false;
+      const sel = (Array.isArray(newsLangs)&&newsLangs.length) ? newsLangs : [];
+      return sel.some(c=>c!==ui);
+    }catch(_){ return false; }
+  }
+  window._newsHasForeignLang=_newsHasForeignLang;
   function renderUI(){
     const feed=document.getElementById('live-news-feed'),
           dash=document.getElementById('info-dashboard'),
@@ -5688,7 +5719,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if(currentMode==='news'||currentMode==='saved'){
       feed.style.display='flex'; sb.style.display='flex';
       filterToggle.style.display='block';
-      { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='block'; }
+      /* (#R30) Translate titles only when the news set actually carries a non-UI language. */
+      { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display=_newsHasForeignLang()?'block':'none'; }
       try{ aiSyncFeatureButtons(); }catch(_){}
       /* sync the All / ★ Saved sub-filter (Saved now lives inside the News tab) */
       document.getElementById('newsfilter-all').textContent = currentLang==='jp'?'すべて':'All';
@@ -6761,34 +6793,46 @@ window.addEventListener('DOMContentLoaded', () => {
      donation ask (Stripe link, fully declinable); 1–3 stars → a plain thank-you. ===== */
   (function(){
     const jp=()=>currentLang==='jp';
-    let modal=null, rating=0;
+    let modal=null, rating=0, cat='general';
+    /* (#R30) feedback categories — make every note actionable. Bug → offer the diagnostic Bug Reporter. */
+    const CATS=[['general',{en:'General',jp:'全般'}],['idea',{en:'Feature idea',jp:'要望'}],['bug',{en:'Bug',jp:'不具合'}],['praise',{en:'Praise',jp:'良かった点'}]];
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='feedback-modal';
       modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
-      modal.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;width:100%;max-width:380px;box-sizing:border-box;position:relative;" id="fb-card"></div>';
+      modal.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:22px 24px;width:100%;max-width:400px;max-height:92vh;overflow-y:auto;box-sizing:border-box;position:relative;" id="fb-card"></div>';
       document.body.appendChild(modal);
       modal.addEventListener('click',(e)=>{ if(e.target===modal) closeM(); });
       return modal; }
     function star(n){ return '<button class="fb-star" data-n="'+n+'" style="background:none;border:none;font-size:30px;cursor:pointer;padding:2px 3px;line-height:1;color:'+(n<=rating?'#ffcc00':'rgba(128,128,128,0.45)')+';">'+(n<=rating?'★':'☆')+'</button>'; }
-    function renderForm(){ const c=modal.querySelector('#fb-card');
+    function renderForm(){ const c=modal.querySelector('#fb-card'); const loggedOut=!(typeof currentUser!=='undefined'&&currentUser);
       c.innerHTML='<button id="fb-x" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border:none;border-radius:9px;background:var(--input-bg);color:var(--text-main);font-size:16px;cursor:pointer;">✕</button>'+
         '<h3 style="margin:0 0 6px;font-size:17px;">'+(jp()?'フィードバックを送る':'Send feedback')+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(jp()?'IntMapの評価と、ご意見・ご要望をお聞かせください。':'Rate IntMap and tell us what to improve.')+'</p>'+
+        '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 6px;">'+(jp()?'種類':'Type')+'</div>'+
+        '<div id="fb-cats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'+CATS.map(([k,l])=>'<button class="fb-cat" data-k="'+k+'" style="flex:1 1 0;min-width:0;border:1px solid rgba(128,128,128,0.3);background:'+(cat===k?'var(--primary-color)':'var(--input-bg)')+';color:'+(cat===k?'#fff':'var(--text-main)')+';border-radius:9px;padding:7px 4px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+l[jp()?'jp':'en']+'</button>').join('')+'</div>'+
+        (cat==='bug'?'<div id="fb-bughint" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.3);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11.5px;line-height:1.45;">'+(jp()?'不具合は、診断情報を自動添付する<b>バグレポート</b>からの送信がおすすめです。':'For bugs, the <b>Bug Reporter</b> auto-attaches diagnostics.')+' <button id="fb-openbug" style="border:none;background:none;color:var(--primary-color);font-weight:700;cursor:pointer;padding:0;font-size:11.5px;">'+(jp()?'開く →':'Open it →')+'</button></div>':'')+
+        '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 4px;">'+(jp()?'評価':'Rating')+'</div>'+
         '<div id="fb-stars" style="display:flex;justify-content:center;margin-bottom:12px;">'+[1,2,3,4,5].map(star).join('')+'</div>'+
-        '<textarea id="fb-text" maxlength="2000" placeholder="'+(jp()?'ご意見・ご要望（任意）':'Comments (optional)')+'" style="width:100%;box-sizing:border-box;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
+        '<textarea id="fb-text" maxlength="3000" placeholder="'+(jp()?'ご意見・ご要望（任意）':'Comments (optional)')+'" style="width:100%;box-sizing:border-box;min-height:96px;resize:vertical;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;font-family:inherit;"></textarea>'+
+        (loggedOut?'<input id="fb-email" type="email" placeholder="'+(jp()?'メール（任意・返信用）':'Email (optional, for a reply)')+'" style="width:100%;box-sizing:border-box;margin-top:9px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;outline:none;">':'')+
         '<button id="fb-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit')+'</button>'+
         '<p id="fb-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
       c.querySelector('#fb-x').onclick=closeM;
+      c.querySelectorAll('.fb-cat').forEach(b=>b.onclick=()=>{ cat=b.getAttribute('data-k'); renderForm(); });
+      const ob=c.querySelector('#fb-openbug'); if(ob) ob.onclick=()=>{ closeM(); try{ window._openBugReport&&window._openBugReport(); }catch(_){} };
       c.querySelectorAll('.fb-star').forEach(b=>b.onclick=()=>{ rating=+b.getAttribute('data-n'); renderForm(); });
       c.querySelector('#fb-send').onclick=submit; }
     async function submit(){ const c=modal.querySelector('#fb-card'); const msg=c.querySelector('#fb-msg');
       if(!rating){ msg.textContent=jp()?'星の数を選んでください。':'Please pick a star rating.'; return; }
       const text=(c.querySelector('#fb-text').value||'').trim();
+      const emailIn=c.querySelector('#fb-email'); const enteredEmail=emailIn?(emailIn.value||'').trim():'';
+      const catEN=(CATS.find(x=>x[0]===cat)||[,{en:'General'}])[1].en;
+      const comment=('['+catEN+'] '+text).trim();   /* category embedded so it stores without a schema change */
       const btn=c.querySelector('#fb-send'); btn.disabled=true; btn.textContent=jp()?'送信中…':'Sending…';
       let ok=false;
       try{ if(typeof DB!=='undefined'&&DB){
-        const row={ rating, comment:text||null, lang:currentLang, ua:(navigator.userAgent||'').slice(0,250), page:location.pathname };
-        try{ if(typeof currentUser!=='undefined'&&currentUser){ row.user_id=currentUser.id; row.email=currentUser.email||null; } }catch(_){}
+        const row={ rating, comment:comment||null, lang:currentLang, ua:(navigator.userAgent||'').slice(0,250), page:location.pathname };
+        try{ if(typeof currentUser!=='undefined'&&currentUser){ row.user_id=currentUser.id; row.email=currentUser.email||null; } else if(enteredEmail) row.email=enteredEmail; }catch(_){}
         const {error}=await DB.from('feedback').insert(row); ok=!error;
       } }catch(_){}
       if(!ok){ btn.disabled=false; btn.textContent=jp()?'送信':'Submit'; msg.textContent=jp()?'送信できませんでした。時間をおいてもう一度お試しください。':'Could not send — please try again later.'; return; }
@@ -6808,7 +6852,7 @@ window.addEventListener('DOMContentLoaded', () => {
       c.querySelector('#fb-later').onclick=closeM;
       const dn=c.querySelector('#fb-donate');
       if(dn) dn.addEventListener('click',()=>{ try{ if(typeof DB!=='undefined'&&DB&&typeof currentUser!=='undefined'&&currentUser){ DB.from('donations').insert({user_id:currentUser.id,email:currentUser.email||null,locale:currentLang,source:'feedback_upsell',status:'initiated'}); } }catch(_){} setTimeout(closeM,400); }); }
-    function openM(){ ensure(); rating=0; renderForm(); modal.style.display='flex'; }
+    function openM(){ ensure(); rating=0; cat='general'; renderForm(); modal.style.display='flex'; }
     function closeM(){ if(modal) modal.style.display='none'; }
     window._openFeedback=openM;
   })();
@@ -6907,13 +6951,22 @@ window.addEventListener('DOMContentLoaded', () => {
       const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:10px;margin:0 0 4px;';
       const t=document.createElement('h3'); t.textContent=jp()?'プレイグラウンド':'Playground'; t.style.cssText='margin:0;font-size:21px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); card.appendChild(h);
       const sub=document.createElement('p'); sub.textContent=jp()?'実データを使った実験的なインタラクティブモード。':'Experimental interactive modes built on real data.'; sub.style.cssText='margin:0 0 16px;color:var(--text-muted);font-size:13px;'; card.appendChild(sub);
+      /* (#R30) Clean SF-Symbol-style SVG tile icons (no emojis). Quiz mode moved IN here; Nation Sim
+         renamed "Statecraft". */
+      const SV={
+        globe:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 3.9 5.8 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.8-3.9-9S9.4 5.6 12 3Z"/></svg>',
+        virus:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>',
+        capitol:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M3 10l9-6 9 6"/></svg>',
+        cap:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 5 2 9l10 4 10-4Z"/><path d="M6 11v5c0 1.2 2.7 2.6 6 2.6s6-1.4 6-2.6v-5"/><path d="M22 9v5"/></svg>'
+      };
       const modes=[
-        {icon:'🌍',bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真版GeoGuessr。ランダムな地点へ飛び、現在地を当てる。':'Satellite GeoGuessr — dropped somewhere on Earth, guess where you are.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
-        {icon:'🦠',bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を可視化。ワクチン開発まで。':'Seed an outbreak and watch it spread across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
-        {icon:'🏛️',bg:'linear-gradient(135deg,#5856d6,#af52de)',t:jp()?'ネイション・シミュレーター':'Nation Sim',d:jp()?'1900〜2026年、任意の国家の元首に。独裁か民主かで制約が変わる。':'Lead a real nation (1900–2026) as dictator or democrat — each has its own constraints.',go:()=>{ ov.remove(); window._pgNationSim&&window._pgNationSim(); }}
+        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真版GeoGuessr。ランダムな地点へ飛び、現在地を当てる。':'Satellite GeoGuessr — dropped somewhere on Earth, guess where you are.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
+        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を可視化。ワクチン開発まで。':'Seed an outbreak and watch it spread across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
+        {svg:SV.capitol,bg:'linear-gradient(135deg,#5856d6,#af52de)',t:jp()?'ステイトクラフト（国家運営）':'Statecraft',d:jp()?'1900〜2026年、任意の国家の元首に。経済・世論・議会・国際情勢が絡み合う。':'Lead a real nation (1900–2026); economy, opinion, parliament & geopolitics all interact.',go:()=>{ ov.remove(); window._pgNationSim&&window._pgNationSim(); }},
+        {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove(); try{ window.IntMapEdu&&window.IntMapEdu.open(); }catch(_){} }}
       ];
       modes.forEach(m=>{ const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-radius:14px;padding:14px;margin-bottom:11px;cursor:pointer;color:var(--text-main);';
-        const ic=document.createElement('div'); ic.textContent=m.icon; ic.style.cssText='width:48px;height:48px;border-radius:13px;background:'+m.bg+';display:flex;align-items:center;justify-content:center;font-size:25px;flex-shrink:0;';
+        const ic=document.createElement('div'); ic.innerHTML=m.svg; ic.style.cssText='width:48px;height:48px;border-radius:13px;background:'+m.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;';
         const tx=document.createElement('div'); const tt=document.createElement('div'); tt.textContent=m.t; tt.style.cssText='font-size:15px;font-weight:700;'; const dd=document.createElement('div'); dd.textContent=m.d; dd.style.cssText='font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.35;'; tx.appendChild(tt); tx.appendChild(dd);
         row.appendChild(ic); row.appendChild(tx); row.onclick=m.go; card.appendChild(row); });
     };
@@ -6933,41 +6986,68 @@ window.addEventListener('DOMContentLoaded', () => {
     function cName(f){ const p=f&&f.properties||{}; return p.NAME_EN||p.ADMIN||p.NAME||p.name||''; }
 
     /* ===================== WORLD EXPLORER ===================== */
+    function _pgWeStyle(){ if(document.getElementById('pg-we-style')) return; const s=document.createElement('style'); s.id='pg-we-style';
+      s.textContent='.pg-we-pin{width:22px;height:22px;cursor:pointer;}'+
+        '.pg-we-pin span{display:block;width:14px;height:14px;margin:4px;border-radius:50%;background:#ff3b30;border:2.5px solid #fff;box-shadow:0 0 0 2px rgba(255,59,48,0.45),0 2px 7px rgba(0,0,0,0.55);animation:pgWePulse 1.8s ease-in-out infinite;}'+
+        '@keyframes pgWePulse{0%,100%{box-shadow:0 0 0 2px rgba(255,59,48,0.45),0 2px 7px rgba(0,0,0,0.55);}50%{box-shadow:0 0 0 8px rgba(255,59,48,0.0),0 2px 7px rgba(0,0,0,0.55);}}'+
+        'body.pg-we .m-fab-stack,body.pg-we .m-sheet,body.pg-we .m-scrim,body.pg-we .news-timeline,'+
+        'body.pg-sim .m-fab-stack,body.pg-sim .m-sheet,body.pg-sim .m-scrim,body.pg-sim .news-timeline{display:none !important;}';
+      document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
       if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      _pgWeStyle();
       ensureCountries(()=>{
         const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
-        // pick a random LAND point (never open ocean)
-        let target=null; for(let tr=0;tr<500&&!target;tr++){ const f=feats[Math.floor(Math.random()*feats.length)]; const bb=bboxOf(f); if(bb[2]-bb[0]>40||bb[3]-bb[1]>40){ /* skip huge multi-territory shells half the time for fairer spots */ if(Math.random()<0.5) continue; } const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(pig(lng,lat,f.geometry)) target={lng,lat,country:cName(f)}; }
+        /* (#R30) TRULY RANDOM land point — area-weighted uniform over the sphere (lat=asin(U), lng uniform),
+           accepted only when it falls on land. The old per-feature pick clustered on a handful of countries
+           ("毎回似たような場所に行く"). A bbox pre-reject keeps the point-in-polygon scan cheap. */
+        const bbs=feats.map(bboxOf);
+        let target=null;
+        for(let tr=0;tr<2500 && !target;tr++){
+          const lat=Math.asin(Math.random()*2-1)*180/Math.PI, lng=Math.random()*360-180;
+          for(let i=0;i<feats.length;i++){ const bb=bbs[i]; if(lng<bb[0]||lng>bb[2]||lat<bb[1]||lat>bb[3]) continue; if(pig(lng,lat,feats[i].geometry)){ target={lng,lat,country:cName(feats[i])}; break; } }
+        }
         if(!target){ try{ imToast(jp()?'地点を選べませんでした':'Could not pick a spot'); }catch(_){} return; }
-        // save state to restore on exit
-        const saved={ c:map.getCenter(), z:map.getZoom(), proj:(typeof currentProj!=='undefined'?currentProj:'globe'), mt:(typeof currentMapType!=='undefined'?currentMapType:'map'), names:(typeof namesOn!=='undefined'?namesOn:true), borders:(typeof bordersOn!=='undefined'?bordersOn:false) };
-        // turn OFF every data layer + labels + borders, switch to satellite
-        try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked').forEach(cb=>{ if(['cb-grid'].includes(cb.id)) return; if(cb.id==='cb-names'||cb.id==='cb-borders'||!['cb-countries'].includes(cb.id)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); }catch(_){}
+        const START_Z=15.4; let minZoom=START_Z;
+        const sbEl=document.getElementById('sidebar');
+        const saved={ c:map.getCenter(), z:map.getZoom(), proj:(typeof currentProj!=='undefined'?currentProj:'globe'), mt:(typeof currentMapType!=='undefined'?currentMapType:'map'), names:(typeof namesOn!=='undefined'?namesOn:true), borders:(typeof bordersOn!=='undefined'?bordersOn:false), mode:(typeof currentMode!=='undefined'?currentMode:null), sbCol:(sbEl?sbEl.classList.contains('collapsed'):true) };
+        /* (#R30) On start: turn OFF every data layer + labels + borders, DESELECT all tabs, and COLLAPSE the
+           sidebar ("起動時には自動的にサイドバーが収納され、その他のタブやレイヤーが選択解除された状態に"). */
+        try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]:checked').forEach(cb=>{ if(cb.id==='cb-grid') return; if(cb.id==='cb-names'||cb.id==='cb-borders'||cb.id!=='cb-countries'){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); }catch(_){}
+        try{ if(typeof currentMode!=='undefined' && currentMode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); try{ renderUI(); }catch(_){} } }catch(_){}
+        try{ if(sbEl && !sbEl.classList.contains('collapsed')){ sbEl.classList.add('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
+        try{ document.body.classList.add('pg-we'); }catch(_){}
         try{ const sat=document.getElementById('btn-view-sat'); if(sat&&typeof currentMapType!=='undefined'&&currentMapType!=='sat') sat.click(); }catch(_){}
-        // blackout while we jump so the route to the target is never shown
-        const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:5800;background:#000;transition:opacity .6s;'; black.textContent=''; document.body.appendChild(black);
+        const black=document.createElement('div'); black.style.cssText='position:fixed;inset:0;z-index:5800;background:#000;transition:opacity .6s;'; document.body.appendChild(black);
         const bt=document.createElement('div'); bt.textContent=jp()?'どこかへ移動中…':'Dropping you somewhere…'; bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
-        setTimeout(()=>{ try{ map.jumpTo({center:[target.lng,target.lat],zoom:15.4,bearing:0,pitch:0}); }catch(_){} setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
-        // control panel
+        let pin=null; const onZoom=()=>{ try{ minZoom=Math.min(minZoom, map.getZoom()); }catch(_){} };
+        setTimeout(()=>{ try{ map.jumpTo({center:[target.lng,target.lat],zoom:START_Z,bearing:0,pitch:0}); }catch(_){}
+          /* (#R30) drop a pulsing "home" pin at the start point so you never lose it while panning. */
+          try{ const el=document.createElement('div'); el.className='pg-we-pin'; el.innerHTML='<span></span>'; pin=new maplibregl.Marker({element:el}).setLngLat([target.lng,target.lat]).addTo(map); }catch(_){}
+          try{ map.on('zoom',onZoom); }catch(_){}
+          setTimeout(()=>{ black.style.opacity='0'; bt.remove(); setTimeout(()=>black.remove(),650); }, 900); }, 250);
         const panel=document.createElement('div'); panel.id='pg-we-panel';
-        panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom));z-index:5810;display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;';
-        const lab=document.createElement('span'); lab.textContent='🌍 '+(jp()?'ここはどこ？':'Where are you?'); panel.appendChild(lab);
+        panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom));z-index:5810;display:flex;gap:8px;align-items:center;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:8px 10px 8px 16px;font-size:13px;font-weight:600;max-width:calc(100vw - 24px);';
+        const lab=document.createElement('span'); lab.textContent=jp()?'ここはどこ？':'Where are you?'; panel.appendChild(lab);
+        const homeB=document.createElement('button'); homeB.title=jp()?'開始地点へ戻る':'Back to start'; homeB.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>'; homeB.style.cssText='border:none;border-radius:50%;width:34px;height:34px;background:var(--input-bg);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:center;'; homeB.onclick=()=>{ try{ map.flyTo({center:[target.lng,target.lat],zoom:START_Z,duration:700}); }catch(_){} }; panel.appendChild(homeB);
         const guessB=document.createElement('button'); guessB.textContent=jp()?'回答する':'Make a guess'; guessB.style.cssText='border:none;border-radius:999px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;cursor:pointer;'; panel.appendChild(guessB);
         const exitB=document.createElement('button'); exitB.textContent='✕'; exitB.title=jp()?'終了':'Exit'; exitB.style.cssText='border:none;border-radius:50%;width:30px;height:30px;background:var(--input-bg);color:var(--text-main);font-size:14px;cursor:pointer;'; panel.appendChild(exitB);
         (document.getElementById('map-container')||document.body).appendChild(panel);
-        function restore(){ try{ panel.remove(); }catch(_){} try{ black.remove(); }catch(_){}
+        function restore(){ try{ panel.remove(); }catch(_){} try{ black.remove(); }catch(_){} try{ map.off('zoom',onZoom); }catch(_){} try{ pin&&pin.remove(); }catch(_){}
+          try{ document.body.classList.remove('pg-we'); }catch(_){}
           try{ const cb=document.getElementById('cb-names'); if(cb&&!!saved.names!==cb.checked){ cb.checked=!!saved.names; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
           try{ const mt=document.getElementById(saved.mt==='sat'?'btn-view-sat':'btn-view-map'); if(mt&&typeof currentMapType!=='undefined'&&currentMapType!==saved.mt) mt.click(); }catch(_){}
+          try{ if(sbEl && !saved.sbCol && sbEl.classList.contains('collapsed')){ sbEl.classList.remove('collapsed'); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){}
           try{ map.flyTo({center:saved.c,zoom:saved.z,duration:900}); }catch(_){}
         }
         exitB.onclick=restore;
-        guessB.onclick=()=>openGuess(target,restore);
+        guessB.onclick=()=>openGuess(target,restore,{startZoom:START_Z,getMinZoom:()=>minZoom});
       });
     };
-    function openGuess(target,restore){
+    function openGuess(target,restore,roundInfo){
       const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
-      const t=document.createElement('h3'); t.textContent=jp()?'現在地はどこ？地図をタップ':'Click the map to drop your guess'; t.style.cssText='margin:0 0 10px;font-size:16px;'; card.appendChild(t);
+      const t=document.createElement('h3'); t.textContent=jp()?'現在地はどこ？地図をタップ':'Click the map to drop your guess'; t.style.cssText='margin:0 0 4px;font-size:16px;'; card.appendChild(t);
+      const hint=document.createElement('div'); hint.style.cssText='margin:0 0 10px;font-size:11.5px;color:var(--text-muted);'; hint.textContent=jp()?'ズームアウトせずに当てるほど高得点（最小ズームで減点）。':'The less you zoom out, the higher your score (min zoom is penalised).'; card.appendChild(hint);
       const mapDiv=document.createElement('div'); mapDiv.id='pg-guess-map'; mapDiv.style.cssText='width:100%;height:300px;border-radius:12px;overflow:hidden;background:var(--input-bg);'; card.appendChild(mapDiv);
       const result=document.createElement('div'); result.style.cssText='margin-top:12px;font-size:13.5px;line-height:1.6;'; card.appendChild(result);
       const answerB=document.createElement('button'); answerB.textContent=jp()?'回答':'Answer'; answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
@@ -6978,10 +7058,16 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(err){ result.textContent='Guess map failed.'; }
       answerB.onclick=()=>{
         if(answered||!guess) return; answered=true; answerB.style.display='none';
-        const dist=haversine(guess,[target.lng,target.lat]); const score=Math.round(1000*Math.exp(-dist/1500));
+        const dist=haversine(guess,[target.lng,target.lat]); const base=Math.round(1000*Math.exp(-dist/1500));
+        /* (#R30) zoom-out penalty — the more the player zoomed out during the round, the bigger the deduction. */
+        const sz=(roundInfo&&roundInfo.startZoom)||15.4; const mz=(roundInfo&&roundInfo.getMinZoom)?roundInfo.getMinZoom():sz;
+        const zoomDrop=Math.max(0, sz-mz); const penFrac=Math.min(0.6, zoomDrop*0.045); const penalty=Math.round(base*penFrac); const score=Math.max(0, base-penalty);
         try{ const el=document.createElement('div'); el.style.cssText='width:18px;height:18px;border-radius:50%;background:#34c759;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; new maplibregl.Marker({element:el}).setLngLat([target.lng,target.lat]).addTo(gmap);
           gmap.fitBounds([[Math.min(guess[0],target.lng),Math.min(guess[1],target.lat)],[Math.max(guess[0],target.lng),Math.max(guess[1],target.lat)]],{padding:60,maxZoom:6,duration:800}); }catch(_){}
-        result.innerHTML='<b style="font-size:22px;color:var(--primary-color);">'+score+' / 1000</b><br>'+(jp()?'距離: ':'Distance: ')+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(jp()?'正解: ':'Actual: ')+target.country:'');
+        result.innerHTML='<b style="font-size:22px;color:var(--primary-color);">'+score+' / 1000</b><br>'
+          +(jp()?'距離: ':'Distance: ')+Math.round(dist).toLocaleString()+' km'+(target.country?' · '+(jp()?'正解: ':'Actual: ')+target.country:'')
+          +'<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'+(jp()?'基本点 ':'Base ')+base
+          +(penalty>0?(' · '+(jp()?'ズームアウト減点 −':'Zoom-out −')+penalty+' ('+(jp()?'最小ズーム ':'min zoom ')+mz.toFixed(1)+')'):' · <span style="color:#34c759;">'+(jp()?'ズームアウトなし！':'no zoom-out!')+'</span>')+'</div>';
         const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;margin-top:12px;padding:11px;border:none;border-radius:11px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:700;cursor:pointer;'; card.appendChild(again);
         again.onclick=()=>{ try{ gmap&&gmap.remove(); }catch(_){} ov.remove(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
       };
@@ -6989,102 +7075,166 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ===================== PANDEMIC SIMULATOR ===================== */
+    /* (#R30) Scientifically-grounded SEIR metapopulation model. Per-country S/E/I/R/D/V compartments;
+       transmission from R0 + incubation + infectious period; sanitation (HDI/GDP) drives healthcare
+       overload & care speed; seasonality + behavioural distancing + automatic lockdowns / border closures
+       + waning immunity + random VARIANTS produce long, chaotic, VARIED outcomes — not the old short
+       "everyone dies" curve. Spread shows as RED CASE DOTS that multiply & spread (no country-wide red
+       fill, per spec). Vaccine + treatment arrive on a luck-driven timeline. */
     const PG_PRESETS={
-      flu:{ n:{en:'Influenza',jp:'インフルエンザ'}, inf:0.55, leth:0.001, inc:2 },
-      covid:{ n:{en:'COVID-19',jp:'COVID-19'}, inf:0.78, leth:0.012, inc:5 },
-      ebola:{ n:{en:'Ebola',jp:'エボラ出血熱'}, inf:0.35, leth:0.5, inc:8 },
-      measles:{ n:{en:'Measles',jp:'麻疹'}, inf:0.92, leth:0.002, inc:11 }
+      flu:{ n:{en:'Influenza',jp:'インフルエンザ'}, r0:1.4, inc:2, inf:5, ifr:0.001, immMo:8, seas:0.35 },
+      covid:{ n:{en:'COVID-19',jp:'COVID-19'}, r0:3.2, inc:5, inf:9, ifr:0.007, immMo:9, seas:0.18 },
+      sars:{ n:{en:'SARS',jp:'SARS'}, r0:2.6, inc:5, inf:10, ifr:0.1, immMo:36, seas:0.12 },
+      ebola:{ n:{en:'Ebola',jp:'エボラ出血熱'}, r0:1.9, inc:9, inf:10, ifr:0.5, immMo:120, seas:0 },
+      measles:{ n:{en:'Measles',jp:'麻疹'}, r0:14, inc:11, inf:8, ifr:0.002, immMo:600, seas:0.05 }
     };
     window._pgPandemic=function(){
       if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      _pgWeStyle();
       ensureCountries(()=>{
         const feats=(window.countryGeo&&window.countryGeo.features)||[]; if(!feats.length){ try{ imToast(jp()?'国境データを読み込めません':'Country data unavailable'); }catch(_){} return; }
+        /* (#R30) hide the mobile bottom-sheet / FABs so the HUD + map aren't covered ("ボタンがボトムシートに隠れる"). */
+        try{ document.body.classList.add('pg-sim'); }catch(_){}
         const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
         const resolve=(p)=>{ const c=[p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3,p.SOV_A3].map(String).find(x=>cs[x]); return c?cs[c]:null; };
-        // build sim state per feature
-        const N=feats.length; const cent=[], pop=[], hyg=[], st=[];
-        feats.forEach((f,i)=>{ const bb=bboxOf(f); cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{}); const P=(s&&s.pop&&s.pop>0)?s.pop:5e6; pop[i]=P; const dev=(s&&s.gdppc)?Math.min(1,s.gdppc/60000):(s&&s.hdi?s.hdi:0.5); hyg[i]=0.35+0.6*dev; /* 0.35..0.95 — higher=slower spread, faster care */ st[i]={S:P,I:0,R:0,D:0,on:false}; });
-        // map layer (separate source so it never clobbers the real country layers)
-        const fc={type:'FeatureCollection',features:feats.map((f,i)=>({type:'Feature',id:i,geometry:f.geometry,properties:{}}))};
-        try{ if(map.getLayer('pg-pan-fill')) map.removeLayer('pg-pan-fill'); if(map.getLayer('pg-pan-line')) map.removeLayer('pg-pan-line'); if(map.getSource('pg-pan')) map.removeSource('pg-pan'); }catch(_){}
-        const before=map.getLayer('tool-poly')?'tool-poly':undefined;
-        try{ map.addSource('pg-pan',{type:'geojson',data:fc});
-          map.addLayer({id:'pg-pan-fill',type:'fill',source:'pg-pan',paint:{'fill-color':['interpolate',['linear'],['coalesce',['feature-state','inf'],0],0,'#2ca25f',0.02,'#ffeda0',0.2,'#feb24c',0.5,'#f03b20',1,'#7a0010'],'fill-opacity':['interpolate',['linear'],['coalesce',['feature-state','inf'],0],0,0,0.01,0.3,1,0.78]}},before);
-          map.addLayer({id:'pg-pan-line',type:'line',source:'pg-pan',paint:{'line-color':'rgba(0,0,0,0.25)','line-width':0.3}},before);
-        }catch(e){ console.warn('pandemic layer',e); }
-        let day=0,timer=null,running=false,speed=1,vaccine=0,vaxDay=0,startedAt=-1,emergency=false,vaxAnnounced=false,P=PG_PRESETS.covid,picking=true;
-        const totals=()=>{ let I=0,D=0,R=0,aff=0; for(let i=0;i<N;i++){ I+=st[i].I; D+=st[i].D; R+=st[i].R; if(st[i].on) aff++; } return {I,D,R,aff}; };
-        function paint(){ for(let i=0;i<N;i++){ const s=st[i]; const inf=s.on?Math.max(s.I/Math.max(1,pop[i]), s.D>0?0.02:0):0; try{ map.setFeatureState({source:'pg-pan',id:i},{inf:Math.min(1,inf)}); }catch(_){} } }
-        function seed(i){ if(st[i].on) return; st[i].on=true; const k=Math.min(st[i].S,Math.max(50,pop[i]*0.00002)); st[i].S-=k; st[i].I+=k; if(startedAt<0){ startedAt=day; vaxDay=day+60+Math.floor(Math.random()*70); } }
-        function step(){ day++; const aff0=totals().aff;
-          for(let i=0;i<N;i++){ const s=st[i]; if(!s.on) continue; const Pn=pop[i]||1;
-            const beta=P.inf*(1.25-hyg[i])*(vaccine?0.45:1); const gamma=(0.07+hyg[i]*0.08)*(vaccine?2.2:1); const mu=P.leth*(vaccine?0.4:1)*(1.1-hyg[i]);
-            const newInf=Math.min(s.S, beta*s.I*s.S/Pn); const out=gamma*s.I; const deaths=mu*s.I;
-            s.S-=newInf; s.I+=newInf-out-deaths; if(s.I<0)s.I=0; s.R+=out; s.D+=deaths;
-            // spread to other countries by distance (air/sea/land) + rare global hub jump
-            if(s.I>Pn*0.0008){ const tries=1+Math.floor(P.inf*3); for(let t=0;t<tries;t++){ let j=Math.floor(Math.random()*N); if(j===i||st[j].on) continue; const d=haversine(cent[i],cent[j]); const pHop=P.inf*(Math.exp(-d/3500)*0.6+0.04); if(Math.random()<pHop*speed*0.5) seed(j); } }
+        const N=feats.length, cent=[], bbs=[], pop=[], dev=[], st=[], nm=[]; let WORLDPOP=0;
+        feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{}); const Pp=(s&&s.pop&&s.pop>0)?s.pop:3e6; pop[i]=Pp; WORLDPOP+=Pp; dev[i]=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5); nm[i]=cName(f)||'?'; st[i]={S:Pp,E:0,I:0,R:0,D:0,V:0,seeded:false,closed:false,lock:0,pool:null,fatigue:0}; });
+        /* CASE-DOT layers (no country fill). A soft glow under crisp dots. */
+        try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); }); if(map.getSource('pg-dots')) map.removeSource('pg-dots'); }catch(_){}
+        try{ map.addSource('pg-dots',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          map.addLayer({id:'pg-dots-glow',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,4.5,5,10],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff5a3c',1,'#7a0010'],'circle-blur':1,'circle-opacity':0.32}});
+          map.addLayer({id:'pg-dots',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.1,5,4.2],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff3b30',0.5,'#e01010',1,'#7a0010'],'circle-stroke-color':'rgba(255,255,255,0.5)','circle-stroke-width':0.3,'circle-opacity':0.92}});
+        }catch(e){ console.warn('pandemic dots',e); }
+        function genPts(i,n){ const f=feats[i], bb=bbs[i], out=[]; let tries=0; while(out.length<n && tries<n*18){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(pig(lng,lat,f.geometry)) out.push([lng,lat]); } if(!out.length) out.push(cent[i]); return out; }
+
+        let P=Object.assign({},PG_PRESETS.covid), immMo=P.immMo, seasAmp=P.seas;
+        let day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='';
+        let vaxProg=0, vaxDay=-1, vaxRate=0, treat=false, pheic=false, hit10=false, variants=0, closeAnn=0, lockAnn=0;
+        const vaxDifficulty=0.7+Math.random()*0.9;   // luck: some runs get a fast vaccine, some slow
+        const peakDay=(lat)=> lat>=0 ? 20 : 202;
+        function totals(){ let I=0,E=0,R=0,D=0,V=0,aff=0; for(let i=0;i<N;i++){ const s=st[i]; I+=s.I; E+=s.E; R+=s.R; D+=s.D; V+=s.V; if(s.seeded&&(s.I+s.E)>0.5) aff++; } return {I,E,R,D,V,aff}; }
+        function seed(i,amount){ const s=st[i]; const k=Math.min(s.S, amount||Math.max(40,pop[i]*1e-6)); s.S-=k; s.E+=k; s.seeded=true; }
+        function news(html,kind){ lastEvt=html; try{ pgNews(html,kind); }catch(_){} const el=hud&&hud.querySelector('#pg-evt'); if(el) el.textContent=html.replace(/<[^>]+>/g,''); }
+
+        function step(){ day++;
+          const gamE=1/Math.max(0.5,P.inc), gam=1/Math.max(1,P.inf), omega=immMo>=400?0:1/(immMo*30);
+          /* vaccine R&D — driven by global infections in capable (high-GDP) countries + time (luck-gated) */
+          if(vaxDay<0){ let drive=0; for(let i=0;i<N;i++){ if(dev[i]>0.6) drive+=st[i].I; } vaxProg+=0.0016+Math.min(0.02,drive/4e8);
+            if(vaxProg>vaxDifficulty){ vaxDay=day; let best=-1,bv=-1; for(let i=0;i<N;i++){ if(dev[i]>0.62){ const v=st[i].I*dev[i]+Math.random()*1e6; if(v>bv){bv=v;best=i;} } } const cn=best>=0?nm[best]:'a leading lab';
+              news((jp()?(cn+'がワクチンを承認。接種が始まります。'):(cn+' approves a vaccine — rollout begins.')),'good'); } }
+          if(vaxDay>=0) vaxRate=Math.min(0.012, vaxRate+0.00035);
+          let totI=0;
+          for(let i=0;i<N;i++){ const s=st[i]; if(!s.seeded) continue; const live=s.S+s.E+s.I+s.R+s.V||1;
+            const seas=1+seasAmp*Math.cos(2*Math.PI*((day-peakDay(cent[i][1]))/365));
+            const sick=s.I/live; const behav=1-0.55*Math.min(1,sick*90)-0.25*s.lock;
+            const beta=P.r0*gam*seas*Math.max(0.12,behav);
+            const newE=Math.min(s.S, beta*s.I*s.S/live), toI=gamE*s.E;
+            const overload=1+Math.min(1.6,(sick*80)*(1-dev[i]));
+            const ifrEff=Math.min(0.9,P.ifr*overload*(treat?0.45:1)*(1.25-0.4*dev[i]));
+            const out=gam*s.I, dead=out*ifrEff, rec=out-dead, vac=Math.min(s.S,vaxRate*s.S*0.9), wane=omega*s.R;
+            s.S+= -newE - vac + wane; s.E+= newE - toI; s.I+= toI - out; s.R+= rec - wane; s.D+= dead; s.V+= vac;
+            if(s.S<0)s.S=0; if(s.E<0)s.E=0; if(s.I<0)s.I=0; if(s.R<0)s.R=0;
+            totI+=s.I;
+            /* automatic interventions (the lockdown / border-screening the spec asked for) */
+            if(!s.closed && sick>0.0008 && Math.random()<0.04+0.16*dev[i]){ s.closed=true; if(closeAnn<6 && pop[i]>8e6){ closeAnn++; news((jp()?(nm[i]+'が国境を封鎖。'):(nm[i]+' closes its borders.')),'info'); } }
+            if(s.lock<0.85 && sick>0.004 && s.fatigue<3){ s.lock=Math.min(0.85,s.lock+0.08); if(lockAnn<6 && pop[i]>1.2e7 && s.lock>0.45 && Math.random()<0.25){ lockAnn++; news((jp()?(nm[i]+'がロックダウンを発令。'):(nm[i]+' enters lockdown.')),'info'); } }
+            else if(s.lock>0 && sick<0.0015){ s.lock=Math.max(0,s.lock-0.04); s.fatigue+=0.01; }
+            /* between-country spread — gravity + transport, throttled by border closures */
+            if(s.I>live*0.0004){ const tries=2+Math.floor(P.r0/2); for(let t=0;t<tries;t++){ const j=Math.floor(Math.random()*N); if(j===i) continue; const d=haversine(cent[i],cent[j])+1; const air=Math.exp(-d/3200)*0.55, hub=0.04*dev[j]; let pHop=(P.r0/3)*(air+hub)*Math.min(1,s.I/live*120); if(s.closed) pHop*=0.18; if(st[j].closed) pHop*=0.25; if(Math.random()<pHop*speed*0.12){ if(!st[j].seeded) seed(j,Math.max(20,pop[j]*4e-7)); else st[j].E+=Math.min(st[j].S,30); } } }
           }
-          if(!vaccine && startedAt>=0 && day>=vaxDay){ vaccine=1; if(!vaxAnnounced){ vaxAnnounced=true; pgNews((jp()?'ワクチンが緊急承認されました。回復が加速し、新規感染が減少します。':'A vaccine has been approved — recoveries accelerate and new infections fall.'),'good'); } }
-          const T=totals(); if(!emergency && T.I+T.R+T.D>2e7){ emergency=true; pgNews((jp()?'WHOが「国際的に懸念される公衆衛生上の緊急事態」を宣言。':'WHO declares a Public Health Emergency of International Concern.'),'alert'); }
-          if(T.aff>aff0 && T.aff===10) pgNews((jp()?'感染が10カ国に拡大。':'Outbreak has reached 10 countries.'),'alert');
-          paint(); updateHud(T);
-          if(T.I<1 && startedAt>=0 && day>startedAt+5){ stop(); pgNews((jp()?'流行は終息しました。':'The outbreak has ended.'),'good'); }
+          /* VARIANTS — random emergence with immune escape → new waves (chaos + variety + length) */
+          if(variants<6 && totI>5e5 && Math.random()<0.0016*speed){ variants++;
+            let best=-1,bv=-1; for(let i=0;i<N;i++){ if(st[i].I>bv){bv=st[i].I;best=i;} }
+            const moreInf=Math.random()<0.75; P.r0=Math.max(0.8,P.r0*(moreInf?(1.12+Math.random()*0.5):(0.85+Math.random()*0.1)));
+            const escape=0.2+Math.random()*0.4; for(let i=0;i<N;i++){ const mv=st[i].R*escape; st[i].R-=mv; st[i].S+=mv; const vv=st[i].V*escape*0.6; st[i].V-=vv; st[i].S+=vv; }
+            if(Math.random()<0.4) P.ifr*=(0.7+Math.random()*0.7);
+            const gl=String.fromCharCode(944+variants);
+            news((jp()?('新変異株（'+gl+'）を'+(best>=0?nm[best]:'?')+'で確認。'+(moreInf?'感染力が上昇。':'')):('New variant ('+gl+') detected in '+(best>=0?nm[best]:'?')+'.'+(moreInf?' More transmissible.':''))),'alert');
+          }
+          const T=totals();
+          if(!hit10 && T.aff>=10){ hit10=true; news((jp()?'感染が10カ国に拡大。':'Outbreak has reached 10 countries.'),'alert'); }
+          if(!pheic && (T.I+T.R+T.D)>3e6){ pheic=true; news((jp()?'WHOが「国際的に懸念される公衆衛生上の緊急事態（PHEIC）」を宣言。':'WHO declares a global health emergency (PHEIC).'),'alert'); }
+          if(!treat && totI>2e6 && Math.random()<0.0009*speed){ treat=true; news((jp()?'有効な治療法が確立。致死率が低下します。':'An effective treatment is found — fatality rate falls.'),'good'); }
+          const now=Date.now(); if(now-lastDots>140){ lastDots=now; buildDots(); } updateHud(T);
+          if(day>40 && totI<200 && T.aff===0){ buildDots(); stop(); news((jp()?'流行は終息しました。':'The outbreak has ended.'),'good'); renderRun(true); }
+          else if(day>365*8){ stop(); news((jp()?'感染症は風土病として定着しました（長期均衡）。':'The disease is now endemic (long-run equilibrium).'),'info'); renderRun(true); }
         }
-        function loop(){ clearTimeout(timer); if(!running) return; step(); timer=setTimeout(loop, Math.max(120,560/speed)); }
+        function buildDots(){ const out=[]; for(let i=0;i<N;i++){ const s=st[i]; if(!s.seeded) continue; const act=s.I+s.E; if(act<1 && s.D<1) continue;
+            let k=Math.min(14,Math.round(3.0*Math.log10(1+act))); if(k<=0 && (act>=1||s.D>0)) k=1; if(k<=0) continue;
+            if(!s.pool) s.pool=genPts(i,14); const sev=s.D>0?Math.min(1,s.D/(s.I+s.R+s.D+1)*3):0;
+            for(let d=0; d<k && d<s.pool.length; d++) out.push({type:'Feature',geometry:{type:'Point',coordinates:s.pool[d]},properties:{sev}}); }
+          try{ map.getSource('pg-dots').setData({type:'FeatureCollection',features:out}); }catch(_){} }
+        function loop(){ clearTimeout(timer); if(!running) return; step(); if(running) timer=setTimeout(loop, Math.max(70,440/speed)); }
         function start(){ if(running) return; running=true; loop(); }
         function stop(){ running=false; clearTimeout(timer); }
-        // HUD
+
         const hud=document.createElement('div'); hud.id='pg-pan-hud';
-        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(520px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;';
+        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;';
         (document.getElementById('map-container')||document.body).appendChild(hud);
         function fmt(n){ n=Math.round(n); if(n>=1e9)return (n/1e9).toFixed(2)+'B'; if(n>=1e6)return (n/1e6).toFixed(2)+'M'; if(n>=1e3)return (n/1e3).toFixed(1)+'k'; return ''+n; }
-        function updateHud(T){ const el=hud.querySelector('#pg-pan-stats'); if(el) el.innerHTML=
-          '<span style="color:#f03b20;">'+(jp()?'感染':'Infected')+': <b>'+fmt(T.I)+'</b></span> · '+
-          '<span style="color:#7a0010;">'+(jp()?'死亡':'Dead')+': <b>'+fmt(T.D)+'</b></span> · '+
-          '<span style="color:#2ca25f;">'+(jp()?'回復':'Recovered')+': <b>'+fmt(T.R)+'</b></span> · '+
-          '<span>'+(jp()?'国':'Countries')+': <b>'+T.aff+'</b></span> · '+(jp()?'経過':'Day')+' <b>'+day+'</b>'+(vaccine?' · 💉':''); }
+        function updateHud(T){ const el=hud.querySelector('#pg-pan-stats'); if(!el) return; const vpct=WORLDPOP?Math.round(T.V/WORLDPOP*100):0;
+          el.innerHTML='<span style="color:#f03b20;">'+(jp()?'感染':'Infected')+' <b>'+fmt(T.I)+'</b></span> · '+
+          '<span style="color:#7a0010;">'+(jp()?'死亡':'Dead')+' <b>'+fmt(T.D)+'</b></span> · '+
+          '<span style="color:#2ca25f;">'+(jp()?'回復':'Recovered')+' <b>'+fmt(T.R)+'</b></span> · '+
+          '<span style="color:#0a84ff;">'+(jp()?'接種':'Vaccinated')+' <b>'+vpct+'%</b></span><br>'+
+          '<span>'+(jp()?'国':'Countries')+' <b>'+T.aff+'</b></span> · '+(jp()?'経過':'Day')+' <b>'+day+'</b>'+(variants?' · '+(jp()?'変異株':'variants')+' <b>'+variants+'</b>':'')+(vaxDay>=0?' · 💉':(vaxProg>0?' · '+(jp()?'ワクチン開発':'vaccine R&D')+' '+Math.round(Math.min(1,vaxProg/vaxDifficulty)*100)+'%':'')); }
+        function mk(lab,val,min,max,stp,fmtv,set){ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 104px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 50px;text-align:right;'; r.oninput=()=>{ v.textContent=fmtv(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); }
         function renderConfig(){ hud.innerHTML='';
-          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent='🦠 '+(jp()?'パンデミック設定':'Outbreak setup'); tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
-          const presetRow=document.createElement('div'); presetRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
-          Object.keys(PG_PRESETS).forEach(k=>{ const b=document.createElement('button'); b.textContent=PG_PRESETS[k].n[jp()?'jp':'en']; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(P===PG_PRESETS[k]?'var(--primary-color)':'var(--input-bg)')+';color:'+(P===PG_PRESETS[k]?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ P=PG_PRESETS[k]; renderConfig(); }; presetRow.appendChild(b); }); hud.appendChild(presetRow);
-          const mk=(lab,val,min,max,step,set)=>{ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 96px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=step; r.value=val; r.style.flex='1'; const v=document.createElement('b'); v.textContent=val; v.style.cssText='flex:0 0 42px;text-align:right;'; r.oninput=()=>{ v.textContent=(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); };
-          mk(jp()?'感染力':'Infectivity',Math.round(P.inf*100),5,100,1,v=>P={...P,inf:v/100});
-          mk(jp()?'致死率%':'Lethality %',+(P.leth*100).toFixed(1),0,80,0.5,v=>P={...P,leth:v/100});
-          mk(jp()?'潜伏(日)':'Incubation',P.inc,0,21,1,v=>P={...P,inc:v});
-          const hint=document.createElement('div'); hint.style.cssText='margin-top:8px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=jp()?'▶ 地図で感染源となる国をタップ':'▶ Tap a country on the map to place patient zero'; hud.appendChild(hint);
+          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=jp()?'パンデミック設定':'Outbreak setup'; tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
+          const presetRow=document.createElement('div'); presetRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;';
+          Object.keys(PG_PRESETS).forEach(k=>{ const pr=PG_PRESETS[k]; const on=(P.n&&P.n.en)===pr.n.en; const b=document.createElement('button'); b.textContent=pr.n[jp()?'jp':'en']; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ P=Object.assign({},pr); immMo=P.immMo; seasAmp=P.seas; renderConfig(); }; presetRow.appendChild(b); }); hud.appendChild(presetRow);
+          mk(jp()?'基本再生産数R₀':'Infectivity R₀',P.r0,0.6,18,0.1,v=>v.toFixed(1),v=>P.r0=v);
+          mk(jp()?'致死率(IFR)%':'Lethality %',+(P.ifr*100).toFixed(1),0,60,0.1,v=>v+'%',v=>P.ifr=v/100);
+          mk(jp()?'潜伏(日)':'Incubation (d)',P.inc,0,21,1,v=>''+v,v=>P.inc=v);
+          mk(jp()?'感染期(日)':'Infectious (d)',P.inf,1,21,1,v=>''+v,v=>P.inf=v);
+          mk(jp()?'免疫(月)':'Immunity (mo)',Math.min(120,immMo),0,120,1,v=>v>=120?'∞':(''+v),v=>immMo=(v>=120?600:v));
+          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=jp()?'▶ 地図で感染源となる国をタップ':'▶ Tap a country on the map to place patient zero'; hud.appendChild(hint);
         }
-        function renderRun(){ hud.innerHTML='';
-          const stats=document.createElement('div'); stats.id='pg-pan-stats'; stats.style.cssText='margin-bottom:9px;line-height:1.6;'; hud.appendChild(stats);
+        function renderRun(ended){ hud.innerHTML='';
+          const stats=document.createElement('div'); stats.id='pg-pan-stats'; stats.style.cssText='margin-bottom:7px;line-height:1.65;'; hud.appendChild(stats);
+          const evt=document.createElement('div'); evt.id='pg-evt'; evt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:8px;min-height:14px;line-height:1.35;'; evt.textContent=lastEvt.replace(/<[^>]+>/g,''); hud.appendChild(evt);
           const row=document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center;';
-          const play=document.createElement('button'); const setPlay=()=>play.textContent=running?(jp()?'⏸ 一時停止':'⏸ Pause'):(jp()?'▶ 再開':'▶ Play'); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
-          const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=4?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd);
+          if(ended){ const again=document.createElement('button'); again.textContent=jp()?'もう一度':'New outbreak'; again.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:10px;font-weight:700;cursor:pointer;'; again.onclick=()=>{ exit(); setTimeout(()=>window._pgPandemic&&window._pgPandemic(),120); }; row.appendChild(again); }
+          else { const play=document.createElement('button'); const setPlay=()=>play.textContent=running?(jp()?'⏸ 一時停止':'⏸ Pause'):(jp()?'▶ 再開':'▶ Play'); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
+            const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=8?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd); }
           const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;cursor:pointer;'; ex.onclick=exit; row.appendChild(ex);
           hud.appendChild(row); updateHud(totals());
         }
-        function onPick(e){ if(!picking) return; let hit=null; try{ const pt=map.queryRenderedFeatures(e.point,{layers:['pg-pan-fill']}); if(pt&&pt[0]&&pt[0].id!=null) hit=pt[0].id; }catch(_){}
-          if(hit==null){ /* fallback: point-in-polygon */ for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } } }
-          if(hit==null) return; picking=false; seed(hit); paint(); renderRun(); start();
-          pgNews((jp()?'最初の感染者が確認されました — ':'Patient zero confirmed in ')+(cName(feats[hit])||'?')+'.','alert');
+        function onPick(e){ if(!picking) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
+          if(hit==null) return; picking=false; seed(hit,Math.max(60,pop[hit]*2e-6)); buildDots(); renderRun(false); start();
+          news((jp()?'最初の感染者が確認されました — ':'Patient zero confirmed in ')+nm[hit]+'.','alert');
         }
         map.on('click',onPick);
-        function exit(){ stop(); try{ map.off('click',onPick); }catch(_){} try{ if(map.getLayer('pg-pan-fill'))map.removeLayer('pg-pan-fill'); if(map.getLayer('pg-pan-line'))map.removeLayer('pg-pan-line'); if(map.getSource('pg-pan'))map.removeSource('pg-pan'); }catch(_){} try{ hud.remove(); }catch(_){} }
+        function exit(){ stop(); try{ map.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(map.getLayer(id))map.removeLayer(id); }); if(map.getSource('pg-dots'))map.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
         window._pgPandemicExit=exit;
         renderConfig();
       });
     };
 
     /* ===================== NATION SIM ===================== */
+    /* ===================== STATECRAFT (grand-strategy, real data) ===================== */
+    /* (#R30) Expanded from "Nation Sim": lead any real nation (1900–2026) as a democracy or an
+       authoritarian regime. Deep model — 7 national gauges + 5 power FACTIONS (parliament, military,
+       business, public, courts) that gate what you can actually do. In a democracy unpopular bills are
+       BLOCKED by the factions that lose out; an autocrat can DECREE anything but pays in unrest, sanctions
+       and a falling Democracy Index (→ coups, isolation, exile). Real GDP/HDI/Dem-index/pop/military are
+       the starting point; the economy compounds with tech/stability/sanctions; random events + wars +
+       elections produce varied endings. */
     window._pgNationSim=function(){
       ensureCountries(()=>{
         const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
         const list=Object.keys(cs).map(code=>({code,s:cs[code],name:(cs[code].nameEn||code)})).filter(x=>x.s&&(x.s.gdp||x.s.pop)).sort((a,b)=>a.name.localeCompare(b.name));
         if(!list.length){ try{ imToast(jp()?'国データを読み込めません':'Country data unavailable'); }catch(_){} return; }
-        const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
+        const {ov,card}=shell(580); card.appendChild(xbtn(()=>ov.remove()));
         let G=null;
+        const money=(b)=>'$'+(b>=1000?(b/1000).toFixed(2)+'T':Math.round(b)+'B');
+        const popf=(n)=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':Math.round(n);
+        const govLbl=()=>G.gov==='authoritarian'?(jp()?'権威主義':'Authoritarian'):(jp()?'民主主義':'Democracy');
+        const pt=(p)=>p.t[jp()?'jp':'en']; const et=(e)=>e.m[jp()?'jp':'en'];
         function setup(){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove());
           const wrap=document.createElement('div'); wrap.className='pg-ns';
-          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:9px;margin:0 0 6px;'; const t=document.createElement('h3'); t.textContent='🏛️ '+(jp()?'ネイション・シミュレーター':'Nation Sim'); t.style.cssText='margin:0;font-size:19px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); wrap.appendChild(h);
-          const p=document.createElement('p'); p.style.cssText='margin:0 0 14px;color:var(--text-muted);font-size:12.5px;line-height:1.5;'; p.textContent=jp()?'国家の元首として、実データを起点に国を導きます。':'Lead a real nation forward from its real-world figures.'; wrap.appendChild(p);
+          const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:9px;margin:0 0 6px;'; const t=document.createElement('h3'); t.textContent=jp()?'ステイトクラフト':'Statecraft'; t.style.cssText='margin:0;font-size:20px;'; h.appendChild(t); h.appendChild(pill('beta','#ff9500')); wrap.appendChild(h);
+          const p=document.createElement('p'); p.style.cssText='margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;'; p.textContent=jp()?'実在の国家の元首として、経済・世論・議会・軍・国際情勢を動かしながら国を導く。':'Lead a real nation: balance the economy, public opinion, parliament, the military and the world.'; wrap.appendChild(p);
           const mklabel=(s)=>{ const l=document.createElement('div'); l.textContent=s; l.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin:10px 0 5px;'; return l; };
           wrap.appendChild(mklabel(jp()?'国':'Country'));
           const sel=document.createElement('select'); sel.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; list.forEach(x=>{ const o=document.createElement('option'); o.value=x.code; o.textContent=(x.s.flag?x.s.flag+' ':'')+x.name; sel.appendChild(o); }); const def=list.find(x=>x.code==='JPN')||list.find(x=>x.code==='USA')||list[0]; sel.value=def.code; wrap.appendChild(sel);
@@ -7092,72 +7242,140 @@ window.addEventListener('DOMContentLoaded', () => {
           const yr=document.createElement('input'); yr.type='number'; yr.min=1900; yr.max=2026; yr.value=2026; yr.style.cssText='width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:14px;'; wrap.appendChild(yr);
           wrap.appendChild(mklabel(jp()?'統治形態':'Government'));
           const seg=document.createElement('div'); seg.className='ios-segment'; seg.style.cssText='display:flex;width:100%;'; let gov='democracy';
-          [['democracy',jp()?'民主主義':'Democracy'],['dictator',jp()?'独裁':'Dictatorship']].forEach(([v,lab],i)=>{ const b=document.createElement('button'); b.className='ios-segment-btn'+(i===0?' active':''); b.style.flex='1'; b.textContent=lab; b.onclick=()=>{ gov=v; seg.querySelectorAll('.ios-segment-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }; seg.appendChild(b); }); wrap.appendChild(seg);
+          [['democracy',jp()?'民主主義':'Democracy'],['authoritarian',jp()?'権威主義':'Authoritarian']].forEach(([v,lab],i)=>{ const b=document.createElement('button'); b.className='ios-segment-btn'+(i===0?' active':''); b.style.flex='1'; b.textContent=lab; b.onclick=()=>{ gov=v; seg.querySelectorAll('.ios-segment-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }; seg.appendChild(b); }); wrap.appendChild(seg);
           const go=document.createElement('button'); go.textContent=jp()?'就任する':'Take power'; go.style.cssText='width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;background:var(--primary-color);color:#fff;font-size:15px;font-weight:700;cursor:pointer;'; wrap.appendChild(go);
-          go.onclick=()=>{ const x=cs[sel.value]; G={ code:sel.value, name:(x.nameEn||sel.value), flag:x.flag||'🏳️', gov, year:Math.max(1900,Math.min(2026,+yr.value||2026)),
-            gdp:(x.gdp||500), hdi:(x.hdi||0.7), dem:(x.dem||(gov==='dictator'?3:6.5)), pop:(x.pop||1e7),
-            approval:gov==='dictator'?55:58, stability:62, treasury:50, unrest:gov==='dictator'?28:18, sanctions:10, log:[] };
+          go.onclick=()=>{ const x=cs[sel.value]||{}; const yy=Math.max(1900,Math.min(2026,+yr.value||2026));
+            const gdp=(x.gdp||500), pop=(x.pop||1e7), gdppc=(x.gdppc|| (gdp*1e9/Math.max(1,pop)));
+            const mil=Math.max(8,Math.min(95, 30 + (x.milSpend? Math.log10(x.milSpend+1)*16 : 18) ));
+            const tech=Math.max(12,Math.min(96, 28 + Math.min(55, (gdppc||8000)/1400) ));
+            const dem=(x.dem|| (gov==='authoritarian'?3:6.5));
+            G={ code:sel.value, name:(x.nameEn||sel.value), flag:x.flag||'🏳️', gov, year:yy, startYear:yy, turnCount:0,
+              gdp, startGdp:gdp, gdpGrowth:0.02, pop, hdi:(x.hdi||0.7), dem, gdppc,
+              approval:gov==='authoritarian'?56:58, stability:Math.round(54+(dem-5)*2), treasury:50,
+              unrest:gov==='authoritarian'?30:18, sanctions:8, military:Math.round(mil), tech:Math.round(tech),
+              tension:18, atWar:false, allies:0,
+              factions:{ parliament:Math.round(dem*9), military:55, business:55, public:gov==='authoritarian'?56:58, courts:Math.round(dem*8) },
+              log:[] };
             play(); };
           card.appendChild(wrap);
         }
-        function bar(label,val,max,color){ const pct=Math.max(0,Math.min(100,(val/max)*100)); return '<div style="margin:5px 0;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span style="color:var(--text-muted);">'+label+'</span><b>'+(max===10?val.toFixed(1):max===1?val.toFixed(3):Math.round(val))+'</b></div><div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.2);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';transition:width .4s;"></div></div></div>'; }
-        function clamp(){ ['approval','stability','treasury','unrest','sanctions'].forEach(k=>G[k]=Math.max(0,Math.min(100,G[k]))); G.hdi=Math.max(0,Math.min(1,G.hdi)); G.dem=Math.max(0,Math.min(10,G.dem)); }
-        const POLICIES=()=>[
-          {t:jp()?'景気刺激策':'Economic stimulus', pop:14, ef:{gdp:+0.06,treasury:-12,approval:+6,unrest:-4}},
-          {t:jp()?'緊縮財政':'Austerity', pop:-16, ef:{treasury:+16,approval:-8,unrest:+7,gdp:-0.02}},
-          {t:jp()?'社会福祉の拡大':'Expand welfare', pop:12, ef:{hdi:+0.015,approval:+8,treasury:-10,unrest:-6}},
-          {t:jp()?'再軍備':'Rearmament', pop:-4, ef:{treasury:-9,stability:+5,sanctions:+8}},
-          {t:jp()?'国際協調・同盟参加':'Join alliance / open up', pop:6, ef:{sanctions:-14,stability:+6,gdp:+0.03}},
-          {t:jp()?'反体制派の弾圧':'Crack down on dissent', pop:-10, ef:{unrest:-18,approval:-6,dem:-0.5,sanctions:+10,stability:+4}},
-          {t:jp()?'教育・インフラ投資':'Education & infrastructure', pop:10, ef:{hdi:+0.02,gdp:+0.04,treasury:-11}},
-          {t:jp()?'増税':'Raise taxes', pop:-14, ef:{treasury:+15,approval:-7,gdp:-0.02}}
+        function clampG(){ ['approval','stability','treasury','unrest','sanctions','military','tech','tension'].forEach(k=>G[k]=Math.max(0,Math.min(100,G[k]))); for(const k in G.factions) G.factions[k]=Math.max(0,Math.min(100,G.factions[k])); G.hdi=Math.max(0,Math.min(0.99,G.hdi)); G.dem=Math.max(0,Math.min(10,G.dem)); }
+        function bar(label,val,color,extra){ const pct=Math.max(0,Math.min(100,val)); return '<div style="margin:4px 0;"><div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:2px;"><span style="color:var(--text-muted);">'+label+'</span><b>'+Math.round(val)+(extra||'')+'</b></div><div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.18);overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+color+';transition:width .45s;"></div></div></div>'; }
+        const CATC={econ:'#34c759',mil:'#ff3b30',soc:'#5856d6',dip:'#0a84ff',tech:'#ff9500'};
+        const POLICIES=[
+          {cat:'econ',t:{en:'Economic stimulus',jp:'景気刺激策'},pop:13,ef:{gdpMul:1.04,treasury:-12,approval:5,unrest:-3},fac:{business:4,public:5}},
+          {cat:'econ',t:{en:'Austerity package',jp:'緊縮財政'},pop:-15,ef:{treasury:16,approval:-8,unrest:7,gdpMul:0.99},fac:{business:4,public:-8}},
+          {cat:'econ',t:{en:'Raise taxes on the rich',jp:'富裕層への増税'},pop:-6,ef:{treasury:15,approval:-4,gdpMul:0.99},fac:{business:-9,public:5}},
+          {cat:'econ',t:{en:'Cut taxes & deregulate',jp:'減税・規制緩和'},pop:8,ef:{treasury:-9,gdpMul:1.035,approval:4},fac:{business:10,public:-3}},
+          {cat:'econ',t:{en:'Nationalize key industry',jp:'基幹産業の国有化'},pop:5,ef:{treasury:6,gdpMul:0.98,sanctions:5},fac:{business:-13,public:6}},
+          {cat:'mil',t:{en:'Rearmament program',jp:'再軍備計画'},pop:-3,ef:{military:11,treasury:-9,tension:6},fac:{military:11,public:-3}},
+          {cat:'mil',t:{en:'Cut defense spending',jp:'国防費削減'},pop:4,ef:{military:-8,treasury:8,tension:-5},fac:{military:-12,public:5}},
+          {cat:'mil',t:{en:'Introduce conscription',jp:'徴兵制の導入'},pop:-7,ef:{military:8,unrest:5},fac:{military:7,public:-8}},
+          {cat:'soc',t:{en:'Expand welfare state',jp:'社会福祉の拡大'},pop:12,ef:{hdi:0.015,approval:8,treasury:-10,unrest:-6},fac:{public:10,business:-4}},
+          {cat:'soc',t:{en:'Education & infrastructure',jp:'教育・インフラ投資'},pop:10,ef:{hdi:0.02,tech:4,gdpMul:1.03,treasury:-11},fac:{public:6,business:3}},
+          {cat:'soc',t:{en:'Universal healthcare',jp:'国民皆保険'},pop:11,ef:{hdi:0.02,approval:7,treasury:-10},fac:{public:9,business:-3}},
+          {cat:'soc',t:{en:'Crack down on dissent',jp:'反体制派の弾圧'},pop:-11,ef:{unrest:-17,approval:-5,dem:-0.6,sanctions:8,stability:5},fac:{military:6,courts:-9,public:-11}},
+          {cat:'soc',t:{en:'Expand civil rights',jp:'市民的自由の拡大'},pop:8,ef:{dem:0.5,approval:5,hdi:0.01},fac:{courts:9,public:7,military:-3}},
+          {cat:'dip',t:{en:'Join an alliance / open up',jp:'同盟参加・国際協調'},pop:6,ef:{sanctions:-15,tension:-9,gdpMul:1.03,stability:4},fac:{business:6,military:3}},
+          {cat:'dip',t:{en:'Sign a free-trade deal',jp:'自由貿易協定'},pop:6,ef:{gdpMul:1.04,treasury:4,sanctions:-6},fac:{business:9,public:2}},
+          {cat:'dip',t:{en:'Defy the international order',jp:'国際秩序への対抗'},pop:3,ef:{tension:12,sanctions:10,approval:4,military:3},fac:{military:7,business:-6}},
+          {cat:'tech',t:{en:'Crash R&D program',jp:'科学技術への大型投資'},pop:4,ef:{tech:9,treasury:-9,gdpMul:1.02},fac:{business:5,public:2}},
+          {cat:'tech',t:{en:'Digital & green transition',jp:'デジタル・脱炭素転換'},pop:5,ef:{tech:7,hdi:0.01,gdpMul:1.02,treasury:-7},fac:{public:5,business:2}}
         ];
-        const EVENTS=()=>[
-          {p:0.10,m:jp()?'世界的な好況。':'A global boom lifts the economy.',ef:{gdp:+0.05,treasury:+6,approval:+4}},
-          {p:0.10,m:jp()?'景気後退に見舞われた。':'A recession hits.',ef:{gdp:-0.06,treasury:-8,approval:-6,unrest:+6}},
-          {p:0.08,m:jp()?'汚職スキャンダルが発覚。':'A corruption scandal erupts.',ef:{approval:-10,unrest:+6}},
-          {p:0.07,m:jp()?'自然災害が発生。':'A natural disaster strikes.',ef:{treasury:-9,hdi:-0.01,approval:+3,unrest:+4}},
-          {p:0.07,m:jp()?'技術革新で生産性が向上。':'A tech breakthrough boosts productivity.',ef:{gdp:+0.05,hdi:+0.01}}
+        const EVENTS=[
+          {p:0.08,m:{en:'A global boom lifts the economy.',jp:'世界的な好況。'},ef:{gdpMul:1.05,treasury:6,approval:4}},
+          {p:0.08,m:{en:'A recession bites.',jp:'景気後退に見舞われた。'},ef:{gdpMul:0.94,treasury:-8,approval:-6,unrest:6}},
+          {p:0.06,m:{en:'A corruption scandal erupts.',jp:'汚職スキャンダルが発覚。'},ef:{approval:-10,unrest:6},fac:{public:-7,courts:-4}},
+          {p:0.05,m:{en:'A natural disaster strikes.',jp:'大規模な自然災害。'},ef:{treasury:-9,hdi:-0.01,unrest:4}},
+          {p:0.05,m:{en:'A technological breakthrough.',jp:'技術的ブレークスルー。'},ef:{tech:6,gdpMul:1.03}},
+          {p:0.04,m:{en:'Major resource discovery.',jp:'大規模な資源発見。'},ef:{gdpMul:1.04,treasury:8},fac:{business:5}},
+          {p:0.05,m:{en:'Mass protests sweep the capital.',jp:'首都で大規模デモ。'},ef:{stability:-6,approval:-4},fac:{public:-5},cond:()=>G.unrest>50},
+          {p:0.04,m:{en:'An allied nation offers a pact.',jp:'同盟国が協定を提案。'},ef:{tension:-8},fac:{military:5},go:()=>{ G.allies++; }},
+          {p:0.04,m:{en:'A pandemic spreads.',jp:'感染症が流行。'},ef:{hdi:-0.02,gdpMul:0.96,approval:3,unrest:4}},
+          {p:0.035,m:{en:'Brain drain weakens industry.',jp:'頭脳流出が産業を弱体化。'},ef:{tech:-4,gdpMul:0.99},cond:()=>G.hdi<0.7||G.unrest>55},
+          {p:0.03,m:{en:'A corruption probe targets your circle.',jp:'側近への汚職捜査。'},ef:{approval:-5},fac:{courts:-6}},
+          {p:0.04,m:{en:'A rival escalates tensions.',jp:'対立国が緊張を高めた。'},ef:{tension:14}}
         ];
-        function apply(ef){ for(const k in ef){ if(k==='gdp') G.gdp*=(1+ef.gdp); else G[k]+=ef[k]; } clamp(); }
+        function apply(ef){ if(!ef) return; for(const k in ef){ if(k==='gdpMul') G.gdp*=ef.gdpMul; else G[k]+=ef[k]; } }
+        function applyFac(fac,scale){ if(!fac) return; for(const k in fac){ if(G.factions[k]!=null) G.factions[k]+=fac[k]*(scale==null?1:scale); } }
         function play(){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); const wrap=document.createElement('div'); wrap.className='pg-ns';
-          const head=document.createElement('div'); head.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:4px;'; const tt=document.createElement('h3'); tt.style.cssText='margin:0;font-size:18px;'; tt.textContent=G.flag+' '+G.name; head.appendChild(tt); head.appendChild(pill(G.gov==='dictator'?(jp()?'独裁':'Dictator'):(jp()?'民主':'Democracy'), G.gov==='dictator'?'#ff3b30':'#0a84ff')); const ys=document.createElement('span'); ys.style.cssText='margin-left:auto;font-weight:700;font-size:15px;'; ys.textContent=G.year; head.appendChild(ys); wrap.appendChild(head);
-          const stats=document.createElement('div'); stats.innerHTML=
-            bar(jp()?'支持率':'Approval',G.approval,100,'#34c759')+bar(jp()?'安定度':'Stability',G.stability,100,'#0a84ff')+
-            bar(jp()?'財政':'Treasury',G.treasury,100,'#ffcc00')+bar(jp()?'国内不安':'Unrest',G.unrest,100,'#ff3b30')+
-            bar(jp()?'国際的圧力':'Sanctions',G.sanctions,100,'#af52de')+
-            '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--text-muted);margin-top:8px;">'+
-            '<span>GDP <b style="color:var(--text-main);">$'+(G.gdp>=1000?(G.gdp/1000).toFixed(2)+'T':Math.round(G.gdp)+'B')+'</b></span>'+
+          const head=document.createElement('div'); head.style.cssText='display:flex;align-items:center;gap:9px;margin-bottom:6px;'; const tt=document.createElement('h3'); tt.style.cssText='margin:0;font-size:18px;'; tt.textContent=G.flag+' '+G.name; head.appendChild(tt); head.appendChild(pill(govLbl(), G.gov==='authoritarian'?'#ff3b30':'#0a84ff')); if(G.atWar) head.appendChild(pill(jp()?'戦争':'AT WAR','#7a0010')); const ys=document.createElement('span'); ys.style.cssText='margin-left:auto;font-weight:700;font-size:15px;'; ys.textContent=G.year; head.appendChild(ys); wrap.appendChild(head);
+          const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:0 14px;';
+          grid.innerHTML=
+            bar(jp()?'支持率':'Approval',G.approval,'#34c759')+bar(jp()?'安定度':'Stability',G.stability,'#0a84ff')+
+            bar(jp()?'財政':'Treasury',G.treasury,'#ffcc00')+bar(jp()?'国内不安':'Unrest',G.unrest,'#ff3b30')+
+            bar(jp()?'軍事力':'Military',G.military,'#8e8e93')+bar(jp()?'技術':'Tech',G.tech,'#ff9500')+
+            bar(jp()?'制裁・圧力':'Sanctions',G.sanctions,'#af52de')+bar(jp()?'国際緊張':'Tension',G.tension,'#ff6a3d');
+          wrap.appendChild(grid);
+          const nums=document.createElement('div'); nums.style.cssText='display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);margin:8px 0 4px;';
+          nums.innerHTML='<span>GDP <b style="color:var(--text-main);">'+money(G.gdp)+'</b> ('+(G.gdpGrowth>=0?'+':'')+(G.gdpGrowth*100).toFixed(1)+'%)</span>'+
+            '<span>'+(jp()?'1人当':'PPP/cap')+' <b style="color:var(--text-main);">$'+Math.round(G.gdppc).toLocaleString()+'</b></span>'+
+            '<span>'+(jp()?'人口':'Pop')+' <b style="color:var(--text-main);">'+popf(G.pop)+'</b></span>'+
             '<span>HDI <b style="color:var(--text-main);">'+G.hdi.toFixed(3)+'</b></span>'+
-            '<span>'+(jp()?'民主指数':'Dem. Index')+' <b style="color:var(--text-main);">'+G.dem.toFixed(1)+'</b></span></div>';
-          wrap.appendChild(stats);
-          const pl=document.createElement('div'); pl.style.cssText='margin-top:12px;'; const plh=document.createElement('div'); plh.textContent=jp()?'今年の政策（1つ選択）':'Pick a policy this year'; plh.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;'; pl.appendChild(plh);
-          const choices=POLICIES().sort(()=>Math.random()-0.5).slice(0,4);
-          choices.forEach(c=>{ const b=document.createElement('button'); b.textContent=c.t; b.style.cssText='display:block;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.18);border-radius:10px;padding:10px 12px;margin-bottom:7px;cursor:pointer;color:var(--text-main);font-size:13px;font-weight:600;';
-            b.onclick=()=>turn(c); pl.appendChild(b); });
-          const skip=document.createElement('button'); skip.textContent=jp()?'何もしない（次の年へ）':'Do nothing — next year'; skip.style.cssText='display:block;width:100%;background:transparent;border:1px dashed rgba(128,128,128,0.4);border-radius:10px;padding:9px;margin-top:2px;cursor:pointer;color:var(--text-muted);font-size:12.5px;'; skip.onclick=()=>turn(null); pl.appendChild(skip);
+            '<span>'+(jp()?'民主指数':'Dem')+' <b style="color:var(--text-main);">'+G.dem.toFixed(1)+'</b></span>';
+          wrap.appendChild(nums);
+          const facWrap=document.createElement('div'); facWrap.style.cssText='display:flex;gap:6px;margin:6px 0 2px;';
+          const FAC=[['parliament',jp()?'議会':'Parl.'],['military',jp()?'軍':'Mil.'],['business',jp()?'財界':'Biz'],['public',jp()?'世論':'Public'],['courts',jp()?'司法':'Courts']];
+          facWrap.innerHTML=FAC.map(([k,l])=>{ const v=Math.round(G.factions[k]); const col=v>=55?'#34c759':v>=35?'#ffcc00':'#ff3b30'; return '<div style="flex:1;text-align:center;"><div style="font-size:9.5px;color:var(--text-muted);">'+l+'</div><div style="font-size:12px;font-weight:700;color:'+col+';">'+v+'</div></div>'; }).join('');
+          const facLab=document.createElement('div'); facLab.textContent=jp()?'勢力の支持（民主制では政策を左右）':'Factions (gate your bills in a democracy)'; facLab.style.cssText='font-size:10px;color:var(--text-muted);margin-top:8px;'; wrap.appendChild(facLab); wrap.appendChild(facWrap);
+          const pl=document.createElement('div'); pl.style.cssText='margin-top:10px;'; const plh=document.createElement('div'); plh.textContent=jp()?'今年の政策（1つ選択）':'Choose this year’s policy'; plh.style.cssText='font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;'; pl.appendChild(plh);
+          const pool=POLICIES.slice().sort(()=>Math.random()-0.5); const seen={}; const choices=[]; for(const c of pool){ if(choices.length>=5) break; if(!seen[c.cat]||Math.random()<0.4){ seen[c.cat]=1; choices.push(c); } } while(choices.length<5 && choices.length<pool.length){ const c=pool[choices.length]; if(choices.indexOf(c)<0) choices.push(c); }
+          choices.forEach(c=>{ const b=document.createElement('button'); b.style.cssText='display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-left:3px solid '+CATC[c.cat]+';border-radius:10px;padding:9px 11px;margin-bottom:6px;cursor:pointer;color:var(--text-main);font-size:13px;font-weight:600;';
+            b.innerHTML='<span style="flex:1;">'+pt(c)+'</span><span style="font-size:10px;color:'+(c.pop>=0?'#34c759':'#ff3b30')+';">'+(c.pop>=0?'▲':'▼')+'</span>'; b.onclick=()=>turn(c); pl.appendChild(b); });
+          const skip=document.createElement('button'); skip.textContent=jp()?'何もしない（次の年へ）':'Do nothing — advance a year'; skip.style.cssText='display:block;width:100%;background:transparent;border:1px dashed rgba(128,128,128,0.4);border-radius:10px;padding:9px;margin-top:2px;cursor:pointer;color:var(--text-muted);font-size:12.5px;'; skip.onclick=()=>turn(null); pl.appendChild(skip);
           wrap.appendChild(pl);
-          if(G.log.length){ const lg=document.createElement('div'); lg.style.cssText='margin-top:12px;font-size:11.5px;color:var(--text-muted);line-height:1.5;max-height:90px;overflow:auto;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;'; lg.innerHTML=G.log.slice(-6).reverse().map(x=>'• '+x).join('<br>'); wrap.appendChild(lg); }
+          if(G.log.length){ const lg=document.createElement('div'); lg.style.cssText='margin-top:12px;font-size:11.5px;color:var(--text-muted);line-height:1.5;max-height:96px;overflow:auto;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;'; lg.innerHTML=G.log.slice(-7).reverse().map(x=>'• '+x).join('<br>'); wrap.appendChild(lg); }
           card.appendChild(wrap);
         }
-        function turn(policy){
-          let msg='';
-          if(policy){ if(G.gov==='democracy'){ const blockP=Math.max(0,(-policy.pop)/100 + (10-G.dem)*0.03 + (G.approval<45?0.15:0)); if(Math.random()<blockP){ msg=(jp()?'議会が否決: ':'Parliament blocked: ')+policy.t; G.approval-=2; } else { apply(policy.ef); G.approval+=policy.pop*0.3; msg=(jp()?'可決: ':'Passed: ')+policy.t; } }
-            else { apply(policy.ef); G.approval+=policy.pop*0.15; if(policy.pop<0){ G.unrest+=Math.abs(policy.pop)*0.4; G.dem-=0.1; } msg=(jp()?'強行: ':'Enacted by decree: ')+policy.t; } }
-          // yearly drift + random event
-          G.year++; G.gdp*=1.01; G.treasury+=2; G.unrest+=(G.approval<40?4:-2)+(G.sanctions>50?3:0); G.stability+=(G.unrest>60?-5:2); G.sanctions-=1;
-          const ev=EVENTS().find(e=>Math.random()<e.p); if(ev){ apply(ev.ef); G.log.push(G.year+': '+ev.m); }
+        function turn(policy){ G.turnCount++; let msg='';
+          if(policy){
+            if(G.gov==='democracy'){
+              let oppose=0; for(const k in (policy.fac||{})){ if(policy.fac[k]<0) oppose += -policy.fac[k]*(G.factions[k]/100); }
+              const blockP=Math.max(0,Math.min(0.85, oppose/55 + (55-G.approval)/260 + (7-G.dem)*0.025 ));
+              if(Math.random()<blockP){ msg=(jp()?'阻止: ':'Blocked: ')+pt(policy)+(jp()?'（議会・利害関係者）':' (parliament/stakeholders)'); G.approval-=2; applyFac(policy.fac,0.3); }
+              else { apply(policy.ef); applyFac(policy.fac,1); G.approval+=policy.pop*0.3; msg=(jp()?'可決: ':'Passed: ')+pt(policy); }
+            } else {
+              apply(policy.ef); applyFac(policy.fac,1); G.approval+=policy.pop*0.16;
+              let resent=0; for(const k in (policy.fac||{})){ if(policy.fac[k]<0) resent+=-policy.fac[k]; }
+              G.unrest+= resent*0.25 + (policy.pop<0?-policy.pop*0.3:0); G.dem-=0.08; if(policy.pop<-8) G.sanctions+=2;
+              msg=(jp()?'勅令で強行: ':'Enacted by decree: ')+pt(policy);
+            }
+          }
+          // yearly economic + social drift
+          G.year++;
+          const gr=0.02 + (G.tech-50)*0.0006 + (G.stability-50)*0.0005 + (G.treasury-50)*0.0004 - G.sanctions*0.0006 - (G.unrest-30)*0.0004 + (Math.random()-0.5)*0.03;
+          G.gdpGrowth=gr; G.gdp*=Math.max(0.85,1+gr);
+          G.pop*= 1 + (0.012 - G.hdi*0.012) + (Math.random()-0.5)*0.002;
+          G.gdppc=G.gdp*1e9/Math.max(1,G.pop);
+          G.hdi += (Math.min(0.96, 0.32+Math.log10(Math.max(1,G.gdppc))/6) - G.hdi)*0.06;
+          G.factions.public += (G.approval - G.factions.public)*0.4;
+          ['parliament','military','business','courts'].forEach(k=>{ G.factions[k] += (55 - G.factions[k])*0.06; });
+          G.unrest += (G.approval<40?4:-3) + (G.sanctions>50?3:0) + (G.atWar?2:0);
+          G.stability += (G.unrest>60?-5:(G.unrest<25?3:1));
+          G.sanctions = Math.max(0,G.sanctions-1.5);
+          G.tension += (Math.random()-0.5)*6 - 1 + (G.military>72?1:0);
+          // war
+          if(G.atWar){ const power=G.military+G.allies*8-50; G.treasury-=6; G.approval+= power>15?2:-3;
+            if(Math.random()<0.28){ if(power+Math.random()*45>40){ G.atWar=false; G.military-=8; G.approval+=8; G.log.push(G.year+': '+(jp()?'戦争に勝利。':'You won the war.')); } else { return gameover(jp()?'戦争に敗北し、政権は崩壊した。':'You lost the war; your government falls.'); } } }
+          else if(G.tension>72 && Math.random()<0.12){ G.atWar=true; G.log.push(G.year+': '+(jp()?'戦争が勃発した。':'War breaks out.')); }
+          // random event
+          const ev=EVENTS.filter(e=>!e.cond||e.cond()).find(e=>Math.random()<e.p);
+          if(ev){ apply(ev.ef); applyFac(ev.fac,1); if(ev.go){ try{ ev.go(); }catch(_){} } G.log.push(G.year+': '+et(ev)); }
           if(msg) G.log.push(G.year+': '+msg);
-          clamp();
-          // end conditions
-          if(G.gov==='dictator' && G.unrest>82 && G.stability<26 && Math.random()<0.5){ return gameover(jp()?'クーデターにより政権は崩壊した。':'A coup d\'état topples your regime.'); }
-          if(G.gov==='democracy' && G.year%4===0){ if(G.approval<42){ return gameover(jp()?'選挙に敗北。政権を去ることに。':'You lost the election and leave office.'); } else { G.log.push(G.year+': '+(jp()?'選挙に勝利！':'Re-elected!')); G.approval=Math.min(100,G.approval+5); } }
-          if(G.year>2060){ return gameover(jp()?'長期にわたり国を導きました。':'You led the nation for a long era.'); }
+          clampG();
+          // endings
+          if(G.gov==='authoritarian' && G.unrest>84 && G.stability<24 && Math.random()<0.5) return gameover(jp()?'クーデターにより政権は崩壊した。':'A coup d’état topples your regime.');
+          if(G.gov==='authoritarian' && G.sanctions>86 && Math.random()<0.25) return gameover(jp()?'国際的孤立と経済崩壊で亡命を余儀なくされた。':'Isolation and collapse force you into exile.');
+          if(G.gov==='democracy' && (G.year-G.startYear)%4===0){ if(G.approval<42) return gameover(jp()?'選挙に敗北。政権を去ることに。':'You lost the election.'); else { G.log.push(G.year+': '+(jp()?'選挙に勝利！':'Re-elected!')); G.approval=Math.min(100,G.approval+5); } }
+          if(G.gdp < G.startGdp*0.4) return gameover(jp()?'経済が崩壊した。':'The economy has collapsed.');
+          if(G.year>2100) return gameover(jp()?'歴史的な長期政権を築き上げた。':'You built an era-defining government.');
           play();
         }
-        function gameover(reason){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); const wrap=document.createElement('div'); wrap.className='pg-ns'; wrap.style.textAlign='center';
-          wrap.innerHTML='<div style="font-size:34px;margin:6px 0;">🏁</div><h3 style="margin:0 0 8px;font-size:18px;">'+(jp()?'ゲーム終了':'Game over')+'</h3><p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin:0 0 8px;">'+reason+'</p>'+
-            '<p style="font-size:12.5px;margin:0 0 16px;">'+G.flag+' '+G.name+' · '+G.year+'<br>'+(jp()?'最終支持率':'Final approval')+' '+Math.round(G.approval)+' · GDP $'+(G.gdp>=1000?(G.gdp/1000).toFixed(2)+'T':Math.round(G.gdp)+'B')+'</p>';
+        function gameover(reason){ card.querySelectorAll('.pg-ns').forEach(n=>n.remove()); clampG(); const wrap=document.createElement('div'); wrap.className='pg-ns'; wrap.style.textAlign='center';
+          const yrs=G.year-G.startYear;
+          wrap.innerHTML='<div style="font-size:34px;margin:6px 0;">🏁</div><h3 style="margin:0 0 8px;font-size:18px;">'+(jp()?'ゲーム終了':'Game over')+'</h3><p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin:0 0 10px;">'+reason+'</p>'+
+            '<div style="font-size:12px;line-height:1.7;margin:0 0 14px;">'+G.flag+' '+G.name+' · '+G.startYear+'–'+G.year+' ('+yrs+(jp()?'年在任':' yrs')+')<br>'+
+            (jp()?'最終GDP ':'Final GDP ')+money(G.gdp)+' · HDI '+G.hdi.toFixed(3)+'<br>'+(jp()?'民主指数 ':'Dem index ')+G.dem.toFixed(1)+' · '+(jp()?'支持率 ':'Approval ')+Math.round(G.approval)+'</div>';
           const again=document.createElement('button'); again.textContent=jp()?'もう一度':'Play again'; again.style.cssText='width:100%;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-weight:700;cursor:pointer;'; again.onclick=setup; wrap.appendChild(again); card.appendChild(wrap);
         }
         setup();
@@ -9477,6 +9695,13 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(id==='night'){ buildNight(); setVis('lyr-night',true); if(nightTimer)clearInterval(nightTimer); nightTimer=setInterval(buildNight,60000); }
         /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
         { try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
+        /* (#R30) ASYNC-RACE ORPHAN GUARD — root cause of "オンになっているのにactive layersに表示されず、消せない" /
+           "勝手にレイヤーがオンになる". Most layers add+show inside whenStyleReady()/poll callbacks that resolve
+           LATER. If the user UNCHECKED before that resolved, the deferred setVis(true) re-showed a layer whose
+           checkbox is now OFF — a visible-but-unremovable orphan (the active-layers list reads the checkbox, so
+           it never lists it). Re-assert the OFF state a few times after if the box went off in the meantime.
+           toggleLayer(id,false) runs the full per-id hide path, so map ⇄ checkbox ⇄ active-list stay in sync. */
+        { const _dlid='dl-'+id; [600,1500,3200].forEach(ms=>setTimeout(()=>{ try{ const cb=document.getElementById(_dlid); if(cb && !cb.checked){ toggleLayer(id,false); try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} } }catch(_){} }, ms)); }
       } else {
         if(id==='hdi'||id==='dem'||id==='pop'||id==='milSpend'||id==='milSpendGDP'||id==='gdppc'||id==='tfr'){ setVis(id+'-fill',false); }
         else if(id==='nato'){ setNatoVis(false); try{ window._hideGenericLegend&&window._hideGenericLegend('nato'); }catch(_){} }
@@ -10723,7 +10948,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function updateAccountButton(){ const b=document.getElementById('btn-account'); if(b){
       if(!currentUser){ b.textContent=(currentLang==='jp'?'ログイン':'Log in'); }
       else { const nm=(currentUser.name||currentUser.email.split('@')[0]), img=window.imGetAvatarImg();
-        b.innerHTML = (img?`<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:url('${img}') center/cover;vertical-align:-4px;margin-right:5px;"></span>`:(window.imGetAvatar()+' '))+escapeHtml(nm); }
+        /* (#R30) name wrapped in .acct-name so mobile can show the avatar ONLY (the full name made the
+           account / feedback / settings row wrap = "横一列に並ばず改行されてしまう"). */
+        b.innerHTML = (img?`<span class="acct-av" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:url('${img}') center/cover;vertical-align:-5px;"></span>`:`<span class="acct-av">${window.imGetAvatar()}</span>`)+'<span class="acct-name">'+escapeHtml(nm)+'</span>'; }
     }
     /* Sidebar EN/JP toggle shows only when logged OUT; logged-in users switch language in Settings. */
     const lt=document.querySelector('.lang-toggle'); if(lt) lt.style.display = currentUser ? 'none' : 'flex';
@@ -13592,7 +13819,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!name){ hide(); return; }
         const ll=e.lngLat;   /* isolate by the tapped POINT (reliable) — name is just the label */
         const b=ensurePop();
-        b.innerHTML='<span style="color:var(--primary-color);font-size:13px;">🔍</span><span>'+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name))+'</span>';
+        b.innerHTML='<span style="color:var(--primary-color);display:inline-flex;align-items:center;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg></span><span>'+(currentLang==='jp'?(name+' だけ表示'):('Isolate '+name))+'</span>';
         b.style.left=e.point.x+'px'; b.style.top=Math.max(48,e.point.y)+'px'; b.style.display='inline-flex';
         b.onclick=(ev)=>{ ev.stopPropagation(); hide(); try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(ll.lng,ll.lat,name); }catch(_){} };
         clearTimeout(hideT); hideT=setTimeout(hide,4500);   /* auto-dismiss if ignored */
@@ -14189,28 +14416,29 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-rz::after{content:"";position:absolute;inset:5px;border-radius:3px;border:2px solid rgba(150,160,175,0.55);border-top:none;border-left:none;opacity:0;transition:opacity 0.15s;}'+
       '#compare-window:hover .cmp-rz::after{opacity:1;}'+
       '@media(max-width:768px){'+
-      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:14px;padding-bottom:20px;z-index:4200;}'+
+      '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:16px;padding-bottom:20px;z-index:4200;overflow:hidden;}'+
       '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:7;}'+
       '.cmp-resize::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:42px;height:4px;border-radius:2px;background:rgba(150,160,175,0.7);}'+
-      /* (#R22) Compact header (the wrapping 7-button bar looked like a big gray top strip — "上部がグレー")
-         + a clearly-pinned red Close so it never hides behind other buttons ("compare viewを終了できない"). */
-      '.cmp-head{flex-wrap:wrap;padding:8px 52px 8px 10px;gap:6px;align-items:center;}'+
-      '.cmp-head .cmp-title{font-size:13px;width:auto;margin-right:6px;}'+
-      '.cmp-btn{padding:6px 9px;font-size:12px;min-height:32px;}'+
-      /* (#R24) close pinned ABOVE everything in the window and always hit-takeable — it sits in its own
-         reserved 52px gutter (the header has padding-right:52px) so no wrapped header/ctrls button can land
-         on top of it ("×がボタンと重なって終了できない"). */
-      '#cmp-close{position:absolute !important;top:6px;right:6px;z-index:30 !important;pointer-events:auto !important;background:#ff3b30 !important;color:#fff !important;min-width:44px;height:44px;border-radius:22px;font-size:20px;padding:0;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.35);}'+
-      /* (#R29.1) Keep the main-map FAB stack visible while compare is open ("勝手に消すな"), but move it to
-         the vertical CENTER-right — clear of BOTH the compare window's × at the top AND the time-slider /
-         timebar at the bottom (the R29 bottom placement covered the timebar = "タイムスライダーのボタンが消える"). */
-      'body.cmp-open .m-fab-stack{top:50% !important;bottom:auto !important;transform:translateY(-50%) !important;opacity:1 !important;pointer-events:auto !important;}'+
-      '#cmp-min{min-width:38px;font-size:16px;}'+
-      '#compare-window.cmp-xray .cmp-head{padding:8px 52px 8px 10px;}'+
-      '.cmp-ctrls{top:auto;bottom:28px;left:8px;right:8px;max-width:none;}'+
-      '.cmp-ctrls select,.cmp-ctrls label{font-size:12px;padding:6px 9px;}'+
+      /* (#R30) Clean iOS header — NO chaotic flex-wrap ("並びが不規則でダサい"). The title gets its own line;
+         the two segmented controls fill an even second row; Map/Sat + Sync/Free/X-ray read as proper iOS
+         segmented pills. Close + Minimise are tasteful frosted circular icons (the old alarming red ✕ was
+         "×のUIがダサい"), pinned top-right in a reserved gutter so nothing can ever overlap the close. */
+      '.cmp-head{display:flex !important;flex-wrap:wrap;padding:10px 96px 10px 14px;gap:7px;align-items:center;cursor:default;}'+
+      '.cmp-head .cmp-title{flex:1 1 100%;font-size:14px;margin:0;}'+
+      '.cmp-head .cmp-seg{flex:1 1 0;display:flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;}'+
+      '.cmp-head .cmp-seg .cmp-btn{flex:1 1 0;min-width:0;padding:7px 4px;font-size:12px;min-height:32px;background:transparent;border-radius:7px;}'+
+      '.cmp-head .cmp-seg .cmp-btn.on{background:var(--primary-color);color:#fff;}'+
+      '#cmp-close,#cmp-min{position:absolute !important;top:9px;z-index:30 !important;pointer-events:auto !important;width:34px;height:34px;min-width:34px;border-radius:17px;padding:0;display:flex;align-items:center;justify-content:center;font-weight:600;background:rgba(120,120,128,0.2) !important;color:var(--text-main) !important;border:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}'+
+      '#cmp-close{right:10px;font-size:18px;} #cmp-min{right:50px;font-size:22px;}'+
+      /* (#R30) Main-map FABs move to the BOTTOM-LEFT while compare is open — provably clear of the compare ×
+         (top-right), the layer picker, AND the bottom-RIGHT timebar (root of "×がボタンと重なる" /
+         "タイムスライダーのボタンが消える"). Moved, never hidden ("勝手に消すな"). */
+      'body.cmp-open .m-fab-stack{top:auto !important;bottom:calc(env(safe-area-inset-bottom) + 84px) !important;left:12px !important;right:auto !important;transform:none !important;opacity:1 !important;pointer-events:auto !important;}'+
+      '#compare-window.cmp-xray .cmp-head{padding:10px 96px 10px 14px;}'+
+      '.cmp-ctrls{top:auto;bottom:28px;left:10px;right:10px;max-width:none;}'+
+      '.cmp-ctrls select,.cmp-ctrls label{font-size:12px;padding:8px 10px;}'+
       /* (#R23) compare layer picker = full-width native select on mobile (iOS shows its own wheel UI). */
-      '#cmp-layers-sel{width:100% !important;max-width:none !important;font-size:13px;min-height:38px;}'+
+      '#cmp-layers-sel{width:100% !important;max-width:none !important;font-size:13px;min-height:40px;}'+
       '}';
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -14583,10 +14811,10 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     }
     function open(){ build(); win.style.display='flex'; minimized=false; win.classList.remove('cmp-min');
-      /* (#R28) While compare is open on mobile, HIDE the main-map FAB stack. The compare window is a
-         full-width top panel and its close × sits top-right — exactly where the Layers/Map FABs live, so
-         they overlapped and "compare viewを終了できない / ×がレイヤー選択ボタンと重なる". With the FABs hidden
-         the × is the only thing in that corner; they reappear the instant compare closes. */
+      /* (#R30) While compare is open on mobile, MOVE the main-map FAB stack to the bottom-LEFT (CSS on
+         body.cmp-open). The compare window is a full-width top panel and its close × sits top-right — exactly
+         where the Layers/Map FABs normally live, which caused "×がレイヤー選択ボタンと重なる / 終了できない".
+         Moving (not hiding — "勝手に消すな") keeps them usable AND clear of the bottom-right timebar. */
       try{ document.body.classList.add('cmp-open'); }catch(_){}
       /* (#R26) Make sure the default (bottom-right) position doesn't land ON TOP OF the sidebar on a narrow
          desktop / wide sidebar — nudge the window right of the sidebar if it would overlap. */
@@ -15235,16 +15463,18 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function closeP(){ if(panel) panel.style.display='none'; mapQuizArmed=false; }
     function openP(){ score=0; streak=0; total=0; menu(); }
+    /* (#R30) The Tools button that used to open Quiz mode now opens the PLAYGROUND (Quiz lives INSIDE the
+       Playground hub) — "Playground自体は…旧quiz modeの場所に / Quiz modeをplaygroundに移動". */
     function mount(){ if(document.getElementById('edu-mount')) return;
       const host=document.createElement('div'); host.id='edu-mount'; host.style.marginTop='6px';
-      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎓 <span>'+(jp()?'クイズモード':'Quiz mode')+'</span></button>';
+      host.innerHTML='<button id="btn-edu" class="ai-test-btn" style="width:100%;">🎮 <span>'+(jp()?'プレイグラウンド':'Playground')+'</span></button>';
       const tools=document.getElementById('layer-tools'); const dd=document.getElementById('layer-dropdown');
       (tools||dd||document.body).appendChild(host);
-      host.querySelector('#btn-edu').onclick=openP;
+      host.querySelector('#btn-edu').onclick=()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     if(map) map.on('click',onMapClick);
     if(document.readyState!=='loading') setTimeout(mount,500); else document.addEventListener('DOMContentLoaded',()=>setTimeout(mount,500));
-    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎓 <span>'+(jp()?'クイズモード':'Quiz mode')+'</span>'; });
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-edu'); if(b) b.innerHTML='🎮 <span>'+(jp()?'プレイグラウンド':'Playground')+'</span>'; });
     return { open:openP, close:closeP };
   })();
 
@@ -15672,27 +15902,35 @@ window.addEventListener('DOMContentLoaded', () => {
     const card=document.createElement('div');
     card.style.cssText='width:min(440px,100%);max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--popup-bg);color:var(--text-main);box-shadow:0 18px 60px rgba(0,0,0,0.4);padding:26px 24px max(24px,env(safe-area-inset-bottom)) 24px;box-sizing:border-box;'+(isM?'border-radius:22px 22px 0 0;animation:mSheetUp 0.42s var(--sheet-ease);':'border-radius:22px;margin:16px;');
     if(isM){ const g=document.createElement('div'); g.style.cssText='width:38px;height:5px;border-radius:3px;background:rgba(128,128,128,0.4);margin:-8px auto 14px;'; card.appendChild(g); }
+    /* (#R30) Clean SF-Symbol-style line icons instead of emojis ("中途半端にダサい絵文字を入れるな"). */
+    const ICONS={
+      layers:'<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.7l9 4.7 9-4.7L12 3Z"/><path d="m3 12 9 4.7L21 12"/><path d="m3 16.3 9 4.7 9-4.7"/></svg>',
+      news:'<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.7-6-10a6 6 0 0 1 12 0c0 4.3-6 10-6 10Z"/><circle cx="12" cy="11" r="2.3"/></svg>',
+      globe:'<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>',
+      chart:'<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 4-6"/></svg>'
+    };
     const head=document.createElement('div'); head.style.cssText='display:flex;align-items:center;gap:14px;margin:0 0 18px;';
-    const icon=document.createElement('div'); icon.textContent='🌍'; icon.style.cssText='width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--primary-color),#5856d6);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,0.22);';
+    const icon=document.createElement('div'); icon.innerHTML='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>'; icon.style.cssText='width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--primary-color),#5856d6);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,0.22);';
     const ht=document.createElement('div');
     const h1=document.createElement('div'); h1.textContent='IntMap'; h1.style.cssText='font-size:23px;font-weight:700;line-height:1.15;';
     const h2=document.createElement('div'); h2.textContent=jp?'世界を、地図で読み解く':'Explore the world, one layer at a time'; h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
     ht.appendChild(h1); ht.appendChild(h2); head.appendChild(icon); head.appendChild(ht); card.appendChild(head);
     const feats=jp?[
-      ['🗺️','70以上のデータレイヤー','気候・人口・経済・地政学などを地図に重ねて表示'],
-      ['📰','ライブニュースマップ','世界のニュースを「発生した場所」にピン表示'],
-      ['🌐','3D地球儀・衛星画像','地球儀／衛星・3D地形・過去にさかのぼる表示'],
-      ['📊','国データ','国をタップして統計・時系列・比較を表示']
+      ['layers','70以上のデータレイヤー','気候・人口・経済・地政学などを地図に重ねて表示'],
+      ['news','ライブニュースマップ','世界のニュースを「発生した場所」にピン表示'],
+      ['globe','3D地球儀・衛星画像','地球儀／衛星・3D地形・過去にさかのぼる表示'],
+      ['chart','国データ','国をタップして統計・時系列・比較を表示']
     ]:[
-      ['🗺️','70+ data layers','Climate, population, economy & geopolitics on the map'],
-      ['📰','Live news map','World headlines pinned to where they actually happen'],
-      ['🌐','Globe & satellite','3D globe, satellite imagery, terrain & time travel'],
-      ['📊','Country data','Tap any country for stats, time-series & comparisons']
+      ['layers','70+ data layers','Climate, population, economy & geopolitics on the map'],
+      ['news','Live news map','World headlines pinned to where they actually happen'],
+      ['globe','Globe & satellite','3D globe, satellite imagery, terrain & time travel'],
+      ['chart','Country data','Tap any country for stats, time-series & comparisons']
     ];
-    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:14px;margin:0 0 22px;';
+    const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:16px;margin:0 0 22px;';
     const tints=['rgba(0,122,255,0.15)','rgba(255,59,48,0.15)','rgba(52,199,89,0.15)','rgba(175,82,222,0.15)'];
+    const tintFg=['#0a84ff','#ff3b30','#34c759','#af52de'];
     feats.forEach((f,i)=>{ const row=document.createElement('div'); row.style.cssText='display:flex;align-items:center;gap:13px;';
-      const ic=document.createElement('div'); ic.textContent=f[0]; ic.style.cssText='width:38px;height:38px;border-radius:10px;background:'+tints[i%tints.length]+';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;';
+      const ic=document.createElement('div'); ic.innerHTML=ICONS[f[0]]||''; ic.style.cssText='width:38px;height:38px;border-radius:10px;background:'+tints[i%tints.length]+';color:'+tintFg[i%tintFg.length]+';display:flex;align-items:center;justify-content:center;flex-shrink:0;';
       const tx=document.createElement('div');
       const t1=document.createElement('div'); t1.textContent=f[1]; t1.style.cssText='font-size:14.5px;font-weight:600;line-height:1.2;';
       const t2=document.createElement('div'); t2.textContent=f[2]; t2.style.cssText='font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.3;';

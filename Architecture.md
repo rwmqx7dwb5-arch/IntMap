@@ -37,7 +37,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **アカウント/AI機能** — ログインで使えるアカウント制AI（翻訳・要約・画像解析など。1日上限つき）。
 - **テーマ (Theme)** — 10種（System/Light/Dark + Age of Discovery / Cyber Terminal / Psychedelic / Military /
   Medical / Baroque / Taishō）。テーマ変更でサイドバー外観（solid/frosted/transparent）を自動選択。
-- **Playground (beta)** — World Explorer（衛星GeoGuessr）/ Pandemic Simulator / Nation Sim の3モード（実データ）。
+- **Playground (beta)** — 設定ではなく **Layers ▸ Tools**（旧Quizモードの場所）から起動。4モード（実データ）:
+  World Explorer（衛星GeoGuessr。ズームアウト減点・開始地点ピン・起動時サイドバー収納/タブ解除・完全ランダム）/
+  Pandemic Simulator（国別 SEIR メタ個体群モデル＝症例ドット表示・交通網拡散・自動ロックダウン/国境封鎖・
+  変異株・ワクチン/治療・速報通知）/ Statecraft（旧Nation Sim。7指標＋5勢力で政策が制約される国家運営、1900–2026）/
+  Quiz mode（旧クイズモードをハブ内へ移動）。
 - **Bug Report** — 診断情報を自動添付してSupabase `bug_reports` に送信（オフライン時はローカル+クリップボード）。
 - **お気に入りレイヤー、レイヤープリセット、共有パーマリンク（URLハッシュ）、スクリーンショット、PWA(Service Worker)**。
 - **多言語ニュース翻訳**（任意）・**寄付(Stripe)**・**フィードバック**・**管理コンソール(admin.html)**。
@@ -184,8 +188,10 @@ supabase/
   iOS風の説明カードに変更。レイヤー紹介ツアー(`_imStartDemo`)は明示ボタン（カード内・設定内）からの任意起動に。
 - **テーマ**：`applyTheme()` が `userTheme` から `body.theme-<id>` を排他トグル＋light/darkベースを設定（skin registry）。
   CSSはすべて静的 `<style>` 内（テンプレートリテラル不使用＝バッククォート罠なし）。テーマ変更時に最適サイドバー外観を自動適用。
-- **Playground/Bug Report**：設定から起動。`window._openPlayground` / `window._openBugReport` / `window._openFeedback`。
-  Playgroundの各モードは createElement+インラインstyleで構築（CSS-in-template-literal を避ける）。
+- **Playground/Bug Report**：Playgroundは Layers ▸ Tools の `btn-edu` から `window._openPlayground`。Bug Report /
+  Feedback は設定から `window._openBugReport` / `window._openFeedback`。Feedbackは種類（不具合/要望/良かった点等）・
+  ログアウト時の任意メール・不具合はバグレポートへ誘導。Playgroundの各モードは createElement+インラインstyleで構築
+  （CSS-in-template-literal を避ける）。
 - **テキストに影を付けない**（`text-shadow:none` を徹底）。
 
 ---
