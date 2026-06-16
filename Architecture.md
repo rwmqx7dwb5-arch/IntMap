@@ -37,11 +37,14 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **アカウント/AI機能** — ログインで使えるアカウント制AI（翻訳・要約・画像解析など。1日上限つき）。
 - **テーマ (Theme)** — 10種（System/Light/Dark + Age of Discovery / Cyber Terminal / Psychedelic / Military /
   Medical / Baroque / Taishō）。テーマ変更でサイドバー外観（solid/frosted/transparent）を自動選択。
-- **Playground (beta)** — 設定ではなく **Layers ▸ Tools**（旧Quizモードの場所）から起動。4モード（実データ）:
-  World Explorer（衛星GeoGuessr。ズームアウト減点・開始地点ピン・起動時サイドバー収納/タブ解除・完全ランダム）/
-  Pandemic Simulator（国別 SEIR メタ個体群モデル＝症例ドット表示・交通網拡散・自動ロックダウン/国境封鎖・
-  変異株・ワクチン/治療・速報通知）/ Statecraft（旧Nation Sim。7指標＋5勢力で政策が制約される国家運営、1900–2026）/
-  Quiz mode（旧クイズモードをハブ内へ移動）。
+- **Playground (beta)** — 設定ではなく **Layers ▸ Tools**（旧Quizモードの場所）から起動。5モード（実データ）:
+  World Explorer（衛星GeoGuessr。完全ランダム陸地・ズームアウト減点・開始地点ピン・回答地図はglobe・起動時に
+  サイドバー収納/タブ解除）/ Pandemic Simulator（国別 SEIR メタ個体群＝実在都市に症例ドット・交通網拡散・自動
+  ロックダウン/国境封鎖・変異株・ワクチン/治療・速報通知）/ Statecraft（旧Nation Sim。7指標＋5勢力で政策が
+  制約される国家運営、1900–2026）/ World Sandbox（世界を編集：新国家を描く=turf面積/都市/海面/航路封鎖と影響）/
+  Quiz mode。
+- **β追加レイヤー(#R31)** — USGS地震（ライブ＋過去）・注目度ヒートマップ（ニュース密度）・World Bank コロプレス
+  8種（CO₂/都市化/電力/医療費/森林/再エネ/携帯/インフレ、最新値）。`_registerLayerOpacity` で凡例+不透明度。
 - **Bug Report** — 診断情報を自動添付してSupabase `bug_reports` に送信（オフライン時はローカル+クリップボード）。
 - **お気に入りレイヤー、レイヤープリセット、共有パーマリンク（URLハッシュ）、スクリーンショット、PWA(Service Worker)**。
 - **多言語ニュース翻訳**（任意）・**寄付(Stripe)**・**フィードバック**・**管理コンソール(admin.html)**。

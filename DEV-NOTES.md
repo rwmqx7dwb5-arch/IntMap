@@ -2531,3 +2531,68 @@ console errors; the two simulators run end-to-end; key DOM/CSS/state probes).
 - The two simulators + World Explorer are verified to launch & play in the headless preview (no WebGL needed
   for the logic), but the dot-rendering / pin / satellite visuals need a real device. Mobile compare/FAB
   geometry is root-caused in CSS + measured, but a phone confirmation is welcome.
+
+---
+
+## 35. Round 31 — re-reported bug root-causes + big feature batch (tags `#R31`)
+
+Build `2026-06-16-R31`. The user re-reported several bugs as STILL broken (with new specifics) and asked for
+a large new feature set. Verified live after every change (82 layer rows incl. +10 new beta layers, zero
+console errors; new layers render — earthquakes on real fault zones, attention heatmap, choropleths; the new
+Playground modes launch & play; screenshots confirm the iOS look).
+
+### Re-reported bugs — fixed at the root
+- **Layer toggle still moved the panel.** Two real causes: (1) the active-layers compensation ran ASYNC
+  (a one-frame flash), (2) the browser's own scroll-ANCHORING fought it. Fix: compensate the scroll
+  SYNCHRONOUSLY inside the deterministic toggle + re-assert on the next frame, and `overflow-anchor:none`
+  on the dropdown / sheet scrollers. Now check/uncheck moves the list 0px on both platforms.
+- **Ukraine frontline appeared OUTSIDE Ukraine in Compare (Northern Territories etc.).** Root cause found:
+  the compare layer loaded the RAW DeepState feed; the main map filters it to the Ukraine bbox. Applied the
+  SAME filter to `cmpx-ukr` → no more stray polygons. (This was the concrete repro the R30 note asked for.)
+- **Compare close/minimise** are now SQUARE (rounded-rect like the other controls, not circles), the × is a
+  perfectly-centred SVG, the minimise a single clean line; the **layer picker moved to its own row directly
+  under the Map/Sat + Sync/Free/X-ray controls** ("Select a layerは…欄の下に").
+- **Account avatar** is a real circular chip (round avatar-only button on mobile) — no bare emoji centred in
+  a pill. **Isolate button** is clamped inside the map and clears the top controls (no overflow/overlap).
+- **World Explorer**: the satellite controller no longer pops up each round; the guess map is now a GLOBE
+  (per request); the satellite-controller is hidden during play (`body.pg-we`/`pg-sim`).
+- **Intro/welcome card**: emoji→SVG was R30; re-confirmed by screenshot it is clean & not crushed on mobile.
+
+### Pandemic dots (re-reported)
+- Dots now sit on REAL places — the capital + gazetteer cities inside each country (with jittered clusters),
+  not random in-polygon points. More of them (cap 14→30) and finer/more-uniform size ("数を増やして/大きさ差
+  を小さく").
+
+### AI
+- **Developer = unlimited.** Client gate lifted (`aiDev()`), and `ai-proxy` grants `DEV_EMAILS` / `DEV_USER_IDS`
+  the `unlimited` plan with NO quota consumption (redeploy + set the secrets to your account).
+- **Chat UI.** The AI brief is now a chat thread — the user's message stays as a bubble and the conversation
+  accumulates with context continuity ("主要なAIチャットアプリのようなUIに").
+
+### +10 NEW BETA LAYERS (real data; "最低10レイヤーをβに")
+- 8 World Bank choropleths (latest value per country, `mrnev`): CO₂/capita, urban %, electricity access,
+  health %GDP, forest %, renewables %, mobile subs/100, inflation — each with a color-key legend + opacity.
+- **Earthquakes (USGS)** — realtime feed (24h/7d/30d M4.5+) + historical query (1yr M6+), magnitude-sized
+  colored dots, click popups.
+- **Heat of Attention** — a news-density heatmap (approximate, per "完全な精度はいらない").
+- Self-contained module (own change handlers; swept into Others(beta); active-layers + deterministic toggle
+  pick them up). 72 → 82 layer rows.
+
+### Widgets
+- Edit mode now uses iOS-style **drag-and-drop** reorder (pointer-based grip; lift→reorder→commit) instead
+  of ↑↓; the per-widget config button restyled to a clean SVG gear.
+
+### Playground
+- **World Sandbox (new 5th mode)** — edit the world: raise/lower the sea (DEM recolor), found new nations
+  (draw a border → real turf area), drop cities, block straits, with derived-effect readouts + breaking-news.
+- Stats refreshed to the latest World Bank GDP/pop/GDPpc/life-expectancy.
+
+### Honest / out-of-scope
+- **Köppen 1980–2016**: the multi-period mechanism + UI ALREADY exist (1901–2020). The specific Beck-2018
+  1980–2016 period needs its reprojected PNG asset (same pipeline); it can't be generated in-app, so it's
+  wired for one-line activation (commented) rather than shipped broken.
+- **Statecraft "world grid / supercomputer model"**: a literal cellular world-grid is not feasible in a
+  single-file front-end; R30 greatly deepened the systems model instead (factions, economy, war, events).
+- **Economic widgets** are already rich (FX, crypto, market cap, Fear&Greed, gold, silver); further ones
+  (oil, equity indices) need keyed APIs, which the real-data/no-key policy precludes.
+- **Redeploy** `ai-proxy` and set `DEV_EMAILS`/`DEV_USER_IDS` for server-side unlimited AI.
