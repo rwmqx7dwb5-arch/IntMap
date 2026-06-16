@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-16-R31';
+  window.INTMAP_BUILD='2026-06-17-R32';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -2040,7 +2040,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblNavSens:"Navigationsempfindlichkeit", lblNavZoom:"Zoom", lblNavPan:"Schwenken",
       satKeysTitle:"Satellitenbilder (BYOK)", satKeyHint:"Geben Sie einen API-Schlüssel ein, um diese Anbieter im Satelliten-Panel freizuschalten. Schlüssel werden nur in diesem Browser gespeichert.",
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
-      aiSecTitle:"KI-Funktionen (BYOK / auf dem Gerät)", aiSecHint:"Verwenden Sie Ihren eigenen API-Schlüssel — Anfragen gehen direkt von diesem Browser an den Anbieter; der Schlüssel wird nur hier gespeichert.",
+      aiSecTitle:"KI-Funktionen", aiSecHint:"Integrierte KI — nach der Anmeldung kostenlos nutzbar (bis zu 5×/Tag). Kein API-Schlüssel erforderlich.",
       blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
       measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
