@@ -1684,7 +1684,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option></select></div>
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option></select></div>
     <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
       <option value="auto" id="opt-theme-auto">System Default</option>
       <option value="light" data-i18n="optLight">Light</option>
@@ -1918,7 +1918,7 @@ window.addEventListener('DOMContentLoaded', () => {
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
-  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R23) DE/RU removed from UI language → only en/jp persist; older de/ru fall back to en */
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R32) German RE-ADDED as a first-class UI language (settings selector + persistence). ru still falls back to en. */
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false;
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -2202,7 +2202,9 @@ window.addEventListener('DOMContentLoaded', () => {
     let nameExpr;
     if(mode==='en') nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name_int'],['get','name']];
     else if(mode==='local') nameExpr=['get','name'];
-    else nameExpr=(currentLang==='jp') ? ['coalesce',['get','name:ja'],['get','name']] : ['coalesce',['get','name:en'],['get','name:latin'],['get','name']];
+    else if(currentLang==='jp') nameExpr=['coalesce',['get','name:ja'],['get','name']];
+    else if(currentLang==='de') nameExpr=['coalesce',['get','name:de'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R32) German place labels */
+    else nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name']];
     const sat=(currentMapType==='sat');
     /* Show vector labels in satellite mode (always — replaces ugly Esri) and on the map for jp/local. */
     const show = namesOn && (sat || mapLabelsViaVector());
@@ -6694,12 +6696,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Language ===== */
   function setLang(lang){
-    if((lang!=='en'&&lang!=='jp') || currentLang===lang) return;   /* (#R23) DE/RU removed from UI language */
+    if(!['en','jp','de'].includes(lang) || currentLang===lang) return;   /* (#R32) German RE-ENABLED as a UI language */
     currentLang=lang;
-    document.getElementById('lang-en').classList.toggle('active',lang==='en');
-    document.getElementById('lang-jp').classList.toggle('active',lang==='jp');
+    try{ const be=document.getElementById('lang-en'); if(be) be.classList.toggle('active',lang==='en'); const bj=document.getElementById('lang-jp'); if(bj) bj.classList.toggle('active',lang==='jp'); }catch(_){}
+    try{ document.documentElement.setAttribute('lang', lang==='jp'?'ja':lang); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
     globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
+    try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}   /* modules that relabel on language change */
   }
   document.getElementById('lang-en').onclick=()=>setLang('en');
   document.getElementById('lang-jp').onclick=()=>setLang('jp');
@@ -7506,6 +7509,10 @@ window.addEventListener('DOMContentLoaded', () => {
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
+    /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
+    Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNight:"Tag / Nacht", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 World Explorer",
+      lyrGrpClimate:"Klima & Wetter", lyrGrpHazard:"Gefahren & Nachthimmel", lyrGrpDemo:"Bevölkerung & Wirtschaft", lyrGrpGeoPol:"Geopolitik & Verteidigung", lyrGrpOthers:"Weitere (Beta)",
+      lyrGrpMaritime:"Ozeane & Seefahrt", lyrGrpIndic:"Indikatoren & Overlays", lyrGrpTerrain:"Gelände & Höhe", lyrHillshade:"Reliefschattierung", lyrContours:"Höhenlinien", lyrPopGrid:"Bevölkerungsdichte (1-km-Raster)", lgdTempTitle:"Lufttemp. (2 m)", lyrTimeMonth:"Monat", mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig", lyrRelief:"Höhe (Farbrelief)", lyrSubcables:"Seekabel", lgdReliefTitle:"Höhe", lgdSubcablesTitle:"Seekabel", lyrMilSpend:"Militärausgaben ($ Mrd.)", lyrMilSpendGDP:"Militärausgaben (% BIP)", lyrGDPpc:"BIP pro Kopf", lyrTFR:"Geburtenrate", lyrSeaLevel:"Meeresspiegeländerung", lgdSeaLevelTitle:"Meeresspiegeländerung" });
 
     const style=document.createElement('style');
     style.textContent=`
