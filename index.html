@@ -7207,14 +7207,14 @@ window.addEventListener('DOMContentLoaded', () => {
            in-polygon points only when no city is known for that country. */
         function genPts(i,n){ const f=feats[i], bb=bbs[i]; const span=Math.min(2.0,Math.max(0.1,Math.max(bb[2]-bb[0],bb[3]-bb[1])*0.09)); const anchors=[];
           try{ const s=resolve(f.properties||{}); if(s&&s.latlng){ const cl=[s.latlng[1],s.latlng[0]]; if(pig(cl[0],cl[1],f.geometry)) anchors.push(cl); } }catch(_){}
-          try{ const gz=(typeof geoDB!=='undefined'&&geoDB)||window.geoDB||[]; for(let q=0;q<gz.length && anchors.length<26;q++){ const c=gz[q]&&gz[q].loc; if(!c) continue; if(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3]) continue; if(pig(c[0],c[1],f.geometry)) anchors.push([c[0],c[1]]); } }catch(_){}
+          try{ const gz=(typeof geoDB!=='undefined'&&geoDB)||window.geoDB||[]; for(let q=0;q<gz.length && anchors.length<64;q++){ const c=gz[q]&&gz[q].loc; if(!c) continue; if(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3]) continue; if(pig(c[0],c[1],f.geometry)) anchors.push([c[0],c[1]]); } }catch(_){}
           const out=[];
           if(anchors.length){ for(let d=0; d<n; d++){ const a=anchors[d%anchors.length]; const jit=d<anchors.length?0:1; out.push([a[0]+(Math.random()-0.5)*span*jit, a[1]+(Math.random()-0.5)*span*jit]); } return out; }
           let tries=0; while(out.length<n && tries<n*16){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(pig(lng,lat,f.geometry)) out.push([lng,lat]); } if(!out.length) out.push(cent[i]); return out; }
 
         let P=Object.assign({},PG_PRESETS.covid), immMo=P.immMo, seasAmp=P.seas;
         let day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='';
-        let vaxProg=0, vaxDay=-1, vaxRate=0, treat=false, pheic=false, hit10=false, variants=0, closeAnn=0, lockAnn=0;
+        let vaxProg=0, vaxDay=-1, vaxRate=0, treat=false, pheic=false, hit10=false, variants=0, closeAnn=0, lockAnn=0, d1m=false, d10m=false;
         const vaxDifficulty=0.7+Math.random()*0.9;   // luck: some runs get a fast vaccine, some slow
         const peakDay=(lat)=> lat>=0 ? 20 : 202;
         function totals(){ let I=0,E=0,R=0,D=0,V=0,aff=0; for(let i=0;i<N;i++){ const s=st[i]; I+=s.I; E+=s.E; R+=s.R; D+=s.D; V+=s.V; if(s.seeded&&(s.I+s.E)>0.5) aff++; } return {I,E,R,D,V,aff}; }
@@ -7234,8 +7234,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const sick=s.I/live; const behav=1-0.55*Math.min(1,sick*90)-0.25*s.lock;
             const beta=P.r0*gam*seas*Math.max(0.12,behav);
             const newE=Math.min(s.S, beta*s.I*s.S/live), toI=gamE*s.E;
-            const overload=1+Math.min(1.6,(sick*80)*(1-dev[i]));
-            const ifrEff=Math.min(0.9,P.ifr*overload*(treat?0.45:1)*(1.25-0.4*dev[i]));
+            const overload=1+Math.min(1.1,(sick*55)*(1-dev[i]));              /* (#R32) gentler hospital overload */
+            const medImprove=Math.max(0.5,1-day*0.00045);                      /* (#R32) care/CFR improves over time (realistic) */
+            const ifrEff=Math.min(0.85,P.ifr*overload*(treat?0.4:1)*medImprove*(1.2-0.4*dev[i]));
             const out=gam*s.I, dead=out*ifrEff, rec=out-dead, vac=Math.min(s.S,vaxRate*s.S*0.9), wane=omega*s.R;
             s.S+= -newE - vac + wane; s.E+= newE - toI; s.I+= toI - out; s.R+= rec - wane; s.D+= dead; s.V+= vac;
             if(s.S<0)s.S=0; if(s.E<0)s.E=0; if(s.I<0)s.I=0; if(s.R<0)s.R=0;
@@ -7260,13 +7261,26 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!hit10 && T.aff>=10){ hit10=true; news((jp()?'感染が10カ国に拡大。':'Outbreak has reached 10 countries.'),'alert'); }
           if(!pheic && (T.I+T.R+T.D)>3e6){ pheic=true; news((jp()?'WHOが「国際的に懸念される公衆衛生上の緊急事態（PHEIC）」を宣言。':'WHO declares a global health emergency (PHEIC).'),'alert'); }
           if(!treat && totI>2e6 && Math.random()<0.0009*speed){ treat=true; news((jp()?'有効な治療法が確立。致死率が低下します。':'An effective treatment is found — fatality rate falls.'),'good'); }
+          if(!d1m && T.D>1e6){ d1m=true; news((jp()?'世界の死者が100万人を突破。':'Global death toll passes 1 million.'),'alert'); }
+          if(!d10m && T.D>1e7){ d10m=true; news((jp()?'世界の死者が1000万人を突破。':'Global death toll passes 10 million.'),'alert'); }
           const now=Date.now(); if(now-lastDots>140){ lastDots=now; buildDots(); } updateHud(T);
-          if(day>40 && totI<200 && T.aff===0){ buildDots(); stop(); news((jp()?'流行は終息しました。':'The outbreak has ended.'),'good'); renderRun(true); }
-          else if(day>365*8){ stop(); news((jp()?'感染症は風土病として定着しました（長期均衡）。':'The disease is now endemic (long-run equilibrium).'),'info'); renderRun(true); }
+          /* (#R32) richer, VARIED end states ("オチが毎回同じ…をやめて") with the final toll + attack rate. */
+          const attack=WORLDPOP?((T.R+T.D+T.I)/WORLDPOP):0;
+          if(day>40 && totI<150 && T.aff<=1 && day<300){ buildDots(); stop(); news((jp()?('封じ込め成功 — 死者'+fmt(T.D)+'。世界的流行には至りませんでした。'):('Contained — '+fmt(T.D)+' deaths; it never became a pandemic.')),'good'); renderRun(true); }
+          else if(day>40 && totI<200){ buildDots(); stop(); const verdict=attack<0.05?(jp()?'小規模な流行で終息':'a minor outbreak'):attack<0.25?(jp()?'流行は終息':'the outbreak has ended'):(jp()?'壊滅的な大流行を経て終息':'a devastating pandemic, now over'); news((jp()?(verdict+' — 累計死者'+fmt(T.D)+'（世界の'+(attack*100).toFixed(1)+'%が感染）。'):('It was '+verdict+' — '+fmt(T.D)+' deaths, '+(attack*100).toFixed(1)+'% of the world infected.')),attack<0.25?'good':'alert'); renderRun(true); }
+          else if(day>365*8){ stop(); news((jp()?('風土病として定着（長期均衡）。累計死者'+fmt(T.D)+'。'):('Now endemic (long-run equilibrium) — '+fmt(T.D)+' cumulative deaths.')),'info'); renderRun(true); }
         }
-        function buildDots(){ const out=[]; for(let i=0;i<N;i++){ const s=st[i]; if(!s.seeded) continue; const act=s.I+s.E; if(act<1 && s.D<1) continue;
-            let k=Math.min(30,Math.round(5.0*Math.log10(1+act))); if(k<=0 && (act>=1||s.D>0)) k=1; if(k<=0) continue;   /* (#R31) more dots */
-            if(!s.pool) s.pool=genPts(i,30); const sev=s.D>0?Math.min(1,s.D/(s.I+s.R+s.D+1)*3):0;
+        /* (#R32) Dots now scale with the ACTUAL case count ("感染者の人数単位で") — each dot ≈ `perDot`
+           active cases, allocated proportionally per country up to a global budget (perf), placed on REAL
+           cities. Far MORE dots than the old log-capped 30 ("数を増やして"); uniform small size kept. */
+        const PG_POOL=80, PG_DOTCAP=4800, PG_CASES_PER_DOT=60;
+        function buildDots(){ let totAct=0; for(let i=0;i<N;i++){ const s=st[i]; if(s.seeded) totAct+=s.I+s.E; }
+          /* (#R32) each dot ≈ a fixed number of cases (so a small outbreak shows a FEW dots and grows
+             visibly as cases rise), with the global budget only kicking in once the pandemic is huge. */
+          const perDot=Math.max(PG_CASES_PER_DOT, totAct/PG_DOTCAP); const out=[];
+          for(let i=0;i<N;i++){ const s=st[i]; if(!s.seeded) continue; const act=s.I+s.E; if(act<1 && s.D<1) continue;
+            let k=Math.round(act/perDot); if(k<1 && (act>=1||s.D>0)) k=1; if(k>PG_POOL) k=PG_POOL;
+            if(!s.pool) s.pool=genPts(i,PG_POOL); const sev=s.D>0?Math.min(1,s.D/(s.I+s.R+s.D+1)*3):0;
             for(let d=0; d<k && d<s.pool.length; d++) out.push({type:'Feature',geometry:{type:'Point',coordinates:s.pool[d]},properties:{sev}}); }
           try{ map.getSource('pg-dots').setData({type:'FeatureCollection',features:out}); }catch(_){} }
         function loop(){ clearTimeout(timer); if(!running) return; step(); if(running) timer=setTimeout(loop, Math.max(70,440/speed)); }
