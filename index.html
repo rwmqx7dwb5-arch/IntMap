@@ -6970,12 +6970,14 @@ window.addEventListener('DOMContentLoaded', () => {
         globe:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.6 3.9 5.8 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.8-3.9-9S9.4 5.6 12 3Z"/></svg>',
         virus:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>',
         capitol:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M3 10l9-6 9 6"/></svg>',
-        cap:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 5 2 9l10 4 10-4Z"/><path d="M6 11v5c0 1.2 2.7 2.6 6 2.6s6-1.4 6-2.6v-5"/><path d="M22 9v5"/></svg>'
+        cap:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 5 2 9l10 4 10-4Z"/><path d="M6 11v5c0 1.2 2.7 2.6 6 2.6s6-1.4 6-2.6v-5"/><path d="M22 9v5"/></svg>',
+        sandbox:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a13 13 0 0 1 0 16M11 3a13 13 0 0 0 0 16M3 11h16"/><path d="m18.5 18.5 3 3"/></svg>'
       };
       const modes=[
         {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真版GeoGuessr。ランダムな地点へ飛び、現在地を当てる。':'Satellite GeoGuessr — dropped somewhere on Earth, guess where you are.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
         {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を可視化。ワクチン開発まで。':'Seed an outbreak and watch it spread across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
         {svg:SV.capitol,bg:'linear-gradient(135deg,#5856d6,#af52de)',t:jp()?'ステイトクラフト（国家運営）':'Statecraft',d:jp()?'1900〜2026年、任意の国家の元首に。経済・世論・議会・国際情勢が絡み合う。':'Lead a real nation (1900–2026); economy, opinion, parliament & geopolitics all interact.',go:()=>{ ov.remove(); window._pgNationSim&&window._pgNationSim(); }},
+        {svg:SV.sandbox,bg:'linear-gradient(135deg,#0a84ff,#5856d6)',t:jp()?'ワールド・サンドボックス':'World Sandbox',d:jp()?'世界を編集する地図。新国家・都市・海面上昇・航路封鎖とその影響。':'Edit the world: found nations, raise the sea, block straits — and see the effects.',go:()=>{ ov.remove(); window._pgWorldSandbox&&window._pgWorldSandbox(); }},
         {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove(); try{ window.IntMapEdu&&window.IntMapEdu.open(); }catch(_){} }}
       ];
       modes.forEach(m=>{ const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-radius:14px;padding:14px;margin-bottom:11px;cursor:pointer;color:var(--text-main);';
@@ -7406,6 +7408,68 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         setup();
       });
+    };
+
+    /* ===================== WORLD SANDBOX ===================== */
+    /* (#R31) Turn the map into an EDITABLE world: raise the sea, found new nations (draw a border → real
+       area), drop cities, block straits — and read the derived effects. v1: real geometry (turf area, the
+       DEM sea-level recolor) + qualitative impact notes. */
+    window._pgWorldSandbox=function(){
+      if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
+      _pgWeStyle(); try{ document.body.classList.add('pg-sim'); }catch(_){}
+      const SRC='pg-sbx', feats=[]; let mode=null, draw=[], nations=0, cities=0, blocks=0;
+      const prevSea=(window._seaLevelM||0), prevSeaCB=(()=>{ try{ const c=document.getElementById('dl-sealevel'); return c?c.checked:false; }catch(_){ return false; } })();
+      try{ ['pg-sbx-fill','pg-sbx-line','pg-sbx-vtx','pg-sbx-pt'].forEach(id=>{ if(map.getLayer(id)) map.removeLayer(id); }); if(map.getSource(SRC)) map.removeSource(SRC); }catch(_){}
+      try{ map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:'pg-sbx-fill',type:'fill',source:SRC,filter:['==',['geometry-type'],'Polygon'],paint:{'fill-color':['coalesce',['get','color'],'#af52de'],'fill-opacity':0.4}});
+        map.addLayer({id:'pg-sbx-line',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],paint:{'line-color':['coalesce',['get','color'],'#af52de'],'line-width':2,'line-dasharray':[2,1]}});
+        map.addLayer({id:'pg-sbx-pt',type:'circle',source:SRC,filter:['==',['geometry-type'],'Point'],paint:{'circle-radius':['coalesce',['get','r'],6],'circle-color':['coalesce',['get','color'],'#0a84ff'],'circle-stroke-color':'#fff','circle-stroke-width':1.6}});
+      }catch(_){}
+      const sync=()=>{ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} };
+      function setSea(v){ window._seaLevelM=v; try{ const c=document.getElementById('dl-sealevel'); if(c&&!c.checked){ c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} try{ window._refreshSeaLevel&&window._refreshSeaLevel(); }catch(_){} }
+      function onClick(e){ const ll=[e.lngLat.lng,e.lngLat.lat];
+        if(mode==='city'){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:ll},properties:{color:'#0a84ff',r:6}}); cities++; sync(); info(); }
+        else if(mode==='nation'){ draw.push(ll); feats.push({type:'Feature',geometry:{type:'Point',coordinates:ll},properties:{color:'#af52de',r:4}});
+          const d=feats.filter(f=>f.properties&&f.properties._draft); d.forEach(p=>feats.splice(feats.indexOf(p),1));
+          if(draw.length>=2) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:draw},properties:{_draft:1,color:'#af52de'}});
+          sync(); info(); }
+        else if(mode==='strait'){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:ll},properties:{color:'#ff3b30',r:7}}); blocks++; sync(); pgNews((jp()?'海上交通路を封鎖 — 周辺の貿易・エネルギー輸送に影響。':'Maritime route blocked — regional trade & energy flows disrupted.'),'alert'); mode=null; setBtns(); info(); }
+      }
+      map.on('click',onClick);
+      function finishNation(){ if(draw.length<3){ mode=null; setBtns(); return; }
+        feats.filter(f=>f.properties&&(f.properties._draft||f.properties.color==='#af52de'&&f.geometry.type==='Point')).slice().forEach(p=>feats.splice(feats.indexOf(p),1));
+        const ring=draw.concat([draw[0]]); const poly={type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{color:'#af52de'}};
+        let area=0; try{ area=turf.area(poly)/1e6; }catch(_){}
+        feats.push(poly); nations++; draw=[]; mode=null; setBtns(); sync();
+        pgNews((jp()?('新国家を建国。面積 約'+Math.round(area).toLocaleString()+' km²。'):('A new nation is founded — area ≈ '+Math.round(area).toLocaleString()+' km².')),'good'); info();
+      }
+      // HUD
+      const hud=document.createElement('div'); hud.id='pg-sbx-hud';
+      hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;';
+      (document.getElementById('map-container')||document.body).appendChild(hud);
+      let btnRow;
+      function info(){ const el=hud.querySelector('#pg-sbx-info'); if(!el) return; const sea=window._seaLevelM||0;
+        el.innerHTML='<span>'+(jp()?'新国家':'Nations')+' <b>'+nations+'</b></span> · <span>'+(jp()?'都市':'Cities')+' <b>'+cities+'</b></span> · <span>'+(jp()?'封鎖':'Blocks')+' <b>'+blocks+'</b></span> · <span style="color:#0a84ff;">'+(jp()?'海面':'Sea')+' <b>'+(sea>=0?'+':'')+sea+' m</b></span>'+(sea>0?(' — <span style="color:var(--text-muted);">'+(jp()?'沿岸低地が浸水':'low-lying coasts flood')+'</span>'):''); }
+      function setBtns(){ if(!btnRow) return; btnRow.querySelectorAll('button[data-m]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-m')===mode)); const fin=btnRow.querySelector('#sbx-finish'); if(fin) fin.style.display=(mode==='nation')?'inline-flex':'none'; }
+      function render(){ hud.innerHTML='';
+        const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=jp()?'ワールド・サンドボックス':'World Sandbox'; tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
+        const info0=document.createElement('div'); info0.id='pg-sbx-info'; info0.style.cssText='margin-bottom:9px;line-height:1.6;'; hud.appendChild(info0);
+        const sea=document.createElement('div'); sea.style.cssText='display:flex;align-items:center;gap:8px;margin:4px 0 8px;font-size:11.5px;'; sea.innerHTML='<span style="flex:0 0 70px;color:var(--text-muted);">'+(jp()?'海面変動':'Sea level')+'</span>'; const r=document.createElement('input'); r.type='range'; r.min=-10; r.max=90; r.step=1; r.value=(window._seaLevelM||0); r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.style.cssText='flex:0 0 48px;text-align:right;'; v.textContent=((window._seaLevelM||0)>=0?'+':'')+(window._seaLevelM||0)+'m'; r.oninput=()=>{ v.textContent=(+r.value>=0?'+':'')+r.value+'m'; setSea(+r.value); info(); }; sea.appendChild(r); sea.appendChild(v); hud.appendChild(sea);
+        btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px;flex-wrap:wrap;';
+        const mk=(label,m)=>{ const b=document.createElement('button'); b.textContent=label; b.setAttribute('data-m',m); b.style.cssText='flex:1 1 0;min-width:90px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:9px;padding:8px 6px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ mode=(mode===m?null:m); if(m==='nation'&&mode==='nation') draw=[]; setBtns(); }; return b; };
+        btnRow.appendChild(mk(jp()?'＋新国家を描く':'＋ Draw nation','nation'));
+        btnRow.appendChild(mk(jp()?'＋都市':'＋ City','city'));
+        btnRow.appendChild(mk(jp()?'航路を封鎖':'Block strait','strait'));
+        const fin=document.createElement('button'); fin.id='sbx-finish'; fin.textContent=jp()?'✓ 国境を確定':'✓ Finish border'; fin.style.cssText='flex:1 1 100%;display:none;border:none;border-radius:9px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;margin-top:2px;'; fin.onclick=finishNation; btnRow.appendChild(fin);
+        const reset=document.createElement('button'); reset.textContent=jp()?'リセット':'Reset'; reset.style.cssText='flex:1 1 100%;border:1px dashed rgba(128,128,128,0.4);background:transparent;color:var(--text-muted);border-radius:9px;padding:8px;font-size:11.5px;cursor:pointer;margin-top:4px;'; reset.onclick=()=>{ feats.length=0; draw=[]; mode=null; nations=cities=blocks=0; sync(); setSea(0); setBtns(); info(); }; btnRow.appendChild(reset);
+        hud.appendChild(btnRow);
+        const hint=document.createElement('div'); hint.style.cssText='margin-top:8px;font-size:11px;color:var(--text-muted);line-height:1.4;'; hint.textContent=jp()?'ツールを選んで地図をタップ。新国家は頂点を順にタップし「国境を確定」。':'Pick a tool and tap the map. For a nation, tap vertices in order then “Finish border”.'; hud.appendChild(hint);
+        info(); setBtns();
+      }
+      function exit(){ try{ map.off('click',onClick); }catch(_){} try{ ['pg-sbx-fill','pg-sbx-line','pg-sbx-pt'].forEach(id=>{ if(map.getLayer(id))map.removeLayer(id); }); if(map.getSource(SRC))map.removeSource(SRC); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){}
+        try{ window._seaLevelM=prevSea; window._refreshSeaLevel&&window._refreshSeaLevel(); const c=document.getElementById('dl-sealevel'); if(c&&c.checked!==prevSeaCB){ c.checked=prevSeaCB; c.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
+      window._pgWorldSandboxExit=exit;
+      render();
     };
   })();
 
@@ -8623,7 +8687,14 @@ window.addEventListener('DOMContentLoaded', () => {
        reprojected by _koppen_convert.py to Web Mercator at 8192² (nearest-neighbor, crisp class
        boundaries) and named koppen_mercator_<period>.png (the old koppen_mercator.png was retired);
        1931-1960 & 1961-1990 now use the user's updated, distinct source TIFFs. */
+    /* (#R31) The Köppen layer already supports multiple 30-year periods (1901–2020) via the SAME mechanism
+       & UI. To add the Beck et al. 2018 "1980–2016" period the user asked for, drop the reprojected assets
+       data/koppen_mercator_1980-2016.png (+ _4k.png) — produced by the SAME pipeline (Web-Mercator ±85.0511°,
+       same palette) as the existing ones — then add ['1980-2016','koppen_mercator_1980-2016.png'] to the
+       front of this list. The asset can't be generated in-app (it needs the raw 1980–2016 raster + a
+       reprojection), so it's wired for one-line activation rather than shipped broken. */
     window.KOPPEN_PERIODS=[['1991-2020','koppen_mercator_1991-2020.png'],['1961-1990','koppen_mercator_1961-1990.png'],['1931-1960','koppen_mercator_1931-1960.png'],['1901-1930','koppen_mercator_1901-1930.png']];
+    /* To enable 1980–2016 once the asset exists: window.KOPPEN_PERIODS.unshift(['1980-2016','koppen_mercator_1980-2016.png']); */
     if(!window._koppenPeriod) window._koppenPeriod='1991-2020';
     /* (#R17) The DISPLAYED Köppen is ALWAYS the full 8192² PNG — on EVERY device, no silent downgrade
        (the user: "画質を勝手に下げるな…画質は保持しろ"). The mobile OOM that crashed the tab was driven by a
@@ -16114,6 +16185,23 @@ window.addEventListener('DOMContentLoaded', () => {
     /* keep labels in sync with UI language */
     window.addEventListener('intmap-lang',()=>{ ALL.forEach(L=>{ const r=document.getElementById('lyrrow-'+L.id); const sp=r&&r.querySelector('.bx-name'); if(sp) sp.textContent=L.n[jp()?'jp':'en']; }); });
     if(document.readyState!=='loading') setTimeout(buildRows,700); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildRows,700));
+
+    /* (#R31) Refresh Stats to the LATEST available figures ("Statsの数値はできる限り最新に") — pull the most
+       recent World Bank GDP / population / GDP-per-capita / life-expectancy and merge into countryStats
+       (only overwriting where WB has a value), then re-render Stats if it's open. Runs once, low-priority. */
+    function refreshStatsLatest(){ try{ const cs=(typeof countryStats!=='undefined'&&countryStats)||null; if(!cs) return;
+      Promise.all([wbFetch('NY.GDP.MKTP.CD'),wbFetch('SP.POP.TOTL'),wbFetch('NY.GDP.PCAP.CD'),wbFetch('SP.DYN.LE00.IN')]).then(([gdp,pop,pc,le])=>{
+        Object.keys(cs).forEach(code=>{ const s=cs[code]; if(!s) return;
+          if(gdp[code]&&gdp[code].v>0) s.gdp=gdp[code].v/1e9;
+          if(pop[code]&&pop[code].v>0) s.pop=pop[code].v;
+          if(pc[code]&&pc[code].v>0) s.gdppc=pc[code].v;
+          if(le&&le[code]&&le[code].v>0) s.lifeExp=le[code].v;
+        });
+        window.__statsRefreshed=true;
+        try{ if(typeof currentMode!=='undefined'&&currentMode==='stats'&&typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){}
+      }).catch(()=>{});
+    }catch(_){} }
+    if(window.requestIdleCallback) requestIdleCallback(()=>refreshStatsLatest(),{timeout:6000}); else setTimeout(refreshStatsLatest,4500);
   })();
 
   /* ===== Init ===== */
