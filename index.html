@@ -1291,6 +1291,19 @@ gtag('config', 'G-57X5MX0ZPW');
     [data-theme="dark"] body.sidebar-translucent{ --glass-fill:rgba(30,30,38,0.42); --glass-border:rgba(255,255,255,0.12); }
     body.sidebar-glass2{ --glass-blur:22px; --glass-sat:165%; --glass-fill:rgba(255,255,255,0.12); --glass-border:rgba(255,255,255,0.24); }
     [data-theme="dark"] body.sidebar-glass2{ --glass-fill:rgba(20,20,26,0.16); --glass-border:rgba(255,255,255,0.10); }
+    /* (#R33) ALL major surfaces follow the Solid / Frosted Glass / More-transparent setting — one common
+       design ("全てのUIはこの設定に従うように"). In the two glass modes the modal/popup/panel surfaces switch
+       to the frosted glass fill + blur (Solid keeps the opaque defaults). */
+    body.sidebar-translucent .modal-content, body.sidebar-glass2 .modal-content,
+    body.sidebar-translucent .tool-panel, body.sidebar-glass2 .tool-panel,
+    body.sidebar-translucent .data-legend, body.sidebar-glass2 .data-legend,
+    body.sidebar-translucent .koppen-legend, body.sidebar-glass2 .koppen-legend,
+    body.sidebar-translucent .country-popup, body.sidebar-glass2 .country-popup,
+    body.sidebar-translucent .pin-popup, body.sidebar-glass2 .pin-popup,
+    body.sidebar-translucent .ctx-menu, body.sidebar-glass2 .ctx-menu,
+    body.sidebar-translucent .m-sheet, body.sidebar-glass2 .m-sheet,
+    body.sidebar-translucent .wgt-card, body.sidebar-glass2 .wgt-card{
+      background:var(--glass-fill) !important; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-color:var(--glass-border) !important; }
 
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
@@ -7141,7 +7154,16 @@ window.addEventListener('DOMContentLoaded', () => {
         '@keyframes pgWePulse{0%,100%{box-shadow:0 0 0 2px rgba(255,59,48,0.45),0 2px 7px rgba(0,0,0,0.55);}50%{box-shadow:0 0 0 8px rgba(255,59,48,0.0),0 2px 7px rgba(0,0,0,0.55);}}'+
         /* (#R33) World Explorer also hides the lat/lng/elevation readout + center crosshair ("常時表示欄は非表示に"). */
         'body.pg-we .m-fab-stack,body.pg-we .m-sheet,body.pg-we .m-scrim,body.pg-we .news-timeline,body.pg-we .sat-controller,body.pg-we .coord-readout,body.pg-we #m-crosshair,body.pg-we #m-addpoint,'+
-        'body.pg-sim .m-fab-stack,body.pg-sim .m-sheet,body.pg-sim .m-scrim,body.pg-sim .news-timeline,body.pg-sim .sat-controller{display:none !important;}';
+        'body.pg-sim .m-fab-stack,body.pg-sim .m-sheet,body.pg-sim .m-scrim,body.pg-sim .news-timeline,body.pg-sim .sat-controller{display:none !important;}'+
+        /* (#R33) The playground HUDs must sit ABOVE everything and not reserve any bottom-sheet space, so they
+           are never hidden under / crushed by the mobile sheet. Panels go full-width on phones. */
+        'body.pg-we,body.pg-sim{--sheet-cover:0px !important;--peek-h:0px !important;}'+
+        '#pg-we-panel,#pg-pan-hud{z-index:6300 !important;}'+
+        '@media(max-width:768px){'+
+        '#pg-we-panel{left:8px !important;right:8px !important;width:auto !important;max-width:none !important;transform:none !important;flex-wrap:wrap;justify-content:center;gap:8px;padding:10px 12px;}'+
+        '#pg-we-panel button{min-height:40px;}'+
+        '#pg-pan-hud{left:8px !important;right:8px !important;width:auto !important;max-width:none !important;transform:none !important;}'+
+        '}';
       document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
       if(!map){ try{ imToast('Map not ready'); }catch(_){} return; }
@@ -15832,15 +15854,21 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
        lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
        on its own ("なにも操作していないのに勝手にレイヤーがオンになる"). */
-    function save(){ if(restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
+    /* (#R33) Tag OUR OWN persisted hash with self=1. On (re)load, restore() then knows this URL is our own
+       session state (NOT an externally-shared link) and starts CLEAN — no layers auto-restored — so a browser
+       crash/reload returns to the normal initial state ("落ちても通常の初期時に"). A shared link (built by
+       IntMapBookmark.link(), which has no self marker) still restores its layers for the recipient. */
+    function save(){ if(restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h+'&self=1'); }catch(_){} }
     function restore(){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
       try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
         if(proj==='f'&&currentProj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
         else if(proj==='g'&&currentProj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
         if(isFinite(lng)&&isFinite(lat)) map.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
       }catch(_){}
-      const lm=/[#&]l=([^&]+)/.exec(location.hash);
-      if(lm){ const want=decodeURIComponent(lm[1]).split(',');
+      /* (#R33) Only restore LAYERS for an externally-shared link (no self marker). Our own saved state
+         (self=1) starts clean so a crash/reload never auto-enables layers. The view above is always restored. */
+      const lm=/[#&]l=([^&]+)/.exec(location.hash); const selfWritten=/[#&]self=1/.test(location.hash);
+      if(lm && !selfWritten){ const want=decodeURIComponent(lm[1]).split(',');
         const apply=()=>{ want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); };
         setTimeout(apply,700); setTimeout(apply,1800);
       }
