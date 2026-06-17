@@ -393,7 +393,10 @@ gtag('config', 'G-57X5MX0ZPW');
       .plc-popup .maplibregl-popup-content{ padding-top:14px !important; }
       .plc-popup .maplibregl-popup-close-button{ width:30px; height:30px; top:9px; right:12px; } }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
-    .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
+    .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; min-width:0; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
+    /* (#R33) radius −/＋ steppers + let long action-button labels wrap instead of overflowing (desktop radius legend). */
+    .rad-step{ width:30px; height:32px; flex:0 0 auto; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); border-radius:8px; font-size:17px; font-weight:700; line-height:1; cursor:pointer; }
+    .tool-panel .ai-action-btn{ white-space:normal; line-height:1.25; height:auto; min-height:38px; }
     .radius-color-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:6px 0; }
     /* (#R24) radius readouts reorganized into a compact 3-up stat strip (was 3 full rows that made the
        panel tall + "ほとんど使えない" on mobile). */
@@ -4719,7 +4722,7 @@ window.addEventListener('DOMContentLoaded', () => {
         list=`<div class="tp-sub">${radiusItems.length} ${t('radius')}</div><div class="radius-list">`+radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button class="rl-del" onclick="removeRadiusItem('${c.id}')">✕</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${t('removeAll')}</button>`;
       }
       body=`<div class="tp-sub">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
-        <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><input type="number" id="radius-num" min="1" value="${radiusKm}"><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
+        <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><button type="button" id="radius-dec" class="rad-step" title="${currentLang==='jp'?'小さく':'Decrease'}">−</button><input type="number" id="radius-num" min="1" value="${radiusKm}"><button type="button" id="radius-inc" class="rad-step" title="${currentLang==='jp'?'大きく':'Increase'}">＋</button><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
         <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':'Custom color'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
         <div class="rad-stats"><div class="rad-stat"><label>${t('radius')}</label><b id="rad-r">${distHTML(radiusKm)}</b></div><div class="rad-stat"><label>${t('circumference')}</label><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div><div class="rad-stat"><label>${t('area')}</label><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div></div>
         <div class="tp-hint">${t('radiusHint')}</div>${list}${radiusItems.length?`<button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button><button class="ai-action-btn" id="tp-finalize">✓ ${t('finalizeMeas')}</button>`:''}`;
@@ -4749,6 +4752,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const setR=(v,fromInput)=>{ radiusKm=v; if(!fromInput)n.value=dispVal(v); r.value=Math.min(20000,v); refresh(); applyActive(); };
       r.oninput=()=>setR(Math.max(1,+r.value));
       n.oninput=()=>{ const raw=parseFloat(n.value); if(!isNaN(raw)&&raw>0){ const km=rImp()? raw*1.60934 : raw; setR(km,true); } };
+      /* (#R33) −/＋ steppers for the radius (10% per tap, min 1km). */
+      { const dec=p.querySelector('#radius-dec'), inc=p.querySelector('#radius-inc');
+        const step=(f)=>{ const nv=Math.max(1, Math.round(radiusKm*f)); setR(nv); };
+        if(dec) dec.onclick=()=>step(0.9); if(inc) inc.onclick=()=>step(1.1111); }
       if(unitSel){ unitSel.onchange=()=>{ n.value=dispVal(radiusKm); }; unitSel.value=rImp()?'mi':'km'; n.value=dispVal(radiusKm); }
       op.oninput=()=>{ radiusOpacity=parseFloat(op.value); applyActive(); };
       const markPreset=()=>{ p.querySelectorAll('.rad-preset').forEach(b=>b.classList.toggle('on',(b.getAttribute('data-col')||'').toLowerCase()===radiusColor.toLowerCase())); };
@@ -5609,13 +5616,15 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R32) "ズームしても帯が表示されない" — at low zoom the bands collide and drop; once zoomed IN
            (z≥5) allow overlap so the band of a pin you zoomed to ALWAYS shows. Decluttered world view kept. */
         'text-allow-overlap':['step',['zoom'],false,5,true],
-        'text-optional':true,
+        /* (#R33) text & icon are coupled (both optional:false) so a pin NEVER shows its text without the
+           pill background at a zoom boundary — it's the whole band or nothing ("表示する時は帯付きに"). */
+        'text-optional':false,
         'text-max-width':14,
         'icon-image':'news-pill',
         'icon-text-fit':'both',
         'icon-text-fit-padding':[2,9,2,9],
         'icon-allow-overlap':['step',['zoom'],false,5,true],
-        'icon-optional':true
+        'icon-optional':false
       },paint:{
         'text-color':'#ffffff',
         'text-halo-color':'rgba(0,0,0,0.55)',
@@ -6758,7 +6767,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!wrap.dataset.built){
       wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span class="nlx" data-code="${code}"></span></label>`).join('');
       wrap.dataset.built='1';
-      wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value); const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(tmp.length?tmp.map(newsLangNameOf).join(', '):(currentLang==='jp'?'未選択':'None selected')); });
+      /* (#R33) The checked boxes are the SINGLE SOURCE OF TRUTH for newsLangs — update + persist on every
+         change so the saved set always equals exactly what the user ticked (fixes the desync where other
+         languages appeared checked / a tap didn't stick). */
+      wrap.addEventListener('change',(e)=>{ if(e.target&&e.target.type==='checkbox'){ newsLangs=Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.value);
+          try{ localStorage.setItem('intmap_news_langs',JSON.stringify(newsLangs)); }catch(_){} try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){} }
+        const lbl=document.getElementById('newslang-dd-label'); if(lbl) lbl.textContent=(newsLangs.length?newsLangs.map(newsLangNameOf).join(', '):(currentLang==='jp'?'未選択':'None selected')); });
     }
     wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=newsLangs.includes(cb.value); });
     wrap.querySelectorAll('.nlx').forEach(s=>{ const c=s.getAttribute('data-code'); s.textContent=newsLangNameOf(c); });
@@ -7121,7 +7135,8 @@ window.addEventListener('DOMContentLoaded', () => {
       s.textContent='.pg-we-pin{width:22px;height:22px;cursor:pointer;}'+
         '.pg-we-pin span{display:block;width:14px;height:14px;margin:4px;border-radius:50%;background:#ff3b30;border:2.5px solid #fff;box-shadow:0 0 0 2px rgba(255,59,48,0.45),0 2px 7px rgba(0,0,0,0.55);animation:pgWePulse 1.8s ease-in-out infinite;}'+
         '@keyframes pgWePulse{0%,100%{box-shadow:0 0 0 2px rgba(255,59,48,0.45),0 2px 7px rgba(0,0,0,0.55);}50%{box-shadow:0 0 0 8px rgba(255,59,48,0.0),0 2px 7px rgba(0,0,0,0.55);}}'+
-        'body.pg-we .m-fab-stack,body.pg-we .m-sheet,body.pg-we .m-scrim,body.pg-we .news-timeline,body.pg-we .sat-controller,'+
+        /* (#R33) World Explorer also hides the lat/lng/elevation readout + center crosshair ("常時表示欄は非表示に"). */
+        'body.pg-we .m-fab-stack,body.pg-we .m-sheet,body.pg-we .m-scrim,body.pg-we .news-timeline,body.pg-we .sat-controller,body.pg-we .coord-readout,body.pg-we #m-crosshair,body.pg-we #m-addpoint,'+
         'body.pg-sim .m-fab-stack,body.pg-sim .m-sheet,body.pg-sim .m-scrim,body.pg-sim .news-timeline,body.pg-sim .sat-controller{display:none !important;}';
       document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
@@ -12055,7 +12070,7 @@ window.addEventListener('DOMContentLoaded', () => {
           `<input type="range" id="draw-res" min="0" max="100" step="1" value="${smoothing}" style="width:100%;accent-color:var(--primary-color);"></div>`+
         `<div class="tp-hint">${hint}</div>`+
         `<div style="display:flex;gap:6px;margin-top:8px;">`+
-          `<button class="tp-clear" id="draw-finish" style="flex:1;">${jp()?'確定':'Finish'}</button>`+
+          `<button class="tp-clear" id="draw-finish" style="flex:1;">${jp()?'地図に残す':'Keep on map'}</button>`+
           `<button class="tp-clear" id="draw-redo" style="flex:1;">${jp()?'やり直し':'Redraw'}</button>`+
         `</div>`;
       p.querySelector('.tp-close').onclick=()=>api.exit();
@@ -15644,7 +15659,9 @@ window.addEventListener('DOMContentLoaded', () => {
        drives the context menu instead. */
     /* (#R15 / #1) The crosshair is now ALWAYS visible on mobile (the user wants the center point's
        coords/elevation/layer value shown at all times), while the +Add-point button stays tool-only. */
-    function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=m?'block':'none'; btn.style.display=tool?'block':'none'; }
+    /* (#R33) "Add point" pill is MOBILE-ONLY now — on desktop you add points by clicking the map, so the
+       pill is redundant ("Don't show 'Add point' pill in desktop mode"). */
+    function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=m?'block':'none'; btn.style.display=(tool&&m)?'block':'none'; }
     /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
        center, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
     function readout(){ if(!mob()) return; try{ const c=centerLL();
