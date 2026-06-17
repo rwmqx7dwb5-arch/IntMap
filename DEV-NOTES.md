@@ -2671,3 +2671,78 @@ errors; new layers render; compare/pandemic/German verified by state probes + sc
 - **Köppen 1980–2016**: the multi-period mechanism + UI already exist (1901–2020); the specific Beck-2018
   1980–2016 period still needs its reprojected PNG asset (same pipeline; can't be generated in-app).
 - **Redeploy** `supabase functions deploy ai-proxy` to activate the hard-coded dev-unlimited default.
+
+---
+
+## 37. Round 33 — large re-reported-bug + refinement batch (tags `#R33`)
+
+Build `2026-06-17-R33`. A very large batch of re-reports (with new specifics) + new requests. Verified live
+after each change (101 layer rows incl. +16 new beta choropleths, zero console errors). NOTE: the headless
+preview's WebGL exhausts after many reloads (map `load` won't fire), so map-render visuals are reasoned at
+the code level + DOM-verified; on-device confirmation welcome.
+
+### Layer panel
+- **Order** set to Place names · Country borders · State/province · Roads · Railways · Grid · Countries(info).
+- **Colored squares before layer names REMOVED** for all layers (`.lyr-sw{display:none}`).
+- **Fewer divider lines** (iOS-clean): top-level `<hr>`s and group-header borders dropped.
+- **Active layers gap** under the sticky bar filled (negative margins reach the panel edge); **mobile** Active
+  layers now sticks to the sheet bottom as an opaque bar.
+
+### Themes
+- **All skin themes DELETED** per request — only System Default / Light / Dark remain (selector trimmed;
+  `applyTheme` coerces any old saved skin to auto and clears every `theme-*` class).
+
+### Compare
+- Clarified: "same layers" = pick the SAME-QUALITY layers freely (NOT mirror the main map's selection) →
+  **auto-mirror removed**, picker offers the full CMP_LAYERS. **X-ray hardened**: re-layout lens + re-apply
+  base + re-show layer at 60/200/500 ms on entry and on every Map/Sat switch; picker kept clickable in x-ray.
+
+### Account / privacy / settings
+- **Email privacy**: public names never derive from the email local part anymore (→ `User-xxxxx`).
+- **Logout** now asks for confirmation. Redundant in-Settings "Log in/Sign up" removed. **Apply** button is
+  sticky at the modal bottom. Login-prompt copy updated to mention AI + cross-device sync.
+- **Avatar syncs across devices** (added to the `user_prefs` blob; set on change) — no more revert-to-default.
+- **Dev = unlimited AI** now shown correctly in Settings (was a broken "∞/5" bar).
+
+### Widgets
+- **Weather** renamed (drop "(my location)"); location widgets NEVER use map center now — no location → an
+  **"Allow location"** button (works across devices). **Aurora (Kp) FIXED** (NOAA changed the feed to objects;
+  the old `last[1]` read undefined → "—"). **Random country** flies to the country on tap. **Analog clock**
+  widget added. **Delete badge** is now the iOS jiggle-mode minus at the top-left; the board jiggles in edit mode.
+
+### Tools / map / news
+- Radius gained **−/＋ steppers**; long action-button labels wrap (no desktop overflow). **"Add point" pill is
+  mobile-only**. Draw "Finish" → **"Keep on map"**. **World Explorer hides** the lat/lng/elevation readout +
+  crosshair. **News cards** lost the 📍/📡 emoji. **News band** never shows text without its pill at a zoom
+  boundary (text+icon coupled). Selected **News/Information/Stats is blue on mobile**. Entering **Stats**
+  auto-enables Countries(info) (and disables it on leave). **Quiz** closes the layer panel. **Isolate** moved
+  into the place popup's Copy/Wikipedia/AI-brief action row (separate floating button removed). **AI brief "+"
+  icon removed**.
+- **Crash/reload starts CLEAN**: our own saved hash is tagged `self=1`, so a crash/reload restores only the
+  view (no layers auto-on); an externally-shared link (no tag) still restores its layers.
+- **Settings & popups follow the Solid / Frosted / More-transparent setting** (one common glass design).
+- **Smoother mobile pan/zoom**: per-frame occlusion recompute is deferred to `moveend` on phones.
+
+### Multi-language + German
+- News multi-language checkboxes are now authoritative (the checked set IS the saved set; fixes the desync).
+- **German**: Köppen climate names (were "undefined"), place-popup buttons, country-popup rows/buttons, and the
+  country-stat + tool labels are now German. Honest gap: the app still has ~800 inline `currentLang==='jp'?…:…`
+  literals in less-common surfaces that fall back to English in DE — the dictionary + main surfaces are German,
+  the long tail is progressively localized.
+
+### Content
+- **+16 new World Bank beta choropleths** (infant mortality, GDP growth, literacy, safe water, sanitation,
+  poverty, Gini, trade %GDP, tax %GDP, agricultural land, physicians/1k, secondary enrollment, electricity
+  use/capita, renewable electricity %, FDI, armed-forces personnel) — resilient `mrnev`+date-range fetch,
+  hover values, swept into Others(beta). 8 earlier WB choropleths + earthquakes **promoted to real groups**.
+- **Information timeline expanded** with recent + historical events (2024 Taiwan quake, fall of Assad, 2024
+  US election, Haitian independence, penicillin, Warsaw Pact, Year of Africa, German reunification, Gulf War,
+  iPhone, Higgs boson, inter-Korean summit, COVID pandemic declaration, US Capitol attack).
+
+### Honest / still-open
+- **Min/maximize − vs ▢ "reversed"**: the main data/Köppen legends are correct on desktop and mobile; couldn't
+  reproduce a reversed instance — needs a concrete example (which legend/popup).
+- **Economic widgets**: already FX/crypto/cap/Fear&Greed/gold/silver; more (oil, equity indices) need keyed
+  APIs, which the real-data/no-key policy precludes.
+- **AI news geolocation**: server-side AI-primary (R29) unchanged here; the shared non-AI gazetteer was further
+  strengthened in R32. A server-prompt overhaul needs a `refresh-news` redeploy.

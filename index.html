@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-17-R32';
+  window.INTMAP_BUILD='2026-06-17-R33';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -15302,7 +15302,22 @@ window.addEventListener('DOMContentLoaded', () => {
       E(2022,30.52,50.45,'war','Russia invades Ukraine','ロシアのウクライナ侵攻','Largest war in Europe since 1945.','1945年以降欧州最大の戦争。','Russian_invasion_of_Ukraine'),
       E(2022,135.81,34.69,'assassination','Abe Shinzō assassinated','安倍晋三元首相銃撃事件','Former Japanese PM shot in Nara.','奈良で銃撃され死亡。','Assassination_of_Shinzo_Abe'),
       E(2023,37.03,37.17,'disaster','Türkiye–Syria earthquakes','トルコ・シリア地震','M7.8 doublet; 55,000+ dead.','M7.8の連続地震、5万5千人超が犠牲。','2023_Turkey%E2%80%93Syria_earthquakes'),
-      E(2023,34.46,31.52,'war','October 7 attacks / Gaza war','10月7日攻撃とガザ戦争','Hamas attack and the war that followed.','ハマスの攻撃とそれに続く戦争。','October_7_attacks')
+      E(2023,34.46,31.52,'war','October 7 attacks / Gaza war','10月7日攻撃とガザ戦争','Hamas attack and the war that followed.','ハマスの攻撃とそれに続く戦争。','October_7_attacks'),
+      /* (#R33) Information timeline greatly expanded — recent events + historical gaps. */
+      E(2024,121.56,23.83,'disaster','Taiwan (Hualien) earthquake','台湾・花蓮地震','M7.4 quake off eastern Taiwan.','台湾東部沖でM7.4の地震。','2024_Hualien_earthquake'),
+      E(2024,36.30,33.51,'revolution','Fall of the Assad regime','アサド政権の崩壊','Syrian government collapses; Assad flees.','シリア政権が崩壊しアサドが国外脱出。','Fall_of_the_Assad_regime'),
+      E(2024,-77.04,38.90,'geo','2024 US presidential election','2024年アメリカ大統領選','Trump wins a second, non-consecutive term.','トランプが返り咲き当選。','2024_United_States_presidential_election'),
+      E(1804,-72.34,18.59,'revolution','Haitian independence','ハイチ独立','First Black-led republic; slavery abolished.','黒人主導の共和国が独立、奴隷制廃止。','Haitian_Revolution'),
+      E(1928,-0.14,51.52,'space','Penicillin discovered','ペニシリンの発見','Fleming opens the antibiotic era.','フレミングが抗生物質時代を開く。','History_of_penicillin'),
+      E(1955,21.01,52.23,'geo','Warsaw Pact formed','ワルシャワ条約機構の成立','Soviet-led military alliance.','ソ連主導の軍事同盟が発足。','Warsaw_Pact'),
+      E(1960,7.49,9.06,'geo','Year of Africa','アフリカの年','17 African nations gain independence.','アフリカ17か国が独立。','Year_of_Africa'),
+      E(1990,13.40,52.52,'geo','German reunification','ドイツ再統一','East and West Germany reunite.','東西ドイツが再統一。','German_reunification'),
+      E(1991,47.98,29.38,'war','Gulf War','湾岸戦争','Coalition expels Iraq from Kuwait.','多国籍軍がイラクをクウェートから撃退。','Gulf_War'),
+      E(2007,-122.03,37.33,'space','iPhone introduced','iPhone発表','The modern smartphone era begins.','現代のスマートフォン時代の幕開け。','IPhone_(1st_generation)'),
+      E(2012,6.05,46.23,'space','Higgs boson discovered','ヒッグス粒子の発見','CERN confirms the Higgs boson.','CERNがヒッグス粒子を確認。','Higgs_boson'),
+      E(2018,126.66,37.95,'geo','Inter-Korean summit','南北首脳会談','Koreas meet at Panmunjom.','板門店で南北首脳が会談。','2018_inter-Korean_summits'),
+      E(2020,-98.50,39.80,'disaster','WHO declares COVID-19 a pandemic','WHOがCOVID-19をパンデミックと宣言','Global pandemic declared in March 2020.','2020年3月、世界的流行を宣言。','COVID-19_pandemic'),
+      E(2021,-77.01,38.89,'geo','US Capitol attack','米連邦議会議事堂襲撃','Rioters storm the US Capitol.','暴徒が連邦議会を襲撃。','January_6_United_States_Capitol_attack')
     ];
     const EV_COLORS={war:'#ff3b30',disaster:'#ff9500',revolution:'#af52de',assassination:'#8e8e93',space:'#5856d6',economic:'#34c759',geo:'#007aff'};
     const EV_LBL={war:['War','戦争'],disaster:['Disaster','災害'],revolution:['Revolution','革命・政変'],assassination:['Assassination','暗殺'],space:['Space & science','宇宙・科学'],economic:['Economy','経済危機・転換点'],geo:['Geopolitics','地政学・条約']};
