@@ -6939,7 +6939,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const jp=()=>currentLang==='jp';
     let modal=null, rating=0, cat='general';
     /* (#R30) feedback categories — make every note actionable. Bug → offer the diagnostic Bug Reporter. */
-    const CATS=[['general',{en:'General',jp:'全般'}],['idea',{en:'Feature idea',jp:'要望'}],['bug',{en:'Bug',jp:'不具合'}],['praise',{en:'Praise',jp:'良かった点'}]];
+    /* (#R33) "Praise" category removed; category is now an iOS pulldown (chips truncated on mobile). */
+    const CATS=[['general',{en:'General',jp:'全般'}],['idea',{en:'Feature idea',jp:'要望'}],['bug',{en:'Bug',jp:'不具合'}]];
     function ensure(){ if(modal) return modal;
       modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='feedback-modal';
       modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:5200;align-items:center;justify-content:center;padding:20px;';
@@ -6953,7 +6954,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<h3 style="margin:0 0 6px;font-size:17px;">'+(jp()?'フィードバックを送る':'Send feedback')+'</h3>'+
         '<p style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px;line-height:1.5;">'+(jp()?'IntMapの評価と、ご意見・ご要望をお聞かせください。':'Rate IntMap and tell us what to improve.')+'</p>'+
         '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 6px;">'+(jp()?'種類':'Type')+'</div>'+
-        '<div id="fb-cats" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'+CATS.map(([k,l])=>'<button class="fb-cat" data-k="'+k+'" style="flex:1 1 0;min-width:0;border:1px solid rgba(128,128,128,0.3);background:'+(cat===k?'var(--primary-color)':'var(--input-bg)')+';color:'+(cat===k?'#fff':'var(--text-main)')+';border-radius:9px;padding:7px 4px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+l[jp()?'jp':'en']+'</button>').join('')+'</div>'+
+        '<select id="fb-cat" style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.25);background:var(--input-bg);color:var(--text-main);font-size:13px;font-weight:600;cursor:pointer;">'+CATS.map(([k,l])=>'<option value="'+k+'"'+(cat===k?' selected':'')+'>'+l[jp()?'jp':'en']+'</option>').join('')+'</select>'+
         (cat==='bug'?'<div id="fb-bughint" style="background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.3);border-radius:9px;padding:9px 11px;margin-bottom:12px;font-size:11.5px;line-height:1.45;">'+(jp()?'不具合は、診断情報を自動添付する<b>バグレポート</b>からの送信がおすすめです。':'For bugs, the <b>Bug Reporter</b> auto-attaches diagnostics.')+' <button id="fb-openbug" style="border:none;background:none;color:var(--primary-color);font-weight:700;cursor:pointer;padding:0;font-size:11.5px;">'+(jp()?'開く →':'Open it →')+'</button></div>':'')+
         '<div style="font-size:11.5px;font-weight:600;color:var(--text-muted);margin:0 0 4px;">'+(jp()?'評価':'Rating')+'</div>'+
         '<div id="fb-stars" style="display:flex;justify-content:center;margin-bottom:12px;">'+[1,2,3,4,5].map(star).join('')+'</div>'+
@@ -6962,7 +6963,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<button id="fb-send" style="width:100%;margin-top:12px;padding:11px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">'+(jp()?'送信':'Submit')+'</button>'+
         '<p id="fb-msg" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);min-height:14px;text-align:center;"></p>';
       c.querySelector('#fb-x').onclick=closeM;
-      c.querySelectorAll('.fb-cat').forEach(b=>b.onclick=()=>{ cat=b.getAttribute('data-k'); renderForm(); });
+      { const cs=c.querySelector('#fb-cat'); if(cs) cs.onchange=()=>{ cat=cs.value; renderForm(); }; }
       const ob=c.querySelector('#fb-openbug'); if(ob) ob.onclick=()=>{ closeM(); try{ window._openBugReport&&window._openBugReport(); }catch(_){} };
       c.querySelectorAll('.fb-star').forEach(b=>b.onclick=()=>{ rating=+b.getAttribute('data-n'); renderForm(); });
       c.querySelector('#fb-send').onclick=submit; }
@@ -7108,7 +7109,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const modes=[
         {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。':'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
         {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。':'Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
-        {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove(); try{ window.IntMapEdu&&window.IntMapEdu.open(); }catch(_){} }}
+        {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove();
+          /* (#R33) Close the layer-selection panel/sheet when entering Quiz mode. */
+          try{ const dd=document.getElementById('layer-dropdown'); if(dd) dd.classList.remove('show'); document.querySelectorAll('.m-sheet.show,#mo-sheet.show,#tools-sheet.show,.m-scrim.show').forEach(s=>s.classList.remove('show')); }catch(_){}
+          try{ window.IntMapEdu&&window.IntMapEdu.open(); }catch(_){} }}
       ];
       modes.forEach(m=>{ const row=document.createElement('button'); row.style.cssText='display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--input-bg);border:1px solid rgba(128,128,128,0.16);border-radius:14px;padding:14px;margin-bottom:11px;cursor:pointer;color:var(--text-main);';
         const ic=document.createElement('div'); ic.innerHTML=m.svg; ic.style.cssText='width:48px;height:48px;border-radius:13px;background:'+m.bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0;';
@@ -11021,7 +11025,9 @@ window.addEventListener('DOMContentLoaded', () => {
       /* First login after email/OAuth signup: copy the chosen name (or OAuth name) into the profile */
       if(!name){ const want=meta.display_name||meta.full_name||meta.name||''; if(want){ try{ await DB.from('profiles').update({display_name:want}).eq('id',session.user.id); name=want; }catch(_){} } }
     }catch(_){}
-    if(!name) name=session.user.email.split('@')[0];
+    /* (#R33) PRIVACY: never derive the public name from the email (its local part would expose part of the
+       address in community posts). Fall back to a neutral handle from the user id instead. */
+    if(!name) name='User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5);
     currentUser={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin }; updateAccountButton();
     try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
     try{ window._syncPrefsDown&&window._syncPrefsDown(); }catch(_){}   /* (#R20) pull the account's saved settings/presets/widgets */
@@ -11182,7 +11188,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(session&&session.user){
           if(!currentUser||currentUser.id!==session.user.id){
             const m=session.user.user_metadata||{};
-            currentUser={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||(session.user.email||'user').split('@')[0]), isAdmin:false, isPro:false };
+            currentUser={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||('User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5))), isAdmin:false, isPro:false };
           }
           try{ updateAccountButton(); }catch(_){}
           try{ const am=document.getElementById('auth-modal'); if(am && am.style.display!=='none') am.style.display='none'; }catch(_){}
