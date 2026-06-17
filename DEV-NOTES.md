@@ -2842,3 +2842,110 @@ screenshot.
   out of scope for a static-file edit.
 - **ToS / Privacy / attributions**: no change needed — the new beta layers are World Bank (already attributed)
   and the new events link to Wikipedia (already linked); no new data collection.
+
+---
+
+## 39. Round 35 — re-reported-bug batch, root-cause focus (tags `#R35`)
+
+Build `2026-06-17-R35`. Verified live on the http preview (map loads when given idle wall-clock; the page
+RUNS — 109 layer checkboxes, zero console errors after every change).
+
+### TOP PRIORITY — "ほとんどのレイヤーが選択しても反応しない" (ROOT CAUSE FOUND + fixed + verified)
+- Not a wiring bug (the R29 capture-toggle + `toggleLayer` + render path all work — proven live: clean tap
+  flips the checkbox, `toggleLayer` runs, the map layer becomes `visible`, choropleths/GIBS/geo all paint).
+- **The real cause was the scroll-vs-tap guard's 3px threshold.** The layer list is long, so reaching *most*
+  layers needs scrolling; on iOS the list keeps *settling* for a moment after the finger lifts, so a real tap
+  landing during that settle saw `scrollTop` drift a few px and was WRONGLY suppressed. Only the top utility
+  toggles (no scroll needed) survived → "most" layers felt dead. **Fix: raise the container-delta threshold
+  3 → 16px** (a genuine scroll DRAG is still caught by the finger-travel `far`>24px guard; momentum-settle of a
+  few px no longer kills the tap). Verified: 5px-jitter tap now toggles, 30px scroll still suppresses, clean tap
+  works. This is strictly more permissive, so it cannot regress clean taps.
+
+### Satellite Drop
+- **World Explorer → "Satellite Drop"** everywhere user-visible (playground hub title + the orphan
+  `worldExplorerBtn` i18n key; JP=サテライトドロップ). Internal ids (`_pgWorldExplorer`, `pg-we`) unchanged.
+- **Start page button**: a "Play Satellite Drop" button now sits directly below "Start exploring" (3-language),
+  closing the welcome and launching the drop. Verified present + ordered.
+
+### Compare view
+- **Round × → rounded-RECT** (`border-radius:8px`, matching every other compare control). Verified 28×28, 8px.
+- **"謎の青い枠" killed**: the focusable compare-map canvas was showing the browser default blue focus ring —
+  suppressed `outline`/`box-shadow` on the window + canvas; the x-ray keyline is now a neutral grey (was a
+  bluish `rgba(150,160,175)`). Verified `canvas outline:none`.
+- **X-ray "Map" now paints an INDEPENDENT carto/dark base** instead of going transparent. The old "Map = see the
+  MAIN map through the lens" was exactly the "X-rayをメインマップに合わせるモード" the user rejected — you could
+  never make the lens a map. Now main=Satellite + lens=Map (registered to the same spot) works. Verified no errors.
+- Layer parity: compare already clones the choropleths (cmp-choro), GIBS rasters, Köppen, beta layers (R21/R31);
+  Köppen/satellite use the same sources as the main map.
+
+### Mobile World Explorer / Pandemic HUD
+- **Crushed buttons fixed**: `#pg-we-panel button{min-height:40px}` stretched the width-34px round home/exit
+  buttons into 34×40 OVALS. The circular ones (`border-radius:50%`) are now forced 42×42 (WE) / 34×34 (pandemic ✕).
+  Verified live on a phone viewport: clean circles + a pill, panel fully on-screen, satellite active.
+
+### Mobile layer panel
+- **Left-right scroll killed**: `.m-sheet-scroll{overflow-x:hidden}` (a few stray px of width let the sheet pan
+  sideways).
+
+### Widgets
+- **Delete (−) badge un-hidden**: editing cards now `overflow:visible` so the iOS-style badge (pinned OUTSIDE
+  the corner at -7px/-7px) is no longer clipped by the card's `overflow:hidden`.
+
+### Settings
+- **Frosted-glass color bug**: the modal body switches to `--glass-fill` in the two glass modes, but the sticky
+  Apply footer kept the opaque `--popup-bg` → a mismatched solid strip. Footer now matches the glass material.
+- **Mobile multi-language checkbox mis-toggle (ROOT CAUSE, not a spacing hack)**: a nested `<label><input>` fires
+  iOS's ~300ms delayed synthetic click that, after a reflow, can land on an ADJACENT label. Added a deterministic
+  capture-toggle to the `.nc-dd-panel` dropdowns (news languages + countries): preventDefault the native
+  activation and flip EXACTLY the tapped label's box — a neighbour can never toggle.
+
+### Stats
+- **Dot squashed into an ellipse fixed**: the intersection dot was an SVG `<circle>` inside a
+  `preserveAspectRatio="none"` chart, so the non-uniform x/y scale stretched it. It's now an absolutely-positioned
+  HTML element (always round). The crosshair stays an SVG line (lines don't distort).
+
+### Tools
+- **Measure/Draw panels unified with the legends/popups**: the header buttons now use the SAME icon language as
+  the legends — a centred line that becomes a square box (minimise) and rotated bars (×). No more text `–`/`+`
+  ("-で最小化＋で最大化…他にないわ").
+- **Draw "Keep on map" hardened**: the annotation refresh now self-retries if the style is transiently not-loaded
+  (a load race could drop the kept line). The kept polygon/line was verified to persist on the map.
+
+### Desktop
+- **Active-layers gap filled**: a later `#layer-active-section{margin:2px 0 4px}` rule was clobbering the
+  sticky-flush desktop rule (negative side margins + 0 bottom). Removed → the bar sits flush to the panel edges.
+- **Radius legend overflow**: the desktop panel was 248px — too narrow for the 3 stat tiles, so big values spilled
+  out. Widened to 300px + the stat values now wrap inside the tile.
+
+### News
+- **Bands now pure COLLISION-based at every zoom** (was force-overlap at z≥5, which crushed every band together
+  and the hard z=5 step popped/flickered). With `allow-overlap:false` the map shows only the bands that physically
+  fit; zoom in → pins spread → more bands appear; dense clusters stay as dots until there's room. A stable
+  `symbol-sort-key` (subject>publisher>unlocated) removes the frame-to-frame flicker.
+- **Fewer "unknown" publisher pins**: in Publisher mode, when the outlet HQ can't be resolved, fall back to the
+  SUBJECT (event) location instead of scattering to a random hash point.
+
+### AI / dev
+- **Dev = unlimited now reflected in the Settings graph**: persist `intmap_dev='1'` the moment the OWNER account
+  logs in (so `aiDev()` is synchronously true thereafter, even before `currentUser` repopulates) + re-render the
+  AI settings on login.
+
+### Pandemic realism
+- **Vaccine can no longer arrive in ~1 month**: a massive early outbreak could unlock the vaccine in ~32 days via
+  the R&D race. Gated approval behind a realistic floor of 240–360 days (COVID mRNA, genome→first EUA, ≈270 days).
+  Progress display is bounded by the same floor so it doesn't show a stuck "100%". The rest of the SEIR
+  metapopulation model (compartments, seasonality, behaviour, hospital overload, variants w/ immune escape,
+  gravity spread, lockdowns) was left intact — a deeper rework still can't be visually verified headless.
+
+### German (Task: full 3-language, no leakage)
+- Welcome screen converted to full 3-language (was jp/en only → leaked English in DE). Köppen climate names
+  confirmed German (the `_kde` merge sets `KNAME[*].de`; consumers fall back to EN only if missing).
+- **Honest limitation**: ~761 inline `currentLang==='jp'?…:…` / `jp()?…` literals still fall back to ENGLISH in
+  DE. Converting them all in one pass is impractical AND high-risk (a single stray back-tick inside a template
+  literal blanks the whole site). The dictionary-driven chrome (`i18n.de`) + the main interactive surfaces are
+  German; the long tail is progressively localized and NOT fully eliminated this round.
+
+### ToS / Privacy / attributions
+- No change needed: no new data sources or collection (the publisher-fallback reuses the existing subject
+  location; the dev flag is local-only). "World Explorer" appears in ToS/Privacy nowhere; the 5 remaining
+  in-code mentions are comments.
