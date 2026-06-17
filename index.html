@@ -16179,7 +16179,24 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbforest', code:'AG.LND.FRST.ZS', n:{en:'Forest area %',jp:'森林面積率'}, ramp:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e'], unit:'%'},
       {id:'wbrenew', code:'EG.FEC.RNEW.ZS', n:{en:'Renewable energy %',jp:'再エネ比率'}, ramp:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837'], unit:'%'},
       {id:'wbmobile', code:'IT.CEL.SETS.P2', n:{en:'Mobile subs /100',jp:'携帯契約 /100人'}, ramp:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837'], unit:''},
-      {id:'wbinfl', code:'FP.CPI.TOTL.ZG', n:{en:'Inflation % (CPI)',jp:'インフレ率 (CPI)'}, ramp:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026'], unit:'%'}
+      {id:'wbinfl', code:'FP.CPI.TOTL.ZG', n:{en:'Inflation % (CPI)',jp:'インフレ率 (CPI)'}, ramp:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026'], unit:'%'},
+      /* (#R33) +16 NEW beta choropleths (World Bank, latest value per country) — "最低20レイヤーをβに追加". */
+      {id:'wbinfmort', code:'SP.DYN.IMRT.IN', n:{en:'Infant mortality /1k',jp:'乳児死亡率 /1k'}, ramp:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026'], unit:''},
+      {id:'wbgdpgrow', code:'NY.GDP.MKTP.KD.ZG', n:{en:'GDP growth %',jp:'GDP成長率 %'}, ramp:[-6,'#a50026',-1,'#f46d43',2,'#fee08b',5,'#a6d96a',9,'#1a9850'], unit:'%'},
+      {id:'wblit', code:'SE.ADT.LITR.ZS', n:{en:'Literacy rate %',jp:'識字率 %'}, ramp:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbwater', code:'SH.H2O.SMDW.ZS', n:{en:'Safe water access %',jp:'安全な水 %'}, ramp:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbsan', code:'SH.STA.SMSS.ZS', n:{en:'Sanitation access %',jp:'衛生設備 %'}, ramp:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbpov', code:'SI.POV.DDAY', n:{en:'Extreme poverty %',jp:'極度の貧困 %'}, ramp:[0,'#1a9850',2,'#a6d96a',10,'#fee08b',30,'#f46d43',60,'#a50026'], unit:'%'},
+      {id:'wbgini', code:'SI.POV.GINI', n:{en:'Income inequality (Gini)',jp:'所得格差 (ジニ)'}, ramp:[25,'#1a9850',32,'#a6d96a',38,'#fee08b',45,'#f46d43',60,'#a50026'], unit:''},
+      {id:'wbtrade', code:'NE.TRD.GNFS.ZS', n:{en:'Trade % of GDP',jp:'貿易 対GDP %'}, ramp:[20,'#fff7ec',50,'#fdd49e',90,'#fc8d59',150,'#d7301f',300,'#7f0000'], unit:'%'},
+      {id:'wbtax', code:'GC.TAX.TOTL.GD.ZS', n:{en:'Tax revenue % GDP',jp:'税収 対GDP %'}, ramp:[5,'#fff7ec',12,'#fdd49e',20,'#a6d96a',30,'#66bd63',45,'#006837'], unit:'%'},
+      {id:'wbagri', code:'AG.LND.AGRI.ZS', n:{en:'Agricultural land %',jp:'農地率 %'}, ramp:[5,'#f6e8c3',25,'#dfc27d',45,'#c7eae5',65,'#80cdc1',85,'#01665e'], unit:'%'},
+      {id:'wbphys', code:'SH.MED.PHYS.ZS', n:{en:'Physicians /1k',jp:'医師 /1k人'}, ramp:[0.1,'#a50026',0.5,'#f46d43',1.5,'#fee08b',3,'#a6d96a',6,'#1a9850'], unit:''},
+      {id:'wbschool', code:'SE.SEC.ENRR', n:{en:'Secondary enrollment %',jp:'中等教育就学 %'}, ramp:[30,'#a50026',55,'#f46d43',80,'#fee08b',100,'#a6d96a',130,'#1a9850'], unit:'%'},
+      {id:'wbelecuse', code:'EG.USE.ELEC.KH.PC', n:{en:'Electricity use /capita (kWh)',jp:'電力消費 /人 (kWh)'}, ramp:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000'], unit:''},
+      {id:'wbrenelec', code:'EG.ELC.RNEW.ZS', n:{en:'Renewable electricity %',jp:'再エネ電力 %'}, ramp:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837'], unit:'%'},
+      {id:'wbfdi', code:'BX.KLT.DINV.WD.GD.ZS', n:{en:'FDI inflow % GDP',jp:'対内直接投資 対GDP %'}, ramp:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837'], unit:'%'},
+      {id:'wbmilppl', code:'MS.MIL.TOTL.P1', n:{en:'Armed forces personnel',jp:'軍人数'}, ramp:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000'], unit:''}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
