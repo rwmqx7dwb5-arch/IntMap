@@ -13172,7 +13172,8 @@ window.addEventListener('DOMContentLoaded', () => {
     /* multi: more than one instance allowed (different pairs / countdowns) */
     const DEFS={
       clock:    { nm:()=>jp()?'時計':'Clock', ic:'🕐', desc:()=>jp()?'現在時刻と日付':'Time & date' },
-      weather:  { nm:()=>jp()?'天気（現在地）':'Weather (my location)', ic:'🌤', desc:()=>jp()?'現在地の天気（追加時に位置情報の許可を求めます）':'Weather at your location (asks for location permission when added)' },
+      aclock:   { nm:()=>jp()?'アナログ時計':'Analog clock', ic:'🕰', desc:()=>jp()?'アナログ文字盤':'An analog clock face' },
+      weather:  { nm:()=>jp()?'天気':'Weather', ic:'🌤', desc:()=>jp()?'現在地の天気（追加時に位置情報の許可を求めます）':'Weather at your location (asks for location permission when added)' },
       fx:       { nm:()=>jp()?'為替レート':'FX rate', ic:'💱', desc:()=>jp()?'好きな通貨ペアを選択':'Pick any currency pair', multi:true },
       crypto:   { nm:()=>jp()?'暗号資産（BTC・ETH）':'Crypto (BTC·ETH)', ic:'📈', desc:()=>jp()?'価格と24h変動':'Price & 24h change' },
       cryptocap:{ nm:()=>jp()?'暗号資産時価総額':'Crypto market cap', ic:'🪙', desc:()=>jp()?'総時価総額とBTCドミナンス':'Total cap & BTC dominance' },
@@ -13223,7 +13224,10 @@ window.addEventListener('DOMContentLoaded', () => {
       '.wgt-card.editing:active{cursor:grabbing;}'+
       /* (#R31) edit-mode: grip (drag) top-left, delete top-right; config gear restyled (SVG). */
       '.wgt-grip{position:absolute;top:7px;left:7px;z-index:2;display:flex;align-items:center;justify-content:center;color:var(--text-muted);opacity:0.7;}'+
-      '.wgt-del{position:absolute;top:6px;right:6px;z-index:2;width:26px;height:26px;border:none;border-radius:13px;background:#ff3b30;color:#fff;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}'+
+      /* (#R33) iOS jiggle-mode delete badge: a dark circle with a white minus, pinned to the top-LEFT corner. */
+      '.wgt-del{position:absolute;top:-7px;left:-7px;z-index:4;width:24px;height:24px;border:none;border-radius:50%;background:rgba(60,60,67,0.94);color:#fff;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,0.4);}'+
+      '.wgt-card.editing{animation:wgtJiggle 0.35s ease-in-out infinite alternate;}'+
+      '@keyframes wgtJiggle{from{transform:rotate(-0.5deg);}to{transform:rotate(0.5deg);}}'+
       '.wgt-cfg{position:absolute;top:6px;right:6px;z-index:2;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.16);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}'+
       '.wgt-cfg:hover{background:rgba(128,128,128,0.28);color:var(--text-main);}'+
       '@media(max-width:768px){ .wgt-del{width:32px;height:32px;border-radius:16px;font-size:15px;} .wgt-grip svg{width:18px;height:18px;} }'+
@@ -13253,8 +13257,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(editing){
         /* (#R31) Edit mode: DRAG-AND-DROP reorder (iOS-style) + delete (✕). The ↑↓ buttons are gone — a
            grip handle (the whole card is draggable) replaces them ("↓↑ではなく、ドラッグアンドドロップで"). */
-        topright='<span class="wgt-grip" title="'+(jp()?'ドラッグで並べ替え':'Drag to reorder')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>'+
-          '<button class="wgt-del" data-u="'+e.u+'" title="'+(jp()?'削除':'Remove')+'">✕</button>';
+        /* (#R33) iOS home-screen style: the whole card is draggable (no separate grip), and the delete badge
+           is a minus in a dark circle at the top-left ("iPhoneのホーム画面のように / 削除ボタンをiOS風に"). */
+        topright='<button class="wgt-del" data-u="'+e.u+'" title="'+(jp()?'削除':'Remove')+'" aria-label="'+(jp()?'削除':'Remove')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 12h12"/></svg></button>';
       } else if(e.t==='fx'||e.t==='countdown'||e.t==='worldclock'||e.t==='holiday'){
         /* (#R31) cleaner SF-Symbol-style gear (the old ⚙ glyph looked "ダサい"). */
         topright='<button class="wgt-cfg" data-u="'+e.u+'" title="'+(jp()?'設定':'Configure')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>';
@@ -13366,6 +13371,13 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ tstr=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:tz}); }catch(_){ tstr=now.toLocaleTimeString(); }
         try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
         setV(e.u,'<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); });
+      /* (#R33) Analog clock widget. */
+      active.filter(e=>e.t==='aclock').forEach(e=>{ let d=now; try{ if(tz) d=new Date(now.toLocaleString('en-US',{timeZone:tz})); }catch(_){}
+        const h=d.getHours()%12, mi=d.getMinutes(), se=d.getSeconds();
+        const hand=(ang,len,w,col)=>{ const a=(ang-90)*Math.PI/180; return '<line x1="50" y1="50" x2="'+(50+len*Math.cos(a)).toFixed(1)+'" y2="'+(50+len*Math.sin(a)).toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"/>'; };
+        let ticks=''; for(let i=0;i<12;i++){ const a=(i*30-90)*Math.PI/180; ticks+='<line x1="'+(50+40*Math.cos(a)).toFixed(1)+'" y1="'+(50+40*Math.sin(a)).toFixed(1)+'" x2="'+(50+45.5*Math.cos(a)).toFixed(1)+'" y2="'+(50+45.5*Math.sin(a)).toFixed(1)+'" stroke="var(--text-muted)" stroke-width="'+(i%3===0?2.4:1.2)+'"/>'; }
+        const svg='<svg viewBox="0 0 100 100" width="96" height="96" style="display:block;margin:1px auto 0;"><circle cx="50" cy="50" r="47.5" fill="none" stroke="var(--text-muted)" stroke-width="2" opacity="0.55"/>'+ticks+hand(h*30+mi*0.5,25,3.2,'var(--text-main)')+hand(mi*6,34,2.3,'var(--text-main)')+hand(se*6,38,1.1,'var(--primary-color)')+'<circle cx="50" cy="50" r="2.6" fill="var(--primary-color)"/></svg>';
+        setV(e.u, svg, dstr+(tz?' · '+tz:'')); });
       active.filter(e=>e.t==='countdown').forEach(e=>refreshCountdown(e));
       /* (#R21) Locally-computed widgets ride the clock tick so they're always current. */
       active.filter(e=>e.t==='worldclock').forEach(e=>{ const z=(e.cfg&&e.cfg.tz)||'Asia/Tokyo'; let ts,ds;
@@ -13401,10 +13413,14 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ const st=await navigator.permissions.query({name:'geolocation'}); state=st.state; }catch(_){ state='unknown'; }
         if(state==='granted'||state==='unknown'){ await new Promise(res=>reqGeo(res)); if(geoPos) return mine(); }
       }
-      const c=(typeof map!=='undefined'&&map)?map.getCenter():{lat:35.68,lng:139.76};
-      return {lat:c.lat,lng:c.lng,lbl:jp()?'地図中心':'map center'};
+      /* (#R33) NEVER fall back to map center ("map centerのデータを使用するのはやめて"). No location → null,
+         and the widget shows an "Allow location" button (works across devices: a new device re-prompts). */
+      return null;
     }
-    async function refreshWeather(e){ try{ const c=await widgetLoc();
+    function wgtLocPrompt(e){ const msg=jp()?'位置情報が必要です':'Location needed';
+      setV(e.u, '<button class="wgt-loc-btn" data-u="'+e.u+'" style="background:var(--primary-color);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;">'+(jp()?'位置情報を許可':'Allow location')+'</button>', msg);
+      setTimeout(()=>{ const b=document.querySelector('.wgt-loc-btn[data-u="'+e.u+'"]'); if(b) b.onclick=()=>{ geoDenied=false; b.textContent=jp()?'取得中…':'Locating…'; reqGeo(()=>{ try{ refreshOne(e); }catch(_){} }); }; },0); }
+    async function refreshWeather(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
         const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
         const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
@@ -13423,7 +13439,7 @@ window.addEventListener('DOMContentLoaded', () => {
         setV(e.u, base+'/'+quote+'<br><span style="font-size:24px;">'+f(v)+'</span>', when+' · '+src);
         const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'為替 ':'FX ')+base+'/'+quote;
       }catch(_){ setV(e.u,'—', una()); } }
-    async function refreshSun(e){ try{ const c=await widgetLoc();
+    async function refreshSun(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&daily=sunrise,sunset,daylight_duration&forecast_days=1&timezone=auto');
         const j=await r.json(); const d=j.daily||{};
         const sr=String(d.sunrise&&d.sunrise[0]||'').slice(11,16), ss=String(d.sunset&&d.sunset[0]||'').slice(11,16);
@@ -13440,7 +13456,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const illum=Math.round((1-Math.cos(ph*2*Math.PI))/2*100);
         setV(e.u,ic+' <span style="font-size:15px;">'+(jp()?nmJ[idx]:nmE[idx])+'</span>',(jp()?'月齢 ':'age ')+age.toFixed(1)+(jp()?'日':' d')+' · '+illum+'% '+(jp()?'照度':'lit'));
       }catch(_){ setV(e.u,'—',''); } }
-    async function refreshAqi(e){ try{ const c=await widgetLoc();
+    async function refreshAqi(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=us_aqi,pm2_5');
         const j=await r.json(); const cu=j.current||{}; const v=cu.us_aqi;
         const col=v==null?'var(--text-main)':v<=50?'#34c759':v<=100?'#ffcc00':v<=150?'#ff9500':'#ff3b30';
@@ -13527,9 +13543,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const s=all[Math.floor(Math.random()*all.length)];
         const nm=jp()?(s.nameJp||s.nameEn):s.nameEn;
         const fm=(v)=>{ if(v==null) return '—'; if(v>=1e9) return (v/1e9).toFixed(2)+'B'; if(v>=1e6) return (v/1e6).toFixed(1)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return String(v); };
-        setV(e.u,window.imFlagHTML(s.flag,22)+' <span style="font-size:15px;font-weight:700;">'+nm+'</span>',
+        setV(e.u,'<span class="wc-go" style="cursor:pointer;" title="'+(jp()?'この国へ移動':'Fly to this country')+'">'+window.imFlagHTML(s.flag,22)+' <span style="font-size:15px;font-weight:700;">'+nm+'</span></span>',
           (jp()?'人口 ':'Pop ')+fm(s.pop)+(s.gdp!=null?' · GDP '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+fm(s.area)+' km²':'')+'<br><span style="color:var(--primary-color);cursor:pointer;font-weight:600;" class="wc-next">'+(jp()?'別の国 ↻':'Another ↻')+'</span>');
-        const nx=document.querySelector('#wgts-'+e.u+' .wc-next'); if(nx) nx.onclick=()=>refreshCountry(e);
+        const nx=document.querySelector('#wgts-'+e.u+' .wc-next'); if(nx) nx.onclick=(ev)=>{ ev.stopPropagation(); refreshCountry(e); };
+        /* (#R33) Tap the country → fly there. */
+        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ const ll=s.latlng; if(ll&&map){ map.flyTo({center:[ll[1],ll[0]],zoom:Math.max(map.getZoom(),4.2),speed:1.3,essential:true}); try{ if(typeof closeSheet==='function') closeSheet(); }catch(_){} } }catch(_){} };
       }catch(_){ setV(e.u,'—',''); } }
     function refreshCountdown(e){ try{
         if(!e.cfg||!e.cfg.date){ setV(e.u,'<span style="font-size:13px;color:var(--text-muted);">'+(jp()?'⚙ から日付と題名を設定':'Set date & title via ⚙')+'</span>',''); return; }
@@ -13543,7 +13561,7 @@ window.addEventListener('DOMContentLoaded', () => {
         setV(e.u,v,'<b style="color:var(--text-main);">'+String(title).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</b> · '+e.cfg.date);
       }catch(_){ setV(e.u,'—',''); } }
     /* (#R22) New live widgets — all keyless + CORS-verified. */
-    async function refreshUv(e){ try{ const c=await widgetLoc();
+    async function refreshUv(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=uv_index&daily=uv_index_max&forecast_days=1&timezone=auto');
         const j=await r.json(); const uv=j.current&&j.current.uv_index, mx=j.daily&&j.daily.uv_index_max&&j.daily.uv_index_max[0];
         const lvl=(v)=>v==null?'':v<3?(jp()?'低い':'Low'):v<6?(jp()?'中程度':'Moderate'):v<8?(jp()?'高い':'High'):v<11?(jp()?'非常に高い':'Very high'):(jp()?'極端':'Extreme');
@@ -13551,7 +13569,12 @@ window.addEventListener('DOMContentLoaded', () => {
         setV(e.u,'<span style="color:'+col(uv)+';">'+(uv!=null?(+uv).toFixed(1):'—')+'</span> <span style="font-size:13px;">UV</span>', lvl(uv)+(mx!=null?' · '+(jp()?'本日最大 ':'max ')+(+mx).toFixed(1):'')+' · '+c.lbl);
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
-        const a=await r.json(); const rows=a.slice(1); const last=rows[rows.length-1]||[]; const kp=parseFloat(last[1]); const when=(last[0]||'').replace(' ','T');
+        /* (#R33) NOAA changed this feed from array-rows to an array of OBJECTS ({time_tag,Kp,…}) — the old
+           last[1] read undefined → the widget showed "—" ("Aurora widget is not working"). Handle both. */
+        const a=await r.json(); let kp=NaN, when='';
+        if(Array.isArray(a)&&a.length){ const last=a[a.length-1];
+          if(last&&typeof last==='object'&&!Array.isArray(last)){ kp=parseFloat(last.Kp!=null?last.Kp:last.kp_index); when=last.time_tag||''; }
+          else { const rows=a.slice(1); const lr=rows[rows.length-1]||[]; kp=parseFloat(lr[1]); when=(lr[0]||'').replace(' ','T'); } }
         const col=kp>=7?'#af52de':kp>=5?'#ff3b30':kp>=4?'#ff9500':'#34c759';
         const note=kp>=5?(jp()?'地磁気嵐（オーロラの可能性）':'Storm — aurora likely'):kp>=4?(jp()?'活発':'Active'):(jp()?'静穏':'Quiet');
         setV(e.u,'Kp <span style="color:'+col+';">'+(isNaN(kp)?'—':kp.toFixed(0))+'</span>', note+' · '+asOf(when)+' · NOAA');
