@@ -4202,9 +4202,10 @@ window.addEventListener('DOMContentLoaded', () => {
       [t('statCurrency'), s.currency||'—'],
       [t('statLang'), s.languages||'—']
     ];
-    if(s.timezones&&s.timezones.length) rows.push([currentLang==='jp'?'時間帯':'Timezones', s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]);
-    if(s.borders&&s.borders.length) rows.push([currentLang==='jp'?'隣接':'Borders', s.borders.join(', ')]);
-    if(s.unMember!=null) rows.push([currentLang==='jp'?'国連加盟':'UN member', s.unMember?(currentLang==='jp'?'はい':'Yes'):(currentLang==='jp'?'いいえ':'No')]);
+    const _de=currentLang==='de', _jp=currentLang==='jp';
+    if(s.timezones&&s.timezones.length) rows.push([_de?'Zeitzonen':_jp?'時間帯':'Timezones', s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]);
+    if(s.borders&&s.borders.length) rows.push([_de?'Nachbarländer':_jp?'隣接':'Borders', s.borders.join(', ')]);
+    if(s.unMember!=null) rows.push([_de?'UN-Mitglied':_jp?'国連加盟':'UN member', s.unMember?(_de?'Ja':_jp?'はい':'Yes'):(_de?'Nein':_jp?'いいえ':'No')]);
     return rows.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('');
   }
   function showCountryDetail(id,fallback){
@@ -4219,8 +4220,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const _tsSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>';
     const _topBtnCss='flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;';
     const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
-      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${currentLang==='jp'?'この国だけ':'Isolate'}</button>`
-      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${currentLang==='jp'?'時系列グラフ':'Time-series'}</button>`
+      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${currentLang==='de'?'Nur dieses Land':currentLang==='jp'?'この国だけ':'Isolate'}</button>`
+      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${currentLang==='de'?'Zeitverlauf':currentLang==='jp'?'時系列グラフ':'Time-series'}</button>`
       +`</div>`;
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
@@ -7615,6 +7616,8 @@ window.addEventListener('DOMContentLoaded', () => {
     Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNight:"Tag / Nacht", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 World Explorer",
       lyrGrpClimate:"Klima & Wetter", lyrGrpHazard:"Gefahren & Nachthimmel", lyrGrpDemo:"Bevölkerung & Wirtschaft", lyrGrpGeoPol:"Geopolitik & Verteidigung", lyrGrpOthers:"Weitere (Beta)",
       lyrGrpMaritime:"Ozeane & Seefahrt", lyrGrpIndic:"Indikatoren & Overlays", lyrGrpTerrain:"Gelände & Höhe", lyrHillshade:"Reliefschattierung", lyrContours:"Höhenlinien", lyrPopGrid:"Bevölkerungsdichte (1-km-Raster)", lgdTempTitle:"Lufttemp. (2 m)", lyrTimeMonth:"Monat", mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig", lyrRelief:"Höhe (Farbrelief)", lyrSubcables:"Seekabel", lgdReliefTitle:"Höhe", lgdSubcablesTitle:"Seekabel", lyrMilSpend:"Militärausgaben ($ Mrd.)", lyrMilSpendGDP:"Militärausgaben (% BIP)", lyrGDPpc:"BIP pro Kopf", lyrTFR:"Geburtenrate", lyrSeaLevel:"Meeresspiegeländerung", lgdSeaLevelTitle:"Meeresspiegeländerung" });
+    /* (#R33) German country-stat + common labels so the country panel/stats aren't English in DE mode. */
+    Object.assign(i18n.de,{ statPop:"Bevölkerung", statGdp:"BIP (nominal)", statGdpPc:"BIP pro Kopf", statGdpPPP:"BIP (KKP)", statGdpPcPPP:"BIP pro Kopf (KKP)", statArea:"Fläche", statDensity:"Bev.-dichte", statRegion:"Region", statSub:"Subregion", statCapital:"Hauptstadt", statCurrency:"Währung", statLang:"Sprachen", statHDI:"HDI", statDem:"Demokratie-Idx", statMil:"Militärausgaben", statLife:"Lebenserwartung", statInet:"Internetnutzer", dataNA:"—", points:"Punkte", total:"Gesamt", perimeter:"Umfang", area:"Fläche", radius:"Radius", circumference:"Umfang", opacity:"Deckkraft", color:"Farbe", presetLbl:"Voreinstellung", clear:"Löschen", undoPt:"Punkt zurück", removeAll:"Alle entfernen", finalizeMeas:"Auf Karte behalten", elevProfile:"Höhenprofil", newsInArea:"Nachrichten im Gebiet", bearing:"Peilung", tabNews:"Nachrichten", tabInfo:"Informationen", tabStats:"Statistik" });
 
     const style=document.createElement('style');
     style.textContent=`
@@ -15738,8 +15741,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
       /* (#R33) Isolate now lives in this SAME action row as Copy/Wikipedia/AI brief (for countries) — no more
          separate floating button ("既存のcopy, wikipedia, AI briefと同じ並びに、同じUIで"). */
-      const isoBtn=isCountry?`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${jp?'この国だけ':'Isolate'}</button>`:'';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${jp?'AI調査':'AI brief'}</button>${isoBtn}</div></div>`;
+      const de=currentLang==='de';   /* (#R33) 3-language labels */
+      const isoBtn=isCountry?`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${de?'Nur dieses Land':jp?'この国だけ':'Isolate'}</button>`:'';
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}</div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
