@@ -311,7 +311,10 @@ gtag('config', 'G-57X5MX0ZPW');
     .measure-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
     .caret-sm{ font-size:9px; opacity:0.7; }
     /* (#R15d) Use the shared glass border so the Layers dropdown matches every other frosted surface. */
-    .layer-dropdown{ display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--glass-fill); border-radius:12px; padding:12px; box-shadow:var(--shadow); border:1px solid var(--glass-border); min-width:210px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; overflow-anchor:none; }
+    /* (#R34) padding-bottom is 0 so the sticky Active-layers bar sits FLUSH with the dropdown's bottom edge.
+       A `position:sticky;bottom:0` bar pins to the scroll container's CONTENT box, so a 12px bottom padding
+       left a 12px frosted gap UNDER the bar ("Active layersの下に隙間"). The bar carries its own bottom padding. */
+    .layer-dropdown{ display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--glass-fill); border-radius:12px; padding:12px 12px 0; box-shadow:var(--shadow); border:1px solid var(--glass-border); min-width:210px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; overflow-anchor:none; }
     /* (#R31) Kill browser scroll-anchoring inside the scrollers that host the layer list — it fought the
        manual active-layers compensation and produced the "toggling a layer scrolls the panel" jump. */
     .m-sheet-scroll{ overflow-anchor:none; }
@@ -322,11 +325,16 @@ gtag('config', 'G-57X5MX0ZPW');
        sticky keeps it pinned visible. Frosted like the dropdown so rows scroll cleanly beneath it. */
     /* (#R32b) Negative L/R/B margins cancel the dropdown's 12px padding so the bar is FLUSH with the panel's
        bottom + side edges — no unnatural gap below it ("Active layersの下に隙間があるのが不自然"). */
-    #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:6px -12px -12px; padding:7px 12px 11px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:0 0 12px 12px; }
+    #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:6px -12px 0; padding:7px 12px 12px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:0 0 12px 12px; }
     /* (#R33) Mobile: the bar STICKS to the bottom of the sheet scroller with an opaque surface so rows don't
        show through it ("モバイル版でもActive layersは下部にstick"). The in-sheet dropdown has no padding, so
        no negative side margins. */
-    .m-sheet #layer-active-section{ position:sticky; bottom:0; z-index:5; margin:6px -16px -8px; padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px)); border-radius:0; background:var(--card-bg); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-top:1px solid var(--glass-border,rgba(128,128,128,0.25)); box-shadow:0 -4px 12px rgba(0,0,0,0.12); }
+    /* (#R34) MOBILE Active-layers now lives as the LAST child of the SHEET scroller (.m-sheet-scroll) — see
+       _placeActiveSection() — so it is a sticky last child of the REAL scroll container and truly pins to the
+       sheet bottom ("モバイル版でもActive layersは下部にstick"). Full width (the scroller has no side padding). */
+    .m-sheet #layer-active-section{ position:sticky; bottom:0; z-index:5; margin:0; padding:8px 16px calc(10px + env(safe-area-inset-bottom,0px)); border-radius:0; background:var(--card-bg); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-top:1px solid var(--glass-border,rgba(128,128,128,0.25)); box-shadow:0 -4px 12px rgba(0,0,0,0.12); }
+    /* (#R34) Kill the gap under the sticky bar (the scroller's bottom padding pushed it up). */
+    #mo-sheet .m-sheet-scroll{ padding-bottom:0; }
     /* (#R33) Remove the colored square before EVERY layer name ("色付きの四角をやめて"). */
     .layer-dropdown .lyr-sw{ display:none !important; }
     /* (#R33) iOS-clean layer panel: no heavy divider rules — section headers carry the grouping with spacing,
@@ -1087,7 +1095,12 @@ gtag('config', 'G-57X5MX0ZPW');
       /* config panels relocated into the option sheets: strip their floating skin */
       /* fill the sheet width — the desktop dropdown's fixed 268px left-aligned it, leaving a big
          empty gutter on the right (#9). Now it spans the full sheet, balanced edge-to-edge. */
-      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; width:auto !important; max-width:none !important; max-height:none !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:0 !important; }
+      /* (#R34) overflow:visible is CRITICAL on mobile: the base rule has overflow-y:auto, which (even with
+         max-height:none, i.e. not actually scrolling) makes the dropdown the sticky child's scroll container
+         AND an iOS touch-eater — the dead scroller swallowed the first touch so "一つ以上レイヤーを選択していると
+         レイヤー選択欄が引っかかってスクロールできない". With overflow:visible the single real scroller is
+         .m-sheet-scroll, so scrolling never sticks and the Active-layers bar can pin to the sheet bottom. */
+      .m-sheet .layer-dropdown{ display:flex !important; position:static !important; inset:auto !important; margin:0 !important; padding:0 !important; min-width:0 !important; width:auto !important; max-width:none !important; max-height:none !important; overflow:visible !important; box-shadow:none !important; border:none !important; background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; gap:0 !important; }
       /* (#R15 / #27 / #28) iOS-style SINGLE-COLUMN list. The old 2-up CSS grid mixed full-width spans with
          2-up cells, which mis-aligned constantly (esp. the Tools section — "ぐちゃっと"). A clean single
          column is predictable, legible and consistent on every phone, matching the Apple-like brief. */
@@ -2162,7 +2175,18 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
        chosen map color always lands. */
-    if(!map||!map.isStyleLoaded()){ if(map) map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); return; }
+    if(!map||!map.isStyleLoaded()){
+      /* (#R34) Even while the style is still loading, do an IMMEDIATE best-effort base flip so a Map/Sat
+         tap never feels dead ("切り替えができない/反応が極めて悪い"). The full applyTheme re-runs on idle. */
+      if(map){ try{
+        const _l=(window.imMapColor==='light')||(window.imMapColor!=='dark'&&((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches)));
+        const _sat=currentMapType==='sat';
+        if(map.getLayer('layer-sat'))      map.setLayoutProperty('layer-sat','visibility',_sat?'visible':'none');
+        if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',(!_sat&&_l)?'visible':'none');
+        if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',(!_sat&&!_l)?'visible':'none');
+      }catch(_){} map.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }
+      return;
+    }
     /* Map base color can be chosen independently of the UI theme (#map-color). */
     const mc=(window.imMapColor||'auto'); const mapLight = (mc==='light')?true:(mc==='dark')?false:isLight;
     const sat=currentMapType==='sat', light=!sat&&mapLight, dark=!sat&&!mapLight;
@@ -2179,6 +2203,8 @@ window.addEventListener('DOMContentLoaded', () => {
     map.setLayoutProperty('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
     map.setLayoutProperty('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
+    /* (#R34) Ocean overlay visible only on the dark map (created in ensurePlaceLabels above). */
+    try{ if(map.getLayer('ofm-water')) map.setLayoutProperty('ofm-water','visibility', dark?'visible':'none'); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
     if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility', bordersOn?'visible':'none');
     if(map.getLayer('grid-labels')){ map.setPaintProperty('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); map.setPaintProperty('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
@@ -2212,6 +2238,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
       const FONT=['Noto Sans Regular'];
       const before = map.getLayer('grid-lines') ? 'grid-lines' : undefined;
+      /* (#R34) OCEAN overlay — the real dark-map land/sea contrast fix (see the layer-dark comment). We
+         paint every water body from the OFM `water` vector layer in a distinct deep navy so coastlines read
+         crisply against the grey land. Sits just above the base raster + below grid/labels/data; applyTheme
+         shows it ONLY on the dark map (hidden on light map + satellite, which have their own water). */
+      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'fill',source:'ofm','source-layer':'water',layout:{visibility:'none'},paint:{'fill-color':'#0a1c30','fill-opacity':1}}, before);
       if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-transform':'uppercase','text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
       if(!map.getLayer('ofm-city')) map.addLayer({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],4,11,10,15],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
       if(!map.getLayer('ofm-other')) map.addLayer({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
@@ -2993,14 +3024,15 @@ window.addEventListener('DOMContentLoaded', () => {
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
              baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
-          /* (#R32) Boost land/sea contrast on the dark base — Carto dark tiles render water and land at very
-             similar near-black greys ("陸地と海のコントラストが弱く、視認性が悪い"). raster-contrast stretches
-             them apart; a slight brightness lift keeps coastlines readable without washing the map out. */
-          /* (#R32b) STRONGER land/sea separation. The R32 brightness-min LIFTED the near-black water toward
-             the land grey → less contrast ("むしろ弱くなっている"). Now: high raster-contrast with the black
-             floor kept at 0 (water stays dark) and a small saturation bump, so land reads clearly lighter. */
-          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-contrast':0.45,'raster-saturation':0.15}},
-          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-contrast':0.45,'raster-saturation':0.15}},
+          /* (#R34) BLACK-MAP FIX. The R32b `raster-contrast:0.45` on the already-dark Carto tiles was a
+             disaster: MapLibre contrast is (v-0.5)/(1-0.45)+0.5, so dark land (~0.16) AND water (~0.11)
+             both clamp to PURE BLACK ("ついには何も見えず真っ黒になった"). Contrast is GONE. Instead we (1)
+             LIFT the dark base off black with raster-brightness-min so land is always a visible grey, and
+             (2) draw the OCEAN ourselves as a distinct deep-navy vector fill (ofm-water, added in
+             ensurePlaceLabels, toggled in applyTheme) — that is what finally gives the STRONG dark-mode
+             land/sea contrast the user kept asking for, without ever going black. */
+          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-brightness-min':0.12,'raster-saturation':0.06}},
+          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-brightness-min':0.12,'raster-saturation':0.06}},
           {id:'layer-light',type:'raster',source:'bl',layout:{visibility:'none'}},
           {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:isInitiallyDark?'none':'visible'}},
           {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
@@ -8167,6 +8199,17 @@ window.addEventListener('DOMContentLoaded', () => {
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
       _restore();
+    };
+    /* (#R34) Relocate the Active-layers bar to the right scroll container per platform. On mobile it must be a
+       sticky LAST CHILD of the SHEET scroller (.m-sheet-scroll) so it pins to the sheet bottom; on desktop it
+       belongs at the bottom of the dropdown. reorganizeLayerPanel always re-appends it to the dropdown, so we
+       re-place it after every reorganize and on layout changes. */
+    window._placeActiveSection=function(){
+      try{ const act=document.getElementById('layer-active-section'); if(!act) return;
+        const isM = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+        if(isM){ const sc=document.querySelector('#mo-sheet .m-sheet-scroll'); if(sc && act.parentElement!==sc) sc.appendChild(act); }
+        else { const dd=document.getElementById('layer-dropdown'); if(dd && act.parentElement!==dd) dd.appendChild(act); }
+      }catch(_){}
     };
     /* Any layer checkbox toggle → refresh the active-layers list (deferred so toggleLayer runs first). */
     document.getElementById('layer-dropdown')&&document.getElementById('layer-dropdown').addEventListener('change',(e)=>{
@@ -14525,7 +14568,9 @@ window.addEventListener('DOMContentLoaded', () => {
          The window stays its normal floating/resizable size; only its basemap goes transparent so the MAIN
          map shows through, and the camera is synced so the window shows exactly the main-map geography
          BEHIND it (perfect register — see syncFromMain's lens branch). A cyan border marks the lens. */
-      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
+      /* (#R34) "謎の青い枠…いらない" — the bright cyan x-ray keyline is GONE. A faint neutral edge is all that
+         marks the lens boundary now (no blue anywhere). */
+      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 1px rgba(150,160,175,0.45) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       /* (#R29.1) The lens MAP is now draggable inside the window (it drives the main map 1:1); empty body
          areas still pass through so you can also pan the main map outside the window. */
@@ -14534,7 +14579,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R26) x-ray needs the header SOLID (the window goes transparent for alignment) so the buttons stay
          visible — but it must MATCH THE THEME, not force black in light mode ("Light modeで黒くなる謎システムは
          いらない。テーマに合わせろ"). Solid theme surface + theme-colored chips; only the cyan keyline marks the lens. */
-      '#compare-window.cmp-xray .cmp-head{background:#f3f4f7 !important;position:relative;z-index:7;border-bottom:2px solid rgba(25,198,255,0.9);box-shadow:0 2px 10px rgba(0,0,0,0.18);}'+
+      '#compare-window.cmp-xray .cmp-head{background:#f3f4f7 !important;position:relative;z-index:7;border-bottom:1px solid rgba(128,128,128,0.3);box-shadow:0 2px 10px rgba(0,0,0,0.18);}'+
       '[data-theme="dark"] #compare-window.cmp-xray .cmp-head{background:#1a1c22 !important;box-shadow:0 2px 10px rgba(0,0,0,0.45);}'+
       '#compare-window.cmp-xray .cmp-head .cmp-title{color:var(--text-main) !important;}'+
       '#compare-window.cmp-xray .cmp-btn{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
@@ -14544,7 +14589,7 @@ window.addEventListener('DOMContentLoaded', () => {
       '#compare-window.cmp-xray .cmp-ctrls select{background:var(--input-bg) !important;color:var(--text-main) !important;}'+
       /* (#R18) In lens mode the compare map is pulled out to cover the whole container (clipped to the
          window). Keep it BELOW the header/controls and give it a cyan edge so the lens boundary reads. */
-      '#compare-window.cmp-xray #compare-map{box-shadow:0 0 0 2px rgba(25,198,255,0.95) inset;}'+
+      '#compare-window.cmp-xray #compare-map{box-shadow:none;}'+
       /* (#R15d) MOBILE: the 440px resizable window + the full-cover x-ray were "ほぼ使えない / どうにもできない".
          Make it a clean full-width TOP panel with big tappable header buttons; x-ray still overlays for
          alignment but its header is a tall, opaque bar so Close/X-ray are always reachable. */
@@ -14585,7 +14630,9 @@ window.addEventListener('DOMContentLoaded', () => {
       return { version:8, glyphs:'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', sources:{
         'cmp-carto':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
         'cmp-dark':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
-        'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'© Esri'},
+        /* (#R34) Same two-host Esri imagery as the MAIN map so compare satellite is byte-identical quality
+           ("Compare viewでも同一品質のレイヤーを") and not throttled to one host. */
+        'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:(typeof isMobile==='function'&&isMobile())?18:19,attribution:'© Esri'},
         'cmp-koppen':{type:'image',url:koppenUrl(),coordinates:KC},
         'cmp-worldcover':{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'},
         'cmp-relief':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256}
@@ -14611,7 +14658,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',baseKind==='sat'); return; }
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
       setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
-    function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600); }   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
+    function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600);   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
+      /* (#R34) POLL until the wanted base actually shows — a click landing during the cmap style-load
+         otherwise no-ops with nothing retrying ("Compare viewで…切り替えができないバグが発生する"). */
+      try{ clearInterval(cmap.__basePoll); let n=0; cmap.__basePoll=setInterval(()=>{ n++;
+        try{ if(!cmap||baseKind!==kind){ clearInterval(cmap.__basePoll); return; }
+          if(cmap.getLayer('cmp-base-sat')){ const wantSat=(kind==='sat'), isSat=(cmap.getLayoutProperty('cmp-base-sat','visibility')==='visible'); if(wantSat!==isSat) go(); else clearInterval(cmap.__basePoll); } }catch(_){}
+        if(n>30) clearInterval(cmap.__basePoll); },150); }catch(_){}
+    }
     /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
        (Köppen/land cover/eco) only register when both maps share the projection. */
     /* (#R24) Track the compare projection with OUR OWN flag instead of cmap.getProjection() — the latter
@@ -14864,7 +14918,9 @@ window.addEventListener('DOMContentLoaded', () => {
          actually ready (and again on first idle as a backstop). */
       cmap.on('load',()=>{ applyBase(); try{ cmap.__wantGlobe=null; }catch(_){} followProjection(); });
       cmap.once('idle',()=>{ try{ cmap.__wantGlobe=null; }catch(_){} followProjection(); });
-      cmap.on('styledata',()=>{ setTimeout(applyBase,60); });
+      /* (#R34) Re-assert base AND re-show the picked compare layer after any style change — in x-ray a
+         layer add/base swap could drop the chosen layer's visibility ("x-rayで…選択したレイヤーが反映されない"). */
+      cmap.on('styledata',()=>{ setTimeout(()=>{ try{ applyBase(); if(xrayOn()) _reshowCmpLayer(); }catch(_){} },60); });
       /* base buttons */
       win.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ win.querySelectorAll('[data-v]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); setBase(b.getAttribute('data-v')); });
       /* (#R20) three EXCLUSIVE modes */
