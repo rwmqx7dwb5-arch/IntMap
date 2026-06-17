@@ -245,10 +245,9 @@ gtag('config', 'G-57X5MX0ZPW');
     .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:10; }
     /* iOS-style location pill (replaces old loc-chip) */
     .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
-    .loc-chip::before{ content:'📍'; font-size:10px; line-height:1; filter:none; -webkit-text-fill-color:initial; }
+    /* (#R33) No 📍/📡 emoji on news-card location chips per request. */
     .loc-chip.unmapped{ background:linear-gradient(135deg, rgba(155,89,182,0.85), rgba(122,75,150,0.85)); }
     .loc-chip.publisher{ background:linear-gradient(135deg, rgba(94,92,230,0.92), rgba(88,86,214,0.88)); }
-    .loc-chip.publisher::before{ content:'📡'; }
     [data-theme="dark"] .loc-chip{ box-shadow:0 1px 4px rgba(0,0,0,0.4); }
     .btn-bookmark{ position:absolute; top:14px; right:16px; background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; transition:0.2s; padding:0; }
     .btn-bookmark:hover{ transform:scale(1.2); } .btn-bookmark.active{ color:#ffcc00; text-shadow:0 0 8px rgba(255,204,0,0.5); }
@@ -326,6 +325,12 @@ gtag('config', 'G-57X5MX0ZPW');
     #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:6px -12px -12px; padding:7px 12px 11px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:0 0 12px 12px; }
     /* Mobile: the in-sheet dropdown has no padding, so don't pull the bar outside it. */
     .m-sheet #layer-active-section{ margin:6px 0 0; padding:7px 0 4px; border-radius:0; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; }
+    /* (#R33) Remove the colored square before EVERY layer name ("色付きの四角をやめて"). */
+    .layer-dropdown .lyr-sw{ display:none !important; }
+    /* (#R33) iOS-clean layer panel: no heavy divider rules — section headers carry the grouping with spacing,
+       not lines ("不要な横線が多い"). Keep only a faint top accent on group headers. */
+    .layer-dropdown > hr{ display:none !important; }
+    .layer-dropdown .lyr-head{ border-bottom:none !important; }
     .layer-dropdown.show{ display:flex; }
     /* (#R24) touch-action:manipulation kills the iOS ~300ms delayed SYNTHETIC click. Without it, tapping a
        row fired its change handler, the Active-layers section appeared and shoved the rows DOWN, and the
@@ -650,7 +655,6 @@ gtag('config', 'G-57X5MX0ZPW');
     .nrp-src{ font-size:12px; color:var(--text-muted); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .nrp-hero{ width:100%; max-height:220px; object-fit:cover; border-radius:16px; margin-bottom:16px; box-shadow:var(--shadow); }
     .nrp-loc{ display:inline-flex; align-items:center; gap:5px; align-self:flex-start; font-size:11px; padding:4px 11px 4px 9px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; margin-bottom:12px; cursor:pointer; }
-    .nrp-loc::before{ content:'📍'; font-size:10px; }
     .nrp-title{ font-size:24px; font-weight:700; line-height:1.25; letter-spacing:-0.4px; margin:0 0 10px; color:var(--text-main); }
     .nrp-meta{ font-size:12px; color:var(--text-muted); margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid rgba(128,128,128,0.15); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .nrp-meta .nrp-dot{ width:3px; height:3px; border-radius:50%; background:var(--text-muted); }
@@ -1690,16 +1694,10 @@ gtag('config', 'G-57X5MX0ZPW');
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
     <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option></select></div>
     <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
+      <!-- (#R33) Only System Default / Dark / Light kept per request; the skin themes were deleted. -->
       <option value="auto" id="opt-theme-auto">System Default</option>
       <option value="light" data-i18n="optLight">Light</option>
       <option value="dark" data-i18n="optDark">Dark</option>
-      <option value="classic" data-i18n="optClassic">Age of Discovery</option>
-      <option value="cyber" data-i18n="optCyber">Cyber Terminal</option>
-      <option value="psychedelic" data-i18n="optPsychedelic">Psychedelic</option>
-      <option value="military" data-i18n="optMilitary">Military</option>
-      <option value="medical" data-i18n="optMedical">Medical</option>
-      <option value="baroque" data-i18n="optBaroque">Baroque (European)</option>
-      <option value="taisho" data-i18n="optTaisho">Taishō Japan</option>
     </select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
@@ -2134,13 +2132,13 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
        sepia surfaces, serif type, brass accents, and a parchment tint over the (light) basemap. */
-    /* (#R29.1) Skin themes registry — each builds on the light OR dark base. `tactical` (retired) → cyber. */
-    const SKIN_THEMES={ cyber:false, classic:true, psychedelic:false, military:false, medical:true, baroque:true, taisho:true };
-    const tk=(userTheme==='tactical')?'cyber':userTheme;
-    const skin=Object.prototype.hasOwnProperty.call(SKIN_THEMES,tk)?tk:null;
-    const isLight = skin ? SKIN_THEMES[skin] : ((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches));
+    /* (#R33) Skin themes DELETED per request — only System Default / Light / Dark remain. Any old saved
+       skin theme is coerced to System Default, and every theme-* body class is cleared. */
+    const _SKINS=['cyber','classic','psychedelic','military','medical','baroque','taisho','tactical'];
+    if(_SKINS.includes(userTheme)){ userTheme='auto'; }
+    const isLight = (userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches);
     document.documentElement.setAttribute('data-theme', isLight?'light':'dark');
-    Object.keys(SKIN_THEMES).forEach(k=>document.body.classList.toggle('theme-'+k, skin===k));
+    _SKINS.forEach(k=>document.body.classList.remove('theme-'+k));
     /* (#R12) If the style isn't fully loaded the basemap layer-visibility set below is skipped — and
        NOTHING re-ran it, so the wrong base (black/white) occasionally stuck. Retry once on idle so the
        chosen map color always lands. */
@@ -8201,7 +8199,8 @@ window.addEventListener('DOMContentLoaded', () => {
         dd.querySelectorAll(':scope > .lyr-others-note').forEach(n=>n.remove());   /* (#R15b) was accumulating one note per run */
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
-        ['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        /* (#R33) Requested order: Place names, Country borders, State/province, Roads, Railways, Grid, Countries(info). */
+        ['cb-names','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -13851,6 +13850,7 @@ window.addEventListener('DOMContentLoaded', () => {
       (document.getElementById('map-container')||document.body).appendChild(pop); return pop; }
     map.on('movestart',hide);
     map.on('click',(e)=>{
+      return;   /* (#R33) DISABLED — Isolate now lives in the place popup's action row (Copy/Wikipedia/AI brief/Isolate), so the separate floating button is no longer shown. */
       try{
         if(typeof toolMode!=='undefined' && toolMode){ hide(); return; }                 /* measuring/drawing → ignore */
         if(typeof countryInfoOn!=='undefined' && countryInfoOn){ hide(); return; }        /* its popup already has Isolate */
@@ -15650,11 +15650,14 @@ window.addEventListener('DOMContentLoaded', () => {
         return true; }catch(_){ return false; }
     }
     function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; } }
-    function showPopup(lngLat,name){ if(popup){ try{popup.remove();}catch(_){} } const jp=currentLang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function showPopup(lngLat,name,isCountry){ if(popup){ try{popup.remove();}catch(_){} } const jp=currentLang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       const btnBase='border:none;color:var(--text-main);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">📋 ${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">📖 Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${jp?'AI調査':'AI brief'}</button></div></div>`;
+      /* (#R33) Isolate now lives in this SAME action row as Copy/Wikipedia/AI brief (for countries) — no more
+         separate floating button ("既存のcopy, wikipedia, AI briefと同じ並びに、同じUIで"). */
+      const isoBtn=isCountry?`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${jp?'この国だけ':'Isolate'}</button>`:'';
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${jp?'AI調査':'AI brief'}</button>${isoBtn}</div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
@@ -15669,6 +15672,8 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R20) AI Research Assistant entry point */
           const ai=document.querySelector('.plc-ai');
           if(ai) ai.onclick=()=>{ try{ window.IntMapAIResearch&&window.IntMapAIResearch.open(name,lngLat); }catch(_){} };
+          const iso=document.querySelector('.plc-iso');
+          if(iso) iso.onclick=()=>{ try{ popup&&popup.remove(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); }catch(_){} };
         },0);
       }catch(_){}
     }
@@ -15681,7 +15686,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
-      showPopup(e.lngLat,name); }; }
+      showPopup(e.lngLat,name,isCountry); }; }
     function wire(){ if(wired) return; if(!map.getLayer('ofm-country')) return; wired=true;
       map.on('click','ofm-country',onLabel(true)); map.on('click','ofm-city',onLabel(false)); map.on('click','ofm-other',onLabel(false));
       ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ map.on('mouseenter',id,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',id,()=>{ map.getCanvas().style.cursor=''; }); });
@@ -15696,7 +15701,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(typeof toolMode==='undefined' || !toolMode){
           const pad=(typeof isMobile==='function'&&isMobile())?15:6;
           const near=map.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
-          if(near.length){ const p=near[0].properties||{}; const nm=p.name||p['name:en']||p.name_en||p['name_en']||''; if(nm){ showPopup(e.lngLat,nm); return; } }
+          if(near.length){ const p=near[0].properties||{}; const nm=p.name||p['name:en']||p.name_en||p['name_en']||''; if(nm){ showPopup(e.lngLat,nm,near[0].layer&&near[0].layer.id==='ofm-country'); return; } }
         }
         clearHL();
       }catch(_){} });
