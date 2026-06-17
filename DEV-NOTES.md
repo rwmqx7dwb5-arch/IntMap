@@ -2746,3 +2746,99 @@ the code level + DOM-verified; on-device confirmation welcome.
   APIs, which the real-data/no-key policy precludes.
 - **AI news geolocation**: server-side AI-primary (R29) unchanged here; the shared non-AI gazetteer was further
   strengthened in R32. A server-prompt overhaul needs a `refresh-news` redeploy.
+
+---
+
+## 38. Round 34 — re-reported-bug batch + the dark-map correction (tags `#R34`)
+
+Build `2026-06-17-R34`. Verified live after each change: **109 layer checkboxes**, zero console errors,
+page RUNS (not just parses). The headless preview is `document.hidden` so the WebGL map does not paint here —
+map-pixel claims below are proven by **simulating MapLibre's raster shader on real fetched tiles**, not by
+screenshot.
+
+### TOP PRIORITY — black map / dark contrast / Map↔Sat toggle
+- **The R32b `raster-contrast:0.45` was the black-map cause.** Sampling the real Carto `dark_nolabels` tiles:
+  ocean ≈ luminance **9**, land ≈ **38** — both far below MapLibre's 0.5 contrast pivot, so any strong
+  `raster-contrast` crushes BOTH to pure black ("真っ黒"). Confirmed by simulating the exact shader
+  (saturation→contrast→brightness) on the real pixels.
+- **First wrong attempt (reverted): an OFM `water` navy fill.** The user was right to reject it — a flat fill
+  *removes* detail/contrast and it was leaking onto Satellite. Fully removed (`ofm-water` gone from
+  `ensurePlaceLabels` + `applyTheme`).
+- **Correct fix = genuinely INCREASE the base raster's contrast, nothing painted.** `raster-contrast:0.5`
+  PLUS `raster-brightness-min:0.33` (brightness applied AFTER contrast, so it rescues land from the crush
+  while the sea stays dark). Shader simulation on the real tile: ocean→~11 (dark), land→~44-50 (clearly
+  visible grey), separation 29→~38. Never black, no painting, no base-map swap.
+- **Map↔Sat toggle** hardened: `applyTheme`'s style-not-loaded early-return now does an IMMEDIATE best-effort
+  base-layer flip before deferring, so a tap never feels dead while tiles load.
+
+### Layer panel
+- **Desktop gap under Active layers** = a `position:sticky;bottom:0` bar pins to the scroll *content* box, so
+  the dropdown's 12px bottom padding showed UNDER the floating bar. Dropped the dropdown's `padding-bottom`
+  (bar carries its own); now flush.
+- **Mobile Active layers now truly sticks + scroll no longer jams.** Root cause: `.m-sheet .layer-dropdown`
+  kept `overflow-y:auto` (R34 adds `overflow:visible`), so the non-scrolling dropdown was BOTH the sticky
+  child's scroll container AND an iOS touch-eater. Now the single scroller is `.m-sheet-scroll`, and the
+  Active-layers bar is relocated (`_placeActiveSection`) to be a sticky LAST CHILD of that scroller → it pins
+  to the sheet bottom.
+
+### Layer ghost bugs
+- **Generic orphan sweep** (`_sweepOrphanLayers`, on map idle): any `dl-` layer whose checkbox is OFF but whose
+  map layer is still painted gets the real hide path. Pure hide-only/idempotent — fixes "オンなのにactive
+  layersに出ず消せない" for slow async adds / any path, never turns anything on.
+
+### Compare
+- **Blue x-ray frame removed** (cyan keyline → faint neutral edge). Map/Sat base **polls until it matches**.
+  Picked layer **re-shown on every styledata in x-ray**. Compare satellite now the **same two-host Esri** as
+  the main map (quality parity).
+
+### World Explorer / Pandemic (mobile)
+- The HUD was under the **main `#sidebar`** sheet (`.m-sheet` hiding only covered the *option* sheets;
+  `.collapsed` is desktop-only). On phones `#sidebar` is now slid off-screen during `pg-we`/`pg-sim`; HUD
+  buttons get `flex:0 0 auto` so the round buttons stop squashing into ovals. World Explorer **re-asserts
+  Satellite** after the drop.
+
+### Widgets / Tools / Stats
+- **Widget drag-drop ROOT CAUSE fixed** ("まったく動作しない"): the card was set `pointer-events:none` on
+  pointerdown while relying on `setPointerCapture` — a captured element with pointer-events:none stops getting
+  move/up in most browsers. Now move/up bind to **document**; the card stays pointer-events:none only so
+  elementFromPoint sees beneath it.
+- **Random-country widget** now `fitBounds` the whole country (was `zoom:max(current,4.2)` → city-close).
+- **Tool panels gained a minimize (−)** (collapses to the header → uncovers the mobile crosshair, per the
+  Radius ask). **Draw "Keep on map"** now actually PERSISTS the trace as an IntMapAnnotation (was wired to
+  `finish()`, a no-op once the trace was done). **Place names** re-asserts a few times (the OFM label layers
+  can be added a beat after the first `applyTheme`).
+- **Stats time-series hover reworked** to the requested spec: NO always-on dots, a JS crosshair that shows the
+  value INSTANTLY (not a laggy native `<title>`), a vertical line at the cursor + a single dot at the
+  intersection.
+
+### Settings
+- **Apply button** is now a clean sticky FOOTER (rounded primary button + fine-print, matching the modal
+  surface) — the R33 full-bleed blue bar clashed with the iOS-clean design.
+- **Dev = unlimited AI** now resolves BEFORE the "not logged in" early-return, so the unlimited graph shows for
+  the developer even before `currentUser` populates.
+- **Multi-language news checkboxes** got the same mobile-tap hardening as the layer rows
+  (`touch-action:manipulation` + checkbox `pointer-events:none` + 44px rows) → tapping one language no longer
+  toggles an adjacent one.
+
+### Content
+- **Inflation % (CPI) + every World Bank choropleth now states its SOURCE + PERIOD** in the legend
+  ("出典: World Bank · <code> · <year-span> · most recent value per country") — the year span is the real
+  span present in the fetched data.
+- **+8 more beta choropleths** (life expectancy, unemployment, internet users, govt debt %GDP, manufacturing
+  %GDP, under-5 mortality, population growth, energy use/capita) — same resilient fetch + hover + source note.
+- **Information timeline +22 events** (Fall of Constantinople, Reformation, US independence, Origin of Species,
+  WWI start/end, Russian Revolution, 1929 Crash, WWII start/end, Partition of India, Israel, Stonewall,
+  Nixon→China, Iraq→Kuwait, Rwanda, Deepwater Horizon, Paris 2015, Notre-Dame, Afghanistan withdrawal,
+  ChatGPT, JWST).
+
+### Honest / still-open
+- **German**: unchanged from R33 — dictionary chrome + layer panel + map labels are DE, but the ~800 inline
+  `currentLang==='jp'?…:…` literals still fall back to English in DE. Fully eliminating the leakage is a
+  per-site conversion of all 800 and was NOT completed this round.
+- **Pandemic realism**: left on the R30/R33 SEIR metapopulation model — a deeper scientific rework was NOT
+  attempted here because it can't be visually verified in the headless (`document.hidden`) preview and risks
+  unobservable regressions. Still flagged as a simplified educational model.
+- **AI news geolocation (server prompt)**: needs a `refresh-news`/`ai-proxy` Supabase redeploy to change —
+  out of scope for a static-file edit.
+- **ToS / Privacy / attributions**: no change needed — the new beta layers are World Bank (already attributed)
+  and the new events link to Wikipedia (already linked); no new data collection.

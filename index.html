@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-17-R33';
+  window.INTMAP_BUILD='2026-06-17-R34';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -487,8 +487,14 @@ gtag('config', 'G-57X5MX0ZPW');
     .nc-dd.open .nc-dd-caret{ transform:rotate(180deg); }
     .nc-dd-panel{ display:none; position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:30; max-height:260px; overflow-y:auto; padding:6px; border-radius:10px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--card-bg,#fff); box-shadow:var(--shadow,0 8px 28px rgba(0,0,0,0.22)); }
     .nc-dd.open .nc-dd-panel{ display:block; }
-    .nc-dd-panel label{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; font-size:13px; cursor:pointer; }
+    /* (#R34) 44px tap rows + the SAME mobile-tap hardening as the layer rows: touch-action:manipulation kills
+       the iOS ~300ms delayed synthetic click that landed on the ADJACENT language, and pointer-events:none on
+       the checkbox routes every tap through the <label> exactly once (no double-toggle). Fixes "tapping one
+       language checks other languages" on mobile. */
+    .nc-dd-panel label{ display:flex; align-items:center; gap:10px; padding:9px 8px; min-height:40px; border-radius:7px; font-size:13px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
     .nc-dd-panel label:hover{ background:var(--input-bg,rgba(128,128,128,0.1)); }
+    .nc-dd-panel input[type=checkbox]{ pointer-events:none; }
+    @media (hover:none){ .nc-dd-panel label:hover{ background:transparent; } }
     .sat-key-row{ margin-bottom:11px; }
     .sat-key-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px; }
     .sat-key-name{ font-size:12px; font-weight:500; color:var(--text-main); }
@@ -590,8 +596,14 @@ gtag('config', 'G-57X5MX0ZPW');
     .tp-select, .tp-select option, .tp-select optgroup, .lang-toggle option{ background-color:var(--card-bg); color:var(--text-main); }
     [data-theme="dark"] .tp-select, [data-theme="dark"] .tp-select option, [data-theme="dark"] .tp-select optgroup{ background-color:#1c1c1e !important; color:#f5f5f7 !important; }
     .modal-close-btn{ width:100%; padding:12px; background:var(--primary-color); color:#fff; border:none; cursor:pointer; font-weight:500; border-radius:10px; font-size:14px; margin-top:14px; } .modal-close-btn:hover{ filter:brightness(1.08); }
-    /* (#R33) Settings: pin the Apply button to the bottom of the scrolling modal so it's always reachable. */
-    #settings-modal #btn-close-settings{ position:sticky; bottom:-32px; margin:14px -32px -32px; padding:14px 32px calc(14px + env(safe-area-inset-bottom,0px)); border-radius:0 0 20px 20px; box-shadow:0 -6px 16px rgba(0,0,0,0.12); z-index:3; }
+    /* (#R34) Settings Apply = a clean sticky FOOTER (was a clashing full-bleed blue bar in R33). The footer
+       matches the modal surface with a hairline top divider; the button keeps its normal rounded primary look.
+       modal padding-bottom is dropped for this modal so the sticky footer sits FLUSH (sticky;bottom:0 sticks
+       to the scroll CONTENT box, so a bottom padding would leave a gap — same fix as the layer panel). */
+    #settings-modal .modal-content{ padding-bottom:0 !important; }
+    #settings-modal .settings-foot{ position:sticky; bottom:0; z-index:3; margin:18px -32px 0; padding:14px 32px calc(16px + env(safe-area-inset-bottom,0px)); background:var(--popup-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:0 0 20px 20px; }
+    #settings-modal .settings-foot #btn-close-settings{ margin-top:0; }
+    @media(max-width:768px){ #settings-modal .settings-foot{ margin:16px -20px 0; padding-left:20px; padding-right:20px; } }
     .measure-tooltip{ position:absolute; background:rgba(0,0,0,0.82); color:#fff; padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; pointer-events:none; z-index:2000; transform:translate(12px,-50%); display:none; white-space:nowrap; }
     /* Right-click context menu */
     .ctx-menu{ display:none; position:absolute; z-index:2500; min-width:180px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(20px); overflow:hidden; padding:4px; font-size:13px; }
@@ -715,6 +727,12 @@ gtag('config', 'G-57X5MX0ZPW');
     .unit-sub{ font-size:0.82em; color:var(--text-muted); }
     .tp-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:move; user-select:none; touch-action:none; }
     .tp-close{ background:none; border:none; color:var(--text-muted); font-size:14px; cursor:pointer; padding:0 2px; } .tp-close:hover{ color:var(--text-main); }
+    /* (#R34) tool-panel minimize control + collapsed state (hide everything but the header). */
+    .tp-hd-btns{ display:flex; align-items:center; gap:4px; }
+    .tp-min-btn{ background:none; border:none; color:var(--text-muted); font-size:18px; line-height:1; cursor:pointer; padding:0 4px; } .tp-min-btn:hover{ color:var(--text-main); }
+    .tool-panel.tp-collapsed > *:not(.tp-header){ display:none !important; }
+    .tool-panel.tp-collapsed .tp-header{ margin-bottom:0 !important; }
+    .tool-panel.tp-collapsed{ width:auto; min-width:0; }
     .tp-select{ width:100%; padding:7px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; margin-bottom:8px; box-sizing:border-box; }
     .tp-sub{ font-size:11px; color:var(--text-muted); margin:6px 0 2px; }
 
@@ -1810,10 +1828,14 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group" id="support-group">
       <button type="button" id="btn-blueberry" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="blueberryBtn">Support</button>
     </div>
-    <button class="modal-close-btn" id="btn-close-settings">Apply</button>
-    <div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--text-muted);">
-      <a href="#" id="link-terms" style="color:var(--text-muted);">Terms of Service</a> ·
-      <a href="#" id="link-privacy" style="color:var(--text-muted);">Privacy Policy</a>
+    <!-- (#R34) Apply lives in a clean sticky FOOTER (matches the modal surface, rounded primary button +
+         fine-print below) — the R33 full-bleed blue bar clashed with the iOS-clean design. -->
+    <div class="settings-foot">
+      <button class="modal-close-btn" id="btn-close-settings">Apply</button>
+      <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--text-muted);">
+        <a href="#" id="link-terms" style="color:var(--text-muted);">Terms of Service</a> ·
+        <a href="#" id="link-privacy" style="color:var(--text-muted);">Privacy Policy</a>
+      </div>
     </div>
   </div>
 </div>
@@ -2203,8 +2225,6 @@ window.addEventListener('DOMContentLoaded', () => {
     map.setLayoutProperty('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
     map.setLayoutProperty('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
-    /* (#R34) Ocean overlay visible only on the dark map (created in ensurePlaceLabels above). */
-    try{ if(map.getLayer('ofm-water')) map.setLayoutProperty('ofm-water','visibility', dark?'visible':'none'); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
     if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility', bordersOn?'visible':'none');
     if(map.getLayer('grid-labels')){ map.setPaintProperty('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); map.setPaintProperty('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
@@ -2238,11 +2258,6 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
       const FONT=['Noto Sans Regular'];
       const before = map.getLayer('grid-lines') ? 'grid-lines' : undefined;
-      /* (#R34) OCEAN overlay — the real dark-map land/sea contrast fix (see the layer-dark comment). We
-         paint every water body from the OFM `water` vector layer in a distinct deep navy so coastlines read
-         crisply against the grey land. Sits just above the base raster + below grid/labels/data; applyTheme
-         shows it ONLY on the dark map (hidden on light map + satellite, which have their own water). */
-      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'fill',source:'ofm','source-layer':'water',layout:{visibility:'none'},paint:{'fill-color':'#0a1c30','fill-opacity':1}}, before);
       if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-transform':'uppercase','text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
       if(!map.getLayer('ofm-city')) map.addLayer({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],4,11,10,15],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
       if(!map.getLayer('ofm-other')) map.addLayer({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
@@ -2775,18 +2790,9 @@ window.addEventListener('DOMContentLoaded', () => {
   function aiRenderSettings(){
     const wrap=document.getElementById('ai-settings-body'); if(!wrap) return;
     const jp=aiJP();
-    if(typeof currentUser==='undefined' || !currentUser){
-      wrap.innerHTML=
-        /* (#R33) The in-Settings "Log in / Sign up" button was removed as redundant (use the account button
-           top-right). Only the explanatory line remains. */
-        `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
-          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）は、右上のアカウントからログインすると無料でご利用いただけます（1日'+AI_FREE_DAILY+'回まで）。APIキーは不要です。'
-                  :'AI features (summaries, translation, locating, image compare…) are free once you log in from the account button (top-right) — up to '+AI_FREE_DAILY+' uses per day. No API key needed.')+
-        `</div>`;
-      return;
-    }
-    /* (#R32b) Developer = UNLIMITED — show that instead of the broken "∞ / 5" quota bar
-       ("開発者なので無制限に / 設定欄のグラフに反映されていない"). */
+    /* (#R34) DEV = UNLIMITED — check this FIRST. It used to sit BELOW the "not logged in" early-return, so a
+       developer (intmap_dev flag, or logged in but currentUser not yet populated) saw the login prompt instead
+       of the unlimited state ("開発者なので無制限に / 設定欄のグラフに反映されていない"). */
     if(aiDev()){
       wrap.innerHTML=
         `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
@@ -2794,6 +2800,16 @@ window.addEventListener('DOMContentLoaded', () => {
         `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+
           aiEsc(jp?'開発者アカウント — AI利用は無制限です。':'Developer account — unlimited AI usage.')+
           `<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:100%;background:linear-gradient(90deg,#34c759,#0a84ff);"></div></div>`+
+        `</div>`;
+      return;
+    }
+    if(typeof currentUser==='undefined' || !currentUser){
+      wrap.innerHTML=
+        /* (#R33) The in-Settings "Log in / Sign up" button was removed as redundant (use the account button
+           top-right). Only the explanatory line remains. */
+        `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
+          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）は、右上のアカウントからログインすると無料でご利用いただけます（1日'+AI_FREE_DAILY+'回まで）。APIキーは不要です。'
+                  :'AI features (summaries, translation, locating, image compare…) are free once you log in from the account button (top-right) — up to '+AI_FREE_DAILY+' uses per day. No API key needed.')+
         `</div>`;
       return;
     }
@@ -3024,15 +3040,15 @@ window.addEventListener('DOMContentLoaded', () => {
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
              baked-in carto labels never flash at startup before applyTheme swaps them ("スタート時は旧来のまま"). */
-          /* (#R34) BLACK-MAP FIX. The R32b `raster-contrast:0.45` on the already-dark Carto tiles was a
-             disaster: MapLibre contrast is (v-0.5)/(1-0.45)+0.5, so dark land (~0.16) AND water (~0.11)
-             both clamp to PURE BLACK ("ついには何も見えず真っ黒になった"). Contrast is GONE. Instead we (1)
-             LIFT the dark base off black with raster-brightness-min so land is always a visible grey, and
-             (2) draw the OCEAN ourselves as a distinct deep-navy vector fill (ofm-water, added in
-             ensurePlaceLabels, toggled in applyTheme) — that is what finally gives the STRONG dark-mode
-             land/sea contrast the user kept asking for, without ever going black. */
-          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-brightness-min':0.12,'raster-saturation':0.06}},
-          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-brightness-min':0.12,'raster-saturation':0.06}},
+          /* (#R34) DARK-MAP CONTRAST — done by genuinely INCREASING the base raster's contrast (the only
+             thing asked for), NOT by painting anything over it. Measured the real Carto dark_nolabels pixels:
+             ocean≈luminance 9, land≈38 — both far below the 0.5 contrast pivot, which is why the old bare
+             `raster-contrast:0.45` crushed BOTH to pure black. The fix is contrast for the steeper land/sea
+             slope PLUS a brightness floor applied AFTER contrast (MapLibre order: saturation→contrast→
+             brightness) that rescues land from the crush while the ocean stays dark. Simulated on the real
+             tile: ocean→~11 (dark), land→~44-50 (clearly visible grey), separation 29→~38. Never black. */
+          {id:'layer-dark',type:'raster',source:'bd',layout:{visibility:'none'},paint:{'raster-contrast':0.5,'raster-brightness-min':0.33,'raster-saturation':0.1}},
+          {id:'layer-dark-nl',type:'raster',source:'bdn',layout:{visibility:isInitiallyDark?'visible':'none'},paint:{'raster-contrast':0.5,'raster-brightness-min':0.33,'raster-saturation':0.1}},
           {id:'layer-light',type:'raster',source:'bl',layout:{visibility:'none'}},
           {id:'layer-light-nl',type:'raster',source:'bln',layout:{visibility:isInitiallyDark?'none':'visible'}},
           {id:'grid-lines',type:'line',source:'grid-source',filter:['all',['==','$type','LineString'],['!=','kind','equator'],['!=','kind','prime']],paint:{'line-color':['case',['==',['get','kind'],'major'],'#3a86ff','#6c87b3'],'line-opacity':['case',['==',['get','kind'],'major'],0.75,0.45],'line-width':['case',['==',['get','kind'],'major'],1.6,1.0]}},
@@ -4778,9 +4794,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const footBtns = (toolMode!=='radius')
       ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
       : '';
-    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[toolMode]}</span><button class="tp-close" title="${t('close')}">✕</button></div>${body}${footBtns}`;
+    p.innerHTML=`<div class="tp-header"><span class="tp-title">${titles[toolMode]}</span><span class="tp-hd-btns"><button class="tp-min-btn" title="${currentLang==='jp'?'最小化':'Minimize'}">–</button><button class="tp-close" title="${t('close')}">✕</button></span></div>${body}${footBtns}`;
     p.classList.toggle('tp-radius', toolMode==='radius');   /* (#R22) drives the compact mobile radius layout */
+    if(p.dataset.collapsed==='1'){ p.classList.add('tp-collapsed'); }   /* (#R34) keep minimized state across re-renders */
     p.querySelector('.tp-close').onclick=exitTool; makeDraggable(p,p.querySelector('.tp-header'));
+    /* (#R34) Minimize button ("Enable − in Radius") — collapses the panel to just its header so the tool no
+       longer covers the centre crosshair on mobile ("Radius widget is too big so it hides the cross pointer"). */
+    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.textContent=on?'+':'–'; mb.title=(currentLang==='jp'?(on?'展開':'最小化'):(on?'Expand':'Minimize')); }; if(mb&&p.dataset.collapsed==='1') mb.textContent='+'; }
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
     { const fb=p.querySelector('#tp-finalize'); if(fb) fb.onclick=()=>{ try{ window._finalizeMeasurement(); }catch(_){} }; const pb=p.querySelector('#tp-profile'); if(pb) pb.onclick=()=>{ try{ window._elevationProfile(); }catch(_){} }; }
@@ -5503,7 +5523,11 @@ window.addEventListener('DOMContentLoaded', () => {
       } else if(!cb.checked && window._hideGenericLegend){ window._hideGenericLegend('geo-'+key); }
     }catch(_){}
   }));
-  document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme(); });
+  document.getElementById('cb-names').addEventListener('change',(e)=>{ namesOn=e.target.checked; applyTheme();
+    /* (#R34) "Place namesが反応しない" — the OFM label layers are added inside ensurePlaceLabels and the vector
+       source can finish loading a beat AFTER the first applyTheme, so a single call sometimes toggled nothing.
+       Re-assert the label layers a few times so the toggle always lands. */
+    [120,400,1000].forEach(ms=>setTimeout(()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },ms)); });
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
     bordersOn=e.target.checked;
     /* Lazy-create the border-only line layer (uses the same countries GeoJSON source) */
@@ -7199,9 +7223,18 @@ window.addEventListener('DOMContentLoaded', () => {
         'body.pg-we,body.pg-sim{--sheet-cover:0px !important;--peek-h:0px !important;}'+
         '#pg-we-panel,#pg-pan-hud{z-index:6300 !important;}'+
         '@media(max-width:768px){'+
+        /* (#R34) Hide the MAIN bottom sheet (#sidebar) on phones during these focused modes. The rule above
+           only hides the secondary .m-sheet option sheets — on mobile the #sidebar IS the bottom sheet and
+           .collapsed (a desktop mechanism) doesn\'t move it, so it kept covering the HUD ("ボトムシートの下に
+           隠れてしまう"). Slide it fully off-screen; the inline --sheet-ty transform restores it on exit. */
+        'body.pg-we #sidebar,body.pg-sim #sidebar{transform:translateY(125%) !important;}'+
         '#pg-we-panel{left:8px !important;right:8px !important;width:auto !important;max-width:none !important;transform:none !important;flex-wrap:wrap;justify-content:center;gap:8px;padding:10px 12px;}'+
-        '#pg-we-panel button{min-height:40px;}'+
+        /* (#R34) flex must NOT squash the round home/exit buttons into ovals ("ボタンの縦横比がおかしい"); the
+           label takes its own full row so the action buttons sit on a clean centred row. */
+        '#pg-we-panel button{min-height:40px;flex:0 0 auto;}'+
+        '#pg-we-panel>span{flex:1 1 100%;text-align:center;margin-bottom:2px;}'+
         '#pg-pan-hud{left:8px !important;right:8px !important;width:auto !important;max-width:none !important;transform:none !important;}'+
+        '#pg-pan-hud button{flex-shrink:0;}'+
         '}';
       document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
@@ -7235,6 +7268,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const bt=document.createElement('div'); bt.textContent=jp()?'どこかへ移動中…':'Dropping you somewhere…'; bt.style.cssText='position:fixed;inset:0;z-index:5801;display:flex;align-items:center;justify-content:center;color:#fff;font:600 15px system-ui;'; document.body.appendChild(bt);
         let pin=null; const onZoom=()=>{ try{ minZoom=Math.min(minZoom, map.getZoom()); }catch(_){} };
         setTimeout(()=>{ try{ map.jumpTo({center:[target.lng,target.lat],zoom:START_Z,bearing:0,pitch:0}); }catch(_){}
+          /* (#R34) RE-ASSERT satellite after the drop — World Explorer is a satellite where-am-I game, but a
+             single early btn-view-sat click could lose the race with the style swap and leave it on Map
+             ("World ExplorerではSatelliteではなくMapになっている"). Force it again here + keep the panel hidden. */
+          try{ if(typeof currentMapType!=='undefined'&&currentMapType!=='sat'){ const sb=document.getElementById('btn-view-sat'); if(sb) sb.click(); } if(typeof satPanelDismissed!=='undefined') satPanelDismissed=true; const sp=document.getElementById('sat-controller'); if(sp) sp.style.display='none'; }catch(_){}
           /* (#R30) drop a pulsing "home" pin at the start point so you never lose it while panning. */
           try{ const el=document.createElement('div'); el.className='pg-we-pin'; el.innerHTML='<span></span>'; pin=new maplibregl.Marker({element:el}).setLngLat([target.lng,target.lat]).addTo(map); }catch(_){}
           try{ map.on('zoom',onZoom); }catch(_){}
@@ -8361,6 +8398,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R29) Mobile: "Others (beta)" is a pulldown — collapse it by default (unless the user opened it). */
         try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const _oh=dd.querySelector(':scope > .lyr-head[data-i18n="lyrGrpOthers"]'); if(_oh && !_oh.dataset.userToggled) _collapseGroup(_oh); } }catch(_){}
         try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
+        try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* (#R34) move the bar to the sheet scroller on mobile */
       }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
     };
     /* (#R19) Mobile-start smoothness: the very first panel reorganization (a few hundred DOM moves)
@@ -9857,6 +9895,22 @@ window.addEventListener('DOMContentLoaded', () => {
         if(id==='night'&&nightTimer){ clearInterval(nightTimer); nightTimer=null; }
       }
     }
+    /* (#R34) GENERIC ORPHAN SWEEP — the definitive fix for "オンになっているのにactive layersに表示されず、消すこと
+       もできない" / "消したレイヤーが表示されっぱなし". Any data layer whose checkbox is OFF but whose map layer is
+       still VISIBLE is an orphan: the active-layers list reads the checkbox, so it never lists it → the user
+       can't remove it. The dl- guard at toggle time only re-checks for ~3s and only the dl- id; this catches
+       EVERY case (slow async adds, any path) by reconciling on idle. Pure hide-only + idempotent: it walks
+       each dl- checkbox and, if it's unchecked yet its layer is still painted, runs the real hide path. It
+       NEVER turns anything on, so it can't cause "勝手にオンになる". */
+    window._sweepOrphanLayers=function(){
+      if(!map||!map.isStyleLoaded()||window._imDemoActive) return;
+      try{ document.querySelectorAll('#layer-dropdown input[id^="dl-"]').forEach(cb=>{
+        if(cb.checked) return; const id=cb.id.slice(3);
+        let vis=false; ['lyr-'+id, id+'-fill'].forEach(L=>{ try{ if(map.getLayer(L)&&map.getLayoutProperty(L,'visibility')==='visible') vis=true; }catch(_){} });
+        if(vis){ try{ toggleLayer(id,false); }catch(_){} }
+      }); }catch(_){}
+    };
+    try{ if(map) map.on('idle',()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} }); }catch(_){}
     /* Expose for the lyr-row dt-/ft- handlers above */
     window.refreshDatedLayer=refreshDatedLayer;
     window.refreshTrafficLayer=refreshTrafficLayer;
@@ -10562,6 +10616,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ window._expandAllLayerGroups&&window._expandAllLayerGroups(); }catch(_){}
       }
       else{ restoreHome(layerDropdown); restoreHome(satController); closeSheet(); document.body.classList.remove('sheet-full'); }
+      try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* (#R34) re-home the Active-layers bar for the new layout */
     }
 
     /* =================== THE BOTTOM SHEET =================== */
@@ -12156,7 +12211,7 @@ window.addEventListener('DOMContentLoaded', () => {
       p.querySelector('.tp-close').onclick=()=>api.exit();
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const res=p.querySelector('#draw-res'); if(res) res.oninput=()=>{ smoothing=+res.value; recomputeLine(); /* AREA stays locked to raw */ setData(); updateNumbers(); };
-      const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=finish;
+      const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=keepOnMap;
       const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; state='armed'; setData(); renderPanel(); };
     }
     function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=simplified.length+'/'+raw.length; }
@@ -12175,6 +12230,21 @@ window.addEventListener('DOMContentLoaded', () => {
       closeAux=null;
       if(lockedArea===0 && raw.length>=3){ try{ const ring=raw.concat([raw[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(raw[raw.length-1],raw[0],64); } }catch(_){} }
       setData(); state='done'; try{ map.dragPan.enable(); }catch(_){} renderPanel(); }
+
+    /* (#R34) "Keep on map" — the button used to be wired to finish(), which early-returns once the trace is
+       done, so it did NOTHING ("keep on map button is not working"). Now it actually PERSISTS the drawing as
+       permanent annotations (same IntMapAnnotations path the measure/area/radius "Keep on map" uses), so the
+       traced line + any enclosed area stay on the map after the tool closes. */
+    function keepOnMap(){
+      if(state==='drawing') finish();
+      try{
+        (loopRings||[]).forEach(r=>{ if(r&&r.length>=4){ try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{color:'#ffcc00',op:0.22,name:(jp()?'描画範囲':'Drawn area'),value:(lockedArea>0?areaHTML(lockedArea):'')}); }catch(_){} } });
+        const ln=(simplified&&simplified.length>=2)?simplified:((raw&&raw.length>=2)?raw:null);
+        if(ln){ try{ window.IntMapAnnotations.add({type:'LineString',coordinates:ln},{color:'#ff9500',name:(jp()?'描画':'Drawing'),value:(lengthKm>0?distHTML(lengthKm):'')}); }catch(_){} }
+        try{ if(window.imToast) imToast(jp()?'地図に残しました':'Kept on the map'); }catch(_){}
+      }catch(_){}
+      api.exit();
+    }
 
     function onClick(e){ if(state==='armed') startStroke(e.lngLat); else if(state==='drawing') finish(); }
     function onMove(e){ if(state==='drawing') sample(e.point, e.lngLat); }
@@ -13409,19 +13479,27 @@ window.addEventListener('DOMContentLoaded', () => {
         const flip=(mut)=>{ const sibs=[].slice.call(grid.children).filter(c=>c!==card&&c.classList&&c.classList.contains('wgt-card'));
           const first=new Map(); sibs.forEach(c=>first.set(c,c.getBoundingClientRect())); mut();
           sibs.forEach(c=>{ const f=first.get(c), l=c.getBoundingClientRect(); const dx=f.left-l.left, dy=f.top-l.top; if(dx||dy){ c.style.transition='none'; c.style.transform='translate('+dx+'px,'+dy+'px)'; c.getBoundingClientRect(); requestAnimationFrame(()=>{ c.style.transition='transform 0.24s cubic-bezier(0.2,0.7,0.2,1)'; c.style.transform=''; }); } }); };
-        card.addEventListener('pointerdown',(e)=>{ if(!editing) return; if(e.target.closest&&e.target.closest('button')) return; dragging=true; hx=e.clientX; hy=e.clientY;
-          try{ card.setPointerCapture(e.pointerId); }catch(_){} card.style.zIndex='8'; card.style.pointerEvents='none'; card.style.opacity='0.96'; card.style.boxShadow='0 16px 38px rgba(0,0,0,0.30)'; card.style.transition='transform 0.12s ease'; card.style.transform='scale(1.05)'; e.preventDefault(); });
-        card.addEventListener('pointermove',(e)=>{ if(!dragging) return;
+        /* (#R34) ROOT-CAUSE FIX for "ドラッグアンドドロップ…まったく動作しない". The old code set the card to
+           pointer-events:none on pointerdown AND relied on setPointerCapture — but a pointer-captured element
+           with pointer-events:none stops receiving pointermove/pointerup in most browsers, so the drag never
+           moved. Now move/up are bound to DOCUMENT (they always fire), while the card stays pointer-events:none
+           purely so elementFromPoint can see the card beneath the finger. */
+        let moveH=null, upH=null;
+        const onMove=(e)=>{ if(!dragging) return; e.preventDefault&&e.preventDefault();
           card.style.transition='none'; card.style.transform='translate('+(e.clientX-hx)+'px,'+(e.clientY-hy)+'px) scale(1.05)';
           const under=document.elementFromPoint(e.clientX,e.clientY); const over=under&&under.closest&&under.closest('.wgt-card');
           if(over&&over!==card&&over.parentElement===grid){ const r=over.getBoundingClientRect(); const before=(e.clientY< r.top+r.height/2);
             flip(()=>grid.insertBefore(card, before?over:over.nextSibling));
             hx=e.clientX; hy=e.clientY; card.style.transform='translate(0px,0px) scale(1.05)';   /* re-anchor to the new slot under the finger */
-          } });
-        const end=()=>{ if(!dragging) return; dragging=false; card.style.transition='transform 0.2s cubic-bezier(0.2,0.7,0.2,1),opacity 0.2s,box-shadow 0.2s'; card.style.transform=''; card.style.opacity=''; card.style.boxShadow=''; card.style.zIndex=''; setTimeout(()=>{ card.style.pointerEvents=''; card.style.transition=''; },220);
+          } };
+        const end=()=>{ if(!dragging) return; dragging=false;
+          try{ document.removeEventListener('pointermove',moveH); document.removeEventListener('pointerup',upH); document.removeEventListener('pointercancel',upH); }catch(_){}
+          card.style.transition='transform 0.2s cubic-bezier(0.2,0.7,0.2,1),opacity 0.2s,box-shadow 0.2s'; card.style.transform=''; card.style.opacity=''; card.style.boxShadow=''; card.style.zIndex=''; setTimeout(()=>{ card.style.pointerEvents=''; card.style.transition=''; },220);
           const order=[].map.call(grid.querySelectorAll('.wgt-card'),c=>c.getAttribute('data-u'));
           active.sort((a,b2)=>order.indexOf(a.u)-order.indexOf(b2.u)); try{ save(); }catch(_){} };
-        card.addEventListener('pointerup',end); card.addEventListener('pointercancel',end);
+        card.addEventListener('pointerdown',(e)=>{ if(!editing) return; if(e.target.closest&&e.target.closest('button')) return; dragging=true; hx=e.clientX; hy=e.clientY;
+          card.style.zIndex='8'; card.style.pointerEvents='none'; card.style.opacity='0.96'; card.style.boxShadow='0 16px 38px rgba(0,0,0,0.30)'; card.style.transition='transform 0.12s ease'; card.style.transform='scale(1.05)'; e.preventDefault();
+          moveH=onMove; upH=end; document.addEventListener('pointermove',moveH,{passive:false}); document.addEventListener('pointerup',upH); document.addEventListener('pointercancel',upH); });
       });
     }
     function entry(u){ return active.find(e=>e.u===u); }
@@ -13641,8 +13719,17 @@ window.addEventListener('DOMContentLoaded', () => {
         setV(e.u,'<span class="wc-go" style="cursor:pointer;" title="'+(jp()?'この国へ移動':'Fly to this country')+'">'+window.imFlagHTML(s.flag,22)+' <span style="font-size:15px;font-weight:700;">'+nm+'</span></span>',
           (jp()?'人口 ':'Pop ')+fm(s.pop)+(s.gdp!=null?' · GDP '+(typeof fmtMoney==='function'?fmtMoney(s.gdp):'$'+s.gdp+'B'):'')+(s.area!=null?' · '+fm(s.area)+' km²':'')+'<br><span style="color:var(--primary-color);cursor:pointer;font-weight:600;" class="wc-next">'+(jp()?'別の国 ↻':'Another ↻')+'</span>');
         const nx=document.querySelector('#wgts-'+e.u+' .wc-next'); if(nx) nx.onclick=(ev)=>{ ev.stopPropagation(); refreshCountry(e); };
-        /* (#R33) Tap the country → fly there. */
-        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ const ll=s.latlng; if(ll&&map){ map.flyTo({center:[ll[1],ll[0]],zoom:Math.max(map.getZoom(),4.2),speed:1.3,essential:true}); try{ if(typeof closeSheet==='function') closeSheet(); }catch(_){} } }catch(_){} };
+        /* (#R34) Tap the country → fit the WHOLE country. The old flyTo used zoom:Math.max(map.getZoom(),4.2),
+           so if you were already zoomed in it stayed city-close ("zoomed too close. Show an entire country").
+           Now fitBounds the country geometry (maxZoom 6 so a tiny country still shows with context); fall back
+           to a sensible low-zoom flyTo when the geometry is unavailable or spans the antimeridian. */
+        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ if(!map) return; let done=false;
+          try{ const cg=window.countryGeo; const ft=cg&&cg.features&&cg.features.find(f=>String(f.id)===String(s.code));
+            if(ft&&ft.geometry&&typeof turf!=='undefined'){ const bb=turf.bbox(ft);
+              if(bb&&bb.every(isFinite)&&(bb[2]-bb[0])<180&&(bb[3]-bb[1])<170){ map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,duration:900,maxZoom:6}); done=true; } } }catch(_){}
+          if(!done){ const ll=s.latlng; if(ll) map.flyTo({center:[ll[1],ll[0]],zoom:4,speed:1.3,essential:true}); }
+          try{ if(typeof closeSheet==='function') closeSheet(); }catch(_){}
+        }catch(_){} };
       }catch(_){ setV(e.u,'—',''); } }
     function refreshCountdown(e){ try{
         if(!e.cfg||!e.cfg.date){ setV(e.u,'<span style="font-size:13px;color:var(--text-muted);">'+(jp()?'⚙ から日付と題名を設定':'Set date & title via ⚙')+'</span>',''); return; }
@@ -14024,23 +14111,49 @@ window.addEventListener('DOMContentLoaded', () => {
       modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
       return modal; }
     async function fetchInd(code,id){ try{ const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=70&date=1970:2024'); const j=await r.json(); if(!Array.isArray(j)||!j[1]) return null; return j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); }catch(_){ return null; } }
+    /* (#R34) Reworked per the explicit spec: NO always-on dots ("ドットは不要"); hovering ANYWHERE in the
+       chart area shows the value INSTANTLY (a JS crosshair, not a laggy native <title> — "反応が悪い"); a
+       vertical line is drawn at the cursor and a SINGLE dot sits where it meets the line ("カーソル地点の時間
+       に線が引かれ、グラフとの交点にだけドット"). The per-point [px,py,year,formatted] data is embedded so
+       wireCharts() can drive the crosshair after the HTML is injected. */
+    const TS_W=500, TS_H=92;
     function chart(series,label,fmt){
       if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(jp()?'データなし':'no data')+'</div>';
-      const W=500,H=92,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v), minV=Math.min(...ys), maxV=Math.max(...ys), y0=series[0].y, y1=series[series.length-1].y;
+      const W=TS_W,H=TS_H,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v), minV=Math.min(...ys), maxV=Math.max(...ys), y0=series[0].y, y1=series[series.length-1].y;
       const X=y=>padL+((y-y0)/((y1-y0)||1))*(W-padL-padR), Y=v=>padT+(1-(v-minV)/((maxV-minV)||1))*(H-padT-padB);
-      let d=''; series.forEach((s,i)=>{ d+=(i?'L':'M')+X(s.y).toFixed(1)+' '+Y(s.v).toFixed(1)+' '; });
+      let d=''; const pts=[]; series.forEach((s,i)=>{ const x=X(s.y),y=Y(s.v); d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; pts.push([+x.toFixed(1),+y.toFixed(1),s.y,fmt(s.v)]); });
       const last=series[series.length-1];
-      /* (#R32) Hover values ("Statsのグラフは、ホバーして数値が出るように"): a visible dot per year + a
-         full-height transparent band per year carrying a native <title> "year: value" tooltip, so hovering
-         anywhere along a year shows its figure. Bands render LAST so they win the hover. */
-      let dots='', bands='';
-      series.forEach((s,i)=>{ const x=X(s.y), y=Y(s.v); const xl=i>0?(x+X(series[i-1].y))/2:x-6, xr=i<series.length-1?(x+X(series[i+1].y))/2:x+6;
-        dots+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.3" fill="var(--primary-color)" vector-effect="non-scaling-stroke"/>';
-        bands+='<rect x="'+xl.toFixed(1)+'" y="0" width="'+Math.max(1,(xr-xl)).toFixed(1)+'" height="'+H+'" fill="transparent" style="cursor:crosshair;"><title>'+s.y+': '+fmt(s.v)+'</title></rect>'; });
-      return '<div style="margin:0 0 12px;"><div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px;"><b style="color:var(--text-main);">'+label+'</b><span style="color:var(--primary-color);font-weight:700;">'+fmt(last.v)+' <span style="color:var(--text-muted);font-weight:400;">('+last.y+')</span></span></div>'
-        +'<svg width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;"><path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'+dots
-        +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'+bands+'</svg></div>';
+      const ptsAttr=JSON.stringify(pts).replace(/'/g,'&#39;');
+      return '<div class="ts-wrap" style="margin:0 0 12px;position:relative;" data-pts=\''+ptsAttr+'\'>'
+        +'<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px;"><b style="color:var(--text-main);">'+label+'</b><span style="color:var(--primary-color);font-weight:700;">'+fmt(last.v)+' <span style="color:var(--text-muted);font-weight:400;">('+last.y+')</span></span></div>'
+        +'<svg class="ts-svg" width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;cursor:crosshair;touch-action:none;">'
+          +'<path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+          +'<line class="ts-cursor" y1="0" y2="'+H+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
+          +'<circle class="ts-dot" r="3" fill="var(--primary-color)" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke" style="display:none;"/>'
+          +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'
+        +'</svg>'
+        +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:5;transform:translate(-50%,-118%);"></div>'
+      +'</div>';
     }
+    /* (#R34) Wire each chart's instant crosshair after its HTML is in the DOM. */
+    function wireCharts(root){ if(!root) return; root.querySelectorAll('.ts-wrap').forEach(wrap=>{
+      const svg=wrap.querySelector('.ts-svg'), cur=wrap.querySelector('.ts-cursor'), dot=wrap.querySelector('.ts-dot'), tip=wrap.querySelector('.ts-tip');
+      if(!svg||!cur||!dot||!tip) return; let pts=[]; try{ pts=JSON.parse(wrap.getAttribute('data-pts')||'[]'); }catch(_){} if(!pts.length) return;
+      const move=(e)=>{ const r=svg.getBoundingClientRect(); if(!r.width) return;
+        const cx=(e.clientX!=null)?e.clientX:(e.touches&&e.touches[0]?e.touches[0].clientX:null); if(cx==null) return;
+        const vbX=(cx-r.left)/r.width*TS_W;
+        let best=0,bd=Infinity; for(let i=0;i<pts.length;i++){ const dd=Math.abs(pts[i][0]-vbX); if(dd<bd){ bd=dd; best=i; } }
+        const p=pts[best];
+        cur.setAttribute('x1',p[0]); cur.setAttribute('x2',p[0]); cur.style.display='';
+        dot.setAttribute('cx',p[0]); dot.setAttribute('cy',p[1]); dot.style.display='';
+        tip.textContent=p[2]+' · '+p[3]; tip.style.display='block';
+        const wr=wrap.getBoundingClientRect();
+        tip.style.left=((p[0]/TS_W)*r.width + (r.left-wr.left))+'px';
+        tip.style.top=((p[1]/TS_H)*r.height + (r.top-wr.top))+'px';
+      };
+      const leave=()=>{ cur.style.display='none'; dot.style.display='none'; tip.style.display='none'; };
+      svg.addEventListener('pointermove',move); svg.addEventListener('pointerdown',move); svg.addEventListener('pointerleave',leave);
+    }); }
     async function open(){ const cur=window._cpCurrent||{}; const code=cur.code; if(!code) return;
       const m=ensureModal(); m.style.display='flex';
       m.querySelector('#ts-title').textContent=(jp()?'時系列グラフ — ':'Time-series — ')+(cur.name||code);
@@ -14049,6 +14162,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const results=await Promise.all(IND.map(ind=>fetchInd(code,ind.id)));
       const html=IND.map((ind,i)=>chart(results[i],jp()?ind.label[1]:ind.label[0],ind.fmt)).join('');
       body.innerHTML=html || (jp()?'データがありません':'No data available');
+      try{ wireCharts(body); }catch(_){}
     }
     return { open };
   })();
@@ -15373,7 +15487,30 @@ window.addEventListener('DOMContentLoaded', () => {
       E(2012,6.05,46.23,'space','Higgs boson discovered','ヒッグス粒子の発見','CERN confirms the Higgs boson.','CERNがヒッグス粒子を確認。','Higgs_boson'),
       E(2018,126.66,37.95,'geo','Inter-Korean summit','南北首脳会談','Koreas meet at Panmunjom.','板門店で南北首脳が会談。','2018_inter-Korean_summits'),
       E(2020,-98.50,39.80,'disaster','WHO declares COVID-19 a pandemic','WHOがCOVID-19をパンデミックと宣言','Global pandemic declared in March 2020.','2020年3月、世界的流行を宣言。','COVID-19_pandemic'),
-      E(2021,-77.01,38.89,'geo','US Capitol attack','米連邦議会議事堂襲撃','Rioters storm the US Capitol.','暴徒が連邦議会を襲撃。','January_6_United_States_Capitol_attack')
+      E(2021,-77.01,38.89,'geo','US Capitol attack','米連邦議会議事堂襲撃','Rioters storm the US Capitol.','暴徒が連邦議会を襲撃。','January_6_United_States_Capitol_attack'),
+      /* (#R34) Information timeline further expanded — major historical + recent events. */
+      E(1453,28.98,41.01,'war','Fall of Constantinople','コンスタンティノープル陥落','Ottomans end the Byzantine Empire.','オスマン帝国がビザンツ帝国を滅ぼす。','Fall_of_Constantinople'),
+      E(1517,11.33,51.51,'revolution','Protestant Reformation','宗教改革','Luther’s 95 Theses split Western Christianity.','ルターの95か条で西方教会が分裂。','Reformation'),
+      E(1776,-75.15,39.95,'revolution','US Declaration of Independence','アメリカ独立宣言','Thirteen colonies declare independence.','13植民地が独立を宣言。','United_States_Declaration_of_Independence'),
+      E(1859,-0.08,51.51,'space','On the Origin of Species','『種の起源』刊行','Darwin sets out evolution by natural selection.','ダーウィンが自然選択による進化論を提唱。','On_the_Origin_of_Species'),
+      E(1914,18.41,43.86,'war','World War I begins','第一次世界大戦勃発','The assassination in Sarajevo triggers global war.','サラエボ事件が世界大戦の引き金に。','World_War_I'),
+      E(1917,30.31,59.94,'revolution','Russian Revolution','ロシア革命','Bolsheviks seize power in Petrograd.','ボリシェヴィキが権力を掌握。','Russian_Revolution'),
+      E(1918,2.84,49.42,'war','End of World War I','第一次世界大戦終結','Armistice signed at Compiègne.','コンピエーニュで休戦協定に調印。','Armistice_of_11_November_1918'),
+      E(1929,-74.01,40.71,'economic','Wall Street Crash of 1929','世界恐慌の始まり','Market collapse triggers the Great Depression.','株価暴落が世界恐慌の引き金に。','Wall_Street_Crash_of_1929'),
+      E(1939,21.01,52.23,'war','World War II begins','第二次世界大戦勃発','Germany invades Poland.','ドイツがポーランドに侵攻。','World_War_II'),
+      E(1945,139.77,35.61,'war','End of World War II','第二次世界大戦終結','Japan’s surrender ends the war.','日本の降伏で大戦が終結。','Surrender_of_Japan'),
+      E(1947,74.35,31.55,'geo','Partition of India','インド・パキスタン分離','British India splits into two states.','英領インドが2国に分離独立。','Partition_of_India'),
+      E(1948,35.21,31.77,'geo','Establishment of Israel','イスラエル建国','The State of Israel is declared.','イスラエル国家の樹立。','Israeli_Declaration_of_Independence'),
+      E(1969,-73.99,40.73,'revolution','Stonewall uprising','ストーンウォールの反乱','Catalyst of the modern LGBT-rights movement.','現代のLGBT権利運動の契機。','Stonewall_riots'),
+      E(1972,116.39,39.90,'geo','Nixon visits China','ニクソン訪中','A turning point in US–China relations.','米中接近の転換点。','1972_Nixon_visit_to_China'),
+      E(1990,47.98,29.37,'war','Iraq invades Kuwait','イラクのクウェート侵攻','Trigger of the Gulf War.','湾岸戦争の発端。','Invasion_of_Kuwait'),
+      E(1994,30.06,-1.94,'disaster','Rwandan genocide','ルワンダ虐殺','~800,000 killed in about 100 days.','約100日で80万人前後が虐殺される。','Rwandan_genocide'),
+      E(2010,-88.37,28.74,'disaster','Deepwater Horizon oil spill','メキシコ湾原油流出事故','Largest marine oil spill in history.','史上最大級の海洋原油流出。','Deepwater_Horizon_oil_spill'),
+      E(2015,2.35,48.86,'war','November 2015 Paris attacks','パリ同時多発テロ','Coordinated attacks kill 130 across Paris.','連続攻撃で130人が死亡。','November_2015_Paris_attacks'),
+      E(2019,2.35,48.85,'disaster','Notre-Dame fire','ノートルダム大聖堂火災','The Paris cathedral’s spire collapses in flames.','大聖堂の尖塔が焼け落ちる。','Notre-Dame_fire'),
+      E(2021,69.17,34.53,'war','US withdrawal from Afghanistan','米軍アフガニスタン撤退','The Taliban retake Kabul.','タリバンがカブールを制圧。','2021_Taliban_offensive'),
+      E(2022,-122.42,37.77,'space','ChatGPT launched','ChatGPT公開','Generative AI reaches mass adoption.','生成AIが急速に普及する契機。','ChatGPT'),
+      E(2023,12.34,45.44,'space','JWST first images','ジェイムズ・ウェッブ宇宙望遠鏡','Deepest infrared view of the universe yet.','史上最も深い赤外線宇宙像を取得。','James_Webb_Space_Telescope')
     ];
     const EV_COLORS={war:'#ff3b30',disaster:'#ff9500',revolution:'#af52de',assassination:'#8e8e93',space:'#5856d6',economic:'#34c759',geo:'#007aff'};
     const EV_LBL={war:['War','戦争'],disaster:['Disaster','災害'],revolution:['Revolution','革命・政変'],assassination:['Assassination','暗殺'],space:['Space & science','宇宙・科学'],economic:['Economy','経済危機・転換点'],geo:['Geopolitics','地政学・条約']};
@@ -16267,7 +16404,16 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbelecuse', code:'EG.USE.ELEC.KH.PC', n:{en:'Electricity use /capita (kWh)',jp:'電力消費 /人 (kWh)'}, ramp:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000'], unit:''},
       {id:'wbrenelec', code:'EG.ELC.RNEW.ZS', n:{en:'Renewable electricity %',jp:'再エネ電力 %'}, ramp:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837'], unit:'%'},
       {id:'wbfdi', code:'BX.KLT.DINV.WD.GD.ZS', n:{en:'FDI inflow % GDP',jp:'対内直接投資 対GDP %'}, ramp:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837'], unit:'%'},
-      {id:'wbmilppl', code:'MS.MIL.TOTL.P1', n:{en:'Armed forces personnel',jp:'軍人数'}, ramp:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000'], unit:''}
+      {id:'wbmilppl', code:'MS.MIL.TOTL.P1', n:{en:'Armed forces personnel',jp:'軍人数'}, ramp:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000'], unit:''},
+      /* (#R34) +8 more beta choropleths (World Bank) — same resilient mrnev+range fetch, hover values + source note. */
+      {id:'wblife', code:'SP.DYN.LE00.IN', n:{en:'Life expectancy',jp:'平均寿命'}, ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850'], unit:' yr'},
+      {id:'wbunemp', code:'SL.UEM.TOTL.ZS', n:{en:'Unemployment %',jp:'失業率 %'}, ramp:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026'], unit:'%'},
+      {id:'wbnet', code:'IT.NET.USER.ZS', n:{en:'Internet users %',jp:'インターネット利用率 %'}, ramp:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850'], unit:'%'},
+      {id:'wbdebt', code:'GC.DOD.TOTL.GD.ZS', n:{en:'Govt debt % GDP',jp:'政府債務 対GDP %'}, ramp:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026'], unit:'%'},
+      {id:'wbmanuf', code:'NV.IND.MANF.ZS', n:{en:'Manufacturing % GDP',jp:'製造業 対GDP %'}, ramp:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000'], unit:'%'},
+      {id:'wbu5mort', code:'SH.DYN.MORT', n:{en:'Under-5 mortality /1k',jp:'5歳未満死亡率 /1k'}, ramp:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026'], unit:''},
+      {id:'wbpopgrow', code:'SP.POP.GROW', n:{en:'Population growth %',jp:'人口増加率 %'}, ramp:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02'], unit:'%'},
+      {id:'wbenergy', code:'EG.USE.PCAP.KG.OE', n:{en:'Energy use /capita',jp:'エネルギー消費 /人'}, ramp:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000'], unit:''}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
@@ -16287,7 +16433,13 @@ window.addEventListener('DOMContentLoaded', () => {
         map.addLayer({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
       [fill,line].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
-      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,[L.n.en,L.n.jp],[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join(''); } } }catch(_){}
+      try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity(L.id,[L.n.en,L.n.jp],[fill,line],'bx-'+L.id); if(el){ const ramp=L.ramp,parts=[]; for(let i=0;i<ramp.length;i+=2) parts.push('<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:11px;height:11px;border-radius:2px;background:'+ramp[i+1]+';"></span>'+ramp[i]+L.unit+'</span>'); let kk=el.querySelector('.bx-key'); if(!kk){ kk=document.createElement('div'); kk.className='bx-key'; kk.style.cssText='display:flex;flex-wrap:wrap;gap:7px;font-size:10px;color:var(--text-muted);margin-top:5px;'; el.appendChild(kk); } kk.innerHTML=parts.join('');
+        /* (#R34) State the DATA SOURCE + PERIOD on every World Bank choropleth ("Inflation % (CPI)→データの
+           出典と時期を記載しろ"). The period is the actual span of years present in the fetched data (each country
+           shows its most-recent available year). */
+        let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} let ysp=''; if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
+        let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
+        nn.textContent=(jp()?'出典: 世界銀行 · ':'Source: World Bank · ')+L.code+(ysp?(' · '+ysp):'')+(jp()?'（国ごとに最新値）':' · most recent value per country'); } } }catch(_){}
     }); }); }
     function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
 
