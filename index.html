@@ -577,6 +577,8 @@ gtag('config', 'G-57X5MX0ZPW');
     .tp-select, .tp-select option, .tp-select optgroup, .lang-toggle option{ background-color:var(--card-bg); color:var(--text-main); }
     [data-theme="dark"] .tp-select, [data-theme="dark"] .tp-select option, [data-theme="dark"] .tp-select optgroup{ background-color:#1c1c1e !important; color:#f5f5f7 !important; }
     .modal-close-btn{ width:100%; padding:12px; background:var(--primary-color); color:#fff; border:none; cursor:pointer; font-weight:500; border-radius:10px; font-size:14px; margin-top:14px; } .modal-close-btn:hover{ filter:brightness(1.08); }
+    /* (#R33) Settings: pin the Apply button to the bottom of the scrolling modal so it's always reachable. */
+    #settings-modal #btn-close-settings{ position:sticky; bottom:-32px; margin:14px -32px -32px; padding:14px 32px calc(14px + env(safe-area-inset-bottom,0px)); border-radius:0 0 20px 20px; box-shadow:0 -6px 16px rgba(0,0,0,0.12); z-index:3; }
     .measure-tooltip{ position:absolute; background:rgba(0,0,0,0.82); color:#fff; padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; pointer-events:none; z-index:2000; transform:translate(12px,-50%); display:none; white-space:nowrap; }
     /* Right-click context menu */
     .ctx-menu{ display:none; position:absolute; z-index:2500; min-width:180px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(20px); overflow:hidden; padding:4px; font-size:13px; }
@@ -977,8 +979,8 @@ gtag('config', 'G-57X5MX0ZPW');
       /* mode tabs → iOS segmented control */
       .control-panel{ flex:0 0 auto; flex-wrap:nowrap; gap:0; margin:0 0 10px; padding:3px; background:var(--input-bg); border-radius:11px; }
       .mode-btn{ flex:1 1 0; min-width:0; min-height:36px; padding:8px 4px; font-size:12px; font-weight:600; border-radius:8px; background:transparent; color:var(--text-muted); box-shadow:none !important; }
-      .mode-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 5px rgba(0,0,0,0.12) !important; }
-      [data-theme="dark"] .mode-btn.active{ background:#3a3a3c; color:#fff; }
+      /* (#R33) Selected News/Information/Stats is BLUE on mobile too (was a neutral grey card). */
+      .mode-btn.active{ background:var(--primary-color) !important; color:#fff !important; box-shadow:0 2px 8px rgba(0,122,255,0.3) !important; }
 
       .news-filter-toggle, .news-pin-toggle{ flex:0 0 auto; }
       .ios-segment-btn{ padding:8px 12px; font-size:12px; min-height:32px; }
@@ -2726,12 +2728,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const jp=aiJP();
     if(typeof currentUser==='undefined' || !currentUser){
       wrap.innerHTML=
+        /* (#R33) The in-Settings "Log in / Sign up" button was removed as redundant (use the account button
+           top-right). Only the explanatory line remains. */
         `<div class="ai-row" style="font-size:12px;color:var(--text-muted);line-height:1.5;">`+
-          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）はログインすると無料でご利用いただけます（1日'+AI_FREE_DAILY+'回まで）。APIキーは不要です。'
-                  :'AI features (summaries, translation, locating, image compare…) are free once you log in — up to '+AI_FREE_DAILY+' uses per day. No API key needed.')+
-        `</div>`+
-        `<button class="ai-test-btn" id="ai-login-btn" style="margin-top:4px;">`+aiEsc(jp?'ログイン / 新規登録':'Log in / Sign up')+`</button>`;
-      const lb=wrap.querySelector('#ai-login-btn'); if(lb) lb.onclick=()=>{ try{ openAuthModal(aiLoginMsg()); }catch(_){} };
+          aiEsc(jp?'AI機能（要約・翻訳・位置解析・画像比較など）は、右上のアカウントからログインすると無料でご利用いただけます（1日'+AI_FREE_DAILY+'回まで）。APIキーは不要です。'
+                  :'AI features (summaries, translation, locating, image compare…) are free once you log in from the account button (top-right) — up to '+AI_FREE_DAILY+' uses per day. No API key needed.')+
+        `</div>`;
       return;
     }
     /* (#R32b) Developer = UNLIMITED — show that instead of the broken "∞ / 5" quota bar
@@ -6714,10 +6716,13 @@ window.addEventListener('DOMContentLoaded', () => {
   { const b3=document.getElementById('btn-view-3d'); if(b3) b3.onclick=()=>set3D(!terrain3D); }
 
   /* ===== Mode tabs (deselectable) ===== */
+    /* (#R33) Stats mode auto-enables Countries(info) so the map carries country data; leaving Stats turns it back off. */
+    function _setCountriesInfo(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} }
   function setMode(mode,btnId){
-    if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); renderUI(); return; }
+    const wasStats=(currentMode==='stats');
+    if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); if(wasStats) _setCountriesInfo(false); renderUI(); return; }
     currentMode=mode; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); document.getElementById(btnId).classList.add('active');
-    if(mode==='stats'&&!countryDataLoaded)loadCountryData();
+    if(mode==='stats'){ if(!countryDataLoaded)loadCountryData(); _setCountriesInfo(true); } else if(wasStats){ _setCountriesInfo(false); }
     renderUI();
   }
   document.getElementById('btn-news').onclick=()=>setMode('news','btn-news');
@@ -10793,7 +10798,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const oaStyle='width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:9px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-weight:600;font-size:13.5px;cursor:pointer;margin-bottom:8px;';
     m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:92vh;overflow-y:auto;">
       <h2 style="margin:0 0 4px;font-size:19px;">IntMap account</h2>
-      <p id="am-sub" style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.5;">Log in or create an account to post, comment and save favorites across devices.</p>
+      <p id="am-sub" style="margin:0 0 16px;color:var(--text-muted);font-size:13px;line-height:1.5;">Log in or create an account to use AI features, join the community, and sync your settings, widgets, favorites and avatar across devices.</p>
       <div style="display:flex;background:var(--input-bg);border-radius:10px;padding:3px;margin-bottom:14px;">
         <button id="am-tab-login" style="flex:1;border:none;background:var(--card-bg);color:var(--text-main);padding:8px;border-radius:8px;font-weight:600;cursor:pointer;">Log In</button>
         <button id="am-tab-signup" style="flex:1;border:none;background:transparent;color:var(--text-muted);padding:8px;border-radius:8px;font-weight:600;cursor:pointer;">Sign Up</button>
@@ -10861,7 +10866,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function openAuthModal(contextMsg){ const m=document.getElementById('auth-modal'); if(!m) return; if(window.__amSetTab) window.__amSetTab('login');
     try{ const sub=document.getElementById('am-sub');
       if(sub){ if(contextMsg){ sub.dataset.ctx='1'; sub.textContent=contextMsg; }
-        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(currentLang==='jp'?'ログインまたは新規登録で、投稿・コメント・お気に入りを端末間で共有できます。':'Log in or create an account to post, comment and save favorites across devices.'); } }
+        else if(sub.dataset.ctx){ delete sub.dataset.ctx; sub.textContent=(currentLang==='jp'?'ログイン／新規登録で、AI機能・コミュニティ・設定/ウィジェット/お気に入り/アイコンの端末間同期が使えます。':'Log in or create an account to use AI features, join the community, and sync your settings, widgets, favorites and avatar across devices.'); } }
     }catch(_){}
     m.style.display='flex'; }
   function openAccountMenu(){
@@ -10906,6 +10911,8 @@ window.addEventListener('DOMContentLoaded', () => {
       m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
       document.getElementById('acct-close').onclick=()=>{ m.style.display='none'; };
       document.getElementById('acct-logout').onclick=()=>{
+        /* (#R33) Confirm before logging out. */
+        if(!window.confirm(currentLang==='jp'?'ログアウトしますか？':'Log out of your account?')) return;
         /* Instant: clear local state + UI right away, revoke the session in the background. */
         m.style.display='none';
         currentUser=null; bookmarks=[];
