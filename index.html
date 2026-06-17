@@ -323,8 +323,10 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R32b) Negative L/R/B margins cancel the dropdown's 12px padding so the bar is FLUSH with the panel's
        bottom + side edges — no unnatural gap below it ("Active layersの下に隙間があるのが不自然"). */
     #layer-active-section{ position:sticky; bottom:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:6px -12px -12px; padding:7px 12px 11px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:0 0 12px 12px; }
-    /* Mobile: the in-sheet dropdown has no padding, so don't pull the bar outside it. */
-    .m-sheet #layer-active-section{ margin:6px 0 0; padding:7px 0 4px; border-radius:0; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; }
+    /* (#R33) Mobile: the bar STICKS to the bottom of the sheet scroller with an opaque surface so rows don't
+       show through it ("モバイル版でもActive layersは下部にstick"). The in-sheet dropdown has no padding, so
+       no negative side margins. */
+    .m-sheet #layer-active-section{ position:sticky; bottom:0; z-index:5; margin:6px -16px -8px; padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px)); border-radius:0; background:var(--card-bg); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-top:1px solid var(--glass-border,rgba(128,128,128,0.25)); box-shadow:0 -4px 12px rgba(0,0,0,0.12); }
     /* (#R33) Remove the colored square before EVERY layer name ("色付きの四角をやめて"). */
     .layer-dropdown .lyr-sw{ display:none !important; }
     /* (#R33) iOS-clean layer panel: no heavy divider rules — section headers carry the grouping with spacing,
@@ -5110,7 +5112,11 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('mouseout',()=>{ _crLng=null; if(currentMapType==='sat'){ renderCoordReadout(); } else { const _cr=document.getElementById('coord-readout'); if(_cr) _cr.style.display='none'; } liveCursor=null; if(toolMode) refreshTool(); });
     /* Coalesce occlusion updates to one per animation frame so dragging/spinning the globe stays smooth. */
     let _occRAF=0; const occOnMove=()=>{ if(_occRAF) return; _occRAF=requestAnimationFrame(()=>{ _occRAF=0; updateOcclusion(); }); };
-    map.on('move',occOnMove); map.on('rotate',updateCompass); map.on('pitch',updateCompass);
+    /* (#R33) Smoother MOBILE pan/zoom ("カクツク"): skip the per-frame occlusion recompute during a gesture on
+       phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move. */
+    const _occMob=()=>{ try{ return isMobile(); }catch(_){ return false; } };
+    map.on('move',()=>{ if(!_occMob()) occOnMove(); }); map.on('moveend',updateOcclusion);
+    map.on('rotate',updateCompass); map.on('pitch',updateCompass);
     map.on('moveend',refreshGrid); map.on('zoomend',refreshGrid);
     map.on('load',()=>{
       try{ if(!/[?&]flat\b/.test(location.search)) map.setProjection({type:'globe'}); }catch(e){}
@@ -14501,7 +14507,8 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-body{position:relative;flex:1 1 auto;min-height:0;}'+
       '#compare-map{position:absolute;inset:0;}'+
       /* (#R31) layer picker row directly under the control segments. */
-      '.cmp-picker{flex:0 0 auto;padding:6px 10px 8px;background:var(--sidebar-bg);border-bottom:1px solid rgba(128,128,128,0.14);}'+
+      '.cmp-picker{flex:0 0 auto;padding:6px 10px 8px;background:var(--sidebar-bg);border-bottom:1px solid rgba(128,128,128,0.14);position:relative;z-index:8;pointer-events:auto;}'+
+      '#compare-window.cmp-xray .cmp-picker{pointer-events:auto !important;z-index:9;position:relative;}'+   /* (#R33) picker stays clickable in x-ray */
       '.cmp-picker select{width:100%;box-sizing:border-box;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.28);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:600;cursor:pointer;}'+
       '.cmp-ctrls{position:absolute;top:8px;left:8px;z-index:5;display:flex;flex-wrap:wrap;gap:4px;max-width:calc(100% - 16px);}'+
       '.cmp-ctrls label{font-size:11px;background:var(--popup-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;padding:4px 7px;display:flex;align-items:center;gap:4px;backdrop-filter:blur(8px);}'+
