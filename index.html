@@ -418,7 +418,11 @@ gtag('config', 'G-57X5MX0ZPW');
        landscape phones >768px still spilled long values/coords out of the card — "一部テキストがUIから
        はみ出して不格好"). Nothing may exceed the card width; rows wrap, values ellipsize/break inside. */
     .tool-panel.tp-radius, .tool-panel.tp-radius *{ box-sizing:border-box; }
-    .tool-panel.tp-radius{ overflow-x:hidden; }
+    /* (#R35) DESKTOP Radius panel was 248px — too narrow for the 3 stat tiles (radius/circumference/area),
+       so big values (e.g. a continent-sized area) spilled OUT of their tiles ("texts expand out of their
+       buttons"). Widen it and let the stat values WRAP inside the tile instead of overflowing. */
+    .tool-panel.tp-radius{ overflow-x:hidden; width:300px; }
+    .tool-panel.tp-radius .rad-stat b{ white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; line-height:1.2; font-size:11px; }
     .tool-panel.tp-radius .radius-row, .tool-panel.tp-radius .radius-color-row{ flex-wrap:wrap; min-width:0; }
     .tool-panel.tp-radius .tp-row{ min-width:0; gap:8px; }
     .tool-panel.tp-radius .tp-row > b{ min-width:0; overflow-wrap:anywhere; text-align:right; }
@@ -603,6 +607,10 @@ gtag('config', 'G-57X5MX0ZPW');
     #settings-modal .modal-content{ padding-bottom:0 !important; }
     #settings-modal .settings-foot{ position:sticky; bottom:0; z-index:3; margin:18px -32px 0; padding:14px 32px calc(16px + env(safe-area-inset-bottom,0px)); background:var(--popup-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:0 0 20px 20px; }
     #settings-modal .settings-foot #btn-close-settings{ margin-top:0; }
+    /* (#R35) In the two frosted modes the modal body switches to --glass-fill, but the sticky Apply footer
+       kept the opaque --popup-bg → a mismatched solid strip at the bottom ("frosted glassにするとSettingsの
+       色だけおかしい"). Match the footer to the modal's glass material so it blends seamlessly. */
+    body.sidebar-translucent #settings-modal .settings-foot, body.sidebar-glass2 #settings-modal .settings-foot{ background:var(--glass-fill); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
     @media(max-width:768px){ #settings-modal .settings-foot{ margin:16px -20px 0; padding-left:20px; padding-right:20px; } }
     .measure-tooltip{ position:absolute; background:rgba(0,0,0,0.82); color:#fff; padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; pointer-events:none; z-index:2000; transform:translate(12px,-50%); display:none; white-space:nowrap; }
     /* Right-click context menu */
@@ -726,10 +734,17 @@ gtag('config', 'G-57X5MX0ZPW');
     .ms-loading{ padding:12px; font-size:12px; color:var(--text-muted); text-align:center; }
     .unit-sub{ font-size:0.82em; color:var(--text-muted); }
     .tp-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:move; user-select:none; touch-action:none; }
-    .tp-close{ background:none; border:none; color:var(--text-muted); font-size:14px; cursor:pointer; padding:0 2px; } .tp-close:hover{ color:var(--text-main); }
-    /* (#R34) tool-panel minimize control + collapsed state (hide everything but the header). */
-    .tp-hd-btns{ display:flex; align-items:center; gap:4px; }
-    .tp-min-btn{ background:none; border:none; color:var(--text-muted); font-size:18px; line-height:1; cursor:pointer; padding:0 4px; } .tp-min-btn:hover{ color:var(--text-main); }
+    /* (#R35) Tool panels (Measure / Draw) now use the EXACT SAME header-button icon language as the legends
+       and popups ("測定機能のUIを他の凡例・ポップアップと統一しろ。-で最小化＋で最大化…他にないわ"): a centred
+       line that turns into a square box when collapsed = minimise, and rotated bars = ×. No more text –/+. */
+    .tp-hd-btns{ display:flex; align-items:center; gap:6px; }
+    .tp-min-btn,.tp-close{ position:relative; background:rgba(128,128,128,0.16); border:none; color:var(--text-muted); width:24px; height:24px; padding:0; font-size:0; line-height:0; border-radius:7px; cursor:pointer; box-sizing:border-box; flex:0 0 auto; }
+    .tp-min-btn:hover,.tp-close:hover{ color:var(--text-main); background:var(--input-bg); }
+    .tp-min-btn::before{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); }
+    .tool-panel.tp-collapsed .tp-min-btn::before{ width:12px; height:12px; background:none; border:1.8px solid currentColor; border-radius:3px; }
+    .tp-close::before,.tp-close::after{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; border-radius:2px; background:currentColor; }
+    .tp-close::before{ transform:translate(-50%,-50%) rotate(45deg); }
+    .tp-close::after{ transform:translate(-50%,-50%) rotate(-45deg); }
     .tool-panel.tp-collapsed > *:not(.tp-header){ display:none !important; }
     .tool-panel.tp-collapsed .tp-header{ margin-bottom:0 !important; }
     .tool-panel.tp-collapsed{ width:auto; min-width:0; }
@@ -1096,7 +1111,9 @@ gtag('config', 'G-57X5MX0ZPW');
       .m-sheet-head{ display:flex; align-items:center; justify-content:space-between; padding:2px 2px 12px; }
       .m-sheet-title{ font-size:20px; font-weight:700; letter-spacing:-0.3px; }
       .m-sheet-done{ background:transparent; border:none; color:var(--primary-color); font-size:16px; font-weight:600; padding:4px 6px; }
-      .m-sheet-scroll{ overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; padding-bottom:6px; }
+      /* (#R35) overflow-x:hidden kills the "レイヤー選択欄が左右にスクロールできてしまう" — a stray few-px of
+         content width let the sheet pan sideways. The list is single-column; it must never scroll horizontally. */
+      .m-sheet-scroll{ overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; padding-bottom:6px; }
 
       .m-seg-block{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
       .m-seg{ display:flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; }
@@ -1494,8 +1511,11 @@ gtag('config', 'G-57X5MX0ZPW');
     .lyr-star.on{ color:#ffcc00; }
     .layer-option{ position:relative; }
 
-    /* --- Currently-active layers list, pinned below the favorites + top toggles (#R14 / #17) --- */
-    #layer-active-section{ margin:2px 0 4px; }
+    /* --- Currently-active layers list (#R14 / #17) --- */
+    /* (#R35) The old `#layer-active-section{ margin:2px 0 4px }` here came LATER in the cascade and clobbered
+       the sticky-flush desktop rule above (which uses margin:6px -12px 0 to bleed the bar to the panel edges
+       and a 0 bottom margin). That left the "わずかな隙間" under Active layers + inset sides. Removed so the
+       flush sticky bar wins. */
     .active-lyr-chips{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 2px 2px; }
     .active-lyr-chip{ display:inline-flex; align-items:center; gap:5px; background:var(--primary-color); border:1px solid var(--primary-color); color:#fff; font-size:11px; font-weight:600; padding:4px 5px 4px 10px; border-radius:999px; white-space:nowrap; max-width:100%; }
     .active-lyr-chip .alc-name{ cursor:pointer; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
@@ -4800,7 +4820,7 @@ window.addEventListener('DOMContentLoaded', () => {
     p.querySelector('.tp-close').onclick=exitTool; makeDraggable(p,p.querySelector('.tp-header'));
     /* (#R34) Minimize button ("Enable − in Radius") — collapses the panel to just its header so the tool no
        longer covers the centre crosshair on mobile ("Radius widget is too big so it hides the cross pointer"). */
-    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.textContent=on?'+':'–'; mb.title=(currentLang==='jp'?(on?'展開':'最小化'):(on?'Expand':'Minimize')); }; if(mb&&p.dataset.collapsed==='1') mb.textContent='+'; }
+    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.title=(currentLang==='jp'?(on?'展開':'最小化'):(on?'Expand':'Minimize')); }; }   /* (#R35) icon (line↔box) is drawn by CSS off .tp-collapsed — no text –/+ */
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
     { const fb=p.querySelector('#tp-finalize'); if(fb) fb.onclick=()=>{ try{ window._finalizeMeasurement(); }catch(_){} }; const pb=p.querySelector('#tp-profile'); if(pb) pb.onclick=()=>{ try{ window._elevationProfile(); }catch(_){} }; }
@@ -6859,6 +6879,29 @@ window.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click',(e)=>{ e.stopPropagation(); dd.classList.toggle('open'); });
     document.addEventListener('click',(e)=>{ if(dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open'); });
   })();
+  /* (#R35) DETERMINISTIC toggle for the multi-select dropdown checkboxes (news languages + countries).
+     ROOT CAUSE of "タップした言語と違う言語にチェックが入る" on mobile: a nested <label><input> fires a
+     ~300ms-delayed synthetic click on iOS that, after any reflow, can land on an ADJACENT label → the wrong
+     box toggles. (pointer-events:none on the box + touch-action alone did NOT fully kill it.) We now OWN the
+     toggle: on a real tap inside a label we preventDefault the native activation and flip EXACTLY that
+     label's checkbox — never a neighbour. This is the root-cause fix, NOT a spacing hack. Delegated on the
+     panel so it also covers checkboxes added later; a genuine scroll/drag still passes through. */
+  (function wireDetTap(){
+    document.querySelectorAll('.nc-dd-panel').forEach(panel=>{
+      if(panel.dataset.detTap) return; panel.dataset.detTap='1';
+      let downLab=null, dY=0, sTop=0, moved=false;
+      panel.addEventListener('pointerdown',e=>{ downLab=e.target.closest?e.target.closest('label'):null; dY=e.clientY; moved=false; sTop=panel.scrollTop; },true);
+      panel.addEventListener('pointermove',e=>{ if(Math.abs(e.clientY-dY)>24) moved=true; },true);
+      panel.addEventListener('click',e=>{
+        const lab=e.target.closest?e.target.closest('label'):null; if(!lab) return;
+        e.preventDefault();                                  /* cancel the native (mis-targetable) label toggle */
+        if(moved || Math.abs(panel.scrollTop-sTop)>16) return;   /* a scroll, not a tap */
+        if(downLab && downLab!==lab) return;                 /* finger drifted to another row */
+        const cb=lab.querySelector('input[type=checkbox]'); if(!cb||cb.disabled) return;
+        cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
+      },true);
+    });
+  })();
 
   /* ===== Settings + Timezones ===== */
   let _tzZones=null;
@@ -7183,7 +7226,7 @@ window.addEventListener('DOMContentLoaded', () => {
       };
       /* (#R32) Statecraft & World Sandbox ABOLISHED per request — removed from the hub. */
       const modes=[
-        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:jp()?'ワールドエクスプローラー':'World Explorer',d:jp()?'衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。':'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.',go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
+        {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:(currentLang==='jp'?'サテライトドロップ':'Satellite Drop'),d:(currentLang==='jp'?'衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。':currentLang==='de'?'Ein Satelliten-Geografiespiel: irgendwo auf der Erde abgesetzt — errate deinen Standort.':'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.'),go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
         {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。':'Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
         {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove();
           /* (#R33) Close the layer-selection panel/sheet when entering Quiz mode. */
@@ -7674,15 +7717,15 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===================== GROUP 3: DATA LAYERS ===================== */
   (function(){
     if(!map) return;
-    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 World Explorer" });
-    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 ワールドエクスプローラー" });
+    Object.assign(i18n.en,{ lyrEU:"EU members", lyrClimate:"Köppen climate", lyrTemp:"Air temperature (2 m)", lyrPrecip:"Precipitation (IMERG)", lyrPop:"Population density", lyrHDI:"HDI (2022)", lyrDem:"Democracy Index (2023)", lyrNATO:"NATO members", lyrNight:"Day / night", lgdTitle:"Köppen–Geiger", climAt:"Climate", lyrSection:"Data layers", lyrGrpGeo:"Strategic geography", lyrGrpStrat:"Strategic networks", lyrGrpWeather:"Weather & environment", optLight:"Light", optDark:"Dark", optCyber:"Cyber Terminal", optClassic:"Age of Discovery", optPsychedelic:"Psychedelic", optMilitary:"Military", optMedical:"Medical", optBaroque:"Baroque (European)", optTaisho:"Taishō Japan", lyrRadar:"Precipitation radar (live)", lyrClouds:"Clouds · infrared (live)", lyrSST:"Sea-surface temperature", lyrSnow:"Snow & ice cover", lyrAOD:"Aerosol / haze", lyrNightSat:"Night lights (satellite)", lyrWind:"Wind (animated)", lgdRadarTitle:"Rain rate", lgdSSTTitle:"Sea-surface temp", lgdWindTitle:"Wind speed", lblFeedback:"Feedback & bug report", sendFeedbackBtn:"⭐ Send feedback", reportBugBtn:"🐞 Report a bug", lblPlayground:"Playground (beta)", playgroundBtn:"🎮 Open Playground", worldExplorerBtn:"🌍 Satellite Drop" });
+    Object.assign(i18n.jp,{ lyrEU:"EU加盟国", lyrClimate:"ケッペン気候区分", lyrTemp:"気温（2m・再解析）", lyrPrecip:"降水量 (IMERG)", lyrPop:"人口密度", lyrHDI:"HDI (2022)", lyrDem:"民主主義指数 (2023)", lyrNATO:"NATO加盟国", lyrNight:"昼/夜", lgdTitle:"ケッペン・ガイガー", climAt:"気候区分", lyrSection:"データレイヤー", lyrGrpGeo:"戦略地理", lyrGrpStrat:"戦略ネットワーク", lyrGrpWeather:"気象・環境", optLight:"ライト", optDark:"ダーク", optCyber:"サイバーターミナル", optClassic:"大航海時代", optPsychedelic:"サイケデリック", optMilitary:"ミリタリー", optMedical:"メディカル", optBaroque:"豪華絢爛（ヨーロッパ）", optTaisho:"大正ロマン", lyrRadar:"降水レーダー（実時間）", lyrClouds:"雲・赤外（実時間）", lyrSST:"海面水温", lyrSnow:"積雪・海氷", lyrAOD:"エアロゾル・煙霧", lyrNightSat:"夜間光（衛星）", lyrWind:"風（アニメーション）", lgdRadarTitle:"降水強度", lgdSSTTitle:"海面水温", lgdWindTitle:"風速", lblFeedback:"フィードバック・バグ報告", sendFeedbackBtn:"⭐ フィードバックを送る", reportBugBtn:"🐞 バグを報告", lblPlayground:"プレイグラウンド (ベータ)", playgroundBtn:"🎮 プレイグラウンドを開く", worldExplorerBtn:"🌍 サテライトドロップ" });
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
-    Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNight:"Tag / Nacht", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 World Explorer",
+    Object.assign(i18n.de,{ lyrEU:"EU-Mitglieder", lyrClimate:"Köppen-Klima", lyrTemp:"Lufttemperatur (2 m)", lyrPrecip:"Niederschlag (IMERG)", lyrPop:"Bevölkerungsdichte", lyrHDI:"HDI (2022)", lyrDem:"Demokratieindex (2023)", lyrNATO:"NATO-Mitglieder", lyrNight:"Tag / Nacht", lgdTitle:"Köppen–Geiger", climAt:"Klima", lyrSection:"Datenebenen", lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpWeather:"Wetter & Umwelt", optLight:"Hell", optDark:"Dunkel", optCyber:"Cyber-Terminal", optClassic:"Zeitalter der Entdeckungen", optPsychedelic:"Psychedelisch", optMilitary:"Militärisch", optMedical:"Medizinisch", optBaroque:"Barock (europäisch)", optTaisho:"Taishō-Japan", lyrRadar:"Niederschlagsradar (live)", lyrClouds:"Wolken · Infrarot (live)", lyrSST:"Meeresoberflächentemperatur", lyrSnow:"Schnee & Eis", lyrAOD:"Aerosol / Dunst", lyrNightSat:"Nachtlichter (Satellit)", lyrWind:"Wind (animiert)", lgdRadarTitle:"Regenrate", lgdSSTTitle:"Meerestemperatur", lgdWindTitle:"Windgeschwindigkeit", lblFeedback:"Feedback & Fehlerbericht", sendFeedbackBtn:"⭐ Feedback senden", reportBugBtn:"🐞 Fehler melden", lblPlayground:"Spielwiese (Beta)", playgroundBtn:"🎮 Spielwiese öffnen", worldExplorerBtn:"🌍 Satellite Drop",
       lyrGrpClimate:"Klima & Wetter", lyrGrpHazard:"Gefahren & Nachthimmel", lyrGrpDemo:"Bevölkerung & Wirtschaft", lyrGrpGeoPol:"Geopolitik & Verteidigung", lyrGrpOthers:"Weitere (Beta)",
       lyrGrpMaritime:"Ozeane & Seefahrt", lyrGrpIndic:"Indikatoren & Overlays", lyrGrpTerrain:"Gelände & Höhe", lyrHillshade:"Reliefschattierung", lyrContours:"Höhenlinien", lyrPopGrid:"Bevölkerungsdichte (1-km-Raster)", lgdTempTitle:"Lufttemp. (2 m)", lyrTimeMonth:"Monat", mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig", lyrRelief:"Höhe (Farbrelief)", lyrSubcables:"Seekabel", lgdReliefTitle:"Höhe", lgdSubcablesTitle:"Seekabel", lyrMilSpend:"Militärausgaben ($ Mrd.)", lyrMilSpendGDP:"Militärausgaben (% BIP)", lyrGDPpc:"BIP pro Kopf", lyrTFR:"Geburtenrate", lyrSeaLevel:"Meeresspiegeländerung", lgdSeaLevelTitle:"Meeresspiegeländerung" });
     /* (#R33) German country-stat + common labels so the country panel/stats aren't English in DE mode. */
@@ -7808,6 +7851,11 @@ window.addEventListener('DOMContentLoaded', () => {
         .wgt-cfg{ width:32px !important; height:32px !important; border-radius:16px !important; right:6px !important; }
         #wgt-g-close{ width:32px !important; height:32px !important; border-radius:9px !important; font-size:15px !important; }
         .legend-collapsed .legend-min::before{ width:12px; height:12px; }
+        /* (#R35) Tool-panel (Measure/Draw) min+close get the SAME 32px tap target + box as the legends. */
+        .tp-min-btn,.tp-close{ width:32px !important; height:32px !important; border-radius:9px; }
+        .tp-min-btn::before{ width:15px; height:2.1px; }
+        .tool-panel.tp-collapsed .tp-min-btn::before{ width:13px; height:13px; }
+        .tp-close::before,.tp-close::after{ width:15px; height:2.1px; }
         /* Minimised legend: keep the header compact so the (now 32px) buttons don't dwarf the title. */
         .data-legend.legend-collapsed, .koppen-legend.legend-collapsed{ padding:6px 10px !important; min-width:150px; }
         .data-legend.legend-collapsed h4, .koppen-legend.legend-collapsed h4{ min-height:32px !important; display:flex; align-items:center; }
@@ -8283,7 +8331,14 @@ window.addEventListener('DOMContentLoaded', () => {
       dd.addEventListener('click',(e)=>{
         try{
           if(e.target.closest && e.target.closest(SUBCTRL)) return;     /* a real control handles itself */
-          const scrolled = sc && Math.abs(sc.scrollTop - sTop) > 3;
+          /* (#R35) ROOT CAUSE of "ほとんどのレイヤーが選択しても反応しない" on mobile: this threshold was 3px, but
+             iOS momentum scrolling leaves the list gently SETTLING for a moment after the finger lifts, so a
+             real tap that lands during that settle saw scrollTop drift a few px and was WRONGLY suppressed.
+             Only the top utility toggles (reachable with no scroll) survived → "most layers" below the fold felt
+             dead. A genuine scroll DRAG moves the finger and is already caught by `far` (>24px); the container
+             delta only needs to catch a list still actively GLIDING (≫ a few px during the brief tap), so 16px
+             cleanly separates "gentle settle under a tap" (toggle) from "still flying" (suppress). */
+          const scrolled = sc && Math.abs(sc.scrollTop - sTop) > 16;
           const lab = e.target.closest ? e.target.closest('label.layer-option') : null;
           if(lab){
             e.preventDefault(); e.stopPropagation();                    /* never let the native label toggle fire */
@@ -13873,7 +13928,11 @@ window.addEventListener('DOMContentLoaded', () => {
         return true;
       }catch(_){ return false; }
     }
-    function refresh(){ try{ if(ensure()) map.getSource(SRC).setData(fc()); }catch(_){} }
+    /* (#R35) Self-healing refresh: if the style is transiently NOT loaded when an annotation is added
+       (e.g. many layers churning styledata right after "Keep on map"), ensure() returns false and the old
+       refresh silently did nothing → the kept line/area "disappeared". Now we retry until the source+layers
+       exist, so a kept drawing can never be dropped by a load race. */
+    function refresh(){ try{ if(ensure()){ map.getSource(SRC).setData(fc()); } else if(items.length){ setTimeout(refresh,120); } }catch(_){ if(items.length) setTimeout(refresh,200); } }
     map.on('styledata',()=>{ if(items.length) setTimeout(refresh,80); });
     function repr(geom){ try{ if(geom.type==='LineString'){ const c=geom.coordinates; return c[Math.floor(c.length/2)]; } if(geom.type==='Polygon'){ const r=geom.coordinates[0]; let x=0,y=0; r.forEach(p=>{x+=p[0];y+=p[1];}); return [x/r.length,y/r.length]; } }catch(_){} return [0,0]; }
     function openPop(id, ll){ const it=items.find(x=>x.id===id); if(!it) return; try{ if(popup) popup.remove(); }catch(_){}
@@ -14129,10 +14188,13 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<svg class="ts-svg" width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;cursor:crosshair;touch-action:none;">'
           +'<path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
           +'<line class="ts-cursor" y1="0" y2="'+H+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
-          +'<circle class="ts-dot" r="3" fill="var(--primary-color)" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke" style="display:none;"/>'
           +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'
         +'</svg>'
         +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:5;transform:translate(-50%,-118%);"></div>'
+        /* (#R35) The intersection dot is an HTML element (perfect circle) — the old SVG <circle> lived in a
+           preserveAspectRatio="none" chart, so the non-uniform x/y scale squashed it into an ellipse
+           ("ドットが縦に潰れて楕円"). An absolutely-positioned div is immune to that scaling. */
+        +'<div class="ts-dot" style="display:none;position:absolute;width:9px;height:9px;border-radius:50%;background:var(--primary-color);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.18);pointer-events:none;transform:translate(-50%,-50%);z-index:6;"></div>'
       +'</div>';
     }
     /* (#R34) Wire each chart's instant crosshair after its HTML is in the DOM. */
@@ -14653,7 +14715,9 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R27) Close × is a direct child of the window now (relocated out of the header), pinned top-right
          above all header/controls so nothing can overlap it. Mobile media query enlarges it below. */
       /* (#R29.1) Clean circular close + grouped iOS segments so the header reads regular, not "並びが不規則でダサい". */
-      '#cmp-close{position:absolute;top:6px;right:7px;z-index:30;width:28px;height:28px;border-radius:50%;background:rgba(128,128,128,0.16);font-size:13px;}'+
+      /* (#R35) Close × is a rounded-RECT now, not a circle ("×ボタンが丸でダサい") — matches the minimise
+         button + every other compare control (the iOS design language is rounded-rect, never circles here). */
+      '#cmp-close{position:absolute;top:6px;right:7px;z-index:30;width:28px;height:28px;border-radius:8px;background:rgba(128,128,128,0.16);font-size:13px;}'+
       '#cmp-close:hover{background:#ff3b30;color:#fff;}'+
       '.cmp-seg{display:inline-flex;background:var(--input-bg);border-radius:9px;padding:2px;gap:2px;flex:0 0 auto;}'+
       '.cmp-seg .cmp-btn{background:transparent;border-radius:7px;padding:4px 9px;}'+
@@ -14684,8 +14748,13 @@ window.addEventListener('DOMContentLoaded', () => {
          BEHIND it (perfect register — see syncFromMain's lens branch). A cyan border marks the lens. */
       /* (#R34) "謎の青い枠…いらない" — the bright cyan x-ray keyline is GONE. A faint neutral edge is all that
          marks the lens boundary now (no blue anywhere). */
-      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 1px rgba(150,160,175,0.45) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
+      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 1px rgba(168,168,170,0.42) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
+      /* (#R35) Kill the "謎の青い枠": the focusable compare-map canvas (and the window) were showing the
+         browser default blue :focus / :focus-visible outline on click. Suppress it everywhere in compare so
+         no blue frame can appear; the neutral inset keyline above is the ONLY boundary marker now. */
+      '#compare-window,#compare-window *,#compare-map,#compare-map canvas,#compare-window .maplibregl-canvas{outline:none !important;-webkit-tap-highlight-color:transparent;}'+
+      '#compare-window .maplibregl-canvas:focus,#compare-map canvas:focus{outline:none !important;box-shadow:none !important;}'+
       /* (#R29.1) The lens MAP is now draggable inside the window (it drives the main map 1:1); empty body
          areas still pass through so you can also pan the main map outside the window. */
       '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
@@ -14766,11 +14835,14 @@ window.addEventListener('DOMContentLoaded', () => {
          continuously and never goes idle, so the old `cmap.once('idle',applyBase)` could never fire and the
          Map/Sat switch "押しても地図が変わらない". A bounded 120ms poll always lands once the style is ready. */
       if(!cmap.getLayer('cmp-base-carto')){ clearTimeout(cmap.__baseRetryT); cmap.__baseRetryT=setTimeout(applyBase,120); return; }
-      /* (#R21) X-ray + SATELLITE now works ("x-rayで…satelliteが使えない"): picking Sat in x-ray paints
-         the satellite base inside the lens (an x-ray *to satellite imagery*); picking Map keeps the
-         transparent lens (the classic data-layers-over-the-main-map view). */
-      if(xrayOn()){ setVis('cmp-base-carto',false); setVis('cmp-base-dark',false); setVis('cmp-base-sat',baseKind==='sat'); return; }
+      /* (#R35) X-ray "Map" now paints the compare's OWN carto/dark base instead of going transparent.
+         The old behavior ("Map" = transparent = just shows the MAIN map through the lens) was exactly the
+         "X-rayはすべてをメインマップに合わせるためのモード" the user rejected — you could never make the lens a
+         MAP. X-ray exists to show a DIFFERENT view at the SAME registered spot (e.g. main=Satellite, lens=Map,
+         or any data layer over an independent base). So both Map and Sat now show an opaque, independent base
+         in the lens, registered pixel-for-pixel to the main camera. */
       const dark=document.documentElement.getAttribute('data-theme')==='dark';
+      if(xrayOn()){ setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); return; }
       setVis('cmp-base-carto',baseKind==='map'&&!dark); setVis('cmp-base-dark',baseKind==='map'&&dark); setVis('cmp-base-sat',baseKind==='sat'); }
     function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600);   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
       /* (#R34) POLL until the wanted base actually shows — a click landing during the cmap style-load
@@ -16340,6 +16412,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const primary=document.createElement('button'); primary.textContent=jp?'使ってみる':'Start exploring';
     primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-color);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
     primary.onclick=close; card.appendChild(primary);
+    /* (#R35) Direct launch into Satellite Drop (the renamed World Explorer) straight from the Start page,
+       just below "Start exploring" ("start exploringの下に…そのまま行けるボタン"). */
+    const satdrop=document.createElement('button');
+    satdrop.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px;"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>'+(currentLang==='jp'?'サテライトドロップで遊ぶ':currentLang==='de'?'Satellite Drop spielen':'Play Satellite Drop');
+    satdrop.style.cssText='width:100%;padding:12px;margin-top:9px;border:none;border-radius:13px;background:linear-gradient(135deg,#0a84ff,#34c759);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+    satdrop.onclick=()=>{ close(); setTimeout(()=>{ try{ window._pgWorldExplorer&&window._pgWorldExplorer(); }catch(_){} },380); }; card.appendChild(satdrop);
     const tour=document.createElement('button'); tour.textContent=jp?'▶ レイヤー紹介ツアーを見る':'▶ Watch the layer tour';
     tour.style.cssText='width:100%;padding:11px;margin-top:8px;border:none;border-radius:13px;background:transparent;color:var(--primary-color);font-size:13.5px;font-weight:600;cursor:pointer;';
     tour.onclick=()=>{ close(); setTimeout(()=>{ try{ _imStartDemo(true); }catch(_){} },360); }; card.appendChild(tour);
