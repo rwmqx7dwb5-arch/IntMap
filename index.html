@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-17-R34';
+  window.INTMAP_BUILD='2026-06-17-R35';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -5709,17 +5709,21 @@ window.addEventListener('DOMContentLoaded', () => {
         'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left',
         'text-offset':[1.25,0],
-        /* (#R32) "ズームしても帯が表示されない" — at low zoom the bands collide and drop; once zoomed IN
-           (z≥5) allow overlap so the band of a pin you zoomed to ALWAYS shows. Decluttered world view kept. */
-        'text-allow-overlap':['step',['zoom'],false,5,true],
-        /* (#R33) text & icon are coupled (both optional:false) so a pin NEVER shows its text without the
-           pill background at a zoom boundary — it's the whole band or nothing ("表示する時は帯付きに"). */
+        /* (#R35) BANDS ARE NOW PURE COLLISION-BASED at every zoom (no more z≥5 force-overlap). The old
+           step→allow-overlap:true CRUSHED every band on top of each other once zoomed in ("重なり合ってつぶれる")
+           and the hard z=5 boundary popped/flickered ("高速点滅 / ズームインすると見えなくなる"). With
+           allow-overlap:false the map shows ONLY the bands that physically fit; as you zoom IN the pins spread
+           apart so MORE bands appear ("空間に余裕ができれば表示"), and dense clusters quietly stay as dots until
+           there's room — exactly the requested behavior. A stable symbol-sort-key makes the winner deterministic
+           (subject-located > publisher > unlocated), which removes the frame-to-frame flicker. */
+        'symbol-sort-key':['match',['get','mapped'],'true',0,'publisher',1,'none',3,2],
+        'text-allow-overlap':false,
         'text-optional':false,
         'text-max-width':14,
         'icon-image':'news-pill',
         'icon-text-fit':'both',
         'icon-text-fit-padding':[2,9,2,9],
-        'icon-allow-overlap':['step',['zoom'],false,5,true],
+        'icon-allow-overlap':false,
         'icon-optional':false
       },paint:{
         'text-color':'#ffffff',
@@ -5895,6 +5899,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const title=a._title||'', pub=a._pub||'';
     if(newsPinMode==='publisher'){
       if(a.pubLoc){ a.loc=a.pubLoc; a.name=a.pubName; a.mapped='publisher'; }
+      /* (#R35) "Publisher locationにすると位置不明のピンが多い" — when the outlet HQ can't be resolved, fall
+         back to the SUBJECT (event) location instead of scattering to a random hash point. A real place is far
+         more useful than a dim "unknown" dot, so the number of unlocated publisher pins drops sharply. */
+      else if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=(pub?pub+' · ':'')+(a.subjectName||''); a.mapped='publisher'; }
       else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(currentLang==='jp'?'発信元不明':'Publisher unknown'); a.mapped=false; }
     } else {
       if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; }
@@ -7274,10 +7282,15 @@ window.addEventListener('DOMContentLoaded', () => {
         '#pg-we-panel{left:8px !important;right:8px !important;width:auto !important;max-width:none !important;transform:none !important;flex-wrap:wrap;justify-content:center;gap:8px;padding:10px 12px;}'+
         /* (#R34) flex must NOT squash the round home/exit buttons into ovals ("ボタンの縦横比がおかしい"); the
            label takes its own full row so the action buttons sit on a clean centred row. */
-        '#pg-we-panel button{min-height:40px;flex:0 0 auto;}'+
+        '#pg-we-panel button{flex:0 0 auto;min-height:40px;}'+
+        /* (#R35) The round home/exit buttons are width:34px inline; min-height:40px alone stretched them into
+           34×40 OVALS ("ボタンの縦横比がおかしい"). Force the circular ones (border-radius:50%) square. */
+        '#pg-we-panel button[style*="50%"]{width:42px !important;height:42px !important;min-height:0 !important;}'+
         '#pg-we-panel>span{flex:1 1 100%;text-align:center;margin-bottom:2px;}'+
         '#pg-pan-hud{left:8px !important;right:8px !important;width:auto !important;max-width:none !important;transform:none !important;}'+
+        /* (#R35) Same oval fix for the pandemic HUD's circular ✕ (width:28px inline). */
         '#pg-pan-hud button{flex-shrink:0;}'+
+        '#pg-pan-hud button[style*="50%"]{width:34px !important;height:34px !important;min-height:0 !important;}'+
         '}';
       document.head.appendChild(s); }
     window._pgWorldExplorer=function(){
@@ -7415,6 +7428,10 @@ window.addEventListener('DOMContentLoaded', () => {
         let day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', R0_BASE=P.r0;
         let vaxProg=0, vaxDay=-1, vaxRate=0, treat=false, pheic=false, hit10=false, variants=0, closeAnn=0, lockAnn=0, d1m=false, d10m=false;
         const vaxDifficulty=0.7+Math.random()*0.9;   // luck: some runs get a fast vaccine, some slow
+        /* (#R35) REALISM: a vaccine can NEVER be approved before ~8 months. The R&D-progress race alone let a
+           massive early outbreak unlock a vaccine in ~1 month ("ありえないことが多すぎる") — but the real record
+           (COVID mRNA, genome→first EUA) is ~270 days. Gate approval behind a realistic floor of 240–360 days. */
+        const VAX_MIN_DAY=240+Math.floor(Math.random()*120);
         const peakDay=(lat)=> lat>=0 ? 20 : 202;
         function totals(){ let I=0,E=0,R=0,D=0,V=0,aff=0; for(let i=0;i<N;i++){ const s=st[i]; I+=s.I; E+=s.E; R+=s.R; D+=s.D; V+=s.V; if(s.seeded&&(s.I+s.E)>0.5) aff++; } return {I,E,R,D,V,aff}; }
         function seed(i,amount){ const s=st[i]; const k=Math.min(s.S, amount||Math.max(40,pop[i]*1e-6)); s.S-=k; s.E+=k; s.seeded=true; }
@@ -7424,7 +7441,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const gamE=1/Math.max(0.5,P.inc), gam=1/Math.max(1,P.inf), omega=immMo>=400?0:1/(immMo*30);
           /* vaccine R&D — driven by global infections in capable (high-GDP) countries + time (luck-gated) */
           if(vaxDay<0){ let drive=0; for(let i=0;i<N;i++){ if(dev[i]>0.6) drive+=st[i].I; } vaxProg+=0.0016+Math.min(0.02,drive/4e8);
-            if(vaxProg>vaxDifficulty){ vaxDay=day; let best=-1,bv=-1; for(let i=0;i<N;i++){ if(dev[i]>0.62){ const v=st[i].I*dev[i]+Math.random()*1e6; if(v>bv){bv=v;best=i;} } } const cn=best>=0?nm[best]:'a leading lab';
+            if(vaxProg>vaxDifficulty && day>=VAX_MIN_DAY){ vaxDay=day; let best=-1,bv=-1; for(let i=0;i<N;i++){ if(dev[i]>0.62){ const v=st[i].I*dev[i]+Math.random()*1e6; if(v>bv){bv=v;best=i;} } } const cn=best>=0?nm[best]:'a leading lab';
               news((jp()?(cn+'がワクチンを承認。接種が始まります。'):(cn+' approves a vaccine — rollout begins.')),'good'); } }
           if(vaxDay>=0) vaxRate=Math.min(0.012, vaxRate+0.00035);
           let totI=0;
@@ -7497,7 +7514,7 @@ window.addEventListener('DOMContentLoaded', () => {
           '<span style="color:#7a0010;">'+(jp()?'死亡':'Dead')+' <b>'+fmt(T.D)+'</b></span> · '+
           '<span style="color:#2ca25f;">'+(jp()?'回復':'Recovered')+' <b>'+fmt(T.R)+'</b></span> · '+
           '<span style="color:#0a84ff;">'+(jp()?'接種':'Vaccinated')+' <b>'+vpct+'%</b></span><br>'+
-          '<span>'+(jp()?'国':'Countries')+' <b>'+T.aff+'</b></span> · '+(jp()?'経過':'Day')+' <b>'+day+'</b>'+(variants?' · '+(jp()?'変異株':'variants')+' <b>'+variants+'</b>':'')+(vaxDay>=0?' · 💉':(vaxProg>0?' · '+(jp()?'ワクチン開発':'vaccine R&D')+' '+Math.round(Math.min(1,vaxProg/vaxDifficulty)*100)+'%':'')); }
+          '<span>'+(jp()?'国':'Countries')+' <b>'+T.aff+'</b></span> · '+(jp()?'経過':'Day')+' <b>'+day+'</b>'+(variants?' · '+(jp()?'変異株':'variants')+' <b>'+variants+'</b>':'')+(vaxDay>=0?' · 💉':(vaxProg>0?' · '+(jp()?'ワクチン開発':'vaccine R&D')+' '+Math.round(Math.min(1,vaxProg/vaxDifficulty,day/VAX_MIN_DAY)*100)+'%':'')); }   /* (#R35) progress also bounded by the realistic time floor */
         function mk(lab,val,min,max,stp,fmtv,set){ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 104px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 50px;text-align:right;'; r.oninput=()=>{ v.textContent=fmtv(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); }
         function renderConfig(){ hud.innerHTML='';
           const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=jp()?'パンデミック設定':'Outbreak setup'; tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='✕'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
@@ -11213,6 +11230,12 @@ window.addEventListener('DOMContentLoaded', () => {
        address in community posts). Fall back to a neutral handle from the user id instead. */
     if(!name) name='User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5);
     currentUser={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin }; updateAccountButton();
+    /* (#R35) Persist the developer flag the moment the OWNER account logs in, so "unlimited AI" is recognised
+       SYNCHRONOUSLY everywhere afterward — even before currentUser repopulates on the next load. This is why
+       the Settings usage graph "wasn't reflecting unlimited": aiRenderSettings could run before the async
+       email arrived. Persist + re-render now. */
+    try{ if(/2ppzc4kk6r@privaterelay\.appleid\.com/i.test(currentUser.email||'')) localStorage.setItem('intmap_dev','1'); }catch(_){}
+    try{ window.aiRenderSettings&&window.aiRenderSettings(); }catch(_){}
     try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
     try{ window._syncPrefsDown&&window._syncPrefsDown(); }catch(_){}   /* (#R20) pull the account's saved settings/presets/widgets */
   }
@@ -13440,7 +13463,10 @@ window.addEventListener('DOMContentLoaded', () => {
       '.wgt-title-row{display:flex;align-items:center;margin:2px 2px 10px;}'+
       '.wgt-edit-btn{margin-left:auto;border:none;background:rgba(128,128,128,0.16);color:var(--text-main);font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;}'+
       '.wgt-edit-btn.on{background:var(--primary-color);color:#fff;}'+
-      '.wgt-card.editing{outline:1.5px solid var(--glass-border);cursor:grab;touch-action:none;}'+
+      /* (#R35) overflow:visible in edit mode so the iOS-style delete badge (top:-7px;left:-7px, OUTSIDE the
+         card corner) is no longer clipped by the card's overflow:hidden ("削除する―ボタンがウィジェットに一部
+         隠されている"). The badge now shows in full. */
+      '.wgt-card.editing{outline:1.5px solid var(--glass-border);cursor:grab;touch-action:none;overflow:visible;}'+
       '.wgt-card.editing:active{cursor:grabbing;}'+
       /* (#R31) edit-mode: grip (drag) top-left, delete top-right; config gear restyled (SVG). */
       '.wgt-grip{position:absolute;top:7px;left:7px;z-index:2;display:flex;align-items:center;justify-content:center;color:var(--text-muted);opacity:0.7;}'+
@@ -14206,12 +14232,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const vbX=(cx-r.left)/r.width*TS_W;
         let best=0,bd=Infinity; for(let i=0;i<pts.length;i++){ const dd=Math.abs(pts[i][0]-vbX); if(dd<bd){ bd=dd; best=i; } }
         const p=pts[best];
-        cur.setAttribute('x1',p[0]); cur.setAttribute('x2',p[0]); cur.style.display='';
-        dot.setAttribute('cx',p[0]); dot.setAttribute('cy',p[1]); dot.style.display='';
-        tip.textContent=p[2]+' · '+p[3]; tip.style.display='block';
+        cur.setAttribute('x1',p[0]); cur.setAttribute('x2',p[0]); cur.style.display='';   /* vertical crosshair line (a line never distorts) */
         const wr=wrap.getBoundingClientRect();
-        tip.style.left=((p[0]/TS_W)*r.width + (r.left-wr.left))+'px';
-        tip.style.top=((p[1]/TS_H)*r.height + (r.top-wr.top))+'px';
+        /* (#R35) position the HTML dot + tip at the exact intersection pixel (round dot, no ellipse). */
+        const px=(p[0]/TS_W)*r.width + (r.left-wr.left), py=(p[1]/TS_H)*r.height + (r.top-wr.top);
+        dot.style.left=px+'px'; dot.style.top=py+'px'; dot.style.display='block';
+        tip.textContent=p[2]+' · '+p[3]; tip.style.display='block';
+        tip.style.left=px+'px'; tip.style.top=py+'px';
       };
       const leave=()=>{ cur.style.display='none'; dot.style.display='none'; tip.style.display='none'; };
       svg.addEventListener('pointermove',move); svg.addEventListener('pointerdown',move); svg.addEventListener('pointerleave',leave);
@@ -16368,6 +16395,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(localStorage.getItem('intmap_demo_seen')==='1') return; }catch(_){}
     if(document.getElementById('im-welcome')) return;
     const jp=currentLang==='jp';
+    const de=currentLang==='de';   /* (#R35) welcome screen now full 3-language (was jp/en only → leaked English in DE) */
     const isM=(typeof isMobile==='function' && isMobile());
     const ov=document.createElement('div'); ov.id='im-welcome';
     ov.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;justify-content:center;'+(isM?'align-items:flex-end;':'align-items:center;')+'background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;transition:opacity 0.28s ease;';
@@ -16385,13 +16413,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const icon=document.createElement('div'); icon.innerHTML='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>'; icon.style.cssText='width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--primary-color),#5856d6);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,0.22);';
     const ht=document.createElement('div');
     const h1=document.createElement('div'); h1.textContent='IntMap'; h1.style.cssText='font-size:23px;font-weight:700;line-height:1.15;';
-    const h2=document.createElement('div'); h2.textContent=jp?'世界を、地図で読み解く':'Explore the world, one layer at a time'; h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
+    const h2=document.createElement('div'); h2.textContent=jp?'世界を、地図で読み解く':de?'Die Welt erkunden – Ebene für Ebene':'Explore the world, one layer at a time'; h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
     ht.appendChild(h1); ht.appendChild(h2); head.appendChild(icon); head.appendChild(ht); card.appendChild(head);
     const feats=jp?[
       ['layers','70以上のデータレイヤー','気候・人口・経済・地政学などを地図に重ねて表示'],
       ['news','ライブニュースマップ','世界のニュースを「発生した場所」にピン表示'],
       ['globe','3D地球儀・衛星画像','地球儀／衛星・3D地形・過去にさかのぼる表示'],
       ['chart','国データ','国をタップして統計・時系列・比較を表示']
+    ]:de?[
+      ['layers','Über 70 Datenebenen','Klima, Bevölkerung, Wirtschaft & Geopolitik auf der Karte'],
+      ['news','Live-Nachrichtenkarte','Schlagzeilen dort angeheftet, wo sie wirklich geschehen'],
+      ['globe','Globus & Satellit','3D-Globus, Satellitenbilder, Gelände & Zeitreise'],
+      ['chart','Länderdaten','Tippe ein Land für Statistiken, Zeitreihen & Vergleiche an']
     ]:[
       ['layers','70+ data layers','Climate, population, economy & geopolitics on the map'],
       ['news','Live news map','World headlines pinned to where they actually happen'],
@@ -16409,7 +16442,7 @@ window.addEventListener('DOMContentLoaded', () => {
       tx.appendChild(t1); tx.appendChild(t2); row.appendChild(ic); row.appendChild(tx); list.appendChild(row); });
     card.appendChild(list);
     const close=()=>{ try{ localStorage.setItem('intmap_demo_seen','1'); }catch(_){} ov.style.opacity='0'; setTimeout(()=>{ try{ ov.remove(); }catch(_){} },280); };
-    const primary=document.createElement('button'); primary.textContent=jp?'使ってみる':'Start exploring';
+    const primary=document.createElement('button'); primary.textContent=jp?'使ってみる':de?'Loslegen':'Start exploring';
     primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-color);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
     primary.onclick=close; card.appendChild(primary);
     /* (#R35) Direct launch into Satellite Drop (the renamed World Explorer) straight from the Start page,
@@ -16418,7 +16451,7 @@ window.addEventListener('DOMContentLoaded', () => {
     satdrop.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px;"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>'+(currentLang==='jp'?'サテライトドロップで遊ぶ':currentLang==='de'?'Satellite Drop spielen':'Play Satellite Drop');
     satdrop.style.cssText='width:100%;padding:12px;margin-top:9px;border:none;border-radius:13px;background:linear-gradient(135deg,#0a84ff,#34c759);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;';
     satdrop.onclick=()=>{ close(); setTimeout(()=>{ try{ window._pgWorldExplorer&&window._pgWorldExplorer(); }catch(_){} },380); }; card.appendChild(satdrop);
-    const tour=document.createElement('button'); tour.textContent=jp?'▶ レイヤー紹介ツアーを見る':'▶ Watch the layer tour';
+    const tour=document.createElement('button'); tour.textContent=jp?'▶ レイヤー紹介ツアーを見る':de?'▶ Ebenen-Tour ansehen':'▶ Watch the layer tour';
     tour.style.cssText='width:100%;padding:11px;margin-top:8px;border:none;border-radius:13px;background:transparent;color:var(--primary-color);font-size:13.5px;font-weight:600;cursor:pointer;';
     tour.onclick=()=>{ close(); setTimeout(()=>{ try{ _imStartDemo(true); }catch(_){} },360); }; card.appendChild(tour);
     ov.appendChild(card);
