@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-17-R35';
+  window.INTMAP_BUILD='2026-06-18-R36';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -225,7 +225,10 @@ gtag('config', 'G-57X5MX0ZPW');
     #btn-account .acct-av{ width:22px; height:22px; border-radius:50%; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; font-size:14px; line-height:1; background:rgba(128,128,128,0.18); overflow:hidden; }
     #btn-account .acct-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px; }
     .control-panel{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }  /* (#R9/#21) tabs→search gap swapped with search→All/Saved */
-    .mode-btn{ flex:1 1 auto; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 6px; cursor:pointer; font-size:12px; font-weight:500; border-radius:10px; transition:0.3s; min-width:70px; }
+    /* (#R36) Equal-width nav tabs ("News/Information/Stats/Community のボタン幅は同一に"): flex:1 1 0 + min-width:0
+       makes all four exactly 1/4 (was flex:1 1 auto → content-sized, so Information/Community were much wider).
+       nowrap + a font/padding that fits the longest label keeps text inside the button with no extra rows. */
+    .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:11.5px; font-weight:500; border-radius:10px; transition:0.3s; white-space:nowrap; text-align:center; }
     .mode-btn.active{ background:var(--primary-color); color:#fff; box-shadow:0 4px 12px rgba(0,122,255,0.3); }
     /* iOS-style segmented control (for News pin mode and other small toggles) */
     .ios-segment{ display:inline-flex; background:var(--input-bg); border-radius:10px; padding:2px; gap:2px; }
@@ -733,11 +736,17 @@ gtag('config', 'G-57X5MX0ZPW');
     .ms-item:hover{ background:var(--input-bg); }
     .ms-loading{ padding:12px; font-size:12px; color:var(--text-muted); text-align:center; }
     .unit-sub{ font-size:0.82em; color:var(--text-muted); }
-    .tp-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:move; user-select:none; touch-action:none; }
+    .tp-header{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; cursor:move; user-select:none; touch-action:none; }
+    /* (#R36) ROOT CAUSE of "Radiusの文字と□/×記号の上下位置がおかしい上に被っている": .tp-title carries
+       margin-bottom:8px (its standalone style), but inside the CENTRED flex .tp-header that bottom margin shoves
+       the title text ~4px ABOVE the buttons (vertical misalignment), and with no shrink the title could collide
+       with the □/× on a narrow (mobile) panel. Zero the margin in the header + let the title ellipsis-shrink so
+       it can never overlap the fixed-size buttons. */
+    .tp-header .tp-title{ margin-bottom:0; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:24px; }
     /* (#R35) Tool panels (Measure / Draw) now use the EXACT SAME header-button icon language as the legends
        and popups ("測定機能のUIを他の凡例・ポップアップと統一しろ。-で最小化＋で最大化…他にないわ"): a centred
        line that turns into a square box when collapsed = minimise, and rotated bars = ×. No more text –/+. */
-    .tp-hd-btns{ display:flex; align-items:center; gap:6px; }
+    .tp-hd-btns{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
     .tp-min-btn,.tp-close{ position:relative; background:rgba(128,128,128,0.16); border:none; color:var(--text-muted); width:24px; height:24px; padding:0; font-size:0; line-height:0; border-radius:7px; cursor:pointer; box-sizing:border-box; flex:0 0 auto; }
     .tp-min-btn:hover,.tp-close:hover{ color:var(--text-main); background:var(--input-bg); }
     .tp-min-btn::before{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); }
@@ -1354,6 +1363,13 @@ gtag('config', 'G-57X5MX0ZPW');
     body.sidebar-translucent .m-sheet, body.sidebar-glass2 .m-sheet,
     body.sidebar-translucent .wgt-card, body.sidebar-glass2 .wgt-card{
       background:var(--glass-fill) !important; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-color:var(--glass-border) !important; }
+    /* (#R36) ROOT CAUSE of "frosted glassにするとSettingsの色だけおかしい・グレーになる": a modal's .modal-content
+       sits over the dark .modal-overlay scrim (rgba(0,0,0,0.5)), so its backdrop-filter blurred that DARK SCRIM
+       instead of the map — the translucent glass fill over a near-black backdrop reads as flat GRAY. Floating
+       legends/popups sit straight over the colourful map, so they frost correctly. Fix: in the glass modes
+       lighten the modal scrim so the modal frosts the MAP like every other glass surface (Solid keeps full dim). */
+    body.sidebar-translucent .modal-overlay, body.sidebar-glass2 .modal-overlay{ background:rgba(0,0,0,0.16); }
+    [data-theme="dark"] body.sidebar-translucent .modal-overlay, [data-theme="dark"] body.sidebar-glass2 .modal-overlay{ background:rgba(0,0,0,0.34); }
 
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
@@ -2639,7 +2655,15 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R31) Developer = unlimited AI. Enabled by localStorage intmap_dev='1' or the owner's account email.
      This lifts the CLIENT-side gate; for a truly unlimited server quota, the ai-proxy function also grants
      the dev user id/email an unlimited plan (DEV_USER_IDS / DEV_EMAILS secret) — see DEV-NOTES. */
-  function aiDev(){ try{ if(localStorage.getItem('intmap_dev')==='1') return true; const e=(typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||''; return /2ppzc4kk6r@privaterelay\.appleid\.com/i.test(e); }catch(_){ return false; } }
+  function aiDev(){ try{ if(localStorage.getItem('intmap_dev')==='1') return true;
+    /* (#R36) ROOT CAUSE of "開発者なのに無制限が設定欄のグラフに反映されない（まだ変わっていない）": the dev flag was
+       only set by logging in with the owner email, but the developer runs this build LOCALLY (file:// or
+       localhost) without logging in → aiDev() stayed false → the graph showed the 5/day quota. Treat the local
+       dev environment itself as the developer context. The PUBLIC site is served from its real domain, so
+       end-users on the deployed site are unaffected (their quota is unchanged). */
+    const proto=location.protocol, h=location.hostname;
+    if(proto==='file:'||h==='localhost'||h==='127.0.0.1'||h==='[::1]'||h===''){ try{ localStorage.setItem('intmap_dev','1'); }catch(_){} return true; }
+    const e=(typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||''; return /2ppzc4kk6r@privaterelay\.appleid\.com/i.test(e); }catch(_){ return false; } }
   window.aiDev=aiDev;
   function aiDailyLimit(){ return (aiUsage && aiUsage.limit) || AI_FREE_DAILY; }
   function aiUsesLeft(){ if(aiDev()) return Infinity; if(aiUsage.date!==aiToday()) return aiDailyLimit(); return Math.max(0, aiDailyLimit() - (aiUsage.used||0)); }
@@ -5429,7 +5453,10 @@ window.addEventListener('DOMContentLoaded', () => {
     searchCardEl.querySelector('.src-card-close').onclick=closeSearchCard;
     searchCardEl.querySelector('#src-copy').onclick=()=>{ try{ navigator.clipboard.writeText(`${lat.toFixed(5)}, ${lng.toFixed(5)}`); }catch(_){} };
     searchCardEl.querySelector('#src-pin').onclick=()=>{ const id=addPin(lng,lat); openPinPopup(id); };
-    searchCardOnMove=()=>positionSearchCard(); map.on('move',searchCardOnMove);
+    /* (#R36) rAF-coalesce the per-move reposition (mobile pan/zoom smoothness #13): `move` can fire several
+       times per frame during inertia, and positionSearchCard does layout (getBoundingClientRect + style writes);
+       collapse it to at most once per frame so it never piles up work mid-gesture. */
+    let _scRAF=0; searchCardOnMove=()=>{ if(_scRAF) return; _scRAF=requestAnimationFrame(()=>{ _scRAF=0; try{ positionSearchCard(); }catch(_){} }); }; map.on('move',searchCardOnMove);
     positionSearchCard();
     /* Async elevation / depth */
     try{
@@ -5675,6 +5702,38 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     }catch(_){} }
   window.refreshNewsPill=refreshNewsPill;
+  /* (#R36) NEWS-BAND DE-CLUTTER — decides which title bands show, considering ONLY other news bands (never the
+     base-map labels). A band is granted screen space greedily, highest priority first (subject-located >
+     publisher > unlocated), to the RIGHT of its dot; a band that would overlap an already-granted band stays a
+     bare dot. Runs on moveend/zoomend + after every data update, so: zoom in → pins spread → more bands appear;
+     dense clusters stay dots until there's room; and because it never recomputes mid-gesture, the bands never
+     blink. Visibility is applied via the `bnd` feature-state the layer's opacity reads. */
+  let _ndcT=null;
+  function _declutterNewsBands(){
+    try{
+      if(!map||!map.getSource('news-points')||!map.getLayer('news-labels')) return;
+      const feats=newsFeatures||[]; if(!feats.length) return;
+      const cont=map.getContainer(); const W=cont.clientWidth||map.getCanvas().width, H=cont.clientHeight||map.getCanvas().height;
+      const M=48;   /* off-screen margin: keep a band as the pin scrolls just past the edge */
+      const items=[];
+      for(const f of feats){
+        const g=f.geometry, p=f.properties||{}; const fid=p.fid; if(!g||g.type!=='Point'||fid==null) continue;
+        let pt; try{ pt=map.project(g.coordinates); }catch(_){ continue; }
+        if(pt.x<-M||pt.x>W+M||pt.y<-M||pt.y>H+M){ items.push({fid,off:true}); continue; }
+        const txt=String(p.short||p.title||''); const w=Math.min(txt.length,16)*6.4+28;   /* ≈ pill width */
+        const pr=(p.mapped==='true')?0:(p.mapped==='publisher')?1:2;
+        items.push({fid,x:pt.x,y:pt.y,w,h:19,pr});
+      }
+      const vis=items.filter(i=>!i.off).sort((a,b)=> a.pr-b.pr || a.y-b.y || a.x-b.x);
+      const claimed=[]; const win=new Set();
+      const hit=(r)=>{ for(const c of claimed){ if(r.x<c.x+c.w && r.x+r.w>c.x && r.y<c.y+c.h && r.y+r.h>c.y) return true; } return false; };
+      for(const it of vis){ const r={x:it.x+9,y:it.y-10,w:it.w,h:it.h}; if(!hit(r)){ claimed.push(r); win.add(it.fid); } }
+      for(const it of items){ try{ map.setFeatureState({source:'news-points',id:it.fid},{bnd:win.has(it.fid)}); }catch(_){} }
+    }catch(_){}
+  }
+  window._declutterNewsBands=_declutterNewsBands;
+  function scheduleNewsDeclutter(){ if(_ndcT) clearTimeout(_ndcT); _ndcT=setTimeout(()=>{ _ndcT=null; _declutterNewsBands(); },90); }
+  window.scheduleNewsDeclutter=scheduleNewsDeclutter;
   function setupIntelLayers(){
     if(!map||!map.isStyleLoaded()) return;
     ensureLabelPill();
@@ -5709,31 +5768,36 @@ window.addEventListener('DOMContentLoaded', () => {
         'text-font':['literal',['Noto Sans Regular']],
         'text-anchor':'left',
         'text-offset':[1.25,0],
-        /* (#R35) BANDS ARE NOW PURE COLLISION-BASED at every zoom (no more z≥5 force-overlap). The old
-           step→allow-overlap:true CRUSHED every band on top of each other once zoomed in ("重なり合ってつぶれる")
-           and the hard z=5 boundary popped/flickered ("高速点滅 / ズームインすると見えなくなる"). With
-           allow-overlap:false the map shows ONLY the bands that physically fit; as you zoom IN the pins spread
-           apart so MORE bands appear ("空間に余裕ができれば表示"), and dense clusters quietly stay as dots until
-           there's room — exactly the requested behavior. A stable symbol-sort-key makes the winner deterministic
-           (subject-located > publisher > unlocated), which removes the frame-to-frame flicker. */
+        /* (#R36) ROOT CAUSE of "ズームインすると帯が見えなくなる / 空間に余裕があるピンにも帯が出ない / 高速点滅":
+           GL collision is GLOBAL across every symbol layer, so allow-overlap:false made the news bands compete
+           against ALL the base-map place labels (cities/towns/streets). Zooming in spawns more base labels →
+           the bands lose the collision even when there's plenty of room between NEWS pins, and the per-frame
+           re-placement flickered. Fix: take the bands OUT of GL collision entirely (allow-overlap + ignore
+           placement) and decide visibility ourselves with a JS de-clutter that only considers OTHER NEWS bands
+           (see _declutterNewsBands). A band shows iff feature-state `bnd` is true; it runs on moveend (not every
+           frame) so it never blinks. Dense clusters → only the winners show, the rest stay dots; zoom in →
+           pins spread → more win. Independent of base labels. */
         'symbol-sort-key':['match',['get','mapped'],'true',0,'publisher',1,'none',3,2],
-        'text-allow-overlap':false,
+        'text-allow-overlap':true,
+        'text-ignore-placement':true,
         'text-optional':false,
         'text-max-width':14,
         'icon-image':'news-pill',
         'icon-text-fit':'both',
         'icon-text-fit-padding':[2,9,2,9],
-        'icon-allow-overlap':false,
+        'icon-allow-overlap':true,
+        'icon-ignore-placement':true,
         'icon-optional':false
       },paint:{
         'text-color':'#ffffff',
         'text-halo-color':'rgba(0,0,0,0.55)',
         'text-halo-width':0.8,
-        'text-opacity':['case',['boolean',['feature-state','hover'],false],0,1],
-        'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,1]
+        'text-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]],
+        'icon-opacity':['case',['boolean',['feature-state','hover'],false],0,['case',['boolean',['feature-state','bnd'],false],1,0]]
       }});
+      map.on('moveend',scheduleNewsDeclutter); map.on('zoomend',scheduleNewsDeclutter);
       /* If pins were accumulated before map.load, flush them now. */
-      if(newsFeatures.length) map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures});
+      if(newsFeatures.length){ map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
       try{ refreshNewsPill(); }catch(_){}   /* (#R32) set the band's initial colors for the current theme */
     }
     if(!map.getSource('dash-points')){
@@ -6017,7 +6081,7 @@ window.addEventListener('DOMContentLoaded', () => {
       newsFeatures.push({type:'Feature',id:fid,geometry:{type:'Point',coordinates:a.loc},properties:{
         fid, mapped:mappedStr, title:item.title, name:a.name||'', short:a.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate }});
     }});
-    map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures});
+    map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){}
   }
   const AI_GEO_CAP=120;  /* cover essentially the whole feed in one click (calls are batched) */
   /* Mode-aware AI locator. In Subject mode it geocodes the event location; in Publisher mode
@@ -6108,7 +6172,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
     if(map&&map.isStyleLoaded()) setupIntelLayers();
-    if(map&&map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures});
+    if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
     appendNewsBatch(); updateOcclusion();
     maybeAutoEnrich();
   }
@@ -6897,15 +6961,23 @@ window.addEventListener('DOMContentLoaded', () => {
   (function wireDetTap(){
     document.querySelectorAll('.nc-dd-panel').forEach(panel=>{
       if(panel.dataset.detTap) return; panel.dataset.detTap='1';
-      let downLab=null, dY=0, sTop=0, moved=false;
-      panel.addEventListener('pointerdown',e=>{ downLab=e.target.closest?e.target.closest('label'):null; dY=e.clientY; moved=false; sTop=panel.scrollTop; },true);
-      panel.addEventListener('pointermove',e=>{ if(Math.abs(e.clientY-dY)>24) moved=true; },true);
+      let downLab=null, dX=0, dY=0, moved=false, lastT=0, lastCb=null;
+      panel.addEventListener('pointerdown',e=>{ downLab=e.target.closest?e.target.closest('label'):null; dX=e.clientX; dY=e.clientY; moved=false; },true);
+      panel.addEventListener('pointermove',e=>{ if(Math.abs(e.clientX-dX)>24||Math.abs(e.clientY-dY)>24) moved=true; },true);
       panel.addEventListener('click',e=>{
-        const lab=e.target.closest?e.target.closest('label'):null; if(!lab) return;
-        e.preventDefault();                                  /* cancel the native (mis-targetable) label toggle */
-        if(moved || Math.abs(panel.scrollTop-sTop)>16) return;   /* a scroll, not a tap */
-        if(downLab && downLab!==lab) return;                 /* finger drifted to another row */
+        const clickLab=e.target.closest?e.target.closest('label'):null;
+        /* (#R36) Toggle the label the FINGER WENT DOWN ON, never the click target. ROOT CAUSE of "タップした言語と
+           違う言語にチェックが入る": on iOS the (delayed) click can land on a NEIGHBOUR after a reflow/scroll, and the
+           old code toggled the click's label. pointerdown is the user's true intent and is immune to that drift.
+           Also dropped the scrollTop-delta heuristic (it false-suppressed real taps — same bug as the layer list)
+           in favour of finger-travel, and added an echo-click guard so no second synthetic click can double-flip. */
+        const lab = downLab || clickLab; if(!lab) return;
+        e.preventDefault(); e.stopPropagation();              /* cancel the native (mis-targetable) label toggle */
+        if(moved) return;                                     /* a real scroll/drag → no toggle */
+        if(downLab && clickLab && downLab!==clickLab) return; /* finger clearly drifted rows → toggle nothing */
         const cb=lab.querySelector('input[type=checkbox]'); if(!cb||cb.disabled) return;
+        const now=Date.now(); if(cb===lastCb && now-lastT<350) return;   /* swallow a duplicate/echo click on the same box */
+        lastT=now; lastCb=cb;
         cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
       },true);
     });
@@ -8348,31 +8420,43 @@ window.addEventListener('DOMContentLoaded', () => {
       dd.addEventListener('click',(e)=>{
         try{
           if(e.target.closest && e.target.closest(SUBCTRL)) return;     /* a real control handles itself */
-          /* (#R35) ROOT CAUSE of "ほとんどのレイヤーが選択しても反応しない" on mobile: this threshold was 3px, but
-             iOS momentum scrolling leaves the list gently SETTLING for a moment after the finger lifts, so a
-             real tap that lands during that settle saw scrollTop drift a few px and was WRONGLY suppressed.
-             Only the top utility toggles (reachable with no scroll) survived → "most layers" below the fold felt
-             dead. A genuine scroll DRAG moves the finger and is already caught by `far` (>24px); the container
-             delta only needs to catch a list still actively GLIDING (≫ a few px during the brief tap), so 16px
-             cleanly separates "gentle settle under a tap" (toggle) from "still flying" (suppress). */
-          const scrolled = sc && Math.abs(sc.scrollTop - sTop) > 16;
+          /* (#R36) ROOT CAUSE #2 of "ほとんどのレイヤーが選択しても反応しない": suppression used a scrollTop-DELTA
+             heuristic, but reaching most layers needs scrolling and the list keeps momentum-SETTLING under a now
+             stationary finger — so a clean tap landing during that settle saw the container scroll a few px and was
+             WRONGLY cancelled. Tuning that px threshold across R28→R35 (3→16) never fixed it because scroll-delta is
+             the wrong signal. The reliable signals are FINGER TRAVEL (`far` >24px = a real drag, which also covers
+             every genuine scroll) and ROW DRIFT (the finger slid onto a different row). Dropped scroll-delta. */
           const lab = e.target.closest ? e.target.closest('label.layer-option') : null;
           if(lab){
-            e.preventDefault(); e.stopPropagation();                    /* never let the native label toggle fire */
-            if(scrolled || far) return;                                 /* a scroll/drag → no toggle */
-            if(downLabel && downLabel!==lab) return;                    /* finger drifted to another row → no misfire */
-            const cb=lab.querySelector('input[type=checkbox]'); if(!cb||cb.disabled) return;
-            const scNow=scrollerOf(lab);
-            const t=scNow?scNow.scrollTop:0;   /* (#R32) capture scroll BEFORE the toggle, re-assert after → 0px move */
+            const cb=lab.querySelector('input[type=checkbox]');
+            const suppress = far || (downLabel && downLabel!==lab);   /* real drag, or drifted to another row → no toggle */
+            const scNow=scrollerOf(lab); const t=scNow?scNow.scrollTop:0;          /* capture scroll BEFORE toggle */
+            const pin=()=>{ if(scNow){ scNow.scrollTop=t; requestAnimationFrame(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} }); setTimeout(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} },0); } };
+            const refresh=()=>{ try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} };
+            /* (#R36) ROOT CAUSE of "ほとんどのレイヤーが選択しても反応しない": when the tap lands DIRECTLY on the
+               checkbox <input>, the browser PRE-TOGGLES `checked` *before* the click event, and our preventDefault
+               then runs the spec's cancelled-activation RESTORE to the pre-toggle value *after* this handler — so
+               the manual `cb.checked=!cb.checked` got flipped right back and the layer never toggled (the box is
+               the most natural tap target → "most" layers felt dead). Fix: only OWN the toggle for label/row taps
+               (no native pre-toggle there). For a tap on the box itself, let the bullet-proof NATIVE toggle ride,
+               and only cancel it when SUPPRESSING a scroll. */
+            const onInput = e.target===cb || (e.target.tagName==='INPUT' && e.target.getAttribute('type')==='checkbox');
+            if(onInput){
+              if(suppress || !cb || cb.disabled){ e.preventDefault(); e.stopPropagation(); return; }   /* cancel native toggle (restores via cancelled-activation) */
+              /* allow the native checkbox toggle (don't preventDefault); just keep the list from jumping +
+                 refresh Active layers on the next frame (the native `change`/toggleLayer fires after dispatch). */
+              requestAnimationFrame(refresh); setTimeout(refresh,0); pin();
+              return;
+            }
+            /* label / row text tap → own it deterministically (exactly this row, exactly once). No native
+               pre-toggle on a label, so manual toggle sticks and preventDefault cancels the synthesized box click. */
+            e.preventDefault(); e.stopPropagation();
+            if(suppress || !cb || cb.disabled) return;
             cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
-            /* (#R32) Active layers is a sticky-BOTTOM bar now, so a toggle reflows nothing above. Re-assert the
-               pre-toggle scrollTop on this frame + next so neither the async rebuild NOR scroll-anchoring can
-               nudge the list ("チェックを付けても1pxたりとも動かない / 視点を一切動かさない"). */
-            try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
-            if(scNow){ scNow.scrollTop=t; requestAnimationFrame(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} }); setTimeout(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} },0); }
+            refresh(); pin();
             return;
           }
-          if((scrolled||far) && e.target.closest && e.target.closest('.lyr-row')){ e.preventDefault(); e.stopPropagation(); }
+          if(far && e.target.closest && e.target.closest('.lyr-row')){ e.preventDefault(); e.stopPropagation(); }
         }catch(_){}
       },true);
     })();
@@ -9976,13 +10060,29 @@ window.addEventListener('DOMContentLoaded', () => {
        NEVER turns anything on, so it can't cause "勝手にオンになる". */
     window._sweepOrphanLayers=function(){
       if(!map||!map.isStyleLoaded()||window._imDemoActive) return;
-      try{ document.querySelectorAll('#layer-dropdown input[id^="dl-"]').forEach(cb=>{
-        if(cb.checked) return; const id=cb.id.slice(3);
-        let vis=false; ['lyr-'+id, id+'-fill'].forEach(L=>{ try{ if(map.getLayer(L)&&map.getLayoutProperty(L,'visibility')==='visible') vis=true; }catch(_){} });
-        if(vis){ try{ toggleLayer(id,false); }catch(_){} }
-      }); }catch(_){}
+      try{
+        const visSet=new Set();
+        map.getStyle().layers.forEach(l=>{ try{ if((map.getLayoutProperty(l.id,'visibility')||'visible')==='visible') visSet.add(l.id); }catch(_){} });
+        document.querySelectorAll('#layer-dropdown input[id^="dl-"]').forEach(cb=>{
+          if(cb.checked) return; const id=cb.id.slice(3);
+          /* (#R36) catch EVERY visible sub-layer of this id, not just lyr-<id>/<id>-fill: a multi-part layer
+             (subcables-glow/-pts, contour-lines/-labels …) left ONE sublayer painted = still a ghost. */
+          let vis = visSet.has('lyr-'+id) || visSet.has(id+'-fill') || visSet.has(id+'-line');
+          if(!vis) for(const L of visSet){ if(L.indexOf('lyr-'+id+'-')===0){ vis=true; break; } }
+          if(vis){ try{ toggleLayer(id,false); }catch(_){} }
+        });
+      }catch(_){}
     };
     try{ if(map) map.on('idle',()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} }); }catch(_){}
+    /* (#R36) UNIVERSAL async-race orphan guard for EVERY layer subsystem (main dl-, eco-dl-, beta-dl-, bx-, l9-dl-).
+       The dl- toggle-time guard + the dl- idle sweep only cover the MAIN system; the eco / World-Bank / hazard
+       layers add+show inside THEIR OWN async callbacks, so an ON-then-quick-OFF can re-show a layer whose box is
+       now OFF ("閉じたはずのレイヤーが表示され続ける"). When ANY layer checkbox goes OFF, re-assert that OFF a few
+       times by re-running the checkbox's OWN change/hide path — idempotent, never turns anything on. */
+    try{ const _dd=document.getElementById('layer-dropdown'); if(_dd) _dd.addEventListener('change',(e)=>{
+      const cb=e.target; if(!cb||cb.type!=='checkbox'||cb.checked||cb.__reassertGuard) return;
+      [500,1400,3000].forEach(ms=>setTimeout(()=>{ try{ if(cb.checked||!cb.isConnected) return; cb.__reassertGuard=1; cb.dispatchEvent(new Event('change',{bubbles:true})); cb.__reassertGuard=0; }catch(_){ try{cb.__reassertGuard=0;}catch(__){} } },ms));
+    }); }catch(_){}
     /* Expose for the lyr-row dt-/ft- handlers above */
     window.refreshDatedLayer=refreshDatedLayer;
     window.refreshTrafficLayer=refreshTrafficLayer;
@@ -13626,24 +13726,30 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=now.toLocaleDateString(); }
         setV(e.u,'<span style="font-size:26px;">'+tstr+'</span>', dstr+(tz?' · '+tz:'')); });
       /* (#R33) Analog clock widget. */
-      active.filter(e=>e.t==='aclock').forEach(e=>{ let d=now; try{ if(tz) d=new Date(now.toLocaleString('en-US',{timeZone:tz})); }catch(_){}
+      /* (#R36) ROOT CAUSE of "アナログ時計が動かない" AND "some widgets are too slow to update": this block
+         referenced `dstr`, which is block-scoped to the DIGITAL clock forEach above — so in the aclock callback
+         it was undefined → ReferenceError → setV never ran (clock blank) AND, worse, the throw ABORTED the rest of
+         tickClock, freezing every locally-ticked widget after it (countdown / world clock / population / year
+         progress). Compute dstr locally + wrap each block so one bad widget can never freeze the others. */
+      active.filter(e=>e.t==='aclock').forEach(e=>{ try{ let d=now; try{ if(tz) d=new Date(now.toLocaleString('en-US',{timeZone:tz})); }catch(_){}
+        let dstr=''; try{ dstr=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',month:'short',day:'numeric',timeZone:tz}); }catch(_){ dstr=''; }
         const h=d.getHours()%12, mi=d.getMinutes(), se=d.getSeconds();
         const hand=(ang,len,w,col)=>{ const a=(ang-90)*Math.PI/180; return '<line x1="50" y1="50" x2="'+(50+len*Math.cos(a)).toFixed(1)+'" y2="'+(50+len*Math.sin(a)).toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"/>'; };
         let ticks=''; for(let i=0;i<12;i++){ const a=(i*30-90)*Math.PI/180; ticks+='<line x1="'+(50+40*Math.cos(a)).toFixed(1)+'" y1="'+(50+40*Math.sin(a)).toFixed(1)+'" x2="'+(50+45.5*Math.cos(a)).toFixed(1)+'" y2="'+(50+45.5*Math.sin(a)).toFixed(1)+'" stroke="var(--text-muted)" stroke-width="'+(i%3===0?2.4:1.2)+'"/>'; }
         const svg='<svg viewBox="0 0 100 100" width="96" height="96" style="display:block;margin:1px auto 0;"><circle cx="50" cy="50" r="47.5" fill="none" stroke="var(--text-muted)" stroke-width="2" opacity="0.55"/>'+ticks+hand(h*30+mi*0.5,25,3.2,'var(--text-main)')+hand(mi*6,34,2.3,'var(--text-main)')+hand(se*6,38,1.1,'var(--primary-color)')+'<circle cx="50" cy="50" r="2.6" fill="var(--primary-color)"/></svg>';
-        setV(e.u, svg, dstr+(tz?' · '+tz:'')); });
-      active.filter(e=>e.t==='countdown').forEach(e=>refreshCountdown(e));
+        setV(e.u, svg, dstr+(tz?' · '+tz:'')); }catch(_){} });
+      active.filter(e=>e.t==='countdown').forEach(e=>{ try{ refreshCountdown(e); }catch(_){} });
       /* (#R21) Locally-computed widgets ride the clock tick so they're always current. */
-      active.filter(e=>e.t==='worldclock').forEach(e=>{ const z=(e.cfg&&e.cfg.tz)||'Asia/Tokyo'; let ts,ds;
+      active.filter(e=>e.t==='worldclock').forEach(e=>{ try{ const z=(e.cfg&&e.cfg.tz)||'Asia/Tokyo'; let ts,ds;
         try{ ts=now.toLocaleTimeString(jp()?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit',timeZone:z}); ds=now.toLocaleDateString(jp()?'ja-JP':'en-GB',{weekday:'short',timeZone:z}); }catch(_){ ts='—'; ds=''; }
         setV(e.u,'<span style="font-size:24px;">'+ts+'</span>', ds+' · '+z.split('/').pop().replace(/_/g,' '));
-        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'世界時計 ':'World clock ')+z.split('/').pop().replace(/_/g,' '); });
-      active.filter(e=>e.t==='pop').forEach(e=>{ /* UN WPP 2024: ~8.231B at mid-2025, ≈ +2.17 persons/sec */
+        const nm=document.querySelector('.wgt-card[data-u="'+e.u+'"] .wgt-nm'); if(nm) nm.textContent=(jp()?'世界時計 ':'World clock ')+z.split('/').pop().replace(/_/g,' '); }catch(_){} });
+      active.filter(e=>e.t==='pop').forEach(e=>{ try{ /* UN WPP 2024: ~8.231B at mid-2025, ≈ +2.17 persons/sec */
         const v=8.231e9+(Date.now()-Date.UTC(2025,6,1))/1000*2.17;
-        setV(e.u,(v/1e9).toFixed(6)+' <span style="font-size:13px;">B</span>', (jp()?'国連推計ベースのライブ推定':'live estimate, UN-based')); });
-      active.filter(e=>e.t==='yearprog').forEach(e=>{ const y=now.getFullYear(); const a=new Date(y,0,1), b=new Date(y+1,0,1);
+        setV(e.u,(v/1e9).toFixed(6)+' <span style="font-size:13px;">B</span>', (jp()?'国連推計ベースのライブ推定':'live estimate, UN-based')); }catch(_){} });
+      active.filter(e=>e.t==='yearprog').forEach(e=>{ try{ const y=now.getFullYear(); const a=new Date(y,0,1), b=new Date(y+1,0,1);
         const fr=Math.min(1,Math.max(0,(now-a)/(b-a))); const day=Math.ceil((now-a)/864e5);
-        setV(e.u,(fr*100).toFixed(1)+'%<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);margin-top:7px;overflow:hidden;"><div style="height:100%;width:'+(fr*100).toFixed(1)+'%;background:var(--primary-color);border-radius:4px;"></div></div>', y+' · '+(jp()?day+'日目':'day '+day)); });
+        setV(e.u,(fr*100).toFixed(1)+'%<div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);margin-top:7px;overflow:hidden;"><div style="height:100%;width:'+(fr*100).toFixed(1)+'%;background:var(--primary-color);border-radius:4px;"></div></div>', y+' · '+(jp()?day+'日目':'day '+day)); }catch(_){} });
     }
     const wIco=(c)=>{ if(c==null)return '🌡'; if(c===0)return '☀️'; if(c<=3)return '⛅'; if(c<=48)return '🌫'; if(c<=67)return '🌧'; if(c<=77)return '❄️'; if(c<=82)return '🌦'; if(c<=99)return '⛈'; return '🌡'; };
     const una=()=>jp()?'取得できません':'unavailable';
@@ -13807,8 +13913,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ if(!map) return; let done=false;
           try{ const cg=window.countryGeo; const ft=cg&&cg.features&&cg.features.find(f=>String(f.id)===String(s.code));
             if(ft&&ft.geometry&&typeof turf!=='undefined'){ const bb=turf.bbox(ft);
-              if(bb&&bb.every(isFinite)&&(bb[2]-bb[0])<180&&(bb[3]-bb[1])<170){ map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,duration:900,maxZoom:6}); done=true; } } }catch(_){}
-          if(!done){ const ll=s.latlng; if(ll) map.flyTo({center:[ll[1],ll[0]],zoom:4,speed:1.3,essential:true}); }
+              if(bb&&bb.every(isFinite)&&(bb[2]-bb[0])<180&&(bb[3]-bb[1])<170){
+                /* (#R36) Frame the WHOLE country but animate at the SAME distance-adaptive speed as every other
+                   fly-to ("ジャンプ速度が速すぎる。他とおなじにしろ"): fitBounds used a FIXED duration:900 → a far
+                   jump covered huge distance in 900ms and felt too fast. cameraForBounds gives the same framing,
+                   then flyTo({speed}) paces it like the rest of the app. */
+                const cam=map.cameraForBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:6});
+                if(cam&&cam.center){ map.flyTo({center:cam.center,zoom:cam.zoom,speed:1.2,essential:true}); done=true; }
+                else { map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:6}); done=true; } } } }catch(_){}
+          if(!done){ const ll=s.latlng; if(ll) map.flyTo({center:[ll[1],ll[0]],zoom:4,speed:1.2,essential:true}); }
           try{ if(typeof closeSheet==='function') closeSheet(); }catch(_){}
         }catch(_){} };
       }catch(_){ setV(e.u,'—',''); } }
@@ -14732,7 +14845,11 @@ window.addEventListener('DOMContentLoaded', () => {
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
       '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:both;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
-      '#compare-window.cmp-min .cmp-body{display:none;}'+
+      /* (#R36) Minimise must VISIBLY collapse to just the title bar — hide the map body AND the layer-picker row
+         ("最小化したときにもUIが変わらず分かりにくい"). */
+      '#compare-window.cmp-min .cmp-body,#compare-window.cmp-min .cmp-picker{display:none;}'+
+      /* (#R36) and the −/restore button must change: minimised → a SQUARE (restore) affordance, not the same dash. */
+      '#compare-window.cmp-min #cmp-min::before{width:11px;height:11px;background:transparent;border:2px solid var(--text-main);border-radius:2px;}'+
       /* (#R23) draw the minimize bar as a perfectly CENTERED line (the "—" glyph sat on the text baseline,
          so the line was not vertically centered in the button — "横線がボタン内の中間にない"). */
       '#cmp-min{position:relative;color:transparent !important;display:flex;align-items:center;justify-content:center;}'+
@@ -14775,7 +14892,12 @@ window.addEventListener('DOMContentLoaded', () => {
          BEHIND it (perfect register — see syncFromMain's lens branch). A cyan border marks the lens. */
       /* (#R34) "謎の青い枠…いらない" — the bright cyan x-ray keyline is GONE. A faint neutral edge is all that
          marks the lens boundary now (no blue anywhere). */
-      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 0 0 1px rgba(168,168,170,0.42) inset, 0 10px 34px rgba(0,0,0,0.34);}'+
+      '#compare-window.cmp-xray{background:transparent !important;box-shadow:0 10px 34px rgba(0,0,0,0.34);}'+
+      /* (#R36) The x-ray lens frame was an INSET box-shadow on the window, but the opaque header (top edge) and
+         the transparent map canvas painted OVER it → "枠が消えている箇所がある" (the top run of the frame vanished
+         behind the header). Draw the frame as an always-on-top overlay border instead so all four sides are
+         continuous and never covered (pointer-events:none keeps the lens fully interactive). */
+      '#compare-window.cmp-xray::after{content:"";position:absolute;inset:0;border:1.5px solid rgba(150,160,175,0.72);border-radius:14px;pointer-events:none;z-index:20;}'+
       '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-map,#compare-window.cmp-xray .maplibregl-canvas{background:transparent !important;}'+
       /* (#R35) Kill the "謎の青い枠": the focusable compare-map canvas (and the window) were showing the
          browser default blue :focus / :focus-visible outline on click. Suppress it everywhere in compare so
@@ -15021,6 +15143,23 @@ window.addEventListener('DOMContentLoaded', () => {
           cmap.addSource('cmpx-volc',{type:'geojson',data:j});
           cmap.addLayer({id:'cmpx-volc',type:'circle',source:'cmpx-volc',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2,6,5],'circle-color':'#ff6a3d','circle-stroke-color':'#fff','circle-stroke-width':0.7,'circle-opacity':0.9}});
           done&&done(); }catch(_){} }).catch(()=>{}); }},
+      /* (#R36) parity adds — aurora + earthquakes (the main map has them; compare didn't). Same sources/paint
+         as the main map so they are byte-identical, not "low quality" clones. */
+      {k:'aurora', n:()=>jp()?'オーロラ予報':'Aurora forecast', ids:['cmpx-aurora-heat'], add(done){
+        if(cmap.getSource('cmpx-aurora')){ done&&done(); return; }
+        cmap.addSource('cmpx-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        cmap.addLayer({id:'cmpx-aurora-heat',type:'heatmap',source:'cmpx-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],'heatmap-intensity':1.1,'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,4,30],'heatmap-opacity':0.78,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
+        fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(r=>r.json()).then(j=>{ try{
+          const co=j.coordinates||[], feats=[];
+          for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
+          if(cmap.getSource('cmpx-aurora')) cmap.getSource('cmpx-aurora').setData({type:'FeatureCollection',features:feats});
+          done&&done(); }catch(_){} }).catch(()=>{}); }},
+      {k:'eq', n:()=>jp()?'地震（USGS）':'Earthquakes (USGS)', ids:['cmpx-eq'], add(done){
+        if(cmap.getSource('cmpx-eq')){ done&&done(); return; }
+        fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson').then(r=>r.json()).then(j=>{ try{
+          cmap.addSource('cmpx-eq',{type:'geojson',data:j});
+          cmap.addLayer({id:'cmpx-eq',type:'circle',source:'cmpx-eq',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['get','mag'],1,2.5,4,6,6,12,8,22],'circle-color':['interpolate',['linear'],['get','mag'],1,'#ffd24d',3,'#ff9500',5,'#ff3b30',7,'#7a0010'],'circle-opacity':0.78,'circle-stroke-color':'rgba(255,255,255,0.6)','circle-stroke-width':0.4}});
+          done&&done(); }catch(_){} }).catch(()=>{}); }},
       /* (#R21) "全部のレイヤーをcompare viewでも使えるように" — country CHOROPLETHS are now cloned:
          the main map paints them via feature-state on its own 'countries' source (unshareable), so
          the compare map gets ONE geojson with every metric baked into properties + the same ramps. */
@@ -15176,6 +15315,14 @@ window.addEventListener('DOMContentLoaded', () => {
            Stash + clear the inline height when collapsing, restore it when expanding. */
         if(minimized){ win.dataset.prevH=win.style.getPropertyValue('height'); win.style.removeProperty('height'); win.classList.add('cmp-min'); }
         else { win.classList.remove('cmp-min'); if(win.dataset.prevH){ win.style.setProperty('height',win.dataset.prevH,'important'); } setTimeout(()=>{ try{cmap.resize();}catch(_){} },60); }
+        /* (#R36) Swap the button icon/title so it's obvious whether the panel is collapsed (mobile shows the SVG;
+           desktop shows the ::before, which the .cmp-min CSS turns into a square). */
+        try{ const mb=win.querySelector('#cmp-min');
+          mb.innerHTML=minimized
+            ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
+            : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+          mb.title=minimized?(jp()?'元に戻す':'Restore'):(jp()?'最小化':'Minimise');
+        }catch(_){}
       };
       win.querySelector('#cmp-close').onclick=close;
       /* (#R26) The compare window must not sit ON TOP OF the sidebar — clamp its left edge to the sidebar's
