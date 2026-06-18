@@ -2949,3 +2949,124 @@ RUNS — 109 layer checkboxes, zero console errors after every change).
 - No change needed: no new data sources or collection (the publisher-fallback reuses the existing subject
   location; the dev flag is local-only). "World Explorer" appears in ToS/Privacy nowhere; the 5 remaining
   in-code mentions are comments.
+
+---
+
+## 40. Round 36 — re-reported-bug batch, root-cause focus (tags `#R36`)
+
+Build `2026-06-18-R36`. Verified live on the http preview after every change (page RUNS — 109 layer checkboxes,
+zero console errors). Each fix below was reproduced/proven, not assumed.
+
+### TOP PRIORITY — "ほとんどのレイヤーが選択しても反応しない" (TWO real root causes, both fixed + verified)
+- **(1) input-direct checkbox double-toggle.** When a tap lands on the checkbox `<input>`, the browser PRE-toggles
+  `checked` *before* the click event, and the capture handler's `preventDefault()` then triggers the spec's
+  cancelled-activation RESTORE *after* the handler — so the manual `cb.checked=!cb.checked` got flipped right back
+  → net no toggle. The box is the most natural tap target, so "most" layers felt dead. Proven with `el.click()`
+  (5/5 input-direct taps failed before, pass after). Fix: only OWN the toggle for label/row taps; for a tap on the
+  box itself, let the native toggle ride (cancel it only when suppressing a scroll).
+- **(2) scrollTop-delta momentum-settle false-suppression.** Reaching most layers needs scrolling, and the list
+  keeps momentum-SETTLING under a now-stationary finger, so a clean tap landing during that settle saw the
+  container scroll a few px and was WRONGLY cancelled. Tuning that px threshold across R28→R35 (3→16) never fixed it
+  because scroll-delta is the wrong signal. Dropped it; suppression now uses FINGER TRAVEL (`far` >24px, which also
+  covers every genuine scroll) + ROW DRIFT only. Verified: clean tap toggles, 40px momentum-settle tap NOW toggles,
+  60px finger drag still suppressed, and the map actually renders the toggled layer.
+
+### Layer ghosts ("閉じたはずのレイヤーが表示され続ける")
+- The dl- idle sweep only checked `lyr-<id>`/`<id>-fill` — broadened to catch multi-sublayer ids (`lyr-<id>-glow`
+  etc.). Added a **universal post-OFF re-assert guard** on the layer dropdown: when ANY layer checkbox goes OFF, it
+  re-runs that checkbox's OWN hide path 3x over ~3s — covering the async-ON-then-quick-OFF race for EVERY subsystem
+  (eco-/bx-/beta-/l9-, whose map-layer ids don't follow the dl- naming). Idempotent, self-terminating (verified
+  exactly 4 change events, no runaway), never turns anything on.
+
+### Multi-language news checkbox ("タップした言語と違う言語にチェックが入る")
+- Root cause, not a spacing hack: the handler toggled the CLICK target's label, but on iOS the (delayed) click can
+  land on a NEIGHBOUR after a reflow. Now it toggles the **pointerdown** label (the finger's true intent), drops the
+  same scrollTop heuristic, and adds an echo-click guard. Verified: clean tap = exactly the tapped language; a
+  down-on-A/click-on-B drift toggles NOTHING; echo double-click swallowed; a single legit tap always flips.
+
+### Compare view
+- **X-ray frame "枠が消えている箇所がある":** the frame was an INSET box-shadow the opaque header + map canvas painted
+  over. Now an always-on-top overlay border (`.cmp-xray::after`, z-index 20, pointer-events:none) — continuous on
+  all four sides.
+- **Minimise "UIが変わらず":** now collapses to JUST the title bar (hides body AND picker) and the button swaps to a
+  RESTORE square (+ "Restore"/"元に戻す" title). Verified the class/icon/picker-display all flip.
+- **Layer parity:** confirmed the compare GIBS layers use IDENTICAL levels/maxzoom to the main map (snow L8, aod L6,
+  sst L7, temp L6, precip L6, nightsat L8 — NOT lower quality). Added **aurora + earthquakes** clones (same
+  sources/paint as the main map) → 28 compare layers. Full 109-layer parity is still a larger effort (documented).
+
+### Dev = unlimited AI ("設定欄のグラフに反映されない / まだ変わっていない")
+- The flag was only set by logging in with the owner email, but the developer runs this build LOCALLY (file:// or
+  localhost) WITHOUT logging in → `aiDev()` stayed false → the graph showed the 5/day quota. Now `aiDev()` treats the
+  local dev env (file://localhost) as the developer context (auto-persists `intmap_dev`). The PUBLIC site on its real
+  domain is unaffected. Verified: fresh local load → `aiDev()` true, graph shows the full "unlimited" bar, no login.
+
+### Nav tabs equal width
+- News/Information/Stats/Community → `flex:1 1 0; min-width:0` (was content-sized). Verified exactly equal (92px
+  desktop / 88px mobile) with NO overflow/wrap in EN, JP AND DE (incl. German "Informationen", 13 chars).
+
+### Settings frosted-glass "グレーになる"
+- A modal's `.modal-content` sits over the dark `.modal-overlay` scrim (`rgba(0,0,0,0.5)`), so its backdrop-filter
+  blurred that DARK SCRIM (→ flat gray) instead of the map like every floating panel does. Fix: lighten the modal
+  scrim in the two glass modes so the modal frosts the MAP. Verified by screenshot in light theme — clean frosted
+  panel (not gray) in both Frosted Glass and More-transparent modes.
+
+### Measure / Radius header ("Radiusの文字と□/×が上下ズレ＋被る")
+- `.tp-title` carried `margin-bottom:8px` which, inside the centred flex header, shoved the title ~4px above the
+  min/close icons; on a narrow mobile panel it could also collide. Zeroed the margin in the header + made the title
+  ellipsis-shrink so it can never overlap the fixed-size buttons. Verified misalign 4→0 (desktop), no overlap at a
+  293px mobile panel even with a long title.
+
+### Widgets / clock
+- **Analog clock "not working" + "some widgets too slow to update":** ROOT CAUSE was a `dstr` ReferenceError — the
+  aclock block referenced `dstr`, which is block-scoped to the DIGITAL clock's forEach, so it threw every tick →
+  the clock never drew AND the throw aborted the rest of `tickClock`, freezing every later-ticked widget (countdown
+  / world clock / population / year progress). Fixed the scope + hardened each widget block with try/catch. Verified
+  live: an added analog clock renders its SVG face and all 6 cards stay filled.
+- **Random-country widget "ジャンプ速度が速すぎる":** `fitBounds` used a FIXED `duration:900`, so a far jump covered huge
+  distance in 900ms and felt too fast. Now `cameraForBounds` + `flyTo({speed:1.2})` → whole country framed at the
+  same distance-adaptive speed as every other fly-to.
+
+### News bands ("ズームインで消える / 空間があるのに帯が出ない / 高速点滅")
+- ROOT CAUSE: GL collision is GLOBAL across all symbol layers, so `allow-overlap:false` made the bands compete
+  against every base-map place label; zooming in spawns more labels → bands lose even with room between NEWS pins,
+  and per-frame re-placement flickered. Fix: take the bands OUT of GL collision (`allow-overlap:true` +
+  `ignore-placement:true` — which also REMOVES the heavy per-frame collision work) and decide visibility in JS with
+  `_declutterNewsBands`, considering ONLY other news bands, granted greedily highest-priority-first to the right of
+  the dot, run on moveend (never mid-gesture → no blink). Verified on synthetic data: world view → 3 spread cities
+  get bands + a tight cluster gets 0 (stays dots); zoom into the cluster → 4/6 get bands. Visibility via the `bnd`
+  feature-state the layer opacity reads.
+
+### Mobile zoom/pan smoothness
+- The init is already well-tuned (antialias off, pixelRatio capped at 2x, tile-cache budget, R33 occlusion deferred
+  off the gesture path) and the user's "don't sacrifice quality" rules out lowering pixelRatio. The news-band
+  collision-removal above also CUTS per-frame work on the News tab. Added: rAF-coalesced search-card reposition
+  (quality-neutral). Deeper GPU-bound gains would require sacrificing render quality, which is disallowed.
+
+### German (full 3-language, no leakage)
+- Audited the dictionary live: of the 129 keys actually used by `data-i18n`, only 5 lacked German; 160 more (used by
+  `t()` in dynamically-built legends/popups/tool-panels) were missing → those surfaces fell back to English. Filled
+  ALL 165 missing `i18n.de` keys (measure/area/radius, community, satellite controller, AI features, context menu,
+  sources/premium modals, etc.) — SAFE dictionary additions, no template-literal risk. Added **DE to the top language
+  toggle** (was EN/JP only) + wired its active state. Verified: switching to DE renders chrome, nav and MAP LABELS in
+  German (screenshot), zero console errors.
+- **Honest limitation:** the remaining English leak in DE is the ~766 inline `jp()?…:…` / `currentLang==='jp'?…:…`
+  string literals that carry no dictionary key. Bulk-converting all 766 template-literal sites is high-risk (a single
+  stray back-tick blanks the whole site) and infeasible to do safely in one pass; the dictionary completion above
+  covers the bulk of the dynamic UI, and the long tail is progressively localized.
+
+### News publisher pins ("位置不明のピンが多い")
+- The client gazetteer (`sourceDict` ~130 outlets) + the R32 embedded-place fallback + the R35 subject-location
+  fallback already place most pins. Added 28 more BRANDED outlets whose name carries no place token (Rappler,
+  Infobae, EFE, dpa, PTI/ANI/IANS, Caixin, Quartz, Meduza, Defense One, …) with accurate HQ coords — the case the
+  embedded-place scan can't catch. The server-side AI geolocation PROMPT is a separate `refresh-news` redeploy
+  (out of scope for a static-file edit).
+
+### Information events ("Eventsを強化")
+- +16 timeline events (Black Death, Copernicus, Newton's Principia, Waterloo, DNA double helix, Everest, first heart
+  transplant, Munich '72, Iran–Iraq War, Falklands, World Wide Web, Dolly, Human Genome Project, fall of Gaddafi,
+  Paris Agreement, Sudan civil war) — additive, real Wikipedia slugs.
+
+### ToS / Privacy / attributions
+- No change needed: no new data sources or collection. The new compare aurora/earthquake layers are NOAA/USGS
+  (same as the main map, already attributed); the new publisher outlets are HQ coordinates only; the dev flag is
+  local-only; events link to Wikipedia (already linked).
