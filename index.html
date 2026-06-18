@@ -498,9 +498,16 @@ gtag('config', 'G-57X5MX0ZPW');
        the iOS ~300ms delayed synthetic click that landed on the ADJACENT language, and pointer-events:none on
        the checkbox routes every tap through the <label> exactly once (no double-toggle). Fixes "tapping one
        language checks other languages" on mobile. */
-    .nc-dd-panel label{ display:flex; align-items:center; gap:10px; padding:9px 8px; min-height:40px; border-radius:7px; font-size:13px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    /* (#R37) iOS-compliant rows: 44px tap target, balanced 15px text + a 22px rounded custom checkbox (the old
+       16px box looked unbalanced next to the text — "テキストやチェックボックスの大きさがアンバランス…iOS準拠に").
+       pointer-events:none routes every tap through the <label> once (no double-toggle / cross-toggle). */
+    /* `div.nc-dd-panel` (specificity 0,1,2) so it beats `.setting-group label` (0,1,1, defined later) which
+       would otherwise force display:block + 13px + a bottom margin onto these rows. */
+    div.nc-dd-panel label{ display:flex; align-items:center; gap:12px; padding:0 10px; margin:0; min-height:44px; border-radius:9px; font-size:15px; font-weight:500; color:var(--text-main); cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
     .nc-dd-panel label:hover{ background:var(--input-bg,rgba(128,128,128,0.1)); }
-    .nc-dd-panel input[type=checkbox]{ pointer-events:none; }
+    .nc-dd-panel input[type=checkbox]{ -webkit-appearance:none; appearance:none; width:22px; height:22px; flex-shrink:0; border-radius:7px; border:1.5px solid var(--glass-border,rgba(128,128,128,0.5)); background:var(--input-bg); position:relative; pointer-events:none; transition:background .15s ease, border-color .15s ease; }
+    .nc-dd-panel input[type=checkbox]:checked{ background:var(--primary-color); border-color:var(--primary-color); box-shadow:0 1px 4px rgba(10,132,255,0.3); }
+    .nc-dd-panel input[type=checkbox]:checked::after{ content:''; position:absolute; left:7px; top:3px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); box-sizing:border-box; }
     @media (hover:none){ .nc-dd-panel label:hover{ background:transparent; } }
     .sat-key-row{ margin-bottom:11px; }
     .sat-key-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px; }
@@ -1646,7 +1653,7 @@ gtag('config', 'G-57X5MX0ZPW');
   <div class="sidebar" id="sidebar">
     <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
     <div class="header-area">
-      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button></div></div>
+      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button></div></div>
       <button class="btn-settings" id="btn-open-settings"><span id="text-settings">Settings</span></button>
     </div>
     <div class="control-panel">
@@ -1783,7 +1790,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option></select></div>
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch</option><option value="ru">Русский</option></select></div>
     <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
       <!-- (#R33) Only System Default / Dark / Light kept per request; the skin themes were deleted. -->
       <option value="auto" id="opt-theme-auto">System Default</option>
@@ -2146,6 +2153,25 @@ window.addEventListener('DOMContentLoaded', () => {
       tlTitle:"Zeitreise-Nachrichten", tlToday:"Heute", tl10y:"−10 J", tl5y:"−5 J", tlNow:"Jetzt",
       lblPinMode:"Nachrichten-Pin-Position", pinModeLoc:"Ort des Themas", pinModePub:"Ort des Herausgebers",
       aiTranslateTitles:"Titel übersetzen", aiViewSumBtn:"Diese Ansicht zusammenfassen",
+      /* (#R37) full DE coverage — the 184 keys that were falling back to English (measure/stats/community/AI/satellite/context). */
+      loading:"Artikel werden geladen...", noMatch:"Keine Ergebnisse gefunden.", networkError:"Nachrichten konnten nicht geladen werden. Erneuter Versuch…", emptyHint:"Kein Tab ausgewählt — die Karte ist frei.<br>Wählen Sie oben einen Tab, um Inhalte anzuzeigen.",
+      dashCatMil:"Militärbasen", dashCatTech:"Technik / Cyber", dashCatMar:"Maritim / Engpässe", dashCatGeo:"Geo / Klima", readWiki:"Auf Wikipedia lesen ↗",
+      measure:"Messen", areaTool:"Fläche", radius:"Radius", points:"Punkte", total:"Gesamt", perimeter:"Umfang", area:"Fläche", clear:"Löschen", undoPt:"Punkt zurück",
+      measureHint:"Klicken zum Hinzufügen von Punkten · Doppelklick zum Abschließen", areaHint:"3+ Punkte zum Umschließen · Doppelklick zum Abschließen", radiusHint:"Klicken Sie auf die Karte, um einen Kreis zu platzieren. Mehrere Kreise möglich.", addCircle:"Kreis platzieren", removeAll:"Alle löschen", color:"Farbe",
+      statPop:"Bevölkerung", statGdp:"BIP (nominal)", statGdpPc:"BIP pro Kopf", statGdpPPP:"BIP (KKP)", statGdpPcPPP:"BIP pro Kopf (KKP)", statArea:"Fläche", statDensity:"Bevölkerungsdichte", statRegion:"Region", statSub:"Subregion", statCapital:"Hauptstadt", statCurrency:"Währung", statLang:"Sprachen", statHDI:"HDI", statDem:"Demokratie-Index", statMil:"Militärausgaben", statLife:"Lebenserwartung", statInet:"Internetnutzer",
+      details:"Details ↗", loadingData:"Länderdaten werden geladen...", dataNA:"k. A.", noData:"Länderdaten nicht verfügbar.",
+      sortGdp:"BIP", sortPop:"Bev.", sortArea:"Fläche", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil.$", elev:"Höhe", bearing:"Peilung", presetNone:"— wählen —", presetLbl:"Bereichsvorgaben", opacity:"Deckkraft", circumference:"Umfang",
+      spRunway:"Start-/Landebahn", spGarrison:"Garnison", spOperator:"Betreiber", spEstd:"Gegründet", spAircraft:"Flugzeuge", spType:"Typ", spCapacity:"Kapazität", spDepth:"Tiefe", spOutput:"Förderung", spReserves:"Reserven",
+      widgetsBtn:"Widgets", measureBtn:"📏 Messen", areaBtn:"📐 Fläche",
+      ctxDropPin:"Pin hier setzen", ctxMeasureFrom:"Messung hier beginnen", ctxPostHere:"Hier posten (Community)", ctxDistFrom:"Entfernung vom vorherigen Pin", ctxCopy:"Koordinaten kopieren", ctxClearPins:"Alle Pins entfernen", ctxThisPoint:"Dieser Punkt", coords:"Koordinaten", depth:"Tiefe", climate:"Klima",
+      lyrEEZ:"Meeres-AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrThermal:"Wärmeanomalien (Brände)", planesZoomHint:"🔍 Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"🔍 Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenen-Datum",
+      commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Posten", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte zeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Angesagt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
+      compare:"Vergleichen", compareEmpty:"Tippen Sie auf Zeilen, um 2–3 Länder zum Vergleich auszuwählen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
+      satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ersatz umgeschaltet",
+      aiProvider:"KI-Anbieter", aiModel:"Modell", aiApiKey:"API-Schlüssel", aiKeyConnected:"Verbunden", aiKeyNone:"Kein Schlüssel", aiGetKey:"Schlüssel erhalten ↗", aiOnDevice:"Läuft lokal in Chrome — kein API-Schlüssel nötig.", aiTest:"Verbindung testen", aiTesting:"Test läuft…", aiTestOk:"Verbindung OK ✓", aiNoKey:"Fügen Sie zuerst einen KI-API-Schlüssel unter Einstellungen → KI-Funktionen hinzu.", aiNoVision:"Dieses Modell kann keine Bilder lesen. Wählen Sie GPT-4o, Claude 3.5 Sonnet oder Gemini 1.5 Pro.", aiChromeUnavail:"Die in Chrome integrierte KI ist hier nicht verfügbar. Verwenden Sie Chrome 127+ mit aktivierter On-Device-KI oder einen anderen Anbieter.", aiThinking:"KI analysiert…", aiError:"KI-Anfrage fehlgeschlagen", aiCopy:"Kopieren", aiCopied:"Kopiert ✓", aiClose:"Schließen", aiRetry:"Wiederholen",
+      aiGeoBtn:"✨ Alle Nachrichten per KI verorten", aiGeoBtnSub:"✨ Thema per KI verorten", aiGeoBtnPub:"✨ Herausgeber per KI verorten", aiGeoBusy:"Verorten…", aiGeoNone:"Nichts zu verorten.", aiGeoDone:"{n} Meldungen verortet", aiGeoErr:"Geokodierung fehlgeschlagen", aiTransBusy:"Übersetzen…", aiTransDone:"{n} Titel übersetzt", aiTransNone:"Titel bereits in Ihrer Sprache.", aiTranslate:"Übersetzen", aiShowOriginal:"Original", aiTransNoText:"Kein Artikeltext zum Übersetzen — versuchen Sie die Web-Ansicht.",
+      aiSumBtn:"Dieses Gebiet mit KI zusammenfassen", newsInArea:"Nachrichten in diesem Gebiet", elevProfile:"Höhenprofil", finalizeMeas:"Auf Karte behalten", aiSumTitle:"Gebiets-Briefing", aiSumSub:"{n} Nachrichten-Pins im ausgewählten Gebiet", aiSumNoArea:"Zeichnen Sie zuerst ein Gebiet oder platzieren Sie einen Kreis.", aiSumNoNews:"Keine Nachrichten-Pins in diesem Gebiet.", aiViewSumTitle:"Was auf dem Bildschirm passiert",
+      aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem datumsfähigen Anbieter (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Kartenbilder konnten nicht erfasst werden.",
       mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
     ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabStats:"Статистика", tabCommunity:"Сообщество",
       searchPh:"Поиск новостей / мест...", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
@@ -2173,6 +2199,25 @@ window.addEventListener('DOMContentLoaded', () => {
       tlTitle:"Новости прошлого", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
       lblPinMode:"Положение метки новости", pinModeLoc:"Место события", pinModePub:"Место издателя",
       aiTranslateTitles:"Перевести заголовки", aiViewSumBtn:"Сводка по этому виду",
+      /* (#R37) full RU coverage — the same 184 keys that were falling back to English. */
+      loading:"Загрузка статей...", noMatch:"Ничего не найдено.", networkError:"Не удалось загрузить новости. Повтор…", emptyHint:"Вкладка не выбрана — карта пуста.<br>Выберите вкладку выше, чтобы показать содержимое.",
+      dashCatMil:"Военные базы", dashCatTech:"Технологии / Кибер", dashCatMar:"Море / Проливы", dashCatGeo:"Гео / Климат", readWiki:"Читать в Википедии ↗",
+      measure:"Измерить", areaTool:"Площадь", radius:"Радиус", points:"Точки", total:"Всего", perimeter:"Периметр", area:"Площадь", clear:"Очистить", undoPt:"Отменить точку",
+      measureHint:"Нажимайте, чтобы добавить точки · двойной клик для завершения", areaHint:"Добавьте 3+ точек для замыкания · двойной клик для завершения", radiusHint:"Нажмите на карту, чтобы поставить круг. Можно несколько кругов.", addCircle:"Поставить круг", removeAll:"Очистить всё", color:"Цвет",
+      statPop:"Население", statGdp:"ВВП (номинал)", statGdpPc:"ВВП на душу", statGdpPPP:"ВВП (ППС)", statGdpPcPPP:"ВВП на душу (ППС)", statArea:"Площадь", statDensity:"Плотность населения", statRegion:"Регион", statSub:"Субрегион", statCapital:"Столица", statCurrency:"Валюта", statLang:"Языки", statHDI:"ИЧР", statDem:"Индекс демократии", statMil:"Военные расходы", statLife:"Ожид. продолжительность жизни", statInet:"Интернет-пользователи",
+      details:"Подробнее ↗", loadingData:"Загрузка данных о странах...", dataNA:"н/д", noData:"Данные о стране недоступны.",
+      sortGdp:"ВВП", sortPop:"Нас.", sortArea:"Пл.", sortName:"А–Я", sortHDI:"ИЧР", sortMil:"Воен.$", elev:"Высота", bearing:"Азимут", presetNone:"— выбрать —", presetLbl:"Предустановки диапазона", opacity:"Непрозрачность", circumference:"Длина окружности",
+      spRunway:"ВПП", spGarrison:"Гарнизон", spOperator:"Оператор", spEstd:"Основано", spAircraft:"Самолёты", spType:"Тип", spCapacity:"Мощность", spDepth:"Глубина", spOutput:"Добыча", spReserves:"Запасы",
+      widgetsBtn:"Виджеты", measureBtn:"📏 Измерить", areaBtn:"📐 Площадь",
+      ctxDropPin:"Поставить метку здесь", ctxMeasureFrom:"Начать измерение отсюда", ctxPostHere:"Опубликовать здесь (сообщество)", ctxDistFrom:"Расстояние от предыдущей метки", ctxCopy:"Скопировать координаты", ctxClearPins:"Удалить все метки", ctxThisPoint:"Эта точка", coords:"Координаты", depth:"Глубина", climate:"Климат",
+      lyrEEZ:"Морская ИЭЗ / 12 миль", lyrShips:"Суда в реальном времени", lyrPlanes:"Самолёты в реальном времени", lyrThermal:"Тепловые аномалии (пожары)", planesZoomHint:"🔍 Приблизьте, чтобы загрузить самолёты", shipsZoomHint:"🔍 Приблизьте, чтобы загрузить суда", aisNoKey:"Для судов нужен бесплатный ключ API AISstream.io — добавьте его в Настройках.", trafficFilter:"Фильтр", lyrTime:"Дата слоя",
+      commAdd:"+ Новый пост", commAddArmed:"Нажмите на карту, чтобы поставить метку", commTitle:"Заголовок", commBody:"Поделитесь наблюдением, вопросом или теорией...", commPost:"Опубликовать", commCancel:"Отмена", commEmpty:"Пока нет постов. Нажмите \"+ Новый пост\", чтобы начать обсуждение.", commComment:"Комментировать", commLocate:"Показать на карте", commDelete:"Удалить", commReply:"Ответить", commWrite:"Написать комментарий...", commPostNew:"Новый пост", commPlacedAt:"Размещено в", commSortHot:"Популярное", commSortNew:"Новое", commSortTop:"Лучшее", commSearchPh:"Поиск постов…", commInView:"В поле зрения", commCat:"Категория", commCatAll:"Все", commEdit:"Изменить", commEdited:"изменено", commEditPost:"Редактировать пост", commSaveEdit:"Сохранить изменения", commNoMatch:"Нет постов по вашим фильтрам.",
+      compare:"Сравнить", compareEmpty:"Нажимайте на строки, чтобы выбрать 2–3 страны для сравнения.", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
+      satCtrlTitle:"Спутниковые снимки", satProvider:"Провайдер", satDate:"Дата съёмки", satLatest:"Самые свежие", satMosaicSuffix:"безоблачная мозаика", satLocked:"добавьте ключ API", satPrevDay:"Предыдущий день", satNextDay:"Следующий день", satKeyConnected:"Подключено", satKeyNone:"Нет ключа", satErrAuth:"{provider}: ошибка аутентификации — проверьте ключ API", satErrTiles:"{provider}: снимки недоступны — переключено на резерв",
+      aiProvider:"Провайдер ИИ", aiModel:"Модель", aiApiKey:"Ключ API", aiKeyConnected:"Подключено", aiKeyNone:"Нет ключа", aiGetKey:"Получить ключ ↗", aiOnDevice:"Работает локально в Chrome — ключ API не нужен.", aiTest:"Проверить подключение", aiTesting:"Проверка…", aiTestOk:"Подключение в порядке ✓", aiNoKey:"Сначала добавьте ключ API ИИ в Настройки → Функции ИИ.", aiNoVision:"Эта модель не читает изображения. Выберите GPT-4o, Claude 3.5 Sonnet или Gemini 1.5 Pro.", aiChromeUnavail:"Встроенный ИИ Chrome здесь недоступен. Используйте Chrome 127+ с включённым ИИ на устройстве или выберите другого провайдера.", aiThinking:"ИИ анализирует…", aiError:"Сбой запроса к ИИ", aiCopy:"Копировать", aiCopied:"Скопировано ✓", aiClose:"Закрыть", aiRetry:"Повторить",
+      aiGeoBtn:"✨ Определить места всех новостей (ИИ)", aiGeoBtnSub:"✨ Определить место события (ИИ)", aiGeoBtnPub:"✨ Определить место издателя (ИИ)", aiGeoBusy:"Определение…", aiGeoNone:"Нечего определять.", aiGeoDone:"Определено новостей: {n}", aiGeoErr:"Ошибка геокодирования", aiTransBusy:"Перевод…", aiTransDone:"Переведено заголовков: {n}", aiTransNone:"Заголовки уже на вашем языке.", aiTranslate:"Перевести", aiShowOriginal:"Оригинал", aiTransNoText:"Нет текста статьи для перевода — попробуйте веб-вид.",
+      aiSumBtn:"Сводка по этой области (ИИ)", newsInArea:"Новости в этой области", elevProfile:"Профиль высот", finalizeMeas:"Оставить на карте", aiSumTitle:"Сводка по области", aiSumSub:"Меток новостей в выбранной области: {n}", aiSumNoArea:"Сначала нарисуйте область или поставьте круг.", aiSumNoNews:"В этой области нет меток новостей.", aiViewSumTitle:"Что происходит на экране",
+      aiVisHead:"ИИ-обнаружение изменений", aiVisBtn:"Обнаружить изменения", aiVisTitle:"Отчёт об изменениях со спутника", aiVisSub:"Сравнение {a} → {b}", aiVisBefore:"До", aiVisAfter:"После", aiVisCapturing:"Захват снимков…", aiVisPickDates:"Выберите две даты для сравнения.", aiVisNeedsDated:"Переключитесь на провайдера с выбором даты (MODIS / VIIRS / Sentinel-2) в режиме спутника.", aiVisCapFail:"Не удалось захватить снимки карты.",
       mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" }
   };
 
@@ -5649,7 +5694,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const tzOpt=()=>(userTZ==='auto'?undefined:userTZ);
   const ymd=(d,tz)=>new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
   const hm=(d,tz)=>new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false}).format(d);
-  function formatCustomDate(s){ const d=parseDate(s),tz=tzOpt(),now=new Date(); const a=ymd(d,tz),today=ymd(now,tz),yest=ymd(new Date(now.getTime()-864e5),tz),time=hm(d,tz); if(a===today)return currentLang==='en'?`today ${time}`:`今日 ${time}`; if(a===yest)return currentLang==='en'?`yesterday ${time}`:`昨日 ${time}`; const[,M,D]=a.split('-'); return `${+M}/${+D} ${time}`; }
+  function formatCustomDate(s){ const d=parseDate(s),tz=tzOpt(),now=new Date(); const a=ymd(d,tz),today=ymd(now,tz),yest=ymd(new Date(now.getTime()-864e5),tz),time=hm(d,tz);
+    /* (#R37) localize "today"/"yesterday" for ALL four languages — the old en?…:… else-branch showed Japanese to DE/RU. */
+    const TODAY=({en:'today',jp:'今日',de:'heute',ru:'сегодня'})[currentLang]||'today', YEST=({en:'yesterday',jp:'昨日',de:'gestern',ru:'вчера'})[currentLang]||'yesterday';
+    if(a===today)return `${TODAY} ${time}`; if(a===yest)return `${YEST} ${time}`; const[,M,D]=a.split('-'); return `${+M}/${+D} ${time}`; }
 
   /* =============================================================================
    * WEBGL PIN INFRASTRUCTURE — pins are rendered as native MapLibre circle layers
@@ -6713,7 +6761,8 @@ window.addEventListener('DOMContentLoaded', () => {
     au:'hl=en-AU&gl=AU&ceid=AU:en', sa:'hl=ar&gl=SA&ceid=SA:ar', tr:'hl=tr&gl=TR&ceid=TR:tr', eg:'hl=ar&gl=EG&ceid=EG:ar'
   };
   function feedUrls(){
-    const p=currentLang==='en'?'hl=en-US&gl=US&ceid=US:en':'hl=ja&gl=JP&ceid=JP:ja';
+    /* (#R37) per-language Google News locale so DE/RU get German/Russian feeds (not the JP feed via the old else). */
+    const p=({en:'hl=en-US&gl=US&ceid=US:en', jp:'hl=ja&gl=JP&ceid=JP:ja', de:'hl=de&gl=DE&ceid=DE:de', ru:'hl=ru&gl=RU&ceid=RU:ru'})[currentLang]||'hl=en-US&gl=US&ceid=US:en';
     if(newsDate){
       /* Google News search supports after:/before: operators. Headlines endpoints don't,
          so a date-filtered query goes through search. */
@@ -6753,7 +6802,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function buildItems(byLink){
     const uniq=[...byLink.values()].sort((a,b)=>parseDate(b.pubDate)-parseDate(a.pubDate));
-    return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():(currentLang==='en'?'News':'報道'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:analyzeContext(title,publisher,it.link,desc) }; });
+    return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():(({en:'News',jp:'報道',de:'Nachrichten',ru:'Новости'})[currentLang]||'News'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:analyzeContext(title,publisher,it.link,desc) }; });
   }
   /* ===== Server-baked news (FAST PATH) =====
      The `refresh-news` Edge Function pre-fetches + pre-analyses the default feeds every
@@ -6954,9 +7003,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Language ===== */
   function setLang(lang){
-    if(!['en','jp','de'].includes(lang) || currentLang===lang) return;   /* (#R32) German RE-ENABLED as a UI language */
+    if(!['en','jp','de','ru'].includes(lang) || currentLang===lang) return;   /* (#R37) all four UI languages: EN/JP/DE/RU */
     currentLang=lang;
-    try{ const be=document.getElementById('lang-en'); if(be) be.classList.toggle('active',lang==='en'); const bj=document.getElementById('lang-jp'); if(bj) bj.classList.toggle('active',lang==='jp'); const bd=document.getElementById('lang-de'); if(bd) bd.classList.toggle('active',lang==='de'); }catch(_){}
+    try{ ['en','jp','de','ru'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
     try{ document.documentElement.setAttribute('lang', lang==='jp'?'ja':lang); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
     globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
@@ -6965,6 +7014,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lang-en').onclick=()=>setLang('en');
   document.getElementById('lang-jp').onclick=()=>setLang('jp');
   { const ld=document.getElementById('lang-de'); if(ld) ld.onclick=()=>setLang('de'); }
+  { const lr=document.getElementById('lang-ru'); if(lr) lr.onclick=()=>setLang('ru'); }
   { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
   function newsLangNameOf(c){ return (NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; }
@@ -6976,7 +7026,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const show=(sel.value==='multi');
     if(dd) dd.style.display=show?'block':'none'; if(hint) hint.style.display=show?'block':'none';
     if(!wrap.dataset.built){
-      wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label><input type="checkbox" value="${code}" style="accent-color:var(--primary-color);width:16px;height:16px;flex-shrink:0;"> <span class="nlx" data-code="${code}"></span></label>`).join('');
+      wrap.innerHTML=Object.keys(NEWS_LANG_NAMES).map(code=>`<label><input type="checkbox" value="${code}"> <span class="nlx" data-code="${code}"></span></label>`).join('');
       wrap.dataset.built='1';
       /* (#R33) The checked boxes are the SINGLE SOURCE OF TRUTH for newsLangs — update + persist on every
          change so the saved set always equals exactly what the user ticked (fixes the desync where other
@@ -7005,19 +7055,18 @@ window.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.nc-dd-panel').forEach(panel=>{
       if(panel.dataset.detTap) return; panel.dataset.detTap='1';
       let downLab=null, dX=0, dY=0, moved=false, lastT=0, lastCb=null;
-      panel.addEventListener('pointerdown',e=>{ downLab=e.target.closest?e.target.closest('label'):null; dX=e.clientX; dY=e.clientY; moved=false; },true);
-      panel.addEventListener('pointermove',e=>{ if(Math.abs(e.clientX-dX)>24||Math.abs(e.clientY-dY)>24) moved=true; },true);
+      /* (#R37) Resolve the row the finger went DOWN on, falling back to elementFromPoint so a tap that lands a hair
+         into the row GAP still resolves to a real row (the old code left downLab=null there and then toggled the
+         CLICK target — a NEIGHBOUR after a reflow → "タップした言語と違う言語にチェックが入る"). */
+      const labAt=(e)=>{ let l=e.target&&e.target.closest?e.target.closest('label'):null; if(!l){ try{ const el=document.elementFromPoint(e.clientX,e.clientY); l=el&&el.closest?el.closest('label'):null; }catch(_){} } return (l&&panel.contains(l))?l:null; };
+      panel.addEventListener('pointerdown',e=>{ downLab=labAt(e); dX=e.clientX; dY=e.clientY; moved=false; },true);
+      panel.addEventListener('pointermove',e=>{ if(Math.abs(e.clientX-dX)>26||Math.abs(e.clientY-dY)>26) moved=true; },true);
       panel.addEventListener('click',e=>{
-        const clickLab=e.target.closest?e.target.closest('label'):null;
-        /* (#R36) Toggle the label the FINGER WENT DOWN ON, never the click target. ROOT CAUSE of "タップした言語と
-           違う言語にチェックが入る": on iOS the (delayed) click can land on a NEIGHBOUR after a reflow/scroll, and the
-           old code toggled the click's label. pointerdown is the user's true intent and is immune to that drift.
-           Also dropped the scrollTop-delta heuristic (it false-suppressed real taps — same bug as the layer list)
-           in favour of finger-travel, and added an echo-click guard so no second synthetic click can double-flip. */
-        const lab = downLab || clickLab; if(!lab) return;
+        /* Toggle the label the FINGER WENT DOWN ON — never the (drift-prone) click target. We always OWN it, so a
+           delayed click landing on a neighbour can neither toggle the wrong row nor double-fire. */
+        const lab = downLab; if(!lab){ if(e.target.closest&&e.target.closest('label')){ e.preventDefault(); e.stopPropagation(); } return; }
         e.preventDefault(); e.stopPropagation();              /* cancel the native (mis-targetable) label toggle */
         if(moved) return;                                     /* a real scroll/drag → no toggle */
-        if(downLab && clickLab && downLab!==clickLab) return; /* finger clearly drifted rows → toggle nothing */
         const cb=lab.querySelector('input[type=checkbox]'); if(!cb||cb.disabled) return;
         const now=Date.now(); if(cb===lastCb && now-lastT<350) return;   /* swallow a duplicate/echo click on the same box */
         lastT=now; lastCb=cb;
@@ -10810,7 +10859,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(fabMap) fabMap.classList.toggle('on', currentMapType==='sat');
       if(fabTools) fabTools.classList.toggle('on', !!toolMode || isGridOn);
     }
-    ['lang-en','lang-jp'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
+    ['lang-en','lang-jp','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
     /* (#R8 JP/EN) Re-label the mobile segment/tool proxies on EVERY language change — not just the lang
        toggle buttons. Changing language via the Settings dropdown (or any programmatic switch) used to
        leave "Globe/Flat/Satellite" in English on the phone ("日本語版で英語が出てくる"). updateI18n() now
@@ -11647,7 +11696,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
-    if(s.lang==='en'||s.lang==='jp'){ currentLang=s.lang; const le=document.getElementById('lang-en'),lj=document.getElementById('lang-jp'); if(le) le.classList.toggle('active',currentLang==='en'); if(lj) lj.classList.toggle('active',currentLang==='jp'); }   /* (#R23) DE/RU removed from UI language */
+    if(['en','jp','de','ru'].includes(s.lang)){ currentLang=s.lang; ['en','jp','de','ru'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -11982,7 +12031,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
-  ['lang-en','lang-jp'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
+  ['lang-en','lang-jp','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
 
   /* ---------- Flat-map pan mode ----------
      Fixed = a single, non-repeating world (no infinite horizontal wrap) — you can still pan/zoom
@@ -12685,7 +12734,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
     function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defense coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
-    ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
+    ['lang-jp','lang-en','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
 
@@ -12770,7 +12819,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=jp()?'地球・大気・空域':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=jp()?L9LBL[k][0]:L9LBL[k][1]; }); }
-    ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    ['lang-jp','lang-en','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) relabel on Settings language change */
     window.IntMapLayers9={ toggle };
   })();
@@ -12904,7 +12953,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=jp()?'土地被覆・地球科学':'Land cover & earth science'; Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=jp()?ECLBL[k][0]:ECLBL[k][1]; }); }
-    ['lang-jp','lang-en'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    ['lang-jp','lang-en','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
     window.IntMapEco={ toggle };
   })();
@@ -16879,7 +16928,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:4000}); else setTimeout(warm,3000); })();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
   try{ setTimeout(_imWelcome,900); }catch(_){}   /* (#R29) first-visit iOS welcome card (replaces the confusing auto-demo) */
-  try{ if(currentLang==='jp'){ document.getElementById('lang-jp').classList.add('active'); document.getElementById('lang-en').classList.remove('active'); } }catch(_){}
+  try{ ['en','jp','de','ru'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
 });
 </script>
 <script type="text/javascript">
