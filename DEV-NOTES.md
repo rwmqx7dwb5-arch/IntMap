@@ -3070,3 +3070,89 @@ zero console errors). Each fix below was reproduced/proven, not assumed.
 - No change needed: no new data sources or collection. The new compare aurora/earthquake layers are NOAA/USGS
   (same as the main map, already attributed); the new publisher outlets are HQ coordinates only; the dev flag is
   local-only; events link to Wikipedia (already linked).
+
+---
+
+## 41. Round 37 — re-reported-bug batch, root-cause focus (tags `#R37`)
+
+Build `2026-06-18-R37`. Verified live on the http preview after each change (page RUNS — 109 layer checkboxes,
+zero console errors). Each fix reproduced/proven, not assumed.
+
+### Layer checkbox sensitivity + "Grid が勝手にチェックされる" (ROOT CAUSE, unified)
+- The tap handler now toggles the row the finger went **DOWN** on (pointerdown intent), not the (drift-prone)
+  click target, and resolves the box from EITHER `label.layer-option` OR the whole `.lyr-row` (kills row-padding
+  dead zones). Proven: clean tap toggles the aimed row; a down-on-Roads / click-on-Grid drift toggles **Roads**
+  (intent) and leaves Grid OFF — fixing BOTH "しっかりタップしないと反応しない" and "Grid が勝手にチェックされる" with
+  one change. `touch-action:manipulation` added to `.lyr-row`. (The "再読み込みで治る" report was the same eaten-tap
+  perceived as a dead layer — verified Roads/choropleths DO render once tiles/country-data arrive.)
+- Same down-targeting + elementFromPoint fallback applied to the **news-language** panel (`.nc-dd-panel`): a
+  gap-tap no longer falls through to the click target → no cross-toggle. iOS sizing: 44px rows, 15px text, a 22px
+  rounded custom checkbox (`div.nc-dd-panel` specificity beats the `.setting-group label` 13px/block rule).
+
+### Frosted-glass Settings "グレーになる" (REAL root cause — double backdrop-filter)
+- `.modal-overlay` had its OWN `backdrop-filter:blur(12px)` + scrim; the child `.modal-content` then blurred that
+  already-dimmed surface (not the map) → composited to flat gray. R36 only lightened the scrim. Fix: in the two
+  glass modes the overlay becomes a near-transparent click-catcher with NO blur, so `.modal-content`'s own glass
+  frosts the MAP directly. Verified by screenshot (light + dark): the blurred map shows through, not gray.
+
+### Stats comparison bars "幅を縮小すると長さ0"
+- `.cmp-bar-wrap` was `flex:1;min-width:0` → it lost the flex fight to fixed-width siblings and collapsed to 0.
+  Now `flex:1 1 46px;min-width:46px` (never 0) and the name ellipsis-shrinks first. Verified track ≥46px at a
+  190px container.
+
+### No-data gray + Govt Debt coverage
+- The World-Bank beta choropleths painted ONLY countries with data (others showed nothing). Now EVERY country is
+  drawn; no-data ones are neutral gray (`['case',['has','v'],ramp,'#9aa0a6']`) — the explicit "データのない国は灰色に".
+- Govt debt (WB `GC.DOD…` = central govt, ~half the world) gap-filled from an embedded **IMF WEO** general-govt
+  gross-debt table → 142/216 countries now valued (was ~100, rest invisible). Source-noted in the legend + the
+  Data-sources modal. Mirrors how HDI/Democracy/MilSpend are embedded real datasets (no fabrication).
+
+### Widgets / clock / random-country
+- Analog clock "秒針が動かない": the clock ticked every **30 s** → second hand frozen. Now 1 s (also makes the
+  live population counter tick). Random-country fly: gentler (`speed:0.7`, maxZoom 5) so it frames the WHOLE
+  country with context and glides in calmly (the re-reported "近すぎ / 速すぎ").
+
+### News bands above place labels + mobile news interaction
+- News/dash/user/community pins added to the label-stack "own" set → news BANDS now render ABOVE place labels
+  (verified news-labels idx > ofm-city idx) — "帯が地名ラベルにさえぎられる" fixed.
+- The BAND (`news-labels`) is now clickable + hover-tooltipped (was dot-only) → "地名ラベルを押しても反応しない".
+- MOBILE crosshair → news popup: on moveend, the news pin under the centre crosshair shows the same popup as the
+  desktop cursor hover, tappable to open the article (`_crosshairNews`).
+
+### Full 4-language (EN / JP / DE / RU) — selectable from Settings, no missing-key leakage
+- **RU was blocked entirely** (setLang allow-list, no button, no dropdown option, restore accepted en/jp only).
+  Wired RU end-to-end + fixed the restore/active-state/relabel triggers to cover all 4 (the `['lang-en','lang-jp']`
+  relabel arrays missed DE/RU → modules stayed stale = leakage on switch).
+- **Dictionary gap was huge**: DE & RU each had only 112 of EN's 257 keys → 145+ keys fell back to English. Filled
+  ALL 184 missing keys in BOTH DE and RU (measure/stats/community/AI/satellite/context) — verified `en−de=∅`,
+  `en−ru=∅`. Fixed the 4 `currentLang==='en'?…:…` sites whose else-branch showed **Japanese** to DE/RU (dates,
+  Google-News feed locale, publisher fallback).
+- **Honest limitation:** ~768 inline `jp()?…:…` ternaries carry no dictionary key and fall back to **English**
+  (not the target language) for DE/RU dynamic strings. English fallback is not wrong-language-leak, but it is not
+  yet full DE/RU. Bulk-converting 768 template-literal sites is high-risk (one stray back-tick blanks the site)
+  and out of scope for one safe pass; the dictionary completion covers all `t()`/`data-i18n` UI.
+
+### News geolocation (AI + non-AI, publisher + subject) — strengthened
+- Client publisher gazetteer +~45 national/regional outlets (Nordic, E. Europe, Benelux, SE/South Asia, Latin
+  America, Africa, CIS, ANZ) → fewer "publisher unknown" pins. (Google-News links are redirects, so the publisher
+  NAME is the only client signal — domain/TLD fallback can't help there.)
+- **Server (`refresh-news`) — needs redeploy:** the AI subject prompt rewritten to be more specific (city/landmark
+  over country, resolve clubs/companies/airports to their city, disambiguate same-name places) AND to OMIT far less
+  (country-level is acceptable; only truly placeless items dropped) → fewer unlocated subject pins. The server
+  publisher `SOURCE_DICT` mirrored up to the R36+R37 client additions.
+
+### Dev = unlimited AI (public site)
+- Code is complete + verified locally (aiDev()→true, Settings graph shows the full "unlimited" bar). The server
+  `ai-proxy` already hard-codes the owner email as `unlimited` (never 429) and the client persists `intmap_dev` on
+  owner login → unlimited on the PUBLIC site too **once the owner is logged in there AND the `ai-proxy` function is
+  deployed**. Nothing left to change in code; the only remaining step is the Supabase function deploy.
+
+### Mobile zoom/pan smoothness
+- The per-move crosshair readout (DEM lookup + queryRenderedFeatures, every ~110 ms mid-gesture) is the last
+  avoidable main-thread spike — now only the cheap coord text renders during motion; the heavy readout settles on
+  moveend. Quality-neutral. News-band declutter confirmed platform-agnostic (mobile already == desktop). Deeper
+  GPU-bound gains remain blocked by the user's "don't lower quality" rule (pixelRatio stays 2× on mobile).
+
+### Deploy checklist (server-side, NOT shipped by the static-file edit)
+- `supabase functions deploy refresh-news` — strengthened subject prompt + expanded publisher dict.
+- `supabase functions deploy ai-proxy` — already grants the owner unlimited (deploy if not yet live).
