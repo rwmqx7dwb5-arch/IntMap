@@ -853,8 +853,10 @@ gtag('config', 'G-57X5MX0ZPW');
     .cmp-bars{ display:flex; flex-direction:column; gap:8px; }
     .cmp-bar-row{ display:flex; align-items:center; gap:10px; font-size:12px; }
     .cmp-bar-flag{ width:28px; font-size:18px; flex-shrink:0; text-align:center; }
-    .cmp-bar-name{ width:90px; font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
-    .cmp-bar-wrap{ flex:1; min-width:0; background:var(--input-bg); border-radius:6px; height:18px; position:relative; overflow:hidden; }
+    /* (#R37) name ellipsis-SHRINKS (flex 0 1) so it yields space first; the bar track keeps a hard min-width so
+       it can NEVER collapse to length 0 when the sidebar is narrowed ("幅を縮小すると棒グラフが潰れて長さ0になる"). */
+    .cmp-bar-name{ flex:0 1 90px; min-width:30px; font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cmp-bar-wrap{ flex:1 1 46px; min-width:46px; background:var(--input-bg); border-radius:6px; height:18px; position:relative; overflow:hidden; }
     .cmp-bar-fill{ position:absolute; left:0; top:0; bottom:0; border-radius:6px; transition:width 0.5s cubic-bezier(0.4,0,0.2,1); }
     .cmp-bar-val{ width:78px; text-align:right; font-weight:600; font-size:11px; font-variant-numeric:tabular-nums; flex-shrink:0; }
 
@@ -1363,13 +1365,15 @@ gtag('config', 'G-57X5MX0ZPW');
     body.sidebar-translucent .m-sheet, body.sidebar-glass2 .m-sheet,
     body.sidebar-translucent .wgt-card, body.sidebar-glass2 .wgt-card{
       background:var(--glass-fill) !important; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-color:var(--glass-border) !important; }
-    /* (#R36) ROOT CAUSE of "frosted glassにするとSettingsの色だけおかしい・グレーになる": a modal's .modal-content
-       sits over the dark .modal-overlay scrim (rgba(0,0,0,0.5)), so its backdrop-filter blurred that DARK SCRIM
-       instead of the map — the translucent glass fill over a near-black backdrop reads as flat GRAY. Floating
-       legends/popups sit straight over the colourful map, so they frost correctly. Fix: in the glass modes
-       lighten the modal scrim so the modal frosts the MAP like every other glass surface (Solid keeps full dim). */
-    body.sidebar-translucent .modal-overlay, body.sidebar-glass2 .modal-overlay{ background:rgba(0,0,0,0.16); }
-    [data-theme="dark"] body.sidebar-translucent .modal-overlay, [data-theme="dark"] body.sidebar-glass2 .modal-overlay{ background:rgba(0,0,0,0.34); }
+    /* (#R37) REAL ROOT CAUSE of "frosted glassにするとSettingsだけグレーになる" — DOUBLE backdrop-filter. The
+       .modal-overlay already has its OWN backdrop-filter:blur(12px) + a dark scrim; the child .modal-content then
+       blurs THAT (an already-blurred + dimmed surface, NOT the map) and tints it milky → it composites to flat
+       GRAY. R36 only lightened the scrim but left the parent blur, so the gray remained. Fix: in the glass modes
+       turn the overlay into a plain near-transparent click-catcher with NO blur of its own, so the modal-content's
+       OWN glass blurs the MAP directly — exactly like every floating panel/legend. (Solid mode keeps the full dim
+       scrim + blur for focus.) */
+    body.sidebar-translucent .modal-overlay, body.sidebar-glass2 .modal-overlay{ background:rgba(0,0,0,0.06); backdrop-filter:none; -webkit-backdrop-filter:none; }
+    [data-theme="dark"] body.sidebar-translucent .modal-overlay, [data-theme="dark"] body.sidebar-glass2 .modal-overlay{ background:rgba(0,0,0,0.18); backdrop-filter:none; -webkit-backdrop-filter:none; }
 
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
@@ -3202,7 +3206,11 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
        the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
        user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
-    const isOwn=(id)=>/^(tool|draw|los|route|place-hl)-/.test(id)||id==='iso-mask';
+    /* (#R37) News pins/bands + the user pin + community pins are ANNOTATIONS, not data layers — they belong
+       ABOVE the place-name labels ("地名ラベルは、ニュースピンの帯よりも後ろに表示して。いまは帯が地名ラベルに
+       さえぎられてしまっている"). Adding them here keeps the bands fully visible over labels instead of being
+       clipped by them, while real DATA layers (choropleths, rasters) still sit beneath the labels. */
+    const isOwn=(id)=>/^(tool|draw|los|route|place-hl|news|dash|user-pin|comm)-/.test(id)||id==='iso-mask';
     /* (#R25) ROOT CAUSE labels kept getting buried by land-cover/relief/etc.: the old top-scan declared
        "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
        label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
@@ -5846,6 +5854,37 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Open the article straight in the device's browser (the in-app mini-browser was removed) */
       if(p.link) window.open(p.link,'_blank','noopener');
     });
+    /* (#R37) The BAND (news-labels = the place-name pill) is the big, natural tap target — make it clickable
+       too, not just the tiny dot ("地名ラベルを押しても反応しない"). Same hover tooltip + tap-to-open as the dot. */
+    map.on('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(p.link) window.open(p.link,'_blank','noopener'); });
+    map.on('mousemove','news-labels',e=>{ if(!e.features.length) return; map.getCanvas().style.cursor='pointer'; const f=e.features[0];
+      const el=ensureMapTooltip(); el.style.display='block';
+      el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${f.properties.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${f.properties.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${f.properties.publisher}</div>`;
+      positionTooltip(map.project(f.geometry.coordinates)); });
+    map.on('mouseleave','news-labels',()=>{ map.getCanvas().style.cursor=''; if(mapTooltipEl) mapTooltipEl.style.display='none'; });
+    /* (#R37) MOBILE crosshair → news popup, the same way the DESKTOP cursor reveals the pin under it
+       ("モバイル版でも…十字ポインターの位置のニュースは…ポップアップが出るように"). On every settle, look for a news
+       pin/band right under the centre crosshair and show the same popup there; tap it to open the article. */
+    let _xhrNewsId=null, _xhrLink=null;
+    function _crosshairNews(){ try{
+      if(!isMobile()||!map||!map.isStyleLoaded()||!map.getLayer('news-dots')) return;
+      if(toolMode||document.body.classList.contains('pg-we')){ if(mapTooltipEl) mapTooltipEl.style.display='none'; return; }
+      const c=map.project(map.getCenter()); const R=22;
+      const layers=['news-labels','news-dots'].filter(l=>map.getLayer(l));
+      let hits=[]; try{ hits=map.queryRenderedFeatures([[c.x-R,c.y-R],[c.x+R,c.y+R]],{layers}); }catch(_){}
+      if(hits&&hits.length){ let best=hits[0],bd=Infinity; hits.forEach(f=>{ try{ const p=map.project(f.geometry.coordinates); const d=Math.hypot(p.x-c.x,p.y-c.y); if(d<bd){bd=d;best=f;} }catch(_){} }); const f=best, pr=f.properties||{};
+        if(_xhrNewsId!==f.id){ if(_xhrNewsId!=null) try{map.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){}
+          _xhrNewsId=f.id; try{map.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
+        _xhrLink=pr.link||null;
+        const el=ensureMapTooltip(); el.style.display='block'; el.style.pointerEvents='auto'; el.style.cursor=_xhrLink?'pointer':'';
+        el.innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${_xhrLink?(' · '+(currentLang==='jp'?'タップで記事を開く':currentLang==='de'?'Zum Öffnen tippen':currentLang==='ru'?'Нажмите, чтобы открыть':'tap to open')):''}</div>`;
+        try{ positionTooltip(map.project(f.geometry.coordinates)); }catch(_){}
+      } else { if(_xhrNewsId!=null){ try{map.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; if(mapTooltipEl){ mapTooltipEl.style.display='none'; mapTooltipEl.style.pointerEvents='none'; } }
+    }catch(_){} }
+    window._crosshairNews=_crosshairNews;
+    map.on('moveend',_crosshairNews);
+    /* tap the crosshair popup itself → open the article (the dot under the crosshair is too small to hit) */
+    document.addEventListener('click',(ev)=>{ try{ if(!isMobile()||!_xhrLink) return; if(mapTooltipEl&&mapTooltipEl.style.display!=='none'&&mapTooltipEl.contains(ev.target)){ window.open(_xhrLink,'_blank','noopener'); } }catch(_){} });
     /* Dash hover/click */
     map.on('mousemove','dash-dots',e=>{
       if(!e.features.length) return;
@@ -7851,7 +7890,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const style=document.createElement('style');
     style.textContent=`
-      .lyr-row{ display:flex; flex-direction:column; gap:2px; }
+      .lyr-row{ display:flex; flex-direction:column; gap:2px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
       .lyr-op{ width:100%; accent-color:var(--primary-color); display:none; margin:0 0 4px 24px; }
       .lyr-row.on .lyr-op{ display:block; }
       .lyr-head{ font-size:11px; font-weight:700; color:var(--text-muted); margin:6px 2px 2px; text-transform:uppercase; letter-spacing:0.5px; }
@@ -8442,50 +8481,38 @@ window.addEventListener('DOMContentLoaded', () => {
     (function(){
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       const scrollerOf=(el)=>{ let n=el; while(n&&n!==document.body){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2) return n; n=n.parentElement; } return dd; };
-      const SUBCTRL='button, input[type=color], input[type=range], select, a, textarea, [role="button"], .alc-x, .alc-name, .alc-clear-all';
-      let downLabel=null, downX=0, downY=0, sc=null, sTop=0, far=false;
-      dd.addEventListener('pointerdown',(e)=>{ downLabel=e.target.closest?e.target.closest('label.layer-option'):null; downX=e.clientX; downY=e.clientY; far=false; sc=scrollerOf(e.target); sTop=sc?sc.scrollTop:0; },true);
-      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>24||Math.abs(e.clientY-downY)>24) far=true; },true);
+      const SUBCTRL='button, input[type=color], input[type=range], select, a, textarea, [role="button"], input[type=date], .alc-x, .alc-name, .alc-clear-all';
+      /* (#R37) Resolve the checkbox a tap should toggle from EITHER a `label.layer-option` OR the whole
+         `.lyr-row` (so a tap on the row's padding — outside the inner label — is no longer a dead zone, a
+         real part of "しっかりタップしないとチェックがつかない"). The box always has pointer-events:none, so the
+         finger never lands on the <input> itself → we are always the single, deterministic toggle path. */
+      const boxFor=(el)=>{ if(!el||!el.closest) return null;
+        const lab=el.closest('label.layer-option'); if(lab){ const c=lab.querySelector('input[type=checkbox]'); if(c) return c; }
+        const row=el.closest('.lyr-row'); if(row){ const c=row.querySelector('input[type=checkbox]'); if(c) return c; }
+        return null; };
+      let downBox=null, downX=0, downY=0, far=false;
+      dd.addEventListener('pointerdown',(e)=>{ if(e.target.closest&&e.target.closest(SUBCTRL)){ downBox=null; return; } downBox=boxFor(e.target); downX=e.clientX; downY=e.clientY; far=false; },true);
+      /* >30px finger travel = a genuine drag/scroll (well above tap jitter, well below a deliberate swipe).
+         This — NOT scrollTop-delta (momentum-settle false-positives, R28→R36) — is the reliable scroll signal. */
+      dd.addEventListener('pointermove',(e)=>{ if(Math.abs(e.clientX-downX)>30||Math.abs(e.clientY-downY)>30) far=true; },true);
       dd.addEventListener('click',(e)=>{
         try{
           if(e.target.closest && e.target.closest(SUBCTRL)) return;     /* a real control handles itself */
-          /* (#R36) ROOT CAUSE #2 of "ほとんどのレイヤーが選択しても反応しない": suppression used a scrollTop-DELTA
-             heuristic, but reaching most layers needs scrolling and the list keeps momentum-SETTLING under a now
-             stationary finger — so a clean tap landing during that settle saw the container scroll a few px and was
-             WRONGLY cancelled. Tuning that px threshold across R28→R35 (3→16) never fixed it because scroll-delta is
-             the wrong signal. The reliable signals are FINGER TRAVEL (`far` >24px = a real drag, which also covers
-             every genuine scroll) and ROW DRIFT (the finger slid onto a different row). Dropped scroll-delta. */
-          const lab = e.target.closest ? e.target.closest('label.layer-option') : null;
-          if(lab){
-            const cb=lab.querySelector('input[type=checkbox]');
-            const suppress = far || (downLabel && downLabel!==lab);   /* real drag, or drifted to another row → no toggle */
-            const scNow=scrollerOf(lab); const t=scNow?scNow.scrollTop:0;          /* capture scroll BEFORE toggle */
-            const pin=()=>{ if(scNow){ scNow.scrollTop=t; requestAnimationFrame(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} }); setTimeout(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} },0); } };
-            const refresh=()=>{ try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} };
-            /* (#R36) ROOT CAUSE of "ほとんどのレイヤーが選択しても反応しない": when the tap lands DIRECTLY on the
-               checkbox <input>, the browser PRE-TOGGLES `checked` *before* the click event, and our preventDefault
-               then runs the spec's cancelled-activation RESTORE to the pre-toggle value *after* this handler — so
-               the manual `cb.checked=!cb.checked` got flipped right back and the layer never toggled (the box is
-               the most natural tap target → "most" layers felt dead). Fix: only OWN the toggle for label/row taps
-               (no native pre-toggle there). For a tap on the box itself, let the bullet-proof NATIVE toggle ride,
-               and only cancel it when SUPPRESSING a scroll. */
-            const onInput = e.target===cb || (e.target.tagName==='INPUT' && e.target.getAttribute('type')==='checkbox');
-            if(onInput){
-              if(suppress || !cb || cb.disabled){ e.preventDefault(); e.stopPropagation(); return; }   /* cancel native toggle (restores via cancelled-activation) */
-              /* allow the native checkbox toggle (don't preventDefault); just keep the list from jumping +
-                 refresh Active layers on the next frame (the native `change`/toggleLayer fires after dispatch). */
-              requestAnimationFrame(refresh); setTimeout(refresh,0); pin();
-              return;
-            }
-            /* label / row text tap → own it deterministically (exactly this row, exactly once). No native
-               pre-toggle on a label, so manual toggle sticks and preventDefault cancels the synthesized box click. */
-            e.preventDefault(); e.stopPropagation();
-            if(suppress || !cb || cb.disabled) return;
-            cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
-            refresh(); pin();
-            return;
-          }
-          if(far && e.target.closest && e.target.closest('.lyr-row')){ e.preventDefault(); e.stopPropagation(); }
+          /* (#R37) ROOT-CAUSE rewrite of "しっかりタップしないとチェックがつかない / タップした行と違う行が反応する /
+             Grid & labels が勝手にチェックされる". Toggle the row the finger WENT DOWN ON (the user's true intent),
+             NOT the click target — on touch the (delayed) click can land on a NEIGHBOUR after a momentum-settle
+             reflow, which both (a) made the aimed row feel dead and (b) silently checked the adjacent row (e.g.
+             Grid). Down-targeting fixes both at once. We only ever SUPPRESS (on a real drag) — never synthesize a
+             phantom toggle. */
+          const cb = downBox || boxFor(e.target);
+          if(!cb || !cb.isConnected){ if(far){ const r=e.target.closest&&(e.target.closest('label.layer-option')||e.target.closest('.lyr-row')); if(r){ e.preventDefault(); e.stopPropagation(); } } return; }
+          e.preventDefault(); e.stopPropagation();   /* we own it — cancel the native label→box click so it can't double-fire */
+          if(far || cb.disabled) return;             /* a genuine scroll/drag → never toggles */
+          const scNow=scrollerOf(cb); const t=scNow?scNow.scrollTop:0;
+          const pin=()=>{ if(scNow){ scNow.scrollTop=t; requestAnimationFrame(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} }); setTimeout(()=>{ try{ if(scNow.scrollTop!==t) scNow.scrollTop=t; }catch(_){} },0); } };
+          cb.checked=!cb.checked; cb.dispatchEvent(new Event('change',{bubbles:true}));
+          try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
+          pin();
         }catch(_){}
       },true);
     })();
@@ -13939,18 +13966,21 @@ window.addEventListener('DOMContentLoaded', () => {
            so if you were already zoomed in it stayed city-close ("zoomed too close. Show an entire country").
            Now fitBounds the country geometry (maxZoom 6 so a tiny country still shows with context); fall back
            to a sensible low-zoom flyTo when the geometry is unavailable or spans the antimeridian. */
-        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ if(!map) return; let done=false;
+        const go=document.querySelector('#wgtv-'+e.u+' .wc-go'); if(go) go.onclick=()=>{ try{ if(!map) return;
+          /* (#R37) Frame the WHOLE country (more context, never city-close) with a GENTLE animation. The user
+             re-reported both "zoomed too close" AND "jump too fast" after the R36 cameraForBounds+speed:1.2 (1.2
+             is MapLibre's DEFAULT — i.e. still the fast snap). Fix: cap the framing zoom a notch lower (maxZoom 5,
+             so even a small country is shown with its surroundings) and fly at speed 0.7 with a flat curve, so the
+             camera glides in calmly like a deliberate navigation rather than snapping. */
+          const flyOpts=(center,zoom)=>({center,zoom,speed:0.7,curve:1.3,essential:true});
+          let done=false;
           try{ const cg=window.countryGeo; const ft=cg&&cg.features&&cg.features.find(f=>String(f.id)===String(s.code));
             if(ft&&ft.geometry&&typeof turf!=='undefined'){ const bb=turf.bbox(ft);
               if(bb&&bb.every(isFinite)&&(bb[2]-bb[0])<180&&(bb[3]-bb[1])<170){
-                /* (#R36) Frame the WHOLE country but animate at the SAME distance-adaptive speed as every other
-                   fly-to ("ジャンプ速度が速すぎる。他とおなじにしろ"): fitBounds used a FIXED duration:900 → a far
-                   jump covered huge distance in 900ms and felt too fast. cameraForBounds gives the same framing,
-                   then flyTo({speed}) paces it like the rest of the app. */
-                const cam=map.cameraForBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:6});
-                if(cam&&cam.center){ map.flyTo({center:cam.center,zoom:cam.zoom,speed:1.2,essential:true}); done=true; }
-                else { map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:6}); done=true; } } } }catch(_){}
-          if(!done){ const ll=s.latlng; if(ll) map.flyTo({center:[ll[1],ll[0]],zoom:4,speed:1.2,essential:true}); }
+                const cam=map.cameraForBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:5});
+                if(cam&&cam.center){ map.flyTo(flyOpts(cam.center,cam.zoom)); done=true; }
+                else { map.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:50,maxZoom:5,speed:0.7,essential:true}); done=true; } } } }catch(_){}
+          if(!done){ const ll=s.latlng; if(ll) map.flyTo(flyOpts([ll[1],ll[0]],4)); }
           try{ if(typeof closeSheet==='function') closeSheet(); }catch(_){}
         }catch(_){} };
       }catch(_){ setV(e.u,'—',''); } }
@@ -14033,7 +14063,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function sync(){ const b=ensureBoard(); if(!b) return;
       const noTab=(typeof currentMode==='undefined'||!currentMode);
       if(noTab){ b.style.display='block'; if(!b.dataset.built){ b.dataset.built='1'; render(); } else refreshAll();
-        if(!clockT) clockT=setInterval(tickClock,30000);
+        /* (#R37) 1-second tick — ROOT CAUSE of "アナログ時計の秒針が動かない": at 30 s the second hand only
+           redrew twice a minute, so it looked frozen. A 1 s tick is a handful of cheap setV writes (clock text
+           + analog SVG + the live population counter) → the second hand sweeps and the pop counter ticks live. */
+        if(!clockT) clockT=setInterval(tickClock,1000);
         if(!dataT){ dataT=setInterval(refreshData,3*60*1000); setInterval(refreshFast,60*1000);   /* (#R24) 5→3 min data tick, fresher widgets */
           document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&visible()) refreshAll(); });
           window.addEventListener('focus',()=>{ if(visible()) refreshAll(); }); }   /* (#R24) also refresh the moment the window regains focus, so returning to the tab is never hours-stale */
@@ -16729,12 +16762,28 @@ window.addEventListener('DOMContentLoaded', () => {
       map.on('mouseleave',fill,()=>{ map.getCanvas().style.cursor=''; try{ const el=window.ensureMapTooltip(); el.style.display='none'; }catch(_){} });
     }
     const _nmOf=(p)=>{ p=p||{}; return p.NAME_EN||p.ADMIN||p.name_en||p.NAME||p.name||p.NAME_LONG||p.ADM0_A3||''; };
+    /* (#R37) IMF WEO (Oct 2024) GENERAL government gross debt, % of GDP — a broad, authoritative fallback for the
+       Govt-debt layer, whose World-Bank series (GC.DOD.TOTL.GD.ZS = CENTRAL government debt) is reported by only
+       ~half the world ("データのない国が多すぎる"). Merged ONLY where the World Bank has no value, and source-noted.
+       This mirrors how HDI / Democracy / military-spend are embedded real datasets. Genuinely unreported states
+       are omitted (they stay gray) rather than fabricated. */
+    const DEBT_IMF_GG={JPN:251,GRC:159,ITA:135,USA:121,SGP:175,FRA:111,ESP:105,BEL:105,CAN:107,PRT:99,GBR:101,CYP:73,AUT:78,SVN:67,HUN:74,DEU:64,FIN:77,IRL:43,NLD:47,SWE:34,DNK:30,NOR:42,CHE:38,POL:55,CZE:45,SVK:59,HRV:62,ROU:52,BGR:24,EST:22,LVA:45,LTU:38,LUX:27,ISL:61,MLT:50,
+      MEX:53,BRA:85,ARG:155,CHL:41,COL:55,PER:34,URY:62,ECU:55,BOL:84,PRY:40,PAN:54,CRI:63,DOM:60,SLV:73,GTM:28,HND:51,JAM:72,
+      CHN:88,IND:83,IDN:39,KOR:55,THA:64,MYS:67,PHL:57,VNM:35,PAK:71,BGD:39,LKA:108,NPL:48,KHM:36,MMR:60,MNG:46,
+      SAU:27,ARE:30,ISR:62,TUR:35,IRN:34,IRQ:44,EGY:96,JOR:89,QAT:45,KWT:8,OMN:36,BHR:122,LBN:150,YEM:78,
+      ZAF:75,NGA:46,MAR:70,TUN:80,KEN:70,GHA:84,AGO:85,ETH:37,ZMB:113,MOZ:92,CIV:58,SEN:81,CMR:43,UGA:50,TZA:47,COD:21,SDN:152,NAM:66,BWA:24,MUS:80,
+      AUS:50,NZL:46,FJI:80,RUS:20,UKR:88,KAZ:24,UZB:35,GEO:39,ARM:50,AZE:22,BLR:42,SRB:48,MKD:52,ALB:59,BIH:30,MNE:64,MDA:36};
     function choroOn(L){ ensureGeo(geo=>{ if(!geo) return; wbFetch(L.code).then(m=>{
-      const feats=[]; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; if(d&&d.v!=null) feats.push({type:'Feature',geometry:f.geometry,properties:{v:d.v,nm:_nmOf(f.properties)}}); });
-      if(!feats.length){ try{ if(typeof imToast==='function') imToast(jp()?'データを取得できませんでした。少し待って再試行してください。':'No data right now — please try again in a moment.'); }catch(_){} }
+      /* (#R37) Paint EVERY country, not only the ones WITH data: countries the World Bank has no value for now
+         carry NO `v` property and are rendered NEUTRAL GRAY (like the core HDI/pop choropleths), instead of
+         showing nothing ("レイヤーにおいて、データのない国は灰色にするように" + "Govt Debt にデータのない国が多すぎる"
+         — the gray makes the real coverage gaps honest and visible rather than invisible). */
+      if(L.id==='wbdebt'){ try{ Object.keys(DEBT_IMF_GG).forEach(k=>{ if(!(m[k]&&m[k].v!=null)) m[k]={v:DEBT_IMF_GG[k],y:'2024',imf:true}; }); }catch(_){} }
+      const feats=[]; let withData=0; geo.features.forEach(f=>{ const d=m[iso(f.properties||{})]; const props={nm:_nmOf(f.properties)}; if(d&&d.v!=null){ props.v=d.v; withData++; } feats.push({type:'Feature',geometry:f.geometry,properties:props}); });
+      if(!withData){ try{ if(typeof imToast==='function') imToast(jp()?'データを取得できませんでした。少し待って再試行してください。':'No data right now — please try again in a moment.'); }catch(_){} }
       const fc={type:'FeatureCollection',features:feats}, src='src-'+L.id, fill=L.id+'-fill', line=L.id+'-line';
       try{ if(map.getSource(src)) map.getSource(src).setData(fc); else { map.addSource(src,{type:'geojson',data:fc});
-        map.addLayer({id:fill,type:'fill',source:src,paint:{'fill-color':['interpolate',['linear'],['get','v']].concat(L.ramp),'fill-opacity':0.62}});
+        map.addLayer({id:fill,type:'fill',source:src,paint:{'fill-color':['case',['has','v'],['interpolate',['linear'],['get','v']].concat(L.ramp),'#9aa0a6'],'fill-opacity':['case',['has','v'],0.62,0.42]}});
         map.addLayer({id:line,type:'line',source:src,paint:{'line-color':'rgba(0,0,0,0.16)','line-width':0.3}}); _wbHover(L,fill); } }catch(_){}
       const cb=document.getElementById('bx-'+L.id), on=cb?cb.checked:true;
       [fill,line].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
@@ -16744,7 +16793,7 @@ window.addEventListener('DOMContentLoaded', () => {
            shows its most-recent available year). */
         let yrs=[]; try{ yrs=Object.values(m).map(d=>+d.y).filter(isFinite); }catch(_){} let ysp=''; if(yrs.length){ const a=Math.min.apply(null,yrs),b=Math.max.apply(null,yrs); ysp=(a===b)?(''+a):(a+'–'+b); }
         let nn=el.querySelector('.bx-note'); if(!nn){ nn=document.createElement('div'); nn.className='bx-note'; nn.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(nn); }
-        nn.textContent=(jp()?'出典: 世界銀行 · ':'Source: World Bank · ')+L.code+(ysp?(' · '+ysp):'')+(jp()?'（国ごとに最新値）':' · most recent value per country'); } } }catch(_){}
+        nn.textContent=(jp()?'出典: 世界銀行 · ':'Source: World Bank · ')+L.code+(ysp?(' · '+ysp):'')+(jp()?'（国ごとに最新値）':' · most recent value per country')+(L.id==='wbdebt'?(jp()?' ＋ IMF WEO（一般政府総債務）で補完':' + IMF WEO general govt gross debt (gap-fill)'):''); } } }catch(_){}
     }); }); }
     function choroOff(L){ [L.id+'-fill',L.id+'-line'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }catch(_){} }); try{ window._hideGenericLegend&&window._hideGenericLegend(L.id); }catch(_){} }
 
