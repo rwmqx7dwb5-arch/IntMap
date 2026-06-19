@@ -56,8 +56,8 @@ gtag('config', 'G-57X5MX0ZPW');
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
   <style>
-    :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#86868b; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px; }
-    [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#8e8e93; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
+    :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#6c6c70; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px; }
+    [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#a6a6ad; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
     /* ===== (#R22) CYBER theme — Settings → Appearance → "Cyber". A retro-computer / cyberpunk terminal
        look (replaces the old "Tactical" military HUD): deep indigo-black, neon CYAN primary with a MAGENTA
        accent, monospace type, glowing text, CRT scanlines, sharp corners. Built on the dark theme. ===== */
@@ -610,18 +610,18 @@ gtag('config', 'G-57X5MX0ZPW');
     .tp-select, .tp-select option, .tp-select optgroup, .lang-toggle option{ background-color:var(--card-bg); color:var(--text-main); }
     [data-theme="dark"] .tp-select, [data-theme="dark"] .tp-select option, [data-theme="dark"] .tp-select optgroup{ background-color:#1c1c1e !important; color:#f5f5f7 !important; }
     .modal-close-btn{ width:100%; padding:12px; background:var(--primary-color); color:#fff; border:none; cursor:pointer; font-weight:500; border-radius:10px; font-size:14px; margin-top:14px; } .modal-close-btn:hover{ filter:brightness(1.08); }
-    /* (#R34) Settings Apply = a clean sticky FOOTER (was a clashing full-bleed blue bar in R33). The footer
-       matches the modal surface with a hairline top divider; the button keeps its normal rounded primary look.
-       modal padding-bottom is dropped for this modal so the sticky footer sits FLUSH (sticky;bottom:0 sticks
-       to the scroll CONTENT box, so a bottom padding would leave a gap — same fix as the layer panel). */
-    #settings-modal .modal-content{ padding-bottom:0 !important; }
-    #settings-modal .settings-foot{ position:sticky; bottom:0; z-index:3; margin:18px -32px 0; padding:14px 32px calc(16px + env(safe-area-inset-bottom,0px)); background:var(--popup-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:0 0 20px 20px; }
+    /* (#R34/#R39) Settings = a flex column: a SCROLLING body (.settings-scroll) + a non-scrolling Apply
+       FOOTER. The body holds the scrollbar, so its gutter no longer sits BESIDE the footer's rounded corner
+       — that was the "Apply UIの右下が角丸で隙間がある" gap. The footer now spans the full card width flush. */
+    #settings-modal .modal-content{ display:flex; flex-direction:column; overflow:hidden; padding:0 !important; }
+    #settings-modal .settings-scroll{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:32px 32px 0; }
+    #settings-modal .settings-foot{ flex:0 0 auto; z-index:3; margin:0; padding:14px 32px calc(16px + env(safe-area-inset-bottom,0px)); background:var(--popup-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:0 0 20px 20px; }
     #settings-modal .settings-foot #btn-close-settings{ margin-top:0; }
-    /* (#R35) In the two frosted modes the modal body switches to --glass-fill, but the sticky Apply footer
+    /* (#R35) In the two frosted modes the modal body switches to --glass-fill, but the Apply footer
        kept the opaque --popup-bg → a mismatched solid strip at the bottom ("frosted glassにするとSettingsの
        色だけおかしい"). Match the footer to the modal's glass material so it blends seamlessly. */
     body.sidebar-translucent #settings-modal .settings-foot, body.sidebar-glass2 #settings-modal .settings-foot{ background:var(--glass-fill); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
-    @media(max-width:768px){ #settings-modal .settings-foot{ margin:16px -20px 0; padding-left:20px; padding-right:20px; } }
+    @media(max-width:768px){ #settings-modal .settings-foot{ padding-left:20px; padding-right:20px; } }
     .measure-tooltip{ position:absolute; background:rgba(0,0,0,0.82); color:#fff; padding:5px 9px; border-radius:8px; font-size:12px; font-weight:600; pointer-events:none; z-index:2000; transform:translate(12px,-50%); display:none; white-space:nowrap; }
     /* Right-click context menu */
     .ctx-menu{ display:none; position:absolute; z-index:2500; min-width:180px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(20px); overflow:hidden; padding:4px; font-size:13px; }
@@ -694,7 +694,10 @@ gtag('config', 'G-57X5MX0ZPW');
     /* (#R38) Mobile news pin → popup with a Read button (instead of jumping straight to the article). */
     .m-news-pop-back{ display:none; position:fixed; inset:0; z-index:1190; background:rgba(0,0,0,0.30); }
     .m-news-pop-back.show{ display:block; }
-    .m-news-pop{ position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:min(90vw,400px); max-height:72vh; overflow:auto; background:var(--popup-bg,var(--sidebar-bg)); color:var(--text-main); border-radius:18px; box-shadow:0 14px 50px rgba(0,0,0,0.38); padding:16px 18px 18px; box-sizing:border-box; }
+    /* (#R39) The popup was translucent --popup-bg with NO backdrop-filter (every other popup has one), so the
+       map showed straight through it → "設定にかかわらず透明で視認性が悪い". Use the opaque card surface + a
+       frost so it's solidly readable in the default mode; the frosted-glass modes override it below (#1408). */
+    .m-news-pop{ position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); width:min(90vw,400px); max-height:72vh; overflow:auto; background:var(--card-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:18px; box-shadow:0 14px 50px rgba(0,0,0,0.38); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); padding:16px 18px 18px; box-sizing:border-box; }
     .m-news-pop .mnp-head{ display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
     .m-news-pop .mnp-loc{ color:var(--primary-color); font-weight:700; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .m-news-pop .mnp-date{ color:var(--text-muted); font-size:11.5px; flex-shrink:0; }
@@ -776,6 +779,20 @@ gtag('config', 'G-57X5MX0ZPW');
     .tool-panel.tp-collapsed > *:not(.tp-header){ display:none !important; }
     .tool-panel.tp-collapsed .tp-header{ margin-bottom:0 !important; }
     .tool-panel.tp-collapsed{ width:auto; min-width:0; }
+    /* (#R39) The AI brief / Ask-AI panel scrolls; pin its header so the ✕ (and title) are ALWAYS reachable
+       — it used to scroll out of view, so the user had to scroll back to the top to close it. */
+    #ai-research-panel .tp-header{ position:sticky; top:-14px; margin:-14px -16px 8px; padding:14px 16px 8px; background:var(--popup-bg); z-index:6; border-radius:14px 14px 0 0; }
+    body.sidebar-translucent #ai-research-panel .tp-header, body.sidebar-glass2 #ai-research-panel .tp-header{ background:var(--glass-fill); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
+    /* (#R39) In frosted-glass modes the AI brief's follow-up input + buttons used solid --input-bg/--card-bg
+       fills with hard 1px borders → they read as cheap opaque squares on the frosted panel. Blend them into
+       the glass: a translucent fill + hairline glass border, and the input bar uses the panel's glass fill
+       (not an opaque --card-bg strip). ("Frosted Glassにすると四角い枠が見えてcheap") */
+    body.sidebar-translucent #ai-research-panel .ai-test-btn, body.sidebar-glass2 #ai-research-panel .ai-test-btn,
+    body.sidebar-translucent #ai-research-panel .air-free, body.sidebar-glass2 #ai-research-panel .air-free{
+      background:rgba(140,140,150,0.16) !important; border:1px solid var(--glass-border,rgba(255,255,255,0.18)) !important; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); box-shadow:none !important; }
+    body.sidebar-translucent #ai-research-panel .ai-test-btn:hover, body.sidebar-glass2 #ai-research-panel .ai-test-btn:hover{ background:rgba(140,140,150,0.26) !important; }
+    body.sidebar-translucent #ai-research-panel .air-free:focus, body.sidebar-glass2 #ai-research-panel .air-free:focus{ border-color:var(--primary-color) !important; }
+    body.sidebar-translucent #ai-research-panel .air-inbar, body.sidebar-glass2 #ai-research-panel .air-inbar{ background:var(--glass-fill) !important; -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }
     .tp-select{ width:100%; padding:7px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; margin-bottom:8px; box-sizing:border-box; }
     .tp-sub{ font-size:11px; color:var(--text-muted); margin:6px 0 2px; }
 
@@ -1136,7 +1153,11 @@ gtag('config', 'G-57X5MX0ZPW');
       .m-sheet{ display:flex; flex-direction:column; position:fixed; left:0; right:0; bottom:0; z-index:1700;
         background:var(--popup-bg); backdrop-filter:saturate(180%) blur(30px); -webkit-backdrop-filter:saturate(180%) blur(30px);
         border-radius:16px 16px 0 0; box-shadow:0 -8px 36px rgba(0,0,0,0.26);
-        max-height:82dvh; padding:0 18px max(18px,env(safe-area-inset-bottom));
+        max-height:82dvh; padding:0 18px 0;
+        /* (#R39) bottom padding REMOVED — it pushed the scroller (and the sticky Active-layers bar) UP by
+           ~18px, leaving an empty strip of sheet background below the bar ("Active layersの下に隙間"). The
+           home-indicator safe area is now absorbed by the terminal elements themselves (the Active-layers bar
+           already has it; #layer-tools + .sat-controller get it below) so the bar sits FLUSH with the edge. */
         transform:translateY(110%); transition:transform 0.42s var(--sheet-ease); will-change:transform; }
       .m-sheet.show{ transform:translateY(0); }
       .m-sheet-grip{ flex:0 0 auto; height:22px; position:relative; touch-action:none; cursor:grab; }
@@ -1146,7 +1167,7 @@ gtag('config', 'G-57X5MX0ZPW');
       .m-sheet-done{ background:transparent; border:none; color:var(--primary-color); font-size:16px; font-weight:600; padding:4px 6px; }
       /* (#R35) overflow-x:hidden kills the "レイヤー選択欄が左右にスクロールできてしまう" — a stray few-px of
          content width let the sheet pan sideways. The list is single-column; it must never scroll horizontally. */
-      .m-sheet-scroll{ overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; padding-bottom:6px; }
+      .m-sheet-scroll{ overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; flex:1 1 auto; min-height:0; padding-bottom:max(6px,env(safe-area-inset-bottom,0px)); }
 
       .m-seg-block{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
       .m-seg{ display:flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; }
@@ -1177,7 +1198,7 @@ gtag('config', 'G-57X5MX0ZPW');
       /* (#R23) keep the Tools section a flex column with an EVEN gap on mobile too — the old display:block
          let the parent's gap:1px collapse, so after the per-button margins were zeroed the 4 Tools buttons
          touched with random-looking spacing ("間隔がランダムで不自然"). */
-      #mo-mount-layers .layer-dropdown > #layer-tools{ display:flex !important; flex-direction:column !important; gap:6px !important; }
+      #mo-mount-layers .layer-dropdown > #layer-tools{ display:flex !important; flex-direction:column !important; gap:6px !important; padding-bottom:max(10px,env(safe-area-inset-bottom,0px)); }
       #mo-mount-layers #layer-tools .btn-settings, #mo-mount-layers #layer-tools button{ width:100% !important; box-sizing:border-box; }
       /* (#R25) layer rows = a proper 44px iOS tap target. ROOT CAUSE of "Country borders を押すと place names
          がチェックされる / 勝手にレイヤーがオンになる": the rows were 32px tall (centers ~33px apart) — well below
@@ -1201,7 +1222,7 @@ gtag('config', 'G-57X5MX0ZPW');
       /* (#R28) The "Others (beta)" group is NO LONGER a pulldown on mobile ("Others(beta)だけプルダウン…
          元に戻せ"). It now shows fully expanded like every other group — no caret, no collapse. */
       .m-sheet .layer-dropdown hr, .m-sheet .layer-dropdown .premium-divider{ margin:4px 0 !important; }
-      .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 0 !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+      .m-sheet .sat-controller{ position:static !important; inset:auto !important; width:auto !important; margin:12px 0 max(10px,env(safe-area-inset-bottom,0px)) !important; box-shadow:none !important; border:1px solid rgba(128,128,128,0.14) !important; max-height:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 
       /* ---------- Floating map panels dock ABOVE the Summarize-button lane ----------
          The Summarize button owns the strip just above the sheet (peek+10); every other
@@ -1245,6 +1266,8 @@ gtag('config', 'G-57X5MX0ZPW');
         max-height:min(42dvh, calc(100dvh - var(--sheet-cover, var(--peek-h, 0px)) - 90px)) !important;
         overflow-y:auto; -webkit-overflow-scrolling:touch; padding:10px 12px 12px !important; border-radius:16px !important; }
       .tool-panel.tp-radius .tp-header{ position:sticky; top:-10px; margin:-10px -12px 6px; padding:10px 12px 6px; background:var(--glass-fill,var(--popup-bg)); z-index:2; }
+      /* (#R39) AI brief sticky header — match the mobile .tool-panel padding (9px 11px) so it spans flush. */
+      #ai-research-panel .tp-header{ top:-9px; margin:-9px -11px 6px; padding:9px 11px 6px; }
       .tool-panel.tp-radius .tp-sub{ margin:6px 0 2px !important; font-size:10.5px !important; }
       .tool-panel.tp-radius .tp-row{ margin:2px 0 !important; font-size:12px !important; }
       .tool-panel.tp-radius #radius-range{ width:100% !important; height:26px; }
@@ -1306,7 +1329,7 @@ gtag('config', 'G-57X5MX0ZPW');
       .modal-content::before, .compose-content::before, .country-popup::before{ content:''; position:absolute; top:8px; left:50%; transform:translateX(-50%); width:36px; height:5px; border-radius:3px; background:rgba(128,128,128,0.4); }
       /* Settings uses an explicit × button instead of the grip bar */
       #settings-modal .modal-content::before{ display:none !important; }
-      #settings-modal .modal-content{ padding-top:20px !important; }
+      #settings-modal .settings-scroll{ padding-top:20px !important; }
       .modal-content input, .modal-content select, .compose-content input, .compose-content textarea, .setting-group select{ font-size:16px; }
       .setting-group select{ min-height:46px; }
       /* (#R13c) box-sizing:border-box so width:100% INCLUDES the 18px L/R padding — without it the sheet
@@ -1804,6 +1827,10 @@ gtag('config', 'G-57X5MX0ZPW');
 <div class="modal-overlay" id="settings-modal">
   <div class="modal-content" style="position:relative;">
     <button id="settings-close-x" type="button" aria-label="Close" title="Close" style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:25px;font-weight:300;line-height:1;cursor:pointer;z-index:2;">×</button>
+    <!-- (#R39) The settings body scrolls inside .settings-scroll so the scrollbar gutter lives INSIDE the
+         scroll area, not beside the sticky footer. That removes the ~11px gap to the right of the Apply
+         footer's rounded corner ("Apply UIの右下が角丸で隙間がある"). The footer is now a flush flex child. -->
+    <div class="settings-scroll">
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
     <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch (Beta)</option><option value="ru">Русский (бета)</option></select></div>
@@ -1891,6 +1918,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="setting-group" id="support-group">
       <button type="button" id="btn-blueberry" class="ai-test-btn" style="width:100%;font-weight:600;" data-i18n="blueberryBtn">Support</button>
     </div>
+    </div><!-- /.settings-scroll -->
     <!-- (#R34) Apply lives in a clean sticky FOOTER (matches the modal surface, rounded primary button +
          fine-print below) — the R33 full-bleed blue bar clashed with the iOS-clean design. -->
     <div class="settings-foot">
@@ -5667,18 +5695,24 @@ window.addEventListener('DOMContentLoaded', () => {
     [120,400,1000].forEach(ms=>setTimeout(()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },ms)); });
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
     bordersOn=e.target.checked;
-    /* Lazy-create the border-only line layer (uses the same countries GeoJSON source) */
+    /* (#R39) Lazy-create the border-only line layer, WITH RETRIES — same root cause as roads/rail: the
+       `countries` source / `tool-poly` anchor often aren't ready on the first (cold) toggle, the single
+       attempt silently no-op'd, and borders only appeared after a reload. Now retry on idle + a backoff. */
+    const mkBorders=()=>{ try{ if(!bordersOn||!map) return;
+      if(!map.getSource('countries') && countryGeo && map.isStyleLoaded()) addCountryLayers();
+      if(map.getSource('countries') && !map.getLayer('borders-only-line')){
+        /* (#R23) guard the beforeId — addLayer(...,'tool-poly') THROWS if the tool layer isn't on the
+           map yet, which silently aborted the borders toggle on mobile ("country bordersのチェックでバグる"). */
+        const anchor=map.getLayer('tool-poly')?'tool-poly':undefined;
+        try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},anchor); }catch(_){ try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}}); }catch(__){} }
+      }
+      if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility','visible');
+      applyTheme();
+    }catch(_){} };
     if(bordersOn){
-      loadCountryData().then(()=>{
-        if(!map.getSource('countries') && countryGeo) addCountryLayers();
-        if(map.getSource('countries') && !map.getLayer('borders-only-line')){
-          /* (#R23) guard the beforeId — addLayer(...,'tool-poly') THROWS if the tool layer isn't on the
-             map yet, which silently aborted the borders toggle on mobile ("country bordersのチェックでバグる"). */
-          const anchor=map.getLayer('tool-poly')?'tool-poly':undefined;
-          try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},anchor); }catch(_){ try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}}); }catch(__){} }
-        }
-        applyTheme();
-      });
+      loadCountryData().then(mkBorders);
+      if(!map||!map.isStyleLoaded()){ map&&map.once&&map.once('idle',mkBorders); }
+      [250,700,1600,3200].forEach(ms=>setTimeout(mkBorders,ms));
     } else { applyTheme(); }
   });
   document.getElementById('cb-countries').addEventListener('change',(e)=>{ countryInfoOn=e.target.checked;
@@ -7213,7 +7247,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */
     try{ document.activeElement&&document.activeElement.blur&&document.activeElement.blur(); }catch(_){}
-    const _mc=modal.querySelector('.modal-content'); if(_mc){ _mc.scrollTop=0; requestAnimationFrame(()=>{ _mc.scrollTop=0; modal.scrollTop=0; }); }
+    const _mc=modal.querySelector('.settings-scroll')||modal.querySelector('.modal-content'); if(_mc){ _mc.scrollTop=0; requestAnimationFrame(()=>{ _mc.scrollTop=0; modal.scrollTop=0; }); }
   };
   document.getElementById('btn-close-settings').onclick=()=>{
     const _prevTheme=userTheme;
@@ -14411,7 +14445,13 @@ window.addEventListener('DOMContentLoaded', () => {
        toggled on later (or re-added after a basemap swap) can land above it, so re-assert it to the
        very top whenever the map settles — guarded so it only moves when not already last (no repaint loop). */
     function toTop(){ try{ if(!map.getLayer('iso-mask')) return; const ls=map.getStyle().layers; if(ls&&ls.length&&ls[ls.length-1].id!=='iso-mask') map.moveLayer('iso-mask'); }catch(_){} }
-    function applyFeature(feat){ const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
+    function applyFeature(feat){ let tries=0; const apply=()=>{ if(!ensure()){
+          /* (#R39) ROOT CAUSE of "Isolateを押しても反応しない（再読み込みで治る）": ensure() returns false while
+             the style isn't fully loaded and we waited ONLY on `once('idle')`. On a slow first load the map can
+             already be sitting idle (nothing re-triggers a render), so that idle never fires and the mask never
+             applies — until a reload warms the cache. POLL instead (reliable regardless of render state), with
+             the idle listener kept as a last-resort. */
+          if(tries++<60){ setTimeout(apply,120); } else { try{ map.once('idle',apply); }catch(_){} } return; }
         if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
         try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){}
         /* (#R29) Isolating a country auto-deselects "Countries (info)" — its hover-fill / info card would
@@ -14427,10 +14467,14 @@ window.addEventListener('DOMContentLoaded', () => {
       }; apply(); }
     /* enter by COUNTRY CODE (the country detail popup) or by NAME (a tapped place label). Both load the
        border GeoJSON first if it isn't in memory yet so isolate works even before Countries(info) is used. */
-    function enter(id){ const go=()=>applyFeature(findFeature(id)); if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
-    function enterByName(name){ const go=()=>applyFeature(findByName(name)); if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
+    /* (#R39) ALWAYS route through the data-ready promise (idempotent — resolves instantly if already loaded).
+       The old `if(!window.countryGeo)` short-circuit ran go() even when countryGeo was set-but-still-populating,
+       so the very first isolate after a cold load could hit an empty feature list and toast "border not found". */
+    function withGeo(go){ try{ if(window.countryGeo && window.countryGeo.features && window.countryGeo.features.length){ go(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(go); return; } }catch(_){} go(); }
+    function enter(id){ withGeo(()=>applyFeature(findFeature(id))); }
+    function enterByName(name){ withGeo(()=>applyFeature(findByName(name))); }
     /* (#R29.1) enter by the tapped point first (reliable), fall back to the label name. */
-    function enterAt(lng,lat,name){ const go=()=>{ let f=findByLngLat(lng,lat); if(!f && name) f=findByName(name); applyFeature(f); }; if(!window.countryGeo && typeof loadCountryData==='function'){ loadCountryData().then(go); } else go(); }
+    function enterAt(lng,lat,name){ withGeo(()=>{ let f=findByLngLat(lng,lat); if(!f && name) f=findByName(name); applyFeature(f); }); }
     function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
@@ -15778,7 +15822,7 @@ window.addEventListener('DOMContentLoaded', () => {
         sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'おすすめの質問':'Suggested questions')+'</div>'+
           qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(s)+'</button>').join('')+
           '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>'+
-          '<div style="display:flex;gap:6px;margin-top:8px;position:sticky;bottom:0;background:var(--card-bg);padding:6px 0 2px;"><input class="air-free" type="text" placeholder="'+(jp()?'続けて質問…':'Ask a follow-up…')+'" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
+          '<div class="air-inbar" style="display:flex;gap:6px;margin-top:8px;position:sticky;bottom:0;background:var(--card-bg);padding:6px 0 2px;"><input class="air-free" type="text" placeholder="'+(jp()?'続けて質問…':'Ask a follow-up…')+'" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
         p.appendChild(sug);
         /* (#R31) CHAT-style thread — the user's message stays visible as a bubble after the AI replies
            ("主要なAIチャットアプリのようなUIに"), and the conversation accumulates with context continuity. */
