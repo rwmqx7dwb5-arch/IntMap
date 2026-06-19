@@ -3156,3 +3156,78 @@ zero console errors). Each fix reproduced/proven, not assumed.
 ### Deploy checklist (server-side, NOT shipped by the static-file edit)
 - `supabase functions deploy refresh-news` — strengthened subject prompt + expanded publisher dict.
 - `supabase functions deploy ai-proxy` — already grants the owner unlimited (deploy if not yet live).
+
+---
+
+## 42. Round 38 — re-reported batch, real root causes + layer expansion (tags `#R38`)
+
+Build `2026-06-19-R38`. Verified live on the http preview (page RUNS — **117** layer checkboxes now, zero
+console errors after every change; the WebGL globe DOES paint here — confirmed by screenshot of the new Blue
+Marble layer rendering with real NASA tiles, HTTP 200).
+
+### Mobile layer-checkbox sensitivity "しっかりタップしないとチェックがつかない" (NEW real cause)
+- R37 down-targeted the pointerdown row but still fired the toggle on the synthetic **CLICK**, which iOS emits
+  ~300 ms late and DROPS unpredictably inside a scroll container → a normal tap often did nothing unless pressed
+  firmly. **Fix: toggle on `pointerup`** (fires the instant the finger lifts, every time); `click` is now ONLY a
+  suppressor so the native label→checkbox activation can't double-toggle. Kept R37 down-targeting (intent row) and
+  the finger-travel (>30px) scroll guard. A `click` fallback covers engines that synthesize click without pointerup.
+
+### "Grid & labels が何度消しても自動的にチェックされる" (ROOT CAUSE — finally)
+- The R36 async-race re-assert guard re-dispatches a `change` on a box that just went OFF (idempotent for normal
+  layers, which READ `e.target.checked`). But `toggleGrid()` **FLIPPED** `isGridOn` regardless of the box → ~500 ms
+  after the user unchecked Grid, the re-asserted change flipped it back ON. **Fix:** split into an idempotent
+  `setGrid(on)` (drives state FROM the box) + a `toggleGrid()` for the toolbar button; the checkbox `change` calls
+  `setGrid(checked)`. ALSO excluded the 7 utility toggles (`cb-names/borders/admin1/roads/rail2/grid/countries`)
+  from the re-assert guard entirely (they have their own re-assert and aren't async-race layers).
+
+### "Country borders / State borders / Roads / Railways をチェックしても表示されない、再読み込みで治る"
+- The ref layers (`ref-admin1/roads/rail`) depend on the OFM vector source, which often settled AFTER `_wireRef`'s
+  single 400 ms retry → the visibility-set hit nothing and never re-ran. **Fix:** apply from the LIVE box state,
+  re-assert at 250/700/1600/3200 ms AND on every `ofm` `sourcedata isSourceLoaded`. (Borders also already re-assert
+  via the load-time `_assertNamesBorders` + applyTheme.)
+
+### Theme change wiped the sidebar transparency choice
+- R29.1 auto-overwrote the sidebar appearance from a per-SKIN map on every theme change. The skins that map needed
+  were DELETED in R33, so EVERY surviving theme (auto/light/dark) mapped to `'opaque'` → any theme change silently
+  reset Solid/Frosted/More-transparent. **Removed the auto-pick block** — appearance is an independent setting now.
+
+### Stats comparison bars "幅を縮小すると潰れて長さ0 / まだ短い" (definitive)
+- The single-row layout forced the bar TRACK to compete with fixed flag/name/value columns → pinned to ~46 px when
+  narrow. **Now the row WRAPS:** flag+name+value share the top line, the track drops to its OWN full-width line
+  (`flex:1 1 100%` + CSS `order`, no markup change) → the bar is ALWAYS the full available width at any sidebar
+  width. Fill carries `min-width:3px` so even a tiny value shows.
+
+### Mobile news pin → popup with a Read button (was a direct jump)
+- On mobile, tapping `news-dots`/`news-labels` now opens `_showMobileNewsPopup(props)` — an iOS-style card (location,
+  title, publisher, date) with a **Read** button (opens the article) + Close, dismiss on backdrop tap. Desktop keeps
+  the direct open (its hover tooltip already previews). The R37 crosshair tooltip now opens the SAME popup on tap.
+  Card joins the unified frosted-glass surface set.
+
+### Full 4-language (EN/JP/DE/RU) — the layer panel is now 100% localized
+- Empirically scanned the live DE/RU panels (not guessed). **RU up-front seed bug:** line ~2025 dropped 'ru' from the
+  construction-time language seed → RU fell back to English in every baked surface until loadSettings re-ran. Added.
+- Converted EVERY remaining English-fallback layer label to 4 languages via per-module pickers (no source churn):
+  the **World Bank/bx betas** (34 labels incl. eq + Heat of Attention) via a `BX_TR` map + `bxLabel()`; the **ECMWF**
+  weather rows (`['EN','JP']`→`['EN','JP','DE','RU']` + `ecLbl()`); the **B2** betas (lifeexp/unemp/internet/…) via
+  `b2Lbl()`; **L9** (dams/aurora/seaice/…) via `l9Lbl()`; **ECO** (worldcover/ecoregions/plates) via `ecoLbl()`; group
+  headers, the Others-note, the Tools label, the ECMWF time caption, the context-menu radius/runway/LOS items, and
+  the generic legend (`ensureGenericLegend` is now 4-lang; `[EN,JP]` callers still fall back to EN — never Japanese).
+  **Verified live:** DE and RU layer panels show ZERO English/Japanese leaks; RU rows are genuinely Cyrillic.
+- **Honest limitation (unchanged scope):** ~700 deep inline `jp()?…:…` ternaries in toasts / some tool-panel text
+  still fall back to ENGLISH (not Japanese) in DE/RU. No wrong-language (Japanese) leak remains in the surfaces
+  audited; the long tail is English-fallback only and is progressively localized (bulk-converting all sites in one
+  pass is high-risk per the template-literal back-tick rule).
+
+### Layers "大幅増強" — +8 real NASA GIBS science rasters (all curl-verified 200/image before wiring)
+- New self-contained additive module (DOM-built, no template literals → no CSS back-tick risk): **Daily satellite
+  (true color)**, **Land surface temp (day)**, **Vegetation index (NDVI)**, **Water vapor**, **Cloud fraction**,
+  **Sea-ice concentration**, **Sea-surface temp anomaly**, **Blue Marble (relief + bathymetry, static)**. Each: full
+  EN/JP/DE/RU label + source note, freshest GIBS day (−2 d), added BELOW the place labels (then `_raiseLabelLayers`),
+  shared opacity legend via `_registerLayerOpacity`, filed into climate/maritime/terrain by reorganizeLayerPanel
+  (ids added to GROUPS), and integrated with the Active-layers chips (verified). Blue Marble verified rendering on the
+  globe with live GIBS tiles. Skipped probes that 404/400'd (chlorophyll, NO₂/CO/SO₂ ids, brightness-temp) to avoid
+  blank layers — only confirmed-serving layers were wired.
+
+### ToS / Privacy / attributions
+- No change needed: all 8 new layers are **NASA EOSDIS GIBS** (already credited in the Privacy Policy's third-party
+  list AND set as the MapLibre source `attribution`). No new data collection.
