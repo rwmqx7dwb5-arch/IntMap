@@ -2820,6 +2820,12 @@ window.addEventListener('DOMContentLoaded', () => {
     throw new Error(aiLimitMsg());
   }
   async function askAIJSON(prompt, systemPrompt, imageDatas){ return aiParseJSON(await askAI(prompt, systemPrompt, imageDatas)); }
+  /* (#R39) Force the AI OUTPUT language to follow the app language. The inline brief/summary prompts only had
+     EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
+     Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
+     must stay canonical) nor the connectivity test. Harmless/​reinforcing for EN/JP. */
+  function _aiLangName(){ return ({en:'English',jp:'Japanese',de:'German',ru:'Russian'})[currentLang]||'English'; }
+  window._aiLangLine=function(){ return ' Always write your entire response in '+_aiLangName()+', regardless of the language of the input.'; };
   function aiParseJSON(raw){
     if(raw==null) return null;
     let s=String(raw).trim();
@@ -3088,9 +3094,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const run=async()=>{
       rep.setLoading(t('aiThinking'));
       try{
-        const sys=currentLang==='jp'
+        const sys=(currentLang==='jp'
           ? "あなたは衛星画像アナリストです。同一地域の2枚の衛星画像を比較します（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"
-          : "You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.";
+          : "You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.")+window._aiLangLine();
         const prompt=currentLang==='jp'?`1枚目の日付: ${va}\n2枚目の日付: ${vb}\nこの2枚を比較し、変化を報告してください。`:`First image date: ${va}\nSecond image date: ${vb}\nCompare the two images and report the changes.`;
         const out=await askAI(prompt,sys,[imgA,imgB]);
         rep.setBody(out||'');
@@ -5024,9 +5030,9 @@ window.addEventListener('DOMContentLoaded', () => {
       rep.setLoading(t('aiThinking'));
       try{
         const lines=uniq.map((p,i)=>`${i+1}. [${p.name||'?'}] ${p.title||''}${p.publisher?' ('+p.publisher+')':''}`).join('\n');
-        const sys = currentLang==='jp'
+        const sys = (currentLang==='jp'
           ? "あなたは地政学アナリストです。以下は、ある地理的範囲内で報じられているニュース見出しの一覧です。この地域で今何が起きているのかを地政学的観点から、日本語で簡潔に3行程度に要約してください。各行は「・」で始めてください。与えられた見出しの範囲内で述べ、過度な推測は避けてください。"
-          : "You are a geopolitical analyst. Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.";
+          : "You are a geopolitical analyst. Below are news headlines reported within a single geographic area. In about three concise lines, summarize what is happening in this region from a geopolitical perspective. Begin each line with '- '. Stay grounded in the given headlines and avoid over-speculation.")+window._aiLangLine();
         const out=await askAI('Headlines:\n'+lines, sys);
         rep.setBody(out||'');
       }catch(e){ rep.setError((e&&e.message)||t('aiError'), run); }
@@ -6585,7 +6591,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!src){ aiToast(t('aiTransNoText')); return; }
     res._origHTML=bodyEl.innerHTML; btn.disabled=true; btn.innerHTML='<span class="ai-spin"></span>';
     try{
-      const sys="You are a professional news translator. Translate the article into natural, fluent Japanese. Keep paragraph breaks. Do not add notes, labels, or the original text — output only the Japanese translation.";
+      /* (#R39) Translate into the UI language, not always Japanese (DE/RU/EN users got Japanese). */
+      const _tgt=_aiLangName();
+      const sys="You are a professional news translator. Translate the article into natural, fluent "+_tgt+". Keep paragraph breaks. Do not add notes, labels, or the original text — output only the "+_tgt+" translation.";
       const out=await askAI('Title: '+item.title+'\n\n'+src, sys);
       const paras=String(out||'').split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
       res._translatedHTML=(paras.length?paras:[String(out||'')]).map(p=>`<p>${escForReader(p)}</p>`).join('');
@@ -6785,11 +6793,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const _cimg=info.img||'';
       cards+=`<div class="wiki-card" id="card-${info.id}" onclick="flyToLoc(${info.loc[0]},${info.loc[1]})" onmouseenter="triggerLayerHover('${info.layerRef||''}',true); highlightDashMarker('${info.id}',true)" onmouseleave="triggerLayerHover('${info.layerRef||''}',false); highlightDashMarker('${info.id}',false)">
         <div class="wiki-card-img${_cimg?'':' wc-noimg'}" data-type="${info.type||''}"${_cimg?` style="background-image:url('${_cimg}');"`:''}><span class="wiki-card-badge">${info.badge}</span></div>
-        <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[currentLang]}</h4><p class="wiki-card-body">${info.body[currentLang]}</p>${specsHTML}<div class="wiki-card-footer"><a href="${info.wiki[currentLang]}" target="_blank" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
+        <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[currentLang]||info.title.en}</h4><p class="wiki-card-body">${info.body[currentLang]||info.body.en}</p>${specsHTML}<div class="wiki-card-footer"><a href="${info.wiki[currentLang]||info.wiki.en}" target="_blank" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
     });
     cards+='</div>';
     /* (#R20) top-level Places | Events switch, then the existing category nav */
-    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${currentLang==='jp'?'📍 場所':'📍 Places'}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${currentLang==='jp'?'🗓 出来事':'🗓 Events'}</button></div>`;
+    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${({en:'📍 Places',jp:'📍 場所',de:'📍 Orte',ru:'📍 Места'})[currentLang]||'📍 Places'}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${({en:'🗓 Events',jp:'🗓 出来事',de:'🗓 Ereignisse',ru:'🗓 События'})[currentLang]||'🗓 Events'}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${activeDashCategories.has('mil')?'active':''}" onclick="toggleDashCat('mil')">${dict.dashCatMil}</button><button class="dash-nav-btn ${activeDashCategories.has('tech')?'active':''}" onclick="toggleDashCat('tech')">${dict.dashCatTech}</button><button class="dash-nav-btn ${activeDashCategories.has('maritime')?'active':''}" onclick="toggleDashCat('maritime')">${dict.dashCatMar}</button><button class="dash-nav-btn ${activeDashCategories.has('geo')?'active':''}" onclick="toggleDashCat('geo')">${dict.dashCatGeo}</button></div>`;
     dash.innerHTML=seg+nav+cards;
     /* Mouse wheel → horizontal scroll on the category nav */
@@ -15763,6 +15771,8 @@ window.addEventListener('DOMContentLoaded', () => {
      than an encyclopedia. Needs an AI key (Settings → AI features); reuses askAI(). ===== */
   window.IntMapAIResearch=(function(){
     const jp=()=>currentLang==='jp';
+    /* (#R39) 4-language helper so the brief panel's own UI follows the app language (DE/RU used to fall to EN). */
+    const LL=(en,j,de,ru)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:en;
     let panel=null;
     function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
     /* minimal safe markdown: ## headers, **bold**, bullet lines */
@@ -15788,9 +15798,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const p=ensure();
       p.style.display='block';
-      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+(jp()?'AI調査: ':'AI brief: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
-        '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;">'+(jp()?'<span style="color:var(--text-muted);">調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)</span>':'<span style="color:var(--text-muted);">Researching… (background, history, economy, military, recent developments)</span>')+'</div>'+
-        '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+(jp()?'再生成':'Regenerate')+'</button>';
+      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+LL('AI brief: ','AI調査: ','KI-Bericht: ','ИИ-справка: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+        '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;"><span style="color:var(--text-muted);">'+LL('Researching… (background, history, economy, military, recent developments)','調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)','Recherche… (Hintergrund, Geschichte, Wirtschaft, Militär, jüngste Entwicklungen)','Анализ… (история, экономика, военная и стратегическая значимость, последние события)')+'</span></div>'+
+        '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+LL('Regenerate','再生成','Neu generieren','Сгенерировать заново')+'</button>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const body=p.querySelector('#air-body');
@@ -15799,9 +15809,9 @@ window.addEventListener('DOMContentLoaded', () => {
          date/figure, and "Recent developments" must prioritise the newest events the model knows +
          the supplied nearby headlines ("できるだけ日付などを記載する等具体的に。最新の動向を意識"). */
       const today=new Date().toISOString().slice(0,10);
-      const sys=jp()
+      const sys=(jp()
         ?('あなたは地政学・地域研究のリサーチアシスタントです。本日は'+today+'です。事実に忠実に、簡潔な日本語で答えてください。可能な限り具体的な年・日付・数値（人口、GDP、兵力、距離など）を文中に入れてください。不確かな点は「未確認」と明記してください。')
-        :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.');
+        :('You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain.'))+window._aiLangLine();
       const prompt=(jp()
         ?('場所「'+name+'」'+(lngLat?('（座標: '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+'）'):'')+'について、以下の構成で簡潔なインテリジェンス・ブリーフを書いてください。\n## 概要・背景\n## 歴史（重要な出来事は年号つきで）\n## 経済（最新の数値・年を明記）\n## 軍事・戦略的意義\n## 最近の動向（直近1〜2年を最優先。出来事には日付や時期を明記）\n各セクション2〜4文。曖昧な一般論より、固有名詞・日付・数値を優先してください。')
         :('Write a concise intelligence brief on "'+name+'"'+(lngLat?(' (around '+lngLat.lat.toFixed(2)+', '+lngLat.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (state the latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1–2 years; date each event)\n2–4 sentences per section. Prefer named entities, dates and numbers over generalities.'))
@@ -15810,7 +15820,7 @@ window.addEventListener('DOMContentLoaded', () => {
          ("Suggested questions は AI brief が終わってから最後に表示") — it used to render immediately. */
       try{
         const out=await askAI(prompt,sys);
-        body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+(jp()?'AI生成 — 重要な判断には一次情報の確認を。':'AI-generated — verify with primary sources for important decisions.')+'</div>';
+        body.innerHTML=md(out||'')+'<div style="margin-top:10px;font-size:10px;color:var(--text-muted);">'+LL('AI-generated — verify with primary sources for important decisions.','AI生成 — 重要な判断には一次情報の確認を。','KI-generiert — bei wichtigen Entscheidungen mit Primärquellen prüfen.','Сгенерировано ИИ — для важных решений проверяйте по первоисточникам.')+'</div>';
       }catch(e){ body.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
       const again=p.querySelector('#air-again'); again.style.display='block'; again.onclick=()=>open(name,lngLat);
       /* (#R21 beta) SUGGESTED QUESTIONS — auto-generated from the countries in the current viewport
@@ -15819,10 +15829,10 @@ window.addEventListener('DOMContentLoaded', () => {
         let sug=p.querySelector('#air-sugg'); if(sug) sug.remove();
         sug=document.createElement('div'); sug.id='air-sugg'; sug.style.cssText='margin-top:10px;border-top:1px solid rgba(128,128,128,0.2);padding-top:8px;';
         const qs=suggestQs(name);
-        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+(jp()?'おすすめの質問':'Suggested questions')+'</div>'+
+        sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+LL('Suggested questions','おすすめの質問','Vorgeschlagene Fragen','Предлагаемые вопросы')+'</div>'+
           qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(s)+'</button>').join('')+
           '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>'+
-          '<div class="air-inbar" style="display:flex;gap:6px;margin-top:8px;position:sticky;bottom:0;background:var(--card-bg);padding:6px 0 2px;"><input class="air-free" type="text" placeholder="'+(jp()?'続けて質問…':'Ask a follow-up…')+'" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
+          '<div class="air-inbar" style="display:flex;gap:6px;margin-top:8px;position:sticky;bottom:0;background:var(--card-bg);padding:6px 0 2px;"><input class="air-free" type="text" placeholder="'+LL('Ask a follow-up…','続けて質問…','Nachfrage stellen…','Задать уточняющий вопрос…')+'" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
         p.appendChild(sug);
         /* (#R31) CHAT-style thread — the user's message stays visible as a bubble after the AI replies
            ("主要なAIチャットアプリのようなUIに"), and the conversation accumulates with context continuity. */
@@ -15832,7 +15842,7 @@ window.addEventListener('DOMContentLoaded', () => {
           :'align-self:flex-start;max-width:93%;background:var(--input-bg);color:var(--text-main);border-radius:14px 14px 14px 5px;')+'padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word;'; d.innerHTML=html; chat.appendChild(d); try{ p.scrollTop=p.scrollHeight; }catch(_){} return d; };
         const ask=async(qq)=>{
           bubble('user',esc(qq));
-          const ai=bubble('ai','<span style="color:var(--text-muted);">'+(jp()?'回答中…':'Thinking…')+'</span>');
+          const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…')+'</span>');
           convo.push('User: '+qq);
           try{ const ctx=(news.length?('\n\n'+(jp()?'参考: 周辺の最近のニュース見出し:\n':'Context — recent nearby headlines:\n')+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\n'+(jp()?'これまでの会話:\n':'Conversation so far:\n')+convo.slice(-6).join('\n')):'');
             const out2=await askAI(qq+ctx,sys);
@@ -15853,17 +15863,27 @@ window.addEventListener('DOMContentLoaded', () => {
         inView=Object.values(countryStats||{}).filter(s=>s&&s.latlng&&s.latlng[0]>b.getSouth()&&s.latlng[0]<b.getNorth()&&s.latlng[1]>b.getWest()&&s.latlng[1]<b.getEast());
         inView.sort((a,b2)=>(b2.pop||0)-(a.pop||0));
       }catch(_){}
-      const nm=(s)=>jp()?(s.nameJp||s.nameEn):s.nameEn;
-      const out=[];
-      if(jp()){
+      const nm=(s)=>{ const L=currentLang; if(L==='jp') return s.nameJp||s.nameEn; if(L==='de') return s.nameDe||s.nameEn; if(L==='ru') return s.nameRu||s.nameEn; return s.nameEn; };
+      const out=[]; const L=currentLang; const A=inView[0]&&nm(inView[0]), B=inView[1]&&nm(inView[1]); const pair=inView[0]&&inView[1]&&inView[0]!==inView[1];
+      if(L==='jp'){
         out.push(name+'の地政学的重要性を、直近の動向を踏まえて教えて');
-        if(inView[0]&&inView[1]&&inView[0]!==inView[1]) out.push(nm(inView[0])+'と'+nm(inView[1])+'の現在の関係と主要な懸案は？');
-        if(inView[0]) out.push(nm(inView[0])+'の経済の強みと弱みを最新の数値で教えて');
+        if(pair) out.push(A+'と'+B+'の現在の関係と主要な懸案は？');
+        if(inView[0]) out.push(A+'の経済の強みと弱みを最新の数値で教えて');
         out.push(name+'周辺で今後12か月に注視すべきリスクは？');
+      } else if(L==='de'){
+        out.push('Warum ist '+name+' geopolitisch bedeutsam – angesichts der jüngsten Entwicklungen?');
+        if(pair) out.push('Wie ist der aktuelle Stand der Beziehungen zwischen '+A+' und '+B+', und was sind die wichtigsten Konfliktpunkte?');
+        if(inView[0]) out.push('Was sind '+A+'s wirtschaftliche Stärken und Schwächen, mit den neuesten Zahlen?');
+        out.push('Welche Risiken rund um '+name+' sollte man in den nächsten 12 Monaten beobachten?');
+      } else if(L==='ru'){
+        out.push('Почему '+name+' важен геополитически, учитывая последние события?');
+        if(pair) out.push('Каково текущее состояние отношений '+A+'–'+B+' и каковы основные точки трения?');
+        if(inView[0]) out.push('Каковы экономические сильные и слабые стороны '+A+' по последним данным?');
+        out.push('Какие риски вокруг '+name+' стоит отслеживать в ближайшие 12 месяцев?');
       } else {
         out.push('Why does '+name+' matter geopolitically, given recent developments?');
-        if(inView[0]&&inView[1]&&inView[0]!==inView[1]) out.push('What is the current state of '+nm(inView[0])+'–'+nm(inView[1])+' relations, and the main friction points?');
-        if(inView[0]) out.push('What are '+nm(inView[0])+'’s economic strengths and weaknesses, with the latest figures?');
+        if(pair) out.push('What is the current state of '+A+'–'+B+' relations, and the main friction points?');
+        if(inView[0]) out.push('What are '+A+'’s economic strengths and weaknesses, with the latest figures?');
         out.push('What risks around '+name+' should be watched over the next 12 months?');
       }
       return out.slice(0,4);
