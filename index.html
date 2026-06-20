@@ -8517,9 +8517,34 @@ window.addEventListener('DOMContentLoaded', () => {
       milSpendGDP:['Defense budget as a share of the country’s GDP — its military burden on the economy.','国防費が国のGDPに占める割合。経済における軍事負担。','Verteidigungsbudget als Anteil am BIP — die militärische Last für die Wirtschaft.','Военный бюджет как доля ВВП — военная нагрузка на экономику.'],
       aod:['Aerosol optical depth — how much haze, smoke and dust dim sunlight in the air column.','エアロゾル光学的厚さ — 大気中の霞・煙・砂塵が日射を遮る度合い。','Aerosol-optische Dicke — wie stark Dunst, Rauch und Staub das Sonnenlicht dämpfen.','Аэрозольная оптическая толщина — насколько дымка, дым и пыль ослабляют солнечный свет.'],
       nightsat:['Artificial light at night, from satellite — a proxy for urbanization and economic activity.','衛星が捉えた夜間の人工光 — 都市化や経済活動の代理指標。','Künstliches Licht bei Nacht (Satellit) — ein Indikator für Urbanisierung und Wirtschaft.','Искусственный свет ночью со спутника — индикатор урбанизации и экономики.'],
-      snow:['Snow and ice cover from satellite (NDSI index). Brighter = more snow/ice on the ground.','衛星による積雪・海氷（NDSI指数）。明るいほど積雪・氷が多い。','Schnee- und Eisbedeckung per Satellit (NDSI). Heller = mehr Schnee/Eis.','Снежный и ледяной покров со спутника (индекс NDSI). Ярче = больше снега/льда.']
+      snow:['Snow and ice cover from satellite (NDSI index). Brighter = more snow/ice on the ground.','衛星による積雪・海氷（NDSI指数）。明るいほど積雪・氷が多い。','Schnee- und Eisbedeckung per Satellit (NDSI). Heller = mehr Schnee/Eis.','Снежный и ледяной покров со спутника (индекс NDSI). Ярче = больше снега/льда.'],
+      /* (#R40) explanations for more non-obvious metrics (en + jp; de/ru/es fall back to en). Well-known ones
+         (population, GDP, area, density) intentionally get none. */
+      eez:['Exclusive Economic Zone — the sea a country controls for fishing & resources, out to 200 nautical miles.','排他的経済水域 — 漁業・資源を管理できる海域（沿岸から200海里）。'],
+      sst:['Sea-surface temperature from satellite — the skin temperature of the ocean.','衛星による海面水温 — 海の表層の温度。'],
+      popgrid:['People per km² on a fine 1 km grid (not country averages) — shows where people actually cluster.','1kmグリッドの人口密度（国平均ではない）— 実際に人が集まる場所がわかる。'],
+      sealevel:['Projected coastline change if sea level rises by the chosen amount — areas below that height flood.','選んだ海面上昇量で浸水する沿岸域 — その標高以下が水没。'],
+      subcables:['Submarine fibre-optic cables carrying almost all intercontinental internet traffic.','大陸間インターネットの大半を担う海底光ファイバーケーブル。'],
+      plates:['Boundaries of Earth’s tectonic plates — where most earthquakes and volcanoes occur.','地球のプレート境界 — 地震・火山の多くが起きる場所。'],
+      ecoregions:['Distinct ecological regions (WWF/RESOLVE) grouping similar species, climate and habitat.','類似の生物・気候・生息環境でまとめた生態地域（WWF/RESOLVE）。'],
+      worldcover:['ESA satellite land-cover classes (forest, cropland, built-up, water…) at 10 m resolution.','ESA衛星による土地被覆分類（森林・農地・市街地・水域など、10m解像度）。'],
+      aurora:['Modeled auroral oval — where the northern/southern lights are likely visible right now.','オーロラ帯のモデル — 今オーロラが見える可能性が高い場所。'],
+      thermal:['Satellite-detected heat sources in the last hours — mostly wildfires, also flares and volcanoes.','直近数時間に衛星が検知した熱源 — 主に山火事、ガスフレアや火山も。'],
+      cpi:['Transparency International score (0–100) of perceived public-sector corruption. Higher = cleaner.','トランスペアレンシーによる公的部門の汚職体感指数（0〜100）。高いほど清廉。'],
+      wbco2:['Carbon-dioxide emissions per person per year (tonnes) — a country’s per-capita climate footprint.','1人当たりの年間CO₂排出量（トン）— 国民1人の気候負荷。'],
+      wbgini:['Gini index of income inequality (0 = perfectly equal, 100 = maximally unequal).','所得格差のジニ指数（0=完全平等、100=最大格差）。'],
+      wbpov:['Share of people living on less than ~$2.15 a day (extreme poverty).','1日約2.15ドル未満で暮らす人の割合（極度の貧困）。'],
+      wbinfmort:['Infant deaths before age 1 per 1,000 live births — a core health/development indicator.','出生1000人当たりの満1歳未満の死亡数 — 基本的な保健・開発指標。'],
+      wbu5mort:['Deaths before age 5 per 1,000 live births.','出生1000人当たりの5歳未満死亡数。'],
+      wbgdpgrow:['Year-on-year real GDP growth (%) — how fast the economy is expanding or contracting.','実質GDPの前年比成長率（％）。'],
+      wbinfl:['Annual consumer-price inflation (%) — how fast prices are rising.','消費者物価の年間インフレ率（％）。'],
+      wbrenew:['Share of final energy from renewable sources (hydro, wind, solar, biomass…).','最終エネルギーに占める再生可能エネルギー（水力・風力・太陽光・バイオなど）の割合。'],
+      wbphys:['Physicians per 1,000 people — a measure of healthcare capacity.','人口1000人当たりの医師数 — 医療提供力の指標。'],
+      wbwater:['Share of people with safely managed drinking water.','安全に管理された飲料水を利用できる人の割合。'],
+      wbagri:['Share of land used for agriculture (crops + pasture).','農業（耕地＋牧草地）に使われる土地の割合。'],
+      milSpend:['Total annual defense budget in US$ billions.','年間の国防費総額（10億米ドル）。']
     };
-    function _legendDesc(id){ const d=LEGEND_DESC[id]; if(!d) return ''; const i=currentLang==='jp'?1:currentLang==='de'?2:currentLang==='ru'?3:0; return '<div class="dl-desc">'+(d[i]||d[0])+'</div>'; }
+    function _legendDesc(id){ const d=LEGEND_DESC[id]; if(!d||!d[0]) return ''; const i=currentLang==='jp'?1:currentLang==='de'?2:currentLang==='ru'?3:currentLang==='es'?4:0; return '<div class="dl-desc">'+(d[i]||d[0])+'</div>'; }
     window._legendDescHTML=_legendDesc;
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
@@ -9933,6 +9958,10 @@ window.addEventListener('DOMContentLoaded', () => {
           s.addEventListener('change',()=>{ try{ trafficFilters[id]=s.value; }catch(_){} try{ refreshTrafficLayer(id); }catch(_){} });
         }
       } else { el.querySelector('h4').textContent=nm; }
+      /* (#R40) attach the 1-line "what is this data" explanation to the generic legend too (it was only on the
+         dedicated climate legends before). Refreshed each call so it tracks the language; well-known metrics
+         (population/GDP/area/density) have no entry and get nothing. */
+      try{ if(window._legendDescHTML){ const dh=window._legendDescHTML(id); const old=el.querySelector('.dl-desc'); if(old) old.remove(); if(dh) el.insertAdjacentHTML('beforeend',dh); } }catch(_){}
       return el;
     }
     window._ensureGenericLegend=ensureGenericLegend;
