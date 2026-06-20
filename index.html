@@ -8290,6 +8290,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R8c) Alt-projection viewer removed (MapLibre renders only Mercator/Globe). (#R9) "Copy link to
          this view" removed per request — the live-permalink hash still restores a reload. */
       {label:`📋 ${t('ctxCopy')}`, action:()=>{ try{ navigator.clipboard.writeText(`${lngLat.lat.toFixed(5)}, ${lngLat.lng.toFixed(5)}`); }catch(_){} }},
+      /* (#R40) Share the EXACT current state (position, zoom, projection, layers, time-travel, compare) as a link. */
+      {label:`🔗 ${currentLang==='jp'?'この表示を共有':currentLang==='de'?'Diese Ansicht teilen':currentLang==='ru'?'Поделиться этим видом':currentLang==='es'?'Compartir esta vista':'Share this view'}`, action:()=>{ try{ const url=(window.IntMapBookmark&&window.IntMapBookmark.link&&window.IntMapBookmark.link())||location.href;
+        const done=()=>{ try{ imToast(currentLang==='jp'?'リンクをコピーしました':currentLang==='de'?'Link kopiert':currentLang==='ru'?'Ссылка скопирована':currentLang==='es'?'Enlace copiado':'Link copied'); }catch(_){} };
+        if(navigator.share){ navigator.share({title:'IntMap',url}).catch(()=>{ try{ navigator.clipboard.writeText(url); done(); }catch(_){} }); }
+        else { navigator.clipboard.writeText(url).then(done).catch(()=>{ try{ prompt('Link:',url); }catch(_){} }); } }catch(_){} }},
       {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':currentLang==='de'?'Start-/Landebahn-Suche (von hier)':currentLang==='ru'?'Поиск ВПП (отсюда)':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {label:`📡 ${currentLang==='jp'?'見通し線解析（レーダー死角）':currentLang==='de'?'Sichtlinie (Radarschatten)':currentLang==='ru'?'Линия видимости (радиотень)':'Line of sight (radar shadow)'}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
@@ -17071,11 +17076,17 @@ window.addEventListener('DOMContentLoaded', () => {
   (function(){
     if(!map) return;
     let restoring=false, t=null;
-    function activeLayers(){ const ids=[]; try{
-      document.querySelectorAll('input[id^="dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.push(k); });
-    }catch(_){} return ids; }
+    function activeLayers(){ const ids=new Set(); try{
+      /* (#R40) capture EVERY data-layer checkbox convention so the share link carries ALL selected layers
+         (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
+      document.querySelectorAll('input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked').forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k) ids.add(k); });
+    }catch(_){} return Array.from(ids); }
     function encode(){ try{ const c=map.getCenter(); const v=[c.lng.toFixed(4),c.lat.toFixed(4),map.getZoom().toFixed(2),Math.round(map.getBearing()),Math.round(map.getPitch()),(currentProj==='globe'?'g':'f')].join(',');
-      const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(','); return h; }catch(_){ return ''; } }
+      const ls=activeLayers(); let h='#v='+v; if(ls.length) h+='&l='+ls.join(',');
+      /* (#R40) time-travel state (slider 0–3650, 3650=now) and compare state, so a shared link reproduces them. */
+      try{ const sl=document.getElementById('ntl-slider'); if(sl && +sl.value<3650) h+='&ts='+(+sl.value); }catch(_){}
+      try{ const cw=document.getElementById('compare-window'); if(cw && getComputedStyle(cw).display!=='none') h+='&cmp='+(cw.classList.contains('cmp-xray')?'x':'1'); }catch(_){}
+      return h; }catch(_){ return ''; } }
     /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
        lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
        on its own ("なにも操作していないのに勝手にレイヤーがオンになる"). */
@@ -17097,7 +17108,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const apply=()=>{ want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); };
         setTimeout(apply,700); setTimeout(apply,1800);
       }
-      setTimeout(()=>{ restoring=false; },2400);
+      /* (#R40) shared-link time-travel + compare restore (own session stays clean, like layers). */
+      if(!selfWritten){
+        const tm=/[#&]ts=(\d+)/.exec(location.hash);
+        if(tm){ setTimeout(()=>{ try{ const sl=document.getElementById('ntl-slider'); if(sl){ sl.value=tm[1]; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },900); }
+        const cm2=/[#&]cmp=([^&]+)/.exec(location.hash);
+        if(cm2){ setTimeout(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); if(cm2[1]==='x'){ setTimeout(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
+      }
+      setTimeout(()=>{ restoring=false; },2600);
     }
     map.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
     /* (#R16) GHOST-LAYER fix: the hash (which restore() re-applies on reload) used to update ONLY on pan,
