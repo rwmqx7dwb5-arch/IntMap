@@ -1783,12 +1783,12 @@ gtag('config', 'G-57X5MX0ZPW');
                <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
              </div>
              <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-borders"> <span data-i18n="borders">Country borders</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-admin1"> <span data-i18n="adminBounds">State / province borders</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-roads"> <span data-i18n="roadsLayer">Roads</span></label>
-             <label class="layer-option"><input type="checkbox" id="cb-rail2"> <span data-i18n="railLayer">Railways</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-admin1" checked> <span data-i18n="adminBounds">State / province borders</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-roads" checked> <span data-i18n="roadsLayer">Roads</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-rail2" checked> <span data-i18n="railLayer">Railways</span></label>
              <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0;">
              <div class="layer-group-title" data-i18n="lyrGrpGeo">Strategic geography</div>
              <label class="layer-option"><input type="checkbox" data-layer="fsu" class="geo-layer-cb"> <span class="lyr-sw" style="background:#e0312e"></span> Former Soviet Union</label>
@@ -2366,7 +2366,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===== Theme ===== */
-  let bordersOn=false;   /* (#R27) Country borders default OFF — they were checked-by-default but not drawn, so the default no longer claims a layer that isn't showing. */
+  let bordersOn=true;   /* (#R40) Country borders DEFAULT ON per request. The lazy-create + retry path (R39) now draws them reliably on first load, so the default is honoured (see the startup dispatch after _wireRef). */
   function applyTheme(){
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
@@ -2445,6 +2445,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-transform':'uppercase','text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
       if(!map.getLayer('ofm-city')) map.addLayer({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],4,11,10,15],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
       if(!map.getLayer('ofm-other')) map.addLayer({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
+      /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
+         from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
+         elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
+      const FONTI=['Noto Sans Italic'];
+      if(!map.getLayer('ofm-river')) map.addLayer({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'water_name',minzoom:5,filter:['==',['get','class'],'river'],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':['interpolate',['linear'],['zoom'],6,10,12,13],'text-max-angle':40,'text-letter-spacing':0.02,'symbol-spacing':400},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'ofm','source-layer':'water_name',minzoom:3,filter:['in',['get','class'],['literal',['lake','sea','ocean','bay']]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':['interpolate',['linear'],['zoom'],3,11,8,14,12,16],'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!map.getLayer('ofm-peak')) map.addLayer({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':8,'text-offset':[0,0.4],'text-anchor':'top'},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       _placeLabelsAdded=true;
     }catch(e){ console.warn('ensurePlaceLabels',e); }
   }
@@ -2463,6 +2470,10 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Show vector labels in satellite mode (always — replaces ugly Esri) and on the map for jp/local. */
     const show = namesOn && (sat || mapLabelsViaVector());
     const isDark = !( (window.imMapColor==='light') || (window.imMapColor!=='dark' && ((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches))) );
+    /* (#R40) localize + show/hide the water (river/lake/sea) and mountain-peak labels with the same toggle.
+       They keep their own (blue / stone) colors, so they're only given the language expression + visibility. */
+    try{ ['ofm-river','ofm-water'].forEach(id=>{ if(!map.getLayer(id)) return; map.setLayoutProperty(id,'visibility',show?'visible':'none'); map.setLayoutProperty(id,'text-field',nameExpr); });
+      if(map.getLayer('ofm-peak')){ map.setLayoutProperty('ofm-peak','visibility',show?'visible':'none'); map.setLayoutProperty('ofm-peak','text-field',['concat','▲ ',nameExpr]); } }catch(_){}
     ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ if(!map.getLayer(id)) return;
       map.setLayoutProperty(id,'visibility',show?'visible':'none');
       map.setLayoutProperty(id,'text-field',nameExpr);
@@ -3354,7 +3365,7 @@ window.addEventListener('DOMContentLoaded', () => {
      tool layers (your own drawings stay on top of everything). Guarded: only moves when actually out of
      place, so there's no repaint loop. */
   if(map){ (function(){
-    const STACK=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'];
+    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','ofm-peak','ofm-country','ofm-city','ofm-other'];
     /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
        the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
        user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
@@ -4463,8 +4474,7 @@ window.addEventListener('DOMContentLoaded', () => {
        only inside the cb-borders change handler — that lazy-create meant borders were checked-by-default but
        NOT drawn on load until you re-toggled them ("デフォルト選択されているのに表示されない"). applyTheme()
        sets its visibility from bordersOn (default true). */
-    if(!map.getLayer('borders-only-line')){ const _ba=map.getLayer('tool-poly')?'tool-poly':undefined;
-      try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{visibility:bordersOn?'visible':'none'},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},_ba); }catch(_){ try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{visibility:bordersOn?'visible':'none'},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}}); }catch(__){} } }
+    try{ ensureBordersLayer(); }catch(_){}   /* (#R40) borders-only-line now comes from the OFM boundary layer (accurate, basemap-aligned) — created here too in case Countries(info) initializes first */
     map.on('mousemove','country-fill',(e)=>{ if(!countryInfoOn||toolMode||!e.features.length)return; const f=e.features[0]; if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; map.setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
     map.on('mouseleave','country-fill',()=>{ if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=null; hideCountryInfo(); });
     map.on('click','country-fill',(e)=>{ if(countryInfoOn&&!toolMode&&e.features.length){ const f=e.features[0]; const p=f.properties||{}; const id=resolveCountryId(f); showCountryDetail(id, p.NAME_EN||p.ADMIN||p.NAME); } });
@@ -5884,25 +5894,20 @@ window.addEventListener('DOMContentLoaded', () => {
     [120,400,1000].forEach(ms=>setTimeout(()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },ms)); });
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
     bordersOn=e.target.checked;
-    /* (#R39) Lazy-create the border-only line layer, WITH RETRIES — same root cause as roads/rail: the
-       `countries` source / `tool-poly` anchor often aren't ready on the first (cold) toggle, the single
-       attempt silently no-op'd, and borders only appeared after a reload. Now retry on idle + a backoff. */
-    const mkBorders=()=>{ try{ if(!bordersOn||!map) return;
-      if(!map.getSource('countries') && countryGeo && map.isStyleLoaded()) addCountryLayers();
-      if(map.getSource('countries') && !map.getLayer('borders-only-line')){
-        /* (#R23) guard the beforeId — addLayer(...,'tool-poly') THROWS if the tool layer isn't on the
-           map yet, which silently aborted the borders toggle on mobile ("country bordersのチェックでバグる"). */
-        const anchor=map.getLayer('tool-poly')?'tool-poly':undefined;
-        try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}},anchor); }catch(_){ try{ map.addLayer({id:'borders-only-line',type:'line',source:'countries',layout:{},paint:{'line-color':'rgba(140,140,140,0.7)','line-width':0.7,'line-opacity':0.85}}); }catch(__){} }
-      }
-      if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility','visible');
+    /* (#R40) Now sourced from the OFM `boundary` layer (see ensureBordersLayer). Same retry treatment as
+       roads/rail — the `ofm` vector source often settles AFTER the first cold toggle, so re-assert on idle +
+       a backoff + when the OFM tiles arrive (the sourcedata listener below), else borders only appeared
+       after a reload. */
+    const mkBorders=()=>{ try{ if(!map) return;
+      if(bordersOn) ensureBordersLayer();
+      if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',bordersOn?'visible':'none');
       applyTheme();
     }catch(_){} };
     if(bordersOn){
-      loadCountryData().then(mkBorders);
       if(!map||!map.isStyleLoaded()){ map&&map.once&&map.once('idle',mkBorders); }
+      mkBorders();
       [250,700,1600,3200].forEach(ms=>setTimeout(mkBorders,ms));
-    } else { applyTheme(); }
+    } else { mkBorders(); }
   });
   document.getElementById('cb-countries').addEventListener('change',(e)=>{ countryInfoOn=e.target.checked;
     /* (#R29) ROBUST: a basemap style swap (Map↔Sat) drops the `countries` source + `country-fill` layer,
@@ -5916,6 +5921,22 @@ window.addEventListener('DOMContentLoaded', () => {
      Drawn from the SAME OpenFreeMap/OpenMapTiles vector source already used for labels — `boundary`
      (admin_level 3–4 = states/provinces/prefectures) and `transportation` (road classes + rail). Rendered
      UNDER the place labels so names stay readable. Theme-independent muted colors that read on light & dark. */
+  /* (#R40) Country borders drawn from the OSM-based OFM `boundary` source (admin_level 2) rather than the
+     generalized Natural Earth geojson, so the lines align exactly with the OSM basemap & coastlines
+     ("国境線が実際とずれる" → accurate where possible). Same reliable `ofm` path as state/road/rail (no
+     countryGeo dependency → also fixes "borders only after reload"). */
+  function ensureBordersLayer(){ try{
+    if(!map||!map.isStyleLoaded()) return false;
+    ensurePlaceLabels(); if(!map.getSource('ofm')) return false;
+    if(!map.getLayer('borders-only-line')){
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>map.getLayer(id)) || (map.getLayer('tool-poly')?'tool-poly':undefined);
+      map.addLayer({id:'borders-only-line',type:'line',source:'ofm','source-layer':'boundary',
+        filter:['all',['==',['get','admin_level'],2],['!=',['get','maritime'],1]],
+        layout:{visibility:bordersOn?'visible':'none','line-join':'round'},
+        paint:{'line-color':'rgba(150,150,150,0.85)','line-opacity':0.9,'line-width':['interpolate',['linear'],['zoom'],1,0.5,4,0.9,8,1.5,12,2.2]}}, before);
+    }
+    return true; }catch(e){ return false; } }
+  window.ensureBordersLayer=ensureBordersLayer;
   function ensureRefLayers(){
     try{
       if(!map||!map.isStyleLoaded()) return false;
@@ -5932,8 +5953,10 @@ window.addEventListener('DOMContentLoaded', () => {
         paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.4,10,1.6,14,3.4]}}, before);
       if(!map.getLayer('ref-rail')) map.addLayer({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
         filter:['==',['get','class'],'rail'],
-        layout:{visibility:'none','line-join':'round'},
-        paint:{'line-color':'#9aa0a6','line-opacity':0.85,'line-dasharray':[2,2.2],'line-width':['interpolate',['linear'],['zoom'],6,0.5,12,1.7]}}, before);
+        layout:{visibility:'none','line-join':'round','line-cap':'round'},
+        /* (#R40) Railways were too faint ("線が薄すぎる"): darker color, higher opacity, thicker line + a tighter
+           dash so they read clearly as rail at all zooms (was #9aa0a6 / 0.85 / width 0.5→1.7). */
+        paint:{'line-color':'#52555b','line-opacity':0.95,'line-dasharray':[2.4,1.6],'line-width':['interpolate',['linear'],['zoom'],5,0.8,9,1.8,12,3.2,15,4.6]}}, before);
       return true;
     }catch(e){ console.warn('ensureRefLayers',e); return false; }
   }
@@ -5951,7 +5974,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }); }
   _wireRef('cb-admin1','ref-admin1'); _wireRef('cb-roads','ref-roads'); _wireRef('cb-rail2','ref-rail');
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
-  try{ if(map&&map.on) map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); }); } }); }catch(_){}
+  try{ if(map&&map.on) map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
+    /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
+    try{ if(bordersOn){ ensureBordersLayer(); if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility','visible'); } }catch(_){} } }); }catch(_){}
+  /* (#R40) Country borders / State-province / Roads / Railways now DEFAULT ON (HTML `checked`). Fire their
+     (retry-hardened) change handlers once at startup so the layers are created + shown on first load; they
+     self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL
+     hash, so this only sets the initial default — unchecking one still sticks for the session. */
+  (function(){ const fire=()=>['cb-borders','cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&!c.__defFired){ c.__defFired=true; try{ c.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } });
+    try{ if(map){ if(map.isStyleLoaded()) setTimeout(fire,300); if(map.on) map.on('load',()=>setTimeout(fire,300)); setTimeout(fire,1600); } else setTimeout(fire,1600); }catch(_){} })();
 
   /* ===== Date / TZ ===== */
   function parseDate(input){ if(input instanceof Date)return isNaN(input.getTime())?new Date():input; let d=new Date(input); if(isNaN(d.getTime())&&typeof input==='string')d=new Date(input.replace(' ','T')+'Z'); return isNaN(d.getTime())?new Date():d; }
