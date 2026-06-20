@@ -39,7 +39,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
-const PLAN_LIMITS: Record<string, number> = { free: 5, plus: 50, pro: 200, unlimited: 1_000_000 };
+const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
