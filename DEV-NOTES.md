@@ -3231,3 +3231,84 @@ Marble layer rendering with real NASA tiles, HTTP 200).
 ### ToS / Privacy / attributions
 - No change needed: all 8 new layers are **NASA EOSDIS GIBS** (already credited in the Privacy Policy's third-party
   list AND set as the MapLibre source `attribution`). No new data collection.
+
+---
+
+## 43. Round 39 — large requested batch: UI bug-fixes, 4-lang depth, new features (tags `#R39`)
+
+Build verified live (http preview, page RUNS — **121** layer checkboxes, zero console errors after every change).
+Committed in 6 parts to `main`.
+
+### UI bug-fixes (part 1)
+- **Mobile "Active layers の下に隙間"** — root cause: `.m-sheet{padding-bottom:max(18px,safe-area)}` sat BELOW the
+  scroller, so the sticky Active-layers bar pinned to the scroller bottom and left an 18px strip of sheet background
+  beneath it. Fix: `.m-sheet` bottom padding → 0; the home-indicator safe area now lives on the terminal elements
+  themselves (the bar already had it; added to `#layer-tools` + `.sat-controller`). Bar is now flush (measured gap 0).
+- **Settings "Apply UIの右下が角丸で隙間"** — the sticky footer lived INSIDE the scrolling `.modal-content`, so the
+  ~11px scrollbar gutter ran down its right side, beside the footer's rounded corner. Fix: wrap the body in a new
+  `.settings-scroll` (flex:1, holds the scrollbar) and make the footer a non-scrolling flex child → spans the full
+  card width (gap 11px→1px = border only).
+- **AI brief × only reachable at top** — the whole panel scrolled, taking `.tp-header` (the ✕) with it. Fix:
+  `#ai-research-panel .tp-header{position:sticky;top:-Npx}` (negative top + negative margins = flush, no content bleeds
+  above; mirrors the radius-panel trick). Verified: ✕ stays pinned at gap 0 while scrolled.
+- **Frosted-glass AI input "四角い枠でcheap"** — the follow-up input + buttons used solid `--input-bg`/`--card-bg`.
+  In `sidebar-translucent`/`glass2` they now use a translucent fill + hairline `--glass-border` + the panel's glass
+  fill for the input bar (tagged `.air-inbar`). Verified via computed styles.
+- **Gray-text visibility** — bumped `--text-muted` contrast in both themes (light `#86868b`→`#6c6c70`, dark
+  `#8e8e93`→`#a6a6ad`). It's the single gray-text variable (no hardcoded grays exist).
+- **Mobile news popup透明** — `.m-news-pop` had NO `backdrop-filter` (every other popup does) + translucent
+  `--popup-bg` → see-through. Fix: opaque `--card-bg` + frost + hairline border.
+
+### "Works only after reload" cluster
+- **Isolate不反応（再読み込みで治る）** — `applyFeature`→`ensure()` returns false while the style isn't loaded and
+  waited ONLY on `once('idle')`; on a slow first load the map can already be idle (nothing re-triggers a render), so
+  that idle never fires. Fix: **poll** (`setTimeout(apply,120)` ×60) instead. `enter*` now always await country data
+  via `withGeo()` (the old `if(!window.countryGeo)` short-circuit ran on a half-populated list).
+- **Country borders表示されない** — gave the borders toggle the same retry treatment as roads/rail (idle +
+  250/700/1600/3200 ms) — the `countries` source / `tool-poly` anchor often weren't ready on the first cold toggle.
+
+### 4-language depth (EN/JP/DE/RU)
+- **Info "undefined" in DE/RU** — the Places cards rendered `info.title[currentLang]` with no fallback (328 cards).
+  Fix: `||...en`. Verified: 0 undefined in DE & RU.
+- **AI output language** — added `window._aiLangLine()` ("Always write your entire response in <lang>") appended to
+  every free-TEXT system prompt (brief, follow-up chat, area/view summary, satellite change-detection). NOT the JSON
+  geocoders / connectivity test. Article translator now targets the UI language (was hardcoded Japanese). The brief
+  panel UI + auto-suggested questions localized to DE/RU.
+- **Leak audit** — Info Places/Events nav buttons localized; verified the dashboard re-renders on language change and
+  there are NO visible CJK/Cyrillic leaks in EN/DE chrome (the earlier "ru-in-en" was a hidden, inactive element).
+
+### New features
+- **"Ask AI about here"** (🤖, context menu first item, 4-lang) — click any map POINT, ask a free-form question; the
+  coordinates are auto-sent + nearby news context. Example questions ("why is population low here?" etc.). Reuses the
+  AI research panel + chat thread.
+- **Two-layer correlation / scatter** (📊 button at the bottom of the Layers panel) — pick any two numeric,
+  absolute-scale country metrics → scatter (log axes where appropriate) + least-squares line + **Pearson r** (on the
+  shown scale) + **Spearman ρ** (rank) + country count, 4-lang. Verified: GDP/cap×life-exp r≈0.94 (Preston curve),
+  GDP/cap×HDI r≈0.94, GDP/cap×area r≈−0.34. Note: `reorganizeLayerPanel` must capture `btn-correlate` BEFORE
+  `tools.innerHTML=''` or the rebuild detaches it.
+- **Wikipedia-style country page** — the country-click popup is now an integrated page: a Wikipedia REST **extract +
+  lead thumbnail** (app language, cached per lang,name) + "Read on Wikipedia" link, then data grouped into 🌍
+  Geography / 💰 Economy / 👥 Society / 🏛 Politics & defense. Action row gains an **AI brief** button (seeded with the
+  country's lat/lng). Verified: Japan renders intro+flag+sections, GDP $4.21T.
+
+### Layers / legends / beta / widgets
+- **+4 more curl-verified GIBS rasters** (Cloud-top temp, Land-surface temp night, Brightness temp thermal-IR,
+  ASTER color shaded relief). Same additive module. Rows 117→121.
+- **Legend explanations** — non-obvious metrics (HDI, Democracy Index, fertility, mil %GDP, AOD, night lights, NDSI
+  snow) carry a 1-line 4-lang "what is this data" note (`.dl-desc`); well-known ones (pop density, GDP) get none.
+- **Beta promotion** — Infant mortality + GDP growth (World Bank, same standard as already-promoted siblings) moved
+  out of Others(beta) into Population & economy.
+- **Widgets iOS polish** — 22px corners, layered shadow + inset top highlight, larger/tighter value type, tactile
+  `:active` press. Functionality unchanged (catalog already had 28 widgets).
+
+### Non-AI news locator — German + Russian
+- New **Cyrillic matcher path** (JS `\b` doesn't fire around Cyrillic; Russian inflects): Russian terms are STEMS
+  matched as `(?:^|[^Cyr])<stem>[а-яё…]{0,4}` → «Москв»→Москва/Москве/Москвы/Москву, demonyms «Российск»→Российские.
+  `_DERU_GZ` (~45 countries + ~15 cities, German exonyms + Russian stems) + `_DERU_DEM` (Russian demonym stems) merged
+  into geoDB. Verified: München/Frankreich/Türkei + all Russian inflection cases match; «Кремль» correctly does not
+  match «Москв».
+
+### ToS / Privacy / attributions
+- Expanded the **NASA GIBS** source line (land-surface/cloud-top temp, true-color, shaded relief) and **added
+  REST Countries** (used by the country info page) to the in-app Data-sources list. No new data collection; the AI
+  path is unchanged (server-side proxy).
