@@ -22,7 +22,7 @@ gtag('config', 'G-57X5MX0ZPW');
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-20-R40';
+  window.INTMAP_BUILD='2026-06-21-R41';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -8247,7 +8247,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-06-20';
+  const LEGAL_DATE='2026-06-21';
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -8279,7 +8279,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
     <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されます）。各社のプライバシーポリシーが適用されます。</p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、YouTube（ウェブカメラの地点をクリックすると、その地点のライブ配信プレーヤーが埋め込み表示されます。プライバシー強化ドメイン youtube-nocookie.com を使用しますが、再生時にYouTube／Googleのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されます）。各社のプライバシーポリシーが適用されます。</p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -8291,7 +8291,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
     <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side).</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation). Each has its own privacy policy.</p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); YouTube (clicking a webcam location embeds that location's live-stream player — we use the privacy-enhanced youtube-nocookie.com domain, but YouTube's/Google's policies apply once a stream plays); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation). Each has its own privacy policy.</p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -12575,7 +12575,8 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'UNDP / EIU / SIPRI / World Bank',u:'https://hdr.undp.org/',use:{en:'HDI, Democracy Index, GDP, military spend, demographics',jp:'HDI・民主主義指数・GDP・軍事費・人口統計'}},
     {n:'AISstream.io',u:'https://aisstream.io/',use:{en:'Live ship AIS traffic (your key)',jp:'船舶AIS（ユーザーキー）'}},
     {n:'OpenSky Network',u:'https://opensky-network.org/',use:{en:'Live aircraft traffic',jp:'航空機トラフィック'}},
-    {n:'Natural Earth',u:'https://www.naturalearthdata.com/',use:{en:'Country borders & polygons',jp:'国境・国ポリゴン'}},
+    {n:'Natural Earth',u:'https://www.naturalearthdata.com/',use:{en:'Country borders & polygons; time-zone boundaries (the Time-zones layer)',jp:'国境・国ポリゴン／タイムゾーン境界（タイムゾーンレイヤー）'}},
+    {n:'OpenRailwayMap / OpenSeaMap',u:'https://www.openrailwaymap.org/',use:{en:'Global rail infrastructure & nautical seamark overlays (raster tiles, beta)',jp:'世界の鉄道インフラ・航海用海図記号オーバーレイ（ラスタータイル、ベータ）'}},
     {n:'Wikipedia / Wikimedia',u:'https://www.wikipedia.org/',use:{en:'Information cards & imagery',jp:'情報カード・画像'}},
     {n:'Google News',u:'https://news.google.com/',use:{en:'News headlines (RSS) — fetched & geolocated server-side',jp:'ニュース見出し（RSS）。サーバー側で取得・地点解析'}},
     {n:'OpenFreeMap / OpenMapTiles',u:'https://openfreemap.org/',use:{en:'Vector place labels & 3D building footprints',jp:'地名ラベル・3D建物'}},
