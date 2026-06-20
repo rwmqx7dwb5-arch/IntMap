@@ -4129,7 +4129,30 @@ window.addEventListener('DOMContentLoaded', () => {
     ['city',['Istanbul','Стамбул'],28.98,41.01,'Istanbul','イスタンブール'],
     ['city',['Teheran','Тегеран'],51.39,35.69,'Tehran','テヘラン'],
     ['city',['Damaskus','Дамаск'],36.30,33.51,'Damascus','ダマスカス'],
-    ['city',['Sankt Petersburg','Петербург'],30.34,59.93,'Saint Petersburg','サンクトペテルブルク']
+    ['city',['Sankt Petersburg','Петербург'],30.34,59.93,'Saint Petersburg','サンクトペテルブルク'],
+    /* (#R41) news-hotspot enhancement — conflict zones + major capitals in DE + RU (RU = declension-safe stems). */
+    ['city',['Charkiw','Charkow','Харьков','Харків'],36.23,49.99,'Kharkiv','ハルキウ'],
+    ['city',['Odessa','Одесс','Одеса'],30.73,46.48,'Odesa','オデーサ'],
+    ['city',['Lwiw','Lemberg','Львов','Львів'],24.03,49.84,'Lviv','リヴィウ'],
+    ['city',['Donezk','Донецк'],37.80,48.00,'Donetsk','ドネツク'],
+    ['region',['Donbass','Донбасс'],37.80,48.00,'Donbas','ドンバス'],
+    ['region',['Westjordanland','Западный берег','Западном берег'],35.30,32.00,'West Bank','ヨルダン川西岸'],
+    ['city',['Gaza','Газа'],34.47,31.50,'Gaza','ガザ'],
+    ['city',['Rafah','Рафах'],34.25,31.29,'Rafah','ラファ'],
+    ['city',['Beirut','Бейрут'],35.50,33.89,'Beirut','ベイルート'],
+    ['city',['Aleppo','Алеппо'],37.16,36.20,'Aleppo','アレッポ'],
+    ['city',['Bagdad','Багдад'],44.36,33.31,'Baghdad','バグダッド'],
+    ['region',['Kaschmir','Кашмир'],74.80,34.08,'Kashmir','カシミール'],
+    ['city',['Taipeh','Тайбэ'],121.56,25.03,'Taipei','台北'],
+    ['city',['Pjöngjang','Пхеньян'],125.76,39.04,'Pyongyang','平壌'],
+    ['city',['Kairo','Каир'],31.24,30.04,'Cairo','カイロ'],
+    ['city',['Riad','Эр-Рияд','Рияд'],46.72,24.69,'Riyadh','リヤド'],
+    ['city',['Neu-Delhi','Нью-Дели','Дели'],77.21,28.61,'New Delhi','ニューデリー'],
+    ['city',['Schanghai','Шанха'],121.47,31.23,'Shanghai','上海'],
+    ['city',['Hongkong','Гонконг'],114.17,22.32,'Hong Kong','香港'],
+    ['city',['Seoul','Сеул'],126.98,37.57,'Seoul','ソウル'],
+    ['city',['Tokio','Токио'],139.69,35.69,'Tokyo','東京'],
+    ['city',['Chartum','Хартум'],32.53,15.50,'Khartoum','ハルツーム']
   ];
   /* Russian demonym/adjective stems → docked country entries (the Cyrillic matcher handles -ий/-ая/-ое/-их). */
   const _DERU_DEM=[
@@ -4195,7 +4218,29 @@ window.addEventListener('DOMContentLoaded', () => {
     ['city',['Estambul'],28.98,41.01,'Istanbul','イスタンブール'],
     ['city',['Teherán','Teheran'],51.39,35.69,'Tehran','テヘラン'],
     ['city',['Damasco'],36.30,33.51,'Damascus','ダマスカス'],
-    ['city',['Múnich','Munich'],11.58,48.14,'Munich','ミュンヘン']
+    ['city',['Múnich','Munich'],11.58,48.14,'Munich','ミュンヘン'],
+    /* (#R41) news-hotspot enhancement — conflict zones + major capitals (Spanish exonyms). */
+    ['city',['Járkov','Jarkov'],36.23,49.99,'Kharkiv','ハルキウ'],
+    ['city',['Leópolis','Leopolis'],24.03,49.84,'Lviv','リヴィウ'],
+    ['city',['Odesa','Odessa'],30.73,46.48,'Odesa','オデーサ'],
+    ['city',['Donetsk'],37.80,48.00,'Donetsk','ドネツク'],
+    ['region',['Cisjordania'],35.30,32.00,'West Bank','ヨルダン川西岸'],
+    ['city',['Gaza'],34.47,31.50,'Gaza','ガザ'],
+    ['city',['Rafah'],34.25,31.29,'Rafah','ラファ'],
+    ['city',['Beirut'],35.50,33.89,'Beirut','ベイルート'],
+    ['city',['Alepo'],37.16,36.20,'Aleppo','アレッポ'],
+    ['city',['Bagdad'],44.36,33.31,'Baghdad','バグダッド'],
+    ['region',['Cachemira'],74.80,34.08,'Kashmir','カシミール'],
+    ['city',['Taipéi','Taipei'],121.56,25.03,'Taipei','台北'],
+    ['city',['Pionyang'],125.76,39.04,'Pyongyang','平壌'],
+    ['city',['El Cairo'],31.24,30.04,'Cairo','カイロ'],
+    ['city',['Riad'],46.72,24.69,'Riyadh','リヤド'],
+    ['city',['Nueva Delhi'],77.21,28.61,'New Delhi','ニューデリー'],
+    ['city',['Shanghái','Shanghai'],121.47,31.23,'Shanghai','上海'],
+    ['city',['Hong Kong'],114.17,22.32,'Hong Kong','香港'],
+    ['city',['Seúl'],126.98,37.57,'Seoul','ソウル'],
+    ['city',['Tokio'],139.69,35.69,'Tokyo','東京'],
+    ['city',['Jartum'],32.53,15.50,'Khartoum','ハルツーム']
   ];
   /* Spanish demonym/adjective forms → low-confidence country entries (docked below explicit places). */
   const _ES_DEM=[
@@ -4666,36 +4711,36 @@ window.addEventListener('DOMContentLoaded', () => {
      not a bare flat列挙. ("Wikipediaのような統合情報ページにして") */
   function renderCountryDetailBody(s){
     if(!s) return `<div class="cm-row"><span>${t('dataNA')}</span><b>—</b></div>`;
-    const _de=currentLang==='de', _jp=currentLang==='jp', _ru=currentLang==='ru';
-    const TR=(en,jp,de,ru)=>_jp?jp:_de?de:_ru?ru:en;
-    const yn=v=>v?TR('Yes','はい','Ja','Да'):TR('No','いいえ','Nein','Нет');
+    const _de=currentLang==='de', _jp=currentLang==='jp', _ru=currentLang==='ru', _es=currentLang==='es';
+    const TR=(en,jp,de,ru,es)=>_jp?jp:_de?de:_ru?ru:_es?(es||en):en;
+    const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
     const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('')+`</div>`; };
-    const geo=sec('🌍 '+TR('Geography','地理','Geografie','География'),[
+    const geo=sec('🌍 '+TR('Geography','地理','Geografie','География','Geografía'),[
       [t('statRegion'),(s.region||'—')+(s.subregion?' / '+s.subregion:'')],
       [t('statCapital'),s.capital||'—'],
       [t('statArea'),fmtArea(s.area)],
       [t('statDensity'),s.density?fmtNum(Math.round(s.density))+' /km²':'—'],
-      (s.borders&&s.borders.length)?[TR('Borders','隣接','Nachbarländer','Соседи'),s.borders.join(', ')]:null,
-      (s.timezones&&s.timezones.length)?[TR('Timezones','時間帯','Zeitzonen','Часовые пояса'),s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]:null
+      (s.borders&&s.borders.length)?[TR('Borders','隣接','Nachbarländer','Соседи','Fronteras'),s.borders.join(', ')]:null,
+      (s.timezones&&s.timezones.length)?[TR('Timezones','時間帯','Zeitzonen','Часовые пояса','Zonas horarias'),s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]:null
     ]);
-    const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика'),[
+    const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
       [t('statGdp')+` (${GDP_YEAR})`,fmtMoney(s.gdp)],
       s.gdpPPP?[t('statGdpPPP'),fmtMoney(s.gdpPPP)]:null,
       [t('statGdpPc'),fmtPc(s.gdppc)],
       s.gdppcPPP?[t('statGdpPcPPP'),fmtPc(s.gdppcPPP)]:null,
       [t('statCurrency'),s.currency||'—']
     ]);
-    const soc=sec('👥 '+TR('Society','社会','Gesellschaft','Общество'),[
+    const soc=sec('👥 '+TR('Society','社会','Gesellschaft','Общество','Sociedad'),[
       [t('statPop')+` (${POP_YEAR})`,fmtNum(s.pop)],
       s.hdi?[t('statHDI')+' (2022)',s.hdi.toFixed(3)]:null,
-      s.lifeExp?[t('statLife'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет')]:null,
+      s.lifeExp?[t('statLife'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
       s.internet?[t('statInet'),s.internet+'%']:null,
       [t('statLang'),s.languages||'—']
     ]);
-    const pol=sec('🏛 '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона'),[
+    const pol=sec('🏛 '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона','Política y defensa'),[
       s.dem?[t('statDem')+' (2023)',s.dem.toFixed(2)]:null,
       s.milSpend?[t('statMil')+' (2023)','$'+s.milSpend+'B']:null,
-      s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН'),yn(s.unMember)]:null
+      s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН','Miembro de la ONU'),yn(s.unMember)]:null
     ]);
     return `<div id="cp-intro" class="cp-intro"></div>`+geo+econ+soc+pol;
   }
@@ -4704,7 +4749,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function _fillCountryIntro(name){
     try{
       const intro=document.getElementById('cp-intro'); if(!intro||!name) return;
-      const wl=currentLang==='jp'?'ja':currentLang==='de'?'de':currentLang==='ru'?'ru':'en';
+      const wl=currentLang==='jp'?'ja':currentLang==='de'?'de':currentLang==='ru'?'ru':currentLang==='es'?'es':'en';
       const key=wl+':'+name;
       const esc=tt=>String(tt==null?'':tt).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       const paint=(html)=>{ const i2=document.getElementById('cp-intro'); if(i2&&html) i2.innerHTML=html; };
@@ -7121,6 +7166,26 @@ window.addEventListener('DOMContentLoaded', () => {
       if(img){ img.style.backgroundImage=`url('${url}')`; img.classList.remove('wc-noimg'); }   /* (#R23) real image loaded → restore the gradient */
     });
   }
+  /* (#R41) Localize the repeated Information-card badges in DE/RU/ES (acronyms like USN/NATO pass through). The
+     curated card bodies stay English/Japanese where no translation exists, but the recurring chrome localizes. */
+  const _DASH_BADGE={
+    'Chokepoint':{jp:'要衝',de:'Engstelle',ru:'Узкое место',es:'Punto crítico'},
+    'Port':{jp:'港',de:'Hafen',ru:'Порт',es:'Puerto'},
+    'Route':{jp:'航路',de:'Route',ru:'Маршрут',es:'Ruta'},
+    'Strait':{jp:'海峡',de:'Meerenge',ru:'Пролив',es:'Estrecho'},
+    'Canal':{jp:'運河',de:'Kanal',ru:'Канал',es:'Canal'},
+    'Naval base':{jp:'海軍基地',de:'Marinestützpunkt',ru:'Военно-морская база',es:'Base naval'},
+    'Air base':{jp:'空軍基地',de:'Luftwaffenbasis',ru:'Авиабаза',es:'Base aérea'},
+    'Base':{jp:'基地',de:'Stützpunkt',ru:'База',es:'Base'},
+    'Hub':{jp:'拠点',de:'Drehkreuz',ru:'Узел',es:'Centro'},
+    'Tech hub':{jp:'技術拠点',de:'Technologiezentrum',ru:'Техноцентр',es:'Centro tecnológico'},
+    'Spaceport':{jp:'宇宙基地',de:'Weltraumbahnhof',ru:'Космодром',es:'Puerto espacial'},
+    'Dam':{jp:'ダム',de:'Staudamm',ru:'Плотина',es:'Presa'},
+    'Pipeline':{jp:'パイプライン',de:'Pipeline',ru:'Трубопровод',es:'Oleoducto'},
+    'Nuclear':{jp:'原子力',de:'Nuklear',ru:'Ядерный',es:'Nuclear'},
+    'Border':{jp:'国境',de:'Grenze',ru:'Граница',es:'Frontera'}
+  };
+  function dashBadgeLabel(b){ if(!b||currentLang==='en') return b||''; const e=_DASH_BADGE[b]; return (e&&e[currentLang])||b; }
   function renderDashboard(){
     const dash=document.getElementById('info-dashboard'); clearMarkers(); const dict=i18n[currentLang];
     const q=(currentMode==='info')?searchVal():'';   /* live text filter (#27) */
@@ -7132,7 +7197,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Push features into WebGL source. Pins are mathematically placed by the GPU. */
     dashFeatures=filtered.map(info=>({type:'Feature',id:info.id,geometry:{type:'Point',coordinates:info.loc},properties:{
       fid:info.id, type:info.type, color:INFO_COLORS[info.type]||'#007aff',
-      title:info.title[currentLang], body:info.body[currentLang], layerRef:info.layerRef||''
+      title:info.title[currentLang]||info.title.en, body:info.body[currentLang]||info.body.en, layerRef:info.layerRef||''
     }}));
     /* Ensure pin layers exist NOW. Without this, on first tab-switch the source may not yet
        have been created → pins appeared with a delay. */
@@ -7151,12 +7216,12 @@ window.addEventListener('DOMContentLoaded', () => {
          The wc-noimg class drops the gradient; the real image (+ its gradient) returns once it lazy-loads. */
       const _cimg=info.img||'';
       cards+=`<div class="wiki-card" id="card-${info.id}" onclick="flyToLoc(${info.loc[0]},${info.loc[1]})" onmouseenter="triggerLayerHover('${info.layerRef||''}',true); highlightDashMarker('${info.id}',true)" onmouseleave="triggerLayerHover('${info.layerRef||''}',false); highlightDashMarker('${info.id}',false)">
-        <div class="wiki-card-img${_cimg?'':' wc-noimg'}" data-type="${info.type||''}"${_cimg?` style="background-image:url('${_cimg}');"`:''}><span class="wiki-card-badge">${info.badge}</span></div>
+        <div class="wiki-card-img${_cimg?'':' wc-noimg'}" data-type="${info.type||''}"${_cimg?` style="background-image:url('${_cimg}');"`:''}><span class="wiki-card-badge">${dashBadgeLabel(info.badge)}</span></div>
         <div class="wiki-card-content"><h4 class="wiki-card-title">${info.title[currentLang]||info.title.en}</h4><p class="wiki-card-body">${info.body[currentLang]||info.body.en}</p>${specsHTML}<div class="wiki-card-footer"><a href="${info.wiki[currentLang]||info.wiki.en}" target="_blank" class="wiki-link" onclick="event.stopPropagation()">${dict.readWiki}</a></div></div></div>`;
     });
     cards+='</div>';
     /* (#R20) top-level Places | Events switch, then the existing category nav */
-    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${({en:'📍 Places',jp:'📍 場所',de:'📍 Orte',ru:'📍 Места'})[currentLang]||'📍 Places'}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${({en:'🗓 Events',jp:'🗓 出来事',de:'🗓 Ereignisse',ru:'🗓 События'})[currentLang]||'🗓 Events'}</button></div>`;
+    const seg=`<div class="dash-nav"><button class="dash-nav-btn active" onclick="_setDashView('places')">${({en:'📍 Places',jp:'📍 場所',de:'📍 Orte',ru:'📍 Места',es:'📍 Lugares'})[currentLang]||'📍 Places'}</button><button class="dash-nav-btn" onclick="_setDashView('events')">${({en:'🗓 Events',jp:'🗓 出来事',de:'🗓 Ereignisse',ru:'🗓 События',es:'🗓 Eventos'})[currentLang]||'🗓 Events'}</button></div>`;
     const nav=`<div class="dash-nav" id="dash-nav"><button class="dash-nav-btn ${activeDashCategories.has('mil')?'active':''}" onclick="toggleDashCat('mil')">${dict.dashCatMil}</button><button class="dash-nav-btn ${activeDashCategories.has('tech')?'active':''}" onclick="toggleDashCat('tech')">${dict.dashCatTech}</button><button class="dash-nav-btn ${activeDashCategories.has('maritime')?'active':''}" onclick="toggleDashCat('maritime')">${dict.dashCatMar}</button><button class="dash-nav-btn ${activeDashCategories.has('geo')?'active':''}" onclick="toggleDashCat('geo')">${dict.dashCatGeo}</button></div>`;
     dash.innerHTML=seg+nav+cards;
     /* Mouse wheel → horizontal scroll on the category nav */
