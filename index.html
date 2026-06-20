@@ -8295,6 +8295,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const done=()=>{ try{ imToast(currentLang==='jp'?'リンクをコピーしました':currentLang==='de'?'Link kopiert':currentLang==='ru'?'Ссылка скопирована':currentLang==='es'?'Enlace copiado':'Link copied'); }catch(_){} };
         if(navigator.share){ navigator.share({title:'IntMap',url}).catch(()=>{ try{ navigator.clipboard.writeText(url); done(); }catch(_){} }); }
         else { navigator.clipboard.writeText(url).then(done).catch(()=>{ try{ prompt('Link:',url); }catch(_){} }); } }catch(_){} }},
+      {label:`🌤 ${currentLang==='jp'?'ここの天気（最新）':currentLang==='de'?'Wetter hier (aktuell)':currentLang==='ru'?'Погода здесь (сейчас)':currentLang==='es'?'El tiempo aquí (ahora)':'Weather here (live)'}`, action:()=>{ try{ window.IntMapWeather&&window.IntMapWeather.open(lngLat); }catch(_){} }},
       {label:`🛬 ${currentLang==='jp'?'滑走路検索（ここから）':currentLang==='de'?'Start-/Landebahn-Suche (von hier)':currentLang==='ru'?'Поиск ВПП (отсюда)':'Runway search (from here)'}`, action:()=>{ try{ window.RunwaySearch&&window.RunwaySearch.open(lngLat); }catch(_){} }},
       {label:`📡 ${currentLang==='jp'?'見通し線解析（レーダー死角）':currentLang==='de'?'Sichtlinie (Radarschatten)':currentLang==='ru'?'Линия видимости (радиотень)':'Line of sight (radar shadow)'}`, action:()=>{ try{ window.IntMapLOS&&window.IntMapLOS.open(lngLat); }catch(_){} }},
       /* (#R15c) Sea-route feature removed per request — repeatedly mis-routed (shallow endpoints / linear /
@@ -17068,6 +17069,79 @@ window.addEventListener('DOMContentLoaded', () => {
     if(mc){ mc.addEventListener('dragover',e=>{ if(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files')) e.preventDefault(); });
       mc.addEventListener('drop',e=>{ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){ e.preventDefault(); handleFiles(e.dataTransfer.files); } }); }
     window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, _items:items };
+  })();
+
+  /* ===== (#R40) Comprehensive LIVE weather popup (right-click → "Weather here"). Open-Meteo forecast API
+     (free, no key, CORS-enabled) → always-latest current conditions + a 5-day outlook. Self-contained;
+     5-language; reuses fmtTemp for the unit setting. CSS is added via cssText with single quotes only (no
+     back-tick in a CSS template-literal → no blank-site risk). ===== */
+  window.IntMapWeather=(function(){
+    if(!map) return { open(){} };
+    const L=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    function wx(code){ const M={
+      0:['☀️','Clear sky','快晴','Klarer Himmel','Ясно','Despejado'],1:['🌤','Mainly clear','晴れ','Überwiegend klar','Преим. ясно','Mayormente despejado'],
+      2:['⛅','Partly cloudy','一部曇り','Teilweise bewölkt','Переменная облачность','Parcialmente nublado'],3:['☁️','Overcast','曇り','Bedeckt','Пасмурно','Nublado'],
+      45:['🌫','Fog','霧','Nebel','Туман','Niebla'],48:['🌫','Rime fog','着氷霧','Reifnebel','Изморозь','Niebla helada'],
+      51:['🌦','Light drizzle','弱い霧雨','Leichter Niesel','Слабая морось','Llovizna débil'],53:['🌦','Drizzle','霧雨','Niesel','Морось','Llovizna'],55:['🌧','Heavy drizzle','強い霧雨','Starker Niesel','Сильная морось','Llovizna intensa'],
+      61:['🌧','Light rain','弱い雨','Leichter Regen','Небольшой дождь','Lluvia débil'],63:['🌧','Rain','雨','Regen','Дождь','Lluvia'],65:['🌧','Heavy rain','強い雨','Starker Regen','Сильный дождь','Lluvia intensa'],
+      66:['🌧','Freezing rain','着氷性の雨','Gefrierender Regen','Ледяной дождь','Lluvia helada'],67:['🌧','Freezing rain','着氷性の雨','Gefrierender Regen','Ледяной дождь','Lluvia helada'],
+      71:['🌨','Light snow','弱い雪','Leichter Schnee','Небольшой снег','Nieve débil'],73:['🌨','Snow','雪','Schnee','Снег','Nieve'],75:['❄️','Heavy snow','大雪','Starker Schnee','Сильный снег','Nieve intensa'],77:['❄️','Snow grains','霧雪','Schneegriesel','Снежные зёрна','Granos de nieve'],
+      80:['🌦','Light showers','弱いにわか雨','Leichte Schauer','Слабый ливень','Chubascos débiles'],81:['🌦','Showers','にわか雨','Schauer','Ливни','Chubascos'],82:['⛈','Heavy showers','激しいにわか雨','Starke Schauer','Сильные ливни','Chubascos intensos'],
+      85:['🌨','Snow showers','にわか雪','Schneeschauer','Снежный ливень','Chubascos de nieve'],86:['🌨','Snow showers','にわか雪','Schneeschauer','Снежный ливень','Chubascos de nieve'],
+      95:['⛈','Thunderstorm','雷雨','Gewitter','Гроза','Tormenta'],96:['⛈','Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo'],99:['⛈','Thunderstorm, hail','雹を伴う雷雨','Gewitter, Hagel','Гроза с градом','Tormenta, granizo'] };
+      const idx={en:1,jp:2,de:3,ru:4,es:5}[currentLang]||1; const e=M[code]; return e?{icon:e[0],desc:e[idx]}:{icon:'🌡',desc:'—'}; }
+    const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    const dir=(d)=>(d==null||isNaN(d))?'':COMPASS[Math.round(d/22.5)%16];
+    const wind=(kmh)=>{ if(kmh==null||isNaN(kmh)) return '—'; const m=window.imUnitMode||window.unitMode||'both'; const k=Math.round(kmh), mph=Math.round(kmh*0.621371); return m==='imperial'?(mph+' mph'):m==='metric'?(k+' km/h'):(k+' km/h ('+mph+' mph)'); };
+    let panel=null, styled=false;
+    function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
+      s.textContent='#weather-panel{position:absolute;z-index:1750;width:300px;max-width:calc(100vw - 24px);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:14px 16px;font-size:12.5px;}'
+        +'#weather-panel .wp-x{position:absolute;top:9px;right:11px;background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px;}'
+        +'#weather-panel .wp-x:hover{background:var(--input-bg);color:var(--text-main);}'
+        +'#weather-panel .wp-cur{display:flex;align-items:center;gap:12px;margin:6px 0 4px;}'
+        +'#weather-panel .wp-temp{font-size:30px;font-weight:700;line-height:1;}'
+        +'#weather-panel .wp-ico{font-size:34px;line-height:1;}'
+        +'#weather-panel .wp-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin-top:8px;font-size:11.5px;color:var(--text-muted);}'
+        +'#weather-panel .wp-grid b{color:var(--text-main);font-weight:600;}'
+        +'#weather-panel .wp-days{display:flex;gap:4px;margin-top:11px;border-top:1px solid rgba(128,128,128,0.18);padding-top:9px;}'
+        +'#weather-panel .wp-day{flex:1;text-align:center;font-size:10.5px;color:var(--text-muted);}'
+        +'#weather-panel .wp-day .di{font-size:18px;margin:2px 0;}'
+        +'#weather-panel .wp-day b{display:block;color:var(--text-main);font-size:11px;}'
+        +'@media(max-width:768px){#weather-panel{left:8px !important;right:8px;width:auto;top:auto !important;bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important;}}';
+      document.head.appendChild(s); }
+    function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='weather-panel'; panel.style.display='none';
+      (document.getElementById('map-container')||document.body).appendChild(panel);
+      try{ window._wireLegendDrag&&window._wireLegendDrag(panel); }catch(_){}
+      return panel; }
+    function close(){ if(panel) panel.style.display='none'; }
+    function place(){ try{ const mc=document.getElementById('map-container'); if(!mc) return; if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top='70px'; }catch(_){} }
+    async function open(lngLat){ const p=ensure(); p.style.display='block'; place();
+      const lat=lngLat.lat, lng=lngLat.lng;
+      const head=`<button class="wp-x" title="${t('close')}">✕</button><div style="font-weight:700;font-size:13.5px;">🌤 ${L('Weather','天気','Wetter','Погода','El tiempo')}</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">${lat.toFixed(3)}°, ${lng.toFixed(3)}°</div>`;
+      p.innerHTML=head+`<div style="margin-top:12px;color:var(--text-muted);">${L('Loading…','読み込み中…','Wird geladen…','Загрузка…','Cargando…')}</div>`;
+      p.querySelector('.wp-x').onclick=close;
+      try{
+        const u='https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(3)+'&longitude='+lng.toFixed(3)+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=5&wind_speed_unit=kmh';
+        const r=await fetch(u,{cache:'no-store'}); const j=await r.json(); const c=j.current||{}; const w=wx(c.weather_code);
+        const days=(j.daily&&j.daily.time)||[]; const dn=L(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],['日','月','火','水','木','金','土'],['So','Mo','Di','Mi','Do','Fr','Sa'],['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],['Do','Lu','Ma','Mi','Ju','Vi','Sá']);
+        let dh=''; for(let i=0;i<days.length;i++){ const d=new Date(days[i]+'T00:00'); const dw=wx(j.daily.weather_code[i]);
+          dh+=`<div class="wp-day"><div>${i===0?L('Today','今日','Heute','Сег.','Hoy'):dn[d.getDay()]}</div><div class="di">${dw.icon}</div><b>${Math.round(j.daily.temperature_2m_max[i])}°</b><div>${Math.round(j.daily.temperature_2m_min[i])}°</div></div>`; }
+        const upd=new Date().toLocaleTimeString(currentLang==='jp'?'ja':currentLang,{hour:'2-digit',minute:'2-digit'});
+        p.innerHTML=head
+          +`<div class="wp-cur"><span class="wp-ico">${w.icon}</span><span class="wp-temp">${fmtTemp(c.temperature_2m)}</span><span style="flex:1;font-size:12px;color:var(--text-muted);">${w.desc}</span></div>`
+          +`<div class="wp-grid">`
+          +`<span>${L('Feels like','体感','Gefühlt','Ощущается','Sensación')}<br><b>${fmtTemp(c.apparent_temperature)}</b></span>`
+          +`<span>${L('Humidity','湿度','Luftf.','Влажность','Humedad')}<br><b>${c.relative_humidity_2m!=null?Math.round(c.relative_humidity_2m)+'%':'—'}</b></span>`
+          +`<span>${L('Wind','風','Wind','Ветер','Viento')}<br><b>${wind(c.wind_speed_10m)} ${dir(c.wind_direction_10m)}</b></span>`
+          +`<span>${L('Pressure','気圧','Druck','Давление','Presión')}<br><b>${c.surface_pressure!=null?Math.round(c.surface_pressure)+' hPa':'—'}</b></span>`
+          +`<span>${L('Precip.','降水','Niederschl.','Осадки','Precip.')}<br><b>${c.precipitation!=null?c.precipitation+' mm':'—'}</b></span>`
+          +`<span>${L('Updated','更新','Aktualisiert','Обновлено','Actualizado')}<br><b>${upd}</b></span>`
+          +`</div><div class="wp-days">${dh}</div>`
+          +`<div style="margin-top:9px;font-size:9.5px;color:var(--text-muted);">Open-Meteo · ${L('refresh: reopen','再取得: 開き直す','Aktual.: erneut öffnen','обновить: открыть снова','actualizar: reabrir')}</div>`;
+        p.querySelector('.wp-x').onclick=close; place();
+      }catch(e){ p.innerHTML=head+`<div style="margin-top:12px;color:#ff453a;">${L('Weather unavailable.','天気を取得できません。','Wetter nicht verfügbar.','Погода недоступна.','El tiempo no disponible.')}</div>`; const x=p.querySelector('.wp-x'); if(x) x.onclick=close; }
+    }
+    return { open, close };
   })();
 
   /* ===== (#R8c) View bookmarks — the live map state (center, zoom, bearing, pitch, projection AND the
