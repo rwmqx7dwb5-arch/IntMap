@@ -7961,6 +7961,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const m=document.getElementById('ctx-menu'); const mc=document.getElementById('map-container').getBoundingClientRect();
     const items=[
       {h:`${t('ctxThisPoint')}: ${fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
+      {label:`🤖 ${currentLang==='jp'?'ここをAIに聞く':currentLang==='de'?'KI zu diesem Ort fragen':currentLang==='ru'?'Спросить ИИ об этом месте':'Ask AI about here'}`, action:()=>{ try{ window.IntMapAIResearch&&window.IntMapAIResearch.askHere(lngLat); }catch(_){} }},
       {label:`📍 ${t('ctxDropPin')}`, action:()=>{ const id=addPin(lngLat.lng,lngLat.lat); openPinPopup(id); }},
       {label:`📏 ${t('ctxMeasureFrom')}`, action:()=>{ if(toolMode!=='measure') setTool('measure'); measurePoints=[[lngLat.lng,lngLat.lat]]; refreshTool(); updateToolPanel(); }},
       {label:`⭕ ${currentLang==='jp'?'ここからの半径':currentLang==='de'?'Radius von hier':currentLang==='ru'?'Радиус отсюда':'Radius from here'}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
@@ -8744,6 +8745,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Tools section (compare + upload) pinned to the very bottom */
         const upBtn=document.getElementById('btn-upload-geojson');
         const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
+        const corrBtn=document.getElementById('btn-correlate');   /* (#R39) capture BEFORE tools.innerHTML='' detaches it */
         let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
         const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
         const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
@@ -8752,6 +8754,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
            left over from an earlier collapse so the Tools section always shows (#R13c). */
         if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
+        if(corrBtn){ corrBtn.style.display=''; corrBtn.style.width='100%'; corrBtn.style.margin='6px 0 0'; tools.appendChild(corrBtn); }   /* (#R39) two-layer scatter/correlation */
         if(upBtn){ upBtn.style.display=''; upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
         if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
@@ -15888,7 +15891,140 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       return out.slice(0,4);
     }
-    return { open };
+    /* ===== (#R39) "Ask AI about here" — click ANY map point and ask a free-form question. The coordinates
+       are sent automatically, so questions like "why is population low only here?" / "why is this border
+       curved?" / "why is this city important?" work without naming the place. Reuses this panel + chat. ===== */
+    async function askHere(lngLat){
+      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
+      const p=ensure(); p.style.display='block';
+      const coordStr=lngLat.lat.toFixed(3)+', '+lngLat.lng.toFixed(3);
+      const title=LL('Ask AI about here','ここをAIに聞く','KI zu diesem Ort fragen','Спросить ИИ об этом месте');
+      const examples=LL(
+        ['Why is this area so sparsely populated?','Why is the border here shaped this way?','Why is this place strategically important?'],
+        ['なぜこの辺りは人口が少ないの？','この国境はなぜこの形なの？','この場所が重要な理由は？'],
+        ['Warum ist dieses Gebiet so dünn besiedelt?','Warum verläuft die Grenze hier so?','Warum ist dieser Ort strategisch wichtig?'],
+        ['Почему здесь так мало населения?','Почему граница здесь такой формы?','Почему это место важно?']);
+      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+esc(title)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+        '<div style="font-size:11px;color:var(--text-muted);margin:0 2px 8px;">📍 '+coordStr+'</div>'+
+        '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;"></div>'+
+        '<div style="font-size:10.5px;color:var(--text-muted);margin:10px 2px 4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;">'+LL('Try asking','質問の例','Beispiele','Примеры вопросов')+'</div>'+
+        examples.map(e=>'<button class="ai-test-btn air-q" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(e)+'</button>').join('')+
+        '<div class="air-inbar" style="display:flex;gap:6px;margin-top:8px;position:sticky;bottom:0;background:var(--card-bg);padding:6px 0 2px;"><input class="air-free" type="text" placeholder="'+LL('Ask anything about this spot…','この地点について質問…','Frage zu diesem Ort…','Спросите об этом месте…')+'" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;"><button class="ai-test-btn air-go" style="width:auto;flex:0 0 auto;">→</button></div>';
+      p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
+      try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
+      const chat=p.querySelector('#air-chat'); const convo=[]; const news=nearbyNews(lngLat); const today=new Date().toISOString().slice(0,10);
+      const sys='You are a world-geography, history and geopolitics expert. The user is asking about a SPECIFIC point on the map at latitude '+lngLat.lat.toFixed(4)+', longitude '+lngLat.lng.toFixed(4)+'. Today is '+today+'. First work out what is at or near that exact location (country, region, city, terrain, sea), then answer concisely and factually with concrete facts, figures and dates. If the point is ocean or uninhabited, say so plainly. Flag anything uncertain.'+window._aiLangLine();
+      const bubble=(who,html)=>{ const d=document.createElement('div'); d.style.cssText=(who==='user'?'align-self:flex-end;max-width:88%;background:var(--primary-color);color:#fff;border-radius:14px 14px 5px 14px;':'align-self:flex-start;max-width:93%;background:var(--input-bg);color:var(--text-main);border-radius:14px 14px 14px 5px;')+'padding:8px 11px;font-size:12.5px;line-height:1.55;word-break:break-word;'; d.innerHTML=html; chat.appendChild(d); try{ p.scrollTop=p.scrollHeight; }catch(_){} return d; };
+      const ask=async(qq)=>{ bubble('user',esc(qq));
+        const ai=bubble('ai','<span style="color:var(--text-muted);">'+LL('Thinking…','回答中…','Denke nach…','Думаю…')+'</span>'); convo.push('User: '+qq);
+        try{ const ctx='\n\nMap point: '+lngLat.lat.toFixed(4)+', '+lngLat.lng.toFixed(4)+(news.length?('\nNearby recent headlines:\n'+news.map(s=>'- '+s).join('\n')):'')+(convo.length>1?('\n\nConversation so far:\n'+convo.slice(-6).join('\n')):'');
+          const out=await askAI(qq+ctx,sys); ai.innerHTML=md(out||''); convo.push('Assistant: '+String(out||'').slice(0,600));
+        }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc(e&&e.message||'AI error')+'</span>'; }
+        try{ p.scrollTop=p.scrollHeight; }catch(_){} };
+      p.querySelectorAll('.air-q').forEach(b=>b.onclick=()=>ask(b.textContent.trim()));
+      const fr=p.querySelector('.air-free'), go=p.querySelector('.air-go');
+      const fire=()=>{ const v=fr.value.trim(); if(v){ ask(v); fr.value=''; } };
+      if(go) go.onclick=fire; if(fr) fr.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); fire(); } });
+    }
+    return { open, askHere };
+  })();
+
+  /* ===== (#R39) TWO-LAYER CORRELATION / SCATTER — pick any two NUMERIC, ABSOLUTE-SCALE country metrics
+     ("数値があるかつ絶対尺度のレイヤーのみ") and see a scatter plot + correlation coefficient over every
+     country that has both values. Opened from a button at the bottom of the Layers panel. ===== */
+  (function(){
+    if(typeof countryStats==='undefined') return;
+    const L=()=>currentLang;
+    const tr=(en,jp,de,ru)=>L()==='jp'?jp:L()==='de'?de:L()==='ru'?ru:en;
+    function compact(v){ v=+v; const a=Math.abs(v); if(a>=1e12)return (v/1e12).toFixed(1)+'T'; if(a>=1e9)return (v/1e9).toFixed(1)+'B'; if(a>=1e6)return (v/1e6).toFixed(1)+'M'; if(a>=1e3)return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
+    const METRICS=[
+      {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:['Population','人口','Bevölkerung','Население']},
+      {id:'density',  get:s=>s.density,  log:true,  fmt:v=>Math.round(v).toLocaleString()+' /km²', lbl:['Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.']},
+      {id:'area',     get:s=>s.area,     log:true,  fmt:v=>compact(v)+' km²', lbl:['Area','面積','Fläche','Площадь']},
+      {id:'gdp',      get:s=>s.gdp,      log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (nominal)','GDP(名目)','BIP (nominal)','ВВП (номинал)']},   /* s.gdp is in $B → ×1e9 for the T/B label */
+      {id:'gdppc',    get:s=>s.gdppc,    log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу']},
+      {id:'gdppcPPP', get:s=>s.gdppcPPP, log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP/capita (PPP)','1人当たりGDP(PPP)','BIP pro Kopf (KKP)','ВВП на душу (ППС)']},
+      {id:'hdi',      get:s=>s.hdi,      log:false, fmt:v=>v.toFixed(3),     lbl:['HDI','HDI','HDI','ИЧР']},
+      {id:'dem',      get:s=>s.dem,      log:false, fmt:v=>v.toFixed(2),     lbl:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии']},
+      {id:'milSpend', get:s=>s.milSpend, log:true,  fmt:v=>'$'+v+'B',        lbl:['Mil. spending','国防費','Militärausgaben','Военные расходы']},
+      {id:'milGDP',   get:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null, log:false, fmt:v=>v.toFixed(2)+'%', lbl:['Mil. spend (% GDP)','国防費(対GDP%)','Militärausg. (% BIP)','Воен. расходы (% ВВП)']},
+      {id:'tfr',      get:s=>s.tfr,      log:false, fmt:v=>v.toFixed(2),     lbl:['Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость']},
+      {id:'lifeExp',  get:s=>s.lifeExp,  log:false, fmt:v=>v.toFixed(1)+' yr', lbl:['Life expectancy','平均寿命','Lebenserwartung','Прод. жизни']},
+      {id:'internet', get:s=>s.internet, log:false, fmt:v=>v+'%',            lbl:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.']}
+    ];
+    const ml=m=>m.lbl[L()==='jp'?1:L()==='de'?2:L()==='ru'?3:0]||m.lbl[0];
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function pear(xs,ys){ const n=xs.length; if(n<3)return null; let sx=0,sy=0,sxx=0,syy=0,sxy=0; for(let i=0;i<n;i++){const x=xs[i],y=ys[i]; sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;} const dx=n*sxx-sx*sx,dy=n*syy-sy*sy; if(dx<=0||dy<=0)return null; return (n*sxy-sx*sy)/Math.sqrt(dx*dy); }
+    function ranks(a){ const idx=a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]); const r=new Array(a.length); let i=0; while(i<idx.length){ let j=i; while(j+1<idx.length&&idx[j+1][0]===idx[i][0])j++; const avg=(i+j)/2+1; for(let k=i;k<=j;k++)r[idx[k][1]]=avg; i=j+1; } return r; }
+    function lsq(xs,ys){ const n=xs.length; let sx=0,sy=0,sxx=0,sxy=0; for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxx+=xs[i]*xs[i];sxy+=xs[i]*ys[i];} const m=(n*sxy-sx*sy)/((n*sxx-sx*sx)||1); return {m,b:(sy-m*sx)/n}; }
+    let xId='gdppc', yId='lifeExp', ov=null;
+    function inject(){ if(document.getElementById('corr-style'))return; const st=document.createElement('style'); st.id='corr-style';
+      st.textContent='#corr-overlay{display:none;position:fixed;inset:0;z-index:9998;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}'
+        +'#corr-overlay.show{display:flex;}'
+        +'.corr-card{background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.18));border-radius:20px;box-shadow:var(--shadow);width:min(620px,96vw);max-height:92vh;overflow:auto;padding:18px 20px 20px;backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);}'
+        +'.corr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}'
+        +'.corr-head h3{margin:0;font-size:17px;}'
+        +'.corr-x{background:transparent;border:none;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;padding:2px 6px;}'
+        +'.corr-pick{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}'
+        +'.corr-pick label{flex:1 1 0;min-width:150px;font-size:11.5px;color:var(--text-muted);}'
+        +'.corr-pick select{width:100%;margin-top:3px;padding:8px 9px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:13px;}'
+        +'.corr-r{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;margin:10px 2px 4px;}'
+        +'.corr-r .lab{font-size:11px;color:var(--text-muted);}'
+        +'.corr-r b{font-size:22px;display:block;}'
+        +'.corr-dot{fill:var(--primary-color);fill-opacity:0.62;}'
+        +'.corr-note{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5;}';
+      document.head.appendChild(st); }
+    function ensure(){ if(ov)return ov; inject(); ov=document.createElement('div'); ov.id='corr-overlay';
+      ov.innerHTML='<div class="corr-card" role="dialog" aria-modal="true"><div class="corr-head"><h3></h3><button class="corr-x" aria-label="Close">×</button></div>'
+        +'<div class="corr-pick"><label class="lx"><span></span><select class="corr-sel-x"></select></label><label class="ly"><span></span><select class="corr-sel-y"></select></label></div>'
+        +'<div class="corr-svg-wrap"></div><div class="corr-r"></div><div class="corr-note"></div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener('click',e=>{ if(e.target===ov) hide(); });
+      ov.querySelector('.corr-x').onclick=hide;
+      const sx=ov.querySelector('.corr-sel-x'), sy=ov.querySelector('.corr-sel-y');
+      METRICS.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=ml(m); sx.appendChild(o); sy.appendChild(o.cloneNode(true)); });
+      sx.value=xId; sy.value=yId;
+      sx.onchange=()=>{ xId=sx.value; render(); }; sy.onchange=()=>{ yId=sy.value; render(); };
+      return ov; }
+    function hide(){ if(ov) ov.classList.remove('show'); }
+    function pairs(mx,my){ const out=[]; for(const c in countryStats){ const s=countryStats[c]; if(!s)continue; let x=mx.get(s),y=my.get(s); if(x==null||y==null||!isFinite(x)||!isFinite(y))continue; if(mx.log&&x<=0)continue; if(my.log&&y<=0)continue; out.push({c,nm:(L()==='jp'?(s.nameJp||s.nameEn):s.nameEn)||c,x:+x,y:+y}); } return out; }
+    function render(){ if(!ov)return; const mx=METRICS.find(m=>m.id===xId), my=METRICS.find(m=>m.id===yId);
+      ov.querySelector('.corr-head h3').textContent=tr('Correlation','相関分析','Korrelation','Корреляция');
+      ov.querySelector('.lx span').textContent=tr('X axis','横軸 (X)','X-Achse','Ось X');
+      ov.querySelector('.ly span').textContent=tr('Y axis','縦軸 (Y)','Y-Achse','Ось Y');
+      const ps=pairs(mx,my), wrap=ov.querySelector('.corr-svg-wrap'), rEl=ov.querySelector('.corr-r'), nEl=ov.querySelector('.corr-note');
+      if(ps.length<3){ wrap.innerHTML=''; rEl.innerHTML=''; nEl.textContent=tr('Not enough countries have both values.','両方の値を持つ国が不足しています。','Zu wenige Länder haben beide Werte.','Недостаточно стран с обоими значениями.'); return; }
+      const tx=ps.map(p=>mx.log?Math.log10(p.x):p.x), ty=ps.map(p=>my.log?Math.log10(p.y):p.y);
+      const r=pear(tx,ty), rho=pear(ranks(ps.map(p=>p.x)),ranks(ps.map(p=>p.y)));
+      const W=560,H=360,pl=54,prr=16,ptt=14,pb=44, iw=W-pl-prr, ih=H-ptt-pb;
+      const xmin=Math.min.apply(0,tx),xmax=Math.max.apply(0,tx),ymin=Math.min.apply(0,ty),ymax=Math.max.apply(0,ty);
+      const SX=v=>pl+(xmax===xmin?0.5:(v-xmin)/(xmax-xmin))*iw, SY=v=>ptt+ih-(ymax===ymin?0.5:(v-ymin)/(ymax-ymin))*ih;
+      let dots=''; ps.forEach((p,i)=>{ dots+='<circle class="corr-dot" cx="'+SX(tx[i]).toFixed(1)+'" cy="'+SY(ty[i]).toFixed(1)+'" r="4"><title>'+esc(p.nm)+': '+esc(mx.fmt(p.x))+' / '+esc(my.fmt(p.y))+'</title></circle>'; });
+      let line=''; if(r!=null){ const mb=lsq(tx,ty); line='<line x1="'+SX(xmin).toFixed(1)+'" y1="'+SY(mb.m*xmin+mb.b).toFixed(1)+'" x2="'+SX(xmax).toFixed(1)+'" y2="'+SY(mb.m*xmax+mb.b).toFixed(1)+'" stroke="#ff3b30" stroke-width="1.6" stroke-dasharray="5 4"/>'; }
+      const axis='<line x1="'+pl+'" y1="'+(ptt+ih)+'" x2="'+(pl+iw)+'" y2="'+(ptt+ih)+'" stroke="rgba(128,128,128,0.5)"/><line x1="'+pl+'" y1="'+ptt+'" x2="'+pl+'" y2="'+(ptt+ih)+'" stroke="rgba(128,128,128,0.5)"/>';
+      const inv=(tt,log)=>log?Math.pow(10,tt):tt, TS='font-size="9" style="fill:var(--text-muted)"';
+      const ticks='<text x="'+pl+'" y="'+(ptt+ih+15)+'" '+TS+' text-anchor="start">'+esc(mx.fmt(inv(xmin,mx.log)))+'</text>'
+        +'<text x="'+(pl+iw)+'" y="'+(ptt+ih+15)+'" '+TS+' text-anchor="end">'+esc(mx.fmt(inv(xmax,mx.log)))+'</text>'
+        +'<text x="'+(pl-5)+'" y="'+(ptt+ih)+'" '+TS+' text-anchor="end">'+esc(my.fmt(inv(ymin,my.log)))+'</text>'
+        +'<text x="'+(pl-5)+'" y="'+(ptt+9)+'" '+TS+' text-anchor="end">'+esc(my.fmt(inv(ymax,my.log)))+'</text>';
+      const titles='<text x="'+(pl+iw/2)+'" y="'+(H-6)+'" font-size="11" style="fill:var(--text-main)" text-anchor="middle">'+esc(ml(mx))+(mx.log?' (log)':'')+'</text>'
+        +'<text x="14" y="'+(ptt+ih/2)+'" font-size="11" style="fill:var(--text-main)" text-anchor="middle" transform="rotate(-90 14 '+(ptt+ih/2)+')">'+esc(ml(my))+(my.log?' (log)':'')+'</text>';
+      wrap.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;">'+axis+line+dots+ticks+titles+'</svg>';
+      const str=Math.abs(r||0), d= str<0.2?tr('very weak','ごく弱い','sehr schwach','очень слабая'):str<0.4?tr('weak','弱い','schwach','слабая'):str<0.6?tr('moderate','中程度の','mäßig','умеренная'):str<0.8?tr('strong','強い','stark','сильная'):tr('very strong','非常に強い','sehr stark','очень сильная');
+      const sg= r>0?tr('positive','正の','positive','положительная'):tr('negative','負の','negative','отрицательная');
+      rEl.innerHTML='<div><span class="lab">'+tr('Pearson r','ピアソン r','Pearson r','Пирсон r')+(mx.log||my.log?' ('+tr('log','対数','log','лог')+')':'')+'</span><b style="color:'+(r>0?'#34c759':'#ff453a')+'">'+(r!=null?r.toFixed(3):'—')+'</b></div>'
+        +'<div><span class="lab">'+tr('Spearman ρ (rank)','スピアマン ρ (順位)','Spearman ρ (Rang)','Спирмен ρ (ранг)')+'</span><b>'+(rho!=null?rho.toFixed(3):'—')+'</b></div>'
+        +'<div><span class="lab">'+tr('Countries','国数','Länder','Стран')+'</span><b>'+ps.length+'</b></div>';
+      nEl.textContent=d+' '+sg+' '+tr('correlation','相関','Korrelation','корреляция')+' · '+tr('Correlation is not causation; outliers and confounders matter.','相関は因果ではありません。外れ値や交絡因子に注意。','Korrelation ist keine Kausalität; Ausreißer & Störfaktoren beachten.','Корреляция — не причинность; учитывайте выбросы и факторы.');
+    }
+    function open(){ ensure(); ov.classList.add('show'); const go=()=>render();
+      if(window.countryGeo&&Object.keys(countryStats||{}).length) go();
+      else if(typeof loadCountryData==='function'){ ov.querySelector('.corr-svg-wrap').innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; loadCountryData().then(go); }
+      else go(); }
+    window.IntMapCorrelate={open};
+    const btnLbl=()=>tr('Correlation / scatter','相関・散布図','Korrelation / Streudiagramm','Корреляция / диаграмма');
+    (function mkBtn(){ if(document.getElementById('btn-correlate'))return; const b=document.createElement('button'); b.id='btn-correlate'; b.type='button'; b.className='ai-test-btn'; b.style.cssText='width:100%;text-align:center;'; b.innerHTML='📊 <span>'+esc(btnLbl())+'</span>'; b.onclick=open; (document.getElementById('layer-tools')||document.body).appendChild(b); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} })();
+    window.addEventListener('intmap-lang',()=>{ const b=document.getElementById('btn-correlate'); if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=btnLbl(); } if(ov){ const sx=ov.querySelector('.corr-sel-x'),sy=ov.querySelector('.corr-sel-y'); if(sx&&sy){ [sx,sy].forEach(sel=>{ [].forEach.call(sel.options,(o,i)=>{ if(METRICS[i]) o.textContent=ml(METRICS[i]); }); }); if(ov.classList.contains('show')) render(); } } });
   })();
 
   /* ===== (#R20) WORLD EVENTS ARCHIVE — the Information tab gains a Places | Events split
