@@ -410,6 +410,10 @@ gtag('config', 'G-57X5MX0ZPW');
       /* Keep the close × aligned to the buttons' right edge on mobile too; only the top needs clearing. */
       .plc-popup .maplibregl-popup-content{ padding-top:14px !important; }
       .plc-popup .maplibregl-popup-close-button{ width:30px; height:30px; top:9px; right:12px; } }
+    /* (#R41) Webcam popup — inherits .plc-popup dark-mode theming; just give the embedded live player room and
+       keep the × clear of the title ("ポップアップのデザインがダークモードで死んでいる"). */
+    .webcam-popup .maplibregl-popup-content{ padding:11px 12px 12px !important; }
+    .webcam-popup .maplibregl-popup-close-button{ background:rgba(128,128,128,0.22); color:var(--text-main); top:7px; right:7px; width:24px; height:24px; border-radius:7px; z-index:2; }
     .radius-control{ flex-direction:column; gap:8px; align-items:stretch; } .radius-control input[type=range]{ width:100%; accent-color:var(--primary-color); }
     .radius-row{ display:flex; align-items:center; gap:6px; } .radius-row input[type=number]{ flex:1; min-width:0; padding:6px 8px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); }
     /* (#R33) radius −/＋ steppers + let long action-button labels wrap instead of overflowing (desktop radius legend). */
@@ -814,6 +818,23 @@ gtag('config', 'G-57X5MX0ZPW');
        the frosted-box rule above no longer turns it into a bordered translucent square). */
     #ai-research-panel .air-go:hover{ filter:brightness(1.08); }
     body.sidebar-translucent #ai-research-panel .air-q, body.sidebar-glass2 #ai-research-panel .air-q{ border-color:transparent !important; }
+    /* (#R41) AI follow-up bar polish (applies in ALL sidebar modes + the place-popup AI). The sticky input
+       strip painted a HARD --popup-bg RECTANGLE behind the pill + send button ("入力欄と送信ボタンの後ろに
+       長方形の背景が見えてダサい") — fade it to transparent upward so it still masks the scrolling chat at the
+       bottom but shows NO rectangle edge. The bordered suggestion buttons ("四角い枠が見えてcheap") become
+       clean borderless iOS pills, and the send button gets a real iOS look (soft shadow + press spring). */
+    .air-inbar{ background:linear-gradient(to top, var(--popup-bg) 62%, rgba(0,0,0,0)) !important; padding-top:12px !important; }
+    .air-q{ border:none !important; background:rgba(120,120,128,0.10) !important; border-radius:13px !important; transition:background .15s ease, transform .08s ease; }
+    .air-q:hover{ background:rgba(120,120,128,0.18) !important; }
+    .air-q:active{ transform:scale(0.99); }
+    [data-theme="dark"] .air-q{ background:rgba(120,120,128,0.18) !important; }
+    [data-theme="dark"] .air-q:hover{ background:rgba(120,120,128,0.28) !important; }
+    .air-free{ box-shadow:0 1px 2px rgba(0,0,0,0.05); transition:border-color .15s ease, box-shadow .15s ease; }
+    .air-free:focus{ border-color:var(--primary-color) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent); }
+    .air-go{ box-shadow:0 2px 9px rgba(0,0,0,0.20); transition:filter .15s ease, transform .08s ease, box-shadow .15s ease; }
+    .air-go:hover{ filter:brightness(1.06); }
+    .air-go:active{ transform:scale(0.9); }
+    .air-go svg{ display:block; }
     .tp-select{ width:100%; padding:7px; border-radius:8px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:12px; margin-bottom:8px; box-sizing:border-box; }
     .tp-sub{ font-size:11px; color:var(--text-muted); margin:6px 0 2px; }
 
@@ -1795,6 +1816,7 @@ gtag('config', 'G-57X5MX0ZPW');
                <hr style="border:0; border-top:1px solid rgba(128,128,128,0.2); width:100%; margin:4px 0 8px;">
              </div>
              <label class="layer-option"><input type="checkbox" id="cb-names" checked> <span data-i18n="placeNames">Place names</span></label>
+             <label class="layer-option"><input type="checkbox" id="cb-geolabels" checked> <span data-i18n="geoLabels">Water &amp; terrain labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
@@ -2089,7 +2111,7 @@ window.addEventListener('DOMContentLoaded', () => {
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
   try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru','es'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
   let isGridOn=false, toolMode=null, measurePoints=[];
-  let namesOn=true, countryInfoOn=false;
+  let namesOn=true, countryInfoOn=false, geoLabelsOn=true;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */
   let map=null, markersArray=[], forceHoverLayers=new Set();
   let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp';   /* (#R11) no tab auto-selected */
   let newsFiltered=[], renderedCount=0, NEWS_BATCH=30;
@@ -2135,7 +2157,7 @@ window.addEventListener('DOMContentLoaded', () => {
       dashCatMil:"Military Bases", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Chokes", dashCatGeo:"Geo / Climate",
       readWiki:"Read on Wikipedia ↗", measure:"Measure", areaTool:"Area", radius:"Radius", points:"Points", total:"Total", perimeter:"Perimeter", area:"Area", clear:"Clear", undoPt:"Undo point",
       measureHint:"Click to add points · double-click to finish", areaHint:"Add 3+ points to enclose · double-click to finish", radiusHint:"Click the map to place a circle. Multiple circles allowed.",
-      placeNames:"Place names", adminBounds:"State / province borders", roadsLayer:"Roads", railLayer:"Railways", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
+      placeNames:"Place names", geoLabels:"Water & terrain labels", adminBounds:"State / province borders", roadsLayer:"Roads", railLayer:"Railways", countries:"Countries (info)", addCircle:"Place circle", removeAll:"Clear all", color:"Color",
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"GDP per capita (PPP)", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
@@ -2167,7 +2189,7 @@ window.addEventListener('DOMContentLoaded', () => {
       dashCatMil:"軍事・戦略拠点", dashCatTech:"技術・サイバー", dashCatMar:"海上輸送・要衝", dashCatGeo:"地政学・気候",
       readWiki:"Wikipediaで詳細を見る ↗", measure:"距離計測", areaTool:"面積計測", radius:"半径", points:"地点数", total:"合計距離", perimeter:"外周", area:"面積", clear:"クリア", undoPt:"一つ戻る",
       measureHint:"クリックで地点追加・ダブルクリックで確定", areaHint:"3点以上で範囲を囲む・ダブルクリックで確定", radiusHint:"地図をクリックで円を配置。複数配置可。",
-      placeNames:"地名表示", adminBounds:"州・県境", roadsLayer:"道路網", railLayer:"鉄道", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
+      placeNames:"地名表示", geoLabels:"水域・地形ラベル", adminBounds:"州・県境", roadsLayer:"道路網", railLayer:"鉄道", countries:"国境・国情報", addCircle:"円を追加", removeAll:"全削除", color:"色",
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
@@ -2210,7 +2232,7 @@ window.addEventListener('DOMContentLoaded', () => {
       satKeysTitle:"Satellitenbilder (BYOK)", satKeyHint:"Geben Sie einen API-Schlüssel ein, um diese Anbieter im Satelliten-Panel freizuschalten. Schlüssel werden nur in diesem Browser gespeichert.",
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
       aiSecTitle:"KI-Funktionen", aiSecHint:"Integrierte KI — nach der Anmeldung kostenlos nutzbar (bis zu 10×/Tag). Kein API-Schlüssel erforderlich.",
-      blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
+      blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", geoLabels:"Gewässer- & Geländenamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
       measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
       lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
@@ -2256,7 +2278,7 @@ window.addEventListener('DOMContentLoaded', () => {
       satKeysTitle:"Спутниковые снимки (BYOK)", satKeyHint:"Введите ключ API, чтобы разблокировать этих провайдеров в панели спутника. Ключи хранятся только в этом браузере.",
       aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
       aiSecTitle:"ИИ-функции", aiSecHint:"Встроенный ИИ — бесплатно после входа (до 10 раз в день). Ключ API не нужен.",
-      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
+      blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
       measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", mScreenshot:"Снимок", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
       lblDataSources:"Источники данных", viewDataSources:"Показать источники данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
       lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
@@ -2303,7 +2325,7 @@ window.addEventListener('DOMContentLoaded', () => {
       satKeysTitle:"Imágenes de satélite (BYOK)", satKeyHint:"Introduce una clave API para desbloquear estos proveedores en el panel de satélite. Las claves se guardan solo en este navegador.",
       aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",
       aiSecTitle:"Funciones de IA", aiSecHint:"IA integrada — gratis al iniciar sesión (hasta 10 usos al día). No se necesita clave API.",
-      blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
+      blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", geoLabels:"Etiquetas de agua y relieve", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
       measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", radiusBtn:"⭕ Radio", mScreenshot:"Captura", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
       lblDataSources:"Fuentes de datos", viewDataSources:"Ver fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
       lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
@@ -2461,7 +2483,11 @@ window.addEventListener('DOMContentLoaded', () => {
          from the same OFM vector source. Italic blue for water (cartographic convention), a ▲ for peaks with
          elevation. They follow the Place-names toggle + the active label language (handled in applyLabelLang). */
       const FONTI=['Noto Sans Italic'];
-      if(!map.getLayer('ofm-river')) map.addLayer({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'water_name',minzoom:5,filter:['==',['get','class'],'river'],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':['interpolate',['linear'],['zoom'],6,10,12,13],'text-max-angle':40,'text-letter-spacing':0.02,'symbol-spacing':400},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      /* (#R41) ROOT CAUSE of "水域のラベルが地図からずれている": river names were read from `water_name` (which is
+         POINT label geometry) but drawn with symbol-placement:line — line placement on a point lands the label
+         off the actual river. River/canal names live in the `waterway` LINE layer; placing them there makes them
+         follow the real river line on the basemap (aligned). */
+      if(!map.getLayer('ofm-river')) map.addLayer({id:'ofm-river',type:'symbol',source:'ofm','source-layer':'waterway',minzoom:6,filter:['in',['get','class'],['literal',['river','canal']]],layout:{visibility:'none','symbol-placement':'line','text-field':['get','name'],'text-font':FONTI,'text-size':['interpolate',['linear'],['zoom'],6,10,12,13],'text-max-angle':38,'text-letter-spacing':0.02,'symbol-spacing':350},paint:{'text-color':'#7fc4ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
       if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'ofm','source-layer':'water_name',minzoom:3,filter:['in',['get','class'],['literal',['lake','sea','ocean','bay']]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':['interpolate',['linear'],['zoom'],3,11,8,14,12,16],'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
       if(!map.getLayer('ofm-peak')) map.addLayer({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':8,'text-offset':[0,0.4],'text-anchor':'top'},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       _placeLabelsAdded=true;
@@ -2484,8 +2510,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const isDark = !( (window.imMapColor==='light') || (window.imMapColor!=='dark' && ((userTheme==='light')||(userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches))) );
     /* (#R40) localize + show/hide the water (river/lake/sea) and mountain-peak labels with the same toggle.
        They keep their own (blue / stone) colors, so they're only given the language expression + visibility. */
-    try{ ['ofm-river','ofm-water'].forEach(id=>{ if(!map.getLayer(id)) return; map.setLayoutProperty(id,'visibility',show?'visible':'none'); map.setLayoutProperty(id,'text-field',nameExpr); });
-      if(map.getLayer('ofm-peak')){ map.setLayoutProperty('ofm-peak','visibility',show?'visible':'none'); map.setLayoutProperty('ofm-peak','text-field',['concat','▲ ',nameExpr]); } }catch(_){}
+    /* (#R41) water/terrain labels follow their OWN checkbox (geoLabelsOn), independent of place names. */
+    const showGeo = geoLabelsOn && (sat || mapLabelsViaVector());
+    try{ ['ofm-river','ofm-water'].forEach(id=>{ if(!map.getLayer(id)) return; map.setLayoutProperty(id,'visibility',showGeo?'visible':'none'); map.setLayoutProperty(id,'text-field',nameExpr); });
+      if(map.getLayer('ofm-peak')){ map.setLayoutProperty('ofm-peak','visibility',showGeo?'visible':'none'); map.setLayoutProperty('ofm-peak','text-field',['concat','▲ ',nameExpr]); } }catch(_){}
     ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ if(!map.getLayer(id)) return;
       map.setLayoutProperty(id,'visibility',show?'visible':'none');
       map.setLayoutProperty(id,'text-field',nameExpr);
@@ -5934,11 +5962,22 @@ window.addEventListener('DOMContentLoaded', () => {
        finally reliable for every legend type (generic, worldcover/eco, GIBS, round-9, beta), not just dl-*. */
     let id=x.getAttribute('data-x');
     if(!id && lg){ id=(lg.dataset&&lg.dataset.cbId)||''; if(!id && lg.id) id=lg.id.replace(/^data-legend-/,''); }
-    if(!id) return;
-    const bare=id.replace(/^eco-/,'');
-    const cands=[id,'dl-'+id,'eco-dl-'+id,'gx-'+id,'l9-dl-'+id,'beta-dl-'+id,bare,'dl-'+bare,'eco-dl-'+bare];
-    let cb=null; for(const k of cands){ cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb) break; }
-    if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+    const bare=(id||'').replace(/^eco-/,'').replace(/^gx-/,'').replace(/^dl-/,'');
+    if(id){
+      const cands=[id,'dl-'+id,'eco-dl-'+id,'gx-'+id,'l9-dl-'+id,'beta-dl-'+id,bare,'dl-'+bare,'eco-dl-'+bare,'gx-'+bare,'ox-'+bare];
+      let cb=null; for(const k of cands){ cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb) break; }
+      if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }
+      /* (#R41) BELT-AND-SUSPENDERS — the canonical uncheck above is the clean path, but "凡例の×を押しても
+         レイヤーが消えない" still happened when the controlling checkbox couldn't be resolved (custom/legacy
+         legends) or its change handler didn't fully hide. So ALSO hide every map layer that matches this id
+         directly, regardless of the checkbox. Idempotent + specific (exact ids + lyr-/-fill/-line variants). */
+      try{ if(map&&map.getStyle){ const pats=new Set([id,bare,'lyr-'+id,'lyr-'+bare,id+'-fill',bare+'-fill',id+'-line',bare+'-line','gxlyr-'+bare,'oxl-ox'+bare,'oxl-'+id]);
+        map.getStyle().layers.forEach(L=>{ const lid=L.id; if(pats.has(lid)||lid.indexOf('lyr-'+bare+'-')===0||lid.indexOf('lyr-'+id+'-')===0){ try{ map.setLayoutProperty(lid,'visibility','none'); }catch(_){} } }); } }catch(_){}
+    }
+    /* always close the legend element itself + re-tile, so the × is never a dead button */
+    if(lg){ try{ lg.style.display='none'; }catch(_){} }
+    try{ window.tileLegends&&window.tileLegends(); }catch(_){}
+    try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){}
   });
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
   function _lyrGroupItems(header){ const out=[]; let el=header.nextElementSibling;
@@ -5989,6 +6028,10 @@ window.addEventListener('DOMContentLoaded', () => {
        source can finish loading a beat AFTER the first applyTheme, so a single call sometimes toggled nothing.
        Re-assert the label layers a few times so the toggle always lands. */
     [120,400,1000].forEach(ms=>setTimeout(()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },ms)); });
+  /* (#R41) separate water/terrain label toggle ("水域や地形のラベルは別チェックで") */
+  { const _gl=document.getElementById('cb-geolabels'); if(_gl) _gl.addEventListener('change',(e)=>{ geoLabelsOn=e.target.checked;
+    const ap=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} };
+    ap(); [120,400,1000].forEach(ms=>setTimeout(ap,ms)); }); }
   document.getElementById('cb-borders').addEventListener('change',(e)=>{
     bordersOn=e.target.checked;
     /* (#R40) Now sourced from the OFM `boundary` layer (see ensureBordersLayer). Same retry treatment as
@@ -8913,7 +8956,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       const sec=document.getElementById('layer-active-section'); if(!sec) return;
       const lang=(typeof currentLang!=='undefined')?currentLang:'en';
-      const skip=new Set(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
+      const skip=new Set(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
       const seen=new Set(), chips=[];
       dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{
         if(!cb.checked || skip.has(cb.id) || seen.has(cb)) return; seen.add(cb);   /* key by ELEMENT — geo/strategic rows have no id, so an id key collapsed them all to one */
@@ -9071,7 +9114,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const order=[];
         const fav=document.getElementById('layer-fav-section'); if(fav) order.push(fav);
         /* (#R33) Requested order: Place names, Country borders, State/province, Roads, Railways, Grid, Countries(info). */
-        ['cb-names','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
+        ['cb-names','cb-geolabels','cb-borders','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'].forEach(id=>{ const el=document.getElementById(id); const lab=el&&el.closest('label'); if(lab) order.push(lab); });
         /* (#R14 / #17) the live "Active layers" list. DESKTOP: right below the favorites + top toggles.
            (#R25) MOBILE: moved to the BOTTOM (just before Tools) — when it sat at the top, toggling the
            FIRST layer made it appear above the rows and the scroll-compensation had to scroll the list,
@@ -9103,7 +9146,7 @@ window.addEventListener('DOMContentLoaded', () => {
         dd.querySelectorAll(':scope > .lyr-row, :scope > label.layer-option').forEach(r=>{
           if(placed.has(r)) return;
           const cb=r.querySelector('input[type=checkbox]'); if(!cb) return;
-          if(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+          if(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
           otherRows.push(r); placed.add(r);
         });
         if(otherRows.length){
@@ -9180,9 +9223,19 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Helper: returns a promise that resolves when the map style is loaded */
     function whenStyleReady(){
       return new Promise(res=>{
+        let done=false;
+        const fin=()=>{ if(done) return; done=true; try{ map.off('idle',ck); map.off('styledata',ck); map.off('load',ck); }catch(_){} res(); };
+        const ck=()=>{ if(map.isStyleLoaded()) fin(); };
         if(map.isStyleLoaded()){ res(); return; }
-        const ck=()=>{ if(map.isStyleLoaded()){ map.off('idle',ck); map.off('load',ck); res(); } };
-        map.on('idle',ck); map.on('load',ck);
+        map.on('idle',ck); map.on('styledata',ck); map.on('load',ck);
+        /* (#R41) ROOT CAUSE of "レイヤー/ラベルをチェックしても表示されない・ブラウザ再読み込みで治る": the old version
+           waited ONLY on idle/load. If ANOTHER source is still loading or erroring, the map never reaches a clean
+           idle, so this promise hung FOREVER and the layer was never added — a reload (clean state) was the only
+           cure. Now also listen on styledata, POLL independently (covers the TOCTOU race where the style finished
+           between the sync check and the listener registration), and as a last resort resolve anyway after ~6 s —
+           addSource/addLayer work fine as long as the style object exists, so a slightly-early add beats a layer
+           that never appears. */
+        let n=0; (function poll(){ if(done) return; if(map.isStyleLoaded()||n++>40) fin(); else setTimeout(poll,150); })();
       });
     }
     /* Hover a choropleth country → tooltip with its name + the metric value. */
@@ -10667,6 +10720,12 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(_){}
     };
     try{ if(map) map.on('idle',()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} }); }catch(_){}
+    /* (#R41) The orphan sweep + label-raise self-heals were driven ONLY by 'idle'. When the map is wedged
+       not-idle (a tile source erroring / looping), idle never fires, so "消したはずのレイヤーが残り続ける" and
+       buried labels persisted until a reload. Drive the SAME idempotent, drift-only self-heals on a slow
+       heartbeat too so they recover without an idle and without a reload. Each only acts on real drift, so in
+       steady state this does nothing. */
+    try{ if(map){ setInterval(()=>{ try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){} try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }, 2500); } }catch(_){}
     /* (#R36) UNIVERSAL async-race orphan guard for EVERY layer subsystem (main dl-, eco-dl-, beta-dl-, bx-, l9-dl-).
        The dl- toggle-time guard + the dl- idle sweep only cover the MAIN system; the eco / World-Bank / hazard
        layers add+show inside THEIR OWN async callbacks, so an ON-then-quick-OFF can re-show a layer whose box is
@@ -10677,7 +10736,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R38) NEVER re-dispatch on the 7 utility toggles. They are not async-race layers, and several have
          stateful handlers (cb-grid's setGrid; borders/roads/rail have their OWN multi-retry re-assert) — a
          re-dispatched change here is what flipped Grid back ON ("何度消しても自動的にチェックされる"). */
-      if(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
+      if(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2'].includes(cb.id)) return;
       [500,1400,3000].forEach(ms=>setTimeout(()=>{ try{ if(cb.checked||!cb.isConnected) return; cb.__reassertGuard=1; cb.dispatchEvent(new Event('change',{bubbles:true})); cb.__reassertGuard=0; }catch(_){ try{cb.__reassertGuard=0;}catch(__){} } },ms));
     }); }catch(_){}
     /* Expose for the lyr-row dt-/ft- handlers above */
@@ -12363,6 +12422,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function layerCbInfo(cb){
     if(!cb) return null;
     if(cb.id==='cb-names')     return {key:'names', label:t('placeNames')};
+    if(cb.id==='cb-geolabels') return {key:'geolabels', label:t('geoLabels')||'Water & terrain labels'};
     if(cb.id==='cb-borders')   return {key:'borders', label:t('borders')};
     if(cb.id==='cb-countries') return {key:'countries', label:i18n[currentLang].countries||'Countries'};
     if(cb.classList.contains('geo-layer-cb')){ const k=cb.getAttribute('data-layer'); const d=(typeof geoLayersDB!=='undefined')&&geoLayersDB[k]; return {key:'geo:'+k, label:(d&&d.name&&(d.name[currentLang]||d.name.en))||k, color:d&&d.color}; }
@@ -12429,7 +12489,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/',use:{en:'Active fire / thermal anomalies',jp:'熱異常（火災）'}},
     {n:'RainViewer',u:'https://www.rainviewer.com/',use:{en:'Live precipitation radar & IR clouds',jp:'降水レーダー・雲'}},
     {n:'Open-Meteo',u:'https://open-meteo.com/',use:{en:'Elevation, wind field & the right-click live weather popup (current conditions + 5-day forecast)',jp:'標高・風（アニメーション）・右クリックの最新天気（現況＋5日予報）'}},
-    {n:'Live webcams (curated locations · YouTube live)',u:'https://www.youtube.com/',use:{en:'Notable public webcam LOCATIONS are bundled; the live view opens on YouTube live results (no API key)',jp:'著名な公開ウェブカメラの「地点」を内蔵。ライブ映像はYouTubeのライブ結果で表示（APIキー不要）'}},
+    {n:'Live webcams (curated 24/7 YouTube streams)',u:'https://www.youtube.com/',use:{en:'Curated, currently-live 24/7 public webcam streams (EarthCam, SkylineWebcams, WebcamSydney, Ozolio, FOX 5, Wild Africa, etc.) embedded directly in the popup (no API key)',jp:'厳選した24時間ライブの公開ウェブカメラ配信（EarthCam・SkylineWebcams・WebcamSydney 等）をポップアップに直接埋め込み再生（APIキー不要）'}},
     {n:'GEBCO 2020',u:'https://www.gebco.net/',use:{en:'Ocean bathymetry (depth readout)',jp:'海底地形（水深）'}},
     {n:'AWS Terrain Tiles',u:'https://registry.opendata.aws/terrain-tiles/',use:{en:'3D terrain, hillshade & contour generation',jp:'3D地形・陰影・等高線'}},
     {n:'Beck et al. Köppen-Geiger (2018)',u:'https://www.nature.com/articles/sdata2018214',use:{en:'1 km climate-zone classification',jp:'ケッペン気候区分（1km）'}},
@@ -16099,7 +16159,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function cbKey(cb){ if(cb.id) return 'id:'+cb.id; const dl=cb.getAttribute&&cb.getAttribute('data-layer'); return dl?('dl:'+dl):null; }
     function findCb(key){ if(!key) return null; if(key.startsWith('id:')) return document.getElementById(key.slice(3));
       if(key.startsWith('dl:')){ const dd=document.getElementById('layer-dropdown'); return dd&&dd.querySelector('input[data-layer="'+key.slice(3)+'"]'); } return null; }
-    const SKIP=new Set(['cb-names','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
+    const SKIP=new Set(['cb-names','cb-geolabels','cb-borders','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
     function capture(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return null;
       const ids=[]; dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(!cb.checked||SKIP.has(cb.id)) return; const k=cbKey(cb); if(k&&!ids.includes(k)) ids.push(k); });
       let ops={}; try{ ops=JSON.parse(JSON.stringify(opacities)); }catch(_){}
@@ -16243,7 +16303,7 @@ window.addEventListener('DOMContentLoaded', () => {
         sug.innerHTML='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+LL('Suggested questions','おすすめの質問','Vorgeschlagene Fragen','Предлагаемые вопросы')+'</div>'+
           qs.map((s,i)=>'<button class="ai-test-btn air-q" data-i="'+i+'" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(s)+'</button>').join('')+
           '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>'+
-          '<div class="air-inbar" style="display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;background:var(--popup-bg);padding:8px 0 4px;"><input class="air-free" type="text" placeholder="'+LL('Ask a follow-up…','続けて質問…','Nachfrage stellen…','Задать уточняющий вопрос…','Haz una pregunta de seguimiento…')+'" style="flex:1;min-width:0;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;box-sizing:border-box;"><button class="air-go" title="'+LL("Send","送信","Senden","Отправить","Enviar")+'" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">→</button></div>';
+          '<div class="air-inbar" style="display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;background:var(--popup-bg);padding:8px 0 4px;"><input class="air-free" type="text" placeholder="'+LL('Ask a follow-up…','続けて質問…','Nachfrage stellen…','Задать уточняющий вопрос…','Haz una pregunta de seguimiento…')+'" style="flex:1;min-width:0;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;box-sizing:border-box;"><button class="air-go" title="'+LL("Send","送信","Senden","Отправить","Enviar")+'" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"/></svg></button></div>';
         p.appendChild(sug);
         /* (#R31) CHAT-style thread — the user's message stays visible as a bubble after the AI replies
            ("主要なAIチャットアプリのようなUIに"), and the conversation accumulates with context continuity. */
@@ -16317,7 +16377,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div id="air-chat" style="display:flex;flex-direction:column;gap:8px;"></div>'+
         '<div style="font-size:10.5px;color:var(--text-muted);margin:10px 2px 4px;border-top:1px solid rgba(128,128,128,0.18);padding-top:8px;">'+LL('Try asking','質問の例','Beispiele','Примеры вопросов')+'</div>'+
         examples.map(e=>'<button class="ai-test-btn air-q" style="width:100%;text-align:left;margin:3px 0;font-size:11.5px;">'+esc(e)+'</button>').join('')+
-        '<div class="air-inbar" style="display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;background:var(--popup-bg);padding:8px 0 4px;"><input class="air-free" type="text" placeholder="'+LL('Ask anything about this spot…','この地点について質問…','Frage zu diesem Ort…','Спросите об этом месте…','Pregunta lo que sea sobre este lugar…')+'" style="flex:1;min-width:0;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;box-sizing:border-box;"><button class="air-go" title="'+LL("Send","送信","Senden","Отправить","Enviar")+'" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">→</button></div>';
+        '<div class="air-inbar" style="display:flex;gap:8px;align-items:center;margin-top:8px;position:sticky;bottom:0;background:var(--popup-bg);padding:8px 0 4px;"><input class="air-free" type="text" placeholder="'+LL('Ask anything about this spot…','この地点について質問…','Frage zu diesem Ort…','Спросите об этом месте…','Pregunta lo que sea sobre este lugar…')+'" style="flex:1;min-width:0;height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12.5px;outline:none;box-sizing:border-box;"><button class="air-go" title="'+LL("Send","送信","Senden","Отправить","Enviar")+'" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 12l6-6 6 6"/></svg></button></div>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const chat=p.querySelector('#air-chat'); const convo=[]; const news=nearbyNews(lngLat); const today=new Date().toISOString().slice(0,10);
@@ -16346,59 +16406,79 @@ window.addEventListener('DOMContentLoaded', () => {
     const tr=(en,jp,de,ru,es)=>L()==='jp'?jp:L()==='de'?de:L()==='ru'?ru:L()==='es'?(es||en):en;
     function compact(v){ v=+v; const a=Math.abs(v); if(a>=1e12)return (v/1e12).toFixed(1)+'T'; if(a>=1e9)return (v/1e9).toFixed(1)+'B'; if(a>=1e6)return (v/1e6).toFixed(1)+'M'; if(a>=1e3)return (v/1e3).toFixed(1)+'k'; return ''+Math.round(v); }
     const METRICS=[
-      {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:['Population','人口','Bevölkerung','Население']},
-      {id:'density',  get:s=>s.density,  log:true,  fmt:v=>Math.round(v).toLocaleString()+' /km²', lbl:['Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.']},
-      {id:'area',     get:s=>s.area,     log:true,  fmt:v=>compact(v)+' km²', lbl:['Area','面積','Fläche','Площадь']},
-      {id:'gdp',      get:s=>s.gdp,      log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (nominal)','GDP(名目)','BIP (nominal)','ВВП (номинал)']},   /* s.gdp is in $B → ×1e9 for the T/B label */
-      {id:'gdppc',    get:s=>s.gdppc,    log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу']},
-      {id:'gdppcPPP', get:s=>s.gdppcPPP, log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP/capita (PPP)','1人当たりGDP(PPP)','BIP pro Kopf (KKP)','ВВП на душу (ППС)']},
-      {id:'hdi',      get:s=>s.hdi,      log:false, fmt:v=>v.toFixed(3),     lbl:['HDI','HDI','HDI','ИЧР']},
-      {id:'dem',      get:s=>s.dem,      log:false, fmt:v=>v.toFixed(2),     lbl:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии']},
-      {id:'milSpend', get:s=>s.milSpend, log:true,  fmt:v=>'$'+v+'B',        lbl:['Mil. spending','国防費','Militärausgaben','Военные расходы']},
-      {id:'milGDP',   get:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null, log:false, fmt:v=>v.toFixed(2)+'%', lbl:['Mil. spend (% GDP)','国防費(対GDP%)','Militärausg. (% BIP)','Воен. расходы (% ВВП)']},
-      {id:'tfr',      get:s=>s.tfr,      log:false, fmt:v=>v.toFixed(2),     lbl:['Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость']},
-      {id:'lifeExp',  get:s=>s.lifeExp,  log:false, fmt:v=>v.toFixed(1)+' yr', lbl:['Life expectancy','平均寿命','Lebenserwartung','Прод. жизни']},
-      {id:'internet', get:s=>s.internet, log:false, fmt:v=>v+'%',            lbl:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.']},
-      {id:'gdpPPP',   get:s=>s.gdpPPP,   log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (PPP)','GDP(PPP)','BIP (KKP)','ВВП (ППС)']}
+      {id:'pop',      get:s=>s.pop,      log:true,  fmt:v=>compact(v),       lbl:['Population','人口','Bevölkerung','Население','Población']},
+      {id:'density',  get:s=>s.density,  log:true,  fmt:v=>Math.round(v).toLocaleString()+' /km²', lbl:['Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.','Densidad de pob.']},
+      {id:'area',     get:s=>s.area,     log:true,  fmt:v=>compact(v)+' km²', lbl:['Area','面積','Fläche','Площадь','Superficie']},
+      {id:'gdp',      get:s=>s.gdp,      log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (nominal)','GDP(名目)','BIP (nominal)','ВВП (номинал)','PIB (nominal)']},   /* s.gdp is in $B → ×1e9 for the T/B label */
+      {id:'gdppc',    get:s=>s.gdppc,    log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita']},
+      {id:'gdppcPPP', get:s=>s.gdppcPPP, log:true,  fmt:v=>'$'+compact(v),   lbl:['GDP/capita (PPP)','1人当たりGDP(PPP)','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)']},
+      {id:'hdi',      get:s=>s.hdi,      log:false, fmt:v=>v.toFixed(3),     lbl:['HDI','HDI','HDI','ИЧР','IDH']},
+      {id:'dem',      get:s=>s.dem,      log:false, fmt:v=>v.toFixed(2),     lbl:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia']},
+      {id:'milSpend', get:s=>s.milSpend, log:true,  fmt:v=>'$'+v+'B',        lbl:['Mil. spending','国防費','Militärausgaben','Военные расходы','Gasto militar']},
+      {id:'milGDP',   get:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null, log:false, fmt:v=>v.toFixed(2)+'%', lbl:['Mil. spend (% GDP)','国防費(対GDP%)','Militärausg. (% BIP)','Воен. расходы (% ВВП)','Gasto mil. (% PIB)']},
+      {id:'tfr',      get:s=>s.tfr,      log:false, fmt:v=>v.toFixed(2),     lbl:['Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость','Tasa de fecundidad']},
+      {id:'lifeExp',  get:s=>s.lifeExp,  log:false, fmt:v=>v.toFixed(1)+' yr', lbl:['Life expectancy','平均寿命','Lebenserwartung','Прод. жизни','Esperanza de vida']},
+      {id:'internet', get:s=>s.internet, log:false, fmt:v=>v+'%',            lbl:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de Internet']},
+      {id:'gdpPPP',   get:s=>s.gdpPPP,   log:true,  fmt:v=>'$'+compact(v*1e9), lbl:['GDP (PPP)','GDP(PPP)','BIP (KKP)','ВВП (ППС)','PIB (PPA)']}
     ];
     /* (#R40) World-Bank-backed axes — greatly expands the metric list ("対応する項目を大幅に増やして").
        Loaded on demand (cached) via window.IntMapWB; get(s,code) reads the latest value for that ISO3. */
     let WBV={};
-    [['EN.GHG.CO2.PC.CE.AR5',false,v=>v.toFixed(1)+' t',['CO₂ per capita','1人当たりCO₂排出']],
-     ['SP.URB.TOTL.IN.ZS',false,v=>Math.round(v)+'%',['Urban population %','都市人口率']],
-     ['EG.ELC.ACCS.ZS',false,v=>Math.round(v)+'%',['Electricity access %','電力アクセス率']],
-     ['SH.XPD.CHEX.GD.ZS',false,v=>v.toFixed(1)+'%',['Health spend %GDP','医療支出 対GDP']],
-     ['AG.LND.FRST.ZS',false,v=>Math.round(v)+'%',['Forest area %','森林面積率']],
-     ['EG.FEC.RNEW.ZS',false,v=>Math.round(v)+'%',['Renewable energy %','再エネ比率']],
-     ['IT.CEL.SETS.P2',false,v=>Math.round(v),['Mobile subs /100','携帯契約 /100人']],
-     ['FP.CPI.TOTL.ZG',false,v=>v.toFixed(1)+'%',['Inflation % (CPI)','インフレ率']],
-     ['SE.ADT.LITR.ZS',false,v=>Math.round(v)+'%',['Literacy rate %','識字率']],
-     ['SI.POV.GINI',false,v=>v.toFixed(1),['Income inequality (Gini)','所得格差(ジニ)']],
-     ['NE.TRD.GNFS.ZS',true,v=>Math.round(v)+'%',['Trade % of GDP','貿易 対GDP']],
-     ['SL.UEM.TOTL.ZS',false,v=>v.toFixed(1)+'%',['Unemployment %','失業率']],
-     ['GC.DOD.TOTL.GD.ZS',false,v=>Math.round(v)+'%',['Govt debt % GDP','政府債務 対GDP']],
-     ['SH.DYN.MORT',true,v=>Math.round(v),['Under-5 mortality /1k','5歳未満死亡率']],
-     ['EG.USE.ELEC.KH.PC',true,v=>compact(v)+' kWh',['Electricity use /capita','電力消費 /人']],
-     ['BX.KLT.DINV.WD.GD.ZS',false,v=>v.toFixed(1)+'%',['FDI inflow % GDP','対内直接投資 %']],
-     ['NV.IND.MANF.ZS',false,v=>v.toFixed(1)+'%',['Manufacturing % GDP','製造業 対GDP']],
-     ['SE.SEC.ENRR',false,v=>Math.round(v)+'%',['Secondary enrollment %','中等教育就学率']],
-     ['SH.MED.PHYS.ZS',false,v=>v.toFixed(2),['Physicians /1k','医師 /1k人']]
+    [['EN.GHG.CO2.PC.CE.AR5',false,v=>v.toFixed(1)+' t',['CO₂ per capita','1人当たりCO₂排出','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita']],
+     ['SP.URB.TOTL.IN.ZS',false,v=>Math.round(v)+'%',['Urban population %','都市人口率','Stadtbevölkerung %','Городское нас. %','Población urbana %']],
+     ['EG.ELC.ACCS.ZS',false,v=>Math.round(v)+'%',['Electricity access %','電力アクセス率','Stromzugang %','Доступ к электр. %','Acceso a electricidad %']],
+     ['SH.XPD.CHEX.GD.ZS',false,v=>v.toFixed(1)+'%',['Health spend %GDP','医療支出 対GDP','Gesundheitsausg. %BIP','Расходы на здрав. %ВВП','Gasto en salud %PIB']],
+     ['AG.LND.FRST.ZS',false,v=>Math.round(v)+'%',['Forest area %','森林面積率','Waldfläche %','Лесная площадь %','Superficie forestal %']],
+     ['EG.FEC.RNEW.ZS',false,v=>Math.round(v)+'%',['Renewable energy %','再エネ比率','Erneuerbare Energie %','Возобн. энергия %','Energía renovable %']],
+     ['IT.CEL.SETS.P2',false,v=>Math.round(v),['Mobile subs /100','携帯契約 /100人','Mobilfunk /100','Моб. связь /100','Móviles /100']],
+     ['FP.CPI.TOTL.ZG',false,v=>v.toFixed(1)+'%',['Inflation % (CPI)','インフレ率','Inflation % (VPI)','Инфляция % (ИПЦ)','Inflación % (IPC)']],
+     ['SE.ADT.LITR.ZS',false,v=>Math.round(v)+'%',['Literacy rate %','識字率','Alphabetisierung %','Грамотность %','Alfabetización %']],
+     ['SI.POV.GINI',false,v=>v.toFixed(1),['Income inequality (Gini)','所得格差(ジニ)','Ungleichheit (Gini)','Неравенство (Джини)','Desigualdad (Gini)']],
+     ['NE.TRD.GNFS.ZS',true,v=>Math.round(v)+'%',['Trade % of GDP','貿易 対GDP','Handel % BIP','Торговля % ВВП','Comercio % PIB']],
+     ['SL.UEM.TOTL.ZS',false,v=>v.toFixed(1)+'%',['Unemployment %','失業率','Arbeitslosigkeit %','Безработица %','Desempleo %']],
+     ['GC.DOD.TOTL.GD.ZS',false,v=>Math.round(v)+'%',['Govt debt % GDP','政府債務 対GDP','Staatsschulden % BIP','Госдолг % ВВП','Deuda púb. % PIB']],
+     ['SH.DYN.MORT',true,v=>Math.round(v),['Under-5 mortality /1k','5歳未満死亡率','Kindersterblichkeit /1k','Смертн. до 5 лет /1k','Mortalidad <5 /1k']],
+     ['EG.USE.ELEC.KH.PC',true,v=>compact(v)+' kWh',['Electricity use /capita','電力消費 /人','Stromverbrauch /Kopf','Потр. электр. /чел','Consumo eléctrico /cápita']],
+     ['BX.KLT.DINV.WD.GD.ZS',false,v=>v.toFixed(1)+'%',['FDI inflow % GDP','対内直接投資 %','ADI-Zufluss % BIP','ПИИ % ВВП','IED entrante % PIB']],
+     ['NV.IND.MANF.ZS',false,v=>v.toFixed(1)+'%',['Manufacturing % GDP','製造業 対GDP','Verarb. Gewerbe % BIP','Промышл. % ВВП','Manufactura % PIB']],
+     ['SE.SEC.ENRR',false,v=>Math.round(v)+'%',['Secondary enrollment %','中等教育就学率','Sekundarschulrate %','Среднее образ. %','Matrícula secundaria %']],
+     ['SH.MED.PHYS.ZS',false,v=>v.toFixed(2),['Physicians /1k','医師 /1k人','Ärzte /1k','Врачи /1k','Médicos /1k']],
+     /* (#R41) greatly expanded set ("対応する項目を大幅に増やして") — all live, latest-value World Bank, full 5-lang */
+     ['SP.POP.GROW',false,v=>v.toFixed(1)+'%',['Population growth %','人口増加率','Bevölkerungswachstum %','Рост населения %','Crecimiento pob. %']],
+     ['SP.RUR.TOTL.ZS',false,v=>Math.round(v)+'%',['Rural population %','農村人口率','Landbevölkerung %','Сельское нас. %','Población rural %']],
+     ['NY.GNP.PCAP.CD',true,v=>'$'+compact(v),['GNI per capita','1人当たりGNI','BNE pro Kopf','ВНД на душу','INB per cápita']],
+     ['AG.LND.AGRI.ZS',false,v=>Math.round(v)+'%',['Agricultural land %','農地率','Landw. Fläche %','С/х земли %','Tierra agrícola %']],
+     ['EN.ATM.PM25.MC.M3',false,v=>v.toFixed(1)+' µg/m³',['PM2.5 air pollution','PM2.5大気汚染','PM2.5-Belastung','PM2.5 загрязн.','Contaminación PM2.5']],
+     ['VC.IHR.PSRC.P5',true,v=>v.toFixed(1),['Homicide rate /100k','殺人率 /10万','Tötungsrate /100k','Убийства /100k','Homicidios /100k']],
+     ['SE.XPD.TOTL.GD.ZS',false,v=>v.toFixed(1)+'%',['Education spend %GDP','教育支出 対GDP','Bildungsausg. %BIP','Расходы на образ. %ВВП','Gasto educación %PIB']],
+     ['SH.H2O.BASW.ZS',false,v=>Math.round(v)+'%',['Basic water access %','基本的飲料水 %','Wasserzugang %','Доступ к воде %','Acceso a agua %']],
+     ['SH.STA.BASS.ZS',false,v=>Math.round(v)+'%',['Basic sanitation %','基本的衛生 %','Sanitärzugang %','Санитария %','Saneamiento %']],
+     ['GB.XPD.RSDV.GD.ZS',false,v=>v.toFixed(2)+'%',['R&D spend %GDP','研究開発費 対GDP','F&E-Ausgaben %BIP','НИОКР %ВВП','Gasto I+D %PIB']],
+     ['SL.TLF.CACT.FE.ZS',false,v=>Math.round(v)+'%',['Female labor force %','女性労働参加率','Frauenerwerbsquote %','Жен. занятость %','Mujeres en fuerza lab. %']],
+     ['ST.INT.ARVL',true,v=>compact(v),['Tourist arrivals','外国人観光客数','Touristenankünfte','Турист. прибытия','Llegadas turísticas']],
+     ['TX.VAL.TECH.MF.ZS',false,v=>v.toFixed(1)+'%',['High-tech exports %','ハイテク輸出 %','Hightech-Exporte %','Высокотех. экспорт %','Exp. alta tecnología %']],
+     ['MS.MIL.TOTL.P1',true,v=>compact(v),['Armed forces','軍人数','Streitkräfte','Военнослужащие','Fuerzas armadas']],
+     ['SH.DYN.AIDS.ZS',false,v=>v.toFixed(1)+'%',['HIV prevalence %','HIV有病率','HIV-Prävalenz %','Распр. ВИЧ %','Prevalencia VIH %']],
+     ['NY.GDP.MKTP.KD.ZG',false,v=>v.toFixed(1)+'%',['GDP growth %','GDP成長率','BIP-Wachstum %','Рост ВВП %','Crecimiento PIB %']],
+     ['SH.XPD.OOPC.CH.ZS',false,v=>v.toFixed(1)+'%',['Out-of-pocket health %','自己負担医療費 %','Selbstzahlerquote %','Личные расходы %','Gasto de bolsillo %']],
+     ['AG.LND.ARBL.ZS',false,v=>v.toFixed(1)+'%',['Arable land %','耕地率','Ackerland %','Пашня %','Tierra cultivable %']]
     ].forEach(arr=>{ const code=arr[0]; METRICS.push({id:'wb:'+code,wb:code,log:arr[1],fmt:arr[2],lbl:arr[3],get:(s,c)=>{ const m=WBV[code]; return (m&&c&&m[c])?m[c].v:null; }}); });
     function ensureWB(){ try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).filter(m=>m&&m.wb&&!WBV[m.wb]);
       if(!need.length||!window.IntMapWB||!window.IntMapWB.fetch) return Promise.resolve();
       return Promise.all(need.map(m=>window.IntMapWB.fetch(m.wb).then(d=>{ WBV[m.wb]=d||{}; }).catch(()=>{ WBV[m.wb]={}; }))); }catch(_){ return Promise.resolve(); } }
     function reRender(){ if(!ov) return; try{ const need=[xId,yId].map(id=>METRICS.find(m=>m.id===id)).some(m=>m&&m.wb&&!WBV[m.wb]); if(need){ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; } }catch(_){} ensureWB().then(render); }
-    const ml=m=>m.lbl[L()==='jp'?1:L()==='de'?2:L()==='ru'?3:0]||m.lbl[0];
+    const ml=m=>{ const i=L()==='jp'?1:L()==='de'?2:L()==='ru'?3:L()==='es'?4:0; return m.lbl[i]||m.lbl[0]; };
     function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function pear(xs,ys){ const n=xs.length; if(n<3)return null; let sx=0,sy=0,sxx=0,syy=0,sxy=0; for(let i=0;i<n;i++){const x=xs[i],y=ys[i]; sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;} const dx=n*sxx-sx*sx,dy=n*syy-sy*sy; if(dx<=0||dy<=0)return null; return (n*sxy-sx*sy)/Math.sqrt(dx*dy); }
     function ranks(a){ const idx=a.map((v,i)=>[v,i]).sort((p,q)=>p[0]-q[0]); const r=new Array(a.length); let i=0; while(i<idx.length){ let j=i; while(j+1<idx.length&&idx[j+1][0]===idx[i][0])j++; const avg=(i+j)/2+1; for(let k=i;k<=j;k++)r[idx[k][1]]=avg; i=j+1; } return r; }
     function lsq(xs,ys){ const n=xs.length; let sx=0,sy=0,sxx=0,sxy=0; for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxx+=xs[i]*xs[i];sxy+=xs[i]*ys[i];} const m=(n*sxy-sx*sy)/((n*sxx-sx*sx)||1); return {m,b:(sy-m*sx)/n}; }
     let xId='gdppc', yId='lifeExp', ov=null, _lastFit=null;
     function inject(){ if(document.getElementById('corr-style'))return; const st=document.createElement('style'); st.id='corr-style';
-      st.textContent='#corr-overlay{display:none;position:fixed;inset:0;z-index:9998;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}'
+      st.textContent='#corr-overlay{display:none;position:fixed;inset:0;z-index:9998;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.18);}'
         +'#corr-overlay.show{display:flex;}'
-        +'.corr-card{background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.18));border-radius:20px;box-shadow:var(--shadow);width:min(620px,96vw);max-height:92vh;overflow:auto;padding:18px 20px 20px;backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);}'
-        +'.corr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}'
+        +'.corr-card{position:relative;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.18));border-radius:20px;box-shadow:var(--shadow);width:min(620px,96vw);max-height:92vh;overflow:auto;padding:18px 20px 20px;backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);}'
+        +'.corr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;cursor:grab;touch-action:none;}'
+        +'.corr-head:active{cursor:grabbing;}'
         +'.corr-head h3{margin:0;font-size:17px;}'
         +'.corr-x{background:transparent;border:none;color:var(--text-muted);font-size:25px;line-height:1;cursor:pointer;padding:2px 6px;}'
         +'.corr-pick{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}'
@@ -16417,6 +16497,16 @@ window.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(ov);
       ov.addEventListener('click',e=>{ if(e.target===ov) hide(); });
       ov.querySelector('.corr-x').onclick=hide;
+      /* (#R41) drag the card by its header so the user can shove it aside and watch the map — combined with the
+         now-translucent backdrop this answers "機能使ってたら地図が見れない". */
+      (function(){ const card=ov.querySelector('.corr-card'), head=ov.querySelector('.corr-head'); let dx=0,dy=0,ox=0,oy=0,drag=false;
+        const dn=e=>{ if(e.target.closest('.corr-x'))return; drag=true; const p=e.touches?e.touches[0]:e; ox=p.clientX-dx; oy=p.clientY-dy; e.preventDefault(); };
+        const mv=e=>{ if(!drag)return; const p=e.touches?e.touches[0]:e; dx=p.clientX-ox; dy=p.clientY-oy; card.style.transform='translate('+dx+'px,'+dy+'px)'; };
+        const up=()=>{ drag=false; };
+        head.addEventListener('mousedown',dn); head.addEventListener('touchstart',dn,{passive:false});
+        window.addEventListener('mousemove',mv); window.addEventListener('touchmove',mv,{passive:false});
+        window.addEventListener('mouseup',up); window.addEventListener('touchend',up);
+      })();
       const sx=ov.querySelector('.corr-sel-x'), sy=ov.querySelector('.corr-sel-y');
       METRICS.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=ml(m); sx.appendChild(o); sy.appendChild(o.cloneNode(true)); });
       sx.value=xId; sy.value=yId;
@@ -16459,21 +16549,38 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R40) Residual map: paint each country by how far it sits ABOVE (blue) or BELOW (red) the regression
        line — deeper = larger residual. Uses the `countries` source via a per-code match expression. */
     function ensureCountriesSrc(cb){ try{ if(map.getSource('countries')){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ if(typeof addCountryLayers==='function'&&!map.getSource('countries')&&map.isStyleLoaded()) addCountryLayers(); }catch(_){} setTimeout(cb,200); }); return; } }catch(_){} cb(); }
-    function residualMap(){ const f=_lastFit; if(!f||!f.mb) return;
-      ensureCountriesSrc(()=>{ try{
+    /* (#R41) Diverging RdBu ramp — the residual map now uses a GRADED multi-hue scale (deep red → orange →
+       light → light blue → deep blue), not the old two flat colors with faint alpha ("青と赤二色だけで塗れと
+       なんかいっていない"). n∈[-1,1]: +1 = far ABOVE the fit (deep blue), −1 = far BELOW (deep red), 0 ≈ on the
+       line (near-neutral). */
+    const _RDBU=[[-1,[103,0,31]],[-0.66,[178,24,43]],[-0.33,[239,138,98]],[0,[247,247,247]],[0.33,[103,169,207]],[0.66,[33,102,172]],[1,[5,48,97]]];
+    function _divColor(n){ n=Math.max(-1,Math.min(1,n)); for(let i=1;i<_RDBU.length;i++){ if(n<=_RDBU[i][0]){ const a=_RDBU[i-1],b=_RDBU[i]; const t=(n-a[0])/((b[0]-a[0])||1); const c=k=>Math.round(a[1][k]+(b[1][k]-a[1][k])*t); return 'rgb('+c(0)+','+c(1)+','+c(2)+')'; } } return 'rgb(5,48,97)'; }
+    function residualMap(){ const f=_lastFit; if(!f||!f.mb){ return; }
+      hide();   /* (#R41) close the chooser FIRST so the map is ALWAYS revealed — the old code only closed it on
+                   success inside a try/catch, so any failure left the user trapped behind the modal
+                   ("機能使ってたら×しないと地図見れない"). */
+      let tries=0;
+      const paint=()=>{ try{
+        if(!map.getSource('countries')){ if(tries++<40){ ensureCountriesSrc(()=>setTimeout(paint,0)); return; } else { residPill(f.mx,f.my,true); return; } }
         let maxA=0; const resids=f.ps.map((p,i)=>{ const e=f.ty[i]-(f.mb.m*f.tx[i]+f.mb.b); if(Math.abs(e)>maxA)maxA=Math.abs(e); return {c:p.c,e}; }); if(maxA<=0) maxA=1;
         const match=['match',['get','__code']];
-        resids.forEach(({c,e})=>{ const n=Math.max(-1,Math.min(1,e/maxA)); const a=(0.16+0.64*Math.abs(n)).toFixed(2); match.push(c, n>=0?('rgba(31,99,214,'+a+')'):('rgba(214,47,47,'+a+')')); });
+        resids.forEach(({c,e})=>{ const n=Math.max(-1,Math.min(1,e/maxA)); match.push(c,_divColor(n)); });
         match.push('rgba(0,0,0,0)');
-        if(!map.getLayer('corr-resid-fill')){ const before=['ofm-river','ofm-water','ofm-peak','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>map.getLayer(id))||(map.getLayer('tool-poly')?'tool-poly':undefined); map.addLayer({id:'corr-resid-fill',type:'fill',source:'countries',paint:{'fill-color':match,'fill-opacity':1}}, before); }
-        else { map.setPaintProperty('corr-resid-fill','fill-color',match); map.setLayoutProperty('corr-resid-fill','visibility','visible'); }
-        hide(); residPill(f.mx,f.my);
-      }catch(_){} }); }
-    function residPill(mx,my){ let pill=document.getElementById('corr-resid-pill'); if(!pill){ pill=document.createElement('div'); pill.id='corr-resid-pill'; pill.style.cssText='position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:14px;padding:8px 13px;font-size:11px;box-shadow:var(--shadow);backdrop-filter:blur(12px);display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center;'; (document.getElementById('map-container')||document.body).appendChild(pill); }
-      pill.innerHTML='<span style="font-weight:600;">'+esc(ml(my))+' '+tr('vs','対','vs','от','vs')+' '+esc(ml(mx))+'</span>'
-        +'<span><span style="display:inline-block;width:11px;height:11px;background:rgba(31,99,214,0.85);border-radius:2px;vertical-align:-1px;"></span> '+tr('above','上振れ','über','выше','encima')+'</span>'
-        +'<span><span style="display:inline-block;width:11px;height:11px;background:rgba(214,47,47,0.85);border-radius:2px;vertical-align:-1px;"></span> '+tr('below','下振れ','unter','ниже','debajo')+'</span>'
-        +'<button style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">✕</button>';
+        if(!map.getLayer('corr-resid-fill')){ const before=['ofm-river','ofm-water','ofm-peak','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>map.getLayer(id))||(map.getLayer('tool-poly')?'tool-poly':undefined); map.addLayer({id:'corr-resid-fill',type:'fill',source:'countries',layout:{visibility:'visible'},paint:{'fill-color':match,'fill-opacity':0.72}}, before); }
+        else { map.setPaintProperty('corr-resid-fill','fill-color',match); map.setPaintProperty('corr-resid-fill','fill-opacity',0.72); map.setLayoutProperty('corr-resid-fill','visibility','visible'); }
+        residPill(f.mx,f.my);
+      }catch(e){ if(tries++<40){ setTimeout(paint,120); } else { residPill(f.mx,f.my,true); } } };
+      ensureCountriesSrc(()=>setTimeout(paint,0));
+    }
+    window._refreshResidualColors=()=>{ try{ if(map.getLayer('corr-resid-fill')&&map.getLayoutProperty('corr-resid-fill','visibility')==='visible'&&_lastFit&&_lastFit.mb) residualMap(); }catch(_){} };
+    function residPill(mx,my,err){ let pill=document.getElementById('corr-resid-pill'); if(!pill){ pill=document.createElement('div'); pill.id='corr-resid-pill'; pill.style.cssText='position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:14px;padding:9px 14px;font-size:11px;box-shadow:var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:min(440px,calc(100vw - 24px));'; (document.getElementById('map-container')||document.body).appendChild(pill); }
+      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+tr('Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')+'</span><button style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">✕</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
+      /* (#R41) graded diverging legend bar (matches the RdBu fill) + a one-line "what is this" note */
+      const grad='linear-gradient(to right,rgb(103,0,31),rgb(178,24,43),rgb(239,138,98),rgb(247,247,247),rgb(103,169,207),rgb(33,102,172),rgb(5,48,97))';
+      pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span style="font-weight:600;">'+esc(ml(my))+' '+tr('vs','対','vs','от','vs')+' '+esc(ml(mx))+'</span><button aria-label="Close" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;line-height:1;">✕</button></div>'
+        +'<div style="height:11px;border-radius:4px;background:'+grad+';border:1px solid rgba(128,128,128,0.25);"></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);"><span>'+tr('below the trend','傾向より下','unter dem Trend','ниже тренда','por debajo')+'</span><span>'+tr('on the line','線上','auf der Linie','на линии','en la línea')+'</span><span>'+tr('above the trend','傾向より上','über dem Trend','выше тренда','por encima')+'</span></div>'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+tr('Each country is shaded by its regression residual — how far its '+ml(my)+' sits above/below what its '+ml(mx)+' predicts.','各国を回帰残差で塗り分け：その国の'+ml(my)+'が'+ml(mx)+'からの予測値より上振れ/下振れしている度合い。','Jedes Land ist nach dem Regressionsresiduum gefärbt — wie weit sein Wert über/unter der Erwartung liegt.','Каждая страна окрашена по остатку регрессии — насколько значение выше/ниже ожидаемого.','Cada país se sombrea por el residuo de la regresión: cuánto se sitúa por encima/debajo de lo previsto.')+'</div>';
       pill.querySelector('button').onclick=()=>{ try{ if(map.getLayer('corr-resid-fill')) map.setLayoutProperty('corr-resid-fill','visibility','none'); }catch(_){} pill.style.display='none'; };
       pill.style.display='flex'; }
     function open(){ ensure(); ov.classList.add('show'); const go=()=>reRender();
@@ -17202,11 +17309,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const COMPASS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
     const dir=(d)=>(d==null||isNaN(d))?'':COMPASS[Math.round(d/22.5)%16];
     const wind=(kmh)=>{ if(kmh==null||isNaN(kmh)) return '—'; const m=window.imUnitMode||window.unitMode||'both'; const k=Math.round(kmh), mph=Math.round(kmh*0.621371); return m==='imperial'?(mph+' mph'):m==='metric'?(k+' km/h'):(k+' km/h ('+mph+' mph)'); };
-    let panel=null, styled=false;
+    /* (#R41) compact daily-outlook temperature — UNIT-AWARE. The old code printed raw °C even when the user
+       chose °F ("華氏を選択しても、華氏に完全対応していない"). Now it follows window.imUnitTemp. */
+    const dT=(c)=>{ if(c==null||isNaN(c)) return '—'; return ((window.imUnitTemp==='f')?Math.round(c*9/5+32):Math.round(c))+'°'; };
+    let panel=null, styled=false, _lastLL=null;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
       s.textContent='#weather-panel{position:absolute;z-index:1750;width:300px;max-width:calc(100vw - 24px);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);padding:14px 16px;font-size:12.5px;}'
         +'#weather-panel .wp-x{position:absolute;top:9px;right:11px;background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px;}'
         +'#weather-panel .wp-x:hover{background:var(--input-bg);color:var(--text-main);}'
+        +'#weather-panel .wp-rf{position:absolute;top:10px;right:39px;background:none;border:none;color:var(--text-muted);font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px;}'
+        +'#weather-panel .wp-rf:hover{background:var(--input-bg);color:var(--text-main);transform:rotate(90deg);transition:transform .2s;}'
+        +'#weather-panel .wp-head{padding-right:58px;touch-action:none;user-select:none;}'
         +'#weather-panel .wp-cur{display:flex;align-items:center;gap:12px;margin:6px 0 4px;}'
         +'#weather-panel .wp-temp{font-size:30px;font-weight:700;line-height:1;}'
         +'#weather-panel .wp-ico{font-size:34px;line-height:1;}'
@@ -17223,18 +17336,21 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ window._wireLegendDrag&&window._wireLegendDrag(panel); }catch(_){}
       return panel; }
     function close(){ if(panel) panel.style.display='none'; }
-    function place(){ try{ const mc=document.getElementById('map-container'); if(!mc) return; if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top='70px'; }catch(_){} }
-    async function open(lngLat){ const p=ensure(); p.style.display='block'; place();
+    /* (#R41) don't snap a user-dragged panel back to the corner when the data finishes loading. */
+    function place(){ try{ if(panel&&panel.dataset.dragged) return; const mc=document.getElementById('map-container'); if(!mc) return; if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top='70px'; }catch(_){} }
+    async function open(lngLat){ const p=ensure(); _lastLL=lngLat; p.style.display='block'; place();
       const lat=lngLat.lat, lng=lngLat.lng;
-      const head=`<button class="wp-x" title="${t('close')}">✕</button><div style="font-weight:700;font-size:13.5px;">🌤 ${L('Weather','天気','Wetter','Погода','El tiempo')}</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">${lat.toFixed(3)}°, ${lng.toFixed(3)}°</div>`;
+      /* (#R41) title is an <h4> so the shared _wireLegendDrag delegated handler makes the popup MOVABLE
+         ("ポップアップは移動可能にしろ"); a ⟳ button re-fetches for always-latest data. */
+      const head=`<button class="wp-x" title="${t('close')}">✕</button><button class="wp-rf" title="${L('Refresh','更新','Aktualisieren','Обновить','Actualizar')}">⟳</button><h4 class="wp-head" style="margin:0;font-weight:700;font-size:13.5px;cursor:move;">🌤 ${L('Weather','天気','Wetter','Погода','El tiempo')}</h4><div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">${lat.toFixed(3)}°, ${lng.toFixed(3)}°</div>`;
       p.innerHTML=head+`<div style="margin-top:12px;color:var(--text-muted);">${L('Loading…','読み込み中…','Wird geladen…','Загрузка…','Cargando…')}</div>`;
-      p.querySelector('.wp-x').onclick=close;
+      p.querySelector('.wp-x').onclick=close; { const rf=p.querySelector('.wp-rf'); if(rf) rf.onclick=()=>open(_lastLL||lngLat); }
       try{
         const u='https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(3)+'&longitude='+lng.toFixed(3)+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=5&wind_speed_unit=kmh';
         const r=await fetch(u,{cache:'no-store'}); const j=await r.json(); const c=j.current||{}; const w=wx(c.weather_code);
         const days=(j.daily&&j.daily.time)||[]; const dn=L(['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],['日','月','火','水','木','金','土'],['So','Mo','Di','Mi','Do','Fr','Sa'],['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],['Do','Lu','Ma','Mi','Ju','Vi','Sá']);
         let dh=''; for(let i=0;i<days.length;i++){ const d=new Date(days[i]+'T00:00'); const dw=wx(j.daily.weather_code[i]);
-          dh+=`<div class="wp-day"><div>${i===0?L('Today','今日','Heute','Сег.','Hoy'):dn[d.getDay()]}</div><div class="di">${dw.icon}</div><b>${Math.round(j.daily.temperature_2m_max[i])}°</b><div>${Math.round(j.daily.temperature_2m_min[i])}°</div></div>`; }
+          dh+=`<div class="wp-day"><div>${i===0?L('Today','今日','Heute','Сег.','Hoy'):dn[d.getDay()]}</div><div class="di">${dw.icon}</div><b>${dT(j.daily.temperature_2m_max[i])}</b><div>${dT(j.daily.temperature_2m_min[i])}</div></div>`; }
         const upd=new Date().toLocaleTimeString(currentLang==='jp'?'ja':currentLang,{hour:'2-digit',minute:'2-digit'});
         p.innerHTML=head
           +`<div class="wp-cur"><span class="wp-ico">${w.icon}</span><span class="wp-temp">${fmtTemp(c.temperature_2m)}</span><span style="flex:1;font-size:12px;color:var(--text-muted);">${w.desc}</span></div>`
@@ -17246,8 +17362,8 @@ window.addEventListener('DOMContentLoaded', () => {
           +`<span>${L('Precip.','降水','Niederschl.','Осадки','Precip.')}<br><b>${c.precipitation!=null?c.precipitation+' mm':'—'}</b></span>`
           +`<span>${L('Updated','更新','Aktualisiert','Обновлено','Actualizado')}<br><b>${upd}</b></span>`
           +`</div><div class="wp-days">${dh}</div>`
-          +`<div style="margin-top:9px;font-size:9.5px;color:var(--text-muted);">Open-Meteo · ${L('refresh: reopen','再取得: 開き直す','Aktual.: erneut öffnen','обновить: открыть снова','actualizar: reabrir')}</div>`;
-        p.querySelector('.wp-x').onclick=close; place();
+          +`<div style="margin-top:9px;font-size:9.5px;color:var(--text-muted);">Open-Meteo · ${L('live · drag to move','最新 · ドラッグで移動','live · zum Verschieben ziehen','актуально · перетащите','en vivo · arrastra para mover')}</div>`;
+        p.querySelector('.wp-x').onclick=close; { const rf=p.querySelector('.wp-rf'); if(rf) rf.onclick=()=>open(_lastLL||lngLat); } place();
       }catch(e){ p.innerHTML=head+`<div style="margin-top:12px;color:#ff453a;">${L('Weather unavailable.','天気を取得できません。','Wetter nicht verfügbar.','Погода недоступна.','El tiempo no disponible.')}</div>`; const x=p.querySelector('.wp-x'); if(x) x.onclick=close; }
     }
     return { open, close };
@@ -17795,38 +17911,61 @@ window.addEventListener('DOMContentLoaded', () => {
      current, key-free, works under file://. Filed into Others(beta) via the dl-webcams id. ===== */
   (function(){
     if(!map) return;
+    /* (#R41) REAL webcams — the R40 version opened a YouTube SEARCH (a facade). These are CURATED, currently-LIVE
+       24/7 YouTube webcam streams whose video ids were each verified embeddable (oEmbed) before shipping. Clicking
+       a point now EMBEDS and PLAYS the actual live feed inside the popup (muted autoplay) — you watch it right
+       there. `v` = YouTube video id. Key-free, file://-safe. Operators incl. EarthCam, SkylineWebcams, FOX 5,
+       WebcamSydney, Ozolio, I Love You Venice, Wild Africa, SeeJacksonHole. */
     const WC=[
-      ['Tokyo · Shibuya',139.700,35.659],['Tokyo · Tower',139.745,35.659],['Osaka · Dotonbori',135.501,34.669],['Kyoto',135.768,35.011],
-      ['Seoul',126.978,37.566],['Beijing',116.40,39.90],['Shanghai · Bund',121.490,31.240],['Hong Kong · Victoria',114.169,22.281],
-      ['Bangkok',100.501,13.756],['Singapore · Marina Bay',103.859,1.283],['Mumbai',72.834,18.922],['Dubai · Marina',55.140,25.080],
-      ['Istanbul · Bosphorus',28.974,41.025],['Jerusalem',35.234,31.776],['Moscow · Red Square',37.621,55.754],['St Petersburg',30.316,59.939],
-      ['London · Tower Bridge',-0.075,51.505],['Paris · Eiffel',2.294,48.858],['Amsterdam',4.892,52.373],['Venice · St Mark',12.339,45.434],
-      ['Rome · Trevi',12.483,41.901],['Barcelona',2.174,41.404],['Berlin',13.378,52.516],['Zermatt · Matterhorn',7.748,45.976],
-      ['Santorini',25.461,36.393],['Reykjavík',-21.895,64.147],['Lisbon',-9.139,38.722],['Prague',14.421,50.087],
-      ['Vienna',16.373,48.208],['Budapest',19.040,47.498],['Dublin',-6.264,53.345],['Edinburgh',-3.189,55.953],
-      ['Stockholm',18.069,59.329],['Copenhagen · Nyhavn',12.591,55.680],['Tromsø · Aurora',18.955,69.649],['North Cape',25.784,71.170],
-      ['New York · Times Sq',-73.985,40.758],['Las Vegas · Strip',-115.172,36.115],['San Francisco',-122.478,37.808],['Chicago',-87.624,41.882],
-      ['Miami Beach',-80.130,25.790],['New Orleans',-90.067,29.958],['Honolulu · Waikiki',-157.826,21.276],['Niagara Falls',-79.069,43.083],
-      ['Toronto',-79.383,43.653],['Banff',-115.570,51.178],['Yellowstone · Old Faithful',-110.828,44.460],['Grand Canyon',-112.113,36.057],
-      ['Mexico City',-99.133,19.433],['Rio · Copacabana',-43.182,-22.971],['Buenos Aires',-58.382,-34.604],['Lima',-77.028,-12.046],
-      ['Sydney · Opera House',151.215,-33.857],['Melbourne',144.963,-37.814],['Auckland',174.763,-36.848],['Queenstown NZ',168.662,-45.031],
-      ['Cape Town · Table Mtn',18.424,-33.925],['Nairobi',36.817,-1.286],['Cairo · Giza',31.134,29.979],['Marrakesh',-7.989,31.626],
-      ['Maldives',73.509,4.175],['Bali · Kuta',115.169,-8.718],['Mount Fuji',138.727,35.361],['Everest region',86.851,28.001]
+      ['Tokyo · Shinjuku Kabukichō',139.7036,35.6938,'DjdUEyjx8GM'],
+      ['Mt Fuji · Lake Yamanaka',138.8690,35.4180,'z_g6lBodPuI'],
+      ['Seoul · Han River',126.9960,37.5130,'RVvYQghFCXk'],
+      ['Hong Kong · Victoria Harbour',114.1500,22.2710,'uoQxBiKcoG8'],
+      ['Hong Kong · skyline',114.1600,22.2850,'bMS-xCTPp6Y'],
+      ['Bali · Indonesia',115.1700,-8.7200,'L1duJDAqbJY'],
+      ['Maldives',73.5100,4.1800,'sYVsjjy0Meg'],
+      ['Venice · Grand Canal',12.3350,45.4380,'r8N6IsoIkTk'],
+      ['Venice · Dorsoduro',12.3258,45.4305,'gzgrofStPJ0'],
+      ['Venice · Ponte delle Guglie',12.3275,45.4430,'mt7uE-n0YPI'],
+      ['London · Abbey Road',-0.1774,51.5320,'M3EYAY2MftI'],
+      ['Paris · Eiffel Tower',2.2945,48.8584,'OzYp4NRZlwQ'],
+      ['Paris · Eiffel (live)',2.2960,48.8600,'4iUmg6eN3Yk'],
+      ['Zermatt · Matterhorn',7.7490,46.0210,'5GRpeR5V7nQ'],
+      ['Reykjavík · Aurora',-21.9400,64.1300,'9GZNvSw3kMg'],
+      ['New York · Times Square',-73.9855,40.7580,'VGnFLdQW39A'],
+      ['New York · Times Sq (EarthCam)',-73.9857,40.7570,'z-jYdOIKcTQ'],
+      ['Niagara Falls',-79.0742,43.0828,'qx7gry390YA'],
+      ['Honolulu · Waikiki (Sheraton)',-157.8366,21.2810,'06v5pzump4w'],
+      ['Honolulu · Waikiki (Marriott)',-157.8280,21.2760,'8waVy4wM1tM'],
+      ['Sint Maarten · Maho Beach',-63.1196,18.0419,'gDI_59-LU_Q'],
+      ['Chicago · Lakefront',-87.6120,41.8920,'_p9ZW-Vo7LA'],
+      ['Sydney · Harbour',151.2108,-33.8568,'5uZa3-RMFos'],
+      ['Kruger · Wild Africa waterhole',31.4900,-24.9900,'vr4o_AsrU1k'],
+      ['Jackson Hole · Town Square',-110.7620,43.4790,'1EiC9bvVGnk']
     ];
-    const fc={type:'FeatureCollection',features:WC.map(([n,lng,lat])=>({type:'Feature',geometry:{type:'Point',coordinates:[lng,lat]},properties:{n}}))};
+    const fc={type:'FeatureCollection',features:WC.map(([n,lng,lat,v])=>({type:'Feature',geometry:{type:'Point',coordinates:[lng,lat]},properties:{n,v}}))};
     let on=false, popup=null;
+    const LLw=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[currentLang]||en;
     const lbl=()=>({en:'Live webcams',jp:'ライブカメラ',de:'Live-Webcams',ru:'Веб-камеры',es:'Cámaras en vivo'})[currentLang]||'Live webcams';
     function ensure(){ try{ if(!map.isStyleLoaded()) return false;
       if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc});
       if(!map.getLayer('webcams-pt')){ map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3.4,5,6],'circle-color':'#00b8d4','circle-stroke-color':'#fff','circle-stroke-width':1.4,'circle-opacity':0.92}});
         map.addLayer({id:'webcams-ico',type:'symbol',source:'webcams-src',layout:{visibility:'none','text-field':'📷','text-size':['interpolate',['linear'],['zoom'],1,9,5,14],'text-allow-overlap':false}});
-        map.on('click','webcams-pt',(e)=>{ if(!e.features.length) return; const f=e.features[0]; const nm=f.properties.n; const c=f.geometry.coordinates.slice();
-          const q=encodeURIComponent(nm.replace(/ · /g,' ')+' live webcam');
-          const yt='https://www.youtube.com/results?search_query='+q+'&sp=EgJAAQ%253D%253D';   /* sp= filters to LIVE results */
-          const watch=({en:'Watch live cams',jp:'ライブ映像を見る',de:'Live-Kameras ansehen',ru:'Смотреть в эфире',es:'Ver cámaras en vivo'})[currentLang]||'Watch live cams';
+        map.on('click','webcams-pt',(e)=>{ if(!e.features.length) return; const f=e.features[0]; const nm=String(f.properties.n||'').replace(/</g,''); const v=f.properties.v; const c=f.geometry.coordinates.slice();
           if(popup) popup.remove();
-          popup=new maplibregl.Popup({offset:12,closeButton:true,maxWidth:'240px'}).setLngLat(c)
-            .setHTML('<div style="font-weight:700;font-size:13px;margin-bottom:6px;">📷 '+nm.replace(/</g,'')+'</div><a href="'+yt+'" target="_blank" rel="noopener" style="display:inline-block;background:var(--primary-color);color:#fff;text-decoration:none;padding:7px 12px;border-radius:9px;font-size:12px;font-weight:600;">▶ '+watch+' ↗</a>').addTo(map); });
+          /* (#R41) EMBED the live feed (muted autoplay) right in the popup — a real "click → watch", not a search.
+             youtube-nocookie + a guaranteed "Open ↗" fallback in case an operator disables embedding. Dark-mode
+             correct via the shared .plc-popup theming + .webcam-popup sizing. */
+          const embed='https://www.youtube-nocookie.com/embed/'+v+'?autoplay=1&mute=1&playsinline=1&rel=0';
+          const watch='https://www.youtube.com/watch?v='+v;
+          const html='<div style="font-weight:700;font-size:13px;margin:0 0 7px;display:flex;align-items:center;gap:6px;">📷 '+nm
+            +' <span style="font-size:9px;font-weight:800;letter-spacing:.4px;background:#ff3b30;color:#fff;border-radius:4px;padding:1px 5px;">LIVE</span></div>'
+            +'<div style="position:relative;width:300px;max-width:78vw;height:170px;border-radius:11px;overflow:hidden;background:#000;">'
+            +'<iframe src="'+embed+'" title="'+nm+'" width="100%" height="100%" style="display:block;border:0;position:absolute;inset:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>'
+            +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;">'
+            +'<span style="font-size:10.5px;color:var(--text-muted);">'+LLw('Live webcam · muted','ライブ映像・消音','Live-Webcam · stumm','Веб-камера · без звука','Cámara en vivo · silencio')+'</span>'
+            +'<a href="'+watch+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--primary-color);text-decoration:none;white-space:nowrap;">'+LLw('Open on YouTube','YouTubeで開く','Auf YouTube öffnen','Открыть на YouTube','Abrir en YouTube')+' ↗</a></div>';
+          popup=new maplibregl.Popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map); });
         map.on('mouseenter','webcams-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
         map.on('mouseleave','webcams-pt',()=>{ map.getCanvas().style.cursor=''; });
       }
@@ -17869,9 +18008,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getSource('ox-'+L.id)) map.addSource('ox-'+L.id,{type:'raster',tiles:L.tiles,tileSize:256,maxzoom:L.max,attribution:L.attr});
       if(!map.getLayer('oxl-'+L.id)) map.addLayer({id:'oxl-'+L.id,type:'raster',source:'ox-'+L.id,layout:{visibility:'none'},paint:{'raster-opacity':0.92,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(_){ return false; } }
-    function toggle(L,on){ state[L.id]=on; const apply=()=>{ if(!ensure(L)){ map.once('idle',apply); return; }
+    function toggle(L,on){ state[L.id]=on; let tries=0; const apply=()=>{ if(!ensure(L)){ if(tries++<40) setTimeout(apply,150); else map.once('idle',apply); return; }
       try{ map.setLayoutProperty('oxl-'+L.id,'visibility',on?'visible':'none'); }catch(_){}
-      if(on){ try{ window._registerLayerOpacity&&window._registerLayerOpacity('ox-'+L.id,[L.label.en,L.label.jp,L.label.de,L.label.ru],['oxl-'+L.id],'ox-'+L.id); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
+      if(on){ try{ window._registerLayerOpacity&&window._registerLayerOpacity('ox-'+L.id,[L.label.en,L.label.jp,L.label.de,L.label.ru],['oxl-'+L.id],'ox-'+L.id); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){}
+        /* (#R41) OpenSeaMap seamarks are a SPARSE transparent overlay — empty over open ocean / at world zoom, so
+           it looked "broken" ("OpenSeaMapが動作しない"). It DOES load (tiles verified 200/png); tell the user the
+           marks only appear when zoomed into a coast or harbour. */
+        if(L.id==='oxsea'){ try{ if(map.getZoom()<9){ const h={en:'Seamarks (buoys, lights, depths) appear when you zoom into a coast or harbour.',jp:'海図記号（ブイ・灯台・水深など）は海岸や港に拡大すると表示されます。',de:'Seezeichen (Bojen, Feuer, Tiefen) erscheinen beim Hineinzoomen an Küsten/Häfen.',ru:'Морские знаки (буи, огни, глубины) видны при приближении к берегу или порту.',es:'Las señales náuticas (boyas, luces, profundidades) aparecen al acercarte a una costa o puerto.'}; satToast(h[currentLang]||h.en); } }catch(_){} } }
       else { try{ window._hideGenericLegend&&window._hideGenericLegend('ox-'+L.id); }catch(_){} } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
     map.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ map.setLayoutProperty('oxl-'+L.id,'visibility','visible'); }catch(_){} } }); },80); });
@@ -17887,6 +18030,57 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('ox-'+L.id+'-lbl'); if(s) s.textContent=lbl(L); }); });
     if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
+  })();
+
+  /* ===== (#R41) Time-zone layer — REAL boundaries (Natural Earth ne_10m_time_zones, loaded on demand from
+     jsDelivr, CORS-OK) PLUS the CURRENT local time labelled on every zone, refreshed each minute
+     ("タイムゾーンの境界…現在の時間もそれぞれのタイムゾーン上に表示"). Key-free; only fetched when toggled. Layer
+     ids are `tzl-*` so they don't collide with the generic dl- orphan sweep (id `tz`). ===== */
+  (function(){
+    if(!map) return;
+    const TZURL='https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_time_zones.geojson';
+    let on=false, geo=null, loading=false, timer=null;
+    const lbl=()=>({en:'Time zones (live clock)',jp:'タイムゾーン（現在時刻）',de:'Zeitzonen (Uhr)',ru:'Часовые пояса (время)',es:'Husos horarios (hora)'})[currentLang]||'Time zones';
+    const T=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[currentLang]||en;
+    function zoneTime(off){ const n=new Date(); const z=new Date(n.getTime()+n.getTimezoneOffset()*60000+off*3600000); const h=z.getHours(),m=z.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
+    function offLabel(off){ const s=off<0?'−':'+'; const a=Math.abs(off); const hh=Math.floor(a); const mm=Math.round((a-hh)*60); return 'UTC'+s+hh+(mm?(':'+(mm<10?'0':'')+mm):''); }
+    function bboxOf(f){ if(f.bbox) return f.bbox; let mnx=180,mny=90,mxx=-180,mxy=-90; const eat=r=>r.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; }); const g=f.geometry; if(!g) return null; const polys=g.type==='Polygon'?g.coordinates:g.type==='MultiPolygon'?[].concat.apply([],g.coordinates):[]; polys.forEach(eat); return [mnx,mny,mxx,mxy]; }
+    function labelFC(){ if(!geo) return {type:'FeatureCollection',features:[]}; const best={};
+      geo.features.forEach(f=>{ const z=f.properties&&f.properties.zone; if(z==null) return; const bb=bboxOf(f); if(!bb) return; const area=(bb[2]-bb[0])*(bb[3]-bb[1]); if(!best[z]||area>best[z].area) best[z]={area,cx:(bb[0]+bb[2])/2,cy:(bb[1]+bb[3])/2,z}; });
+      return {type:'FeatureCollection',features:Object.keys(best).map(k=>{ const b=best[k]; return {type:'Feature',geometry:{type:'Point',coordinates:[b.cx,Math.max(-58,Math.min(72,b.cy))]},properties:{label:offLabel(b.z)+'\n'+zoneTime(b.z)}}; })}; }
+    function refreshTimes(){ try{ const s=map.getSource('tzl-lbl-src'); if(s) s.setData(labelFC()); }catch(_){} }
+    function addLayers(){ if(!geo) return;
+      if(!map.getSource('tzl-src')) map.addSource('tzl-src',{type:'geojson',data:geo});
+      if(!map.getSource('tzl-lbl-src')) map.addSource('tzl-lbl-src',{type:'geojson',data:labelFC()});
+      const before=['ofm-river','ofm-water','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      const PAL=['match',['get','map_color8'],1,'#8dd3c7',2,'#ffffb3',3,'#bebada',4,'#fb8072',5,'#80b1d3',6,'#fdb462',7,'#b3de69',8,'#fccde5','#cfd8e3'];
+      if(!map.getLayer('tzl-fill')) map.addLayer({id:'tzl-fill',type:'fill',source:'tzl-src',layout:{visibility:'none'},paint:{'fill-color':PAL,'fill-opacity':0.15}},before);
+      if(!map.getLayer('tzl-line')) map.addLayer({id:'tzl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},paint:{'line-color':'rgba(120,140,170,0.95)','line-width':['interpolate',['linear'],['zoom'],1,0.6,5,1.4],'line-dasharray':[2,1.6]}},before);
+      if(!map.getLayer('tzl-time')) map.addLayer({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':['interpolate',['linear'],['zoom'],1,11,4,15],'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}}); }
+    function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }); }
+    function toggle(v){ on=v;
+      if(v){
+        const go=()=>{ let tries=0; const apply=()=>{ if(!map.isStyleLoaded()){ if(tries++<60) setTimeout(apply,150); else map.once('idle',apply); return; } addLayers(); setVis(true);
+          try{ window._registerLayerOpacity&&window._registerLayerOpacity('tz',[lbl(),lbl(),lbl(),lbl()],['tzl-fill'],'dl-tz'); }catch(_){}
+          try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} if(!timer) timer=setInterval(refreshTimes,60000); refreshTimes(); }; apply(); [400,1500].forEach(ms=>setTimeout(apply,ms)); };
+        if(geo) go();
+        else if(!loading){ loading=true; try{ satToast(T('Loading time-zone boundaries…','タイムゾーン境界を読み込み中…','Zeitzonengrenzen werden geladen…','Загрузка часовых поясов…','Cargando husos horarios…')); }catch(_){}
+          fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; loading=false; if(on) go(); }).catch(()=>{ loading=false; try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){} const cb=document.getElementById('dl-tz'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } }); }
+        else go();
+      } else { setVis(false); if(timer){ clearInterval(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
+    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(map.isStyleLoaded()&&geo){ addLayers(); setVis(true); refreshTimes(); } },80); });
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-tz')) return;
+      const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-tz';
+      const lab=document.createElement('label'); lab.className='layer-option';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.id='dl-tz';
+      const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background='#80b1d3';
+      const sp=document.createElement('span'); sp.id='dl-tz-lbl'; sp.textContent='🕒 '+lbl();
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
+      w.appendChild(lab); dd.appendChild(w);
+      cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
+    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-tz-lbl'); if(s) s.textContent='🕒 '+lbl(); });
+    if(document.readyState!=='loading') setTimeout(buildUI,1000); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,1000));
   })();
 
   /* (#R38) "レイヤーを大幅増強して" — EIGHT additional REAL NASA GIBS science rasters. Every tile endpoint was
