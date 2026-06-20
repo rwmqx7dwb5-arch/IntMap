@@ -8134,7 +8134,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-06-15';
+  const LEGAL_DATE='2026-06-20';
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -8146,7 +8146,8 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>7. 知的財産</b> — 本サービスのコード・デザインは保護されています。第三者データの権利は各権利者に帰属します。</p>
     <p><b>8. 免責</b> — データは不正確・遅延・利用不可となる場合があり、いかなる保証も行いません。</p>
     <p><b>9. 責任の制限</b> — 法律で認められる範囲で、本サービス利用に起因する損害について当方は責任を負いません。</p>
-    <p><b>10. 変更・終了</b> — 本規約は変更される場合があり、継続利用をもって同意とみなします。違反時はアカウントを停止・終了することがあります。</p>`
+    <p><b>10. 変更・終了</b> — 本規約は変更される場合があり、継続利用をもって同意とみなします。違反時はアカウントを停止・終了することがあります。</p>
+    <p><b>11. 地図表記の中立性</b> — 本サービスで使用する国境線・地名・国／地域の区分や帰属の表示は、第三者の公開データ（地理データ、地図タイル、各種API等）に基づく技術的な表示にすぎず、いかなる国・地域の主権・領有権・政治的立場を主張・支持・否定するものではありません。係争地域の表記は出典データに依存しており、特定の政治的見解を表すものではありません。誤りや不一致がある場合があります。</p>`
     : `
     <h3 style="margin:0 0 4px;font-size:17px;">Terms of Service</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">Last updated: ${LEGAL_DATE}</p>
     <p><b>1. Acceptance.</b> By using IntMap (the "Service") you agree to these Terms. If you do not agree, do not use the Service.</p>
@@ -8158,7 +8159,8 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>7. Intellectual property.</b> IntMap's code and design are protected. Third-party data belongs to its respective owners.</p>
     <p><b>8. Disclaimers.</b> Data may be inaccurate, delayed or unavailable; no warranties are given.</p>
     <p><b>9. Limitation of liability.</b> To the maximum extent permitted by law, we are not liable for damages arising from your use of the Service.</p>
-    <p><b>10. Changes & termination.</b> We may update these Terms; continued use means acceptance. We may suspend or terminate accounts for violations.</p>`; }
+    <p><b>10. Changes & termination.</b> We may update these Terms; continued use means acceptance. We may suspend or terminate accounts for violations.</p>
+    <p><b>11. Neutrality of map depictions.</b> The borders, place names, and the way countries and territories are distinguished, attributed or labeled in the Service are technical depictions derived from third-party open data (geographic datasets, map tiles and APIs). They do not assert, endorse or deny any state's or territory's sovereignty, territorial claims or political status. Depictions of disputed areas follow the underlying source data, may contain errors or inconsistencies, and do not represent any political position of IntMap.</p>`; }
   function legalPrivacyHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">プライバシーポリシー</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
@@ -9024,8 +9026,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const GROUPS=[
           ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups */
           ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],
-          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief']],   /* (#R40) Blue Marble removed (deleted) */
-          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow']],   /* (#R39) promote infant-mortality + GDP-growth (World Bank, objective/sourced — same standard as their siblings) */
+          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted */
+          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
           ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','eu','histb','ukrfront','rail']]   /* (#R26) EU members layer added beside NATO */
         ];
@@ -12397,7 +12399,8 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'REST Countries',u:'https://restcountries.com/',use:{en:'Country reference facts (capital, currency, languages, borders) for the info page',jp:'国の基礎情報（首都・通貨・言語・隣接国）— 情報ページ'}},
     {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/',use:{en:'Active fire / thermal anomalies',jp:'熱異常（火災）'}},
     {n:'RainViewer',u:'https://www.rainviewer.com/',use:{en:'Live precipitation radar & IR clouds',jp:'降水レーダー・雲'}},
-    {n:'Open-Meteo',u:'https://open-meteo.com/',use:{en:'Elevation & wind field (animated layer)',jp:'標高・風（アニメーション）'}},
+    {n:'Open-Meteo',u:'https://open-meteo.com/',use:{en:'Elevation, wind field & the right-click live weather popup (current conditions + 5-day forecast)',jp:'標高・風（アニメーション）・右クリックの最新天気（現況＋5日予報）'}},
+    {n:'Live webcams (curated locations · YouTube live)',u:'https://www.youtube.com/',use:{en:'Notable public webcam LOCATIONS are bundled; the live view opens on YouTube live results (no API key)',jp:'著名な公開ウェブカメラの「地点」を内蔵。ライブ映像はYouTubeのライブ結果で表示（APIキー不要）'}},
     {n:'GEBCO 2020',u:'https://www.gebco.net/',use:{en:'Ocean bathymetry (depth readout)',jp:'海底地形（水深）'}},
     {n:'AWS Terrain Tiles',u:'https://registry.opendata.aws/terrain-tiles/',use:{en:'3D terrain, hillshade & contour generation',jp:'3D地形・陰影・等高線'}},
     {n:'Beck et al. Köppen-Geiger (2018)',u:'https://www.nature.com/articles/sdata2018214',use:{en:'1 km climate-zone classification',jp:'ケッペン気候区分（1km）'}},
@@ -17729,6 +17732,106 @@ window.addEventListener('DOMContentLoaded', () => {
       }).catch(()=>{});
     }catch(_){} }
     if(window.requestIdleCallback) requestIdleCallback(()=>refreshStatsLatest(),{timeout:6000}); else setTimeout(refreshStatsLatest,4500);
+  })();
+
+  /* ===== (#R40) Webcam layer — a large set of notable public live-webcam LOCATIONS worldwide. Clicking a
+     point opens its live view. No API key is used (the constitution forbids frontend keys), so the points are
+     a curated, bundled gazetteer and the live view opens on YouTube's live results for that place — always
+     current, key-free, works under file://. Filed into Others(beta) via the dl-webcams id. ===== */
+  (function(){
+    if(!map) return;
+    const WC=[
+      ['Tokyo · Shibuya',139.700,35.659],['Tokyo · Tower',139.745,35.659],['Osaka · Dotonbori',135.501,34.669],['Kyoto',135.768,35.011],
+      ['Seoul',126.978,37.566],['Beijing',116.40,39.90],['Shanghai · Bund',121.490,31.240],['Hong Kong · Victoria',114.169,22.281],
+      ['Bangkok',100.501,13.756],['Singapore · Marina Bay',103.859,1.283],['Mumbai',72.834,18.922],['Dubai · Marina',55.140,25.080],
+      ['Istanbul · Bosphorus',28.974,41.025],['Jerusalem',35.234,31.776],['Moscow · Red Square',37.621,55.754],['St Petersburg',30.316,59.939],
+      ['London · Tower Bridge',-0.075,51.505],['Paris · Eiffel',2.294,48.858],['Amsterdam',4.892,52.373],['Venice · St Mark',12.339,45.434],
+      ['Rome · Trevi',12.483,41.901],['Barcelona',2.174,41.404],['Berlin',13.378,52.516],['Zermatt · Matterhorn',7.748,45.976],
+      ['Santorini',25.461,36.393],['Reykjavík',-21.895,64.147],['Lisbon',-9.139,38.722],['Prague',14.421,50.087],
+      ['Vienna',16.373,48.208],['Budapest',19.040,47.498],['Dublin',-6.264,53.345],['Edinburgh',-3.189,55.953],
+      ['Stockholm',18.069,59.329],['Copenhagen · Nyhavn',12.591,55.680],['Tromsø · Aurora',18.955,69.649],['North Cape',25.784,71.170],
+      ['New York · Times Sq',-73.985,40.758],['Las Vegas · Strip',-115.172,36.115],['San Francisco',-122.478,37.808],['Chicago',-87.624,41.882],
+      ['Miami Beach',-80.130,25.790],['New Orleans',-90.067,29.958],['Honolulu · Waikiki',-157.826,21.276],['Niagara Falls',-79.069,43.083],
+      ['Toronto',-79.383,43.653],['Banff',-115.570,51.178],['Yellowstone · Old Faithful',-110.828,44.460],['Grand Canyon',-112.113,36.057],
+      ['Mexico City',-99.133,19.433],['Rio · Copacabana',-43.182,-22.971],['Buenos Aires',-58.382,-34.604],['Lima',-77.028,-12.046],
+      ['Sydney · Opera House',151.215,-33.857],['Melbourne',144.963,-37.814],['Auckland',174.763,-36.848],['Queenstown NZ',168.662,-45.031],
+      ['Cape Town · Table Mtn',18.424,-33.925],['Nairobi',36.817,-1.286],['Cairo · Giza',31.134,29.979],['Marrakesh',-7.989,31.626],
+      ['Maldives',73.509,4.175],['Bali · Kuta',115.169,-8.718],['Mount Fuji',138.727,35.361],['Everest region',86.851,28.001]
+    ];
+    const fc={type:'FeatureCollection',features:WC.map(([n,lng,lat])=>({type:'Feature',geometry:{type:'Point',coordinates:[lng,lat]},properties:{n}}))};
+    let on=false, popup=null;
+    const lbl=()=>({en:'Live webcams',jp:'ライブカメラ',de:'Live-Webcams',ru:'Веб-камеры',es:'Cámaras en vivo'})[currentLang]||'Live webcams';
+    function ensure(){ try{ if(!map.isStyleLoaded()) return false;
+      if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc});
+      if(!map.getLayer('webcams-pt')){ map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3.4,5,6],'circle-color':'#00b8d4','circle-stroke-color':'#fff','circle-stroke-width':1.4,'circle-opacity':0.92}});
+        map.addLayer({id:'webcams-ico',type:'symbol',source:'webcams-src',layout:{visibility:'none','text-field':'📷','text-size':['interpolate',['linear'],['zoom'],1,9,5,14],'text-allow-overlap':false}});
+        map.on('click','webcams-pt',(e)=>{ if(!e.features.length) return; const f=e.features[0]; const nm=f.properties.n; const c=f.geometry.coordinates.slice();
+          const q=encodeURIComponent(nm.replace(/ · /g,' ')+' live webcam');
+          const yt='https://www.youtube.com/results?search_query='+q+'&sp=EgJAAQ%253D%253D';   /* sp= filters to LIVE results */
+          const watch=({en:'Watch live cams',jp:'ライブ映像を見る',de:'Live-Kameras ansehen',ru:'Смотреть в эфире',es:'Ver cámaras en vivo'})[currentLang]||'Watch live cams';
+          if(popup) popup.remove();
+          popup=new maplibregl.Popup({offset:12,closeButton:true,maxWidth:'240px'}).setLngLat(c)
+            .setHTML('<div style="font-weight:700;font-size:13px;margin-bottom:6px;">📷 '+nm.replace(/</g,'')+'</div><a href="'+yt+'" target="_blank" rel="noopener" style="display:inline-block;background:var(--primary-color);color:#fff;text-decoration:none;padding:7px 12px;border-radius:9px;font-size:12px;font-weight:600;">▶ '+watch+' ↗</a>').addTo(map); });
+        map.on('mouseenter','webcams-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
+        map.on('mouseleave','webcams-pt',()=>{ map.getCanvas().style.cursor=''; });
+      }
+      return true; }catch(_){ return false; } }
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
+      ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
+      if(on){ try{ window._registerLayerOpacity&&window._registerLayerOpacity('webcams',[lbl(),lbl(),lbl(),lbl()],['webcams-pt','webcams-ico'],'dl-webcams'); }catch(_){} }
+      else { try{ window._hideGenericLegend&&window._hideGenericLegend('webcams'); }catch(_){} if(popup){ popup.remove(); popup=null; } } };
+      apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
+    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility','visible'); }catch(_){} }); } },80); });
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-webcams')) return;
+      const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-webcams';
+      const lab=document.createElement('label'); lab.className='layer-option';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.id='dl-webcams';
+      const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background='#00b8d4';
+      const sp=document.createElement('span'); sp.id='dl-webcams-lbl'; sp.textContent='📷 '+lbl();
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
+      w.appendChild(lab); dd.appendChild(w);
+      cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
+    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.textContent='📷 '+lbl(); });
+    if(document.readyState!=='loading') setTimeout(buildUI,900); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,900));
+  })();
+
+  /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
+     OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
+     images (no CORS needed to display). Filed into Others(beta). Same additive toggle pattern as GIBS. ===== */
+  (function(){
+    if(!map) return;
+    const LIST=[
+      {id:'oxrail', tiles:['https://a.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png','https://b.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png','https://c.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png'], max:19, sw:'#7b1fa2', attr:'© OpenRailwayMap · OSM',
+        label:{en:'Rail infrastructure (OpenRailwayMap)',jp:'鉄道インフラ (OpenRailwayMap)',de:'Eisenbahninfrastruktur (OpenRailwayMap)',ru:'Ж/д инфраструктура (OpenRailwayMap)',es:'Infraestructura ferroviaria (OpenRailwayMap)'}},
+      {id:'oxsea', tiles:['https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'], max:18, sw:'#0277bd', attr:'© OpenSeaMap · OSM',
+        label:{en:'Nautical seamarks (OpenSeaMap)',jp:'航海用海図記号 (OpenSeaMap)',de:'Seezeichen (OpenSeaMap)',ru:'Морские знаки (OpenSeaMap)',es:'Señales náuticas (OpenSeaMap)'}}
+    ];
+    const state={}; LIST.forEach(L=>state[L.id]=false);
+    const lbl=(L)=>L.label[currentLang]||L.label.en;
+    const beforeLabels=()=>['ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+    function ensure(L){ try{ if(!map.isStyleLoaded()) return false;
+      if(!map.getSource('ox-'+L.id)) map.addSource('ox-'+L.id,{type:'raster',tiles:L.tiles,tileSize:256,maxzoom:L.max,attribution:L.attr});
+      if(!map.getLayer('oxl-'+L.id)) map.addLayer({id:'oxl-'+L.id,type:'raster',source:'ox-'+L.id,layout:{visibility:'none'},paint:{'raster-opacity':0.92,'raster-fade-duration':0}}, beforeLabels());
+      return true; }catch(_){ return false; } }
+    function toggle(L,on){ state[L.id]=on; const apply=()=>{ if(!ensure(L)){ map.once('idle',apply); return; }
+      try{ map.setLayoutProperty('oxl-'+L.id,'visibility',on?'visible':'none'); }catch(_){}
+      if(on){ try{ window._registerLayerOpacity&&window._registerLayerOpacity('ox-'+L.id,[L.label.en,L.label.jp,L.label.de,L.label.ru],['oxl-'+L.id],'ox-'+L.id); window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
+      else { try{ window._hideGenericLegend&&window._hideGenericLegend('ox-'+L.id); }catch(_){} } };
+      apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
+    map.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ map.setLayoutProperty('oxl-'+L.id,'visibility','visible'); }catch(_){} } }); },80); });
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('ox-oxrail')) return;
+      LIST.forEach(L=>{ const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-ox-'+L.id;
+        const lab=document.createElement('label'); lab.className='layer-option';
+        const cb=document.createElement('input'); cb.type='checkbox'; cb.id='ox-'+L.id;
+        const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background=L.sw;
+        const sp=document.createElement('span'); sp.id='ox-'+L.id+'-lbl'; sp.textContent=lbl(L);
+        lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
+        w.appendChild(lab); dd.appendChild(w);
+        cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(L,e.target.checked); }); });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
+    window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('ox-'+L.id+'-lbl'); if(s) s.textContent=lbl(L); }); });
+    if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
   })();
 
   /* (#R38) "レイヤーを大幅増強して" — EIGHT additional REAL NASA GIBS science rasters. Every tile endpoint was
