@@ -4428,11 +4428,21 @@ window.addEventListener('DOMContentLoaded', () => {
           });
         }
       }catch(e){ console.warn('country load failed',e); }
-      finally{ countryDataLoaded=true; if(map&&map.isStyleLoaded()) addCountryLayers();
-        /* (#R25/#28) now that countryStats exists, rebuild the geo index so the auto-country/capital
-           entries join the gazetteer → the non-AI news locator gains full global coverage. */
-        try{ rebuildGeoIndex(); }catch(_){} }
-    })();
+      finally{
+        /* (#R40) ROOT CAUSE of "Isolate / Country borders / Countries(info) を押しても反応しない、再読み込みで治る":
+           if the FIRST border-GeoJSON fetch failed (slow/blocked CDN on a cold load), countryGeo stayed null
+           but countryDataPromise stayed RESOLVED FOREVER, so every later call short-circuited on the cached
+           (empty) promise and nothing ever worked — until a full page reload reset the promise. Now, on a
+           FAILED load, clear the cached promise + flags so the very next call (a click) transparently retries
+           the fetch. On success, latch as before. */
+        const ok=!!(countryGeo&&countryGeo.features&&countryGeo.features.length);
+        if(ok){ countryDataLoaded=true; if(map&&map.isStyleLoaded()) addCountryLayers();
+          /* (#R25/#28) now that countryStats exists, rebuild the geo index so the auto-country/capital
+             entries join the gazetteer → the non-AI news locator gains full global coverage. */
+          try{ rebuildGeoIndex(); }catch(_){}
+        } else { countryDataLoaded=false; countryDataPromise=null; }
+      } }
+    )();
     countryDataPromise.then(()=>{ try{ loadGdpPPP(); }catch(_){} });   /* (#R22) enrich with PPP once base stats exist */
     return countryDataPromise;
   }
@@ -5839,8 +5849,16 @@ window.addEventListener('DOMContentLoaded', () => {
      direct onclick (that one runs first and unchecks; this then sees checked===false and no-ops). */
   document.addEventListener('click',(e)=>{
     const x=e.target.closest&&e.target.closest('.layer-popup-x'); if(!x) return;
-    const id=x.getAttribute('data-x'); if(!id) return;
-    const cb=document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]')||document.getElementById(id);
+    const lg=x.closest&&x.closest('.data-legend');
+    /* (#R40) Resolve the controlling id from data-x → the legend's cbId → its container id, then try EVERY
+       checkbox-id convention used across the app. This is what makes "凡例の×を押してもレイヤーが消えない"
+       finally reliable for every legend type (generic, worldcover/eco, GIBS, round-9, beta), not just dl-*. */
+    let id=x.getAttribute('data-x');
+    if(!id && lg){ id=(lg.dataset&&lg.dataset.cbId)||''; if(!id && lg.id) id=lg.id.replace(/^data-legend-/,''); }
+    if(!id) return;
+    const bare=id.replace(/^eco-/,'');
+    const cands=[id,'dl-'+id,'eco-dl-'+id,'gx-'+id,'l9-dl-'+id,'beta-dl-'+id,bare,'dl-'+bare,'eco-dl-'+bare];
+    let cb=null; for(const k of cands){ cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb) break; }
     if(cb&&cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }
   });
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */
@@ -9806,7 +9824,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(cbId) el.dataset.cbId=cbId;
       const nm=GENERIC_LEG[id][{en:0,jp:1,de:2,ru:3}[currentLang]]||GENERIC_LEG[id][0];
       const _dragT=currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите':'Drag to move';
-      if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';
+      if(!el.querySelector('h4')){ el.innerHTML='<span class="dl-drag" title="'+_dragT+'">⋮⋮</span><button class="layer-popup-x" data-x="'+(cbId||id)+'" title="'+t('close')+'">✕</button><h4>'+nm+'</h4>';   /* (#R40) data-x so the universal delegated × handler is a guaranteed fallback */
         el.querySelector('.layer-popup-x').onclick=()=>{ const cb=(el.dataset.cbId&&document.getElementById(el.dataset.cbId))||document.getElementById('dl-'+id)||document.querySelector('.geo-layer-cb[data-layer="'+id+'"]'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } };
         /* (#R15d) ships/planes: the military/civilian filter moves from the Layers panel INTO the legend. */
         if(id==='ships'||id==='planes'){
