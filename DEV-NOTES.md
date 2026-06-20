@@ -3358,3 +3358,44 @@ Build `2026-06-20-R40`. Verified live (http preview, page RUNS — **123** layer
 - `_legendDesc` wired into the **generic** legend (choropleths/geo/WB now carry the 1-line "what is this data" note); `LEGEND_DESC` +21 non-obvious metrics; well-known ones (pop/GDP/area/density) still get none.
 - **Beta promotion**: literacy, Gini, poverty, U5 mortality, safe water, physicians, secondary enrollment → Population & economy; agricultural land → Terrain (objective/World-Bank-sourced, with legends). Demoted GIBS layers stay in beta per instruction.
 - **ToS clause 11** (EN + JP): borders / place names / country distinctions are technical depictions with **no political intent**; disputed areas follow source data. Data-sources: + live webcams + the live-weather popup. Last-updated 2026-06-20.
+
+## 45. Round 41 — re-reported bugs (real fixes) + real webcams + timezone + i18n (tags `#R41`)
+
+Build `2026-06-21-R41`. Verified live on the http preview after every change (page RUNS — globals defined, 137 layer checkboxes, 0 console errors). Committed to `main` in 5 parts. The preview tab is headless (`document.hidden`) so `map.on('load')` (which sets `window.__imap`) doesn't fire after a programmatic reload — verification was therefore by globals/console/checkbox-count + targeted state reads, plus curl/oEmbed verification of every external endpoint before wiring.
+
+### "Works only after reload" — the REAL systemic root cause (the recurring angry one)
+- **`whenStyleReady()` could hang forever.** It waited ONLY on `idle`/`load`; if ANOTHER source is still loading or erroring, the map never reaches a clean idle, so the awaited layer was never added → "checked but doesn't show, reload fixes it". Plus a TOCTOU race. Fixed: also listen on `styledata`, POLL independently, and hard-resolve after ~6 s (addSource/addLayer work as long as the style object exists). This is the gating path for most data layers.
+- **Self-heals were idle-only.** The orphan sweep (`_sweepOrphanLayers`) + label-raise ran only on `idle`; a wedged-not-idle map never fired them → "消したはずのレイヤーが残り続ける". Added a 2.5 s heartbeat that runs the SAME idempotent, drift-only self-heals. (Isolate cold-path was already polled in R39/R40; loadCountryData already self-heals a failed fetch.)
+
+### Correlation / Scatter (the "まったく動作しない / ×しないと地図見れない / UIもくそ" one)
+- Residual map rewritten: closes the chooser FIRST (so the map is ALWAYS revealed — the old try/catch only closed it on success → the user got trapped), retries until the `countries` source is ready, and paints a **graded diverging RdBu ramp** (deep red → light → deep blue) instead of two flat alpha colors. Gradient legend pill + a "what is this" line.
+- Metrics **33 → 51** (19 more live World-Bank indicators, full 5-lang labels). `ml()` now supports `es`. Modal backdrop lightened + the card is draggable so the map stays visible while you pick axes.
+
+### Webcams — REAL, not a facade
+- The R40 layer opened a YouTube SEARCH. R41 ships **25 curated, currently-LIVE 24/7 YouTube webcam streams** whose video ids were each verified embeddable via the oEmbed endpoint before shipping. Clicking a point **embeds + plays the actual live feed** in the popup (muted autoplay, `youtube-nocookie`), dark-mode-correct (`.plc-popup .webcam-popup`), with a guaranteed "Open on YouTube ↗" fallback. Operators: EarthCam, SkylineWebcams, WebcamSydney, Ozolio, FOX 5, I Love You Venice, Wild Africa, SeeJacksonHole.
+
+### Other fixes
+- **OpenSeaMap** tiles were verified loading (HTTP 200 PNG over ports); it only LOOKS empty at low zoom because seamarks render near coasts/harbours — added a zoom hint toast + sturdier retry. (OpenRailwayMap works with a browser UA; the curl 403 was just a missing header.)
+- **Legend ×** is now belt-and-suspenders: uncheck the controlling box AND direct-hide every matching map layer AND always close the legend element.
+- **Water/terrain labels** split onto their OWN checkbox (`cb-geolabels`) separate from place names; **river labels re-sourced from the `waterway` LINE layer** (they were read from `water_name` point geometry with line placement → the "ずれている" misalignment).
+- **Weather popup**: the 5-day outlook now honours °F too (it printed raw °C); the popup is draggable (`<h4>` handle → the shared `_wireLegendDrag`), with a ⟳ refresh button; `place()` no longer snaps a dragged panel back.
+- **Railways**: gray was hard to see on both themes → dark solid base (`ref-rail`) + white cross-tie dashes (`ref-rail-dash`); `_wireRef` toggles the companion.
+- **AI follow-up bar**: the cheap `--popup-bg` rectangle behind the input/buttons now fades to transparent; suggestion buttons are borderless iOS pills; the send button is a clean up-arrow circle with a press spring.
+
+### New layers / legends / widgets
+- **Time-zone layer** (`dl-tz`): real Natural Earth `ne_10m_time_zones` boundaries (on-demand from jsDelivr, CORS-verified, 120 features / 40 zones) + the **current local time labelled on each zone, refreshed each minute**. Promoted into a real "Indicators & overlays" group (not beta).
+- **+OMPS UV Aerosol Index** GIBS raster (endpoint curl-verified) — smoke/dust/ash; promoted into Climate.
+- **GIBS color-SCALE legends** for sea-ice, SST anomaly, LST day/night, NDVI, water vapor, cloud fraction, cloud-top/brightness temp, relief — gradient bar + min/max, temps unit-aware, SST shown as an anomaly (×9/5). LEGEND_DESC + the gx-legend now handle `es`.
+- **+5 widgets (36 → 41)**: Map weather (Open-Meteo at map center, no geolocation), Day length (solar), Map scale (m/px + 100-px bar), Calendar (mini month), Next new moon — 5-lang names; existing cards get a desktop hover-lift.
+
+### i18n (the "Info/Stats が DE/RU で英語のまま" one)
+- **Russian layer-group headers were entirely MISSING** → English; added the full RU set (verified rendering).
+- **Country detail (Stats)** `TR()` had NO Spanish → every section/label fell to English in ES; added full `es` + the Wikipedia intro now uses es.wikipedia.org.
+- **Information dashboard**: Places/Events segment missing `es`; map-pin title/body fall back to en; recurring card **badges** localized (DE/RU/ES).
+- **Non-AI news locator**: +22 DE/RU and +21 ES news-hotspot gazetteer entries (Gaza, Rafah, Kharkiv, Lviv, Odesa, Donetsk, Donbas, West Bank, Beirut, Aleppo, Baghdad, Kashmir, Taipei, Pyongyang, Cairo, Riyadh, New Delhi, Shanghai, Hong Kong, Seoul, Tokyo, Khartoum); RU uses declension-safe stems. (The ~100 curated reference-card BODIES stay EN/JP — no quality translation source — but all surrounding chrome is localized.)
+
+### Shareable URL
+- Already shipped in R40 (`activeLayers()` + `&ts=`/`&cmp=` + "🔗 Share this view"); unchanged in R41.
+
+### Sources / ToS / Privacy
+- Data-sources: Natural Earth note extended (time-zone boundaries); +OpenRailwayMap/OpenSeaMap; webcam entry now describes embedded live streams. Privacy clause 4 (EN+JP) discloses the YouTube webcam embeds (`youtube-nocookie`) + the jsDelivr CDN. Last-updated 2026-06-21.
