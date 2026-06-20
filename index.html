@@ -15493,10 +15493,14 @@ window.addEventListener('DOMContentLoaded', () => {
          no blue frame can appear; the neutral inset keyline above is the ONLY boundary marker now. */
       '#compare-window,#compare-window *,#compare-map,#compare-map canvas,#compare-window .maplibregl-canvas{outline:none !important;-webkit-tap-highlight-color:transparent;}'+
       '#compare-window .maplibregl-canvas:focus,#compare-map canvas:focus{outline:none !important;box-shadow:none !important;}'+
-      /* (#R29.1) The lens MAP is now draggable inside the window (it drives the main map 1:1); empty body
-         areas still pass through so you can also pan the main map outside the window. */
-      '#compare-window.cmp-xray .cmp-body{pointer-events:none;}'+
-      '#compare-window.cmp-xray #compare-map{pointer-events:auto;}'+
+      /* (#R40) X-ray = a true click-through LENS. The window / body / compare-map are pointer-events:none so a
+         drag or zoom hits the REAL main map underneath (always fully interactive); the compare overlay then
+         follows 1:1 via the map.on('move')→syncFromMain handler. This REPLACES the fragile "compare map drives
+         the main map" path that left the lens frozen ("X-rayにしたとき地図が動かせない"). Header + controls below
+         are re-enabled so Close / X-ray / Map-Sat / date pickers stay clickable. */
+      '#compare-window.cmp-xray{pointer-events:none;}'+
+      '#compare-window.cmp-xray .cmp-body,#compare-window.cmp-xray #compare-map,#compare-window.cmp-xray .maplibregl-canvas-container,#compare-window.cmp-xray .maplibregl-canvas{pointer-events:none !important;}'+
+      '#compare-window.cmp-xray .cmp-head,#compare-window.cmp-xray .cmp-head *,#compare-window.cmp-xray .cmp-ctrls,#compare-window.cmp-xray .cmp-ctrls *,#compare-window.cmp-xray .cmp-picker,#compare-window.cmp-xray #cmp-close,#compare-window.cmp-xray #cmp-min{pointer-events:auto !important;}'+
       /* (#R26) x-ray needs the header SOLID (the window goes transparent for alignment) so the buttons stay
          visible — but it must MATCH THE THEME, not force black in light mode ("Light modeで黒くなる謎システムは
          いらない。テーマに合わせろ"). Solid theme surface + theme-colored chips; only the cyan keyline marks the lens. */
