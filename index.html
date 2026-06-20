@@ -6091,12 +6091,17 @@ window.addEventListener('DOMContentLoaded', () => {
         filter:['in',['get','class'],['literal',['motorway','trunk','primary','secondary']]],
         layout:{visibility:'none','line-join':'round','line-cap':'round'},
         paint:{'line-color':['match',['get','class'],'motorway','#f5a623','trunk','#f5a623','primary','#e8a94e','#d9b878'],'line-opacity':0.8,'line-width':['interpolate',['linear'],['zoom'],5,0.4,10,1.6,14,3.4]}}, before);
+      /* (#R41) Railways: gray was still hard to see ("灰色は視認性が悪すぎる"). Render the standard two-part rail
+         symbol that reads on BOTH light AND dark basemaps: a strong dark SOLID base (visible on light terrain)
+         with WHITE cross-tie dashes on top (visible on dark/satellite). */
       if(!map.getLayer('ref-rail')) map.addLayer({id:'ref-rail',type:'line',source:'ofm','source-layer':'transportation',minzoom:5,
         filter:['==',['get','class'],'rail'],
-        layout:{visibility:'none','line-join':'round','line-cap':'round'},
-        /* (#R40) Railways were too faint ("線が薄すぎる"): darker color, higher opacity, thicker line + a tighter
-           dash so they read clearly as rail at all zooms (was #9aa0a6 / 0.85 / width 0.5→1.7). */
-        paint:{'line-color':'#52555b','line-opacity':0.95,'line-dasharray':[2.4,1.6],'line-width':['interpolate',['linear'],['zoom'],5,0.8,9,1.8,12,3.2,15,4.6]}}, before);
+        layout:{visibility:'none','line-join':'round','line-cap':'butt'},
+        paint:{'line-color':'#2b2f36','line-opacity':0.96,'line-width':['interpolate',['linear'],['zoom'],5,1.1,9,2.2,12,3.6,15,5.2]}}, before);
+      if(!map.getLayer('ref-rail-dash')) map.addLayer({id:'ref-rail-dash',type:'line',source:'ofm','source-layer':'transportation',minzoom:6,
+        filter:['==',['get','class'],'rail'],
+        layout:{visibility:'none','line-join':'round','line-cap':'butt'},
+        paint:{'line-color':'#f4f6fa','line-opacity':0.95,'line-dasharray':[1.4,3.2],'line-width':['interpolate',['linear'],['zoom'],6,1,9,1.8,12,2.8,15,4]}}, before);
       return true;
     }catch(e){ console.warn('ensureRefLayers',e); return false; }
   }
@@ -6105,7 +6110,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R38) Apply from the LIVE box state, and re-assert several times + when the OFM vector tiles arrive.
        Root of "Roads/Railways/State borders をチェックしても表示されない、再読み込みで治る": the `ofm` source/layer
        often settled AFTER the single 400ms retry, so the visibility set hit nothing and never re-ran. */
-    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(map&&map.getLayer(layerId)) map.setLayoutProperty(layerId,'visibility',on?'visible':'none'); }catch(_){} };
+    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(map&&map.getLayer(layerId)) map.setLayoutProperty(layerId,'visibility',on?'visible':'none'); if(map&&map.getLayer(layerId+'-dash')) map.setLayoutProperty(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
     cb.__refApply=apply;
     cb.addEventListener('change',()=>{
       if(cb.checked && (!map||!map.isStyleLoaded())){ map&&map.once&&map.once('idle',apply); }
@@ -8373,7 +8378,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
-    Object.assign(i18n.es,{ lyrGrpClimate:"Clima y meteorología", lyrGrpHazard:"Riesgos y cielo nocturno", lyrGrpDemo:"Población y economía", lyrGrpGeoPol:"Geopolítica y defensa", lyrGrpOthers:"Otras (beta)", lyrGrpMaritime:"Océanos y marítimo", lyrGrpTerrain:"Terreno y tierra" });   /* (#R40) Spanish layer-group names */
+    Object.assign(i18n.es,{ lyrGrpClimate:"Clima y meteorología", lyrGrpHazard:"Riesgos y cielo nocturno", lyrGrpDemo:"Población y economía", lyrGrpGeoPol:"Geopolítica y defensa", lyrGrpOthers:"Otras (beta)", lyrGrpMaritime:"Océanos y marítimo", lyrGrpTerrain:"Terreno y tierra", lyrGrpIndic:"Indicadores y capas" });   /* (#R40) Spanish layer-group names */
+    /* (#R41) Russian layer-group names were MISSING entirely → group headers showed English in RU. */
+    Object.assign(i18n.ru,{ lyrGrpClimate:"Климат и погода", lyrGrpHazard:"Опасности и ночное небо", lyrGrpDemo:"Население и экономика", lyrGrpGeoPol:"Геополитика и оборона", lyrGrpOthers:"Прочее (бета)", lyrGrpMaritime:"Океаны и море", lyrGrpTerrain:"Рельеф и высота", lyrGrpIndic:"Индикаторы и слои" });
     Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
@@ -8585,7 +8592,10 @@ window.addEventListener('DOMContentLoaded', () => {
       wbphys:['Physicians per 1,000 people — a measure of healthcare capacity.','人口1000人当たりの医師数 — 医療提供力の指標。'],
       wbwater:['Share of people with safely managed drinking water.','安全に管理された飲料水を利用できる人の割合。'],
       wbagri:['Share of land used for agriculture (crops + pasture).','農業（耕地＋牧草地）に使われる土地の割合。'],
-      milSpend:['Total annual defense budget in US$ billions.','年間の国防費総額（10億米ドル）。']
+      milSpend:['Total annual defense budget in US$ billions.','年間の国防費総額（10億米ドル）。'],
+      /* (#R41) new layers */
+      tz:['Standard time-zone boundaries (Natural Earth) with each zone’s current local time, updated every minute.','標準時タイムゾーンの境界（Natural Earth）。各ゾーンの現在時刻を毎分更新して表示。','Standard-Zeitzonengrenzen (Natural Earth) mit der aktuellen Ortszeit je Zone, jede Minute aktualisiert.','Границы часовых поясов (Natural Earth) с текущим местным временем каждой зоны, обновление каждую минуту.','Límites de husos horarios (Natural Earth) con la hora local actual de cada zona, actualizada cada minuto.'],
+      webcams:['Curated public webcam locations — click a point to watch the live 24/7 stream right in the popup.','厳選した公開ウェブカメラの地点 — 点をクリックするとポップアップ内で24時間ライブ映像を再生。','Ausgewählte öffentliche Webcam-Standorte — Punkt anklicken, um den 24/7-Livestream im Popup zu sehen.','Подобранные общедоступные веб-камеры — нажмите точку, чтобы смотреть прямую трансляцию 24/7 во всплывающем окне.','Ubicaciones de cámaras web públicas — haz clic en un punto para ver la transmisión en vivo 24/7 en la ventana.']
     };
     function _legendDesc(id){ const d=LEGEND_DESC[id]; if(!d||!d[0]) return ''; const i=currentLang==='jp'?1:currentLang==='de'?2:currentLang==='ru'?3:currentLang==='es'?4:0; return '<div class="dl-desc">'+(d[i]||d[0])+'</div>'; }
     window._legendDescHTML=_legendDesc;
@@ -9092,12 +9102,13 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups */
+          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index (objective NASA data, has a legend) */
           ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted */
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
-          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','eu','histb','ukrfront','rail']]   /* (#R26) EU members layer added beside NATO */
+          ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','eu','histb','ukrfront','rail']],   /* (#R26) EU members layer added beside NATO */
+          ['lyrGrpIndic',['tz']]   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
         const OTHERS_IDS=['ec-temp','temp','ec-precip','precip','ec-wind','ec-dew','ec-isobars','ec-slp','ec-cape','ec-sst','ships','seaRoute','chokepoints','dams','sahel','islandChain1','islandChain2','stringOfPearls','bri','pipelines','nuclear'];
@@ -18128,10 +18139,34 @@ window.addEventListener('DOMContentLoaded', () => {
         note:['MODIS バンド31熱赤外の輝度温度（雲・地表の熱）','MODIS band-31 thermal-IR brightness temperature','MODIS Band-31 thermische IR-Strahlungstemperatur','MODIS яркостная температура (тепловой ИК, канал 31)']},
       {id:'gxrelief', gibs:'ASTER_GDEM_Color_Shaded_Relief', max:12, ext:'jpg', staticDate:'2024-01-01', sw:'#8d6e63',
         label:['カラー段彩・陰影（ASTER）','Color relief (ASTER GDEM)','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)'],
-        note:['ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER global DEM colour + shaded relief (static)','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)']}
+        note:['ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER global DEM colour + shaded relief (static)','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)']},
+      /* (#R41) +OMPS UV Aerosol Index — endpoint curl-verified (HTTP 200/png). Highlights UV-absorbing aerosols
+         (smoke, dust, volcanic ash); distinct from the existing AOD layer. */
+      {id:'gxaero', gibs:'OMPS_Aerosol_Index', max:6, ext:'png', sw:'#c97b3c',
+        label:['紫外線エアロゾル指数','UV Aerosol Index','UV-Aerosolindex','УФ-индекс аэрозолей','Índice UV de aerosoles'],
+        note:['煙・砂じん・火山灰など紫外線を吸収するエアロゾルを検出（OMPS）','OMPS UV-absorbing aerosols — smoke, dust, volcanic ash','OMPS UV-absorbierende Aerosole — Rauch, Staub, Vulkanasche','OMPS поглощающие УФ аэрозоли — дым, пыль, пепел','OMPS aerosoles que absorben UV — humo, polvo, ceniza']}
     ];
     const state={}; LIST.forEach(L=>state[L.id]=false);
-    const idx=()=>({jp:0,en:1,de:2,ru:3})[currentLang];
+    /* (#R41) Color-SCALE legends for the GIBS rasters ("Sea-ice / SST anomaly に凡例がない！" + "凡例が必要な
+       のにないレイヤーが多い"). Each is a CSS gradient approximating the GIBS colormap + min/max labels. Temps
+       are unit-aware (°C/°F); the SST field is an ANOMALY so its endpoints convert as a DIFFERENCE (×9/5, no +32). */
+    const _tEnd=(c)=>((window.imUnitTemp==='f')?(Math.round(c*9/5+32)+'°F'):(Math.round(c)+'°C'));
+    const _aEnd=(c)=>{ const v=(window.imUnitTemp==='f')?Math.round(c*9/5):c; return (v>0?'+':'')+v+(window.imUnitTemp==='f'?'°F':'°C'); };
+    const SCALES={
+      gxlst:{temp:[-25,45],grad:'#2166ac,#67a9cf,#d1e5f0,#fddbc7,#ef8a62,#b2182b'},
+      gxlstnight:{temp:[-35,30],grad:'#2166ac,#67a9cf,#d1e5f0,#fddbc7,#ef8a62,#b2182b'},
+      gxseaice:{lo:'0%',hi:'100%',grad:'#0a3d62,#3c7bb6,#9ecae1,#deebf7,#ffffff'},
+      gxsstanom:{anom:[-5,5],grad:'#2166ac,#67a9cf,#f7f7f7,#ef8a62,#b2182b'},
+      gxndvi:{loK:['まばら','sparse','spärlich','редкая','escasa'],hiK:['密','dense','dicht','густая','densa'],grad:'#a6611a,#dfc27d,#f5f5c0,#a6d96a,#1a9641'},
+      gxwvapor:{loK:['乾燥','dry','trocken','сухо','seco'],hiK:['湿潤','humid','feucht','влажно','húmedo'],grad:'#fff7fb,#a6bddb,#3690c0,#034e7b'},
+      gxcloud:{lo:'0%',hi:'100%',grad:'#1c2833,#5d6d7e,#aeb6bf,#ffffff'},
+      gxcloudtop:{temp:[-70,20],grad:'#7a0177,#2166ac,#67a9cf,#f7f7f7,#fdae61,#d73027'},
+      gxbtday:{temp:[-40,50],grad:'#2166ac,#67a9cf,#f7f7f7,#fdae61,#d73027'},
+      gxrelief:{loK:['低い','low','niedrig','низко','bajo'],hiK:['高い','high','hoch','высоко','alto'],grad:'#1a7a3c,#a6d96a,#e6e08b,#a87b52,#ffffff'},
+      gxaero:{lo:'0',hi:'≥5',grad:'#ffffff,#ffe0b2,#fb8c00,#b34a3a,#5b2424'}
+    };
+    const _lx=(arr)=>arr[({jp:0,en:1,de:2,ru:3,es:4})[currentLang]]||arr[1];
+    const idx=()=>({jp:0,en:1,de:2,ru:3,es:4})[currentLang];
     const gxLbl=(L)=>L.label[idx()]!==undefined?L.label[idx()]:L.label[1];
     const gxNote=(L)=>L.note[idx()]!==undefined?L.note[idx()]:L.note[1];
     const srcId=(L)=>'gxsrc-'+L.id, layId=(L)=>'gxlyr-'+L.id;
@@ -18142,7 +18177,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer(layId(L))) map.addLayer({id:layId(L),type:'raster',source:srcId(L),layout:{visibility:'none'},paint:{'raster-opacity':0.85,'raster-fade-duration':0}}, beforeLabels());
       return true; }catch(e){ return false; } }
     function legendNote(L){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('gx-'+L.id,[L.label[1],L.label[0],L.label[2],L.label[3]],[layId(L)],'gx-'+L.id);
-      if(el){ let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
+      if(el){
+        /* (#R41) color-scale bar (above the note) for the rasters that encode a measurable quantity */
+        const sc=SCALES[L.id];
+        if(sc){ let bar=el.querySelector('.gx-scale'); if(!bar){ bar=document.createElement('div'); bar.className='gx-scale'; bar.style.cssText='margin-top:7px;'; el.appendChild(bar); }
+          const lo=sc.temp?_tEnd(sc.temp[0]):sc.anom?_aEnd(sc.anom[0]):sc.loK?_lx(sc.loK):sc.lo;
+          const hi=sc.temp?_tEnd(sc.temp[1]):sc.anom?_aEnd(sc.anom[1]):sc.hiK?_lx(sc.hiK):sc.hi;
+          const mid=sc.anom?'<span>0</span>':'';
+          bar.innerHTML='<div style="height:11px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
+        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
     function toggle(L,on){ state[L.id]=on;
       const apply=()=>{ if(!ensure(L)){ map.once('idle',apply); return; }
         try{ map.setLayoutProperty(layId(L),'visibility',on?'visible':'none'); }catch(_){}
