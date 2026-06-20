@@ -4113,6 +4113,70 @@ window.addEventListener('DOMContentLoaded', () => {
     ['Турецк',32.85,39.93,'Turkey','トルコ'],['Польск',21.01,52.23,'Poland','ポーランド'],
     ['Сирийск',36.30,33.51,'Syria','シリア'],['Индийск',77.21,28.61,'India','インド']
   ];
+  /* (#R40) Spanish exonyms for the non-AI locator (Latin script → the standard word-boundary matcher works,
+     no Cyrillic special-casing needed). Same [type,terms,lng,lat,en,jp] shape as _DERU_GZ. */
+  const _ES_GZ=[
+    ['country',['Estados Unidos','EE.UU.','EEUU'],-77.04,38.91,'United States','アメリカ'],
+    ['country',['Reino Unido','Gran Bretaña','Inglaterra'],-0.13,51.51,'United Kingdom','イギリス'],
+    ['country',['Alemania'],13.40,52.52,'Germany','ドイツ'],
+    ['country',['Francia'],2.35,48.85,'France','フランス'],
+    ['country',['España'],-3.70,40.42,'Spain','スペイン'],
+    ['country',['Rusia'],37.62,55.75,'Russia','ロシア'],
+    ['country',['Ucrania'],30.52,50.45,'Ukraine','ウクライナ'],
+    ['country',['Japón','Japon'],139.69,35.69,'Japan','日本'],
+    ['country',['China'],116.40,39.90,'China','中国'],
+    ['country',['Italia'],12.48,41.89,'Italy','イタリア'],
+    ['country',['Polonia'],21.01,52.23,'Poland','ポーランド'],
+    ['country',['Irán','Iran'],51.39,35.69,'Iran','イラン'],
+    ['country',['Israel'],35.21,31.77,'Israel','イスラエル'],
+    ['country',['Turquía','Turquia'],32.85,39.93,'Turkey','トルコ'],
+    ['country',['India'],77.21,28.61,'India','インド'],
+    ['country',['Brasil'],-47.88,-15.79,'Brazil','ブラジル'],
+    ['country',['Canadá','Canada'],-75.70,45.42,'Canada','カナダ'],
+    ['country',['México','Mexico'],-99.13,19.43,'Mexico','メキシコ'],
+    ['country',['Argentina'],-58.38,-34.60,'Argentina','アルゼンチン'],
+    ['country',['Colombia'],-74.07,4.71,'Colombia','コロンビア'],
+    ['country',['Venezuela'],-66.90,10.49,'Venezuela','ベネズエラ'],
+    ['country',['Chile'],-70.65,-33.45,'Chile','チリ'],
+    ['country',['Perú','Peru'],-77.04,-12.05,'Peru','ペルー'],
+    ['country',['Australia'],149.13,-35.28,'Australia','オーストラリア'],
+    ['country',['Egipto'],31.24,30.04,'Egypt','エジプト'],
+    ['country',['Arabia Saudí','Arabia Saudita'],46.72,24.69,'Saudi Arabia','サウジアラビア'],
+    ['country',['Siria'],36.30,33.51,'Syria','シリア'],
+    ['country',['Corea del Norte'],125.76,39.04,'North Korea','北朝鮮'],
+    ['country',['Corea del Sur'],126.98,37.57,'South Korea','韓国'],
+    ['country',['Países Bajos','Holanda'],4.90,52.37,'Netherlands','オランダ'],
+    ['country',['Suiza'],7.45,46.95,'Switzerland','スイス'],
+    ['country',['Suecia'],18.07,59.33,'Sweden','スウェーデン'],
+    ['country',['Grecia'],23.73,37.98,'Greece','ギリシャ'],
+    ['country',['Bélgica','Belgica'],4.35,50.85,'Belgium','ベルギー'],
+    ['country',['Marruecos'],-6.85,33.97,'Morocco','モロッコ'],
+    ['country',['Sudáfrica','Sudafrica'],28.19,-25.75,'South Africa','南アフリカ'],
+    ['country',['Nigeria'],7.49,9.06,'Nigeria','ナイジェリア'],
+    ['country',['Pakistán','Pakistan'],73.06,33.69,'Pakistan','パキスタン'],
+    ['country',['Afganistán','Afganistan'],69.18,34.52,'Afghanistan','アフガニスタン'],
+    ['country',['Irak'],44.36,33.31,'Iraq','イラク'],
+    ['city',['Moscú','Moscu'],37.62,55.75,'Moscow','モスクワ'],
+    ['city',['Londres'],-0.13,51.51,'London','ロンドン'],
+    ['city',['Nueva York'],-74.01,40.71,'New York','ニューヨーク'],
+    ['city',['Pekín','Pekin'],116.40,39.90,'Beijing','北京'],
+    ['city',['Kiev'],30.52,50.45,'Kyiv','キーウ'],
+    ['city',['Ginebra'],6.14,46.20,'Geneva','ジュネーブ'],
+    ['city',['Bruselas'],4.35,50.85,'Brussels','ブリュッセル'],
+    ['city',['Milán','Milan'],9.19,45.46,'Milan','ミラノ'],
+    ['city',['Estambul'],28.98,41.01,'Istanbul','イスタンブール'],
+    ['city',['Teherán','Teheran'],51.39,35.69,'Tehran','テヘラン'],
+    ['city',['Damasco'],36.30,33.51,'Damascus','ダマスカス'],
+    ['city',['Múnich','Munich'],11.58,48.14,'Munich','ミュンヘン']
+  ];
+  /* Spanish demonym/adjective forms → low-confidence country entries (docked below explicit places). */
+  const _ES_DEM=[
+    ['ruso',37.62,55.75,'Russia','ロシア'],['rusa',37.62,55.75,'Russia','ロシア'],
+    ['ucraniano',30.52,50.45,'Ukraine','ウクライナ'],['ucraniana',30.52,50.45,'Ukraine','ウクライナ'],
+    ['estadounidense',-77.04,38.91,'United States','アメリカ'],['israelí',35.21,31.77,'Israel','イスラエル'],
+    ['iraní',51.39,35.69,'Iran','イラン'],['chino',116.40,39.90,'China','中国'],['china',116.40,39.90,'China','中国'],
+    ['alemán',13.40,52.52,'Germany','ドイツ'],['francés',2.35,48.85,'France','フランス'],['británico',-0.13,51.51,'United Kingdom','イギリス']
+  ];
   /* Rebuild the flat geoDB + per-term matchers from geoRaw. Called after the
      Supabase geo_pins load (and on realtime updates). */
   function rebuildGeoIndex(){
@@ -4139,6 +4203,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R39) German + Russian places (full DE exonyms / RU stems) and Russian demonyms. */
     try{ for(const [type,terms,lng,lat,en,jp] of _DERU_GZ){ (merged[type]=merged[type]||[]).push({terms:terms.slice(), loc:[lng,lat], name:{en,jp}}); } }catch(_){}
     try{ for(const [dem,lng,lat,en,jp] of _DERU_DEM){ (merged.country=merged.country||[]).push({terms:[dem], loc:[lng,lat], name:{en,jp}, demonym:true}); } }catch(_){}
+    /* (#R40) Spanish exonyms + demonyms (same shape) — gives the non-AI locator full Spanish coverage. */
+    try{ for(const [type,terms,lng,lat,en,jp] of _ES_GZ){ (merged[type]=merged[type]||[]).push({terms:terms.slice(), loc:[lng,lat], name:{en,jp}}); } }catch(_){}
+    try{ for(const [dem,lng,lat,en,jp] of _ES_DEM){ (merged.country=merged.country||[]).push({terms:[dem], loc:[lng,lat], name:{en,jp}, demonym:true}); } }catch(_){}
     geoDB=Object.entries(merged).flatMap(([type,arr])=>arr.map(g=>({...g,type})));
     /* longer keywords first → "Tel Aviv" wins over "Israel" (stable tiebreaker on equal scores) */
     geoDB.sort((a,b)=>Math.max(...b.terms.map(t=>t.length)) - Math.max(...a.terms.map(t=>t.length)));
@@ -7107,7 +7174,7 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   function feedUrls(){
     /* (#R37) per-language Google News locale so DE/RU get German/Russian feeds (not the JP feed via the old else). */
-    const p=({en:'hl=en-US&gl=US&ceid=US:en', jp:'hl=ja&gl=JP&ceid=JP:ja', de:'hl=de&gl=DE&ceid=DE:de', ru:'hl=ru&gl=RU&ceid=RU:ru'})[currentLang]||'hl=en-US&gl=US&ceid=US:en';
+    const p=({en:'hl=en-US&gl=US&ceid=US:en', jp:'hl=ja&gl=JP&ceid=JP:ja', de:'hl=de&gl=DE&ceid=DE:de', ru:'hl=ru&gl=RU&ceid=RU:ru', es:'hl=es&gl=ES&ceid=ES:es'})[currentLang]||'hl=en-US&gl=US&ceid=US:en';   /* (#R40) +Spanish news edition */
     if(newsDate){
       /* Google News search supports after:/before: operators. Headlines endpoints don't,
          so a date-filtered query goes through search. */
@@ -7180,13 +7247,20 @@ window.addEventListener('DOMContentLoaded', () => {
       return true;
     }catch(e){ console.warn('[IntMap] current_news unavailable, using live RSS:', e&&e.message); return false; }
   }
+  /* (#R40) TEMPORARY per request ("AIで解析済みのニュースをサーバーから取得というシステムは一時的に停止し、
+     フロントエンドでの非AI地点解析システムのみを使って。全言語で"): force the client-side, non-AI gazetteer
+     locator for EVERY language by skipping the Supabase current_news fast-path. Flip this back to true to
+     re-enable the pre-analysed server feed. The realtime current_news subscription is gated on the same flag. */
+  const USE_SERVER_NEWS = false;
+  window.__IM_USE_SERVER_NEWS = USE_SERVER_NEWS;
   async function fetchData(){
     const feed=document.getElementById('live-news-feed');
     /* 1) Instant: show cached headlines immediately while fresh ones load. */
     if(globalData.length===0){ const cached=loadNewsCache(); if(cached&&cached.length){ globalData=cached; if(currentMode==='news'||currentMode==='saved') startNews(); } }
     if((currentMode==='news'||currentMode==='saved')&&feed&&globalData.length===0) feed.innerHTML=`<div class="empty-msg">${t('loading')}</div>`;
-    /* 1b) FAST PATH: pre-analyzed news from Supabase. If it returns rows we're done — no client scoring. */
-    if(await loadNewsFromSupabase()) return;
+    /* 1b) FAST PATH: pre-analyzed news from Supabase. If it returns rows we're done — no client scoring.
+       (#R40) TEMPORARILY DISABLED via USE_SERVER_NEWS — always fall through to the client non-AI locator. */
+    if(USE_SERVER_NEWS && await loadNewsFromSupabase()) return;
     /* 2) FALLBACK: live RSS via CORS proxies + client-side analysis (function not deployed, or search/time-travel/multi-lang). */
     const parser=new DOMParser(); const byLink=new Map(); let any=false;
     const ingest=(txt)=>{
@@ -11944,7 +12018,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .on('postgres_changes',{event:'*',schema:'public',table:'community_posts'},    ()=>loadCommunity())
         .on('postgres_changes',{event:'*',schema:'public',table:'community_comments'}, ()=>{ if(currentMode==='community') loadCommunity(); })
         .on('postgres_changes',{event:'*',schema:'public',table:'community_votes'},    ()=>{ if(currentMode==='community') loadCommunity(); })
-        .on('postgres_changes',{event:'*',schema:'public',table:'current_news'},       ()=>{ try{ if(!activeSearchQuery&&!newsDate&&newsLangMode!=='multi') loadNewsFromSupabase(); }catch(_){} })
+        .on('postgres_changes',{event:'*',schema:'public',table:'current_news'},       ()=>{ try{ if(window.__IM_USE_SERVER_NEWS!==false && !activeSearchQuery&&!newsDate&&newsLangMode!=='multi') loadNewsFromSupabase(); }catch(_){} })   /* (#R40) gated off while the server feed is temporarily disabled */
         .subscribe();
     }catch(e){ console.warn('[IntMap] realtime subscribe failed:', e&&e.message); }
   }
