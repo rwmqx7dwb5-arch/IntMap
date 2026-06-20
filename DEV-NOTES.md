@@ -3312,3 +3312,49 @@ Committed in 6 parts to `main`.
 - Expanded the **NASA GIBS** source line (land-surface/cloud-top temp, true-color, shaded relief) and **added
   REST Countries** (used by the country info page) to the in-app Data-sources list. No new data collection; the AI
   path is unchanged (server-side proxy).
+
+## 44. Round 40 — large requested batch: 5 languages, UI fixes, new features (tags `#R40`)
+
+Build `2026-06-20-R40`. Verified live (http preview, page RUNS — **123** layer checkboxes, 0 console errors after every change). Committed to `main` in 13 parts.
+
+### Quick fixes
+- **AI daily limit 5 → 10**: `AI_FREE_DAILY=10` + all EN/JP/DE/RU/ES `aiSecHint` strings + `ai-proxy` `PLAN_LIMITS.free=10` (redeploy ai-proxy to apply server-side; the display/pre-check already shows 10).
+- **Radius "Keep on map" button removed** (radius only; measure/area keep theirs — the circles already persist).
+- **Land cover default opacity 100%** (layer paint AND the `_registerLayerOpacity` default, which had been overriding it back to 0.85).
+- **Blue Marble deleted**; the 7 named GIBS temp/cloud/true-color rasters **demoted to Others(beta)** (removed from the Climate GROUPS list → swept to beta).
+
+### Spanish (es) = 5th UI language + DE/RU/ES depth
+- Full `i18n.es` dict (mirrors DE/RU coverage); ES pill + Settings option (beta); every lang-list array extended to include `es`.
+- **RU/ES map place-labels fixed** (`applyLabelLang` had no RU branch → RU fell to English; added RU + ES `name:` expressions) and `applyLabelLang()` now also runs on a language-pill switch (was Settings-Apply only).
+- `_aiLangName`/`_aiLangLine`: +Spanish and an **emphatic** "write your ENTIRE response in <lang>" directive (the AI-brief DE/RU "comes back in English" report).
+- `reorganizeLayerPanel` `T()` now falls back to English so group headers never show the raw key in es.
+
+### "Works only after reload" cluster — REAL root cause
+- **`loadCountryData()` cached a FAILED first fetch forever.** If the cold-load border-GeoJSON fetch failed (slow/blocked CDN), `countryGeo` stayed null but `countryDataPromise` stayed resolved → Isolate / Country borders / Countries(info) were dead until a full reload. Fix: on a failed load, clear the cached promise so the next click retries. This is the long-standing "押しても反応しない、再読み込みで治る" root cause.
+- **Legend ×**: the delegated handler now resolves the layer from `data-x` / the legend's `cbId` / its container id and tries every checkbox-id convention (dl/eco-dl/gx/l9/beta/geo-layer-cb); the generic legend × gained `data-x`. ("凡例の×を押してもレイヤーが消えない" universal fix.)
+
+### Map defaults & lines
+- **Country borders, State/province, Roads, Railways now DEFAULT ON** (HTML `checked` + a startup dispatch through their retry-hardened handlers; these 4 are NOT persisted in the hash so it's only the initial default).
+- **Country borders re-sourced from the OSM-based OFM `boundary` (admin_level 2)** instead of generalized Natural Earth → aligns exactly with the basemap (item: 国境線がずれる) AND removes the `countryGeo` dependency (more reliable cold-start).
+- **Railways** darker/thicker/tighter-dash (`#52555b`, opacity 0.95, wider width ramp).
+- **River / lake / sea (`water_name`) + mountain-peak (`mountain_peak`) labels** added to `ensurePlaceLabels`; follow the Place-names toggle + label language; added to the `_raiseLabelLayers` stack.
+
+### Compare X-ray pannable (the angry one)
+- Root cause: the compare map was `pointer-events:auto` and tried to DRIVE the main map via a fragile reverse-sync that left the lens frozen (synthetic-drag test confirmed 0px). Fix: the whole `.cmp-xray` window/body/compare-map/canvas are now `pointer-events:none` (click-through) so drags hit the real interactive main map underneath; the overlay follows 1:1 via the proven `map.on('move')→syncFromMain`. Header/Close/Map-Sat/date pickers re-enabled.
+
+### News — temporarily frontend-only (all languages)
+- `USE_SERVER_NEWS=false`: `fetchData` skips the `current_news` fast-path and always uses live RSS + client `analyzeContext` (non-AI gazetteer); the realtime `current_news` subscription is gated on the same flag. Flip back to `true` to restore the pre-analysed server feed.
+- Spanish news edition added to `feedUrls` (was English fallback); `_ES_GZ` + `_ES_DEM` Spanish exonyms/demonyms merged into `geoDB` (Latin-script matcher) → Spanish news geolocates client-side like DE/RU.
+
+### New features
+- **Live weather popup** (right-click → "Weather here"): `IntMapWeather` via Open-Meteo (no key, always-latest) — current conditions + 5-day outlook, 5-lang, unit-aware.
+- **Shareable URL**: `activeLayers()` now captures every layer-checkbox convention; `encode()` adds `&ts=` (time-travel) + `&cmp=` (compare); restore reproduces them for shared links; new "🔗 Share this view" context-menu item (Web Share / clipboard).
+- **Correlation/Scatter**: 14 → **33 metrics** (gdpPPP + 19 on-demand World-Bank axes via the new `window.IntMapWB.fetch`); new **residual map**: positive residual (above the fit) → deeper blue, negative → deeper red, as a per-country `match` fill + a legend pill.
+- **Webcam layer** (`dl-webcams`, Others/beta): ~65 curated global webcam LOCATIONS as clickable points → opens current YouTube-live results for the place (key-free, honest, file://-safe).
+- **+OpenRailwayMap + OpenSeaMap** raster overlays (Others/beta). Layer rows 121 → **123**.
+- **+6 widgets** (catalog 30 → 36): Day progress, Season (hemisphere-aware), Week number, Unix time, Map center, Next full moon — all pure-computation (no network). Card gained an extra iOS glass sheen.
+
+### Legends / beta promotion / ToS
+- `_legendDesc` wired into the **generic** legend (choropleths/geo/WB now carry the 1-line "what is this data" note); `LEGEND_DESC` +21 non-obvious metrics; well-known ones (pop/GDP/area/density) still get none.
+- **Beta promotion**: literacy, Gini, poverty, U5 mortality, safe water, physicians, secondary enrollment → Population & economy; agricultural land → Terrain (objective/World-Bank-sourced, with legends). Demoted GIBS layers stay in beta per instruction.
+- **ToS clause 11** (EN + JP): borders / place names / country distinctions are technical depictions with **no political intent**; disputed areas follow source data. Data-sources: + live webcams + the live-weather popup. Last-updated 2026-06-20.
