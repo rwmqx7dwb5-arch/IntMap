@@ -8128,6 +8128,8 @@ window.addEventListener('DOMContentLoaded', () => {
       .data-legend .dl-bar{ height:10px; border-radius:5px; margin:6px 0 4px; border:1px solid rgba(0,0,0,0.1); }
       .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; }
       .data-legend .dl-hint{ color:var(--text-muted); margin-top:8px; font-size:10px; }
+      /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
+      .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:7px; font-size:10px; line-height:1.5; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:6px; }
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
       .koppen-legend h4, .data-legend h4{ padding:0 56px 0 22px !important; min-height:18px; display:flex; align-items:center; }
@@ -8225,11 +8227,24 @@ window.addEventListener('DOMContentLoaded', () => {
     const mc=document.getElementById('map-container');
     const legend=document.createElement('div'); legend.className='koppen-legend'; legend.id='koppen-legend'; mc.appendChild(legend);
     /* Data legends for HDI / Democracy / Pop density / NATO / EEZ / Temperature — colored scale bars */
+    /* (#R39) Short "what is this data" explanations for the NON-obvious metrics (well-known ones like
+       population density / GDP are left without one, per "よく知られているもの以外は…説明を入れて"). 4-language. */
+    const LEGEND_DESC={
+      hdi:['Human Development Index — a 0–1 blend of life expectancy, schooling and income. Higher = more developed.','人間開発指数 — 平均寿命・教育・所得を0〜1で合成した指標。高いほど発展。','Index der menschlichen Entwicklung — 0–1 aus Lebenserwartung, Bildung und Einkommen. Höher = entwickelter.','Индекс человеческого развития — 0–1 из продолжительности жизни, образования и дохода. Выше = развитее.'],
+      dem:['EIU score (0–10) of elections, pluralism, civil liberties and governance. Higher = more democratic.','EIUによる選挙・多元性・自由・統治の評価（0〜10）。高いほど民主的。','EIU-Wert (0–10) für Wahlen, Pluralismus, Freiheiten und Regierungsführung. Höher = demokratischer.','Оценка EIU (0–10): выборы, плюрализм, свободы и управление. Выше = демократичнее.'],
+      tfr:['Average number of children a woman would have over her lifetime; about 2.1 keeps a population stable.','女性が生涯に産む子どもの平均数。約2.1で人口が維持される。','Durchschnittliche Kinderzahl pro Frau; etwa 2,1 hält die Bevölkerung stabil.','Среднее число детей на женщину; около 2,1 удерживает население стабильным.'],
+      milSpendGDP:['Defense budget as a share of the country’s GDP — its military burden on the economy.','国防費が国のGDPに占める割合。経済における軍事負担。','Verteidigungsbudget als Anteil am BIP — die militärische Last für die Wirtschaft.','Военный бюджет как доля ВВП — военная нагрузка на экономику.'],
+      aod:['Aerosol optical depth — how much haze, smoke and dust dim sunlight in the air column.','エアロゾル光学的厚さ — 大気中の霞・煙・砂塵が日射を遮る度合い。','Aerosol-optische Dicke — wie stark Dunst, Rauch und Staub das Sonnenlicht dämpfen.','Аэрозольная оптическая толщина — насколько дымка, дым и пыль ослабляют солнечный свет.'],
+      nightsat:['Artificial light at night, from satellite — a proxy for urbanization and economic activity.','衛星が捉えた夜間の人工光 — 都市化や経済活動の代理指標。','Künstliches Licht bei Nacht (Satellit) — ein Indikator für Urbanisierung und Wirtschaft.','Искусственный свет ночью со спутника — индикатор урбанизации и экономики.'],
+      snow:['Snow and ice cover from satellite (NDSI index). Brighter = more snow/ice on the ground.','衛星による積雪・海氷（NDSI指数）。明るいほど積雪・氷が多い。','Schnee- und Eisbedeckung per Satellit (NDSI). Heller = mehr Schnee/Eis.','Снежный и ледяной покров со спутника (индекс NDSI). Ярче = больше снега/льда.']
+    };
+    function _legendDesc(id){ const d=LEGEND_DESC[id]; if(!d) return ''; const i=currentLang==='jp'?1:currentLang==='de'?2:currentLang==='ru'?3:0; return '<div class="dl-desc">'+(d[i]||d[0])+'</div>'; }
+    window._legendDescHTML=_legendDesc;
     function makeLegend(id,bottomPx,title,gradient,labels,hint){
       const el=document.createElement('div'); el.className='data-legend'; el.id='data-legend-'+id;
       el.style.bottom=bottomPx+'px';
       const noData=(['hdi','dem','pop','gdppc','tfr','milSpend','milSpendGDP'].includes(id))?`<div style="display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;border-radius:3px;background:#9aa0a6;border:1px solid rgba(0,0,0,0.12);"></span>${currentLang==='jp'?'データなし':'No data'}</div>`:'';
-      el.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}`;
+      el.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="${id}" title="${t('close')}">✕</button><h4>${title}</h4><div class="dl-bar" style="background:${gradient};"></div><div class="dl-scale"><span>${labels[0]}</span><span>${labels[1]}</span></div>${noData}${hint?`<div class="dl-hint">${hint}</div>`:''}${_legendDesc(id)}`;
       mc.appendChild(el);
       el.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
       /* Drag (mouse + touch) is wired centrally by wireDrag() once it is defined below, so every
@@ -8728,10 +8743,10 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R32b) The World-Bank choropleths + earthquakes are PROMOTED out of "Others (beta)" into real
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
-          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','wbco2','wbforest','gxlst','gxwvapor','gxcloud','gxtruecolor']],   /* (#R38) +NASA GIBS science rasters */
+          ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','wbco2','wbforest','gxlst','gxlstnight','gxbtday','gxwvapor','gxcloud','gxcloudtop','gxtruecolor']],   /* (#R38/#R39) +NASA GIBS science rasters */
           ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],
-          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxbluemarble']],
-          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl']],
+          ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxbluemarble','gxrelief']],
+          ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow']],   /* (#R39) promote infant-mortality + GDP-growth (World Bank, objective/sourced — same standard as their siblings) */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
           ['lyrGrpGeoPol',['fsu','milSpend','milSpendGDP','nato','eu','histb','ukrfront','rail']]   /* (#R26) EU members layer added beside NATO */
         ];
@@ -13830,14 +13845,17 @@ window.addEventListener('DOMContentLoaded', () => {
       '.wgt-board{display:none;flex:1 1 auto;min-height:0;overflow-y:auto;padding:2px 2px 14px;}'+
       '.wgt-title{font-size:13px;font-weight:700;color:var(--text-muted);margin:2px 2px 10px;letter-spacing:0.2px;}'+
       '.wgt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'+
-      '.wgt-card{position:relative;border-radius:18px;padding:13px 14px;min-height:104px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 6px 22px rgba(0,0,0,0.10);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;}'+
-      '.wgt-card .wgt-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;}'+
-      '.wgt-card .wgt-v{font-size:21px;font-weight:700;color:var(--text-main);line-height:1.18;font-variant-numeric:tabular-nums;margin-top:6px;word-break:break-word;}'+
+      /* (#R39) iOS-refined card: rounder corners, a softer layered shadow, a hairline top highlight, and a
+         tactile press state — matching the iOS widget look ("よりiOS風の洗練されたデザインに"). */
+      '.wgt-card{position:relative;border-radius:22px;padding:14px 15px;min-height:106px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 1px 0 rgba(255,255,255,0.10) inset,0 8px 24px rgba(0,0,0,0.12);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.16s cubic-bezier(0.2,0.7,0.2,1),box-shadow 0.16s;}'+
+      '.wgt-card:not(.editing):active{transform:scale(0.972);box-shadow:0 2px 10px rgba(0,0,0,0.14);}'+
+      '.wgt-card .wgt-h{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.4px;text-transform:uppercase;}'+
+      '.wgt-card .wgt-v{font-size:23px;font-weight:700;color:var(--text-main);line-height:1.14;letter-spacing:-0.4px;font-variant-numeric:tabular-nums;margin-top:7px;word-break:break-word;}'+
       '.wgt-card .wgt-s{font-size:10.5px;color:var(--text-muted);margin-top:4px;line-height:1.45;}'+
       '.wgt-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;}'+
       '.wgt-card:hover .wgt-x{opacity:1;}'+
       '@media(max-width:768px){ .wgt-x{opacity:0.85;width:30px;height:30px;border-radius:15px;} }'+
-      '.wgt-add{position:relative;overflow:hidden;border:1.5px dashed rgba(128,128,128,0.45);border-radius:18px;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-muted);cursor:pointer;font-size:12.5px;background:transparent;transition:background 0.15s;}'+
+      '.wgt-add{position:relative;overflow:hidden;border:1.5px dashed rgba(128,128,128,0.45);border-radius:22px;min-height:106px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-muted);cursor:pointer;font-size:12.5px;background:transparent;transition:background 0.15s;}'+
       /* (#R22) Edit mode: per-card delete + reorder controls replace the old hover ✕. */
       '.wgt-title-row{display:flex;align-items:center;margin:2px 2px 10px;}'+
       '.wgt-edit-btn{margin-left:auto;border:none;background:rgba(128,128,128,0.16);color:var(--text-main);font-size:11.5px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;}'+
@@ -17323,7 +17341,20 @@ window.addEventListener('DOMContentLoaded', () => {
         note:['平年差（エルニーニョ等の指標）','Anomaly vs climatology (ENSO signal)','Abweichung vom Mittel (ENSO)','Аномалия к норме (сигнал Эль-Ниньо)']},
       {id:'gxbluemarble', gibs:'BlueMarble_ShadedRelief_Bathymetry', max:8, ext:'jpg', staticDate:'2024-01-01', sw:'#3b6b8f',
         label:['ブルーマーブル（地形・水深）','Blue Marble (relief + bathymetry)','Blue Marble (Relief + Bathymetrie)','Blue Marble (рельеф + батиметрия)'],
-        note:['陰影起伏＋海底地形（静止画）','Shaded relief + ocean bathymetry (static)','Schummerung + Meeresboden (statisch)','Рельеф + батиметрия океана (статично)']}
+        note:['陰影起伏＋海底地形（静止画）','Shaded relief + ocean bathymetry (static)','Schummerung + Meeresboden (statisch)','Рельеф + батиметрия океана (статично)']},
+      /* (#R39) +4 more curl-verified GIBS rasters (HTTP 200 / image/*). */
+      {id:'gxcloudtop', gibs:'MODIS_Terra_Cloud_Top_Temp_Day', max:6, ext:'png', sw:'#b3d4fc',
+        label:['雲頂温度（昼）','Cloud-top temperature','Wolkenobergrenzentemperatur','Температура вершин облаков'],
+        note:['MODIS 雲頂温度。低いほど高く発達した雲（積乱雲など）','MODIS cloud-top temperature; colder = taller storm clouds','MODIS Wolkenobergrenzentemperatur; kälter = höhere Gewitterwolken','MODIS температура вершин облаков; холоднее = выше грозовые облака']},
+      {id:'gxlstnight', gibs:'MODIS_Terra_Land_Surface_Temp_Night', max:7, ext:'png', sw:'#5c6bc0',
+        label:['地表面温度（夜）','Land surface temp (night)','Bodentemperatur (Nacht)','Темп. поверхности (ночь)'],
+        note:['MODIS 夜間の地表面温度','MODIS land-surface temperature, nighttime','MODIS Landoberflächentemperatur (Nacht)','MODIS темп. поверхности суши (ночь)']},
+      {id:'gxbtday', gibs:'MODIS_Terra_Brightness_Temp_Band31_Day', max:7, ext:'png', sw:'#ff8a65',
+        label:['輝度温度（熱赤外・昼）','Brightness temp (thermal IR)','Strahlungstemperatur (Thermal-IR)','Яркостная температура (ИК)'],
+        note:['MODIS バンド31熱赤外の輝度温度（雲・地表の熱）','MODIS band-31 thermal-IR brightness temperature','MODIS Band-31 thermische IR-Strahlungstemperatur','MODIS яркостная температура (тепловой ИК, канал 31)']},
+      {id:'gxrelief', gibs:'ASTER_GDEM_Color_Shaded_Relief', max:12, ext:'jpg', staticDate:'2024-01-01', sw:'#8d6e63',
+        label:['カラー段彩・陰影（ASTER）','Color relief (ASTER GDEM)','Farbrelief (ASTER GDEM)','Цветной рельеф (ASTER GDEM)'],
+        note:['ASTER 全球標高モデルのカラー段彩＋陰影起伏（静止画）','ASTER global DEM colour + shaded relief (static)','ASTER globales DEM, Farb- + Schummerung (statisch)','ASTER глобальная ЦМР: цвет + отмывка (статично)']}
     ];
     const state={}; LIST.forEach(L=>state[L.id]=false);
     const idx=()=>({jp:0,en:1,de:2,ru:3})[currentLang];
