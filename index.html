@@ -14228,7 +14228,13 @@ window.addEventListener('DOMContentLoaded', () => {
       weeknum:  { nm:()=>jp()?'週番号':'Week number', ic:'🗓', desc:()=>jp()?'ISO週番号・通算日・残り日数':'ISO week, day-of-year & days left' },
       unixclock:{ nm:()=>jp()?'Unix時刻':'Unix time', ic:'⏲', desc:()=>jp()?'現在のUnixタイムスタンプ':'Live Unix timestamp' },
       mapcenter:{ nm:()=>jp()?'地図の中心':'Map center', ic:'🎯', desc:()=>jp()?'表示中心の座標とズーム':'Center coordinates & zoom' },
-      fullmoon: { nm:()=>jp()?'次の満月':'Next full moon', ic:'🌕', desc:()=>jp()?'次の満月までの日数':'Days until the next full moon' }
+      fullmoon: { nm:()=>jp()?'次の満月':'Next full moon', ic:'🌕', desc:()=>jp()?'次の満月までの日数':'Days until the next full moon' },
+      /* (#R41) Board expansion #4 — map-aware + pure-computation widgets (5-lang names). */
+      mapweather:{ nm:()=>({en:'Map weather',jp:'地図中心の天気',de:'Karten-Wetter',ru:'Погода по центру',es:'Clima del mapa'})[currentLang]||'Map weather', ic:'🗺', desc:()=>({en:'Live weather at the map center (no location permission)',jp:'地図中心の現在の天気（位置情報不要）',de:'Wetter in der Kartenmitte (keine Standortfreigabe)',ru:'Погода в центре карты (без доступа к геолокации)',es:'Tiempo en el centro del mapa (sin permiso de ubicación)'})[currentLang]||'Live weather at the map center' },
+      daylength:{ nm:()=>({en:'Day length',jp:'昼の長さ',de:'Tageslänge',ru:'Долгота дня',es:'Duración del día'})[currentLang]||'Day length', ic:'🌞', desc:()=>({en:'Daylight hours at the map-center latitude',jp:'地図中心の緯度での日照時間',de:'Tageslichtstunden auf Breite der Kartenmitte',ru:'Часы светового дня на широте центра карты',es:'Horas de luz en la latitud del centro'})[currentLang]||'Daylight hours' },
+      mapscale:{ nm:()=>({en:'Map scale',jp:'地図の縮尺',de:'Kartenmaßstab',ru:'Масштаб карты',es:'Escala del mapa'})[currentLang]||'Map scale', ic:'📐', desc:()=>({en:'Scale at the current zoom',jp:'現在のズームの縮尺',de:'Maßstab beim aktuellen Zoom',ru:'Масштаб при текущем увеличении',es:'Escala en el zoom actual'})[currentLang]||'Scale at the current zoom' },
+      calendar:{ nm:()=>({en:'Calendar',jp:'カレンダー',de:'Kalender',ru:'Календарь',es:'Calendario'})[currentLang]||'Calendar', ic:'📅', desc:()=>({en:'This month, today highlighted',jp:'今月のミニカレンダー',de:'Dieser Monat, heute markiert',ru:'Этот месяц, сегодня выделено',es:'Este mes, hoy resaltado'})[currentLang]||'This month' },
+      newmoon:{ nm:()=>({en:'Next new moon',jp:'次の新月',de:'Nächster Neumond',ru:'Следующее новолуние',es:'Próxima luna nueva'})[currentLang]||'Next new moon', ic:'🌑', desc:()=>({en:'Days until the next new moon',jp:'次の新月までの日数',de:'Tage bis zum nächsten Neumond',ru:'Дней до новолуния',es:'Días hasta la luna nueva'})[currentLang]||'Days until the next new moon' }
     };
     const css=document.createElement('style');
     css.textContent=
@@ -14239,6 +14245,8 @@ window.addEventListener('DOMContentLoaded', () => {
          tactile press state — matching the iOS widget look ("よりiOS風の洗練されたデザインに"). */
       '.wgt-card{position:relative;border-radius:22px;padding:14px 15px;min-height:106px;background:var(--glass-fill);border:1px solid var(--glass-border);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));box-shadow:0 1px 0 rgba(255,255,255,0.10) inset,0 8px 24px rgba(0,0,0,0.12);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.16s cubic-bezier(0.2,0.7,0.2,1),box-shadow 0.16s;}'+
       '.wgt-card:not(.editing):active{transform:scale(0.972);box-shadow:0 2px 10px rgba(0,0,0,0.14);}'+
+      /* (#R41) subtle iOS hover-lift on desktop ("よりiOS風の洗練されたデザインに") */
+      '@media(hover:hover){ .wgt-card:not(.editing):hover{transform:translateY(-1.5px);box-shadow:0 1px 0 rgba(255,255,255,0.12) inset,0 12px 30px rgba(0,0,0,0.16);} }'+
       /* (#R40) extra iOS refinement: a soft diagonal glass sheen BEHIND the content (content gets z-index:1). */
       '.wgt-card::before{content:"";position:absolute;inset:0;z-index:0;border-radius:22px;background:linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0) 46%);pointer-events:none;}'+
       '.wgt-card>*{position:relative;z-index:1;}'+
@@ -14456,6 +14464,25 @@ window.addEventListener('DOMContentLoaded', () => {
       active.filter(e=>e.t==='mapcenter').forEach(e=>{ try{ const c=(map&&map.getCenter)?map.getCenter():null; if(c) setV(e.u,'<span style="font-size:16px;">'+c.lat.toFixed(3)+'°, '+c.lng.toFixed(3)+'°</span>', (jp()?'ズーム ':'zoom ')+((map&&map.getZoom)?map.getZoom().toFixed(1):'')); }catch(_){} });
       active.filter(e=>e.t==='fullmoon').forEach(e=>{ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14); const phase=((((Date.now()-ref)/864e5)%syn)+syn)%syn; const toFull=((syn/2)-phase+syn)%syn; const days=Math.round(toFull);
         setV(e.u, days===0?(jp()?'今夜！':'Tonight!'):('🌕 '+days+(jp()?'日後':'d')), (jp()?'次の満月まで':'until the next full moon')); }catch(_){} });
+      /* (#R41) pure-computation map-aware widgets */
+      active.filter(e=>e.t==='newmoon').forEach(e=>{ try{ const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14); const phase=((((Date.now()-ref)/864e5)%syn)+syn)%syn; const toNew=(syn-phase)%syn; const days=Math.round(toNew);
+        setV(e.u, days===0?(jp()?'今夜！':'Tonight!'):('🌑 '+days+(jp()?'日後':'d')), (jp()?'次の新月まで':'until the next new moon')); }catch(_){} });
+      active.filter(e=>e.t==='daylength').forEach(e=>{ try{ const lat=(map&&map.getCenter)?map.getCenter().lat:35; const st=new Date(now.getFullYear(),0,0); const doy=Math.floor((now-st)/864e5);
+        const decl=-23.44*Math.cos((360/365)*(doy+10)*Math.PI/180); const cosH=-Math.tan(lat*Math.PI/180)*Math.tan(decl*Math.PI/180);
+        let hrs; if(cosH<=-1) hrs=24; else if(cosH>=1) hrs=0; else hrs=(2*Math.acos(cosH)*180/Math.PI)/15; const h=Math.floor(hrs), m=Math.round((hrs-h)*60);
+        setV(e.u,'🌞 '+h+'h '+(m<10?'0':'')+m+'m', (jp()?'緯度 ':'lat ')+lat.toFixed(1)+'° · '+(jp()?'日照':'daylight')); }catch(_){} });
+      active.filter(e=>e.t==='mapscale').forEach(e=>{ try{ if(!map||!map.getCenter) return; const lat=map.getCenter().lat, z=map.getZoom();
+        const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z); const v=(mpp>=1000)?((mpp/1000).toFixed(1)+' km/px'):(mpp>=1?Math.round(mpp)+' m/px':(mpp*100).toFixed(0)+' cm/px');
+        const bar=mpp*100, barStr=bar>=1000?(bar/1000).toFixed(1)+' km':Math.round(bar)+' m';
+        setV(e.u,'<span style="font-size:18px;">'+v+'</span>', (jp()?'100pxバー ≈ ':'100-px bar ≈ ')+barStr+' · z'+z.toFixed(1)); }catch(_){} });
+      active.filter(e=>e.t==='calendar').forEach(e=>{ try{ const y=now.getFullYear(), mo=now.getMonth(), today=now.getDate(); const startDow=(new Date(y,mo,1).getDay()+6)%7, dim=new Date(y,mo+1,0).getDate();
+        const dn=jp()?['月','火','水','木','金','土','日']:['M','T','W','T','F','S','S'];
+        let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;font-size:9px;text-align:center;line-height:14px;">';
+        dn.forEach(x=>html+='<span style="color:var(--text-muted);font-weight:700;">'+x+'</span>');
+        for(let i=0;i<startDow;i++) html+='<span></span>';
+        for(let d2=1;d2<=dim;d2++){ const is=d2===today; html+='<span style="'+(is?'background:var(--primary-color);color:#fff;border-radius:50%;font-weight:700;':'color:var(--text-main);')+'display:inline-block;width:14px;height:14px;">'+d2+'</span>'; }
+        html+='</div>';
+        setV(e.u, html, ''); try{ const es=document.getElementById('wgts-'+e.u); if(es) es.textContent=now.toLocaleDateString(jp()?'ja-JP':(currentLang==='en'?'en-US':currentLang),{month:'long',year:'numeric'}); }catch(_){} }catch(_){} });
     }
     const wIco=(c)=>{ if(c==null)return '🌡'; if(c===0)return '☀️'; if(c<=3)return '⛅'; if(c<=48)return '🌫'; if(c<=67)return '🌧'; if(c<=77)return '❄️'; if(c<=82)return '🌦'; if(c<=99)return '⛈'; return '🌡'; };
     const una=()=>jp()?'取得できません':'unavailable';
@@ -14493,6 +14520,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
         setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+c.lbl);
       }catch(_){ setV(e.u,'—', una()); } }
+    /* (#R41) Weather at the MAP CENTER — distinct from the geolocation 'weather' widget; needs no permission
+       and follows wherever the user pans (refreshed on the data tick). */
+    async function refreshMapWeather(e){ try{ const c=(map&&map.getCenter)?map.getCenter():null; if(!c){ setV(e.u,'—',una()); return; }
+        const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto',{cache:'no-store'});
+        const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
+        const tmp=(window.fmtTemp?window.fmtTemp(cu.temperature_2m):Math.round(cu.temperature_2m)+'°C');
+        const hi=dy.temperature_2m_max&&dy.temperature_2m_max[0], lo=dy.temperature_2m_min&&dy.temperature_2m_min[0];
+        setV(e.u, wIco(cu.weather_code)+' '+tmp, (hi!=null?('H '+Math.round(hi)+'° · L '+Math.round(lo)+'°  ·  '):'')+(jp()?'地図中心':'map center')); }catch(_){ setV(e.u,'—', una()); } }
     /* (#R21) FX freshness: fxratesapi.com (keyless, CORS*, minute-fresh — curl-verified) is primary;
        open.er-api.com (daily) stays as the fallback. */
     async function refreshFx(e){ try{ const base=(e.cfg&&e.cfg.base)||'USD', quote=(e.cfg&&e.cfg.quote)||'JPY';
@@ -14701,7 +14736,8 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'iss': refreshIss(e); break; case 'wikifeat': refreshWikiFeat(e); break;
         case 'uv': refreshUv(e); break; case 'kp': refreshKp(e); break; case 'hn': refreshHn(e); break;
         case 'holiday': refreshHoliday(e); break; case 'launch': refreshLaunch(e); break; case 'btc': refreshBtc(e); break;
-        case 'worldclock': case 'pop': case 'yearprog': case 'dayprog': case 'season': case 'weeknum': case 'unixclock': case 'mapcenter': case 'fullmoon': tickClock(); break; } }
+        case 'mapweather': refreshMapWeather(e); break;
+        case 'worldclock': case 'pop': case 'yearprog': case 'dayprog': case 'season': case 'weeknum': case 'unixclock': case 'mapcenter': case 'fullmoon': case 'newmoon': case 'daylength': case 'mapscale': case 'calendar': tickClock(); break; } }
     function refreshAll(){ if(!visible()) return; active.forEach(refreshOne); }
     /* (#R21) Market/fast data refreshes every 60 s (was one 5-min tick for everything — the
        "数時間遅れ" was the daily ER-API source, now replaced; this keeps the board live). */
