@@ -657,8 +657,17 @@ gtag('config', 'G-57X5MX0ZPW');
     .country-popup-header h3{ margin:0; font-size:18px; font-weight:600; line-height:1.2; }
     .country-popup-close{ position:absolute; top:10px; right:12px; background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; padding:4px 8px; border-radius:8px; line-height:1; }
     .country-popup-close:hover{ background:var(--input-bg); color:var(--info-mil); }
+    /* (#R39) Wikipedia-style integrated country page: an intro (extract + thumbnail) and grouped sections,
+       not a flat list of rows. */
+    .cp-intro{ margin:0 0 4px; }
+    .cp-intro-img{ float:right; width:122px; max-width:42%; border-radius:10px; margin:2px 0 8px 12px; border:1px solid var(--glass-border,rgba(128,128,128,0.2)); object-fit:cover; }
+    .cp-intro-text{ font-size:12.5px; line-height:1.6; color:var(--text-main); margin:0 0 8px; }
+    .cp-wiki-link{ display:inline-block; font-size:11.5px; color:var(--primary-color); text-decoration:none; margin:0 0 4px; clear:both; }
+    .cp-sec{ margin:14px 0 0; clear:both; }
+    .cp-sec-h{ font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; margin:0 0 6px; padding-bottom:5px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.18)); }
     @media(max-width:768px){
       .country-popup{ width:calc(100vw - 24px); max-width:calc(100vw - 24px); }
+      .cp-intro-img{ width:104px; }
     }
     /* Pin popup (anchored DOM element near pin location) */
     .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
@@ -4390,31 +4399,65 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(e){}
     return s;
   }
+  /* (#R39) Wikipedia-style integrated page: an intro placeholder (filled async with a Wikipedia extract +
+     thumbnail) then the data GROUPED into Geography / Economy / Society / Politics & defense sections —
+     not a bare flat列挙. ("Wikipediaのような統合情報ページにして") */
   function renderCountryDetailBody(s){
     if(!s) return `<div class="cm-row"><span>${t('dataNA')}</span><b>—</b></div>`;
-    const rows=[
-      [t('statRegion'), (s.region||'—')+(s.subregion?' / '+s.subregion:'')],
-      [t('statCapital'), s.capital||'—'],
-      [t('statPop')+` (${POP_YEAR})`, fmtNum(s.pop)],
-      [t('statDensity'), s.density?fmtNum(s.density)+' /km²':'—'],
-      [t('statArea'), fmtArea(s.area)],
-      [t('statGdp')+` (${GDP_YEAR})`, fmtMoney(s.gdp)],
-      [t('statGdpPPP'), s.gdpPPP?fmtMoney(s.gdpPPP):'—'],
-      [t('statGdpPc'), fmtPc(s.gdppc)],
-      [t('statGdpPcPPP'), s.gdppcPPP?fmtPc(s.gdppcPPP):'—'],
-      [t('statHDI')+' (2022)', s.hdi?s.hdi.toFixed(3):'—'],
-      [t('statDem')+' (2023)', s.dem?s.dem.toFixed(2):'—'],
-      [t('statMil')+' (2023)', s.milSpend?'$'+s.milSpend+'B':'—'],
-      [t('statLife'), s.lifeExp?s.lifeExp.toFixed(1)+' yr':'—'],
-      [t('statInet'), s.internet?s.internet+'%':'—'],
-      [t('statCurrency'), s.currency||'—'],
-      [t('statLang'), s.languages||'—']
-    ];
-    const _de=currentLang==='de', _jp=currentLang==='jp';
-    if(s.timezones&&s.timezones.length) rows.push([_de?'Zeitzonen':_jp?'時間帯':'Timezones', s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]);
-    if(s.borders&&s.borders.length) rows.push([_de?'Nachbarländer':_jp?'隣接':'Borders', s.borders.join(', ')]);
-    if(s.unMember!=null) rows.push([_de?'UN-Mitglied':_jp?'国連加盟':'UN member', s.unMember?(_de?'Ja':_jp?'はい':'Yes'):(_de?'Nein':_jp?'いいえ':'No')]);
-    return rows.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('');
+    const _de=currentLang==='de', _jp=currentLang==='jp', _ru=currentLang==='ru';
+    const TR=(en,jp,de,ru)=>_jp?jp:_de?de:_ru?ru:en;
+    const yn=v=>v?TR('Yes','はい','Ja','Да'):TR('No','いいえ','Nein','Нет');
+    const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('')+`</div>`; };
+    const geo=sec('🌍 '+TR('Geography','地理','Geografie','География'),[
+      [t('statRegion'),(s.region||'—')+(s.subregion?' / '+s.subregion:'')],
+      [t('statCapital'),s.capital||'—'],
+      [t('statArea'),fmtArea(s.area)],
+      [t('statDensity'),s.density?fmtNum(Math.round(s.density))+' /km²':'—'],
+      (s.borders&&s.borders.length)?[TR('Borders','隣接','Nachbarländer','Соседи'),s.borders.join(', ')]:null,
+      (s.timezones&&s.timezones.length)?[TR('Timezones','時間帯','Zeitzonen','Часовые пояса'),s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]:null
+    ]);
+    const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика'),[
+      [t('statGdp')+` (${GDP_YEAR})`,fmtMoney(s.gdp)],
+      s.gdpPPP?[t('statGdpPPP'),fmtMoney(s.gdpPPP)]:null,
+      [t('statGdpPc'),fmtPc(s.gdppc)],
+      s.gdppcPPP?[t('statGdpPcPPP'),fmtPc(s.gdppcPPP)]:null,
+      [t('statCurrency'),s.currency||'—']
+    ]);
+    const soc=sec('👥 '+TR('Society','社会','Gesellschaft','Общество'),[
+      [t('statPop')+` (${POP_YEAR})`,fmtNum(s.pop)],
+      s.hdi?[t('statHDI')+' (2022)',s.hdi.toFixed(3)]:null,
+      s.lifeExp?[t('statLife'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет')]:null,
+      s.internet?[t('statInet'),s.internet+'%']:null,
+      [t('statLang'),s.languages||'—']
+    ]);
+    const pol=sec('🏛 '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона'),[
+      s.dem?[t('statDem')+' (2023)',s.dem.toFixed(2)]:null,
+      s.milSpend?[t('statMil')+' (2023)','$'+s.milSpend+'B']:null,
+      s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН'),yn(s.unMember)]:null
+    ]);
+    return `<div id="cp-intro" class="cp-intro"></div>`+geo+econ+soc+pol;
+  }
+  /* (#R39) Fill the intro with a Wikipedia summary (extract + thumbnail + link) in the active language. */
+  const _cpIntroCache={};
+  function _fillCountryIntro(name){
+    try{
+      const intro=document.getElementById('cp-intro'); if(!intro||!name) return;
+      const wl=currentLang==='jp'?'ja':currentLang==='de'?'de':currentLang==='ru'?'ru':'en';
+      const key=wl+':'+name;
+      const esc=tt=>String(tt==null?'':tt).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const paint=(html)=>{ const i2=document.getElementById('cp-intro'); if(i2&&html) i2.innerHTML=html; };
+      if(_cpIntroCache[key]!=null){ paint(_cpIntroCache[key]); return; }   /* re-render flash-free */
+      fetch('https://'+wl+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(String(name).replace(/ /g,'_')))
+        .then(r=>r.ok?r.json():null).then(j=>{
+          if(!j || j.type==='disambiguation'){ _cpIntroCache[key]=''; return; }
+          const extract=j.extract||'', img=(j.thumbnail&&j.thumbnail.source)||'', url=(j.content_urls&&j.content_urls.desktop&&j.content_urls.desktop.page)||'';
+          if(!extract && !img){ _cpIntroCache[key]=''; return; }
+          const html=(img?'<img src="'+esc(img)+'" alt="" class="cp-intro-img" loading="lazy">':'')
+            +(extract?'<p class="cp-intro-text">'+esc(extract)+'</p>':'')
+            +(url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" class="cp-wiki-link">'+t('readWiki')+'</a>':'');
+          _cpIntroCache[key]=html; paint(html);
+        }).catch(()=>{});
+    }catch(_){}
   }
   function showCountryDetail(id,fallback){
     const idStr=String(id||'');
@@ -4427,14 +4470,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const _isoSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/></svg>';
     const _tsSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>';
     const _topBtnCss='flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);font-weight:600;font-size:12px;cursor:pointer;';
+    const _aiSvg='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18 12h3M16.3 7.7l2.1-2.1"/><circle cx="12" cy="14" r="5"/></svg>';
+    const _aiName=encodeURIComponent(name).replace(/'/g,'%27');
     const topBtns=()=>`<div style="display:flex;gap:6px;margin:0 0 12px;">`
-      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${currentLang==='de'?'Nur dieses Land':currentLang==='jp'?'この国だけ':'Isolate'}</button>`
-      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${currentLang==='de'?'Zeitverlauf':currentLang==='jp'?'時系列グラフ':'Time-series'}</button>`
+      +`<button onclick="window.IntMapIsolate&&window.IntMapIsolate.enter((window._cpCurrent||{}).code)" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_isoSvg}</span>${currentLang==='de'?'Nur dieses Land':currentLang==='jp'?'この国だけ':currentLang==='ru'?'Только эту страну':'Isolate'}</button>`
+      +`<button onclick="window.IntMapTimeSeries&&window.IntMapTimeSeries.open()" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_tsSvg}</span>${currentLang==='de'?'Zeitverlauf':currentLang==='jp'?'時系列グラフ':currentLang==='ru'?'Динамика':'Time-series'}</button>`
+      +`<button onclick="try{window.IntMapAIResearch&&window.IntMapAIResearch.open(decodeURIComponent('${_aiName}'),(window._cpCurrent&&window._cpCurrent._ll)||null)}catch(e){}" style="${_topBtnCss}"><span style="color:var(--primary-color);display:inline-flex;">${_aiSvg}</span>${currentLang==='de'?'KI-Bericht':currentLang==='jp'?'AI調査':currentLang==='ru'?'ИИ-справка':'AI brief'}</button>`
       +`</div>`;
+    if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
+    _fillCountryIntro(name);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block') body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); _fillCountryIntro(name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
     popup.style.display='block';
     /* Initial centered position (viewport coords). Drag handle wires in once. */
     if(!popup.dataset.placed){
