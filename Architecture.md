@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-06-15 (R29)
+> Last reviewed: 2026-06-20 (R40)
 
 ---
 
@@ -18,7 +18,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。Cesium は**廃止済み**。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
-- 対応UI言語は **英語 (en) と日本語 (jp)** の2つ（DE/RU は UI からは廃止、ニュース多言語翻訳は別機能）。
+- 対応UI言語は **英語 (en) / 日本語 (jp) / ドイツ語 (de) / ロシア語 (ru) / スペイン語 (es, ベータ)** の5つ（R40でDE/RU復活＋ES追加。`i18n.es` は静的UIを網羅、深層の動的文字列はEN/JPフォールバック）。地名ラベルも全言語対応（`applyLabelLang` の `name:<lang>`）。
 
 ---
 
@@ -106,6 +106,7 @@ supabase/
   1. ローカルキャッシュ（`intmap_news_cache`）があれば即表示。
   2. **FAST PATH**：`loadNewsFromSupabase()` が `current_news` を1回 SELECT → `serverRowToItem()` で整形 → `startNews()` でピン即表示。
      **フロントはニュース地点解析のためにAIを呼ばない**（AIロケートボタンも無い）。
+     - **⚠️ R40で一時停止中**：`const USE_SERVER_NEWS=false`（`window.__IM_USE_SERVER_NEWS`）で FAST PATH をスキップし、**全言語**でライブRSS＋クライアント非AI辞書（`analyzeContext`/`scoreGeo`）のみを使用中（ユーザー要望「一時的に停止」）。`true` に戻せばサーバー事前解析フィードが復活。辞書はDE/RU(`_DERU_GZ`)＋ES(`_ES_GZ`/`_ES_DEM`)を内蔵。
   3. **FALLBACK**：検索・時系列(time-travel)・多言語モード等、サーバーが焼いていないケースのみ、
      ライブRSS（CORSプロキシ経由）を取得し、クライアントの `analyzeContext()`（非AI辞書）で解析。
 - **72時間フィルタ**：`computeFilteredNews()` が72時間より古い記事を表示から除外（保存(saved)・時系列モードは除外しない）。
@@ -118,7 +119,7 @@ supabase/
 - **方針：APIキーは絶対にフロントに置かない。** BYOK（ユーザーが鍵を入力）方式は**廃止済み (R27)**。
 - **アカウント制AI** — `supabase/functions/ai-proxy/index.ts`:
   - フロントの `askAI()` → `aiCallServer()` が、ユーザーのSupabase JWT を付けて ai-proxy に POST。
-  - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（free=5/日 等 `PLAN_LIMITS`）→
+  - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（R40で free=10/日 `PLAN_LIMITS`）→
     (3)`increment_ai_usage` RPC で当日分を原子的に消費（超過は 429）→ (4)**サーバー保持の鍵**でプロバイダ呼び出し →
     (5)失敗時は `refund_ai_usage` で消費分を返金。
   - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎）。
