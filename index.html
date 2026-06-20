@@ -1701,7 +1701,7 @@ gtag('config', 'G-57X5MX0ZPW');
   <div class="sidebar" id="sidebar">
     <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
     <div class="header-area">
-      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button></div></div>
+      <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button><button class="lang-btn" id="lang-es" title="Español (beta)">ES</button></div></div>
       <button class="btn-settings" id="btn-open-settings"><span id="text-settings">Settings</span></button>
     </div>
     <div class="control-panel">
@@ -1842,7 +1842,7 @@ gtag('config', 'G-57X5MX0ZPW');
     <div class="settings-scroll">
     <h3 style="margin:0 0 20px 0; font-size:18px;" id="modal-title">Settings</h3>
     <!-- (#R22) Tutorial button retired per request (the first-visit auto demo remains, clearly badged). -->
-    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch (Beta)</option><option value="ru">Русский (бета)</option></select></div>
+    <div class="setting-group"><label data-i18n="lblLang">Language</label><select id="setting-lang"><option value="en">English</option><option value="jp">日本語</option><option value="de">Deutsch (Beta)</option><option value="ru">Русский (бета)</option><option value="es">Español (Beta)</option></select></div>
     <div class="setting-group"><label id="lbl-theme" data-i18n="lblTheme">Theme</label><select id="setting-theme">
       <!-- (#R33) Only System Default / Dark / Light kept per request; the skin themes were deleted. -->
       <option value="auto" id="opt-theme-auto">System Default</option>
@@ -2075,7 +2075,7 @@ window.addEventListener('DOMContentLoaded', () => {
      surfaces bake their text with a `currentLang==='jp'?…:…` ternary at construction time (they predate
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
-  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
+  try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru','es'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false;
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -2271,7 +2271,53 @@ window.addEventListener('DOMContentLoaded', () => {
       aiGeoBtn:"✨ Определить места всех новостей (ИИ)", aiGeoBtnSub:"✨ Определить место события (ИИ)", aiGeoBtnPub:"✨ Определить место издателя (ИИ)", aiGeoBusy:"Определение…", aiGeoNone:"Нечего определять.", aiGeoDone:"Определено новостей: {n}", aiGeoErr:"Ошибка геокодирования", aiTransBusy:"Перевод…", aiTransDone:"Переведено заголовков: {n}", aiTransNone:"Заголовки уже на вашем языке.", aiTranslate:"Перевести", aiShowOriginal:"Оригинал", aiTransNoText:"Нет текста статьи для перевода — попробуйте веб-вид.",
       aiSumBtn:"Сводка по этой области (ИИ)", newsInArea:"Новости в этой области", elevProfile:"Профиль высот", finalizeMeas:"Оставить на карте", aiSumTitle:"Сводка по области", aiSumSub:"Меток новостей в выбранной области: {n}", aiSumNoArea:"Сначала нарисуйте область или поставьте круг.", aiSumNoNews:"В этой области нет меток новостей.", aiViewSumTitle:"Что происходит на экране",
       aiVisHead:"ИИ-обнаружение изменений", aiVisBtn:"Обнаружить изменения", aiVisTitle:"Отчёт об изменениях со спутника", aiVisSub:"Сравнение {a} → {b}", aiVisBefore:"До", aiVisAfter:"После", aiVisCapturing:"Захват снимков…", aiVisPickDates:"Выберите две даты для сравнения.", aiVisNeedsDated:"Переключитесь на провайдера с выбором даты (MODIS / VIIRS / Sentinel-2) в режиме спутника.", aiVisCapFail:"Не удалось захватить снимки карты.",
-      mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" }
+      mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" },
+    /* (#R40) Spanish (beta). Covers the visible static UI like DE/RU; anything not listed falls back to English (t() fallback). */
+    es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabStats:"Estadísticas", tabCommunity:"Comunidad",
+      searchPh:"Buscar noticias / lugares...", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
+      viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
+      settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
+      lblTheme:"Apariencia", optAuto:"Predeterminado del sistema", optLight:"Claro", optDark:"Oscuro", optClassic:"Clásico", optCyber:"Cíber",
+      lblMapColor:"Color del mapa", mapColorAuto:"Como la apariencia", mapColorLight:"Claro (blanco)", mapColorDark:"Oscuro (negro)",
+      lblUnits:"Unidades de medida", unitBoth:"Métrico + imperial", unitMetric:"Solo métrico", unitImperial:"Solo imperial",
+      lblTempUnit:"Temperatura", tempBoth:"°C + °F", tempC:"Solo °C", tempF:"Solo °F",
+      lblTz:"Zona horaria", tzSearch:"Buscar zona horaria…", optLocal:"Local (predeterminado del sistema)",
+      lblNewsLang:"Idiomas de noticias", newsLangUi:"Solo el idioma actual", newsLangMultiSel:"Varios idiomas…", newsLangMulti:"Todos los idiomas (traducir títulos)", newsLangHint:"Los titulares de todos los idiomas aparecen juntos; con una clave de IA los títulos se traducen automáticamente.",
+      lblAiLocate:"Análisis de ubicación por IA", aiLocManual:"Manual (botón)", aiLocAuto:"Automático para todas las noticias",
+      lblSidebarStyle:"Barra lateral", sidebarOpaque:"Sólida (predeterminada)", sidebarTranslucent:"Vidrio esmerilado", sidebarGlass2:"Vidrio esmerilado (más transparente)",
+      lblLabelLang:"Etiquetas de lugares", labelLangUi:"Como el idioma de la app", labelLangLocal:"Idioma local (alfabeto original)", labelLangEn:"Siempre en inglés",
+      lblFlatPan:"Vista de mapa plano", flatPanFixed:"Encuadre fijo (Europa)", flatPanFree:"Desplazamiento libre (dar la vuelta al mundo)",
+      lblNavSens:"Sensibilidad de navegación", lblNavZoom:"Zoom", lblNavPan:"Desplazamiento",
+      satKeysTitle:"Imágenes de satélite (BYOK)", satKeyHint:"Introduce una clave API para desbloquear estos proveedores en el panel de satélite. Las claves se guardan solo en este navegador.",
+      aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",
+      aiSecTitle:"Funciones de IA", aiSecHint:"IA integrada — gratis al iniciar sesión (hasta 10 usos al día). No se necesita clave API.",
+      blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
+      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", radiusBtn:"⭕ Radio", mScreenshot:"Captura", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
+      lblDataSources:"Fuentes de datos", viewDataSources:"Ver fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
+      lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
+      filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",
+      tlTitle:"Noticias del pasado", tlToday:"Hoy", tl10y:"−10 a", tl5y:"−5 a", tlNow:"Ahora",
+      lblPinMode:"Posición del marcador de noticias", pinModeLoc:"Lugar del suceso", pinModePub:"Lugar del medio",
+      aiTranslateTitles:"Traducir títulos", aiViewSumBtn:"Resumir esta vista",
+      loading:"Cargando artículos...", noMatch:"No se encontraron resultados.", networkError:"No se pudieron cargar las noticias. Reintentando…", emptyHint:"Ninguna pestaña seleccionada — el mapa está despejado.<br>Elige una pestaña arriba para mostrar contenido.",
+      dashCatMil:"Bases militares", dashCatTech:"Tecnología / Ciber", dashCatMar:"Marítimo / Estrechos", dashCatGeo:"Geo / Clima", readWiki:"Leer en Wikipedia ↗",
+      measure:"Medir", areaTool:"Área", radius:"Radio", points:"Puntos", total:"Total", perimeter:"Perímetro", area:"Área", clear:"Borrar", undoPt:"Deshacer punto",
+      measureHint:"Haz clic para añadir puntos · doble clic para terminar", areaHint:"Añade 3+ puntos para encerrar · doble clic para terminar", radiusHint:"Haz clic en el mapa para colocar un círculo. Se permiten varios círculos.", addCircle:"Colocar círculo", removeAll:"Borrar todo", color:"Color",
+      statPop:"Población", statGdp:"PIB (nominal)", statGdpPc:"PIB per cápita", statGdpPPP:"PIB (PPA)", statGdpPcPPP:"PIB per cápita (PPA)", statArea:"Superficie", statDensity:"Densidad de población", statRegion:"Región", statSub:"Subregión", statCapital:"Capital", statCurrency:"Moneda", statLang:"Idiomas", statHDI:"IDH", statDem:"Índice de democracia", statMil:"Gasto militar", statLife:"Esperanza de vida", statInet:"Usuarios de Internet",
+      details:"Detalles ↗", loadingData:"Cargando datos del país...", dataNA:"N/D", noData:"Datos del país no disponibles.",
+      sortGdp:"PIB", sortPop:"Pob.", sortArea:"Sup.", sortName:"A–Z", sortHDI:"IDH", sortMil:"Mil.$", elev:"Altitud", bearing:"Rumbo", presetNone:"— seleccionar —", presetLbl:"Rangos predefinidos", opacity:"Opacidad", circumference:"Circunferencia",
+      spRunway:"Pista", spGarrison:"Guarnición", spOperator:"Operador", spEstd:"Fundado", spAircraft:"Aeronaves", spType:"Tipo", spCapacity:"Capacidad", spDepth:"Profundidad", spOutput:"Producción", spReserves:"Reservas",
+      widgetsBtn:"Widgets", measureBtn:"📏 Medir", areaBtn:"📐 Área",
+      ctxDropPin:"Poner marcador aquí", ctxMeasureFrom:"Empezar a medir desde aquí", ctxPostHere:"Publicar aquí (comunidad)", ctxDistFrom:"Distancia desde el marcador anterior", ctxCopy:"Copiar coordenadas", ctxClearPins:"Quitar todos los marcadores", ctxThisPoint:"Este punto", coords:"Coordenadas", depth:"Profundidad", climate:"Clima",
+      lyrEEZ:"ZEE marítima / 12 mn", lyrShips:"Tráfico marítimo en vivo", lyrPlanes:"Tráfico aéreo en vivo", lyrThermal:"Anomalías térmicas (incendios)", planesZoomHint:"🔍 Acerca para cargar aviones en vivo", shipsZoomHint:"🔍 Acerca para cargar barcos en vivo", aisNoKey:"Los barcos en vivo necesitan una clave API gratuita de AISstream.io — añádela en Ajustes.", trafficFilter:"Filtro", lyrTime:"Fecha de la capa",
+      commAdd:"+ Nueva publicación", commAddArmed:"Haz clic en el mapa para poner un marcador", commTitle:"Título", commBody:"Comparte una observación, pregunta o teoría...", commPost:"Publicar", commCancel:"Cancelar", commEmpty:"Aún no hay publicaciones. Haz clic en \"+ Nueva publicación\" para empezar.", commComment:"Comentar", commLocate:"Mostrar en el mapa", commDelete:"Eliminar", commReply:"Responder", commWrite:"Escribe un comentario...", commPostNew:"Nueva publicación", commPlacedAt:"Colocado en", commSortHot:"Popular", commSortNew:"Nuevo", commSortTop:"Top", commSearchPh:"Buscar publicaciones…", commInView:"En vista", commCat:"Categoría", commCatAll:"Todas", commEdit:"Editar", commEdited:"editado", commEditPost:"Editar publicación", commSaveEdit:"Guardar cambios", commNoMatch:"Ninguna publicación coincide con tus filtros.",
+      compare:"Comparar", compareEmpty:"Toca filas para elegir 2–3 países a comparar.", compareView:"Mostrar comparación", compareClear:"Borrar", back:"Atrás", deletePin:"Eliminar",
+      satCtrlTitle:"Imágenes de satélite", satProvider:"Proveedor", satDate:"Fecha de captura", satLatest:"Más reciente disponible", satMosaicSuffix:"mosaico sin nubes", satLocked:"añadir clave API", satPrevDay:"Día anterior", satNextDay:"Día siguiente", satKeyConnected:"Conectado", satKeyNone:"Sin clave", satErrAuth:"{provider}: fallo de autenticación — comprueba la clave API", satErrTiles:"{provider}: imágenes no disponibles — se cambió a reserva",
+      aiProvider:"Proveedor de IA", aiModel:"Modelo", aiApiKey:"Clave API", aiKeyConnected:"Conectado", aiKeyNone:"Sin clave", aiGetKey:"Obtener una clave ↗", aiOnDevice:"Se ejecuta localmente en Chrome — sin clave API.", aiTest:"Probar conexión", aiTesting:"Probando…", aiTestOk:"Conexión correcta ✓", aiNoKey:"Primero añade una clave API de IA en Ajustes → Funciones de IA.", aiNoVision:"Este modelo no puede leer imágenes. Elige GPT-4o, Claude 3.5 Sonnet o Gemini 1.5 Pro.", aiChromeUnavail:"La IA integrada de Chrome no está disponible aquí. Usa Chrome 127+ con la IA en el dispositivo activada, o elige otro proveedor.", aiThinking:"La IA está analizando…", aiError:"Falló la solicitud de IA", aiCopy:"Copiar", aiCopied:"Copiado ✓", aiClose:"Cerrar", aiRetry:"Reintentar",
+      aiGeoBtn:"✨ Localizar todas las noticias (IA)", aiGeoBtnSub:"✨ Localizar el tema (IA)", aiGeoBtnPub:"✨ Localizar el medio (IA)", aiGeoBusy:"Localizando…", aiGeoNone:"Nada que localizar.", aiGeoDone:"{n} noticias localizadas", aiGeoErr:"Falló la geocodificación", aiTransBusy:"Traduciendo…", aiTransDone:"{n} títulos traducidos", aiTransNone:"Los títulos ya están en tu idioma.", aiTranslate:"Traducir", aiShowOriginal:"Original", aiTransNoText:"No hay texto de artículo para traducir — prueba la vista web.",
+      aiSumBtn:"Resumir esta zona con IA", newsInArea:"Noticias en esta zona", elevProfile:"Perfil de elevación", finalizeMeas:"Mantener en el mapa", aiSumTitle:"Informe de zona", aiSumSub:"{n} marcadores de noticias en la zona seleccionada", aiSumNoArea:"Primero dibuja una zona o coloca un círculo.", aiSumNoNews:"No hay marcadores de noticias en esta zona.", aiViewSumTitle:"Qué está pasando en pantalla",
+      aiVisHead:"Detección de cambios por IA", aiVisBtn:"Detectar cambios", aiVisTitle:"Informe de cambios por satélite", aiVisSub:"Comparando {a} → {b}", aiVisBefore:"Antes", aiVisAfter:"Después", aiVisCapturing:"Capturando imágenes…", aiVisPickDates:"Elige dos fechas para comparar.", aiVisNeedsDated:"Cambia a un proveedor con fecha (MODIS / VIIRS / Sentinel-2) en el modo satélite.", aiVisCapFail:"No se pudieron capturar las imágenes del mapa.",
+      mTitleMap:"Mapa", mTitleTools:"Herramientas", mDone:"Hecho" }
   };
 
   function updateI18n(){
@@ -2410,6 +2456,8 @@ window.addEventListener('DOMContentLoaded', () => {
     else if(mode==='local') nameExpr=['get','name'];
     else if(currentLang==='jp') nameExpr=['coalesce',['get','name:ja'],['get','name']];
     else if(currentLang==='de') nameExpr=['coalesce',['get','name:de'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R32) German place labels */
+    else if(currentLang==='ru') nameExpr=['coalesce',['get','name:ru'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R40) Russian place labels — RU previously fell into the English branch (item: 地名ラベルが英語のまま) */
+    else if(currentLang==='es') nameExpr=['coalesce',['get','name:es'],['get','name:en'],['get','name:latin'],['get','name']];   /* (#R40) Spanish place labels */
     else nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name']];
     const sat=(currentMapType==='sat');
     /* Show vector labels in satellite mode (always — replaces ugly Esri) and on the map for jp/local. */
@@ -2833,8 +2881,8 @@ window.addEventListener('DOMContentLoaded', () => {
      EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
      Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
      must stay canonical) nor the connectivity test. Harmless/​reinforcing for EN/JP. */
-  function _aiLangName(){ return ({en:'English',jp:'Japanese',de:'German',ru:'Russian'})[currentLang]||'English'; }
-  window._aiLangLine=function(){ return ' Always write your entire response in '+_aiLangName()+', regardless of the language of the input.'; };
+  function _aiLangName(){ return ({en:'English',jp:'Japanese',de:'German',ru:'Russian',es:'Spanish'})[currentLang]||'English'; }
+  window._aiLangLine=function(){ const L=_aiLangName(); return ' IMPORTANT: Write your ENTIRE response in '+L+' only — every sentence, heading and bullet must be in '+L+', regardless of the language of the input or these instructions. Do not reply in English unless '+L+' is English.'; };
   function aiParseJSON(raw){
     if(raw==null) return null;
     let s=String(raw).trim();
@@ -7239,18 +7287,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Language ===== */
   function setLang(lang){
-    if(!['en','jp','de','ru'].includes(lang) || currentLang===lang) return;   /* (#R37) all four UI languages: EN/JP/DE/RU */
+    if(!['en','jp','de','ru','es'].includes(lang) || currentLang===lang) return;   /* (#R37) all four UI languages: EN/JP/DE/RU */
     currentLang=lang;
-    try{ ['en','jp','de','ru'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
+    try{ ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',lang===L); }); }catch(_){}
     try{ document.documentElement.setAttribute('lang', lang==='jp'?'ja':lang); }catch(_){}
     const sl=document.getElementById('setting-lang'); if(sl) sl.value=lang;
     globalData=[]; updateI18n(); fetchData(); try{ saveSettings(); }catch(_){}
+    try{ applyLabelLang(); }catch(_){}   /* (#R40) re-apply map place-label language immediately on pill switch (was only on Settings-Apply → RU/ES labels stayed English until Apply) */
     try{ window.dispatchEvent(new Event('intmap-lang')); }catch(_){}   /* modules that relabel on language change */
   }
   document.getElementById('lang-en').onclick=()=>setLang('en');
   document.getElementById('lang-jp').onclick=()=>setLang('jp');
   { const ld=document.getElementById('lang-de'); if(ld) ld.onclick=()=>setLang('de'); }
   { const lr=document.getElementById('lang-ru'); if(lr) lr.onclick=()=>setLang('ru'); }
+  { const le=document.getElementById('lang-es'); if(le) le.onclick=()=>setLang('es'); }   /* (#R40) Spanish (beta) */
   { const sl=document.getElementById('setting-lang'); if(sl) sl.addEventListener('change',e=>setLang(e.target.value)); }
   /* Multi-select news languages (shown when "Multiple languages…" is chosen in Settings). */
   function newsLangNameOf(c){ return (NEWS_LANG_NAMES[c]&&(NEWS_LANG_NAMES[c][currentLang]||NEWS_LANG_NAMES[c].en))||c; }
@@ -8137,6 +8187,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R12) New layer-category labels for the re-organized panel. */
     Object.assign(i18n.en,{ lyrGrpClimate:"Climate & weather", lyrGrpHazard:"Hazards & night sky", lyrGrpDemo:"Population & economy", lyrGrpGeoPol:"Geopolitics & defense", lyrGrpOthers:"Others (beta)" });
     Object.assign(i18n.jp,{ lyrGrpClimate:"気候・気象", lyrGrpHazard:"災害・夜空", lyrGrpDemo:"人口・経済", lyrGrpGeoPol:"地政学・防衛", lyrGrpOthers:"ベータ版・その他" });
+    Object.assign(i18n.es,{ lyrGrpClimate:"Clima y meteorología", lyrGrpHazard:"Riesgos y cielo nocturno", lyrGrpDemo:"Población y economía", lyrGrpGeoPol:"Geopolítica y defensa", lyrGrpOthers:"Otras (beta)", lyrGrpMaritime:"Océanos y marítimo", lyrGrpTerrain:"Terreno y tierra" });   /* (#R40) Spanish layer-group names */
     Object.assign(i18n.en,{ lyrGrpMaritime:"Oceans & maritime", lyrGrpIndic:"Indicators & overlays", lyrGrpTerrain:"Terrain & elevation", lyrHillshade:"Elevation relief (hillshade)", lyrContours:"Contour lines", lyrPopGrid:"Population density (1 km grid)", lgdTempTitle:"Air temp (2 m)", lyrTimeMonth:"Month", lblLang:"Language", newsLangMultiSel:"Multiple languages…", newsLangHint:"Headlines from each chosen language appear together; with an AI key their titles are auto-translated.", mTitleMap:"Map", mTitleTools:"Tools", mDone:"Done", lyrRelief:"Elevation (color relief)", lyrSubcables:"Submarine cables", lgdReliefTitle:"Elevation", lgdSubcablesTitle:"Submarine cables", lyrMilSpend:"Military spending ($B)", lyrMilSpendGDP:"Military spending (% GDP)", lyrGDPpc:"GDP per capita", lyrTFR:"Total fertility rate", lyrSeaLevel:"Sea-level change", lgdSeaLevelTitle:"Sea-level change" });
     Object.assign(i18n.jp,{ lyrGrpMaritime:"海洋・船舶", lyrGrpIndic:"指標・オーバーレイ", lyrGrpTerrain:"地形・標高", lyrHillshade:"陰影起伏（標高）", lyrContours:"等高線", lyrPopGrid:"人口密度（1kmグリッド）", lgdTempTitle:"気温(2m)", lyrTimeMonth:"月", lblLang:"言語", newsLangMultiSel:"複数の言語…", newsLangHint:"選択した各言語の見出しがまとめて表示されます。AIキーがあればタイトルを自動翻訳します。", mTitleMap:"地図", mTitleTools:"ツール", mDone:"完了", lyrRelief:"標高（カラー段彩）", lyrSubcables:"海底ケーブル", lgdReliefTitle:"標高", lgdSubcablesTitle:"海底ケーブル", lyrMilSpend:"国防費（$B）", lyrMilSpendGDP:"国防費（対GDP比）", lyrGDPpc:"1人当たりGDP", lyrTFR:"合計特殊出生率", lyrSeaLevel:"海面変動", lgdSeaLevelTitle:"海面変動" });
     /* (#R32) German for the layer panel + theme names + sections so DE isn't just the top chrome ("細部までドイツ語対応"). */
@@ -8844,7 +8895,7 @@ window.addEventListener('DOMContentLoaded', () => {
           el=dd.querySelector('input[data-layer="'+id+'"]'); if(el) return el.closest('.lyr-row')||el.closest('label');
           return null; };
         const lang=(typeof currentLang!=='undefined')?currentLang:'en';
-        const T=(k)=>{ try{ return (i18n[lang]&&i18n[lang][k])||k; }catch(_){ return k; } };
+        const T=(k)=>{ try{ return (i18n[lang]&&i18n[lang][k])||(i18n.en&&i18n.en[k])||k; }catch(_){ return k; } };   /* (#R40) fall back to English (e.g. Spanish/beta) so group headers never show the raw key */
         /* strip old headers + top-level dividers (favorites' inner <hr> is nested, so it survives) */
         dd.querySelectorAll(':scope > .layer-group-title, :scope > .lyr-head').forEach(n=>n.remove());
         dd.querySelectorAll(':scope > hr').forEach(n=>n.remove());
@@ -8889,7 +8940,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
         if(otherRows.length){
           const oh=document.createElement('div'); oh.className='lyr-head'; oh.setAttribute('data-i18n','lyrGrpOthers'); oh.textContent=T('lyrGrpOthers'); order.push(oh);
-          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(lang==='jp'?'動作しない場合や不完全な場合があります。':lang==='de'?'Kann unvollständig sein oder nicht voll funktionieren.':lang==='ru'?'Может быть неполным или работать не полностью.':'May be incomplete or not fully working.'); order.push(note);
+          const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(lang==='jp'?'動作しない場合や不完全な場合があります。':lang==='de'?'Kann unvollständig sein oder nicht voll funktionieren.':lang==='ru'?'Может быть неполным или работать не полностью.':lang==='es'?'Puede estar incompleto o no funcionar del todo.':'May be incomplete or not fully working.'); order.push(note);
           otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); });
         }
         /* Tools section (compare + upload) pinned to the very bottom */
@@ -8900,7 +8951,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
         const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
         tools.innerHTML='';
-        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(lang==='jp'?'ツール':lang==='de'?'Werkzeuge':lang==='ru'?'Инструменты':'Tools'); tools.appendChild(th);
+        const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(lang==='jp'?'ツール':lang==='de'?'Werkzeuge':lang==='ru'?'Инструменты':lang==='es'?'Herramientas':'Tools'); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
            left over from an earlier collapse so the Tools section always shows (#R13c). */
         if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
@@ -11128,7 +11179,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(fabMap) fabMap.classList.toggle('on', currentMapType==='sat');
       if(fabTools) fabTools.classList.toggle('on', !!toolMode || isGridOn);
     }
-    ['lang-en','lang-jp','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
+    ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
     /* (#R8 JP/EN) Re-label the mobile segment/tool proxies on EVERY language change — not just the lang
        toggle buttons. Changing language via the Settings dropdown (or any programmatic switch) used to
        leave "Globe/Flat/Satellite" in English on the phone ("日本語版で英語が出てくる"). updateI18n() now
@@ -11965,7 +12016,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
-    if(['en','jp','de','ru'].includes(s.lang)){ currentLang=s.lang; ['en','jp','de','ru'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
+    if(['en','jp','de','ru','es'].includes(s.lang)){ currentLang=s.lang; ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
@@ -12302,7 +12353,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
   /* Persist on the simpler toggles too (these have their own handlers; we just add saving) */
-  ['lang-en','lang-jp','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
+  ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(saveSettings,0)); });
 
   /* ---------- Flat-map pan mode ----------
      Fixed = a single, non-repeating world (no infinite horizontal wrap) — you can still pan/zoom
@@ -13005,7 +13056,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
     function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=jp()?'インテリジェンス（高度）':'Intelligence (advanced)'; const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=jp()?'係争境界線':'Disputed boundaries'; if(a) a.textContent=jp()?'防空カバレッジ（射程ドーム）':'Air-defense coverage'; if(l) l.textContent=jp()?'世界の言語分布':'World languages'; refreshDisputeLabels(); }
-    ['lang-jp','lang-en','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
+    ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
 
@@ -13092,7 +13143,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-l9head]'); if(h) h.textContent=currentLang==='jp'?'地球・大気・空域':currentLang==='de'?'Erde, Himmel & Luftraum':currentLang==='ru'?'Земля, небо и воздушное пространство':'Earth, sky & airspace'; Object.keys(L9LBL).forEach(k=>{ const e=document.getElementById('l9-dl-'+k+'-lbl'); if(e) e.textContent=l9Lbl(k); }); }
-    ['lang-jp','lang-en','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) relabel on Settings language change */
     window.IntMapLayers9={ toggle };
   })();
@@ -13228,7 +13279,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if(document.readyState!=='loading') setTimeout(buildUI,0); else document.addEventListener('DOMContentLoaded',buildUI);
     function relabel(){ const h=document.querySelector('[data-ecohead]'); if(h) h.textContent=currentLang==='jp'?'土地被覆・地球科学':currentLang==='de'?'Bodenbedeckung & Geowissenschaft':currentLang==='ru'?'Земной покров и науки о Земле':'Land cover & earth science'; Object.keys(ECLBL).forEach(k=>{ const e=document.getElementById('eco-dl-'+k+'-lbl'); if(e) e.textContent=ecoLbl(k); }); }
-    ['lang-jp','lang-en','lang-de','lang-ru'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
+    ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(relabel,20)); });
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));   /* (#R11) header lang toggle is hidden → relabel on Settings change */
     window.IntMapEco={ toggle };
   })();
@@ -17491,7 +17542,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if('requestIdleCallback' in window) requestIdleCallback(warm,{timeout:4000}); else setTimeout(warm,3000); })();
   try{ initMobileUI(); }catch(e){ console.warn('initMobileUI failed:',e); }
   try{ setTimeout(_imWelcome,900); }catch(_){}   /* (#R29) first-visit iOS welcome card (replaces the confusing auto-demo) */
-  try{ ['en','jp','de','ru'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
+  try{ ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }catch(_){}   /* (#R37) sync the active language pill for all four languages on boot */
 });
 </script>
 <script type="text/javascript">
