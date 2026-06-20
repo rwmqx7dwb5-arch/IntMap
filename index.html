@@ -8279,7 +8279,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
     <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、YouTube（ウェブカメラの地点をクリックすると、その地点のライブ配信プレーヤーが埋め込み表示されます。プライバシー強化ドメイン youtube-nocookie.com を使用しますが、再生時にYouTube／Googleのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されます）。各社のプライバシーポリシーが適用されます。</p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点をライブ取得）、ウェブカメラ視聴（地点をクリックすると、その提供元の第三者コンテンツ＝ライブ画像／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／提供元ページ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されます）。各社のプライバシーポリシーが適用されます。</p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -8291,7 +8291,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
     <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side).</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); YouTube (clicking a webcam location embeds that location's live-stream player — we use the privacy-enhanced youtube-nocookie.com domain, but YouTube's/Google's policies apply once a stream plays); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation). Each has its own privacy policy.</p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view); webcam viewing — opening a webcam loads that operator's third-party content (a live image, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or the operator's own page), subject to that operator's/platform's policies; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation). Each has its own privacy policy.</p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -8660,7 +8660,7 @@ window.addEventListener('DOMContentLoaded', () => {
       milSpend:['Total annual defense budget in US$ billions.','年間の国防費総額（10億米ドル）。'],
       /* (#R41) new layers */
       tz:['Standard time-zone boundaries (Natural Earth) with each zone’s current local time, updated every minute.','標準時タイムゾーンの境界（Natural Earth）。各ゾーンの現在時刻を毎分更新して表示。','Standard-Zeitzonengrenzen (Natural Earth) mit der aktuellen Ortszeit je Zone, jede Minute aktualisiert.','Границы часовых поясов (Natural Earth) с текущим местным временем каждой зоны, обновление каждую минуту.','Límites de husos horarios (Natural Earth) con la hora local actual de cada zona, actualizada cada minuto.'],
-      webcams:['Curated public webcam locations — click a point to watch the live 24/7 stream right in the popup.','厳選した公開ウェブカメラの地点 — 点をクリックするとポップアップ内で24時間ライブ映像を再生。','Ausgewählte öffentliche Webcam-Standorte — Punkt anklicken, um den 24/7-Livestream im Popup zu sehen.','Подобранные общедоступные веб-камеры — нажмите точку, чтобы смотреть прямую трансляцию 24/7 во всплывающем окне.','Ubicaciones de cámaras web públicas — haz clic en un punto para ver la transmisión en vivo 24/7 en la ventana.']
+      webcams:['Public webcams worldwide, loaded live from OpenStreetMap for the current view — pan/zoom for more. Click a point: YouTube/image/panorama cams play in the popup, others open the operator page.','世界中の公開ウェブカメラを、表示範囲に応じてOpenStreetMapからライブ取得（移動・拡大で追加読み込み）。点をクリックするとYouTube・画像・パノラマはその場で再生、その他は提供元ページを開きます。','Öffentliche Webcams weltweit, live aus OpenStreetMap für den aktuellen Ausschnitt geladen — zum Laden verschieben/zoomen. Punkt anklicken: YouTube/Bild/Panorama spielen im Popup, andere öffnen die Betreiberseite.','Общедоступные веб-камеры по всему миру, подгружаются вживую из OpenStreetMap для текущего вида — двигайте/масштабируйте. Нажмите точку: YouTube/изображение/панорама — в окне, прочие — на сайте оператора.','Cámaras web públicas de todo el mundo, cargadas en vivo desde OpenStreetMap para la vista actual — desplaza/amplía. Haz clic en un punto: YouTube/imagen/panorámica se reproducen en la ventana, las demás abren la página del operador.']
     };
     function _legendDesc(id){ const d=LEGEND_DESC[id]; if(!d||!d[0]) return ''; const i=currentLang==='jp'?1:currentLang==='de'?2:currentLang==='ru'?3:currentLang==='es'?4:0; return '<div class="dl-desc">'+(d[i]||d[0])+'</div>'; }
     window._legendDescHTML=_legendDesc;
@@ -12565,7 +12565,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/',use:{en:'Active fire / thermal anomalies',jp:'熱異常（火災）'}},
     {n:'RainViewer',u:'https://www.rainviewer.com/',use:{en:'Live precipitation radar & IR clouds',jp:'降水レーダー・雲'}},
     {n:'Open-Meteo',u:'https://open-meteo.com/',use:{en:'Elevation, wind field & the right-click live weather popup (current conditions + 5-day forecast)',jp:'標高・風（アニメーション）・右クリックの最新天気（現況＋5日予報）'}},
-    {n:'Live webcams (curated 24/7 YouTube streams)',u:'https://www.youtube.com/',use:{en:'Curated, currently-live 24/7 public webcam streams (EarthCam, SkylineWebcams, WebcamSydney, Ozolio, FOX 5, Wild Africa, etc.) embedded directly in the popup (no API key)',jp:'厳選した24時間ライブの公開ウェブカメラ配信（EarthCam・SkylineWebcams・WebcamSydney 等）をポップアップに直接埋め込み再生（APIキー不要）'}},
+    {n:'Live webcams — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam',use:{en:'Public webcam points worldwide, queried live from OSM by map view (the contact:webcam / webcam tags, ODbL); YouTube / image / Roundshot · Panomax cams embed in the popup, others open the operator page (no API key)',jp:'世界中の公開ウェブカメラ地点を地図表示範囲に応じてOSMからライブ取得（contact:webcam / webcam タグ、ODbL）。YouTube・画像・Roundshot/Panomaxはポップアップに埋め込み再生、その他は提供元ページを開く（APIキー不要）'}},
     {n:'GEBCO 2020',u:'https://www.gebco.net/',use:{en:'Ocean bathymetry (depth readout)',jp:'海底地形（水深）'}},
     {n:'AWS Terrain Tiles',u:'https://registry.opendata.aws/terrain-tiles/',use:{en:'3D terrain, hillshade & contour generation',jp:'3D地形・陰影・等高線'}},
     {n:'Beck et al. Köppen-Geiger (2018)',u:'https://www.nature.com/articles/sdata2018214',use:{en:'1 km climate-zone classification',jp:'ケッペン気候区分（1km）'}},
@@ -18018,76 +18018,70 @@ window.addEventListener('DOMContentLoaded', () => {
     if(window.requestIdleCallback) requestIdleCallback(()=>refreshStatsLatest(),{timeout:6000}); else setTimeout(refreshStatsLatest,4500);
   })();
 
-  /* ===== (#R40) Webcam layer — a large set of notable public live-webcam LOCATIONS worldwide. Clicking a
-     point opens its live view. No API key is used (the constitution forbids frontend keys), so the points are
-     a curated, bundled gazetteer and the live view opens on YouTube's live results for that place — always
-     current, key-free, works under file://. Filed into Others(beta) via the dl-webcams id. ===== */
+  /* ===== (#R41b) Webcam layer — DYNAMIC + WORLDWIDE, not a hardcoded list and not YouTube-bound. It queries
+     OpenStreetMap's public webcam database LIVE via the Overpass API for whatever is in view (9k+ cams globally,
+     ODbL, keyless — no frontend API key), accumulating points as you pan/zoom. Click a point to view it:
+     YouTube / direct-image / Roundshot · Panomax panoramas EMBED and play in the popup (dark-mode correct); any
+     other cam opens its real operator webcam page (never a search). Replaces the old static 25-entry YouTube
+     list per "youtube依存・事前に静的コーディングされた場所だけ・ハリボテはやめろ". ===== */
   (function(){
     if(!map) return;
-    /* (#R41) REAL webcams — the R40 version opened a YouTube SEARCH (a facade). These are CURATED, currently-LIVE
-       24/7 YouTube webcam streams whose video ids were each verified embeddable (oEmbed) before shipping. Clicking
-       a point now EMBEDS and PLAYS the actual live feed inside the popup (muted autoplay) — you watch it right
-       there. `v` = YouTube video id. Key-free, file://-safe. Operators incl. EarthCam, SkylineWebcams, FOX 5,
-       WebcamSydney, Ozolio, I Love You Venice, Wild Africa, SeeJacksonHole. */
-    const WC=[
-      ['Tokyo · Shinjuku Kabukichō',139.7036,35.6938,'DjdUEyjx8GM'],
-      ['Mt Fuji · Lake Yamanaka',138.8690,35.4180,'z_g6lBodPuI'],
-      ['Seoul · Han River',126.9960,37.5130,'RVvYQghFCXk'],
-      ['Hong Kong · Victoria Harbour',114.1500,22.2710,'uoQxBiKcoG8'],
-      ['Hong Kong · skyline',114.1600,22.2850,'bMS-xCTPp6Y'],
-      ['Bali · Indonesia',115.1700,-8.7200,'L1duJDAqbJY'],
-      ['Maldives',73.5100,4.1800,'sYVsjjy0Meg'],
-      ['Venice · Grand Canal',12.3350,45.4380,'r8N6IsoIkTk'],
-      ['Venice · Dorsoduro',12.3258,45.4305,'gzgrofStPJ0'],
-      ['Venice · Ponte delle Guglie',12.3275,45.4430,'mt7uE-n0YPI'],
-      ['London · Abbey Road',-0.1774,51.5320,'M3EYAY2MftI'],
-      ['Paris · Eiffel Tower',2.2945,48.8584,'OzYp4NRZlwQ'],
-      ['Paris · Eiffel (live)',2.2960,48.8600,'4iUmg6eN3Yk'],
-      ['Zermatt · Matterhorn',7.7490,46.0210,'5GRpeR5V7nQ'],
-      ['Reykjavík · Aurora',-21.9400,64.1300,'9GZNvSw3kMg'],
-      ['New York · Times Square',-73.9855,40.7580,'VGnFLdQW39A'],
-      ['New York · Times Sq (EarthCam)',-73.9857,40.7570,'z-jYdOIKcTQ'],
-      ['Niagara Falls',-79.0742,43.0828,'qx7gry390YA'],
-      ['Honolulu · Waikiki (Sheraton)',-157.8366,21.2810,'06v5pzump4w'],
-      ['Honolulu · Waikiki (Marriott)',-157.8280,21.2760,'8waVy4wM1tM'],
-      ['Sint Maarten · Maho Beach',-63.1196,18.0419,'gDI_59-LU_Q'],
-      ['Chicago · Lakefront',-87.6120,41.8920,'_p9ZW-Vo7LA'],
-      ['Sydney · Harbour',151.2108,-33.8568,'5uZa3-RMFos'],
-      ['Kruger · Wild Africa waterhole',31.4900,-24.9900,'vr4o_AsrU1k'],
-      ['Jackson Hole · Town Square',-110.7620,43.4790,'1EiC9bvVGnk']
-    ];
-    const fc={type:'FeatureCollection',features:WC.map(([n,lng,lat,v])=>({type:'Feature',geometry:{type:'Point',coordinates:[lng,lat]},properties:{n,v}}))};
-    let on=false, popup=null;
+    const EP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
     const LLw=(en,jp,de,ru,es)=>({en,jp,de,ru,es})[currentLang]||en;
-    const lbl=()=>({en:'Live webcams',jp:'ライブカメラ',de:'Live-Webcams',ru:'Веб-камеры',es:'Cámaras en vivo'})[currentLang]||'Live webcams';
+    const lbl=()=>LLw('Live webcams (OpenStreetMap)','ライブカメラ (OpenStreetMap)','Live-Webcams (OpenStreetMap)','Веб-камеры (OpenStreetMap)','Cámaras web (OpenStreetMap)');
+    let on=false, popup=null, fetching=false, lastBox=null, lastZoom=-1, moveT=null, camById={};
+    function fc(){ const a=[]; for(const k in camById) a.push(camById[k]); return {type:'FeatureCollection',features:a}; }
+    function ytId(u){ const m=/(?:youtube\.com\/(?:watch\?v=|embed\/|live\/|v\/)|youtu\.be\/)([\w-]{11})/.exec(u||''); return m?m[1]:null; }
+    function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
+    function tryEP(q,i){ i=i||0; if(i>=EP.length) return Promise.reject(new Error('overpass')); return fetch(EP[i],{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>tryEP(q,i+1)); }
     function ensure(){ try{ if(!map.isStyleLoaded()) return false;
-      if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc});
-      if(!map.getLayer('webcams-pt')){ map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3.4,5,6],'circle-color':'#00b8d4','circle-stroke-color':'#fff','circle-stroke-width':1.4,'circle-opacity':0.92}});
-        map.addLayer({id:'webcams-ico',type:'symbol',source:'webcams-src',layout:{visibility:'none','text-field':'📷','text-size':['interpolate',['linear'],['zoom'],1,9,5,14],'text-allow-overlap':false}});
-        map.on('click','webcams-pt',(e)=>{ if(!e.features.length) return; const f=e.features[0]; const nm=String(f.properties.n||'').replace(/</g,''); const v=f.properties.v; const c=f.geometry.coordinates.slice();
-          if(popup) popup.remove();
-          /* (#R41) EMBED the live feed (muted autoplay) right in the popup — a real "click → watch", not a search.
-             youtube-nocookie + a guaranteed "Open ↗" fallback in case an operator disables embedding. Dark-mode
-             correct via the shared .plc-popup theming + .webcam-popup sizing. */
-          const embed='https://www.youtube-nocookie.com/embed/'+v+'?autoplay=1&mute=1&playsinline=1&rel=0';
-          const watch='https://www.youtube.com/watch?v='+v;
-          const html='<div style="font-weight:700;font-size:13px;margin:0 0 7px;display:flex;align-items:center;gap:6px;">📷 '+nm
-            +' <span style="font-size:9px;font-weight:800;letter-spacing:.4px;background:#ff3b30;color:#fff;border-radius:4px;padding:1px 5px;">LIVE</span></div>'
-            +'<div style="position:relative;width:300px;max-width:78vw;height:170px;border-radius:11px;overflow:hidden;background:#000;">'
-            +'<iframe src="'+embed+'" title="'+nm+'" width="100%" height="100%" style="display:block;border:0;position:absolute;inset:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>'
-            +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;">'
-            +'<span style="font-size:10.5px;color:var(--text-muted);">'+LLw('Live webcam · muted','ライブ映像・消音','Live-Webcam · stumm','Веб-камера · без звука','Cámara en vivo · silencio')+'</span>'
-            +'<a href="'+watch+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--primary-color);text-decoration:none;white-space:nowrap;">'+LLw('Open on YouTube','YouTubeで開く','Auf YouTube öffnen','Открыть на YouTube','Abrir en YouTube')+' ↗</a></div>';
-          popup=new maplibregl.Popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map); });
+      if(!map.getSource('webcams-src')) map.addSource('webcams-src',{type:'geojson',data:fc()});
+      if(!map.getLayer('webcams-pt')){
+        map.addLayer({id:'webcams-pt',type:'circle',source:'webcams-src',layout:{visibility:'none'},paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,3,6,5,11,7],'circle-color':'#00b8d4','circle-stroke-color':'#fff','circle-stroke-width':1.3,'circle-opacity':0.9}});
+        map.addLayer({id:'webcams-ico',type:'symbol',source:'webcams-src',minzoom:5,layout:{visibility:'none','text-field':'📷','text-size':13,'text-allow-overlap':false}});
+        map.on('click','webcams-pt',(e)=>{ if(!e.features||!e.features.length) return; openCam(e.features[0]); });
         map.on('mouseenter','webcams-pt',()=>{ map.getCanvas().style.cursor='pointer'; });
         map.on('mouseleave','webcams-pt',()=>{ map.getCanvas().style.cursor=''; });
       }
       return true; }catch(_){ return false; } }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ map.once('idle',apply); return; }
+    function openCam(f){ const p=f.properties||{}; const nm=String(p.n||'Webcam').replace(/[<>]/g,''); const url=String(p.url||''); const c=f.geometry.coordinates.slice();
+      const yt=ytId(url); const isImg=/\.(jpe?g|png|gif|webp)(\?|#|$)/i.test(url); const isPano=/roundshot\.com|panomax\.com/i.test(url);
+      let media='';
+      if(yt) media='<div style="position:relative;width:300px;max-width:80vw;height:170px;border-radius:11px;overflow:hidden;background:#000;"><iframe src="https://www.youtube-nocookie.com/embed/'+yt+'?autoplay=1&mute=1&playsinline=1&rel=0" width="100%" height="100%" style="border:0;position:absolute;inset:0;" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>';
+      else if(isImg) media='<img src="'+url+(url.indexOf("?")>=0?"&":"?")+'_t='+Date.now()+'" referrerpolicy="no-referrer" style="width:300px;max-width:80vw;border-radius:11px;display:block;background:#000;" onerror="this.style.display=\'none\'">';
+      else if(isPano) media='<div style="position:relative;width:300px;max-width:80vw;height:175px;border-radius:11px;overflow:hidden;background:#000;"><iframe src="'+url+'" width="100%" height="100%" style="border:0;position:absolute;inset:0;" allowfullscreen referrerpolicy="no-referrer" loading="lazy"></iframe></div>';
+      const html='<div style="font-weight:700;font-size:13px;margin:0 0 7px;display:flex;align-items:center;gap:6px;">📷 '+nm
+        +' <span style="font-size:9px;font-weight:800;letter-spacing:.4px;background:#ff3b30;color:#fff;border-radius:4px;padding:1px 5px;">LIVE</span></div>'
+        +(media?media:'<div style="font-size:11.5px;color:var(--text-muted);width:300px;max-width:80vw;padding:4px 0;line-height:1.5;">'+LLw('This webcam opens on its operator’s site.','このウェブカメラは提供元のサイトで開きます。','Diese Webcam öffnet auf der Seite des Betreibers.','Эта веб-камера откроется на сайте оператора.','Esta cámara se abre en el sitio del operador.')+'</div>')
+        +'<div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">© OpenStreetMap</span>'
+        +'<a href="'+url+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--primary-color);text-decoration:none;white-space:nowrap;">'+LLw('Open webcam','ウェブカメラを開く','Webcam öffnen','Открыть камеру','Abrir cámara')+' ↗</a></div>';
+      if(popup) popup.remove();
+      popup=new maplibregl.Popup({offset:14,closeButton:true,maxWidth:'330px',className:'plc-popup webcam-popup'}).setLngLat(c).setHTML(html).addTo(map);
+    }
+    function updateLegend(){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('webcams',[lbl(),lbl(),lbl(),lbl()],['webcams-pt','webcams-ico'],'dl-webcams'); if(el){ let h=el.querySelector('.wc-note'); if(!h){ h=document.createElement('div'); h.className='wc-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} const n=Object.keys(camById).length;
+      h.textContent=LLw(n+' webcams in view · pan / zoom to load more (live from OpenStreetMap)', '表示中 '+n+' 件 · 移動・拡大でさらに読み込み（OpenStreetMapからライブ取得）', n+' Webcams im Blick · verschieben / zoomen für mehr (live aus OpenStreetMap)', n+' камер в зоне · двигайте / масштабируйте (вживую из OpenStreetMap)', n+' cámaras a la vista · desplaza / amplía para más (en vivo desde OpenStreetMap)'); } }catch(_){} }
+    function loadView(force){ if(!on||!map||fetching) return; let b; try{ b=map.getBounds(); }catch(_){ return; }
+      const cur=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()], z=map.getZoom();
+      /* skip if the view is already covered AND we haven't zoomed in meaningfully (zoom-in fetches denser cams) */
+      if(!force && contains(lastBox,cur) && z<=lastZoom+0.8) return;
+      const padLa=Math.max(1.5,(cur[2]-cur[0])*0.25), padLo=Math.max(1.5,(cur[3]-cur[1])*0.25);
+      const qb=[Math.max(-90,cur[0]-padLa),Math.max(-180,cur[1]-padLo),Math.min(90,cur[2]+padLa),Math.min(180,cur[3]+padLo)].map(n=>n.toFixed(4)).join(',');
+      const q='[out:json][timeout:25];(node["contact:webcam"]('+qb+');node["webcam"]('+qb+'););out body 700;';
+      fetching=true; if(window.satToast && !Object.keys(camById).length){ try{ satToast(LLw('Loading webcams…','ウェブカメラを読み込み中…','Webcams werden geladen…','Загрузка веб-камер…','Cargando cámaras…')); }catch(_){} }
+      tryEP(q).then(j=>{ fetching=false; lastBox=[+qb.split(',')[0],+qb.split(',')[1],+qb.split(',')[2],+qb.split(',')[3]]; lastZoom=z;
+        ((j&&j.elements)||[]).forEach(el=>{ if(!el.tags||camById[el.id]) return; let u=el.tags['contact:webcam']||el.tags.webcam; if(!u) return; u=String(u).trim();
+          if(!/^https?:\/\//i.test(u)){ if(/^\/\//.test(u)) u='https:'+u; else u='https://'+u.replace(/^\/+/,''); }
+          camById[el.id]={type:'Feature',id:el.id,geometry:{type:'Point',coordinates:[el.lon,el.lat]},properties:{n:el.tags.name||el.tags.operator||el.tags['operator:short']||'Webcam',url:u}}; });
+        try{ const s=map.getSource('webcams-src'); if(s) s.setData(fc()); }catch(_){}
+        try{ if(on) updateLegend(); }catch(_){}
+      }).catch(()=>{ fetching=false; try{ if(!Object.keys(camById).length) satToast(LLw('Could not load webcams — try again.','ウェブカメラを取得できませんでした。','Webcams konnten nicht geladen werden.','Не удалось загрузить веб-камеры.','No se pudieron cargar las cámaras.')); }catch(_){} });
+    }
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map&&map.once) map.once('idle',apply); return; }
       ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility',on?'visible':'none'); }catch(_){} });
-      if(on){ try{ window._registerLayerOpacity&&window._registerLayerOpacity('webcams',[lbl(),lbl(),lbl(),lbl()],['webcams-pt','webcams-ico'],'dl-webcams'); }catch(_){} }
+      if(on){ updateLegend(); loadView(true); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} }
       else { try{ window._hideGenericLegend&&window._hideGenericLegend('webcams'); }catch(_){} if(popup){ popup.remove(); popup=null; } } };
       apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
+    map.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(()=>loadView(false),550); });
     map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ ['webcams-pt','webcams-ico'].forEach(id=>{ try{ map.setLayoutProperty(id,'visibility','visible'); }catch(_){} }); } },80); });
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-webcams')) return;
       const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-webcams';
@@ -18099,7 +18093,7 @@ window.addEventListener('DOMContentLoaded', () => {
       w.appendChild(lab); dd.appendChild(w);
       cb.addEventListener('change',e=>{ w.classList.toggle('on',e.target.checked); toggle(e.target.checked); });
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.textContent='📷 '+lbl(); });
+    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.textContent='📷 '+lbl(); try{ if(on) updateLegend(); }catch(_){} });
     if(document.readyState!=='loading') setTimeout(buildUI,900); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,900));
   })();
 
