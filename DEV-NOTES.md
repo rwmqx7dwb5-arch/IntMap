@@ -3402,3 +3402,35 @@ Build `2026-06-21-R41`. Verified live on the http preview after every change (pa
 
 ### R41b — Webcams reworked again (re-report: "youtube依存・静的コーディングはやめろ")
 The R41 webcam layer (25 hand-coded YouTube streams) was still rejected as a facade. Rebuilt as a **dynamic, worldwide, keyless** layer: it queries **OpenStreetMap's webcam database live via the Overpass API** (`contact:webcam` / `webcam` tags, ODbL — 9,400+ nodes globally) for the current map view, accumulating points as you pan/zoom (debounced `moveend`, bbox-contains + zoom-in skip, 3 Overpass endpoints with failover, `out body 700` cap). Click → the popup EMBEDS YouTube / direct-image / Roundshot·Panomax cams and PLAYS them; any other cam opens its real operator page (never a search). The hardcoded YouTube list is gone. Verified: the module's exact query returns 700 cams for a Europe bbox (≈120 embed inline, rest open externally); Overpass CORS confirmed from the browser. Sources entry → OpenStreetMap/Overpass; Privacy clause 4 (EN+JP) updated (Overpass + per-operator third-party content on view). No frontend key (constitution-compliant).
+
+---
+
+## 46. Round 42 — re-reported "fixes" done for real + Share panel + Atlas NL console (tags `#R42`)
+
+Build `2026-06-21-R42`. Several R41 items were re-reported as STILL broken; R42 found the REAL root causes (the R41 attempts were cosmetic/incomplete). Verified live on the http preview after every change: page RUNS, 0 console errors, build = R42, 240 layer rows, 15 GIBS rasters. Headless preview can't load WebGL rasters or run the AI/network path, so those were validated by exact-data verification + state reads + a synthetic unit test of the analysis math.
+
+### AI follow-up bar rectangle — the REAL root cause (re-reported "まだある")
+- R39–R41 kept tweaking the `.air-inbar` fill (solid → glass-fill → a `--popup-bg` gradient) and it STILL showed a rectangle. **Root cause: alpha doubling.** `.tool-panel` is `--popup-bg` = `rgba(255,255,255,0.72)` (translucent); `.air-inbar` repainted ANOTHER `--popup-bg` on top → the overlap is ~0.92 opaque, i.e. a brighter rectangle. The R41 gradient only faded the *top* edge; the solid lower band remained.
+- Fix: `.air-inbar` paints **nothing** (`background:transparent !important`, no blur, no border) in ALL sidebar modes. The pill goes opaque (`--card-bg`) so it still masks chat that scrolls behind the sticky bar. Verified: a test `.air-inbar` computes `backgroundColor: rgba(0,0,0,0)`.
+
+### Sea-ice / SST-anomaly (and ALL GIBS) legends — "凡例の色がでたらめ" was correct
+- The R41 legend gradients were **invented**, not taken from the data. Pulled the ACTUAL NASA GIBS colormap XMLs (`colormaps/v1.3/<name>.xml`), parsed the `<ColorMapEntry rgb=… value=…>` stops, sampled them at even intervals, and rebuilt every `SCALES` gradient to MATCH the tiles:
+  - **Sea-ice (GHRSST MUR)**: real palette is a full rainbow `near-black(0%)→magenta→violet→blue→cyan→green→yellow→orange→red→white(100%)` — was a flat blue→white.
+  - **SST anomaly (GHRSST MUR)**: real range is **±3 °C** (not ±5) `purple→blue→cyan→green→GREY-TAN(0)→yellow→orange→red→magenta→dark-red` — was blue→white→red.
+  - Temp rasters now use the colormap's true Kelvin clamp span (LST 200–350 K = −73…+77 °C; cloud-top 150–350 K; brightness-temp 180–340 K), plus exact NDVI / water-vapor / cloud-fraction / UV-aerosol gradients. (The legend MECHANISM was fine — only the data was wrong.)
+
+### Weather popup — Fahrenheit in `°C + °F` mode (re-reported "華氏に対応していない")
+- The popup's current/feels-like already used `fmtTemp` (both units), but the **5-day daily strip's `dT()` showed °C only in `both` mode**. Added `fF()` + a small `.wp-dayf` secondary line so `both` shows e.g. `30°/22°` (°C) with `86/72°F` beneath each day. `f`-only and `c`-only were already correct.
+
+### Share — surfaced as a real panel + completed the state (re-reported "まだ実装されていない")
+- The live permalink (`IntMapBookmark`) already encoded view+layers+`ts`+`cmp`, and a right-click "Share this view" existed — but it was a SILENT clipboard copy and the address bar carried `self=1` (which suppresses restore), so it never felt implemented. R42 adds **`window.IntMapShare`**: a visible panel (toolbar 🔗 button + the right-click entry both open it) showing the CLEAN `IntMapBookmark.link()` (no `self=1`) in a selectable field + Copy + native share, listing exactly what travels. Also added **`&sat=1`** to `encode()`/`restore()` so the Map↔Satellite base view is shared/restored too (it was the one missing piece). 5-lang.
+
+### Atlas — natural-language console (the new beta "ターミナル", `window.IntMapConsole`)
+- Type plain language → `askAIJSON` returns a STRICT JSON action plan → a REAL dispatcher executes it. Not a facade — every action maps to existing engine code: `layer` (fuzzy-match any layer checkbox), `flyTo` (local gazetteer→Nominatim geocode), `projection`, `base`, `compare`, `weather`, `brief`, `reset`, plus genuine country-data analysis over `countryStats`: `rank` (top/bottom N), `ratio` (A/B), and `relate` — a **regression residual** (`metricY` on `log(metricX)`) for "Y relative to X" questions. The example "map countries with low HDI relative to GDP per capita" → `{relate, metricY:hdi, metricX:gdppc, find:low}` → most-negative residual; validated with a synthetic test (the rich-but-low-HDI outlier ranks first). Matches highlight on the shared `countries` source (`nlq-fill`/`nlq-line` feature-state, re-added on `styledata`) + a fit-to-bounds + a ranked list. Launch (inconspicuous, beta): a small `⌖` toolbar button, the right-click menu, or **Ctrl/⌘+K**. 5-lang UI + the `say` line follows the app language.
+
+### New layers (大幅増強) + promotion (#R42)
+- **+3 objective NASA GIBS science rasters** (ids/colormaps curl-verified), each with an EXACT legend + full 5-lang label/note, placed straight into REAL groups (same bar as the already-promoted `gxaero`/`gxndvi`): **ocean chlorophyll-a** (VIIRS → Maritime), **carbon monoxide** (AIRS, smoke/pollution → Climate), **soil moisture** (AMSR2, drought → Terrain). The 7 GIBS temp/cloud/true-color rasters that were DEMOTED by request stay in Others (beta), per "降格指示があったものはそのままbeta".
+
+### i18n / Sources / Privacy
+- Every new string (Share panel, Atlas console + examples, button tooltips, layer labels/notes) ships in EN/JP/DE/RU/ES; ES rendering spot-checked live.
+- Data-sources: NASA GIBS `use` extended (sea-ice, SST anomaly, CO, soil moisture, ocean chlorophyll, NDVI). Privacy clause 4 (EN+JP) broadened: text submitted to ANY AI feature — place briefs, "Ask AI", and the Atlas console — plus relevant coordinates is sent to the AI provider (previously only "news headlines"). Atlas geocoding reuses the already-disclosed Nominatim/OSM. Last-updated 2026-06-21.
