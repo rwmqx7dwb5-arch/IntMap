@@ -9176,7 +9176,7 @@ window.addEventListener('DOMContentLoaded', () => {
            groups ("正規レイヤーに") — wbco2/wbforest = environment, the rest = population & economy, eq = hazards. */
         const GROUPS=[
           ['lyrGrpClimate',['climate','wind','radar','ec-cloud','snow','aod','gxaero','gxco','wbco2','wbforest']],   /* (#R40) the 7 GIBS temp/cloud/true-color rasters were DEMOTED to Others(beta) per request; only kept-quality rasters stay in real groups. (#R41) +OMPS UV aerosol index. (#R42) +carbon monoxide (AIRS, objective + exact legend) */
-          ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom','gxchlor']],   /* (#R42) +chlorophyll-a (ocean color, objective + exact legend) */
+          ['lyrGrpMaritime',['sst','eez','subcables','planes','gxseaice','gxsstanom']],   /* (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           ['lyrGrpTerrain',['worldcover','ecoregions','plates','relief','hillshade','contours','sealevel','gxndvi','gxrelief','wbagri','gxsoil']],   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
           ['lyrGrpDemo',['pop','popgrid','gdppc','tfr','hdi','dem','cpi','lifeexp','unemp','internet','wburb','wbelec','wbhealth','wbrenew','wbmobile','wbinfl','wbinfmort','wbgdpgrow','wblit','wbgini','wbpov','wbu5mort','wbwater','wbphys','wbschool']],   /* (#R39/#R40) promote objective/sourced World-Bank indicators (literacy, inequality, poverty, U5 mortality, safe water, physicians, schooling) to real layers — same standard as their already-promoted siblings */
           ['lyrGrpHazard',['thermal','aurora','nightsat','night','volc2','eq']],
@@ -17509,6 +17509,12 @@ window.addEventListener('DOMContentLoaded', () => {
   (function(){
     if(!map) return;
     let restoring=false, t=null;
+    /* (#R42b) Per-TAB flag: true on the FIRST load of a tab (a fresh open / a shared link / a copied address
+       bar opened on another device), false on a plain RELOAD of the same tab. sessionStorage survives reload
+       but is absent in a new tab. This lets a shared/opened URL restore the FULL state while a reload of your
+       own tab stays clean (the R33 "落ちても通常の初期時に" intent) — WITHOUT the old self=1 marker, so the
+       address bar is now itself a complete, copy-and-share link. */
+    let firstLoad; try{ firstLoad = (sessionStorage.getItem('intmap_session')!=='1'); sessionStorage.setItem('intmap_session','1'); }catch(_){ firstLoad=null; }
     function activeLayers(){ const ids=new Set(); try{
       /* (#R40) capture EVERY data-layer checkbox convention so the share link carries ALL selected layers
          (previously only dl-* / geo-layer-cb → GIBS gx-*, eco-dl-*, round-9 l9-dl-*, beta-dl-* were lost). */
@@ -17525,36 +17531,52 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R23) never persist layers while the intro AUTO-demo is toggling them — otherwise a demo layer
        lands in the URL hash and gets restored on the next load, so a layer the user never chose appears
        on its own ("なにも操作していないのに勝手にレイヤーがオンになる"). */
-    /* (#R33) Tag OUR OWN persisted hash with self=1. On (re)load, restore() then knows this URL is our own
-       session state (NOT an externally-shared link) and starts CLEAN — no layers auto-restored — so a browser
-       crash/reload returns to the normal initial state ("落ちても通常の初期時に"). A shared link (built by
-       IntMapBookmark.link(), which has no self marker) still restores its layers for the recipient. */
-    function save(){ if(restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h+'&self=1'); }catch(_){} }
-    function restore(){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
+    /* (#R33→#R42b) The R33 "reload returns clean" intent ("落ちても通常の初期時に") used a self=1 URL marker,
+       but that made the address bar non-shareable (copying it lost the layers). R42b drops the marker and writes
+       the FULL state straight to the address bar — so the URL is itself a complete copy-and-share link — while
+       the SAME reload-clean behaviour is preserved via the per-tab `firstLoad` sessionStorage flag (a reload of
+       your own tab restores the view only; a fresh open / shared link / same-tab paste restores everything). */
+    function save(){ if(restoring || window._imDemoActive) return; const h=encode(); if(!h) return; try{ history.replaceState(null,'',location.pathname+location.search+h); }catch(_){} }
+    /* (#R42b) restore. The VIEW (center/zoom/bearing/pitch/projection) is ALWAYS restored. The FULL state
+       (layers + time-travel + compare + base map, EXACTLY) is restored when this is a shared/explicit open —
+       i.e. a hashchange navigation (opts.shared, e.g. pasting a link in the same tab) OR the first load of the
+       tab (firstLoad: a new tab / another device / a copied link). A plain RELOAD of the same tab restores the
+       view only (R33). Legacy self=1 links still fully restore (firstLoad handles them). */
+    function restore(opts){ const m=/[#&]v=([^&]+)/.exec(location.hash); if(!m) return; restoring=true;
+      const full = !!(opts&&opts.shared===true) || (firstLoad!==false);   /* firstLoad null (no sessionStorage) → favour restore */
       try{ const p=decodeURIComponent(m[1]).split(','); const lng=+p[0],lat=+p[1],z=+p[2],br=+p[3]||0,pi=+p[4]||0,proj=p[5];
         if(proj==='f'&&currentProj!=='flat'){ const b=document.getElementById('btn-view-flat'); if(b) b.click(); }
         else if(proj==='g'&&currentProj!=='globe'){ const b=document.getElementById('btn-view-globe'); if(b) b.click(); }
         if(isFinite(lng)&&isFinite(lat)) map.jumpTo({center:[lng,lat],zoom:isFinite(z)?z:2,bearing:br,pitch:pi});
-        /* (#R42) restore satellite base view (part of the view, like projection — applied for self + shared links). */
-        try{ if(/[#&]sat=1/.test(location.hash)){ const sb=document.getElementById('btn-view-sat'); if(sb&&typeof currentMapType!=='undefined'&&currentMapType!=='sat') setTimeout(()=>{ try{ sb.click(); }catch(_){} },300); } }catch(_){}
+        /* satellite base view: switch ON if wanted; on a FULL restore also switch back to Map if NOT wanted (so a
+           shared link reproduces the base exactly, e.g. pasting a no-sat link over a satellite session). */
+        try{ const wantSat=/[#&]sat=1/.test(location.hash);
+          if(wantSat){ const sb=document.getElementById('btn-view-sat'); if(sb&&typeof currentMapType!=='undefined'&&currentMapType!=='sat') setTimeout(()=>{ try{ sb.click(); }catch(_){} },300); }
+          else if(full){ const mb=document.getElementById('btn-view-map'); if(mb&&typeof currentMapType!=='undefined'&&currentMapType==='sat') setTimeout(()=>{ try{ mb.click(); }catch(_){} },300); } }catch(_){}
       }catch(_){}
-      /* (#R33) Only restore LAYERS for an externally-shared link (no self marker). Our own saved state
-         (self=1) starts clean so a crash/reload never auto-enables layers. The view above is always restored. */
-      const lm=/[#&]l=([^&]+)/.exec(location.hash); const selfWritten=/[#&]self=1/.test(location.hash);
-      if(lm && !selfWritten){ const want=decodeURIComponent(lm[1]).split(',');
-        const apply=()=>{ want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); };
-        setTimeout(apply,700); setTimeout(apply,1800);
-      }
-      /* (#R40) shared-link time-travel + compare restore (own session stays clean, like layers). */
-      if(!selfWritten){
+      if(full){
+        const lm=/[#&]l=([^&]+)/.exec(location.hash);
+        const want=lm?decodeURIComponent(lm[1]).split(','):[]; const wantSet=new Set(want);
+        const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, .geo-layer-cb:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
+        const apply=()=>{
+          want.forEach(k=>{ const cb=document.getElementById(k)||document.querySelector('.geo-layer-cb[data-layer="'+k+'"]'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+          /* turn OFF any data layer NOT in the link so the shared state is reproduced EXACTLY (matters when a
+             link is pasted into a tab that already had layers on). Base toggles (names/borders/…) are untouched. */
+          document.querySelectorAll(DATASEL).forEach(cb=>{ const k=cb.id||cb.getAttribute('data-layer'); if(k && !wantSet.has(k)){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } });
+        };
+        [700,1800,3200].forEach(ms=>setTimeout(apply,ms));
         const tm=/[#&]ts=(\d+)/.exec(location.hash);
         if(tm){ setTimeout(()=>{ try{ const sl=document.getElementById('ntl-slider'); if(sl){ sl.value=tm[1]; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },900); }
         const cm2=/[#&]cmp=([^&]+)/.exec(location.hash);
         if(cm2){ setTimeout(()=>{ try{ window.IntMapCompare&&window.IntMapCompare.open(); if(cm2[1]==='x'){ setTimeout(()=>{ const xb=Array.from(document.querySelectorAll('#compare-window .cmp-btn')).find(b=>/x-ray/i.test(b.textContent)); if(xb) xb.click(); },700); } }catch(_){} },1300); }
       }
-      setTimeout(()=>{ restoring=false; },2600);
+      setTimeout(()=>{ restoring=false; },3500);
     }
     map.on('moveend',()=>{ clearTimeout(t); t=setTimeout(save,400); });
+    /* (#R42b) ROOT CAUSE of "コピーしたリンクを開いてもそのままにならない": pasting a link into the SAME tab is a
+       hash-only navigation — no reload — so restore() never re-ran. history.replaceState (used by save) does NOT
+       fire hashchange, so this can't loop. Re-run a FULL restore on any user hash navigation to a state link. */
+    window.addEventListener('hashchange',()=>{ try{ if(restoring) return; if(/[#&]v=/.test(location.hash)) restore({shared:true}); }catch(_){} });
     /* (#R16) GHOST-LAYER fix: the hash (which restore() re-applies on reload) used to update ONLY on pan,
        so toggling a layer OFF without panning left it in the hash → it "came back" on the next/crash reload
        ("表示を辞めたはずのレイヤーが残り続ける"). Persist the hash on EVERY layer change so the restored set
@@ -17564,14 +17586,13 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapBookmark={ link:()=>location.origin+location.pathname+location.search+encode(), save:save, restore:restore };
   })();
 
-  /* ===== (#R42) "Share this view" — a REAL, surfaced share PANEL ("今の状態をそのままURLで共有...まだ実装され
-     ていない"). The live permalink (IntMapBookmark) already encodes center/zoom/bearing/pitch, projection,
-     satellite base, ALL active layers, the time-travel slider AND the compare state; but the address bar carries
-     a private self=1 marker that suppresses layer/time/compare restore (so a crash-reload returns clean), so
-     copying the address bar did NOT reproduce state for a recipient. IntMapBookmark.link() builds the CLEAN link
-     (no self marker) → the recipient gets the FULL state. This panel SURFACES that link (it was only a silent
-     right-click copy before) with one-tap copy + the native share sheet + a list of exactly what travels in the
-     URL. 5-language. CSS via cssText with single quotes only (no back-tick in CSS → no blank-site risk). ===== */
+  /* ===== (#R42/#R42b) "Share this view" — a REAL, surfaced share PANEL ("今の状態をそのままURLで共有"). The
+     permalink (IntMapBookmark / the address bar) encodes center/zoom/bearing/pitch, projection, satellite base,
+     ALL active layers, the time-travel slider AND the compare state; R42b made the address bar itself a complete
+     shareable link and restore() now reproduces it on a fresh open OR a same-tab paste (the hashchange fix), so
+     "コピーしたリンクを開いてもそのままにならない" is resolved. This panel SURFACES the link with one-tap copy +
+     the native share sheet + a list of exactly what travels in the URL. 5-language. CSS via cssText with single
+     quotes only (no back-tick in CSS → no blank-site risk). ===== */
   window.IntMapShare=(function(){
     const L=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     let panel=null, styled=false;
@@ -17702,7 +17723,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length) return {lng:+h[0].lng,lat:+h[0].lat,name:h[0].name}; } }catch(_){}
       try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]) return {lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0]}; }catch(_){}
       return null; }
-    /* ---- dispatch ---- */
+    /* ---- generic UI helpers for the full-control action set ---- */
+    const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
+    function setSel(id,val){ const el=document.getElementById(id); if(!el) return false; el.value=val; el.dispatchEvent(new Event('change',{bubbles:true})); return true; }
+    /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return '';
       switch(a.type){
         case 'reset': clearHl(); return note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.'));
@@ -17718,20 +17742,35 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'relate': { await ensureData(); const n=clampN(a.n); const list=relate(a.metricY,a.metricX,a.find==='high'?'high':'low',n);
           const t=(a.find==='high'?L('High ','高い ','Hoch ','Высокий ','Alto '):L('Low ','低い ','Niedrig ','Низкий ','Bajo '))+(METRICS[a.metricY]?lx(METRICS[a.metricY].label):a.metricY)+' '+L('relative to','に対する','relativ zu','относительно','en relación con')+' '+(METRICS[a.metricX]?lx(METRICS[a.metricX].label):a.metricX);
           return listHtml(t,list,a.metricY); }
+        case 'theme': { const m=({dark:'dark',light:'light',auto:'auto',system:'auto'})[String(a.mode||'').toLowerCase()]||'auto'; setSel('setting-theme',m); try{ if(typeof userTheme!=='undefined'){ userTheme=m; if(typeof applyTheme==='function') applyTheme(); } }catch(_){} return note('✓ '+L('Theme','テーマ','Thema','Тема','Tema')+': '+m); }
+        case 'language': { const lg=({en:'en',english:'en',jp:'jp',ja:'jp',japanese:'jp','日本語':'jp',de:'de',german:'de',deutsch:'de',ru:'ru',russian:'ru',es:'es',spanish:'es','español':'es'})[String(a.lang||'').toLowerCase()]; if(lg){ try{ setLang(lg); }catch(_){ clickId('lang-'+lg); } return note('✓ '+L('Language','言語','Sprache','Язык','Idioma')+': '+lg); } return ''; }
+        case 'terrain3d': { if(a.on===false){ clickId('btn-view-globe'); } else { clickId('btn-view-3d'); } return note('✓ 3D '+(a.on===false?'off':'on')); }
+        case 'grid': { try{ if(typeof setGrid==='function') setGrid(a.on!==false); else clickId('btn-tool-grid'); }catch(_){} return note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on')); }
+        case 'resetNorth': case 'resetView': { clickId('btn-compass'); return note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')); }
+        case 'zoom': { try{ if(a.to!=null) map.zoomTo(+a.to,{duration:600}); else if(a.delta!=null) map.zoomTo(map.getZoom()+(+a.delta),{duration:400}); else if(String(a.dir||'')==='out') map.zoomOut(); else map.zoomIn(); }catch(_){} return note('✓ '+L('Zoom','ズーム','Zoom','Зум','Zoom')+': '+map.getZoom().toFixed(1)); }
+        case 'tab': { const ids={news:'btn-news',information:'btn-info',info:'btn-info',stats:'btn-stats',statistics:'btn-stats',community:'btn-community'}; const id=ids[String(a.name||'').toLowerCase()]; if(id) clickId(id); return note('✓ '+esc(a.name||'')); }
+        case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } } return note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on')); }
+        case 'isolate': { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off')); } const ll=await geocode(a.country||a.place); if(ll){ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(ll.lng,ll.lat,ll.name); }catch(_){} return note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(ll.name||a.country||'')); } return ''; }
+        case 'widgets': { try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle) window.IntMapWidgets.toggle(); else clickId('btn-widgets'); }catch(_){} return note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')); }
+        case 'screenshot': { clickId('btn-screenshot'); return note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')); }
+        case 'share': { try{ window.IntMapShare&&window.IntMapShare.open(); }catch(_){} return note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')); }
+        case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} } return note('✓ °'+String(u||'').toUpperCase()); }
+        case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ setSel('setting-units',m); try{ if(typeof unitMode!=='undefined') unitMode=m; }catch(_){} } return note('✓ '+esc(m||'')); }
+        case 'timeTravel': { try{ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650; if(a.daysAgo!=null) v=Math.max(0,3650-Math.round(+a.daysAgo)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} return note('✓ '+L('Time-travel','時刻','Zeitreise','Время','Tiempo')); }
+        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return note('📍 '+esc(ll.name||a.place||'')); } return ''; }
+        case 'tool': { const n=String(a.name||'').toLowerCase(); const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/measur|dist|area/.test(n)?'btn-tool-measure':null; if(id) clickId(id); return note('✓ '+esc(a.name||'')); }
         case 'answer': return '<div style="font-size:12px;line-height:1.55;">'+esc(a.text||'')+'</div>';
         default: return '';
       } }
     function SYS(){ const lang=(typeof _aiLangName==='function')?_aiLangName():'English';
-      return 'You are Atlas, the command interpreter for IntMap, an interactive world map. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' describing what you do. Action types:\n'
-        +'{"type":"layer","name":string,"on":boolean} toggle a data layer by name (wind, HDI, sea-ice concentration, population density, NATO, earthquakes, night lights, etc).\n'
-        +'{"type":"flyTo","place":string} OR {"type":"flyTo","lng":num,"lat":num,"zoom":num}.\n'
-        +'{"type":"projection","mode":"globe"|"flat"} . {"type":"base","mode":"map"|"satellite"} . {"type":"compare","on":boolean} .\n'
-        +'{"type":"weather","place":string} . {"type":"brief","place":string} AI brief for a place.\n'
-        +'{"type":"rank","metric":KEY,"order":"top"|"bottom","n":int} highlight top/bottom N countries by a metric.\n'
-        +'{"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int} rank by metricA/metricB.\n'
-        +'{"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} highlight countries whose metricY is unusually LOW/HIGH given metricX (regression residual). Use for "Y relative to X" / "Y for their X": e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}.\n'
-        +'{"type":"reset"} clear highlights. {"type":"answer","text":string} just answer a question (text in '+lang+').\n'
-        +'Valid KEY values ONLY: pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr. If a needed metric is not in this list, do NOT invent it — explain in "say" and return [] actions. Return MULTIPLE actions when useful. Default n=15.';
+      return 'You are Atlas, the command interpreter for IntMap, an interactive world map. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' describing what you did. You can drive EVERY part of IntMap, and a single request often needs SEVERAL actions — decompose compound requests into an ORDERED list and return them all. Action types:\n'
+        +'NAVIGATION/VIEW: {"type":"flyTo","place":str} or {"type":"flyTo","lng":num,"lat":num,"zoom":num}; {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"resetNorth"}.\n'
+        +'LAYERS: {"type":"layer","name":str,"on":bool} — fuzzy name (wind, HDI, sea-ice concentration, population density, NATO, earthquakes, night lights, submarine cables, soil moisture, carbon monoxide, …); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}.\n'
+        +'ANALYSIS (highlights countries): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"reset"} clears highlights.\n'
+        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"brief","place":str} (AI brief); {"type":"compare","on":bool}; {"type":"isolate","country":str,"on":bool} (show only that country); {"type":"pin","place":str}; {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int}.\n'
+        +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
+        +'ANSWER: {"type":"answer","text":str} — for a pure question, answer in '+lang+' with this single action.\n'
+        +'Valid metric KEY values ONLY: pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr. If a needed metric is not in this list, do NOT invent it — explain in "say" and omit that action. Default n=15. Example compound: "dark mode, fly to Taiwan, show military spending and the weather" → 4 actions [theme, flyTo, layer, weather].';
     }
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
@@ -17759,11 +17798,11 @@ window.addEventListener('DOMContentLoaded', () => {
       document.head.appendChild(s); }
     function bubble(who,html){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d); try{ chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} return d; }
     function examples(){ return L(
-      ['Map countries with low HDI relative to GDP per capita','Show the wind layer','Top 10 by military spending','Fly to Taiwan & show the weather'],
-      ['GDP per capitaの割にHDIの低い国をマッピング','風レイヤーを表示','国防費トップ10','台湾へ移動して天気を表示'],
-      ['Länder mit niedrigem HDI relativ zum BIP/Kopf zeigen','Windebene anzeigen','Top 10 Militärausgaben','Nach Taiwan fliegen & Wetter'],
-      ['Страны с низким ИЧР относительно ВВП на душу','Показать слой ветра','Топ-10 по военным расходам','Лететь на Тайвань и погода'],
-      ['Países con bajo IDH respecto al PIB per cápita','Mostrar capa de viento','Top 10 en gasto militar','Volar a Taiwán y ver el tiempo']); }
+      ['Map countries with low HDI relative to GDP per capita','Dark mode, fly to Iran, show military spending','Top 10 by military spending','Fly to Taiwan, satellite view & the weather'],
+      ['GDP per capitaの割にHDIの低い国をマッピング','ダークモードにしてイランへ移動し国防費を表示','国防費トップ10','台湾へ移動・衛星表示・天気を出して'],
+      ['Länder mit niedrigem HDI relativ zum BIP/Kopf zeigen','Dunkelmodus, nach Iran fliegen, Militärausgaben zeigen','Top 10 Militärausgaben','Nach Taiwan, Satellit & Wetter'],
+      ['Страны с низким ИЧР относительно ВВП на душу','Тёмная тема, лететь в Иран, военные расходы','Топ-10 по военным расходам','Тайвань, спутник и погода'],
+      ['Países con bajo IDH respecto al PIB per cápita','Modo oscuro, volar a Irán, mostrar gasto militar','Top 10 en gasto militar','Volar a Taiwán, satélite y el tiempo']); }
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='atlas-panel';
       panel.innerHTML='<div class="atl-head"><span class="atl-title">⌖ Atlas <span class="atl-beta">beta</span></span><button class="atl-x" title="'+t('close')+'">✕</button></div>'
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
