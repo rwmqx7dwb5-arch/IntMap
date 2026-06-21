@@ -17683,22 +17683,29 @@ window.addEventListener('DOMContentLoaded', () => {
       return (Math.round(v*100)/100).toLocaleString(); }
     /* ---- country data + highlight (reuses the shared `countries` source / ISO promoteId) ---- */
     function ensureData(){ return new Promise(res=>{
-      const ok=()=>(typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length&&map.getSource('countries'));
+      const ok=()=>(typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length&&!!geo());
       if(ok()){ res(true); return; }
       try{ if(typeof loadCountryData==='function'){ const p=loadCountryData(); if(p&&p.then){ p.then(()=>res(ok())).catch(()=>res(false)); } } }catch(_){}
-      let n=0; (function poll(){ if(ok()) res(true); else if(n++>50) res(ok()); else setTimeout(poll,150); })();
+      let n=0; (function poll(){ if(ok()) res(true); else if(n++>60) res(ok()); else setTimeout(poll,150); })();
     }); }
     let _hl=new Set();
-    function ensureHlLayers(){ if(map.getLayer('nlq-fill')) return; if(!map.getSource('countries')) return;
+    /* (#R42c) ROOT CAUSE of "地図へのマッピングが行われない": highlights targeted the shared `countries` source,
+       which only exists AFTER the Countries(info) layer is enabled (addCountryLayers) — so ensureHlLayers bailed
+       and nothing painted. Use our OWN geojson source built from window.countryGeo (always available once
+       loadCountryData ran), independent of any layer toggle. */
+    function geo(){ return window.countryGeo || (typeof countryGeo!=='undefined'?countryGeo:null); }
+    function ensureHlLayers(){ const g=geo(); if(!g||!g.features) return false;
+      try{ if(!map.getSource('nlq-src')) map.addSource('nlq-src',{type:'geojson',data:g,promoteId:'__code'}); }catch(_){}
+      if(map.getLayer('nlq-fill')) return true;
       const before=['ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      try{ map.addLayer({id:'nlq-fill',type:'fill',source:'countries',paint:{'fill-color':'#ff9500','fill-opacity':['case',['boolean',['feature-state','nlq'],false],0.5,0]}},before);
-        map.addLayer({id:'nlq-line',type:'line',source:'countries',paint:{'line-color':'#ff9f0a','line-width':['case',['boolean',['feature-state','nlq'],false],1.8,0],'line-opacity':0.95}},before); }catch(_){} }
-    function clearHl(){ _hl.forEach(c=>{ try{ map.setFeatureState({source:'countries',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); }
-    function highlight(codes){ ensureHlLayers(); clearHl(); codes.forEach(c=>{ try{ map.setFeatureState({source:'countries',id:String(c)},{nlq:true}); _hl.add(String(c)); }catch(_){} }); }
-    map.on('styledata',()=>{ if(_hl.size){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ map.setFeatureState({source:'countries',id:c},{nlq:true}); _hl.add(c); }catch(_){} }); }catch(_){} },120); } });
+      try{ map.addLayer({id:'nlq-fill',type:'fill',source:'nlq-src',paint:{'fill-color':'#ff9500','fill-opacity':['case',['boolean',['feature-state','nlq'],false],0.55,0]}},before);
+        map.addLayer({id:'nlq-line',type:'line',source:'nlq-src',paint:{'line-color':'#ff9f0a','line-width':['case',['boolean',['feature-state','nlq'],false],2,0],'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
+    function clearHl(){ _hl.forEach(c=>{ try{ map.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); }
+    function highlight(codes){ if(!ensureHlLayers()) return false; clearHl(); codes.forEach(c=>{ try{ map.setFeatureState({source:'nlq-src',id:String(c)},{nlq:true}); _hl.add(String(c)); }catch(_){} }); return true; }
+    map.on('styledata',()=>{ if(_hl.size){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ map.setFeatureState({source:'nlq-src',id:c},{nlq:true}); _hl.add(c); }catch(_){} }); }catch(_){} },120); } });
     function fbbox(g){ try{ let a=180,b=90,c=-180,d=-90; const scan=cs=>cs.forEach(x=>{ if(typeof x[0]==='number'){ a=Math.min(a,x[0]);b=Math.min(b,x[1]);c=Math.max(c,x[0]);d=Math.max(d,x[1]); } else scan(x); }); if(g.type==='Polygon'||g.type==='MultiPolygon') scan(g.coordinates); else return null; return [a,b,c,d]; }catch(_){ return null; } }
-    function fitTo(codes){ try{ if(typeof countryGeo==='undefined'||!countryGeo) return; const set=new Set(codes.map(String)); let a=180,b=90,c=-180,d=-90,any=false;
-      countryGeo.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); });
+    function fitTo(codes){ try{ const g=geo(); if(!g||!g.features) return; const set=new Set(codes.map(String)); let a=180,b=90,c=-180,d=-90,any=false;
+      g.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); });
       if(any&&isFinite(a)&&(c-a)<350) map.fitBounds([[a,b],[c,d]],{padding:60,maxZoom:6,duration:900}); }catch(_){} }
     /* ---- analysis ---- */
     function rows(metric){ const m=METRICS[metric]; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }
@@ -17759,6 +17766,12 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'timeTravel': { try{ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650; if(a.daysAgo!=null) v=Math.max(0,3650-Math.round(+a.daysAgo)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} return note('✓ '+L('Time-travel','時刻','Zeitreise','Время','Tiempo')); }
         case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return note('📍 '+esc(ll.name||a.place||'')); } return ''; }
         case 'tool': { const n=String(a.name||'').toLowerCase(); const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/measur|dist|area/.test(n)?'btn-tool-measure':null; if(id) clickId(id); return note('✓ '+esc(a.name||'')); }
+        case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof radiusKm!=='undefined') radiusKm=Math.max(1,+a.km); }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); try{ window._radiusFromPoint&&window._radiusFromPoint(ll.lng,ll.lat); }catch(_){} return note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')); } return ''; }
+        case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof measurePoints!=='undefined') measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||'')); } return ''; }
+        case 'bearing': case 'rotate': { try{ const b=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getBearing()+(+a.delta)):0); map.easeTo({bearing:b,pitch:a.pitch!=null?+a.pitch:map.getPitch(),duration:600}); }catch(_){} return note('✓ '+L('Bearing','方位','Ausrichtung','Азимут','Rumbo')+' '+Math.round(map.getBearing())+'°'); }
+        case 'correlate': { try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open) window.IntMapCorrelate.open(); else clickId('btn-correlate'); }catch(_){} return note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')); }
+        case 'settings': { clickId('btn-open-settings'); return note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')); }
+        case 'clearAll': { try{ clearHl(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} return note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado')); }
         case 'answer': return '<div style="font-size:12px;line-height:1.55;">'+esc(a.text||'')+'</div>';
         default: return '';
       } }
@@ -17767,7 +17780,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} or {"type":"flyTo","lng":num,"lat":num,"zoom":num}; {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"resetNorth"}.\n'
         +'LAYERS: {"type":"layer","name":str,"on":bool} — fuzzy name (wind, HDI, sea-ice concentration, population density, NATO, earthquakes, night lights, submarine cables, soil moisture, carbon monoxide, …); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}.\n'
         +'ANALYSIS (highlights countries): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"reset"} clears highlights.\n'
-        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"brief","place":str} (AI brief); {"type":"compare","on":bool}; {"type":"isolate","country":str,"on":bool} (show only that country); {"type":"pin","place":str}; {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int}.\n'
+        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"brief","place":str} (AI brief); {"type":"compare","on":bool}; {"type":"isolate","country":str,"on":bool} (show only that country); {"type":"pin","place":str}; {"type":"radius","place":str,"km":num} (draw a circle); {"type":"measure","from":str,"to":str} (distance between two places); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter/correlation tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int}; {"type":"bearing","deg":num} (rotate map); {"type":"clearAll"} (clear highlights, pins, radius & isolate).\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for a pure question, answer in '+lang+' with this single action.\n'
         +'Valid metric KEY values ONLY: pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr. If a needed metric is not in this list, do NOT invent it — explain in "say" and omit that action. Default n=15. Example compound: "dark mode, fly to Taiwan, show military spending and the weather" → 4 actions [theme, flyTo, layer, weather].';
@@ -17775,7 +17788,12 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
-      s.textContent='#atlas-panel{position:absolute;z-index:1850;left:50%;top:64px;transform:translateX(-50%);display:none;flex-direction:column;width:min(480px,calc(100vw - 24px));max-height:min(72vh,640px);background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);overflow:hidden;}'
+      s.textContent='#atlas-panel{position:absolute;z-index:1850;left:50%;top:64px;transform:translateX(-50%);display:none;flex-direction:column;width:min(480px,calc(100vw - 24px));height:min(72vh,560px);min-width:300px;min-height:160px;max-width:calc(100vw - 16px);max-height:90vh;resize:both;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);overflow:hidden;}'
+        +'#atlas-panel.atl-min{height:auto !important;resize:none;}'
+        +'#atlas-panel.atl-min .atl-sub,#atlas-panel.atl-min .atl-ex,#atlas-panel.atl-min .atl-chat,#atlas-panel.atl-min .atl-inbar{display:none !important;}'
+        +'#atlas-panel .atl-btns{display:flex;gap:2px;align-items:center;}'
+        +'#atlas-panel .atl-min-btn{background:none;border:none;color:var(--text-muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px;}'
+        +'#atlas-panel .atl-min-btn:hover{background:var(--input-bg);color:var(--text-main);}'
         +'#atlas-panel .atl-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 9px;cursor:move;}'
         +'#atlas-panel .atl-title{font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:7px;}'
         +'#atlas-panel .atl-beta{font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#ff9500;border-radius:5px;padding:1px 5px;}'
@@ -17804,14 +17822,17 @@ window.addEventListener('DOMContentLoaded', () => {
       ['Страны с низким ИЧР относительно ВВП на душу','Тёмная тема, лететь в Иран, военные расходы','Топ-10 по военным расходам','Тайвань, спутник и погода'],
       ['Países con bajo IDH respecto al PIB per cápita','Modo oscuro, volar a Irán, mostrar gasto militar','Top 10 en gasto militar','Volar a Taiwán, satélite y el tiempo']); }
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='atlas-panel';
-      panel.innerHTML='<div class="atl-head"><span class="atl-title">⌖ Atlas <span class="atl-beta">beta</span></span><button class="atl-x" title="'+t('close')+'">✕</button></div>'
+      panel.innerHTML='<div class="atl-head"><span class="atl-title">⌖ Atlas <span class="atl-beta">beta</span></span><span class="atl-btns"><button class="atl-min-btn" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'">–</button><button class="atl-x" title="'+t('close')+'">✕</button></span></div>'
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
         +'<div class="atl-ex"></div>'
         +'<div class="atl-chat"></div>'
         +'<div class="atl-inbar"><input class="atl-in" type="text" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"><button class="atl-go" title="'+L('Send','送信','Senden','Отправить','Enviar')+'">▸</button></div>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
-      panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; };
+      /* (#R42c) closing Atlas also clears the highlights it drew ("×したらAtlas起源の地図上の表示も消える"). */
+      panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; try{ clearHl(); }catch(_){} };
+      /* (#R42c) minimize / restore (collapse to just the header bar). */
+      const minBtn=panel.querySelector('.atl-min-btn'); if(minBtn) minBtn.onclick=()=>{ const mn=panel.classList.toggle('atl-min'); minBtn.textContent=mn?'▢':'–'; minBtn.title=mn?L('Restore','元に戻す','Wiederherstellen','Развернуть','Restaurar'):L('Minimize','最小化','Minimieren','Свернуть','Minimizar'); };
       const exWrap=panel.querySelector('.atl-ex'); examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; exWrap.appendChild(b); });
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); fire(); } });
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.atl-head')); }catch(_){}
@@ -17830,7 +17851,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ai.innerHTML=out||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
       }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; }
     }
-    function open(){ const p=ensure(); p.style.display='flex'; setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
+    function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; } p.style.display='flex'; setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else p.style.display='none'; }
     return { open, toggle, run };
   })();
