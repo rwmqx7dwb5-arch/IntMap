@@ -17733,6 +17733,38 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- generic UI helpers for the full-control action set ---- */
     const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
     function setSel(id,val){ const el=document.getElementById(id); if(!el) return false; el.value=val; el.dispatchEvent(new Event('change',{bubbles:true})); return true; }
+    /* ---- (#R42d) UNIVERSAL control layer so Atlas can operate ANY control in IntMap, not just the enumerated
+       semantic actions ("all actions, literally"). It fuzzy-matches a target name/id against EVERY button,
+       checkbox/radio, select, slider and text input in the live DOM (visible OR inside a closed panel — direct
+       DOM ops + dispatched events still run the real handler) and clicks/sets/toggles it. ---- */
+    function _assocLabel(el){ try{ if(el.id){ const l=document.querySelector('label[for="'+el.id+'"]'); if(l) return l.textContent||''; } const grp=el.closest&&(el.closest('.setting-group')||el.closest('label')); if(grp&&grp!==el){ const l=grp.tagName==='LABEL'?grp:grp.querySelector('label'); if(l) return l.textContent||''; } let p=el.previousElementSibling; let k=0; while(p&&k++<2){ if(p.tagName==='LABEL') return p.textContent||''; p=p.previousElementSibling; } }catch(_){} return ''; }
+    function _ctlLabel(el){ const opts=(el.tagName==='SELECT')?'':(el.textContent||''); return ((el.id||'')+' '+opts+' '+_assocLabel(el)+' '+(el.getAttribute&&(el.getAttribute('title')||'')||'')+' '+(el.getAttribute&&(el.getAttribute('aria-label')||'')||'')+' '+(el.getAttribute&&(el.getAttribute('data-i18n')||el.getAttribute('data-i18n-title')||'')||'')+' '+(el.placeholder||'')).toLowerCase().replace(/\s+/g,' ').trim(); }
+    function _ctlEls(){ return [].slice.call(document.querySelectorAll('button, input, select, textarea, [role="button"], .view-btn, .mode-btn, .ios-segment-btn, .dash-nav-btn, .lyr-head')); }
+    function findControl(target){ const q=String(target||'').toLowerCase().trim(); if(!q) return null; let best=null,bs=0;
+      _ctlEls().forEach(el=>{ if(el.disabled) return; if((el.type==='checkbox'||el.type==='radio')&&el.closest&&el.closest('#layer-dropdown')) return; /* layers use the `layer` action */ const id=(el.id||'').toLowerCase(); const lab=_ctlLabel(el); let sc=0;
+        if(id&&id===q) sc=100; else if(lab===q) sc=96; else if(id&&q===id.replace(/^(btn-|cb-|setting-|dl-)/,'')) sc=92;
+        else if(lab.indexOf(q)>=0&&q.length>1) sc=62+Math.min(22,q.length); else if(id&&id.indexOf(q)>=0&&q.length>2) sc=58;
+        else { const qt=q.split(/\s+/).filter(w=>w.length>1); if(qt.length){ const hit=qt.filter(w=>lab.indexOf(w)>=0||id.indexOf(w)>=0).length; if(hit) sc=45*hit/qt.length; } }
+        if(sc>0 && el.offsetParent===null) sc*=0.6; /* prefer a VISIBLE control over a hidden duplicate (e.g. desktop btn vs mobile proxy); hidden still wins if it's the only match (settings in a closed modal) */
+        if(sc>bs){ bs=sc; best=el; } });
+      return bs>=22?best:null; }
+    function doControl(a){ const el=findControl(a.target); if(!el) return note('⚠ '+L('Control not found','操作対象が見つかりません','Steuerung nicht gefunden','Элемент не найден','Control no encontrado')+': '+esc(a.target||''));
+      const tag=el.tagName.toLowerCase(), nm=esc(a.target||el.id||(el.textContent||'').trim().slice(0,24));
+      try{
+        if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(o){ el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } } return note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):'')); }
+        if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return note('✓ '+nm+': '+(want?'on':'off')); }
+        if(el.type==='range'||el.type==='number'){ if(a.value!=null){ el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } return note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):'')); }
+        if(tag==='textarea'||(tag==='input'&&(!el.type||/^(text|search|email|url)$/.test(el.type)))){ if(a.value!=null){ el.focus(); el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); if(a.submit!==false){ el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); } } return note('✓ '+nm); }
+        el.click(); return note('✓ '+nm);
+      }catch(_){ return note('⚠ '+nm); } }
+    /* Compact catalog of the main controls (buttons + selects), fed to the AI so it can target ANY of them by
+       name via {"type":"control",...}. Layer checkboxes are omitted (the `layer` action covers them). */
+    function controlCatalog(){ try{ const seen=new Set(), out=[];
+      _ctlEls().forEach(el=>{ const tag=el.tagName.toLowerCase(); if(el.type==='checkbox'||el.type==='radio') return; if(el.closest&&el.closest('#layer-dropdown')&&tag!=='select') return;
+        let nm=(tag==='select'||tag==='input'||tag==='textarea')?(_assocLabel(el)||(el.getAttribute&&(el.getAttribute('title')||el.placeholder||''))||el.id||''):((el.textContent||'').replace(/\s+/g,' ').trim()||(el.getAttribute&&(el.getAttribute('title')||el.getAttribute('aria-label')||''))||el.id||''); nm=String(nm).replace(/\s+/g,' ').slice(0,28).trim(); if(!nm||nm.length<2) return;
+        const key=(el.id||nm).toLowerCase(); if(seen.has(key)) return; seen.add(key);
+        out.push(nm+(el.id?(' [#'+el.id+']'):'')+(tag==='select'?' (select)':'')); });
+      return out.slice(0,140).join('; '); }catch(_){ return ''; } }
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return '';
       switch(a.type){
@@ -17772,18 +17804,21 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'correlate': { try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open) window.IntMapCorrelate.open(); else clickId('btn-correlate'); }catch(_){} return note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')); }
         case 'settings': { clickId('btn-open-settings'); return note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')); }
         case 'clearAll': { try{ clearHl(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} return note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado')); }
+        case 'control': return doControl(a);
         case 'answer': return '<div style="font-size:12px;line-height:1.55;">'+esc(a.text||'')+'</div>';
         default: return '';
       } }
     function SYS(){ const lang=(typeof _aiLangName==='function')?_aiLangName():'English';
-      return 'You are Atlas, the command interpreter for IntMap, an interactive world map. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' describing what you did. You can drive EVERY part of IntMap, and a single request often needs SEVERAL actions — decompose compound requests into an ORDERED list and return them all. Action types:\n'
+      return 'You are Atlas, the command interpreter for IntMap, an interactive world map. You can perform ANY action available in IntMap — there is NO operation you cannot do (every button, toggle, slider, menu and setting is reachable, via a specific action below or the universal "control" action). Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' describing what you did. A single request often needs SEVERAL actions — decompose compound/complex requests into an ORDERED list and return them ALL. Action types:\n'
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} or {"type":"flyTo","lng":num,"lat":num,"zoom":num}; {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"resetNorth"}.\n'
         +'LAYERS: {"type":"layer","name":str,"on":bool} — fuzzy name (wind, HDI, sea-ice concentration, population density, NATO, earthquakes, night lights, submarine cables, soil moisture, carbon monoxide, …); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}.\n'
         +'ANALYSIS (highlights countries): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"reset"} clears highlights.\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"brief","place":str} (AI brief); {"type":"compare","on":bool}; {"type":"isolate","country":str,"on":bool} (show only that country); {"type":"pin","place":str}; {"type":"radius","place":str,"km":num} (draw a circle); {"type":"measure","from":str,"to":str} (distance between two places); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter/correlation tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int}; {"type":"bearing","deg":num} (rotate map); {"type":"clearAll"} (clear highlights, pins, radius & isolate).\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for a pure question, answer in '+lang+' with this single action.\n'
-        +'Valid metric KEY values ONLY: pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr. If a needed metric is not in this list, do NOT invent it — explain in "say" and omit that action. Default n=15. Example compound: "dark mode, fly to Taiwan, show military spending and the weather" → 4 actions [theme, flyTo, layer, weather].';
+        +'UNIVERSAL — use this for ANYTHING not covered above so EVERY operation in the app is possible: {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool}. It finds and clicks/sets/toggles any button, checkbox, dropdown, slider or input. Prefer a specific action when one exists; otherwise ALWAYS fall back to "control" rather than refusing.\n'
+        +'Valid metric KEY values ONLY: pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr. If a needed metric is not in this list, do NOT invent it — explain in "say" and omit that action. Default n=15. Example compound: "dark mode, fly to Taiwan, show military spending and the weather" → 4 actions [theme, flyTo, layer, weather].\n'
+        +'Controls you can target with "control" (name [#id]): '+controlCatalog();
     }
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
