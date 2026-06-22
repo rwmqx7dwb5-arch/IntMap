@@ -17690,6 +17690,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }); }
     let _hl=new Set();
     let _choroState={}, _choroMetric=null;   /* (#R43) choropleth (data→map shading) per-country normalized value */
+    /* (#R44) conversation MEMORY + last-referenced place — the user reported "文脈理解が壊滅的": Atlas was sending
+       ONLY the current message to the model with no history and no map state, so follow-ups ("there", "turn it
+       off", "more", "the same country over time") had nothing to resolve against. */
+    let _hist=[]; let _lastPlace=null;
     /* (#R42c) ROOT CAUSE of "地図へのマッピングが行われない": highlights targeted the shared `countries` source,
        which only exists AFTER the Countries(info) layer is enabled (addCountryLayers) — so ensureHlLayers bailed
        and nothing painted. Use our OWN geojson source built from window.countryGeo (always available once
@@ -17755,9 +17759,14 @@ window.addEventListener('DOMContentLoaded', () => {
       let sl=row.querySelector&&row.querySelector('input[type=range]'); if(sl) return sl;
       let n=row.nextElementSibling; let k=0; while(n&&k++<2){ if(n.matches&&n.matches('input[type=range]')) return n; if(n.querySelector){ const s=n.querySelector('input[type=range]'); if(s) return s; } n=n.nextElementSibling; }
       if(cb.id){ const o=document.getElementById('op-'+cb.id.replace(/^dl-/,''))||document.getElementById(cb.id.replace(/^dl-/,'op-')); if(o&&o.type==='range') return o; } }catch(_){} return null; }
-    async function geocode(place){ place=String(place||'').trim(); if(!place){ const c=map.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
-      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length) return {lng:+h[0].lng,lat:+h[0].lat,name:h[0].name}; } }catch(_){}
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]) return {lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0]}; }catch(_){}
+    const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
+    async function geocode(place){ place=String(place||'').trim();
+      /* (#R44) deictic references → the place Atlas last touched, else the current map centre, so "here / there /
+         this place / the same spot / current location / そこ / ここ / そこの" resolve in context. */
+      if(!place||/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|現在地|この場所|同じ場所)$/i.test(place)){
+        if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=map.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
+      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length) return _setLast({lng:+h[0].lng,lat:+h[0].lat,name:h[0].name}); } }catch(_){}
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]) return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0]}); }catch(_){}
       return null; }
     /* ---- generic UI helpers for the full-control action set ---- */
     const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
@@ -17834,6 +17843,27 @@ window.addEventListener('DOMContentLoaded', () => {
     async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c; try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats[code]){ const s=countryStats[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
     /* short human label for a step, used in the honest failure summary */
     function actLabel(a){ if(!a||!a.type) return ''; const x=a.name||a.place||a.country||a.metric||a.query||a.mode||a.lang||a.unit||a.from||a.target||''; return a.type+(x?(' "'+String(x).slice(0,26)+'"'):''); }
+    /* (#R44) a compact snapshot of what is CURRENTLY on screen, fed to the model so it can ground references
+       ("there", "this country", "turn that layer off", "zoom in more", "the same") in the real map state. */
+    function stateContext(){ try{ const lines=[]; const c=map.getCenter(), z=map.getZoom();
+        const act=id=>{ const e=document.getElementById(id); return e&&e.classList.contains('active'); };
+        const base=act('btn-view-sat')?'satellite':'map'; const proj=act('btn-view-3d')?'3D terrain':act('btn-view-flat')?'flat':'globe';
+        lines.push('Map centre ≈ '+c.lat.toFixed(2)+','+c.lng.toFixed(2)+' · zoom '+z.toFixed(1)+' · '+base+' base · '+proj+' view · bearing '+Math.round(map.getBearing())+'°.');
+        if(_lastPlace&&_lastPlace.name) lines.push('Last place referenced: "'+_lastPlace.name+'" — map "here"/"there"/"that place" to it.');
+        const active=[]; try{ layerCatalog().forEach(c2=>{ if(c2.cb.checked) active.push(c2.label); }); }catch(_){}
+        lines.push(active.length?('Layers ON ('+active.length+'): '+active.slice(0,40).join(', ')+'.'):'No data layers are on.');
+        if(_hl&&_hl.size) lines.push(_hl.size+' countries are highlighted by Atlas right now.');
+        if(_choroMetric&&METRICS[_choroMetric]) lines.push('The map is currently shaded (choropleth) by '+lx(METRICS[_choroMetric].label)+'.');
+        try{ if(window._cpCurrent&&window._cpCurrent.name) lines.push('Open country card: '+window._cpCurrent.name+' — "this country"/"it"/"over time" refer to it.'); }catch(_){}
+        let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}
+        lines.push('UI language='+currentLang+', theme='+((typeof userTheme!=='undefined')?userTheme:'auto')+(tu?(', temp unit=°'+String(tu).toUpperCase()):'')+'.');
+        return lines.join('\n'); }catch(_){ return ''; } }
+    /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
+       the CONTEXT it was completely missing before. */
+    function buildPrompt(q){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
+      if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest; resolve pronouns/follow-ups against this)\n'+_hist.slice(-8).join('\n')+'\n\n';
+      p+='[NEW REQUEST]\n'+q+'\n\nInterpret the request IN CONTEXT of the state and conversation above. Resolve references like "it / that / there / here / this country / the same / again / now / turn it off / make it bigger / the Nth one / zoom in more" using them. If the request is a tweak of the previous one, keep the parts that still apply.';
+      return p; }
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,'');
       switch(a.type){
@@ -17890,7 +17920,8 @@ window.addEventListener('DOMContentLoaded', () => {
         default: { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn('⚠ '+L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
       } }
     function SYS(){ const lang=(typeof _aiLangName==='function')?_aiLangName():'English';
-      return 'You are Atlas, the natural-language command layer for IntMap, an interactive world map. You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' stating what you did. Decompose EVERY compound or vague request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyse a metric, shade the map, enable a layer AND fly somewhere). Never refuse and never claim success for something you did not emit an action for; if unsure, pick the closest action and proceed. Action types:\n'
+      return 'You are Atlas, the natural-language command layer for IntMap, an interactive world map. You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' stating what you did. Decompose EVERY compound or vague request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyse a metric, shade the map, enable a layer AND fly somewhere). Never refuse and never claim success for something you did not emit an action for; if unsure, pick the closest action and proceed.\n'
+        +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (centre, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map centre. Action types:\n'
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} or {"type":"flyTo","lng":num,"lat":num,"zoom":num}; {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). {"type":"opacity","name":EXACT_NAME,"value":0..1}; {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom"} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"); {"type":"reset"} clears highlights & shading.\n'
@@ -17962,12 +17993,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none';
       bubble('u',esc(q));
       const ai=bubble('a','<span style="color:var(--text-muted);">'+L('Thinking…','考え中…','Denke nach…','Думаю…','Pensando…')+'</span>');
-      try{ let plan=await askAIJSON(q,SYS());
+      try{ let plan=await askAIJSON(buildPrompt(q),SYS());
         if(!plan){ ai.innerHTML=esc(L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.')); return; }
         /* (#R43) tolerate a bare array of actions or a single action object from a weaker model. */
         if(Array.isArray(plan)) plan={actions:plan}; else if(plan.type&&!plan.actions) plan={actions:[plan],say:plan.say};
         const acts=Array.isArray(plan.actions)?plan.actions:[];
-        if(!acts.length){ ai.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc(plan.say||L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.'))+'</div>'; return; }
+        if(!acts.length){ const txt=plan.say||L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.'); ai.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc(txt)+'</div>'; recordTurn(q, plan.say||'', acts, []); return; }
         /* (#R43) HONEST reporting: run every action, collect REAL per-step results, and surface any failures
            prominently instead of letting the model's optimistic "say" claim success it never achieved. */
         let body=''; const fails=[];
@@ -17976,8 +18007,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
           head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')+'</div>'; }
         ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
+        recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
       }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; }
     }
+    /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
+    function recordTurn(q, say, acts, fails){ try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
+      let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
+      _hist.push('User: '+q.slice(0,260)); _hist.push(a); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }
     function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; } p.style.display='flex'; setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else p.style.display='none'; }
     return { open, toggle, run };
