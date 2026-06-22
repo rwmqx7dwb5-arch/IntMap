@@ -17796,77 +17796,58 @@ window.addEventListener('DOMContentLoaded', () => {
       let n=row.nextElementSibling; let k=0; while(n&&k++<2){ if(n.matches&&n.matches('input[type=range]')) return n; if(n.querySelector){ const s=n.querySelector('input[type=range]'); if(s) return s; } n=n.nextElementSibling; }
       if(cb.id){ const o=document.getElementById('op-'+cb.id.replace(/^dl-/,''))||document.getElementById(cb.id.replace(/^dl-/,'op-')); if(o&&o.type==='range') return o; } }catch(_){} return null; }
     const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
+    /* (#R44) deictic references → the place Atlas last touched, else the current map centre. */
+    const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|現在地|この場所|同じ場所)$/i;
     async function geocode(place){ place=String(place||'').trim();
-      /* (#R44) deictic references → the place Atlas last touched, else the current map centre, so "here / there /
-         this place / the same spot / current location / そこ / ここ / そこの" resolve in context. */
-      if(!place||/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|現在地|この場所|同じ場所)$/i.test(place)){
+      if(!place||DEIXIS_RE.test(place)){
         if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=map.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
       try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length) return _setLast({lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}); } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
       try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
       return null; }
-    /* (#R46) scale → zoom (AI may pass scale on flyTo) + place-kind → zoom (from the gazetteer/Nominatim type) +
-       a sanity check before fitBounds. These make navigation match the TARGET'S SIZE. */
-    const SCALE_Z={world:1.6,globe:1.6,hemisphere:2.2,continent:3,subcontinent:3.4,region:4,country:4.6,nation:4.6,subregion:5,state:6,province:6,prefecture:6.5,county:8,metro:8.5,city:10.5,town:11.5,village:12.5,suburb:12.5,neighborhood:13,district:13,landmark:14.5,poi:14.5,building:16,address:16,street:15};
-    function scaleZoom(s){ if(s==null) return null; const z=SCALE_Z[String(s).toLowerCase().trim()]; return (z!=null)?z:null; }
-    function kindZoom(k){ if(!k) return null; k=String(k).toLowerCase(); if(SCALE_Z[k]!=null) return SCALE_Z[k]; if(/capital/.test(k)) return 9.5; if(/city|town|village|hamlet|municipal|suburb|borough/.test(k)) return 10.5; if(/country|nation|sovereign|administrative|state|province/.test(k)) return 4.8; if(/continent/.test(k)) return 3; if(/island|peak|mountain|volcano|cape|landmark|attraction|monument/.test(k)) return 9; if(/peninsula|sea|bay|gulf|strait|desert|plateau/.test(k)) return 5; if(/flashpoint|base|airport|aerodrome|harbour|port/.test(k)) return 8.5; return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
-    /* (#R50) COMMON-SENSE navigation. The user: 'world'→geocoded to "World Bank (MC Building)", 'Earth'→"Earth, Texas",
-       a city→only its city HALL, China/Russia→extreme zoom-in. Fixes: (1) WORLD_RE = "the whole world / earth / globe"
-       → zoom OUT to the planet, never geocode. (2) For SETTLEMENTS/POIs use a FIXED comfortable zoom CENTRED on the
-       point (no tiny-bbox→city-hall, no metropolis-islands→too-far). (3) Only big FIT_KINDS (continent/country/region/
-       island/sea) fit their bbox; a country with no sane bbox (France/USA/Russia: antimeridian/territories) just uses
-       a centred country zoom — never the random largest-island polygon that caused the extreme zoom-in. */
-    const WORLD_RE=/^\s*(the\s+|whole\s+|entire\s+|all\s+(of\s+)?)*(world|earth|planet|globe|everything|map)\s*$|^\s*(全世界|世界全体|世界|地球|ぜんたい|全体|全球|весь\s*мир|мир|mundo entero|el mundo|die welt|welt)\s*$/i;
-    const FIT_KINDS=/continent|country|nation|sovereign|state|province|region|prefecture|oblast|krai|republic|department|county|administrative|island|archipelago|sea|gulf|bay|desert|ocean|peninsula|range|massif/;
-    function placeZoom(kind){ const k=String(kind||'').toLowerCase();
-      if(/continent/.test(k)) return 3.2;
-      if(/country|nation|sovereign/.test(k)) return 4.6;
-      if(/state|province|region|prefecture|oblast|krai|republic|department|county|administrative/.test(k)) return 6;
-      if(/capital|city|metropolis|municipal|borough/.test(k)) return 10.3;
-      if(/town/.test(k)) return 11.3;
-      if(/suburb|district|village|hamlet|neighbourhood|neighborhood|quarter|locality/.test(k)) return 12.5;
-      if(/island|archipelago/.test(k)) return 8;
-      if(/mountain|peak|volcano|range|massif|hill/.test(k)) return 11;
-      if(/lake|sea|bay|gulf|strait|reef|river|fjord|reservoir/.test(k)) return 7;
-      if(/landmark|monument|attraction|building|tower|stadium|bridge|dam|man_made|memorial|museum|palace|castle|temple|shrine|church|mosque|airport|aerodrome|station|park|square|poi|tourism|historic|hotel|amenity|leisure|university|hospital/.test(k)) return 14.5;
+    /* (#R51) DYNAMIC navigation. The user: "固定値でいいはずがない／静的なコーディングだと所変われば不具合". Correct — a
+       "city" can be Tokyo or a hamlet, so any hardcoded type→zoom table is wrong somewhere. We DERIVE the view from the
+       place's REAL geographic FOOTPRINT instead of any constant. WORLD_RE is only the global-view INTENT (there is no
+       geometry for "the world"). robustExtent() takes the actual polygon (Nominatim polygon_geojson) and returns the
+       extent of the place's MAIN body — antimeridian-aware (Russia/Fiji) and discarding tiny far-flung outliers
+       (France+Guiana, Tokyo+Ogasawara) by keeping only the largest rings up to ~92% of the area. cameraForBounds then
+       frames it with a proportional margin. No per-type constants → every place gets exactly the zoom its size warrants. */
+    const WORLD_RE=/^\s*(the\s+|whole\s+|entire\s+|all\s+(of\s+)?)*(world|earth|planet|globe|everything)\s*$|^\s*(全世界|世界全体|世界|地球|全体|全球|весь\s*мир|мир|mundo entero|el mundo|die welt|welt)\s*$/i;
+    function _ringArea(r){ let a=0,n=(r&&r.length)||0; if(n<3) return 0; for(let i=0,j=n-1;i<n;j=i++){ if(r[i]&&r[j]) a+=(r[j][0]*r[i][1]-r[i][0]*r[j][1]); } return Math.abs(a/2); }
+    function _outerRings(gj){ if(!gj) return null; const t=gj.type;
+      if(t==='Polygon') return gj.coordinates&&[gj.coordinates[0]];
+      if(t==='MultiPolygon') return gj.coordinates&&gj.coordinates.map(p=>p&&p[0]);
+      if(t==='LineString') return [gj.coordinates];
+      if(t==='MultiLineString') return gj.coordinates;
       return null; }
-    /* (#R49) "ちょうど見渡せる" comfort clamp — Nominatim admin bboxes vary wildly (e.g. Tokyo Metropolis includes
-       islands 1000 km south → way too far; a tiny POI bbox → way too close). Clamp the fitted zoom into a sensible
-       band for the place TYPE so the whole place sits comfortably in view, neither too near nor too far. */
-    /* WIDE bands — the bbox itself already encodes the place's size, so only rein in the ABSURD extremes (a tiny POI
-       fitting to z17, or a sprawling admin boundary fitting to z3 for a city); normal cases pass through unchanged
-       (e.g. tiny city-states like Singapore must NOT be forced to country-zoom). */
-    function comfortClamp(z, kind){ if(z==null||isNaN(z)) return z; kind=String(kind||'').toLowerCase(); let lo=1.4,hi=17;
-      if(/continent/.test(kind)){ lo=1.5; hi=4.5; }
-      else if(/country|nation|sovereign/.test(kind)){ lo=2.2; hi=11; }
-      else if(/capital|city|metropolis|municipal|borough/.test(kind)){ lo=8.3; hi=13.5; }
-      else if(/town|suburb|district|village|hamlet|neighbourhood|neighborhood|quarter/.test(kind)){ lo=9.5; hi=15; }
-      else if(/state|province|region|prefecture|county|oblast|department|administrative/.test(kind)){ lo=3.3; hi=11; }
-      else if(/island|peninsula|mountain|peak|volcano|range|lake|sea|bay|gulf|strait|desert|plateau|valley|reef/.test(kind)){ lo=3.5; hi=13; }
-      else if(/landmark|monument|attraction|building|tower|stadium|bridge|dam|man_made|memorial|museum|palace|castle|temple|shrine|church|airport|aerodrome|station|park|square|poi/.test(kind)){ lo=11; hi=17.5; }
-      return Math.max(lo, Math.min(hi, z)); }
-    /* Fit a bbox AND land at a COMFORTABLE zoom: proportional padding (margin so the place isn't edge-to-edge) +
-       cameraForBounds → comfortClamp → flyTo. Falls back to fitBounds. */
-    function flyToBox(bb, kind){ try{ const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(40, Math.round(Math.min(W,H)*0.085));
-      const cam=map.cameraForBounds(bb,{padding:pad,maxZoom:16}); if(cam&&cam.center){ const z=comfortClamp(cam.zoom, kind); map.flyTo({center:cam.center, zoom:z, duration:1100}); return true; } }catch(_){} try{ map.fitBounds(bb,{padding:54,duration:1100,maxZoom:13}); return true; }catch(_){} return false; }
-    /* (#R47) the REAL extent wins over the model's scale guess (was over/under-zooming). Prefer the Nominatim bbox;
-       else compute a COUNTRY'S bbox from countryGeo — but using the LARGEST landmass polygon only, NOT the whole
-       multipolygon: the full feature spans overseas territories / the antimeridian (USA+Aleutians, Russia, France+
-       Guiana) and produced a near-whole-world bbox → catastrophic under-zoom. */
-    function _polyBbox(poly){ let a=180,b=90,c=-180,d=-90; const ring=(poly&&poly[0])||[]; for(let i=0;i<ring.length;i++){ const p=ring[i]; if(p&&typeof p[0]==='number'){ if(p[0]<a)a=p[0]; if(p[1]<b)b=p[1]; if(p[0]>c)c=p[0]; if(p[1]>d)d=p[1]; } } return [a,b,c,d]; }
-    function _bigBbox(gm){ try{ const polys=gm.type==='Polygon'?[gm.coordinates]:(gm.type==='MultiPolygon'?gm.coordinates:null); if(!polys) return null; let best=null,ba=-1; polys.forEach(poly=>{ const bb=_polyBbox(poly); const W=bb[2]-bb[0],H=bb[3]-bb[1]; if(W<=0||H<=0||W>140||H>80) return; const area=W*H; if(area>ba){ ba=area; best=bb; } }); return best; }catch(_){ return null; } }
-    const _saneBox=box=>{ try{ return _bboxOK(box) && (box[1][0]-box[0][0])<=200; }catch(_){ return false; } };   /* reject the 350°+ territory/antimeridian blow-ups (France/USA/Russia) */
-    async function bestBbox(ll, qn){
-      try{ if(ll&&ll.bbox&&_saneBox(ll.bbox)) return ll.bbox; }catch(_){}
-      /* the gazetteer resolves a COUNTRY to a point with no bbox → fetch Nominatim's extent so "fly to Japan" frames
-         ALL of Japan (full 31° extent), not just its largest island. */
-      try{ const q=qn||(ll&&ll.name)||''; if(q && !(ll&&ll.bbox)){ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]&&Array.isArray(j[0].boundingbox)&&j[0].boundingbox.length===4){ const b=j[0].boundingbox,s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>isFinite(v))){ const box=[[w,s],[e,n]]; if(_saneBox(box)) return box; } } } }catch(_){}
-      /* (#R50) For France/USA/Russia (Nominatim bbox is a 350°+ antimeridian/territory blow-up) we DON'T try to
-         derive a polygon bbox any more — the "largest landmass" heuristic picked a random island/exclave and caused
-         the EXTREME zoom-in the user hit. Returning null makes flyTo use a centred country zoom (predictable). */
+    function _ringMeta(ring,shift){ let w=Infinity,s=Infinity,e=-Infinity,n=-Infinity; for(const p of ring){ if(!p||typeof p[0]!=='number') continue; let x=p[0]; if(shift&&x<0) x+=360; if(x<w)w=x; if(x>e)e=x; if(p[1]<s)s=p[1]; if(p[1]>n)n=p[1]; } if(!isFinite(w)||!isFinite(s)) return null; return {w,s,e,n,cx:(w+e)/2,cy:(s+n)/2,ar:_ringArea(ring)||Math.max((e-w)*(n-s),1e-7),diag:Math.hypot(e-w,n-s)}; }
+    /* Extent of the place's MAIN BODY: the largest polygon + only the OTHER polygons within a reach scaled to the
+       main body's own size (so a country's mainland + nearby islands are kept, but scattered overseas territories /
+       far exclaves — France+Polynesia, USA+Guam — are dropped). Antimeridian-aware (tries both 0° and 180° frames). */
+    function robustExtent(gj){ const rings=_outerRings(gj); if(!rings||!rings.length) return null;
+      const build=(shift)=>{ const ms=[]; for(const r of rings){ if(!r||!r.length) continue; const m=_ringMeta(r,shift); if(m) ms.push(m); } if(!ms.length) return null;
+        ms.sort((a,b)=>b.ar-a.ar); const main=ms[0]; const reach=Math.max(main.diag*1.7, 4);
+        let W=main.w,S=main.s,E=main.e,N=main.n; for(let i=1;i<ms.length;i++){ const p=ms[i]; if(Math.hypot(p.cx-main.cx,p.cy-main.cy)<=reach){ if(p.w<W)W=p.w; if(p.s<S)S=p.s; if(p.e>E)E=p.e; if(p.n>N)N=p.n; } }
+        return {W,S,E,N,span:E-W}; };
+      const a=build(false), b=build(true); const pick=(a&&b)?((b.span<a.span-1e-6)?b:a):(a||b);
+      if(!pick||!isFinite(pick.W)||pick.E<=pick.W||pick.N<=pick.S) return null;
+      return [[pick.W,pick.S],[pick.E,pick.N]]; }
+    /* ONE Nominatim call → the BEST result (highest importance, so "China" is the country, not "China, Texas") +
+       point + name + the real footprint (a simplified polygon). */
+    async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||WORLD_RE.test(place)) return null;
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&polygon_geojson=1&polygon_threshold=0.02&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
+        const o=j.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0];   /* most-important match = the real place */
+        let box=robustExtent(o.geojson);
+        if(!box && Array.isArray(o.boundingbox)&&o.boundingbox.length===4){ const s=+o.boundingbox[0],n=+o.boundingbox[1],w=+o.boundingbox[2],e=+o.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
+        return {lng:+o.lon, lat:+o.lat, name:(o.display_name||place).split(',')[0], box}; }catch(_){}
       return null; }
+    /* Fit a box at a comfortable zoom: proportional MARGIN (so the place isn't edge-to-edge) + cameraForBounds, with
+       only loose SANITY caps (a point can't go past z16.5; nothing below z0.6). NO per-type constants. */
+    function flyToBox(box){ try{ const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(38, Math.round(Math.min(W,H)*0.09));
+      const cam=map.cameraForBounds(box,{padding:pad,maxZoom:16.5}); if(cam&&cam.center&&isFinite(cam.zoom)){ const z=Math.max(0.6,Math.min(16.5,cam.zoom)); map.flyTo({center:[cam.center.lng,cam.center.lat], zoom:z, duration:1100}); return true; } }catch(_){}
+      try{ map.fitBounds(box,{padding:46,duration:1100,maxZoom:16}); return true; }catch(_){} return false; }
     /* ---- generic UI helpers for the full-control action set ---- */
     const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
     function setSel(id,val){ const el=document.getElementById(id); if(!el) return false; el.value=val; el.dispatchEvent(new Event('change',{bubbles:true})); return true; }
@@ -17986,21 +17967,20 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'projection': { const flat=(a.mode==='flat'); const ok=clickId(flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo'))):warn('⚠')); }
         case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=clickId(sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa'))):warn('⚠')); }
         case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); }
-        case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null;
-          /* (#R50) "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
-          if(WORLD_RE.test(String(a.place||'').trim()) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ map.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
-          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:(scaleZoom(a.scale)||Math.max(map.getZoom(),6)),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
-          const ll=await geocode(a.place);
-          if(ll){ const kind=ll.kind||a.scale||'';
-            if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
-            /* big features (continent/country/region/island/sea) → fit their real extent; a country with no sane bbox
-               (France/USA/Russia) just uses a centred country zoom. */
-            else if(FIT_KINDS.test(String(kind))){ const bb=await bestBbox(ll,a.place); if(!(bb&&flyToBox(bb,kind))){ map.flyTo({center:[ll.lng,ll.lat],zoom:(placeZoom(kind)||scaleZoom(a.scale)||6),duration:1100}); } }
-            /* settlements / POIs / unknown → a FIXED comfortable zoom CENTRED on the point (fixes city→city-hall and
-               metropolis→too-far; no tiny-bbox fitting). */
-            else { map.flyTo({center:[ll.lng,ll.lat],zoom:(placeZoom(kind)||scaleZoom(a.scale)||11),duration:1100}); }
-            return R(true, note('📍 '+esc(ll.name||a.place))); }
-          return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(a.place||''))); }
+        case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim();
+          /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
+          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ map.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
+          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
+          /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
+          if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
+            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('📍 '+esc(ext.name||placeStr))); } }
+          /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
+          const ll=await geocode(placeStr);
+          if(ll){ if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
+            else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
+            else { map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
+            return R(true, note('📍 '+esc(ll.name||placeStr))); }
+          return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
         case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'brief': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapAIResearch&&window.IntMapAIResearch.open){ window.IntMapAIResearch.open(ll.name||a.place,{lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('🤖 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'askHere': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapAIResearch&&window.IntMapAIResearch.askHere){ window.IntMapAIResearch.askHere({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🤖 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
@@ -18032,7 +18012,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'widgets': { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
         case 'screenshot': { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
         case 'share': { let ok=false; try{ if(window.IntMapShare&&window.IntMapShare.open){ window.IntMapShare.open(); ok=true; } else ok=clickId('btn-share'); }catch(_){} return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
-        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ll=await geocode(q); if(ll){ const kind=ll.kind||''; try{ if(FIT_KINDS.test(String(kind))){ const bb=await bestBbox(ll,q); if(!(bb&&flyToBox(bb,kind))) map.flyTo({center:[ll.lng,ll.lat],zoom:placeZoom(kind)||7,duration:1000}); } else map.flyTo({center:[ll.lng,ll.lat],zoom:placeZoom(kind)||Math.max(map.getZoom(),11),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))); } return R(false, warn('⚠ '+esc(q))); }
+        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))); } return R(false, warn('⚠ '+esc(q))); }
         case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
         case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof unitMode!=='undefined') unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
         case 'timeTravel': { let ok=false; try{ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650; if(a.daysAgo!=null) v=Math.max(0,3650-Math.round(+a.daysAgo)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Time-travel','時刻','Zeitreise','Время','Tiempo')):warn('⚠ '+L('Time slider unavailable','時刻スライダーなし','Zeitschieber fehlt','Нет ползунка времени','Sin control de tiempo'))); }
@@ -18054,7 +18034,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'HONESTY: NEVER use "answer" (or the "say" text) to claim you did something you did not emit a real action for — that is a lie the user explicitly complained about. To DO anything you MUST emit its action. "say" must describe ONLY what the actions in this plan actually do. If a request is impossible or unclear, emit a single honest {"type":"answer"} explaining it, and emit NO action you cannot fulfil. Decompose multi-part requests fully (5+ actions is fine) and keep them in the order the user implied.\n'
         +'COMMON SENSE — do NOT take a generic word as a literal place name (these were real failures): "the whole world / entire world / earth / globe / 世界 / 地球" means ZOOM OUT to the planet → emit {"type":"flyTo","place":"world"} (NEVER geocode "world"/"earth" — they wrongly matched "World Bank building" / "Earth, Texas"). To show a COUNTRY or CITY, pass its plain name as flyTo place (e.g. {"type":"flyTo","place":"China"} / {"type":"flyTo","place":"Osaka"}) — the engine frames the whole country / city area itself; do NOT append "city hall" or pick a tiny sub-place, and do NOT over-zoom. The Köppen climate layer (and other colour rasters) cannot isolate a SINGLE class: for "highlight the Cfa climate", enable the Köppen layer with {"type":"layer","name":"Köppen climate"} and, in "say", tell the user the Cfa zones are identified by the legend (do not claim you isolated Cfa).\n'
         +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (centre, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map centre. Action types:\n'
-        +'NAVIGATION/VIEW: {"type":"flyTo","place":str,"scale":"continent"|"region"|"country"|"state"|"city"|"town"|"landmark"} — ALWAYS set "scale" (or an explicit "zoom") to MATCH THE TARGET\'S SIZE so the view fits it: continent/ocean→continent, a country→country, a metro/city→city, a building/landmark→landmark. Do NOT leave everything at country zoom. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt the camera; deg 0 = top-down, 60 = oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box).\n'
+        +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). {"type":"opacity","name":EXACT_NAME,"value":0..1}; {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom"} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"); {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (AI brief); {"type":"askHere","place":str} (ask AI about a spot).\n'
