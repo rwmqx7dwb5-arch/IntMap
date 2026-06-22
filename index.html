@@ -5282,14 +5282,19 @@ window.addEventListener('DOMContentLoaded', () => {
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
     panel.addEventListener('pointerdown',(e)=>{ if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
-      const sx=e.clientX, sy=e.clientY, sw=r.width, sh=r.height, sl=r.left-opr.left, st=r.top-opr.top;
+      /* (#R48) ROOT CAUSE of the buggy resize: the Atlas panel is centred with transform:translateX(-50%) (from
+         left:50%). The old code pinned left to the VISUAL rect but LEFT THE TRANSFORM ON, so on grab the panel
+         jumped half its width and drifted while resizing. Neutralise the transform + bottom/right anchors first,
+         pin to the exact on-screen box, then read the transform-free offset. */
+      panel.style.setProperty('transform','none','important'); panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
+      panel.style.setProperty('left',(r.left-opr.left)+'px','important'); panel.style.setProperty('top',(r.top-opr.top)+'px','important');
+      const sx=e.clientX, sy=e.clientY, sw=r.width, sh=r.height, sl=panel.offsetLeft, st=panel.offsetTop;
       try{ panel.setPointerCapture&&panel.setPointerCapture(e.pointerId); }catch(_){}
       const mv=(ev)=>{ let w=sw,h=sh,l=sl,t=st; const dx=ev.clientX-sx, dy=ev.clientY-sy;
         if(d.indexOf('e')>=0) w=Math.max(minW,sw+dx); if(d.indexOf('s')>=0) h=Math.max(minH,sh+dy);
         if(d.indexOf('w')>=0){ w=Math.max(minW,sw-dx); l=sl+(sw-w); } if(d.indexOf('n')>=0){ h=Math.max(minH,sh-dy); t=st+(sh-h); }
         panel.style.setProperty('width',w+'px','important'); panel.style.setProperty('height',h+'px','important');
-        panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important');
-        panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important'); panel.setAttribute('data-dragged','1'); };
+        panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important'); panel.setAttribute('data-dragged','1'); };
       const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; };
       document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     registerWindow(panel); }
@@ -18018,7 +18023,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
-      s.textContent='#atlas-panel{position:absolute;z-index:1850;left:50%;top:64px;transform:translateX(-50%);display:none;flex-direction:column;width:min(480px,calc(100vw - 24px));height:min(72vh,560px);min-width:300px;min-height:160px;max-width:calc(100vw - 16px);max-height:90vh;resize:none;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);overflow:hidden;}'
+      s.textContent='#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:50%;top:64px;transform:translateX(-50%);display:none;flex-direction:column;width:min(480px,calc(100vw - 24px));height:min(72vh,560px);min-width:300px;min-height:160px;max-width:calc(100vw - 16px);max-height:90vh;resize:none;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);overflow:hidden;}'
         +'#atlas-panel.atl-min{height:auto !important;min-height:0 !important;resize:none;}'
         +'#atlas-panel.atl-min .atl-sub,#atlas-panel.atl-min .atl-ex,#atlas-panel.atl-min .atl-chat,#atlas-panel.atl-min .atl-inbar{display:none !important;}'
         +'#atlas-panel .atl-btns{display:flex;gap:2px;align-items:center;}'
