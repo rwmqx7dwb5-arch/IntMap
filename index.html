@@ -1043,8 +1043,8 @@ gtag('config', 'G-57X5MX0ZPW');
 
     /* Legends made draggable + collapsible */
     .data-legend, .koppen-legend{ cursor:default; }
-    .data-legend .dl-drag, .koppen-legend .kl-drag{ position:absolute; top:6px; left:8px; color:var(--text-muted); font-size:13px; cursor:move; user-select:none; padding:2px 4px; border-radius:5px; touch-action:none; }
-    .data-legend .dl-drag:hover, .koppen-legend .kl-drag:hover{ background:var(--input-bg); color:var(--text-main); }
+    /* (#R47) the ⋮⋮ drag-mark is hidden — the user finds it unnecessary; legends still move by dragging their TITLE (h4 is a drag handle). */
+    .data-legend .dl-drag, .koppen-legend .kl-drag{ display:none !important; }
     .data-legend h4, .koppen-legend h4{ padding-left:18px; }
     .legend-collapsed .dl-bar, .legend-collapsed .dl-scale, .legend-collapsed .dl-hint, .legend-collapsed .kl-item, .legend-collapsed .kl-hint, .legend-collapsed .kl-clear, .legend-collapsed .dl-op-row, .legend-collapsed .dl-op-extra{ display:none !important; }
     /* Minimize/expand button on legends + popups (so a kept-open legend doesn't hog the screen, esp. mobile).
@@ -5258,12 +5258,42 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
       panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
       panel.setAttribute('data-dragged','1'); };
-    handle.onmousedown=(e)=>{ if(onCtl(e)) return; panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
-    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)) return; const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
+    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing) return; panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
+    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing) return; const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
       const up=()=>{ panelDrag=null; document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
       document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
+    registerWindow(panel);   /* (#R47) any draggable panel also gets click-to-front + all-edge resize */
   }
+  /* ================= (#R47) Window manager — the user: "前後位置が切り替わらない／触れたものを全面に／右下だけの
+     リサイズは不便／移動・リサイズのマークは要らない". One small system applied to every floating window+popup:
+       • bringToFront(el): clicking ANY managed window raises it above the others (capped below modals).
+       • addEdgeResize(el): resize from ANY edge or corner with NO visible handle (hit-tested border zone),
+         replacing the native bottom-right-only `resize:both` grab-mark.
+     makeDraggable auto-registers its panel; bigger windows (Atlas, Compare) also add edge-resize. ================= */
+  const __winReg=new Set(); let __winZ=4300;
+  function bringToFront(el){ if(!el) return; try{ let mx=4300; __winReg.forEach(w=>{ if(w===el||!w.isConnected) return; const z=parseInt(w.style.zIndex,10)||0; if(z>mx&&z<6000) mx=z; }); __winZ=Math.min(5999,Math.max(__winZ,mx)+1); el.style.zIndex=String(__winZ); }catch(_){} }
+  function registerWindow(el){ if(!el||__winReg.has(el)) return; __winReg.add(el); try{ el.addEventListener('pointerdown',()=>bringToFront(el),true); }catch(_){ try{ el.addEventListener('mousedown',()=>bringToFront(el),true); }catch(__){} } }
+  function addEdgeResize(panel,opts){ opts=opts||{}; if(!panel||panel.dataset.edgeResize) return; panel.dataset.edgeResize='1';
+    const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
+    const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
+    const edgeAt=(cx,cy)=>{ const r=panel.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<0||y<0||x>r.width||y>r.height) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
+    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
+    panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
+    panel.addEventListener('pointerdown',(e)=>{ if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
+      const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
+      const sx=e.clientX, sy=e.clientY, sw=r.width, sh=r.height, sl=r.left-opr.left, st=r.top-opr.top;
+      try{ panel.setPointerCapture&&panel.setPointerCapture(e.pointerId); }catch(_){}
+      const mv=(ev)=>{ let w=sw,h=sh,l=sl,t=st; const dx=ev.clientX-sx, dy=ev.clientY-sy;
+        if(d.indexOf('e')>=0) w=Math.max(minW,sw+dx); if(d.indexOf('s')>=0) h=Math.max(minH,sh+dy);
+        if(d.indexOf('w')>=0){ w=Math.max(minW,sw-dx); l=sl+(sw-w); } if(d.indexOf('n')>=0){ h=Math.max(minH,sh-dy); t=st+(sh-h); }
+        panel.style.setProperty('width',w+'px','important'); panel.style.setProperty('height',h+'px','important');
+        panel.style.setProperty('left',l+'px','important'); panel.style.setProperty('top',t+'px','important');
+        panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important'); panel.setAttribute('data-dragged','1'); };
+      const up=(ev)=>{ delete panel.dataset.resizing; try{ panel.releasePointerCapture&&panel.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); panel.style.cursor=''; };
+      document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
+    registerWindow(panel); }
+  try{ window.bringToFront=bringToFront; window.addEdgeResize=addEdgeResize; window.registerWindow=registerWindow; }catch(_){}
 
   window.removeRadiusItem=function(id){ radiusItems=radiusItems.filter(c=>c.id!==id); if(window._activeRadiusId===id) window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   window.clearAllRadius=function(){ radiusItems=[]; window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
@@ -15683,7 +15713,7 @@ window.addEventListener('DOMContentLoaded', () => {
        map's) doubled GPU memory and OOM-crashed iPhone Safari ("iPhoneでcompare viewでケッペン…ブラウザが落ちる"). */
     function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
-      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:both;display:flex;flex-direction:column;}'+
+      '#compare-window{position:fixed;right:24px;bottom:24px;width:440px;height:340px;min-width:260px;min-height:200px;z-index:4000;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,0.4);overflow:hidden;resize:none;display:flex;flex-direction:column;}'+
       '#compare-window.cmp-min{height:auto !important;min-height:0;resize:none;}'+
       /* (#R36) Minimise must VISIBLY collapse to just the title bar — hide the map body AND the layer-picker row
          ("最小化したときにもUIが変わらず分かりにくい"). */
@@ -15779,7 +15809,7 @@ window.addEventListener('DOMContentLoaded', () => {
       '.cmp-rz[data-c="sw"]{bottom:-4px;left:-4px;cursor:nesw-resize;}'+
       '.cmp-rz[data-c="se"]{bottom:-4px;right:-4px;cursor:nwse-resize;}'+
       '.cmp-rz::after{content:"";position:absolute;inset:5px;border-radius:3px;border:2px solid rgba(150,160,175,0.55);border-top:none;border-left:none;opacity:0;transition:opacity 0.15s;}'+
-      '#compare-window:hover .cmp-rz::after{opacity:1;}'+
+      '#compare-window:hover .cmp-rz::after{opacity:0;}'+   /* (#R47) hide the resize corner-mark (still resizable; the cursor change is the only hint the user wants) */
       '@media(max-width:768px){'+
       '#compare-window{left:6px !important;right:6px !important;top:max(8px,env(safe-area-inset-top)) !important;bottom:auto !important;width:auto !important;height:46vh !important;min-width:0 !important;resize:none !important;border-radius:16px;padding-bottom:20px;z-index:4200;overflow:hidden;}'+
       '.cmp-resize{display:block;position:absolute;left:0;right:0;bottom:0;height:24px;cursor:ns-resize;touch-action:none;z-index:7;}'+
@@ -16100,6 +16130,7 @@ window.addEventListener('DOMContentLoaded', () => {
         '<div class="cmp-rz" data-c="nw"></div><div class="cmp-rz" data-c="ne"></div><div class="cmp-rz" data-c="sw"></div><div class="cmp-rz" data-c="se"></div>'+
         '<div class="cmp-resize" title="'+(jp()?'高さを調節':'Drag to resize')+'"></div>';
       (document.getElementById('map-container')||document.body).appendChild(win);
+      try{ window.registerWindow&&window.registerWindow(win); }catch(_){}   /* (#R47) click-to-front */
       /* (#R27) Pull the close × OUT of the wrapping header flow and make it a direct child of the window,
          pinned top-right above everything. On mobile the 7-button header wraps, and a wrapped row could
          land on top of the × ("×がレイヤー選択ボタンと重なって終了できない") — now nothing in the header/controls
@@ -17776,6 +17807,21 @@ window.addEventListener('DOMContentLoaded', () => {
     function scaleZoom(s){ if(s==null) return null; const z=SCALE_Z[String(s).toLowerCase().trim()]; return (z!=null)?z:null; }
     function kindZoom(k){ if(!k) return null; k=String(k).toLowerCase(); if(SCALE_Z[k]!=null) return SCALE_Z[k]; if(/capital/.test(k)) return 9.5; if(/city|town|village|hamlet|municipal|suburb|borough/.test(k)) return 10.5; if(/country|nation|sovereign|administrative|state|province/.test(k)) return 4.8; if(/continent/.test(k)) return 3; if(/island|peak|mountain|volcano|cape|landmark|attraction|monument/.test(k)) return 9; if(/peninsula|sea|bay|gulf|strait|desert|plateau/.test(k)) return 5; if(/flashpoint|base|airport|aerodrome|harbour|port/.test(k)) return 8.5; return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
+    /* (#R47) the REAL extent wins over the model's scale guess (was over/under-zooming). Prefer the Nominatim bbox;
+       else compute a COUNTRY'S bbox from countryGeo — but using the LARGEST landmass polygon only, NOT the whole
+       multipolygon: the full feature spans overseas territories / the antimeridian (USA+Aleutians, Russia, France+
+       Guiana) and produced a near-whole-world bbox → catastrophic under-zoom. */
+    function _polyBbox(poly){ let a=180,b=90,c=-180,d=-90; const ring=(poly&&poly[0])||[]; for(let i=0;i<ring.length;i++){ const p=ring[i]; if(p&&typeof p[0]==='number'){ if(p[0]<a)a=p[0]; if(p[1]<b)b=p[1]; if(p[0]>c)c=p[0]; if(p[1]>d)d=p[1]; } } return [a,b,c,d]; }
+    function _bigBbox(gm){ try{ const polys=gm.type==='Polygon'?[gm.coordinates]:(gm.type==='MultiPolygon'?gm.coordinates:null); if(!polys) return null; let best=null,ba=-1; polys.forEach(poly=>{ const bb=_polyBbox(poly); const W=bb[2]-bb[0],H=bb[3]-bb[1]; if(W<=0||H<=0||W>140||H>80) return; const area=W*H; if(area>ba){ ba=area; best=bb; } }); return best; }catch(_){ return null; } }
+    const _saneBox=box=>{ try{ return _bboxOK(box) && (box[1][0]-box[0][0])<=200; }catch(_){ return false; } };   /* reject the 350°+ territory/antimeridian blow-ups (France/USA/Russia) */
+    async function bestBbox(ll, qn){
+      try{ if(ll&&ll.bbox&&_saneBox(ll.bbox)) return ll.bbox; }catch(_){}
+      /* the gazetteer resolves a COUNTRY to a point with no bbox → fetch Nominatim's extent so "fly to Japan" frames
+         ALL of Japan (full 31° extent), not just its largest island. */
+      try{ const q=qn||(ll&&ll.name)||''; if(q && !(ll&&ll.bbox)){ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]&&Array.isArray(j[0].boundingbox)&&j[0].boundingbox.length===4){ const b=j[0].boundingbox,s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>isFinite(v))){ const box=[[w,s],[e,n]]; if(_saneBox(box)) return box; } } } }catch(_){}
+      /* France/USA/Russia (Nominatim is insane) OR offline → largest-landmass polygon from countryGeo. */
+      try{ const c=(typeof resolveCountrySync==='function')?resolveCountrySync(qn||(ll&&ll.name)||''):null; if(c&&c.code){ const g=geo(); if(g&&g.features){ const f=g.features.find(ft=>String(ft.id)===String(c.code)); if(f){ const bb=_bigBbox(f.geometry); if(bb){ const box=[[bb[0],bb[1]],[bb[2],bb[3]]]; if(_bboxOK(box)) return box; } } } } }catch(_){}
+      return null; }
     /* ---- generic UI helpers for the full-control action set ---- */
     const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
     function setSel(id,val){ const el=document.getElementById(id); if(!el) return false; el.value=val; el.dispatchEvent(new Event('change',{bubbles:true})); return true; }
@@ -17895,12 +17941,13 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'projection': { const flat=(a.mode==='flat'); const ok=clickId(flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo'))):warn('⚠')); }
         case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=clickId(sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa'))):warn('⚠')); }
         case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); }
-        case 'flyTo': { const wantZ=(a.zoom!=null)?+a.zoom:scaleZoom(a.scale);
-          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:wantZ!=null?wantZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
+        case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null;   /* explicit numeric zoom wins; else the REAL bbox; else scale; else kind */
+          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:(scaleZoom(a.scale)||Math.max(map.getZoom(),6)),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
           const ll=await geocode(a.place);
-          if(ll){ if(wantZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:wantZ,duration:1100}); }
-            else if(ll.bbox&&_bboxOK(ll.bbox)){ try{ map.fitBounds(ll.bbox,{padding:64,duration:1100,maxZoom:13}); }catch(_){ map.flyTo({center:[ll.lng,ll.lat],zoom:kindZoom(ll.kind)||6,duration:1100}); } }
-            else { map.flyTo({center:[ll.lng,ll.lat],zoom:kindZoom(ll.kind)||6,duration:1100}); }
+          if(ll){ const bb=await bestBbox(ll,a.place);
+            if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
+            else if(bb){ try{ map.fitBounds(bb,{padding:48,duration:1100,maxZoom:12}); }catch(_){ map.flyTo({center:[ll.lng,ll.lat],zoom:(scaleZoom(a.scale)||kindZoom(ll.kind)||6),duration:1100}); } }
+            else { map.flyTo({center:[ll.lng,ll.lat],zoom:(scaleZoom(a.scale)||kindZoom(ll.kind)||6),duration:1100}); }
             return R(true, note('📍 '+esc(ll.name||a.place))); }
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(a.place||''))); }
         case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
@@ -17934,7 +17981,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'widgets': { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
         case 'screenshot': { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
         case 'share': { let ok=false; try{ if(window.IntMapShare&&window.IntMapShare.open){ window.IntMapShare.open(); ok=true; } else ok=clickId('btn-share'); }catch(_){} return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
-        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) map.fitBounds(ll.bbox,{padding:64,duration:1000,maxZoom:13}); else map.flyTo({center:[ll.lng,ll.lat],zoom:kindZoom(ll.kind)||Math.max(map.getZoom(),7),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))); } return R(false, warn('⚠ '+esc(q))); }
+        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } const ll=await geocode(q); if(ll){ const bb=await bestBbox(ll,q); try{ if(bb) map.fitBounds(bb,{padding:48,duration:1000,maxZoom:12}); else map.flyTo({center:[ll.lng,ll.lat],zoom:kindZoom(ll.kind)||Math.max(map.getZoom(),7),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))); } return R(false, warn('⚠ '+esc(q))); }
         case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
         case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof unitMode!=='undefined') unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
         case 'timeTravel': { let ok=false; try{ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650; if(a.daysAgo!=null) v=Math.max(0,3650-Math.round(+a.daysAgo)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Time-travel','時刻','Zeitreise','Время','Tiempo')):warn('⚠ '+L('Time slider unavailable','時刻スライダーなし','Zeitschieber fehlt','Нет ползунка времени','Sin control de tiempo'))); }
@@ -17971,8 +18018,8 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
-      s.textContent='#atlas-panel{position:absolute;z-index:1850;left:50%;top:64px;transform:translateX(-50%);display:none;flex-direction:column;width:min(480px,calc(100vw - 24px));height:min(72vh,560px);min-width:300px;min-height:160px;max-width:calc(100vw - 16px);max-height:90vh;resize:both;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);overflow:hidden;}'
-        +'#atlas-panel.atl-min{height:auto !important;resize:none;}'
+      s.textContent='#atlas-panel{position:absolute;z-index:1850;left:50%;top:64px;transform:translateX(-50%);display:none;flex-direction:column;width:min(480px,calc(100vw - 24px));height:min(72vh,560px);min-width:300px;min-height:160px;max-width:calc(100vw - 16px);max-height:90vh;resize:none;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(180%) blur(18px);-webkit-backdrop-filter:saturate(180%) blur(18px);overflow:hidden;}'
+        +'#atlas-panel.atl-min{height:auto !important;min-height:0 !important;resize:none;}'
         +'#atlas-panel.atl-min .atl-sub,#atlas-panel.atl-min .atl-ex,#atlas-panel.atl-min .atl-chat,#atlas-panel.atl-min .atl-inbar{display:none !important;}'
         +'#atlas-panel .atl-btns{display:flex;gap:2px;align-items:center;}'
         +'#atlas-panel .atl-min-btn{background:none;border:none;color:var(--text-muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px;}'
@@ -18014,11 +18061,17 @@ window.addEventListener('DOMContentLoaded', () => {
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
       panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} };
-      /* (#R42c) minimize / restore (collapse to just the header bar). */
-      const minBtn=panel.querySelector('.atl-min-btn'); if(minBtn) minBtn.onclick=()=>{ const mn=panel.classList.toggle('atl-min'); minBtn.textContent=mn?'▢':'–'; minBtn.title=mn?L('Restore','元に戻す','Wiederherstellen','Развернуть','Restaurar'):L('Minimize','最小化','Minimieren','Свернуть','Minimizar'); };
+      /* (#R42c/#R47) minimize / restore (collapse to just the header bar). FIX: a resized panel carries an inline
+         height:!important that beat the class → minimize did nothing. Now we stash & clear it on minimize and
+         restore it after (and the CSS adds min-height:0). */
+      const minBtn=panel.querySelector('.atl-min-btn'); if(minBtn) minBtn.onclick=()=>{ const mn=panel.classList.toggle('atl-min');
+        if(mn){ panel._restoreH=panel.style.height||''; panel.style.setProperty('height','auto','important'); }
+        else { if(panel._restoreH){ panel.style.setProperty('height',panel._restoreH,'important'); } else { panel.style.removeProperty('height'); } }
+        minBtn.textContent=mn?'▢':'–'; minBtn.title=mn?L('Restore','元に戻す','Wiederherstellen','Развернуть','Restaurar'):L('Minimize','最小化','Minimieren','Свернуть','Minimizar'); };
       const exWrap=panel.querySelector('.atl-ex'); examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; exWrap.appendChild(b); });
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); fire(); } });
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.atl-head')); }catch(_){}
+      try{ if(typeof addEdgeResize==='function') addEdgeResize(panel,{min:[300,160]}); }catch(_){}   /* (#R47) resize from ANY edge, no handle mark */
       return panel; }
     function fire(){ const v=inEl.value.trim(); if(v){ inEl.value=''; run(v); } }
     async function run(q){ q=String(q||'').trim(); if(!q) return; const p=ensure(); p.style.display='flex';
@@ -18047,7 +18100,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function recordTurn(q, say, acts, fails){ try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
       _hist.push('User: '+q.slice(0,260)); _hist.push(a); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }
-    function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; } p.style.display='flex'; setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
+    function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
+      if(p._restoreH){ p.style.setProperty('height',p._restoreH,'important'); } else if(p.style.height==='auto'){ p.style.removeProperty('height'); }
+      p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){} setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else p.style.display='none'; }
     return { open, toggle, run };
   })();
