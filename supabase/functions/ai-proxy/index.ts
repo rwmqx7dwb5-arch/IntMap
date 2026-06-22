@@ -59,9 +59,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   content.push({ type: "text", text: prompt });
-  // (#R49) LOW temperature — every IntMap AI call is a precise task (Atlas JSON command plans, news geolocation
-  // JSON, factual briefs). The default (1.0) made Atlas mis-read clear instructions and vary its output run-to-run.
-  const body: Record<string, unknown> = { model, max_tokens: MAX_TOKENS, temperature: 0.2, messages: [{ role: "user", content }] };
+  const body: Record<string, unknown> = { model, max_tokens: MAX_TOKENS, messages: [{ role: "user", content }] };
   if (system) body.system = system;
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
