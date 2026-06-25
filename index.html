@@ -17694,7 +17694,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapOutline=(function(){
     if(typeof map==='undefined'||!map) return { show(){}, clear(){} };
     const L=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
-    let chip=null, busy=false, _last=null;
+    let chip=null, busy=false, _last=null, _active=false;
+    function setVis(v){ try{ if(map.getLayer('pl-outline-fill')) map.setLayoutProperty('pl-outline-fill','visibility',v); if(map.getLayer('pl-outline-line')) map.setLayoutProperty('pl-outline-line','visibility',v); }catch(_){} }
     function ensureLayers(){ try{
       if(!map.getSource('pl-outline-src')) map.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
@@ -17702,17 +17703,24 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('pl-outline-line')) map.addLayer({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:{'line-color':'#0a84ff','line-width':2.4,'line-opacity':0.95}},before);
       return true; }catch(_){ return false; } }
     function setData(geo){ try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData(geo); }catch(_){} }
-    function clear(){ try{ const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} _last=null; if(chip) chip.style.display='none'; }
+    /* (#R54) Bulletproof clear — the user reported the polygon staying after ×. Root cause path: the R41 basemap
+       re-assert heartbeat rebuilds the style, and our styledata re-add could repaint a just-cleared outline. So
+       clear() now (a) flips `_active`/`_last` off FIRST (the re-add is gated on `_active`), (b) empties the source,
+       AND (c) hides the layers outright — nothing can render until the next show(). */
+    function clear(){ _active=false; _last=null; try{ const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} setVis('none'); if(chip) chip.style.display='none'; }
     function boxToPolygon(box){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1]; return {type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; }
     function bboxOf(geo){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geo.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>a&&d>b)?[[a,b],[c,d]]:null; }
     function showChip(name){ if(!chip){ chip=document.createElement('div'); chip.id='pl-outline-chip'; chip.style.cssText='position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;display:flex;align-items:center;gap:8px;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:7px 8px 7px 14px;font-size:12.5px;font-weight:600;max-width:min(80vw,440px);';
         const tx=document.createElement('span'); tx.className='plo-name'; tx.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; chip.appendChild(tx);
-        const x=document.createElement('button'); x.textContent='✕'; x.title=L('Clear','消去','Löschen','Очистить','Borrar'); x.style.cssText='background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:50%;line-height:1;'; x.onclick=clear; chip.appendChild(x);
+        const x=document.createElement('button'); x.textContent='✕'; x.title=L('Clear','消去','Löschen','Очистить','Borrar'); x.style.cssText='background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:50%;line-height:1;'; x.onclick=(ev)=>{ try{ ev.stopPropagation(); ev.preventDefault(); }catch(_){} clear(); }; chip.appendChild(x);
         (document.getElementById('map-container')||document.body).appendChild(chip); }
       chip.querySelector('.plo-name').textContent='⬡ '+name; chip.style.display='flex'; }
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
       let vb=''; if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){ const d=8; vb='&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d); }
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold=0.006&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
+      /* (#R54) higher resolution — threshold 0.006 simplified a ward to ~9 points ("線が直線的すぎてクソ"); 0.0003
+         keeps the real shape (Shibuya ≈ 120+ pts) yet stays bounded. Callers may override via ctx.threshold. */
+      const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
         const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||'')); const cand=polys.length?polys:j; let best=cand[0];
         if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){ let bd=Infinity; cand.forEach(o=>{ const dist=Math.hypot((+o.lon)-ctx.lng,(+o.lat)-ctx.lat)-(+o.importance||0)*2; if(dist<bd){ bd=dist; best=o; } }); }
         else { best=cand.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0]; }
@@ -17725,15 +17733,16 @@ window.addEventListener('DOMContentLoaded', () => {
           if(r){ disp=r.name||disp; if(r.geojson) geo=r.geojson; else if(ctx.box) geo=boxToPolygon(ctx.box); else if(Array.isArray(r.bbox)&&r.bbox.length===4){ const s=+r.bbox[0],n=+r.bbox[1],w=+r.bbox[2],e=+r.bbox[3]; if([s,n,w,e].every(isFinite)&&e>w&&n>s) geo=boxToPolygon([[w,s],[e,n]]); } }
           else if(ctx.box) geo=boxToPolygon(ctx.box); }
         if(!geo){ showChip(L('No outline available','範囲が取得できません','Kein Umriss verfügbar','Контур недоступен','Sin contorno')); busy=false; return false; }
-        setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; showChip(disp||name||'');
+        setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible'); showChip(disp||name||'');
         const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=map.getContainer&&map.getContainer(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); map.fitBounds(bb,{padding:pad,maxZoom:12,duration:1000}); }catch(_){} }
         busy=false; return true;
       }catch(_){ busy=false; return false; } }
-    map.on('styledata',()=>{ if(_last){ setTimeout(()=>{ try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); }catch(_){} },120); } });
+    map.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); } });
     function labelClick(e){ try{
       if(typeof toolMode!=='undefined' && toolMode) return;                                   /* a measure/radius tool owns the click */
       if(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()) return;
-      const labs=['ofm-country','ofm-city','ofm-other'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } }); if(!labs.length) return;
+      /* (#R54) clicking a COUNTRY label does NOT outline (user: 国を選択時はポリゴン不要) — only cities / towns / villages. */
+      const labs=['ofm-city','ofm-other'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } }); if(!labs.length) return;
       let hits=[]; try{ hits=map.queryRenderedFeatures([[e.point.x-7,e.point.y-7],[e.point.x+7,e.point.y+7]],{layers:labs}); }catch(_){}
       if(!hits||!hits.length) return; const p=hits[0].properties||{}; const nm=p.name||p['name:en']||p['name:latin']||p.name_en||''; if(!nm) return;
       show(nm,{lng:e.lngLat.lng,lat:e.lngLat.lat,kind:p.class||''});
