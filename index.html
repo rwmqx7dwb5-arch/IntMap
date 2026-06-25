@@ -17708,12 +17708,26 @@ window.addEventListener('DOMContentLoaded', () => {
        clear() bumps `_seq` (every in-flight show checks it after its await and bails on mismatch), flips
        `_active`/`_last` off (the styledata re-add is gated on `_active`), empties the source, AND hides the layers
        outright — nothing can render until the next show(). */
-    function clear(){ _seq++; _active=false; _last=null; try{ const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} setVis('none'); if(chip) chip.style.display='none'; }
+    /* (#R56) NUCLEAR clear — the user kept reporting the polygon staying after ×. Emptying the source + hiding the
+       layers evidently wasn't enough in the field, so we now REMOVE the layers and the source outright: there is
+       literally nothing left that can paint the outline. `_seq`/`_active`/`_last` are flipped off first so any
+       in-flight show() or styledata re-add bails. The next show() re-creates everything via ensureLayers(). */
+    function clear(){ _seq++; _active=false; _last=null;
+      try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
+      try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
+      try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){}
+      try{ setVis('none'); }catch(_){}
+      if(chip) chip.style.display='none'; }
     function boxToPolygon(box){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1]; return {type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; }
     function bboxOf(geo){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geo.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>a&&d>b)?[[a,b],[c,d]]:null; }
-    function showChip(name){ if(!chip){ chip=document.createElement('div'); chip.id='pl-outline-chip'; chip.style.cssText='position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;display:flex;align-items:center;gap:8px;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:7px 8px 7px 14px;font-size:12.5px;font-weight:600;max-width:min(80vw,440px);';
-        const tx=document.createElement('span'); tx.className='plo-name'; tx.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; chip.appendChild(tx);
-        const x=document.createElement('button'); x.textContent='✕'; x.title=L('Clear','消去','Löschen','Очистить','Borrar'); x.style.cssText='background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:50%;line-height:1;'; x.onclick=(ev)=>{ try{ ev.stopPropagation(); ev.preventDefault(); }catch(_){} clear(); }; chip.appendChild(x);
+    /* (#R56) The ENTIRE chip clears the outline (tap the name or the ×), not just the tiny ✕ glyph — a too-small
+       hit target was a likely reason "× doesn't clear" on touch. Bound for both mouse and touch. */
+    function showChip(name){ if(!chip){ chip=document.createElement('div'); chip.id='pl-outline-chip'; chip.style.cssText='position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;display:flex;align-items:center;gap:8px;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:7px 14px;font-size:12.5px;font-weight:600;max-width:min(80vw,440px);cursor:pointer;touch-action:manipulation;';
+        chip.title=L('Tap to clear','タップで消去','Zum Löschen tippen','Нажмите, чтобы убрать','Toca para borrar');
+        const tx=document.createElement('span'); tx.className='plo-name'; tx.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;'; chip.appendChild(tx);
+        const x=document.createElement('span'); x.textContent='✕'; x.style.cssText='color:var(--text-muted);font-size:15px;line-height:1;flex:0 0 auto;pointer-events:none;'; chip.appendChild(x);
+        const doClear=(ev)=>{ try{ ev.stopPropagation(); ev.preventDefault(); }catch(_){} clear(); };
+        chip.addEventListener('click',doClear); chip.addEventListener('touchend',doClear,{passive:false});
         (document.getElementById('map-container')||document.body).appendChild(chip); }
       chip.querySelector('.plo-name').textContent='⬡ '+name; chip.style.display='flex'; }
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
