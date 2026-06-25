@@ -17776,18 +17776,87 @@ window.addEventListener('DOMContentLoaded', () => {
     const _lnorm=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } };
     function layerCatalog(){ const out=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } disp=disp.replace(/\s+/g,' ').trim(); const txt=_lnorm(disp); if(!txt) return; out.push({cb, label:disp, txt, id:(cb.id||'').toLowerCase(), dl:(cb.getAttribute('data-layer')||'').toLowerCase()}); }); return out; }
     function layerCatalogText(){ try{ const seen=new Set(),out=[]; layerCatalog().forEach(c=>{ const n=c.label; if(!n||n.length<2) return; const k=c.txt; if(seen.has(k)) return; seen.add(k); out.push(n); }); return out.slice(0,170).join('; '); }catch(_){ return ''; } }
-    function resolveLayer(name){ const q=_lnorm(name); if(!q) return null; const cat=layerCatalog(); let best=null,bs=0;
-      cat.forEach(c=>{ const t=c.txt,id=c.id,dl=c.dl; let sc=0;
-        if(id&&id===q) sc=100; else if(dl&&dl===q) sc=99; else if(t===q) sc=98;
-        else if(t&&t===q.replace(/ (layer|overlay)$/,'')) sc=96;
-        else if(t&&t.indexOf(q)===0&&q.length>=3) sc=82;
-        else if(q.indexOf(t)===0&&t.length>=4) sc=78;
-        else if(t&&(t.indexOf(' '+q)>=0||t.indexOf(q+' ')>=0)) sc=72;
-        else if(t&&t.indexOf(q)>=0&&q.length>=4) sc=66;
-        else if(id&&id.indexOf(q)>=0&&q.length>=4) sc=58;
-        else { const qt=q.split(' ').filter(w=>w.length>2); if(qt.length){ const hit=qt.filter(w=>t.indexOf(w)>=0).length; if(hit) sc=40*hit/qt.length+(hit===qt.length?14:0); } }
-        if(sc>bs){ bs=sc; best=c; } });
-      return bs>=40?{cb:best.cb,label:best.label,score:bs}:null; }
+    /* (#R52) The user re-reported "レイヤーによっては混同している" (layer confusion). Verified real failures with the
+       LIVE catalogue: "rain" resolved to "Water & terrain labels" (it matched the letters "rain" INSIDE "ter-rain"),
+       "clouds"/"co2" matched NOTHING (plural + the ₂ subscript), and bare "temperature" grabbed the ECMWF variant
+       instead of the general air-temperature layer. Three fixes, all deterministic: (1) a curated multilingual ALIAS
+       map (common/paraphrased term → the EXACT intended layer id), tried first; (2) subscript/superscript folding so
+       "co2"↔"CO₂"; (3) WORD-aware scoring so a query is matched against whole words / word-prefixes, never as a
+       fragment buried inside a bigger word. */
+    const _SUBMAP={'₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9','²':'2','³':'3','¹':'1'};
+    const _subnorm=s=>String(s==null?'':s).replace(/[₀-₉²³¹]/g,c=>_SUBMAP[c]||c);
+    const _reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const LAYER_ALIASES={
+      'temperature':'dl-temp','temp':'dl-temp','air temperature':'dl-temp','surface temperature':'dl-temp','気温':'dl-temp','温度':'dl-temp','temperatur':'dl-temp','температура':'dl-temp','temperatura':'dl-temp',
+      'sea temperature':'dl-sst','sea surface temperature':'dl-sst','sst':'dl-sst','water temperature':'dl-sst','海水温':'dl-sst','水温':'dl-sst','ocean temperature':'dl-ec-sst',
+      'rain':'dl-radar','rainfall':'dl-radar','radar':'dl-radar','雨':'dl-radar','降雨':'dl-radar','regen':'dl-radar','дождь':'dl-radar','lluvia':'dl-radar',
+      'precipitation':'dl-precip','降水':'dl-precip','降水量':'dl-precip','niederschlag':'dl-precip','осадки':'dl-precip','precipitación':'dl-precip',
+      'snow':'dl-snow','snow cover':'dl-snow','雪':'dl-snow','積雪':'dl-snow','schnee':'dl-snow','снег':'dl-snow','nieve':'dl-snow',
+      'ice':'dl-snow','sea ice':'gx-gxseaice','sea-ice':'gx-gxseaice','海氷':'gx-gxseaice',
+      'cloud':'dl-ec-cloud','clouds':'dl-ec-cloud','cloud cover':'dl-ec-cloud','雲':'dl-ec-cloud','雲量':'dl-ec-cloud','wolken':'dl-ec-cloud','облака':'dl-ec-cloud','nubes':'dl-ec-cloud',
+      'wind':'dl-wind','風':'dl-wind','ветер':'dl-wind','viento':'dl-wind',
+      'humidity':'dl-ec-dew','dew point':'dl-ec-dew','湿度':'dl-ec-dew','feuchtigkeit':'dl-ec-dew',
+      'pressure':'dl-ec-slp','air pressure':'dl-ec-slp','sea level pressure':'dl-ec-slp','気圧':'dl-ec-slp','давление':'dl-ec-slp','isobars':'dl-ec-isobars','等圧線':'dl-ec-isobars',
+      'aerosol':'dl-aod','haze':'dl-aod','smog':'dl-aod','エアロゾル':'dl-aod',
+      'co2':'bx-wbco2','carbon dioxide':'bx-wbco2','二酸化炭素':'bx-wbco2',
+      'co':'gx-gxco','carbon monoxide':'gx-gxco','一酸化炭素':'gx-gxco',
+      'eez':'dl-eez','exclusive economic zone':'dl-eez','排他的経済水域':'dl-eez',
+      'submarine cables':'dl-subcables','sea cables':'dl-subcables','cables':'dl-subcables','海底ケーブル':'dl-subcables',
+      'aircraft':'dl-planes','planes':'dl-planes','flights':'dl-planes','air traffic':'dl-planes','航空機':'dl-planes','飛行機':'dl-planes',
+      'ships':'dl-ships','shipping':'dl-ships','vessels':'dl-ships','ship traffic':'dl-ships','船':'dl-ships','船舶':'dl-ships',
+      'chlorophyll':'gx-gxchlor','ocean color':'gx-gxchlor',
+      'land cover':'eco-dl-worldcover','landcover':'eco-dl-worldcover','土地被覆':'eco-dl-worldcover',
+      'ecoregions':'eco-dl-ecoregions','エコリージョン':'eco-dl-ecoregions',
+      'tectonic plates':'eco-dl-plates','plates':'eco-dl-plates','プレート':'eco-dl-plates',
+      'elevation':'dl-relief','relief':'dl-relief','標高':'dl-relief','hillshade':'dl-hillshade','陰影':'dl-hillshade',
+      'contours':'dl-contours','contour lines':'dl-contours','等高線':'dl-contours',
+      'sea level':'dl-sealevel','sea level rise':'dl-sealevel','海面上昇':'dl-sealevel',
+      'vegetation':'gx-gxndvi','ndvi':'gx-gxndvi','植生':'gx-gxndvi',
+      'soil moisture':'gx-gxsoil','土壌水分':'gx-gxsoil',
+      'population':'dl-pop','population density':'dl-pop','人口':'dl-pop','人口密度':'dl-pop','bevölkerung':'dl-pop','население':'dl-pop','población':'dl-pop',
+      'gdp':'dl-gdppc','gdp per capita':'dl-gdppc','一人当たりgdp':'dl-gdppc',
+      'hdi':'dl-hdi','human development':'dl-hdi','fertility':'dl-tfr','fertility rate':'dl-tfr','出生率':'dl-tfr','democracy':'dl-dem','democracy index':'dl-dem','民主主義':'dl-dem',
+      'forest':'bx-wbforest','life expectancy':'beta-dl-lifeexp','unemployment':'beta-dl-unemp','internet':'beta-dl-internet',
+      'earthquake':'bx-eq','earthquakes':'bx-eq','地震':'bx-eq','quakes':'bx-eq','seismic':'bx-eq',
+      'thermal':'dl-thermal','fires':'dl-thermal','wildfires':'dl-thermal','fire':'dl-thermal','火災':'dl-thermal','山火事':'dl-thermal',
+      'aurora':'l9-dl-aurora','northern lights':'l9-dl-aurora','オーロラ':'l9-dl-aurora',
+      'night lights':'dl-nightsat','nightlights':'dl-nightsat','city lights':'dl-nightsat','夜間光':'dl-nightsat','夜景':'dl-nightsat',
+      'day night':'dl-night','day/night':'dl-night','昼夜':'dl-night','terminator':'dl-night',
+      'volcano':'beta-dl-volc2','volcanoes':'beta-dl-volc2','火山':'beta-dl-volc2',
+      'nato':'dl-nato','eu':'dl-eu','european union':'dl-eu','military spending':'dl-milSpend','defense spending':'dl-milSpend','国防費':'dl-milSpend','軍事費':'dl-milSpend',
+      'former soviet union':'fsu','ussr':'fsu','soviet':'fsu','旧ソ連':'fsu',
+      'historical borders':'beta-dl-histb','歴史的国境':'beta-dl-histb','ukraine frontline':'beta-dl-ukrfront','frontline':'beta-dl-ukrfront','前線':'beta-dl-ukrfront',
+      'railway':'cb-rail2','railways':'cb-rail2','rail':'cb-rail2','trains':'cb-rail2','鉄道':'cb-rail2','roads':'cb-roads','道路':'cb-roads',
+      'borders':'cb-borders','country borders':'cb-borders','国境':'cb-borders','place names':'cb-names','地名':'cb-names',
+      'time zones':'dl-tz','timezones':'dl-tz','タイムゾーン':'dl-tz','時間帯':'dl-tz',
+      'webcams':'dl-webcams','webcam':'dl-webcams','ライブカメラ':'dl-webcams','ウェブカメラ':'dl-webcams',
+      'pipelines':'pipelines','nuclear':'nuclear','nuclear sites':'nuclear','chokepoints':'chokepoints',
+      'data centers':'beta-dl-dc','datacenters':'beta-dl-dc','ai infrastructure':'beta-dl-dc',
+      'religion':'beta-dl-cat-religion','language':'beta-dl-cat-language','languages':'beta-dl-cat-language'
+    };
+    function _cbByKey(key){ if(!key) return null; let cb=document.getElementById(key); if(cb&&cb.matches&&cb.matches('input[type=checkbox]')) return cb; try{ cb=document.querySelector('#layer-dropdown input[type=checkbox][data-layer="'+key+'"]'); }catch(_){ cb=null; } return cb||null; }
+    function _labelOf(cb){ try{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } return disp.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } }
+    function resolveLayer(name){ const q0=_lnorm(name); if(!q0) return null;
+      /* 1) deterministic ALIAS — exact, then "… layer/overlay" stripped, then singular. */
+      const aliasKeys=[q0, q0.replace(/\s+(layer|overlay|data|map|cover)$/,'')]; if(q0.length>3&&q0.endsWith('s')) aliasKeys.push(q0.slice(0,-1));
+      for(const k of aliasKeys){ const id=LAYER_ALIASES[k]; if(id){ const cb=_cbByKey(id); if(cb) return {cb,label:_labelOf(cb)||name,score:100}; } }
+      /* 2) WORD-aware scoring (variants: as-typed + singular), subscript-folded so co2↔CO₂. */
+      const cat=layerCatalog(); const variants=[q0]; if(q0.length>3&&q0.endsWith('s')) variants.push(q0.slice(0,-1));
+      let best=null,bs=0;
+      cat.forEach(c=>{ const t=_subnorm(c.txt), id=c.id, dl=c.dl; let words; try{ words=t.split(/[^\p{L}\p{N}]+/u).filter(Boolean); }catch(_){ words=t.split(/[^a-z0-9]+/).filter(Boolean); } /* Unicode split keeps CJK/Cyrillic/accented words so layer matching works in every UI language */
+        variants.forEach(qv=>{ const q=_subnorm(qv); let sc=0;
+          if(id&&id===qv) sc=100; else if(dl&&dl===qv) sc=99; else if(t===q) sc=98;
+          else if(t===q.replace(/ (layer|overlay)$/,'')) sc=96;
+          else if(words.indexOf(q)>=0) sc=90;                                    /* q is a whole word in the label */
+          else if(t.indexOf(q)===0&&q.length>=3) sc=84;                          /* label starts with q */
+          else if(words.some(w=>w.indexOf(q)===0&&q.length>=3)) sc=80;           /* a word starts with q */
+          else if(q.indexOf(t)===0&&t.length>=4) sc=78;
+          else if(q.length>=3&&new RegExp('\\b'+_reEsc(q)+'\\b').test(t)) sc=72; /* q as a whole-word phrase (never inside a bigger word) */
+          else if(q.length>=5&&t.indexOf(q)>=0) sc=52;                           /* long contiguous substring (safe) */
+          else if(id&&id.indexOf(q)>=0&&q.length>=4) sc=56;
+          else { const qt=q.split(' ').filter(w=>w.length>2); if(qt.length){ const hit=qt.filter(w=>words.indexOf(w)>=0||words.some(ww=>ww.indexOf(w)===0)).length; if(hit) sc=42*hit/qt.length+(hit===qt.length?12:0); } }
+          if(sc>bs){ bs=sc; best=c; } }); });
+      return (best&&bs>=40)?{cb:best.cb,label:best.label,score:bs}:null; }
     function toggleLayer(name,on){ const r=resolveLayer(name); if(!r) return {ok:false}; const want=on!==false; const already=(r.cb.checked===want);
       if(!already){ try{ r.cb.checked=want; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
       return {ok:(r.cb.checked===want), label:r.label, already, want}; }
@@ -18023,6 +18092,26 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
         case 'clearAll': { try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
+        /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
+           actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
+           publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
+        case 'playground': case 'game': { const m=String(a.mode||a.name||'').toLowerCase(); let ok=false, lbl='Playground';
+          try{ if(/world|explorer|geo|satellite|drop|guess|どこ|地理/.test(m)&&window._pgWorldExplorer){ window._pgWorldExplorer(); ok=true; lbl='World Explorer'; }
+            else if(/pandemic|virus|outbreak|epidemic|disease|感染|パンデミック|эпидеми|pandemia/.test(m)&&window._pgPandemic){ window._pgPandemic(); ok=true; lbl='Pandemic Simulator'; }
+            else if(/quiz|test|クイズ|викторин|cuestionario/.test(m)&&window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; lbl='Quiz'; }
+            else if(window._openPlayground){ window._openPlayground(); ok=true; } }catch(_){}
+          return R(ok, ok?note('🎮 '+esc(lbl)):warn('⚠ '+L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
+        case 'news': { const m=String(a.mode||a.name||'').toLowerCase(); let id=null,lbl='';
+          if(/pub|source|outlet|媒体|発信|発信元|издат|fuente/.test(m)){ id='pinmode-pub'; lbl=L('Publisher pins','発信元ピン','Quelle','Издатель','Editor'); }
+          else if(/subj|event|loc|主題|出来事|событ|suceso/.test(m)){ id='pinmode-loc'; lbl=L('Subject pins','主題ピン','Ereignisort','Событие','Suceso'); }
+          else if(/saved|favorit|bookmark|保存|ブックマーク|сохран|guardad/.test(m)){ id='newsfilter-saved'; lbl=L('Saved','保存','Gespeichert','Сохранённые','Guardados'); }
+          else if(/translat|翻訳|перевод|traduc/.test(m)){ id='ai-translate-btn'; lbl=L('Translate','翻訳','Übersetzen','Перевод','Traducir'); }
+          if(id){ const ok=clickId(id); return R(ok, ok?note('📰 '+esc(lbl)):warn('⚠')); }
+          const ok=clickId('btn-news'); return R(ok, ok?note('📰 '+L('News','ニュース','Nachrichten','Новости','Noticias')):warn('⚠')); }
+        case 'account': case 'login': { const ok=clickId('btn-account'); return R(ok, ok?note('👤 '+L('Account','アカウント','Konto','Аккаунт','Cuenta')):warn('⚠')); }
+        case 'donate': { const ok=clickId('btn-blueberry'); return R(ok, ok?note('💙 '+L('Donate','寄付','Spenden','Поддержать','Donar')):warn('⚠')); }
+        case 'feedback': { let ok=false; try{ if(window._openFeedback){ window._openFeedback(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-feedback-hdr'); return R(ok, ok?note('✓ '+L('Feedback','フィードバック','Feedback','Отзыв','Comentarios')):warn('⚠')); }
+        case 'bugReport': case 'bug': { let ok=false; try{ if(window._openBugReport){ window._openBugReport(); ok=true; } }catch(_){} return R(ok, ok?note('🐞 '+L('Bug report','バグ報告','Fehlerbericht','Сообщить об ошибке','Reportar error')):warn('⚠')); }
         case 'module': return doModule(a);
         case 'control': return doControl(a);
         case 'answer': return R(true, '<div style="font-size:12px;line-height:1.55;">'+esc(a.text||'')+'</div>');
@@ -18035,10 +18124,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'COMMON SENSE — do NOT take a generic word as a literal place name (these were real failures): "the whole world / entire world / earth / globe / 世界 / 地球" means ZOOM OUT to the planet → emit {"type":"flyTo","place":"world"} (NEVER geocode "world"/"earth" — they wrongly matched "World Bank building" / "Earth, Texas"). To show a COUNTRY or CITY, pass its plain name as flyTo place (e.g. {"type":"flyTo","place":"China"} / {"type":"flyTo","place":"Osaka"}) — the engine frames the whole country / city area itself; do NOT append "city hall" or pick a tiny sub-place, and do NOT over-zoom. The Köppen climate layer (and other colour rasters) cannot isolate a SINGLE class: for "highlight the Cfa climate", enable the Köppen layer with {"type":"layer","name":"Köppen climate"} and, in "say", tell the user the Cfa zones are identified by the legend (do not claim you isolated Cfa).\n'
         +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (centre, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map centre. Action types:\n'
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box).\n'
-        +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). {"type":"opacity","name":EXACT_NAME,"value":0..1}; {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
+        +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1}; {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom"} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"); {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (AI brief); {"type":"askHere","place":str} (ask AI about a spot).\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"route","from":str,"to":str} (sea route); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int}; {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate).\n'
+        +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for a pure question OR to honestly explain something you could NOT do, answer in '+lang+'. You MAY combine an answer WITH real actions, but answer text must NOT pretend an un-emitted action happened.\n'
         +'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider or input. Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n'
@@ -18107,27 +18197,82 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof addEdgeResize==='function') addEdgeResize(panel,{min:[300,160]}); }catch(_){}   /* (#R47) resize from ANY edge, no handle mark */
       return panel; }
     function fire(){ const v=inEl.value.trim(); if(v){ inEl.value=''; run(v); } }
+    /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
+       fast-path/rescue share it): run every action, collect REAL per-step results, surface failures prominently
+       instead of trusting the model's optimistic "say". Returns the list of failed actions. */
+    async function runActions(ai, say, acts){
+      let body=''; const fails=[];
+      for(const a of acts){ let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a); }
+      let head=say?('<div style="margin-bottom:6px;">'+esc(say)+'</div>'):'';
+      if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
+        head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')+'</div>'; }
+      ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
+      return fails;
+    }
+    /* (#R52) DETERMINISTIC interpreter. The user re-reported operations Atlas "said" it did but didn't. A clear,
+       single-intent command should NEVER depend on (or spend) an AI round-trip, and when the AI fails to return a
+       usable plan we should still try to do the obvious thing rather than say "couldn't interpret". localPlan(q)
+       maps such commands to the SAME action objects dispatch already runs, in all 5 UI languages. It returns
+       {actions, confident}: `confident` (a fully-anchored single intent) runs immediately and skips the AI;
+       non-confident matches (navigation / layer toggle) are used only to RESCUE a failed AI plan, so the AI still
+       owns every compound / contextual / ambiguous request. */
+    function localPlan(q){ const s=String(q||'').trim(); if(!s) return null; const low=s.toLowerCase();
+      const A=a=>({actions:[a],confident:true});
+      if(/^(switch to |go |set |enable |turn on )?(dark( ?mode| ?theme)?|ダーク(モード|テーマ)?|暗い(テーマ|モード)|dunkel(modus|es design)?|тёмн(ая|ый)( тема| режим)?|modo oscuro|tema oscuro)$/i.test(low)) return A({type:'theme',mode:'dark'});
+      if(/^(switch to |go |set |enable |turn on )?(light( ?mode| ?theme)?|ライト(モード|テーマ)?|明るい(テーマ|モード)|hell(es design|modus)?|светл(ая|ый)( тема| режим)?|modo claro|tema claro)$/i.test(low)) return A({type:'theme',mode:'light'});
+      if(/^(auto|system)( ?theme| ?mode| default)?$|^(自動|システム)(テーマ|デフォルト)?$/i.test(low)) return A({type:'theme',mode:'auto'});
+      if(/^(globe|地球儀|globus|глобус|globo)( view| projection|表示)?$/i.test(low)) return A({type:'projection',mode:'globe'});
+      if(/^(flat|2d|平面(地図)?|flach(e karte)?|плоск(ая|ий)( карта)?|plano|mapa plano)( map| view|表示)?$/i.test(low)) return A({type:'projection',mode:'flat'});
+      if(/^(3d|3-?d terrain|3d地形|地形(表示)?|relieve 3d|3d-?gelände|3d рельеф)( view| mode| map)?$/i.test(low)) return A({type:'terrain3d',on:true});
+      if(/^(satellite|sat|衛星(写真|表示)?|satellit(enansicht)?|спутник|satélite)( view| imagery|表示)?$/i.test(low)) return A({type:'base',mode:'satellite'});
+      if(/^(map view|map base|地図(表示|に戻す)?|karten(ansicht)?|карт(а|ы)|mapa)( base| view)?$/i.test(low)) return A({type:'base',mode:'map'});
+      /* WORLD_RE after the projection toggles so bare "globe" means the globe PROJECTION, while "world / earth / the whole globe / 地球" still zoom out to the planet. */
+      if(WORLD_RE.test(s)) return A({type:'flyTo',place:'world'});
+      if(/^(zoom ?in|拡大|ズームイン|näher( heran)?|приблизить|acercar(se)?)$/i.test(low)) return A({type:'zoom',dir:'in'});
+      if(/^(zoom ?out|縮小|ズームアウト|heraus ?zoomen|отдалить|alejar(se)?)$/i.test(low)) return A({type:'zoom',dir:'out'});
+      if(/^(reset north|north up|face north|北を上に?|北向き|norden ausrichten|на север|al norte|orientar al norte)$/i.test(low)) return A({type:'resetNorth'});
+      if(/^(clear( the)?( map| all| everything)?|reset (the )?map|全(部)?(消去|クリア)|地図(を)?(クリア|消去)|очисти(ть)?( карту| всё)?|limpiar( el)?( mapa| todo)?|borrar todo)$/i.test(low)) return A({type:'clearAll'});
+      if(/^(compass|reset view|コンパス)$/i.test(low)) return A({type:'resetNorth'});
+      /* navigation (explicit motion verb + place) — rescue-grade. */
+      let mm=s.match(/^(?:fly|go|navigate|take me|jump|pan|move|center|centre)\s+(?:to|me to|over to|on)\s+(.+)$/i);
+      if(!mm) mm=s.match(/^(.+?)\s*(?:へ|に)\s*(?:移動|飛(?:んで|ぶ)|行って|ジャンプ|ズーム)(?:して)?$/);
+      if(mm){ const place=(mm[1]||'').trim().replace(/[。.!?]+$/,''); if(place&&place.length<=64) return {actions:[{type:'flyTo',place}],confident:false}; }
+      /* layer toggle (explicit on/off verb + a layer that actually RESOLVES) — rescue-grade. Only fires for a real
+         layer; non-layer "show me X" / compound text falls through to the AI rather than guessing. */
+      let on=true, lm=low.match(/^(?:show|display|turn on|enable|add|activate|put on)\s+(?:the\s+)?(.+?)(?:\s+layer)?$/i);
+      if(!lm){ const off=low.match(/^(?:hide|turn off|disable|remove|take off)\s+(?:the\s+)?(.+?)(?:\s+layer)?$/i); if(off){ lm=off; on=false; } }
+      if(lm){ const nm=(lm[1]||'').trim(); if(nm&&resolveLayer(nm)) return {actions:[{type:'layer',name:nm,on}],confident:false}; }
+      let jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:表示|オン|つけて|有効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:true}],confident:false};
+      jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:非表示|オフ|消して|無効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:false}],confident:false};
+      return null; }
     async function run(q){ q=String(q||'').trim(); if(!q) return; const p=ensure(); p.style.display='flex';
-      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none';
       bubble('u',esc(q));
+      let lp=null; try{ lp=localPlan(q); }catch(_){}
+      /* (#R52) a clear single-intent command runs deterministically with NO AI round-trip — it neither needs an
+         account nor spends a daily AI credit, so the most common operations ALWAYS work (the core of the user's
+         "claims it did X but didn't" report). The AI path below is still gated as before. */
+      if(lp&&lp.confident&&lp.actions&&lp.actions.length){ const ai=bubble('a',''); try{ const fails=await runActions(ai,'',lp.actions); recordTurn(q,'',lp.actions,fails); }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } return; }
+      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const ai=bubble('a','<span style="color:var(--text-muted);">'+L('Thinking…','考え中…','Denke nach…','Думаю…','Pensando…')+'</span>');
       try{ let plan=await askAIJSON(buildPrompt(q),SYS());
-        if(!plan){ ai.innerHTML=esc(L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.')); return; }
-        /* (#R43) tolerate a bare array of actions or a single action object from a weaker model. */
-        if(Array.isArray(plan)) plan={actions:plan}; else if(plan.type&&!plan.actions) plan={actions:[plan],say:plan.say};
-        const acts=Array.isArray(plan.actions)?plan.actions:[];
-        if(!acts.length){ const txt=plan.say||L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.'); ai.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc(txt)+'</div>'; recordTurn(q, plan.say||'', acts, []); return; }
-        /* (#R43) HONEST reporting: run every action, collect REAL per-step results, and surface any failures
-           prominently instead of letting the model's optimistic "say" claim success it never achieved. */
-        let body=''; const fails=[];
-        for(const a of acts){ let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a); }
-        let head=plan.say?('<div style="margin-bottom:6px;">'+esc(plan.say)+'</div>'):'';
-        if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
-          head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')+'</div>'; }
-        ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
+        /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
+        if(Array.isArray(plan)) plan={actions:plan}; else if(plan&&plan.type&&!plan.actions) plan={actions:[plan],say:plan.say};
+        const acts=(plan&&Array.isArray(plan.actions))?plan.actions:[];
+        if(!acts.length){
+          /* (#R52) No executable action came back. Priority: (1) if we have a DETERMINISTIC plan for this request,
+             DO it — this overrides a model that "said" it acted without emitting an action (the exact bug reported:
+             実行したと言っている操作が実行されていない). (2) else show the model's say (a real clarification / answer).
+             (3) else admit we could not interpret it. */
+          if(lp&&lp.actions&&lp.actions.length){ const fails=await runActions(ai,'',lp.actions); recordTurn(q,'',lp.actions,fails); return; }
+          const say=plan&&plan.say; if(say){ ai.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc(say)+'</div>'; recordTurn(q, say, [], []); return; }
+          ai.innerHTML=esc(L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.')); return;
+        }
+        const fails=await runActions(ai, plan.say||'', acts);
         recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
-      }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; }
+      }catch(e){ /* (#R52) network/parse failure → still try the deterministic plan before surfacing the error. */
+        if(lp&&lp.actions&&lp.actions.length){ try{ const fails=await runActions(ai,'',lp.actions); recordTurn(q,'',lp.actions,fails); return; }catch(_){} }
+        ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; }
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
     function recordTurn(q, say, acts, fails){ try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
