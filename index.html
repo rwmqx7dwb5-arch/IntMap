@@ -8291,7 +8291,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-06-21';
+  const LEGAL_DATE='2026-06-26';
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -8323,7 +8323,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
     <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点をライブ取得）、ウェブカメラ視聴（地点をクリックすると、その提供元の第三者コンテンツ＝ライブ画像／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／提供元ページ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます）。各社のプライバシーポリシーが適用されます。</p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点をライブ取得）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、ウェブカメラ視聴（地点をクリックすると、その提供元の第三者コンテンツ＝ライブ画像／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／提供元ページ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます）。各社のプライバシーポリシーが適用されます。</p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -8335,7 +8335,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
     <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side).</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view); webcam viewing — opening a webcam loads that operator's third-party content (a live image, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or the operator's own page), subject to that operator's/platform's policies; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response). Each has its own privacy policy.</p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; webcam viewing — opening a webcam loads that operator's third-party content (a live image, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or the operator's own page), subject to that operator's/platform's policies; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response). Each has its own privacy policy.</p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -12608,7 +12608,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const DATA_SOURCES=[
     {n:'CARTO basemaps',u:'https://carto.com/attribution/',use:{en:'Light/dark vector basemap tiles',jp:'標準マップのタイル'}},
     {n:'Esri World Imagery',u:'https://www.esri.com/',use:{en:'Satellite imagery + reference labels',jp:'衛星画像・地名ラベル'}},
-    {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',use:{en:'Place search (Nominatim) & basemap data',jp:'地名検索・地図データ'}},
+    {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',use:{en:'Place search & place/region boundary outlines (Nominatim) & basemap data',jp:'地名検索・地名/地域の範囲ポリゴン表示（Nominatim）・地図データ'}},
     {n:'NASA GIBS / Worldview',u:'https://www.earthdata.nasa.gov/',use:{en:'Temperature, precipitation, SST, sea-ice concentration & SST anomaly, snow, aerosol & UV-aerosol index, carbon monoxide, soil moisture, ocean chlorophyll, fires, vegetation (NDVI), land-surface & cloud-top temperature, true-color & shaded relief',jp:'気温・降水・海面水温・海氷密接度・海面水温偏差・積雪・煙霧・紫外線エアロゾル指数・一酸化炭素・土壌水分・海洋クロロフィル・火災・植生(NDVI)・地表面/雲頂温度・トゥルーカラー・陰影起伏'}},
     {n:'REST Countries',u:'https://restcountries.com/',use:{en:'Country reference facts (capital, currency, languages, borders) for the info page',jp:'国の基礎情報（首都・通貨・言語・隣接国）— 情報ページ'}},
     {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/',use:{en:'Active fire / thermal anomalies',jp:'熱異常（火災）'}},
@@ -17686,6 +17686,61 @@ window.addEventListener('DOMContentLoaded', () => {
      `countries` source and listing them. Not a facade: every action maps to existing engine code. 5-language.
      Launch: a small ⌨ toolbar button (beta), the right-click menu, or Ctrl/⌘+K. CSS via single-quoted cssText
      (no back-tick in CSS → no blank-site risk). ===== */
+  /* ===== (#R53) Place-label OUTLINE — click any place-name label on the map and its REAL extent is drawn as a
+     polygon (user request: "地名ラベルをクリックしたら、その地域の範囲がポリゴンで表示されるように"). Also exposed as
+     window.IntMapOutline.show(name, ctx) so Atlas can outline any place. Click-point disambiguation picks the match
+     nearest the label (so the "Paris" label near France → France's Paris, not Paris TX). CSS via single-quoted
+     cssText (no back-tick → no blank-site risk). 5-language. ===== */
+  window.IntMapOutline=(function(){
+    if(typeof map==='undefined'||!map) return { show(){}, clear(){} };
+    const L=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+    let chip=null, busy=false, _last=null;
+    function ensureLayers(){ try{
+      if(!map.getSource('pl-outline-src')) map.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      if(!map.getLayer('pl-outline-fill')) map.addLayer({id:'pl-outline-fill',type:'fill',source:'pl-outline-src',paint:{'fill-color':'#0a84ff','fill-opacity':0.15}},before);
+      if(!map.getLayer('pl-outline-line')) map.addLayer({id:'pl-outline-line',type:'line',source:'pl-outline-src',paint:{'line-color':'#0a84ff','line-width':2.4,'line-opacity':0.95}},before);
+      return true; }catch(_){ return false; } }
+    function setData(geo){ try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData(geo); }catch(_){} }
+    function clear(){ try{ const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} _last=null; if(chip) chip.style.display='none'; }
+    function boxToPolygon(box){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1]; return {type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; }
+    function bboxOf(geo){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geo.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>a&&d>b)?[[a,b],[c,d]]:null; }
+    function showChip(name){ if(!chip){ chip=document.createElement('div'); chip.id='pl-outline-chip'; chip.style.cssText='position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;display:flex;align-items:center;gap:8px;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:7px 8px 7px 14px;font-size:12.5px;font-weight:600;max-width:min(80vw,440px);';
+        const tx=document.createElement('span'); tx.className='plo-name'; tx.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; chip.appendChild(tx);
+        const x=document.createElement('button'); x.textContent='✕'; x.title=L('Clear','消去','Löschen','Очистить','Borrar'); x.style.cssText='background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 6px;border-radius:50%;line-height:1;'; x.onclick=clear; chip.appendChild(x);
+        (document.getElementById('map-container')||document.body).appendChild(chip); }
+      chip.querySelector('.plo-name').textContent='⬡ '+name; chip.style.display='flex'; }
+    async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
+      let vb=''; if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){ const d=8; vb='&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d); }
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold=0.006&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
+        const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||'')); const cand=polys.length?polys:j; let best=cand[0];
+        if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){ let bd=Infinity; cand.forEach(o=>{ const dist=Math.hypot((+o.lon)-ctx.lng,(+o.lat)-ctx.lat)-(+o.importance||0)*2; if(dist<bd){ bd=dist; best=o; } }); }
+        else { best=cand.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0]; }
+        return { name:(best.display_name||q).split(',')[0], geojson:(best.geojson&&/Polygon/.test(best.geojson.type||''))?best.geojson:null, lng:+best.lon, lat:+best.lat, bbox:best.boundingbox };
+      }catch(_){ return null; } }
+    async function show(name, ctx){ ctx=ctx||{}; if(busy) return false; busy=true;
+      try{ showChip(name||'…'); let geo=ctx.geojson||null, disp=name||'';
+        if(!geo && ctx.forceBox && ctx.box){ geo=boxToPolygon(ctx.box); }
+        if(!geo){ const r=await fetchPolygon(name, ctx);
+          if(r){ disp=r.name||disp; if(r.geojson) geo=r.geojson; else if(ctx.box) geo=boxToPolygon(ctx.box); else if(Array.isArray(r.bbox)&&r.bbox.length===4){ const s=+r.bbox[0],n=+r.bbox[1],w=+r.bbox[2],e=+r.bbox[3]; if([s,n,w,e].every(isFinite)&&e>w&&n>s) geo=boxToPolygon([[w,s],[e,n]]); } }
+          else if(ctx.box) geo=boxToPolygon(ctx.box); }
+        if(!geo){ showChip(L('No outline available','範囲が取得できません','Kein Umriss verfügbar','Контур недоступен','Sin contorno')); busy=false; return false; }
+        setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; showChip(disp||name||'');
+        const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=map.getContainer&&map.getContainer(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); map.fitBounds(bb,{padding:pad,maxZoom:12,duration:1000}); }catch(_){} }
+        busy=false; return true;
+      }catch(_){ busy=false; return false; } }
+    map.on('styledata',()=>{ if(_last){ setTimeout(()=>{ try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); }catch(_){} },120); } });
+    function labelClick(e){ try{
+      if(typeof toolMode!=='undefined' && toolMode) return;                                   /* a measure/radius tool owns the click */
+      if(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()) return;
+      const labs=['ofm-country','ofm-city','ofm-other'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } }); if(!labs.length) return;
+      let hits=[]; try{ hits=map.queryRenderedFeatures([[e.point.x-7,e.point.y-7],[e.point.x+7,e.point.y+7]],{layers:labs}); }catch(_){}
+      if(!hits||!hits.length) return; const p=hits[0].properties||{}; const nm=p.name||p['name:en']||p['name:latin']||p.name_en||''; if(!nm) return;
+      show(nm,{lng:e.lngLat.lng,lat:e.lngLat.lat,kind:p.class||''});
+    }catch(_){} }
+    map.on('click',labelClick);
+    return { show, clear };
+  })();
   window.IntMapConsole=(function(){
     if(typeof map==='undefined'||!map) return { open(){}, run(){}, toggle(){} };
     const L=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
@@ -17903,15 +17958,77 @@ window.addEventListener('DOMContentLoaded', () => {
       const a=build(false), b=build(true); const pick=(a&&b)?((b.span<a.span-1e-6)?b:a):(a||b);
       if(!pick||!isFinite(pick.W)||pick.E<=pick.W||pick.N<=pick.S) return null;
       return [[pick.W,pick.S],[pick.E,pick.N]]; }
-    /* ONE Nominatim call → the BEST result (highest importance, so "China" is the country, not "China, Texas") +
-       point + name + the real footprint (a simplified polygon). */
-    async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||WORLD_RE.test(place)) return null;
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&polygon_geojson=1&polygon_threshold=0.02&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
-        const o=j.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0];   /* most-important match = the real place */
-        let box=robustExtent(o.geojson);
-        if(!box && Array.isArray(o.boundingbox)&&o.boundingbox.length===4){ const s=+o.boundingbox[0],n=+o.boundingbox[1],w=+o.boundingbox[2],e=+o.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
-        return {lng:+o.lon, lat:+o.lat, name:(o.display_name||place).split(',')[0], box}; }catch(_){}
+    /* (#R53) The user reported real OFF-TARGET zooms: a REGION name jumped to a random tiny POI in the wrong country
+       (verified live: "Central Europe"→a quarter in Minsk; "Southern Italy"→a military office in Vicenza; "City Center
+       of Chongqing"→a tourist centre 100 km away). Root cause = blindly trusting Nominatim's highest-importance
+       free-text hit. Fix WITHOUT any per-type zoom constant: a macro-REGION gazetteer (Nominatim has no polygon for
+       these), DIRECTIONAL names sliced from the base country's REAL polygon, "city centre of X" → the city core, and
+       POI-vs-admin result filtering. All 5 languages. */
+    const _rnorm=s=>_lnorm(String(s||'')).replace(/^(the|la|el|las|los|le|les|der|die|das)\s+/,'').replace(/\s+(region|area)$/,'').trim();
+    const REGION_BBOX={
+      'central europe':[4,45,24,55],'western europe':[-10,42,13,55],'eastern europe':[16,43,42,58],'northern europe':[3,53,32,71],'southern europe':[-10,35,28,47],
+      'europe':[-12,34,42,71],'scandinavia':[4,54,32,71],'nordics':[4,54,32,71],'baltics':[20,53,29,60],'baltic states':[20,53,29,60],'benelux':[2,49,7,54],
+      'british isles':[-11,49,2,61],'iberia':[-10,36,4,44],'iberian peninsula':[-10,36,4,44],'balkans':[13,38,30,49],'caucasus':[40,38,50,45],'mediterranean':[-6,30,37,47],
+      'middle east':[25,12,63,42],'near east':[25,12,50,42],'levant':[34,29,42,38],'arabian peninsula':[34,12,60,32],'gulf':[47,23,57,31],'persian gulf':[47,23,57,31],'mesopotamia':[38,30,49,37],
+      'central asia':[46,35,88,56],'south asia':[60,5,98,38],'southeast asia':[92,-11,141,29],'south-east asia':[92,-11,141,29],'east asia':[100,18,146,54],'far east':[100,18,146,54],
+      'indochina':[92,9,110,29],'indian subcontinent':[60,5,98,38],'asia':[26,-11,180,78],
+      'north africa':[-17,19,37,38],'west africa':[-18,4,16,28],'east africa':[28,-12,52,18],'central africa':[8,-13,31,8],'southern africa':[11,-35,41,-15],
+      'horn of africa':[40,-2,51,18],'sahel':[-18,11,40,18],'maghreb':[-13,27,12,38],'sub-saharan africa':[-18,-35,52,18],'africa':[-18,-35,52,38],'sahara':[-17,16,37,31],
+      'north america':[-168,7,-52,72],'central america':[-92,7,-77,19],'latin america':[-118,-56,-34,33],'south america':[-82,-56,-34,13],'caribbean':[-85,9,-59,27],
+      'midwest':[-104,36,-80,49],'new england':[-74,41,-66,48],'pacific northwest':[-125,42,-111,49],'great plains':[-105,31,-95,49],'deep south':[-95,29,-75,37],'american south':[-95,29,-75,37],
+      'patagonia':[-76,-56,-62,-39],'amazon':[-79,-16,-44,5],'amazonia':[-79,-16,-44,5],'andes':[-79,-56,-62,11],
+      'himalayas':[73,26,96,36],'alps':[5,43,17,48],'siberia':[60,50,180,78],'oceania':[110,-50,180,0],'gulf of mexico':[-98,18,-81,31] };
+    const REGION_ALIASES={
+      '中央ヨーロッパ':'central europe','中欧':'central europe','西ヨーロッパ':'western europe','西欧':'western europe','東ヨーロッパ':'eastern europe','東欧':'eastern europe','北欧':'northern europe','南欧':'southern europe','ヨーロッパ':'europe','欧州':'europe','中東':'middle east','東南アジア':'southeast asia','東アジア':'east asia','中央アジア':'central asia','南アジア':'south asia','北アフリカ':'north africa','サハラ以南アフリカ':'sub-saharan africa','カリブ':'caribbean','カリブ海':'caribbean','バルカン':'balkans','バルカン半島':'balkans','スカンジナビア':'scandinavia','北米':'north america','中米':'central america','南米':'south america','ラテンアメリカ':'latin america','サハラ':'sahara','アマゾン':'amazon','ヒマラヤ':'himalayas','アルプス':'alps','シベリア':'siberia','中南米':'latin america',
+      'mitteleuropa':'central europe','westeuropa':'western europe','osteuropa':'eastern europe','nordeuropa':'northern europe','südeuropa':'southern europe','naher osten':'middle east','südostasien':'southeast asia','ostasien':'east asia','zentralasien':'central asia','nordafrika':'north africa','der balkan':'balkans','skandinavien':'scandinavia',
+      'центральная европа':'central europe','западная европа':'western europe','восточная европа':'eastern europe','северная европа':'northern europe','южная европа':'southern europe','европа':'europe','ближний восток':'middle east','юго-восточная азия':'southeast asia','восточная азия':'east asia','центральная азия':'central asia','северная африка':'north africa','балканы':'balkans','скандинавия':'scandinavia','сибирь':'siberia','карибы':'caribbean','латинская америка':'latin america',
+      'europa central':'central europe','europa occidental':'western europe','europa oriental':'eastern europe','oriente medio':'middle east','medio oriente':'middle east','sudeste asiático':'southeast asia','asia oriental':'east asia','asia central':'central asia','el caribe':'caribbean','escandinavia':'scandinavia','los balcanes':'balkans','américa latina':'latin america','el sahara':'sahara','los andes':'andes','el amazonas':'amazon' };
+    function regionBox(place){ const raw=_lnorm(place); const k=REGION_ALIASES[raw]||REGION_ALIASES[_rnorm(place)]||_rnorm(place); const b=REGION_BBOX[k]; if(!b) return null; return {box:[[b[0],b[1]],[b[2],b[3]]], lng:(b[0]+b[2])/2, lat:(b[1]+b[3])/2, name:place.trim(), region:true}; }
+    const DIR_VEC={north:'N',northern:'N',south:'S',southern:'S',east:'E',eastern:'E',west:'W',western:'W',central:'C',northeast:'NE',northeastern:'NE',northwest:'NW',northwestern:'NW',southeast:'SE',southeastern:'SE',southwest:'SW',southwestern:'SW',upper:'N',lower:'S'};
+    function parseDirectional(place){ const s=String(place||'').trim(); let m;
+      m=s.match(/^(northern|southern|eastern|western|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|upper|lower|north|south|east|west)\s+(.{2,})$/i);
+      if(m) return {dir:DIR_VEC[m[1].toLowerCase()], base:m[2]};
+      m=s.match(/^(?:el\s+|la\s+)?(norte|sur|este|oeste|centro|noreste|noroeste|sureste|suroeste)\s+de\s+(.{2,})$/i);
+      if(m){ const M={norte:'N',sur:'S',este:'E',oeste:'W',centro:'C',noreste:'NE',noroeste:'NW',sureste:'SE',suroeste:'SW'}; return {dir:M[m[1].toLowerCase()], base:m[2]}; }
+      m=s.match(/^(.{2,}?)(北東部|北西部|南東部|南西部|北部|南部|東部|西部|中部|中央部)$/);
+      if(m){ const M={'北部':'N','南部':'S','東部':'E','西部':'W','中部':'C','中央部':'C','北東部':'NE','北西部':'NW','南東部':'SE','南西部':'SW'}; return {dir:M[m[2]], base:m[1]}; }
+      m=s.match(/^(северо-восточн\S*|северо-западн\S*|юго-восточн\S*|юго-западн\S*|северн\S*|южн\S*|восточн\S*|западн\S*|центральн\S*)\s+(.{2,})$/i);
+      if(m){ const w=m[1].toLowerCase(); const d=/^северо-в/.test(w)?'NE':/^северо-з/.test(w)?'NW':/^юго-в/.test(w)?'SE':/^юго-з/.test(w)?'SW':/^северн/.test(w)?'N':/^южн/.test(w)?'S':/^восточн/.test(w)?'E':/^западн/.test(w)?'W':'C'; return {dir:d, base:m[2]}; }
+      m=s.match(/^(nord|süd|sud|ost|west|zentral|mittel)([a-zäöüß].{3,})$/i);
+      if(m){ const M={nord:'N','süd':'S',sud:'S',ost:'E',west:'W',zentral:'C',mittel:'C'}; return {dir:M[m[1].toLowerCase()], base:m[2]}; }
       return null; }
+    function sliceBox(box,dir){ const W=box[0][0],S=box[0][1],E=box[1][0],N=box[1][1], Hd=N-S, Wd=E-W, fr=0.58; let w=W,s=S,e=E,n=N;
+      if(/N/.test(dir)) s=N-Hd*fr; if(/S/.test(dir)) n=S+Hd*fr; if(/E/.test(dir)) w=E-Wd*fr; if(/W/.test(dir)) e=W+Wd*fr;
+      if(dir==='C'){ w=W+Wd*0.22; e=E-Wd*0.22; s=S+Hd*0.22; n=N-Hd*0.22; }
+      return [[w,s],[e,n]]; }
+    const CENTER_RE=/^(?:the\s+)?(?:downtown|city\s+cent(?:er|re)|cent(?:er|re)|inner\s+city)\s+(?:of\s+)?(.{2,})$|^(.{2,}?)\s+(?:city\s+cent(?:er|re)|downtown|inner\s+city)$|^(.{2,}?)(?:の)?(?:中心部|中心街|都心|繁華街)$|^(?:centro|el\s+centro)\s+de\s+(.{2,})$|^(?:zentrum|innenstadt|stadtzentrum)\s+(?:von\s+)?(.{2,})$|^центр\s+(.{2,})$/i;
+    function parseCenter(place){ const m=String(place||'').trim().match(CENTER_RE); if(!m) return null; const base=m[1]||m[2]||m[3]||m[4]||m[5]||m[6]; return base?base.trim():null; }
+    function _classBonus(o){ const c=(o.class||'').toLowerCase(), at=(o.addresstype||'').toLowerCase();
+      if(/^(amenity|shop|tourism|leisure|office|building|man_made|highway|railway|historic|craft|healthcare|barrier|power|aeroway)$/.test(c)) return -0.6;
+      if(/^(country|state|region|province|county|city|town|district|municipality|island|continent|borough|department)$/.test(at)) return 0.3;
+      if(c==='place'||c==='boundary'||c==='natural') return 0.22; return 0; }
+    async function _nomExtent(place){ place=String(place||'').trim(); if(!place) return null;
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.02&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
+        const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y))-((+x.importance||0)+_classBonus(x)))[0];
+        let box=robustExtent(best.geojson);
+        if(!box && Array.isArray(best.boundingbox)&&best.boundingbox.length===4){ const s=+best.boundingbox[0],n=+best.boundingbox[1],w=+best.boundingbox[2],e=+best.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
+        const adminPoly=!!(best.geojson && /Polygon/.test(best.geojson.type||'') && _classBonus(best)>0);
+        return {lng:+best.lon, lat:+best.lat, name:(best.display_name||place).split(',')[0], box, geojson:best.geojson||null, adminPoly}; }catch(_){}
+      return null; }
+    async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||WORLD_RE.test(place)) return null;
+      /* 1) macro-region with a known real extent (Nominatim has no clean polygon for these). */
+      const reg=regionBox(place); if(reg) return reg;
+      /* 2) "city centre of X" → the city core at a close view (a small box around the city point). */
+      const cb=parseCenter(place); if(cb){ const e=await _nomExtent(cb); if(e&&isFinite(e.lng)){ const d=0.06; return {lng:e.lng, lat:e.lat, name:e.name, box:[[e.lng-d,e.lat-d*0.8],[e.lng+d,e.lat+d*0.8]]}; } }
+      /* 3) directional sub-region. A "Dir + Word" string is often a PROPER name (South Korea, West Virginia,
+         Northern Ireland), so try the FULL name first — if Nominatim returns a real admin polygon, use it. Only
+         when the full name is junk (Southern Italy → a POI) do we SLICE the base place's real polygon (dynamic). */
+      const dir=parseDirectional(place);
+      if(dir){ const full=await _nomExtent(place); if(full&&full.adminPoly&&full.box) return full;
+        const e=await _nomExtent(dir.base); if(e&&e.box){ const sb=sliceBox(e.box,dir.dir); return {lng:(sb[0][0]+sb[1][0])/2, lat:(sb[0][1]+sb[1][1])/2, name:place.trim(), box:sb}; }
+        if(full&&full.box) return full; }
+      /* 4) normal place — Nominatim with POI-vs-admin filtering + real footprint. */
+      return await _nomExtent(place); }
     /* Fit a box at a comfortable zoom: proportional MARGIN (so the place isn't edge-to-edge) + cameraForBounds, with
        only loose SANITY caps (a point can't go past z16.5; nothing below z0.6). NO per-type constants. */
     function flyToBox(box){ try{ const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(38, Math.round(Math.min(W,H)*0.09));
@@ -18091,7 +18208,14 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof measurePoints!=='undefined') measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
-        case 'clearAll': { try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
+        case 'clearAll': { try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
+        case 'outline': case 'extent': case 'showExtent': { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado'))); }
+          const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
+          if(!window.IntMapOutline||!window.IntMapOutline.show) return R(false, warn('⚠'));
+          let ext=null; try{ ext=await placeExtent(place); }catch(_){}
+          let ctx={}; if(ext){ ctx=ext.region?{box:ext.box,forceBox:true}:{lng:ext.lng,lat:ext.lat,box:ext.box}; }
+          let ok=false; try{ ok=await window.IntMapOutline.show((ext&&ext.name)||place, ctx); }catch(_){}
+          return R(!!ok, ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place)):warn('⚠ '+L('Could not outline','範囲を表示できません','Kein Umriss','Не удалось','No se pudo')+': '+esc(place))); }
         /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
            actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
            publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
@@ -18123,7 +18247,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'HONESTY: NEVER use "answer" (or the "say" text) to claim you did something you did not emit a real action for — that is a lie the user explicitly complained about. To DO anything you MUST emit its action. "say" must describe ONLY what the actions in this plan actually do. If a request is impossible or unclear, emit a single honest {"type":"answer"} explaining it, and emit NO action you cannot fulfil. Decompose multi-part requests fully (5+ actions is fine) and keep them in the order the user implied.\n'
         +'COMMON SENSE — do NOT take a generic word as a literal place name (these were real failures): "the whole world / entire world / earth / globe / 世界 / 地球" means ZOOM OUT to the planet → emit {"type":"flyTo","place":"world"} (NEVER geocode "world"/"earth" — they wrongly matched "World Bank building" / "Earth, Texas"). To show a COUNTRY or CITY, pass its plain name as flyTo place (e.g. {"type":"flyTo","place":"China"} / {"type":"flyTo","place":"Osaka"}) — the engine frames the whole country / city area itself; do NOT append "city hall" or pick a tiny sub-place, and do NOT over-zoom. The Köppen climate layer (and other colour rasters) cannot isolate a SINGLE class: for "highlight the Cfa climate", enable the Köppen layer with {"type":"layer","name":"Köppen climate"} and, in "say", tell the user the Cfa zones are identified by the legend (do not claim you isolated Cfa).\n'
         +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (centre, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map centre. Action types:\n'
-        +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box).\n'
+        +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. {"type":"outline","place":str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1}; {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom"} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"); {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (AI brief); {"type":"askHere","place":str} (ask AI about a spot).\n'
@@ -18268,6 +18392,10 @@ window.addEventListener('DOMContentLoaded', () => {
           const say=plan&&plan.say; if(say){ ai.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc(say)+'</div>'; recordTurn(q, say, [], []); return; }
           ai.innerHTML=esc(L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.')); return;
         }
+        /* (#R53) ANTI-FABRICATION: if the model only "answered" (no real action) yet we have a deterministic plan
+           for this request, DO the real thing instead of printing words that claim an action that never ran — the
+           user explicitly reported "実行していない動作を実行したという虚偽の報告". */
+        if(acts.every(a=>a&&a.type==='answer') && lp && lp.actions && lp.actions.length){ const fails=await runActions(ai,'',lp.actions); recordTurn(q,'',lp.actions,fails); return; }
         const fails=await runActions(ai, plan.say||'', acts);
         recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
       }catch(e){ /* (#R52) network/parse failure → still try the deterministic plan before surfacing the error. */
