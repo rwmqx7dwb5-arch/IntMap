@@ -17717,6 +17717,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
       try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){}
       try{ setVis('none'); }catch(_){}
+      /* (#R58) FORCE a repaint — if the render loop was idle, removeLayer updates the style but the last drawn frame
+         (with the polygon) could linger on the canvas. triggerRepaint guarantees the next frame has no outline. */
+      try{ map.triggerRepaint&&map.triggerRepaint(); }catch(_){}
       if(chip) chip.style.display='none'; }
     function boxToPolygon(box){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1]; return {type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; }
     function bboxOf(geo){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geo.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>a&&d>b)?[[a,b],[c,d]]:null; }
@@ -17768,6 +17771,10 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
         try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){} } });
     function labelClick(e){ try{
+      /* (#R58) NEVER treat a click that did NOT land on the map canvas as a label click — so a × tap (or any overlay
+         tap) can never leak through to the map and re-draw the outline at the chip's spot. */
+      const tgt=e&&e.originalEvent&&e.originalEvent.target;
+      if(tgt&&tgt.closest&&!tgt.closest('.maplibregl-canvas-container')) return;
       if(typeof toolMode!=='undefined' && toolMode) return;                                   /* a measure/radius tool owns the click */
       if(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()) return;
       /* (#R54) clicking a COUNTRY label does NOT outline (user: 国を選択時はポリゴン不要) — only cities / towns / villages. */
