@@ -17760,7 +17760,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=map.getContainer&&map.getContainer(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); map.fitBounds(bb,{padding:pad,maxZoom:12,duration:1000}); }catch(_){} }
         return true;
       }catch(_){ return false; } }
-    map.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); } });
+    map.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
+      else { /* (#R57) REAPER — definitive guarantee that a cleared outline can never linger: while no outline is
+                active, NO pl-outline layer/source may survive a style event. So even if a clear() were somehow
+                bypassed, the very next style change (frequent) removes any stray polygon. Only ever removes. */
+        try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
+        try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
+        try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){} } });
     function labelClick(e){ try{
       if(typeof toolMode!=='undefined' && toolMode) return;                                   /* a measure/radius tool owns the click */
       if(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()) return;
