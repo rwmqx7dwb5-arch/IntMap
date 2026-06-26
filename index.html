@@ -17333,7 +17333,10 @@ window.addEventListener('DOMContentLoaded', () => {
         map.addLayer({id:'place-hl-dot',type:'circle',source:'place-hl-src',filter:['==','$type','Point'],paint:{'circle-radius':9,'circle-color':'#ff3b30','circle-opacity':0.35,'circle-stroke-color':'#ff3b30','circle-stroke-width':2.5}},before);
         return true; }catch(_){ return false; }
     }
-    function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; } }
+    function clearHL(){ try{ const s=map.getSource('place-hl-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} if(popup){ try{popup.remove();}catch(_){} popup=null; }
+      /* (#R59) the place popup now OWNS the boundary outline (#R8c popup + IntMapOutline unified) — closing/clearing
+         the popup (×, click-away, or a new label) also clears the blue boundary, so it can never linger. */
+      try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){} }
     function showPopup(lngLat,name,isCountry){ if(popup){ try{popup.remove();}catch(_){} } const jp=currentLang==='jp', safe=String(name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
@@ -17344,7 +17347,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const isoBtn=isCountry?`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${de?'Nur dieses Land':jp?'この国だけ':'Isolate'}</button>`:'';
       const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}</div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
-        setTimeout(()=>{ const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
+        /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
+           uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
+           boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
+        if(!isCountry){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }
+        setTimeout(()=>{ try{ const xb=document.querySelector('.plc-popup .maplibregl-popup-close-button'); if(xb) xb.addEventListener('click',()=>{ try{ clearHL(); }catch(_){} }); }catch(_){}
+          const b=document.querySelector('.plc-copy'); if(b) b.onclick=()=>{ try{ navigator.clipboard.writeText(name); }catch(_){} b.textContent=jp?'✓ コピーしました':'✓ Copied'; };
           /* (#R20) Wikipedia button — shown only when an article actually EXISTS for this name
              (REST summary probe, CORS*). Opens the article in a new tab. */
           const w=document.querySelector('.plc-wiki');
@@ -17694,7 +17702,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapOutline=(function(){
     if(typeof map==='undefined'||!map) return { show(){}, clear(){} };
     const L=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
-    let chip=null, _last=null, _active=false, _seq=0;
+    let _last=null, _active=false, _seq=0;
     function setVis(v){ try{ if(map.getLayer('pl-outline-fill')) map.setLayoutProperty('pl-outline-fill','visibility',v); if(map.getLayer('pl-outline-line')) map.setLayoutProperty('pl-outline-line','visibility',v); }catch(_){} }
     function ensureLayers(){ try{
       if(!map.getSource('pl-outline-src')) map.addSource('pl-outline-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
@@ -17712,81 +17720,56 @@ window.addEventListener('DOMContentLoaded', () => {
        layers evidently wasn't enough in the field, so we now REMOVE the layers and the source outright: there is
        literally nothing left that can paint the outline. `_seq`/`_active`/`_last` are flipped off first so any
        in-flight show() or styledata re-add bails. The next show() re-creates everything via ensureLayers(). */
+    /* (#R59) Pure boundary renderer (NO chip, NO own click handler). The place-label POPUP (#R8c) now owns the
+       click + the × and drives show()/clear() — so there is ONE popup, ONE boundary, and ONE × that clears both
+       (the user reported the line staying after the popup's ×, which only closed the popup). clear() is nuclear:
+       removes the layers + source so nothing can paint, then forces a repaint. */
     function clear(){ _seq++; _active=false; _last=null;
       try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
       try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
       try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){}
       try{ setVis('none'); }catch(_){}
-      /* (#R58) FORCE a repaint — if the render loop was idle, removeLayer updates the style but the last drawn frame
-         (with the polygon) could linger on the canvas. triggerRepaint guarantees the next frame has no outline. */
-      try{ map.triggerRepaint&&map.triggerRepaint(); }catch(_){}
-      if(chip) chip.style.display='none'; }
-    function boxToPolygon(box){ const w=box[0][0],s=box[0][1],e=box[1][0],n=box[1][1]; return {type:'Polygon',coordinates:[[[w,s],[e,s],[e,n],[w,n],[w,s]]]}; }
+      try{ map.triggerRepaint&&map.triggerRepaint(); }catch(_){} }
     function bboxOf(geo){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geo.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>a&&d>b)?[[a,b],[c,d]]:null; }
-    /* (#R56) The ENTIRE chip clears the outline (tap the name or the ×), not just the tiny ✕ glyph — a too-small
-       hit target was a likely reason "× doesn't clear" on touch. Bound for both mouse and touch. */
-    function showChip(name){ if(!chip){ chip=document.createElement('div'); chip.id='pl-outline-chip'; chip.style.cssText='position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;display:flex;align-items:center;gap:8px;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:999px;box-shadow:var(--shadow);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding:7px 14px;font-size:12.5px;font-weight:600;max-width:min(80vw,440px);cursor:pointer;touch-action:manipulation;';
-        chip.title=L('Tap to clear','タップで消去','Zum Löschen tippen','Нажмите, чтобы убрать','Toca para borrar');
-        const tx=document.createElement('span'); tx.className='plo-name'; tx.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;'; chip.appendChild(tx);
-        const x=document.createElement('span'); x.textContent='✕'; x.style.cssText='color:var(--text-muted);font-size:15px;line-height:1;flex:0 0 auto;pointer-events:none;'; chip.appendChild(x);
-        const doClear=(ev)=>{ try{ ev.stopPropagation(); ev.preventDefault(); }catch(_){} clear(); };
-        chip.addEventListener('click',doClear); chip.addEventListener('touchend',doClear,{passive:false});
-        (document.getElementById('map-container')||document.body).appendChild(chip); }
-      chip.querySelector('.plo-name').textContent='⬡ '+name; chip.style.display='flex'; }
+    /* (#R59) point-in-polygon — pick the boundary that CONTAINS the clicked point (exact, no distance threshold:
+       the user said "固定基準で解決できると思うな"). Fixes "flies to a far same-named place". */
+    function _pipRing(x,y,r){ let inside=false; for(let i=0,j=r.length-1;i<r.length;j=i++){ const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; } return inside; }
+    function _pipPoly(x,y,poly){ if(!poly||!poly.length||!_pipRing(x,y,poly[0])) return false; for(let i=1;i<poly.length;i++){ if(_pipRing(x,y,poly[i])) return false; } return true; }
+    function _pipGeo(x,y,gj){ try{ if(!gj) return false; if(gj.type==='Polygon') return _pipPoly(x,y,gj.coordinates); if(gj.type==='MultiPolygon') return gj.coordinates.some(p=>_pipPoly(x,y,p)); }catch(_){} return false; }
+    function _bboxArea(gj){ const bb=bboxOf(gj); return bb?((bb[1][0]-bb[0][0])*(bb[1][1]-bb[0][1])):Infinity; }
+    function _bboxHas(gj,x,y){ const bb=bboxOf(gj); return !!(bb&&x>=bb[0][0]&&x<=bb[1][0]&&y>=bb[0][1]&&y<=bb[1][1]); }
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
       let vb=''; if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){ const d=8; vb='&viewbox='+(ctx.lng-d)+','+(ctx.lat+d)+','+(ctx.lng+d)+','+(ctx.lat-d); }
-      /* (#R54) higher resolution — threshold 0.006 simplified a ward to ~9 points ("線が直線的すぎてクソ"); 0.0003
-         keeps the real shape (Shibuya ≈ 120+ pts) yet stays bounded. Callers may override via ctx.threshold. */
-      const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;
+      const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;   /* (#R54) high-res shape, not 9 straight points */
       try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
-        const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||'')); const cand=polys.length?polys:j; let best=cand[0];
+        const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||''));
+        if(!polys.length) return null;   /* (#R59) NO rectangle fallback — if there is no real boundary, draw NOTHING */
+        let best=null;
         if(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat)){
-          /* (#R55) The user clicked an EXACT spot. Pick the same-named match NEAREST the click — NO importance pull
-             (that previously dragged the view to a far 同名 city). And if even the nearest match is implausibly far
-             from where they clicked, the place they tapped simply has no boundary here → return null (do NOT fly to a
-             distant same-named place). The cap is relaxed for non-click callers via ctx.maxDist. */
-          let bd=Infinity; cand.forEach(o=>{ const d=Math.hypot((+o.lon)-ctx.lng,(+o.lat)-ctx.lat); if(d<bd){ bd=d; best=o; } });
-          const cap=(ctx.maxDist!=null)?ctx.maxDist:Infinity; if(!best || bd>cap) return null; }
-        else { best=cand.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0]; }
-        return { name:(best.display_name||q).split(',')[0], geojson:(best.geojson&&/Polygon/.test(best.geojson.type||''))?best.geojson:null, lng:+best.lon, lat:+best.lat, bbox:best.boundingbox };
+          const inside=polys.filter(o=>_pipGeo(ctx.lng,ctx.lat,o.geojson));
+          if(inside.length){ inside.sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson)); best=inside[0]; }   /* smallest containing = most specific */
+          else { const bx=polys.filter(o=>_bboxHas(o.geojson,ctx.lng,ctx.lat)); if(bx.length){ bx.sort((a,b)=>_bboxArea(a.geojson)-_bboxArea(b.geojson)); best=bx[0]; } }   /* tap just off the glyph */
+          if(!best) return null;   /* the tapped place has no boundary here → null (never a far namesake, never a box) */
+        } else { best=polys.slice().sort((x,y)=>(+y.importance||0)-(+x.importance||0))[0]; }
+        if(!best) return null;
+        return { name:(best.display_name||q).split(',')[0], geojson:best.geojson, lng:+best.lon, lat:+best.lat };
       }catch(_){ return null; } }
-    async function show(name, ctx){ ctx=ctx||{}; const myseq=++_seq;   /* (#R55) generation token — a later show() or a clear()/× invalidates this one */
-      try{ showChip(name||'…'); let geo=ctx.geojson||null, disp=name||'';
-        if(!geo && ctx.forceBox && ctx.box){ geo=boxToPolygon(ctx.box); }
-        if(!geo){ const r=await fetchPolygon(name, ctx);
-          if(myseq!==_seq) return false;   /* (#R55) ×/clear pressed (or a newer click) while we were fetching → do NOT draw */
-          if(r){ disp=r.name||disp; if(r.geojson) geo=r.geojson; else if(ctx.box) geo=boxToPolygon(ctx.box); else if(Array.isArray(r.bbox)&&r.bbox.length===4){ const s=+r.bbox[0],n=+r.bbox[1],w=+r.bbox[2],e=+r.bbox[3]; if([s,n,w,e].every(isFinite)&&e>w&&n>s) geo=boxToPolygon([[w,s],[e,n]]); } }
-          else if(ctx.box) geo=boxToPolygon(ctx.box); }
+    async function show(name, ctx){ ctx=ctx||{}; const myseq=++_seq;   /* generation token — a later show()/clear() invalidates this one */
+      try{ let geo=(ctx.geojson&&/Polygon/.test(ctx.geojson.type||''))?ctx.geojson:null, disp=name||'';
+        if(!geo){ const r=await fetchPolygon(name, ctx); if(myseq!==_seq) return false; if(r&&r.geojson){ disp=r.name||disp; geo=r.geojson; } }
         if(myseq!==_seq) return false;
-        if(!geo){ if(myseq===_seq) showChip(L('No outline available','範囲が取得できません','Kein Umriss verfügbar','Контур недоступен','Sin contorno')); return false; }
-        setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible'); showChip(disp||name||'');
-        const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=map.getContainer&&map.getContainer(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); map.fitBounds(bb,{padding:pad,maxZoom:12,duration:1000}); }catch(_){} }
+        if(!geo) return false;   /* (#R59) no real polygon → draw NOTHING (no rectangle, no far same-named place) */
+        setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible');
+        if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=map.getContainer&&map.getContainer(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); map.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
         return true;
       }catch(_){ return false; } }
     map.on('styledata',()=>{ if(_active&&_last){ setTimeout(()=>{ if(!_active||!_last) return; try{ ensureLayers(); const src=map.getSource('pl-outline-src'); if(src) src.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:_last.geo,properties:{}}]}); setVis('visible'); }catch(_){} },120); }
-      else { /* (#R57) REAPER — definitive guarantee that a cleared outline can never linger: while no outline is
-                active, NO pl-outline layer/source may survive a style event. So even if a clear() were somehow
-                bypassed, the very next style change (frequent) removes any stray polygon. Only ever removes. */
+      else { /* (#R57) REAPER — while no outline is active, NO pl-outline layer/source may survive a style event, so a
+                cleared outline can never linger. Only ever removes. */
         try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
         try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
         try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){} } });
-    function labelClick(e){ try{
-      /* (#R58) NEVER treat a click that did NOT land on the map canvas as a label click — so a × tap (or any overlay
-         tap) can never leak through to the map and re-draw the outline at the chip's spot. */
-      const tgt=e&&e.originalEvent&&e.originalEvent.target;
-      if(tgt&&tgt.closest&&!tgt.closest('.maplibregl-canvas-container')) return;
-      if(typeof toolMode!=='undefined' && toolMode) return;                                   /* a measure/radius tool owns the click */
-      if(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()) return;
-      /* (#R54) clicking a COUNTRY label does NOT outline (user: 国を選択時はポリゴン不要) — only cities / towns / villages. */
-      const labs=['ofm-city','ofm-other'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } }); if(!labs.length) return;
-      let hits=[]; try{ hits=map.queryRenderedFeatures([[e.point.x-7,e.point.y-7],[e.point.x+7,e.point.y+7]],{layers:labs}); }catch(_){}
-      if(!hits||!hits.length) return; const p=hits[0].properties||{}; const nm=p.name||p['name:en']||p['name:latin']||p.name_en||''; if(!nm) return;
-      /* (#R55) maxDist caps how far the resolved boundary may sit from the tapped spot — so a click NEVER flies to a
-         far same-named place; if the tapped place has no boundary nearby it shows "no outline" instead. */
-      show(nm,{lng:e.lngLat.lng,lat:e.lngLat.lat,kind:p.class||'',maxDist:2.2});
-    }catch(_){} }
-    map.on('click',labelClick);
-    return { show, clear };
+    return { show, clear, active:()=>_active };
   })();
   window.IntMapConsole=(function(){
     if(typeof map==='undefined'||!map) return { open(){}, run(){}, toggle(){} };
@@ -18260,9 +18243,11 @@ window.addEventListener('DOMContentLoaded', () => {
           const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
           if(!window.IntMapOutline||!window.IntMapOutline.show) return R(false, warn('⚠'));
           let ext=null; try{ ext=await placeExtent(place); }catch(_){}
-          let ctx={}; if(ext){ ctx=ext.region?{box:ext.box,forceBox:true}:{lng:ext.lng,lat:ext.lat,box:ext.box}; }
+          /* (#R59) outline = the REAL boundary only (point-in-polygon via ext's point; NO rectangle for regions that
+             have no polygon — the user: "領域がわからない地名は全部長方形になるとかクソ"). */
+          const ctx=ext?{lng:ext.lng,lat:ext.lat,fit:true}:{fit:true};
           let ok=false; try{ ok=await window.IntMapOutline.show((ext&&ext.name)||place, ctx); }catch(_){}
-          return R(!!ok, ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place)):warn('⚠ '+L('Could not outline','範囲を表示できません','Kein Umriss','Не удалось','No se pudo')+': '+esc(place))); }
+          return R(!!ok, ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place)):warn('⚠ '+L('No precise boundary for','正確な境界がありません','Keine genaue Grenze für','Нет точной границы для','Sin límite preciso para')+': '+esc((ext&&ext.name)||place))); }
         /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
            actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
            publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
