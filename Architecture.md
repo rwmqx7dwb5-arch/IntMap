@@ -136,6 +136,47 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     ⑨ウィジェット — 青アクセント・グラデ文字・太字・ヘッダー罫線を全廃し、SF系スタックの
     レギュラーウェイトでiOS風に。⑩湖・山岳ラベル — 主要湖36件をガゼッタ追加（計120水域）、OFM湖はz5.5以降のみ、
     山岳ラベルはサイズ固定（ズーム時の見かけスライドを除去）。Privacy§4・Sources（市場データAPI・Yahoo Finance）更新。
+  - **#R64 再々指摘対応バッチ**:
+    ①**曖昧地域＝実境界の合成（最重要）** — 「カクカクポリゴン」の根因2つを修正: (a) Nominatim **jsonv2は`class`でなく
+    `category`** を返すため POI減点/行政加点が一度も効いていなかった（`_classBonus`修正 → 畿内の実歴史境界が正しく
+    最上位に）; (b) `polygon_threshold` 0.02（約2km単純化）→ **0.0008**。さらに解決ラダーを**実境界合成**へ拡張:
+    国 → **国グループ**（旧ソ連15か国/EU/NATO/ASEAN/バルト三国/G7/BRICS/中東/ラテンアメリカ等、ISO3→countryGeoの
+    正確な国境、5言語エイリアス）→ **キュレーション合成**（日本の各地方=都道府県union、ベッサラビア=モルドバ+ブジャク
+    3ライオン+ホティン、チェルノーゼム=UA15州+RU15州+MD+KZ4州、肥沃な三日月帯=約48行政単位〔西部クリップ付き〕）→
+    Nominatim直接境界 → 方角スライスは**実ポリゴンの矩形クリップ**（Sutherland–Hodgman `_clipGeoRect`）→
+    **AIが構成行政単位を列挙**（Wikipedia根拠付け）して同じ実境界合成 → AIトレース輪郭（24-60頂点、「近似」明記）→
+    ガゼッタ楕円（最終）。境界取得は **1.05秒/件スロットリング**（Nominatim規約）＋失敗は非キャッシュ・1回再試行、
+    さらに**geoBoundaries ADM1フォールバック**（Git-LFS実体は media.githubusercontent.com=ACAO:*、shapeName曖昧一致
+    ≤2編集距離）。合成領域は1フィーチャのMultiPolygon（`comp:1`で内部境界を薄く）。完成時のみ地域キャッシュ。
+    出力は「実際の行政境界から描画」/部分欠落を正直に警告。検証: 東海地方・磯城郡・ベッサラビア・チェルノーゼム
+    （Nominatimレート制限下でもgeoBoundaries経由で完全描画）・旧ソ連諸国(15)。反日付変更線集合はfitTo不能→全球表示。
+    ②**ラベルずれの根治（ハードコード無し）** — 真因: OFMタイルは**同じ湖・山でもズームごとに別のラベル位置**を持つ
+    （湖はLineString型のラベル線!）。`ofm-water`/`ofm-peak` をクライアント側**安定ソース**（`stab-water-src`/
+    `stab-peak-src`）に切替え、ハーベスタが実タイルデータから**名前ごとに初出座標へピン留め**（LineStringは中点、
+    名前+粗セルで重複排除、SEA_LABELSガゼッタとも重複排除、idleで動的更新、`map.on('idle')`は1回だけ登録=リスナー
+    蓄積禁止）。全世界の全湖沼・全山岳が対象。診断: `window._imLabelStats()`。
+    ③**ティッカーは真のインフロー帯** — `position:fixed`廃止→`.operation-room`直後の**通常フロー要素**（不透明
+    `--bg-color`、30px）。表示倍率やdvh差異でも地図に重なり得ない。
+    ④**右レイヤーサイドバー＝左と同じ展開式** — fixedオーバーレイ廃止→`.operation-room`の**フレックス子**
+    （`margin-right`トランジション＝左サイドバーの鏡像、`--lsr-w`）。開くと**地図が縮む**。検索・プレビュー・
+    Active layers維持。（バグ修正: `.lsr-thumb`スパンが名前抽出querySelectorに先に一致し、右モードでActive layers
+    チップ名が全て空になっていた → 全抽出箇所に `:not(.lsr-thumb)`）
+    ⑤**Active layersは最上部** — sticky **top** の先頭要素（クラシック/右サイドバー/モバイルシート共通）。チップは
+    **固定高1行の横スクロール**で、R32の「1pxも動かない」保証は高さ不変で維持（空でも"(0)"で常時表示）。5言語化。
+    ⑥**POI全域網羅＋根拠明示** — 地名が実OSM行政リレーションに解決されたら **Overpassエリアクエリ**
+    （`area(3600000000+relid)`、timeout 25/60s、`out center 600`）で**全土検索**（旧30°×24°bboxクランプが「一部地域
+    だけ」の原因）。応答に**根拠**（OSM登録施設・検索範囲）と600件打ち切り警告を明記。検証: クウェート石油施設597件。
+    ⑦**ライブWeb検索の多重化＋レポート品質** — GDELTは**英語トピック**で照会（日本語地名で0件→「取得不可」の原因）、
+    **Google News RSS検索**（`_gnewsNews`、UI言語+英語、プロキシラダー）を第2エンジンとしてanalyze/briefに注入。
+    ai-proxyに `web:true` → **Anthropicネイティブweb_search**（max_uses:3）を実装し**デプロイ済み** — analyze/briefは
+    プロバイダ側リアルタイム検索でも根拠付け。analyzeのSYSを**レポート体裁**へ全面書き換え（ニュース先行・日付明記・
+    無関係な気象/地震/統計の羅列禁止=ギリシャ報告の反省、~220語）。
+    ⑧**言語ミラーリング** — Atlasは**ユーザーのメッセージの言語**で返答（`_replyLang`: 文字種+ストップワード検出。
+    SYS/answer/analyze/briefのプロンプト指示に加え、**決定的応答のL()/lxもミラー**。非対応言語はUI言語へフォール
+    バック、ボタン起点briefはUI言語）。検証: en UIで「地図をクリア」→日本語応答、"clear the map"→英語応答。
+    ⑨**i18n全面化** — EN/JPのみだった**約190箇所**の2言語ターナリを**5言語**（de/ru/es追加）へ一括変換（凡例・
+    ニュースUI・コミュニティ・プロフィール・ツールパネル・トースト・n分前表記・分離ボタン等）。
+    ⑩Privacy§4・Sources更新（Google Newsブラウザ直接検索、AIプロバイダ側web検索、geoBoundaries追加）。
   - **#R45 AtlasはIntMap全体のOS**: 「今後追加する機能もすべてAtlasで操作可能に」という恒久ルール。汎用 `module` アクション＋
     `moduleCatalog()` が `window.IntMap*`（＋RunwaySearch）の全サブシステムを**自動発見**し名前で `open/toggle/close/clear` 等を
     呼べる（メソッドは許可リストで制限）。これで個別アクションに無いモジュール（Annotations/Presets/Overlays 等）や**将来追加する
@@ -383,8 +424,11 @@ supabase/
 ## 10. 多言語対応の構造
 
 - `i18n.en` / `i18n.jp` の辞書 ＋ `t(key)`。`data-i18n` / `data-i18n-ph` 属性を `updateI18n()` が一括適用。
-- `currentLang`（`intmap_settings` に保存）。ヘッダの EN/JP トグル＋設定で切替。
-- UI言語は en/jp のみ（DE/RU は UI から廃止。古い設定は en にフォールバック）。
+- `currentLang`（`intmap_settings` に保存）。設定で切替。
+- **UI言語は en/jp/de/ru/es の5言語**。インライン文言は `L(en,jp,de,ru,es)` / `T(...)` ヘルパの5引数ターナリ。
+  （#R64: EN/JPのみ残っていた約190箇所を5言語化 — 新規実装は必ず5言語で書くこと。）
+- 利用規約・プライバシーポリシーの本文のみ jp/en の2言語（法的文書のため。de/ru/es は英語表示）。
+- Atlasの応答は**ユーザーのメッセージの言語をミラー**（`_replyLang`、#R64）。UI言語はフォールバック。
 - ニュースは**多言語取得＋AIタイトル翻訳**が任意機能（`newsLangMode`、`aiTranslateTitles()`）。
 
 ---
