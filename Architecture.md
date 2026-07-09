@@ -177,6 +177,29 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     ⑨**i18n全面化** — EN/JPのみだった**約190箇所**の2言語ターナリを**5言語**（de/ru/es追加）へ一括変換（凡例・
     ニュースUI・コミュニティ・プロフィール・ツールパネル・トースト・n分前表記・分離ボタン等）。
     ⑩Privacy§4・Sources更新（Google Newsブラウザ直接検索、AIプロバイダ側web検索、geoBoundaries追加）。
+  - **#R65 バグ再指摘＋自然地物バッチ**:
+    ①**右サイドバー4バグ修正** — (a) `ms-narrow`検索ピル監視がビューポート座標で計算し全幅分岐が `--ms-right:14px`
+    →固定配置のピルが開いたサイドバーを横断。**可視の`.map-container`端で計算＋マップ領域へハードクランプ＋
+    max-width で退化時は潰れる**、open/close が `intmap-sidebar-resize` を発火。 (b) lsr-mode でも
+    `#layer-dropdown` に `overflow-y:auto` が残り sticky の基準になって Active バーが**張り付かなかった**
+    → `overflow:visible !important`。 (c) 検索欄が2つ（`.lsr-search`+内蔵 `#layer-search-wrap`）→内蔵側に一本化。
+    (d) クラシックでは検索ボックスが Active バーの上に挿入され `margin-top:-12px` が重なる → ensureBox が
+    Activeバー直下に挿入＋負マージンは `:first-child` 限定。※「勝手に開閉」は open() をスタック計測しても再現不能
+    （Esc=左サイドバー、L=レイヤーパネルのトグルは R62 の仕様）。
+    ②**水域・地形ラベル=完全動的**（「ハードコードでやろうとするな」）— ハーベスタが `water_name` の**全クラス**
+    （sea/bay/strait/gulf/lagoon＋lake）をピン留め（従来は湖のみ→ガゼッタ外の海・湾はラベル無し＝「数ゲー」）。
+    重複排除セルはクラス比例（ocean 30°/sea 12°/bay·strait 2.5°/lake 4°＝カスピ海の重複ピン解消）。新レイヤー
+    `ofm-water2`（大水域、z2〜）＋`ofm-water`（湖、z5.5〜）。ガゼッタは主要水域の**多言語オーバーライドのみ**。
+    全レイヤーIDリスト（applyLabelLang/STACK/クリック）更新。検証: フィンランド湖水地方で水域18＋山岳222ピン。
+    ③**河川=線・流域=支流+薄い面**（「行政区分を使うべきか見極めて」）— highlight 解決の最前段で判定:
+    `riverIntent`（〜川/River/Fluss/река/río）→ Nominatim の実河道 LineString（0.0008、Overpass 名前一致
+    フォールバック）を `nlq-line-src` に 3.2px 線で描画。`basinIntent`（流域/basin/watershed/Einzugsgebiet/
+    бассейн/cuenca）→ `buildBasin`: 本流＋流域輪郭（OSM流域リレーション→無ければ Wikipedia 根拠のAI輪郭・
+    「近似」明記）を**薄い面**（per-feature `op:0.14`）＋流域ポリゴン内の**OSM 全河川・運河**を Overpass
+    `(poly:…)` で細線描画（本数報告・上限は正直に警告・未ログインは本流のみ＋警告）。`aiRegionUnits` は
+    行政区分で表せない地域（流域・山脈・砂漠・帯・海域）に `mode:"outline"` を返して合成をスキップ。
+    localPlan アンカー（「Xの流域を表示して」/"show the X basin"）＋SYS 更新。クリア系
+    （reset/clearAll/clear highlights/Atlas×）に line 消去を配線。検証: 信濃川=線、利根川の流域=本流＋正直警告。
   - **#R45 AtlasはIntMap全体のOS**: 「今後追加する機能もすべてAtlasで操作可能に」という恒久ルール。汎用 `module` アクション＋
     `moduleCatalog()` が `window.IntMap*`（＋RunwaySearch）の全サブシステムを**自動発見**し名前で `open/toggle/close/clear` 等を
     呼べる（メソッドは許可リストで制限）。これで個別アクションに無いモジュール（Annotations/Presets/Overlays 等）や**将来追加する

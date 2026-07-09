@@ -342,7 +342,10 @@ gtag('config', 'G-57X5MX0ZPW');
        child). The R32 "0px movement" guarantee is kept a different way: the chips render in ONE fixed-height
        horizontally-scrolling row, so adding/removing chips can never change the bar's height → the rows below
        never shift. */
-    #layer-active-section{ position:sticky; top:-12px; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:-12px -12px 6px; padding:8px 12px 7px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:12px 12px 0 0; }
+    #layer-active-section{ position:sticky; top:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:0 -12px 6px; padding:8px 12px 7px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:12px 12px 0 0; }
+    /* flush with the panel's top edge only when it actually IS the first element (#R65: the negative margin
+       used to overlap the search box when that was inserted above the bar) */
+    #layer-active-section:first-child{ margin-top:-12px; top:-12px; }
     /* (#R33) Mobile: the bar STICKS to the bottom of the sheet scroller with an opaque surface so rows don't
        show through it ("モバイル版でもActive layersは下部にstick"). The in-sheet dropdown has no padding, so
        no negative side margins. */
@@ -877,7 +880,10 @@ gtag('config', 'G-57X5MX0ZPW');
          right-hand view buttons and the left sidebar, so the search can never overlap them or get crushed
          ("つぶれて押せない" / "かぶる"). It anchors left+right (no centering) and stretches between. */
       body.ms-narrow .map-search{ position:fixed; z-index:1002; top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
-        width:auto; max-width:none; transform:none; }
+        width:auto; transform:none; min-width:0; overflow:hidden;
+        /* (#R65) never wider than the anchors allow — a degenerate layout collapses instead of overflowing
+           across the in-flow right sidebar */
+        max-width:calc(100vw - var(--ms-left,14px) - var(--ms-right,290px)); }
     }
     /* (#R20) Frosted-glass news cards — Apple-style light frost instead of the intimidating solid
        dark-gray slab ("コントラストをもう少し抑えて"). Only in the two frosted sidebar modes. */
@@ -2525,7 +2531,10 @@ window.addEventListener('DOMContentLoaded', () => {
          water body and peak — one fixed anchor per feature, zero drift, nothing hardcoded. */
       try{ if(!map.getSource('stab-water-src')) map.addSource('stab-water-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         if(!map.getSource('stab-peak-src')) map.addSource('stab-peak-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
-      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':13,'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':13,'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      /* (#R65) seas/bays/straits/gulfs from the SAME pinned dynamic source (visible from low zoom) — every
+         named water body worldwide gets a stable label, not just the curated majors. */
+      if(!map.getLayer('ofm-water2')) map.addLayer({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':13.5},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
       try{ if(!map.getSource('geo-sea-src')){
         const S=window.SEA_LABELS||[];
         map.addSource('geo-sea-src',{type:'geojson',data:{type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7]}}))}});
@@ -2556,7 +2565,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const seaSet=(kind==='water')?_seaNameSet():null;
     for(const f of feats){ try{
       const p=f.properties||{}; const nm2=p.name||p['name:en']||p.name_en; if(!nm2) continue;
-      if(seaSet){ let dup=false; [p.name,p['name:en'],p.name_en,p['name:ja'],p['name:de'],p['name:ru'],p['name:es']].forEach(v=>{ if(v&&seaSet.has(String(v).toLowerCase())) dup=true; }); if(dup) continue; }   /* the fixed sea/lake gazetteer already labels it */
+      if(seaSet){ let dup=false; [p.name,p['name:en'],p.name_en,p['name:ja'],p['name:de'],p['name:ru'],p['name:es']].forEach(v=>{ if(v&&seaSet.has(String(v).toLowerCase())) dup=true; }); if(dup) continue; }   /* the curated multilingual gazetteer already labels it */
       /* OFM stores lake/water labels as per-tile LineStrings (label placement lines) — exactly why they drifted.
          Pin the midpoint of the line (or the point) as the one stable anchor. */
       const g=f.geometry; if(!g) continue; let co=null;
@@ -2564,12 +2573,16 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(g.type==='LineString'&&g.coordinates.length) co=g.coordinates[Math.floor(g.coordinates.length/2)];
       else if(g.type==='MultiLineString'&&g.coordinates.length&&g.coordinates[0].length){ const ln=g.coordinates[0]; co=ln[Math.floor(ln.length/2)]; }
       if(!co) continue;
+      /* (#R65) dedupe radius scales with the feature's physical size class — one "Caspian Sea" pin, not one
+         per tile pyramid level; small bays still allow same-name twins far apart. */
+      const cls=String(p.class||'');
+      const cell=(typeof cellDeg==='number')?cellDeg:(cls==='ocean'?30:cls==='sea'?12:(cls==='bay'||cls==='strait'||cls==='gulf'||cls==='lagoon')?2.5:4);
       const base=String(nm2).toLowerCase();
       /* same name may exist in several places (e.g. many "Long Lake") — key by name + coarse cell, and treat a
          nearby existing pin as THE anchor (first seen wins → stable across zooms). */
-      let hit=null; for(let dx=-1;dx<=1&&!hit;dx++) for(let dy=-1;dy<=1&&!hit;dy++){ const k=base+'|'+(Math.round(co[0]/cellDeg)+dx)+'|'+(Math.round(co[1]/cellDeg)+dy); if(idx.has(k)) hit=k; }
+      let hit=null; for(let dx=-1;dx<=1&&!hit;dx++) for(let dy=-1;dy<=1&&!hit;dy++){ const k=base+'|'+cell+'|'+(Math.round(co[0]/cell)+dx)+'|'+(Math.round(co[1]/cell)+dy); if(idx.has(k)) hit=k; }
       if(hit) continue;
-      const key=base+'|'+Math.round(co[0]/cellDeg)+'|'+Math.round(co[1]/cellDeg);
+      const key=base+'|'+cell+'|'+Math.round(co[0]/cell)+'|'+Math.round(co[1]/cell);
       if(idx.size>9000) return;
       idx.set(key,{type:'Feature',id:idx.size,geometry:{type:'Point',coordinates:[co[0],co[1]]},properties:p});
       _stabDirty[kind]=true;
@@ -2577,7 +2590,10 @@ window.addEventListener('DOMContentLoaded', () => {
   function harvestStableLabels(){
     let vis=false; try{ vis=map.getLayer('ofm-water')&&map.getLayoutProperty('ofm-water','visibility')==='visible'; }catch(_){}
     if(!vis) return;
-    _harvestOne('water','water_name',['in',['get','class'],['literal',['lake']]],1.2);
+    /* (#R65) ALL water_name classes — seas, bays, straits, gulfs, lagoons AND lakes — are pinned dynamically.
+       The curated gazetteer is only a multilingual override for the majors; every other water body on the
+       planet gets its label from live tile data (no fixed list, no coverage ceiling). */
+    _harvestOne('water','water_name',null,null);
     _harvestOne('peak','mountain_peak',null,0.12);
     ['water','peak'].forEach(kind=>{ if(!_stabDirty[kind]) return; _stabDirty[kind]=false;
       try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(_stabIdx[kind].values())}); }catch(_){} });
@@ -2727,7 +2743,7 @@ window.addEventListener('DOMContentLoaded', () => {
        They keep their own (blue / stone) colors, so they're only given the language expression + visibility. */
     /* (#R41) water/terrain labels follow their OWN checkbox (geoLabelsOn), independent of place names. */
     const showGeo = geoLabelsOn && (sat || mapLabelsViaVector());
-    try{ ['ofm-river','ofm-water'].forEach(id=>{ if(!map.getLayer(id)) return; map.setLayoutProperty(id,'visibility',showGeo?'visible':'none'); map.setLayoutProperty(id,'text-field',nameExpr); });
+    try{ ['ofm-river','ofm-water','ofm-water2'].forEach(id=>{ if(!map.getLayer(id)) return; map.setLayoutProperty(id,'visibility',showGeo?'visible':'none'); map.setLayoutProperty(id,'text-field',nameExpr); });
       if(map.getLayer('ofm-peak')){ map.setLayoutProperty('ofm-peak','visibility',showGeo?'visible':'none'); map.setLayoutProperty('ofm-peak','text-field',['concat','▲ ',nameExpr]); }
       /* (#R62) fixed sea labels follow the same toggle; language from the gazetteer's own 5 name fields. */
       if(map.getLayer('geo-sea')){ const gl=(mode==='en')?'en':(mode==='local')?'en':(({jp:'jp',de:'de',ru:'ru',es:'es'})[currentLang]||'en');
@@ -3699,7 +3715,7 @@ window.addEventListener('DOMContentLoaded', () => {
      tool layers (your own drawings stay on top of everything). Guarded: only moves when actually out of
      place, so there's no repaint loop. */
   if(map){ (function(){
-    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','geo-sea','ofm-peak','ofm-country','ofm-city','ofm-other'];
+    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','ofm-water2','geo-sea','ofm-peak','ofm-country','ofm-city','ofm-other'];
     /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
        the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
        user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
@@ -6444,11 +6460,15 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#layer-sidebar-r .lsr-head b{font-size:16px;color:var(--text-main);}'
         +'#layer-sidebar-r .lsr-x{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;border-radius:8px;padding:2px 8px;}'
         +'#layer-sidebar-r .lsr-x:hover{background:var(--input-bg);color:var(--text-main);}'
-        +'#layer-sidebar-r .lsr-search{padding:0 14px 10px;}'
+        /* (#R65) ONE search field: the dropdown's own #layer-search-wrap (it filters every row type,
+           incl. .lyr-row wrappers) — the sidebar's duplicate pill was the "two stacked search boxes" jank. */
+        +'#layer-sidebar-r .lsr-search{display:none;}'
         +'#layer-sidebar-r .lsr-search input{width:100%;box-sizing:border-box;height:36px;border-radius:18px;border:1px solid rgba(128,128,128,0.28);background:var(--card-bg);color:var(--text-main);font-size:12.5px;padding:0 14px;outline:none;}'
         +'#layer-sidebar-r .lsr-search input:focus{border-color:var(--primary-color);}'
         +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 10px 24px;min-height:0;}'
-        +'#layer-dropdown.lsr-mode{position:static !important;display:block !important;width:auto !important;max-width:none !important;max-height:none !important;box-shadow:none !important;background:transparent !important;border:none !important;margin:0 !important;padding:0 4px !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}'
+        /* (#R65) overflow:visible is CRITICAL: .layer-dropdown keeps overflow-y:auto, which made the dropdown
+           (not .lsr-body) the sticky containing scroller → the Active-layers bar never stuck in right mode. */
+        +'#layer-dropdown.lsr-mode{position:static !important;display:block !important;width:auto !important;max-width:none !important;max-height:none !important;overflow:visible !important;box-shadow:none !important;background:transparent !important;border:none !important;margin:0 !important;padding:0 4px !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}'
         +'#layer-dropdown.lsr-mode label.layer-option{display:flex;align-items:center;gap:10px;padding:6px 9px;border-radius:12px;margin:2px 0;transition:background .15s ease;}'
         +'#layer-dropdown.lsr-mode label.layer-option:hover{background:rgba(120,120,128,0.12);}'
         +'.lsr-thumb{display:none;}'
@@ -6513,9 +6533,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function filter(){ const q=((sb&&sb.querySelector('#lsr-q').value)||'').toLowerCase().trim(); const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       dd.querySelectorAll('label.layer-option').forEach(lab=>{ const t2=(lab.textContent||'').toLowerCase(); lab.style.display=(!q||t2.indexOf(q)>=0)?'':'none'; }); }
     function open(){ if(isMob()) return; build(); adopt(); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} decorate(); sb.classList.add('open'); document.body.classList.add('lsr-open'); setTimeout(decorate,400);
-      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },420); }
+      /* (#R65) tell the viewport-fixed map UI (search pill watcher etc.) that the map area changed */
+      const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
+      kick(); setTimeout(kick,420); }
     function close(){ if(sb) sb.classList.remove('open'); document.body.classList.remove('lsr-open');
-      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },420); }
+      const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
+      kick(); setTimeout(kick,420); }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
     function apply(){ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail'); open(); } else { close(); release(); document.body.classList.remove('lsr-avail'); } }
     setTimeout(()=>{ try{ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail'); } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */
@@ -12964,22 +12987,36 @@ window.addEventListener('DOMContentLoaded', () => {
       const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
         if(!desk){ document.body.classList.remove('ms-narrow'); return; }
         const winW=window.innerWidth;
-        let rightLeft=winW, stackBottom=66;
+        /* (#R65) the pill anchors are VIEWPORT-fixed but the map area is not the viewport anymore: the
+           in-flow RIGHT layer sidebar (and future flex siblings) shrink it. Everything below works against
+           the visible map area's edges, so the pill can never be stretched across the right sidebar (the
+           reported bug: ms-narrow's full-width branch set --ms-right:14px = across the open sidebar). */
+        let mapL=0, mapR=winW, mapCX=winW/2;
+        try{ const mc=document.querySelector('.map-container'); if(mc){ const r=mc.getBoundingClientRect(); if(r.width>50){ mapL=r.left; mapR=r.right; mapCX=r.left+r.width/2; } } }catch(_){}
+        let rightLeft=mapR, stackBottom=66;
         document.querySelectorAll('.map-controls-top .map-view-group, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
-        let leftRight=0;
+        let leftRight=mapL;
         try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
         try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
         const half=110, margin=14;   /* half = half of a comfortable ~220px centered pill */
-        const collide = ((winW/2 + half + margin) > rightLeft) || ((winW/2 - half - margin) < leftRight);
+        const collide = ((mapCX + half + margin) > rightLeft) || ((mapCX - half - margin) < leftRight);
         const bs=document.body.style;
         if(collide){
           const sideGap = rightLeft - leftRight;   /* clear room on row 2 BESIDE the right controls */
-          bs.setProperty('--ms-left', (leftRight+14)+'px');
-          if(sideGap < 210){ /* not enough room beside the (multi-row) controls → go BELOW the whole stack, full width */
-            bs.setProperty('--ms-top', (stackBottom+10)+'px'); bs.setProperty('--ms-right','14px');
+          let mLeft=leftRight+14, mRight;
+          if(sideGap < 210){ /* not enough room beside the (multi-row) controls → go BELOW the whole stack, map-wide */
+            bs.setProperty('--ms-top', (stackBottom+10)+'px'); mRight=winW - mapR + 14;
           } else { /* sit on row 2, ending before the right controls' leftmost edge */
-            bs.setProperty('--ms-top','78px'); bs.setProperty('--ms-right', (winW - rightLeft + 14)+'px');
+            bs.setProperty('--ms-top','78px'); mRight=winW - rightLeft + 14;
           }
+          /* (#R65) HARD CLAMP into the visible map area — degenerate geometry (both sidebars open on a narrow
+             window) used to yield left+right anchors that cross, and the pill overflowed at min-content width
+             across the right sidebar. Never let left exceed (map right − 160px of usable pill). */
+          mRight=Math.max(mRight, winW - mapR + 14);
+          const maxLeft=(winW - mRight) - 160;
+          if(mLeft>maxLeft) mLeft=Math.max(mapL+14, maxLeft);
+          bs.setProperty('--ms-left', Math.round(mLeft)+'px');
+          bs.setProperty('--ms-right', Math.round(mRight)+'px');
           document.body.classList.add('ms-narrow');
         } else { document.body.classList.remove('ms-narrow'); }
       }catch(_){} };
@@ -17816,7 +17853,10 @@ window.addEventListener('DOMContentLoaded', () => {
         inp.addEventListener('keydown',e=>e.stopPropagation());
         window.addEventListener('intmap-lang',()=>{ inp.placeholder=jp()?'🔍 レイヤーを検索…':'🔍 Search layers…'; });
       }
-      if(d.firstChild!==box) d.insertBefore(box,d.firstChild);
+      /* (#R65) the Active-layers bar owns the very top (sticky) — the search box slots in right below it */
+      { const act=document.getElementById('layer-active-section');
+        if(act&&act.parentElement===d){ if(act.nextSibling!==box) d.insertBefore(box,act.nextSibling); }
+        else if(d.firstChild!==box) d.insertBefore(box,d.firstChild); }
       /* re-apply an active query after a panel rebuild */
       const inp=box.querySelector('input'); if(inp&&inp.value) filter(inp.value);
     }
@@ -18140,11 +18180,11 @@ window.addEventListener('DOMContentLoaded', () => {
       showPopup(labelAnchor(f,e),name,false,{noOutline:true}); }; }
     function wire(){ if(wired) return; if(!map.getLayer('ofm-country')) return; wired=true;
       map.on('click','ofm-country',onLabel(true)); map.on('click','ofm-city',onLabel(false)); map.on('click','ofm-other',onLabel(false));
-      ['geo-sea','ofm-water','ofm-river','ofm-peak'].forEach(id=>{ try{ map.on('click',id,onGeoLabel()); }catch(_){} });
-      ['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-river','ofm-peak'].forEach(id=>{ map.on('mouseenter',id,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',id,()=>{ map.getCanvas().style.cursor=''; }); });
+      ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ map.on('click',id,onGeoLabel()); }catch(_){} });
+      ['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ map.on('mouseenter',id,()=>{ map.getCanvas().style.cursor='pointer'; }); map.on('mouseleave',id,()=>{ map.getCanvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
       map.on('click',(e)=>{ try{
-        const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-river','ofm-peak'].filter(id=>map.getLayer(id)); if(!ls.length) return;
+        const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>map.getLayer(id)); if(!ls.length) return;
         const hit=map.queryRenderedFeatures(e.point,{layers:ls});
         if(hit.length) return;   /* exact glyph hit → the per-layer onLabel handler already opened the popup */
         /* (#R23) PADDED hit-box: a finger tap almost never lands on the exact label glyph, so the popup
@@ -18667,16 +18707,77 @@ window.addEventListener('DOMContentLoaded', () => {
     function ensurePolyLayer(){ try{ if(!map.getSource('nlq-poly-src')) map.addSource('nlq-poly-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(map.getLayer('nlq-poly-fill')) return true;
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      map.addLayer({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','color'],'#ff9500'],'fill-opacity':0.32}},before);
+      map.addLayer({id:'nlq-poly-fill',type:'fill',source:'nlq-poly-src',paint:{'fill-color':['coalesce',['get','color'],'#ff9500'],'fill-opacity':['coalesce',['get','op'],0.32]}},before);
       /* (#R64) composed regions (unions of many real admin polygons) get FAINT member outlines so the internal
          admin seams don't dominate — the region reads as one shape. */
       map.addLayer({id:'nlq-poly-line',type:'line',source:'nlq-poly-src',paint:{'line-color':['coalesce',['get','color'],'#ff9f0a'],'line-width':['case',['==',['get','comp'],1],1,2],'line-opacity':['case',['==',['get','comp'],1],0.35,0.9]}},before);
       return true; }catch(_){ return false; } }
     function paintPolys(){ if(!_hlPolys.length){ try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
       if(!ensurePolyLayer()) return false;
-      try{ map.getSource('nlq-poly-src').setData({type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0}}))}); return true; }catch(_){ return false; } }
+      try{ map.getSource('nlq-poly-src').setData({type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null)}}))}); return true; }catch(_){ return false; } }
     function clearPolyHl(){ _hlPolys=[]; try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     map.on('styledata',()=>{ if(_hlPolys.length){ setTimeout(()=>{ try{ paintPolys(); }catch(_){} },140); } });
+    /* ---- (#R65) LINE highlights — rivers as their REAL course ("河川をハイライトしてといったら、その河川を線で"),
+       tributaries as thinner lines. Same lifecycle as the polygon highlights. ---- */
+    let _hlLines=[];
+    function ensureLineLayer(){ try{ if(!map.getSource('nlq-line-src')) map.addSource('nlq-line-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      if(map.getLayer('nlq-line')) return true;
+      const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      map.addLayer({id:'nlq-line',type:'line',source:'nlq-line-src',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','color'],'#2f9bff'],'line-width':['coalesce',['get','w'],2.5],'line-opacity':['coalesce',['get','op'],0.92]}},before);
+      return true; }catch(_){ return false; } }
+    function paintLines(){ if(!_hlLines.length){ try{ const s=map.getSource('nlq-line-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} return true; }
+      if(!ensureLineLayer()) return false;
+      try{ map.getSource('nlq-line-src').setData({type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op||null,name:l.name||''}}))}); return true; }catch(_){ return false; } }
+    function clearLineHl(){ _hlLines=[]; try{ const s=map.getSource('nlq-line-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    map.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
+    /* river / basin intent — multilingual, judged BEFORE any admin-unit logic ("全部が全部行政区分使えば
+       いいわけじゃない。見極めて"). */
+    function basinIntent(nm){ const s2=String(nm||'').trim(); let m;
+      m=s2.match(/^(.+?)の?流域$/); if(m) return {base:m[1]};   /* keep 川/江/河 in the base name */
+      m=s2.match(/^(?:the\s+)?(.+?)\s+(?:river\s+)?(?:drainage\s+)?(?:basin|watershed|catchment(?:\s+area)?)$/i); if(m) return {base:m[1]};
+      m=s2.match(/^(?:einzugsgebiet|flusseinzugsgebiet)\s+(?:der|des|von)?\s*(.+)$/i)||s2.match(/^(.+?)-?einzugsgebiet$/i); if(m) return {base:m[1]};
+      m=s2.match(/^бассейн\s+(?:реки\s+)?(.+)$/i); if(m) return {base:m[1]};
+      m=s2.match(/^(?:la\s+)?cuenca\s+(?:del?\s+(?:río\s+)?)?(.+)$/i); if(m) return {base:m[1]};
+      return null; }
+    function riverIntent(nm){ const s2=String(nm||'').trim();
+      if(/[川江河]$/.test(s2)) return true;
+      if(/\b(river|creek|stream|canal|rivière|fleuve)\b/i.test(s2)) return true;
+      if(/(fluss|kanal|strom)$/i.test(s2)) return true;
+      if(/^(река|канал)\s+/i.test(s2)||/\s(река|канал)$/i.test(s2)) return true;
+      if(/^(?:el\s+)?(?:río|rio)\s+/i.test(s2)) return true;
+      return false; }
+    /* real river geometry: Nominatim waterway result (full-detail LineString) → Overpass named ways fallback */
+    const _riverGeoCache={};
+    async function fetchRiverLine(nm){ const key=_lnorm(nm); if(_riverGeoCache[key]!==undefined) return _riverGeoCache[key];
+      let out=null;
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(nm),{headers:{Accept:'application/json'}});
+        if(r.ok){ const j=await r.json();
+          if(Array.isArray(j)){ const wat=j.filter(o=>{ const c=(o.class||o.category||'').toLowerCase(); const gt=(o.geojson&&o.geojson.type)||''; return (c==='waterway'||/^(river|canal|stream)$/.test(String(o.type||'').toLowerCase()))&&/LineString/.test(gt); })
+            .sort((x,y)=>((+y.importance||0)-(+x.importance||0)))[0];
+            if(wat) out={geo:wat.geojson,name:(wat.display_name||nm).split(',')[0]}; } } }catch(_){}
+      if(!out){ try{ const ll=await geocode(nm); if(ll&&isFinite(ll.lng)){ const d2=3.2; const bb='('+(ll.lat-d2).toFixed(2)+','+(ll.lng-d2).toFixed(2)+','+(ll.lat+d2).toFixed(2)+','+(ll.lng+d2).toFixed(2)+')';
+        const safe=String(nm).replace(/["\\]/g,'').trim();
+        const q2='[out:json][timeout:30];way["waterway"~"^(river|canal|stream)$"]["name"~"'+safe+'",i]'+bb+';out geom 300;';
+        const j2=await new Promise(res=>{ fetch(_OP_EPS[0],{method:'POST',body:'data='+encodeURIComponent(q2)}).then(r2=>r2.ok?r2.json():null).then(res).catch(()=>res(null)); });
+        if(j2&&Array.isArray(j2.elements)&&j2.elements.length){ const coords=[]; j2.elements.forEach(el=>{ if(el.geometry&&el.geometry.length>1) coords.push(el.geometry.map(g=>[g.lon,g.lat])); });
+          if(coords.length) out={geo:{type:'MultiLineString',coordinates:coords},name:nm}; } } }catch(_){}
+      }
+      _riverGeoCache[key]=out; return out; }
+    /* tributaries inside the basin outline: every OSM waterway=river/canal within the polygon (capped, honest) */
+    async function fetchTributaries(basinGeo,cap){
+      try{ let ring=null; if(basinGeo.type==='Polygon') ring=basinGeo.coordinates[0]; else if(basinGeo.type==='MultiPolygon'){ let best=null,bl=0; basinGeo.coordinates.forEach(p2=>{ if(p2[0]&&p2[0].length>bl){ bl=p2[0].length; best=p2[0]; } }); ring=best; }
+        if(!ring||ring.length<4) return null;
+        const step=Math.max(1,Math.ceil(ring.length/70));
+        const poly=ring.filter((_,i)=>i%step===0).map(c=>c[1].toFixed(3)+' '+c[0].toFixed(3)).join(' ');
+        const q2='[out:json][timeout:50];way["waterway"~"^(river|canal)$"](poly:"'+poly+'");out geom '+(cap||900)+';';
+        const j2=await new Promise(res=>{ const tryEp=(i)=>{ if(i>=_OP_EPS.length){ res(null); return; }
+            fetch(_OP_EPS[i],{method:'POST',body:'data='+encodeURIComponent(q2)}).then(r2=>r2.ok?r2.json():null).then(x=>{ if(x) res(x); else tryEp(i+1); }).catch(()=>tryEp(i+1)); }; tryEp(0); });
+        if(!j2||!Array.isArray(j2.elements)) return null;
+        const coords=[]; let pts=0, truncated=false;
+        for(const el of j2.elements){ if(!el.geometry||el.geometry.length<2) continue; if(pts>240000){ truncated=true; break; }
+          const line=el.geometry.map(g=>[g.lon,g.lat]); pts+=line.length; coords.push(line); }
+        if(!coords.length) return null;
+        return {geo:{type:'MultiLineString',coordinates:coords},n:coords.length,truncated:truncated||j2.elements.length>=(cap||900)}; }catch(_){ return null; } }
     function _bboxSoftPoly(box){ const cx=(box[0][0]+box[1][0])/2, cy=(box[0][1]+box[1][1])/2, rx=Math.max(0.05,(box[1][0]-box[0][0])/2), ry=Math.max(0.05,(box[1][1]-box[0][1])/2); const ring=[]; for(let i=0;i<=40;i++){ const a=i/40*2*Math.PI, co=Math.cos(a), si=Math.sin(a); ring.push([cx+rx*Math.sign(co)*Math.pow(Math.abs(co),0.62), cy+ry*Math.sign(si)*Math.pow(Math.abs(si),0.62)]); } return {type:'Polygon',coordinates:[ring]}; }
     /* ==== (#R64) REAL region composition ("こんなカクカクポリゴンで許されると思うなよ。実際の範囲に忠実に、正確で
        高精細なポリゴンを引け"). A fuzzy/regional name is now resolved to a UNION OF REAL BOUNDARIES instead of a
@@ -18854,10 +18955,11 @@ window.addEventListener('DOMContentLoaded', () => {
     async function aiRegionUnits(nm){ const key=_lnorm(nm); if(key in _aiUnitCache) return _aiUnitCache[key]; let out=null;
       let wiki=''; try{ const w=await _wikiSummary(nm); if(w) wiki='\n\nWikipedia summary (ground truth for what this region covers):\n'+w; }catch(_){}
       try{ const j=await askAIJSON('Region name: "'+nm+'"'+wiki,
-        'You output ONLY strict JSON (no prose, no fence). Task: express the named geographic/historical/informal region as a UNION of real administrative units so its exact official boundaries can be drawn. If the name denotes a recognizable region, return {"found":true,"units":[{"q":"<admin unit name in English with country, Nominatim-searchable, e.g. \'Voronezh Oblast, Russia\' / \'Aichi Prefecture, Japan\'>","part":null|"N"|"S"|"E"|"W"|"NE"|"NW"|"SE"|"SW"|"C"}...],"countries":["<names of countries that belong ENTIRELY to the region>"]}. Prefer FIRST-LEVEL admin units (state/province/oblast/prefecture/governorate); use second-level (county/district/raion) when the region is smaller than one first-level unit. Use "part" ONLY when clearly less than ~70% of that unit belongs. Cover the WHOLE region (up to 40 units) — do not stop at 3-4 units for a large region. If you do not recognize it, return {"found":false}.');
-        if(j&&j.found){ const units=Array.isArray(j.units)?j.units.filter(u=>u&&u.q).map(u=>({q:String(u.q).slice(0,90),part:(u.part&&/^(N|S|E|W|NE|NW|SE|SW|C)$/.test(String(u.part)))?String(u.part):null})).slice(0,40):[];
+        'You output ONLY strict JSON (no prose, no fence). Task: JUDGE whether the named region is well approximated by a union of real administrative units, and if so express it as one so its exact official boundaries can be drawn. (a) If it IS admin-composable (historical provinces, informal groupings of prefectures/states, economic macro-regions), return {"found":true,"units":[{"q":"<admin unit name in English with country, Nominatim-searchable, e.g. \'Voronezh Oblast, Russia\' / \'Aichi Prefecture, Japan\'>","part":null|"N"|"S"|"E"|"W"|"NE"|"NW"|"SE"|"SW"|"C"}...],"countries":["<names of countries that belong ENTIRELY to the region>"]}. Prefer FIRST-LEVEL admin units; use second-level (county/district/raion) when the region is smaller than one first-level unit. Use "part" ONLY when clearly less than ~70% of that unit belongs. Cover the WHOLE region (up to 40 units). (b) If it is NOT admin-shaped (a river basin/watershed, mountain range, desert, plain, climate/soil/vegetation belt, sea area, urban corridor) — administrative borders would misrepresent it — return {"found":true,"mode":"outline"} and nothing else. (c) If you do not recognize it, return {"found":false}.');
+        if(j&&j.found){ if(String(j.mode||'')==='outline'){ out={outline:true}; }
+          else { const units=Array.isArray(j.units)?j.units.filter(u=>u&&u.q).map(u=>({q:String(u.q).slice(0,90),part:(u.part&&/^(N|S|E|W|NE|NW|SE|SW|C)$/.test(String(u.part)))?String(u.part):null})).slice(0,40):[];
           const iso=[]; (Array.isArray(j.countries)?j.countries:[]).forEach(cn=>{ try{ const c=resolveCountrySync(String(cn)); if(c&&c.code&&iso.indexOf(c.code)<0) iso.push(c.code); }catch(_){} });
-          if(units.length||iso.length) out={units,iso}; } }catch(_){}
+          if(units.length||iso.length) out={units,iso}; } } }catch(_){}
       _aiUnitCache[key]=out; return out; }
     const _aiPolyCache={};
     /* (#R63) "曖昧な地域名の範囲表示がめちゃくちゃ" — the AI-traced outline is now GROUNDED in a live Wikipedia
@@ -18870,6 +18972,18 @@ window.addEventListener('DOMContentLoaded', () => {
         if(j&&j.found&&Array.isArray(j.polygon)){ const ring=j.polygon.filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])&&Math.abs(+p[0])<=180&&Math.abs(+p[1])<=90).map(p=>[+p[0],+p[1]]);
           if(ring.length>=6){ ring.push([ring[0][0],ring[0][1]]); out={type:'Polygon',coordinates:[ring]}; } } }catch(_){}
       _aiPolyCache[key]=out; return out; }
+    /* (#R65) BASIN builder: main river (real course) + every OSM-tagged river/canal inside the basin outline
+       (thin lines) + the basin itself as a FAINT fill. Basins have no official admin boundary — the outline
+       ladder is: OSM basin relation (rare) → AI-traced outline grounded in Wikipedia (honestly labelled
+       approximate). Admin-unit composition is deliberately NOT used here (「全部が全部行政区分使えばいいわけ
+       じゃない」). */
+    async function buildBasin(baseName){
+      let river=await fetchRiverLine(baseName); if(!river&&!/river|川|fluss|река|río/i.test(baseName)) river=await fetchRiverLine(baseName+' River');
+      let basin=null, approx=false;
+      try{ const e=await _nomExtent(baseName+' basin'); if(e&&e.geojson&&/Polygon/.test((e.geojson.type||''))&&/basin|流域|einzugsgebiet|бассейн|cuenca/i.test(String(e.name||''))) basin={geo:e.geojson,name:e.name}; }catch(_){}
+      if(!basin){ try{ const ai=await aiRegionPoly(baseName+' drainage basin'); if(ai){ basin={geo:ai,name:baseName}; approx=true; } }catch(_){} }
+      let trib=null; if(basin){ try{ trib=await fetchTributaries(basin.geo,900); }catch(_){} }
+      return {river,basin,trib,approx}; }
     /* (#R64) resolution ladder, most-exact first: country → country GROUP (exact national borders) → curated
        COMPOSITION (real member admin boundaries) → direct OSM boundary polygon (fine threshold) → directional
        slice CLIPPED FROM THE REAL polygon → AI-named member units composed from real boundaries → AI-traced
@@ -18882,10 +18996,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const dir=parseDirectional(nm); if(dir){ try{ const b=await _nomExtent(dir.base);
         if(b&&b.geojson&&/Polygon/.test((b.geojson.type||''))&&b.box){ const cg=_clipGeoRect(b.geojson,sliceBox(b.box,dir.dir)); if(cg) return {poly:{name:nm,geo:cg},sliced:true}; }
         if(b&&b.box) return {poly:{name:nm,geo:_bboxSoftPoly(sliceBox(b.box,dir.dir))},soft:true}; }catch(_){} }
-      /* unknown fuzzy region → the AI names its member admin units (Wikipedia-grounded), then the SAME
-         real-boundary composition draws it. */
+      /* unknown fuzzy region → the AI first JUDGES whether admin units represent it (「見極めて」); if yes it
+         names them (Wikipedia-grounded) and the SAME real-boundary composition draws it; if it answers
+         mode:"outline" (basins, ranges, belts…) we go straight to the traced outline instead. */
       const rbKnown=regionBox(nm);
-      try{ const aiu=await aiRegionUnits(nm); if(aiu){ const cp2=await composeRegion(aiu,_lnorm(nm)); if(cp2&&cp2.geo&&cp2.n>=Math.max(1,Math.round(cp2.total*0.5))) return {poly:{name:String(nm||'').trim(),geo:cp2.geo},composed:true,partial:cp2.n<cp2.total}; } }catch(_){}
+      try{ const aiu=await aiRegionUnits(nm); if(aiu&&!aiu.outline){ const cp2=await composeRegion(aiu,_lnorm(nm)); if(cp2&&cp2.geo&&cp2.n>=Math.max(1,Math.round(cp2.total*0.5))) return {poly:{name:String(nm||'').trim(),geo:cp2.geo},composed:true,partial:cp2.n<cp2.total}; } }catch(_){}
       const ai=await aiRegionPoly(nm); if(ai) return {poly:{name:nm,geo:ai},approx:true};
       if(rbKnown&&rbKnown.box) return {poly:{name:nm,geo:_bboxSoftPoly(rbKnown.box)},soft:true};
       const c2=await resolveCountry(nm); if(c2&&c2.code) return {code:c2.code,name:c2.name};
@@ -19211,7 +19326,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!geo()) return R(false, warn('⚠ '+L('Map data not ready yet','地図データが未準備です','Kartendaten noch nicht bereit','Данные карты не готовы','Datos del mapa no listos')));
       /* (#R61) optional shading hue — honoured for REAL (setPaintProperty on the live layer) or honestly flagged. */
       let cWarn=''; if(color!=null&&String(color).trim()!==''){ const pc=parseColor(color); if(pc) _choroRamp=rampFrom(pc); else cWarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(color)); }
-      clearHl(); clearChoro(); clearPolyHl(); if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
+      clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
       try{ map.setPaintProperty('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
       const vals=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let v=m.get(s); if(v==null||isNaN(v)) continue; if(m.log&&v<=0) continue; vals.push({code, raw:v, t:(m.log?Math.log(v):v)}); }
       if(vals.length<3) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
@@ -19419,7 +19534,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,'');
       switch(a.type){
-        case 'reset': clearHl(); clearChoro(); clearPolyHl(); return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')));
+        case 'reset': clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')));
         case 'layer': { const r=toggleLayer(a.name,a.on!==false); if(!r.ok){ const c=doControl({target:a.name,on:a.on}); if(c.ok) return c; return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); }
           const onTxt=r.want?L('on','オン','an','вкл','activado'):L('off','オフ','aus','выкл','desactivado'); return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))); }
         case 'opacity': { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','透明度調整なし: ','Keine Deckkraft: ','Нет прозрачности: ','Sin opacidad: ')+esc(r.label))); }
@@ -19501,7 +19616,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof measurePoints!=='undefined') measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
-        case 'clearAll': { try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
+        case 'clearAll': { try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
         case 'outline': case 'extent': case 'showExtent': { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado'))); }
           const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
           if(!window.IntMapOutline||!window.IntMapOutline.show) return R(false, warn('⚠'));
@@ -19536,7 +19651,7 @@ window.addEventListener('DOMContentLoaded', () => {
            highlight named countries, look up ONE country's actual figure, all-layers-off, SELECTIVE clear,
            fullscreen and real GPS locate — plus relative opacity ("delta"), compass-direction bearing and
            date-based timeTravel handled in their existing cases above. Every branch runs REAL engine code. */
-        case 'highlight': { if(a.on===false||/^(off|clear|none|解除)$/i.test(String(Array.isArray(a.countries)?'':(a.countries||a.country||'')))){ clearHl(); clearPolyHl(); return R(true, note('✓ '+L('Highlights cleared','ハイライトを消去しました','Hervorhebungen gelöscht','Выделение снято','Resaltado quitado'))); }
+        case 'highlight': { if(a.on===false||/^(off|clear|none|解除)$/i.test(String(Array.isArray(a.countries)?'':(a.countries||a.country||'')))){ clearHl(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Highlights cleared','ハイライトを消去しました','Hervorhebungen gelöscht','Выделение снято','Resaltado quitado'))); }
           /* (#R61) COLOR is honoured for real ("赤でハイライトしてといっても色が変わらない") — parse it, apply it to
              the live paint, and if we cannot parse it SAY SO instead of silently claiming success. */
           let cwarn=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) setHlColor(pc); else cwarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
@@ -19546,26 +19661,46 @@ window.addEventListener('DOMContentLoaded', () => {
             if(a.color&&!cwarn) return R(false, warn('⚠ '+L('Nothing is highlighted yet — name the countries or regions','ハイライト中の対象がありません。国名や地域名を指定してください','Noch nichts hervorgehoben — Länder oder Regionen nennen','Ничего не выделено — укажите страны или регионы','Nada resaltado aún — indica países o regiones')));
             return R(false, warn('⚠ '+L('Which countries or regions?','どの国・地域をハイライトしますか？','Welche Länder oder Regionen?','Какие страны или регионы?','¿Qué países o regiones?'))+cwarn); }
           /* (#R62) countries AND subdivisions AND fuzzy regions, freely mixed.
-             (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…). */
-          const found=[],polys=[],miss=[],seen=new Set(),grpNames=[]; let anyApprox=false,anyComposed=false,anyPartial=false;
-          for(const nm2 of raw){ let t2=null; try{ t2=await resolveHlTarget(nm2); }catch(_){}
+             (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…).
+             (#R65) + RIVERS as their real course (line) and BASINS (tributaries + faint basin fill) — judged
+             BEFORE any admin-unit logic. */
+          const found=[],polys=[],lines=[],lineNames=[],miss=[],seen=new Set(),grpNames=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null;
+          for(const nm2 of raw){
+            const bi=basinIntent(nm2);
+            if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
+              if(!B||(!B.river&&!B.basin)){ miss.push(nm2); continue; }
+              if(B.basin){ const bp={name:nm2,geo:B.basin.geo,op:0.14,comp:true}; if(pc2) bp.color=pc2; polys.push(bp); if(B.approx) anyApprox=true; }
+              if(B.trib&&B.trib.geo) lines.push({geo:B.trib.geo,w:1.1,op:0.75,color:pc2||null});
+              if(B.river) lines.push({geo:B.river.geo,w:3.2,color:pc2||null,name:B.river.name});
+              if(!B.basin&&B.river) lineNames.push(B.river.name);
+              basinInfo={trib:(B.trib&&B.trib.n)||0, trunc:!!(B.trib&&B.trib.truncated), noBasin:!B.basin, noTrib:!B.trib};
+              continue; }
+            if(riverIntent(nm2)){ let rl=null; try{ rl=await fetchRiverLine(nm2); }catch(_){}
+              if(rl){ lines.push({geo:rl.geo,w:3.2,color:pc2||null,name:rl.name}); lineNames.push(rl.name); continue; } }
+            let t2=null; try{ t2=await resolveHlTarget(nm2); }catch(_){}
             if(t2&&t2.code){ if(!seen.has(t2.code)){ seen.add(t2.code); found.push(t2); } }
             else if(t2&&t2.codes){ let nAdd=0; t2.codes.forEach(cd=>{ if(!seen.has(cd)){ seen.add(cd); found.push({code:cd,_grp:1}); nAdd++; } }); grpNames.push((t2.name||nm2)+' ('+nAdd+')'); }
             else if(t2&&t2.poly){ if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.soft||t2.approx) anyApprox=true; if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true; }
             else miss.push(nm2); }
-          if(!found.length&&!polys.length) return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn);
+          if(!found.length&&!polys.length&&!lines.length) return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn);
           /* (#R61) VERIFY the paint really happened (style may still be loading) — bounded retry, then honesty. */
-          clearPolyHl(); _hlPolys=polys;
+          clearPolyHl(); _hlPolys=polys; clearLineHl(); _hlLines=lines;
           const codes2=found.map(c=>c.code);
-          let painted=(codes2.length?highlight(codes2):(clearHl(),true)); let paintedP=paintPolys();
-          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(codes2.length&&!painted) painted=highlight(codes2); if(polys.length&&!paintedP) paintedP=paintPolys(); }
-          const ub=unionBox(codes2,polys); if(ub){ try{ map.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(codes2.length){ const fitOk=fitTo(codes2);
+          let painted=(codes2.length?highlight(codes2):(clearHl(),true)); let paintedP=paintPolys(); let paintedL=paintLines();
+          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(codes2.length&&!painted) painted=highlight(codes2); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
+          const ub=unionBox(codes2,polys.concat(lines)); if(ub){ try{ map.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(codes2.length){ const fitOk=fitTo(codes2);
             /* (#R64) antimeridian-spanning sets (旧ソ連諸国: Chukotka wraps the date line) defeat a bbox fit —
                zoom out to the planet so the highlight is actually visible instead of silently not moving. */
             if(!fitOk){ try{ if(map.getZoom()>2.6) map.flyTo({center:[map.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} } }
-          if((codes2.length&&!painted)||(polys.length&&!paintedP)) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
-          const shown=found.filter(c=>!c._grp).map(c=>esc(c.name)).concat(grpNames.map(esc)).concat(polys.map(p=>esc(p.name)));
+          if((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL)) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
+          const shown=found.filter(c=>!c._grp).map(c=>esc(c.name)).concat(grpNames.map(esc)).concat(polys.map(p=>esc(p.name))).concat(lineNames.map(esc));
           let hh=note((found.length?'✦ ':'')+shown.join(', '));
+          if(basinInfo){
+            if(basinInfo.trib) hh+=note(L(basinInfo.trib+' tributary/branch waterways drawn (every river/canal tagged in OpenStreetMap inside the basin)','支流・分流 '+basinInfo.trib+' 本を描画（流域内にOSM登録された河川・運河すべて）','' +basinInfo.trib+' Nebenflüsse gezeichnet (alle in OSM erfassten Wasserläufe im Einzugsgebiet)','Нарисовано притоков: '+basinInfo.trib+' (все реки/каналы OSM в бассейне)','Dibujados '+basinInfo.trib+' afluentes (todos los ríos/canales de OSM en la cuenca)'));
+            if(basinInfo.trunc) hh+=warn('⚠ '+L('Tributaries capped — zoom into a sub-area for the rest','支流は上限で打ち切り — 残りは範囲を絞って再検索してください','Nebenflüsse gekappt — Bereich eingrenzen','Притоки ограничены — сузьте область','Afluentes limitados — acota la zona'));
+            if(basinInfo.noBasin) hh+=warn('⚠ '+L('Basin outline unavailable — main stem only','流域の輪郭を取得できませんでした（本流のみ描画）','Beckenumriss nicht verfügbar — nur Hauptstrom','Контур бассейна недоступен — только главное русло','Contorno de la cuenca no disponible — solo el cauce principal'));
+            else if(basinInfo.noTrib) hh+=note(L('No tributaries returned by OpenStreetMap here','OpenStreetMapから支流を取得できませんでした','Keine Nebenflüsse von OSM','OSM не вернул притоков','OSM no devolvió afluentes'));
+          }
           if(anyComposed) hh+=note(L('Drawn from the real administrative boundaries of the region\'s member units','構成する行政区画の実際の境界データから描画','Aus den realen Verwaltungsgrenzen der Teilgebiete gezeichnet','Построено из реальных административных границ','Dibujado a partir de los límites administrativos reales'));
           if(anyPartial) hh+=warn('⚠ '+L('Some member boundaries could not be fetched — the shape may be missing pieces','一部の構成区画の境界を取得できませんでした（欠けがある可能性）','Einige Teilgrenzen fehlen','Часть границ получить не удалось','Faltan algunos límites'));
           if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
@@ -19588,7 +19723,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'clear': { const w=String(a.what||a.target||'all').toLowerCase(); const did=[]; const all=/^(all|everything|全部|すべて|todo|alles|всё)$/.test(w); const wants=re=>all||re.test(w);
           if(wants(/pin|ピン|метк|pines/)){ try{ if(typeof clearAllPins==='function'){ clearAllPins(); did.push(L('pins','ピン','Pins','метки','pines')); } }catch(_){} }
           if(wants(/radius|circle|半径|円|круг|círculo/)){ try{ if(window.clearAllRadius){ window.clearAllRadius(); did.push(L('circles','円','Kreise','круги','círculos')); } }catch(_){} }
-          if(wants(/highlight|shad|choro|ハイライト|濃淡|色分け|выделен|resalt/)){ try{ clearHl(); clearChoro(); clearPolyHl(); did.push(L('highlights','ハイライト','Hervorhebungen','выделение','resaltado')); }catch(_){} }
+          if(wants(/highlight|shad|choro|ハイライト|濃淡|色分け|выделен|resalt/)){ try{ clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); did.push(L('highlights','ハイライト','Hervorhebungen','выделение','resaltado')); }catch(_){} }
           if(wants(/outline|contour|輪郭|範囲|контур/)){ try{ if(window.IntMapOutline&&window.IntMapOutline.clear){ window.IntMapOutline.clear(); did.push(L('outline','輪郭','Umriss','контур','contorno')); } }catch(_){} }
           if(wants(/measure|draw|tool|計測|測定|描画|ツール|инструмент|herramienta/)){ try{ if(typeof exitTool==='function'){ exitTool(); did.push(L('tools','ツール','Werkzeuge','инструменты','herramientas')); } }catch(_){} }
           if(wants(/isolat|分離|изоляц|aisla/)){ try{ if(window.IntMapIsolate&&window.IntMapIsolate.exit){ window.IntMapIsolate.exit(); did.push(L('isolate','分離','Isolierung','изоляция','aislar')); } }catch(_){} }
@@ -19761,7 +19896,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (centre, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map centre. Action types:\n'
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. {"type":"outline","place":str,"color"?:str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it). {"type":"locate"} flies to the user\'s real GPS position (asks browser permission). {"type":"fullscreen","on":bool}. "bearing" also takes {"dir":"west"|"northeast"|…}; zoom/pitch/bearing/pan accept exact numbers for precise commands ("zoom to 5" → {"type":"zoom","to":5}; "tilt 30°" → {"type":"pitch","deg":30}).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
-        +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country) or NAMED/INFORMAL REGIONS ("Blue Banana","Rhine-Ruhr","Great Plains","Sahel" → an approximate traced outline) — pass the name as the user said it. "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
+        +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 5],"source"?:"wb"|"imf"} = side-by-side statistical comparison panel (latest values + overlaid time-series for ~20 indicators; use for "compare Japan and Korea", "日本とドイツを比較").\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"route","from":str,"to":str} (sea route); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}.\n'
@@ -19830,7 +19965,7 @@ window.addEventListener('DOMContentLoaded', () => {
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
-      panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} };
+      panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
       /* (#R42c/#R47) minimize / restore (collapse to just the header bar). FIX: a resized panel carries an inline
          height:!important that beat the class → minimize did nothing. Now we stash & clear it on minimize and
          restore it after (and the CSS adds min-height:0). */
@@ -19941,6 +20076,10 @@ window.addEventListener('DOMContentLoaded', () => {
         if(hn) return A({type:'highlight',countries:hn,color:cn}); }
       fm=low.match(/^highlight\s+in\s+([a-z]+(?: blue)?|#[0-9a-f]{3}|#[0-9a-f]{6})$/)||s.match(/^(.{1,9}?)で(?:ハイライト|強調表示|強調)(?:して)?$/)||low.match(/^(?:make|change|turn) (?:the )?highlights? (?:to )?([a-z]+)$/);
       if(fm&&parseColor((fm[1]||'').trim())) return A({type:'highlight',color:(fm[1]||'').trim()});
+      /* (#R65) basins are first-class highlight targets (「Xの流域を表示して」= main stem + tributaries + faint
+         basin fill) — anchored so it can never hijack layer commands. */
+      fm=s.match(/^(.+?の流域)を?(?:表示|ハイライト|強調表示)(?:して)?$/)||low.match(/^show\s+(?:me\s+)?(?:the\s+)?(.+?\s+(?:river\s+)?(?:basin|watershed|catchment))$/)||low.match(/^(?:display|draw)\s+(?:the\s+)?(.+?\s+(?:basin|watershed))$/);
+      if(fm&&(fm[1]||'').trim()) return {actions:[{type:'highlight',countries:(fm[1]||'').trim()}],confident:true};
       fm=low.match(/^highlight\s+(.+)$/)||s.match(/^(.+?)を(?:ハイライト|強調表示|強調)(?:して)?$/);
       if(fm){ const hn=(fm[1]||'').trim(); if(/^(off|clear|解除)$/i.test(hn)) return A({type:'highlight',on:false});
         if(hn) return {actions:[{type:'highlight',countries:hn}],confident:true}; }   /* (#R62) subdivisions/regions resolve in dispatch */
