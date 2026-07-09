@@ -2579,12 +2579,20 @@ window.addEventListener('DOMContentLoaded', () => {
       const cell=(typeof cellDeg==='number')?cellDeg:(cls==='ocean'?30:cls==='sea'?12:(cls==='bay'||cls==='strait'||cls==='gulf'||cls==='lagoon')?2.5:4);
       const base=String(nm2).toLowerCase();
       /* same name may exist in several places (e.g. many "Long Lake") — key by name + coarse cell, and treat a
-         nearby existing pin as THE anchor (first seen wins → stable across zooms). */
+         nearby existing pin as THE anchor. (#R66) ROOT CAUSE of the remaining "ズームでずれる" (the Mount
+         Futatsumori report): vector-tile coordinates are QUANTIZED to the tile grid, so a pin captured from a
+         low-zoom tile can sit up to ~1 km off the true summit — and zooming in makes that fixed offset grow to
+         hundreds of screen pixels. The pin therefore REFINES: when the same feature is observed at a HIGHER
+         integer zoom (finer quantization) the stored coordinate is upgraded, converging on the exact position
+         (peaks refine up to z14; water stops at z7 so a big lake's label never jumps to a tile-local segment). */
+      const zNow=Math.min(Math.floor(map.getZoom()),(kind==='peak')?14:7);
       let hit=null; for(let dx=-1;dx<=1&&!hit;dx++) for(let dy=-1;dy<=1&&!hit;dy++){ const k=base+'|'+cell+'|'+(Math.round(co[0]/cell)+dx)+'|'+(Math.round(co[1]/cell)+dy); if(idx.has(k)) hit=k; }
-      if(hit) continue;
+      if(hit){ const ex=idx.get(hit);
+        if(zNow>(ex.z||0)){ ex.z=zNow; ex.f.geometry={type:'Point',coordinates:[co[0],co[1]]}; _stabDirty[kind]=true; }
+        continue; }
       const key=base+'|'+cell+'|'+Math.round(co[0]/cell)+'|'+Math.round(co[1]/cell);
       if(idx.size>9000) return;
-      idx.set(key,{type:'Feature',id:idx.size,geometry:{type:'Point',coordinates:[co[0],co[1]]},properties:p});
+      idx.set(key,{z:zNow,f:{type:'Feature',id:idx.size,geometry:{type:'Point',coordinates:[co[0],co[1]]},properties:p}});
       _stabDirty[kind]=true;
     }catch(_){} } }
   function harvestStableLabels(){
@@ -2596,9 +2604,11 @@ window.addEventListener('DOMContentLoaded', () => {
     _harvestOne('water','water_name',null,null);
     _harvestOne('peak','mountain_peak',null,0.12);
     ['water','peak'].forEach(kind=>{ if(!_stabDirty[kind]) return; _stabDirty[kind]=false;
-      try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(_stabIdx[kind].values())}); }catch(_){} });
+      try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(_stabIdx[kind].values()).map(v=>v.f)}); }catch(_){} });
   }
-  window._imLabelStats=()=>({water:_stabIdx.water.size,peak:_stabIdx.peak.size});   /* diagnostics (read-only) */
+  window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size,peak:_stabIdx.peak.size};
+    if(dump){ o.peaks=Array.from(_stabIdx.peak.values()).slice(0,6).map(v=>({n:(v.f.properties||{}).name,z:v.z,c:v.f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
+    return o; };   /* diagnostics (read-only) */
   /* (#R62) FIXED sea/ocean/gulf label gazetteer — one stable point per water body (fixes the per-tile label drift),
      5 languages, clickable like place labels. [lng, lat, minzoom, en, jp, de, ru, es] */
   window.SEA_LABELS=[
@@ -6532,11 +6542,16 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(!window.countryGeo&&typeof loadCountryData==='function'&&!decorate._kick){ decorate._kick=1; loadCountryData().then(()=>{ try{ decorate(); }catch(_){} }); } }catch(_){} }
     function filter(){ const q=((sb&&sb.querySelector('#lsr-q').value)||'').toLowerCase().trim(); const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       dd.querySelectorAll('label.layer-option').forEach(lab=>{ const t2=(lab.textContent||'').toLowerCase(); lab.style.display=(!q||t2.indexOf(q)>=0)?'':'none'; }); }
-    function open(){ if(isMob()) return; build(); adopt(); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} decorate(); sb.classList.add('open'); document.body.classList.add('lsr-open'); setTimeout(decorate,400);
-      /* (#R65) tell the viewport-fixed map UI (search pill watcher etc.) that the map area changed */
+    function open(){ if(isMob()) return; build(); try{ adopt(); }catch(_){} try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} try{ decorate(); }catch(_){}
+      sb.classList.add('open'); document.body.classList.add('lsr-open');
+      /* (#R66) INLINE margin — the open/close position must never depend on cascade order or a CSS transition
+         completing (the "バグった位置に出てくる" report: the panel could sit stranded off-canvas). Inline style
+         always wins and the class transition still animates it. */
+      sb.style.marginRight='0px';
+      setTimeout(()=>{ try{ decorate(); }catch(_){} },400);
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
-    function close(){ if(sb) sb.classList.remove('open'); document.body.classList.remove('lsr-open');
+    function close(){ if(sb){ sb.classList.remove('open'); sb.style.marginRight='calc(-1 * var(--lsr-w))'; } document.body.classList.remove('lsr-open');
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
@@ -6558,11 +6573,12 @@ window.addEventListener('DOMContentLoaded', () => {
     async function fjson(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
     async function ftext(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.text(); }catch(_){} } return null; }
     function css(){ const st=document.createElement('style');
-      /* (#R64) the ticker is a TRUE in-flow strip below the app shell, not a fixed overlay: the operation-room
-         gives up 30px and the bar occupies exactly that strip in normal block flow (opaque — it can never sit
-         "on top of" the map, no vh/scaling rounding can make it overlap). */
-      st.textContent='body.ticker-on .operation-room{height:calc(100vh - 30px);height:calc(100dvh - 30px);}'
-        +'#ticker-bar{position:relative;width:100%;height:30px;z-index:500;display:flex;align-items:center;background:var(--bg-color);border-top:1px solid rgba(128,128,128,0.25);overflow:hidden;font-size:12px;font-variant-numeric:tabular-nums;box-sizing:border-box;}'
+      /* (#R65) DETERMINISTIC column layout — no height calc at all: body becomes a flex column, the app shell
+         takes the remaining space and the bar its fixed 30px row BELOW it. There is no arithmetic (dvh/scaling
+         rounding) that can ever make the bar overlap the map. */
+      st.textContent='body.ticker-on{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;}'
+        +'body.ticker-on .operation-room{flex:1 1 auto;min-height:0;height:auto !important;}'
+        +'#ticker-bar{position:relative;flex:0 0 30px;width:100%;height:30px;z-index:500;display:flex;align-items:center;background:var(--bg-color);border-top:1px solid rgba(128,128,128,0.25);overflow:hidden;font-size:12px;font-variant-numeric:tabular-nums;box-sizing:border-box;}'
         +'#ticker-bar .tk-track{display:inline-flex;white-space:nowrap;will-change:transform;animation:tkScroll var(--tk-dur,70s) linear infinite;align-items:center;}'
         +'#ticker-bar:hover .tk-track{animation-play-state:paused;}'
         +'@keyframes tkScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}'
@@ -6571,7 +6587,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#ticker-bar .tk-lbl{color:var(--text-muted);}'
         +'#ticker-bar .tk-up{color:#34c759;} #ticker-bar .tk-dn{color:#ff453a;}'
         +'#ticker-bar a{color:var(--text-main);text-decoration:none;} #ticker-bar a:hover{color:var(--primary-color);}'
-        +'@media(max-width:768px){ #ticker-bar{display:none !important;} body.ticker-on .operation-room{height:100vh;height:100dvh;} }';
+        +'@media(max-width:768px){ #ticker-bar{display:none !important;} body.ticker-on{display:block;} body.ticker-on .operation-room{height:100vh !important;height:100dvh !important;} }';
       document.head.appendChild(st); }
     async function loadMarkets(){ const out=[];
       let rt=null; try{ const j=await fjson('https://api.fxratesapi.com/latest?base=USD&currencies=JPY,EUR,GBP,CNY'); rt=j&&j.rates; }catch(_){}
@@ -18763,21 +18779,38 @@ window.addEventListener('DOMContentLoaded', () => {
           if(coords.length) out={geo:{type:'MultiLineString',coordinates:coords},name:nm}; } } }catch(_){}
       }
       _riverGeoCache[key]=out; return out; }
-    /* tributaries inside the basin outline: every OSM waterway=river/canal within the polygon (capped, honest) */
+    /* tributaries inside the basin outline: every OSM waterway=river/canal within the polygon.
+       (#R66) NO "narrow your search yourself" cop-out: if one query saturates the server cap, the basin is
+       AUTOMATICALLY subdivided into quadrants (real ring clips, not bboxes) and re-fetched, results merged and
+       deduped by way id — big basins come back complete without the user doing anything. */
+    function _basinRing(basinGeo){ let ring=null; if(basinGeo.type==='Polygon') ring=basinGeo.coordinates[0];
+      else if(basinGeo.type==='MultiPolygon'){ let best=null,bl=0; basinGeo.coordinates.forEach(p2=>{ if(p2[0]&&p2[0].length>bl){ bl=p2[0].length; best=p2[0]; } }); ring=best; }
+      return (ring&&ring.length>=4)?ring:null; }
+    async function _tribOne(ring,cap){ const step=Math.max(1,Math.ceil(ring.length/70));
+      const poly=ring.filter((_,i)=>i%step===0).map(c=>c[1].toFixed(3)+' '+c[0].toFixed(3)).join(' ');
+      const q2='[out:json][timeout:60];way["waterway"~"^(river|canal)$"](poly:"'+poly+'");out geom '+cap+';';
+      return await new Promise(res=>{ const tryEp=(i)=>{ if(i>=_OP_EPS.length){ res(null); return; }
+        fetch(_OP_EPS[i],{method:'POST',body:'data='+encodeURIComponent(q2)}).then(r2=>r2.ok?r2.json():null).then(x=>{ if(x&&Array.isArray(x.elements)) res(x.elements); else tryEp(i+1); }).catch(()=>tryEp(i+1)); }; tryEp(0); }); }
     async function fetchTributaries(basinGeo,cap){
-      try{ let ring=null; if(basinGeo.type==='Polygon') ring=basinGeo.coordinates[0]; else if(basinGeo.type==='MultiPolygon'){ let best=null,bl=0; basinGeo.coordinates.forEach(p2=>{ if(p2[0]&&p2[0].length>bl){ bl=p2[0].length; best=p2[0]; } }); ring=best; }
-        if(!ring||ring.length<4) return null;
-        const step=Math.max(1,Math.ceil(ring.length/70));
-        const poly=ring.filter((_,i)=>i%step===0).map(c=>c[1].toFixed(3)+' '+c[0].toFixed(3)).join(' ');
-        const q2='[out:json][timeout:50];way["waterway"~"^(river|canal)$"](poly:"'+poly+'");out geom '+(cap||900)+';';
-        const j2=await new Promise(res=>{ const tryEp=(i)=>{ if(i>=_OP_EPS.length){ res(null); return; }
-            fetch(_OP_EPS[i],{method:'POST',body:'data='+encodeURIComponent(q2)}).then(r2=>r2.ok?r2.json():null).then(x=>{ if(x) res(x); else tryEp(i+1); }).catch(()=>tryEp(i+1)); }; tryEp(0); });
-        if(!j2||!Array.isArray(j2.elements)) return null;
-        const coords=[]; let pts=0, truncated=false;
-        for(const el of j2.elements){ if(!el.geometry||el.geometry.length<2) continue; if(pts>240000){ truncated=true; break; }
+      try{ const CAP=cap||3000; const ring=_basinRing(basinGeo); if(!ring) return null;
+        let els=await _tribOne(ring,CAP); if(els===null) return null;
+        let saturated=(els.length>=CAP);
+        if(saturated){
+          /* subdivide: clip the basin to its bbox quadrants and fetch each part */
+          const bb=fbbox(basinGeo); if(bb){ const mx=(bb[0]+bb[2])/2, my=(bb[1]+bb[3])/2;
+            const quads=[[[bb[0],bb[1]],[mx,my]],[[mx,bb[1]],[bb[2],my]],[[bb[0],my],[mx,bb[3]]],[[mx,my],[bb[2],bb[3]]]];
+            const parts=[]; let anySat=false;
+            for(const q of quads){ const cg=_clipGeoRect(basinGeo,q); const r2=cg&&_basinRing(cg); if(!r2) continue;
+              const e2=await _tribOne(r2,CAP); if(e2){ parts.push(...e2); if(e2.length>=CAP) anySat=true; } }
+            if(parts.length){ els=parts; saturated=anySat; }
+          }
+        }
+        const coords=[]; const seenIds=new Set(); let pts=0, clientCut=false;
+        for(const el of els){ if(!el.geometry||el.geometry.length<2) continue; if(el.id!=null){ if(seenIds.has(el.id)) continue; seenIds.add(el.id); }
+          if(pts>600000){ clientCut=true; break; }
           const line=el.geometry.map(g=>[g.lon,g.lat]); pts+=line.length; coords.push(line); }
         if(!coords.length) return null;
-        return {geo:{type:'MultiLineString',coordinates:coords},n:coords.length,truncated:truncated||j2.elements.length>=(cap||900)}; }catch(_){ return null; } }
+        return {geo:{type:'MultiLineString',coordinates:coords},n:coords.length,truncated:saturated||clientCut}; }catch(_){ return null; } }
     function _bboxSoftPoly(box){ const cx=(box[0][0]+box[1][0])/2, cy=(box[0][1]+box[1][1])/2, rx=Math.max(0.05,(box[1][0]-box[0][0])/2), ry=Math.max(0.05,(box[1][1]-box[0][1])/2); const ring=[]; for(let i=0;i<=40;i++){ const a=i/40*2*Math.PI, co=Math.cos(a), si=Math.sin(a); ring.push([cx+rx*Math.sign(co)*Math.pow(Math.abs(co),0.62), cy+ry*Math.sign(si)*Math.pow(Math.abs(si),0.62)]); } return {type:'Polygon',coordinates:[ring]}; }
     /* ==== (#R64) REAL region composition ("こんなカクカクポリゴンで許されると思うなよ。実際の範囲に忠実に、正確で
        高精細なポリゴンを引け"). A fuzzy/regional name is now resolved to a UNION OF REAL BOUNDARIES instead of a
@@ -19697,7 +19730,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let hh=note((found.length?'✦ ':'')+shown.join(', '));
           if(basinInfo){
             if(basinInfo.trib) hh+=note(L(basinInfo.trib+' tributary/branch waterways drawn (every river/canal tagged in OpenStreetMap inside the basin)','支流・分流 '+basinInfo.trib+' 本を描画（流域内にOSM登録された河川・運河すべて）','' +basinInfo.trib+' Nebenflüsse gezeichnet (alle in OSM erfassten Wasserläufe im Einzugsgebiet)','Нарисовано притоков: '+basinInfo.trib+' (все реки/каналы OSM в бассейне)','Dibujados '+basinInfo.trib+' afluentes (todos los ríos/canales de OSM en la cuenca)'));
-            if(basinInfo.trunc) hh+=warn('⚠ '+L('Tributaries capped — zoom into a sub-area for the rest','支流は上限で打ち切り — 残りは範囲を絞って再検索してください','Nebenflüsse gekappt — Bereich eingrenzen','Притоки ограничены — сузьте область','Afluentes limitados — acota la zona'));
+            if(basinInfo.trunc) hh+=note(L('Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)','注: 表示上限により最小級の細流の一部のみ省略（主要な支流はすべて描画済み）','Hinweis: nur ein kleiner Teil der kleinsten Bäche wurde am Limit ausgelassen','Примечание: опущена лишь малая часть мельчайших ручьёв','Nota: solo se omitió una pequeña parte de los arroyos más pequeños'));
             if(basinInfo.noBasin) hh+=warn('⚠ '+L('Basin outline unavailable — main stem only','流域の輪郭を取得できませんでした（本流のみ描画）','Beckenumriss nicht verfügbar — nur Hauptstrom','Контур бассейна недоступен — только главное русло','Contorno de la cuenca no disponible — solo el cauce principal'));
             else if(basinInfo.noTrib) hh+=note(L('No tributaries returned by OpenStreetMap here','OpenStreetMapから支流を取得できませんでした','Keine Nebenflüsse von OSM','OSM не вернул притоков','OSM no devolvió afluentes'));
           }
