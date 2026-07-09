@@ -75,6 +75,17 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     （zoom to N・N度傾けて/回転・少し右へ・全レイヤーオフ・全画面・現在地・ピン/円/ハイライト消去・レイヤーN%・
     もっと薄く/濃く・「日本の人口は？」等の統計質問・「XとYをハイライト」、5言語アンカー付き＝複合/曖昧文は従来通りAIへ）。
     プライバシーポリシー§2に端末位置情報の扱いを明記（LEGAL_DATE更新）。
+  - **#R61 虚偽報告の根絶＋色指定＋統合分析**（「実行できていない/指示に完全に沿えていない場合も完了報告」「赤でハイライトしても色が変わらない」「ニュースやレイヤー数値を統合した横断的出力」）:
+    ①**正直な報告** — zoom/pitch/bearing は実行前のカメラ値ではなく**指示の目標値**を報告（`✓ Zoom → 6.0`）。
+    `highlight`/rank系は `highlight()` の戻り値を**検証**し、スタイル読込中で描画できなければ有界リトライ（約5.6s）後に
+    **正直に失敗を報告**（旧: 描画失敗でも ✦ と完了報告）。解釈できない色・実行できないパラメータは黙殺せず⚠で明示。
+    ②**色指定** — `parseColor`（5言語の色名+hex）を新設し、`highlight`（色のみ指定で再着色も）/`mapMetric`（色相から
+    5段階ランプ生成 `rampFrom`）/`radius`/`outline`（`IntMapOutline.setColor`）が color を実際にlive paintへ適用。
+    localPlanに「日本を赤でハイライト」「highlight X in red」「赤でハイライト」(再着色)の決定的パターン。
+    ③**統合分析 `analyze`** — {question, place?, countries?, use?} で、読み込み済みニュース(globalData、未ロード時は
+    fetchData)・現況気象/大気質/海水温/標高(Open-Meteo)・直近24h地震(USGS)・国別統計(countryStats)を**実データとして
+    収集**し、そのデータのみからテキストAIが統合回答（使用データ/取得不可データをフッターに正直に明記）。
+    Privacy§4(AI送信データ)・Sources(USGS新規記載・Open-Meteo用途拡充)を更新。
   - **#R45 AtlasはIntMap全体のOS**: 「今後追加する機能もすべてAtlasで操作可能に」という恒久ルール。汎用 `module` アクション＋
     `moduleCatalog()` が `window.IntMap*`（＋RunwaySearch）の全サブシステムを**自動発見**し名前で `open/toggle/close/clear` 等を
     呼べる（メソッドは許可リストで制限）。これで個別アクションに無いモジュール（Annotations/Presets/Overlays 等）や**将来追加する
