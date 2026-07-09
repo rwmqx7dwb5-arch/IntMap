@@ -55,12 +55,15 @@ function parseDataUrl(d: string): ImgPart | null {
 // ---------------------------------------------------------------------------
 //  Provider calls (key lives only here, in the function's env).
 // ---------------------------------------------------------------------------
-async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[]): Promise<string> {
+async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web = false): Promise<string> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   content.push({ type: "text", text: prompt });
   const body: Record<string, unknown> = { model, max_tokens: MAX_TOKENS, messages: [{ role: "user", content }] };
   if (system) body.system = system;
+  // (#R64) Atlas live web search: analyze/brief send {web:true} → let the model run Anthropic's native
+  // web-search tool (capped) so answers are grounded in the live web, not just the client-gathered data.
+  if (web) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
@@ -151,8 +154,9 @@ Deno.serve(async (req) => {
   }
 
   // Parse the request body.
-  let payload: { prompt?: string; system?: string; images?: string[] } = {};
+  let payload: { prompt?: string; system?: string; images?: string[]; web?: boolean } = {};
   try { payload = await req.json(); } catch (_) { payload = {}; }
+  const web = payload.web === true;
   const prompt = String(payload.prompt || "").slice(0, MAX_PROMPT);
   const system = String(payload.system || "").slice(0, MAX_PROMPT);
   const imgs = (Array.isArray(payload.images) ? payload.images : [])
@@ -177,7 +181,7 @@ Deno.serve(async (req) => {
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new Error("ANTHROPIC_API_KEY not set");
-      text = await callAnthropic(Deno.env.get("AI_MODEL") || "claude-3-5-haiku-latest", key, prompt, system, imgs);
+      text = await callAnthropic(Deno.env.get("AI_MODEL") || "claude-3-5-haiku-latest", key, prompt, system, imgs, web);
     }
     // 5) Success.
     return json({ text, used, limit, remaining: Math.max(0, limit - used) });
