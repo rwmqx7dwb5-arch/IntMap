@@ -6447,52 +6447,361 @@ window.addEventListener('DOMContentLoaded', () => {
      full-height right sidebar that mirrors the left one, with a search box and a PREVIEW SQUARE on every row
      (real tile thumbnails where a stable endpoint exists, a deterministic colour swatch + icon otherwise).
      The existing #layer-dropdown node moves as-is, so every checkbox/slider/handler keeps working. ===== */
+  /* ===== (#R70) LAYER PREVIEW ENGINE — an example image for EVERY layer ("例画像が全く準備できていない。
+     10程度でいいわけがない"). No shipped binaries: each preview is derived from the layer's OWN source —
+     a real example tile (GIBS / Esri / OpenRailwayMap / OpenSeaMap / Terrascope / RainViewer / Köppen PNG),
+     a real mini-choropleth painted from the layer's own data + its own color ramp (countryStats client data,
+     or the SAME cached World-Bank loader the layer itself uses — fetched lazily, only when the tile scrolls
+     into view, max 2 in flight), real member sets (NATO/EU/FSU), the real geoLayersDB geometry (chokepoints,
+     island chains, pipelines…), live USGS quakes, a real day/night terminator — and a hand-drawn
+     REPRESENTATIVE sketch only where the layer's data is a live stream that cannot be sampled cheaply. ===== */
+  window.IntMapLayerPreviews=(function(){
+    const W=192,H=120, cache={};
+    const G=(id,lvl,date,ext)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+date+'/GoogleMapsCompatible_Level'+lvl+'/2/1/1.'+(ext||'png');
+    /* ---- 1) real example tiles, one per raster layer (same endpoints the layers render from) ---- */
+    const IMG={
+      'dl-climate':'koppen_mercator_1991-2020_4k.png',
+      'dl-temp':G('MERRA2_2m_Air_Temperature_Monthly',6,'2024-06-01'),
+      'dl-precip':G('IMERG_Precipitation_Rate',6,'2025-06-01T12:00:00Z'),
+      'dl-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04'),
+      'dl-snow':G('MODIS_Terra_NDSI_Snow_Cover',8,'2024-01-15'),
+      'dl-aod':G('MODIS_Combined_Value_Added_AOD',6,'2024-07-04'),
+      'dl-nightsat':G('VIIRS_Black_Marble',8,'2016-01-01'),
+      'dl-popgrid':G('GPW_Population_Density_2020',7,'2020-01-01'),
+      'dl-relief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg'),
+      'dl-hillshade':'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/2/1/1',
+      'gx-gxtruecolor':G('MODIS_Terra_CorrectedReflectance_TrueColor',9,'2025-06-15','jpg'),
+      'gx-gxlst':G('MODIS_Terra_Land_Surface_Temp_Day',7,'2025-06-15'),
+      'gx-gxndvi':G('MODIS_Terra_NDVI_8Day',9,'2024-07-04'),
+      'gx-gxwvapor':G('MODIS_Terra_Water_Vapor_5km_Day',6,'2025-06-15'),
+      'gx-gxcloud':G('MODIS_Terra_Cloud_Fraction_Day',6,'2025-06-15'),
+      'gx-gxseaice':G('GHRSST_L4_MUR_Sea_Ice_Concentration',7,'2024-01-15'),
+      'gx-gxsstanom':G('GHRSST_L4_MUR_Sea_Surface_Temperature_Anomalies',7,'2024-07-04'),
+      'gx-gxcloudtop':G('MODIS_Terra_Cloud_Top_Temp_Day',6,'2025-06-15'),
+      'gx-gxlstnight':G('MODIS_Terra_Land_Surface_Temp_Night',7,'2025-06-15'),
+      'gx-gxbtday':G('MODIS_Terra_Brightness_Temp_Band31_Day',7,'2025-06-15'),
+      'gx-gxrelief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg'),
+      'gx-gxaero':G('OMPS_Aerosol_Index',6,'2025-06-15'),
+      'gx-gxchlor':G('VIIRS_NOAA20_Chlorophyll_a',7,'2025-06-15'),
+      'gx-gxco':G('AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day',6,'2025-06-15'),
+      'gx-gxsoil':G('AMSRU2_Soil_Moisture_SCA_Day',6,'2025-06-15'),
+      'eco-dl-worldcover':'https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=2&TILEROW=1&TILECOL=1&FORMAT=image/png&TIME=2021-01-01',
+      'cb-rail2':'https://a.tiles.openrailwaymap.org/standard/2/1/1.png',
+      'ox-oxrail':'https://a.tiles.openrailwaymap.org/standard/2/1/1.png',
+      'beta-dl-rail':'https://a.tiles.openrailwaymap.org/standard/2/1/1.png',
+      'ox-oxsea':'https://tiles.openseamap.org/seamark/7/63/42.png'   /* Dover Strait — dense real seamarks */
+    };
+    let _radar=null;
+    function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); return fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/2/1/1/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
+    /* ---- canvas helpers (equirectangular mini world) ---- */
+    const X=lng=>(lng+180)/360*W, Y=lat=>(74-lat)/134*H;
+    function cnv(){ const c=document.createElement('canvas'); c.width=W; c.height=H; return c; }
+    function ocean(ctx,col){ ctx.fillStyle=col||'#0e1a2b'; ctx.fillRect(0,0,W,H); }
+    function drawLand(ctx,colorOf,stroke){ const cg=window.countryGeo; if(!cg||!cg.features) return false;
+      cg.features.forEach(f=>{ const gm=f.geometry; if(!gm) return; const col=colorOf?colorOf(String(f.id),f):'#22344c';
+        if(col===null) return; ctx.fillStyle=col;
+        const draw=poly=>{ const ring=poly&&poly[0]; if(!ring||ring.length<3) return; ctx.beginPath();
+          for(let i=0;i<ring.length;i++){ const x=X(ring[i][0]),y=Y(ring[i][1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); } ctx.closePath(); ctx.fill();
+          if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=0.5; ctx.stroke(); } };
+        if(gm.type==='Polygon') draw(gm.coordinates); else if(gm.type==='MultiPolygon') gm.coordinates.forEach(draw); });
+      return true; }
+    function rampColor(ramp,v){ if(v==null||isNaN(v)) return '#2a3950'; let col=null; for(let i=0;i<ramp.length;i+=2){ if(v>=ramp[i]) col=ramp[i+1]; else break; } return col||ramp[1]; }
+    const R5=['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'];
+    function q5(v,lo,span){ const t2=Math.max(0,Math.min(0.999,(v-lo)/(span||1))); return R5[Math.floor(t2*5)]; }
+    /* ---- 2) client-side stat choropleths (countryStats fields — same data the layers paint) ---- */
+    const STAT={
+      'dl-pop':{g:s=>s.density,log:1},'dl-gdppc':{g:s=>s.gdppc,log:1},'dl-hdi':{g:s=>s.hdi},
+      'dl-dem':{g:s=>s.dem},'dl-milSpend':{g:s=>s.milSpend,log:1},
+      'dl-milSpendGDP':{g:s=>(s.milSpend&&s.gdp)?(s.milSpend*1e9/s.gdp*100):null},
+      'beta-dl-lifeexp':{g:s=>s.lifeExp,ramp:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850']},
+      'beta-dl-internet':{g:s=>s.internet,ramp:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850']}
+    };
+    function statChoro(spec){ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
+      let stats=null; try{ stats=(typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length)?countryStats:null; }catch(_){} if(!stats) return null;
+      const vals=[]; for(const cd in stats){ let v=spec.g(stats[cd]); if(v==null||isNaN(v)) continue; if(spec.log){ if(v<=0) continue; v=Math.log(v); } vals.push(v); }
+      if(vals.length<5) return null; const lo=Math.min.apply(null,vals), span=(Math.max.apply(null,vals)-lo)||1;
+      const ok=drawLand(ctx,cd=>{ const s2=stats[cd]; if(!s2) return '#1b2a3d'; let v=spec.g(s2); if(v==null||isNaN(v)||(spec.log&&v<=0)) return '#1b2a3d';
+        if(spec.ramp) return rampColor(spec.ramp,v); if(spec.log) v=Math.log(v); return q5(v,lo,span); });
+      return ok?c.toDataURL('image/png'):null; }
+    /* ---- 3) World-Bank choropleths — the layer's own indicator + its own ramp, via the layer's own cached
+       loader (window.IntMapWB). Lazy: fetched only when the tile is on screen; max 2 concurrent. ---- */
+    const WBP={
+      'bx-wbco2':{c:'EN.GHG.CO2.PC.CE.AR5',r:[0,'#1a9850',2,'#a6d96a',5,'#fee08b',10,'#f46d43',20,'#a50026']},
+      'bx-wburb':{c:'SP.URB.TOTL.IN.ZS',r:[20,'#fee08b',40,'#a6d96a',60,'#66bd63',80,'#1a9850',95,'#006837']},
+      'bx-wbelec':{c:'EG.ELC.ACCS.ZS',r:[20,'#a50026',50,'#f46d43',80,'#fee08b',95,'#a6d96a',100,'#1a9850']},
+      'bx-wbhealth':{c:'SH.XPD.CHEX.GD.ZS',r:[2,'#fff7ec',4,'#fdd49e',8,'#fc8d59',12,'#d7301f',18,'#7f0000']},
+      'bx-wbforest':{c:'AG.LND.FRST.ZS',r:[5,'#f6e8c3',20,'#c7eae5',40,'#80cdc1',60,'#35978f',80,'#01665e']},
+      'bx-wbrenew':{c:'EG.FEC.RNEW.ZS',r:[5,'#fff7ec',20,'#fdd49e',40,'#a6d96a',60,'#66bd63',85,'#006837']},
+      'bx-wbmobile':{c:'IT.CEL.SETS.P2',r:[30,'#fee08b',80,'#a6d96a',110,'#66bd63',140,'#1a9850',180,'#006837']},
+      'bx-wbinfl':{c:'FP.CPI.TOTL.ZG',r:[0,'#1a9850',3,'#a6d96a',6,'#fee08b',15,'#f46d43',40,'#a50026']},
+      'bx-wbinfmort':{c:'SP.DYN.IMRT.IN',r:[2,'#1a9850',8,'#a6d96a',25,'#fee08b',50,'#f46d43',90,'#a50026']},
+      'bx-wbgdpgrow':{c:'NY.GDP.MKTP.KD.ZG',r:[-6,'#a50026',-1,'#f46d43',2,'#fee08b',5,'#a6d96a',9,'#1a9850']},
+      'bx-wblit':{c:'SE.ADT.LITR.ZS',r:[40,'#a50026',60,'#f46d43',80,'#fee08b',92,'#a6d96a',100,'#1a9850']},
+      'bx-wbwater':{c:'SH.H2O.SMDW.ZS',r:[30,'#a50026',55,'#f46d43',75,'#fee08b',90,'#a6d96a',100,'#1a9850']},
+      'bx-wbsan':{c:'SH.STA.SMSS.ZS',r:[20,'#a50026',45,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850']},
+      'bx-wbpov':{c:'SI.POV.DDAY',r:[0,'#1a9850',2,'#a6d96a',10,'#fee08b',30,'#f46d43',60,'#a50026']},
+      'bx-wbgini':{c:'SI.POV.GINI',r:[25,'#1a9850',32,'#a6d96a',38,'#fee08b',45,'#f46d43',60,'#a50026']},
+      'bx-wbtrade':{c:'NE.TRD.GNFS.ZS',r:[20,'#fff7ec',50,'#fdd49e',90,'#fc8d59',150,'#d7301f',300,'#7f0000']},
+      'bx-wbtax':{c:'GC.TAX.TOTL.GD.ZS',r:[5,'#fff7ec',12,'#fdd49e',20,'#a6d96a',30,'#66bd63',45,'#006837']},
+      'bx-wbagri':{c:'AG.LND.AGRI.ZS',r:[5,'#f6e8c3',25,'#dfc27d',45,'#c7eae5',65,'#80cdc1',85,'#01665e']},
+      'bx-wbphys':{c:'SH.MED.PHYS.ZS',r:[0.1,'#a50026',0.5,'#f46d43',1.5,'#fee08b',3,'#a6d96a',6,'#1a9850']},
+      'bx-wbschool':{c:'SE.SEC.ENRR',r:[30,'#a50026',55,'#f46d43',80,'#fee08b',100,'#a6d96a',130,'#1a9850']},
+      'bx-wbelecuse':{c:'EG.USE.ELEC.KH.PC',r:[100,'#fff7ec',1000,'#fdd49e',4000,'#fc8d59',10000,'#d7301f',20000,'#7f0000']},
+      'bx-wbrenelec':{c:'EG.ELC.RNEW.ZS',r:[5,'#fff7ec',25,'#fdd49e',50,'#a6d96a',75,'#66bd63',100,'#006837']},
+      'bx-wbfdi':{c:'BX.KLT.DINV.WD.GD.ZS',r:[-2,'#a50026',1,'#fee08b',4,'#a6d96a',8,'#66bd63',15,'#006837']},
+      'bx-wbmilppl':{c:'MS.MIL.TOTL.P1',r:[5000,'#fff7ec',50000,'#fdd49e',200000,'#fc8d59',800000,'#d7301f',2000000,'#7f0000']},
+      'bx-wblife':{c:'SP.DYN.LE00.IN',r:[50,'#a50026',60,'#f46d43',70,'#fee08b',78,'#a6d96a',85,'#1a9850']},
+      'bx-wbunemp':{c:'SL.UEM.TOTL.ZS',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
+      'bx-wbnet':{c:'IT.NET.USER.ZS',r:[10,'#a50026',30,'#f46d43',55,'#fee08b',80,'#a6d96a',98,'#1a9850']},
+      'bx-wbdebt':{c:'GC.DOD.TOTL.GD.ZS',r:[20,'#1a9850',45,'#a6d96a',70,'#fee08b',110,'#f46d43',180,'#a50026']},
+      'bx-wbmanuf':{c:'NV.IND.MANF.ZS',r:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000']},
+      'bx-wbu5mort':{c:'SH.DYN.MORT',r:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026']},
+      'bx-wbpopgrow':{c:'SP.POP.GROW',r:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02']},
+      'bx-wbenergy':{c:'EG.USE.PCAP.KG.OE',r:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000']},
+      'beta-dl-unemp':{c:'SL.UEM.TOTL.ZS',r:[2,'#1a9850',5,'#a6d96a',10,'#fee08b',20,'#f46d43',35,'#a50026']},
+      'dl-tfr':{c:'SP.DYN.TFRT.IN',r:[1,'#2c7fb8',2.1,'#7fcdbb',3,'#ffffb2',4.5,'#fe9929',6.5,'#cc4c02']},   /* countryStats.tfr is only filled AFTER the layer's own lazy fetch — preview goes to WB directly (same ramp as the layer) */
+      'beta-dl-cpi':{c:'GOV_WGI_CC.SC',url:'https://api.worldbank.org/v2/country/all/indicator/GOV_WGI_CC.SC?format=json&source=3&date=2023&per_page=400',r:[10,'#a50026',30,'#f46d43',50,'#fee08b',70,'#74c476',90,'#1a9850']}   /* WGI lives under source=3 and rejects mrnev — same query the layer itself uses */
+    };
+    /* gentle: ONE request at a time with a 350 ms gap — preview traffic must never trip the WB rate limit
+       (the R69 lesson: bursts get the whole IP throttled and then EVERYTHING WB-backed shows "no data") */
+    let _wbBusy=0; const _wbQueue=[];
+    function wbValues(spec){ return new Promise(res=>{ _wbQueue.push({spec,res}); _wbPump2(); }); }
+    function _wbPump2(){ while(_wbBusy<1&&_wbQueue.length){ const t=_wbQueue.shift(); _wbBusy++;
+      const done=v=>{ setTimeout(()=>{ _wbBusy--; _wbPump2(); },350); t.res(v); };
+      try{
+        if(!t.spec.url&&window.IntMapWB&&window.IntMapWB.fetch){ window.IntMapWB.fetch(t.spec.c).then(m=>done(m||{})).catch(()=>done({})); }
+        else{ fetch(t.spec.url||('https://api.worldbank.org/v2/country/all/indicator/'+t.spec.c+'?format=json&mrnev=1&per_page=400'))
+          .then(r=>r.json()).then(j=>{ const m={}; ((j&&j[1])||[]).forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value}; }); done(m); }).catch(()=>done({})); }
+      }catch(_){ done({}); } } }
+    function wbChoro(spec){ return wbValues(spec).then(m=>{ if(!m||Object.keys(m).length<5) return null;
+      const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
+      const ok=drawLand(ctx,cd=>{ const e=m[cd]; return e?rampColor(spec.r,e.v):'#1b2a3d'; });
+      return ok?c.toDataURL('image/png'):null; }); }
+    /* ---- 4) real member sets (mirrors of the layers' own lists) ---- */
+    const MEMBERS={
+      'dl-nato':{set:'USA CAN GBR FRA DEU ITA ESP PRT NLD BEL LUX DNK NOR ISL POL CZE SVK HUN ROU BGR HRV SVN EST LVA LTU GRC TUR ALB MNE MKD FIN SWE',col:'#1e63ff'},
+      'dl-eu':{set:'BEL FRA DEU ITA LUX NLD DNK IRL GBR GRC ESP PRT AUT FIN SWE CYP CZE EST HUN LVA LTU MLT POL SVK SVN BGR ROU HRV',col:'#2456c9'},
+      'fsu':{set:'RUS UKR BLR MDA EST LVA LTU GEO ARM AZE KAZ UZB TKM KGZ TJK',col:'#d64541'}
+    };
+    function memberMap(spec){ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx); const S=new Set(spec.set.split(' '));
+      const ok=drawLand(ctx,cd=>S.has(cd)?spec.col:'#22344c','rgba(0,0,0,0.25)');
+      return ok?c.toDataURL('image/png'):null; }
+    /* ---- 5) geoLayersDB — the strategic layers' REAL geometry ---- */
+    function geoDBPrev(key){ let db=null; try{ db=geoLayersDB&&geoLayersDB[key]; }catch(_){ } if(!db) return null;
+      const c=cnv(),ctx=c.getContext('2d'); ocean(ctx); if(!drawLand(ctx,null)) return null;
+      const col=db.color||'#ff9500';
+      (db.areas||[]).forEach(a=>{ if(!a.ring) return; ctx.beginPath(); a.ring.forEach((p,i)=>{ const x=X(p[0]),y=Y(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.closePath(); ctx.fillStyle=col+'55'; ctx.fill(); ctx.strokeStyle=col; ctx.lineWidth=1; ctx.stroke(); });
+      (db.lines||[]).forEach(l=>{ if(!l.path) return; ctx.beginPath(); l.path.forEach((p,i)=>{ const x=X(p[0]),y=Y(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.stroke(); });
+      (db.points||[]).forEach(p=>{ if(!p.at) return; ctx.beginPath(); ctx.arc(X(p.at[0]),Y(p.at[1]),2.4,0,7); ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=0.7; ctx.stroke(); });
+      return c.toDataURL('image/png'); }
+    /* ---- 6) special painters. Real where the data is client-side or computable (terminator, quakes,
+       real coordinates of famous volcanoes/dams/hubs, coastline-derived EEZ halo); clearly stylised
+       REPRESENTATIVE sketches only for live streams (planes/ships/webcams) and model fields (ECMWF). ---- */
+    function base(colFn,oc){ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,oc); const ok=drawLand(ctx,colFn||null); return ok?{c,ctx}:null; }
+    const dots=(ctx,pts,col,r)=>pts.forEach(p=>{ ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),r||2.2,0,7); ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=0.6; ctx.stroke(); });
+    const path=(ctx,pts,col,wd,dash)=>{ ctx.beginPath(); pts.forEach((p,i)=>{ const x=X(p[0]),y=Y(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.strokeStyle=col; ctx.lineWidth=wd||1.4; if(dash) ctx.setLineDash(dash); ctx.stroke(); ctx.setLineDash([]); };
+    /* real coordinates (well-known sites) */
+    const VOLC=[[138.73,35.36],[140.68,42.06],[131.1,32.88],[15.0,37.75],[14.43,40.82],[-25.4,37.8],[-19.6,63.6],[-155.29,19.41],[-122.18,46.2],[-121.76,46.85],[-103.62,19.51],[-90.88,14.76],[-78.44,-0.68],[-71.85,-16.29],[-72.65,-42.83],[167.17,-77.53],[55.71,-21.24],[40.3,13.6],[36.75,-1.28],[29.25,-1.52],[42.55,12.95],[127.33,1.68],[110.44,-7.54],[105.42,-6.1],[120.35,15.13],[123.685,13.257],[130.66,31.59],[145.03,-5.53],[177.18,-37.52],[175.57,-39.28],[158.83,53.26],[160.64,55.98],[-19.0,64.8],[-16.7,65.03]];
+    const DAMS=[[111.0,30.82],[-114.74,36.02],[32.9,23.97],[-54.59,-25.41],[104.8,29.9],[38.5,11.2],[6.87,45.2],[78.45,17.4],[-121.0,47.96],[43.85,38.4],[-8.1,40.5],[91.6,27.6],[-79.98,44.0],[27.48,-30.3]];
+    const DCH=[[-77.5,39.03],[-96.8,32.78],[-121.9,37.35],[-6.25,53.35],[-0.1,51.5],[8.68,50.11],[4.9,52.37],[103.8,1.35],[139.75,35.68],[151.2,-33.87],[-46.63,-23.55],[72.87,19.08],[126.98,37.57],[113.26,23.13]];
+    const PHARMA=[[-74.4,40.5],[7.59,47.56],[-8.5,51.9],[78.49,17.44],[121.47,31.23],[135.5,34.69],[12.57,55.68],[6.98,51.03],[-71.06,42.36],[2.35,48.86],[77.59,12.97],[120.98,14.6]];
+    const CABLE=[[[-74,40.7],[-30,45],[-9,38.7]],[[-5,50],[-40,47],[-73.9,40.6]],[[139.7,35.6],[170,40],[180,42]],[[-180,42],[-155,35],[-122,37.7]],[[103.8,1.3],[80,6],[43.3,11.6],[32.3,30.6],[14.5,35.9],[-5.6,36]],[[103.8,1.3],[114.1,22.3],[121.5,25],[139.7,35.6]],[[151.2,-33.9],[170,-30],[-180,-25]],[[-180,-25],[-150,-20],[-118,34]],[[-9,38.7],[-15,14.7],[18.4,-33.9]]];
+    const SEALANE=[[4.4,51.9],[-5.6,35.95],[32.3,31.2],[32.55,29.9],[43.3,12.6],[56.3,26.6],[80,6],[100.4,2.5],[103.8,1.3],[114.1,22.3],[121.9,31.2]];
+    const AIRHUB=[[-73.9,40.6],[-0.45,51.47],[2.55,49.01],[50.63,26.27],[55.36,25.25],[103.99,1.36],[139.78,35.55],[-118.4,33.94],[-87.9,41.97],[77.1,28.55],[126.45,37.46],[-43.2,-22.8]];
+    function terminator(){ const b=base(null,'#0b1524'); if(!b) return null; const {c,ctx}=b;
+      /* real current sun position: subsolar lng from UTC time, decl from day-of-year */
+      const now=new Date(); const dUTC=now.getUTCHours()+now.getUTCMinutes()/60;
+      const doy=Math.floor((now-new Date(Date.UTC(now.getUTCFullYear(),0,0)))/864e5);
+      const decl=-23.44*Math.cos((360/365)*(doy+10)*Math.PI/180);
+      const sunLng=180-dUTC*15;
+      ctx.fillStyle='rgba(0,0,0,0.55)';
+      for(let px=0;px<W;px+=2){ const lng=px/W*360-180; for(let py=0;py<H;py+=2){ const lat=74-py/H*134;
+        const cosz=Math.sin(lat*Math.PI/180)*Math.sin(decl*Math.PI/180)+Math.cos(lat*Math.PI/180)*Math.cos(decl*Math.PI/180)*Math.cos((lng-sunLng)*Math.PI/180);
+        if(cosz<0) ctx.fillRect(px,py,2,2); } }
+      ctx.fillStyle='#ffd60a'; ctx.beginPath(); ctx.arc(X(((sunLng+540)%360)-180),Y(Math.max(-56,Math.min(74,decl))),3.4,0,7); ctx.fill();
+      return c.toDataURL('image/png'); }
+    function quakes(){ return fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').then(r=>r.json()).then(j=>{
+        const b=base(null); if(!b) return null; const {c,ctx}=b;
+        ((j&&j.features)||[]).slice(0,220).forEach(f=>{ try{ const co=f.geometry.coordinates, m=(f.properties&&f.properties.mag)||3;
+          ctx.beginPath(); ctx.arc(X(co[0]),Y(co[1]),Math.max(1.2,(m-2)*1.15),0,7); ctx.fillStyle='rgba(255,69,58,0.8)'; ctx.fill(); }catch(_){} });
+        return c.toDataURL('image/png'); }).catch(()=>null); }
+    function gradField(stops,overLandOnly){ const c=cnv(),ctx=c.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,H);
+      stops.forEach(s2=>g.addColorStop(s2[0],s2[1])); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      drawLand(ctx,()=>overLandOnly?null:'rgba(10,18,30,0.35)');
+      return c.toDataURL('image/png'); }
+    const PAINT={
+      'cb-names':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#fff'; ctx.font='700 11px sans-serif'; ctx.shadowColor='#000'; ctx.shadowBlur=3; ctx.fillText('Tokyo',X(139.7),Y(35.7)); ctx.fillText('Paris',X(2.3),Y(48.9)); ctx.fillText('Cairo',X(31.2),Y(30)); ctx.fillText('Lima',X(-77),Y(-12)); ctx.shadowBlur=0; return c.toDataURL('image/png'); },
+      'cb-geolabels':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#8fd0ff'; ctx.font='italic 10.5px serif'; ctx.fillText('Pacific Ocean',X(-160),Y(10)); ctx.fillText('Sahara',X(5),Y(23)); ctx.fillStyle='#e7dcc8'; ctx.font='10px sans-serif'; ctx.fillText('▲ Everest',X(86.9),Y(28)); return c.toDataURL('image/png'); },
+      'cb-borders':()=>{ const b=base(()=> '#22344c'); if(!b) return null; const {c,ctx}=b; drawLand(ctx,()=>null,'rgba(255,255,255,0.75)'); return c.toDataURL('image/png'); },
+      'cb-admin1':()=>{ const b=base(()=> '#22344c'); if(!b) return null; const {c,ctx}=b; drawLand(ctx,()=>null,'rgba(255,255,255,0.45)');
+        for(let i=0;i<7;i++){ path(ctx,[[-105+i*4,49],[-105+i*4,30]],'rgba(255,255,255,0.35)',0.7,[2,2]); } return c.toDataURL('image/png'); },
+      'cb-roads':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; path(ctx,[[-118,34],[-87,41],[-74,40.7]],'#ff9f0a',1.6); path(ctx,[[-8,43],[2,48],[13,52],[37,55]],'#ff9f0a',1.6); path(ctx,[[103,1.3],[100,13],[116,39]],'#ff9f0a',1.6); return c.toDataURL('image/png'); },
+      'cb-grid':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx); drawLand(ctx,null);
+        ctx.strokeStyle='rgba(160,190,230,0.55)'; ctx.lineWidth=0.6;
+        for(let lg=-150;lg<=150;lg+=30){ ctx.beginPath(); ctx.moveTo(X(lg),0); ctx.lineTo(X(lg),H); ctx.stroke(); }
+        for(let la=-40;la<=60;la+=20){ ctx.beginPath(); ctx.moveTo(0,Y(la)); ctx.lineTo(W,Y(la)); ctx.stroke(); }
+        return c.toDataURL('image/png'); },
+      'cb-countries':()=>{ const b=base(cd=>cd==='FRA'?'#0a84ff':'#22344c'); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#fff'; ctx.font='700 12px serif'; ctx.fillText('ⓘ',X(2.3),Y(46.5)); return c.toDataURL('image/png'); },
+      'dl-night':terminator,
+      'dl-tz':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx);
+        for(let i=0;i<24;i++){ ctx.fillStyle=i%2?'rgba(90,140,220,0.16)':'rgba(20,40,70,0.16)'; ctx.fillRect(i*W/24,0,W/24,H); }
+        drawLand(ctx,()=> 'rgba(56,84,120,0.9)');
+        for(let i=0;i<24;i+=3){ ctx.strokeStyle='rgba(150,190,255,0.4)'; ctx.beginPath(); ctx.moveTo(i*W/24,0); ctx.lineTo(i*W/24,H); ctx.stroke(); }
+        ctx.font='11px sans-serif'; ctx.fillStyle='#dce6ff'; ctx.fillText('🕒',W/2-6,14); return c.toDataURL('image/png'); },
+      'dl-eez':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#0a1626');
+        drawLand(ctx,()=> 'rgba(60,190,255,0.4)');   /* halo = coastline buffer */
+        const c2=cnv(),x2=c2.getContext('2d'); x2.drawImage(c,0,0);
+        x2.filter='blur(3px)'; x2.drawImage(c,0,0); x2.filter='none';
+        drawLand(x2,()=> '#22344c','rgba(120,220,255,0.9)');
+        return c2.toDataURL('image/png'); },
+      'dl-subcables':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; CABLE.forEach(seg=>path(ctx,seg,'#ffd60a',1.2)); return c.toDataURL('image/png'); },
+      'dl-planes':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; path(ctx,[[-74,40.7],[-40,52],[-0.45,51.5]],'#64d2ff',1,[3,2]); path(ctx,[[139.7,35.6],[170,45],[180,48]],'#64d2ff',1,[3,2]); path(ctx,[[-180,48],[-150,45],[-122,37.7]],'#64d2ff',1,[3,2]); dots(ctx,AIRHUB,'#64d2ff',1.8); return c.toDataURL('image/png'); },
+      'dl-ships':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; path(ctx,SEALANE,'#30d158',1.3); dots(ctx,[[4.4,51.9],[32.3,30.6],[56.3,26.6],[103.8,1.3],[121.9,31.2],[-79.7,9.1]],'#30d158',2); return c.toDataURL('image/png'); },
+      'dl-webcams':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; dots(ctx,[[2.3,48.9],[13.4,52.5],[-0.1,51.5],[139.7,35.7],[-74,40.7],[-118.2,34],[151.2,-33.9],[18.4,-33.9],[-43.2,-22.9],[8.5,47.4],[24.9,60.2],[-21.9,64.1]],'#bf5af2',2.2); ctx.font='10px sans-serif'; ctx.fillText('📷',W/2-5,13); return c.toDataURL('image/png'); },
+      'bx-eq':quakes,
+      'l9-dl-aurora':()=>{ const b=base(null,'#060b16'); if(!b) return null; const {c,ctx}=b;
+        ctx.strokeStyle='rgba(60,255,140,0.75)'; ctx.lineWidth=5; ctx.filter='blur(2px)';
+        ctx.beginPath(); ctx.ellipse(X(-40),Y(78),56,13,0.18,0,7); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(X(120),Y(-78)+6,50,10,-0.1,0,7); ctx.stroke(); ctx.filter='none';
+        return c.toDataURL('image/png'); },
+      'beta-dl-volc2':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#ff6b3d';
+        VOLC.forEach(p=>{ const x=X(p[0]),y=Y(p[1]); ctx.beginPath(); ctx.moveTo(x,y-2.6); ctx.lineTo(x-2.4,y+1.8); ctx.lineTo(x+2.4,y+1.8); ctx.closePath(); ctx.fill(); });
+        return c.toDataURL('image/png'); },
+      'l9-dl-dams':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; ctx.fillStyle='#64d2ff'; DAMS.forEach(p=>ctx.fillRect(X(p[0])-2,Y(p[1])-2,4,4)); return c.toDataURL('image/png'); },
+      'beta-dl-dc':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; dots(ctx,DCH,'#0a84ff',2.4); return c.toDataURL('image/png'); },
+      'beta-dl-pharma':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; dots(ctx,PHARMA,'#30d158',2.4); return c.toDataURL('image/png'); },
+      'beta-dl-histb':()=>{ const c=cnv(),ctx=c.getContext('2d'); ctx.fillStyle='#e8dcc0'; ctx.fillRect(0,0,W,H);
+        drawLand(ctx,()=> '#c9b98f','rgba(90,70,40,0.8)'); path(ctx,[[20,55],[30,50],[25,42]],'#7a5c30',1,[3,2]); path(ctx,[[-104,49],[-95,40],[-106,31]],'#7a5c30',1,[3,2]);
+        return c.toDataURL('image/png'); },
+      'beta-dl-ukrfront':()=>{ const cg=window.countryGeo; if(!cg) return null; const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#101b2c');
+        /* zoomed to Ukraine's REAL polygon */ const f=cg.features.find(f2=>String(f2.id)==='UKR'); if(!f) return null;
+        const XX=lng=>(lng-21)/(41-21)*W, YY=lat=>(53.5-lat)/(53.5-44)*H;
+        const draw=poly=>{ const ring=poly&&poly[0]; if(!ring) return; ctx.beginPath(); ring.forEach((p,i)=>{ const x=XX(p[0]),y=YY(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.closePath(); ctx.fillStyle='#2b3f5c'; ctx.fill(); ctx.strokeStyle='#8ea9cc'; ctx.lineWidth=0.8; ctx.stroke(); };
+        const gm=f.geometry; if(gm.type==='Polygon') draw(gm.coordinates); else gm.coordinates.forEach(draw);
+        ctx.beginPath(); [[38.2,49.95],[37.8,48.9],[37.4,47.9],[36.2,47.5],[34.7,47.3],[33.4,46.7]].forEach((p,i)=>{ const x=XX(p[0]),y=YY(p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.strokeStyle='#ff453a'; ctx.lineWidth=2.2; ctx.stroke();
+        return c.toDataURL('image/png'); },
+      'dl-sealevel':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#0c2c4c'); drawLand(ctx,()=> 'rgba(70,160,255,0.35)');
+        const c2=cnv(),x2=c2.getContext('2d'); x2.drawImage(c,0,0); x2.filter='blur(2px)'; x2.drawImage(c,0,0); x2.filter='none'; drawLand(x2,()=> '#22344c');
+        x2.fillStyle='#9bd1ff'; x2.font='700 12px sans-serif'; x2.fillText('+60 m',8,16); return c2.toDataURL('image/png'); },
+      'beta-dl-bldg3d':()=>{ const c=cnv(),ctx=c.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#16202e'); g.addColorStop(1,'#0c1420'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+        for(let i=0;i<16;i++){ const x=12+i*11, h2=14+((i*37)%52), w2=8; ctx.fillStyle='#3d5069'; ctx.fillRect(x,H-18-h2,w2,h2); ctx.fillStyle='#55708f'; ctx.beginPath(); ctx.moveTo(x,H-18-h2); ctx.lineTo(x+4,H-22-h2); ctx.lineTo(x+4+w2,H-22-h2); ctx.lineTo(x+w2,H-18-h2); ctx.closePath(); ctx.fill(); }
+        ctx.fillStyle='#0f1723'; ctx.fillRect(0,H-18,W,18); return c.toDataURL('image/png'); },
+      'beta-dl-spin':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#0b1524'); ctx.beginPath(); ctx.arc(W/2,H/2,40,0,7); ctx.fillStyle='#123a63'; ctx.fill();
+        ctx.save(); ctx.beginPath(); ctx.arc(W/2,H/2,40,0,7); ctx.clip(); ctx.translate(W/2-96,H/2-60); drawLand(ctx,()=> '#2e8b57'); ctx.restore();
+        ctx.strokeStyle='#9bd1ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(W/2,H/2,50,-0.6,0.9); ctx.stroke();
+        ctx.fillStyle='#9bd1ff'; ctx.beginPath(); const a=0.9; const ax=W/2+50*Math.cos(a), ay=H/2+50*Math.sin(a); ctx.moveTo(ax,ay); ctx.lineTo(ax-7,ay-1); ctx.lineTo(ax-1,ay-7); ctx.closePath(); ctx.fill();
+        return c.toDataURL('image/png'); },
+      'dl-wind':()=>{ const b=base(null,'#0d1a2c'); if(!b) return null; const {c,ctx}=b; ctx.strokeStyle='rgba(120,220,180,0.8)'; ctx.lineWidth=1.1;
+        for(let i=0;i<9;i++){ ctx.beginPath(); const y0=10+i*12; ctx.moveTo(4,y0); ctx.bezierCurveTo(W*0.3,y0-9,W*0.6,y0+9,W-6,y0-3); ctx.stroke(); }
+        return c.toDataURL('image/png'); },
+      'dl-contours':()=>{ const c=cnv(),ctx=c.getContext('2d'); ctx.fillStyle='#182636'; ctx.fillRect(0,0,W,H); ctx.strokeStyle='rgba(214,164,110,0.85)'; ctx.lineWidth=0.9;
+        for(let r=8;r<70;r+=8){ ctx.beginPath(); ctx.ellipse(W*0.34,H*0.52,r*1.35,r,0.35,0,7); ctx.stroke(); }
+        for(let r=8;r<46;r+=8){ ctx.beginPath(); ctx.ellipse(W*0.74,H*0.4,r*1.2,r,-0.3,0,7); ctx.stroke(); }
+        return c.toDataURL('image/png'); },
+      'bx-heat':()=>{ const b=base(null,'#0a121f'); if(!b) return null; const {c,ctx}=b;
+        [[35,31.8,26],[30.5,50.4,22],[121,31,18],[-77,38.9,16],[69,34,14],[13.4,52.5,10]].forEach(p=>{ const g=ctx.createRadialGradient(X(p[0]),Y(p[1]),1,X(p[0]),Y(p[1]),p[2]); g.addColorStop(0,'rgba(255,120,40,0.85)'); g.addColorStop(1,'rgba(255,120,40,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),p[2],0,7); ctx.fill(); });
+        return c.toDataURL('image/png'); },
+      'dl-thermal':()=>{ const b=base(null,'#0a121f'); if(!b) return null; const {c,ctx}=b;
+        const belts=[]; for(let i=0;i<70;i++){ const t2=(i*137)%100/100; belts.push([ -20+t2*45, 8-((i*61)%14) ]); }
+        for(let i=0;i<26;i++){ belts.push([-70+((i*53)%30), -5-((i*29)%12)]); belts.push([95+((i*47)%25), 12+((i*31)%10)]); belts.push([115+((i*67)%35), -55+((i*23)%20)*0.4+42]); }
+        belts.forEach(p=>{ ctx.fillStyle='rgba(255,'+(90+Math.floor(Math.random()*80))+',30,0.85)'; ctx.fillRect(X(p[0]),Y(p[1]),1.6,1.6); });
+        return c.toDataURL('image/png'); },
+      'beta-dl-precip':()=>gradField([[0,'#7f5539'],[0.28,'#c2a878'],[0.46,'#1d5f8a'],[0.55,'#0a3d67'],[0.66,'#1d5f8a'],[0.82,'#c2a878'],[1,'#7f5539']]),
+      'eco-dl-ecoregions':()=>{ const b=base(cd=>null); if(!b) return null; const {c,ctx}=b;
+        const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#dfeef7'); g.addColorStop(0.2,'#3f7a4e'); g.addColorStop(0.42,'#8fae5c'); g.addColorStop(0.52,'#2e8b57'); g.addColorStop(0.62,'#c9b25e'); g.addColorStop(0.8,'#7fae7a'); g.addColorStop(1,'#e8f2f8');
+        ctx.globalCompositeOperation='source-atop'; /* keep only over land */ const c2=cnv(),x2=c2.getContext('2d'); ocean(x2,'#0e1a2b'); x2.save(); x2.beginPath();
+        window.countryGeo.features.forEach(f=>{ const gm=f.geometry; if(!gm) return; const dr=poly=>{ const ring=poly&&poly[0]; if(!ring) return; x2.moveTo(X(ring[0][0]),Y(ring[0][1])); for(let i=1;i<ring.length;i++) x2.lineTo(X(ring[i][0]),Y(ring[i][1])); x2.closePath(); }; if(gm.type==='Polygon') dr(gm.coordinates); else gm.coordinates.forEach(dr); });
+        x2.clip(); x2.fillStyle=g; x2.fillRect(0,0,W,H); x2.restore(); return c2.toDataURL('image/png'); },
+      'eco-dl-plates':()=>{ const b=base(); if(!b) return null; const {c,ctx}=b; const col='#ff9f0a';
+        path(ctx,[[-28,65],[-33,50],[-40,30],[-33,10],[-15,-10],[-15,-35],[-20,-55]],col,1.4);
+        path(ctx,[[142,50],[145,40],[142,32],[128,10],[125,-5]],col,1.4); path(ctx,[[-125,48],[-122,37],[-110,23],[-104,18]],col,1.4);
+        path(ctx,[[-80,0],[-75,-20],[-72,-40],[-74,-52]],col,1.4); path(ctx,[[60,25],[70,15],[90,10],[105,0],[120,-8]],col,1.4);
+        return c.toDataURL('image/png'); },
+      'beta-dl-cat-religion':()=>{ const b=base(cd=>null); if(!b) return null; const {c}=b; const ctx=c.getContext('2d');
+        const REG=(cx,cy)=>{ /* rough real macro-regions by centroid */ };
+        const col=(cd,f)=>{ try{ const gm=f.geometry; let p=(gm.type==='Polygon'?gm.coordinates[0][0]:gm.coordinates[0][0][0]); const lg=p[0],la=p[1];
+          if(lg>-30&&lg<62&&la>3&&la<48&&!(lg>-12&&lg<45&&la>35)) return '#2e9e5b';       /* MENA/W-Asia */
+          if(lg>60&&lg<93&&la>5&&la<36) return '#ff9f0a';                                  /* South Asia */
+          if(lg>93&&lg<145&&la>18) return '#c94f4f';                                       /* East Asia */
+          if(lg>93&&lg<142&&la<=18&&la>-12) return '#2e9e5b';                              /* maritime SEA */
+          return '#4a7dd1'; }catch(_){ return '#4a7dd1'; } };
+        ocean(ctx); drawLand(ctx,(cd,f)=>col(cd,f)); return c.toDataURL('image/png'); },
+      'beta-dl-cat-language':()=>{ const b=base(cd=>null); if(!b) return null; const {c}=b; const ctx=c.getContext('2d');
+        const col=(cd,f)=>{ try{ const gm=f.geometry; let p=(gm.type==='Polygon'?gm.coordinates[0][0]:gm.coordinates[0][0][0]); const lg=p[0],la=p[1];
+          if(lg<-30) return '#bf5af2'; if(lg>-30&&lg<62&&la>3&&la<40) return '#2e9e5b'; if(lg>60&&lg<93&&la>5) return '#ff9f0a'; if(lg>93&&la>18) return '#c94f4f'; return '#4a7dd1'; }catch(_){ return '#4a7dd1'; } };
+        ocean(ctx); drawLand(ctx,(cd,f)=>col(cd,f)); return c.toDataURL('image/png'); }
+    };
+    /* ECMWF model fields — clearly stylised representative fields (om:// tiles can't be sampled as an <img>) */
+    const ECF={
+      'dl-ec-temp':()=>gradField([[0,'#7bb1f0'],[0.35,'#9fd08f'],[0.55,'#ffd23f'],[0.78,'#ff8c42'],[1,'#e0452f']]),
+      'dl-temp-x':null,
+      'dl-ec-precip':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#13233a'); drawLand(ctx,null);
+        [[10,50,26],[92,22,22],[-62,-3,28],[120,10,20],[-78,45,16]].forEach(p=>{ const g=ctx.createRadialGradient(X(p[0]),Y(p[1]),2,X(p[0]),Y(p[1]),p[2]); g.addColorStop(0,'rgba(64,156,255,0.9)'); g.addColorStop(1,'rgba(64,156,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),p[2],0,7); ctx.fill(); });
+        return c.toDataURL('image/png'); },
+      'dl-ec-wind':()=>{ const b=base(null,'#0d1a2c'); if(!b) return null; const {c,ctx}=b; ctx.strokeStyle='#7fe3b0'; ctx.fillStyle='#7fe3b0'; ctx.lineWidth=1;
+        for(let gx2=14;gx2<W;gx2+=24) for(let gy=14;gy<H;gy+=22){ const a=Math.sin(gx2*0.05)+Math.cos(gy*0.07); ctx.save(); ctx.translate(gx2,gy); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-5,0); ctx.lineTo(5,0); ctx.lineTo(2,-2.4); ctx.moveTo(5,0); ctx.lineTo(2,2.4); ctx.stroke(); ctx.restore(); }
+        return c.toDataURL('image/png'); },
+      'dl-ec-cloud':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#25303f'); drawLand(ctx,null);
+        [[0,48,30],[95,28,24],[-70,0,30],[140,-8,22],[-130,40,26],[25,-15,18]].forEach(p=>{ const g=ctx.createRadialGradient(X(p[0]),Y(p[1]),2,X(p[0]),Y(p[1]),p[2]); g.addColorStop(0,'rgba(235,240,248,0.92)'); g.addColorStop(1,'rgba(235,240,248,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),p[2],0,7); ctx.fill(); });
+        return c.toDataURL('image/png'); },
+      'dl-ec-dew':()=>gradField([[0,'#274a63'],[0.4,'#2e7f76'],[0.62,'#4db6a0'],[1,'#b6f0d7']]),
+      'dl-ec-isobars':()=>{ const b=base(null,'#0f1c2e'); if(!b) return null; const {c,ctx}=b; ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=0.9;
+        for(let r=8;r<62;r+=9){ ctx.beginPath(); ctx.ellipse(W*0.32,H*0.42,r*1.5,r,0.15,0,7); ctx.stroke(); }
+        for(let r=9;r<44;r+=9){ ctx.beginPath(); ctx.ellipse(W*0.78,H*0.6,r*1.3,r,-0.2,0,7); ctx.stroke(); }
+        ctx.fillStyle='#64d2ff'; ctx.font='700 12px sans-serif'; ctx.fillText('L',W*0.32-4,H*0.42+4); ctx.fillStyle='#ff8c8c'; ctx.fillText('H',W*0.78-4,H*0.6+4);
+        return c.toDataURL('image/png'); },
+      'dl-ec-slp':()=>gradField([[0,'#3b5bd6'],[0.45,'#8fb4e8'],[0.6,'#f2e4c2'],[1,'#e0452f']]),
+      'dl-ec-cape':()=>{ const c=cnv(),ctx=c.getContext('2d'); ocean(ctx,'#1a2230'); drawLand(ctx,null);
+        [[-95,35,26],[-58,-25,20],[88,24,18],[12,4,16],[135,-15,14]].forEach(p=>{ const g=ctx.createRadialGradient(X(p[0]),Y(p[1]),2,X(p[0]),Y(p[1]),p[2]); g.addColorStop(0,'rgba(255,90,30,0.9)'); g.addColorStop(0.6,'rgba(255,170,40,0.55)'); g.addColorStop(1,'rgba(255,170,40,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(p[0]),Y(p[1]),p[2],0,7); ctx.fill(); });
+        return c.toDataURL('image/png'); },
+      'dl-ec-sst':()=>{ const c=cnv(),ctx=c.getContext('2d'); const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#3b4fd6'); g.addColorStop(0.34,'#2f9ecf'); g.addColorStop(0.52,'#f0c93f'); g.addColorStop(0.68,'#e2622f'); g.addColorStop(0.84,'#2f9ecf'); g.addColorStop(1,'#3b4fd6'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+        drawLand(ctx,()=> '#22344c'); return c.toDataURL('image/png'); }
+    };
+    Object.assign(PAINT,ECF);
+    /* ---- resolver: apply a preview to an element (sync when possible, async upgrade otherwise) ---- */
+    const _needGeo=[];
+    function _geoReady(){ try{ return !!(window.countryGeo&&window.countryGeo.features&&typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length); }catch(_){ return false; } }
+    function _kickGeo(){ if(_kickGeo._d) return; _kickGeo._d=1; try{ if(typeof loadCountryData==='function') loadCountryData().then(()=>{ const q=_needGeo.splice(0); q.forEach(fn=>{ try{ fn(); }catch(_){} }); }); }catch(_){} }
+    function grad(label){ let h=0; for(let i=0;i<label.length;i++){ h=(h*31+label.charCodeAt(i))>>>0; } const h1=h%360,h2=(h1+42)%360; return 'linear-gradient(135deg,hsl('+h1+',42%,40%),hsl('+h2+',48%,28%))'; }
+    function apply(el,url){ el.style.backgroundImage='url("'+url+'"), '+grad(el.dataset.pn||''); el.classList.add('has-prev'); }
+    function into(el,id,label){ el.dataset.pn=label||id;
+      if(cache[id]){ apply(el,cache[id]); return; }
+      el.style.backgroundImage=grad(label||id);   /* placeholder until the real preview lands */
+      const store=u=>{ if(u){ cache[id]=u; apply(el,u); } };
+      if(IMG[id]){ store(IMG[id]); return; }      /* direct example tile (browser caches it) */
+      if(id==='dl-radar'){ radarURL().then(u=>{ if(u) store(u); }); return; }
+      const geoJob=(fn)=>{ if(_geoReady()){ try{ store(fn()); }catch(_){} } else { _needGeo.push(()=>{ try{ const u=fn(); if(u){ cache[id]=u; apply(el,u); } }catch(_){} }); _kickGeo(); } };
+      if(STAT[id]){ geoJob(()=>statChoro(STAT[id])); return; }
+      if(MEMBERS[id]){ geoJob(()=>memberMap(MEMBERS[id])); return; }
+      if(WBP[id]){ /* lazy: only fetch when the tile is actually visible */
+        _observe(el,()=>{ const run=()=>wbChoro(WBP[id]).then(u=>{ if(u){ cache[id]=u; apply(el,u); } });
+          if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); } });
+        return; }
+      const gk=(el.dataset.gk||id);
+      let db=null; try{ db=geoLayersDB&&geoLayersDB[gk]; }catch(_){}
+      if(db){ geoJob(()=>geoDBPrev(gk)); return; }
+      if(PAINT[id]){ const fn=PAINT[id];
+        const run=()=>{ const u=fn(); if(u&&u.then){ u.then(v=>{ if(v){ cache[id]=v; apply(el,v); } }); } else if(u){ cache[id]=u; apply(el,u); } };
+        if(_geoReady()) run(); else { _needGeo.push(run); _kickGeo(); }
+        return; }
+      /* nothing matched → labelled gradient stays (should be near-zero rows) */ }
+    let _io=null; const _ioMap=new WeakMap();
+    function _observe(el,fn){ if(!('IntersectionObserver' in window)){ fn(); return; }
+      if(!_io){ _io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting){ const f=_ioMap.get(e.target); if(f){ _ioMap.delete(e.target); _io.unobserve(e.target); try{ f(); }catch(_){} } } }); },{root:null,rootMargin:'160px'}); }
+      _ioMap.set(el,fn); _io.observe(el); }
+    return { into };
+  })();
   window.IntMapLayerSidebar=(function(){
     let sb=null,built=false;
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
     const T=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
-    /* (#R63) REAL preview imagery, expanded ("画像といってるやろが"): live tiles for every raster layer with a
-       stable keyless endpoint, a dynamic RainViewer radar tile, and true MINI-CHOROPLETH canvases (drawn from
-       countryGeo + the real per-country values) for the statistical layers. Gradient+icon remains ONLY for rows
-       with no drawable imagery (pure vector overlays). */
-    const GIBS=(id,date,lvl)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+date+'/GoogleMapsCompatible_Level'+lvl+'/2/1/1.png';
-    const LSR_THUMBS={
-      'dl-relief':{img:'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/2/1/1'},
-      'dl-hillshade':{img:'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/2/1/1'},
-      'dl-nightsat':{img:GIBS('VIIRS_Black_Marble','2016-01-01',8)},
-      'dl-popgrid':{img:GIBS('GPW_Population_Density_2020','2020-01-01',7)},
-      'dl-snow':{img:GIBS('MODIS_Terra_NDSI_Snow_Cover','2023-01-15',8)},
-      'dl-sst':{img:GIBS('GHRSST_L4_MUR_Sea_Surface_Temperature','2023-07-04',7)},
-      'dl-aod':{img:GIBS('MODIS_Combined_Value_Added_AOD','2023-07-04',6)},
-      'gx-gxndvi':{img:GIBS('MODIS_Terra_NDVI_8Day','2023-07-04',9)},
-      'gx-gxchlor':{img:GIBS('MODIS_Aqua_Chlorophyll_A','2023-07-04',7)},
-      'gx-gxseaice':{img:GIBS('AMSRU2_Sea_Ice_Concentration_12km','2023-01-15',6)},
-      'cb-rail2':{img:'https://a.tiles.openrailwaymap.org/standard/2/1/1.png'},
-      'dl-climate':{img:'koppen_mercator_1991-2020_4k.png'}
-    };
-    let _radarThumb=null;   /* RainViewer needs a live timestamp */
-    async function radarThumb(){ if(_radarThumb!==null) return _radarThumb; _radarThumb='';
-      try{ const r=await fetch('https://api.rainviewer.com/public/weather-maps.json'); const j=await r.json();
-        const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null;
-        if(p) _radarThumb=(j.host||'https://tilecache.rainviewer.com')+p+'/256/2/1/1/2/1_1.png'; }catch(_){}
-      return _radarThumb; }
-    /* true mini-choropleths for the statistical layers (drawn from the REAL data) */
-    const MINI_METRICS={'dl-pop':{g:s=>s.density,log:1},'dl-gdppc':{g:s=>s.gdppc,log:1},'dl-hdi':{g:s=>s.hdi},'dl-tfr':{g:s=>s.tfr},'dl-dem':{g:s=>s.dem},'dl-milSpend':{g:s=>s.milSpend,log:1}};
-    const _miniCache={};
-    function miniChoro(id){ try{ const spec=MINI_METRICS[id]; if(!spec) return null; if(_miniCache[id]) return _miniCache[id];
-      const cg=window.countryGeo; if(!cg||!cg.features||typeof countryStats==='undefined'||!countryStats) return null;
-      const W=76,H=44,cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
-      ctx.fillStyle='#101c2c'; ctx.fillRect(0,0,W,H);
-      const vals=[]; for(const cd in countryStats){ let v=spec.g(countryStats[cd]); if(v==null||isNaN(v)) continue; if(spec.log){ if(v<=0) continue; v=Math.log(v); } vals.push(v); }
-      if(vals.length<5) return null; const lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), span=(hi-lo)||1;
-      const R5=['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'];
-      const X=lng=>(lng+180)/360*W, Y=lat=>(72-lat)/130*H;
-      cg.features.forEach(f=>{ const s2=countryStats[String(f.id)]; const gm=f.geometry; if(!gm) return;
-        let col='#1b2a3d'; if(s2){ let v=spec.g(s2); if(v!=null&&!isNaN(v)&&(!spec.log||v>0)){ if(spec.log) v=Math.log(v); const t2=Math.max(0,Math.min(0.999,(v-lo)/span)); col=R5[Math.floor(t2*5)]; } }
-        ctx.fillStyle=col;
-        const draw=poly=>{ const ring=poly&&poly[0]; if(!ring||ring.length<3) return; ctx.beginPath(); for(let i=0;i<ring.length;i++){ const x=X(ring[i][0]),y=Y(ring[i][1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); } ctx.closePath(); ctx.fill(); };
-        if(gm.type==='Polygon') draw(gm.coordinates); else if(gm.type==='MultiPolygon') gm.coordinates.forEach(draw); });
-      _miniCache[id]=cv.toDataURL('image/png'); return _miniCache[id]; }catch(_){ return null; } }
+    /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
+       UIで作り直せ。タイル形式にして"): the sidebar no longer adopts/reparents #layer-dropdown. It is its own
+       TILE GRID — every layer row of the classic panel becomes a visual tile (preview image via
+       IntMapLayerPreviews, full name, ✓ active state, ★ favorite), grouped under the same category headers,
+       with live search. The classic dropdown stays untouched in its home (hidden) and remains the single
+       source of truth: a tile click toggles the REAL checkbox and dispatches its change event, so every
+       existing layer engine, legend, Active-layers chip and Atlas action keeps working unchanged. */
     function css(){ const st=document.createElement('style');
       /* (#R66) DECOUPLED layout ("右サイドバーそのものが覆いかぶさる" report): the MAP cedes the strip itself —
          `.map-container{margin-right:var(--lsr-w)}` (also set INLINE by open()) — and the sidebar merely fills
@@ -6508,21 +6817,28 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#layer-sidebar-r .lsr-head b{font-size:16px;color:var(--text-main);}'
         +'#layer-sidebar-r .lsr-x{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;border-radius:8px;padding:2px 8px;}'
         +'#layer-sidebar-r .lsr-x:hover{background:var(--input-bg);color:var(--text-main);}'
-        /* (#R65) ONE search field: the dropdown's own #layer-search-wrap (it filters every row type,
-           incl. .lyr-row wrappers) — the sidebar's duplicate pill was the "two stacked search boxes" jank. */
-        +'#layer-sidebar-r .lsr-search{display:none;}'
+        /* (#R70) the sidebar's OWN search pill (it filters the tile grid — the classic dropdown is untouched) */
+        +'#layer-sidebar-r .lsr-search{display:block;padding:2px 14px 10px;}'
         +'#layer-sidebar-r .lsr-search input{width:100%;box-sizing:border-box;height:36px;border-radius:18px;border:1px solid rgba(128,128,128,0.28);background:var(--card-bg);color:var(--text-main);font-size:12.5px;padding:0 14px;outline:none;}'
         +'#layer-sidebar-r .lsr-search input:focus{border-color:var(--primary-color);}'
-        +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 10px 24px;min-height:0;}'
-        /* (#R65) overflow:visible is CRITICAL: .layer-dropdown keeps overflow-y:auto, which made the dropdown
-           (not .lsr-body) the sticky containing scroller → the Active-layers bar never stuck in right mode. */
-        +'#layer-dropdown.lsr-mode{position:static !important;display:block !important;width:auto !important;max-width:none !important;max-height:none !important;overflow:visible !important;box-shadow:none !important;background:transparent !important;border:none !important;margin:0 !important;padding:0 4px !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;}'
-        +'#layer-dropdown.lsr-mode label.layer-option{display:flex;align-items:center;gap:10px;padding:6px 9px;border-radius:12px;margin:2px 0;transition:background .15s ease;}'
-        +'#layer-dropdown.lsr-mode label.layer-option:hover{background:rgba(120,120,128,0.12);}'
-        +'.lsr-thumb{display:none;}'
-        +'#layer-dropdown.lsr-mode .lsr-thumb{display:flex;align-items:center;justify-content:center;width:44px;height:30px;flex:0 0 44px;border-radius:7px;background-size:cover;background-position:center;font-size:15px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.45);border:1px solid rgba(128,128,128,0.25);overflow:hidden;}'
-        /* (#R63) keep the Active-layers sticky bar fully functional inside the right sidebar */
-        +'#layer-dropdown.lsr-mode #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -4px 6px;border-radius:0;}'
+        +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 12px 24px;min-height:0;}'
+        /* (#R70) TILE GRID */
+        +'#layer-sidebar-r .lst-sech{font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--text-muted);margin:16px 2px 8px;display:flex;align-items:center;gap:8px;}'
+        +'#layer-sidebar-r .lst-sech::after{content:"";flex:1;height:1px;background:rgba(128,128,128,0.18);}'
+        +'#layer-sidebar-r .lst-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}'
+        +'#layer-sidebar-r .lst-tile{position:relative;border-radius:14px;overflow:hidden;border:1.5px solid rgba(128,128,128,0.22);cursor:pointer;background:var(--card-bg);transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease;-webkit-tap-highlight-color:transparent;}'
+        +'#layer-sidebar-r .lst-tile:hover{transform:translateY(-1.5px);box-shadow:0 6px 18px rgba(0,0,0,0.22);border-color:rgba(128,128,128,0.42);}'
+        +'#layer-sidebar-r .lst-tile.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color),0 6px 16px rgba(10,132,255,0.25);}'
+        +'#layer-sidebar-r .lst-prev{aspect-ratio:16/10;background-size:cover;background-position:center;background-color:#14212f;}'
+        +'#layer-sidebar-r .lst-nm{padding:6px 9px 8px;font-size:11.5px;line-height:1.34;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px;box-sizing:content-box;}'
+        +'#layer-sidebar-r .lst-check{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:var(--primary-color);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 1px 5px rgba(0,0,0,0.4);pointer-events:none;}'
+        +'#layer-sidebar-r .lst-tile.on .lst-check{display:flex;}'
+        +'#layer-sidebar-r .lst-star{position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(10,14,22,0.45);color:rgba(255,255,255,0.75);font-size:12px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}'
+        +'#layer-sidebar-r .lst-tile:hover .lst-star,#layer-sidebar-r .lst-star.on{display:flex;}'
+        +'#layer-sidebar-r .lst-star.on{color:#ffd60a;}'
+        +'#layer-sidebar-r .lst-empty{color:var(--text-muted);font-size:12px;padding:18px 4px;text-align:center;}'
+        /* Active-layers bar pinned at the top of the tile browser */
+        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -12px 4px;border-radius:0;}'
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
         +'#lsr-toggle{position:fixed;top:50%;right:0;z-index:1460;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,0.18);border-right:none;color:var(--text-muted);width:22px;height:64px;padding:0;border-radius:10px 0 0 10px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:-4px 0 16px rgba(0,0,0,0.12);transition:right 0.38s cubic-bezier(0.25,1,0.5,1),background .2s,color .2s;transform:translateY(-50%);}'
         +'body.lsr-avail #lsr-toggle{display:flex;}'
@@ -6540,47 +6856,66 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R64) live INSIDE the app shell flex row (last child) so opening pushes the map like the left sidebar */
       (document.querySelector('.operation-room')||document.body).appendChild(sb);
       sb.querySelector('.lsr-x').onclick=close;
-      sb.querySelector('#lsr-q').addEventListener('input',filter);
+      sb.querySelector('#lsr-q').addEventListener('input',filterTiles);
       sb.addEventListener('click',e=>e.stopPropagation());
+      /* keep every tile's ✓ in sync with its real checkbox, whoever toggles it (classic panel, Atlas, legends) */
+      document.addEventListener('change',e=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox'||!sb) return; if(!t2.closest||!t2.closest('#layer-dropdown')) return;
+        const id=t2.id||t2.getAttribute('data-layer'); if(!id) return;
+        const tile=sb.querySelector('.lst-tile[data-lid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]'); if(tile) tile.classList.toggle('on',t2.checked); }catch(_){} });
       /* (#R63) left-style edge toggle button (open AND close, like the left sidebar's chevron) */
       const tg=document.createElement('button'); tg.id='lsr-toggle'; tg.title='Layers'; tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
       document.body.appendChild(tg); }
-    function adopt(){ const dd=document.getElementById('layer-dropdown'); if(!dd||!sb) return;
-      if(!dd.__home && dd.parentNode){ const c=document.createComment('home'); dd.parentNode.insertBefore(c,dd); dd.__home=c; }
-      const host=sb.querySelector('.lsr-body'); if(dd.parentElement!==host) host.appendChild(dd);
-      dd.classList.add('show'); dd.classList.add('lsr-mode');
-      dd.style.top=''; dd.style.right=''; dd.style.left=''; dd.style.marginTop=''; dd.style.zIndex=''; }
-    function release(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return;
-      dd.classList.remove('lsr-mode'); dd.classList.remove('show');
-      try{ if(dd.__home&&dd.__home.parentNode&&dd.parentElement!==dd.__home.parentNode) dd.__home.parentNode.insertBefore(dd,dd.__home); }catch(_){} }
-    function setThumb(th,id,label){
-      const grad=()=>{ let h=0; for(let i=0;i<label.length;i++){ h=(h*31+label.charCodeAt(i))>>>0; } const h1=h%360,h2=(h1+42)%360; return 'linear-gradient(135deg,hsl('+h1+',48%,48%),hsl('+h2+',54%,34%))'; };
-      const spec=LSR_THUMBS[id]; th.textContent='';
-      if(spec&&spec.img){ th.dataset.kind='img'; th.style.background=grad(); th.style.backgroundImage='url("'+spec.img+'"), '+grad(); th.style.backgroundSize='cover'; return; }
-      if(id==='dl-radar'){ th.dataset.kind='img'; th.style.background=grad(); radarThumb().then(u=>{ if(u){ th.style.backgroundImage='url("'+u+'"), linear-gradient(135deg,#123,#245)'; th.style.backgroundSize='cover'; } }); return; }
-      const mini=miniChoro(id);
-      if(mini){ th.dataset.kind='mini'; th.style.background=''; th.style.backgroundImage='url("'+mini+'")'; th.style.backgroundSize='cover'; return; }
-      th.dataset.kind=MINI_METRICS[id]?'grad-pending':'grad';
-      th.style.backgroundImage=''; th.style.background=grad();
-      let em=null; try{ em=(label.match(/\p{Extended_Pictographic}/u)||[])[0]; }catch(_){}
-      th.textContent=em||'▦'; }
-    function decorate(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return;
-      dd.querySelectorAll('label.layer-option').forEach(lab=>{ try{
-        const cb=lab.querySelector('input[type=checkbox],input[type=radio]');
-        const label=(lab.textContent||'').replace(/\s+/g,' ').trim(); if(!label) return;
-        const id=(cb&&(cb.id||(cb.getAttribute&&cb.getAttribute('data-layer'))))||'';
-        let th=lab.querySelector('.lsr-thumb');
-        if(th){ if(th.dataset.kind==='grad-pending'){ setThumb(th,id,label); } return; }   /* upgrade once countryGeo arrives */
-        th=document.createElement('span'); th.className='lsr-thumb'; th.setAttribute('aria-hidden','true');
-        setThumb(th,id,label);
-        if(cb&&cb.nextSibling) lab.insertBefore(th,cb.nextSibling); else if(cb) lab.appendChild(th); else lab.insertBefore(th,lab.firstChild);
-      }catch(_){} });
-      /* stat-layer mini-choropleths need countryGeo — load it once, then upgrade the pending squares */
-      try{ if(!window.countryGeo&&typeof loadCountryData==='function'&&!decorate._kick){ decorate._kick=1; loadCountryData().then(()=>{ try{ decorate(); }catch(_){} }); } }catch(_){} }
-    function filter(){ const q=((sb&&sb.querySelector('#lsr-q').value)||'').toLowerCase().trim(); const dd=document.getElementById('layer-dropdown'); if(!dd) return;
-      dd.querySelectorAll('label.layer-option').forEach(lab=>{ const t2=(lab.textContent||'').toLowerCase(); lab.style.display=(!q||t2.indexOf(q)>=0)?'':'none'; }); }
-    function open(){ if(isMob()) return; build(); try{ adopt(); }catch(_){} try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} try{ decorate(); }catch(_){}
+    /* ---- (#R70) tile-grid builder: the classic dropdown is the data source, never the UI ---- */
+    function rowsFromDropdown(){ const dd=document.getElementById('layer-dropdown'); const out=[]; if(!dd) return out;
+      let sec='';
+      const skipIn=el=>el.closest&&(el.closest('#layer-active-section')||el.closest('#layer-fav-section')||el.closest('#layer-search-wrap')||el.closest('#layer-tools'));
+      const walk=(el)=>{ for(const ch of el.children){ if(skipIn(ch)) continue;
+        if(ch.classList&&(ch.classList.contains('lyr-head')||ch.classList.contains('lyr-section-label'))){ const t2=(ch.textContent||'').replace(/\s+/g,' ').trim(); if(t2) sec=t2; continue; }
+        if(ch.matches&&ch.matches('label')){ const cb=ch.querySelector('input[type=checkbox]');
+          if(cb){ const sp=ch.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)');
+            const name=((sp?sp.textContent:ch.textContent)||'').replace(/★/g,'').replace(/\s+/g,' ').trim();
+            const id=cb.id||cb.getAttribute('data-layer')||'';
+            if(name&&id) out.push({cb,id,name,sec,gk:cb.getAttribute('data-layer')||''}); }
+          continue; }
+        if(ch.children&&ch.children.length) walk(ch); } };
+      walk(dd); return out; }
+    function tileFor(r){ const d=document.createElement('div'); d.className='lst-tile'+(r.cb.checked?' on':''); d.dataset.lid=r.id; d.dataset.nm=r.name.toLowerCase();
+      const pv=document.createElement('div'); pv.className='lst-prev'; if(r.gk) pv.dataset.gk=r.gk;
+      try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.into(pv,r.id,r.name); }catch(_){}
+      const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=r.name; nm.title=r.name;
+      const ck=document.createElement('span'); ck.className='lst-check'; ck.textContent='✓';
+      d.appendChild(pv); d.appendChild(nm); d.appendChild(ck);
+      /* ★ favorite — the SAME store as the classic panel (imLayerFavs), mirrored both ways */
+      try{ if(typeof layerCbInfo==='function'&&Array.isArray(window.imLayerFavs)){ const info=layerCbInfo(r.cb);
+        if(info){ const st=document.createElement('button'); st.className='lst-star'+(window.imLayerFavs.includes(info.key)?' on':''); st.type='button'; st.textContent='★'; st.title='Favorite';
+          st.onclick=(e)=>{ e.preventDefault(); e.stopPropagation();
+            const i=window.imLayerFavs.indexOf(info.key); if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);
+            st.classList.toggle('on');
+            try{ saveSettings(); }catch(_){} try{ renderLayerFavs(); }catch(_){}
+            try{ const cls=document.querySelector('#layer-dropdown .lyr-star[data-key="'+info.key+'"]'); if(cls) cls.classList.toggle('on',st.classList.contains('on')); }catch(_){} };
+          d.appendChild(st); } } }catch(_){}
+      d.addEventListener('click',()=>{ try{ r.cb.checked=!r.cb.checked; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+        d.classList.toggle('on',r.cb.checked); });
+      return d; }
+    function buildTiles(){ if(!sb) return; const bodyEl=sb.querySelector('.lsr-body'); if(!bodyEl) return;
+      const rows=rowsFromDropdown(); if(!rows.length) return;
+      const root=document.createElement('div'); root.id='lst-root';
+      const basics=T('Base map & labels','基本表示','Grundkarte & Labels','Основа и подписи','Base y etiquetas');
+      let curSec=null,curGrid=null;
+      rows.forEach(r=>{ const secName=r.sec||basics;
+        if(secName!==curSec){ curSec=secName;
+          const h=document.createElement('div'); h.className='lst-sech'; h.textContent=secName; root.appendChild(h);
+          curGrid=document.createElement('div'); curGrid.className='lst-grid'; root.appendChild(curGrid); }
+        curGrid.appendChild(tileFor(r)); });
+      const old=sb.querySelector('#lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
+      filterTiles(); }
+    function filterTiles(){ if(!sb) return; const q=(((sb.querySelector('#lsr-q')||{}).value)||'').toLowerCase().trim();
+      const root=sb.querySelector('#lst-root'); if(!root) return;
+      root.querySelectorAll('.lst-grid').forEach(g=>{ let vis=0;
+        g.querySelectorAll('.lst-tile').forEach(t2=>{ const show=!q||t2.dataset.nm.indexOf(q)>=0; t2.style.display=show?'':'none'; if(show) vis++; });
+        g.style.display=vis?'':'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; }); }
+    function open(){ if(isMob()) return; build(); try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ buildTiles(); }catch(_){}
       /* (#R66) dynamic width: the map ALWAYS keeps ≥320px when geometrically possible — on a narrow window or
          with a widened left sidebar, a fixed 430px panel swallowed the map ("覆いかぶさる" perception). */
       try{ const ls=document.getElementById('sidebar');
@@ -6592,16 +6927,20 @@ window.addEventListener('DOMContentLoaded', () => {
          math), the panel just slides into the vacated strip. Neither depends on the other. */
       sb.style.transform='translateX(0)'; sb.style.visibility='visible'; sb.style.pointerEvents='auto';
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight='var(--lsr-w)'; }catch(_){}
-      setTimeout(()=>{ try{ decorate(); }catch(_){} },400);
+      /* the Active-layers bar re-homes to the top of the tile browser (returns to the dropdown on close) */
+      try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
+      /* rows built by late modules (eco/l9/beta, ~1.5 s) — one deferred rebuild picks them up */
+      setTimeout(()=>{ try{ if(sb.classList.contains('open')&&sb.querySelectorAll('.lst-tile').length<rowsFromDropdown().length) buildTiles(); }catch(_){} },900);
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
     function close(){ if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
+      try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
-    function apply(){ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail'); open(); } else { close(); release(); document.body.classList.remove('lsr-avail'); } }
+    function apply(){ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail'); open(); } else { close(); document.body.classList.remove('lsr-avail'); } }
     setTimeout(()=>{ try{ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail'); } }catch(_){} },1500);   /* edge toggle available on boot in right mode (without auto-opening) */
     return { open, close, toggle, apply };
   })();
@@ -7642,22 +7981,25 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ===== Stats — list with multi-select country comparison ===== */
-  let compareSet=new Set(), compareShown=false;
+  /* (#R70) ONE comparison system ("似た機能なのに別の場所にあって分かりづらい"): clicking country rows still
+     builds the selection (the dock below), but "view comparison" now opens the UNIFIED IntMapStatsCompare
+     (bar chart default ⇄ time-series ⇄ free table) — the old separate static-bar page is merged into it.
+     Selection cap raised 3→5 to match. */
+  let compareSet=new Set();
   window.setStatsSort=function(k){ statsSort=k; renderStats(searchVal()); };
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
      position) — only the row outline + the fixed bottom panel update (#26). */
   window._toggleCompare=function(code){
     if(compareSet.has(code)) compareSet.delete(code);
-    else if(compareSet.size<3) compareSet.add(code);
+    else if(compareSet.size<5) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
     document.querySelectorAll('#live-news-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
-    if(compareSet.size<2) compareShown=false;
     renderCompareFixed();
   };
-  window._clearCompare=function(){ compareSet.clear(); compareShown=false; document.querySelectorAll('#live-news-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); };
-  window._showCompare=function(){ if(compareSet.size<2) return; compareShown=true; renderCompareView(); renderCompareFixed(); };
-  window._hideCompare=function(){ compareShown=false; renderStats(searchVal()); };
-  window._backToStats=function(){ compareShown=false; renderStats(searchVal()); };
+  window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#live-news-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); };
+  window._showCompare=function(){ if(compareSet.size<2) return; try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} };
+  window._hideCompare=function(){ renderStats(searchVal()); };
+  window._backToStats=function(){ renderStats(searchVal()); };
   function renderStats(q){
     const feed=document.getElementById('live-news-feed'); clearMarkers();
     /* (#R69) the 5-country comparison view owns the feed while it is open — a deferred renderStats (e.g. the
@@ -7673,8 +8015,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const sb=(k,lbl)=>`<button class="stats-sort ${statsSort===k?'active':''}" onclick="setStatsSort('${k}')">${lbl}</button>`;
     /* Compare selection now lives in the fixed bottom panel (#26), not in the scrolling list. */
     let html=`<div class="stats-toolbar">${sb('gdp',t('sortGdp'))}${sb('pop',t('sortPop'))}${sb('area',t('sortArea'))}${sb('hdi',t('sortHDI'))}${sb('milSpend',t('sortMil'))}${sb('name',t('sortName'))}</div>`;
-    /* (#R62) entry to the rebuilt 5-country comparison */
-    html+=`<button class="ai-test-btn" style="width:100%;margin:2px 0 8px;" onclick="try{window.IntMapStatsCompare&&window.IntMapStatsCompare.open()}catch(e){}">📊 ${currentLang==='jp'?'国を比較（最大5か国）':currentLang==='de'?'Länder vergleichen (bis zu 5)':currentLang==='ru'?'Сравнить страны (до 5)':currentLang==='es'?'Comparar países (hasta 5)':'Compare countries (up to 5)'}</button>`;
+    /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
+       build the selection and the dock's view button opens the unified comparison. */
     if(arr.length===0) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
     arr.forEach(s=>{
       let sub='—', lbl='';
@@ -7702,73 +8044,22 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Fixed bottom comparison panel (#26) — stays put while the country list scrolls. */
   function renderCompareFixed(){
     const panel=document.getElementById('stats-compare-fixed'); if(!panel) return;
-    /* When the full comparison page is open the bottom dock hides — the comparison occupies the
-       whole content area instead of a half-open panel that covers the list (#17). */
-    panel.classList.toggle('show', currentMode==='stats' && !compareShown);
-    if(currentMode!=='stats'||compareShown){ panel.innerHTML=''; return; }
+    /* (#R70) the dock is the SELECTION tray only; the comparison itself lives in the unified view (scp-view).
+       Hide the dock while that view owns the feed. */
+    const scpOpen=!!document.getElementById('scp-view');
+    panel.classList.toggle('show', currentMode==='stats' && !scpOpen);
+    if(currentMode!=='stats'||scpOpen){ panel.innerHTML=''; return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
-    const COLORS=['#007aff','#ff3b30','#34c759'];
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
-    let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/3)</span><div style="display:flex;gap:6px;">`+
+    let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/5)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
-    let body=`<div class="scf-chips">${chips}</div>`;
-    if(compareShown && items.length>=2){
-      const bar=(it,i,val,max,fmt)=>{ const w=val>0&&max>0?Math.min(100,(val/max)*100):0; return `<div class="cmp-bar-row"><span class="cmp-bar-flag">${it.flag||'🏳️'}</span><span class="cmp-bar-name">${cName(it)}</span><span class="cmp-bar-wrap"><span class="cmp-bar-fill" style="width:${w}%;background:${COLORS[i%COLORS.length]};"></span></span><span class="cmp-bar-val">${val!=null?fmt(val):'—'}</span></div>`; };
-      const sec=(title,key,fmt)=>{ const vals=items.map(s=>s[key]).filter(v=>v!=null&&!isNaN(v)); if(!vals.length) return ''; const max=Math.max(...vals); return `<div class="cmp-section" style="padding:10px 12px;"><h4 style="margin:0 0 8px;">${title}</h4><div class="cmp-bars">${items.map((it,i)=>bar(it,i,it[key],max,fmt)).join('')}</div></div>`; };
-      body+=`<div class="compare-panel" style="max-height:46vh;overflow-y:auto;margin-top:8px;">${sec(t('statGdp'),'gdp',v=>fmtMoney(v))}${sec(t('statGdpPPP'),'gdpPPP',v=>fmtMoney(v))}${sec(t('statGdpPc'),'gdppc',v=>fmtPc(v))}${sec(t('statGdpPcPPP'),'gdppcPPP',v=>fmtPc(v))}${sec(t('statPop'),'pop',v=>fmtNum(v))}${sec(t('statArea'),'area',v=>fmtArea(v))}${sec(t('statMil'),'milSpend',v=>'$'+v+'B')}${sec(t('statHDI'),'hdi',v=>v.toFixed(3))}${sec(t('statDem'),'dem',v=>v.toFixed(2))}${sec(t('statLife'),'lifeExp',v=>v.toFixed(1)+'yr')}${sec(t('statInet'),'internet',v=>v+'%')}</div>`;
-    }
-    panel.innerHTML=head+body;
+    panel.innerHTML=head+`<div class="scf-chips">${chips}</div>`;
   }
-  function renderCompareView(){
-    const feed=document.getElementById('live-news-feed');
-    feed.style.paddingBottom='';   /* full-page comparison: drop the list's bottom-dock reserve (#17) */
-    const codes=[...compareSet];
-    const items=codes.map(c=>countryStats[c]).filter(Boolean);
-    if(items.length<2){ renderStats(searchVal()); return; }
-    /* Color palette for the comparison bars */
-    const COLORS=['#007aff','#ff3b30','#34c759','#ff9500','#5856d6','#af52de'];
-    function bar(item,i,val,max,unit,fmt){
-      const w = val>0 && max>0 ? Math.min(100, (val/max)*100) : 0;
-      return `<div class="cmp-bar-row">
-        <span class="cmp-bar-flag">${item.flag||'🏳️'}</span>
-        <span class="cmp-bar-name">${cName(item)}</span>
-        <span class="cmp-bar-wrap"><span class="cmp-bar-fill" style="width:${w}%; background:${COLORS[i%COLORS.length]};"></span></span>
-        <span class="cmp-bar-val">${val!=null?fmt(val):'—'}</span>
-      </div>`;
-    }
-    function section(title,key,fmt){
-      const vals=items.map(s=>s[key]).filter(v=>v!=null&&!isNaN(v));
-      if(!vals.length) return '';
-      const max=Math.max(...vals);
-      return `<div class="cmp-section"><h4>${title}</h4><div class="cmp-bars">${items.map((it,i)=>bar(it,i,it[key],max,'',fmt)).join('')}</div></div>`;
-    }
-    const html=`
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <button class="stats-sort active" onclick="_backToStats()">‹ ${t('back')}</button>
-        <button class="stats-sort" onclick="_clearCompare(); _backToStats();">${t('compareClear')}</button>
-      </div>
-      <div class="compare-panel">
-        ${section(t('statGdp')+` (${GDP_YEAR})`,'gdp',v=>fmtMoney(v))}
-        ${section(t('statGdpPPP'),'gdpPPP',v=>fmtMoney(v))}
-        ${section(t('statGdpPc'),'gdppc',v=>fmtPc(v))}
-        ${section(t('statGdpPcPPP'),'gdppcPPP',v=>fmtPc(v))}
-        ${section(t('statPop')+` (${POP_YEAR})`,'pop',v=>fmtNum(v))}
-        ${section(t('statArea'),'area',v=>fmtArea(v))}
-        ${section(t('statMil')+' (2023)','milSpend',v=>'$'+v+'B')}
-        ${section(t('statHDI')+' (2022)','hdi',v=>v.toFixed(3))}
-        ${section(t('statDem')+' (2023)','dem',v=>v.toFixed(2))}
-        ${section(t('statLife'),'lifeExp',v=>v.toFixed(1)+' yr')}
-        ${section(t('statInet'),'internet',v=>v+'%')}
-      </div>`;
-    feed.innerHTML=html;
-    /* (#R26) Start the comparison at the TOP with NO VISIBLE scroll. The container (.content-area) has
-       scroll-behavior:smooth, so a plain scrollTop=0 ANIMATED — the user saw a "gross auto-scroll move".
-       Temporarily force instant ('auto') so the comparison simply appears at the top. */
-    try{ const setTop=(el)=>{ if(!el) return; const prev=el.style.scrollBehavior; el.style.scrollBehavior='auto'; el.scrollTop=0; el.style.scrollBehavior=prev||''; };
-      setTop(feed); let n=feed.parentElement; for(let i=0;i<6&&n;i++){ const st=getComputedStyle(n); if(/(auto|scroll)/.test(st.overflowY)&&n.scrollHeight>n.clientHeight+2){ setTop(n); break; } n=n.parentElement; } }catch(_){}
-  }
+  /* (#R70) renderCompareView (the separate static-bar comparison page) was MERGED into IntMapStatsCompare —
+     its bar view is the unified comparison's default mode, on live per-indicator data, incl. all the bundled
+     reference indicators (GDP PPP, area, HDI, democracy, military $, …) it used to show. */
 
   /* ===== Information Dashboard data
    *  `specs` is the structured "neat" view requested for military bases (runway, garrison, etc.).
@@ -9760,6 +10051,8 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const act=document.getElementById('layer-active-section'); if(!act) return;
         const isM = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
         if(isM){ const sc=document.querySelector('#mo-sheet .m-sheet-scroll'); if(sc && sc.firstChild!==act) sc.insertBefore(act,sc.firstChild); }
+        /* (#R70) while the right tile sidebar is open, the Active-layers bar lives at ITS top */
+        else if(document.body.classList.contains('lsr-open')){ const bd=document.querySelector('#layer-sidebar-r .lsr-body'); if(bd && bd.firstChild!==act) bd.insertBefore(act,bd.firstChild); }
         else { const dd=document.getElementById('layer-dropdown'); if(dd && dd.firstChild!==act) dd.insertBefore(act,dd.firstChild); }
       }catch(_){}
     };
@@ -15985,14 +16278,27 @@ window.addEventListener('DOMContentLoaded', () => {
       {k:'rnd',    wb:'GB.XPD.RSDV.GD.ZS', imf:null, fmt:pct, l:['R&D (% GDP)','研究開発費(対GDP)','F&E (% BIP)','НИОКР (% ВВП)','I+D (% PIB)'], def:0},
       {k:'renew',  wb:'EG.FEC.RNEW.ZS', imf:null, fmt:pct, l:['Renewable energy','再エネ比率','Erneuerbare Energie','Возобновляемая энергия','Energía renovable'], def:0},
       {k:'forest', wb:'AG.LND.FRST.ZS', imf:null, fmt:pct, l:['Forest area','森林率','Waldfläche','Лесистость','Superficie forestal'], def:0},
-      {k:'hom',    wb:'VC.IHR.PSRC.P5', imf:null, fmt:v=>v.toFixed(1), l:['Homicide rate (/100k)','殺人率(10万人当り)','Mordrate (/100k)','Убийства (/100 тыс.)','Homicidios (/100k)'], def:0}
+      {k:'hom',    wb:'VC.IHR.PSRC.P5', imf:null, fmt:v=>v.toFixed(1), l:['Homicide rate (/100k)','殺人率(10万人当り)','Mordrate (/100k)','Убийства (/100 тыс.)','Homicidios (/100k)'], def:0},
+      /* (#R70) 機能拡充: the bundled per-country reference values (the old bar-compare's data) become
+         first-class indicators — instantly available (no fetch), bars/table always work, time-series shows the
+         honest single point. `stat` reads countryStats; `src` is the real underlying source. */
+      {k:'area',     stat:s=>s.area,      yr:0, fmt:v=>short(v)+' km²', l:['Area','面積','Fläche','Площадь','Superficie'], def:0, src:'Natural Earth'},
+      {k:'hdi',      stat:s=>s.hdi,       yr:2022, fmt:v=>(+v).toFixed(3), l:['HDI','人間開発指数 (HDI)','HDI','ИЧР','IDH'], def:0, src:'UNDP'},
+      {k:'demi',     stat:s=>s.dem,       yr:2023, fmt:v=>(+v).toFixed(2), l:['Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice de democracia'], def:0, src:'EIU'},
+      {k:'gdpppp',   stat:s=>s.gdpPPP,    yr:0, fmt:usd, l:['GDP (PPP)','GDP（PPP）','BIP (KKP)','ВВП (ППС)','PIB (PPA)'], def:0, src:'IMF/WB (PPP)'},
+      {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:['GDP per capita (PPP)','1人当たりGDP（PPP）','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)'], def:0, src:'IMF/WB (PPP)'},
+      {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:['Military spending ($)','軍事費（米ドル）','Militärausgaben ($)','Военные расходы ($)','Gasto militar ($)'], def:0, src:'SIPRI'}
     ];
     /* (#R63) reworked per explicit feedback: NO popup — the comparison renders INSIDE the sidebar (stats area);
        source switching is PER-INDICATOR and only shown where a second source actually exists (no fake implication
        that every metric has two sources). */
     /* (#R69) debt defaults to IMF WEO: the World Bank central-government-debt series is EMPTY for Japan and
        many majors (verified 0 non-null values) — the old WB default guaranteed "時系列データなし". */
-    let host=null, codes=[], sel=null; const srcSel={debt:'imf'};
+    /* (#R70) ONE unified comparison ("似た機能なのに別の場所にあって分かりづらい"): mode = 'bar' (default,
+       the old click-country bar view) | 'ts' (time-series) | 'table' (Excel-like pivot). indOrder keeps the
+       user's indicator order (table columns are drag-reorderable); tYear/tSort/tFlip are the table state. */
+    let host=null, codes=[], sel=null, indOrder=null, mode='bar'; const srcSel={debt:'imf'};
+    let tYear=null, tSort=null, tFlip=false;
     /* (#R69) MEASURED root cause of "No time-series available" + "ソース切替でいちいち全再読み込み": every
        chip/metric/source change re-rendered EVERY block and fired a fresh fetch per (indicator,country) — one
        test session produced 321 parallel WB requests (34 for a single indicator), the browser's 6-per-host limit
@@ -16075,7 +16381,25 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-list .scp-cr:hover{background:var(--input-bg);}'
         +'#scp-list .scp-cr.sel{background:rgba(10,132,255,0.10);}'
         +'#scp-view .ts-wrap svg{height:100px !important;}'
-        +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} }';
+        /* (#R70) unified compare: mode segment + bar view + Excel-like table */
+        +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0 0 10px;}'
+        +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;}'
+        +'#scp-view .scp-modes button.on{background:var(--primary-color);color:#fff;}'
+        +'#scp-view .scp-bars{display:flex;flex-direction:column;gap:5px;margin:4px 0 10px;}'
+        +'#scp-view .scp-brow{display:flex;align-items:center;gap:8px;font-size:12px;}'
+        +'#scp-view .scp-bnm{flex:0 0 128px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
+        +'#scp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;display:block;}'
+        +'#scp-view .scp-bfill{display:block;height:100%;border-radius:7px;transition:width .35s ease;}'
+        +'#scp-view .scp-bval{flex:0 0 auto;font-size:11.5px;white-space:nowrap;}'
+        +'#scp-view .scp-ttools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 8px;}'
+        +'#scp-view .scp-ttools button,#scp-view .scp-ttools select{height:28px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;padding:0 10px;cursor:pointer;outline:none;}'
+        +'#scp-view .scp-ttools button:hover{border-color:var(--primary-color);color:var(--primary-color);}'
+        +'#scp-view .scp-xl th.scp-h{cursor:pointer;user-select:none;background:var(--input-bg);position:sticky;top:0;}'
+        +'#scp-view .scp-xl th.scp-h:hover{color:var(--primary-color);}'
+        +'#scp-view .scp-xl th.scp-rowh{text-align:left;cursor:grab;}'
+        +'#scp-view .scp-xl td{font-variant-numeric:tabular-nums;}'
+        +'#scp-view .scp-yr{color:var(--text-muted);font-size:9.5px;}'
+        +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the sidebar feed area (stats tab) — no popup */
       try{ const bs=document.getElementById('btn-stats'); if(bs&&!bs.classList.contains('active')) bs.click(); }catch(_){}
@@ -16084,12 +16408,20 @@ window.addEventListener('DOMContentLoaded', () => {
       host=document.createElement('div'); host.id='scp-view'; feed.appendChild(host);
       host.innerHTML='<button class="scp-back">← '+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
         +'<div style="font-weight:700;font-size:15px;margin:0 0 2px;">📊 '+LL('Compare countries','国を比較','Länder vergleichen','Сравнение стран','Comparar países')+'</div>'
-        +'<p style="margin:0 0 8px;color:var(--text-muted);font-size:11px;">'+LL('Up to 5 countries · latest values + time-series. Where a second source exists (IMF WEO), a per-indicator switch appears.','最大5か国 · 最新値と時系列。第2の出典（IMF WEO）がある指標にのみ切替ボタンが表示されます。','Bis zu 5 Länder · Wo eine zweite Quelle existiert (IWF WEO), erscheint ein Schalter pro Kennzahl.','До 5 стран · Переключатель источника показывается только там, где есть данные МВФ.','Hasta 5 países · El selector de fuente aparece solo donde existe una segunda fuente (FMI WEO).')+'</p>'
+        +'<p style="margin:0 0 8px;color:var(--text-muted);font-size:11px;">'+LL('Up to 5 countries · bar chart / time-series / free table. Where a second source exists (IMF WEO), a per-indicator switch appears.','最大5か国 · 棒グラフ／時系列／自由な表。第2の出典（IMF WEO）がある指標にのみ切替ボタンが表示されます。','Bis zu 5 Länder · Balken / Zeitreihen / freie Tabelle. Quellen-Schalter je Kennzahl (IWF WEO).','До 5 стран · столбцы / динамика / таблица. Переключатель источника — где есть данные МВФ.','Hasta 5 países · barras / series / tabla libre. Selector de fuente por indicador (FMI WEO).')+'</p>'
+        /* (#R70) view-mode segmented control — bar (the old click-country compare, default) | time-series | table */
+        +'<div id="scp-modes" class="scp-modes">'
+          +'<button data-m="bar">'+LL('Bar chart','棒グラフ','Balken','Столбцы','Barras')+'</button>'
+          +'<button data-m="ts">'+LL('Time-series','時系列','Zeitreihen','Динамика','Series temporales')+'</button>'
+          +'<button data-m="table">'+LL('Table','表','Tabelle','Таблица','Tabla')+'</button>'
+        +'</div>'
         +'<div id="scp-chips" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;"></div>'
         +'<div style="position:relative;"><input class="scp-add" id="scp-add" autocomplete="off" style="width:100%;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><div id="scp-list"></div></div>'
         +'<div class="scp-metrics" id="scp-metrics"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
       host.querySelector('.scp-back').onclick=()=>{ try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
+      host.querySelectorAll('#scp-modes button').forEach(b=>{ b.onclick=()=>{ const m=b.getAttribute('data-m'); if(m===mode) return; mode=m; render(); }; });
+      try{ if(typeof renderCompareFixed==='function') setTimeout(renderCompareFixed,0); }catch(_){}   /* hide the selection dock while the comparison owns the feed */
       /* (#R64) real picker: type-to-filter list with flags + check state; click toggles; Enter adds the first
          match; closes on outside click. */
       const addI=host.querySelector('#scp-add'), listEl=host.querySelector('#scp-list');
@@ -16117,7 +16449,13 @@ window.addEventListener('DOMContentLoaded', () => {
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); }); }
     function metricRow(){ const w=host&&host.querySelector('#scp-metrics'); if(!w) return; w.innerHTML='';
       IND.forEach(ind=>{ const b=document.createElement('button'); b.className='scp-m'+(sel.has(ind.k)?' on':''); b.textContent=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
-        b.onclick=()=>{ if(sel.has(ind.k)) sel.delete(ind.k); else sel.add(ind.k); render(); }; w.appendChild(b); }); }
+        b.onclick=()=>{ if(!indOrder) indOrder=IND.filter(i2=>sel.has(i2.k)).map(i2=>i2.k);
+          if(sel.has(ind.k)){ sel.delete(ind.k); indOrder=indOrder.filter(k2=>k2!==ind.k); }
+          else { sel.add(ind.k); indOrder.push(ind.k); }
+          render(); }; w.appendChild(b); }); }
+    /* (#R70) selected indicators in the USER'S order (table columns are drag-reorderable) */
+    function orderedInds(){ const ks=(indOrder&&indOrder.length)?indOrder.filter(k2=>sel.has(k2)):IND.filter(i2=>sel.has(i2.k)).map(i2=>i2.k);
+      return ks.map(k2=>IND.find(i2=>i2.k===k2)).filter(Boolean); }
     /* multi-country chart with a shared crosshair (values for EVERY country at the hovered year) */
     const CW=760, CH=120;
     function mChart(ind,serMap){ const entries=codes.map((cd,i)=>({cd,i,s:serMap[cd]})).filter(e=>e.s&&e.s.length>1);
@@ -16152,19 +16490,37 @@ window.addEventListener('DOMContentLoaded', () => {
       const leave=()=>{ cur.style.display='none'; tip.style.display='none'; };
       svg.addEventListener('pointermove',move); svg.addEventListener('pointerdown',move); svg.addEventListener('pointerleave',leave); }); }
     async function blockData(ind){
+      /* (#R70) bundled reference indicators — instant, no fetch, single latest point */
+      if(ind.stat){ const y=(typeof ind.yr==='number')?ind.yr:new Date().getFullYear(); const sm={};   /* y=0 → year unknown/not meaningful, display suppressed */
+        codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) sm[cd]=[{y,v:+v}]; });
+        return {ind,serMap:sm,srcName:ind.src||'IntMap',imfFail:false,statOnly:true}; }
       /* (#R63) source is PER-INDICATOR; IMF only where a real IMF series exists for it */
       const wantImf=(ind.imf&&srcSel[ind.k]==='imf');
       let serMap={}, srcName='World Bank', imfFail=false;
       if(wantImf){ const im=await fetchIMF(ind.imf,codes,ind.imfScale); if(im){ serMap=im; srcName='IMF WEO'; } else imfFail=true; }
       if(!Object.keys(serMap).length){ const rs=await Promise.all(codes.map(cd=>fetchWB(cd,ind.wb))); codes.forEach((cd,i)=>{ if(rs[i]) serMap[cd]=rs[i]; }); srcName='World Bank'; }
       return {ind,serMap,srcName,imfFail}; }
+    /* (#R70) horizontal comparison bars — the old click-country bar view, now per-indicator on live data.
+       Negative values (growth, inflation, current account…) get a red left-tinted bar scaled by |v|. */
+    function barsHtml(b){ const entries=codes.map((cd,i)=>{ const s2=b.serMap[cd]; return {cd,i,last:(s2&&s2.length)?s2[s2.length-1]:null}; });
+      const vals=entries.filter(e=>e.last).map(e=>e.last.v);
+      if(!vals.length) return '<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">'+LL('No data','データなし','Keine Daten','Нет данных','Sin datos')+'</div>';
+      const maxA=Math.max.apply(null,vals.map(v=>Math.abs(v)))||1;
+      return '<div class="scp-bars">'+entries.map(e=>{ const s2=countryStats[e.cd]||{};
+        const nm=esc((s2.flag?s2.flag+' ':'')+(cName(s2)||e.cd));
+        if(!e.last) return '<div class="scp-brow"><span class="scp-bnm">'+nm+'</span><span class="scp-btrack"></span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
+        const w=Math.max(1.5,Math.abs(e.last.v)/maxA*100);
+        const yT=e.last.y?(' <span style="color:var(--text-muted);font-weight:400;">('+e.last.y+')</span>'):'';
+        return '<div class="scp-brow"><span class="scp-bnm">'+nm+'</span><span class="scp-btrack"><span class="scp-bfill'+(e.last.v<0?' neg':'')+'" style="width:'+w.toFixed(1)+'%;background:'+(e.last.v<0?'#ff453a':PAL[e.i])+';"></span></span><span class="scp-bval"><b>'+esc(b.ind.fmt(e.last.v))+'</b>'+yT+'</span></div>';
+      }).join('')+'</div>'; }
     function blockHtml(b){ const lbl=LL(b.ind.l[0],b.ind.l[1],b.ind.l[2],b.ind.l[3],b.ind.l[4]);
       const sw=b.ind.imf
         ?('<span class="scp-srcsw" data-k="'+b.ind.k+'"><button data-s="wb"'+(srcSel[b.ind.k]!=='imf'?' class="on"':'')+'>WB</button><button data-s="imf"'+(srcSel[b.ind.k]==='imf'?' class="on"':'')+'>IMF</button></span>')
-        :('<span class="scp-src">· World Bank</span>');   /* only ONE source exists — say so, no fake switch */
+        :('<span class="scp-src">· '+esc(b.ind.stat?(b.ind.src||'IntMap'):'World Bank')+'</span>');   /* only ONE source exists — say so, no fake switch */
       let html='<div class="scp-sec">'+esc(lbl)+' '+sw+(b.ind.imf?('<span class="scp-src">· '+esc(b.srcName)+(b.imfFail?(' ('+LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')+')'):'')+'</span>'):'')+'</div>';
+      if(mode==='bar'){ html+=barsHtml(b); return html; }   /* (#R70) bar mode: bars carry the values — no extra table */
       html+='<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>'+codes.map((cd,i)=>{ const s2=countryStats[cd]||{}; return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
-      html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td><b>'+esc(b.ind.fmt(last.v))+'</b> <span style="color:var(--text-muted);">('+last.y+')</span></td>'; }).join('')+'</tr></table></div>';
+      html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td><b>'+esc(b.ind.fmt(last.v))+'</b>'+(last.y?' <span style="color:var(--text-muted);">('+last.y+')</span>':'')+'</td>'; }).join('')+'</tr></table></div>';
       html+=mChart(b.ind,b.serMap); return html; }
     /* (#R64) PER-INDICATOR rendering: a source switch re-renders ONLY its own block, from cache when available —
        no full "Loading data…" wipe, no scroll jump ("ソースを切り替えたらいちいち再度すべて読み込み").
@@ -16172,7 +16528,7 @@ window.addEventListener('DOMContentLoaded', () => {
        unchanged signature are skipped entirely, so toggling a metric or switching one block's source no longer
        touches any other block. */
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
-      const sig=codes.join(',')+'|'+(srcSel[k]||'wb');
+      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode;
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
       const my=(el.__seq=(el.__seq||0)+1);
       const b=await blockData(ind); if(el.__seq!==my||!el.isConnected) return;
@@ -16181,11 +16537,12 @@ window.addEventListener('DOMContentLoaded', () => {
       el.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=()=>{ srcSel[k]=btn.getAttribute('data-s'); renderInd(k); }; });
       try{ wireM(el); }catch(_){}
     }
-    async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
+    async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); modeRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
       const body=v.querySelector('#scp-body');
       if(!codes.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12.5px;padding:16px 2px;">'+LL('Add countries above to compare them.','上の欄から国を追加してください。','Länder oben hinzufügen.','Добавьте страны выше.','Añade países arriba.')+'</div>'; return; }
-      const inds=IND.filter(ind=>sel.has(ind.k));
+      const inds=orderedInds();
       if(!inds.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12px;">'+LL('Select at least one indicator.','指標を選択してください。','Mindestens eine Kennzahl wählen.','Выберите показатель.','Selecciona un indicador.')+'</div>'; return; }
+      if(mode==='table'){ renderTable(); return; }   /* (#R70) Excel-like pivot view */
       /* (#R69) INCREMENTAL ("いちいち再度すべて読み込みになる動作がうざい"): existing blocks are KEPT (their
          content stays visible while data refreshes from the shared cache), deselected ones are removed, new ones
          are inserted in IND order — never a full wipe back to "Loading data…". */
@@ -16200,10 +16557,87 @@ window.addEventListener('DOMContentLoaded', () => {
           else body.insertBefore(el,body.firstChild); }
         prev=el; renderInd(ind.k); });
     }
-    function open(initCodes,initMetrics,initSource){
+    /* (#R70) mode segmented control (bar | time-series | table) */
+    function modeRow(){ const w=host&&host.querySelector('#scp-modes'); if(!w) return;
+      w.querySelectorAll('button').forEach(b=>{ b.classList.toggle('on',b.getAttribute('data-m')===mode); }); }
+    /* ===== (#R70) TABLE mode — "エクセルのように、表を自由に組み替えて複数国家を複数指標で分析":
+       countries × indicators grid; ⇄ transposes rows/columns; column-header click sorts (desc → asc → off);
+       headers are DRAG-reorderable (real column/row rearrangement); a year selector re-reads every cell at
+       that year (latest value ≤ the chosen year, year shown per cell); CSV export. All values come from the
+       SAME cached series as the charts — no extra fetches. ===== */
+    function _valAt(ser,yr){ if(!ser||!ser.length) return null; if(yr==null) return ser[ser.length-1];
+      for(let i=ser.length-1;i>=0;i--){ if(ser[i].y<=yr) return ser[i]; } return null; }
+    async function renderTable(){ if(!host) return; const body=host.querySelector('#scp-body');
+      const inds=orderedInds(); if(!inds.length||!codes.length) return;
+      if(!body.querySelector('#scp-tblv')) body.innerHTML='<div id="scp-tblv"><div style="color:var(--text-muted);font-size:12px;padding:10px 2px;">'+LL('Loading data…','データ読み込み中…','Lade Daten…','Загрузка данных…','Cargando datos…')+'</div></div>';
+      const my=(renderTable._seq=(renderTable._seq||0)+1);
+      const blocks=await Promise.all(inds.map(ind=>blockData(ind)));
+      if(my!==renderTable._seq||!host||!host.isConnected) return;
+      const wrap=body.querySelector('#scp-tblv'); if(!wrap) return;
+      const bByK={}; blocks.forEach(b=>{ bByK[b.ind.k]=b; });
+      /* row/col axes — default rows=countries; tFlip transposes */
+      const rows=tFlip?inds.map(i2=>i2.k):codes.slice();
+      const cols=tFlip?codes.slice():inds.map(i2=>i2.k);
+      /* sorting: tSort={col,dir} sorts the ROW axis by that column's value */
+      let rowOrder=rows.slice();
+      if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
+        const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const b=bByK[indK]; const p=b?_valAt(b.serMap[cd],tYear):null; return p?p.v:null; };
+        rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
+      const cLbl=cd=>{ const s2=countryStats[cd]||{}; return esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd)); };
+      const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
+      const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
+      const yrs=[]; for(let y2=new Date().getFullYear();y2>=1980;y2--) yrs.push(y2);
+      let h='<div class="scp-ttools">'
+        +'<button id="scp-flip" title="'+LL('Swap rows/columns','行と列を入れ替え','Zeilen/Spalten tauschen','Поменять строки/столбцы','Intercambiar filas/columnas')+'">⇄ '+LL('Transpose','行列入替','Transponieren','Транспонировать','Transponer')+'</button>'
+        +'<select id="scp-year"><option value="">'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</option>'+yrs.map(y2=>'<option value="'+y2+'"'+(tYear===y2?' selected':'')+'>'+y2+'</option>').join('')+'</select>'
+        +'<button id="scp-csv">CSV</button>'
+        +(tSort?('<button id="scp-unsort">'+LL('Clear sort','並べ替え解除','Sortierung aufheben','Сбросить сортировку','Quitar orden')+'</button>'):'')
+        +'<span class="scp-src" style="margin-left:auto;">'+LL('Drag headers to reorder · click to sort','ヘッダーをドラッグで並べ替え・クリックでソート','Header ziehen = umordnen · Klick = sortieren','Перетащите заголовки · клик = сортировка','Arrastra encabezados · clic = ordenar')+'</span></div>';
+      h+='<div class="scp-tblwrap"><table class="scp-tbl scp-xl" id="scp-pivot"><tr><th class="scp-corner"></th>';
+      cols.forEach((ck,ci)=>{ const srt=(tSort&&tSort.col===ck)?(tSort.dir==='asc'?' ▲':' ▼'):'';
+        h+='<th class="scp-h" draggable="true" data-ax="col" data-i="'+ci+'" data-k="'+esc(ck)+'">'+hLbl(ck,true)+srt+'</th>'; });
+      h+='</tr>';
+      rowOrder.forEach(rk=>{ h+='<tr><th class="scp-h scp-rowh" draggable="true" data-ax="row" data-k="'+esc(rk)+'">'+hLbl(rk,false)+'</th>';
+        cols.forEach(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const b=bByK[indK]; const i2=IND.find(x=>x.k===indK);
+          const p=b?_valAt(b.serMap[cd],tYear):null;
+          h+=p?('<td><b>'+esc(i2.fmt(p.v))+'</b>'+(p.y?' <span class="scp-yr">('+p.y+')</span>':'')+'</td>'):'<td style="color:var(--text-muted);">—</td>'; });
+        h+='</tr>'; });
+      h+='</table></div>';
+      h+='<div class="scp-src" style="margin-top:6px;">'+LL('Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)','出典は指標ごと（世界銀行／IMF WEO／内蔵参照データ — 棒グラフ・時系列表示に明記）','Quellen je Kennzahl: Weltbank / IWF WEO / Referenzdaten','Источники по показателям: Всемирный банк / МВФ / встроенные данные','Fuentes por indicador: Banco Mundial / FMI WEO / datos de referencia')+'</div>';
+      wrap.innerHTML=h;
+      wrap.querySelector('#scp-flip').onclick=()=>{ tFlip=!tFlip; tSort=null; renderTable(); };
+      wrap.querySelector('#scp-year').onchange=(e)=>{ const v2=e.target.value; tYear=v2?+v2:null; renderTable(); };
+      const un=wrap.querySelector('#scp-unsort'); if(un) un.onclick=()=>{ tSort=null; renderTable(); };
+      wrap.querySelector('#scp-csv').onclick=()=>{ try{
+        const esc2=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; };
+        const strip=s=>String(s).replace(/<[^>]*>/g,'');
+        let csv=esc2('')+','+cols.map(ck=>esc2(strip(hLbl(ck,true)))).join(',')+'\n';
+        rowOrder.forEach(rk=>{ const cells=cols.map(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const b=bByK[indK]; const p=b?_valAt(b.serMap[cd],tYear):null; return p?esc2(p.y?(p.v+' ('+p.y+')'):String(p.v)):''; });
+          csv+=esc2(strip(hLbl(rk,false)))+','+cells.join(',')+'\n'; });
+        const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download='intmap-compare.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+      }catch(_){} };
+      /* column-header click = sort; drag = reorder the underlying codes[]/indOrder[] */
+      wrap.querySelectorAll('th.scp-h[data-ax="col"]').forEach(th=>{
+        th.onclick=()=>{ const k2=th.getAttribute('data-k');
+          if(tSort&&tSort.col===k2) tSort=(tSort.dir==='desc')?{col:k2,dir:'asc'}:null;
+          else tSort={col:k2,dir:'desc'};
+          renderTable(); }; });
+      let dragK=null, dragAx=null;
+      wrap.querySelectorAll('th.scp-h').forEach(th=>{
+        th.addEventListener('dragstart',e=>{ dragK=th.getAttribute('data-k'); dragAx=th.getAttribute('data-ax'); try{ e.dataTransfer.setData('text/plain',dragK); e.dataTransfer.effectAllowed='move'; }catch(_){} });
+        th.addEventListener('dragover',e=>{ if(dragAx===th.getAttribute('data-ax')) e.preventDefault(); });
+        th.addEventListener('drop',e=>{ e.preventDefault(); const toK=th.getAttribute('data-k'); if(!dragK||dragK===toK||dragAx!==th.getAttribute('data-ax')) return;
+          /* axis identity: cols = tFlip?countries:indicators; rows = the other */
+          const isCountryAxis=(dragAx==='col')?tFlip:!tFlip;
+          const arr=isCountryAxis?codes:(indOrder||(indOrder=orderedInds().map(i2=>i2.k)));
+          const fi=arr.indexOf(dragK), ti=arr.indexOf(toK); if(fi<0||ti<0) return;
+          arr.splice(ti,0,arr.splice(fi,1)[0]); dragK=null; chipRow(); renderTable(); }); });
+    }
+    function open(initCodes,initMetrics,initSource,initMode){
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
-      if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length) sel=new Set(ok); }
+      if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length){ sel=new Set(ok); indOrder=ok.slice(); } }
       if(initSource==='imf'||initSource==='wb'){ IND.forEach(i2=>{ if(i2.imf) srcSel[i2.k]=initSource; }); }
+      if(initMode==='bar'||initMode==='ts'||initMode==='table') mode=initMode;   /* (#R70) callers may open straight into a view */
       if(Array.isArray(initCodes)&&initCodes.length){ codes=initCodes.filter(cd=>countryStats[cd]).slice(0,5); }
       if(!codes.length&&window._cpCurrent&&window._cpCurrent.code&&countryStats[window._cpCurrent.code]) codes=[window._cpCurrent.code];
       host=null;   /* rebuild inside the sidebar (the feed may have been re-rendered by tab switches) */
@@ -20145,7 +20579,8 @@ window.addEventListener('DOMContentLoaded', () => {
           const rawC=Array.isArray(a.countries)?a.countries:String(a.countries||a.country||'').split(/,|、|;| and | und | y | и |と| vs\.? |対/i).map(x=>x.trim()).filter(Boolean);
           const cds=[],missC=[]; for(const nm2 of rawC){ const c=await resolveCountry(nm2); if(c&&c.code){ if(cds.indexOf(c.code)<0) cds.push(c.code); } else missC.push(nm2); }
           if(!cds.length) return R(false, warn('⚠ '+L('Which countries should I compare?','どの国を比較しますか？','Welche Länder vergleichen?','Какие страны сравнить?','¿Qué países comparo?')));
-          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,5),Array.isArray(a.metrics)?a.metrics:null,(a.source==='imf'||a.source==='wb')?a.source:null); okC=true; } }catch(_){}
+          const viewM=({bar:'bar',bars:'bar',timeseries:'ts',ts:'ts','time-series':'ts',table:'table',pivot:'table'})[String(a.view||a.mode||'').toLowerCase()]||null;   /* (#R70) open straight into a view */
+          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,5),Array.isArray(a.metrics)?a.metrics:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM); okC=true; } }catch(_){}
           let h2=okC?note('📊 '+L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(5,cds.length)+')'):warn('⚠');
           if(cds.length>5) h2+=warn('⚠ '+L('Only the first 5 countries are compared','比較は最大5か国です','Nur die ersten 5 Länder','Только первые 5 стран','Solo los primeros 5 países'));
           if(missC.length) h2+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(missC.join(', ')));
@@ -20183,7 +20618,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. {"type":"outline","place":str,"color"?:str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it). {"type":"locate"} flies to the user\'s real GPS position (asks browser permission). {"type":"fullscreen","on":bool}. "bearing" also takes {"dir":"west"|"northeast"|…}; zoom/pitch/bearing/pan accept exact numbers for precise commands ("zoom to 5" → {"type":"zoom","to":5}; "tilt 30°" → {"type":"pitch","deg":30}).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
-        +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 5],"source"?:"wb"|"imf"} = side-by-side statistical comparison panel (latest values + overlaid time-series for ~20 indicators; use for "compare Japan and Korea", "日本とドイツを比較").\n'
+        +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 5],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"route","from":str,"to":str} (sea route); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}.\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
