@@ -2546,9 +2546,13 @@ window.addEventListener('DOMContentLoaded', () => {
         'text-size':['case',['==',['get','big'],1],['interpolate',['linear'],['zoom'],1,11,4,16,8,19],['interpolate',['linear'],['zoom'],2,10,5,13,9,16]]},
         paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}}); }catch(_){}
       /* (#R63) peaks: CONSTANT text size — size interpolation read as sliding. (#R67) rendered DIRECTLY from the
-         mountain_peak tiles again: point nodes are sub-pixel accurate at every zoom's own tiles, so the raw layer
-         cannot drift — the R64/R66 pinning of peaks is what made them sit off the summit and hop on zoom. */
-      if(!map.getLayer('ofm-peak')) map.addLayer({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':12.5,'text-max-width':8,'text-offset':[0,0.3],'text-anchor':'top'},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+         mountain_peak tiles (point nodes are sub-pixel accurate at every zoom's own tiles).
+         (#R68) MEASURED root cause of the still-reported drift: the anchors were glued (≤2.4 m across z10→z13.5,
+         verified via queryRenderedFeatures), but text-anchor:'top' centered the whole "▲ Name" string under the
+         point — the ▲ marker sat half-a-string-width LEFT of the summit, a constant SCREEN offset that spans
+         kilometres of terrain at low zoom and metres at high zoom → the ▲ visibly pointed at different terrain
+         at every zoom. The string is now LEFT-anchored: the ▲ glyph itself sits ON the summit at every zoom. */
+      if(!map.getLayer('ofm-peak')) map.addLayer({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,filter:['has','name'],layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':12.5,'text-max-width':30,'text-anchor':'left','text-justify':'left','text-offset':[-0.32,0]},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
@@ -2605,7 +2609,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(_stabIdx[kind].values())}); }catch(_){} });
   }
   window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size};
-    if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,6).map(f=>({n:(f.properties||{}).name,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
+    if(dump==='peaks'){ try{ o.z=+map.getZoom().toFixed(2); o.c=[+map.getCenter().lng.toFixed(6),+map.getCenter().lat.toFixed(6)];
+      o.rp=map.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?map.project(c):null; }catch(_){}
+        return {n:(f.properties||{}).name, c:c?c.map(x=>+x.toFixed(6)):null, px:s?[Math.round(s.x),Math.round(s.y)]:null}; }); }catch(e){ o.rpErr=String(e&&e.message||e); } }
+    else if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,6).map(f=>({n:(f.properties||{}).name,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
     return o; };   /* diagnostics (read-only) */
   /* (#R62) FIXED sea/ocean/gulf label gazetteer — one stable point per water body (fixes the per-tile label drift),
      5 languages, clickable like place labels. [lng, lat, minzoom, en, jp, de, ru, es] */
