@@ -6456,7 +6456,11 @@ window.addEventListener('DOMContentLoaded', () => {
      island chains, pipelines…), live USGS quakes, a real day/night terminator — and a hand-drawn
      REPRESENTATIVE sketch only where the layer's data is a live stream that cannot be sampled cheaply. ===== */
   window.IntMapLayerPreviews=(function(){
-    const W=192,H=120, cache={};
+    /* (#R71) quality pass ("画像の縦横比が引き延ばされ…クオリティも低い"): canvases are now WEB-MERCATOR
+       (±72.5° ≈ exactly 2:1 — country shapes look like the basemap, no vertical stretch) and rendered at
+       2× device pixels (crisp on the 3-column tiles). The tile CSS aspect-ratio matches 240/121 so nothing
+       is ever distorted; raster example tiles are center-cropped by cover, never stretched. */
+    const W=240,H=121, cache={};
     const G=(id,lvl,date,ext)=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+date+'/GoogleMapsCompatible_Level'+lvl+'/2/1/1.'+(ext||'png');
     /* ---- 1) real example tiles, one per raster layer (same endpoints the layers render from) ---- */
     const IMG={
@@ -6493,9 +6497,11 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     let _radar=null;
     function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); return fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/2/1/1/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
-    /* ---- canvas helpers (equirectangular mini world) ---- */
-    const X=lng=>(lng+180)/360*W, Y=lat=>(74-lat)/134*H;
-    function cnv(){ const c=document.createElement('canvas'); c.width=W; c.height=H; return c; }
+    /* ---- canvas helpers (web-mercator mini world, 2× backing store) ---- */
+    const _MY=1.5850;   /* mercator y at ±72.5° */
+    const X=lng=>(lng+180)/360*W;
+    const Y=lat=>{ const f=Math.max(-72.5,Math.min(72.5,lat))*Math.PI/180; const y=Math.log(Math.tan(Math.PI/4+f/2)); return (_MY-y)/(2*_MY)*H; };
+    function cnv(){ const c=document.createElement('canvas'); c.width=W*2; c.height=H*2; c.getContext('2d').scale(2,2); return c; }
     function ocean(ctx,col){ ctx.fillStyle=col||'#0e1a2b'; ctx.fillRect(0,0,W,H); }
     function drawLand(ctx,colorOf,stroke){ const cg=window.countryGeo; if(!cg||!cg.features) return false;
       cg.features.forEach(f=>{ const gm=f.geometry; if(!gm) return; const col=colorOf?colorOf(String(f.id),f):'#22344c';
@@ -6615,7 +6621,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const decl=-23.44*Math.cos((360/365)*(doy+10)*Math.PI/180);
       const sunLng=180-dUTC*15;
       ctx.fillStyle='rgba(0,0,0,0.55)';
-      for(let px=0;px<W;px+=2){ const lng=px/W*360-180; for(let py=0;py<H;py+=2){ const lat=74-py/H*134;
+      for(let px=0;px<W;px+=2){ const lng=px/W*360-180; for(let py=0;py<H;py+=2){ const lat=Math.atan(Math.sinh(_MY-py/H*2*_MY))*180/Math.PI;   /* inverse mercator */
         const cosz=Math.sin(lat*Math.PI/180)*Math.sin(decl*Math.PI/180)+Math.cos(lat*Math.PI/180)*Math.cos(decl*Math.PI/180)*Math.cos((lng-sunLng)*Math.PI/180);
         if(cosz<0) ctx.fillRect(px,py,2,2); } }
       ctx.fillStyle='#ffd60a'; ctx.beginPath(); ctx.arc(X(((sunLng+540)%360)-180),Y(Math.max(-56,Math.min(74,decl))),3.4,0,7); ctx.fill();
@@ -6822,23 +6828,28 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#layer-sidebar-r .lsr-search input{width:100%;box-sizing:border-box;height:36px;border-radius:18px;border:1px solid rgba(128,128,128,0.28);background:var(--card-bg);color:var(--text-main);font-size:12.5px;padding:0 14px;outline:none;}'
         +'#layer-sidebar-r .lsr-search input:focus{border-color:var(--primary-color);}'
         +'#layer-sidebar-r .lsr-body{flex:1;overflow-y:auto;padding:0 12px 24px;min-height:0;}'
-        /* (#R70) TILE GRID */
-        +'#layer-sidebar-r .lst-sech{font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--text-muted);margin:16px 2px 8px;display:flex;align-items:center;gap:8px;}'
-        +'#layer-sidebar-r .lst-sech::after{content:"";flex:1;height:1px;background:rgba(128,128,128,0.18);}'
-        +'#layer-sidebar-r .lst-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}'
-        +'#layer-sidebar-r .lst-tile{position:relative;border-radius:14px;overflow:hidden;border:1.5px solid rgba(128,128,128,0.22);cursor:pointer;background:var(--card-bg);transition:transform .14s ease,border-color .14s ease,box-shadow .14s ease;-webkit-tap-highlight-color:transparent;}'
-        +'#layer-sidebar-r .lst-tile:hover{transform:translateY(-1.5px);box-shadow:0 6px 18px rgba(0,0,0,0.22);border-color:rgba(128,128,128,0.42);}'
-        +'#layer-sidebar-r .lst-tile.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color),0 6px 16px rgba(10,132,255,0.25);}'
-        +'#layer-sidebar-r .lst-prev{aspect-ratio:16/10;background-size:cover;background-position:center;background-color:#14212f;}'
-        +'#layer-sidebar-r .lst-nm{padding:6px 9px 8px;font-size:11.5px;line-height:1.34;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:38px;box-sizing:content-box;}'
-        +'#layer-sidebar-r .lst-check{position:absolute;top:6px;left:6px;width:20px;height:20px;border-radius:50%;background:var(--primary-color);color:#fff;display:none;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 1px 5px rgba(0,0,0,0.4);pointer-events:none;}'
+        /* (#R70/#R71) TILE GRID — 3 columns, mercator-true previews (aspect matches the canvas exactly:
+           nothing stretched), tightened typography, quieter card chrome ("素人が作ったようなダサい"対策). */
+        +'#layer-sidebar-r .lst-sech{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:18px 2px 8px;display:flex;align-items:center;gap:8px;}'
+        +'#layer-sidebar-r .lst-sech .lst-cnt{font-weight:600;opacity:0.65;letter-spacing:0;}'
+        +'#layer-sidebar-r .lst-sech::after{content:"";flex:1;height:1px;background:rgba(128,128,128,0.16);}'
+        +'#layer-sidebar-r .lst-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}'
+        +'#layer-sidebar-r .lst-tile{position:relative;border-radius:11px;overflow:hidden;border:1px solid rgba(128,128,128,0.18);cursor:pointer;background:var(--card-bg);transition:border-color .13s ease,box-shadow .13s ease;-webkit-tap-highlight-color:transparent;}'
+        +'#layer-sidebar-r .lst-tile:hover{box-shadow:0 4px 14px rgba(0,0,0,0.20);border-color:rgba(128,128,128,0.38);}'
+        +'#layer-sidebar-r .lst-tile.on{border-color:var(--primary-color);box-shadow:0 0 0 1px var(--primary-color);}'
+        +'#layer-sidebar-r .lst-prev{aspect-ratio:240/121;background-size:cover;background-position:center;background-color:#14212f;border-bottom:1px solid rgba(128,128,128,0.14);}'
+        +'#layer-sidebar-r .lst-nm{padding:5px 7px 6px;font-size:10.5px;font-weight:500;line-height:1.32;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:28px;box-sizing:content-box;}'
+        +'#layer-sidebar-r .lst-check{position:absolute;top:5px;left:5px;width:17px;height:17px;border-radius:50%;background:var(--primary-color);color:#fff;display:none;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;}'
         +'#layer-sidebar-r .lst-tile.on .lst-check{display:flex;}'
-        +'#layer-sidebar-r .lst-star{position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(10,14,22,0.45);color:rgba(255,255,255,0.75);font-size:12px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}'
+        +'#layer-sidebar-r .lst-star{position:absolute;top:3px;right:3px;width:19px;height:19px;border:none;border-radius:50%;background:rgba(10,14,22,0.5);color:rgba(255,255,255,0.8);font-size:10.5px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}'
         +'#layer-sidebar-r .lst-tile:hover .lst-star,#layer-sidebar-r .lst-star.on{display:flex;}'
         +'#layer-sidebar-r .lst-star.on{color:#ffd60a;}'
         +'#layer-sidebar-r .lst-empty{color:var(--text-muted);font-size:12px;padding:18px 4px;text-align:center;}'
-        /* Active-layers bar pinned at the top of the tile browser */
+        /* Active-layers bar pinned at the top of the tile browser — COMPACT here: the chip strip is hidden
+           (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
+           overlay + Clear-all carry the same functions in one constant-height row. */
         +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -12px 4px;border-radius:0;}'
+        +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
         +'#lsr-toggle{position:fixed;top:50%;right:0;z-index:1460;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,0.18);border-right:none;color:var(--text-muted);width:22px;height:64px;padding:0;border-radius:10px 0 0 10px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:-4px 0 16px rgba(0,0,0,0.12);transition:right 0.38s cubic-bezier(0.25,1,0.5,1),background .2s,color .2s;transform:translateY(-50%);}'
         +'body.lsr-avail #lsr-toggle{display:flex;}'
@@ -6908,6 +6919,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const h=document.createElement('div'); h.className='lst-sech'; h.textContent=secName; root.appendChild(h);
           curGrid=document.createElement('div'); curGrid.className='lst-grid'; root.appendChild(curGrid); }
         curGrid.appendChild(tileFor(r)); });
+      root.querySelectorAll('.lst-grid').forEach(g=>{ const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.children.length; h.appendChild(c); } });
       const old=sb.querySelector('#lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
       filterTiles(); }
     function filterTiles(){ if(!sb) return; const q=(((sb.querySelector('#lsr-q')||{}).value)||'').toLowerCase().trim();
@@ -7991,7 +8003,7 @@ window.addEventListener('DOMContentLoaded', () => {
      position) — only the row outline + the fixed bottom panel update (#26). */
   window._toggleCompare=function(code){
     if(compareSet.has(code)) compareSet.delete(code);
-    else if(compareSet.size<5) compareSet.add(code);
+    else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
     document.querySelectorAll('#live-news-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
     renderCompareFixed();
@@ -8052,7 +8064,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
-    let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/5)</span><div style="display:flex;gap:6px;">`+
+    let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
     panel.innerHTML=head+`<div class="scf-chips">${chips}</div>`;
@@ -16252,7 +16264,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapStatsCompare=(function(){
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a'];
+    const PAL=['#0a84ff','#ff9500','#34c759','#bf5af2','#ff453a','#5ac8fa','#ffd60a','#ff2d92','#30b0c7','#a2845e'];   /* (#R71) up to 10 countries */
     function short(v){ const a=Math.abs(v); if(a>=1e12) return (v/1e12).toFixed(2)+'T'; if(a>=1e9) return (v/1e9).toFixed(2)+'B'; if(a>=1e6) return (v/1e6).toFixed(2)+'M'; if(a>=1e3) return (v/1e3).toFixed(1)+'k'; return (Math.round(v*100)/100).toLocaleString(); }
     const pct=v=>(Math.round(v*100)/100)+'%', usd=v=>'$'+short(v), num=v=>short(v);
     /* wb: World Bank indicator id · imf: IMF WEO datamapper code (null = WB only) · sc: scale factor for IMF values */
@@ -16289,6 +16301,20 @@ window.addEventListener('DOMContentLoaded', () => {
       {k:'gdppcppp', stat:s=>s.gdppcPPP,  yr:0, fmt:usd, l:['GDP per capita (PPP)','1人当たりGDP（PPP）','BIP pro Kopf (KKP)','ВВП на душу (ППС)','PIB per cápita (PPA)'], def:0, src:'IMF/WB (PPP)'},
       {k:'milb',     stat:s=>s.milSpend,  yr:2023, fmt:v=>'$'+short(v*1e9), l:['Military spending ($)','軍事費（米ドル）','Militärausgaben ($)','Военные расходы ($)','Gasto militar ($)'], def:0, src:'SIPRI'}
     ];
+    /* (#R71) indicator metadata: category (the picker is grouped — "指標選択画面が煩雑"), sign-carrying
+       indicators (green/red ± in bars & table — "増減指標は…緑赤"), and bundled-reference fallbacks used to
+       fill gaps ("主要国でも…抜けてしまって比較にならない"). */
+    const INDCAT={gdp:'eco',gdppc:'eco',gdpppp:'eco',gdppcppp:'eco',growth:'eco',infl:'eco',unemp:'eco',
+      debt:'fis',cab:'fis',exp:'fis',fdi:'fis',
+      pop:'soc',life:'soc',tfr:'soc',net:'soc',urban:'soc',health:'soc',edu:'soc',rnd:'soc',hom:'soc',hdi:'soc',demi:'soc',
+      co2:'env',renew:'env',forest:'env', area:'base',mil:'base',milb:'base'};
+    const CATL={eco:['Economy','経済','Wirtschaft','Экономика','Economía'],fis:['Fiscal & trade','財政・貿易','Fiskal & Handel','Финансы и торговля','Fiscal y comercio'],
+      soc:['People & society','人口・社会','Bevölkerung & Gesellschaft','Население и общество','Población y sociedad'],
+      env:['Environment & energy','環境・エネルギー','Umwelt & Energie','Экология и энергия','Medio ambiente y energía'],
+      base:['Reference','基礎・参照','Referenz','Справочные','Referencia']};
+    const CATORD=['eco','fis','soc','env','base'];
+    const SIGNED={growth:1,cab:1,fdi:1};
+    const REFV={gdp:s=>s.gdp,gdppc:s=>s.gdppc,pop:s=>s.pop,life:s=>s.lifeExp,net:s=>s.internet};
     /* (#R63) reworked per explicit feedback: NO popup — the comparison renders INSIDE the sidebar (stats area);
        source switching is PER-INDICATOR and only shown where a second source actually exists (no fake implication
        that every metric has two sources). */
@@ -16353,6 +16379,39 @@ window.addEventListener('DOMContentLoaded', () => {
       const out={}; const nowY=new Date().getFullYear();
       cs.forEach(c=>{ const o=vals[c]; if(!o) return; const arr=[]; for(const y in o){ const yy=+y, vv=+o[y]; if(isFinite(yy)&&isFinite(vv)&&yy<=nowY) arr.push({y:yy,v:vv*(scale||1)}); } if(arr.length) out[c]=arr.sort((a,b)=>a.y-b.y); });
       return Object.keys(out).length?out:null; }
+    /* ===== (#R71) FAST latest values ("Loading data…の時間が長すぎる"): the bar view and the table's
+       latest column need ONE number per country — fetched as ONE country/all&mrnev=1 request per indicator
+       (all ~220 countries at once, shared-promise cached) instead of a request per (indicator,country).
+       Gaps are FILLED from the other source (WB⇄IMF) and finally from the bundled reference values, so major
+       countries stop showing "—" just because one source lacks one year ("比較にならない"). ===== */
+    function _wbLatestOne(code){ const key='wbl|'+code;
+      if(cache[key]===undefined){ let wrapped=null;
+        wrapped=(async()=>{ try{
+          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
+          const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&mrnev=1&per_page=400',c?{signal:c.signal}:undefined);
+          const j=await r.json(); if(tm) clearTimeout(tm);
+          if(Array.isArray(j)&&j[1]){ const m={}; j[1].forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:+d.date||0}; }); if(Object.keys(m).length) return m; }
+          if(Array.isArray(j)) return {};
+        }catch(_){} throw 0; })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return {}; });
+        cache[key]=wrapped; }
+      return cache[key]; }
+    async function wbLatest(id){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const m=await _wbLatestOne(one); if(m&&Object.keys(m).length) return m; } return {}; }
+    function imfLatest(vals,scale){ const nowY=new Date().getFullYear(); const out={};
+      for(const cd in vals){ const o=vals[cd]; let best=null; for(const y in o){ const yy=+y,vv=+o[y]; if(isFinite(yy)&&isFinite(vv)&&yy<=nowY&&(!best||yy>best.y)) best={y:yy,v:vv*(scale||1)}; } if(best) out[cd]=best; }
+      return out; }
+    async function latestData(ind){
+      if(ind.stat){ const m={}; codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) m[cd]={v:+v,y:(typeof ind.yr==='number')?ind.yr:0}; });
+        return {ind,map:m,srcName:ind.src||'IntMap',mixed:false}; }
+      const wantImf=(ind.imf&&srcSel[ind.k]==='imf');
+      let m={}, srcName='World Bank';
+      if(wantImf){ const vals=await _imfRaw(ind.imf); if(vals){ m=Object.assign({},imfLatest(vals,ind.imfScale)); srcName='IMF WEO'; } }
+      if(!Object.keys(m).length){ m=Object.assign({},await wbLatest(ind.wb)); srcName='World Bank'; }
+      let mixed=false;
+      for(const cd of codes){ if(m[cd]) continue;
+        if(ind.imf&&srcName!=='IMF WEO'){ const vals=await _imfRaw(ind.imf); if(vals){ const im=imfLatest(vals,ind.imfScale); if(im[cd]){ m[cd]=Object.assign({src:'IMF'},im[cd]); mixed=true; continue; } } }
+        if(ind.imf&&srcName==='IMF WEO'){ const wl=await wbLatest(ind.wb); if(wl[cd]){ m[cd]=Object.assign({src:'WB'},wl[cd]); mixed=true; continue; } }
+        const rf=REFV[ind.k]; if(rf){ try{ const v=rf(countryStats[cd]||{}); if(v!=null&&isFinite(+v)){ m[cd]={v:+v,y:0,src:'ref'}; mixed=true; } }catch(_){} } }
+      return {ind,map:m,srcName,mixed}; }
     function cList(){ try{ return Object.keys(countryStats).map(cd=>({code:cd,name:cName(countryStats[cd])})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }
     function ensureView(){ if(host&&document.body.contains(host)) return host;
       if(!ensureView._css){ ensureView._css=1; const st=document.createElement('style');
@@ -16385,12 +16444,23 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0 0 10px;}'
         +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;}'
         +'#scp-view .scp-modes button.on{background:var(--primary-color);color:#fff;}'
+        /* (#R71) bars: FIXED name + value columns so every track is the same length ("長さが統一されていなくて
+           気持ち悪い"); absolute-positioned fills allow a true 0 axis (bars grow left/right from the line). */
         +'#scp-view .scp-bars{display:flex;flex-direction:column;gap:5px;margin:4px 0 10px;}'
         +'#scp-view .scp-brow{display:flex;align-items:center;gap:8px;font-size:12px;}'
-        +'#scp-view .scp-bnm{flex:0 0 128px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
-        +'#scp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;display:block;}'
-        +'#scp-view .scp-bfill{display:block;height:100%;border-radius:7px;transition:width .35s ease;}'
-        +'#scp-view .scp-bval{flex:0 0 auto;font-size:11.5px;white-space:nowrap;}'
+        +'#scp-view .scp-bnm{flex:0 0 118px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
+        +'#scp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;display:block;position:relative;}'
+        +'#scp-view .scp-bfill{position:absolute;top:0;bottom:0;border-radius:4px;transition:width .35s ease,left .35s ease;}'
+        +'#scp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.65;z-index:1;}'
+        +'#scp-view .scp-bval{flex:0 0 112px;font-size:11.5px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}'
+        +'#scp-view .scp-fill{color:var(--primary-color);font-weight:700;cursor:help;}'
+        +'#scp-view .scp-secl{font-weight:700;}'
+        +'#scp-view .scp-focus{margin-left:auto;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);border-radius:8px;font-size:10.5px;padding:2.5px 8px;cursor:pointer;}'
+        +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
+        +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
+        /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
+        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:8px 0 2px;}'
+        +'#scp-view .scp-mcat{width:100%;font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.03em;margin:7px 0 1px;}'
         +'#scp-view .scp-ttools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 8px;}'
         +'#scp-view .scp-ttools button,#scp-view .scp-ttools select{height:28px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;padding:0 10px;cursor:pointer;outline:none;}'
         +'#scp-view .scp-ttools button:hover{border-color:var(--primary-color);color:var(--primary-color);}'
@@ -16408,7 +16478,7 @@ window.addEventListener('DOMContentLoaded', () => {
       host=document.createElement('div'); host.id='scp-view'; feed.appendChild(host);
       host.innerHTML='<button class="scp-back">← '+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
         +'<div style="font-weight:700;font-size:15px;margin:0 0 2px;">📊 '+LL('Compare countries','国を比較','Länder vergleichen','Сравнение стран','Comparar países')+'</div>'
-        +'<p style="margin:0 0 8px;color:var(--text-muted);font-size:11px;">'+LL('Up to 5 countries · bar chart / time-series / free table. Where a second source exists (IMF WEO), a per-indicator switch appears.','最大5か国 · 棒グラフ／時系列／自由な表。第2の出典（IMF WEO）がある指標にのみ切替ボタンが表示されます。','Bis zu 5 Länder · Balken / Zeitreihen / freie Tabelle. Quellen-Schalter je Kennzahl (IWF WEO).','До 5 стран · столбцы / динамика / таблица. Переключатель источника — где есть данные МВФ.','Hasta 5 países · barras / series / tabla libre. Selector de fuente por indicador (FMI WEO).')+'</p>'
+        +'<p style="margin:0 0 8px;color:var(--text-muted);font-size:11px;">'+LL('Up to 10 countries · bar chart / time-series / free table. Where a second source exists (IMF WEO), a per-indicator switch appears.','最大10か国 · 棒グラフ／時系列／自由な表。第2の出典（IMF WEO）がある指標にのみ切替ボタンが表示されます。','Bis zu 10 Länder · Balken / Zeitreihen / freie Tabelle. Quellen-Schalter je Kennzahl (IWF WEO).','До 10 стран · столбцы / динамика / таблица. Переключатель источника — где есть данные МВФ.','Hasta 10 países · barras / series / tabla libre. Selector de fuente por indicador (FMI WEO).')+'</p>'
         /* (#R70) view-mode segmented control — bar (the old click-country compare, default) | time-series | table */
         +'<div id="scp-modes" class="scp-modes">'
           +'<button data-m="bar">'+LL('Bar chart','棒グラフ','Balken','Столбцы','Barras')+'</button>'
@@ -16417,7 +16487,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'</div>'
         +'<div id="scp-chips" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;"></div>'
         +'<div style="position:relative;"><input class="scp-add" id="scp-add" autocomplete="off" style="width:100%;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><div id="scp-list"></div></div>'
-        +'<div class="scp-metrics" id="scp-metrics"></div>'
+        /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
+        +'<button class="scp-mtog" id="scp-mtog"></button>'
+        +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
       host.querySelector('.scp-back').onclick=()=>{ try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
       host.querySelectorAll('#scp-modes button').forEach(b=>{ b.onclick=()=>{ const m=b.getAttribute('data-m'); if(m===mode) return; mode=m; render(); }; });
@@ -16435,11 +16507,11 @@ window.addEventListener('DOMContentLoaded', () => {
           ||'<div style="padding:8px 10px;color:var(--text-muted);font-size:11.5px;">'+LL('No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')+'</div>';
         listEl.querySelectorAll('.scp-cr').forEach(r=>{ r.onmousedown=(e)=>{ e.preventDefault(); const cd=r.getAttribute('data-c');
           if(codes.indexOf(cd)>=0) codes=codes.filter(x=>x!==cd);
-          else { if(codes.length>=5){ try{ imToast(LL('Maximum 5 countries','最大5か国です','Maximal 5 Länder','Максимум 5 стран','Máximo 5 países')); }catch(_){} return; } codes.push(cd); }
+          else { if(codes.length>=10){ try{ imToast(LL('Maximum 10 countries','最大10か国です','Maximal 10 Länder','Максимум 10 стран','Máximo 10 países')); }catch(_){} return; } codes.push(cd); }
           render(); setTimeout(()=>{ try{ const a2=host&&host.querySelector('#scp-add'); if(a2){ a2.focus(); const l2=host.querySelector('#scp-list'); if(l2){ l2.style.display='block'; } } }catch(_){} },0); }; }); }
       addI.addEventListener('input',openList); addI.addEventListener('focus',openList);
       addI.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeList(); } if(e.key==='Enter'){ e.preventDefault();
-        const first=listEl.querySelector('.scp-cr:not(.sel)'); if(first){ const cd=first.getAttribute('data-c'); if(codes.length<5&&codes.indexOf(cd)<0){ codes.push(cd); addI.value=''; render(); } } } });
+        const first=listEl.querySelector('.scp-cr:not(.sel)'); if(first){ const cd=first.getAttribute('data-c'); if(codes.length<10&&codes.indexOf(cd)<0){ codes.push(cd); addI.value=''; render(); } } } });
       document.addEventListener('mousedown',e=>{ try{ if(host&&!host.contains(e.target)) closeList(); else if(host&&!e.target.closest('#scp-list')&&e.target!==addI) closeList(); }catch(_){} });
       host.__refreshList=refreshList;
       return host; }
@@ -16447,28 +16519,40 @@ window.addEventListener('DOMContentLoaded', () => {
       codes.forEach((cd,i)=>{ const s2=countryStats[cd]||{}; const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
         el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd))+'<span class="scp-x" title="remove">✕</span>';
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); }); }
+    /* (#R71) grouped picker behind a single toggle ("指標選択画面が煩雑になっている。ごちゃごちゃ") */
+    let mOpen=false;
     function metricRow(){ const w=host&&host.querySelector('#scp-metrics'); if(!w) return; w.innerHTML='';
-      IND.forEach(ind=>{ const b=document.createElement('button'); b.className='scp-m'+(sel.has(ind.k)?' on':''); b.textContent=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
-        b.onclick=()=>{ if(!indOrder) indOrder=IND.filter(i2=>sel.has(i2.k)).map(i2=>i2.k);
-          if(sel.has(ind.k)){ sel.delete(ind.k); indOrder=indOrder.filter(k2=>k2!==ind.k); }
-          else { sel.add(ind.k); indOrder.push(ind.k); }
-          render(); }; w.appendChild(b); }); }
+      const tog=host.querySelector('#scp-mtog');
+      if(tog){ tog.innerHTML=LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+' <b>('+sel.size+'/'+IND.length+')</b> '+(mOpen?'⌃':'⌄');
+        tog.onclick=()=>{ mOpen=!mOpen; w.style.display=mOpen?'flex':'none'; tog.innerHTML=LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+' <b>('+sel.size+'/'+IND.length+')</b> '+(mOpen?'⌃':'⌄'); };
+        w.style.display=mOpen?'flex':'none'; }
+      CATORD.forEach(cat=>{ const inds=IND.filter(i2=>(INDCAT[i2.k]||'base')===cat); if(!inds.length) return;
+        const h=document.createElement('div'); h.className='scp-mcat'; const cl=CATL[cat]; h.textContent=LL(cl[0],cl[1],cl[2],cl[3],cl[4]); w.appendChild(h);
+        inds.forEach(ind=>{ const b=document.createElement('button'); b.className='scp-m'+(sel.has(ind.k)?' on':''); b.textContent=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
+          b.onclick=()=>{ if(!indOrder) indOrder=IND.filter(i2=>sel.has(i2.k)).map(i2=>i2.k);
+            if(sel.has(ind.k)){ sel.delete(ind.k); indOrder=indOrder.filter(k2=>k2!==ind.k); }
+            else { sel.add(ind.k); indOrder.push(ind.k); }
+            render(); }; w.appendChild(b); }); }); }
     /* (#R70) selected indicators in the USER'S order (table columns are drag-reorderable) */
     function orderedInds(){ const ks=(indOrder&&indOrder.length)?indOrder.filter(k2=>sel.has(k2)):IND.filter(i2=>sel.has(i2.k)).map(i2=>i2.k);
       return ks.map(k2=>IND.find(i2=>i2.k===k2)).filter(Boolean); }
     /* multi-country chart with a shared crosshair (values for EVERY country at the hovered year) */
     const CW=760, CH=120;
-    function mChart(ind,serMap){ const entries=codes.map((cd,i)=>({cd,i,s:serMap[cd]})).filter(e=>e.s&&e.s.length>1);
+    /* (#R71) hh = pixel height override (the focus view uses a LARGE chart); a dashed 0-axis gridline is
+       drawn whenever the value range crosses zero ("0の位置に補助線があった方が見やすい"). */
+    function mChart(ind,serMap,hh){ const entries=codes.map((cd,i)=>({cd,i,s:serMap[cd]})).filter(e=>e.s&&e.s.length>1);
       if(!entries.length) return '<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">'+LL('No time-series available','時系列データなし','Keine Zeitreihe','Нет динамики','Sin series')+'</div>';
       let y0=Infinity,y1=-Infinity,v0=Infinity,v1=-Infinity;
       entries.forEach(e=>e.s.forEach(p=>{ if(p.y<y0)y0=p.y; if(p.y>y1)y1=p.y; if(p.v<v0)v0=p.v; if(p.v>v1)v1=p.v; }));
       const padL=8,padR=8,padT=10,padB=16; const X=y=>padL+((y-y0)/((y1-y0)||1))*(CW-padL-padR), Y=v=>padT+(1-(v-v0)/((v1-v0)||1))*(CH-padT-padB);
       let paths=''; const meta=[];
+      if(v0<0&&v1>0){ const zy=Y(0).toFixed(1); paths+='<line x1="'+padL+'" x2="'+(CW-padR)+'" y1="'+zy+'" y2="'+zy+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4 4" opacity="0.55" vector-effect="non-scaling-stroke"/><text x="'+(padL+2)+'" y="'+(zy-3)+'" font-size="9" fill="var(--text-muted)">0</text>'; }
       entries.forEach(e=>{ let d=''; const pts=[]; e.s.forEach((p,j)=>{ const x=X(p.y),y=Y(p.v); d+=(j?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; pts.push([p.y,+x.toFixed(1),+y.toFixed(1),ind.fmt(p.v)]); });
         paths+='<path d="'+d+'" fill="none" stroke="'+PAL[e.i]+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; meta.push({i:e.i,cd:e.cd,pts}); });
       const metaAttr=esc(JSON.stringify(meta));
+      const hpx=hh||110;
       return '<div class="ts-wrap scp-chart" style="margin:0 0 10px;position:relative;" data-m=\''+metaAttr.replace(/'/g,'&#39;')+'\'>'
-        +'<svg class="ts-svg" width="100%" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="none" style="display:block;height:110px;background:var(--input-bg);border-radius:10px;cursor:crosshair;touch-action:none;">'
+        +'<svg class="ts-svg" width="100%" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="none" style="display:block;height:'+hpx+'px;background:var(--input-bg);border-radius:10px;cursor:crosshair;touch-action:none;">'
         +paths
         +'<line class="ts-cursor" y1="0" y2="'+CH+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
         +'<text x="'+padL+'" y="'+(CH-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(CW-padR)+'" y="'+(CH-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'
@@ -16500,27 +16584,44 @@ window.addEventListener('DOMContentLoaded', () => {
       if(wantImf){ const im=await fetchIMF(ind.imf,codes,ind.imfScale); if(im){ serMap=im; srcName='IMF WEO'; } else imfFail=true; }
       if(!Object.keys(serMap).length){ const rs=await Promise.all(codes.map(cd=>fetchWB(cd,ind.wb))); codes.forEach((cd,i)=>{ if(rs[i]) serMap[cd]=rs[i]; }); srcName='World Bank'; }
       return {ind,serMap,srcName,imfFail}; }
-    /* (#R70) horizontal comparison bars — the old click-country bar view, now per-indicator on live data.
-       Negative values (growth, inflation, current account…) get a red left-tinted bar scaled by |v|. */
-    function barsHtml(b){ const entries=codes.map((cd,i)=>{ const s2=b.serMap[cd]; return {cd,i,last:(s2&&s2.length)?s2[s2.length-1]:null}; });
-      const vals=entries.filter(e=>e.last).map(e=>e.last.v);
+    /* shared block header: label · WB⇄IMF switch · source · 詳細 (focus) button */
+    function secHtml(ind,srcName,extra){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
+      const sw=ind.imf
+        ?('<span class="scp-srcsw" data-k="'+ind.k+'"><button data-s="wb"'+(srcSel[ind.k]!=='imf'?' class="on"':'')+'>WB</button><button data-s="imf"'+(srcSel[ind.k]==='imf'?' class="on"':'')+'>IMF</button></span>'
+          +'<span class="scp-src">· '+esc(srcName)+'</span>')
+        :('<span class="scp-src">· '+esc(ind.stat?(ind.src||'IntMap'):srcName||'World Bank')+'</span>');
+      return '<div class="scp-sec"><span class="scp-secl">'+esc(lbl)+'</span> '+sw+(extra||'')
+        +'<button class="scp-focus" data-k="'+ind.k+'" title="'+LL('Details','詳細','Details','Подробно','Detalles')+'">'+LL('Details','詳細','Details','Подробно','Detalles')+' ›</button></div>'; }
+    const fmtSigned=(ind,v)=>{ if(!SIGNED[ind.k]) return '<b>'+esc(ind.fmt(v))+'</b>';
+      const col=v>0?'#30d158':(v<0?'#ff453a':'var(--text-main)');
+      return '<b style="color:'+col+';">'+(v>0?'+':'')+esc(ind.fmt(v))+'</b>'; };
+    /* (#R71) bars — one shared track geometry (fixed name & value columns → identical bar lengths), a REAL
+       zero axis for sign-carrying indicators (bars grow left/right from the 0 line), ± colouring, per-value
+       year, and a ° marker + note when a gap was filled from the other source / bundled reference. */
+    function barsHtml(b){ const entries=codes.map((cd,i)=>({cd,i,e:b.map[cd]||null}));
+      const vals=entries.filter(x=>x.e).map(x=>x.e.v);
       if(!vals.length) return '<div style="color:var(--text-muted);font-size:11px;padding:2px 0 8px;">'+LL('No data','データなし','Keine Daten','Нет данных','Sin datos')+'</div>';
-      const maxA=Math.max.apply(null,vals.map(v=>Math.abs(v)))||1;
-      return '<div class="scp-bars">'+entries.map(e=>{ const s2=countryStats[e.cd]||{};
-        const nm=esc((s2.flag?s2.flag+' ':'')+(cName(s2)||e.cd));
-        if(!e.last) return '<div class="scp-brow"><span class="scp-bnm">'+nm+'</span><span class="scp-btrack"></span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
-        const w=Math.max(1.5,Math.abs(e.last.v)/maxA*100);
-        const yT=e.last.y?(' <span style="color:var(--text-muted);font-weight:400;">('+e.last.y+')</span>'):'';
-        return '<div class="scp-brow"><span class="scp-bnm">'+nm+'</span><span class="scp-btrack"><span class="scp-bfill'+(e.last.v<0?' neg':'')+'" style="width:'+w.toFixed(1)+'%;background:'+(e.last.v<0?'#ff453a':PAL[e.i])+';"></span></span><span class="scp-bval"><b>'+esc(b.ind.fmt(e.last.v))+'</b>'+yT+'</span></div>';
-      }).join('')+'</div>'; }
-    function blockHtml(b){ const lbl=LL(b.ind.l[0],b.ind.l[1],b.ind.l[2],b.ind.l[3],b.ind.l[4]);
-      const sw=b.ind.imf
-        ?('<span class="scp-srcsw" data-k="'+b.ind.k+'"><button data-s="wb"'+(srcSel[b.ind.k]!=='imf'?' class="on"':'')+'>WB</button><button data-s="imf"'+(srcSel[b.ind.k]==='imf'?' class="on"':'')+'>IMF</button></span>')
-        :('<span class="scp-src">· '+esc(b.ind.stat?(b.ind.src||'IntMap'):'World Bank')+'</span>');   /* only ONE source exists — say so, no fake switch */
-      let html='<div class="scp-sec">'+esc(lbl)+' '+sw+(b.ind.imf?('<span class="scp-src">· '+esc(b.srcName)+(b.imfFail?(' ('+LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')+')'):'')+'</span>'):'')+'</div>';
-      if(mode==='bar'){ html+=barsHtml(b); return html; }   /* (#R70) bar mode: bars carry the values — no extra table */
+      const hasNeg=vals.some(v=>v<0);
+      const min0=Math.min(0,Math.min.apply(null,vals)), max0=Math.max(0,Math.max.apply(null,vals));
+      const range=(max0-min0)||1, zero=(-min0)/range*100;
+      let html='<div class="scp-bars">'+entries.map(x=>{ const s2=countryStats[x.cd]||{};
+        const nm=esc((s2.flag?s2.flag+' ':'')+(cName(s2)||x.cd));
+        if(!x.e) return '<div class="scp-brow"><span class="scp-bnm">'+nm+'</span><span class="scp-btrack"'+(hasNeg?' data-z="1"':'')+'>'+(hasNeg?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span>'):'')+'</span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
+        const v=x.e.v, w=Math.max(0.8,Math.abs(v)/range*100), left=v<0?(zero-w):zero;
+        const bar=hasNeg
+          ?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span><span class="scp-bfill" style="left:'+Math.max(0,left).toFixed(2)+'%;width:'+w.toFixed(2)+'%;background:'+(v<0?'#ff453a':PAL[x.i])+';"></span>')
+          :('<span class="scp-bfill" style="left:0;width:'+Math.max(1.2,Math.abs(v)/(max0||1)*100).toFixed(2)+'%;background:'+PAL[x.i]+';"></span>');
+        const yT=x.e.y?('<span class="scp-yr">('+x.e.y+')</span>'):'';
+        const srcM=x.e.src?('<span class="scp-fill" title="'+(x.e.src==='ref'?LL('from bundled reference data','内蔵参照データで補完','aus Referenzdaten','из справочных данных','de datos de referencia'):LL('filled from ','補完: ','ergänzt aus ','дополнено из ','completado de ')+x.e.src)+'">°</span>'):'';
+        return '<div class="scp-brow"><span class="scp-bnm" title="'+nm+'">'+nm+'</span><span class="scp-btrack">'+bar+'</span><span class="scp-bval">'+fmtSigned(b.ind,v)+srcM+' '+yT+'</span></div>';
+      }).join('')+'</div>';
+      if(b.mixed) html+='<div class="scp-src" style="margin:-4px 0 8px;">° '+LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')+'</div>';
+      return html; }
+    function barBlockHtml(b){ return secHtml(b.ind,b.srcName)+barsHtml(b); }
+    function blockHtml(b){
+      let html=secHtml(b.ind,b.srcName,(b.imfFail?('<span class="scp-src">('+LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')+')</span>'):''));
       html+='<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>'+codes.map((cd,i)=>{ const s2=countryStats[cd]||{}; return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
-      html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td><b>'+esc(b.ind.fmt(last.v))+'</b>'+(last.y?' <span style="color:var(--text-muted);">('+last.y+')</span>':'')+'</td>'; }).join('')+'</tr></table></div>';
+      html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td>'+fmtSigned(b.ind,last.v)+(last.y?' <span style="color:var(--text-muted);">('+last.y+')</span>':'')+'</td>'; }).join('')+'</tr></table></div>';
       html+=mChart(b.ind,b.serMap); return html; }
     /* (#R64) PER-INDICATOR rendering: a source switch re-renders ONLY its own block, from cache when available —
        no full "Loading data…" wipe, no scroll jump ("ソースを切り替えたらいちいち再度すべて読み込み").
@@ -16531,11 +16632,42 @@ window.addEventListener('DOMContentLoaded', () => {
       const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode;
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
       const my=(el.__seq=(el.__seq||0)+1);
-      const b=await blockData(ind); if(el.__seq!==my||!el.isConnected) return;
+      /* (#R71) bar mode reads the FAST latest-value path (1 request per indicator); only the time-series
+         view pays for full per-country series */
+      const b=(mode==='bar')?await latestData(ind):await blockData(ind);
+      if(el.__seq!==my||!el.isConnected) return;
       el.dataset.sig=sig;
-      el.innerHTML=blockHtml(b);
-      el.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=()=>{ srcSel[k]=btn.getAttribute('data-s'); renderInd(k); }; });
+      el.innerHTML=(mode==='bar')?barBlockHtml(b):blockHtml(b);
+      el.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=(e)=>{ e.stopPropagation(); srcSel[k]=btn.getAttribute('data-s'); renderInd(k); }; });
+      el.querySelectorAll('.scp-focus').forEach(btn=>{ btn.onclick=(e)=>{ e.stopPropagation(); renderFocus(k); }; });
       try{ wireM(el); }catch(_){}
+    }
+    /* ===== (#R71) FOCUS view ("一つだけ選択したら詳細設定をできるとかなら尚いい"): one indicator, full
+       width — source switch, latest bars, a LARGE time-series chart and a per-year value table. ===== */
+    async function renderFocus(k){ if(!host) return; const ind=IND.find(i2=>i2.k===k); if(!ind) return;
+      const body=host.querySelector('#scp-body'); if(!body) return;
+      body.innerHTML='<div id="scp-fx"><button class="scp-back" id="scp-fxback">← '+LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')+'</button><div style="color:var(--text-muted);font-size:12px;padding:8px 2px;">'+LL('Loading data…','データ読み込み中…','Lade Daten…','Загрузка данных…','Cargando datos…')+'</div></div>';
+      body.querySelector('#scp-fxback').onclick=()=>{ render(); };
+      const my=(renderFocus._seq=(renderFocus._seq||0)+1);
+      const [lb,sb2]=await Promise.all([latestData(ind),blockData(ind)]);
+      if(my!==renderFocus._seq||!host.isConnected) return;
+      const fx=body.querySelector('#scp-fx'); if(!fx) return;
+      /* per-year table: union of years, newest first, capped at 24 rows */
+      const yset=new Set(); codes.forEach(cd=>{ (sb2.serMap[cd]||[]).forEach(p=>yset.add(p.y)); });
+      const years=[...yset].sort((a,b2)=>b2-a).slice(0,24);
+      let yt='';
+      if(years.length){ yt='<div class="scp-tblwrap" style="max-height:300px;overflow-y:auto;"><table class="scp-tbl scp-xl"><tr><th>'+LL('Year','年','Jahr','Год','Año')+'</th>'
+          +codes.map((cd,i)=>{ const s2=countryStats[cd]||{}; return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
+        years.forEach(y2=>{ yt+='<tr><th class="scp-rowh" style="cursor:default;">'+y2+'</th>'+codes.map(cd=>{ const p=(sb2.serMap[cd]||[]).find(q=>q.y===y2); return p?('<td>'+fmtSigned(ind,p.v)+'</td>'):'<td style="color:var(--text-muted);">—</td>'; }).join('')+'</tr>'; });
+        yt+='</table></div>'; }
+      fx.innerHTML='<button class="scp-back" id="scp-fxback">← '+LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')+'</button>'
+        +secHtml(ind,sb2.srcName).replace('scp-focus','scp-focus" style="display:none;')
+        +barsHtml(lb)
+        +mChart(ind,sb2.serMap,240)
+        +yt;
+      fx.querySelector('#scp-fxback').onclick=()=>{ render(); };
+      fx.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=()=>{ srcSel[k]=btn.getAttribute('data-s'); renderFocus(k); }; });
+      try{ wireM(fx); }catch(_){}
     }
     async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); modeRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
       const body=v.querySelector('#scp-body');
@@ -16571,17 +16703,20 @@ window.addEventListener('DOMContentLoaded', () => {
       const inds=orderedInds(); if(!inds.length||!codes.length) return;
       if(!body.querySelector('#scp-tblv')) body.innerHTML='<div id="scp-tblv"><div style="color:var(--text-muted);font-size:12px;padding:10px 2px;">'+LL('Loading data…','データ読み込み中…','Lade Daten…','Загрузка данных…','Cargando datos…')+'</div></div>';
       const my=(renderTable._seq=(renderTable._seq||0)+1);
-      const blocks=await Promise.all(inds.map(ind=>blockData(ind)));
-      if(my!==renderTable._seq||!host||!host.isConnected) return;
+      /* (#R71) latest values ride the FAST path (1 request per indicator, WB⇄IMF⇄reference gap-fill);
+         only a specific-year selection needs the full per-country series */
+      const bByK={};
+      if(tYear==null){ const ls=await Promise.all(inds.map(ind=>latestData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; ls.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,latest:b.map}; }); }
+      else { const blocks=await Promise.all(inds.map(ind=>blockData(ind))); if(my!==renderTable._seq||!host||!host.isConnected) return; blocks.forEach(b=>{ bByK[b.ind.k]={ind:b.ind,ser:b.serMap}; }); }
       const wrap=body.querySelector('#scp-tblv'); if(!wrap) return;
-      const bByK={}; blocks.forEach(b=>{ bByK[b.ind.k]=b; });
+      const cellAt=(indK,cd)=>{ const b=bByK[indK]; if(!b) return null; if(b.latest) return b.latest[cd]||null; return _valAt(b.ser[cd],tYear); };
       /* row/col axes — default rows=countries; tFlip transposes */
       const rows=tFlip?inds.map(i2=>i2.k):codes.slice();
       const cols=tFlip?codes.slice():inds.map(i2=>i2.k);
       /* sorting: tSort={col,dir} sorts the ROW axis by that column's value */
       let rowOrder=rows.slice();
       if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
-        const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const b=bByK[indK]; const p=b?_valAt(b.serMap[cd],tYear):null; return p?p.v:null; };
+        const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const p=cellAt(indK,cd); return p?p.v:null; };
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
       const cLbl=cd=>{ const s2=countryStats[cd]||{}; return esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd)); };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
@@ -16598,9 +16733,10 @@ window.addEventListener('DOMContentLoaded', () => {
         h+='<th class="scp-h" draggable="true" data-ax="col" data-i="'+ci+'" data-k="'+esc(ck)+'">'+hLbl(ck,true)+srt+'</th>'; });
       h+='</tr>';
       rowOrder.forEach(rk=>{ h+='<tr><th class="scp-h scp-rowh" draggable="true" data-ax="row" data-k="'+esc(rk)+'">'+hLbl(rk,false)+'</th>';
-        cols.forEach(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const b=bByK[indK]; const i2=IND.find(x=>x.k===indK);
-          const p=b?_valAt(b.serMap[cd],tYear):null;
-          h+=p?('<td><b>'+esc(i2.fmt(p.v))+'</b>'+(p.y?' <span class="scp-yr">('+p.y+')</span>':'')+'</td>'):'<td style="color:var(--text-muted);">—</td>'; });
+        cols.forEach(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const i2=IND.find(x=>x.k===indK);
+          const p=cellAt(indK,cd);
+          /* (#R71) sign-carrying indicators show ±green/red; ° marks a gap-filled value */
+          h+=p?('<td>'+fmtSigned(i2,p.v)+(p.src?'<span class="scp-fill">°</span>':'')+(p.y?' <span class="scp-yr">('+p.y+')</span>':'')+'</td>'):'<td style="color:var(--text-muted);">—</td>'; });
         h+='</tr>'; });
       h+='</table></div>';
       h+='<div class="scp-src" style="margin-top:6px;">'+LL('Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)','出典は指標ごと（世界銀行／IMF WEO／内蔵参照データ — 棒グラフ・時系列表示に明記）','Quellen je Kennzahl: Weltbank / IWF WEO / Referenzdaten','Источники по показателям: Всемирный банк / МВФ / встроенные данные','Fuentes por indicador: Banco Mundial / FMI WEO / datos de referencia')+'</div>';
@@ -16612,7 +16748,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const esc2=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?('"'+s.replace(/"/g,'""')+'"'):s; };
         const strip=s=>String(s).replace(/<[^>]*>/g,'');
         let csv=esc2('')+','+cols.map(ck=>esc2(strip(hLbl(ck,true)))).join(',')+'\n';
-        rowOrder.forEach(rk=>{ const cells=cols.map(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const b=bByK[indK]; const p=b?_valAt(b.serMap[cd],tYear):null; return p?esc2(p.y?(p.v+' ('+p.y+')'):String(p.v)):''; });
+        rowOrder.forEach(rk=>{ const cells=cols.map(ck=>{ const indK=tFlip?rk:ck, cd=tFlip?ck:rk; const p=cellAt(indK,cd); return p?esc2(p.y?(p.v+' ('+p.y+')'):String(p.v)):''; });
           csv+=esc2(strip(hLbl(rk,false)))+','+cells.join(',')+'\n'; });
         const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download='intmap-compare.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
       }catch(_){} };
@@ -16638,7 +16774,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length){ sel=new Set(ok); indOrder=ok.slice(); } }
       if(initSource==='imf'||initSource==='wb'){ IND.forEach(i2=>{ if(i2.imf) srcSel[i2.k]=initSource; }); }
       if(initMode==='bar'||initMode==='ts'||initMode==='table') mode=initMode;   /* (#R70) callers may open straight into a view */
-      if(Array.isArray(initCodes)&&initCodes.length){ codes=initCodes.filter(cd=>countryStats[cd]).slice(0,5); }
+      if(Array.isArray(initCodes)&&initCodes.length){ codes=initCodes.filter(cd=>countryStats[cd]).slice(0,10); }   /* (#R71) cap 5→10 */
       if(!codes.length&&window._cpCurrent&&window._cpCurrent.code&&countryStats[window._cpCurrent.code]) codes=[window._cpCurrent.code];
       host=null;   /* rebuild inside the sidebar (the feed may have been re-rendered by tab switches) */
       render(); }
@@ -20580,9 +20716,9 @@ window.addEventListener('DOMContentLoaded', () => {
           const cds=[],missC=[]; for(const nm2 of rawC){ const c=await resolveCountry(nm2); if(c&&c.code){ if(cds.indexOf(c.code)<0) cds.push(c.code); } else missC.push(nm2); }
           if(!cds.length) return R(false, warn('⚠ '+L('Which countries should I compare?','どの国を比較しますか？','Welche Länder vergleichen?','Какие страны сравнить?','¿Qué países comparo?')));
           const viewM=({bar:'bar',bars:'bar',timeseries:'ts',ts:'ts','time-series':'ts',table:'table',pivot:'table'})[String(a.view||a.mode||'').toLowerCase()]||null;   /* (#R70) open straight into a view */
-          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,5),Array.isArray(a.metrics)?a.metrics:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM); okC=true; } }catch(_){}
-          let h2=okC?note('📊 '+L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(5,cds.length)+')'):warn('⚠');
-          if(cds.length>5) h2+=warn('⚠ '+L('Only the first 5 countries are compared','比較は最大5か国です','Nur die ersten 5 Länder','Только первые 5 стран','Solo los primeros 5 países'));
+          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,10),Array.isArray(a.metrics)?a.metrics:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM); okC=true; } }catch(_){}
+          let h2=okC?note('📊 '+L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(10,cds.length)+')'):warn('⚠');
+          if(cds.length>10) h2+=warn('⚠ '+L('Only the first 10 countries are compared','比較は最大10か国です','Nur die ersten 10 Länder','Только первые 10 стран','Solo los primeros 10 países'));
           if(missC.length) h2+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(missC.join(', ')));
           return R(okC,h2); }
         case 'module': return doModule(a);
@@ -20618,7 +20754,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. {"type":"outline","place":str,"color"?:str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it). {"type":"locate"} flies to the user\'s real GPS position (asks browser permission). {"type":"fullscreen","on":bool}. "bearing" also takes {"dir":"west"|"northeast"|…}; zoom/pitch/bearing/pan accept exact numbers for precise commands ("zoom to 5" → {"type":"zoom","to":5}; "tilt 30°" → {"type":"pitch","deg":30}).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
-        +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 5],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
+        +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"route","from":str,"to":str} (sea route); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}.\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
