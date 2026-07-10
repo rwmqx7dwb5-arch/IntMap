@@ -1654,6 +1654,20 @@ gtag('config', 'G-57X5MX0ZPW');
     .active-lyr-chip .alc-name{ cursor:pointer; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
     .active-lyr-chip .alc-x{ background:rgba(255,255,255,0.22); border:none; color:#fff; font-size:10px; line-height:1; width:16px; height:16px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; }
     .active-lyr-chip .alc-x:hover{ background:rgba(255,255,255,0.4); }
+    /* (#R69) "Active layersのUIがくそ" — the fixed-height chip strip stays (it is what guarantees the 0px
+       panel-reflow rule from R32/R64), but it gains: mouse-wheel horizontal scrolling, and an EXPAND button that
+       opens a floating list (absolute overlay → still zero reflow) with full layer names, per-layer opacity
+       sliders and one-tap removal. */
+    .alc-exp{ flex:0 0 auto; border:1px solid var(--glass-border,rgba(128,128,128,0.3)); background:var(--input-bg); color:var(--text-main); border-radius:8px; padding:3px 8px; font-size:10.5px; cursor:pointer; line-height:1.3; }
+    .alc-exp.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
+    .alc-panel{ position:absolute; left:8px; right:8px; top:100%; margin-top:4px; z-index:60; background:var(--popup-bg); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:12px; box-shadow:var(--shadow,0 10px 30px rgba(0,0,0,0.25)); padding:6px; max-height:44vh; overflow-y:auto; }
+    .alc-row{ display:flex; align-items:center; gap:8px; padding:5px 7px; border-radius:8px; }
+    .alc-row:hover{ background:var(--input-bg); }
+    .alc-row .alcr-name{ flex:1; min-width:0; font-size:12px; color:var(--text-main); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .alc-row input[type=range]{ width:84px; flex:0 0 auto; }
+    .alc-row .alc-x{ background:var(--input-bg); color:var(--text-muted); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); }
+    .alc-row .alc-x:hover{ background:#ff453a; color:#fff; border-color:#ff453a; }
+    .alc-empty{ padding:8px 10px; color:var(--text-muted); font-size:11.5px; }
 
     /* --- Opacity moved into the legend / layer-control popup (#17) --- */
     .dl-op-row{ display:flex; align-items:center; gap:8px; margin:8px 0 2px; font-size:10.5px; color:var(--text-muted); }
@@ -2534,10 +2548,12 @@ window.addEventListener('DOMContentLoaded', () => {
          BAKED IN one zoom's coarse coordinate and then hopped on refinement, which was itself the reported
          "山岳名がズームに応じて位置ずれする". Do not re-pin point features. */
       try{ if(!map.getSource('stab-water-src')) map.addSource('stab-water-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
-      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':13,'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
+      /* (#R69) both water layers additionally gate each pin on its first-seen tile zoom (`mz`, see _harvestOne)
+         so zoomed-in harvests don't flood lower zooms ("水域ラベルが…過剰な数見えすぎ"). */
+      if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['all',['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':13,'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
       /* (#R65) seas/bays/straits/gulfs from the SAME pinned dynamic source (visible from low zoom) — every
          named water body worldwide gets a stable label, not just the curated majors. */
-      if(!map.getLayer('ofm-water2')) map.addLayer({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':13.5},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
+      if(!map.getLayer('ofm-water2')) map.addLayer({id:'ofm-water2',type:'symbol',source:'stab-water-src',minzoom:2,filter:['all',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]],['<=',['coalesce',['get','mz'],0],['+',['zoom'],0.2]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-letter-spacing':0.06,'text-max-width':8,'text-size':13.5},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}});
       try{ if(!map.getSource('geo-sea-src')){
         const S=window.SEA_LABELS||[];
         map.addSource('geo-sea-src',{type:'geojson',data:{type:'FeatureCollection',features:S.map((r,i)=>({type:'Feature',id:i,geometry:{type:'Point',coordinates:[r[0],r[1]]},properties:{z:r[2],big:r[2]<=1?1:0,en:r[3],jp:r[4],de:r[5],ru:r[6],es:r[7]}}))}});
@@ -2572,6 +2588,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const idx=_stabIdx[kind]; let feats=[];
     try{ const opts={sourceLayer}; if(filter) opts.filter=filter; feats=map.querySourceFeatures('ofm',opts)||[]; }catch(_){ return; }
     const seaSet=(kind==='water')?_seaNameSet():null;
+    /* (#R69) DENSITY ("水域ラベルがそれほどズームしていない状態でも過剰な数見えすぎ"): a pin harvested while
+       zoomed in used to stay visible at EVERY lower zoom (the geojson source has no per-feature importance).
+       Each pin now records the lowest tile zoom it was actually SEEN at (`mz`) — exactly the importance grading
+       OpenMapTiles itself applies per zoom — and the label layers filter on it, so zooming out only keeps the
+       water bodies the low-zoom tiles themselves consider worth labelling. mz only ever moves DOWN (a pin never
+       disappears while zooming in) and the pinned POSITION never changes. */
+    let zNow=6; try{ zNow=Math.max(0,Math.floor(map.getZoom())); }catch(_){}
     for(const f of feats){ try{
       const p=f.properties||{}; const nm2=p.name||p['name:en']||p.name_en; if(!nm2) continue;
       if(seaSet){ let dup=false; [p.name,p['name:en'],p.name_en,p['name:ja'],p['name:de'],p['name:ru'],p['name:es']].forEach(v=>{ if(v&&seaSet.has(String(v).toLowerCase())) dup=true; }); if(dup) continue; }   /* the curated multilingual gazetteer already labels it */
@@ -2591,10 +2614,16 @@ window.addEventListener('DOMContentLoaded', () => {
          nearby existing pin as THE anchor. FIRST SEEN WINS, FOREVER: a water label floats on the water body, so
          a few hundred metres of low-zoom quantization is invisible — total positional stability is what matters
          (#R67: the R66 "refinement" idea is deliberately gone; updating pins was itself visible movement). */
+      /* (#R69) per-class floor keeps rare huge bodies visible early while bays/lagoons wait for closer zooms */
+      const clsMin=(cls==='ocean')?0:(cls==='sea')?3:(cls==='gulf')?4.5:(cls==='bay'||cls==='strait'||cls==='lagoon')?5.5:6.5;
+      const mzNew=Math.max(clsMin,zNow);
       let hit=null; for(let dx=-1;dx<=1&&!hit;dx++) for(let dy=-1;dy<=1&&!hit;dy++){ const k=base+'|'+cell+'|'+(Math.round(co[0]/cell)+dx)+'|'+(Math.round(co[1]/cell)+dy); if(idx.has(k)) hit=k; }
-      if(hit) continue;
+      if(hit){ const ex=idx.get(hit); const exz=(ex&&ex.properties&&typeof ex.properties.mz==='number')?ex.properties.mz:99;
+        if(mzNew<exz-0.01){ ex.properties.mz=mzNew; _stabDirty[kind]=true; }   /* seen in a lower-zoom tile → may appear earlier; position untouched */
+        continue; }
       const key=base+'|'+cell+'|'+Math.round(co[0]/cell)+'|'+Math.round(co[1]/cell);
       if(idx.size>9000) return;
+      p.mz=mzNew;
       idx.set(key,{type:'Feature',id:idx.size,geometry:{type:'Point',coordinates:[co[0],co[1]]},properties:p});
       _stabDirty[kind]=true;
     }catch(_){} } }
@@ -2612,7 +2641,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(dump==='peaks'){ try{ o.z=+map.getZoom().toFixed(2); o.c=[+map.getCenter().lng.toFixed(6),+map.getCenter().lat.toFixed(6)];
       o.rp=map.queryRenderedFeatures({layers:['ofm-peak']}).slice(0,12).map(f=>{ const c=f.geometry&&f.geometry.coordinates; let s=null; try{ s=c?map.project(c):null; }catch(_){}
         return {n:(f.properties||{}).name, c:c?c.map(x=>+x.toFixed(6)):null, px:s?[Math.round(s.x),Math.round(s.y)]:null}; }); }catch(e){ o.rpErr=String(e&&e.message||e); } }
-    else if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,6).map(f=>({n:(f.properties||{}).name,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
+    else if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,10).map(f=>({n:(f.properties||{}).name,mz:(f.properties||{}).mz,cls:(f.properties||{}).class,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
     return o; };   /* diagnostics (read-only) */
   /* (#R62) FIXED sea/ocean/gulf label gazetteer — one stable point per water body (fixes the per-tile label drift),
      5 languages, clickable like place labels. [lng, lat, minzoom, en, jp, de, ru, es] */
@@ -7631,6 +7660,10 @@ window.addEventListener('DOMContentLoaded', () => {
   window._backToStats=function(){ compareShown=false; renderStats(searchVal()); };
   function renderStats(q){
     const feed=document.getElementById('live-news-feed'); clearMarkers();
+    /* (#R69) the 5-country comparison view owns the feed while it is open — a deferred renderStats (e.g. the
+       loadCountryData().then below firing after the user opened the comparison) must NOT clobber it; its own
+       "Back to statistics" button removes the view before calling renderStats. */
+    if(document.getElementById('scp-view')) return;
     if(!countryDataLoaded){ feed.innerHTML=`<div class="empty-msg">${t('loadingData')}</div>`; loadCountryData().then(()=>{ if(currentMode==='stats')renderStats(searchVal()); }); return; }
     let arr=Object.values(countryStats).filter(s=>s.nameEn);
     if(arr.length===0){ feed.innerHTML=`<div class="empty-msg">${t('noData')}</div>`; return; }
@@ -8881,7 +8914,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
     <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。端末の位置情報は、天気・大気質等のウィジェットや「現在地へ移動」機能の利用時にブラウザの許可を得た上でのみ取得され、端末内での地図表示に使用されます（天気・大気質の取得時のみ座標が気象API（Open-Meteo）に送信されます）。当方サーバーに保存されることはありません。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コードと指標コードのみが送信されます）、USGS（地震データの取得）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（fxratesapi／ER-API・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェットと下部ティッカーの価格取得のみで、利用者の情報は送信されません）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。対象の国コードのみが送信されます）、ウェブカメラ視聴（地点をクリックすると、その提供元の第三者コンテンツ＝ライブ画像／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／提供元ページ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。各社のプライバシーポリシーが適用されます。</p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）、Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コードと指標コードのみが送信されます）、USGS（地震データの取得）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（fxratesapi／ER-API・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェットと下部ティッカーの価格取得のみで、利用者の情報は送信されません）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。対象の国コードのみが送信されます）、ウェブカメラ視聴（地点をクリックすると、その提供元の第三者コンテンツ＝ライブ画像／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／提供元ページ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。各社のプライバシーポリシーが適用されます。</p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -8893,7 +8926,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
     <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side). Your device location is read only when you use the weather/air-quality widgets or the "current location" command, only after the browser asks your permission, and is used on-device to position the map (coordinates are sent only to the weather API, Open-Meteo, to fetch conditions); it is never stored on our servers.</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result; additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); statistics APIs (World Bank, IMF DataMapper — only country and indicator codes are sent); USGS (earthquake feeds); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (fxratesapi / ER-API, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches only for the widgets and the bottom ticker; nothing about you is sent); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes; only the country code is sent); webcam viewing — opening a webcam loads that operator's third-party content (a live image, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or the operator's own page), subject to that operator's/platform's policies; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). Each has its own privacy policy.</p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result; additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent); statistics APIs (World Bank, IMF DataMapper — only country and indicator codes are sent); USGS (earthquake feeds); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (fxratesapi / ER-API, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches only for the widgets and the bottom ticker; nothing about you is sent); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes; only the country code is sent); webcam viewing — opening a webcam loads that operator's third-party content (a live image, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or the operator's own page), subject to that operator's/platform's policies; and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). Each has its own privacy policy.</p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -8998,7 +9031,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const m=document.getElementById('ctx-menu'); const mc=document.getElementById('map-container').getBoundingClientRect();
     const items=[
       {h:`${t('ctxThisPoint')}: ${fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
-      {label:`🤖 ${currentLang==='jp'?'ここをAIに聞く':currentLang==='de'?'KI zu diesem Ort fragen':currentLang==='ru'?'Спросить ИИ об этом месте':'Ask AI about here'}`, action:()=>{ try{ window.IntMapAIResearch&&window.IntMapAIResearch.askHere(lngLat); }catch(_){} }},
+      {label:`${currentLang==='jp'?'ここをAIに聞く':currentLang==='de'?'KI zu diesem Ort fragen':currentLang==='ru'?'Спросить ИИ об этом месте':'Ask AI about here'}`, action:()=>{ try{ window.IntMapAIResearch&&window.IntMapAIResearch.askHere(lngLat); }catch(_){} }},
       {label:`${currentLang==='jp'?'Atlas コンソール (beta)':currentLang==='de'?'Atlas-Konsole (Beta)':currentLang==='ru'?'Консоль Atlas (бета)':currentLang==='es'?'Consola Atlas (beta)':'Atlas console (beta)'}`, action:()=>{ try{ window.IntMapConsole&&window.IntMapConsole.open(); }catch(_){} }},
       {label:`📍 ${t('ctxDropPin')}`, action:()=>{ const id=addPin(lngLat.lng,lngLat.lat); openPinPopup(id); }},
       {label:`📏 ${t('ctxMeasureFrom')}`, action:()=>{ if(toolMode!=='measure') setTool('measure'); measurePoints=[[lngLat.lng,lngLat.lat]]; refreshTool(); updateToolPanel(); }},
@@ -9666,12 +9699,17 @@ window.addEventListener('DOMContentLoaded', () => {
       sec.style.display='';
       const title=(lang==='jp'?'表示中のレイヤー':lang==='de'?'Aktive Ebenen':lang==='ru'?'Активные слои':lang==='es'?'Capas activas':'Active layers');
       const clearTxt=(lang==='jp'?'すべて解除':lang==='de'?'Alle aus':lang==='ru'?'Сбросить все':lang==='es'?'Quitar todo':'Clear all');
-      /* (#R19) One-tap deselect-ALL ("すべてのレイヤーを選択解除できるボタン") in the section header. */
-      sec.innerHTML=`<div class="lyr-head lyr-section-label" style="margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;">${title} (${chips.length})<button class="alc-clear-all" style="flex:0 0 auto;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:8px;padding:3px 9px;font-size:10.5px;cursor:pointer;">${clearTxt}</button></div><div class="active-lyr-chips"></div>`;
+      const listTxt=(lang==='jp'?'一覧':lang==='de'?'Liste':lang==='ru'?'Список':lang==='es'?'Lista':'List');
+      /* (#R19) One-tap deselect-ALL ("すべてのレイヤーを選択解除できるボタン") in the section header.
+         (#R69) + a "List" expander (see .alc-panel CSS note) — better UI, same constant bar height. */
+      sec.innerHTML=`<div class="lyr-head lyr-section-label" style="margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="flex:1;min-width:0;">${title} (${chips.length})</span><button class="alc-exp">${listTxt} ⌄</button><button class="alc-clear-all" style="flex:0 0 auto;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:8px;padding:3px 9px;font-size:10.5px;cursor:pointer;">${clearTxt}</button></div><div class="active-lyr-chips"></div>`;
       sec.querySelector('.alc-clear-all').onclick=(e)=>{ e.stopPropagation();
         chips.forEach(c=>{ try{ if(c.el.checked){ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} });
         setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
       const wrap=sec.querySelector('.active-lyr-chips');
+      /* (#R69) vertical mouse wheel scrolls the horizontal strip (it was near-impossible to reach overflowing
+         chips with a mouse). */
+      wrap.addEventListener('wheel',(e)=>{ if(e.deltaY&&!e.deltaX&&wrap.scrollWidth>wrap.clientWidth){ wrap.scrollLeft+=e.deltaY; e.preventDefault(); } },{passive:false});
       chips.forEach(c=>{
         const chip=document.createElement('span'); chip.className='active-lyr-chip';
         const nm=document.createElement('span'); nm.className='alc-name'; nm.textContent=c.name;
@@ -9680,6 +9718,36 @@ window.addEventListener('DOMContentLoaded', () => {
         x.onclick=(e)=>{ e.stopPropagation(); c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
         chip.appendChild(nm); chip.appendChild(x); wrap.appendChild(chip);
       });
+      /* (#R69) expandable full list — an ABSOLUTE overlay under the bar (so the rows below never move): full
+         layer names, the layer's own opacity slider mirrored inline (drives the real control), jump + remove. */
+      const findOp=(cb)=>{ try{ const row=cb.closest('.lyr-row')||cb.closest('label'); if(!row) return null;
+        let sl=row.querySelector('input[type=range]'); if(sl) return sl;
+        let n=row.nextElementSibling,k2=0; while(n&&k2++<2){ if(n.matches&&n.matches('input[type=range]')) return n; const s2=n.querySelector&&n.querySelector('input[type=range]'); if(s2) return s2; n=n.nextElementSibling; } }catch(_){} return null; };
+      const expBtn=sec.querySelector('.alc-exp');
+      const buildPanel=()=>{
+        const old=sec.querySelector('.alc-panel'); if(old) old.remove();
+        const pn=document.createElement('div'); pn.className='alc-panel';
+        if(!chips.length){ const em=document.createElement('div'); em.className='alc-empty'; em.textContent=(lang==='jp'?'表示中のレイヤーはありません':lang==='de'?'Keine aktiven Ebenen':lang==='ru'?'Нет активных слоёв':lang==='es'?'Sin capas activas':'No layers are on'); pn.appendChild(em); }
+        chips.forEach(c=>{ const row=document.createElement('div'); row.className='alc-row';
+          const nm=document.createElement('span'); nm.className='alcr-name'; nm.textContent=c.name; nm.title=c.name;
+          nm.onclick=()=>{ const r2=c.el.closest('.lyr-row')||c.el.closest('label'); if(r2&&r2.scrollIntoView) try{ r2.scrollIntoView({block:'nearest'}); }catch(_){} };
+          row.appendChild(nm);
+          const src=findOp(c.el);
+          if(src){ const rg=document.createElement('input'); rg.type='range';
+            rg.min=src.min||0; rg.max=src.max||1; rg.step=src.step||'any'; rg.value=src.value;
+            rg.title=(lang==='jp'?'透明度':lang==='de'?'Deckkraft':lang==='ru'?'Непрозрачность':lang==='es'?'Opacidad':'Opacity');
+            rg.oninput=()=>{ try{ src.value=rg.value; src.dispatchEvent(new Event('input',{bubbles:true})); src.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} };
+            row.appendChild(rg); }
+          const x=document.createElement('button'); x.className='alc-x'; x.textContent='✕'; x.title=(lang==='jp'?'非表示':'Hide');
+          x.onclick=()=>{ try{ c.el.checked=false; c.el.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} setTimeout(()=>{ try{ window._refreshActiveLayers(); }catch(_){} },0); };
+          row.appendChild(x); pn.appendChild(row); });
+        sec.appendChild(pn); };
+      const setExp=(on)=>{ window._alcExpanded=!!on; expBtn.classList.toggle('on',!!on); expBtn.textContent=listTxt+(on?' ⌃':' ⌄');
+        if(on) buildPanel(); else { const old=sec.querySelector('.alc-panel'); if(old) old.remove(); } };
+      expBtn.onclick=(e)=>{ e.stopPropagation(); setExp(!window._alcExpanded); };
+      if(!window._alcCloser){ window._alcCloser=true;
+        document.addEventListener('pointerdown',(e)=>{ try{ if(!window._alcExpanded) return; const s2=document.getElementById('layer-active-section'); if(s2&&!s2.contains(e.target)){ window._alcExpanded=false; const b2=s2.querySelector('.alc-exp'); if(b2){ b2.classList.remove('on'); b2.textContent=b2.textContent.replace('⌃','⌄'); } const old=s2.querySelector('.alc-panel'); if(old) old.remove(); } }catch(_){} }); }
+      if(window._alcExpanded) setExp(true);   /* keep the list open across rebuilds (layer set changed) */
       _restore();
     };
     /* (#R34) Relocate the Active-layers bar to the right scroll container per platform. On mobile it must be a
@@ -13221,6 +13289,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'Open-Meteo',u:'https://open-meteo.com/',use:{en:'Elevation, wind field, the right-click live weather popup (current conditions + 5-day forecast) & live weather / air-quality / sea-temperature / elevation readings for widgets and Atlas integrated analysis',jp:'標高・風（アニメーション）・右クリックの最新天気（現況＋5日予報）・ウィジェット/Atlas統合分析の気象・大気質・海水温・標高の数値'}},
     {n:'USGS Earthquake Hazards Program',u:'https://earthquake.usgs.gov/',use:{en:'Live & historical earthquakes (map layer, widget, compare & Atlas integrated analysis)',jp:'地震データ（リアルタイム・過去）— レイヤー・ウィジェット・比較・Atlas統合分析'}},
     {n:'OpenStreetMap Overpass API',u:'https://wiki.openstreetmap.org/wiki/Overpass_API',use:{en:'Atlas facility/POI mapping — live area queries for named facility types (oil, power plants, airports, military, …) (ODbL)',jp:'Atlasの施設マッピング — 指定範囲の施設（石油・発電所・空港・軍事など）のライブ検索（ODbL）'}},
+    {n:'Wikidata Query Service',u:'https://query.wikidata.org/',use:{en:'Atlas facility/POI mapping — second, independent facility source (curated entities with coordinates, merged with the OSM results; CC0)',jp:'Atlasの施設マッピング — OSMと併用する第2の独立ソース（座標付きの収録施設。OSM結果とマージ表示。CC0）'}},
     {n:'geoBoundaries',u:'https://www.geoboundaries.org/',use:{en:'Administrative boundary shapes (ADM1) for Atlas region compositions — fallback boundary source (CC BY 4.0)',jp:'Atlasの地域ハイライト（構成区画）用の行政境界形状（ADM1）— 予備の境界ソース（CC BY 4.0）'}},
     {n:'GDELT Project',u:'https://www.gdeltproject.org/',use:{en:'Live worldwide news search (last 72 h) powering Atlas briefs & integrated analysis',jp:'Atlasのブリーフ・統合分析で使う世界ニュース横断検索（直近72時間）'}},
     {n:'Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)',u:'https://fxratesapi.com/',use:{en:'FX rates, gold/silver, crypto prices & sentiment — widgets and the bottom ticker',jp:'為替・金銀・暗号資産の価格と指標 — ウィジェット・下部ティッカー'}},
@@ -15793,7 +15862,7 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'SP.POP.TOTL', label:['Population','人口'], fmt:v=>short(v)},
       {id:'SP.DYN.LE00.IN', label:['Life expectancy','平均寿命'], fmt:v=>v.toFixed(1)+(jp()?' 歳':' yr')},
       {id:'MS.MIL.XPND.GD.ZS', label:['Military (% GDP)','軍事費（対GDP）'], fmt:v=>v.toFixed(2)+'%'},
-      {id:'EN.ATM.CO2E.PC', label:['CO₂ per capita (t)','1人当たりCO₂ (t)'], fmt:v=>v.toFixed(2)}
+      {id:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], label:['CO₂ per capita (t)','1人当たりCO₂ (t)'], fmt:v=>v.toFixed(2)}   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values → "データなし") — successor first, old code as fallback */
     ];
     let modal=null;
     function ensureModal(){ if(modal) return modal; modal=document.createElement('div'); modal.className='modal-overlay'; modal.id='timeseries-modal';
@@ -15802,7 +15871,26 @@ window.addEventListener('DOMContentLoaded', () => {
       modal.querySelector('#ts-x').onclick=()=>{ modal.style.display='none'; };
       modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
       return modal; }
-    async function fetchInd(code,id){ try{ const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=70&date=1970:2024'); const j=await r.json(); if(!Array.isArray(j)||!j[1]) return null; return j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); }catch(_){ return null; } }
+    /* (#R69) shared-promise cache (re-opening the modal was refetching all 6 series every time) + array ids =
+       ordered fallback for series the World Bank retired. */
+    const _tsCache={};
+    function _tsOne(code,id){ const key=id+'|'+code;
+      if(_tsCache[key]===undefined){
+        let wrapped=null;
+        wrapped=(async()=>{
+          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
+          try{
+            const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030',c?{signal:c.signal}:undefined);
+            const j=await r.json(); if(tm) clearTimeout(tm);
+            if(Array.isArray(j)&&j[1]){ const out=j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); if(out.length) return out; }
+            if(Array.isArray(j)) return null;
+          }catch(_){ if(tm) clearTimeout(tm); }
+          throw 0;
+        })().catch(()=>{ if(_tsCache[key]===wrapped) delete _tsCache[key]; return null; });
+        _tsCache[key]=wrapped;
+      }
+      return _tsCache[key]; }
+    async function fetchInd(code,id){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const v=await _tsOne(code,one); if(v) return v; } return null; }
     /* (#R34) Reworked per the explicit spec: NO always-on dots ("ドットは不要"); hovering ANYWHERE in the
        chart area shows the value INSTANTLY (a JS crosshair, not a laggy native <title> — "反応が悪い"); a
        vertical line is drawn at the cursor and a SINGLE dot sits where it meets the line ("カーソル地点の時間
@@ -15887,7 +15975,7 @@ window.addEventListener('DOMContentLoaded', () => {
       {k:'life',   wb:'SP.DYN.LE00.IN', imf:null, fmt:v=>v.toFixed(1), l:['Life expectancy','平均寿命','Lebenserwartung','Продолж. жизни','Esperanza de vida'], def:1},
       {k:'tfr',    wb:'SP.DYN.TFRT.IN', imf:null, fmt:v=>v.toFixed(2), l:['Fertility rate','出生率','Geburtenrate','Рождаемость','Fecundidad'], def:0},
       {k:'mil',    wb:'MS.MIL.XPND.GD.ZS', imf:null, fmt:pct, l:['Military (% GDP)','軍事費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'], def:0},
-      {k:'co2',    wb:'EN.ATM.CO2E.PC', imf:null, fmt:v=>v.toFixed(2)+' t', l:['CO₂ per capita','1人当たりCO₂','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'], def:0},
+      {k:'co2',    wb:['EN.GHG.CO2.PC.CE.AR5','EN.ATM.CO2E.PC'], imf:null, fmt:v=>v.toFixed(2)+' t', l:['CO₂ per capita','1人当たりCO₂','CO₂ pro Kopf','CO₂ на душу','CO₂ per cápita'], def:0},   /* (#R69) WB retired EN.ATM.CO2E.PC (0 values) — successor series first, old code as fallback */
       {k:'net',    wb:'IT.NET.USER.ZS', imf:null, fmt:pct, l:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de internet'], def:0},
       {k:'urban',  wb:'SP.URB.TOTL.IN.ZS', imf:null, fmt:pct, l:['Urban population','都市人口率','Stadtbevölkerung','Городское население','Población urbana'], def:0},
       {k:'exp',    wb:'NE.EXP.GNFS.ZS', imf:null, fmt:pct, l:['Exports (% GDP)','輸出(対GDP)','Exporte (% BIP)','Экспорт (% ВВП)','Exportaciones (% PIB)'], def:0},
@@ -15902,19 +15990,63 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R63) reworked per explicit feedback: NO popup — the comparison renders INSIDE the sidebar (stats area);
        source switching is PER-INDICATOR and only shown where a second source actually exists (no fake implication
        that every metric has two sources). */
-    let host=null, codes=[], sel=null; const srcSel={};
+    /* (#R69) debt defaults to IMF WEO: the World Bank central-government-debt series is EMPTY for Japan and
+       many majors (verified 0 non-null values) — the old WB default guaranteed "時系列データなし". */
+    let host=null, codes=[], sel=null; const srcSel={debt:'imf'};
+    /* (#R69) MEASURED root cause of "No time-series available" + "ソース切替でいちいち全再読み込み": every
+       chip/metric/source change re-rendered EVERY block and fired a fresh fetch per (indicator,country) — one
+       test session produced 321 parallel WB requests (34 for a single indicator), the browser's 6-per-host limit
+       queued them for minutes, and the World Bank then throttled the IP so EVERYTHING showed "no data".
+       Fixed at the root: the cache stores the IN-FLIGHT PROMISE (concurrent duplicates share one request), a
+       6-slot scheduler bounds concurrency, and rendering below is incremental. */
     const cache={};
-    async function fetchWB(code,id){ const key='wb|'+id+'|'+code; if(cache[key]!==undefined) return cache[key];
-      let out=null; try{ const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030'); const j=await r.json(); if(Array.isArray(j)&&j[1]) out=j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); }catch(_){}
-      cache[key]=(out&&out.length)?out:null; return cache[key]; }
-    async function fetchIMF(imfCode,cs,scale){ const key='imf|'+imfCode+'|'+cs.join(','); if(cache[key]!==undefined) return cache[key];
-      let out=null; const url='https://www.imf.org/external/datamapper/api/v1/'+encodeURIComponent(imfCode)+'/'+cs.map(encodeURIComponent).join('/');
-      const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];   /* IMF sends no ACAO header — same proxy ladder the news fetcher uses */
-      for(const p of PROX){ try{ const r=await fetch(p(url)); if(!r.ok) continue; const j=await r.json();
-        const vals=j&&j.values&&j.values[imfCode]; if(vals){ out={}; const nowY=new Date().getFullYear();
-          cs.forEach(c=>{ const o=vals[c]; if(!o) return; const arr=[]; for(const y in o){ const yy=+y, vv=+o[y]; if(isFinite(yy)&&isFinite(vv)&&yy<=nowY) arr.push({y:yy,v:vv*(scale||1)}); } if(arr.length) out[c]=arr.sort((a,b)=>a.y-b.y); }); if(!Object.keys(out).length) out=null; }
-        if(out) break; }catch(_){} }
-      cache[key]=out; return cache[key]; }
+    const _wbQ=[]; let _wbAct=0;
+    function _wbSlot(fn){ return new Promise((res,rej)=>{ _wbQ.push({fn,res,rej}); _wbPump(); }); }
+    function _wbPump(){ while(_wbAct<6&&_wbQ.length){ const t=_wbQ.shift(); _wbAct++;
+      Promise.resolve().then(t.fn).then(v=>{ _wbAct--; t.res(v); _wbPump(); },e=>{ _wbAct--; t.rej(e); _wbPump(); }); } }
+    function _wbOne(code,id){ const key='wb|'+id+'|'+code;
+      if(cache[key]===undefined){
+        let wrapped=null;
+        /* 20 s abort — a hung request (WB throttling) must not leak a scheduler slot forever. A NETWORK failure
+           is NOT negative-cached (the entry is dropped so the next render retries); only a real "API answered,
+           series is empty" is remembered as null. */
+        wrapped=_wbSlot(async()=>{
+          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
+          try{
+            const r=await fetch('https://api.worldbank.org/v2/country/'+encodeURIComponent(code)+'/indicator/'+id+'?format=json&per_page=80&date=1970:2030',c?{signal:c.signal}:undefined);
+            const j=await r.json(); if(tm) clearTimeout(tm);
+            if(Array.isArray(j)&&j[1]){ const out=j[1].filter(d=>d.value!=null).map(d=>({y:+d.date,v:+d.value})).sort((a,b)=>a.y-b.y); if(out.length) return out; }
+            if(Array.isArray(j)) return null;   /* API answered: genuinely no data */
+          }catch(_){ if(tm) clearTimeout(tm); }
+          throw 0;                              /* network/parse failure → retryable */
+        }).catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return null; });
+        cache[key]=wrapped;
+      }
+      return cache[key]; }
+    /* id may be an ARRAY of codes tried in order — used where the World Bank RETIRED a series (CO₂:
+       EN.ATM.CO2E.PC now returns 0 values; the successor is EN.GHG.CO2.PC.CE.AR5). */
+    async function fetchWB(code,id){ const ids=Array.isArray(id)?id:[id];
+      for(const one of ids){ const v=await _wbOne(code,one); if(v) return v; } return null; }
+    /* (#R69) IMF DataMapper returns EVERY country in one response — fetch each indicator ONCE (shared promise),
+       then slice the requested countries locally. Country changes and WB⇄IMF flips become instant after the
+       first load. */
+    function _imfRaw(imfCode){ const key='imfraw|'+imfCode;
+      if(cache[key]===undefined){
+        let wrapped=null;
+        wrapped=(async()=>{
+          const url='https://www.imf.org/external/datamapper/api/v1/'+encodeURIComponent(imfCode);
+          const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];   /* IMF sends no ACAO header — same proxy ladder the news fetcher uses */
+          for(const p of PROX){ try{ const r=await fetch(p(url)); if(!r.ok) continue; const j=await r.json();
+            const vals=j&&j.values&&j.values[imfCode]; if(vals) return vals; }catch(_){} }
+          throw 0;   /* whole ladder failed → retryable, not negative-cached */
+        })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return null; });
+        cache[key]=wrapped;
+      }
+      return cache[key]; }
+    async function fetchIMF(imfCode,cs,scale){ const vals=await _imfRaw(imfCode); if(!vals) return null;
+      const out={}; const nowY=new Date().getFullYear();
+      cs.forEach(c=>{ const o=vals[c]; if(!o) return; const arr=[]; for(const y in o){ const yy=+y, vv=+o[y]; if(isFinite(yy)&&isFinite(vv)&&yy<=nowY) arr.push({y:yy,v:vv*(scale||1)}); } if(arr.length) out[c]=arr.sort((a,b)=>a.y-b.y); });
+      return Object.keys(out).length?out:null; }
     function cList(){ try{ return Object.keys(countryStats).map(cd=>({code:cd,name:cName(countryStats[cd])})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }
     function ensureView(){ if(host&&document.body.contains(host)) return host;
       if(!ensureView._css){ ensureView._css=1; const st=document.createElement('style');
@@ -15957,7 +16089,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div style="position:relative;"><input class="scp-add" id="scp-add" autocomplete="off" style="width:100%;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><div id="scp-list"></div></div>'
         +'<div class="scp-metrics" id="scp-metrics"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
-      host.querySelector('.scp-back').onclick=()=>{ try{ host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
+      host.querySelector('.scp-back').onclick=()=>{ try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
       /* (#R64) real picker: type-to-filter list with flags + check state; click toggles; Enter adds the first
          match; closes on outside click. */
       const addI=host.querySelector('#scp-add'), listEl=host.querySelector('#scp-list');
@@ -16035,10 +16167,16 @@ window.addEventListener('DOMContentLoaded', () => {
       html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td><b>'+esc(b.ind.fmt(last.v))+'</b> <span style="color:var(--text-muted);">('+last.y+')</span></td>'; }).join('')+'</tr></table></div>';
       html+=mChart(b.ind,b.serMap); return html; }
     /* (#R64) PER-INDICATOR rendering: a source switch re-renders ONLY its own block, from cache when available —
-       no full "Loading data…" wipe, no scroll jump ("ソースを切り替えたらいちいち再度すべて読み込み"). */
+       no full "Loading data…" wipe, no scroll jump ("ソースを切り替えたらいちいち再度すべて読み込み").
+       (#R69) each block additionally remembers WHAT it rendered (countries+source signature): re-renders with an
+       unchanged signature are skipped entirely, so toggling a metric or switching one block's source no longer
+       touches any other block. */
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
+      const sig=codes.join(',')+'|'+(srcSel[k]||'wb');
+      if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
       const my=(el.__seq=(el.__seq||0)+1);
       const b=await blockData(ind); if(el.__seq!==my||!el.isConnected) return;
+      el.dataset.sig=sig;
       el.innerHTML=blockHtml(b);
       el.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=()=>{ srcSel[k]=btn.getAttribute('data-s'); renderInd(k); }; });
       try{ wireM(el); }catch(_){}
@@ -16048,8 +16186,19 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!codes.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12.5px;padding:16px 2px;">'+LL('Add countries above to compare them.','上の欄から国を追加してください。','Länder oben hinzufügen.','Добавьте страны выше.','Añade países arriba.')+'</div>'; return; }
       const inds=IND.filter(ind=>sel.has(ind.k));
       if(!inds.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12px;">'+LL('Select at least one indicator.','指標を選択してください。','Mindestens eine Kennzahl wählen.','Выберите показатель.','Selecciona un indicador.')+'</div>'; return; }
-      body.innerHTML=inds.map(ind=>'<div class="scp-blk" data-k="'+esc(ind.k)+'"><div style="color:var(--text-muted);font-size:12px;padding:10px 2px;">'+LL('Loading data…','データ読み込み中…','Lade Daten…','Загрузка данных…','Cargando datos…')+'</div></div>').join('');
-      inds.forEach(ind=>renderInd(ind.k));
+      /* (#R69) INCREMENTAL ("いちいち再度すべて読み込みになる動作がうざい"): existing blocks are KEPT (their
+         content stays visible while data refreshes from the shared cache), deselected ones are removed, new ones
+         are inserted in IND order — never a full wipe back to "Loading data…". */
+      if(!body.querySelector('.scp-blk')) body.innerHTML='';
+      const wantKs=inds.map(i2=>i2.k);
+      Array.prototype.slice.call(body.querySelectorAll('.scp-blk')).forEach(el=>{ if(wantKs.indexOf(el.getAttribute('data-k'))<0) el.remove(); });
+      let prev=null;
+      inds.forEach(ind=>{ let el=body.querySelector('.scp-blk[data-k="'+ind.k+'"]');
+        if(!el){ el=document.createElement('div'); el.className='scp-blk'; el.setAttribute('data-k',ind.k);
+          el.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:10px 2px;">'+LL('Loading data…','データ読み込み中…','Lade Daten…','Загрузка данных…','Cargando datos…')+'</div>';
+          if(prev){ if(prev.nextSibling) body.insertBefore(el,prev.nextSibling); else body.appendChild(el); }
+          else body.insertBefore(el,body.firstChild); }
+        prev=el; renderInd(ind.k); });
     }
     function open(initCodes,initMetrics,initSource){
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
@@ -17252,7 +17401,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const p=ensure();
       p.style.display='block';
-      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+LL('AI brief: ','AI調査: ','KI-Bericht: ','ИИ-справка: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
+      p.innerHTML='<div class="tp-header" style="cursor:move;"><span class="tp-title">'+LL('Research: ','調査: ','Recherche: ','Исследование: ')+esc(name)+'</span><button class="tp-close" title="'+t('close')+'">✕</button></div>'+
         '<div id="air-body" style="font-size:12.5px;line-height:1.65;color:var(--text-main);padding:4px 2px;"><span style="color:var(--text-muted);">'+LL('Researching… (background, history, economy, military, recent developments)','調査中… (AIが背景・歴史・経済・軍事・最近の動向を整理しています)','Recherche… (Hintergrund, Geschichte, Wirtschaft, Militär, jüngste Entwicklungen)','Анализ… (история, экономика, военная и стратегическая значимость, последние события)')+'</span></div>'+
         '<button id="air-again" class="ai-test-btn" style="width:100%;display:none;">↻ '+LL('Regenerate','再生成','Neu generieren','Сгенерировать заново')+'</button>';
       p.querySelector('.tp-close').onclick=()=>{ p.style.display='none'; };
@@ -19573,6 +19722,57 @@ window.addEventListener('DOMContentLoaded', () => {
         'You output ONLY strict JSON (no prose). List REAL, notable facilities of the requested type inside the given area: {"found":[{"name":str,"lng":num,"lat":num},...]} up to 25 entries. Coordinates must be your best real estimate INSIDE the bounding box. Skip anything you are not reasonably sure actually exists — an empty list is better than an invented site. If you know none, return {"found":[]}.');
         if(j&&Array.isArray(j.found)){ out=j.found.filter(f=>f&&f.name&&isFinite(+f.lng)&&isFinite(+f.lat)&&+f.lng>=+box[0][0]-0.5&&+f.lng<=+box[1][0]+0.5&&+f.lat>=+box[0][1]-0.5&&+f.lat<=+box[1][1]+0.5).map(f=>({lng:+f.lng,lat:+f.lat,name:String(f.name).slice(0,80),kind:'AI'})).slice(0,25); } }catch(_){}
       return out; }
+    /* (#R69) SECOND independent facility source ("なんでもかんでもOpen Street Mapで済ませようとするな"):
+       Wikidata. Curated encyclopedic entities with verified coordinates — a genuinely different dataset from
+       OSM's crowd-tagged geometry. Country searches filter by ISO3 (P17 country whose P298 = the code, so no
+       QID lookup round-trip); everything else uses the search bbox. Runs in PARALLEL with Overpass and the
+       results are MERGED (name/proximity dedupe) with per-source counts in the reply so the basis is explicit.
+       QIDs verified live against wbsearchentities + query.wikidata.org (2026-07). */
+    const WD_KINDS=[
+      [/oil|petrol|refin|石油|製油|原油|erdöl|raffiner|нефт|petróle|refiner/i,['Q12353044']],                    /* oil refinery */
+      [/nuclear|原子力|原発|kernkraft|atomkraft|аэс|атомн/i,['Q134447']],                                        /* nuclear power plant */
+      [/wind farm|wind power|風力|windkraft|windpark|ветро|eólic/i,['Q194356']],                                 /* wind farm */
+      [/solar|太陽光|メガソーラー|solarpark|солнечн/i,['Q2298412']],                                             /* solar power plant */
+      [/power (plant|station)|発電所|kraftwerk|электростанц|central eléctrica|centrales/i,['Q159719','Q134447','Q194356','Q2298412']],
+      [/dam|ダム|staudamm|плотин|presa/i,['Q12323']],
+      [/airport|airfield|空港|飛行場|flughafen|аэропорт|aeropuerto/i,['Q1248784']],
+      [/port|harbou?r|港湾|港|hafen|порт|puerto/i,['Q44782']],
+      [/military|army base|軍事|基地|駐屯地|militär|военн|militar/i,['Q245016','Q18691599']],                    /* military base + installation */
+      [/mine|mining|鉱山|炭鉱|bergwerk|шахт|рудник|mina/i,['Q820477']],
+      [/steel|製鉄|stahlwerk|сталелит|acería|acero/i,['Q2069494']],                                              /* steel mill */
+      [/hospital|病院|krankenhaus|больниц|госпитал/i,['Q16917']],
+      [/universit|大学|университет|universidad/i,['Q3918']],
+      [/stadium|スタジアム|競技場|stadion|стадион|estadio/i,['Q483110']],
+      [/prison|刑務所|gefängnis|тюрьм|prisión|cárcel/i,['Q40357']],
+      [/lighthouse|灯台|leuchtturm|маяк|faro/i,['Q39715']],
+      [/embass|大使館|botschaft|посольств|embajada/i,['Q3917681']],
+      [/train station|railway station|駅|bahnhof|вокзал|estación/i,['Q55488']],
+      [/desalination|淡水化|entsalzung|опреснит|desalinizadora/i,['Q51932686']],
+      [/data ?cent(er|re)|データセンター|rechenzentrum|дата-центр|centro de datos/i,['Q671224']]
+    ];
+    async function wikidataPOIs(kindStr,box,iso3){
+      let qids=null; for(const k of WD_KINDS){ if(k[0].test(String(kindStr||''))){ qids=k[1]; break; } }
+      if(!qids) return null;   /* kind has no curated Wikidata class → OSM/AI handle it */
+      const langWD=({jp:'ja'})[currentLang]||currentLang||'en';
+      const cls='VALUES ?cls { '+qids.map(q=>'wd:'+q).join(' ')+' } ?item wdt:P31 ?cls. ';
+      const scope=iso3
+        ?('?country wdt:P298 "'+String(iso3).replace(/[^A-Z]/g,'')+'". ?item wdt:P17 ?country; wdt:P625 ?coord. ')
+        :('SERVICE wikibase:box { ?item wdt:P625 ?coord. bd:serviceParam wikibase:cornerSouthWest "Point('+(+box[0][0]).toFixed(3)+' '+(+box[0][1]).toFixed(3)+')"^^geo:wktLiteral. bd:serviceParam wikibase:cornerNorthEast "Point('+(+box[1][0]).toFixed(3)+' '+(+box[1][1]).toFixed(3)+')"^^geo:wktLiteral. } ');
+      const q2='SELECT ?item ?itemLabel ?coord WHERE { '+cls+scope+'SERVICE wikibase:label { bd:serviceParam wikibase:language "'+langWD+',en". } } LIMIT 400';
+      try{
+        const c=('AbortController' in window)?new AbortController():null; const tm=setTimeout(()=>{ try{ c&&c.abort(); }catch(_){} },26000);
+        const opt={headers:{'Accept':'application/sparql-results+json'}}; if(c) opt.signal=c.signal;
+        const r=await fetch('https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(q2),opt);
+        clearTimeout(tm); if(!r.ok) return null;
+        const j=await r.json(); const rows=(j&&j.results&&j.results.bindings)||[];
+        const out=[];
+        for(const b of rows){ try{
+          const m=/Point\(([-0-9.eE]+) ([-0-9.eE]+)\)/.exec((b.coord&&b.coord.value)||''); if(!m) continue;
+          const nm2=(b.itemLabel&&b.itemLabel.value)||''; if(!nm2||/^Q\d+$/.test(nm2)) continue;   /* bare QID = no usable label */
+          out.push({lng:+m[1],lat:+m[2],name:nm2.slice(0,90),kind:'Wikidata'});
+        }catch(_){} }
+        return out;   /* [] = source answered, nothing tagged; null = source failed */
+      }catch(_){ return null; } }
     let _pois=[], _poiColor=null;
     function ensurePoiLayer(){ try{ if(!map.getSource('nlq-poi-src')) map.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(map.getLayer('nlq-poi-c')) return true;
@@ -19622,12 +19822,14 @@ window.addEventListener('DOMContentLoaded', () => {
           let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
           try{ const g2=await _gdeltNews('"'+nm3+'"'); if(g2) hl2+='\n\nLive web news search results (last 72 h) — use for "Recent developments":\n'+g2; }catch(_){}
           try{ const g3=await _gnewsNews(nm3); if(g3) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+g3; }catch(_){}
-          const sysB='You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. Respond in '+langB+'.';
+          const sysB='You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. You have a live web_search tool — USE it for the "Recent developments" section when the supplied headlines are thin or stale; never claim there is no recent news without having searched. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
           let txtB=''; try{ txtB=await askAI(pB,sysB,null,{web:true}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">🤖 '+L('AI brief','AI調査','KI-Bericht','ИИ-справка','Informe IA')+': '+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+note(L('AI-generated — verify important facts with primary sources.','AI生成 — 重要な事実は一次情報で確認してください。','KI-generiert — wichtige Fakten mit Primärquellen prüfen.','Сгенерировано ИИ — проверяйте важные факты.','Generado por IA — verifica los datos importantes.'))); }
-        case 'askHere': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapAIResearch&&window.IntMapAIResearch.askHere){ window.IntMapAIResearch.askHere({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🤖 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
+          /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
+             "AI briefってワードをわざわざAtlasで出すな"). */
+          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+note(L('AI-generated — verify important facts with primary sources.','AI生成 — 重要な事実は一次情報で確認してください。','KI-generiert — wichtige Fakten mit Primärquellen prüfen.','Сгенерировано ИИ — проверяйте важные факты.','Generado por IA — verifica los datos importantes.'))); }
+        case 'askHere': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapAIResearch&&window.IntMapAIResearch.askHere){ window.IntMapAIResearch.askHere({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('✓ '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'rank': { await ensureData(); const n=clampN(a.n); const list=rank(a.metric,a.order==='bottom'?'bottom':'top',n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+(METRICS[a.metric]?lx(METRICS[a.metric].label):esc(a.metric||'')); return R(!!(list&&list.length), listHtml(t,list,a.metric)); }
         case 'ratio': { await ensureData(); const n=clampN(a.n); const list=ratio(a.metricA,a.metricB,a.order==='bottom'?'bottom':'top',n); const t=(METRICS[a.metricA]?lx(METRICS[a.metricA].label):a.metricA)+' / '+(METRICS[a.metricB]?lx(METRICS[a.metricB].label):a.metricB); return list?R(true, listHtml(t,list.map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')):R(false, warn('⚠ '+esc(a.metricA||''))); }
         case 'relate': { await ensureData(); const n=clampN(a.n); const list=relate(a.metricY,a.metricX,a.find==='high'?'high':'low',n);
@@ -19805,13 +20007,14 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'poi': case 'mapPois': case 'facilities': { /* (#R62) "○○にある石油施設を表示して" → REAL facilities mapped from OpenStreetMap */
           const kindStr=String(a.kind||a.query||a.what||a.name||'').trim();
           if(!kindStr) return R(false, warn('⚠ '+L('What kind of facilities?','どんな施設を表示しますか？','Welche Einrichtungen?','Какие объекты?','¿Qué instalaciones?')));
-          let box=null,pname='',areaRel=null; const placeStr2=String(a.place||'').trim();
+          let box=null,pname='',areaRel=null,isoPoi=null; const placeStr2=String(a.place||'').trim();
           if(placeStr2&&!WORLD_RE.test(placeStr2)&&!DEIXIS_RE.test(placeStr2)){ let ext=null; try{ ext=await placeExtent(placeStr2); }catch(_){} if(!ext){ try{ ext=await geocode(placeStr2); }catch(_){} }
             if(!ext) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr2)));
             pname=ext.name||placeStr2;
             /* (#R64) real admin area → search the WHOLE territory via an Overpass area query (fixes "ロシアの
                石油精製施設 → 一部地域だけ": the old 30°×24° bbox clamp cut most of a large country away). */
             const cSync=resolveCountrySync(placeStr2);
+            if(cSync&&cSync.code) isoPoi=cSync.code;   /* (#R69) ISO3 → country-wide Wikidata query */
             if(ext.osmType==='relation'&&ext.osmId&&(ext.adminPoly||cSync)) areaRel=ext.osmId;
             else if(cSync){ try{ const e2=await _nomExtent(cSync.name||placeStr2); if(e2&&e2.osmType==='relation'&&e2.osmId){ areaRel=e2.osmId; if(e2.box&&_bboxOK(e2.box)) box=e2.box; } }catch(_){} }
             if(!box){ if(ext.box&&_bboxOK(ext.box)) box=ext.box; else if(ext.lng!=null&&isFinite(ext.lng)){ const d2=1.2; box=[[ext.lng-d2,ext.lat-d2*0.8],[ext.lng+d2,ext.lat+d2*0.8]]; } } }
@@ -19821,27 +20024,47 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!areaRel){ const cx2=(box[0][0]+box[1][0])/2, cy2=(box[0][1]+box[1][1])/2; const sx2=Math.min(30,box[1][0]-box[0][0])||1, sy2=Math.min(24,box[1][1]-box[0][1])||1; box=[[cx2-sx2/2,cy2-sy2/2],[cx2+sx2/2,cy2+sy2/2]]; }
           if(a.color!=null&&String(a.color).trim()!==''){ const pc3=parseColor(a.color); if(pc3) _poiColor=pc3; }
           /* (#R63/#R64) staged search: full area/bbox Overpass union → lite retry (2 selectors, 60 s) → bbox
-             fallback if the area query failed → AI-known facilities. */
+             fallback if the area query failed → AI-known facilities.
+             (#R69) Wikidata runs in PARALLEL as an independent second source and is merged in. */
+          const wdP=wikidataPOIs(kindStr,box,isoPoi);
           let res=await overpassPOIs(kindStr,box,false,areaRel);
           if(res===null) res=await overpassPOIs(kindStr,box,true,areaRel);
           if(res===null&&areaRel) res=await overpassPOIs(kindStr,box,true,null);
+          let wd=null; try{ wd=await wdP; }catch(_){}
+          const osmN=(res&&res.length)||0; let wdN=0;
+          if(wd&&wd.length){
+            const normN=s2=>{ try{ return String(s2||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,''); }catch(_){ return String(s2||'').toLowerCase().replace(/\W+/g,''); } };
+            const have=new Set((res||[]).map(p2=>normN(p2.name)).filter(Boolean));
+            const merged=(res||[]).slice();
+            for(const w of wd){ const nw=normN(w.name);
+              if(nw&&have.has(nw)) continue;                                                    /* same facility, same name */
+              if(merged.some(p2=>Math.abs(p2.lat-w.lat)<0.02&&Math.abs(p2.lng-w.lng)<0.03)) continue;   /* same site ~2 km */
+              merged.push(w); have.add(nw); wdN++; }
+            res=merged;
+          }
           let aiUsed=false;
           if(!res||!res.length){ try{ const aiL=await aiFacilities(kindStr,pname,box); if(aiL&&aiL.length){ res=aiL; aiUsed=true; } }catch(_){} }
-          if(res===null) return R(false, warn('⚠ '+L('Facility search failed (OpenStreetMap Overpass busy) — try again shortly','施設検索に失敗しました（Overpass混雑）。少し待って再試行してください','Suche fehlgeschlagen (Overpass ausgelastet) — später erneut','Поиск не удался (Overpass занят) — попробуйте позже','Búsqueda fallida (Overpass ocupado) — reintenta luego')));
+          if(res===null) return R(false, warn('⚠ '+L('Facility search failed (OpenStreetMap Overpass busy, Wikidata had no match) — try again shortly','施設検索に失敗しました（Overpass混雑・Wikidataにも該当なし）。少し待って再試行してください','Suche fehlgeschlagen (Overpass ausgelastet, Wikidata ohne Treffer) — später erneut','Поиск не удался (Overpass занят, в Wikidata нет совпадений) — попробуйте позже','Búsqueda fallida (Overpass ocupado, sin coincidencias en Wikidata) — reintenta luego')));
           clearPois(); _pois=res; let okP=paintPois();
           for(let i2=0;i2<6&&!okP;i2++){ await new Promise(r2=>setTimeout(r2,700)); okP=paintPois(); }
           try{ flyToBox(box); }catch(_){}
           if(!okP) return R(false, warn('⚠ '+L('Could not draw the markers (map still loading) — try again','マーカーを描画できませんでした（地図読込中）。もう一度お試しください','Marker konnten nicht gezeichnet werden (Karte lädt)','Не удалось отрисовать маркеры (карта загружается)','No se pudieron dibujar los marcadores (mapa cargando)')));
-          if(!res.length) return R(true, note('◌ '+L('Nothing found — OpenStreetMap has no such facilities tagged here and the AI knows none it is sure of','見つかりませんでした — OpenStreetMapに該当タグがなく、AIも確実な施設を知りません','Nichts gefunden — weder in OpenStreetMap noch der KI sicher bekannt','Ничего не найдено — нет в OpenStreetMap, ИИ также не уверен','Nada encontrado — ni en OpenStreetMap ni conocido con certeza por la IA')+' ("'+esc(kindStr)+'" @ '+esc(pname)+')'));
+          if(!res.length) return R(true, note('◌ '+L('Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of','見つかりませんでした — OpenStreetMapにもWikidataにも該当がなく、AIも確実な施設を知りません','Nichts gefunden — weder in OpenStreetMap noch Wikidata erfasst, KI kennt keine sicheren','Ничего не найдено — нет ни в OpenStreetMap, ни в Wikidata; ИИ также не уверен','Nada encontrado — ni en OpenStreetMap ni en Wikidata, y la IA no conoce ninguno con certeza')+' ("'+esc(kindStr)+'" @ '+esc(pname)+')'));
           const names5=res.filter(p=>p.name).slice(0,5).map(p=>esc(p.name)).join(' · ');
           /* (#R64) state the BASIS explicitly ("何の根拠に選んでいるのかもわからない"): what was searched, over
              what area, and whether the result set is complete or capped. */
-          const scopeTxt=areaRel
-            ?L('every matching facility tagged in OpenStreetMap across the whole territory of '+pname,'OpenStreetMapに登録されている該当施設を'+pname+'の全域から検索','alle in OpenStreetMap erfassten Einrichtungen im gesamten Gebiet von '+pname,'все объекты с такими тегами в OpenStreetMap по всей территории: '+pname,'todas las instalaciones etiquetadas en OpenStreetMap en todo el territorio de '+pname)
-            :L('matching facilities tagged in OpenStreetMap within the shown search box','OpenStreetMapに登録されている該当施設を表示範囲のボックスから検索','erfasste Einrichtungen im gezeigten Suchbereich','объекты в OpenStreetMap в показанной области поиска','instalaciones etiquetadas en OpenStreetMap dentro del área mostrada');
+          const areaTxt=areaRel||isoPoi
+            ?L('the whole territory of '+pname,pname+'の全域','das gesamte Gebiet von '+pname,'вся территория: '+pname,'todo el territorio de '+pname)
+            :L('the shown search box','表示範囲のボックス','der gezeigte Suchbereich','показанная область поиска','el área mostrada');
+          /* (#R69) per-source counts — OSM live tags + Wikidata curated entities ("何の根拠に選んでいるのか").
+             wd===null → the Wikidata query itself failed/didn't apply; wdN counts only NON-duplicate additions. */
+          const wdTxt=(wd===null)
+            ?L('Wikidata n/a','Wikidata照会なし','Wikidata n. v.','Wikidata недоступна','Wikidata no disponible')
+            :L('Wikidata +'+wdN+' additional','Wikidata追加 '+wdN+'件','Wikidata +'+wdN+' zusätzlich','Wikidata +'+wdN,'Wikidata +'+wdN+' adicionales');
+          const scopeTxt=L('OpenStreetMap tags ('+osmN+') + '+wdTxt+' across '+areaTxt,'OpenStreetMapの登録施設 '+osmN+'件 + '+wdTxt+'（検索範囲: '+areaTxt+'）','OpenStreetMap-Tags ('+osmN+') + '+wdTxt+' in '+areaTxt,'теги OpenStreetMap ('+osmN+') + '+wdTxt+' — '+areaTxt,'etiquetas de OpenStreetMap ('+osmN+') + '+wdTxt+' en '+areaTxt);
           const truncTxt=(res._truncated)?('<br>'+L('⚠ Capped at 600 results — zoom into a sub-region for the rest','⚠ 600件で打ち切り — 残りは範囲を絞って再検索してください','⚠ Bei 600 Ergebnissen gekappt — Region eingrenzen für den Rest','⚠ Ограничено 600 результатами — сузьте область','⚠ Limitado a 600 — acota la zona para ver el resto')):'';
           const srcTxt=aiUsed
-            ?L('Source: AI-estimated (OpenStreetMap had no matching tags here — positions are approximate, verify before relying on them)','出典: AI推定（OpenStreetMapに該当タグが無かったため。位置は概算です — 重要な用途では確認してください）','Quelle: KI-Schätzung (keine OSM-Tags — Positionen ungefähr)','Источник: оценка ИИ (в OSM нет тегов — координаты приблизительны)','Fuente: estimación de IA (sin etiquetas OSM — posiciones aproximadas)')
+            ?L('Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)','出典: AI推定（OpenStreetMapにもWikidataにも該当が無かったため。位置は概算です — 重要な用途では確認してください）','Quelle: KI-Schätzung (weder OSM- noch Wikidata-Treffer — Positionen ungefähr)','Источник: оценка ИИ (нет ни в OSM, ни в Wikidata — координаты приблизительны)','Fuente: estimación de IA (sin coincidencias en OSM ni Wikidata — posiciones aproximadas)')
             :(L('Basis','根拠','Basis','Основание','Base')+': '+scopeTxt+' · '+L('click a pin for details · say "clear facilities" to remove','ピンをクリックで詳細 ·「施設を消して」で削除','Pin anklicken für Details','клик по метке — детали','clic en un pin para detalles'));
           return R(true, note('📌 '+res.length+' '+L('facilities mapped','件の施設をマッピングしました','Einrichtungen kartiert','объектов нанесено на карту','instalaciones mapeadas')+' — '+esc(kindStr)+' @ '+esc(pname)+(names5?('<br>'+names5+(res.length>5?' …':'')):'')+truncTxt+'<br><span style="opacity:0.75;">'+srcTxt+'</span>')); }
         case 'analyze': case 'research': case 'synthesize': { const q=String(a.question||a.query||a.text||'').trim();
@@ -19898,17 +20121,22 @@ window.addEventListener('DOMContentLoaded', () => {
           push2('EARTHQUAKES (USGS, last 24 h'+(ctx?', in the area':'')+')',L('earthquakes','地震','Erdbeben','землетрясения','sismos'),got.quakes);
           push2('COUNTRY STATISTICS',L('country stats','国別統計','Länderstatistik','статистика','estadísticas'),got.stats);
           const st=stateContext(); if(st) block+='[CURRENT MAP STATE]\n'+st+'\n\n';
-          if(!usedNames.length) return R(false, warn('⚠ '+L('No data could be gathered for this analysis','分析に使えるデータを取得できませんでした','Keine Daten für diese Analyse verfügbar','Не удалось собрать данные','No se pudieron obtener datos')+(missing.length?(' ('+missing.join(', ')+')'):'')));
+          /* (#R69) empty client-side gathering NO LONGER aborts — the model has a live web-search tool and MUST
+             use it instead ("ネット検索しろや。逃げてんじゃねーよ"). */
           const lang=_langLine();
           /* (#R64) REPORT quality ("クソみたいなレポート出力してんじゃねーよ"): lead with what is actually happening
              (news, dated), analyse rather than recite — no weather/quake/statistics dumps unless they answer the
-             question. */
-          const sys2='You are Atlas, the analysis engine of the IntMap world map. Today is '+new Date().toISOString().slice(0,10)+'. Write a focused analytical answer to the QUESTION using ONLY the DATA blocks (plus common geographical knowledge for context). Structure: lead with the most newsworthy, question-relevant developments from the news blocks, WITH their dates; then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). If the news blocks are empty or stale for the question, say so in ONE short sentence rather than padding. NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~220 words.';
+             question.
+             (#R69) the old prompt said "use ONLY the DATA blocks", which actively FORBADE the model from using its
+             web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
+             REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
+          const sys2='You are Atlas, the analysis engine of the IntMap world map. Today is '+new Date().toISOString().slice(0,10)+'. Write a focused analytical answer to the QUESTION. Your evidence sources, in order: (1) the DATA blocks below; (2) your live web_search tool — you MUST actually run web searches whenever the question concerns recent events, the current situation, or "latest" anything and the DATA blocks contain no fresh, dated, question-relevant items. It is FORBIDDEN to answer "nothing notable is happening" / "no recent information is available" without having run a web search first; if you searched and truly found nothing, state what you searched for. Structure: lead with the most newsworthy, question-relevant developments WITH their dates (from the data blocks or your searches); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words.';
           let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{web:true}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txt||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
           let html='<div style="font-weight:600;margin:2px 0 5px;">🧭 '+L('Integrated analysis','統合分析','Integrierte Analyse','Комплексный анализ','Análisis integrado')+'</div>';
           html+='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(String(txt).trim())+'</div>';
-          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedNames.join(', ')+(missing.length?(' · '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponible')+': '+missing.join(', ')):'')+'</div>';
+          const usedAll=usedNames.concat([L('AI live web search','AIライブWeb検索','KI-Live-Websuche','живой веб-поиск ИИ','búsqueda web en vivo (IA)')]);   /* (#R69) the provider-side web_search tool is enabled for every analysis */
+          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+(missing.length?(' · '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponible')+': '+missing.join(', ')):'')+'</div>';
           return R(true, html); }
         case 'ticker': { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
           try{ if(window.IntMapTicker){ window.imTicker=onT?'on':'off'; window.IntMapTicker.apply(); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
@@ -19959,7 +20187,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"route","from":str,"to":str} (sea route); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"stats"|"community"}; {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}.\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
-        +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
+        +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for ANY knowledge or explanation question ("ギリシャの文化を教えて", "tell me about the culture of Greece", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold** and "- " bullets). Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider or input. Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n'
@@ -20200,11 +20428,13 @@ window.addEventListener('DOMContentLoaded', () => {
     async function briefEntry(name,ll){ try{ open(); }catch(_){}
       _lastUserMsg='';   /* (#R64) button entry has no typed message → mirror falls back to the UI language */
       const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none';
-      bubble('u','🤖 '+L('AI brief','AI調査','KI-Bericht','ИИ-справка','Informe IA')+': '+esc(String(name||'')));
+      /* (#R69) no 🤖 and no "AI brief" wording in the chat ("AI Briefに🤖をつけるな" / "AI briefってワードを
+         わざわざAtlasで出すな") — the user bubble reads as a plain research request. */
+      bubble('u',L('Research: ','調査: ','Recherche: ','Исследование: ','Investigación: ')+esc(String(name||'')));
       try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
       const ai=bubble('a','<span style="color:var(--text-muted);">'+L('Researching…','調査中…','Recherchiere…','Изучаю…','Investigando…')+'</span>');
       try{ const act={type:'brief',place:String(name||'')}; if(ll&&ll.lng!=null&&isFinite(+ll.lng)){ act.lng=+ll.lng; act.lat=+ll.lat; }
-        const r=await dispatch(act); ai.innerHTML=(r&&r.html)||''; recordTurn('AI brief: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
+        const r=await dispatch(act); ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
       }catch(e){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } }
     return { open, toggle, run, brief:briefEntry };
   })();
