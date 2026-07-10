@@ -2524,14 +2524,16 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R63) lakes: major lakes now come from the FIXED gazetteer too (their per-tile label points also drifted);
          OFM keeps only the long tail of small lakes from z5.5 where any drift is sub-glyph. Constant text size —
          the size interpolation amplified the perceived slide while zooming. */
-      /* (#R64) ROOT-CAUSE fix for the remaining lake/peak drift, NO gazetteer hardcoding: the vector tiles store a
-         DIFFERENT label point for the same lake/peak at every zoom level (per-tile generalized geometry), so any
-         layer that reads the tiles directly re-anchors its labels on zoom → the visible "slide". The layers now
-         read from client-side STABLE sources ('stab-water-src'/'stab-peak-src') that a harvester fills from the
-         SAME tile data at runtime: every name keeps the FIRST coordinate it was seen at, worldwide, for every
-         water body and peak — one fixed anchor per feature, zero drift, nothing hardcoded. */
-      try{ if(!map.getSource('stab-water-src')) map.addSource('stab-water-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        if(!map.getSource('stab-peak-src')) map.addSource('stab-peak-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
+      /* (#R64) WATER labels: the vector tiles store a DIFFERENT label geometry for the same lake at every zoom
+         (per-tile LineString label lines), so a tile-driven layer re-anchors on zoom → the visible "slide".
+         Water labels therefore render from a client-side STABLE source ('stab-water-src') that a harvester fills
+         at runtime: every water name keeps the FIRST coordinate it was seen at, worldwide, nothing hardcoded.
+         (#R67) PEAKS ARE THE OPPOSITE CASE and go back to DIRECT tile rendering: summits are exact POINT nodes
+         whose tile-quantization error is always sub-pixel AT THE ZOOM THAT TILE IS VIEWED AT (error and pixel
+         size shrink together), so the raw tile layer is inherently drift-free — while pinning them (R64/R66)
+         BAKED IN one zoom's coarse coordinate and then hopped on refinement, which was itself the reported
+         "山岳名がズームに応じて位置ずれする". Do not re-pin point features. */
+      try{ if(!map.getSource('stab-water-src')) map.addSource('stab-water-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); }catch(_){}
       if(!map.getLayer('ofm-water')) map.addLayer({id:'ofm-water',type:'symbol',source:'stab-water-src',minzoom:5.5,filter:['!',['in',['get','class'],['literal',['ocean','sea','bay','strait','gulf','lagoon']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONTI,'text-size':13,'text-max-width':8},paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1}});
       /* (#R65) seas/bays/straits/gulfs from the SAME pinned dynamic source (visible from low zoom) — every
          named water body worldwide gets a stable label, not just the curated majors. */
@@ -2543,20 +2545,22 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('geo-sea')) map.addLayer({id:'geo-sea',type:'symbol',source:'geo-sea-src',minzoom:0,filter:['<=',['get','z'],['+',['zoom'],0.001]],layout:{visibility:'none','text-field':['get','en'],'text-font':FONTI,'text-letter-spacing':0.08,'text-max-width':8,
         'text-size':['case',['==',['get','big'],1],['interpolate',['linear'],['zoom'],1,11,4,16,8,19],['interpolate',['linear'],['zoom'],2,10,5,13,9,16]]},
         paint:{'text-color':'#8fd0ff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.1,'text-opacity':0.95}}); }catch(_){}
-      /* (#R63) peaks: CONSTANT text size + zero offset — the size interpolation made the anchored label appear to
-         slide against the peak while zooming ("山岳名のラベルがズームに応じてずれる"). */
-      if(!map.getLayer('ofm-peak')) map.addLayer({id:'ofm-peak',type:'symbol',source:'stab-peak-src',minzoom:7,layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':12.5,'text-max-width':8,'text-offset':[0,0.3],'text-anchor':'top'},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
+      /* (#R63) peaks: CONSTANT text size — size interpolation read as sliding. (#R67) rendered DIRECTLY from the
+         mountain_peak tiles again: point nodes are sub-pixel accurate at every zoom's own tiles, so the raw layer
+         cannot drift — the R64/R66 pinning of peaks is what made them sit off the summit and hop on zoom. */
+      if(!map.getLayer('ofm-peak')) map.addLayer({id:'ofm-peak',type:'symbol',source:'ofm','source-layer':'mountain_peak',minzoom:7,layout:{visibility:'none','text-field':['concat','▲ ',['get','name']],'text-font':FONT,'text-size':12.5,'text-max-width':8,'text-offset':[0,0.3],'text-anchor':'top'},paint:{'text-color':'#e7dcc8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}});
       _placeLabelsAdded=true;
       /* register the harvester ONCE — ensurePlaceLabels is intentionally re-run all the time (R27 idempotency),
          so an unguarded map.on here would pile up listeners. */
       if(!ensurePlaceLabels._harvestHooked){ ensurePlaceLabels._harvestHooked=true; map.on('idle',()=>{ try{ harvestStableLabels(); }catch(_){} }); }
     }catch(e){ console.warn('ensurePlaceLabels',e); }
   }
-  /* (#R64) runtime label-anchor pinning (see comment above): harvest lake/peak label points from the loaded OFM
-     tiles and PIN each name to its first-seen coordinate in a stable geojson source. Works for every feature on
-     the planet — this is a dynamic index built from live tile data, not a hardcoded list. */
-  const _stabIdx={water:new Map(),peak:new Map()};
-  let _stabSeaNames=null, _stabDirty={water:false,peak:false};
+  /* (#R64/#R67) runtime label-anchor pinning — WATER ONLY: lake/sea label geometry genuinely differs per tile
+     zoom (LineString label lines), so each water name is pinned to its FIRST-SEEN coordinate in a stable
+     geojson source (worldwide, dynamic, nothing hardcoded) and NEVER moves again. Peaks are exact point nodes
+     and render straight from the tiles (see #R67 note above) — no pinning, no refinement, nothing to hop. */
+  const _stabIdx={water:new Map()};
+  let _stabSeaNames=null, _stabDirty={water:false};
   function _seaNameSet(){ if(_stabSeaNames) return _stabSeaNames; _stabSeaNames=new Set();
     try{ (window.SEA_LABELS||[]).forEach(r=>{ for(let i=3;i<=7;i++){ if(r[i]) _stabSeaNames.add(String(r[i]).toLowerCase()); } }); }catch(_){}
     return _stabSeaNames; }
@@ -2580,20 +2584,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const cell=(typeof cellDeg==='number')?cellDeg:(cls==='ocean'?30:cls==='sea'?12:(cls==='bay'||cls==='strait'||cls==='gulf'||cls==='lagoon')?2.5:4);
       const base=String(nm2).toLowerCase();
       /* same name may exist in several places (e.g. many "Long Lake") — key by name + coarse cell, and treat a
-         nearby existing pin as THE anchor. (#R66) ROOT CAUSE of the remaining "ズームでずれる" (the Mount
-         Futatsumori report): vector-tile coordinates are QUANTIZED to the tile grid, so a pin captured from a
-         low-zoom tile can sit up to ~1 km off the true summit — and zooming in makes that fixed offset grow to
-         hundreds of screen pixels. The pin therefore REFINES: when the same feature is observed at a HIGHER
-         integer zoom (finer quantization) the stored coordinate is upgraded, converging on the exact position
-         (peaks refine up to z14; water stops at z7 so a big lake's label never jumps to a tile-local segment). */
-      const zNow=Math.min(Math.floor(map.getZoom()),(kind==='peak')?14:7);
+         nearby existing pin as THE anchor. FIRST SEEN WINS, FOREVER: a water label floats on the water body, so
+         a few hundred metres of low-zoom quantization is invisible — total positional stability is what matters
+         (#R67: the R66 "refinement" idea is deliberately gone; updating pins was itself visible movement). */
       let hit=null; for(let dx=-1;dx<=1&&!hit;dx++) for(let dy=-1;dy<=1&&!hit;dy++){ const k=base+'|'+cell+'|'+(Math.round(co[0]/cell)+dx)+'|'+(Math.round(co[1]/cell)+dy); if(idx.has(k)) hit=k; }
-      if(hit){ const ex=idx.get(hit);
-        if(zNow>(ex.z||0)){ ex.z=zNow; ex.f.geometry={type:'Point',coordinates:[co[0],co[1]]}; _stabDirty[kind]=true; }
-        continue; }
+      if(hit) continue;
       const key=base+'|'+cell+'|'+Math.round(co[0]/cell)+'|'+Math.round(co[1]/cell);
       if(idx.size>9000) return;
-      idx.set(key,{z:zNow,f:{type:'Feature',id:idx.size,geometry:{type:'Point',coordinates:[co[0],co[1]]},properties:p}});
+      idx.set(key,{type:'Feature',id:idx.size,geometry:{type:'Point',coordinates:[co[0],co[1]]},properties:p});
       _stabDirty[kind]=true;
     }catch(_){} } }
   function harvestStableLabels(){
@@ -2603,12 +2601,11 @@ window.addEventListener('DOMContentLoaded', () => {
        The curated gazetteer is only a multilingual override for the majors; every other water body on the
        planet gets its label from live tile data (no fixed list, no coverage ceiling). */
     _harvestOne('water','water_name',null,null);
-    _harvestOne('peak','mountain_peak',null,0.12);
-    ['water','peak'].forEach(kind=>{ if(!_stabDirty[kind]) return; _stabDirty[kind]=false;
-      try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(_stabIdx[kind].values()).map(v=>v.f)}); }catch(_){} });
+    ['water'].forEach(kind=>{ if(!_stabDirty[kind]) return; _stabDirty[kind]=false;
+      try{ const s=map.getSource('stab-'+kind+'-src'); if(s) s.setData({type:'FeatureCollection',features:Array.from(_stabIdx[kind].values())}); }catch(_){} });
   }
-  window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size,peak:_stabIdx.peak.size};
-    if(dump){ o.peaks=Array.from(_stabIdx.peak.values()).slice(0,6).map(v=>({n:(v.f.properties||{}).name,z:v.z,c:v.f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
+  window._imLabelStats=(dump)=>{ const o={water:_stabIdx.water.size};
+    if(dump){ o.samples=Array.from(_stabIdx.water.values()).slice(0,6).map(f=>({n:(f.properties||{}).name,c:f.geometry.coordinates.map(x=>+x.toFixed(5))})); }
     return o; };   /* diagnostics (read-only) */
   /* (#R62) FIXED sea/ocean/gulf label gazetteer — one stable point per water body (fixes the per-tile label drift),
      5 languages, clickable like place labels. [lng, lat, minzoom, en, jp, de, ru, es] */
