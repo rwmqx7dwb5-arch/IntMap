@@ -879,6 +879,7 @@ gtag('config', 'G-57X5MX0ZPW');
       /* (#R25) Narrow desktop: the JS watcher computes a left/right that ALWAYS clears the (multi-row)
          right-hand view buttons and the left sidebar, so the search can never overlap them or get crushed
          ("つぶれて押せない" / "かぶる"). It anchors left+right (no centering) and stretches between. */
+      body.ms-hide .map-search{ display:none !important; }   /* (#R66) no usable map strip → no pill */
       body.ms-narrow .map-search{ position:fixed; z-index:1002; top:var(--ms-top,78px); left:var(--ms-left,14px); right:var(--ms-right,290px);
         width:auto; transform:none; min-width:0; overflow:hidden;
         /* (#R65) never wider than the anchors allow — a degenerate layout collapses instead of overflowing
@@ -6460,12 +6461,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if(gm.type==='Polygon') draw(gm.coordinates); else if(gm.type==='MultiPolygon') gm.coordinates.forEach(draw); });
       _miniCache[id]=cv.toDataURL('image/png'); return _miniCache[id]; }catch(_){ return null; } }
     function css(){ const st=document.createElement('style');
-      /* (#R64) the right layer sidebar is now an IN-FLOW flex child of .operation-room, exactly like the left
-         sidebar ("左と同様に展開する形式にしろ"): opening it PUSHES the map (margin-right transition, the mirror
-         of .sidebar.collapsed's margin-left), instead of floating fixed over the map. */
+      /* (#R66) DECOUPLED layout ("右サイドバーそのものが覆いかぶさる" report): the MAP cedes the strip itself —
+         `.map-container{margin-right:var(--lsr-w)}` (also set INLINE by open()) — and the sidebar merely fills
+         the vacated strip as an absolute panel. The map's width never depends on the sidebar's flex/transition
+         state, so no failure mode of the panel can ever leave it covering the map: worst case is an empty strip. */
       st.textContent=':root{--lsr-w:min(430px,92vw);}'
-        +'#layer-sidebar-r{position:relative;order:99;height:100%;width:var(--lsr-w);flex-shrink:0;z-index:1000;background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;margin-right:calc(-1 * var(--lsr-w));transition:margin-right .38s cubic-bezier(0.25,1,0.5,1);min-height:0;}'
-        +'#layer-sidebar-r.open{margin-right:0;}'
+        +'body.lsr-avail .operation-room{position:relative;}'
+        +'body.lsr-avail .map-container{transition:margin-right .38s cubic-bezier(0.25,1,0.5,1);}'
+        +'body.lsr-open .map-container{margin-right:var(--lsr-w);}'
+        +'#layer-sidebar-r{position:absolute;top:0;right:0;bottom:0;width:var(--lsr-w);z-index:1000;background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;transform:translateX(102%);transition:transform .38s cubic-bezier(0.25,1,0.5,1);min-height:0;pointer-events:none;visibility:hidden;}'
+        +'#layer-sidebar-r.open{transform:translateX(0);pointer-events:auto;visibility:visible;}'
         +'#layer-sidebar-r .lsr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;padding-top:max(14px,env(safe-area-inset-top));}'
         +'#layer-sidebar-r .lsr-head b{font-size:16px;color:var(--text-main);}'
         +'#layer-sidebar-r .lsr-x{background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;border-radius:8px;padding:2px 8px;}'
@@ -6543,15 +6548,23 @@ window.addEventListener('DOMContentLoaded', () => {
     function filter(){ const q=((sb&&sb.querySelector('#lsr-q').value)||'').toLowerCase().trim(); const dd=document.getElementById('layer-dropdown'); if(!dd) return;
       dd.querySelectorAll('label.layer-option').forEach(lab=>{ const t2=(lab.textContent||'').toLowerCase(); lab.style.display=(!q||t2.indexOf(q)>=0)?'':'none'; }); }
     function open(){ if(isMob()) return; build(); try{ adopt(); }catch(_){} try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} try{ decorate(); }catch(_){}
+      /* (#R66) dynamic width: the map ALWAYS keeps ≥320px when geometrically possible — on a narrow window or
+         with a widened left sidebar, a fixed 430px panel swallowed the map ("覆いかぶさる" perception). */
+      try{ const ls=document.getElementById('sidebar');
+        const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
+        const w=Math.max(280,Math.min(430, Math.round(window.innerWidth-lw-320)));
+        document.documentElement.style.setProperty('--lsr-w', w+'px'); }catch(_){}
       sb.classList.add('open'); document.body.classList.add('lsr-open');
-      /* (#R66) INLINE margin — the open/close position must never depend on cascade order or a CSS transition
-         completing (the "バグった位置に出てくる" report: the panel could sit stranded off-canvas). Inline style
-         always wins and the class transition still animates it. */
-      sb.style.marginRight='0px';
+      /* (#R66) INLINE, decoupled: the MAP cedes the strip via its own margin (one line, no cascade, no flex
+         math), the panel just slides into the vacated strip. Neither depends on the other. */
+      sb.style.transform='translateX(0)'; sb.style.visibility='visible'; sb.style.pointerEvents='auto';
+      try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight='var(--lsr-w)'; }catch(_){}
       setTimeout(()=>{ try{ decorate(); }catch(_){} },400);
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
-    function close(){ if(sb){ sb.classList.remove('open'); sb.style.marginRight='calc(-1 * var(--lsr-w))'; } document.body.classList.remove('lsr-open');
+    function close(){ if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
+      document.body.classList.remove('lsr-open');
+      try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
@@ -13008,7 +13021,8 @@ window.addEventListener('DOMContentLoaded', () => {
            the visible map area's edges, so the pill can never be stretched across the right sidebar (the
            reported bug: ms-narrow's full-width branch set --ms-right:14px = across the open sidebar). */
         let mapL=0, mapR=winW, mapCX=winW/2;
-        try{ const mc=document.querySelector('.map-container'); if(mc){ const r=mc.getBoundingClientRect(); if(r.width>50){ mapL=r.left; mapR=r.right; mapCX=r.left+r.width/2; } } }catch(_){}
+        /* (#R66) use the map rect even when it is squeezed to ~0 — discarding it re-enabled the overlap */
+        try{ const mc=document.querySelector('.map-container'); if(mc){ const r=mc.getBoundingClientRect(); if(r.right>0){ mapL=r.left; mapR=r.right; mapCX=r.left+r.width/2; } } }catch(_){}
         let rightLeft=mapR, stackBottom=66;
         document.querySelectorAll('.map-controls-top .map-view-group, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
         let leftRight=mapL;
@@ -13027,14 +13041,21 @@ window.addEventListener('DOMContentLoaded', () => {
           }
           /* (#R65) HARD CLAMP into the visible map area — degenerate geometry (both sidebars open on a narrow
              window) used to yield left+right anchors that cross, and the pill overflowed at min-content width
-             across the right sidebar. Never let left exceed (map right − 160px of usable pill). */
+             across the right sidebar. Never let left exceed (map right − 160px of usable pill).
+             (#R66) if the usable map strip is too small for ANY pill, hide it entirely instead of letting
+             min-content overflow across the sidebars. */
           mRight=Math.max(mRight, winW - mapR + 14);
           const maxLeft=(winW - mRight) - 160;
           if(mLeft>maxLeft) mLeft=Math.max(mapL+14, maxLeft);
-          bs.setProperty('--ms-left', Math.round(mLeft)+'px');
-          bs.setProperty('--ms-right', Math.round(mRight)+'px');
-          document.body.classList.add('ms-narrow');
-        } else { document.body.classList.remove('ms-narrow'); }
+          const usable=(winW - mRight) - mLeft;
+          if(usable<120){ document.body.classList.add('ms-hide'); document.body.classList.remove('ms-narrow'); }
+          else{
+            document.body.classList.remove('ms-hide');
+            bs.setProperty('--ms-left', Math.round(mLeft)+'px');
+            bs.setProperty('--ms-right', Math.round(mRight)+'px');
+            document.body.classList.add('ms-narrow');
+          }
+        } else { document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); }
       }catch(_){} };
       try{ const ro=new ResizeObserver(upd); ro.observe(host); const sb=document.querySelector('.sidebar'); if(sb) ro.observe(sb); }catch(_){ window.addEventListener('resize',upd); }
       window.addEventListener('resize',upd); window.addEventListener('intmap-sidebar-resize',upd); setTimeout(upd,300); upd(); }
