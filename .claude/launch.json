@@ -13,6 +13,19 @@
         "127.0.0.1"
       ],
       "port": 8781
+    },
+    {
+      "name": "intmap-static-2",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-3",
+        "-m",
+        "http.server",
+        "8786",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 8786
     }
   ]
 }
