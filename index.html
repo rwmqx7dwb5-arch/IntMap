@@ -7284,34 +7284,120 @@ window.addEventListener('DOMContentLoaded', () => {
       Object.assign(i18n.de,{lblWsMode:'Fenster-Workspace (Desktop)',wsOff:'Aus (Standard)',wsOn:'An — frei bewegliche Fenster',wsHint:'Wie in einem Videoeditor: Panel, Karte, Ebenen und Kartensteuerung werden frei verschieb- und skalierbare Fenster. Das Layout wird gespeichert.'});
       Object.assign(i18n.ru,{lblWsMode:'Оконный режим (десктоп)',wsOff:'Выкл (по умолчанию)',wsOn:'Вкл — свободные окна',wsHint:'Как в видеоредакторе: панель, карта, слои и управление картой становятся свободно перемещаемыми окнами. Раскладка сохраняется.'});
       Object.assign(i18n.es,{lblWsMode:'Espacio de ventanas (escritorio)',wsOff:'Apagado (predeterminado)',wsOn:'Encendido — ventanas libres',wsHint:'Estilo editor de vídeo: el panel, el mapa, las capas y los controles se vuelven ventanas libres. El diseño se guarda.'}); }catch(_){}
-    let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false;
+    let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false, scanT=null;
     const DEFS=[
       {id:'side',  sel:'#sidebar',                    ic:'☰', t:()=>T('Panel','パネル','Panel','Панель','Panel'), min:[300,320]},
       {id:'map',   sel:'#map-container',              ic:'🗺', t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[420,320]},
       {id:'layers',sel:'#layer-sidebar-r',            ic:'▤', t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[280,320]},
-      {id:'ctrls', sel:'.map-controls-top',           ic:'🎛', t:()=>T('Map controls','地図コントロール','Kartensteuerung','Управление картой','Controles del mapa'), min:[190,150], ovis:true}
+      {id:'ctrls', sel:'.map-controls-top',           ic:'🎛', t:()=>T('Map controls','地図コントロール','Kartensteuerung','Управление картой','Controles del mapa'), min:[190,150], ovis:true},
+      {id:'ticker',sel:'#ticker-bar',                 ic:'📈', t:()=>T('Ticker','ティッカー','Ticker','Тикер','Cinta'), min:[300,64], follow:true}   /* (#R78b) the ticker was buried under the windows — now it IS one; the window follows the ticker's own on/off */
     ];
+    /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
+       dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
+       and SHARED-BORDER resize — dragging an edge that abuts a neighbour resizes BOTH windows like a splitter. */
+    let gV=null,gH=null;
+    function _guides(){ if(gV) return; gV=document.createElement('div'); gV.className='ws-guide ws-gv'; gH=document.createElement('div'); gH.className='ws-guide ws-gh'; document.body.appendChild(gV); document.body.appendChild(gH); }
+    function showG(ax,pos){ _guides(); const g=ax==='v'?gV:gH; g.style.display='block'; if(ax==='v') g.style.left=(pos-0.5)+'px'; else g.style.top=(pos-0.5)+'px'; }
+    function hideG(){ if(gV){ gV.style.display='none'; gH.style.display='none'; } }
+    function others(w){ const a=[]; for(const id in wraps){ const o=wraps[id]; if(o&&o!==w&&o.isConnected&&o.style.display!=='none') a.push(o); } return a; }
+    const SNAP=8;
+    function xCands(w){ const a=[12,innerWidth-12]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return a; }
+    function yCands(w){ const a=[12,innerHeight-12]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return a; }
+    function nearest(cands,v){ let b=null,bd=SNAP+0.001; cands.forEach(c=>{ const d=Math.abs(v-c); if(d<bd){ bd=d; b=c; } }); return b; }
+    function minOf(w){ return (w&&w.__wsMin)||[220,140]; }
+    function wsDrag(w,tb){
+      tb.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,a')) return; if(w.dataset.resizing) return; e.preventDefault();
+        try{ bringToFront(w); }catch(_){}
+        const sx=e.clientX,sy=e.clientY,sl=w.offsetLeft,st=w.offsetTop,cx=xCands(w),cy=yCands(w);
+        const mv=ev=>{ let l=sl+ev.clientX-sx,t=st+ev.clientY-sy; hideG();
+          /* snap either edge (left/right, top/bottom) to any candidate line */
+          const sxl=nearest(cx,l), sxr=nearest(cx,l+w.offsetWidth);
+          if(sxl!=null&&(sxr==null||Math.abs(sxl-l)<=Math.abs(sxr-(l+w.offsetWidth)))){ l=sxl; showG('v',sxl); }
+          else if(sxr!=null){ l=sxr-w.offsetWidth; showG('v',sxr); }
+          const syt=nearest(cy,t), syb=nearest(cy,t+w.offsetHeight);
+          if(syt!=null&&(syb==null||Math.abs(syt-t)<=Math.abs(syb-(t+w.offsetHeight)))){ t=syt; showG('h',syt); }
+          else if(syb!=null){ t=syb-w.offsetHeight; showG('h',syb); }
+          l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(0,Math.min(innerHeight-40,t));
+          w.style.left=l+'px'; w.style.top=t+'px'; };
+        const up=()=>{ hideG(); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); schedSave(); };
+        document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
+    }
+    function wsResize(w){
+      const M=8, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
+      const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-2||y<-2||x>r.width+2||y>r.height+2) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
+      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; });
+      w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing) w.style.cursor=''; });
+      w.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,textarea,a,[role="button"]')) return;
+        const d=edgeAt(e.clientX,e.clientY); if(!d) return; if(w.dataset.min) return;
+        e.preventDefault(); e.stopPropagation(); w.dataset.resizing=d; try{ bringToFront(w); }catch(_){}
+        const sx=e.clientX,sy=e.clientY, sw=w.offsetWidth,sh=w.offsetHeight, sl=w.offsetLeft, st=w.offsetTop;
+        const mn=minOf(w), cx=xCands(w), cy=yCands(w);
+        /* adjacency detection at grab time: pure-edge drags pick up every neighbour abutting that edge */
+        const partners=[];
+        if(d.length===1){ others(w).forEach(o=>{ const r0={l:o.offsetLeft,t:o.offsetTop,w:o.offsetWidth,h:o.offsetHeight};
+          const ovY=Math.min(st+sh,r0.t+r0.h)-Math.max(st,r0.t), ovX=Math.min(sl+sw,r0.l+r0.w)-Math.max(sl,r0.l);
+          if(d==='e'&&Math.abs(r0.l-(sl+sw))<=4&&ovY>=40) partners.push({o,r0});
+          if(d==='w'&&Math.abs((r0.l+r0.w)-sl)<=4&&ovY>=40) partners.push({o,r0});
+          if(d==='s'&&Math.abs(r0.t-(st+sh))<=4&&ovX>=40) partners.push({o,r0});
+          if(d==='n'&&Math.abs((r0.t+r0.h)-st)<=4&&ovX>=40) partners.push({o,r0}); }); }
+        const mv=ev=>{ const dx=ev.clientX-sx, dy=ev.clientY-sy; let l=sl,t=st,wd=sw,hg=sh; hideG();
+          if(d.indexOf('e')>=0){ let edge=sl+sw+dx;
+            if(!partners.length){ const s2=nearest(cx,edge); if(s2!=null){ edge=s2; showG('v',s2); } }
+            partners.forEach(p=>{ edge=Math.min(edge,p.r0.l+p.r0.w-minOf(p.o)[0]); });
+            wd=Math.max(mn[0],edge-sl); const E=sl+wd;
+            partners.forEach(p=>{ p.o.style.left=E+'px'; p.o.style.width=(p.r0.l+p.r0.w-E)+'px'; }); }
+          if(d.indexOf('w')>=0){ let edge=sl+dx;
+            if(!partners.length){ const s2=nearest(cx,edge); if(s2!=null){ edge=s2; showG('v',s2); } }
+            partners.forEach(p=>{ edge=Math.max(edge,p.r0.l+minOf(p.o)[0]); });
+            edge=Math.min(edge,sl+sw-mn[0]); wd=sw+(sl-edge); l=edge;
+            partners.forEach(p=>{ p.o.style.width=(edge-p.r0.l)+'px'; }); }
+          if(d.indexOf('s')>=0){ let edge=st+sh+dy;
+            if(!partners.length){ const s2=nearest(cy,edge); if(s2!=null){ edge=s2; showG('h',s2); } }
+            partners.forEach(p=>{ edge=Math.min(edge,p.r0.t+p.r0.h-minOf(p.o)[1]); });
+            hg=Math.max(mn[1],edge-st); const E=st+hg;
+            partners.forEach(p=>{ p.o.style.top=E+'px'; p.o.style.height=(p.r0.t+p.r0.h-E)+'px'; }); }
+          if(d.indexOf('n')>=0){ let edge=st+dy;
+            if(!partners.length){ const s2=nearest(cy,edge); if(s2!=null){ edge=s2; showG('h',s2); } }
+            partners.forEach(p=>{ edge=Math.max(edge,p.r0.t+minOf(p.o)[1]); });
+            edge=Math.min(edge,st+sh-mn[1]); hg=sh+(st-edge); t=edge;
+            partners.forEach(p=>{ p.o.style.height=(edge-p.r0.t)+'px'; }); }
+          w.style.left=l+'px'; w.style.top=t+'px'; w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
+        const up=()=>{ delete w.dataset.resizing; hideG(); w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); };
+        document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
+    }
     function css(){ if(styled) return; styled=true; const st=document.createElement('style'); st.id='ws-style';
       st.textContent=
         'body.ws-mode{background:var(--bg-main,#0d1117);}'
         +'body.ws-mode .operation-room{display:block;background:radial-gradient(circle at 1px 1px, rgba(128,148,178,0.13) 1px, transparent 1.5px);background-size:22px 22px;}'
-        +'.ws-win{position:fixed;z-index:900;display:flex;flex-direction:column;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 18px 50px rgba(0,0,0,0.38);overflow:hidden;min-width:120px;}'
+        +'.ws-win{position:fixed;z-index:900;display:flex;flex-direction:column;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 18px 50px rgba(0,0,0,0.38);overflow:hidden;min-width:120px;}'
         +'.ws-win.ws-ovis,.ws-win.ws-ovis .ws-body{overflow:visible;}'
         +'.ws-tb{flex:0 0 34px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--input-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));cursor:grab;user-select:none;-webkit-user-select:none;}'
         +'.ws-tb:active{cursor:grabbing;}'
         +'.ws-title{font-size:11.5px;font-weight:600;color:var(--text-muted);letter-spacing:0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;}'
         +'.ws-dots{display:flex;gap:7px;flex:0 0 auto;}'
-        +'.ws-dot{width:12px;height:12px;border-radius:50%;border:none;cursor:pointer;padding:0;transition:filter .15s ease;}'
+        /* (#R78b) macOS-style traffic lights: plain dots at rest, the ×/−/+ glyphs appear on HOVER of the group */
+        +'.ws-dot{width:12.5px;height:12.5px;border-radius:50%;border:none;cursor:pointer;padding:0;transition:filter .15s ease;display:flex;align-items:center;justify-content:center;position:relative;}'
         +'.ws-d-close{background:#ff5f57;}.ws-d-min{background:#febc2e;}.ws-d-max{background:#28c840;}'
-        +'.ws-dot:hover{filter:brightness(1.2);}'
+        +'.ws-dot::before{font-size:9.5px;line-height:1;font-weight:800;color:rgba(60,20,10,0.6);opacity:0;transition:opacity .1s ease;pointer-events:none;transform:translateY(-0.5px);}'
+        +'.ws-d-close::before{content:"\\00d7";}.ws-d-min::before{content:"\\2212";}.ws-d-max::before{content:"+";}'
+        +'.ws-dots:hover .ws-dot::before{opacity:1;}'
+        +'.ws-dot:active{filter:brightness(0.85);}'
+        +'.ws-guide{position:fixed;z-index:5995;background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:0.85;box-shadow:0 0 6px rgba(10,132,255,0.6);}'
+        +'.ws-gv{top:0;bottom:0;width:1px;}.ws-gh{left:0;right:0;height:1px;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
-        +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;}'
+        +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
         +'body.ws-mode .sidebar{width:auto !important;min-width:0 !important;max-width:none !important;height:auto !important;border-right:none !important;transform:none !important;}'
         +'body.ws-mode #btn-toggle-sidebar{display:none !important;}'
         +'body.ws-mode #lsr-toggle{display:none !important;}'
         +'body.ws-mode #layer-sidebar-r{position:static !important;width:auto !important;min-width:0 !important;height:auto !important;margin:0 !important;border:none !important;transform:none !important;display:flex !important;flex-direction:column;}'
-        +'body.ws-mode .ws-body .map-controls-top{position:static;display:flex;padding:10px;align-items:flex-end;overflow:visible;max-height:100%;overflow-y:auto;}'
-        +'#ws-dock{position:fixed;left:50%;transform:translateX(-50%);bottom:10px;z-index:5990;display:flex;gap:4px;align-items:center;padding:6px 8px;border-radius:14px;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));box-shadow:0 10px 30px rgba(0,0,0,0.35);-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
+        /* (#R78b) de-chrome the transplanted content ("そのまま移植したような汚いUI"): no duplicate headers,
+           no inner borders/radii — the window IS the chrome now */
+        +'body.ws-mode #layer-sidebar-r .lsr-head{display:none !important;}'
+        +'body.ws-mode .ws-side .sidebar{background:transparent !important;}'
+        +'body.ws-mode #ticker-bar{position:static !important;width:100% !important;height:100% !important;min-height:30px;border-top:none !important;background:transparent !important;}'
+        +'body.ws-mode .ws-body .map-controls-top{position:static;display:flex;flex-direction:column;gap:10px;padding:12px;align-items:stretch;overflow:visible;max-height:100%;overflow-y:auto;}'
+        +'body.ws-mode .ws-body .map-controls-top>*{margin:0 !important;align-self:stretch;}'
+        +'#ws-dock{position:fixed;right:12px;bottom:12px;z-index:5990;display:flex;gap:4px;align-items:center;padding:6px 8px;border-radius:14px;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));box-shadow:0 10px 30px rgba(0,0,0,0.35);-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
         +'#ws-dock button{border:none;background:transparent;color:var(--text-main);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:9px;cursor:pointer;display:flex;gap:6px;align-items:center;white-space:nowrap;}'
         +'#ws-dock button:hover{background:var(--input-bg);}'
         +'#ws-dock button.off{opacity:0.4;}'
@@ -7321,8 +7407,11 @@ window.addEventListener('DOMContentLoaded', () => {
       document.head.appendChild(st); }
     const state=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(_){ return {}; } };
     const save=p=>{ try{ localStorage.setItem(KEY,JSON.stringify(Object.assign(state(),p))); }catch(_){} };
-    function defRects(){ const W=innerWidth,H=innerHeight,rh=Math.round(H*0.56);
-      return { side:[12,12,340,H-24], map:[364,12,Math.max(430,W-364-312),H-24], layers:[W-300,12,288,rh], ctrls:[W-300,rh+24,288,Math.max(160,H-rh-36)] }; }
+    function defRects(){ const W=innerWidth,H=innerHeight;
+      /* ticker-aware defaults: when the ticker exists it gets the full bottom strip and everything else ends above it */
+      const tk=document.getElementById('ticker-bar'); const tkH=tk?76:0; const B=H-24-tkH; const rh=Math.round(B*0.56);
+      return { side:[12,12,340,B], map:[364,12,Math.max(430,W-364-312),B], layers:[W-300,12,288,rh], ctrls:[W-300,rh+24,288,Math.max(160,B-rh-12)],
+        ticker:[12,H-12-64,Math.max(300,W-24-268),64] }; }   /* 268 = keep clear of the bottom-right dock */
     function clampRect(r,min){ const W=innerWidth,H=innerHeight;
       let w=Math.max((min&&min[0])||220,Math.min(W-16,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-16,r[3]||300));
       let x=Math.max(4,Math.min(W-w-4,r[0]||12)), y=Math.max(4,Math.min(H-60,r[1]||12));
@@ -7348,9 +7437,10 @@ window.addEventListener('DOMContentLoaded', () => {
       body.appendChild(el); w.appendChild(tb); w.appendChild(body); document.body.appendChild(w);
       const r=clampRect(rect,def.min);
       w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; w.style.width=r[2]+'px'; w.style.height=r[3]+'px';
-      try{ makeDraggable(w,tb); }catch(_){}
-      try{ addEdgeResize(w,{min:def.min}); }catch(_){}
-      tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; syncDock(); schedSave(); };
+      w.__wsMin=def.min;
+      wsDrag(w,tb); wsResize(w);
+      try{ registerWindow(w); }catch(_){}
+      tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; w.dataset.userHid='1'; syncDock(); schedSave(); };
       tb.querySelector('.ws-d-min').onclick=()=>{ if(w.dataset.min){ delete w.dataset.min; body.style.display=''; w.style.height=(+w.dataset.h0||300)+'px'; } else { w.dataset.h0=String(w.offsetHeight); w.dataset.min='1'; body.style.display='none'; w.style.height='auto'; } fitMap(); schedSave(); };
       tb.querySelector('.ws-d-max').onclick=()=>{ if(w.dataset.maxed){ try{ const r2=JSON.parse(w.dataset.maxed); w.style.left=r2[0]+'px'; w.style.top=r2[1]+'px'; w.style.width=r2[2]+'px'; w.style.height=r2[3]+'px'; }catch(_){} delete w.dataset.maxed; }
         else { w.dataset.maxed=JSON.stringify([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight]); w.style.left='8px'; w.style.top='8px'; w.style.width=(innerWidth-16)+'px'; w.style.height=(innerHeight-16)+'px'; }
@@ -7360,7 +7450,11 @@ window.addEventListener('DOMContentLoaded', () => {
     function mkDock(){ if(dock) return; dock=document.createElement('div'); dock.id='ws-dock';
       DEFS.forEach(def=>{ if(!wraps[def.id]) return; const b=document.createElement('button'); b.dataset.win=def.id;
         b.innerHTML=def.ic+' <span>'+def.t()+'</span>'; b.title=T('Show / hide window','ウィンドウの表示 / 非表示','Fenster ein-/ausblenden','Показать/скрыть окно','Mostrar/ocultar ventana');
-        b.onclick=()=>{ const w=wraps[def.id]; if(!w) return; if(w.style.display==='none'){ w.style.display='flex'; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; } fitMap(); syncDock(); schedSave(); };
+        b.onclick=()=>{ const w=wraps[def.id]; if(!w) return;
+          /* follow-windows (ticker): the dock button drives the REAL feature, the window mirrors it */
+          if(def.follow){ try{ const el=w.querySelector('.ws-body').firstElementChild;
+            if(el&&getComputedStyle(el).display==='none'&&window.IntMapTicker){ window.IntMapTicker.toggle(); delete w.dataset.autoHid; delete w.dataset.userHid; w.style.display='flex'; try{ bringToFront(w); }catch(_){} syncDock(); schedSave(); return; } }catch(_){} }
+          if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; delete w.dataset.autoHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; } fitMap(); syncDock(); schedSave(); };
         dock.appendChild(b); });
       const sep=document.createElement('span'); sep.className='ws-dk-sep'; dock.appendChild(sep);
       const rst=document.createElement('button'); rst.textContent='⟲ '+T('Reset','リセット','Zurücksetzen','Сброс','Restablecer'); rst.title=T('Reset the window layout','ウィンドウ配置を初期状態に戻す','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño');
@@ -7374,6 +7468,20 @@ window.addEventListener('DOMContentLoaded', () => {
       dock.appendChild(ex);
       document.body.appendChild(dock); }
     function syncDock(){ if(!dock) return; dock.querySelectorAll('button[data-win]').forEach(b=>{ const w=wraps[b.dataset.win]; b.classList.toggle('off',!w||w.style.display==='none'); }); }
+    function rebuildDock(){ if(dock){ dock.remove(); dock=null; } mkDock(); syncDock(); }
+    /* (#R78b) elements that appear AFTER enable (the ticker when turned on in Settings) become windows the
+       moment they exist; windows whose element was removed from the DOM are retired. "全機能使えないと意味ない". */
+    function scan(){ if(!on) return; let changed=false;
+      DEFS.forEach(def=>{ const w=wraps[def.id];
+        if(!w){ const el=document.querySelector(def.sel); if(el&&el.isConnected){
+            const st=state(); const rect=(st.rects&&st.rects[def.id])||defRects()[def.id]||[80,80,420,320];
+            wraps[def.id]=mkWin(def,el,rect); changed=true; } }
+        else { const el=w.querySelector('.ws-body')&&w.querySelector('.ws-body').firstElementChild;
+          if(!el||!el.isConnected){ try{ w.remove(); }catch(_){} delete wraps[def.id]; delete holders[def.id]; changed=true; }
+          else if(def.follow){ const hid=getComputedStyle(el).display==='none';   /* window mirrors the content's own on/off (ticker) */
+            if(hid&&w.style.display!=='none'&&!w.dataset.userHid){ w.style.display='none'; w.dataset.autoHid='1'; syncDock(); }
+            else if(!hid&&w.dataset.autoHid&&w.style.display==='none'){ delete w.dataset.autoHid; w.style.display='flex'; syncDock(); } } } });
+      if(changed) rebuildDock(); }
     function enable(){ if(on) return true;
       if(isMob()){ try{ imToast(T('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio')); }catch(_){} return false; }
       css();
@@ -7389,10 +7497,12 @@ window.addEventListener('DOMContentLoaded', () => {
       mkDock(); syncDock();
       try{ ro=new ResizeObserver(()=>{ fitMap(); schedSave(); }); if(wraps.map) ro.observe(wraps.map); }catch(_){}
       document.addEventListener('pointerup',schedSave,true);
+      scanT=setInterval(scan,2500);   /* late-appearing elements (ticker) auto-join the workspace */
       fitMap(); setTimeout(fitMap,350); save({on:1});
       return true; }
     function disable(){ if(!on) return; on=false;
       try{ ro&&ro.disconnect(); }catch(_){} ro=null;
+      clearInterval(scanT); scanT=null; hideG();
       document.removeEventListener('pointerup',schedSave,true); clearTimeout(saveT);
       for(const id in wraps){ const w=wraps[id]; if(!w) continue;
         const body=w.querySelector('.ws-body'); const el=body&&body.firstElementChild; const ph=holders[id];
