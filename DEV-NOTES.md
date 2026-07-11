@@ -3683,3 +3683,17 @@ Big batch; every item below is a direct user report.
 - **Ticker**: 📰 emoji removed from news items.
 - **Shortcuts**: the R62 `?` cheat-sheet was undiscoverable → Settings row "⌨ View keyboard shortcuts" (`btn-kbd-help`, i18n ×5) + `window.IntMapKbdHelp` + Atlas `{"type":"shortcuts"}`.
 - **Privacy/Sources updated**: MET Norway, Global Watersheds (mghydro), GRDC/WB Major River Basins added (EN+JP privacy §4 + sources list with licenses/attribution).
+
+### R73 — 再発報告の実測根治（geo-sea無音棄却・プレビューURL引数ズレ）＋ Central OS化の第一歩（キャンセル・自己検証・実在事件マッピング）
+- **「主要な海や湖の名前が表示されない」= 歴史的バグの実測根治**: `geo-sea`（ガゼッタの海・湖ラベル層）の `text-size` が `case(big, interpolate(zoom), interpolate(zoom))` — **zoom補間がcaseの内側**にある不正式で、MapLibreは addLayer を例外なし（非同期errorイベントのみ）で**無音棄却** → レイヤーは一度も存在せず、ハーベスタはガゼッタと同名の水域をスキップするため主要名がどこにも出なかった（R72の東シナ海報告も同根）。zoom最外殻・出力側caseの正しい式に書き換え。ヘッドレスで z2.3=太平洋/インド洋、z5.2=East China Sea、z7.2=琵琶湖 のレンダリングを queryRenderedFeatures で確認。**教訓: addLayerの失敗はthrowしない。追加直後に getLayer で存在確認するか error イベントを見る。** 同型の不正式は全ファイル走査で他になし。
+- **タイルプレビュー「一切変化なし」の実測根因**: R72の地域別GIBSタイルは `G(id,lvl,date,ext,z,lon,lat)` の **ext省略呼び出しで引数が1つずれ**（3がext扱い・lat欠落）→ 全GIBS-png系のURLが壊れ404→グラデーションのまま（jpg指定の4枚だけ正常だった）。'png'明示で20呼び出し修正。＋IntersectionObserver遅延は off-screenプレビルドで発火しないことがある→**決定的な4並列プリロードキュー**（Image()、DOM順、失敗はグラデーション維持）+ open時の `kick()`（IO残置分の強制発火）+ `IntMapLayerPreviews.stats()` 診断。等高線プレビューはOpenTopoMap実タイル（Matterhorn、Sourcesに追記）。ヘッドレスで GIBS系プレビュー全適用（117/129、残りは遅延WB系）を確認。
+- **rafshim**: `?rafshim=1` で rAF をタイマー化する開発専用シム（先頭スクリプト）— 非表示タブでは rAF が止まり map 'load' が永遠に来ないため、ヘッドレス検証はこれ無しでは不可能。通常訪問者には無効。
+- **流域の精密化（信濃川で実証中）**: mghydro流域算出は「点の上流側」を返すため、河口端点は海にスナップして退化（1点ポリゴン）、**分流（大河津分水）下流の点は小さな残余流域**しか返さない実測 → 両端から2/8/18/33/50%の複数点+地理極値端点（≤12候補）を順に算出し、**河道の包含率が最大**（同率なら面積大）のものを採用、85%で早期確定。河道が取れない川は地名ジオコード点から算出するフォールバックも追加。`window._imBasinDiag`/`_imBasinDiag2` 読み取り専用診断（vision §17）。
+- **Atlasキャンセル**: 世代カウンタ `_runGen` — thinking/実行中に新メッセージ → 旧ターンは残アクションを中断し「⏹ 中止」表示、遅延結果は破棄（localPlan/AI/brief全経路）。
+- **レイヤー自己検証（vision §16）**: layerアクションはトグル前に可視レイヤー+オーバーレイのスナップショットを取り、**実際のスタイル差分**を最大4.2秒ポーリング → 変化なしなら一度だけ再トグル → それでも駄目なら「描画を確認できませんでした」と正直に報告（成功時は「☑ 地図上での描画を確認」）。
+- **返答内コントロールの双方向同期**: document変更/inputリスナーで、凡例・クラシックパネル・タイルサイドバーなど**外部からのレイヤー操作を全返答内のトグル/スライダーに反映**（返答ウィジェット=ライブミラー）。
+- **mapReportの一般論禁止**: 各itemは「検索/証拠で確認できた実在の1事象（日付・都市・被害数）」に限定、地域一般論・統計・トレンドのitem化を明示禁止、英語+ユーザー言語での複数検索を義務化、少なければ「何を検索してどこまでか」を overview で正直に。
+- **現職者ハルシネーション**: 「Xの首相は？」系を localPlan で**決定的に analyze へ**（use:['web']）＋ analyze プロンプトに「現職名はパラメトリック記憶=誤りと推定。検索結果の名前のみ・出典日付付き・未確認なら未確認と明言」。
+- **タブ名**: Stats→Data→**Countries**（5言語: 国/Länder/Страны/Países。5候補からの指名判断: 内容=国別データそのもの、Statesは米州と紛らわしく、Nationsは政治的含意、Data/Statsは曖昧）。
+- **Active layers ✕**: hoverは×の文字が赤くなるだけ（赤丸廃止、チップ/一覧両方）。
+- **ATLAS-VISION.md 新設**: Central OS宣言（20項目+6段階+最優先5項）全文と実装対応表。stateContextへAtlasピン/ポリゴン/ライン/計測/半径/ユーザーピン/右サイドバー/ティッカー状態を追加（vision §2）。
