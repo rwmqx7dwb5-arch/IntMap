@@ -7246,7 +7246,8 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map&&map.on('click',open._mapCloser); }catch(_){}
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
-    function close(){ if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
+    function close(){ if(document.body.classList.contains('ws-mode')) return;   /* (#R78d) in workspace mode the layer panel lives in its own window and must never auto-close (that turned the window black) */
+      if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
       try{ if(open._mapCloser&&map) map.off('click',open._mapCloser); }catch(_){}
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
@@ -7289,9 +7290,15 @@ window.addEventListener('DOMContentLoaded', () => {
        fixed bottom strip above the workspace), NO separate map-controls window (「操作パネルを新設するな」— the
        controls stay inside the map, where they belong), NO emoji in the titles. */
     const DEFS=[
-      {id:'side',  sel:'#sidebar',         t:()=>T('Panel','パネル','Panel','Панель','Panel'), min:[300,320]},
-      {id:'map',   sel:'#map-container',   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[420,320]},
-      {id:'layers',sel:'#layer-sidebar-r', t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[280,320]}
+      {id:'side',  sel:'#sidebar',         t:()=>T('Panel','パネル','Panel','Панель','Panel'), min:[300,300]},
+      {id:'map',   sel:'#map-container',   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
+      {id:'layers',sel:'#layer-sidebar-r', t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]},
+      /* (#R78d) more AVAILABLE windows ("利用可能ウィンドウが少なすぎる"): Information & Community are independent
+         content divs, so each is its own window. They default HIDDEN (clean start) but are listed in the Window
+         menu; opening one pulls the real div into it. News & Countries share one feed div, so they stay tabs
+         inside Panel. */
+      {id:'info',     sel:'#info-dashboard',  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
+      {id:'community', sel:'#community-feed',  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }}
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -7393,9 +7400,22 @@ window.addEventListener('DOMContentLoaded', () => {
            and "map not centred" were the same bug). 100%!important pins every wrapped element to its window. */
         +'body.ws-mode .sidebar{width:100% !important;min-width:0 !important;max-width:none !important;height:100% !important;border-right:none !important;transform:none !important;}'
         +'body.ws-mode #map-container{position:relative !important;width:100% !important;max-width:none !important;height:100% !important;margin:0 !important;flex:1 1 auto !important;}'
+        /* (#R78d) the map top-right controls do NOT belong in the map — they move to the top menu bar (View/Tools) */
+        +'body.ws-mode .map-controls-top{display:none !important;}'
+        /* (#R78d) the place-search bar has a stack of responsive rules (absolute-centre, ms-narrow fixed-to-viewport,
+           ms-hide) that all break inside a window — the "search bar flies away / is crushed" bug. Pin it cleanly
+           to the top-left of the MAP window and neutralise every one of them. */
+        +'body.ws-mode #map-search{position:absolute !important;left:12px !important;right:auto !important;top:12px !important;bottom:auto !important;transform:none !important;width:min(330px,calc(100% - 24px)) !important;max-width:none !important;min-width:0 !important;opacity:1 !important;pointer-events:auto !important;}'
+        +'body.ws-mode #map-search input{width:auto !important;opacity:1 !important;padding:8px 4px !important;}'
         +'body.ws-mode #btn-toggle-sidebar{display:none !important;}'
         +'body.ws-mode #lsr-toggle{display:none !important;}'
-        +'body.ws-mode #layer-sidebar-r{position:static !important;width:100% !important;min-width:0 !important;height:100% !important;margin:0 !important;border:none !important;transform:none !important;display:flex !important;flex-direction:column;}'
+        /* (#R78d) keep the layers panel ALWAYS visible inside its window — the classic "map click closes it"
+           behaviour (open._mapCloser) pushed it off-screen with transform/visibility, making the window go black */
+        +'body.ws-mode #layer-sidebar-r{position:static !important;width:100% !important;min-width:0 !important;height:100% !important;margin:0 !important;border:none !important;transform:none !important;visibility:visible !important;pointer-events:auto !important;opacity:1 !important;display:flex !important;flex-direction:column;}'
+        /* (#R78d) Information / Community are their own windows now → force their content visible regardless of the
+           sidebar tab state, and hide their (now redundant) tab buttons inside the Panel window */
+        +'body.ws-mode .ws-info #info-dashboard,body.ws-mode .ws-community #community-feed{display:flex !important;width:100% !important;height:100% !important;}'
+        +'body.ws-mode .ws-side #btn-info,body.ws-mode .ws-side #btn-community{display:none !important;}'
         /* (#R78b) de-chrome the transplanted content ("そのまま移植したような汚いUI"): no duplicate headers,
            no inner borders/radii — the window IS the chrome now */
         +'body.ws-mode #layer-sidebar-r .lsr-head{display:none !important;}'
@@ -7429,18 +7449,20 @@ window.addEventListener('DOMContentLoaded', () => {
       const MENU=36, tkOn=document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar');
       const top=MENU+10, B=H-top-10-(tkOn?30:0);
       const sideW=340, layW=Math.min(300,Math.round(W*0.22)); const layX=W-10-layW;
-      return { side:[10,top,sideW,B], map:[10+sideW,top,layX-(10+sideW),B], layers:[layX,top,layW,B] }; }
+      return { side:[10,top,sideW,B], map:[10+sideW,top,layX-(10+sideW),B], layers:[layX,top,layW,B],
+        info:[Math.round(W*0.28),top+40,Math.round(W*0.34),Math.round(B*0.7)],
+        community:[Math.round(W*0.34),top+90,Math.round(W*0.34),Math.round(B*0.7)] }; }
     function clampRect(r,min){ const W=innerWidth,H=innerHeight;
       let w=Math.max((min&&min[0])||220,Math.min(W-16,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-52,r[3]||300));
       let x=Math.max(4,Math.min(W-w-4,r[0]||12)), y=Math.max(40,Math.min(H-70,r[1]||46));   /* y≥40: below the menu bar */
       return [x,y,w,h]; }
     function fitMap(){ try{ (window.__imap||map).resize(); }catch(_){} }
     function schedSave(){ if(!on) return; clearTimeout(saveT); saveT=setTimeout(saveRects,400); }
-    function saveRects(){ if(!on) return; const rects={},hid={},minz={};
+    function saveRects(){ if(!on) return; const rects={},vis={},minz={};
       for(const id in wraps){ const w=wraps[id]; if(!w||!w.isConnected) continue;
         rects[id]=[w.offsetLeft,w.offsetTop,w.offsetWidth,(w.dataset.min?(+w.dataset.h0||300):w.offsetHeight)];
-        if(w.style.display==='none') hid[id]=1; if(w.dataset.min) minz[id]=1; }
-      save({rects,hid,minz}); }
+        vis[id]=(w.style.display!=='none'); if(w.dataset.min) minz[id]=1; }
+      save({rects,vis,minz}); }
     function mkWin(def,el,rect){
       const w=document.createElement('div'); w.className='ws-win ws-'+def.id; if(def.ovis) w.classList.add('ws-ovis');
       const tb=document.createElement('div'); tb.className='ws-tb';
@@ -7464,6 +7486,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else { w.dataset.maxed=JSON.stringify([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight]); w.style.left='8px'; w.style.top='8px'; w.style.width=(innerWidth-16)+'px'; w.style.height=(innerHeight-16)+'px'; }
         try{ bringToFront(w); }catch(_){} fitMap(); schedSave(); };
       tb.addEventListener('dblclick',e=>{ if(e.target.closest('.ws-dot')) return; tb.querySelector('.ws-d-max').click(); });
+      try{ if(def.onWrap) def.onWrap(); }catch(_){}
       return w; }
     /* (#R78c) TOP MENU BAR replaces the toy dock ("上部から、ソフトのように選択できるようにしろ"):
        IntMap — Workspace | ウィンドウ▾ (checkmarked show/hide list + reset) | … | 終了 */
@@ -7473,21 +7496,48 @@ window.addEventListener('DOMContentLoaded', () => {
       fitMap(); syncDock(); schedSave(); }
     function mkDock(){ if(dock) return; dock=document.createElement('div'); dock.id='ws-menu';
       const brand=document.createElement('div'); brand.className='ws-brand'; brand.innerHTML='IntMap <span>— '+T('Workspace','ワークスペース','Workspace','Рабочая область','Espacio de trabajo')+'</span>'; dock.appendChild(brand);
-      const m=document.createElement('div'); m.className='ws-m';
-      const mb=document.createElement('button'); mb.textContent=T('Window','ウィンドウ','Fenster','Окно','Ventana')+' ▾'; m.appendChild(mb);
-      const dd=document.createElement('div'); dd.className='ws-dd'; m.appendChild(dd);
-      DEFS.forEach(def=>{ if(!wraps[def.id]) return; const b=document.createElement('button'); b.dataset.win=def.id;
-        b.innerHTML='<span class="ws-ck"></span><span>'+def.t()+'</span>';
-        b.onclick=()=>{ const w=wraps[def.id]; if(!w) return;
-          if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; }
-          fitMap(); syncDock(); schedSave(); };
-        dd.appendChild(b); });
-      const sep=document.createElement('div'); sep.className='ws-dd-sep'; dd.appendChild(sep);
-      const rst=document.createElement('button'); rst.innerHTML='<span class="ws-ck"></span><span>'+T('Reset layout','配置をリセット','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño')+'</span>';
-      rst.onclick=()=>{ resetLayout(); m.classList.remove('open'); }; dd.appendChild(rst);
-      mb.onclick=e=>{ e.stopPropagation(); m.classList.toggle('open'); };
-      document.addEventListener('click',()=>{ try{ m.classList.remove('open'); }catch(_){} });
-      dock.appendChild(m);
+      const clk=id=>{ const b=document.getElementById(id); if(b) b.click(); };
+      const opens=[];   /* remember every menu so opening one closes the rest + outside-click closes all */
+      /* generic dropdown builder: items = {label, run, check?} | 'sep' */
+      function menu(label,items){ const mm=document.createElement('div'); mm.className='ws-m';
+        const mb=document.createElement('button'); mb.textContent=label+' ▾'; mm.appendChild(mb);
+        const dd=document.createElement('div'); dd.className='ws-dd'; mm.appendChild(dd);
+        const rows=[];
+        items.forEach(it=>{ if(it==='sep'){ const s=document.createElement('div'); s.className='ws-dd-sep'; dd.appendChild(s); return; }
+          const b=document.createElement('button'); b.innerHTML='<span class="ws-ck"></span><span>'+it.label+'</span>';
+          b.onclick=()=>{ try{ it.run(); }catch(_){} if(it.stay){ refresh(); } else { mm.classList.remove('open'); } };
+          if(it.win) b.dataset.win=it.win; dd.appendChild(b); rows.push({it,ck:b.querySelector('.ws-ck')}); });
+        function refresh(){ rows.forEach(r=>{ if(r.it.check) r.ck.textContent=r.it.check()?'✓':''; }); }
+        mb.onclick=e=>{ e.stopPropagation(); const wasOpen=mm.classList.contains('open'); opens.forEach(o=>o.classList.remove('open')); if(!wasOpen){ refresh(); mm.classList.add('open'); } };
+        opens.push(mm); mm._refresh=refresh; dock.appendChild(mm); return mm; }
+      /* View — base map + projection (checkmarks reflect the real active button) */
+      const act=id=>{ const b=document.getElementById(id); return !!(b&&b.classList.contains('active')); };
+      menu(T('View','表示','Ansicht','Вид','Vista'),[
+        {label:T('Map','地図','Karte','Карта','Mapa'),run:()=>clk('btn-view-map'),check:()=>act('btn-view-map'),stay:1},
+        {label:T('Satellite','衛星','Satellit','Спутник','Satélite'),run:()=>clk('btn-view-sat'),check:()=>act('btn-view-sat'),stay:1},'sep',
+        {label:T('Globe','地球儀','Globus','Глобус','Globo'),run:()=>clk('btn-view-globe'),check:()=>act('btn-view-globe'),stay:1},
+        {label:T('Flat','平面','Flach','Плоская','Plano'),run:()=>clk('btn-view-flat'),check:()=>act('btn-view-flat'),stay:1},
+        {label:T('3D terrain','3D地形','3D-Gelände','3D-рельеф','Terreno 3D'),run:()=>clk('btn-view-3d'),check:()=>act('btn-view-3d'),stay:1},'sep',
+        {label:T('Reset north','北を上に','Norden zurück','Сброс севера','Restablecer norte'),run:()=>clk('btn-compass')} ]);
+      /* Tools */
+      menu(T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'),[
+        {label:T('Measure distance / area','距離・面積を計測','Entfernung / Fläche','Расстояние / площадь','Distancia / área'),run:()=>clk('btn-tool-measure')},
+        {label:T('Draw / trace','描画・トレース','Zeichnen','Рисование','Dibujar'),run:()=>clk('btn-tool-draw')},
+        {label:T('Radius','半径','Radius','Радиус','Radio'),run:()=>clk('btn-tool-radius')},'sep',
+        {label:T('Screenshot','スクリーンショット','Screenshot','Скриншот','Captura'),run:()=>clk('btn-screenshot')},
+        {label:T('Share this view','この表示を共有','Ansicht teilen','Поделиться','Compartir'),run:()=>clk('btn-share')},'sep',
+        {label:T('Atlas (assistant)','Atlas（アシスタント）','Atlas','Atlas','Atlas'),run:()=>clk('btn-atlas')},
+        {label:T('Grid + labels','グリッド＋ラベル','Gitter','Сетка','Cuadrícula'),run:()=>clk('btn-tool-grid')} ]);
+      /* Window — show/hide each window + reset */
+      const winItems=DEFS.filter(d=>wraps[d.id]).map(def=>({label:def.t(),win:def.id,stay:1,
+        check:()=>{ const w=wraps[def.id]; return !!(w&&w.style.display!=='none'); },
+        run:()=>{ const w=wraps[def.id]; if(!w) return; if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; } fitMap(); schedSave(); } }));
+      winItems.push('sep',{label:T('Reset layout','配置をリセット','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño'),run:resetLayout});
+      menu(T('Window','ウィンドウ','Fenster','Окно','Ventana'),winItems);
+      /* Settings */
+      menu(T('Settings','設定','Einstellungen','Настройки','Ajustes'),[
+        {label:T('Open settings…','設定を開く…','Einstellungen…','Настройки…','Ajustes…'),run:()=>clk('btn-open-settings')} ]);
+      document.addEventListener('click',()=>{ opens.forEach(o=>{ try{ o.classList.remove('open'); }catch(_){} }); });
       const sp=document.createElement('div'); sp.className='ws-spacer'; dock.appendChild(sp);
       const exm=document.createElement('div'); exm.className='ws-m';
       const ex=document.createElement('button'); ex.textContent=T('Exit workspace','ワークスペースを終了','Workspace beenden','Выйти из режима','Salir del espacio');
@@ -7512,14 +7562,18 @@ window.addEventListener('DOMContentLoaded', () => {
     function enable(){ if(on) return true;
       if(isMob()){ try{ imToast(T('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio')); }catch(_){} return false; }
       css();
-      try{ if(!document.getElementById('layer-sidebar-r')&&window.IntMapLayerSidebar&&window.IntMapLayerSidebar.open){ window.IntMapLayerSidebar.open(); } }catch(_){}
+      /* build + open the layer panel so its window has content, and clear any leftover close() inline styles */
+      try{ if(window.IntMapLayerSidebar&&window.IntMapLayerSidebar.open) window.IntMapLayerSidebar.open(); }catch(_){}
+      try{ const lsr=document.getElementById('layer-sidebar-r'); if(lsr){ lsr.style.transform=''; lsr.style.visibility=''; lsr.style.pointerEvents=''; lsr.classList.add('open'); } }catch(_){}
       try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}
       on=true; document.body.classList.add('ws-mode');
       const st=state(), dr=defRects();
       DEFS.forEach(def=>{ const el=document.querySelector(def.sel); if(!el) return;
         const w=mkWin(def,el,(st.rects&&st.rects[def.id])||dr[def.id]);
         if(st.minz&&st.minz[def.id]) w.querySelector('.ws-d-min').click();
-        if(st.hid&&st.hid[def.id]){ w.style.display='none'; }
+        /* saved visibility wins; otherwise defHidden windows (Information/Community) start closed but AVAILABLE */
+        const shown=(st.vis&&st.vis[def.id]!==undefined)?st.vis[def.id]:!def.defHidden;
+        if(!shown){ w.style.display='none'; w.dataset.userHid='1'; }
         wraps[def.id]=w; });
       mkDock(); syncDock();
       try{ ro=new ResizeObserver(()=>{ fitMap(); schedSave(); }); if(wraps.map) ro.observe(wraps.map); }catch(_){}
@@ -7538,6 +7592,10 @@ window.addEventListener('DOMContentLoaded', () => {
       wraps={}; holders={};
       if(dock){ dock.remove(); dock=null; }
       document.body.classList.remove('ws-mode');
+      /* Information / Community were force-shown in ws-mode; restore the normal tab behaviour by handing control
+         back to the sidebar's own tab logic (they hide unless their tab is active). */
+      try{ ['info-dashboard','community-feed'].forEach(idc=>{ const e=document.getElementById(idc); if(e) e.style.display='none'; }); }catch(_){}
+      try{ if(typeof setMode==='function'&&typeof currentMode!=='undefined') setMode(currentMode); }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); }
     function toggle(){ if(on) disable(); else enable(); }
     function bind(){ const s=document.getElementById('setting-wsmode'); if(!s) return;
@@ -14034,6 +14092,7 @@ window.addEventListener('DOMContentLoaded', () => {
          left edge or the left controls' right edge? (The controls don't move when the pill drops, so this
          is stable — no flicker loop.) */
       const upd=()=>{ try{ const desk=window.matchMedia('(min-width:769px)').matches;
+        if(document.body.classList.contains('ws-mode')){ document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); return; }   /* (#R78d) ws-mode pins the search bar inside the map window itself */
         if(!desk){ document.body.classList.remove('ms-narrow'); return; }
         const winW=window.innerWidth;
         /* (#R65) the pill anchors are VIEWPORT-fixed but the map area is not the viewport anymore: the
