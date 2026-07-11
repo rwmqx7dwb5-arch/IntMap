@@ -20609,7 +20609,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map.addLayer({id:'nlq-choro',type:'fill',source:'nlq-src',paint:{
         'fill-color':_choroFillExpr(_choroRamp),
         'fill-opacity':['case',['!=',['feature-state','choroV'],null],0.62,0]}},before); return true; }catch(_){ return false; } }
-    function clearChoro(){ try{ for(const c in _choroState){ try{ map.setFeatureState({source:'nlq-src',id:c},{choroV:null}); }catch(_){} } }catch(_){} _choroState={}; _choroMetric=null; }
+    function clearChoro(){ try{ for(const c in _choroState){ try{ map.setFeatureState({source:'nlq-src',id:c},{choroV:null}); }catch(_){} } }catch(_){} _choroState={}; _choroMetric=null; try{ _customScoreName=null; }catch(_){} }
     function drawChoro(metricKey,order,color){ const m=METRICS[metricKey]; if(!m) return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(metricKey||'')));
       if(!geo()) return R(false, warn('⚠ '+L('Map data not ready yet','地図データが未準備です','Kartendaten noch nicht bereit','Данные карты не готовы','Datos del mapa no listos')));
       /* (#R61) optional shading hue — honoured for REAL (setPaintProperty on the live layer) or honestly flagged. */
@@ -20629,6 +20629,59 @@ window.addEventListener('DOMContentLoaded', () => {
       html+='<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-muted);"><span>'+(bottom?hiTxt:loTxt)+'</span><span>'+(bottom?loTxt:hiTxt)+'</span></div>';
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('High','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Low','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
       return R(true, note(html)+cWarn); }
+    /* ==== (#R75) vision §10/§13 groundwork — metric series shared by explore & scoreMap ==== */
+    /* (#R75) hoisted from localPlan so _metSpec can translate metric names too */
+    const VMET={'population':'pop','人口':'pop','population density':'density','density':'density','人口密度':'density','area':'area','面積':'area','gdp':'gdp','gdp per capita':'gdppc','gdppc':'gdppc','一人当たりgdp':'gdppc','1人当たりgdp':'gdppc','hdi':'hdi','human development index':'hdi','fertility':'tfr','fertility rate':'tfr','出生率':'tfr','合計特殊出生率':'tfr','democracy index':'dem','民主主義指数':'dem','military spending':'milSpend','defense spending':'milSpend','国防費':'milSpend','軍事費':'milSpend','capital':'capital','capital city':'capital','首都':'capital','currency':'currency','通貨':'currency','languages':'languages','language':'languages','言語':'languages','公用語':'languages','flag':'flag','国旗':'flag'};
+    const XMET={
+      lifeExp:{label:['Life expectancy','平均寿命','Lebenserwartung','Ожид. продолжительность жизни','Esperanza de vida'],get:s=>s.lifeExp},
+      internet:{label:['Internet users %','ネット利用率','Internetnutzer %','Интернет-пользователи %','Usuarios de internet %'],get:s=>s.internet}
+    };
+    const XVMET={'平均寿命':'lifeExp','寿命':'lifeExp','life expectancy':'lifeExp','lifeexp':'lifeExp','ネット利用率':'internet','インターネット利用率':'internet','internet':'internet','internet users':'internet'};
+    function _metSpec(key){ const raw=String(key||'').trim(); if(!raw) return null;
+      const k2=VMET[raw.toLowerCase()]||XVMET[raw.toLowerCase()]||XVMET[raw]||raw;
+      if(METRICS[k2]) return {key:k2,m:METRICS[k2]};
+      if(XMET[k2]) return {key:k2,m:XMET[k2]};
+      return null; }
+    /* one component (bundled metric or a World-Bank indicator code) → {label, vals:{ISO3:num}, log} */
+    async function _seriesFor(comp){ try{
+      if(comp&&comp.wb){ if(!(window.IntMapWB&&window.IntMapWB.fetch)) return null;
+        let m=null; try{ m=await window.IntMapWB.fetch(String(comp.wb).trim()); }catch(_){ m=null; }
+        if(!m) return null; const vals={}; for(const cd in m){ const v=m[cd]&&m[cd].v; if(v!=null&&isFinite(v)) vals[cd]=+v; }
+        if(Object.keys(vals).length<20) return null;
+        return {label:String(comp.label||comp.wb).slice(0,60),vals,log:false,src:'World Bank '+String(comp.wb)}; }
+      const sp=_metSpec(comp&&(comp.metric||comp.key||comp.name)); if(!sp) return null;
+      await _fillMetric(sp.key);
+      const vals={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; vals[cd]=+v; }
+      if(Object.keys(vals).length<20) return null;
+      return {label:lx(sp.m.label),vals,log:!!sp.m.log,mkey:sp.key,src:null}; }catch(_){ return null; } }
+    /* robust 0..1 normalisation: log where flagged, clamped to the 5th–95th percentile so one outlier
+       cannot flatten everyone else (vision §10: 外れ値を考慮) */
+    function _normSeries(ser){ const arr=Object.keys(ser.vals).map(cd=>ser.log?Math.log(ser.vals[cd]):ser.vals[cd]).sort((a,b)=>a-b);
+      const q=p=>arr[Math.max(0,Math.min(arr.length-1,Math.round(p*(arr.length-1))))];
+      const lo=q(0.05),hi=q(0.95),span=(hi-lo)||1e-9; const out={};
+      for(const cd in ser.vals){ let v=ser.vals[cd]; if(ser.log) v=Math.log(v); out[cd]=Math.max(0,Math.min(1,(v-lo)/span)); }
+      return out; }
+    /* some bundled fields are lazy-filled by their layer (tfr — R70); explore/scoreMap fill them from the
+       World Bank bulk endpoint on demand so 「少子化と相関する指標」 works without the layer ever having been on */
+    const _WBFILL={tfr:{c:'SP.DYN.TFRT.IN',f:'tfr'},lifeExp:{c:'SP.DYN.LE00.IN',f:'lifeExp'},internet:{c:'IT.NET.USER.ZS',f:'internet'}};
+    async function _fillMetric(key){ try{ const spec=_WBFILL[key]; if(!spec) return;
+      let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[spec.f]!=null&&!isNaN(s[spec.f])) have++; }
+      if(have>=25) return;
+      if(!(window.IntMapWB&&window.IntMapWB.fetch)) return;
+      const m=await window.IntMapWB.fetch(spec.c); if(!m) return;
+      for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue;
+        const s=countryStats[cd]; if(s&&(s[spec.f]==null||isNaN(s[spec.f]))) s[spec.f]=+v; } }catch(_){} }
+    function _pearson(xs,ys){ const n=xs.length; if(n<3) return null; let sx=0,sy=0; for(let i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; }
+      const mx=sx/n,my=sy/n; let sxy=0,sxx=0,syy=0;
+      for(let i=0;i<n;i++){ const dx=xs[i]-mx,dy=ys[i]-my; sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy; }
+      const d=Math.sqrt(sxx*syy); return d>0?(sxy/d):null; }
+    function _ranks(a){ const idx=a.map((v,i)=>[v,i]).sort((x,y)=>x[0]-y[0]); const r=new Array(a.length);
+      for(let i=0;i<idx.length;){ let j=i; while(j+1<idx.length&&idx[j+1][0]===idx[i][0]) j++;
+        const avg=(i+j)/2+1; for(let k=i;k<=j;k++) r[idx[k][1]]=avg; i=j+1; } return r; }
+    function _havKm(a,b){ const R2=6371,d2r=Math.PI/180; const dLa=(b.lat-a.lat)*d2r,dLo=(b.lng-a.lng)*d2r;
+      const h=Math.sin(dLa/2)**2+Math.cos(a.lat*d2r)*Math.cos(b.lat*d2r)*Math.sin(dLo/2)**2;
+      return 2*R2*Math.asin(Math.min(1,Math.sqrt(h))); }
+    let _customScoreName=null;
     /* ---- (#R43) name → country code (for time-series / isolate / select). EN/JP names from countryStats, else
        geocode + point-in-polygon over the country geometry so DE/RU/ES names resolve too. ---- */
     function _pipRing(x,y,ring){ let inside=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; } return inside; }
@@ -20660,6 +20713,7 @@ window.addEventListener('DOMContentLoaded', () => {
         lines.push(active.length?('Layers ON ('+active.length+'): '+active.slice(0,40).join(', ')+'.'):'No data layers are on.');
         if(_hl&&_hl.size) lines.push(_hl.size+' countries are highlighted by Atlas right now.');
         if(_choroMetric&&METRICS[_choroMetric]) lines.push('The map is currently shaded (choropleth) by '+lx(METRICS[_choroMetric].label)+'.');
+        else if(_choroMetric==='__custom'&&_customScoreName) lines.push('The map is currently shaded by a CUSTOM Atlas evaluation score: "'+_customScoreName+'" — follow-ups like "weight X more" / "drop Y" should re-emit scoreMap with adjusted components.');
         try{ if(window._cpCurrent&&window._cpCurrent.name) lines.push('Open country card: '+window._cpCurrent.name+' — "this country"/"it"/"over time" refer to it.'); }catch(_){}
         /* (#R73) vision §2 — Atlas must see EVERYTHING on the map: its own pins/drawings, user tools, panels */
         try{ if(_pois&&_pois.length) lines.push(_pois.length+' Atlas pins are on the map'+((_pois[0]&&_pois[0].sum)?' (research-report pins with summaries)':' (facility/POI pins)')+'.'); }catch(_){}
@@ -21513,6 +21567,154 @@ window.addEventListener('DOMContentLoaded', () => {
           if(cds.length>10) h2+=warn('⚠ '+L('Only the first 10 countries are compared','比較は最大10か国です','Nur die ersten 10 Länder','Только первые 10 стран','Solo los primeros 10 países'));
           if(missC.length) h2+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(missC.join(', ')));
           return R(okC,h2); }
+        case 'scoreMap': case 'customLayer': case 'evaluate': { /* (#R75) vision §13 — a NEW evaluation layer composed
+          from weighted real indicators (bundled metrics and/or World-Bank codes), not a canned choropleth. */
+          await ensureData();
+          const comps=Array.isArray(a.components)?a.components.slice(0,8):[];
+          if(comps.length<2) return R(false, warn('⚠ '+L('A custom score needs at least two indicators (components)','カスタム評価には指標が2つ以上必要です','Mindestens zwei Indikatoren nötig','Нужно минимум два показателя','Se necesitan al menos dos indicadores')));
+          const resolved=[],missingC=[];
+          for(const c of comps){ const w=(c&&c.weight!=null&&isFinite(+c.weight))?Math.max(0.1,Math.min(10,+c.weight)):1;
+            const ser=await _seriesFor(c); if(!ser){ missingC.push(String((c&&(c.label||c.metric||c.wb))||'?').slice(0,40)); continue; }
+            resolved.push({ser,norm:_normSeries(ser),w,inv:!!(c&&(c.invert||c.lowerIsBetter))}); }
+          if(resolved.length<2) return R(false, warn('⚠ '+L('Not enough usable indicators','利用可能な指標が足りません','Zu wenige nutzbare Indikatoren','Недостаточно доступных показателей','Indicadores utilizables insuficientes')+(missingC.length?(' — '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponibles')+': '+esc(missingC.join(', '))):'')));
+          const totW=resolved.reduce((s2,r2)=>s2+r2.w,0);
+          const score={}; let excl=0;
+          for(const cd in countryStats){ let sw=0,sv=0;
+            resolved.forEach(r2=>{ const nv=r2.norm[cd]; if(nv==null) return; sv+=r2.w*(r2.inv?(1-nv):nv); sw+=r2.w; });
+            if(sw>=totW*0.6) score[cd]=sv/sw; else if(sw>0) excl++; }
+          const codes=Object.keys(score);
+          if(codes.length<10) return R(false, warn('⚠ '+L('Too few countries have enough data for this combination','この組み合わせで十分なデータを持つ国が少なすぎます','Zu wenige Länder mit ausreichenden Daten','Слишком мало стран с данными','Muy pocos países con datos suficientes')));
+          let cW=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) _choroRamp=rampFrom(pc); else cW=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
+          clearHl(); clearChoro(); clearPolyHl(); clearLineHl();
+          if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
+          try{ map.setPaintProperty('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
+          let lo=1e9,hi=-1e9; codes.forEach(cd=>{ lo=Math.min(lo,score[cd]); hi=Math.max(hi,score[cd]); }); const span=(hi-lo)||1e-9;
+          codes.forEach(cd=>{ const nv=(score[cd]-lo)/span; _choroState[String(cd)]=nv; try{ map.setFeatureState({source:'nlq-src',id:String(cd)},{choroV:nv}); }catch(_){} });
+          _choroMetric='__custom'; _customScoreName=String(a.name||'').trim().slice(0,60)||L('Custom score','カスタム評価','Eigener Score','Пользовательская оценка','Puntuación propia');
+          try{ map.flyTo({zoom:Math.min(map.getZoom(),2.3),duration:600}); }catch(_){}
+          const rank=codes.map(cd=>({cd,v:score[cd]})).sort((x,y)=>y.v-x.v);
+          const nTop=Math.max(3,Math.min(15,(+a.n||10)));
+          const pct=v=>Math.round((v-lo)/span*100);
+          let html='<div style="font-weight:600;margin:2px 0 5px;">🧮 '+esc(_customScoreName)+' — '+L('custom evaluation layer','カスタム評価レイヤー','eigene Bewertungsebene','пользовательский слой оценки','capa de evaluación propia')+'</div>';
+          html+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">'+resolved.map(r2=>esc(r2.ser.label)+(r2.w!==1?(' ×'+r2.w):'')+(r2.inv?' ↓':'')).join(' · ')+'</div>';
+          html+='<div style="height:12px;border-radius:6px;background:linear-gradient(90deg,'+_choroRamp.join(',')+');margin:4px 0;"></div>';
+          html+='<ol style="margin:2px 0 0;padding-left:22px;line-height:1.6;font-size:12px;">'+rank.slice(0,nTop).map(r2=>'<li>'+esc(nm(countryStats[r2.cd]))+' <span style="color:var(--text-muted);">'+pct(r2.v)+'</span></li>').join('')+'</ol>';
+          const worst=rank.slice(-3).reverse().map(r2=>esc(nm(countryStats[r2.cd]))+' ('+pct(r2.v)+')').join(', ');
+          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:5px;">'+L('Lowest','最下位','Niedrigste','Худшие','Más bajos')+': '+worst+'</div>';
+          /* honesty block (vision §15): method, coverage, exclusions, unavailable components */
+          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'
+            +L('Method: each indicator normalised 0–1 (5th–95th percentile clamp'+(resolved.some(r2=>r2.ser.log)?', log scale where marked':'')+'), weighted mean; countries with under 60% of the total weight covered are excluded','算出: 各指標を0–1に正規化（5–95パーセンタイルでクランプ'+(resolved.some(r2=>r2.ser.log)?'・対数指標は対数変換':'')+'）し加重平均。総重みの60%未満しかデータの無い国は除外','Methode: Indikatoren 0–1 normalisiert (5.–95. Perzentil), gewichtetes Mittel; Länder unter 60% Abdeckung ausgeschlossen','Метод: нормализация 0–1 (5–95 перцентиль), взвешенное среднее; страны с покрытием <60% исключены','Método: normalización 0–1 (percentil 5–95), media ponderada; países con <60% de cobertura excluidos')
+            +' · '+codes.length+' '+L('countries scored','か国を評価','Länder bewertet','стран оценено','países evaluados')+(excl?(' · '+excl+' '+L('excluded for missing data','か国はデータ不足で除外','wegen Datenlücken ausgeschlossen','исключено из-за пропусков','excluidos por falta de datos')):'')
+            +(missingC.length?('<br>⚠ '+L('Unavailable components skipped','取得できず除外した指標','Nicht verfügbare Komponenten übersprungen','Недоступные компоненты пропущены','Componentes no disponibles omitidos')+': '+esc(missingC.join(', '))):'')+'</div>';
+          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">'+L('Refine by talking: "weight rent higher", "drop democracy", "only Europe (highlight)"','会話で調整できます: 「家賃を重視して」「民主主義指数を外して」など','Per Chat verfeinerbar','Уточняйте в чате','Ajustable por chat')+'</div>';
+          return R(true, note(html)+cW); }
+        case 'explore': case 'findRelated': case 'relatedMetrics': { /* (#R75) vision §10 — which indicators MOVE WITH a
+          target metric, computed on the real country data (Pearson + Spearman), reported without causal claims. */
+          await ensureData();
+          const sp=_metSpec(a.metric||a.target||a.key||a.name);
+          if(!sp) return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(String(a.metric||a.target||''))+' — '+L('valid','有効','gültig','допустимо','válidos')+': pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr, lifeExp, internet'));
+          await _fillMetric(sp.key); await _fillMetric('lifeExp'); await _fillMetric('internet'); await _fillMetric('tfr');   /* lazy fields → WB bulk (sequential — WB throttles bursts) */
+          const tv={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; tv[cd]=sp.m.log?Math.log(v):v; }
+          if(Object.keys(tv).length<25) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
+          const ALL=Object.assign({},METRICS,XMET); const out=[];
+          for(const k in ALL){ if(k===sp.key) continue; const m2=ALL[k]; const xs=[],ys=[],cds=[];
+            for(const cd in tv){ const s=countryStats[cd]; let v=m2.get(s); if(v==null||isNaN(v)) continue; if(m2.log&&v<=0) continue; xs.push(m2.log?Math.log(v):v); ys.push(tv[cd]); cds.push(cd); }
+            if(xs.length<25) continue;
+            const r=_pearson(xs,ys); const rho=_pearson(_ranks(xs),_ranks(ys)); if(r==null||rho==null) continue;
+            /* biggest outlier = country least explained by the linear fit (vision §10: 反証となる事例) */
+            let mx2=0,mi=-1; const mxv=xs.reduce((s2,v)=>s2+v,0)/xs.length, myv=ys.reduce((s2,v)=>s2+v,0)/ys.length;
+            const sdx=Math.sqrt(xs.reduce((s2,v)=>s2+(v-mxv)*(v-mxv),0)/xs.length)||1, sdy=Math.sqrt(ys.reduce((s2,v)=>s2+(v-myv)*(v-myv),0)/ys.length)||1;
+            for(let i2=0;i2<xs.length;i2++){ const e=Math.abs(((ys[i2]-myv)/sdy)-r*((xs[i2]-mxv)/sdx)); if(e>mx2){ mx2=e; mi=i2; } }
+            out.push({k,label:lx(m2.label),r,rho,n:xs.length,outlier:mi>=0?nm(countryStats[cds[mi]]):null}); }
+          if(!out.length) return R(false, warn('⚠ '+L('No overlapping data to correlate','相関を計算できる重複データがありません','Keine überlappenden Daten','Нет пересекающихся данных','Sin datos superpuestos')));
+          out.sort((x,y)=>Math.abs(y.rho)-Math.abs(x.rho));
+          const top=out.slice(0,Math.max(3,Math.min(8,(+a.n||5))));
+          let html='<div style="font-weight:600;margin:2px 0 5px;">🔗 '+esc(lx(sp.m.label))+' — '+L('related indicators (all countries)','関連する指標（全カ国データ）','verwandte Indikatoren','связанные показатели','indicadores relacionados')+'</div>';
+          html+=top.map(t2=>{ const dir=t2.rho>0?'↗':'↘'; const st=Math.abs(t2.rho)>=0.7?L('strong','強い','stark','сильная','fuerte'):Math.abs(t2.rho)>=0.4?L('moderate','中程度','mittel','умеренная','moderada'):L('weak','弱い','schwach','слабая','débil');
+            return '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.12);font-size:12px;"><span style="flex:0 0 auto;font-weight:700;">'+dir+'</span><span style="flex:1;min-width:0;">'+esc(t2.label)+'<br><span style="font-size:10.5px;color:var(--text-muted);">ρ='+t2.rho.toFixed(2)+' · r='+t2.r.toFixed(2)+' · n='+t2.n+(t2.outlier?(' · '+L('biggest exception','最大の例外','größte Ausnahme','главное исключение','mayor excepción')+': '+esc(t2.outlier)):'')+'</span></span><span style="flex:0 0 auto;font-size:10.5px;color:var(--text-muted);">'+st+'</span></div>'; }).join('');
+          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'
+            +L('ρ = Spearman rank correlation, r = Pearson (log scale where the metric is log-distributed). Correlation is NOT causation — third factors (income, region) can drive both sides; the listed exception countries are good places to test any explanation.','ρ=スピアマン順位相関、r=ピアソン（対数分布の指標は対数変換）。相関は因果ではありません — 所得や地域など第三の要因が両方を動かしている可能性があります。「最大の例外」の国は説明を検証する良い材料です。','ρ=Spearman, r=Pearson (log wo markiert). Korrelation ist keine Kausalität.','ρ=Спирмен, r=Пирсон (лог. где отмечено). Корреляция — не причинность.','ρ=Spearman, r=Pearson (log donde corresponde). Correlación no es causalidad.')+'</div>';
+          return R(true, note(html)); }
+        case 'impact': case 'impactAnalysis': case 'nearbyCritical': { /* (#R75) vision §11 — WHERE an event's impact
+          spreads: real critical facilities + population context + nearby quakes/news around a point, on the map. */
+          await ensureData();
+          const kmR=Math.max(20,Math.min(1500,(+a.km||300)));
+          let ctr=null,label='',evLine='';
+          const wantQuake=(String(a.event||'').toLowerCase()==='quake')||/地震|earthquake|quake/i.test(String(a.place||a.event||''));
+          if(a.lng!=null&&a.lat!=null&&isFinite(+a.lng)){ ctr={lng:+a.lng,lat:+a.lat}; label=String(a.place||'').trim()||((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2)); }
+          else if(wantQuake){
+            const j=await _fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson');
+            let fs=(j&&j.features)||[]; if(!fs.length) return R(false, warn('⚠ '+L('No M2.5+ earthquakes in the last 24 h','直近24時間にM2.5以上の地震がありません','Keine Beben M2.5+ in 24 h','Нет землетрясений M2.5+ за сутки','Sin sismos M2.5+ en 24 h')));
+            /* nearest to the last referenced place if we have one, else the largest of the day */
+            let f=null; if(_lastPlace&&isFinite(_lastPlace.lng)){ let bd=1e9; fs.forEach(f2=>{ const c=f2.geometry&&f2.geometry.coordinates; if(!c) return; const d=_havKm({lng:+c[0],lat:+c[1]},_lastPlace); if(d<bd){ bd=d; f=f2; } }); if(bd>1500) f=null; }
+            if(!f) f=fs.slice().sort((x,y)=>(((y.properties&&y.properties.mag)||0)-((x.properties&&x.properties.mag)||0)))[0];
+            const c=f.geometry.coordinates; ctr={lng:+c[0],lat:+c[1]}; label=(f.properties&&f.properties.place)||'earthquake';
+            const hAgo=f.properties&&f.properties.time?Math.round((Date.now()-f.properties.time)/3600000):null;
+            evLine='M'+(f.properties&&f.properties.mag!=null?(+f.properties.mag).toFixed(1):'?')+(c[2]!=null?(' · '+L('depth ','深さ','Tiefe ','глубина ','prof. ')+Math.round(c[2])+' km'):'')+(hAgo!=null?(' · '+hAgo+L('h ago','時間前','h zuvor','ч назад','h atrás')):'')+' · USGS';
+            _setLast({lng:ctr.lng,lat:ctr.lat,name:label});
+          } else {
+            const p=String(a.place||'').trim(); let g=null;
+            if(p&&!DEIXIS_RE.test(p)){ try{ g=await placeExtent(p); }catch(_){} if(!g){ try{ g=await geocode(p); }catch(_){} } }
+            else g=await geocode(p);
+            if(!g||!isFinite(+g.lng)) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(p)));
+            ctr={lng:+g.lng,lat:+g.lat}; label=g.name||p;
+          }
+          const d2r=Math.PI/180; const dLat=kmR/111, dLng=kmR/(111*Math.max(0.2,Math.cos(ctr.lat*d2r)));
+          const box=[[ctr.lng-dLng,ctr.lat-dLat],[ctr.lng+dLng,ctr.lat+dLat]];
+          /* focus kinds → the existing real-data POI engine (OSM Overpass, mirror-raced) */
+          const FK={nuclear:'nuclear power plant',dam:'dams',dams:'dams',port:'ports',ports:'ports',airport:'airports',airports:'airports',hospital:'hospitals',hospitals:'hospitals',military:'military bases',power:'power plants'};
+          let kinds=Array.isArray(a.focus)?a.focus.map(x=>FK[String(x||'').toLowerCase()]).filter(Boolean):[];
+          if(!kinds.length) kinds=['nuclear power plant','dams'];
+          kinds=kinds.slice(0,3);
+          const facJobs=kinds.map(k=>overpassPOIs(k,box,false,null).then(r2=>r2===null?overpassPOIs(k,box,true,null):r2).then(r2=>({k,list:r2||[]})).catch(()=>({k,list:[]})));
+          /* real cities/towns with OSM population tags (the honest population anchor).
+             Runs AFTER the facility queries — Overpass rejects parallel requests from one IP (measured live:
+             the same query succeeds alone and 429s beside the facility race). */
+          const cityJob=(async()=>{
+            const bb='('+(ctr.lat-dLat).toFixed(3)+','+(ctr.lng-dLng).toFixed(3)+','+(ctr.lat+dLat).toFixed(3)+','+(ctr.lng+dLng).toFixed(3)+')';
+            const q3='[out:json][timeout:12];node[place~"^(city|town)$"]["population"]'+bb+';out 200;';
+            for(const ep of ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter']){
+              try{ const ctl=new AbortController(); const tt=setTimeout(()=>ctl.abort(),14000);
+                let j=null; try{ const r2=await fetch(ep+'?data='+encodeURIComponent(q3),{signal:ctl.signal}); if(!r2.ok) continue; j=await r2.json(); } finally{ clearTimeout(tt); }
+                if(!j||!Array.isArray(j.elements)) continue;
+                /* a successful reply with ZERO cities is a real answer (open ocean), not a failure */
+                return j.elements.map(e=>({lng:+e.lon,lat:+e.lat,name:(e.tags&&(e.tags['name:'+(currentLang==='jp'?'ja':currentLang)]||e.tags.name))||'?',pop:+((e.tags&&e.tags.population)||0)})).filter(c2=>isFinite(c2.pop)&&c2.pop>0); }catch(_){}
+            }
+            return null; });
+          const qkP=_fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').catch(()=>null);
+          const facRes=await Promise.all(facJobs);
+          let cities=await cityJob();   /* sequential — after the facility race frees the Overpass slots */
+          const qk=await qkP;
+          /* distance-filter, sort, annotate */
+          const inR=p2=>{ const d=_havKm(p2,ctr); return d<=kmR?d:null; };
+          const fac=[]; facRes.forEach(fr=>{ (fr.list||[]).forEach(p2=>{ const d=inR(p2); if(d==null) return; fac.push(Object.assign({},p2,{_d:d,_k:fr.k})); }); });
+          fac.sort((x,y)=>x._d-y._d);
+          if(cities){ cities=cities.map(c2=>Object.assign(c2,{_d:inR(c2)})).filter(c2=>c2._d!=null).sort((x,y)=>y.pop-x.pop).slice(0,10); }
+          let qkN=[]; if(qk&&Array.isArray(qk.features)) qkN=qk.features.filter(f2=>{ const c=f2.geometry&&f2.geometry.coordinates; return c&&_havKm({lng:+c[0],lat:+c[1]},ctr)<=kmR; });
+          let news=null; try{ news=_newsData({lng:ctr.lng,lat:ctr.lat,name:label},label); }catch(_){}
+          /* draw: pins (facilities + top cities) + the radius circle + fit */
+          clearPois();
+          _pois=fac.slice(0,50).map(p2=>({lng:p2.lng,lat:p2.lat,name:p2.name||p2._k,kind:p2._k+' · '+Math.round(p2._d)+' km',sum:'',url:'',src:'OpenStreetMap'}))
+            .concat((cities||[]).slice(0,8).map(c2=>({lng:c2.lng,lat:c2.lat,name:c2.name,kind:L('city','都市','Stadt','город','ciudad')+' · '+L('pop ','人口','Bev. ','нас. ','pob. ')+c2.pop.toLocaleString()+' · '+Math.round(c2._d)+' km',sum:'',url:'',src:'OpenStreetMap'})));
+          let okP=_pois.length?paintPois():true; for(let i2=0;i2<6&&!okP;i2++){ await new Promise(r2=>setTimeout(r2,700)); okP=paintPois(); }
+          try{ if(typeof radiusKm!=='undefined') radiusKm=kmR; if(window._radiusFromPoint) window._radiusFromPoint(ctr.lng,ctr.lat); }catch(_){}
+          try{ map.fitBounds(box,{padding:70,duration:1100,maxZoom:9}); }catch(_){}
+          /* report */
+          const cd0=codeAtPoint(ctr.lng,ctr.lat); const cs=cd0&&countryStats[cd0];
+          const popSum=(cities||[]).reduce((s2,c2)=>s2+c2.pop,0);
+          let html='<div style="font-weight:600;margin:2px 0 4px;">🎯 '+esc(label)+' — '+L('impact analysis within ','影響分析（半径','Wirkungsanalyse im Umkreis ','анализ воздействия в радиусе ','análisis de impacto en ')+kmR+' km'+(currentLang==='jp'?'）':'')+'</div>';
+          if(evLine) html+='<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:5px;">'+esc(evLine)+'</div>';
+          kinds.forEach(k=>{ const list=fac.filter(p2=>p2._k===k);
+            html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+esc(k)+'</b>: '+list.length+(list.length?(' — '+list.slice(0,3).map(p2=>esc(p2.name||'?')+' ('+Math.round(p2._d)+' km)').join(', ')+(list.length>3?' …':'')):' '+L('(none found in OSM within the radius)','（半径内にOSM登録なし）','(keine in OSM im Radius)','(в OSM не найдено)','(ninguno en OSM en el radio)'))+'</div>'; });
+          if(cities===null) html+='<div style="font-size:11px;color:#ff9f0a;">⚠ '+L('City/population query failed (Overpass busy) — population context unavailable','都市・人口の照会に失敗しました（Overpass混雑）','Stadt-/Bevölkerungsabfrage fehlgeschlagen','Запрос городов не удался','Consulta de ciudades falló')+'</div>';
+          else if(cities.length) html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+L('Population nearby','周辺人口','Bevölkerung','Население рядом','Población cercana')+'</b>: ≈'+popSum.toLocaleString()+' '+L('in ','（','in ','в ','en ')+cities.length+L(' cities/towns w/ OSM population tags','都市・町のOSM人口タグ合計）',' Städten (OSM-Tags)',' городах (теги OSM)',' ciudades (etiquetas OSM)')+' — '+cities.slice(0,3).map(c2=>esc(c2.name)+' '+(c2.pop>=1e6?(c2.pop/1e6).toFixed(1)+'M':Math.round(c2.pop/1000)+'k')).join(', ')+'</div>';
+          else html+='<div style="font-size:11px;color:var(--text-muted);">'+L('No populated cities/towns within the radius (per OSM population tags)','半径内に人口タグ付きの都市・町はありません（OSM基準）','Keine Städte im Radius (OSM)','Городов в радиусе нет (OSM)','Sin ciudades en el radio (OSM)')+'</div>';
+          if(cs) html+='<div style="font-size:11px;color:var(--text-muted);">'+esc(nm(cs))+': '+L('density ','人口密度 ','Dichte ','плотность ','densidad ')+(cs.density!=null?Math.round(cs.density).toLocaleString()+'/km²':'—')+'</div>';
+          if(qkN.length) html+='<div style="font-size:12px;margin:4px 0 1px;"><b>'+L('Earthquakes (7 days, in radius)','地震（過去7日・半径内）','Beben (7 Tage)','Землетрясения (7 дней)','Sismos (7 días)')+'</b>: '+qkN.length+' — max M'+Math.max.apply(null,qkN.map(f2=>(f2.properties&&f2.properties.mag)||0)).toFixed(1)+'</div>';
+          if(news) html+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">📰 '+L('Loaded news near here','周辺の読み込み済みニュース','Geladene News','Новости рядом','Noticias cercanas')+':<br>'+esc(String(news).split('\n').slice(0,3).join(' · ').slice(0,220))+'</div>';
+          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.','出典: OpenStreetMap（施設・都市人口タグ — 地域によって登録密度が異なります）、USGS（地震）、IntMap国別統計。ピンはクリック可能、円は分析半径です。','Quellen: OpenStreetMap, USGS, IntMap-Statistiken.','Источники: OpenStreetMap, USGS, статистика IntMap.','Fuentes: OpenStreetMap, USGS, estadísticas de IntMap.')+'</div>';
+          if(!okP&&_pois.length) html+=warn('⚠ '+L('Could not draw the markers (map still loading)','マーカーを描画できませんでした（地図読込中）','Marker nicht gezeichnet','Маркеры не отрисованы','Marcadores no dibujados'));
+          return R(true, html); }
         case 'module': return doModule(a);
         case 'control': return doControl(a);
         case 'answer': return R(true, '<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>');
@@ -21554,6 +21756,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'RESEARCH MAPPED ONTO THE MAP: {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic with LIVE WEB SEARCH (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, dated incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. USE THIS (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate something ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X") OR asks to research/look into a topic whose findings have real locations — incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. If the user asks a research question and the answer naturally lives at places on a map, prefer mapReport; combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
         +'ANIMATED FLIGHT: {"type":"fly","from":str,"to":str,"mode"?:"icbm"|"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory — ICBM mode boosts to apogee (zooms out) and re-enters, plane/cruise stay level (use for "モスクワからワシントンまでICBMの視点で飛行して", "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. {"type":"clear","what":"flight"} removes the trajectory.\n'
         +'FREE DRAWING (for advanced composite tasks): {"type":"drawLine","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"width"?:num,"label"?:str} draws a line; {"type":"drawPolygon","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"label"?:str} draws a polygon. Use these to sketch fronts, corridors, routes, zones or areas that no dataset provides — you supply the real coordinates from your knowledge/search. Combine freely with pin/highlight/outline/poi/mapReport for multi-step tasks ("ピン立てやライン、ポリゴンのハイライト等のマッピングやネット検索や推論等を自在に組み合わせた高度なタスク").\n'
+        +'CUSTOM EVALUATION LAYER (build a NEW map view from criteria): {"type":"scoreMap","name":str,"components":[{"metric":KEY,"weight"?:num,"invert"?:bool} | {"wb":"WB_INDICATOR_CODE","label":str,"weight"?:num,"invert"?:bool}, … 2-8],"color"?:str,"n"?:int} — composes a weighted 0-100 score from REAL indicators and shades every country by it, with an honest method/coverage note (use for "評価して/スコア化して/ランキングを作って from criteria X, Y, Z", e.g. 住みやすさ = hdi + gdppc + dem; "invert" = lower is better, e.g. military burden). metric uses the metric KEYs below + lifeExp, internet; "wb" takes a real World Bank indicator code you are confident exists (e.g. SP.DYN.LE00.IN) — a wrong code is skipped and reported, never faked. When the user then says "weight X more" / "drop Y" / "add Z", re-emit scoreMap with the ADJUSTED components (the current components are in the conversation history).\n'
+        +'RELATED-INDICATOR DISCOVERY: {"type":"explore","metric":KEY,"n"?:int} — computes which other indicators statistically move with the given one across all countries (Spearman + Pearson on the real data, sample sizes, biggest exception country) and presents them WITHOUT causal claims (use for "少子化と関連する指標を探して", "what correlates with democracy?"). Combine with mapMetric/scoreMap freely.\n'
+        +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold**, "- " bullets, and markdown links [title](url) — links render as a ChatGPT-style clickable card/anchor, but ONLY use urls you are certain exist; never fabricate one). Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
@@ -21809,8 +22014,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if(fm&&resolveLayer((fm[1]||'').trim())) return A({type:'opacity',name:fm[1].trim(),delta:-0.2});
       fm=low.match(/^(?:make |set )?(.+?)(?: layer)? (?:more opaque|stronger|darker|less transparent)$/)||s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:もっと|少し)?(?:濃く|不透明に|はっきり)(?:して)?$/);
       if(fm&&resolveLayer((fm[1]||'').trim())) return A({type:'opacity',name:fm[1].trim(),delta:0.2});
-      /* single-country stat question → the REAL number from countryStats (no AI needed). */
-      const VMET={'population':'pop','人口':'pop','population density':'density','density':'density','人口密度':'density','area':'area','面積':'area','gdp':'gdp','gdp per capita':'gdppc','gdppc':'gdppc','一人当たりgdp':'gdppc','1人当たりgdp':'gdppc','hdi':'hdi','human development index':'hdi','fertility':'tfr','fertility rate':'tfr','出生率':'tfr','合計特殊出生率':'tfr','democracy index':'dem','民主主義指数':'dem','military spending':'milSpend','defense spending':'milSpend','国防費':'milSpend','軍事費':'milSpend','capital':'capital','capital city':'capital','首都':'capital','currency':'currency','通貨':'currency','languages':'languages','language':'languages','言語':'languages','公用語':'languages','flag':'flag','国旗':'flag'};
+      /* single-country stat question → the REAL number from countryStats (no AI needed).
+         (#R75) VMET moved to module scope — shared with _metSpec (explore/scoreMap). */
       fm=low.match(/^(?:what(?:'s| is)(?: the)? )?([a-z0-9 ]+?)\s+of\s+(.+?)\s*\??$/);
       if(fm&&VMET[fm[1].trim()]&&resolveCountrySync(fm[2].trim())) return A({type:'value',metric:VMET[fm[1].trim()],country:fm[2].trim()});
       fm=s.match(/^(.+?)の(人口密度|人口|面積|一人当たりGDP|1人当たりGDP|GDP|HDI|出生率|合計特殊出生率|民主主義指数|国防費|軍事費|首都|通貨|言語|公用語|国旗)(?:は|を教えて)?[?？]?$/i);
@@ -21826,6 +22031,17 @@ window.addEventListener('DOMContentLoaded', () => {
          combining an office word with a who-word routes deterministically to analyze + live web. */
       if(s.length<=80&&/(首相|大統領|総理|国家元首|首脳|党首|総裁|大臣|知事|prime minister|president|chancellor|premier|head of state|head of government|kanzler|президент|премьер|primer ministro|presidente)/i.test(s)
         &&/(誰|だれ|who|wer|кто|quién|quien|現在|今|current|名前|なまえ|name)/i.test(s)) return A({type:'analyze',question:s,use:['web']});
+      /* (#R75) vision §10/§11 anchors — single-intent phrasings run deterministically, no AI round-trip. */
+      fm=s.match(/^(.{1,25}?)(?:と|に)(?:相関|関連)する指標を?(?:探して|調べて|教えて)?[。？?]?$/)
+        ||low.match(/^(?:what |which )?(?:indicators?|metrics?) correlate[sd]? with (.{1,30}?)\??$/)
+        ||low.match(/^explore (?:correlations? (?:of|with) )?(.{1,30}?)\??$/);
+      if(fm&&_metSpec((fm[1]||'').trim())) return A({type:'explore',metric:(fm[1]||'').trim()});
+      fm=s.match(/^(?:この|直近の|最近の)?地震の(?:影響|周辺)(?:範囲)?を?(?:分析|調査|調べて|表示|見せて)(?:して)?[。]?$/)
+        ||low.match(/^impact (?:analysis )?(?:of |around )?(?:the )?(?:latest |recent )?(?:earthquake|quake)$/);
+      if(fm) return A({type:'impact',event:'quake'});
+      fm=s.match(/^(.{1,30}?)の?周辺影響(?:分析)?を?(?:して|調べて|表示して|分析して)$/)
+        ||low.match(/^impact analysis (?:around|of|near) (.{1,40}?)$/);
+      if(fm&&(fm[1]||'').trim()) return A({type:'impact',place:(fm[1]||'').trim()});
       /* (#R61) colored highlight — "highlight X in red" / 「Xを赤でハイライト」 / bare 「赤でハイライト」(recolor). */
       fm=low.match(/^highlight\s+(.+?)\s+in\s+([a-z]+(?: blue)?|#[0-9a-f]{3}|#[0-9a-f]{6})$/)||s.match(/^(.+?)を(.{1,9}?)で(?:ハイライト|強調表示|強調)(?:して)?$/);
       if(fm){ const hn=(fm[1]||'').trim(), cn=(fm[2]||'').trim();
@@ -21925,7 +22141,8 @@ window.addEventListener('DOMContentLoaded', () => {
         ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
       }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { ai.innerHTML=_cancelledNote(); return; } }
       msgTools(ai,null); }
-    return { open, toggle, run, brief:briefEntry };
+    /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results */
+    return { open, toggle, run, brief:briefEntry, dispatch:a=>dispatch(a) };
   })();
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
