@@ -7285,12 +7285,13 @@ window.addEventListener('DOMContentLoaded', () => {
       Object.assign(i18n.ru,{lblWsMode:'Оконный режим (десктоп)',wsOff:'Выкл (по умолчанию)',wsOn:'Вкл — свободные окна',wsHint:'Как в видеоредакторе: панель, карта, слои и управление картой становятся свободно перемещаемыми окнами. Раскладка сохраняется.'});
       Object.assign(i18n.es,{lblWsMode:'Espacio de ventanas (escritorio)',wsOff:'Apagado (predeterminado)',wsOn:'Encendido — ventanas libres',wsHint:'Estilo editor de vídeo: el panel, el mapa, las capas y los controles se vuelven ventanas libres. El diseño se guarda.'}); }catch(_){}
     let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false, scanT=null;
+    /* (#R78c) window set per the re-report: NO ticker window (「画面外の最下部に固定と何度も言っている」— it is a
+       fixed bottom strip above the workspace), NO separate map-controls window (「操作パネルを新設するな」— the
+       controls stay inside the map, where they belong), NO emoji in the titles. */
     const DEFS=[
-      {id:'side',  sel:'#sidebar',                    ic:'☰', t:()=>T('Panel','パネル','Panel','Панель','Panel'), min:[300,320]},
-      {id:'map',   sel:'#map-container',              ic:'🗺', t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[420,320]},
-      {id:'layers',sel:'#layer-sidebar-r',            ic:'▤', t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[280,320]},
-      {id:'ctrls', sel:'.map-controls-top',           ic:'🎛', t:()=>T('Map controls','地図コントロール','Kartensteuerung','Управление картой','Controles del mapa'), min:[190,150], ovis:true},
-      {id:'ticker',sel:'#ticker-bar',                 ic:'📈', t:()=>T('Ticker','ティッカー','Ticker','Тикер','Cinta'), min:[300,64], follow:true}   /* (#R78b) the ticker was buried under the windows — now it IS one; the window follows the ticker's own on/off */
+      {id:'side',  sel:'#sidebar',         t:()=>T('Panel','パネル','Panel','Панель','Panel'), min:[300,320]},
+      {id:'map',   sel:'#map-container',   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[420,320]},
+      {id:'layers',sel:'#layer-sidebar-r', t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[280,320]}
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -7301,8 +7302,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function hideG(){ if(gV){ gV.style.display='none'; gH.style.display='none'; } }
     function others(w){ const a=[]; for(const id in wraps){ const o=wraps[id]; if(o&&o!==w&&o.isConnected&&o.style.display!=='none') a.push(o); } return a; }
     const SNAP=8;
-    function xCands(w){ const a=[12,innerWidth-12]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return a; }
-    function yCands(w){ const a=[12,innerHeight-12]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return a; }
+    function xCands(w){ const a=[10,innerWidth-10]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return a; }
+    function yCands(w){ const tk=(document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar'))?30:0;
+      const a=[46,innerHeight-10-tk]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return a; }
     function nearest(cands,v){ let b=null,bd=SNAP+0.001; cands.forEach(c=>{ const d=Math.abs(v-c); if(d<bd){ bd=d; b=c; } }); return b; }
     function minOf(w){ return (w&&w.__wsMin)||[220,140]; }
     function wsDrag(w,tb){
@@ -7317,7 +7319,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const syt=nearest(cy,t), syb=nearest(cy,t+w.offsetHeight);
           if(syt!=null&&(syb==null||Math.abs(syt-t)<=Math.abs(syb-(t+w.offsetHeight)))){ t=syt; showG('h',syt); }
           else if(syb!=null){ t=syb-w.offsetHeight; showG('h',syb); }
-          l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(0,Math.min(innerHeight-40,t));
+          l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(40,Math.min(innerHeight-44,t));   /* stay below the menu bar */
           w.style.left=l+'px'; w.style.top=t+'px'; };
         const up=()=>{ hideG(); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); schedSave(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
@@ -7386,35 +7388,51 @@ window.addEventListener('DOMContentLoaded', () => {
         +'.ws-gv{top:0;bottom:0;width:1px;}.ws-gh{left:0;right:0;height:1px;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
         +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
-        +'body.ws-mode .sidebar{width:auto !important;min-width:0 !important;max-width:none !important;height:auto !important;border-right:none !important;transform:none !important;}'
+        /* (#R78c) FILL the window, always: the app's own width/height rules are calc(100vw−…) formulas tied to
+           body classes — inside a window they collapsed the map to 38px (measured; the "search bar flying away"
+           and "map not centred" were the same bug). 100%!important pins every wrapped element to its window. */
+        +'body.ws-mode .sidebar{width:100% !important;min-width:0 !important;max-width:none !important;height:100% !important;border-right:none !important;transform:none !important;}'
+        +'body.ws-mode #map-container{position:relative !important;width:100% !important;max-width:none !important;height:100% !important;margin:0 !important;flex:1 1 auto !important;}'
         +'body.ws-mode #btn-toggle-sidebar{display:none !important;}'
         +'body.ws-mode #lsr-toggle{display:none !important;}'
-        +'body.ws-mode #layer-sidebar-r{position:static !important;width:auto !important;min-width:0 !important;height:auto !important;margin:0 !important;border:none !important;transform:none !important;display:flex !important;flex-direction:column;}'
+        +'body.ws-mode #layer-sidebar-r{position:static !important;width:100% !important;min-width:0 !important;height:100% !important;margin:0 !important;border:none !important;transform:none !important;display:flex !important;flex-direction:column;}'
         /* (#R78b) de-chrome the transplanted content ("そのまま移植したような汚いUI"): no duplicate headers,
            no inner borders/radii — the window IS the chrome now */
         +'body.ws-mode #layer-sidebar-r .lsr-head{display:none !important;}'
         +'body.ws-mode .ws-side .sidebar{background:transparent !important;}'
-        +'body.ws-mode #ticker-bar{position:static !important;width:100% !important;height:100% !important;min-height:30px;border-top:none !important;background:transparent !important;}'
-        +'body.ws-mode .ws-body .map-controls-top{position:static;display:flex;flex-direction:column;gap:10px;padding:12px;align-items:stretch;overflow:visible;max-height:100%;overflow-y:auto;}'
-        +'body.ws-mode .ws-body .map-controls-top>*{margin:0 !important;align-self:stretch;}'
-        +'#ws-dock{position:fixed;right:12px;bottom:12px;z-index:5990;display:flex;gap:4px;align-items:center;padding:6px 8px;border-radius:14px;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));box-shadow:0 10px 30px rgba(0,0,0,0.35);-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
-        +'#ws-dock button{border:none;background:transparent;color:var(--text-main);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:9px;cursor:pointer;display:flex;gap:6px;align-items:center;white-space:nowrap;}'
-        +'#ws-dock button:hover{background:var(--input-bg);}'
-        +'#ws-dock button.off{opacity:0.4;}'
-        +'#ws-dock .ws-dk-sep{width:1px;height:16px;background:var(--glass-border,rgba(128,128,128,0.3));margin:0 3px;}'
-        +'body.capture-mode #ws-dock{display:none !important;}'
-        +'@media(max-width:768px){ #ws-dock{display:none !important;} }';
+        /* (#R78c) the ticker is NOT a window — it is pinned to the very bottom of the screen, full width,
+           above the workspace ("画面外の最下部に固定と何度も言っている") */
+        +'body.ws-mode #ticker-bar{position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;width:100% !important;z-index:5985 !important;}'
+        /* (#R78c) TOP MENU BAR ("上部から、ソフトのように選択できるようにしろ") — a real application menu strip */
+        +'#ws-menu{position:fixed;left:0;top:0;right:0;height:36px;z-index:5990;display:flex;align-items:center;gap:2px;padding:0 10px;background:var(--card-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.26));-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
+        +'#ws-menu .ws-brand{font-size:12px;font-weight:700;color:var(--text-main);margin-right:14px;letter-spacing:0.02em;}'
+        +'#ws-menu .ws-brand span{color:var(--text-muted);font-weight:500;}'
+        +'#ws-menu .ws-m{position:relative;}'
+        +'#ws-menu .ws-m>button{border:none;background:transparent;color:var(--text-main);font-size:12px;padding:5px 11px;border-radius:7px;cursor:pointer;}'
+        +'#ws-menu .ws-m>button:hover,#ws-menu .ws-m.open>button{background:var(--input-bg);}'
+        +'#ws-menu .ws-dd{display:none;position:absolute;left:0;top:32px;min-width:210px;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,0.35);padding:5px;z-index:5991;}'
+        +'#ws-menu .ws-m.open .ws-dd{display:block;}'
+        +'#ws-menu .ws-dd button{display:flex;width:100%;align-items:center;gap:8px;border:none;background:transparent;color:var(--text-main);font-size:12px;padding:7px 10px;border-radius:7px;cursor:pointer;text-align:left;white-space:nowrap;}'
+        +'#ws-menu .ws-dd button:hover{background:var(--input-bg);}'
+        +'#ws-menu .ws-dd .ws-ck{width:14px;flex:0 0 14px;font-weight:700;color:var(--primary-color,#0a84ff);}'
+        +'#ws-menu .ws-dd .ws-dd-sep{height:1px;background:var(--glass-border,rgba(128,128,128,0.22));margin:5px 6px;}'
+        +'#ws-menu .ws-spacer{flex:1;}'
+        +'body.capture-mode #ws-menu{display:none !important;}'
+        +'@media(max-width:768px){ #ws-menu{display:none !important;} }';
       document.head.appendChild(st); }
     const state=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(_){ return {}; } };
     const save=p=>{ try{ localStorage.setItem(KEY,JSON.stringify(Object.assign(state(),p))); }catch(_){} };
     function defRects(){ const W=innerWidth,H=innerHeight;
-      /* ticker-aware defaults: when the ticker exists it gets the full bottom strip and everything else ends above it */
-      const tk=document.getElementById('ticker-bar'); const tkH=tk?76:0; const B=H-24-tkH; const rh=Math.round(B*0.56);
-      return { side:[12,12,340,B], map:[364,12,Math.max(430,W-364-312),B], layers:[W-300,12,288,rh], ctrls:[W-300,rh+24,288,Math.max(160,B-rh-12)],
-        ticker:[12,H-12-64,Math.max(300,W-24-268),64] }; }   /* 268 = keep clear of the bottom-right dock */
+      /* (#R78c) PROPER tiled default ("デフォルトの各ウィンドウの配置位置がおかしい"): windows sit below the
+         top menu bar, ABOVE the fixed bottom ticker, and ABUT each other edge-to-edge — so the shared-border
+         splitters work immediately: [Panel 340 | Map (rest) | Layers 288]. */
+      const MENU=36, tkOn=document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar');
+      const top=MENU+10, B=H-top-10-(tkOn?30:0);
+      const sideW=340, layW=Math.min(300,Math.round(W*0.22)); const layX=W-10-layW;
+      return { side:[10,top,sideW,B], map:[10+sideW,top,layX-(10+sideW),B], layers:[layX,top,layW,B] }; }
     function clampRect(r,min){ const W=innerWidth,H=innerHeight;
-      let w=Math.max((min&&min[0])||220,Math.min(W-16,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-16,r[3]||300));
-      let x=Math.max(4,Math.min(W-w-4,r[0]||12)), y=Math.max(4,Math.min(H-60,r[1]||12));
+      let w=Math.max((min&&min[0])||220,Math.min(W-16,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-52,r[3]||300));
+      let x=Math.max(4,Math.min(W-w-4,r[0]||12)), y=Math.max(40,Math.min(H-70,r[1]||46));   /* y≥40: below the menu bar */
       return [x,y,w,h]; }
     function fitMap(){ try{ (window.__imap||map).resize(); }catch(_){} }
     function schedSave(){ if(!on) return; clearTimeout(saveT); saveT=setTimeout(saveRects,400); }
@@ -7430,7 +7448,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<button class="ws-dot ws-d-close" title="'+T('Hide (reopen from the dock)','隠す（下のドックから再表示）','Ausblenden (Dock unten)','Скрыть (док внизу)','Ocultar (dock abajo)')+'"></button>'
         +'<button class="ws-dot ws-d-min" title="'+T('Collapse to title bar','タイトルバーに折りたたむ','Auf Titelleiste einklappen','Свернуть в заголовок','Plegar a la barra')+'"></button>'
         +'<button class="ws-dot ws-d-max" title="'+T('Maximize / restore','最大化 / 元に戻す','Maximieren / wiederherstellen','Развернуть / восстановить','Maximizar / restaurar')+'"></button></span>'
-        +'<span class="ws-title">'+def.ic+' '+def.t()+'</span>';
+        +'<span class="ws-title">'+def.t()+'</span>';
       const body=document.createElement('div'); body.className='ws-body';
       /* placeholder comment marks the EXACT original DOM slot — disable() restores order-independently */
       const ph=document.createComment('ws-ph-'+def.id); el.parentNode.insertBefore(ph,el); holders[def.id]=ph;
@@ -7447,27 +7465,36 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ bringToFront(w); }catch(_){} fitMap(); schedSave(); };
       tb.addEventListener('dblclick',e=>{ if(e.target.closest('.ws-dot')) return; tb.querySelector('.ws-d-max').click(); });
       return w; }
-    function mkDock(){ if(dock) return; dock=document.createElement('div'); dock.id='ws-dock';
+    /* (#R78c) TOP MENU BAR replaces the toy dock ("上部から、ソフトのように選択できるようにしろ"):
+       IntMap — Workspace | ウィンドウ▾ (checkmarked show/hide list + reset) | … | 終了 */
+    function resetLayout(){ const dr=defRects(); for(const id in wraps){ const w=wraps[id]; const def=DEFS.find(d=>d.id===id); if(!w||!dr[id]) continue;
+        delete w.dataset.min; delete w.dataset.maxed; delete w.dataset.userHid; w.querySelector('.ws-body').style.display=''; w.style.display='flex';
+        const r=clampRect(dr[id],def&&def.min); w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; w.style.width=r[2]+'px'; w.style.height=r[3]+'px'; }
+      fitMap(); syncDock(); schedSave(); }
+    function mkDock(){ if(dock) return; dock=document.createElement('div'); dock.id='ws-menu';
+      const brand=document.createElement('div'); brand.className='ws-brand'; brand.innerHTML='IntMap <span>— '+T('Workspace','ワークスペース','Workspace','Рабочая область','Espacio de trabajo')+'</span>'; dock.appendChild(brand);
+      const m=document.createElement('div'); m.className='ws-m';
+      const mb=document.createElement('button'); mb.textContent=T('Window','ウィンドウ','Fenster','Окно','Ventana')+' ▾'; m.appendChild(mb);
+      const dd=document.createElement('div'); dd.className='ws-dd'; m.appendChild(dd);
       DEFS.forEach(def=>{ if(!wraps[def.id]) return; const b=document.createElement('button'); b.dataset.win=def.id;
-        b.innerHTML=def.ic+' <span>'+def.t()+'</span>'; b.title=T('Show / hide window','ウィンドウの表示 / 非表示','Fenster ein-/ausblenden','Показать/скрыть окно','Mostrar/ocultar ventana');
+        b.innerHTML='<span class="ws-ck"></span><span>'+def.t()+'</span>';
         b.onclick=()=>{ const w=wraps[def.id]; if(!w) return;
-          /* follow-windows (ticker): the dock button drives the REAL feature, the window mirrors it */
-          if(def.follow){ try{ const el=w.querySelector('.ws-body').firstElementChild;
-            if(el&&getComputedStyle(el).display==='none'&&window.IntMapTicker){ window.IntMapTicker.toggle(); delete w.dataset.autoHid; delete w.dataset.userHid; w.style.display='flex'; try{ bringToFront(w); }catch(_){} syncDock(); schedSave(); return; } }catch(_){} }
-          if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; delete w.dataset.autoHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; } fitMap(); syncDock(); schedSave(); };
-        dock.appendChild(b); });
-      const sep=document.createElement('span'); sep.className='ws-dk-sep'; dock.appendChild(sep);
-      const rst=document.createElement('button'); rst.textContent='⟲ '+T('Reset','リセット','Zurücksetzen','Сброс','Restablecer'); rst.title=T('Reset the window layout','ウィンドウ配置を初期状態に戻す','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño');
-      rst.onclick=()=>{ const dr=defRects(); for(const id in wraps){ const w=wraps[id]; const def=DEFS.find(d=>d.id===id); if(!w||!dr[id]) continue;
-          delete w.dataset.min; delete w.dataset.maxed; w.querySelector('.ws-body').style.display=''; w.style.display='flex';
-          const r=clampRect(dr[id],def&&def.min); w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; w.style.width=r[2]+'px'; w.style.height=r[3]+'px'; }
-        fitMap(); syncDock(); schedSave(); };
-      dock.appendChild(rst);
-      const ex=document.createElement('button'); ex.textContent='✕ '+T('Exit','終了','Beenden','Выход','Salir'); ex.title=T('Back to the normal layout','通常レイアウトに戻る','Zurück zum normalen Layout','Вернуться к обычному виду','Volver al diseño normal');
+          if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; }
+          fitMap(); syncDock(); schedSave(); };
+        dd.appendChild(b); });
+      const sep=document.createElement('div'); sep.className='ws-dd-sep'; dd.appendChild(sep);
+      const rst=document.createElement('button'); rst.innerHTML='<span class="ws-ck"></span><span>'+T('Reset layout','配置をリセット','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño')+'</span>';
+      rst.onclick=()=>{ resetLayout(); m.classList.remove('open'); }; dd.appendChild(rst);
+      mb.onclick=e=>{ e.stopPropagation(); m.classList.toggle('open'); };
+      document.addEventListener('click',()=>{ try{ m.classList.remove('open'); }catch(_){} });
+      dock.appendChild(m);
+      const sp=document.createElement('div'); sp.className='ws-spacer'; dock.appendChild(sp);
+      const exm=document.createElement('div'); exm.className='ws-m';
+      const ex=document.createElement('button'); ex.textContent=T('Exit workspace','ワークスペースを終了','Workspace beenden','Выйти из режима','Salir del espacio');
       ex.onclick=()=>{ disable(); try{ const s=document.getElementById('setting-wsmode'); if(s) s.value='off'; }catch(_){} };
-      dock.appendChild(ex);
+      exm.appendChild(ex); dock.appendChild(exm);
       document.body.appendChild(dock); }
-    function syncDock(){ if(!dock) return; dock.querySelectorAll('button[data-win]').forEach(b=>{ const w=wraps[b.dataset.win]; b.classList.toggle('off',!w||w.style.display==='none'); }); }
+    function syncDock(){ if(!dock) return; dock.querySelectorAll('button[data-win]').forEach(b=>{ const w=wraps[b.dataset.win]; const onW=w&&w.style.display!=='none'; const ck=b.querySelector('.ws-ck'); if(ck) ck.textContent=onW?'✓':''; }); }
     function rebuildDock(){ if(dock){ dock.remove(); dock=null; } mkDock(); syncDock(); }
     /* (#R78b) elements that appear AFTER enable (the ticker when turned on in Settings) become windows the
        moment they exist; windows whose element was removed from the DOM are retired. "全機能使えないと意味ない". */
