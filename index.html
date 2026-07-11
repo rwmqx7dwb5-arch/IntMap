@@ -10118,6 +10118,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* thermal is NOT date-keyed any more (#5): NASA FIRMS publishes rolling time-window layers, so the
        thermal row carries a window selector in its legend instead of a calendar date. */
     const layerDates={temp:tempMonthISO(3),precip:PRECIP_DATE,sst:GIBS_DATE,snow:GIBS_DATE,aod:GIBS_DATE};
+    window._imLayerDates=layerDates;   /* (#R77) live reference for Atlas stateContext (vision §2 — dated-layer awareness) */
     /* (#R13c) Time-varying layers state WHEN their data is from, in the legend (user request). A small
        "as-of" line is appended to each dated legend and refreshed whenever the date/window changes. */
     function _legendWhenText(id){ const jp=currentLang==='jp';
@@ -20596,6 +20597,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn('⚠ '+nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
         if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(el.checked===want, note('✓ '+nm+': '+(want?'on':'off'))); }
         if(el.type==='range'||el.type==='number'){ if(a.value!=null){ el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
+        /* (#R77) dated-layer date/month inputs (「気温レイヤーの日付を2023-06-01に」) were unreachable — click() did nothing useful */
+        if(el.type==='date'||el.type==='month'){ if(a.value!=null){ let v=String(a.value).trim(); if(el.type==='month') v=v.slice(0,7); else v=v.slice(0,10);
+            el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
+            return R(el.value===v, el.value===v?note('✓ '+nm+' = '+esc(v)):warn('⚠ '+nm+': '+L('value rejected (out of range?)','値が受理されません（範囲外？）','Wert abgelehnt','значение отклонено','valor rechazado')+' '+esc(v))); }
+          return R(true, note('✓ '+nm)); }
         if(tag==='textarea'||(tag==='input'&&(!el.type||/^(text|search|email|url)$/.test(el.type)))){ if(a.value!=null){ el.focus(); el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); if(a.submit!==false){ el.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); } } return R(true, note('✓ '+nm)); }
         el.click(); return R(true, note('✓ '+nm));
       }catch(_){ return R(false, warn('⚠ '+nm)); } }
@@ -20607,6 +20613,52 @@ window.addEventListener('DOMContentLoaded', () => {
         const key=(el.id||nm).toLowerCase(); if(seen.has(key)) return; seen.add(key);
         out.push(nm+(el.id?(' [#'+el.id+']'):'')+(tag==='select'?' (select)':'')); });
       return out.slice(0,140).join('; '); }catch(_){ return ''; } }
+    /* ==== (#R77) FULL UI⇄Atlas integration ("IntMapのUIすべてとAtlasが統合されるように" / vision §1·§17·第六段階).
+       Measured baseline: 538 interactive elements, 192 had NO accessible name — unreachable by any Atlas path
+       (128 favourite ★ per layer row, 21 legend-close ✕, per-layer date inputs, opacity sliders, unlabeled
+       checkboxes). Fix = a NAMING SWEEP that derives an aria-label from each element's real context (its layer
+       row text, its legend's title, its container heading). aria-label feeds _ctlLabel/findControl directly, so
+       named = reachable via {"type":"control"} — and the sweep re-runs periodically, so elements created later
+       (legends open lazily) and FUTURE features are integrated the moment they appear (§17). ==== */
+    function _rowLbl(el){ try{ const row=el.closest&&(el.closest('.lyr-row')||el.closest('label')); if(!row) return '';
+      const sp=row.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label')||row.querySelector('span');
+      return String((sp?sp.textContent:row.textContent)||'').replace(/\s+/g,' ').trim().slice(0,40); }catch(_){ return ''; } }
+    function _uiNameSweep(){ try{ const jp=currentLang==='jp';
+      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) b.setAttribute('aria-label',(jp?'お気に入り: ':'favorite: ')+l2); });
+      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',(jp?'透明度: ':'opacity: ')+l2); });
+      document.querySelectorAll('input.dl-date:not([aria-label])').forEach(i2=>{ let l2=_rowLbl(i2);
+        if(!l2){ const lg=i2.closest('[id^="data-legend-"]'); if(lg) l2=lg.id.replace(/^data-legend-/,''); }   /* date inputs live in the layer's LEGEND, not its row */
+        if(l2) i2.setAttribute('aria-label',(jp?'日付: ':'date: ')+l2); });
+      document.querySelectorAll('#layer-dropdown input[type=checkbox]:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',l2); });
+      document.querySelectorAll('button.layer-popup-x:not([aria-label])').forEach(b=>{ let nm2='';
+        const box=b.closest('[id^="data-legend-"]')||b.closest('[id$="-legend"]')||b.closest('[id^="legend"]')||b.closest('.layer-popup')||b.closest('.data-legend');
+        if(box){ /* first heading candidate that contains REAL text (skip the ⋮⋮ drag handle) */
+          let t3=''; try{ [].slice.call(box.querySelectorAll('b, strong, .lgd-t, span')).some(h=>{ const x2=String(h.textContent||'').replace(/\s+/g,' ').trim(); if(/\p{L}/u.test(x2)&&x2.length>=2){ t3=x2; return true; } return false; }); }catch(_){}
+          nm2=(t3||String(box.id||'').replace(/^data-legend-/,'')).slice(0,32); }
+        b.setAttribute('aria-label',(jp?'凡例を閉じる: ':'close legend: ')+(nm2||'legend')); });
+      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',jp?'海面上昇 (m)':'sea level rise (m)'); });
+      /* generic: an unnamed ×/✕ button is a CLOSE button for its nearest identified container */
+      document.querySelectorAll('button:not([aria-label]), [role="button"]:not([aria-label])').forEach(b=>{ try{
+        const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[×✕✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
+        const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
+        b.setAttribute('aria-label',(jp?'閉じる: ':'close: ')+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
+      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label','file: '+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
+      /* unnamed generic checkboxes/radios outside the layer panel: take the row text they sit in */
+      document.querySelectorAll('input[type=checkbox]:not([aria-label]), input[type=radio]:not([aria-label])').forEach(i2=>{ try{
+        if(i2.closest('#layer-dropdown')||i2.closest('#atlas-panel')) return; const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',l2); }catch(_){} });
+    }catch(_){} }
+    /* permanent §17 diagnostic: how much of the UI can Atlas actually address? Names elements first, then counts. */
+    window.IntMapUIAudit={ sweep:_uiNameSweep,
+      run(){ _uiNameSweep(); const seen=new Set(); let total=0,named=0; const un=[];
+        [].slice.call(document.querySelectorAll('button, input, select, textarea, [role="button"], [onclick]')).forEach(el=>{
+          if(seen.has(el)||el.disabled) return; seen.add(el);
+          if(el.closest&&el.closest('#atlas-panel')) return; total++;
+          /* named = SOME candidate is a usable (≥2-char) handle — a "★"/"×" glyph alone is not, but its aria-label is */
+          const cands=[(el.textContent||''),el.getAttribute('title')||'',el.getAttribute('aria-label')||'',el.getAttribute('placeholder')||'',el.id||''];
+          const lab=cands.map(x2=>String(x2).replace(/\s+/g,' ').trim()).find(x2=>x2.length>=2)||'';
+          if(lab) named++; else un.push(el.tagName.toLowerCase()+(el.id?('#'+el.id):'')+'.'+String(el.className||'').split(' ')[0]); });
+        return {total,named,unnamed:un.length,coverage:total?Math.round(named/total*100):100,unnamedList:un.slice(0,40)}; } };
+    setTimeout(()=>{ _uiNameSweep(); setInterval(()=>{ if(!document.hidden) _uiNameSweep(); },20000); },3500);   /* legends & future panels appear lazily — keep integrating them */
     /* ---- (#R45) MODULE registry so Atlas is the OS over ALL of IntMap ("IntMapのすべてを統合するOS"): EVERY
        IntMap-prefixed window subsystem (current OR future) with a standard entrypoint is auto-discovered and
        callable by name via a "module" action — no per-feature wiring needed, so new modules are reachable the
@@ -20746,6 +20798,16 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(typeof userPins!=='undefined'&&userPins&&userPins.length) lines.push(userPins.length+' user pin(s) on the map.'); }catch(_){}
         try{ if(document.body.classList.contains('lsr-open')) lines.push('The right layer sidebar is open.'); }catch(_){}
         try{ if(document.body.classList.contains('ticker-on')) lines.push('The bottom news/markets ticker is on.'); }catch(_){}
+        /* (#R77) vision §2 完全化 — every open panel/tab/tool/filter, so "close it" / "that tab" / "the tool" resolve */
+        try{ const tb=['btn-news','btn-info','btn-stats','btn-community'].map(id=>document.getElementById(id)).find(b=>b&&b.classList.contains('active'));
+          if(tb) lines.push('Active sidebar tab: '+String(tb.textContent||'').trim()+'.'); }catch(_){}
+        try{ const vis=el=>{ try{ if(!el) return false; const cs2=getComputedStyle(el); if(cs2.display==='none'||cs2.visibility==='hidden'||+cs2.opacity===0) return false; return el.getClientRects().length>0; }catch(_){ return false; } };   /* NOT offsetParent — position:fixed modals have none */
+          const open=[]; [['#settings-modal','Settings'],['#compare-window','Map-compare window'],['#stats-compare-fixed','Statistics-comparison view'],['#tool-panel','Map tool panel'],['#widget-board','Widget board'],['#widget-panel','Widget panel'],['#corr-overlay','Correlation tool'],['.research-panel','Research panel'],['.pg-overlay','Playground']].forEach(p2=>{ const el=document.querySelector(p2[0]); if(vis(el)) open.push(p2[1]); });
+          if(open.length) lines.push('Open panels: '+open.join(', ')+'.'); }catch(_){}
+        try{ if(typeof toolMode!=='undefined'&&toolMode) lines.push('Active map tool: '+toolMode+(typeof measurePoints!=='undefined'&&measurePoints&&measurePoints.length?(' ('+measurePoints.length+' points)'):'')+'.'); }catch(_){}
+        try{ if(typeof newsDate!=='undefined'&&newsDate) lines.push('TIME TRAVEL is active — news/imagery around '+ymdISO(newsDate)+' (not today). "now/current" requests may need timeTravel reset.'); }catch(_){}
+        try{ const LD=window._imLayerDates; if(LD){ const dl=[]; ['temp','precip','sst','snow','aod'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked&&LD[k]) dl.push(k+'='+LD[k]); }); if(dl.length) lines.push('Dated raster layers showing: '+dl.join(', ')+' (changeable via control "date: <layer>").'); } }catch(_){}
+        try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) lines.push('Search box contains: "'+String(si.value).trim().slice(0,60)+'".'); }catch(_){}
         let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}
         lines.push('UI language='+currentLang+', theme='+((typeof userTheme!=='undefined')?userTheme:'auto')+(tu?(', temp unit=°'+String(tu).toUpperCase()):'')+'.');
         return lines.join('\n'); }catch(_){ return ''; } }
@@ -21845,7 +21907,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold**, "- " bullets, and markdown links [title](url) — links render as a ChatGPT-style clickable card/anchor, but ONLY use urls you are certain exist; never fabricate one). Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
-        +'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider or input. Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n'
+        +'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider, date picker or input. Useful addressable patterns (every UI element is named, incl. per-layer micro-controls): "favorite: <layer name>" (★), "date: <layer name>" with value "YYYY-MM-DD" (change a dated raster layer\'s date — e.g. 「気温レイヤーの日付を2023-06-01に」), "close legend: <name>", "opacity: <layer>". Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n'
         +'MODULE fallback (advanced — open/close any IntMap subsystem panel by name, incl. ones with no toolbar button): {"type":"module","name":"IntMapX","method":"open"|"toggle"|"close"|"clear"}. Use only when no specific action or "control" fits. Available modules: '+moduleCatalog()+'\n'
         +'Valid metric KEY values ONLY: pop, density, area, gdp, gdppc, hdi, dem (democracy index), milSpend (military spending), milSpendGDP (military % of GDP), tfr (fertility rate). If a needed metric is not in this list, do NOT invent it — explain in "say" and omit that action. Default n=15.\n'
         +'Examples (note scale + full decomposition): "fly to Africa" → [{flyTo,place:"Africa",scale:"continent"}]; "zoom into Shibuya, Tokyo" → [{flyTo,place:"Shibuya, Tokyo",scale:"city"}]; "dark mode, fly to Taiwan, show military spending layer and the weather" → [theme, {flyTo,place:"Taiwan",scale:"country"}, layer, weather]; "shade the world by GDP per capita, list the top 10, and turn on the globe tilted" → [mapMetric, rank, {projection,mode:"globe"}, {pitch,deg:55}]; "go to the Strait of Hormuz, satellite, draw a 50km circle and show the wind" → [{flyTo,place:"Strait of Hormuz",scale:"region"}, {base,mode:"satellite"}, {radius,place:"Strait of Hormuz",km:50}, {layer,name:"Wind (animated)"}].\n'
@@ -22234,7 +22296,7 @@ window.addEventListener('DOMContentLoaded', () => {
       msgTools(ai,null); }
     /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
        (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
-    return { open, toggle, run, brief:briefEntry, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } } };
+    return { open, toggle, run, brief:briefEntry, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
