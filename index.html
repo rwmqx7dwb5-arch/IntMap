@@ -19855,6 +19855,28 @@ window.addEventListener('DOMContentLoaded', () => {
        ONLY the current message to the model with no history and no map state, so follow-ups ("there", "turn it
        off", "more", "the same country over time") had nothing to resolve against. */
     let _hist=[]; let _lastPlace=null;
+    /* (#R76) vision §3 — STRUCTURED working context. The rolling _hist text is what the model *reads*; this
+       object is what Atlas *knows*: the current focus countries, topic under investigation, metrics in play,
+       the exact components of an active custom score (so "家賃を重視して" re-emits the real current recipe),
+       and the time-travel period. Updated deterministically from the actions that actually SUCCEEDED. */
+    const _wctx={countries:[],topic:'',metrics:[],scoreComponents:null,period:''};
+    function updateWctx(acts,fails){ try{ (acts||[]).forEach(a=>{ if(!a||(fails||[]).indexOf(a)>=0) return;
+      if((a.type==='compareStats'||a.type==='compareCountries'||a.type==='statsCompare')&&a.countries) _wctx.countries=[].concat(a.countries).map(String).slice(0,10);
+      if((a.type==='analyze'||a.type==='research')&&(a.question||a.query)) _wctx.topic=String(a.question||a.query).slice(0,140);
+      if((a.type==='mapReport'||a.type==='newsMap')&&a.topic) _wctx.topic=String(a.topic).slice(0,140);
+      if((a.type==='impact'||a.type==='impactAnalysis')) _wctx.topic=('impact: '+String(a.place||a.event||'')).slice(0,140);
+      if((a.type==='rank'||a.type==='mapMetric'||a.type==='explore'||a.type==='findRelated')&&a.metric){ const m2=String(a.metric); if(_wctx.metrics.indexOf(m2)<0) _wctx.metrics.unshift(m2); _wctx.metrics=_wctx.metrics.slice(0,4); }
+      if((a.type==='scoreMap'||a.type==='customLayer'||a.type==='evaluate')&&Array.isArray(a.components)){ try{ _wctx.scoreComponents=JSON.stringify({name:a.name||'',components:a.components}).slice(0,600); }catch(_){} }
+      if(a.type==='reset'||a.type==='clearAll'){ _wctx.scoreComponents=null; }
+      if(a.type==='timeTravel'){ _wctx.period=String(a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40); }
+    }); }catch(_){} }
+    function wctxBlock(){ try{ const ln=[];
+      if(_wctx.countries.length) ln.push('Focus countries (last comparison): '+_wctx.countries.join(', '));
+      if(_wctx.topic) ln.push('Topic under investigation: '+_wctx.topic);
+      if(_wctx.metrics.length) ln.push('Metrics recently in play: '+_wctx.metrics.join(', '));
+      if(_wctx.scoreComponents) ln.push('ACTIVE custom score recipe (adjust THIS when the user says weight/drop/add): '+_wctx.scoreComponents);
+      if(_wctx.period) ln.push('Time-travel period: '+_wctx.period);
+      return ln.length?ln.join('\n'):''; }catch(_){ return ''; } }
     /* (#R42c) ROOT CAUSE of "地図へのマッピングが行われない": highlights targeted the shared `countries` source,
        which only exists AFTER the Countries(info) layer is enabled (addCountryLayers) — so ensureHlLayers bailed
        and nothing painted. Use our OWN geojson source built from window.countryGeo (always available once
@@ -20730,6 +20752,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
     function buildPrompt(q){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
+      const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about — resolve "the same/them/それ/同じ条件" against this)\n'+wc+'\n\n';
       if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest; resolve pronouns/follow-ups against this)\n'+_hist.slice(-8).join('\n')+'\n\n';
       p+='[NEW REQUEST]\n'+q+'\n\nInterpret the request IN CONTEXT of the state and conversation above. Resolve references like "it / that / there / here / this country / the same / again / now / turn it off / make it bigger / the Nth one / zoom in more" using them. If the request is a tweak of the previous one, keep the parts that still apply.';
       return p; }
@@ -21715,6 +21738,64 @@ window.addEventListener('DOMContentLoaded', () => {
           html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.','出典: OpenStreetMap（施設・都市人口タグ — 地域によって登録密度が異なります）、USGS（地震）、IntMap国別統計。ピンはクリック可能、円は分析半径です。','Quellen: OpenStreetMap, USGS, IntMap-Statistiken.','Источники: OpenStreetMap, USGS, статистика IntMap.','Fuentes: OpenStreetMap, USGS, estadísticas de IntMap.')+'</div>';
           if(!okP&&_pois.length) html+=warn('⚠ '+L('Could not draw the markers (map still loading)','マーカーを描画できませんでした（地図読込中）','Marker nicht gezeichnet','Маркеры не отрисованы','Marcadores no dibujados'));
           return R(true, html); }
+        case 'events': case 'newsEvents': case 'groupNews': { /* (#R76) vision §6 / stage 4 — the loaded news
+          grouped into EVENTS (one real-world occurrence, many articles) instead of a flat article list.
+          Deterministic clustering: same place (≤150 km) + same time window (≤48 h) + headline-token overlap
+          (CJK bigrams so Japanese titles cluster too); tight geo+time pairs need less text similarity. */
+          await ensureData();
+          if(typeof globalData==='undefined'||!globalData||!globalData.length){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
+          let items=(typeof globalData!=='undefined'&&globalData)?globalData.filter(it=>it&&it.analysis&&Array.isArray(it.analysis.loc)&&it.title):[];
+          const hrs=Math.max(6,Math.min(168,(+a.hours||96)));
+          items=items.filter(it=>{ const h=_agoH(it.pubDate); return h==null||h<=hrs; });
+          /* optional place focus */
+          let ctx=null; const plc=String(a.place||'').trim();
+          if(plc&&!WORLD_RE.test(plc)){ if(DEIXIS_RE.test(plc)) ctx=await geocode(plc); else { try{ ctx=await placeExtent(plc); }catch(_){} if(!ctx){ try{ ctx=await geocode(plc); }catch(_){} } }
+            if(!ctx) return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(plc)));
+            if(ctx.box&&_bboxOK(ctx.box)){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n2=ctx.box[1][1]; items=items.filter(it=>{ const l=it.analysis.loc; return l[0]>=w&&l[0]<=e&&l[1]>=s2&&l[1]<=n2; }); }
+            else if(isFinite(+ctx.lng)) items=items.filter(it=>_havKm({lng:it.analysis.loc[0],lat:it.analysis.loc[1]},ctx)<=800); }
+          if(items.length<1) return R(true, note('◌ '+L('No geolocated articles in the loaded news for this window/area','この期間・範囲に地点解析済みの記事がありません','Keine georeferenzierten Artikel','Нет геолоцированных статей','Sin artículos geolocalizados')+' ('+hrs+' h'+(ctx&&ctx.name?(' · '+esc(ctx.name)):'')+')'));
+          const tok=t=>{ let w2; const s=String(t||''); try{ w2=s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x=>x.length>=3); }catch(_){ w2=s.toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>=3); }
+            (s.match(/[一-鿿぀-ヿ가-힯]{2,}/g)||[]).forEach(seq=>{ for(let i2=0;i2<seq.length-1;i2++) w2.push(seq.slice(i2,i2+2)); });
+            return new Set(w2); };
+          const arr=items.slice(0,600).map(it=>({it,loc:it.analysis.loc,h:(_agoH(it.pubDate)!=null?_agoH(it.pubDate):hrs),tk:tok(it.title)}));
+          const sim=(A,B)=>{ let inter=0; A.forEach(x=>{ if(B.has(x)) inter++; }); const u=A.size+B.size-inter; return u?inter/u:0; };
+          const par=arr.map((_,i2)=>i2); const find=i2=>par[i2]===i2?i2:(par[i2]=find(par[i2]));
+          for(let i2=0;i2<arr.length;i2++) for(let j2=i2+1;j2<arr.length;j2++){
+            const d=_havKm({lng:arr[i2].loc[0],lat:arr[i2].loc[1]},{lng:arr[j2].loc[0],lat:arr[j2].loc[1]}); if(d>150) continue;
+            const dh=Math.abs(arr[i2].h-arr[j2].h); if(dh>48) continue;
+            const s3=sim(arr[i2].tk,arr[j2].tk);
+            if(s3>=0.15||(d<30&&dh<=24&&s3>=0.06)){ par[find(i2)]=find(j2); } }
+          const cl={}; arr.forEach((x,i2)=>{ const r2=find(i2); (cl[r2]=cl[r2]||[]).push(x); });
+          let evs=Object.keys(cl).map(k=>{ const g=cl[k].slice().sort((x,y)=>x.h-y.h);   /* newest (fewest hours ago) first */
+            const outlets=[]; g.forEach(x=>{ const p2=x.it.publisher||'?'; if(outlets.indexOf(p2)<0) outlets.push(p2); });
+            const cx=g.reduce((s3,x)=>s3+x.loc[0],0)/g.length, cy=g.reduce((s3,x)=>s3+x.loc[1],0)/g.length;
+            return {g,outlets,cx,cy,newest:g[0].h,oldest:g[g.length-1].h,pname:(g[0].it.analysis&&g[0].it.analysis.name)||''}; });
+          evs.sort((x,y)=>(y.g.length-x.g.length)||(x.newest-y.newest));
+          const N=Math.max(3,Math.min(12,(+a.n||8)));
+          const top=evs.slice(0,N);
+          /* one pin per EVENT (not per article) */
+          clearPois();
+          _pois=top.map((e,i2)=>({lng:e.cx,lat:e.cy,name:(i2+1)+'. '+String(e.g[0].it.title).slice(0,70),
+            kind:e.g.length+' '+L('articles','記事','Artikel','статей','artículos')+' · '+e.outlets.length+' '+L('outlets','媒体','Quellen','источников','medios'),
+            sum:e.g.slice(0,3).map(x=>String(x.it.title).slice(0,80)).join(' ⏐ ').slice(0,320),
+            url:(e.g[0].it.link&&/^https?:/i.test(e.g[0].it.link))?e.g[0].it.link:'',src:e.outlets.slice(0,3).join(', ')}));
+          let okE=_pois.length?paintPois():true; for(let i2=0;i2<6&&!okE;i2++){ await new Promise(r2=>setTimeout(r2,700)); okE=paintPois(); }
+          try{ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p2=>{ a2=Math.min(a2,p2.lng);b2=Math.min(b2,p2.lat);c2=Math.max(c2,p2.lng);d2=Math.max(d2,p2.lat); });
+            if(_pois.length&&c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:8,duration:1100}); }catch(_){}
+          const fmtH=h=>h<1?L('<1h ago','1時間以内','<1 h','<1 ч','<1 h'):Math.round(h)+L('h ago','時間前','h','ч назад','h');
+          let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(currentLang==='jp'?'）':')')+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
+          html+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+items.length+' '+L('articles → ','記事 → ','Artikel → ','статей → ','artículos → ')+evs.length+' '+L('events; the ','イベント。上位','Ereignisse; Top ','событий; топ-','eventos; los ')+top.length+L(' biggest shown — click an item or pin to fly','件を表示 — 項目/ピンをクリックで移動',' angezeigt',' показаны',' mayores mostrados')+'</div>';
+          top.forEach((e,i2)=>{ const first=e.g[e.g.length-1], latest=e.g[0];
+            html+='<div class="atl-rp-item" data-i="'+i2+'" style="padding:5px 0;border-top:1px solid rgba(128,128,128,0.14);cursor:pointer;">'
+              +'<div style="font-size:12px;font-weight:600;line-height:1.45;">'+(i2+1)+'. '+esc(String(latest.it.title).slice(0,110))+'</div>'
+              +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+(e.pname?(esc(e.pname)+' · '):'')+e.g.length+' '+L('articles from ','記事・','Artikel von ','статей от ','artículos de ')+e.outlets.slice(0,4).map(esc).join(', ')+(e.outlets.length>4?' …':'')+' · '+fmtH(e.oldest)+' → '+fmtH(e.newest)+'</div>'
+              +((e.g.length>1&&first.it.title!==latest.it.title)?('<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+L('First report','最初の報道','Erste Meldung','Первое сообщение','Primer reporte')+': '+esc(String(first.it.title).slice(0,90))+'</div>'):'')
+              +(latest.it.link&&/^https?:/i.test(latest.it.link)?(' <a href="'+esc(latest.it.link)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>'):'')
+              +'</div>'; });
+          html+=linkCards(top.filter(e=>e.g[0].it.link).slice(0,4).map(e=>({url:e.g[0].it.link,title:e.g[0].it.title,src:e.outlets[0]})));
+          html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Grouping is mechanical (place ≤150 km × time ≤48 h × headline similarity) on the loaded IntMap feed — one group = reports that likely cover the same occurrence; "first report → latest" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. "analyze event 2".','グループ化は読み込み済みニュースに対する機械的クラスタリング（位置≤150km×時間≤48h×見出し類似）です。1グループ=同一の出来事を扱うとみられる報道で、「最初の報道→最新」で経過が分かります。報道間の相違や深掘りは「2番の出来事を分析して」のように聞いてください。','Mechanische Gruppierung (Ort×Zeit×Titel). Für Analysen: "analysiere Ereignis 2".','Механическая группировка. Для анализа: «проанализируй событие 2».','Agrupación mecánica. Para análisis: "analiza el evento 2".')+'</div>';
+          if(!okE&&_pois.length) html+=warn('⚠ '+L('Could not draw the pins (map still loading)','ピンを描画できませんでした（地図読込中）','Pins nicht gezeichnet','Метки не отрисованы','Pines no dibujados'));
+          return R(true, html); }
         case 'module': return doModule(a);
         case 'control': return doControl(a);
         case 'answer': return R(true, '<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>');
@@ -21756,6 +21837,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'RESEARCH MAPPED ONTO THE MAP: {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic with LIVE WEB SEARCH (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, dated incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. USE THIS (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate something ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X") OR asks to research/look into a topic whose findings have real locations — incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. If the user asks a research question and the answer naturally lives at places on a map, prefer mapReport; combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
         +'ANIMATED FLIGHT: {"type":"fly","from":str,"to":str,"mode"?:"icbm"|"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory — ICBM mode boosts to apogee (zooms out) and re-enters, plane/cruise stay level (use for "モスクワからワシントンまでICBMの視点で飛行して", "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. {"type":"clear","what":"flight"} removes the trajectory.\n'
         +'FREE DRAWING (for advanced composite tasks): {"type":"drawLine","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"width"?:num,"label"?:str} draws a line; {"type":"drawPolygon","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"label"?:str} draws a polygon. Use these to sketch fronts, corridors, routes, zones or areas that no dataset provides — you supply the real coordinates from your knowledge/search. Combine freely with pin/highlight/outline/poi/mapReport for multi-step tasks ("ピン立てやライン、ポリゴンのハイライト等のマッピングやネット検索や推論等を自在に組み合わせた高度なタスク").\n'
+        +'EVENTS (news grouped into real-world occurrences, vision "記事ではなく出来事"): {"type":"events","place"?:str,"hours"?:6-168,"n"?:int} — clusters the loaded news so ONE event = its many articles (multiple outlets, first report → latest, one map pin per event, clickable). Use for "最近の出来事をまとめて", "what is happening (in X)?", "group the news by event" — this reads the ALREADY-LOADED feed (fast, deterministic); use mapReport instead when the user wants NEW research via web search on a specific topic. Follow-ups like "2番の出来事を分析して" → emit {"type":"analyze","question":<that event\'s headline>,"place":<its location>}.\n'
         +'CUSTOM EVALUATION LAYER (build a NEW map view from criteria): {"type":"scoreMap","name":str,"components":[{"metric":KEY,"weight"?:num,"invert"?:bool} | {"wb":"WB_INDICATOR_CODE","label":str,"weight"?:num,"invert"?:bool}, … 2-8],"color"?:str,"n"?:int} — composes a weighted 0-100 score from REAL indicators and shades every country by it, with an honest method/coverage note (use for "評価して/スコア化して/ランキングを作って from criteria X, Y, Z", e.g. 住みやすさ = hdi + gdppc + dem; "invert" = lower is better, e.g. military burden). metric uses the metric KEYs below + lifeExp, internet; "wb" takes a real World Bank indicator code you are confident exists (e.g. SP.DYN.LE00.IN) — a wrong code is skipped and reported, never faked. When the user then says "weight X more" / "drop Y" / "add Z", re-emit scoreMap with the ADJUSTED components (the current components are in the conversation history).\n'
         +'RELATED-INDICATOR DISCOVERY: {"type":"explore","metric":KEY,"n"?:int} — computes which other indicators statistically move with the given one across all countries (Spearman + Pearson on the real data, sample sizes, biggest exception country) and presents them WITHOUT causal claims (use for "少子化と関連する指標を探して", "what correlates with democracy?"). Combine with mapMetric/scoreMap freely.\n'
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
@@ -22031,6 +22113,14 @@ window.addEventListener('DOMContentLoaded', () => {
          combining an office word with a who-word routes deterministically to analyze + live web. */
       if(s.length<=80&&/(首相|大統領|総理|国家元首|首脳|党首|総裁|大臣|知事|prime minister|president|chancellor|premier|head of state|head of government|kanzler|президент|премьер|primer ministro|presidente)/i.test(s)
         &&/(誰|だれ|who|wer|кто|quién|quien|現在|今|current|名前|なまえ|name)/i.test(s)) return A({type:'analyze',question:s,use:['web']});
+      /* (#R76) vision §6 anchors — event-grouped news, deterministic. */
+      fm=s.match(/^(?:最近|直近|今日|世界)の?(?:出来事|イベント)を?(?:まとめて|整理して|一覧にして|教えて|表示して)[。]?$/)
+        ||low.match(/^(?:summarize|group|cluster|show) (?:the )?(?:recent |latest |today'?s )?(?:news )?events?$/)
+        ||low.match(/^what events are happening\??$/);
+      if(fm) return A({type:'events'});
+      fm=s.match(/^(.{1,30}?)(?:周辺|付近)?の(?:出来事|イベント)を?(?:まとめて|整理して|教えて|表示して)[。]?$/)
+        ||low.match(/^(?:summarize|group|show) (?:the )?events? (?:in|around|near) (.{1,40}?)$/);
+      if(fm&&(fm[1]||'').trim()) return A({type:'events',place:(fm[1]||'').trim()});
       /* (#R75) vision §10/§11 anchors — single-intent phrasings run deterministically, no AI round-trip. */
       fm=s.match(/^(.{1,25}?)(?:と|に)(?:相関|関連)する指標を?(?:探して|調べて|教えて)?[。？?]?$/)
         ||low.match(/^(?:what |which )?(?:indicators?|metrics?) correlate[sd]? with (.{1,30}?)\??$/)
@@ -22118,7 +22208,8 @@ window.addEventListener('DOMContentLoaded', () => {
         ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); }
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
-    function recordTurn(q, say, acts, fails){ try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
+    function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){}
+      try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
       _hist.push('User: '+q.slice(0,260)); _hist.push(a); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }
     function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
@@ -22141,8 +22232,9 @@ window.addEventListener('DOMContentLoaded', () => {
         ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
       }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { ai.innerHTML=_cancelledNote(); return; } }
       msgTools(ai,null); }
-    /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results */
-    return { open, toggle, run, brief:briefEntry, dispatch:a=>dispatch(a) };
+    /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
+       (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
+    return { open, toggle, run, brief:briefEntry, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } } };
   })();
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
