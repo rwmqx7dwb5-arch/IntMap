@@ -1822,6 +1822,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       <button class="ai-action-btn" id="ai-translate-btn" style="margin-top:0;">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
     </div>
     <div class="content-area" id="live-news-feed"></div>
+    <div class="content-area" id="countries-feed" style="display:none;"></div><!-- (#R78e) Countries gets its OWN feed so News & Countries can be separate workspace windows -->
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
     <div class="content-area" id="community-feed" style="display:none;"></div>
     <div class="news-reader-pane" id="news-reader-pane" style="display:none;"></div>
@@ -6513,6 +6514,10 @@ window.addEventListener('DOMContentLoaded', () => {
       return 'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+id+'/default/'+date+'/GoogleMapsCompatible_Level'+lvl+'/'+zz+'/'+p.y+'/'+p.x+'.'+(ext||'png'); };
     /* ---- 1) real example tiles, one per raster layer (same endpoints the layers render from) ---- */
     const _t45=tXY(4,8.5,50.2), _t46=tXY(6,8.2,46.4), _tNile=tXY(6,31.2,30.4);
+    /* (#R78e) REAL cartography for the vector-overlay layers ("まだクソみたいな手抜きレイヤー例画像が多すぎる"):
+       borders / place names / admin lines / country outlines are basemap features — show an actual CARTO tile of
+       a recognisable region instead of a hand-drawn sketch. @2x for crispness; distinct regions so no two look alike. */
+    const CT=(style,z,lon,lat)=>{ const t=tXY(z,lon,lat); return 'https://a.basemaps.cartocdn.com/'+style+'/'+z+'/'+t.x+'/'+t.y+'@2x.png'; };
     const IMG={
       'dl-climate':'koppen_mercator_1991-2020_4k.png',   /* the Köppen world map IS this layer's identity */
       'dl-temp':G('MERRA2_2m_Air_Temperature_Monthly',6,'2024-06-01','png',3,25,22),          /* Sahara heat */
@@ -6547,7 +6552,13 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R73) real contour cartography (OpenTopoMap, Matterhorn area) replaces the hand-drawn ellipse sketch */
       'dl-contours':(()=>{ const t=tXY(11,7.66,45.98); return 'https://a.tile.opentopomap.org/11/'+t.x+'/'+t.y+'.png'; })(),
       /* (#R74) ECMWF SST preview = the real GHRSST product (equatorial-Pacific crop, distinct from dl-sst's Gulf Stream) */
-      'dl-ec-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-150,0)
+      'dl-ec-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-150,0),
+      /* (#R78e) real CARTO basemap cartography for the vector-overlay layers (each a distinct, recognisable region) */
+      'cb-names':CT('rastertiles/voyager',9,139.72,35.66),        /* Tokyo — dense bilingual place labels */
+      'cb-geolabels':CT('rastertiles/voyager',6,23.0,37.8),        /* Aegean — sea & island labels */
+      'cb-borders':CT('light_all',6,8.2,48.9),                     /* Alpine borders — DE/FR/CH/AT crisp */
+      'cb-admin1':CT('light_all',6,-96.0,39.5),                    /* US Great Plains — state lines */
+      'cb-countries':CT('rastertiles/voyager',5,105.0,14.0)        /* mainland SE Asia — distinct country shapes */
     };
     let _radar=null;
     function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); return fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; const t4=tXY(4,8,50); _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/4/'+t4.x+'/'+t4.y+'/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
@@ -7289,16 +7300,17 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R78c) window set per the re-report: NO ticker window (「画面外の最下部に固定と何度も言っている」— it is a
        fixed bottom strip above the workspace), NO separate map-controls window (「操作パネルを新設するな」— the
        controls stay inside the map, where they belong), NO emoji in the titles. */
+    /* (#R78e) The sidebar's four tabs become FOUR real windows (News & Countries now use separate feed divs, so
+       they finally separate — "NewsとCountriesを分離しろ"). The News window stacks the search bar + filter +
+       geocode row + feed + reader. Map & Layers as before. The sidebar chrome (title / language / login /
+       feedback / settings) is duplicated in the top bar, so it is removed from the windows — no duplication. */
     const DEFS=[
-      {id:'side',  sel:'#sidebar',         t:()=>T('Panel','パネル','Panel','Панель','Panel'), min:[300,300]},
-      {id:'map',   sel:'#map-container',   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
-      {id:'layers',sel:'#layer-sidebar-r', t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]},
-      /* (#R78d) more AVAILABLE windows ("利用可能ウィンドウが少なすぎる"): Information & Community are independent
-         content divs, so each is its own window. They default HIDDEN (clean start) but are listed in the Window
-         menu; opening one pulls the real div into it. News & Countries share one feed div, so they stay tabs
-         inside Panel. */
-      {id:'info',     sel:'#info-dashboard',  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
-      {id:'community', sel:'#community-feed',  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }}
+      {id:'news',  sels:['#sidebar-search-bar','#news-filter-toggle','#ai-geocode-row','#live-news-feed','#news-reader-pane'], t:()=>T('News','ニュース','Nachrichten','Новости','Noticias'), min:[300,280], onWrap:()=>{ try{ if(typeof currentMode!=='undefined'&&!currentMode&&typeof setMode==='function') setMode('news'); }catch(_){} }},
+      {id:'countries', sels:['#countries-feed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280], defHidden:true, onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} }},
+      {id:'info',     sels:['#info-dashboard'],  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
+      {id:'community', sels:['#community-feed'],  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }},
+      {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
+      {id:'layers',sels:['#layer-sidebar-r'], t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]}
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -7380,7 +7392,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .operation-room{display:block;background:radial-gradient(circle at 1px 1px, rgba(128,148,178,0.13) 1px, transparent 1.5px);background-size:22px 22px;}'
         +'.ws-win{position:fixed;z-index:900;display:flex;flex-direction:column;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 18px 50px rgba(0,0,0,0.38);overflow:hidden;min-width:120px;}'
         +'.ws-win.ws-ovis,.ws-win.ws-ovis .ws-body{overflow:visible;}'
-        +'.ws-tb{flex:0 0 34px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--input-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));cursor:grab;user-select:none;-webkit-user-select:none;}'
+        +'.ws-tb{flex:0 0 25px;display:flex;align-items:center;gap:9px;padding:0 10px;background:var(--input-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));cursor:grab;user-select:none;-webkit-user-select:none;}'
         +'.ws-tb:active{cursor:grabbing;}'
         +'.ws-title{font-size:11.5px;font-weight:600;color:var(--text-muted);letter-spacing:0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;}'
         +'.ws-dots{display:flex;gap:7px;flex:0 0 auto;}'
@@ -7398,7 +7410,9 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R78c) FILL the window, always: the app's own width/height rules are calc(100vw−…) formulas tied to
            body classes — inside a window they collapsed the map to 38px (measured; the "search bar flying away"
            and "map not centred" were the same bug). 100%!important pins every wrapped element to its window. */
-        +'body.ws-mode .sidebar{width:100% !important;min-width:0 !important;max-width:none !important;height:100% !important;border-right:none !important;transform:none !important;}'
+        /* (#R78e) the sidebar shell (title / language / login / feedback / settings + tab buttons) is a duplicate
+           of the top menu bar → hide it entirely; its content divs are pulled into their own windows */
+        +'body.ws-mode #sidebar{display:none !important;}'
         +'body.ws-mode #map-container{position:relative !important;width:100% !important;max-width:none !important;height:100% !important;margin:0 !important;flex:1 1 auto !important;}'
         /* (#R78d) the map top-right controls do NOT belong in the map — they move to the top menu bar (View/Tools) */
         +'body.ws-mode .map-controls-top{display:none !important;}'
@@ -7412,21 +7426,22 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R78d) keep the layers panel ALWAYS visible inside its window — the classic "map click closes it"
            behaviour (open._mapCloser) pushed it off-screen with transform/visibility, making the window go black */
         +'body.ws-mode #layer-sidebar-r{position:static !important;width:100% !important;min-width:0 !important;height:100% !important;margin:0 !important;border:none !important;transform:none !important;visibility:visible !important;pointer-events:auto !important;opacity:1 !important;display:flex !important;flex-direction:column;}'
-        /* (#R78d) Information / Community are their own windows now → force their content visible regardless of the
-           sidebar tab state, and hide their (now redundant) tab buttons inside the Panel window */
-        +'body.ws-mode .ws-info #info-dashboard,body.ws-mode .ws-community #community-feed{display:flex !important;width:100% !important;height:100% !important;}'
-        +'body.ws-mode .ws-side #btn-info,body.ws-mode .ws-side #btn-community{display:none !important;}'
-        /* (#R78b) de-chrome the transplanted content ("そのまま移植したような汚いUI"): no duplicate headers,
-           no inner borders/radii — the window IS the chrome now */
+        /* (#R78e) each tab is its own window now → force its content div visible & filling, regardless of the
+           sidebar tab state that renderUI() would otherwise impose */
+        +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-news #sidebar-search-bar,body.ws-mode .ws-countries #countries-feed,body.ws-mode .ws-info #info-dashboard,body.ws-mode .ws-community #community-feed{display:flex !important;}'
+        +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed,body.ws-mode .ws-info #info-dashboard,body.ws-mode .ws-community #community-feed{flex:1 1 auto !important;width:100% !important;min-height:0 !important;overflow-y:auto;}'
+        +'body.ws-mode .ws-news .ws-body,body.ws-mode .ws-countries .ws-body,body.ws-mode .ws-info .ws-body,body.ws-mode .ws-community .ws-body{flex-direction:column;}'
+        +'body.ws-mode .ws-news #sidebar-search-bar,body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{flex:0 0 auto !important;width:100% !important;}'
+        /* (#R78b) de-chrome the transplanted content — the window IS the chrome now */
         +'body.ws-mode #layer-sidebar-r .lsr-head{display:none !important;}'
-        +'body.ws-mode .ws-side .sidebar{background:transparent !important;}'
         /* (#R78c) the ticker is NOT a window — it is pinned to the very bottom of the screen, full width,
            above the workspace ("画面外の最下部に固定と何度も言っている") */
         +'body.ws-mode #ticker-bar{position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;width:100% !important;z-index:5985 !important;}'
         /* (#R78c) TOP MENU BAR ("上部から、ソフトのように選択できるようにしろ") — a real application menu strip */
-        +'#ws-menu{position:fixed;left:0;top:0;right:0;height:36px;z-index:5990;display:flex;align-items:center;gap:2px;padding:0 10px;background:var(--card-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.26));-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
-        +'#ws-menu .ws-brand{font-size:12px;font-weight:700;color:var(--text-main);margin-right:14px;letter-spacing:0.02em;}'
-        +'#ws-menu .ws-brand span{color:var(--text-muted);font-weight:500;}'
+        +'#ws-menu{position:fixed;left:0;top:0;right:0;height:34px;z-index:5990;display:flex;align-items:center;gap:2px;padding:0 12px;background:var(--card-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.26));-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
+        /* (#R78e) "IntMap" bigger and NOT bold, per request */
+        +'#ws-menu .ws-brand{font-size:17px;font-weight:400;color:var(--text-main);margin-right:16px;letter-spacing:0.01em;}'
+        +'#ws-menu .ws-brand span{display:none;}'
         +'#ws-menu .ws-m{position:relative;}'
         +'#ws-menu .ws-m>button{border:none;background:transparent;color:var(--text-main);font-size:12px;padding:5px 11px;border-radius:7px;cursor:pointer;}'
         +'#ws-menu .ws-m>button:hover,#ws-menu .ws-m.open>button{background:var(--input-bg);}'
@@ -7443,27 +7458,36 @@ window.addEventListener('DOMContentLoaded', () => {
     const state=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(_){ return {}; } };
     const save=p=>{ try{ localStorage.setItem(KEY,JSON.stringify(Object.assign(state(),p))); }catch(_){} };
     function defRects(){ const W=innerWidth,H=innerHeight;
-      /* (#R78c) PROPER tiled default ("デフォルトの各ウィンドウの配置位置がおかしい"): windows sit below the
-         top menu bar, ABOVE the fixed bottom ticker, and ABUT each other edge-to-edge — so the shared-border
-         splitters work immediately: [Panel 340 | Map (rest) | Layers 288]. */
-      const MENU=36, tkOn=document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar');
-      const top=MENU+10, B=H-top-10-(tkOn?30:0);
-      const sideW=340, layW=Math.min(300,Math.round(W*0.22)); const layX=W-10-layW;
-      return { side:[10,top,sideW,B], map:[10+sideW,top,layX-(10+sideW),B], layers:[layX,top,layW,B],
-        info:[Math.round(W*0.28),top+40,Math.round(W*0.34),Math.round(B*0.7)],
-        community:[Math.round(W*0.34),top+90,Math.round(W*0.34),Math.round(B*0.7)] }; }
+      /* (#R78e) EDGE-TO-EDGE tiled default with NO gaps ("上部と各ウィンドウ間に隙間があるのが気になる" /
+         "ティッカーの上端までウィンドウを伸ばしておけ"): windows abut the menu bar (top), each other, the screen
+         sides, and the ticker's top edge. Shared-border splitters then work from the start. */
+      const MENU=34, tkOn=document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar');
+      const top=MENU, bottom=H-(tkOn?30:0), B=bottom-top;
+      const sideW=Math.min(360,Math.round(W*0.25)), layW=Math.min(300,Math.round(W*0.21)); const layX=W-layW;
+      const flo=(i)=>[Math.round(W*0.30)+i*26,top+24+i*30,Math.round(W*0.34),Math.round(B*0.66)];
+      return { news:[0,top,sideW,B], map:[sideW,top,layX-sideW,B], layers:[layX,top,layW,B],
+        countries:flo(0), info:flo(1), community:flo(2) }; }
     function clampRect(r,min){ const W=innerWidth,H=innerHeight;
-      let w=Math.max((min&&min[0])||220,Math.min(W-16,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-52,r[3]||300));
-      let x=Math.max(4,Math.min(W-w-4,r[0]||12)), y=Math.max(40,Math.min(H-70,r[1]||46));   /* y≥40: below the menu bar */
+      /* (#R78e) allow EDGE-TO-EDGE placement (x=0, y=menu bottom, full width, down to the ticker) — no forced gaps */
+      let w=Math.max((min&&min[0])||220,Math.min(W,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-34,r[3]||300));
+      let x=Math.max(0,Math.min(W-w,r[0]!=null?r[0]:0)), y=Math.max(34,Math.min(H-40,r[1]!=null?r[1]:34));   /* y≥34: below the menu bar */
       return [x,y,w,h]; }
-    function fitMap(){ try{ (window.__imap||map).resize(); }catch(_){} }
+    /* (#R78e) the map's geographic centre was landing off-window because frosted-sidebar mode sets
+       map.setPadding({left: sidebarWidth}) so the optical centre sits right of the overlay — stale in a
+       window. Zero the padding here so the map truly centres in its window, then resize. */
+    function fitMap(){ try{ const m=window.__imap||map; if(!m) return; try{ m.setPadding({top:0,right:0,bottom:0,left:0},{duration:0}); }catch(_){} m.resize(); }catch(_){} }
     function schedSave(){ if(!on) return; clearTimeout(saveT); saveT=setTimeout(saveRects,400); }
     function saveRects(){ if(!on) return; const rects={},vis={},minz={};
       for(const id in wraps){ const w=wraps[id]; if(!w||!w.isConnected) continue;
         rects[id]=[w.offsetLeft,w.offsetTop,w.offsetWidth,(w.dataset.min?(+w.dataset.h0||300):w.offsetHeight)];
         vis[id]=(w.style.display!=='none'); if(w.dataset.min) minz[id]=1; }
       save({rects,vis,minz}); }
-    function mkWin(def,el,rect){
+    function mkWin(def,rect){
+      /* (#R78e) a window can host MULTIPLE source elements stacked in its body (the News window = search bar +
+         filter + geocode row + feed + reader), each restored to its exact original slot on exit */
+      const sels=def.sels||[def.sel];
+      const els=sels.map(s=>document.querySelector(s)).filter(Boolean);
+      if(!els.length) return null;
       const w=document.createElement('div'); w.className='ws-win ws-'+def.id; if(def.ovis) w.classList.add('ws-ovis');
       const tb=document.createElement('div'); tb.className='ws-tb';
       tb.innerHTML='<span class="ws-dots">'
@@ -7472,9 +7496,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<button class="ws-dot ws-d-max" title="'+T('Maximize / restore','最大化 / 元に戻す','Maximieren / wiederherstellen','Развернуть / восстановить','Maximizar / restaurar')+'"></button></span>'
         +'<span class="ws-title">'+def.t()+'</span>';
       const body=document.createElement('div'); body.className='ws-body';
-      /* placeholder comment marks the EXACT original DOM slot — disable() restores order-independently */
-      const ph=document.createComment('ws-ph-'+def.id); el.parentNode.insertBefore(ph,el); holders[def.id]=ph;
-      body.appendChild(el); w.appendChild(tb); w.appendChild(body); document.body.appendChild(w);
+      const phs=[]; els.forEach(el=>{ const ph=document.createComment('ws-ph-'+def.id); el.parentNode.insertBefore(ph,el); phs.push([el,ph]); body.appendChild(el); });
+      holders[def.id]=phs;
+      w.appendChild(tb); w.appendChild(body); document.body.appendChild(w);
       const r=clampRect(rect,def.min);
       w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; w.style.width=r[2]+'px'; w.style.height=r[3]+'px';
       w.__wsMin=def.min;
@@ -7534,9 +7558,12 @@ window.addEventListener('DOMContentLoaded', () => {
         run:()=>{ const w=wraps[def.id]; if(!w) return; if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; } fitMap(); schedSave(); } }));
       winItems.push('sep',{label:T('Reset layout','配置をリセット','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño'),run:resetLayout});
       menu(T('Window','ウィンドウ','Fenster','Окно','Ventana'),winItems);
-      /* Settings */
-      menu(T('Settings','設定','Einstellungen','Настройки','Ajustes'),[
-        {label:T('Open settings…','設定を開く…','Einstellungen…','Настройки…','Ajustes…'),run:()=>clk('btn-open-settings')} ]);
+      /* (#R78e) direct action buttons (NOT dropdowns) — "「設定」を押すと設定を開くとボタンが出るというクソUI" */
+      const directBtn=(label,id)=>{ const dm=document.createElement('div'); dm.className='ws-m';
+        const b=document.createElement('button'); b.textContent=label; b.onclick=e=>{ e.stopPropagation(); opens.forEach(o=>o.classList.remove('open')); clk(id); }; dm.appendChild(b); dock.appendChild(dm); };
+      directBtn(T('Settings','設定','Einstellungen','Настройки','Ajustes'),'btn-open-settings');
+      directBtn(T('Feedback','フィードバック','Feedback','Обратная связь','Comentarios'),'btn-feedback-hdr');
+      { const acEl=document.getElementById('btn-account'); directBtn((acEl&&acEl.textContent.trim())||T('Account','アカウント','Konto','Аккаунт','Cuenta'),'btn-account'); }
       document.addEventListener('click',()=>{ opens.forEach(o=>{ try{ o.classList.remove('open'); }catch(_){} }); });
       const sp=document.createElement('div'); sp.className='ws-spacer'; dock.appendChild(sp);
       const exm=document.createElement('div'); exm.className='ws-m';
@@ -7550,14 +7577,10 @@ window.addEventListener('DOMContentLoaded', () => {
        moment they exist; windows whose element was removed from the DOM are retired. "全機能使えないと意味ない". */
     function scan(){ if(!on) return; let changed=false;
       DEFS.forEach(def=>{ const w=wraps[def.id];
-        if(!w){ const el=document.querySelector(def.sel); if(el&&el.isConnected){
-            const st=state(); const rect=(st.rects&&st.rects[def.id])||defRects()[def.id]||[80,80,420,320];
-            wraps[def.id]=mkWin(def,el,rect); changed=true; } }
+        if(!w){ const st=state(); const rect=(st.rects&&st.rects[def.id])||defRects()[def.id]||[80,80,420,320];
+            const nw=mkWin(def,rect); if(nw){ if(def.defHidden){ nw.style.display='none'; nw.dataset.userHid='1'; } wraps[def.id]=nw; changed=true; } }
         else { const el=w.querySelector('.ws-body')&&w.querySelector('.ws-body').firstElementChild;
-          if(!el||!el.isConnected){ try{ w.remove(); }catch(_){} delete wraps[def.id]; delete holders[def.id]; changed=true; }
-          else if(def.follow){ const hid=getComputedStyle(el).display==='none';   /* window mirrors the content's own on/off (ticker) */
-            if(hid&&w.style.display!=='none'&&!w.dataset.userHid){ w.style.display='none'; w.dataset.autoHid='1'; syncDock(); }
-            else if(!hid&&w.dataset.autoHid&&w.style.display==='none'){ delete w.dataset.autoHid; w.style.display='flex'; syncDock(); } } } });
+          if(!el||!el.isConnected){ try{ w.remove(); }catch(_){} delete wraps[def.id]; delete holders[def.id]; changed=true; } } });
       if(changed) rebuildDock(); }
     function enable(){ if(on) return true;
       if(isMob()){ try{ imToast(T('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio')); }catch(_){} return false; }
@@ -7568,8 +7591,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}
       on=true; document.body.classList.add('ws-mode');
       const st=state(), dr=defRects();
-      DEFS.forEach(def=>{ const el=document.querySelector(def.sel); if(!el) return;
-        const w=mkWin(def,el,(st.rects&&st.rects[def.id])||dr[def.id]);
+      DEFS.forEach(def=>{ const w=mkWin(def,(st.rects&&st.rects[def.id])||dr[def.id]); if(!w) return;
         if(st.minz&&st.minz[def.id]) w.querySelector('.ws-d-min').click();
         /* saved visibility wins; otherwise defHidden windows (Information/Community) start closed but AVAILABLE */
         const shown=(st.vis&&st.vis[def.id]!==undefined)?st.vis[def.id]:!def.defHidden;
@@ -7586,8 +7608,7 @@ window.addEventListener('DOMContentLoaded', () => {
       clearInterval(scanT); scanT=null; hideG();
       document.removeEventListener('pointerup',schedSave,true); clearTimeout(saveT);
       for(const id in wraps){ const w=wraps[id]; if(!w) continue;
-        const body=w.querySelector('.ws-body'); const el=body&&body.firstElementChild; const ph=holders[id];
-        if(el&&ph&&ph.parentNode){ ph.parentNode.insertBefore(el,ph); ph.remove(); }
+        const phs=holders[id]; if(Array.isArray(phs)) phs.forEach(pr=>{ const el=pr[0],ph=pr[1]; if(el&&ph&&ph.parentNode){ ph.parentNode.insertBefore(el,ph); ph.remove(); } });
         w.remove(); }
       wraps={}; holders={};
       if(dock){ dock.remove(); dock=null; }
@@ -8209,6 +8230,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window._newsHasForeignLang=_newsHasForeignLang;
   function renderUI(){
     const feed=document.getElementById('live-news-feed'),
+          cfeed=document.getElementById('countries-feed'),
           dash=document.getElementById('info-dashboard'),
           comm=document.getElementById('community-feed'),
           sb=document.querySelector('.search-bar'),
@@ -8216,7 +8238,7 @@ window.addEventListener('DOMContentLoaded', () => {
     clearMarkers();
     try{ pushCommunityFeatures(); }catch(_){}   /* show community pins only on the Community tab */
     /* Hide all panels first (pin-mode toggle now lives inside #ai-geocode-row, #28) */
-    feed.style.display='none'; dash.style.display='none'; comm.style.display='none'; filterToggle.style.display='none';
+    feed.style.display='none'; if(cfeed) cfeed.style.display='none'; dash.style.display='none'; comm.style.display='none'; filterToggle.style.display='none';
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
     /* Stats compare panel only belongs on the Stats tab (#26) */
     if(currentMode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
@@ -8236,7 +8258,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ window.IntMapWidgets2&&window.IntMapWidgets2.sync(); }catch(_){}
     if(currentMode==='info'){ dash.style.display='flex'; sb.style.display='flex'; renderDashboard(); updateOcclusion(); return; }
     if(currentMode==='community'){ comm.style.display='flex'; sb.style.display='none'; loadCommunity(); updateOcclusion(); return; }
-    if(currentMode==='stats'){ feed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
+    if(currentMode==='stats'){ if(cfeed) cfeed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
     if(currentMode==='news'||currentMode==='saved'){
       feed.style.display='flex'; sb.style.display='flex';
       filterToggle.style.display='block';
@@ -8650,15 +8672,16 @@ window.addEventListener('DOMContentLoaded', () => {
     if(compareSet.has(code)) compareSet.delete(code);
     else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
-    document.querySelectorAll('#live-news-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
+    document.querySelectorAll('#countries-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
     renderCompareFixed();
   };
-  window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#live-news-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); };
+  window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#countries-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); };
   window._showCompare=function(){ if(compareSet.size<2) return; try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} };
   window._hideCompare=function(){ renderStats(searchVal()); };
   window._backToStats=function(){ renderStats(searchVal()); };
+  window._wsRenderCountries=function(){ try{ if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ renderStats(searchVal()); }catch(_){} }); } renderStats(searchVal()); }catch(_){} };
   function renderStats(q){
-    const feed=document.getElementById('live-news-feed'); clearMarkers();
+    const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); clearMarkers();
     /* (#R69) the 5-country comparison view owns the feed while it is open — a deferred renderStats (e.g. the
        loadCountryData().then below firing after the user opened the comparison) must NOT clobber it; its own
        "Back to statistics" button removes the view before calling renderStats. */
@@ -14066,7 +14089,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if(map && map.setPadding && !isMobile()){
         const sb=document.getElementById('sidebar');
         const collapsed=sb && sb.classList.contains('collapsed');
-        const pad=(frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0;
+        /* (#R78e) workspace mode → the sidebar is its own window, never an overlay, so no optical offset */
+        const pad=(document.body.classList.contains('ws-mode')) ? 0 : ((frosted && !collapsed) ? (sb ? sb.offsetWidth : 440) : 0);
         /* Match the sidebar's CSS transition (margin-left 0.4s cubic-bezier(0.25,1,0.5,1) ≈ easeOutCubic)
            so the optical center GLIDES in perfect lock-step with the slide — no lag, no snap (#R7). */
         map.setPadding({top:0,right:0,bottom:0,left:pad}, {duration:animate?400:0, easing:x=>1-Math.pow(1-x,3)});
@@ -21148,7 +21172,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(typeof newsDate!=='undefined'&&newsDate) lines.push('TIME TRAVEL is active — news/imagery around '+ymdISO(newsDate)+' (not today). "now/current" requests may need timeTravel reset.'); }catch(_){}
         try{ const LD=window._imLayerDates; if(LD){ const dl=[]; ['temp','precip','sst','snow','aod'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked&&LD[k]) dl.push(k+'='+LD[k]); }); if(dl.length) lines.push('Dated raster layers showing: '+dl.join(', ')+' (changeable via control "date: <layer>").'); } }catch(_){}
         try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) lines.push('Search box contains: "'+String(si.value).trim().slice(0,60)+'".'); }catch(_){}
-        try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (Panel / Map / Layers / Map controls); hidden windows reopen from the bottom dock; turn off via control "setting-wsmode"=off or IntMapWorkspace.close.'); }catch(_){}
+        try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via control "setting-wsmode"=off or IntMapWorkspace.close.'); }catch(_){}
         let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}
         lines.push('UI language='+currentLang+', theme='+((typeof userTheme!=='undefined')?userTheme:'auto')+(tu?(', temp unit=°'+String(tu).toUpperCase()):'')+'.');
         return lines.join('\n'); }catch(_){ return ''; } }
