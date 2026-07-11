@@ -3766,3 +3766,12 @@ Big batch; every item below is a direct user report.
 - **「ウィンドウ名の欄に絵文字を付けるな」**: タイトルバー・メニューとも絵文字全廃（Panel/Map/Layers のプレーンテキスト）。
 - **「layersウィンドウが機能していない」**: 上記38px崩壊とレイアウト崩れの複合症状 — 修正後に実測: NATOタイルクリック→実チェックボックストグル＋✓同期、マップクリック後も129タイル表示のまま生存。
 - 終了で通常レイアウト完全復元（子順・ティッカーposition:relative復帰）・コンソールエラー0。
+
+### R78d — ワークスペース激怒対応（コントロールを上部メニューへ・検索/黒画面の根治・利用可能ウィンドウ増）
+すべて再々報告への直接対応。1440×860で全項目実測。
+- **「マップ右上のボタン類がマップウィンドウに再びある。勝手に戻すな」**: ws中は `.map-controls-top` を display:none（マップから撤去）。代わりに**上部メニューバーに View / Tools メニューを新設** — View=地図/衛星/地球儀/平面/3D地形（実active状態を✓表示）＋北を上に、Tools=距離計測/描画/半径/スクショ/共有/Atlas/グリッド。各項目は実ボタン(btn-view-map等)をidでclickするので挙動は完全一致（実測: Satellite選択→btn-view-sat active化）。「ソフトのように上部から選択」を実現。
+- **「検索バーが明後日の方向に飛んでいく／今もつぶれている」の根治**: 原因は `#map-search` の応答的CSS群（absolute中央寄せ＋`body.ms-narrow`のposition:fixed＋viewport基準の--ms-right＋ms-hide）と、それを駆動する**ms-narrow監視ループ**（ビューポート基準で計算）。ws中は (a) 監視ループを早期return（ms-narrow/ms-hide除去）、(b) `#map-search` を map-container内の左上に固定配置(absolute/left12/top12/width min(330,100%-24))で上書き。実測: マップウィンドウ矩形内・幅348px・つぶれず。
+- **「レイヤーウィンドウがいきなり真っ暗になる」の根因**: `IntMapLayerSidebar` は**マップクリックで自動close**する(open._mapCloser、R72)。closeは transform:translateX(102%)+visibility:hidden で右外へ押し出す→ウィンドウ内では中身が消えてダークな窓地=真っ暗。ws中は **close()を早期return**（自動で閉じない）＋enableで transform/visibility/pointerEvents をクリアして open。実測: マップクリック後も visibility:visible/transform:none/129タイル。
+- **「利用可能ウィンドウが少なすぎる」**: News と Countries は同一 `#live-news-feed` を共用のため分離不可だが、**Information(`#info-dashboard`) と Community(`#community-feed`) は独立divなので各々ウィンドウ化**。既定は非表示だが **Windowメニューに列挙（✓付き表示/非表示）** で「利用可能」＝いつでも開ける。開くと実divを引き込み onWrap で renderDashboard/loadCommunity を実行し中身描画（実測: Information窓にPlaces/Events/Military…、Community窓にfeed 2件）。表示状態は保存(vis map)。計5ウィンドウ Panel/Map/Layers/Information/Community。
+- **絵文字全廃**（前回残っていたタイトル用アイコンを削除。Panel/Map/Layers/Information/Community のプレーンテキスト）。
+- 既存機構は無傷: ティッカー最下部固定(bottomGap 0・全幅・非ウィンドウ)、共有境界スプリッター(側+70/地図右辺不動/地図左辺追従=ピクセル完全)、終了で完全復元(operation-room子順・コントロール帰還・info/community帰還・ticker relative)、通常モードでinfo/community非表示、コンソールエラー0。
