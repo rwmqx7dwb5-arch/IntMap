@@ -3775,3 +3775,16 @@ Big batch; every item below is a direct user report.
 - **「利用可能ウィンドウが少なすぎる」**: News と Countries は同一 `#live-news-feed` を共用のため分離不可だが、**Information(`#info-dashboard`) と Community(`#community-feed`) は独立divなので各々ウィンドウ化**。既定は非表示だが **Windowメニューに列挙（✓付き表示/非表示）** で「利用可能」＝いつでも開ける。開くと実divを引き込み onWrap で renderDashboard/loadCommunity を実行し中身描画（実測: Information窓にPlaces/Events/Military…、Community窓にfeed 2件）。表示状態は保存(vis map)。計5ウィンドウ Panel/Map/Layers/Information/Community。
 - **絵文字全廃**（前回残っていたタイトル用アイコンを削除。Panel/Map/Layers/Information/Community のプレーンテキスト）。
 - 既存機構は無傷: ティッカー最下部固定(bottomGap 0・全幅・非ウィンドウ)、共有境界スプリッター(側+70/地図右辺不動/地図左辺追従=ピクセル完全)、終了で完全復元(operation-room子順・コントロール帰還・info/community帰還・ticker relative)、通常モードでinfo/community非表示、コンソールエラー0。
+
+### R78e — ワークスペース再々々報告の全項目根治（重複ヘッダー・地図中心・隙間・タイトルバー・設定UI・News/Countries分離・ブランド・レイヤー例画像）
+1440/1280×検証、全項目実測。
+- **「IntMap/ログイン/言語/フィードバック/設定がパネルに残り上部と重複」**: ws中は #sidebar（ヘッダー＝タイトル/言語/ログイン/フィードバック/設定＋タブボタン）を display:none。ログイン/フィードバック/設定は**上部メニューの直接ボタン**（実 #btn-account/#btn-feedback-hdr/#btn-open-settings をクリック）に集約。重複解消。
+- **「地図ウィンドウの中央に地図の中央が来ない」= 実測根治**: フロステッド・サイドバーモードが `map.setPadding({left: サイドバー幅})` を設定し光学中心を右へずらしていた（ウィンドウ内では無意味）。fitMap で padding を毎回ゼロ化＋ws中はpadding設定自体を抑止。実測: project(getCenter()) がコンテナ中心の±3px内。
+- **「デフォルトでティッカー上端までウィンドウを伸ばせ」「上部と各ウィンドウ間に隙間」**: defRects を**エッジ密着タイル**に再設計（メニュー直下 top=34、画面端 x=0..W、ティッカー上端まで、隣接ゼロ隙間）。clampRect も x≥0/y≥34/下端ティッカーまで許容に緩和。実測: newsBottom==tickerTop、abut全true、layerRight==vw。
+- **「タイトルバーの帯が太い」**: .ws-tb を 34→25px にスリム化（実測 26px）。
+- **「設定を押すと『設定を開く』ボタンが出るクソUI」**: Settings/Feedback/Account はドロップダウンではなく**直接ボタン**（クリックで即座に設定モーダル等が開く。実測 settingsDirect=true・モーダル即開）。
+- **「IntMapの文字を太字にするな・大きくしろ」**: ブランドを font-weight:400・17px に（実測）。「— Workspace」副題は非表示。
+- **「NewsとCountriesを分離しろ」= 構造分離**: 両者が共用していた #live-news-feed を分割 — Countries用に **#countries-feed** を新設し、renderStats/renderUI/compare選択を新コンテナへ振替。ws中は News窓（検索バー＋フィルタ＋ジオコード行＋フィード＋リーダー）と Countries窓（#countries-feed）が**別ウィンドウ**。通常モードでもタブ切替で別コンテナに表示（実測: News=30記事・Countries=252国、両モードで独立）。
+- **ウィンドウ構成刷新**: 旧「Panel」を廃し **News/Countries/Information/Community/Map/Layers** の6ウィンドウ（mkWinを複数要素スタック対応に。News窓は5要素を積層、終了時は各要素をプレースホルダーで元位置へ復元）。既定表示は News|Map|Layers のタイル、Countries/Info/Community は Windowメニューから開ける（利用可能）。
+- **「手抜きレイヤー例画像がまだ多い」**: 地図系ベクタ層（境界/地名/水域ラベル/行政界/国）の手描きスケッチを**実CARTOタイル**へ置換（cb-names=東京の二言語ラベル、cb-geolabels=エーゲ海の海名、cb-borders=アルプス国境、cb-admin1=米大平原の州界、cb-countries=東南アジアの国形。@2xで高精細・各々別地域で画一感なし）。実測: 5件すべてCARTO実タイル適用・読込OK。
+- 回帰: 共有境界スプリッター/スナップ/ティッカー最下部固定/終了完全復元/通常モードのタブ動作、すべて無傷・コンソールエラー0。
