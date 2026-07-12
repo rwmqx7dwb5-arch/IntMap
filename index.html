@@ -7305,12 +7305,21 @@ window.addEventListener('DOMContentLoaded', () => {
        geocode row + feed + reader. Map & Layers as before. The sidebar chrome (title / language / login /
        feedback / settings) is duplicated in the top bar, so it is removed from the windows — no duplication. */
     const DEFS=[
-      {id:'news',  sels:['#sidebar-search-bar','#news-filter-toggle','#ai-geocode-row','#live-news-feed','#news-reader-pane'], t:()=>T('News','ニュース','Nachrichten','Новости','Noticias'), min:[300,280], onWrap:()=>{ try{ if(typeof currentMode!=='undefined'&&!currentMode&&typeof setMode==='function') setMode('news'); }catch(_){} }},
+      {id:'news',  sels:['#sidebar-search-bar','#news-filter-toggle','#ai-geocode-row','#live-news-feed','#news-reader-pane'], t:()=>T('News','ニュース','Nachrichten','Новости','Noticias'), min:[300,280],
+        onWrap:()=>{ try{ if(typeof setMode==='function') setMode('news'); }catch(_){} },
+        /* (#R78f) closing the News window must stop its map pins + the "summarize view" button ("永遠に地図に
+           ニュース記事や要約ボタンがあるまま。news windowを閉じたらやめろ") */
+        onHide:()=>{ try{ if(map&&map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; }catch(_){} },
+        onShow:()=>{ /* restore pins directly (setMode('news') no-ops when currentMode is already 'news') */
+          try{ if(map&&map.getSource('news-points')&&typeof newsFeatures!=='undefined') map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); }catch(_){}
+          try{ const b=document.getElementById('ai-view-summary-btn'); if(b&&(currentMode==='news'||currentMode==='saved')) b.style.display=''; }catch(_){} } },
       {id:'countries', sels:['#countries-feed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280], defHidden:true, onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} }},
       {id:'info',     sels:['#info-dashboard'],  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
       {id:'community', sels:['#community-feed'],  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }},
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
-      {id:'layers',sels:['#layer-sidebar-r'], t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]}
+      {id:'layers',sels:['#layer-sidebar-r'], t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]},
+      /* (#R78f) Atlas is a window too ("Atlas windowをつくれ"); default hidden, available in the Window menu */
+      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], defHidden:true, ensure:()=>{ try{ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -7431,7 +7440,18 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-news #sidebar-search-bar,body.ws-mode .ws-countries #countries-feed,body.ws-mode .ws-info #info-dashboard,body.ws-mode .ws-community #community-feed{display:flex !important;}'
         +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed,body.ws-mode .ws-info #info-dashboard,body.ws-mode .ws-community #community-feed{flex:1 1 auto !important;width:100% !important;min-height:0 !important;overflow-y:auto;}'
         +'body.ws-mode .ws-news .ws-body,body.ws-mode .ws-countries .ws-body,body.ws-mode .ws-info .ws-body,body.ws-mode .ws-community .ws-body{flex-direction:column;}'
-        +'body.ws-mode .ws-news #sidebar-search-bar,body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{flex:0 0 auto !important;width:100% !important;}'
+        +'body.ws-mode .ws-news #sidebar-search-bar,body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{flex:0 0 auto !important;}'
+        /* (#R78f) BALANCED padding — the .content-area scrollbar hack (margin-right:-10px) made content flush-left
+           but 10px past the right; neutralise it and give even 10px gutters. Search bar was overflowing right. */
+        +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed{margin:0 !important;padding:10px 12px !important;box-sizing:border-box;gap:8px;}'
+        +'body.ws-mode .ws-news #sidebar-search-bar{box-sizing:border-box !important;width:auto !important;margin:10px 12px 4px !important;}'
+        +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
+        /* (#R78f) COMPACT news cards so more fit per screen ("上下方向に冗長") */
+        +'body.ws-mode .ws-news .news-item{padding:9px 11px !important;border-radius:11px !important;}'
+        +'body.ws-mode .ws-news .news-item .news-title{margin-top:4px !important;line-height:1.32 !important;}'
+        +'body.ws-mode .ws-news #live-news-feed{gap:7px !important;}'
+        /* (#R78f) Atlas as a window: fill it, drop its floating chrome */
+        +'body.ws-mode .ws-atlas #atlas-panel{position:static !important;left:auto !important;top:auto !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;display:flex !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;}'
         /* (#R78b) de-chrome the transplanted content — the window IS the chrome now */
         +'body.ws-mode #layer-sidebar-r .lsr-head{display:none !important;}'
         /* (#R78c) the ticker is NOT a window — it is pinned to the very bottom of the screen, full width,
@@ -7466,7 +7486,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const sideW=Math.min(360,Math.round(W*0.25)), layW=Math.min(300,Math.round(W*0.21)); const layX=W-layW;
       const flo=(i)=>[Math.round(W*0.30)+i*26,top+24+i*30,Math.round(W*0.34),Math.round(B*0.66)];
       return { news:[0,top,sideW,B], map:[sideW,top,layX-sideW,B], layers:[layX,top,layW,B],
-        countries:flo(0), info:flo(1), community:flo(2) }; }
+        countries:flo(0), info:flo(1), community:flo(2), atlas:[Math.round(W*0.30)+78,top+114,Math.round(W*0.30),Math.round(B*0.72)] }; }
     function clampRect(r,min){ const W=innerWidth,H=innerHeight;
       /* (#R78e) allow EDGE-TO-EDGE placement (x=0, y=menu bottom, full width, down to the ticker) — no forced gaps */
       let w=Math.max((min&&min[0])||220,Math.min(W,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-34,r[3]||300));
@@ -7485,6 +7505,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function mkWin(def,rect){
       /* (#R78e) a window can host MULTIPLE source elements stacked in its body (the News window = search bar +
          filter + geocode row + feed + reader), each restored to its exact original slot on exit */
+      if(def.ensure){ try{ def.ensure(); }catch(_){} }   /* (#R78f) create the element first (Atlas panel) */
       const sels=def.sels||[def.sel];
       const els=sels.map(s=>document.querySelector(s)).filter(Boolean);
       if(!els.length) return null;
@@ -7504,7 +7525,7 @@ window.addEventListener('DOMContentLoaded', () => {
       w.__wsMin=def.min;
       wsDrag(w,tb); wsResize(w);
       try{ registerWindow(w); }catch(_){}
-      tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; w.dataset.userHid='1'; syncDock(); schedSave(); };
+      tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; w.dataset.userHid='1'; try{ if(def.onHide) def.onHide(); }catch(_){} syncDock(); fitMap(); schedSave(); };
       tb.querySelector('.ws-d-min').onclick=()=>{ if(w.dataset.min){ delete w.dataset.min; body.style.display=''; w.style.height=(+w.dataset.h0||300)+'px'; } else { w.dataset.h0=String(w.offsetHeight); w.dataset.min='1'; body.style.display='none'; w.style.height='auto'; } fitMap(); schedSave(); };
       tb.querySelector('.ws-d-max').onclick=()=>{ if(w.dataset.maxed){ try{ const r2=JSON.parse(w.dataset.maxed); w.style.left=r2[0]+'px'; w.style.top=r2[1]+'px'; w.style.width=r2[2]+'px'; w.style.height=r2[3]+'px'; }catch(_){} delete w.dataset.maxed; }
         else { w.dataset.maxed=JSON.stringify([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight]); w.style.left='8px'; w.style.top='8px'; w.style.width=(innerWidth-16)+'px'; w.style.height=(innerHeight-16)+'px'; }
@@ -7555,7 +7576,10 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Window — show/hide each window + reset */
       const winItems=DEFS.filter(d=>wraps[d.id]).map(def=>({label:def.t(),win:def.id,stay:1,
         check:()=>{ const w=wraps[def.id]; return !!(w&&w.style.display!=='none'); },
-        run:()=>{ const w=wraps[def.id]; if(!w) return; if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; try{ bringToFront(w); }catch(_){} } else { w.style.display='none'; w.dataset.userHid='1'; } fitMap(); schedSave(); } }));
+        run:()=>{ const w=wraps[def.id]; if(!w) return;
+          if(w.style.display==='none'){ w.style.display='flex'; delete w.dataset.userHid; try{ bringToFront(w); }catch(_){} try{ if(def.onShow) def.onShow(); }catch(_){} }
+          else { w.style.display='none'; w.dataset.userHid='1'; try{ if(def.onHide) def.onHide(); }catch(_){} }
+          fitMap(); schedSave(); } }));
       winItems.push('sep',{label:T('Reset layout','配置をリセット','Layout zurücksetzen','Сбросить раскладку','Restablecer diseño'),run:resetLayout});
       menu(T('Window','ウィンドウ','Fenster','Окно','Ventana'),winItems);
       /* (#R78e) direct action buttons (NOT dropdowns) — "「設定」を押すと設定を開くとボタンが出るというクソUI" */
@@ -7616,6 +7640,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Information / Community were force-shown in ws-mode; restore the normal tab behaviour by handing control
          back to the sidebar's own tab logic (they hide unless their tab is active). */
       try{ ['info-dashboard','community-feed'].forEach(idc=>{ const e=document.getElementById(idc); if(e) e.style.display='none'; }); }catch(_){}
+      try{ const ap=document.getElementById('atlas-panel'); if(ap){ ap.style.display='none'; ap.style.width=''; ap.style.height=''; ap.style.left=''; ap.style.top=''; ap.style.transform=''; } }catch(_){}   /* (#R78f) Atlas back to its floating default, hidden */
       try{ if(typeof setMode==='function'&&typeof currentMode!=='undefined') setMode(currentMode); }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); }
     function toggle(){ if(on) disable(); else enable(); }

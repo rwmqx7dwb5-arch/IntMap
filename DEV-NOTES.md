@@ -3788,3 +3788,11 @@ Big batch; every item below is a direct user report.
 - **ウィンドウ構成刷新**: 旧「Panel」を廃し **News/Countries/Information/Community/Map/Layers** の6ウィンドウ（mkWinを複数要素スタック対応に。News窓は5要素を積層、終了時は各要素をプレースホルダーで元位置へ復元）。既定表示は News|Map|Layers のタイル、Countries/Info/Community は Windowメニューから開ける（利用可能）。
 - **「手抜きレイヤー例画像がまだ多い」**: 地図系ベクタ層（境界/地名/水域ラベル/行政界/国）の手描きスケッチを**実CARTOタイル**へ置換（cb-names=東京の二言語ラベル、cb-geolabels=エーゲ海の海名、cb-borders=アルプス国境、cb-admin1=米大平原の州界、cb-countries=東南アジアの国形。@2xで高精細・各々別地域で画一感なし）。実測: 5件すべてCARTO実タイル適用・読込OK。
 - 回帰: 共有境界スプリッター/スナップ/ティッカー最下部固定/終了完全復元/通常モードのタブ動作、すべて無傷・コンソールエラー0。
+
+### R78f — ワークスペース仕上げ（パディング均衡・検索バー収め・News閉でピン/要約停止・Atlas窓・座標左下・カード圧縮）
+- **News/Countriesの内容が左端ぎりぎり・右端とアンバランス / 検索バーが右にはみ出る**: 原因は `.content-area{margin-right:-10px;padding-right:10px}`（スクロールバー回避ハック）がウィンドウ内で右に10pxはみ出させていた。ws中は margin:0＋左右均等12px padding（box-sizing:border-box）に上書き。検索バー/フィルタ/ジオコード行も box-sizing＋左右12pxマージンで収める。実測: feed左右ガター0（内側12px均等）、検索バーはみ出しなし。
+- **News windowを閉じても地図にニュースピン・要約ボタンが残る**: ウィンドウに **onHide/onShow フック**を新設（クローズボタン・Windowメニュー両方から発火）。News onHide=`news-points`ソースを空に＋要約ボタン非表示、onShow=`newsFeatures`から再投入＋要約ボタン復帰（setModeは同一モードで早期returnするため直接操作）。実測: 閉→ピン0・要約none、開→要約flex。
+- **Atlas windowをつくれ**: DEFSに atlas を追加（既定非表示・Windowメニューに列挙）。mkWinに `def.ensure()` フック（要素生成を照会前に実行）を追加し、ラップ前に IntMapConsole.open() で #atlas-panel を生成。ws CSSでフローティング装飾を除去しウィンドウ充填。終了時はパネルを既定（非表示・位置クリア）へ。実測: Atlas窓=入力欄あり・トラフィックライトあり・384×494、終了で display:none復帰。
+- **標高/座標の常時表示を地図windowの左下に**: #coord-readout は元から #map-container 内（position:absolute; bottom:16 left:16）なので、地図ウィンドウの左下に正しく表示（実測: 地図窓左17px・下17px）。ws中も維持されることを確認。
+- **ニュースカードが上下に冗長**: ws中の .news-item を padding 16→9px・角丸圧縮・タイトル上マージン圧縮・feed gap圧縮。実測: カード高 133→113px（同画面あたりの表示件数増）。
+- 回帰: 全ウィンドウ生成・タイル配置・スプリッター・終了復元・コンソールエラー0。
