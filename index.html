@@ -6554,7 +6554,7 @@ window.addEventListener('DOMContentLoaded', () => {
       'dl-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-65,35),      /* Gulf Stream */
       'dl-snow':G('MODIS_Terra_NDSI_Snow_Cover',8,'2024-01-15','png',4,10,46.4),              /* Alps in January */
       'dl-aod':G('MODIS_Combined_Value_Added_AOD',6,'2024-07-04','png',3,80,25),               /* N-India haze */
-      'dl-nightsat':G('VIIRS_Black_Marble',8,'2016-01-01','png',4,136,36),                    /* Japan city lights */
+      'dl-nightsat':'preview_nightlights.png',   /* (#R79g) real VIIRS Black Marble of the Nile Delta + Israel (per request) */
       'dl-popgrid':G('GPW_Population_Density_2020',7,'2020-01-01','png',4,80,24),             /* Ganges plain */
       'dl-relief':G('ASTER_GDEM_Color_Shaded_Relief',12,'2024-01-01','jpg',5,86.9,27.9),/* Himalaya */
       'dl-hillshade':'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/6/'+_t46.y+'/'+_t46.x,   /* Swiss Alps */
@@ -6580,12 +6580,13 @@ window.addEventListener('DOMContentLoaded', () => {
       'eco-dl-ecoregions':'preview_ecoregions.png',
       'eco-dl-plates':'preview_plates.png',
       'dl-wind':'preview_wind.png',
+      'beta-dl-ukrfront':'preview_ukraine.png',   /* (#R79g) real basemap + live DeepState frontline (green = UA gains, red = occupied) */
       'cb-rail2':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',   /* German rail web */
       'ox-oxrail':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',
       'beta-dl-rail':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',
       'ox-oxsea':'https://tiles.openseamap.org/seamark/7/63/42.png',   /* Dover Strait — dense real seamarks */
-      /* (#R73) real contour cartography (OpenTopoMap, Matterhorn area) replaces the hand-drawn ellipse sketch */
-      'dl-contours':(()=>{ const t=tXY(11,7.66,45.98); return 'https://a.tile.opentopomap.org/11/'+t.x+'/'+t.y+'.png'; })(),
+      /* (#R79g) real OpenTopoMap contour screenshot (Matterhorn), self-hosted so it always loads */
+      'dl-contours':'preview_contours.png',
       /* (#R74) ECMWF SST preview = the real GHRSST product (equatorial-Pacific crop, distinct from dl-sst's Gulf Stream) */
       'dl-ec-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-150,0),
       /* (#R78e) real CARTO basemap cartography for the vector-overlay layers (each a distinct, recognisable region) */
