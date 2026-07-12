@@ -20850,40 +20850,54 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<span class="sv-title" style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🧍 '+LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+'</span>'
         +'<button class="sv-ext" title="'+LL('Open in Google Maps','Googleマップで開く','In Google Maps öffnen','Открыть в Google Maps','Abrir en Google Maps')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 4px;">↗</button>'
         +'<button class="sv-close" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;padding:2px 4px;">✕</button></div>'
+        /* (#R85b) heading controls — turn the view; the map marker's cone points the same way so you always see on the map which way you are looking */
+        +'<div class="sv-nav" style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--input-bg);border-top:1px solid rgba(128,128,128,0.14);">'
+          +'<span style="font-size:10.5px;color:var(--text-muted);flex:0 0 auto;">🧭</span>'
+          +'<button class="sv-turn-l" title="'+LL('Turn left','左を向く','Nach links','Влево','Izquierda')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:32px;height:26px;cursor:pointer;font-size:14px;">◀</button>'
+          +'<span class="sv-hdg" style="flex:1;text-align:center;font-size:12px;font-weight:600;color:var(--text-main);">N&nbsp;0°</span>'
+          +'<button class="sv-turn-r" title="'+LL('Turn right','右を向く','Nach rechts','Вправо','Derecha')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:32px;height:26px;cursor:pointer;font-size:14px;">▶</button>'
+          +'<span style="font-size:9.5px;color:var(--text-muted);flex:0 0 auto;">'+LL('shown on map','地図に表示','auf Karte','на карте','en el mapa')+'</span>'
+        +'</div>'
         +'<div class="sv-body" style="flex:1 1 auto;position:relative;background:#000;min-height:0;"><iframe class="sv-if" style="width:100%;height:100%;border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-        +'<div class="sv-hint" style="position:absolute;left:0;right:0;bottom:0;font-size:10px;color:#ddd;background:rgba(0,0,0,0.5);padding:3px 8px;pointer-events:none;">'+LL('Google Street View — drag to look around; some places have no coverage.','Google ストリートビュー — ドラッグで見回せます。カバーされていない場所もあります。','Google Street View — ziehen zum Umsehen; nicht überall verfügbar.','Google Street View — тяните, чтобы осмотреться; есть места без покрытия.','Google Street View — arrastra para mirar; algunas zonas sin cobertura.')+'</div></div>';
+        +'<div class="sv-hint" style="position:absolute;left:0;right:0;bottom:0;font-size:10px;color:#ddd;background:rgba(0,0,0,0.5);padding:3px 8px;pointer-events:none;">'+LL('Drag to look; use ◀ ▶ to turn (the map shows your facing).','ドラッグで見回し／◀ ▶ で向きを変更（地図に向きを表示）。','Ziehen zum Umsehen; ◀ ▶ zum Drehen.','Тяните; ◀ ▶ — поворот (направление на карте).','Arrastra; ◀ ▶ para girar (dirección en el mapa).')+'</div></div>';
       document.body.appendChild(panel); iframe=panel.querySelector('.sv-if');
-      panel.querySelector('.sv-close').onclick=()=>{ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} };
+      panel.querySelector('.sv-close').onclick=()=>{ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} _clearHere(); };
+      panel.querySelector('.sv-turn-l').onclick=()=>_rotateHere(-30);
+      panel.querySelector('.sv-turn-r').onclick=()=>_rotateHere(30);
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sv-head')); }catch(_){}
       return panel; }
+    function _compass(h){ h=((h%360)+360)%360; const dirs=['N','NE','E','SE','S','SW','W','NW']; return dirs[Math.round(h/45)%8]+'&nbsp;'+Math.round(h)+'°'; }
     /* (#R85) "現在のストリートビュー表示箇所はどこを映しているのか地図上に表示" — a live marker + facing cone on the
        map showing the exact spot (and initial heading) the Street View panel is viewing. Painted INSTANTLY on
        select so there is immediate feedback while Google's embed loads (the embed reload is the only slow part
        and is Google's, not ours; the marker makes point-picking feel responsive again). */
-    let _here=null, _hereBound=false;
-    function _ensureHere(){ try{ if(map.getSource('sv-here-src')) return true; if(!map.isStyleLoaded()) return false;
-        map.addSource('sv-here-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-        map.addLayer({id:'sv-here-cone',type:'fill',source:'sv-here-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#39b3ff','fill-opacity':0.3}});
-        map.addLayer({id:'sv-here-halo',type:'circle',source:'sv-here-src',filter:['==','$type','Point'],paint:{'circle-radius':15,'circle-color':'#39b3ff','circle-opacity':0.2}});
-        map.addLayer({id:'sv-here-pt',type:'circle',source:'sv-here-src',filter:['==','$type','Point'],paint:{'circle-radius':7,'circle-color':'#39b3ff','circle-stroke-color':'#fff','circle-stroke-width':3}});
-        if(!_hereBound){ _hereBound=true; try{ map.on('styledata',()=>{ if(_here) setTimeout(()=>{ if(_ensureHere()) _paintHere(); },140); }); }catch(_){} }
-        return true; }catch(_){ return false; } }
-    function _conePoly(lng,lat,hdg,fov,rangeM){ const R=6378137,tr=Math.PI/180,out=[[lng,lat]],n=12;
-      for(let i=0;i<=n;i++){ const a=(hdg-fov/2+fov*i/n)*tr, dx=Math.sin(a)*rangeM, dy=Math.cos(a)*rangeM;
-        out.push([lng+(dx/(R*Math.cos(lat*tr)))/tr, lat+(dy/R)/tr]); } out.push([lng,lat]);
-      return {type:'Polygon',coordinates:[out]}; }
-    function _paintHere(){ if(!_here) return; try{ const s=map.getSource('sv-here-src'); if(!s) return;
-      s.setData({type:'FeatureCollection',features:[
-        {type:'Feature',geometry:{type:'Point',coordinates:[_here.lng,_here.lat]},properties:{}},
-        {type:'Feature',geometry:_conePoly(_here.lng,_here.lat,_here.hdg||0,66,90),properties:{}}]}); }catch(_){} }
-    function _setHere(lng,lat,hdg){ _here={lng:+lng,lat:+lat,hdg:+hdg||0};
-      if(_ensureHere()) _paintHere(); else { let n=0; const t=setInterval(()=>{ if(_ensureHere()||n++>20){ clearInterval(t); _paintHere(); } },150); }
-      try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){} }
-    function _clearHere(){ _here=null; try{ const s=map.getSource('sv-here-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    /* (#R85b) The "where am I looking" indicator is a DOM maplibregl.Marker (NOT a style layer) — it renders
+       INSTANTLY without waiting for map.isStyleLoaded() (the old GeoJSON-layer version silently didn't paint when
+       the style wasn't ready → "地図上で分からない"), and rotates with the map so its cone always points where the
+       panorama faces. */
+    let _hereLL=null, _hereHdg=0, _hereMarker=null;
+    function _hereEl(){ const d=document.createElement('div'); d.style.cssText='width:64px;height:64px;pointer-events:none;';
+      d.innerHTML='<svg width="64" height="64" viewBox="0 0 64 64" style="overflow:visible;display:block;">'
+        +'<path d="M32 32 L12 -2 A 38 38 0 0 1 52 -2 Z" fill="rgba(57,179,255,0.34)" stroke="rgba(57,179,255,0.6)" stroke-width="1.2"/>'
+        +'<circle cx="32" cy="32" r="15" fill="rgba(57,179,255,0.16)"/>'
+        +'<circle cx="32" cy="32" r="7.5" fill="#39b3ff" stroke="#fff" stroke-width="3"/></svg>';
+      return d; }
+    function _setHere(lng,lat,hdg){ _hereLL={lng:+lng,lat:+lat}; if(hdg!=null&&isFinite(+hdg)) _hereHdg=((+hdg%360)+360)%360;
+      try{ if(!_hereMarker){ _hereMarker=new maplibregl.Marker({element:_hereEl(),rotationAlignment:'map',pitchAlignment:'map'}); }
+        _hereMarker.setLngLat([+lng,+lat]).setRotation(_hereHdg);
+        if(!_hereMarker._map){ _hereMarker.addTo(map); } }catch(_){}
+      try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
+      _updHeadingLabel(); }
+    function _updHeadingLabel(){ try{ if(panel){ const h=panel.querySelector('.sv-hdg'); if(h) h.innerHTML=_compass(_hereHdg); } }catch(_){} }
+    function _rotateHere(delta){ if(!_hereLL) return; _hereHdg=((_hereHdg+delta)%360+360)%360;
+      try{ if(_hereMarker) _hereMarker.setRotation(_hereHdg); }catch(_){}
+      try{ if(iframe) iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+(_hereLL.lat).toFixed(6)+','+(_hereLL.lng).toFixed(6)+'&cbp=11,'+_hereHdg+',0,0,0&output=svembed'; }catch(_){}
+      _updHeadingLabel(); }
+    function _clearHere(){ _hereLL=null; try{ if(_hereMarker){ _hereMarker.remove(); _hereMarker=null; } }catch(_){} }
     function open(ll,label){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return false; const p=ensure();
-      const lat=(+ll.lat).toFixed(6), lng=(+ll.lng).toFixed(6);
-      try{ _setHere(+ll.lng,+ll.lat,(ll.heading!=null?+ll.heading:0)); }catch(_){}   /* instant map feedback */
-      try{ iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+lat+','+lng+'&cbp=11,'+((ll.heading!=null?+ll.heading:0))+',0,0,0&output=svembed'; }catch(_){}
+      const lat=(+ll.lat).toFixed(6), lng=(+ll.lng).toFixed(6); const hdg0=(ll.heading!=null&&isFinite(+ll.heading))?((+ll.heading%360)+360)%360:0;
+      try{ _setHere(+ll.lng,+ll.lat,hdg0); }catch(_){}   /* instant map feedback (DOM marker — no style-load wait) */
+      try{ iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+lat+','+lng+'&cbp=11,'+hdg0+',0,0,0&output=svembed'; }catch(_){}
       const t=p.querySelector('.sv-title'); if(t) t.textContent='🧍 '+(label?String(label):(LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')))+' · '+lat+', '+lng;
       const ext=p.querySelector('.sv-ext'); if(ext) ext.onclick=()=>{ try{ window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+lat+','+lng,'_blank','noopener'); }catch(_){} };
       p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
@@ -20931,7 +20945,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapRadiation=(function(){
     if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, clear(){}, openPanel(){}, ISOTOPES:{}, SOURCES:{} };
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
-    const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null;
+    const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
     const ISOTOPES={ 'cs137':{n:'Cs-137',h:264289,dose:2.0e-6}, 'i131':{n:'I-131',h:192.5,dose:1.5e-6}, 'cs134':{n:'Cs-134',h:18045,dose:5.4e-6}, 'sr90':{n:'Sr-90',h:252648,dose:0.2e-6} };
     const SOURCES={ 'chernobyl':{n:'Chernobyl-scale',bq:8.5e16}, 'fukushima':{n:'Fukushima-scale',bq:1.5e16}, 'dirtybomb':{n:'Dirty bomb (RDD)',bq:3.7e13}, 'research':{n:'Small/research',bq:1e12} };
@@ -21033,22 +21047,28 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ const s2=map.getSource(SRC); if(s2) s2.setData({type:'FeatureCollection',features:feats}); }catch(_){}
         if(tau>=1) return; requestAnimationFrame(frame); };
       requestAnimationFrame(frame); }
-    async function run(src,opts){ opts=opts||{}; clear();
+    async function run(src,opts){ opts=opts||{}; clear(); const myGen=++_gen;
       const iso=ISOTOPES[String(opts.isotope||'cs137').toLowerCase()]||ISOTOPES.cs137;
       const bq=(opts.bq!=null&&isFinite(+opts.bq)&&+opts.bq>0)?+opts.bq:(SOURCES[String(opts.source||'').toLowerCase()]||SOURCES.fukushima).bq;
       const hours=Math.max(6,Math.min(80,+opts.hours||48)), emitHours=Math.max(0.25,Math.min(hours,+opts.emitHours||8));
       const halfLifeHours=(+opts.halfLifeHours>0)?+opts.halfLifeHours:iso.h;
-      let ok=ensureLayers(); for(let i=0;i<12&&!ok;i++){ await new Promise(r=>setTimeout(r,250)); ok=ensureLayers(); }
-      if(!ok) return {ok:false,reason:'style'};
+      /* (#R85b) DECOUPLE the model from the map ("放射線拡散シミュレーションが使えない" — the old code returned
+         reason:'style' and gave up if map.isStyleLoaded() was briefly false when the sim was launched). Fetch the
+         wind + compute the deposition FIRST (both map-independent); return the dose report immediately; then PAINT
+         the layers when the style is ready, retrying up to ~14 s + on the next idle. The report never depends on the
+         layer being paintable at that instant. */
       const F=await fetchField(src.lng,src.lat,{date:opts.date,hours}); if(!F) return {ok:false,reason:'wind'};
       const P={bq,hours,emitHours,halfLifeHours,startHour:F.startHour,depRes:0.035,pN:1500};
       const dr=computeDeposition(F,src,P); const dz=depFeatures(dr,iso);
-      try{ const ds=map.getSource(DEP); if(ds) ds.setData({type:'FeatureCollection',features:dz.feats}); }catch(_){}
       const s0=sample(F,src.lng,src.lat,F.startHour); const spd=Math.hypot(s0.u,s0.v), toward=(Math.atan2(s0.u,s0.v)*180/Math.PI+360)%360;
       const estReach=Math.round(Math.min(spd*hours*3600/1000,900)), wet=estimateWet(F);
-      try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); map.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else map.flyTo({center:[src.lng,src.lat],zoom:Math.max(map.getZoom(),6),duration:800}); }catch(_){}
       const secs=Math.max(15,Math.min(60,+opts.seconds||38));
-      animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour});   /* visual plume over the deposition */
+      let painted=false;
+      const paint=()=>{ if(myGen!==_gen) return true; if(painted) return true; if(!ensureLayers()) return false; painted=true;
+        try{ const ds=map.getSource(DEP); if(ds) ds.setData({type:'FeatureCollection',features:dz.feats}); }catch(_){}
+        try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); map.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else map.flyTo({center:[src.lng,src.lat],zoom:Math.max(map.getZoom(),6),duration:800}); }catch(_){}
+        animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour}); return true; };
+      if(!paint()){ let n=0; const t=setInterval(()=>{ if(myGen!==_gen||paint()||n++>56){ clearInterval(t); } },250); try{ map.once('idle',paint); }catch(_){} }
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
     try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ const s=map.getSource(SRC); if(s&&s._data&&s._data.features&&s._data.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
@@ -21170,13 +21190,23 @@ window.addEventListener('DOMContentLoaded', () => {
     function onKeyUp(e){ keys[e.key.toLowerCase()]=false; }
     function _terrAt(lng,lat){ let t=0; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) t=te; } }catch(_){} return t; }
     function addExtraHUD(){ if(!hud) return; const tl=hud.querySelector('.fs-tl'); if(tl&&!tl.querySelector('.fs-g')){ const d=document.createElement('div'); d.style.cssText='margin-top:6px;display:flex;gap:14px;'; d.innerHTML='<div><div class="fs-k">'+LL('LOAD','荷重','LAST','ПЕРЕГР.','CARGA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-g">1.0</span><span style="font-size:10px;">g</span></div></div><div><div class="fs-k">'+LL('AoA','迎角','AoA','УГОЛ','AoA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-aoa">0</span><span style="font-size:10px;">°</span></div></div>'; tl.appendChild(d); } }
+    let prevView=null;
     function start(opts){ if(on) return true; on=true; opts=opts||{};
       const c=map.getCenter();
-      st={ lng:(opts.lng!=null?+opts.lng:c.lng), lat:(opts.lat!=null?+opts.lat:c.lat), alt:(opts.alt!=null?+opts.alt:1500),
-        V:165, gamma:0, psi:((map.getBearing()||90)*Math.PI/180), theta:0.045, phi:0, thr:0.72, G:1, aoa:0.045, vs:0, onGround:false, t:performance.now() };
-      st.alt=Math.max(st.alt, _terrAt(st.lng,st.lat)+1200);   /* never spawn inside the ground */
+      st={ lng:(opts.lng!=null?+opts.lng:c.lng), lat:(opts.lat!=null?+opts.lat:c.lat), alt:(opts.alt!=null?+opts.alt:2500),
+        V:170, gamma:0, psi:((map.getBearing()||90)*Math.PI/180), theta:0.045, phi:0, thr:0.72, G:1, aoa:0.045, vs:0, onGround:false, t:performance.now() };
       camZoom=null;
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
+      /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
+         3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
+         camera can look forward to the horizon. State is remembered and restored on exit. */
+      try{ prevView={ base:(typeof currentMapType!=='undefined'?currentMapType:'map'), proj:(typeof currentProj!=='undefined'?currentProj:'globe'), terr:(typeof terrain3D!=='undefined'?terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
+      try{ if(map.setMaxPitch) map.setMaxPitch(85); }catch(_){}
+      try{ if((typeof currentProj!=='undefined'&&currentProj==='globe')&&window.IntMapOS) IntMapOS.exec('view.proj.flat',{source:'flightsim'}); }catch(_){}
+      try{ if(typeof currentMapType==='undefined'||currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
+      try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
+      try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
+      st.alt=Math.max(st.alt, _terrAt(st.lng,st.lat)+1500);   /* never spawn inside the ground */
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
       buildHUD(); addExtraHUD();
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
@@ -21186,6 +21216,15 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const k in keys) keys[k]=false;
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
       if(hud){ hud.remove(); hud=null; }
+      try{ if(map.setRoll) map.setRoll(0); }catch(_){}
+      /* (#R85b) restore the pre-flight view (basemap / projection / 3-D / max pitch) */
+      try{ const pv=prevView; if(pv){
+        if(map.setMaxPitch) map.setMaxPitch(pv.maxPitch||60);
+        if(pv.base!=='sat'&&typeof currentMapType!=='undefined'&&currentMapType==='sat'){ const b=document.getElementById('btn-view-map'); if(b) b.click(); }
+        if(!pv.terr&&typeof terrain3D!=='undefined'&&terrain3D){ const b3=document.getElementById('btn-view-3d'); if(b3) b3.click(); }
+        if(pv.proj==='globe'&&typeof currentProj!=='undefined'&&currentProj!=='globe'&&window.IntMapOS){ IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }
+      } }catch(_){}
+      prevView=null;
       if(prevCam){ try{ map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,roll:prevCam.roll||0,duration:800}); }catch(_){ try{ if(map.setRoll) map.setRoll(0); map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,duration:800}); }catch(__){} } } }
     function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ','ACCIDENTE'); w.style.display='block'; w.style.color='#ff453a'; }
       st.alt=_terrAt(st.lng,st.lat)+1500; st.V=175; st.gamma=0.04; st.theta=0.06; st.phi=0; st.thr=0.75; st.G=1; st.onGround=false;
@@ -21248,11 +21287,17 @@ window.addEventListener('DOMContentLoaded', () => {
           if(st.V<52&&bankDeg<12) landed=true; }
       } else st.onGround=false;
       const stalling=(st.aoa>AC.aStall*0.95)||(!st.onGround&&st.V<AC.Vstall*1.03), overspeed=st.V>AC.Vne, overG=st.G>8.5;
-      /* ---- banking, altitude-smooth camera ---- */
-      const targetZoom=Math.max(8.0,Math.min(15.2, 15 - Math.log2(Math.max(45,agl)/45)*0.8));
+      /* ---- FIRST-PERSON cockpit camera ("主観視点にしろ"): sit just behind the aircraft, look FORWARD along the
+         heading toward the horizon (near-max pitch), banked with the wings. Centre a point ahead of the nose so the
+         aircraft sits in the lower view like a cockpit. ---- */
+      const hdgDeg=(st.psi*R2D+360)%360;
+      const aheadKm=Math.max(0.35,Math.min(6, agl*0.0009));
+      const mLatK=110.574, mLonK=(111.320*Math.cos(st.lat*Math.PI/180))||1;
+      const cLng=st.lng+(aheadKm*Math.sin(st.psi))/mLonK, cLat=st.lat+(aheadKm*Math.cos(st.psi))/mLatK;
+      const targetZoom=Math.max(9.4,Math.min(16, 15.4 - Math.log2(Math.max(40,agl)/40)*0.72));
       camZoom=(camZoom==null)?targetZoom:(camZoom+(targetZoom-camZoom)*Math.min(1,4*dt));
-      const cam={ center:[st.lng,st.lat], zoom:camZoom, bearing:(st.psi*R2D+360)%360, pitch:Math.max(20,Math.min(85, 74 - st.theta*R2D*0.5)) };
-      cam.roll=Math.max(-55,Math.min(55, -st.phi*R2D*0.85));
+      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:Math.max(60,Math.min(85, 83 - st.theta*R2D*0.28)) };
+      cam.roll=Math.max(-55,Math.min(55, -st.phi*R2D*0.9));
       try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} }
       updateHUD(agl,{stalling,overspeed,overG,landed,ab});
       raf=requestAnimationFrame(loop); }
