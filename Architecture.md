@@ -485,6 +485,16 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     アクション（🟢/🔴、429は「rate-limited(429)」）、localPlanアンカー（"診断"/"何か問題ある？"/"any issues?"）、
     **問題時のみ** `stateContext` へ SELF-DIAGNOSIS ALERT、SYS()にアクション登録、**可視時のみ25s後＋10分毎の軽量プローブ**
     （背面タブ/ヘッドレスでは走らない）。新規外部EPなし＝法務/出典変更不要（LEGAL_DATE 2026-07-12 据置）。
+  - **#R82 Atlasカーネル化 `IntMapOS`（構造インバートの起点・第六段階の土台）**（詳細は DEV-NOTES R82）: 「根底にAtlas、全UIは表層」
+    をコードとして開始。`window.IntMapOS`＝`register`/`exec`（登録コマンド＝インバート済み正準経路）/`dispatch`（Atlasの型付き
+    アクション層）/`on`+`emit`（バス）/`log`（**UI・NL統合syscallログ**・source=ui/atlas/api）/`state`・`catalog`（Atlas束縛）。
+    GUIとNLチャットは**同一カーネルへインテントを投げる薄い2シェル**に。**中核を実インバート**: 地図ビュー
+    （`view.base.map`/`.sat`/`view.proj.globe`/`.flat`）+タブ（`tab.news`/`.info`/`.stats`/`.community`）の実ロジックをカーネル
+    コマンドへ移設し、`onclick=()=>IntMapOS.exec(cmd)`＋Atlas dispatchは `kexec`（コマンド直呼び＋clickIdフォールバック）に
+    →**UIクリックもNL指示も同一コマンドに収束**（clickId模倣を排除）。`_setDispatch/_bindState/_bindCatalog` で
+    Atlasを束縛＝`IntMapOS.dispatch({type:'control'…})` で全UIをカーネル経由操作可、`catalog()` が全操作面を列挙。
+    実測: 実ボタンclick→exec 1回（二重実行なし）、NL dispatch→`view.base.map/atlas`、theme/layerもカーネル経由、
+    `.click()`互換維持、コンソールエラー0。残コントロールは以降のパスで順次コマンド化（段階移行）。
   ウィンドウは**最小化・サイズ変更可**、×で地図上のハイライト/色分けも消去。起動: ツールバー `⌖` / 右クリック / **Ctrl・⌘+K**。
 - **天気ポップアップ（右クリック→「ここの天気」, #R40/#R42)** — Open-Meteo の現況＋5日予報（常に最新）。
   気温は設定の °C/°F/両方に完全対応（両方モードは日別予報も °F を併記, #R42）。ドラッグ移動・⟳更新可。

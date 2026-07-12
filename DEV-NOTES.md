@@ -3888,3 +3888,14 @@ ATLAS-VISION.md の実装対応表「残り」列のうち、当面最優先5つ
 - **`check()` も学習idにフォールバック** — Atlas の状態文脈（stateContext）と `IntMapDataHealth` のレイヤー整合が、登録前の層も正しく「描画/未描画」を報告できるように。
 - **実測（ヘッドレスは document.hidden でオーバーレイ層が実際には描画/追加されないため、アルゴリズムを分離ユニットテストで証明＋配線を確認）**: ①監査 `run()` は throw せず（`_auditLearned` 統合後も安全）②キャプチャ帰属ロジック＝新規かつ非ベースかつ未所有のidのみ採用（`seaice-raster` のみ採用、ベース `ofm-water`/`poi-x` 除外、他CB所有 `wbco2-fill` は非奪取）③skip-guard は dl-ships/dl-planes/cb-grid=除外・gx-*=対象 ④既知31層のカバレッジ不変（11/11）・未知CBは null・起動時カバレッジ=31（純加算=起動時挙動不変、ON化で漸増）⑤コンソールエラー0。実ブラウザでは各オーバーレイのadd時に差分が本物のidを捕捉（同一の `getStyle().layers` 差分）。
 - 新規外部エンドポイントなし・法務/出典変更なし。機能・UIの改変なし（レコンサイラの堅牢化のみ）。
+
+
+### R82 — Atlasをカーネル(IntMapOS)化：UI/NLは表層シェル、全操作が単一カーネルを通る構造へ（Central OS第六段階の土台）
+ユーザー指示: 「根底にAtlasがあり、全UIはそれを表層で操作するだけという構造に。今みたいに間接的にAtlasがIntMapを操作するのではなく、OS自体に」。ATLAS-VISIONの最終定義（「AtlasがIntMapの中にある」→「Atlasの上でIntMap全体が動く」）を構造として実装。**方針は合意（AskUserQuestion）＝「カーネル構築＋中核を実インバート＋全UI登録」**。加算的・機能/UI不変・段階的。
+- **旧構造の問題（実測）**: Atlasは `clickId(...)`（20箇所）＋`doControl` で**UIボタンのクリックを模倣**してIntMapを操作＝間接。UIハンドラはエンジンを直接叩く。＝2系統の並行パス。
+- **新構造 `window.IntMapOS`（カーネル）**: `register(id,run,meta)` / `exec(id,ctx)`（登録コマンド＝インバート済みの正準経路）/ `dispatch(action)`（Atlasの型付きアクション層＝NLと同一）/ `on`+`emit`（イベントバス）/ `log()`（**UI・NL統合のsyscallログ**、source=ui/atlas/apiを区別）/ `state()`・`catalog()`（Atlasが束縛）。UI（GUIシェル）とAtlasチャット（NLシェル）は**どちらもこのカーネルにインテントを投げる薄いクライアント**に。
+- **中核を実インバート（UI→カーネル→エンジン、clickId模倣を排除）**: 地図ビュー（`view.base.map`/`view.base.sat`/`view.proj.globe`/`view.proj.flat`）＋サイドバータブ（`tab.news`/`tab.info`/`tab.stats`/`tab.community`）の**実ロジックをカーネルのコマンドに移設**（旧onclick本体を `e.currentTarget`→明示的要素idに書換えて移動）。ボタンの `onclick=()=>IntMapOS.exec(cmd,{source:'ui'})`、Atlas dispatchの `base`/`projection`/`tab` は `kexec()`（カーネルコマンド直呼び＋失敗時のみclickIdフォールバック）に。→ **UIクリックもNL指示も同一コマンドに収束**。
+- **全UIをOSインテントとして登録**: AtExが `IntMapOS._setDispatch(dispatch)`・`_bindState(stateContext)`・`_bindCatalog({commands,controls,layers,modules})` で束縛。→ `IntMapOS.dispatch({type:'control',target:...})` で**UI全コントロールをカーネル経由で操作可能**、`IntMapOS.catalog()` が**全操作面（controls 3509字・layers 2806字・modules 649字・commands 8）を列挙**。中核は真にインバート済み、残りは束縛dispatch経由で到達＋カタログ登録済み（以降のパスで順次コマンド化＝段階移行）。
+- **実測検証（ヘッドレスでも同期状態変化は観測可）**: ①起動OK・`IntMapOS` 生成・8コマンド登録・`ready=true`・`state()`非空・catalog 4区分 ②UIパス: `exec('view.base.sat')`→btn-view-sat=active/map=非active（逆も）③**実ボタンclick**→onclick→exec が**1回だけ**ログ（`view.base.sat/ui`、二重実行なし）④**NLパス**: `IntMapConsole.dispatch({type:'base',mode:'map'})`→`view.base.map/atlas` 1件・btn-view-map=active（clickId模倣ではなくコマンド直実行）⑤projection/tab も NL→カーネル（`view.proj.flat/atlas`・`tab.community/atlas`）⑥カーネル経由で theme・layer(earthquakes) 操作OK ⑦統合ログに ui/atlas/api の混在を記録 ⑧コンソールエラー0。
+- **互換性**: 既存の `getElementById('btn-...').click()`（キーボードショートカット #3643・共有復元 #20171 等）は新onclick→exec→コマンドを発火＝同一効果を保持（click testで確認）。newsfilter等の周辺ハンドラは不変。
+- 新規外部エンドポイントなし・法務/出典変更なし。次パス: 残りコントロール群（ツール/設定/レイヤーの各トグル）を順次カーネルコマンド化し、UIバインディングをexec経由へ移行（第六段階の完成へ）。
