@@ -341,9 +341,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     実測: 135タイル中123が実画像（残りはWBレート制限保護の遅延コロプレス）。NDVIの8日合成は期間境界日のみ配信
     （2025-06-26でプローブ済み）。
     ②**IntMapLayerAudit（レイヤーON/OFF×実描画の常時監査）** — チェックボックスと実スタイルレイヤーの照合表
-    （dl-*静的表＋_registerLayerOpacity経由の動的登録）を15秒間隔で照合し、「ONなのに未描画」は2回連続検出で
-    1回だけ再トグル（4分/レイヤー上限）、「OFFなのに可視」は直接hide。stateContextのアクティブレイヤー行に
-    `[NOT painted]` を付与しAtlasが未描画を「表示中」と言わない。ヘッドレスで rearm 自己修復を実測確認。
+    （dl-*静的表＋**土台ベクタ層BASE表**（cb-names/geolabels/borders/countries/admin1/roads/rail2）＋_registerLayerOpacity
+    経由の動的登録）を照合し、「ONなのに未描画」は2回連続検出で再トグル（土台層は冪等ハンドラのため change 1回再発火で
+    明滅回避／4分・レイヤー上限）、「OFFなのに可視」は直接hide。**（#R79）トリガを15秒周期だけでなく `idle`（1.2秒
+    デバウンス＝全エンジンの styledata 再追加後）＋`visibilitychange` にも拡張**し、不整合が最悪30秒→数秒で自己修復。
+    stateContextのアクティブレイヤー行に `[NOT painted]` を付与しAtlasが未描画を「表示中」と言わない。
     ③**返答内コントロールの安定参照** — トグル/スライダーが `data-cb`（実チェックボックスID）を持ち、クリック/
     同期時のあいまいラベル再解決を廃止（凡例非同期・別レイヤー誤操作の根）。ID解決→凡例表示/非表示・実描画まで実測。
     ④**現職ハルシネーションの決定的遮断** — analyzeに **Wikidata P6/P35ライブ照会**ブロック（国名を質問からも抽出、
@@ -352,7 +354,9 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     ⑤**件数の誠実化** — mapReportが要求件数（count引数 or「10件」等のパース）を認識、不足時は**追い検索1回**で
     補充、なお不足なら「要求N件中、実在確認はM件」を決定的に表示。プロンプトはoverviewでの件数言及を禁止（UIが実数を出す）。
     ⑥**ChatGPT風リンクカード** — `linkCards()`（ファビコン+記事タイトル+ドメインのカード）。mapReportの記事リンク、
-    analyzeの `SOURCES:` 行（実在URLのみ・捏造禁止）、answerのMarkdownリンクを描画。Privacy/Sources更新
+    analyzeの `SOURCES:` 行（実在URLのみ・捏造禁止）、answerのMarkdownリンクを描画。**（#R79）脆さの根治**: 収集器
+    `_newsData`/`_gdeltNews`/`_gnewsNews` に sink を追加し**供給した実記事の実URL**を収集、analyze/briefは（AIの
+    SOURCES行の有無に依らず）その実記事を "Sources" 見出し付きカードで必ず描画（AI引用URLを先頭に並べる）。Privacy/Sources更新
     （airplanes.live・NOAA SWPC追記、OpenSkyの旧記載をairplanes.liveに是正、Esri Transportation・Wikidata現職照会・
     faviconサービスを明記）。
   - **#R73 再発報告の実測根治＋Central OS第一歩**（詳細は DEV-NOTES R73 / ATLAS-VISION.md）:
