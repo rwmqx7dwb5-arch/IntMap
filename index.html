@@ -12635,7 +12635,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window._applyGenericOpacity=_applyGenericOpacity;
     window._registerLayerOpacity=function(id,namesEnJp,layerIds,cbId){ try{
       /* (#R20) per-layer defaults: tectonic plates start at 30% per request. */
-      if(opacities[id]==null) opacities[id]=((id==='plates'||id==='eco-plates')?0.30:(id==='worldcover'?1:0.85));   /* (#R40) Land cover defaults to 100% */
+      if(opacities[id]==null) opacities[id]=((id==='plates'||id==='eco-plates')?0.30:(id==='worldcover'?1:(id==='tz'?0.5:0.85)));   /* (#R40) Land cover 100%; (#R79c) Time zones default 50% */
       window._opacityTargets[id]=layerIds||[];
       /* (#R74) feed the layer-state audit: remember which REAL style layers belong to this checkbox */
       try{ if(cbId&&layerIds&&layerIds.length){ (window._imAuditReg=window._imAuditReg||{})[cbId]=layerIds.slice(); } }catch(_){}
@@ -17346,9 +17346,13 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-yr{color:var(--text-muted);font-size:9.5px;}'
         +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
-      /* render INSIDE the sidebar feed area (stats tab) — no popup */
-      try{ const bs=document.getElementById('btn-stats'); if(bs&&!bs.classList.contains('active')) bs.click(); }catch(_){}
-      const feed=document.getElementById('live-news-feed'); if(!feed) return null;
+      /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
+         comparison mounted into #live-news-feed, but the country list moved to #countries-feed at the R78e
+         split — so #scp-view rendered into the NEWS feed (hidden in the Stats tab, and in workspace mode it is
+         the hidden News window → the comparison was invisible). Mount into #countries-feed (same element
+         renderStats + the back button use). In workspace mode there are no tabs, so don't click the Stats tab. */
+      if(!document.body.classList.contains('ws-mode')){ try{ const bs=document.getElementById('btn-stats'); if(bs&&!bs.classList.contains('active')) bs.click(); }catch(_){} }
+      const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); if(!feed) return null;
       feed.innerHTML='';
       host=document.createElement('div'); host.id='scp-view'; feed.appendChild(host);
       host.innerHTML='<button class="scp-back">← '+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
@@ -23457,7 +23461,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getSource('tzl-lbl-src')) map.addSource('tzl-lbl-src',{type:'geojson',data:labelFC()});
       const before=['ofm-river','ofm-water','ofm-country','ofm-city','ofm-other','borders-only-line'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
       const PAL=['match',['get','map_color8'],1,'#8dd3c7',2,'#ffffb3',3,'#bebada',4,'#fb8072',5,'#80b1d3',6,'#fdb462',7,'#b3de69',8,'#fccde5','#cfd8e3'];
-      if(!map.getLayer('tzl-fill')) map.addLayer({id:'tzl-fill',type:'fill',source:'tzl-src',layout:{visibility:'none'},paint:{'fill-color':PAL,'fill-opacity':0.15}},before);
+      if(!map.getLayer('tzl-fill')) map.addLayer({id:'tzl-fill',type:'fill',source:'tzl-src',layout:{visibility:'none'},paint:{'fill-color':PAL,'fill-opacity':0.5}},before);   /* (#R79c) initial opacity 50% (matches the registered default) */
       if(!map.getLayer('tzl-line')) map.addLayer({id:'tzl-line',type:'line',source:'tzl-src',layout:{visibility:'none','line-join':'round'},paint:{'line-color':'rgba(120,140,170,0.95)','line-width':['interpolate',['linear'],['zoom'],1,0.6,5,1.4],'line-dasharray':[2,1.6]}},before);
       if(!map.getLayer('tzl-time')) map.addLayer({id:'tzl-time',type:'symbol',source:'tzl-lbl-src',layout:{visibility:'none','text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':['interpolate',['linear'],['zoom'],1,11,4,15],'text-line-height':1.1,'text-allow-overlap':false,'text-padding':5},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,38,76,0.92)','text-halo-width':1.7}}); }
     function setVis(v){ ['tzl-fill','tzl-line','tzl-time'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }); }
