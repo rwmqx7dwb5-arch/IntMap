@@ -240,6 +240,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ios-segment-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
     [data-theme="dark"] .ios-segment-btn.active{ background:#3a3a3c; }
     .search-bar{ display:flex; align-items:center; gap:6px; background:var(--input-bg); border:1px solid transparent; border-radius:12px; padding:4px 4px 4px 12px; margin-bottom:16px; transition:0.2s; }
+    /* (#R79e) the Countries window's own search bar is ONLY for workspace mode; keep it out of the normal sidebar
+       no matter what (the ws-mode rule below has higher specificity + !important, so it still shows in-window). */
+    #countries-search-bar{ display:none !important; }
     .search-bar:focus-within{ background:var(--card-bg); border-color:var(--primary-color); box-shadow:0 0 0 2px rgba(0,122,255,0.2); }
     .search-icon{ font-size:14px; color:var(--text-muted); flex-shrink:0; }
     .search-input{ flex:1; min-width:0; background:transparent; border:none; color:var(--text-main); padding:8px 4px; font-size:14px; outline:none; }
@@ -2181,6 +2184,22 @@ window.addEventListener('DOMContentLoaded', () => {
      data-i18n), and loadSettings() only ran AFTER they were built — so a Japanese user saw English in
      those spots. Seeding currentLang here makes everything build in the right language from the start. */
   try{ const _s0=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(_s0&&['en','jp','de','ru','es'].includes(_s0.lang)) currentLang=_s0.lang; }catch(_){}   /* (#R38) seed ALL FOUR UI languages up-front. RU was missing here, so a saved Russian setting fell back to English in every construction-time-baked surface until loadSettings re-ran — a real DE/RU "別の言語が混じる" source. */
+  /* (#R79e) Country flag emoji ("スマホでは国旗が出るがパソコンでは出ない"): Windows ships NO flag glyphs in its
+     emoji font — regional-indicator pairs render as letter boxes ("US"), never a flag. Ship the Twemoji Country
+     Flags webfont (self-hosted, ~78 KB) scoped by unicode-range to ONLY the flag codepoints, so it touches flag
+     glyphs and nothing else. Applied only where the platform can't render flags natively → phones/Macs keep
+     their own flags. */
+  (function(){ try{
+    var ff=document.createElement('style');
+    ff.textContent='@font-face{font-family:"Twemoji Country Flags";unicode-range:U+1F1E6-1F1FF,U+1F3F4,U+E0062-E0063,U+E0065,U+E0067,U+E006C,U+E006E,U+E0073-E0074,U+E0077,U+E007F;src:url("TwemojiCountryFlags.woff2") format("woff2");font-display:swap;}';
+    document.head.appendChild(ff);
+    function nativeFlags(){ try{ var c=document.createElement('canvas'); c.width=c.height=16; var x=c.getContext('2d'); if(!x) return true; x.textBaseline='top'; x.font='16px sans-serif'; x.fillStyle='#000'; x.fillText('🇨🇦',0,0); /* 🇨🇦 (red+white) — a real flag paints colour, letter-box fallback stays monochrome */
+      var d=x.getImageData(0,0,16,16).data; for(var i=0;i<d.length;i+=4){ if(d[i+3]>0 && (Math.abs(d[i]-d[i+1])>28||Math.abs(d[i+1]-d[i+2])>28||Math.abs(d[i]-d[i+2])>28)) return true; } return false; }catch(_){ return true; } }
+    var ok=nativeFlags(); window.__flagFont={native:ok,applied:false};
+    var apply=function(){ try{ var b=document.body; if(!b) return false; var cur=getComputedStyle(b).fontFamily||'sans-serif'; if(cur.indexOf('Twemoji Country Flags')<0) b.style.fontFamily='"Twemoji Country Flags", '+cur; window.__flagFont.applied=true; return true; }catch(_){ return false; } };
+    window.__applyFlagFont=apply;   /* exposed so it can be forced if the canvas probe is unreliable */
+    if(!ok){ if(!apply()) document.addEventListener('DOMContentLoaded',apply); }
+  }catch(_){} })();
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false, geoLabelsOn=true;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */
   let map=null, markersArray=[], forceHoverLayers=new Set();
@@ -8348,7 +8367,7 @@ window.addEventListener('DOMContentLoaded', () => {
           cfeed=document.getElementById('countries-feed'),
           dash=document.getElementById('info-dashboard'),
           comm=document.getElementById('community-feed'),
-          sb=document.querySelector('.search-bar'),
+          sb=document.getElementById('sidebar-search-bar'),   /* (#R79e) by ID — #countries-search-bar also has class .search-bar, so querySelector('.search-bar') could grab it after a ws cycle and renderUI would leak the "Filter countries" box into the normal sidebar */
           filterToggle=document.getElementById('news-filter-toggle');
     clearMarkers();
     try{ pushCommunityFeatures(); }catch(_){}   /* show community pins only on the Community tab */
@@ -8695,7 +8714,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ document.getElementById('sidebar').classList.remove('collapsed'); if(map) setTimeout(()=>map.resize(),60); }catch(_){}
     try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
-    const sbBar=document.querySelector('.search-bar'); if(sbBar) sbBar.style.display='none';
+    const sbBar=document.getElementById('sidebar-search-bar'); if(sbBar) sbBar.style.display='none';   /* (#R79e) by ID, not .search-bar (see renderUI note) */
     const pt=document.getElementById('news-pin-toggle'); if(pt) pt.style.display='none';
     ['live-news-feed','info-dashboard','community-feed'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
     const pane=document.getElementById('news-reader-pane'); pane.style.display='flex';
@@ -9986,7 +10005,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-07-11';   /* (#R72) Privacy §4: MET Norway fallback + Global Watersheds + GRDC/WB basins added */
+  const LEGAL_DATE='2026-07-12';   /* (#R79e) Sources: self-hosted Twemoji country-flag webfont added (bundled asset, no new data sent) */
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -14468,6 +14487,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ---------- Data sources & attribution modal (#37) ---------- */
   const DATA_SOURCES=[
     {n:'CARTO basemaps',u:'https://carto.com/attribution/',use:{en:'Light/dark vector basemap tiles',jp:'標準マップのタイル'}},
+    {n:'Twemoji (Twitter Emoji)',u:'https://github.com/jdecked/twemoji',use:{en:'Self-hosted country-flag webfont (TwemojiCountryFlags.woff2) so flag emoji render on platforms without native flag glyphs (e.g. Windows). Graphics licensed CC-BY 4.0.',jp:'国旗絵文字をネイティブ非対応のOS（Windows等）でも表示するための自己ホスト国旗フォント（TwemojiCountryFlags.woff2）。画像はCC-BY 4.0。'}},
     {n:'Esri World Imagery',u:'https://www.esri.com/',use:{en:'Satellite imagery + reference labels; World Hillshade & World Transportation reference tiles (hillshade layer and the roads-layer preview image)',jp:'衛星画像・地名ラベル。World Hillshade・World Transportation参照タイル（陰影起伏レイヤーと道路レイヤーのプレビュー画像）'}},
     {n:'OpenStreetMap',u:'https://www.openstreetmap.org/copyright',use:{en:'Place search & place/region boundary outlines (Nominatim) & basemap data',jp:'地名検索・地名/地域の範囲ポリゴン表示（Nominatim）・地図データ'}},
     {n:'NASA GIBS / Worldview',u:'https://www.earthdata.nasa.gov/',use:{en:'Temperature, precipitation, SST, sea-ice concentration & SST anomaly, snow, aerosol & UV-aerosol index, carbon monoxide, soil moisture, ocean chlorophyll, fires, vegetation (NDVI), land-surface & cloud-top temperature, true-color & shaded relief',jp:'気温・降水・海面水温・海氷密接度・海面水温偏差・積雪・煙霧・紫外線エアロゾル指数・一酸化炭素・土壌水分・海洋クロロフィル・火災・植生(NDVI)・地表面/雲頂温度・トゥルーカラー・陰影起伏'}},
@@ -17362,6 +17382,13 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-xl th.scp-rowh{text-align:left;cursor:grab;}'
         +'#scp-view .scp-xl td{font-variant-numeric:tabular-nums;}'
         +'#scp-view .scp-yr{color:var(--text-muted);font-size:9.5px;}'
+        /* (#R79e) the bar chart was crushing in a narrow Countries WINDOW ("countriesウィンドウの幅によっては
+           つぶれてしまう") because the name(118)+value(112) columns are fixed and the old media query keys off the
+           VIEWPORT, not the window. Make the bars respond to the CONTAINER width: shrink the columns as it
+           narrows, then stack (name on its own line, bar+value below) so the bar always has room. */
+        +'#scp-view{container-type:inline-size;}'
+        +'@container (max-width:430px){ #scp-view .scp-bnm{flex-basis:94px;} #scp-view .scp-bval{flex-basis:82px;font-size:10.5px;} }'
+        +'@container (max-width:340px){ #scp-view .scp-brow{flex-wrap:wrap;gap:2px 8px;} #scp-view .scp-bnm{flex:1 1 100%;} #scp-view .scp-btrack{flex:1 1 62%;min-width:70px;} #scp-view .scp-bval{flex:0 0 auto;text-align:left;} }'
         +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
