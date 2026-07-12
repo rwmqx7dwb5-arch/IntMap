@@ -10455,14 +10455,27 @@ window.addEventListener('DOMContentLoaded', () => {
     const lgdSnow=makeLegend('snow',140,(currentLang==='jp'?'積雪・海氷':currentLang==='de'?'Schnee & Eis':currentLang==='ru'?'Снег и лёд':currentLang==='es'?'Nieve y hielo':'Snow & ice'),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[currentLang==='jp'?'少':currentLang==='de'?'Wenig':currentLang==='ru'?'Мало':currentLang==='es'?'Bajo':'Low',currentLang==='jp'?'多':currentLang==='de'?'Viel':currentLang==='ru'?'Много':currentLang==='es'?'Alto':'High'], 'MODIS NDSI');
     const lgdAod=makeLegend('aod',140,(currentLang==='jp'?'エアロゾル / 煙霧':currentLang==='de'?'Aerosol / Dunst':currentLang==='ru'?'Аэрозоль / дымка':currentLang==='es'?'Aerosol / bruma':'Aerosol / haze'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[currentLang==='jp'?'清浄':currentLang==='de'?'Klar':currentLang==='ru'?'Чисто':currentLang==='es'?'Limpio':'Clear',currentLang==='jp'?'濃い':currentLang==='de'?'Trüb':currentLang==='ru'?'Мутно':currentLang==='es'?'Brumoso':'Hazy'], 'MODIS AOD');
     const lgdNightsat=makeLegend('nightsat',140,(currentLang==='jp'?'夜間光（衛星）':currentLang==='de'?'Nachtlichter':currentLang==='ru'?'Ночные огни':currentLang==='es'?'Luces nocturnas':'Night lights'),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[currentLang==='jp'?'暗':currentLang==='de'?'Dunkel':currentLang==='ru'?'Темно':currentLang==='es'?'Oscuro':'Dark',currentLang==='jp'?'明':currentLang==='de'?'Hell':currentLang==='ru'?'Ярко':currentLang==='es'?'Brillante':'Bright'], 'VIIRS Black Marble');
-    /* EEZ legend — single-color line indicator */
+    /* EEZ legend — one row per boundary TYPE (kept distinct), swatches match the BRIGHT SLD colours in addEEZ */
     const lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
-    /* (#R79f) The boundaries are now drawn in ONE bright neon line (see addEEZ) for visibility, so the legend
-       is a single neon swatch + the list of boundary types it covers (as plain text, since they share a colour). */
-    const EEZ_NEON='#39FF14';   /* must match the SLD stroke in addEEZ */
+    /* (#R79g) restored per-type colour coding (flattening it to one colour was wrong) — but now each type is a
+       BRIGHT line for visibility. Colours here MUST match EEZ_STYLE in addEEZ. */
+    const EEZ_CATS=[
+      {c:'#39FF6A',n:{en:'EEZ — 200 NM',jp:'EEZ（200海里）',de:'AWZ — 200 sm',ru:'ИЭЗ — 200 миль',es:'ZEE — 200 mn'}},
+      {c:'#12E3D6',n:{en:'Territorial sea — 12 NM',jp:'領海（12海里）',de:'Küstenmeer — 12 sm',ru:'Терр. море — 12 миль',es:'Mar territorial — 12 mn'}},
+      {c:'#4D8BFF',n:{en:'Treaty boundary',jp:'条約による境界',de:'Vertragsgrenze',ru:'Договорная граница',es:'Límite por tratado'}},
+      {c:'#B6FF3A',n:{en:'Median line',jp:'中間線',de:'Mittellinie',ru:'Срединная линия',es:'Línea media'}},
+      {c:'#FFC21A',n:{en:'Court ruling',jp:'司法判断による境界',de:'Gerichtsurteil',ru:'Судебное решение',es:'Fallo judicial'}},
+      {c:'#FF9E3D',n:{en:'Joint regime',jp:'共同管理水域',de:'Gemeinsames Regime',ru:'Совместный режим',es:'Régimen conjunto'}},
+      {c:'#E64DFF',n:{en:'Unilateral claim (undisputed)',jp:'一方的主張（係争なし）',de:'Einseitiger Anspruch',ru:'Односторонняя претензия',es:'Reclamación unilateral'}},
+      {c:'#FF4D4D',d:1,n:{en:'Unsettled / disputed',jp:'未確定・係争中',de:'Ungeklärt / strittig',ru:'Не урегулировано / спор',es:'Sin resolver / disputa'}},
+      {c:'#FF7A3D',d:1,n:{en:'Unsettled median line',jp:'未確定の中間線',de:'Ungeklärte Mittellinie',ru:'Неурег. срединная линия',es:'Línea media sin resolver'}},
+      {c:'#E6ECF2',d:1,n:{en:'Baselines (archipelagic / straight / normal)',jp:'基線（群島・直線・通常）',de:'Basislinien',ru:'Исходные линии',es:'Líneas de base'}},
+      {c:'#C8D0D8',n:{en:'Connection line',jp:'接続線',de:'Verbindungslinie',ru:'Соединительная линия',es:'Línea de conexión'}}
+    ];
+    const eezRows=EEZ_CATS.map(cat=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;padding:1.5px 0;"><span style="display:inline-block;width:26px;height:0;border-top:3px ${cat.d?'dashed':'solid'} ${cat.c};box-shadow:0 0 4px ${cat.c};flex-shrink:0;"></span><span>${cat.n[currentLang]||cat.n.en}</span></div>`).join('');
     lgdEEZ.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="eez" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海洋管轄区域':currentLang==='de'?'Meereszonen':currentLang==='ru'?'Морские зоны':currentLang==='es'?'Zonas marítimas':'Maritime zones'}</h4>
-      <div style="display:flex; align-items:center; gap:9px; font-size:11.5px; padding:3px 0 5px;"><span style="display:inline-block; width:30px; height:0; border-top:3px solid ${EEZ_NEON}; box-shadow:0 0 5px ${EEZ_NEON}, 0 0 2px ${EEZ_NEON}; flex-shrink:0;"></span><span>${currentLang==='jp'?'海洋境界線（全種別）':currentLang==='de'?'Meeresgrenze (alle Typen)':currentLang==='ru'?'Морская граница (все типы)':currentLang==='es'?'Límite marítimo (todos los tipos)':'Maritime boundary (all types)'}</span></div>
-      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ（200海里）・領海（12海里）・条約/中間線・司法判断・共同管理・一方的主張・係争中の各境界を、視認性のため一本の蛍光ラインで表示。重なりは領有権紛争の目安。':currentLang==='de'?'AWZ (200 sm), Küstenmeer (12 sm), Vertrags-/Mittellinien, Gerichtsurteile, gemeinsame Regime, einseitige & strittige Grenzen — alle als eine gut sichtbare Neonlinie. Überlappungen = Streitfälle.':currentLang==='ru'?'ИЭЗ (200 миль), терр. море (12 миль), договорные/срединные линии, судебные решения, совместные режимы, односторонние и спорные границы — одной яркой неоновой линией. Наложения = споры.':currentLang==='es'?'ZEE (200 mn), mar territorial (12 mn), líneas de tratado/mediana, fallos judiciales, regímenes conjuntos y límites unilaterales/en disputa — en una sola línea neón muy visible. Solapamientos = disputas.':'EEZ (200 nm), territorial sea (12 nm), treaty & median lines, court rulings, joint regimes, unilateral & disputed boundaries — all drawn as one high-visibility neon line. Overlaps flag disputed claims.'}</div>
+      <div style="max-height:34vh; overflow-y:auto; margin:2px 0 4px; padding-right:2px;">${eezRows}</div>
+      <div style="font-size:10px; color:var(--text-muted); line-height:1.5; margin-top:2px;">${currentLang==='jp'?'EEZ＝排他的経済水域。沿岸国が漁業・海底資源を管轄（最大200海里）。境界の種類で色分け（視認性のため明るい配色）。重なりは領有権紛争の目安。':currentLang==='de'?'AWZ = Ausschließliche Wirtschaftszone (bis 200 sm). Linienfarbe = Grenztyp (helle Farben für bessere Sichtbarkeit); Überlappungen = Streitfälle.':currentLang==='ru'?'ИЭЗ = исключительная экономическая зона (до 200 миль). Цвет линий — тип границы (яркие цвета для читаемости); наложения — споры.':currentLang==='es'?'ZEE = Zona Económica Exclusiva (hasta 200 mn). Color de línea = tipo de límite (colores vivos para visibilidad); solapamientos = disputas.':'EEZ = Exclusive Economic Zone (to 200 nm). Line colour = boundary type (bright colours for visibility); overlaps flag disputed claims.'}</div>
       <div class="dl-hint">${currentLang==='jp'?'出典: MarineRegions WMS':currentLang==='de'?'Quelle: MarineRegions WMS':currentLang==='ru'?'Источник: MarineRegions WMS':currentLang==='es'?'Fuente: MarineRegions WMS':'Source: MarineRegions WMS'}</div>`;
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
@@ -12292,13 +12305,26 @@ window.addEventListener('DOMContentLoaded', () => {
       if(id==='ships'){ if(shipsTimer){ clearInterval(shipsTimer); shipsTimer=null; } stopAIS(); updateShipsZoomHint(); }
     }
     /* === EEZ via MarineRegions WMS === */
+    /* (#R79g) The MarineRegions default style colours each boundary TYPE (200 NM / 12 NM / treaty / median /
+       court / joint / unilateral / disputed / baselines / connection) but in DIM near-black tones that were
+       unreadable over the ocean. The fix is NOT to flatten them to one colour (that destroyed the whole point
+       of the layer) — it is to recolour EACH type to a BRIGHT, distinct line via an inline SLD (filter on the
+       `line_type` attribute; verified against the live WMS). This same table drives the legend below, so the
+       swatches always match exactly. Dash patterns are kept so baseline/unsettled variants stay distinguishable. */
+    const EEZ_STYLE=[
+      ['200 NM','#39FF6A',1.8,''],['12 NM','#12E3D6',1.8,''],['Treaty','#4D8BFF',1.8,''],
+      ['Median line','#B6FF3A',1.7,''],['Court ruling','#FFC21A',1.8,''],['Joint regime','#FF9E3D',1.8,''],
+      ['Unilateral claim (undisputed)','#E64DFF',1.8,''],
+      ['Unsettled (maritime)','#FF4D4D',1.9,'10 5'],['Unsettled (land)','#FF4D4D',1.9,'3 3'],
+      ['Unsettled median line (maritime)','#FF7A3D',1.9,'10 5'],['Unsettled median line (land)','#FF7A3D',1.9,'3 3'],
+      ['Straight baseline','#B9C4CE',1.5,''],['Normal baseline (official)','#E6ECF2',1.5,'9 5'],
+      ['Archipelagic baseline','#E6ECF2',1.5,'1 5'],['Connection line','#C8D0D8',1.1,'']
+    ];
     function addEEZ(){
       if(map.getSource('src-eez')) return;
-      /* (#R79f) The MarineRegions default style draws every boundary type in a DIM colour (dark teal/green/
-         brown) that was unreadable over the ocean ("線が視認性悪い"). Recolour ALL boundaries to ONE bright
-         neon line via an inline SLD (verified: the WMS honours SLD_BODY — every boundary pixel comes back
-         #39FF14). The legend is simplified to this single neon colour to match. */
-      const sld='<?xml version="1.0" encoding="UTF-8"?><StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"><NamedLayer><Name>eez_boundaries</Name><UserStyle><FeatureTypeStyle><Rule><LineSymbolizer><Stroke><CssParameter name="stroke">#39FF14</CssParameter><CssParameter name="stroke-width">2</CssParameter><CssParameter name="stroke-opacity">1</CssParameter></Stroke></LineSymbolizer></Rule></FeatureTypeStyle></UserStyle></NamedLayer></StyledLayerDescriptor>';   /* #39FF14 must match the legend swatch below */
+      const _x=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const rules=EEZ_STYLE.map(r=>'<Rule><ogc:Filter><ogc:PropertyIsEqualTo><ogc:PropertyName>line_type</ogc:PropertyName><ogc:Literal>'+_x(r[0])+'</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter><LineSymbolizer><Stroke><CssParameter name="stroke">'+r[1]+'</CssParameter><CssParameter name="stroke-width">'+r[2]+'</CssParameter><CssParameter name="stroke-opacity">1</CssParameter>'+(r[3]?('<CssParameter name="stroke-dasharray">'+r[3]+'</CssParameter>'):'')+'</Stroke></LineSymbolizer></Rule>').join('');
+      const sld='<?xml version="1.0" encoding="UTF-8"?><StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld" xmlns:ogc="http://www.opengis.net/ogc"><NamedLayer><Name>eez_boundaries</Name><UserStyle><FeatureTypeStyle>'+rules+'</FeatureTypeStyle></UserStyle></NamedLayer></StyledLayerDescriptor>';
       const wms='https://geo.vliz.be/geoserver/MarineRegions/wms?service=WMS&version=1.1.1&request=GetMap&layers=eez_boundaries&SLD_BODY='+encodeURIComponent(sld)+'&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857&format=image/png&transparent=true';
       map.addSource('src-eez',{type:'raster',tiles:[wms],tileSize:256});
       map.addLayer({id:'lyr-eez',type:'raster',source:'src-eez',layout:{visibility:'none'},paint:{'raster-opacity':opacities.eez}},beforeId);
