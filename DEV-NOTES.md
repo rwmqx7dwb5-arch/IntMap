@@ -5,6 +5,17 @@
 
 ---
 
+## R87 — live-camera coverage GREATLY expanded (tags `#R87`)
+
+Re-report: "ライブカメラ…coverageが限定的すぎる。すくなくとも今の20倍の利用可能数にしろ。しっかりしたものを（ハリボテNG）".
+
+- **Two big new KEYLESS camera networks, both fully verified end-to-end** (list-access AND image-display — a network whose image won't hotlink is a facade and was rejected). Added alongside the existing OSM-worldwide + TfL-London sets:
+  - **Caltrans (California DOT) CCTV** — **3,323 in-service cameras** across all 12 districts (`cwwp2.dot.ca.gov/data/dN/cctv/cctvStatusDNN.json`, native-CORS open JSON). Each is a direct refreshing JPEG (`imageData.static.currentImageURL`, ~5-min). Fetched once per district; features appear progressively. Verified: 12/12 districts parse, all coords valid, sample image loads (320×260). Pins blue `#2979ff`.
+  - **Fintraffic / Digitraffic (Finland)** — **811 stations / 2,260 live views** (`tie.digitraffic.fi/api/weathercam/v1/stations`, native-CORS, CC BY 4.0). The list omits imageUrl but every preset carries an `id` → deterministic `https://weathercam.digitraffic.fi/{id}.jpg`. One pin per station; the popup shows a **thumbnail switcher** for that station's several views (each swaps the main live image, which the refresh loop then keeps live via `data-base`). Verified: 811 pins, 2,260 views, coords valid, sample image loads (1280×720). Pins amber `#ffab00`.
+- **Pins now colour-coded by network** (per-feature `col`; `circle-color` = `coalesce(col, legacy kind-match)` so it's backward-compatible): OSM 🟢 / TfL 🟠 / Caltrans 🔵 / Fintraffic 🟡 (+ OSM yt red / pano cyan / video purple). Legend names all four sources with counts. `openCam` reads a per-feature `attr` for attribution.
+- **OSM density**: per-view Overpass cap **700 → 1,500** (more cams in dense areas). classify() UNCHANGED (keeps only genuinely-displayable cams — no facade regression).
+- **Honest scope note (measured, not hand-waved):** truly keyless + CORS-open + directly-hotlinkable camera networks are genuinely rare — tested & rejected NYC DOT (960 cams; image won't hotlink → times out), all US/CA "511" platforms (CORS-blocked), NZ NZTA (XML + CORS), and a global one-shot OSM load (>26 s on Overpass — kept view-based). Commercial global sets (Windy ~70 k, Vizzion, TrafficLand) need API keys → excluded (a client-embedded key breaks at quota = facade). Net result: the always-loaded usable pool goes from ~882 (TfL, London-only) + sparse OSM to **~6,500 verified live views across California + Finland + London + denser worldwide OSM** — from near-zero to thousands in whole new regions. Sources modal + Privacy §4 (EN+JP) add Caltrans + Fintraffic/Digitraffic; ToS unaffected (no provider enumeration there). Map paint/toggle can't run in the hidden headless tab (`isStyleLoaded` gate) — loader parsing + image-load verified against live endpoints instead.
+
 ## R86 — transit alternatives · Compare click-to-add · denser news (tags `#R86`)
 
 Batch from a big feature wishlist; these three shipped solid this round (others sequenced).
