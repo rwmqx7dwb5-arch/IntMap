@@ -20720,55 +20720,142 @@ window.addEventListener('DOMContentLoaded', () => {
     async function railRoute(from,to){
       const A=[+from.lng,+from.lat], B=[+to.lng,+to.lat]; const gc=_hav(A,B);
       if(gc<2.5) return {ok:false,reason:'too-close'}; if(gc>430) return {ok:false,reason:'too-far'};
-      const buf=Math.min(0.32,Math.max(0.06, gc/111*0.16));
+      const buf=Math.min(0.32,Math.max(0.2, gc/111*0.26));   /* (#R85f) wide enough to capture corridor detours (e.g. the Tōkaidō Shinkansen bulges north via Maibara) — a tight endpoint box clips the line and disconnects it; capped at the original 0.32 so long-corridor fetches are no heavier than before */
       const s=Math.min(A[1],B[1])-buf, n=Math.max(A[1],B[1])+buf, w=Math.min(A[0],B[0])-buf, e=Math.max(A[0],B[0])+buf;
-      const q='[out:json][timeout:60];(way["railway"~"^(rail|light_rail|narrow_gauge)$"][!"service"]('+s.toFixed(4)+','+w.toFixed(4)+','+n.toFixed(4)+','+e.toFixed(4)+'););(._;>;);out skel;';
+      const bb=s.toFixed(4)+','+w.toFixed(4)+','+n.toFixed(4)+','+e.toFixed(4);
+      /* (#R85f) fetch rail ways WITH tags (line name/ref + class) AND station nodes — so the itinerary can name the
+         REAL lines it rides (e.g. 東海道新幹線) and the REAL stations you board/alight at, instead of a nameless
+         "along the rail line". `out body` = way tags+node refs; `>;out skel` = geometry; station nodes carry names. */
+      const q='[out:json][timeout:90];(way["railway"~"^(rail|light_rail|narrow_gauge)$"][!"service"]('+bb+');node["railway"~"^(station|halt)$"]('+bb+'););out body;>;out skel qt;';
       const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
-      let data=null; for(const ep of EPS){ try{ const r=await fetch(ep,{method:'POST',body:q}); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length){ data=j; break; } } }catch(_){} }
-      if(!data){ try{ const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(EPS[0]+'?data='+encodeURIComponent(q))); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements) data=j; } }catch(_){} }
+      /* (#R85f) reject a PARTIAL result — under load Overpass returns truncated `elements` + a `remark` timeout/OOM
+         note; using it silently gives a disconnected graph → a wrong "no route". Skip it so the next mirror is tried.
+         Each fetch is time-boxed (AbortController) so one hung mirror can't stall the whole route indefinitely. */
+      const _partial=j=>/timed out|out of memory|runtime error/i.test((j&&j.remark)||'');
+      const _fetchT=(url,opts)=>{ const ac=new AbortController(), t=setTimeout(()=>{try{ac.abort();}catch(_){}} ,100000); return fetch(url,Object.assign({signal:ac.signal},opts||{})).finally(()=>clearTimeout(t)); };
+      let data=null; for(const ep of EPS){ try{ const r=await _fetchT(ep,{method:'POST',body:q}); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length&&!_partial(j)){ data=j; break; } } }catch(_){} }
+      if(!data){ try{ const r=await _fetchT('https://corsproxy.io/?url='+encodeURIComponent(EPS[0]+'?data='+encodeURIComponent(q))); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length&&!_partial(j)) data=j; } }catch(_){} }
       if(!data||!data.elements||!data.elements.length) return {ok:false,reason:'overpass'};
-      const coord={}; data.elements.forEach(el=>{ if(el.type==='node') coord[el.id]=[el.lon,el.lat]; });
+      const coord={}, ways=[], stns=[];
+      data.elements.forEach(el=>{ if(el.type==='node'){ coord[el.id]=[el.lon,el.lat];
+          const t=el.tags; if(t&&/^(station|halt)$/.test(t.railway||'')){ const nm=t.name||t['name:ja']||t['name:en']; if(nm) stns.push({ll:[el.lon,el.lat],name:nm,en:t['name:en']||''}); } }
+        else if(el.type==='way'&&el.nodes&&el.nodes.length>1){ ways.push(el); } });
       const idx={}, xy=[]; for(const id in coord){ idx[id]=xy.length; xy.push(coord[id]); }
       const N=xy.length; if(N<2) return {ok:false,reason:'no-rail'};
-      const adj=Array.from({length:N},()=>[]);
-      data.elements.forEach(el=>{ if(el.type==='way'&&el.nodes){ for(let i=0;i<el.nodes.length-1;i++){ const a=idx[el.nodes[i]], b=idx[el.nodes[i+1]]; if(a==null||b==null) continue; const d=_hav(xy[a],xy[b]); adj[a].push([b,d]); adj[b].push([a,d]); } } });
+      const adj=Array.from({length:N},()=>[]); const meta=[]; const hsLines=new Map();
+      ways.forEach(el=>{ const t=el.tags||{}; const name=t.name||t['name:ja']||''; const ref=t.ref||''; const nm=name||ref||t['name:en']||'';
+        const hs=(t.highspeed==='yes')||/新幹線|shinkansen|high[\s-]?speed|tgv|\bice\b/i.test(nm);
+        const cls=hs?'hs':(t.usage==='main'?'main':(t.railway==='light_rail'?'lr':(t.railway==='narrow_gauge'?'ng':'reg')));
+        const wi=meta.length; meta.push({name:name,ref:ref,en:t['name:en']||'',cls:cls});
+        let hg=null; if(hs){ const key=nm||('hs#'+wi); hg=hsLines.get(key); if(!hg){ hg={wi:wi,edges:[],nodes:new Set()}; hsLines.set(key,hg); } }
+        for(let i=0;i<el.nodes.length-1;i++){ const a=idx[el.nodes[i]], b=idx[el.nodes[i+1]]; if(a==null||b==null) continue; const d=_hav(xy[a],xy[b]); adj[a].push([b,d,wi]); adj[b].push([a,d,wi]); if(hg){ hg.edges.push([a,b,d]); hg.nodes.add(a); hg.nodes.add(b); } } });
       /* (#R85e) BRIDGE near-coincident nodes (OSM rail ways often don't share a node id where two lines meet, which
          left the graph in disconnected components — e.g. Nagoya's rail island didn't reach Osaka's). A spatial grid
-         welds nodes within ~30 m so the through routes connect. Verified: Nagoya→Osaka now solves to the real ~169 km
-         Tokaidō rail path. */
-      const CELL=0.0003, grid=new Map();
-      for(let i=0;i<N;i++){ const k=Math.round(xy[i][0]/CELL)+'_'+Math.round(xy[i][1]/CELL); let a=grid.get(k); if(!a){a=[];grid.set(k,a);} a.push(i); }
-      for(let i=0;i<N;i++){ const cx=Math.round(xy[i][0]/CELL), cy=Math.round(xy[i][1]/CELL);
-        for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){ const cell=grid.get((cx+dx)+'_'+(cy+dy)); if(!cell) continue; for(let m=0;m<cell.length;m++){ const j=cell[m]; if(j<=i) continue; const d=_hav(xy[i],xy[j]); if(d<0.03){ adj[i].push([j,d]); adj[j].push([i,d]); } } } }
-      const nearest=(pt)=>{ let bi=-1,bd=1e18; for(let i=0;i<N;i++){ const dx=xy[i][0]-pt[0],dy=xy[i][1]-pt[1],d=dx*dx+dy*dy; if(d<bd){bd=d;bi=i;} } return bi; };
-      const sN=nearest(A), tN=nearest(B); if(sN<0||tN<0||sN===tN) return {ok:false,reason:'no-rail'};
-      const dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1); dist[sN]=0;
-      const heap=[[0,sN]]; const up=(i)=>{ while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0])break; const t=heap[p];heap[p]=heap[i];heap[i]=t; i=p; } };
-      const down=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=2*i+2,m=i; if(l<heap.length&&heap[l][0]<heap[m][0])m=l; if(r<heap.length&&heap[r][0]<heap[m][0])m=r; if(m===i)break; const t=heap[m];heap[m]=heap[i];heap[i]=t; i=m; } } return top; };
-      let guard=0; while(heap.length&&guard++<12000000){ const [d,u]=down(); if(d>dist[u]) continue; if(u===tN) break; const au=adj[u]; for(let k=0;k<au.length;k++){ const v=au[k][0], nd=d+au[k][1]; if(nd<dist[v]){ dist[v]=nd; prev[v]=u; heap.push([nd,v]); up(heap.length-1); } } }
-      if(!isFinite(dist[tN])) return {ok:false,reason:'disconnected'};
-      const path=[]; for(let u=tN;u!==-1;u=prev[u]) path.push(xy[u]); path.reverse();
-      return {ok:true, railCoords:path, railKm:dist[tN], boardLL:xy[sN], alightLL:xy[tN]};
+         welds nodes within a tolerance so through routes connect (weld edges carry way-index -1 = "inherit line"). */
+      const weld=(adjArr,nodeList,tol)=>{ const CELL=Math.max(tol*1.15/111,1e-5), grid=new Map(), arr=nodeList||Array.from({length:N},(_,i)=>i);
+        arr.forEach(i=>{ const k=Math.round(xy[i][0]/CELL)+'_'+Math.round(xy[i][1]/CELL); let a=grid.get(k); if(!a){a=[];grid.set(k,a);} a.push(i); });
+        arr.forEach(i=>{ const cx=Math.round(xy[i][0]/CELL), cy=Math.round(xy[i][1]/CELL);
+          for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){ const cell=grid.get((cx+dx)+'_'+(cy+dy)); if(!cell) continue; for(let m=0;m<cell.length;m++){ const j=cell[m]; if(j<=i) continue; const d=_hav(xy[i],xy[j]); if(d<tol){ (adjArr[i]||(adjArr[i]=[])).push([j,d,-1]); (adjArr[j]||(adjArr[j]=[])).push([i,d,-1]); } } } }); };
+      weld(adj,null,0.03);
+      /* (#R85f) label connected components and snap origin/dest to the nearest node IN THE LARGEST (main JR/Shinkansen)
+         component — the geometrically-nearest track is sometimes an ISOLATED stub/loop that only joins the network
+         outside the bbox, which left sN/tN "disconnected" and killed the whole route (a 0.5 km move in the dest flipped it). */
+      const cpar=new Int32Array(N); for(let i=0;i<N;i++) cpar[i]=i;
+      const cfind=x=>{ while(cpar[x]!==x){ cpar[x]=cpar[cpar[x]]; x=cpar[x]; } return x; };
+      for(let u=0;u<N;u++){ const au=adj[u]; for(let k=0;k<au.length;k++){ const v=au[k][0], ru=cfind(u), rv=cfind(v); if(ru!==rv) cpar[ru]=rv; } }
+      const csz=new Map(); let bigRoot=-1,bigSz=-1; for(let i=0;i<N;i++){ const r=cfind(i); const z=(csz.get(r)||0)+1; csz.set(r,z); if(z>bigSz){bigSz=z;bigRoot=r;} }
+      const nearest=(pt,mainOnly)=>{ let bi=-1,bd=1e18; for(let i=0;i<N;i++){ if(mainOnly&&cfind(i)!==bigRoot) continue; const dx=xy[i][0]-pt[0],dy=xy[i][1]-pt[1],d=dx*dx+dy*dy; if(d<bd){bd=d;bi=i;} } return bi; };
+      /* Dijkstra over any adjacency (full graph or a single-line subgraph); penHs = make bullet-train edges costly so
+         short connectors ride the conventional line instead of doubling back on the Shinkansen. Returns a node path. */
+      const dij=(adjA,src,dst,penHs)=>{ const dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1); dist[src]=0;
+        const heap=[[0,src]]; const up=(i)=>{ while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0])break; const t=heap[p];heap[p]=heap[i];heap[i]=t; i=p; } };
+        const down=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=2*i+2,m=i; if(l<heap.length&&heap[l][0]<heap[m][0])m=l; if(r<heap.length&&heap[r][0]<heap[m][0])m=r; if(m===i)break; const t=heap[m];heap[m]=heap[i];heap[i]=t; i=m; } } return top; };
+        let guard=0; while(heap.length&&guard++<12000000){ const t=down(); const d=t[0],u=t[1]; if(d>dist[u]) continue; if(u===dst) break; const au=adjA[u]; if(!au) continue;
+          for(let k=0;k<au.length;k++){ const v=au[k][0]; let cost=au[k][1]; if(penHs&&au[k][2]>=0&&meta[au[k][2]]&&meta[au[k][2]].cls==='hs') cost*=8; const nd=d+cost; if(nd<dist[v]){ dist[v]=nd; prev[v]=u; heap.push([nd,v]); up(heap.length-1); } } }
+        if(!isFinite(dist[dst])) return null; const p=[]; for(let u=dst;u!==-1;u=prev[u]) p.push(u); p.reverse(); return p; };
+      /* shortest rail path from a node to the FIRST node of a target line that is actually reachable through the network
+         — this locates the real transfer junction (where the conventional network meets the Shinkansen), which the
+         single geometrically-nearest line node often is NOT (its platform may be >30 m from any welded conventional node) */
+      const reachLine=(src,lineSet)=>{ if(lineSet.has(src)) return [src];
+        const dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1); dist[src]=0;
+        const heap=[[0,src]]; const up=(i)=>{ while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0])break; const t=heap[p];heap[p]=heap[i];heap[i]=t; i=p; } };
+        const down=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=2*i+2,m=i; if(l<heap.length&&heap[l][0]<heap[m][0])m=l; if(r<heap.length&&heap[r][0]<heap[m][0])m=r; if(m===i)break; const t=heap[m];heap[m]=heap[i];heap[i]=t; i=m; } } return top; };
+        let guard=0, hit=-1; while(heap.length&&guard++<12000000){ const t=down(); const d=t[0],u=t[1]; if(d>dist[u]) continue; if(lineSet.has(u)){ hit=u; break; } const au=adj[u]; if(!au) continue;
+          for(let k=0;k<au.length;k++){ const v=au[k][0], nd=d+au[k][1]; if(nd<dist[v]){ dist[v]=nd; prev[v]=u; heap.push([nd,v]); up(heap.length-1); } } }
+        if(hit<0) return null; const p=[]; for(let u=hit;u!==-1;u=prev[u]) p.push(u); p.reverse(); return p; };
+      const wayOf=(a,b)=>{ const au=adj[a]; if(!au) return -1; let best=-1; for(let k=0;k<au.length;k++){ if(au[k][0]===b){ if(au[k][2]>=0) return au[k][2]; best=au[k][2]; } } return best; };
+      /* assemble the itinerary from an ordered list of node-index runs (connector + main-line + connector): concat,
+         collapse into named-line legs, drop tiny junction stubs, and snap real stations for board/transfer/alight. */
+      const assemble=(runs)=>{ const nodes=[]; runs.forEach(p=>{ if(!p||!p.length) return; const i0=(nodes.length&&nodes[nodes.length-1]===p[0])?1:0; for(let i=i0;i<p.length;i++) nodes.push(p[i]); });
+        if(nodes.length<2) return {ok:false,reason:'disconnected'};
+        const path=nodes.map(i=>xy[i]); let railKm=0; for(let i=0;i<path.length-1;i++) railKm+=_hav(path[i],path[i+1]);
+        const segs=[]; let carry=null;
+        for(let i=0;i<nodes.length-1;i++){ let wi=wayOf(nodes[i],nodes[i+1]); if(wi<0){ wi=carry; } else carry=wi; const d=_hav(path[i],path[i+1]);
+          const mk=(wi==null||wi<0)?null:meta[wi]; const key=mk?(mk.name||mk.ref||('cls:'+mk.cls)):'_'; const last=segs[segs.length-1];
+          if(last&&last.key===key){ last.km+=d; last.e=i+1; } else segs.push({key:key,km:d,s:i,e:i+1,name:mk?(mk.name||''):'',en:mk?mk.en:'',ref:mk?mk.ref:'',cls:mk?mk.cls:'reg'}); }
+        const MINSEG=2.0; let chg=true;
+        while(chg&&segs.length>1){ chg=false; for(let i=0;i<segs.length;i++){ if(segs[i].km<MINSEG){ const a=segs[i-1],b=segs[i+1]; const tgt=(a&&(!b||a.km>=b.km))?a:b; if(!tgt) break; tgt.km+=segs[i].km; if(tgt===a) tgt.e=segs[i].e; else tgt.s=segs[i].s; segs.splice(i,1); chg=true; break; } } }
+        const stride=Math.max(1,Math.floor(path.length/1600)); const onPath=[];
+        stns.forEach(st=>{ let bd=1e18,bi=-1; for(let i=0;i<path.length;i+=stride){ const d=_hav(path[i],st.ll); if(d<bd){bd=d;bi=i;} } if(bd<0.6) onPath.push({name:st.name,en:st.en,ll:st.ll,idx:bi}); });
+        onPath.sort((a,b)=>a.idx-b.idx);
+        const uniq=[]; onPath.forEach(o=>{ const p=uniq[uniq.length-1]; if(p&&p.name===o.name&&(o.idx-p.idx)<40) return; uniq.push(o); });
+        /* pick the station physically nearest a point, nudging toward the plain JR/mainline stop over a co-located
+           private-railway namesake (名古屋 over 近鉄名古屋) so the boarding station matches the line actually ridden */
+        const PRV=/^(近鉄|京阪|阪急|阪神|名鉄|南海|東武|西武|京王|小田急|京急|相鉄|東急|Kintetsu|Keihan|Hankyu|Hanshin|Meitetsu|Nankai|Tobu|Seibu|Keio|Odakyu|Keikyu|Sotetsu|Tokyu)/i;
+        const stAt=(pt)=>{ let bo=null,bs=1e18; for(const o of onPath){ let sc=_hav(o.ll,pt); if(PRV.test(o.name||'')||PRV.test(o.en||'')) sc+=0.2; if(sc<bs){bs=sc;bo=o;} } return bo; };
+        const segOut=segs.map(sg=>({name:sg.name,en:sg.en,ref:sg.ref,cls:sg.cls,km:sg.km,coords:path.slice(sg.s,sg.e+1),from:stAt(path[sg.s]),to:stAt(path[sg.e])}));
+        return {ok:true, railCoords:path, railKm:railKm, boardLL:xy[nodes[0]], alightLL:xy[nodes[nodes.length-1]], segs:segOut, board:stAt(path[0]), alight:stAt(path[path.length-1]), stops:uniq.length}; };
+      const sN=nearest(A,true), tN=nearest(B,true); if(sN<0||tN<0||sN===tN) return {ok:false,reason:'no-rail'};
+      /* (#R85f) INTERCITY (>50 km): if a single high-speed line runs near BOTH ends, ride it end-to-end (what people
+         mean by "電車で 名古屋→大阪"), stitching a short conventional connector where the bullet-train station sits a few
+         km from the real destination (e.g. Shin-Ōsaka→Ōsaka). Otherwise fall back to the plain shortest rail path. */
+      if(gc>50 && hsLines.size){
+        const cands=[]; hsLines.forEach((hg)=>{ if(hg.nodes.size<2) return; let nbd=1e18,nad=1e18; hg.nodes.forEach(nd=>{ const da=_hav(xy[nd],A); if(da<nbd)nbd=da; const db=_hav(xy[nd],B); if(db<nad)nad=db; }); if(nbd<35&&nad<35) cands.push({hg:hg,score:nbd+nad}); });
+        cands.sort((x,y)=>x.score-y.score);
+        for(const c of cands.slice(0,3)){
+          const lineSet=c.hg.nodes;
+          /* find the REAL transfer junctions: the nearest line node reachable by rail from the origin's / dest's nearest
+             track (sN/tN). The access & egress legs are the rides sN→boardJ and alightJ→tN (conventional), so the only
+             WALK is origin→sN and tN→dest (nearest track) — never a multi-km walk to a far bullet-train station. */
+          const bStart=reachLine(sN,lineSet), eEnd=reachLine(tN,lineSet); if(!bStart||!eEnd) continue;
+          const boardJ=bStart[bStart.length-1], alightJ=eEnd[eEnd.length-1]; if(boardJ===alightJ) continue;
+          const sub={}; c.hg.edges.forEach(ed=>{ (sub[ed[0]]||(sub[ed[0]]=[])).push([ed[1],ed[2],c.hg.wi]); (sub[ed[1]]||(sub[ed[1]]=[])).push([ed[0],ed[2],c.hg.wi]); });
+          weld(sub,Array.from(lineSet),0.08);
+          const hr=dij(sub,boardJ,alightJ,false); if(!hr) continue;
+          const runs=[]; if(bStart.length>1) runs.push(bStart); runs.push(hr); if(eEnd.length>1) runs.push(eEnd.slice().reverse());
+          const rr=assemble(runs); if(rr&&rr.ok) return rr;
+        }
+      }
+      const fr=dij(adj,sN,tN,false); if(!fr) return {ok:false,reason:'disconnected'};
+      return assemble([fr]);
     }
     function _renderRail(from,to,rr){ ensureLayers();
-      const railCol='#1558d6', walkCol='#7a7f87';
+      const railCol='#1558d6', hsCol='#0b8a4a', walkCol='#7a7f87';
+      const clsCol=c=>c==='hs'?hsCol:railCol; const clsSpd=c=>c==='hs'?200:(c==='main'?88:(c==='lr'?38:(c==='ng'?55:64)));   /* km/h effective (incl. stops) per line class */
+      const sNm=st=>st?(currentLang==='jp'?(st.name||st.en):(st.en||st.name)):'';
       const boardM=_hav([+from.lng,+from.lat],rr.boardLL)*1000, alightM=_hav(rr.alightLL,[+to.lng,+to.lat])*1000;
-      const feats=[
-        {type:'Feature',geometry:{type:'LineString',coordinates:[[+from.lng,+from.lat],rr.boardLL]},properties:{col:walkCol,walk:1,w:4}},
-        {type:'Feature',geometry:{type:'LineString',coordinates:rr.railCoords},properties:{col:railCol,walk:0,w:5.5}},
-        {type:'Feature',geometry:{type:'LineString',coordinates:[rr.alightLL,[+to.lng,+to.lat]]},properties:{col:walkCol,walk:1,w:4}},
-        {type:'Feature',geometry:{type:'Point',coordinates:rr.boardLL},properties:{k:'stop',col:railCol}},
-        {type:'Feature',geometry:{type:'Point',coordinates:rr.alightLL},properties:{k:'stop',col:railCol}},
-        {type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}},
-        {type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}}];
+      const feats=[{type:'Feature',geometry:{type:'LineString',coordinates:[[+from.lng,+from.lat],rr.boardLL]},properties:{col:walkCol,walk:1,w:4}}];
+      if(rr.segs&&rr.segs.length){ rr.segs.forEach(sg=>{ if(sg.coords&&sg.coords.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:sg.coords},properties:{col:clsCol(sg.cls),walk:0,w:sg.cls==='hs'?6:5.5}}); }); }
+      else feats.push({type:'Feature',geometry:{type:'LineString',coordinates:rr.railCoords},properties:{col:railCol,walk:0,w:5.5}});
+      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:[rr.alightLL,[+to.lng,+to.lat]]},properties:{col:walkCol,walk:1,w:4}});
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:rr.boardLL},properties:{k:'stop',col:railCol}});
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:rr.alightLL},properties:{k:'stop',col:railCol}});
+      if(rr.segs) for(let i=1;i<rr.segs.length;i++){ const c=rr.segs[i].coords&&rr.segs[i].coords[0]; if(c) feats.push({type:'Feature',geometry:{type:'Point',coordinates:c},properties:{k:'stop',col:railCol}}); }
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}});
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}});
       try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
       try{ let a=180,b=90,c=-180,d=-90; rr.railCoords.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); }); if(isFinite(a)) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:900}); }catch(_){}
-      const avg=rr.railKm>90?115:(rr.railKm>25?72:42);   /* km/h — long routes imply express/Shinkansen-class service */
-      const railS=rr.railKm/avg*3600, walkS=(boardM+alightM)/1.33;
-      const legs=[{mode:'WALK',walk:1,duration:Math.round(boardM/1.33),from:'',to:LL('board the train','乗車','einsteigen','посадка','abordar'),color:walkCol},
-        {mode:'RAIL',walk:0,route:'',headsign:LL('~'+Math.round(rr.railKm)+' km along the rail line','鉄道 約'+Math.round(rr.railKm)+' km','~'+Math.round(rr.railKm)+' km Bahn','~'+Math.round(rr.railKm)+' км по ж/д','~'+Math.round(rr.railKm)+' km por vía'),from:'',to:'',duration:Math.round(railS),color:railCol},
-        {mode:'WALK',walk:1,duration:Math.round(alightM/1.33),from:'',to:LL('to destination','目的地へ','zum Ziel','к цели','al destino'),color:walkCol}];
-      return {ok:true,transit:true,railEstimate:true,duration:Math.round(railS+walkS),transfers:0,legs,railKm:rr.railKm,mode:'transit'};
+      let railS=0; const legs=[];
+      legs.push({mode:'WALK',walk:1,duration:Math.round(boardM/1.33),from:'',to:(rr.board?sNm(rr.board):LL('board the train','乗車','einsteigen','посадка','abordar')),color:walkCol});
+      if(rr.segs&&rr.segs.length){ rr.segs.forEach(sg=>{ const t=sg.km/clsSpd(sg.cls)*3600; railS+=t;
+          const nm=currentLang==='jp'?(sg.name||sg.en||sg.ref):(sg.en||sg.name||sg.ref);
+          legs.push({mode:sg.cls==='hs'?'HIGHSPEED':(sg.cls==='lr'?'LIGHT_RAIL':'RAIL'),walk:0,route:nm||LL('rail line','鉄道','Bahnlinie','ж/д линия','vía'),from:sNm(sg.from),to:sNm(sg.to),headsign:'',duration:Math.round(t),color:clsCol(sg.cls)}); }); }
+      else { railS=rr.railKm/(rr.railKm>90?115:(rr.railKm>25?72:42))*3600;
+        legs.push({mode:'RAIL',walk:0,route:'',headsign:LL('~'+Math.round(rr.railKm)+' km along the rail line','鉄道 約'+Math.round(rr.railKm)+' km','~'+Math.round(rr.railKm)+' km Bahn','~'+Math.round(rr.railKm)+' км по ж/д','~'+Math.round(rr.railKm)+' km por vía'),from:'',to:'',duration:Math.round(railS),color:railCol}); }
+      legs.push({mode:'WALK',walk:1,duration:Math.round(alightM/1.33),from:'',to:LL('to destination','目的地へ','zum Ziel','к цели','al destino'),color:walkCol});
+      const transfers=Math.max(0,(rr.segs?rr.segs.length:1)-1); const transferS=transfers*180, walkS=(boardM+alightM)/1.33;
+      return {ok:true,transit:true,railEstimate:true,duration:Math.round(railS+walkS+transferS),transfers:transfers,legs:legs,railKm:rr.railKm,mode:'transit',
+        lines:(rr.segs||[]).map(sg=>currentLang==='jp'?(sg.name||sg.en):(sg.en||sg.name)).filter(Boolean)};
     }
     async function transit(from,to,opts){ opts=opts||{};
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
@@ -23283,11 +23370,11 @@ window.addEventListener('DOMContentLoaded', () => {
               const head=l.walk?(L('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+esc(l.to)):'')):((l.route?('<b>'+esc(l.route)+'</b> '):'')+esc(l.headsign||l.to||''));
               const sub=l.walk?'':(esc(l.from||'')+(l.dep?(' · '+_tm(l.dep)):''));
               return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; }).join('');
-            const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km '+L('by rail','鉄道','per Bahn','по ж/д','por vía')):('<b>'+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
+            const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km'+(r.lines&&r.lines.length?(' · '+r.lines.slice(0,3).map(esc).join(' → ')):(' '+L('by rail','鉄道','per Bahn','по ж/д','por vía')))):('<b>'+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
             let h=_hdr+'<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div>'
               +'<div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'
               +note(r.railEstimate
-                ? L('Routed along the REAL rail network (OpenStreetMap) — the line the train follows, with walking legs to/from the nearest track. This region has no open transit timetable (e.g. Japan\'s JR/Shinkansen isn\'t open GTFS), so the time is a distance-based estimate, not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って算出した「列車が走る経路」です（最寄り線路までは徒歩）。この地域は公開時刻表（JR/新幹線等は非公開GTFS）が無いため、所要時間は距離ベースの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM) — Zeit ist eine Schätzung, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) — время оценочное, не расписание.','Trazado por la red ferroviaria real (OSM) — tiempo estimado, no horario.')
+                ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
                 : L('Live public-transit routing (Transitous / MOTIS). Walking legs are dotted; each ride is coloured by mode on the map.','公共交通のライブ経路検索（Transitous／MOTIS）。徒歩は点線、乗車区間はモード別に色分けして地図表示。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));
             return R(true, h); }
           if(!r||!r.ok){ if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
