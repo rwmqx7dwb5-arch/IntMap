@@ -3836,3 +3836,10 @@ Big batch; every item below is a direct user report.
 - **スマホで国旗が出るがPCで出ない**: Windowsの絵文字フォントに国旗グリフが無く、地域指示子ペアが文字箱("US")で描画される。**Twemoji Country Flags webフォント（自己ホスト `TwemojiCountryFlags.woff2`・78KB）**を `unicode-range` で国旗コードポイントのみに限定して同梱し、canvasで「国旗が色付き描画されるか」を判定→ネイティブ非対応時のみ body の font-family 先頭に差し込む（スマホ/Macはネイティブ国旗のまま）。実測(ヘッドレス=非対応判定): フォント定義済み・`document.fonts.load`成功・`.stat-flag 🇺🇸` の computed font に "Twemoji Country Flags" 適用。Sources に Twemoji（CC-BY 4.0）追記、LEGAL_DATE→2026-07-12（外部送信データ増なし＝Privacy §4変更なし、同梱アセットの帰属のみ）。
 - **通常モードのサイドバーに"Filter countries"が紛れ込む**: R79bで追加した `#countries-search-bar` にも class `.search-bar` があり、renderUI/`querySelector('.search-bar')` がws往復後にコレを先頭マッチ→通常モードで display:flex を書き込んでいた。根治: renderUI と 8698行を **`getElementById('sidebar-search-bar')`** に（共有バーをID直指定）＋ ベースCSSに `#countries-search-bar{display:none!important}`（ws内のルールは高詳細度＋!importantで勝つので窓内では表示）。実測: 通常モード＝none（Statsタブでもnone）、ws国窓内＝flex表示。
 - 回帰: 129レイヤー行、ws既定4窓、国検索/比較(表示までEnd-to-End)、コンソールエラー0。
+
+### R79f — 海洋zone蛍光ライン／既定は配置窓のみ／レイヤー例画像を実データ描画に差し替え
+- **maritime zones（EEZ）の線が視認性悪い→蛍光ライン**: MarineRegions WMSの既定スタイルは境界種別ごとに暗色（濃teal/緑/茶）で海上で読めなかった。`addEEZ` で **inline SLD（SLD_BODY）** を渡し、全境界を1本の **ネオングリーン #39FF14** に再描画（curlで検証: 全境界ピクセルが#39FF14で返る＝WMSがSLD_BODYを honor）。凡例も多色種別リスト→**単一ネオンswatch（glow付き）＋種別を注記テキスト**に簡素化（「凡例もそれに応じて変えて」）。
+- **「デフォルト状態で全部のウィンドウをオンにするのはやめろ」**: 既定は**配置窓（Countries/Map/Layers/Atlas）のみ**。オンデマンド窓（News/Information/Community＝defHidden）は**保存状態に関わらず常に非表示で起動**（開いた状態を永続化しない）→ 保存レイアウトに溜まって全窓表示になる事故を根絶。実測: vis全true汚染状態でも表示は4窓のみ。配置窓の開閉は従来どおり永続。
+- **レイヤー例画像を実データ描画スクショに差し替え（「手抜き」根絶）**: PILで**各レイヤー自身の実データ**からオフライン描画・自己ホスト（web-mercatorでアプリと同投影）：①Ecoregions=RESOLVE ecoregions_2017.geojson の各ポリゴンを公式COLORで塗り（全大陸のバイオーム）②Tectonic plates=Peter-Bird PB2002_boundaries を実座標でネオン橙ライン（環太平洋・大西洋中央海嶺）③Wind=実海岸線上に全球流線（速度で配色）④Koppen=4k世界メルカトルPNGを**ヨーロッパにクロップ**（「ヨーロッパを写したスクショに」）＋黒海洋を暗色に⑤Base map & labels=実CARTO Voyagerタイル（仏・スイス＝国境+都市ラベル+水域）。`IMG{}`（into()で最優先）へ配線し、旧canvasスケッチ／omWindPaintを置換。実測: 5タイルすべて対応PNGを背景適用・読込OK・480×242/512×256。
+- **Sources/法務**: 新規外部エンドポイントなし（MarineRegions WMSは既出、PB2002はビルド時のみ）。Twemoji(R79e)以外の法務変更なし。
+- 回帰: 129レイヤー行、ws既定4窓、コンソールエラー0。
