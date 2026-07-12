@@ -5,6 +5,17 @@
 
 ---
 
+## R86 — transit alternatives · Compare click-to-add · denser news (tags `#R86`)
+
+Batch from a big feature wishlist; these three shipped solid this round (others sequenced).
+
+- **Transit alternatives (the Berlin→Amsterdam screenshot).** MOTIS already returns many itineraries but `transit()` only surfaced the best. Now it builds EVERY itinerary (`_buildItin`, up to 5, ranked: rides-something-first then by duration), each with its own coloured geometry; the Atlas reply lists them Google/Apple-Maps-style — a tap-to-expand accordion (`.atl-trip[data-ai]`) showing dep–arr time, total duration, transfer count, mode-icon sequence (🚇 S9 → 🚄 ICE 277 → …) and, when expanded, the full leg detail with per-leg departure times. Tapping a card redraws THAT itinerary on the map via `IntMapRouting.selectAlt(i)` (module keeps `_tAlts` with per-alt feats; `_drawFeats` factored out). Delegated on `#atlas-panel` next to the existing mode-switcher handler. Verified live: Berlin→Amsterdam → 5 real options (ICE 277/646, FlixBus N44, Sprinter, Tram 14) with times/transfers in ~5 s (Transitous, not throttled). railEstimate (OSM Shinkansen fallback) has one route → no accordion, unchanged.
+- **Compare → pick a country on the map (`#2`).** `IntMapStatsCompare` gets a ◎ target button beside the search input (matching `.scp-add` styling — no layout disturbance). Press it → `_setPick(true)`: crosshair cursor, `window.__scpPick=true`, `map.on('click',_pickClick)`. A click resolves to a country via turf point-in-polygon over `countryGeo` + `resolveCountryId` (same primitives as the shipping `countryAt`/country-fill click) and pushes it into `codes` (continuous until pressed again / Esc / 10 reached / panel closed). Guarded the country-detail click (`!window.__scpPick`) and `handleMapClick` so pick mode owns the click and doesn't destroy the compare view. Verified: button placement, toggle state, cursor, Esc/close cleanup (map-click resolution itself can't fire in the hidden headless tab, but the resolver is byte-identical to proven code).
+- **Denser news cards (`#3`).** `.news-item` padding 16→**11px 15px**, radius 16→14, `.news-title` margin-top 8→5, `.news-foot` 8→6, and a news-only `#live-news-feed{gap:9px}` (info/community/countries feeds untouched). The ★ (`.btn-bookmark`) re-aligned to `top:9px;right:14px;font-size:17px;line-height:1` so it sits with the head row and doesn't clash when compressed (the `.news-head` keeps its `padding-right` clearance). ~14 px shorter per card without cramming.
+- **Still sequenced (not this round):** isochrone/reachability, universal object list, multi-point route optimisation (TSP), unified disaster simulator, slope/aspect analysis, sun/shadow, RF/coverage, Earth Replay. Live cameras ALREADY EXIST (`dl-webcams`, OSM Overpass `contact:webcam`/`webcam` — see Sources).
+
+---
+
 ## 1. What IntMap is
 
 A single-file global-intelligence web map (`index.html`, ~7k lines) + a small admin page
