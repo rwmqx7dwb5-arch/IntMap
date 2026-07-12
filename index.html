@@ -6588,9 +6588,7 @@ window.addEventListener('DOMContentLoaded', () => {
       'dl-contours':'preview_contours.png',
       /* (#R74) ECMWF SST preview = the real GHRSST product (equatorial-Pacific crop, distinct from dl-sst's Gulf Stream) */
       'dl-ec-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-150,0),
-      /* (#R83) Cloud cover(ECMWF) preview = a REAL satellite view of cloud (MODIS true-colour over the storm-track
-         North Atlantic) instead of synthetic blobs — correct 2:1 aspect, actual clouds */
-      'dl-ec-cloud':G('MODIS_Terra_CorrectedReflectance_TrueColor',9,'2025-06-15','jpg',3,-38,49),
+      /* (#R84) dl-ec-cloud now renders as a REAL basemap + MODIS-cloud composite (see REAL['dl-ec-cloud']) */
       /* (#R78e) real CARTO basemap cartography for the vector-overlay layers (each a distinct, recognisable region) */
       'cb-names':'preview_basemap.png',        /* (#R79i) actual IntMap base map & labels captured over Central Europe (names + borders + roads) */
       'cb-geolabels':CT('rastertiles/voyager',6,23.0,37.8),        /* Aegean — sea & island labels */
@@ -6704,7 +6702,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- 4) real member sets (mirrors of the layers' own lists) ---- */
     const MEMBERS={
       'dl-nato':{set:'USA CAN GBR FRA DEU ITA ESP PRT NLD BEL LUX DNK NOR ISL POL CZE SVK HUN ROU BGR HRV SVN EST LVA LTU GRC TUR ALB MNE MKD FIN SWE',col:'#1e63ff',view:[-95,28,52,72]},
-      'dl-eu':{set:'BEL FRA DEU ITA LUX NLD DNK IRL GBR GRC ESP PRT AUT FIN SWE CYP CZE EST HUN LVA LTU MLT POL SVK SVN BGR ROU HRV',col:'#2456c9',view:[-13,33,36,68]},
+      /* (#R84) dl-eu now renders as a REAL basemap composite (see REAL['dl-eu']); no longer a member-fill sketch */
       'fsu':{set:'RUS UKR BLR MDA EST LVA LTU GEO ARM AZE KAZ UZB TKM KGZ TJK',col:'#d64541',view:[19,35,155,76]}
     };
     function memberMap(spec){ const c=cnv(),ctx=c.getContext('2d');
@@ -7059,6 +7057,33 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     const REAL_LAZY={'l9-dl-aurora':1,'dl-subcables':1,'bx-heat':1};   /* heavier feeds fetch only when the tile is shown */
     Object.keys(OMPAINT).forEach(id=>{ REAL[id]=()=>omGrid().then(F=>F?OMPAINT[id](F):null); });
+    /* ==== (#R84) REAL "IntMap screenshot" previews ("実際のIntMapのスクショ…適切なもの") — the ACTUAL CARTO basemap
+       (2 web-mercator tiles = a true 2:1 slice) with the real layer drawn on top via setView, exactly like a
+       screenshot of the live map. Falls back to the PAINT sketch if the tiles fail (CORS/offline). ==== */
+    function _bmShot(z,lon,lat,dark,drawOverlay){ const t=tXY(z,lon,lat), n=Math.pow(2,z), style=dark?'dark_all':'rastertiles/voyager';
+      const u=(sub,x)=>'https://'+sub+'.basemaps.cartocdn.com/'+style+'/'+z+'/'+(((x%n)+n)%n)+'/'+t.y+'@2x.png';
+      return Promise.all([imgLoad(u('a',t.x)),imgLoad(u('b',t.x+1))]).then(ims=>{ if(!ims[0]&&!ims[1]) return null;
+        const lon0=t.x/n*360-180, lon1=(t.x+2)/n*360-180;
+        const latT=Math.atan(Math.sinh(Math.PI*(1-2*t.y/n)))*180/Math.PI, latB=Math.atan(Math.sinh(Math.PI*(1-2*(t.y+1)/n)))*180/Math.PI;
+        try{ setView([lon0,latB,lon1,latT]); const c=cnv(),ctx=c.getContext('2d');
+          ctx.fillStyle=dark?'#0b0e14':'#e2e8ef'; ctx.fillRect(0,0,W,H);
+          try{ if(ims[0]) ctx.drawImage(ims[0],0,0,W/2,H); if(ims[1]) ctx.drawImage(ims[1],W/2,0,W/2,H); }catch(_){}
+          try{ drawOverlay(ctx,t,n); }catch(_){}
+          let out=null; try{ out=c.toDataURL('image/png'); }catch(_){ out=null; } return out;
+        } finally{ setView(null); } }).catch(()=>null); }
+    const _EUSET=new Set('BEL FRA DEU ITA LUX NLD DNK IRL GRC ESP PRT AUT FIN SWE CYP CZE EST HUN LVA LTU MLT POL SVK SVN BGR ROU HRV'.split(' '));
+    REAL['dl-eu']=()=>_bmShot(3,-8,48,false,ctx=>{ drawLand(ctx,cd=>_EUSET.has(cd)?'rgba(30,92,224,0.5)':null,'rgba(30,92,224,0.85)'); });
+    REAL['beta-dl-volc2']=()=>_bmShot(2,150,22,false,ctx=>{ ctx.fillStyle='#ff5a2c'; ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=0.6; VOLC.forEach(p=>{ const x=X(p[0]),y=Y(p[1]); if(x<-6||x>W+6||y<-6||y>H+6) return; ctx.beginPath(); ctx.moveTo(x,y-3.4); ctx.lineTo(x-3,y+2.4); ctx.lineTo(x+3,y+2.4); ctx.closePath(); ctx.fill(); ctx.stroke(); }); });
+    REAL['bx-eq']=()=>fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson').then(r=>r.json()).then(j=>{ const fs=(j&&j.features)||[]; return _bmShot(1,0,16,true,ctx=>{ fs.slice(0,320).forEach(f=>{ try{ const co=f.geometry.coordinates, m=(f.properties&&f.properties.mag)||3; const x=X(co[0]),y=Y(co[1]); ctx.beginPath(); ctx.arc(x,y,Math.max(1.1,(m-2)*1.1),0,7); ctx.fillStyle='rgba(255,69,58,0.85)'; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=0.4; ctx.stroke(); }catch(_){} }); }); }).catch(()=>null);
+    REAL['dl-tz']=()=>_bmShot(1,0,18,false,ctx=>{ ctx.strokeStyle='rgba(90,150,230,0.55)'; ctx.lineWidth=0.8; for(let lg=-165;lg<=165;lg+=15){ const x=X(lg); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); } ctx.font='700 8px sans-serif'; ctx.textAlign='center'; [['-9',-135],['-6',-90],['-3',-45],['0',0],['+3',45],['+6',90],['+9',135]].forEach(z2=>{ const x=X(z2[1]); ctx.fillStyle='rgba(8,16,28,0.72)'; ctx.fillRect(x-8,3,16,10); ctx.fillStyle='#cfe0ff'; ctx.fillText(z2[0],x,11); }); ctx.textAlign='left'; });
+    REAL['beta-dl-histb']=()=>_bmShot(3,14,48,true,ctx=>{ drawLand(ctx,()=>'rgba(0,0,0,0)','rgba(226,184,96,0.9)'); });
+    REAL['dl-sealevel']=()=>_bmShot(5,4.9,52.2,false,ctx=>{ ctx.fillStyle='rgba(46,138,236,0.4)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#0a3d67'; ctx.font='700 11px sans-serif'; ctx.fillText('+2 m',8,16); });
+    REAL['dl-planes']=()=>fetch('https://api.airplanes.live/v2/point/47/8/250').then(r=>r.json()).then(j=>{ const ac=(j&&Array.isArray(j.ac))?j.ac.filter(a=>a.lat!=null&&a.lon!=null):[]; if(ac.length<10) return null; return _bmShot(6,8,47,true,ctx=>{ ac.slice(0,700).forEach(a=>{ const x=X(+a.lon),y=Y(+a.lat); if(x<-3||x>W+3||y<-3||y>H+3) return; const alt=(+a.alt_baro||+a.alt_geom||0); const col=alt>30000?'#64d2ff':alt>10000?'#9bd1ff':'#ffd60a'; const r=((+a.track||0))*Math.PI/180; ctx.save(); ctx.translate(x,y); ctx.rotate(r); ctx.beginPath(); ctx.moveTo(0,-2.6); ctx.lineTo(1.7,2.2); ctx.lineTo(-1.7,2.2); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); ctx.restore(); }); }); }).catch(()=>null);
+    REAL['dl-ec-cloud']=()=>{ const z=2,lon=140,lat=26,t=tXY(z,lon,lat),n=Math.pow(2,z),date='2024-06-15';
+      const gu=x=>'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Fraction_Day/default/'+date+'/GoogleMapsCompatible_Level6/'+z+'/'+t.y+'/'+(((x%n)+n)%n)+'.png';
+      return Promise.all([imgLoad(gu(t.x)),imgLoad(gu(t.x+1))]).then(gibs=>_bmShot(z,lon,lat,false,ctx=>{ ctx.globalAlpha=0.66; try{ if(gibs[0]) ctx.drawImage(gibs[0],0,0,W/2,H); if(gibs[1]) ctx.drawImage(gibs[1],W/2,0,W/2,H); }catch(_){} ctx.globalAlpha=1; })).catch(()=>null); };
+    /* render immediately (not observer-gated) so they reliably replace the gradient placeholder — the tile cost is
+       just 2-4 lightweight tiles each, and the observer has historically left some tiles stuck on the gradient. */
     /* ---- resolver: apply a preview to an element (sync when possible, async upgrade otherwise) ---- */
     const _needGeo=[];
     function _geoReady(){ try{ return !!(window.countryGeo&&window.countryGeo.features&&typeof countryStats!=='undefined'&&countryStats&&Object.keys(countryStats).length); }catch(_){ return false; } }
@@ -7347,7 +7372,7 @@ window.addEventListener('DOMContentLoaded', () => {
      with a bottom DOCK to reopen hidden windows, reset the layout, or exit the mode. Layout persists.
      Default OFF; desktop only; disable restores the exact original DOM via placeholders (fully additive). */
   window.IntMapWorkspace=(function(){
-    const KEY='intmap_ws3';   /* (#R83) bumped from ws2 — the layout model changed to auto-tiling + a Map+Layers default, so old cramped 4-window layouts are not carried over */
+    const KEY='intmap_ws4';   /* (#R84) bumped — default restored to Countries·Map·Layers·Atlas (role-based tiling); old saved layouts not carried over */
     const T=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
     try{ Object.assign(i18n.en,{lblWsMode:'Window workspace (desktop)',wsOff:'Off (default)',wsOn:'On — free floating, resizable windows',wsHint:'News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.'});
@@ -7389,7 +7414,7 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ const b=document.getElementById('ai-view-summary-btn'); if(b&&(currentMode==='news'||currentMode==='saved')) b.style.display=''; }catch(_){} } },
       /* (#R79b) Countries window now carries its OWN search bar + the compare dock (#stats-compare-fixed),
          stacked in the window body, so its search & country-comparison features work in workspace mode. */
-      {id:'countries', sels:['#countries-search-bar','#countries-feed','#stats-compare-fixed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280], defHidden:true,
+      {id:'countries', sels:['#countries-search-bar','#countries-feed','#stats-compare-fixed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280],
         /* (#R79d) the Countries window pairs with the map's country-info layer, exactly like the Countries tab:
            showing it enables country hover/click on the map; HIDING it turns that OFF and clears the compare
            selection + any open country popup ("国ウィンドウを閉じてもcountriesが選択されている判定になっている"). */
@@ -7402,10 +7427,9 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'community', sels:['#community-feed'],  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }},
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
       {id:'layers',sels:['#layer-sidebar-r'], t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]},
-      /* (#R83) DEFAULT = Map + Layers only ("デフォルト配置で全ウィンドウをオンにするのはやめろ"). Countries, Atlas,
-         News, Information & Community are all available from the Window menu but start hidden — the workspace opens
-         clean, and auto-tiling fills the space as windows are opened/closed. ensure() builds #atlas-panel first. */
-      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], defHidden:true, ensure:()=>{ try{ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }
+      /* (#R84) DEFAULT layout per request = Countries(left) · Map(center) · Layers(top-right) · Atlas(bottom-right).
+         News/Information/Community remain on-demand (defHidden). ensure() builds #atlas-panel before it is wrapped. */
+      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], ensure:()=>{ try{ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -7451,39 +7475,30 @@ window.addEventListener('DOMContentLoaded', () => {
         const d=edgeAt(e.clientX,e.clientY); if(!d) return; if(w.dataset.min) return;
         e.preventDefault(); e.stopPropagation(); w.dataset.resizing=d; try{ bringToFront(w); }catch(_){}
         const sx=e.clientX,sy=e.clientY, sw=w.offsetWidth,sh=w.offsetHeight, sl=w.offsetLeft, st=w.offsetTop;
-        const mn=minOf(w), cx=xCands(w), cy=yCands(w), B=wsBounds();   /* (#R79d) hard clamp edges to the usable rect */
-        /* adjacency detection at grab time: pure-edge drags pick up every neighbour abutting that edge */
-        const partners=[];
-        if(d.length===1){ others(w).forEach(o=>{ const r0={l:o.offsetLeft,t:o.offsetTop,w:o.offsetWidth,h:o.offsetHeight};
-          const ovY=Math.min(st+sh,r0.t+r0.h)-Math.max(st,r0.t), ovX=Math.min(sl+sw,r0.l+r0.w)-Math.max(sl,r0.l);
-          if(d==='e'&&Math.abs(r0.l-(sl+sw))<=4&&ovY>=40) partners.push({o,r0});
-          if(d==='w'&&Math.abs((r0.l+r0.w)-sl)<=4&&ovY>=40) partners.push({o,r0});
-          if(d==='s'&&Math.abs(r0.t-(st+sh))<=4&&ovX>=40) partners.push({o,r0});
-          if(d==='n'&&Math.abs((r0.t+r0.h)-st)<=4&&ovX>=40) partners.push({o,r0}); }); }
-        const mv=ev=>{ const dx=ev.clientX-sx, dy=ev.clientY-sy; let l=sl,t=st,wd=sw,hg=sh; hideG();
-          if(d.indexOf('e')>=0){ let edge=sl+sw+dx;
-            if(!partners.length){ const s2=nearest(cx,edge); if(s2!=null){ edge=s2; showG('v',s2); } }
-            partners.forEach(p=>{ edge=Math.min(edge,p.r0.l+p.r0.w-minOf(p.o)[0]); });
-            edge=Math.min(edge,B.right);
-            wd=Math.max(mn[0],edge-sl); const E=sl+wd;
-            partners.forEach(p=>{ p.o.style.left=E+'px'; p.o.style.width=(p.r0.l+p.r0.w-E)+'px'; }); }
-          if(d.indexOf('w')>=0){ let edge=sl+dx;
-            if(!partners.length){ const s2=nearest(cx,edge); if(s2!=null){ edge=s2; showG('v',s2); } }
-            partners.forEach(p=>{ edge=Math.max(edge,p.r0.l+minOf(p.o)[0]); });
-            edge=Math.max(B.left,Math.min(edge,sl+sw-mn[0])); wd=sw+(sl-edge); l=edge;
-            partners.forEach(p=>{ p.o.style.width=(edge-p.r0.l)+'px'; }); }
-          if(d.indexOf('s')>=0){ let edge=st+sh+dy;
-            if(!partners.length){ const s2=nearest(cy,edge); if(s2!=null){ edge=s2; showG('h',s2); } }
-            partners.forEach(p=>{ edge=Math.min(edge,p.r0.t+p.r0.h-minOf(p.o)[1]); });
-            edge=Math.min(edge,B.bottom);
-            hg=Math.max(mn[1],edge-st); const E=st+hg;
-            partners.forEach(p=>{ p.o.style.top=E+'px'; p.o.style.height=(p.r0.t+p.r0.h-E)+'px'; }); }
-          if(d.indexOf('n')>=0){ let edge=st+dy;
-            if(!partners.length){ const s2=nearest(cy,edge); if(s2!=null){ edge=s2; showG('h',s2); } }
-            partners.forEach(p=>{ edge=Math.max(edge,p.r0.t+minOf(p.o)[1]); });
-            edge=Math.max(B.top,Math.min(edge,st+sh-mn[1])); hg=sh+(st-edge); t=edge;
-            partners.forEach(p=>{ p.o.style.height=(edge-p.r0.t)+'px'; }); }
-          w.style.left=l+'px'; w.style.top=t+'px'; w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
+        const B=wsBounds(), EPS=5;
+        /* (#R84) DIVIDER model — a grabbed edge is a shared divider LINE. Moving it moves EVERY window whose
+           same edge sits on that line, on BOTH sides — so all column-mates (the same-column neighbours that share
+           the edge) follow, not just the one window across the divider (the reported "隣接ウィンドウのみしか
+           ついてこない" bug). Falls back to plain single-window resize when no window shares the line. */
+        const allW=[w].concat(others(w));
+        let vX=null, vLeft=[], vRight=[];
+        if(d.indexOf('e')>=0||d.indexOf('w')>=0){ vX=(d.indexOf('e')>=0)?(sl+sw):sl;
+          allW.forEach(o=>{ const l=o.offsetLeft,r=l+o.offsetWidth; if(Math.abs(r-vX)<EPS) vLeft.push({o,l,r}); if(Math.abs(l-vX)<EPS) vRight.push({o,l,r}); }); }
+        let hY=null, hTop=[], hBot=[];
+        if(d.indexOf('s')>=0||d.indexOf('n')>=0){ hY=(d.indexOf('s')>=0)?(st+sh):st;
+          allW.forEach(o=>{ const t=o.offsetTop,bt=t+o.offsetHeight; if(Math.abs(bt-hY)<EPS) hTop.push({o,t,bt}); if(Math.abs(t-hY)<EPS) hBot.push({o,t,bt}); }); }
+        const mv=ev=>{ const dx=ev.clientX-sx, dy=ev.clientY-sy; hideG();
+          if(vX!=null){ let nx=vX+dx, lo=B.left+90, hi=B.right-90;
+            vLeft.forEach(p=>{ lo=Math.max(lo,p.l+(minOf(p.o)[0]||160)); }); vRight.forEach(p=>{ hi=Math.min(hi,p.r-(minOf(p.o)[0]||160)); });
+            nx=Math.max(lo,Math.min(hi,nx)); showG('v',nx);
+            vLeft.forEach(p=>{ p.o.style.left=p.l+'px'; p.o.style.width=Math.max(120,nx-p.l)+'px'; });
+            vRight.forEach(p=>{ p.o.style.left=nx+'px'; p.o.style.width=Math.max(120,p.r-nx)+'px'; }); }
+          if(hY!=null){ let ny=hY+dy, lo=B.top+70, hi=B.bottom-70;
+            hTop.forEach(p=>{ lo=Math.max(lo,p.t+(minOf(p.o)[1]||120)); }); hBot.forEach(p=>{ hi=Math.min(hi,p.bt-(minOf(p.o)[1]||120)); });
+            ny=Math.max(lo,Math.min(hi,ny)); showG('h',ny);
+            hTop.forEach(p=>{ p.o.style.top=p.t+'px'; p.o.style.height=Math.max(90,ny-p.t)+'px'; });
+            hBot.forEach(p=>{ p.o.style.top=ny+'px'; p.o.style.height=Math.max(90,p.bt-ny)+'px'; }); }
+          fitMap(); };
         const up=()=>{ delete w.dataset.resizing; hideG(); w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
@@ -7566,6 +7581,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:10px 12px 6px !important;padding:0 !important;}'
         +'body.ws-mode .ws-countries #countries-search-bar input{width:100% !important;box-sizing:border-box !important;}'
         +'body.ws-mode .ws-countries #stats-compare-fixed{position:static !important;left:auto !important;right:auto !important;bottom:auto !important;top:auto !important;transform:none !important;width:100% !important;flex:0 0 auto !important;box-sizing:border-box !important;margin:0 !important;}'
+        /* (#R84) narrow Countries window: shrink the compare bar name/value columns so the tracks stay big and
+           UNIFORM ("compareのbar-chartの長さが統一されていない") instead of being squeezed to nothing. */
+        +'body.ws-mode #scp-view .scp-bnm{flex:0 0 84px !important;} body.ws-mode #scp-view .scp-bval{flex:0 0 78px !important;font-size:10.5px !important;}'
         /* (#R79b) Layers search box balance ("上に余白なし・下が空きすぎ"): the .lsr-head above it is hidden in
            ws-mode, so give the search breathing room on top and tighten the gap to the list below. */
         +'body.ws-mode #layer-sidebar-r .lsr-search{padding:12px 14px 6px !important;}'
@@ -7650,17 +7668,27 @@ window.addEventListener('DOMContentLoaded', () => {
        panes meet, a junction handle lets you drag BOTH the vertical and the horizontal divider at once — moving
        all the borders that meet there simultaneously. ==== */
     function tileOrder(){ const order=DEFS.map(d=>d.id);
-      const vis=order.filter(id=>wraps[id]&&wraps[id].style.display!=='none'&&!wraps[id].dataset.min);
-      vis.sort((a,b)=>(a==='map'?-1:(b==='map'?1:order.indexOf(a)-order.indexOf(b))));   /* Map is always the main pane */
-      return vis; }
+      return order.filter(id=>wraps[id]&&wraps[id].style.display!=='none'&&!wraps[id].dataset.min); }
+    /* (#R84) ROLE-BASED tiling to match the requested default (Countries | Map | [Layers/Atlas stacked]):
+       'countries' → the LEFT column, 'map' → the CENTER (widest), every other pane stacks in a RIGHT column.
+       Generalises when panes are opened/closed (a new window joins the right stack; hiding countries lets the
+       map take the left; hiding the map leaves left + right columns). Always a gapless partition. */
     function computeTiles(ids,rect){ const x=rect[0],y=rect[1],w=rect[2],h=rect[3],out={},n=ids.length;
       if(!n) return out;
       if(n===1){ out[ids[0]]=[x,y,w,h]; return out; }
-      if(n===2){ const wl=Math.round(w*0.62); out[ids[0]]=[x,y,wl,h]; out[ids[1]]=[x+wl,y,w-wl,h]; return out; }
-      /* n>=3 → main pane left, the remaining panes stacked in a right column (the "one and the [stacked] two") */
-      const wl=Math.round(w*(n>=4?0.52:0.58)); out[ids[0]]=[x,y,wl,h];
-      const rx=x+wl, rw=w-wl, rest=ids.slice(1), m=rest.length; let cy=y;
-      rest.forEach((id,i)=>{ const hh=(i===m-1)?(y+h-cy):Math.round(h/m); out[id]=[rx,cy,rw,hh]; cy+=hh; });
+      const hasC=ids.indexOf('countries')>=0, hasM=ids.indexOf('map')>=0;
+      const left=hasC?'countries':null;
+      const center=hasM?'map':ids.find(id=>id!==left);
+      const right=ids.filter(id=>id!==left&&id!==center);
+      /* column widths */
+      const nCols=(left?1:0)+(center?1:0)+(right.length?1:0);
+      if(nCols<=1){ /* everything stacks in one column */ let cy=y; const all=ids; all.forEach((id,i)=>{ const hh=(i===all.length-1)?(y+h-cy):Math.round(h/all.length); out[id]=[x,cy,w,hh]; cy+=hh; }); return out; }
+      const lw=left?Math.round(w*(nCols===3?0.24:0.34)):0;
+      const rw=right.length?Math.round(w*(nCols===3?0.26:0.40)):0;
+      const cw=w-lw-rw; let cx=x;
+      if(left){ out[left]=[cx,y,lw,h]; cx+=lw; }
+      if(center){ out[center]=[cx,y,cw,h]; cx+=cw; }
+      if(right.length){ let cy=y; right.forEach((id,i)=>{ const hh=(i===right.length-1)?(y+h-cy):Math.round(h/right.length); out[id]=[cx,cy,rw,hh]; cy+=hh; }); }
       return out; }
     function retile(){ if(!on) return; const ids=tileOrder();
       if(ids.length){ const b=wsBounds(); const r=computeTiles(ids,[b.left,b.top,b.right-b.left,b.bottom-b.top]);
@@ -10337,7 +10365,6 @@ window.addEventListener('DOMContentLoaded', () => {
       {h:`${t('ctxThisPoint')}: ${fmtLL(lngLat.lng,lngLat.lat)}`,head:true},
       {label:`${currentLang==='jp'?'ここをAtlasに聞く':currentLang==='de'?'Atlas zu diesem Ort fragen':currentLang==='ru'?'Спросить Atlas об этом месте':currentLang==='es'?'Preguntar a Atlas sobre aquí':'Ask Atlas about here'}`, action:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.askHere) window.IntMapConsole.askHere(lngLat); else if(window.IntMapConsole) window.IntMapConsole.open(); }catch(_){} }},
       {label:`🧍 ${currentLang==='jp'?'ここのストリートビュー':currentLang==='de'?'Street View hier':currentLang==='ru'?'Просмотр улиц здесь':currentLang==='es'?'Street View aquí':'Street View here'}`, action:()=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.open({lng:lngLat.lng,lat:lngLat.lat}); }catch(_){} }},
-      {label:`${currentLang==='jp'?'Atlas コンソール (beta)':currentLang==='de'?'Atlas-Konsole (Beta)':currentLang==='ru'?'Консоль Atlas (бета)':currentLang==='es'?'Consola Atlas (beta)':'Atlas console (beta)'}`, action:()=>{ try{ window.IntMapConsole&&window.IntMapConsole.open(); }catch(_){} }},
       {label:`📍 ${t('ctxDropPin')}`, action:()=>{ const id=addPin(lngLat.lng,lngLat.lat); openPinPopup(id); }},
       {label:`📏 ${t('ctxMeasureFrom')}`, action:()=>{ if(toolMode!=='measure') setTool('measure'); measurePoints=[[lngLat.lng,lngLat.lat]]; refreshTool(); updateToolPanel(); }},
       {label:`⭕ ${currentLang==='jp'?'ここからの半径':currentLang==='de'?'Radius von hier':currentLang==='ru'?'Радиус отсюда':'Radius from here'}`, action:()=>{ try{ window._radiusFromPoint(lngLat.lng,lngLat.lat); }catch(_){} }},
@@ -17721,12 +17748,14 @@ window.addEventListener('DOMContentLoaded', () => {
         paths+='<path d="'+d+'" fill="none" stroke="'+PAL[e.i]+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; meta.push({i:e.i,cd:e.cd,pts}); });
       const metaAttr=esc(JSON.stringify(meta));
       const hpx=hh||110;
+      /* (#R84) year labels moved OUT of the SVG — with preserveAspectRatio="none" the SVG stretches to the
+         container width and squashed the <text> ("年号の数字が潰れている"). As crisp HTML they never distort. */
       return '<div class="ts-wrap scp-chart" style="margin:0 0 10px;position:relative;" data-m=\''+metaAttr.replace(/'/g,'&#39;')+'\'>'
         +'<svg class="ts-svg" width="100%" viewBox="0 0 '+CW+' '+CH+'" preserveAspectRatio="none" style="display:block;height:'+hpx+'px;background:var(--input-bg);border-radius:10px;cursor:crosshair;touch-action:none;">'
         +paths
         +'<line class="ts-cursor" y1="0" y2="'+CH+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
-        +'<text x="'+padL+'" y="'+(CH-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(CW-padR)+'" y="'+(CH-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'
         +'</svg>'
+        +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);padding:1px 8px 0;font-variant-numeric:tabular-nums;"><span>'+y0+'</span><span>'+y1+'</span></div>'
         +'<div class="ts-tip" style="display:none;position:absolute;pointer-events:none;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:8px;padding:5px 9px;font-size:11px;color:var(--text-main);box-shadow:var(--shadow);white-space:nowrap;z-index:5;transform:translate(-50%,-104%);line-height:1.5;"></div>'
       +'</div>'; }
     function wireM(root){ root.querySelectorAll('.scp-chart').forEach(wrap=>{
@@ -20629,7 +20658,32 @@ window.addEventListener('DOMContentLoaded', () => {
       p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
       return true; }
     function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } }
-    return { open, close };
+    /* (#R84) COVERAGE MODE ("地図上の水色の線、ポイントから選択できるように") — Google-Maps-pegman style: tint the
+       basemap's own road lines light-blue and make the whole map clickable to open Street View at that spot. Works
+       on any vector basemap (clones its road line layers); falls back to click-anywhere on a raster basemap. */
+    let _cov=false, _covLayers=[], _covClick=null, _covHint=null, _covStyled=false;
+    function roadLineLayers(){ const out=[]; try{ (map.getStyle().layers||[]).forEach(l=>{ if(l.type!=='line') return; const sl=((l['source-layer']||'')+' '+(l.id||'')); if(/road|transport|street|highway|motorway|trunk|primary|secondary|tertiary|residential|服务/i.test(sl)) out.push(l); }); }catch(_){} return out; }
+    function addRoadLayers(){ _covLayers.forEach(id=>{ try{ if(map.getLayer(id)) map.removeLayer(id); }catch(_){} }); _covLayers=[];
+      roadLineLayers().forEach((l,i)=>{ const id='sv-cov-'+i; try{ const def={id:id,type:'line',source:l.source,paint:{'line-color':'#39b3ff','line-width':['interpolate',['linear'],['zoom'],6,1,11,2.5,16,6],'line-opacity':0.9}};
+        if(l['source-layer']) def['source-layer']=l['source-layer']; if(l.filter) def.filter=l.filter; if(l.minzoom!=null) def.minzoom=l.minzoom;
+        map.addLayer(def); _covLayers.push(id); }catch(_){} });
+      return _covLayers.length; }
+    function coverage(on){ if(on===undefined) on=!_cov; on=!!on; if(on===_cov) return _cov; _cov=on;
+      if(on){ const n=addRoadLayers();
+        _covClick=e=>{ try{ open({lng:e.lngLat.lng,lat:e.lngLat.lat}); }catch(_){} };
+        try{ map.on('click',_covClick); map.getCanvas().style.cursor='crosshair'; }catch(_){}
+        _covHint=document.createElement('div'); _covHint.id='sv-cov-hint';
+        _covHint.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:1350;background:rgba(18,28,44,0.92);color:#dbeaff;border:1px solid rgba(57,179,255,0.55);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
+        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — click a blue road (or anywhere) to open it','ストリートビュー・モード — 青い道路（どこでも可）をクリックで表示','Street-View-Modus — auf eine blaue Straße klicken','Режим панорам — кликните по синей дороге (или где угодно)','Modo Street View — haz clic en una calle azul')+(n?'':' · '+LL('(raster basemap — click anywhere)','（ラスター地図 — どこでもクリック）','(Rasterkarte — überall klicken)','(растровая карта — кликните где угодно)','(mapa ráster — clic en cualquier sitio)'))+'</span><button id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">✕</button>';
+        document.body.appendChild(_covHint); const off=_covHint.querySelector('#sv-cov-off'); if(off) off.onclick=()=>coverage(false);
+        if(!_covStyled){ _covStyled=true; try{ map.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addRoadLayers(); },250); }); }catch(_){} }
+      } else {
+        _covLayers.forEach(id=>{ try{ if(map.getLayer(id)) map.removeLayer(id); }catch(_){} }); _covLayers=[];
+        if(_covClick){ try{ map.off('click',_covClick); }catch(_){} _covClick=null; }
+        try{ map.getCanvas().style.cursor=''; }catch(_){}
+        if(_covHint){ _covHint.remove(); _covHint=null; } }
+      return _cov; }
+    return { open, close, coverage, coverageOn:()=>_cov };
   })();
   /* ===== (#R83) RADIATION DISPERSION — a real Lagrangian particle model ("流体力学にのっとった粒子飛散モデルで、
      風向きや気温、降水も考慮"). Particles are released from a source and advected by a LIVE, space+time-varying
@@ -20664,16 +20718,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const i0=Math.floor(fx), j0=Math.floor(fy), tx=fx-i0, ty=fy-j0, hi=Math.max(0,Math.min(F.H-1,Math.floor(h)));
       const id=(i,j)=>j*F.nx+i; const bil=A=>{ const a=A[id(i0,j0)],b=A[id(i0+1,j0)],c=A[id(i0,j0+1)],d=A[id(i0+1,j0+1)]; return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty; };
       return { u:bil(F.u[hi]), v:bil(F.v[hi]), pr:bil(F.pr[hi]), tp:bil(F.tp[hi]) }; }
-    async function run(src,opts){ opts=opts||{}; clear(); if(!ensureLayers()) return {ok:false,reason:'style'};
-      const F=await fetchField(src.lng,src.lat); if(!F) return {ok:false,reason:'wind'};
-      const secs=Math.max(15,Math.min(70,+opts.seconds||42)), simHours=Math.min(F.H,+opts.hours||48);
+    function estimateWet(F){ try{ for(let h=0;h<F.H;h++){ const pr=F.pr[h]; for(let i=0;i<pr.length;i++){ if(pr[i]>0.1) return true; } } }catch(_){} return false; }
+    /* (#R84) NON-BLOCKING: the old run() awaited the entire ~42 s animation before the Atlas reply appeared, and
+       cancelled the moment the user touched the map — so it read as "使えない". Now run() fetches the field,
+       reports immediately (wind, estimated reach, rain), and animates in the BACKGROUND; panning/zooming no longer
+       kills it (you can watch the plume travel while moving the map). clear() (or a new sim) stops it. */
+    function animate(F,src,secs,simHours,opts){
       const maxP=700, emitHours=Math.min(simHours,+opts.emitHours||8), halfLifeH=(+opts.halfLifeHours>0)?+opts.halfLifeHours:192;
-      const parts=[]; const run={cancel:false}; _run=run; const ce=()=>{ run.cancel=true; };
-      try{ map.on('mousedown',ce); map.on('wheel',ce); }catch(_){}
-      try{ map.flyTo({center:[src.lng,src.lat],zoom:Math.max(map.getZoom(),5.2),duration:800}); }catch(_){}
-      const t0=performance.now(), dur=secs*1000; let lastH=0, maxReach=0, wet=false;
+      const parts=[]; const rn={cancel:false}; _run=rn;
       const grnd=()=>{ const u1=Math.random()||1e-6,u2=Math.random(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); };
-      await new Promise(res=>{ const frame=now=>{ if(run.cancel){ res(); return; }
+      const t0=performance.now(), dur=secs*1000; let lastH=0;
+      const frame=now=>{ if(rn.cancel) return;
         const tau=Math.min(1,(now-t0)/dur), simH=tau*simHours, dH=Math.max(0,simH-lastH); lastH=simH; const dtSec=dH*3600;
         if(simH<=emitHours){ const want=Math.min(maxP-parts.length,Math.ceil(maxP/emitHours*dH)+1); for(let k=0;k<want;k++) parts.push({lng:src.lng+(Math.random()-0.5)*0.015,lat:src.lat+(Math.random()-0.5)*0.015,act:1,dead:false}); }
         for(const p of parts){ if(p.dead) continue; const s=sample(F,p.lng,p.lat,simH);
@@ -20681,19 +20736,67 @@ window.addEventListener('DOMContentLoaded', () => {
           const mLat=111000, mLon=111000*Math.cos(p.lat*Math.PI/180)||1;
           p.lng+=(s.u*dtSec+grnd()*sig)/mLon; p.lat+=(s.v*dtSec+grnd()*sig)/mLat;
           p.act*=Math.pow(0.5,dH/halfLifeH);
-          if(s.pr>0.05){ wet=true; if(Math.random()<Math.min(0.9,s.pr*0.14*dH)) p.dead=true; }
-          if(Math.random()<0.008*dH) p.dead=true;
-          const dkm=Math.hypot((p.lng-src.lng)*mLon,(p.lat-src.lat)*mLat)/1000; if(dkm>maxReach) maxReach=dkm; }
+          if(s.pr>0.05&&Math.random()<Math.min(0.9,s.pr*0.14*dH)) p.dead=true;
+          if(Math.random()<0.008*dH) p.dead=true; }
         const feats=[{type:'Feature',geometry:{type:'Point',coordinates:[src.lng,src.lat]},properties:{src:1,w:1,c:'#ffe000'}}];
         for(const p of parts){ if(p.dead) continue; const a=p.act; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{w:Math.max(0.15,a),c:(a>0.7?'#ff453a':a>0.4?'#ff9f0a':'#ffe08a')}}); }
-        try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-        if(tau>=1){ res(); return; } requestAnimationFrame(frame); }; requestAnimationFrame(frame); });
-      try{ map.off('mousedown',ce); map.off('wheel',ce); }catch(_){} _run=null;
+        try{ const s2=map.getSource(SRC); if(s2) s2.setData({type:'FeatureCollection',features:feats}); }catch(_){}
+        if(tau>=1) return;   /* freeze on the fully-dispersed plume; clear() or a new sim removes it */
+        requestAnimationFrame(frame); };
+      requestAnimationFrame(frame); }
+    async function run(src,opts){ opts=opts||{}; clear();
+      let ok=ensureLayers(); for(let i=0;i<10&&!ok;i++){ await new Promise(r=>setTimeout(r,250)); ok=ensureLayers(); }
+      if(!ok) return {ok:false,reason:'style'};
+      const F=await fetchField(src.lng,src.lat); if(!F) return {ok:false,reason:'wind'};
+      const secs=Math.max(15,Math.min(70,+opts.seconds||42)), simHours=Math.min(F.H,+opts.hours||48);
       const s0=sample(F,src.lng,src.lat,0); const spd=Math.hypot(s0.u,s0.v), toward=(Math.atan2(s0.u,s0.v)*180/Math.PI+360)%360;
-      return {ok:true,reachKm:Math.round(maxReach),windSpeed:spd,windToward:toward,wet:wet,hours:simHours,cancelled:run.cancel}; }
+      const estReach=Math.round(Math.min(spd*simHours*3600/1000,600)), wet=estimateWet(F);
+      try{ map.flyTo({center:[src.lng,src.lat],zoom:Math.max(map.getZoom(),5.2),duration:800}); }catch(_){}
+      animate(F,src,secs,simHours,opts);   /* background */
+      return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet:wet,hours:simHours}; }
     try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ const s=map.getSource(SRC); if(s&&s._data&&s._data.features&&s._data.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
     return { run, clear };
   })();
+  /* ===== (#R84) 3-D ARC OVERLAY — a screen-space canvas that lifts a ground track off the map by REAL altitude so
+     ballistic trajectories read as a dimensional arc (「地図にのっぺりではなく立体的な軌道」), coloured by altitude.
+     MapLibre line layers can't be raised off the surface, so this projects each ground point every frame and
+     offsets it upward by its altitude — the arc pans/zooms/rotates with the map. ===== */
+  window.IntMapArc3D=(function(){
+    if(typeof map==='undefined'||!map) return { show(){}, hide(){}, animate(){}, draw(){} };
+    let cv=null, ctx=null, data=null, raf=0, prog=1, dpr=1, bound=false;
+    function ensure(){ if(cv) return; cv=document.createElement('canvas'); cv.id='arc3d-canvas';
+      cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6;';
+      const cont=document.getElementById('map-container'); (cont||document.body).appendChild(cv); ctx=cv.getContext('2d');
+      if(!bound){ bound=true; const rd=()=>{ if(data) draw(); }; map.on('move',rd); map.on('zoom',rd); map.on('rotate',rd); map.on('pitch',rd); window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }
+    function resize(){ if(!cv) return; const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); const w=cont.clientWidth,h=cont.clientHeight; cv.width=w*dpr; cv.height=h*dpr; cv.style.width=w+'px'; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
+    function lerp(a,b,t){ return a+(b-a)*t; }
+    function hx(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
+    const STOPS=[[0,'#2a52be'],[0.35,'#30d5c8'],[0.6,'#ffd60a'],[0.82,'#ff9f0a'],[1,'#ff3b30']];   /* altitude ramp: low blue → high red */
+    function altColor(t){ t=Math.max(0,Math.min(1,t)); for(let i=1;i<STOPS.length;i++){ if(t<=STOPS[i][0]){ const a=STOPS[i-1],b=STOPS[i]; const k=(t-a[0])/((b[0]-a[0])||1); const c1=hx(a[1]),c2=hx(b[1]); return 'rgb('+Math.round(lerp(c1[0],c2[0],k))+','+Math.round(lerp(c1[1],c2[1],k))+','+Math.round(lerp(c1[2],c2[2],k))+')'; } } return STOPS[STOPS.length-1][1]; }
+    function show(d){ ensure(); resize(); data=d; prog=(d&&d.prog!=null)?d.prog:1; cv.style.display='block'; draw(); }
+    function hide(){ cancelAnimationFrame(raf); data=null; if(cv&&ctx){ ctx.clearRect(0,0,cv.width,cv.height); cv.style.display='none'; } }
+    function draw(){ if(!cv||!ctx||!data) return; const W=cv.width/dpr, H=cv.height/dpr; ctx.clearRect(0,0,W,H);
+      const N=data.pts.length; if(N<2) return; const apo=data.apogee||1; const altScale=(0.46*H)/apo;
+      const scr=[]; for(let i=0;i<N;i++){ let p; try{ p=map.project(data.pts[i]); }catch(_){ p={x:0,y:0}; } scr.push({x:p.x, gy:p.y, y:p.y-(data.alts[i]||0)*altScale, alt:data.alts[i]||0}); }
+      /* ground track (dashed) */
+      ctx.setLineDash([5,5]); ctx.strokeStyle='rgba(255,90,90,0.35)'; ctx.lineWidth=1.3; ctx.beginPath(); scr.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.gy):ctx.moveTo(p.x,p.gy); }); ctx.stroke(); ctx.setLineDash([]);
+      /* vertical altitude stems */
+      ctx.strokeStyle='rgba(130,170,230,0.16)'; ctx.lineWidth=1; const stemStep=Math.max(1,Math.floor(N/30)); for(let i=0;i<N;i+=stemStep){ ctx.beginPath(); ctx.moveTo(scr[i].x,scr[i].gy); ctx.lineTo(scr[i].x,scr[i].y); ctx.stroke(); }
+      /* the arc, coloured by altitude, drawn up to prog */
+      const upto=Math.max(1,Math.floor((N-1)*prog)); ctx.lineWidth=3.4; ctx.lineCap='round';
+      for(let i=1;i<=upto;i++){ ctx.beginPath(); ctx.moveTo(scr[i-1].x,scr[i-1].y); ctx.lineTo(scr[i].x,scr[i].y); ctx.strokeStyle=altColor(scr[i].alt/apo); ctx.stroke(); }
+      /* launch + impact markers on the ground */
+      const dot=(p,col)=>{ ctx.beginPath(); ctx.arc(p.x,p.gy,4,0,7); ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.4; ctx.stroke(); };
+      dot(scr[0],'#34c759'); dot(scr[N-1],'#ff3b30');
+      /* warhead marker at prog */
+      const wi=Math.min(N-1,Math.round((N-1)*prog)), wp=scr[wi]; if(wp){
+        const g2=ctx.createRadialGradient(wp.x,wp.y,1,wp.x,wp.y,15); g2.addColorStop(0,'rgba(255,220,120,0.7)'); g2.addColorStop(1,'rgba(255,220,120,0)'); ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(wp.x,wp.y,15,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(wp.x,wp.y,5,0,7); ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle='#ff453a'; ctx.lineWidth=2.5; ctx.stroke();
+        if(prog<1){ ctx.font='700 10px sans-serif'; ctx.fillStyle='#e8f0ff'; ctx.textAlign='left'; ctx.fillText(Math.round(wp.alt).toLocaleString()+' km', wp.x+10, wp.y-6); } }
+    }
+    function animate(secs,done){ cancelAnimationFrame(raf); const t0=performance.now(), dur=Math.max(4,secs||16)*1000;
+      const fr=now=>{ if(!data) return; const t=Math.min(1,(now-t0)/dur); prog=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2; draw(); if(t<1){ raf=requestAnimationFrame(fr); } else { prog=1; draw(); if(done) done(); } }; raf=requestAnimationFrame(fr); }
+    return { show, hide, animate, draw }; })();
   /* ===== (#R83) FLIGHT SIMULATOR ("Atlasでフライトシミュレーターを使えるように") — a real, flyable arcade flight
      model over the actual world map: coordinated-turn banking, pitch/throttle, stall, gravity and ground/terrain
      collision, with the MapLibre camera as the cockpit view and a live HUD (airspeed, altitude, heading, VSI,
@@ -22580,6 +22683,10 @@ window.addEventListener('DOMContentLoaded', () => {
             +note(L('Road routing via OSRM on OpenStreetMap data. Times are estimates. Clear it with "clear the route".','OpenStreetMapデータのOSRMによる道路経路です。所要時間は目安です。「経路を消して」で削除できます。','Straßenrouting via OSRM (OpenStreetMap). Zeiten sind Schätzungen.','Дорожный маршрут OSRM (OpenStreetMap). Время — оценка.','Ruta por carretera vía OSRM (OpenStreetMap). Tiempos estimados.'));
           return R(true, h); }
         case 'streetview': case 'streetView': case 'pano': {
+          /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
+          if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))); }
+          const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(_herePoint&&isFinite(_herePoint.lng)));
+          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the blue roads are clickable; click any road to open its panorama','ストリートビュー・モードをオン — 青い道路をクリックするとパノラマを表示します','Street-View-Modus an — auf blaue Straßen klicken','Режим панорам включён — кликайте по синим дорогам','Modo Street View activado — haz clic en las calles azules')):warn('⚠')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
           if(!ll) return R(false, warn('⚠ '+L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar')));
           try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),15),duration:900}); }catch(_){}
@@ -22637,7 +22744,7 @@ window.addEventListener('DOMContentLoaded', () => {
           h+='</div>';
           h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):('⚠ '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
           return R(true, h); }
-        case 'clearAll': { _herePoint=null; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ clearElev(); }catch(_){} try{ clearFac(); }catch(_){} try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); }catch(_){} try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
+        case 'clearAll': { _herePoint=null; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ clearElev(); }catch(_){} try{ clearFac(); }catch(_){} try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); }catch(_){} try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
         case 'outline': case 'extent': case 'showExtent': { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado'))); }
           const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
           if(!window.IntMapOutline||!window.IntMapOutline.show) return R(false, warn('⚠'));
@@ -22750,7 +22857,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(wants(/measure|draw|tool|計測|測定|描画|ツール|инструмент|herramienta/)){ try{ if(typeof exitTool==='function'){ exitTool(); did.push(L('tools','ツール','Werkzeuge','инструменты','herramientas')); } }catch(_){} }
           if(wants(/isolat|分離|изоляц|aisla/)){ try{ if(window.IntMapIsolate&&window.IntMapIsolate.exit){ window.IntMapIsolate.exit(); did.push(L('isolate','分離','Isolierung','изоляция','aislar')); } }catch(_){} }
           if(wants(/poi|facilit|marker|施設|マーカー|объект|instalacion|report|レポート|調査/)){ try{ clearPois(); did.push(L('facilities','施設マーカー','Einrichtungen','объекты','instalaciones')); }catch(_){} }
-          if(wants(/fly|flight|trajector|missile|ballistic|飛行|軌道|ミサイル|弾道|полёт|полет|vuelo|trayector|misil/)){ try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} did.push(L('flight path','飛行経路','Flugbahn','траектория','trayectoria')); }
+          if(wants(/fly|flight|trajector|missile|ballistic|飛行|軌道|ミサイル|弾道|полёт|полет|vuelo|trayector|misil/)){ try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} did.push(L('flight path','飛行経路','Flugbahn','траектория','trayectoria')); }
           if(wants(/lines?|polygons?|drawing|ライン|線|ポリゴン|描画|линии|líneas|polígono/)){ try{ clearLineHl(); clearPolyHl(); did.push(L('drawings','描画','Zeichnungen','рисунки','dibujos')); }catch(_){} }
           if(wants(/route|directions|経路|ルート|道順|путь|маршрут|ruta|weg|route/)){ try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); did.push(L('route','経路','Route','маршрут','ruta')); }catch(_){} }
           if(wants(/radiation|fallout|dispersion|plume|放射|拡散|радиац|radiac/)){ try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); did.push(L('dispersion','拡散','Ausbreitung','рассеивание','dispersión')); }catch(_){} }
@@ -22893,9 +23000,18 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!A||!B) return R(false, warn('⚠ '+L('Need a launch site and a target','発射地点と目標が必要です','Startort & Ziel nötig','Нужны точка пуска и цель','Se necesita origen y objetivo')));
           const km=_gcKm(A,B); const cls=missileClass(a.missile||a.weapon||a.name);
           let rangeWarn=''; if(cls&&cls.range&&km>cls.range*1.02) rangeWarn=warn('⚠ '+L(esc(cls.name)+' max range is ~'+cls.range.toLocaleString()+' km, but this shot is '+Math.round(km).toLocaleString()+' km — beyond its reach','「'+esc(cls.name)+'」の最大射程は約'+cls.range.toLocaleString()+' kmですが、この距離は'+Math.round(km).toLocaleString()+' kmで射程外です',esc(cls.name)+' Reichweite ~'+cls.range.toLocaleString()+' km, Schuss '+Math.round(km).toLocaleString()+' km — außer Reichweite',esc(cls.name)+' дальность ~'+cls.range.toLocaleString()+' км, а тут '+Math.round(km).toLocaleString()+' км — вне досягаемости',esc(cls.name)+' alcance ~'+cls.range.toLocaleString()+' km, pero son '+Math.round(km).toLocaleString()+' km — fuera de alcance'));
-          const r=await ballisticAnimate(A,B,{seconds:a.seconds});
+          /* (#R84) 3-D altitude-coloured arc (not a flat line): build the ground track + real altitude per point,
+             fit the view so the whole arc is visible, then animate the warhead in the BACKGROUND. */
+          const sol=ballisticSolve(km); const mm=Math.floor(sol.tof/60), ss=Math.round(sol.tof%60);
+          try{ clearFly(); }catch(_){}
+          const N=Math.max(80,Math.min(400,Math.round(km/40))); const pts=[], alts=[];
+          for(let i=0;i<=N;i++){ const f=i/N, p=_gcPoint(A,B,f); pts.push([p.lng,p.lat]); alts.push(ballisticAlt(sol,f)); }
+          try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); });
+            if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:{top:150,bottom:80,left:80,right:80},maxZoom:6,duration:900}); }catch(_){}
+          const secs=Math.max(10,Math.min(40,+a.seconds||Math.round(9+km/900)));
+          try{ window.IntMapArc3D.show({pts,alts,apogee:sol.apogee,prog:0}); setTimeout(()=>{ try{ window.IntMapArc3D.animate(secs); }catch(_){} },950); }catch(_){}
+          const r={ok:true,km,sol};
           if(!r.ok||!r.sol) return R(false, warn('⚠ '+L('The simulation could not run (map still loading)','シミュレーションを実行できませんでした（地図読込中）','Simulation nicht möglich (Karte lädt)','Симуляция не запустилась (карта грузится)','No se pudo ejecutar la simulación')));
-          const sol=r.sol; const mm=Math.floor(sol.tof/60), ss=Math.round(sol.tof%60);
           /* optional warhead-effect rings at the impact point */
           clearBlast(); let rings=null; const Y=(a.yield!=null&&isFinite(+a.yield))?+a.yield:((a.blast||a.warhead||a.nuclear)&&cls?cls.yield:0);
           if(Y>0){ rings=drawBlastRings(B,Y); }
@@ -22996,6 +23112,18 @@ window.addEventListener('DOMContentLoaded', () => {
               h+='<button class="atl-ctl-btn" data-run="'+esc(encodeURIComponent(cmd))+'">'+esc(lbl)+'</button>'; } }
           h+='</div>';
           return R(any, any?h:warn('⚠')); }
+        case 'ask': case 'choose': case 'clarify': case 'options': {
+          /* (#R84) SELECTION-STYLE clarification ("ユーザーが十分な情報を提示しない場合…選択形式で聞く"):
+             a question + clickable option chips + a free-text box. Picking a chip (or typing) sends it back to Atlas. */
+          const q=String(a.question||a.text||a.say||a.prompt||'').trim();
+          const opts=Array.isArray(a.options)?a.options.map(o=>String((o&&o.label)||o||'').trim()).filter(Boolean).slice(0,6):[];
+          const allowText=a.allowText!==false&&a.freeText!==false;
+          if(!q&&!opts.length) return R(false, warn('⚠'));
+          let hh='<div style="font-size:12.5px;line-height:1.6;margin-bottom:7px;">'+esc(q||L('Which one?','どれにしますか？','Welche?','Какой вариант?','¿Cuál?'))+'</div>';
+          if(opts.length){ hh+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:'+(allowText?'8px':'2px')+';">'
+            +opts.map(o=>'<button class="atl-choice" data-choice="'+esc(encodeURIComponent(o))+'" style="text-align:left;border:1px solid var(--glass-border,rgba(128,128,128,0.32));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:8px 12px;font-size:12px;cursor:pointer;">'+esc(o)+'</button>').join('')+'</div>'; }
+          if(allowText){ hh+='<div class="atl-choice-txt" style="display:flex;gap:6px;"><input type="text" class="atl-choice-in" placeholder="'+esc(L('or type your own answer…','または自由に入力…','oder eigene Antwort…','или введите свой ответ…','o escribe tu respuesta…'))+'" style="flex:1;min-width:0;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;box-sizing:border-box;"><button class="atl-choice-go" title="'+L('Send','送信','Senden','Отправить','Enviar')+'" style="flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;cursor:pointer;font-size:16px;">→</button></div>'; }
+          return R(true, hh); }
         case 'analyze': case 'research': case 'synthesize': { const q=String(a.question||a.query||a.text||'').trim();
           if(!q) return R(false, warn('⚠ '+L('What should I analyze?','何を分析しますか？','Was soll analysiert werden?','Что проанализировать?','¿Qué analizo?')));
           await ensureData();
@@ -23338,7 +23466,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _langLine=()=>{ const l2=_replyLang(); return 'the language the user\'s message is written in (it appears to be '+l2+' — ALWAYS mirror the user\'s language, never the UI language)'; };
     function SYS(){ const lang=_langLine();
       return 'You are Atlas, the natural-language command layer for IntMap, an interactive world map. You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. "say" = one short sentence in '+lang+' stating what you did. Decompose a compound request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyse a metric, shade the map, enable a layer AND fly somewhere).\n'
-        +'PRECISION vs AMBIGUITY (the user explicitly complained about both forcing a guess on vague input AND mis-reading clear input): (a) when the request is CLEAR, do EXACTLY what it says — do not substitute a different action, drop a step, or add anything not asked; match places/metrics/layers literally. (b) when it is GENUINELY ambiguous (could mean very different things, or names a place/metric/layer you cannot confidently identify), do NOT force a wrong guess — return a SINGLE {"type":"answer"} asking ONE short clarifying question in '+lang+'. Otherwise never refuse. Never claim success for something you did not emit an action for.\n'
+        +'PRECISION vs AMBIGUITY (the user explicitly complained about both forcing a guess on vague input AND mis-reading clear input): (a) when the request is CLEAR, do EXACTLY what it says — do not substitute a different action, drop a step, or add anything not asked; match places/metrics/layers literally. (b) when it is GENUINELY ambiguous or MISSING information you need (which of several places, which metric, from/to for a route, which country, etc.), do NOT force a wrong guess — emit a SINGLE {"type":"ask","question":<one short question in '+lang+'>,"options":[2-4 concrete choices],"allowText":true}. This renders the question with clickable option chips AND a free-text box, and the user\'s pick comes back to you as the next message — ALWAYS prefer this selection form over a plain guess when key info is missing. Only fall back to {"type":"answer"} for a purely conversational clarification with no sensible options. Otherwise never refuse. Never claim success for something you did not emit an action for.\n'
         +'HONESTY: NEVER use "answer" (or the "say" text) to claim you did something you did not emit a real action for — that is a lie the user explicitly complained about. To DO anything you MUST emit its action. "say" must describe ONLY what the actions in this plan actually do. If a request is impossible or unclear, emit a single honest {"type":"answer"} explaining it, and emit NO action you cannot fulfil. Decompose multi-part requests fully (5+ actions is fine) and keep them in the order the user implied.\n'
         +'COMMON SENSE — do NOT take a generic word as a literal place name (these were real failures): "the whole world / entire world / earth / globe / 世界 / 地球" means ZOOM OUT to the planet → emit {"type":"flyTo","place":"world"} (NEVER geocode "world"/"earth" — they wrongly matched "World Bank building" / "Earth, Texas"). To show a COUNTRY or CITY, pass its plain name as flyTo place (e.g. {"type":"flyTo","place":"China"} / {"type":"flyTo","place":"Osaka"}) — the engine frames the whole country / city area itself; do NOT append "city hall" or pick a tiny sub-place, and do NOT over-zoom. The Köppen climate layer (and other colour rasters) cannot isolate a SINGLE class: for "highlight the Cfa climate", enable the Köppen layer with {"type":"layer","name":"Köppen climate"} and, in "say", tell the user the Cfa zones are identified by the legend (do not claim you isolated Cfa).\n'
         +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (centre, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map centre. Action types:\n'
@@ -23364,7 +23492,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
-        +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold**, "- " bullets, and markdown links [title](url) — links render as a ChatGPT-style clickable card/anchor, but ONLY use urls you are certain exist; never fabricate one). Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
+        +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold**, "- " bullets). CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
         +'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider, date picker or input. Useful addressable patterns (every UI element is named, incl. per-layer micro-controls): "favorite: <layer name>" (★), "date: <layer name>" with value "YYYY-MM-DD" (change a dated raster layer\'s date — e.g. 「気温レイヤーの日付を2023-06-01に」), "close legend: <name>", "opacity: <layer>". Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n'
         +'MODULE fallback (advanced — open/close any IntMap subsystem panel by name, incl. ones with no toolbar button): {"type":"module","name":"IntMapX","method":"open"|"toggle"|"close"|"clear"}. Use only when no specific action or "control" fits. Available modules: '+moduleCatalog()+'\n'
@@ -23507,8 +23635,16 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.addEventListener('click',e=>{ try{
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
+        const mtg=e.target.closest&&e.target.closest('.atl-map-toggle');
+        if(mtg){ const row=mtg.closest('.atl-mapctl'); const kinds=((row&&row.getAttribute('data-ovls'))||'').split(',').filter(Boolean);
+          const show=!mtg.classList.contains('on'); kinds.forEach(k=>{ try{ overlayToggle(k,show); }catch(_){} });
+          mtg.classList.toggle('on',show); mtg.setAttribute('aria-checked',show?'true':'false'); return; }
         const bt=e.target.closest&&e.target.closest('.atl-ctl-btn');
         if(bt){ const cmd=decodeURIComponent(bt.getAttribute('data-run')||''); if(cmd) run(cmd); return; }
+        const ch=e.target.closest&&e.target.closest('.atl-choice');
+        if(ch){ const v=decodeURIComponent(ch.getAttribute('data-choice')||''); if(v) run(v); return; }
+        const cg=e.target.closest&&e.target.closest('.atl-choice-go');
+        if(cg){ const inp=cg.parentElement&&cg.parentElement.querySelector('.atl-choice-in'); const v=inp&&inp.value.trim(); if(v){ inp.value=''; run(v); } return; }
         const ri=e.target.closest&&e.target.closest('.atl-rp-item');
         if(ri&&!(e.target.closest&&e.target.closest('a'))){ const p=_pois[+ri.getAttribute('data-i')]; if(p&&isFinite(p.lng)){ map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),7.5),duration:900}); } return; }
       }catch(_){} });
@@ -23518,6 +23654,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const real=layerOpacityControl(rl.cb); if(!real) return;
         real.value=sl.value; real.dispatchEvent(new Event('input',{bubbles:true})); real.dispatchEvent(new Event('change',{bubbles:true}));
       }catch(_){} });
+      panel.addEventListener('keydown',e=>{ try{ if(e.key!=='Enter') return; const inp=e.target.closest&&e.target.closest('.atl-choice-in'); if(!inp) return; e.preventDefault(); const v=inp.value.trim(); if(v){ inp.value=''; run(v); } }catch(_){} });
       /* (#R73) REVERSE sync ("レイヤーの凡例等との同期ができていない"): when a layer is toggled or its opacity
          changed ANYWHERE else (classic panel, tile sidebar, legend, Atlas actions), every inline control in old
          replies updates to the real state — the reply widgets are live mirrors, not stale snapshots. */
@@ -23542,10 +23679,26 @@ window.addEventListener('DOMContentLoaded', () => {
        their remaining actions and their late results are discarded instead of overwriting the chat. */
     let _runGen=0;
     function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Cancelled — a newer message took over','新しいメッセージを受けて中止しました','Abgebrochen — eine neuere Nachricht übernahm','Отменено — поступило новое сообщение','Cancelado — llegó un mensaje nuevo'))+'</span>'; }
+    /* (#R84) MAP-OVERLAY TOGGLE ("Atlasによって地図上にマッピングされた類のものは、Atlasのメッセージ内から
+       オンオフできるように"): a reply that painted something on the map gets a live on/off switch. */
+    const _OVL={ highlight:['nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line'], choropleth:['nlq-choro'], compare:['imcmp-fill','imcmp-line'],
+      poi:['nlq-poi-c','nlq-poi-t'], elevation:['nlq-elev-fill'], historical:['nlq-fac-fill','nlq-fac-line'], route:['imroute-cas','imroute-line','imroute-pt'],
+      radiation:['imrad-heat','imrad-pt','imrad-srcpt'], blast:['nlq-blast-fill','nlq-blast-line'], lines:['nlq-line'], outline:['pl-outline-fill','pl-outline-line'] };
+    const OVL_OF={ highlight:'highlight', mapMetric:'choropleth', choropleth:'choropleth', poi:'poi', elevationBelow:'elevation', belowSeaLevel:'elevation', elevationHighlight:'elevation', elevationScan:'elevation',
+      historicalMap:'historical', historical:'historical', powerMap:'historical', allianceMap:'historical', radiation:'radiation', fallout:'radiation', dispersion:'radiation', plume:'radiation', radiationSim:'radiation',
+      directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:'arc', ballistic:'arc', ballisticMissile:'arc', strike:'arc', icbm:'arc',
+      compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', events:'poi', impact:'poi' };
+    function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_OVL[kind]||[]; for(const id of ids){ try{ if(map.getLayer(id)&&map.getLayoutProperty(id,'visibility')!=='none') return true; }catch(_){} } return false; }
+    function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
+      const ids=_OVL[kind]||[]; if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
+    function mapToggleChip(kinds){ const K=Array.from(new Set((kinds||[]).filter(k=>_OVL[k]||k==='arc'))); if(!K.length) return '';
+      return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">🗺 '+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
+        +'<button class="atl-ctl-toggle atl-map-toggle on" role="switch" aria-checked="true" title="'+L('Show / hide on the map','地図で表示 / 非表示','Auf der Karte ein/aus','Показать/скрыть на карте','Mostrar/ocultar en el mapa')+'"><span class="atl-ctl-knob"></span></button></div>'; }
     async function runActions(ai, say, acts, gen){
       let body=''; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a); }
+      try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; const k=OVL_OF[a&&a.type]; if(k&&_ovlVisible(k)) mapped.push(k); }); if(mapped.length) body+=mapToggleChip(mapped); }catch(_){}
       if(gen!=null&&gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return fails; }
       let head=say?('<div style="margin-bottom:6px;">'+esc(say)+'</div>'):'';
       if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
@@ -23638,10 +23791,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(fm&&(fm[2]||'').trim()&&(fm[3]||'').trim()){ const mm={drive:'driving',driving:'driving',car:'driving',walk:'walking',walking:'walking',foot:'walking',cycle:'cycling',cycling:'cycling',bike:'cycling'}[(fm[1]||'').toLowerCase()]||'driving'; return A({type:'directions',from:fm[2].trim(),to:fm[3].trim(),mode:mm}); }
       fm=low.match(/^how (?:do i|to|can i)\s+(drive|walk|cycle)\s+from\s+(.+?)\s+to\s+(.+?)\??$/i);
       if(fm&&(fm[2]||'').trim()&&(fm[3]||'').trim()){ const mm={drive:'driving',walk:'walking',cycle:'cycling'}[(fm[1]||'').toLowerCase()]||'driving'; return A({type:'directions',from:fm[2].trim(),to:fm[3].trim(),mode:mm}); }
+      /* (#R84) street-view COVERAGE mode (blue clickable roads) — bare "street view" / "ストリートビュー(モード)" */
+      if(/^(?:ストリートビュー(?:モード)?|ストビュー)(?:を)?(?:表示|オン|開始|有効に?|使いたい|使う|見せて|にして)?(?:して)?[。]?$/i.test(s)&&!/[のを](.+)(ストリートビュー|ストビュー)/.test('X'+s)) return A({type:'streetview',mode:'coverage'});
+      if(/^(?:show |open |enable |turn on )?(?:the )?street ?view(?: mode| layer| coverage)?$/i.test(low)) return A({type:'streetview',mode:'coverage'});
+      if(/^(?:ストリートビュー|ストビュー)(?:を)?(?:オフ|非表示|終了|やめて|閉じて)(?:に)?(?:して)?[。]?$/i.test(s)||/^(?:turn off |disable |exit |close )street ?view(?: mode)?$/i.test(low)) return A({type:'streetview',on:false});
       /* (#R83) street view — "渋谷のストリートビュー", "street view of the Eiffel Tower" */
-      fm=s.match(/^(.+?)(?:の|周辺の)?(?:ストリートビュー|ストビュー)(?:を)?(?:見(?:せて|る)|表示|開いて|出して|で見)?(?:して)?[。]?$/i)
-        ||low.match(/^(?:show |open )?(?:the )?street ?view\s+(?:of|for|at|near|around)\s+(.+?)\.?$/i)
-        ||low.match(/^street ?view\s+(.+?)$/i);
+      fm=s.match(/^(.+?)(?:の|周辺の)(?:ストリートビュー|ストビュー)(?:を)?(?:見(?:せて|る)|表示|開いて|出して|で見)?(?:して)?[。]?$/i)
+        ||low.match(/^(?:show |open )?(?:the )?street ?view\s+(?:of|for|at|near|around)\s+(.+?)\.?$/i);
       if(fm&&(fm[1]||'').trim()) return A({type:'streetview',place:(fm[1]||'').trim()});
       /* (#R83) radiation dispersion — "福島第一原発からの放射性物質の拡散をシミュレートして" */
       fm=s.match(/^(.+?)(?:からの|から|周辺の|付近の|の)?(?:放射(?:性物質|能|線)|フォールアウト|死の灰)(?:の)?(?:拡散|飛散|降下|プルーム)(?:を)?(?:シミュ(?:レート|レーション)?|表示|マッピング|マップ|予測|見せて)?(?:して)?[。]?$/i);
