@@ -256,7 +256,8 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .content-area{ overflow-y:auto; flex:1; min-height:0; margin-right:-10px; padding-right:10px; padding-top:4px; padding-bottom:4px; display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; }
     .content-area::-webkit-scrollbar{ width:4px; } .content-area::-webkit-scrollbar-thumb{ background:rgba(128,128,128,0.2); border-radius:10px; }
     .empty-msg{ text-align:center; color:var(--text-muted); font-size:13px; padding:48px 16px; line-height:1.6; }
-    .news-item{ background:var(--card-bg); padding:16px; border-radius:16px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
+    .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:14px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
+    #live-news-feed{ gap:9px; }   /* (#R86) denser news feed — fit more cards without cramming (news only; info/community/countries feeds unaffected) */
     .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:10; }
     /* iOS-style location pill (replaces old loc-chip) */
     .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
@@ -264,7 +265,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .loc-chip.unmapped{ background:linear-gradient(135deg, rgba(155,89,182,0.85), rgba(122,75,150,0.85)); }
     .loc-chip.publisher{ background:linear-gradient(135deg, rgba(94,92,230,0.92), rgba(88,86,214,0.88)); }
     [data-theme="dark"] .loc-chip{ box-shadow:0 1px 4px rgba(0,0,0,0.4); }
-    .btn-bookmark{ position:absolute; top:14px; right:16px; background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; transition:0.2s; padding:0; }
+    .btn-bookmark{ position:absolute; top:9px; right:14px; background:none; border:none; font-size:17px; line-height:1; color:var(--text-muted); cursor:pointer; transition:0.2s; padding:0; }
     .btn-bookmark:hover{ transform:scale(1.2); } .btn-bookmark.active{ color:#ffcc00; text-shadow:0 0 8px rgba(255,204,0,0.5); }
     .dash-nav{ display:flex; gap:8px; margin-bottom:12px; overflow-x:auto; padding-bottom:8px; flex-shrink:0; position:sticky; top:0; background:var(--sidebar-bg); z-index:5; }
     .dash-nav::-webkit-scrollbar{ height:0; }
@@ -723,9 +724,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     /* Compact news card: publisher + a small Read pill share one row (saves vertical space) */
     .news-item .news-head{ display:flex; justify-content:space-between; align-items:center; padding-right:20px; gap:8px; }
     .news-item .news-date{ color:var(--text-muted); font-size:11px; font-weight:500; white-space:nowrap; }
-    .news-item .news-title{ font-weight:600; line-height:1.4; margin-top:8px; font-size:13px; }
+    .news-item .news-title{ font-weight:600; line-height:1.38; margin-top:5px; font-size:13px; }
     .news-item .news-origlang{ font-size:11px; color:var(--text-muted); font-weight:500; margin-top:4px; }
-    .news-item .news-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:8px; }
+    .news-item .news-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px; }
     .news-item .news-pub{ color:var(--primary-color); font-weight:500; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
     .news-item .btn-read{ flex-shrink:0; background:transparent; border:1px solid rgba(128,128,128,0.22); color:var(--primary-color); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; }
     .news-item .btn-read:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
@@ -1410,7 +1411,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       .country-popup{ position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:100% !important; max-width:100% !important; box-sizing:border-box !important; max-height:84dvh; border-radius:18px 18px 0 0; transform:none !important; padding:26px 18px max(20px,env(safe-area-inset-bottom)); animation:mSheetUp 0.42s var(--sheet-ease); }
 
       /* roomier tap targets across content */
-      .news-item{ padding:16px; } .stat-row{ padding:15px 14px; }
+      .news-item{ padding:11px 15px; } .stat-row{ padding:15px 14px; }
       .dash-nav-btn{ padding:10px 14px; min-height:38px; }
       .news-item .news-actions button{ padding:11px; font-size:12px; }
       .comm-add-btn{ padding:12px; font-size:13px; } .comm-post-actions button{ min-height:36px; }
@@ -5082,7 +5083,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ ensureBordersLayer(); }catch(_){}   /* (#R40) borders-only-line now comes from the OFM boundary layer (accurate, basemap-aligned) — created here too in case Countries(info) initializes first */
     map.on('mousemove','country-fill',(e)=>{ if(!countryInfoOn||toolMode||!e.features.length)return; const f=e.features[0]; if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; map.setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
     map.on('mouseleave','country-fill',()=>{ if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=null; hideCountryInfo(); });
-    map.on('click','country-fill',(e)=>{ if(countryInfoOn&&!toolMode&&e.features.length){ const f=e.features[0]; const p=f.properties||{}; const id=resolveCountryId(f); showCountryDetail(id, p.NAME_EN||p.ADMIN||p.NAME); } });
+    map.on('click','country-fill',(e)=>{ if(countryInfoOn&&!toolMode&&!window.__scpPick&&e.features.length){ const f=e.features[0]; const p=f.properties||{}; const id=resolveCountryId(f); showCountryDetail(id, p.NAME_EN||p.ADMIN||p.NAME); } });
     applyCountryVisibility();
   }
   function applyCountryVisibility(){ if(!map||!map.getLayer('country-fill'))return; const v=countryInfoOn?'visible':'none'; map.setLayoutProperty('country-fill','visibility',v); map.setLayoutProperty('country-line','visibility',v); }
@@ -5897,6 +5898,7 @@ window.addEventListener('DOMContentLoaded', () => {
   { const vb=document.getElementById('ai-view-summary-btn'); if(vb) vb.onclick=aiSummarizeView; }
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-summarize-btn'); if(!b) return; b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey'); });
   function handleMapClick(lng,lat,point,viaBtn){
+    if(window.__scpPick) return;   /* (#R86) Compare "pick a country on the map" mode owns the click */
     /* (#R7-draw) The freehand Draw tool owns the map gesture while it is active. */
     if(window.DrawTool && window.DrawTool.active()) return;
     /* Köppen click-to-highlight (#25): when the climate layer is on, clicking the map highlights
@@ -17674,6 +17676,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-chip .scp-x{cursor:pointer;color:var(--text-muted);font-weight:700;} #scp-view .scp-chip .scp-x:hover{color:#ff453a;}'
         +'#scp-view .scp-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}'
         +'#scp-view .scp-add{height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-main);font-size:12.5px;outline:none;min-width:0;flex:1;box-sizing:border-box;}'
+        +'#scp-view .scp-pickbtn{flex:0 0 auto;width:38px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-muted);cursor:pointer;transition:.15s;}'
+        +'#scp-view .scp-pickbtn:hover{color:var(--text-main);border-color:var(--primary-color);}'
+        +'#scp-view .scp-pickbtn.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}'
         +'#scp-view .scp-metrics{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 2px;}'
         +'#scp-view .scp-m{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);cursor:pointer;}'
         +'#scp-view .scp-m.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff;font-weight:600;}'
@@ -17752,12 +17757,12 @@ window.addEventListener('DOMContentLoaded', () => {
           +'<button data-m="table">'+LL('Table','表','Tabelle','Таблица','Tabla')+'</button>'
         +'</div>'
         +'<div id="scp-chips" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;"></div>'
-        +'<div style="position:relative;"><input class="scp-add" id="scp-add" autocomplete="off" style="width:100%;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><div id="scp-list"></div></div>'
+        +'<div style="position:relative;"><div style="display:flex;gap:6px;align-items:stretch;"><input class="scp-add" id="scp-add" autocomplete="off" style="flex:1;min-width:0;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><button id="scp-pick" class="scp-pickbtn" type="button" title="'+LL('Pick a country on the map','地図で国をクリックして追加','Land auf der Karte wählen','Выбрать страну на карте','Elegir país en el mapa')+'" aria-label="'+LL('Pick a country on the map','地図で国をクリックして追加','Land auf der Karte wählen','Выбрать страну на карте','Elegir país en el mapa')+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button></div><div id="scp-list"></div></div>'
         /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
         +'<button class="scp-mtog" id="scp-mtog"></button>'
         +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
-      host.querySelector('.scp-back').onclick=()=>{ try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
+      host.querySelector('.scp-back').onclick=()=>{ try{ _endPick(); }catch(_){} try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
       host.querySelectorAll('#scp-modes button').forEach(b=>{ b.onclick=()=>{ const m=b.getAttribute('data-m'); if(m===mode) return; mode=m; render(); }; });
       try{ if(typeof renderCompareFixed==='function') setTimeout(renderCompareFixed,0); }catch(_){}   /* hide the selection dock while the comparison owns the feed */
       /* (#R64) real picker: type-to-filter list with flags + check state; click toggles; Enter adds the first
@@ -17780,7 +17785,29 @@ window.addEventListener('DOMContentLoaded', () => {
         const first=listEl.querySelector('.scp-cr:not(.sel)'); if(first){ const cd=first.getAttribute('data-c'); if(codes.length<10&&codes.indexOf(cd)<0){ codes.push(cd); addI.value=''; render(); } } } });
       document.addEventListener('mousedown',e=>{ try{ if(host&&!host.contains(e.target)) closeList(); else if(host&&!e.target.closest('#scp-list')&&e.target!==addI) closeList(); }catch(_){} });
       host.__refreshList=refreshList;
+      /* (#R86) pick-on-map button — wired here so it survives panel rebuilds; reflects the current pick state */
+      const pickBtn=host.querySelector('#scp-pick'); if(pickBtn){ pickBtn.classList.toggle('on',_picking); pickBtn.onclick=()=>{ _setPick(!_picking); }; }
       return host; }
+    /* (#R86) "地図上でクリックした国を比較に追加" — press ◎, then click countries on the globe. Continuous until pressed
+       again / Esc / 10 reached / the panel closes. Resolves the click to a country via turf point-in-polygon (countryGeo). */
+    let _picking=false, _pickBound=false, _pickKey=null;
+    function _pickResolve(lngLat){ try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return resolveCountryId(f); }catch(_){} } } }catch(_){} return ''; }
+    function _pickClick(e){ if(!_picking) return;
+      if(!host||!document.body.contains(host)){ _setPick(false); return; }   /* panel gone → stop picking */
+      if(codes.length>=10){ _setPick(false); try{ imToast(LL('Maximum 10 countries','最大10か国です','Maximal 10 Länder','Максимум 10 стран','Máximo 10 países')); }catch(_){} return; }
+      const cd=_pickResolve(e.lngLat);
+      if(!cd){ try{ imToast(LL('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
+      const nm=cName(countryStats[cd])||cd;
+      if(codes.indexOf(cd)>=0){ try{ imToast(LL('Already added','追加済み','Bereits hinzugefügt','Уже добавлено','Ya añadido')+': '+nm); }catch(_){} return; }
+      codes.push(cd); try{ render(); }catch(_){} try{ imToast('✓ '+nm); }catch(_){} }
+    function _setPick(on){ _picking=!!on; window.__scpPick=_picking;
+      const b=host&&host.querySelector('#scp-pick'); if(b) b.classList.toggle('on',_picking);
+      try{ const cv=map&&map.getCanvas&&map.getCanvas(); if(cv) cv.style.cursor=_picking?'crosshair':''; }catch(_){}
+      if(_picking&&!_pickBound){ try{ map.on('click',_pickClick); _pickBound=true; }catch(_){} }
+      if(_picking&&!_pickKey){ _pickKey=(ev)=>{ if(ev.key==='Escape') _setPick(false); }; try{ document.addEventListener('keydown',_pickKey); }catch(_){} }
+      else if(!_picking&&_pickKey){ try{ document.removeEventListener('keydown',_pickKey); }catch(_){} _pickKey=null; }
+      if(_picking){ try{ imToast(LL('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} } }
+    function _endPick(){ try{ _setPick(false); }catch(_){} }
     function chipRow(){ const w=host&&host.querySelector('#scp-chips'); if(!w) return; w.innerHTML='';
       codes.forEach((cd,i)=>{ const s2=countryStats[cd]||{}; const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
         el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd))+'<span class="scp-x" title="remove">✕</span>';
@@ -20857,6 +20884,12 @@ window.addEventListener('DOMContentLoaded', () => {
       return {ok:true,transit:true,railEstimate:true,duration:Math.round(railS+walkS+transferS),transfers:transfers,legs:legs,railKm:rr.railKm,mode:'transit',
         lines:(rr.segs||[]).map(sg=>currentLang==='jp'?(sg.name||sg.en):(sg.en||sg.name)).filter(Boolean)};
     }
+    /* (#R86) transit alternatives — each MOTIS itinerary keeps its own coloured geometry so the reply can list every
+       option (like the Berlin→Amsterdam screenshot) and tapping one redraws it on the map. */
+    let _tAlts=[];
+    function _drawFeats(feats){ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ let a=180,b=90,c=-180,d=-90; feats.forEach(f=>{ if(f.geometry.type==='LineString') f.geometry.coordinates.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); }); }); if(isFinite(a)) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:15,duration:900}); }catch(_){} }
+    function selectAlt(i){ if(_tAlts&&_tAlts[i]){ ensureLayers(); _drawFeats(_tAlts[i].feats); return true; } return false; }
     async function transit(from,to,opts){ opts=opts||{};
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
       const url='https://api.transitous.org/api/v1/plan?fromPlace='+(+from.lat).toFixed(6)+','+(+from.lng).toFixed(6)+'&toPlace='+(+to.lat).toFixed(6)+','+(+to.lng).toFixed(6)+'&time='+encodeURIComponent(tISO)+(opts.arriveBy?'&arriveBy=true':'');
@@ -20866,22 +20899,26 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!its||!its.length){ /* (#R85e) no open-GTFS service here (e.g. Japan intercity JR) → route on the real rail network */
         try{ const rr=await railRoute(from,to); if(rr&&rr.ok) return _renderRail(from,to,rr); }catch(_){}
         return {ok:false,reason:'no-transit'}; }
-      its.sort((x,y)=>(x.duration||1e9)-(y.duration||1e9));
-      const it=its.find(x=>(x.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode)))||its[0];
       ensureLayers();   /* best-effort — the leg list still returns even if the style isn't ready to paint yet */
-      const feats=[], legOut=[]; const P=l=>({lng:+(l.lon!=null?l.lon:l.lng),lat:+l.lat});
-      (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
-        let coords=null; try{ if(l.legGeometry&&l.legGeometry.points) coords=_decodePoly(l.legGeometry.points,l.legGeometry.precision||7); }catch(_){}
-        if((!coords||coords.length<2)&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to); if(isFinite(a.lng)&&isFinite(b.lng)) coords=[[a.lng,a.lat],[b.lng,b.lat]]; }
-        if(coords&&coords.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:coords},properties:{col,walk,w:walk?4:5.5}});
-        if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) feats.push({type:'Feature',geometry:{type:'Point',coordinates:[a.lng,a.lat]},properties:{k:'stop',col}}); }
-          if(l.to&&l.to.lat!=null){ const b=P(l.to); if(isFinite(b.lng)) feats.push({type:'Feature',geometry:{type:'Point',coordinates:[b.lng,b.lat]},properties:{k:'stop',col}}); } }
-        legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col}); });
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}});
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}});
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      try{ let a=180,b=90,c=-180,d=-90; feats.forEach(f=>{ if(f.geometry.type==='LineString') f.geometry.coordinates.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); }); }); if(isFinite(a)) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:15,duration:900}); }catch(_){}
-      return {ok:true,transit:true,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),legs:legOut,startTime:it.startTime,endTime:it.endTime,mode:'transit'}; }
+      const P=l=>({lng:+(l.lon!=null?l.lon:l.lng),lat:+l.lat});
+      const _buildItin=(it)=>{ const feats=[], legOut=[];
+        (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
+          let coords=null; try{ if(l.legGeometry&&l.legGeometry.points) coords=_decodePoly(l.legGeometry.points,l.legGeometry.precision||7); }catch(_){}
+          if((!coords||coords.length<2)&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to); if(isFinite(a.lng)&&isFinite(b.lng)) coords=[[a.lng,a.lat],[b.lng,b.lat]]; }
+          if(coords&&coords.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:coords},properties:{col,walk,w:walk?4:5.5}});
+          if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) feats.push({type:'Feature',geometry:{type:'Point',coordinates:[a.lng,a.lat]},properties:{k:'stop',col}}); }
+            if(l.to&&l.to.lat!=null){ const b=P(l.to); if(isFinite(b.lng)) feats.push({type:'Feature',geometry:{type:'Point',coordinates:[b.lng,b.lat]},properties:{k:'stop',col}}); } }
+          legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col}); });
+        feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}});
+        feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}});
+        return {feats:feats,legs:legOut,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; };
+      /* rank: itineraries that actually ride something first (a bare all-walk plan is unhelpful), then by duration; keep up to 5 */
+      const ranked=its.slice().sort((x,y)=>{ const rx=(x.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1, ry=(y.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1; return (rx-ry)||((x.duration||1e9)-(y.duration||1e9)); });
+      _tAlts=ranked.slice(0,5).map(_buildItin); if(!_tAlts.length) return {ok:false,reason:'no-transit'};
+      _drawFeats(_tAlts[0].feats);
+      const b0=_tAlts[0];
+      return {ok:true,transit:true,duration:b0.duration,transfers:b0.transfers,legs:b0.legs,startTime:b0.startTime,endTime:b0.endTime,mode:'transit',sel:0,
+        alternatives:_tAlts.map(a=>({duration:a.duration,transfers:a.transfers,legs:a.legs,startTime:a.startTime,endTime:a.endTime}))}; }
     async function route(from,to,opts){ opts=opts||{}; if(!from||to==null) return {ok:false};
       const mode=String(opts.mode||'driving').toLowerCase();
       if(_isTransit(mode)) return await transit(from,to,opts);
@@ -20983,7 +21020,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(from){ if(typeof from==='object'&&from.lng!=null){ pFrom=from; fEl.value=from.name||(from.lat.toFixed(3)+', '+from.lng.toFixed(3)); } else { fEl.value=String(from); pFrom=await geo1(String(from)); if(pFrom) fEl.value=pFrom.name; } }
       if(to){ if(typeof to==='object'&&to.lng!=null){ pTo=to; tEl.value=to.name||(to.lat.toFixed(3)+', '+to.lng.toFixed(3)); } else { tEl.value=String(to); pTo=await geo1(String(to)); if(pTo) tEl.value=pTo.name; } }
       recompute(); }
-    return { route, clear, ensureLayers, openPanel, _src:SRC };
+    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt };
   })();
   /* ===== (#R83) STREET VIEW ("ストリートビューを使えるように") — an embedded, KEYLESS Google Street View panel
      (the classic maps.google.com output=svembed endpoint, no API key/billing) plus an "open in Google Maps" jump.
@@ -23366,13 +23403,23 @@ window.addEventListener('DOMContentLoaded', () => {
             const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
             const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(currentLang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
             const seq=(r.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
-            const legHtml=(r.legs||[]).map(l=>{ const mn=Math.round((l.duration||0)/60);
+            const _legRow=(l)=>{ const mn=Math.round((l.duration||0)/60);
               const head=l.walk?(L('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+esc(l.to)):'')):((l.route?('<b>'+esc(l.route)+'</b> '):'')+esc(l.headsign||l.to||''));
               const sub=l.walk?'':(esc(l.from||'')+(l.dep?(' · '+_tm(l.dep)):''));
-              return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; }).join('');
+              return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; };
+            const legHtml=(r.legs||[]).map(_legRow).join('');
             const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km'+(r.lines&&r.lines.length?(' · '+r.lines.slice(0,3).map(esc).join(' → ')):(' '+L('by rail','鉄道','per Bahn','по ж/д','por vía')))):('<b>'+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
-            let h=_hdr+'<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div>'
-              +'<div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'
+            /* (#R86) list EVERY alternative itinerary (Google/Apple-Maps style — the Berlin→Amsterdam screenshot); the
+               selected one is expanded, tapping another redraws it on the map via IntMapRouting.selectAlt. */
+            const alts=(!r.railEstimate&&r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
+            let body;
+            if(alts){ const selI=r.sel||0;
+              body='<div class="atl-trips">'+alts.map((av,i)=>{ const am=Math.round((av.duration||0)/60), ah2=Math.floor(am/60), arm=am%60, adur=ah2?(ah2+' h '+arm+' min'):(am+' min'); const atf=av.transfers||0;
+                const times=av.startTime?(_tm(av.startTime)+'–'+_tm(av.endTime)):('<b>'+adur+'</b>');
+                const aseq=(av.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
+                return '<div class="atl-trip'+(i===selI?' on':'')+'" data-ai="'+i+'"><div class="atl-trip-head"><span class="atl-trip-time">'+times+'</span><span class="atl-trip-dur">'+(av.startTime?('<b>'+adur+'</b> · '):'')+atf+' '+L('transfer'+(atf===1?'':'s'),'乗換','Umst.','пер.','transb.')+'</span></div><div class="atl-trip-seq">'+aseq+'</div><div class="atl-trip-legs">'+(av.legs||[]).map(_legRow).join('')+'</div></div>'; }).join('')+'</div>';
+            } else { body='<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div><div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'; }
+            let h=_hdr+(alts?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+alts.length+' '+L('options — tap one to show it on the map','件の候補 — タップで地図に表示','Optionen — zum Anzeigen antippen','вариантов — нажмите, чтобы показать','opciones — toca para ver en el mapa')+'</div>'):'')+body
               +note(r.railEstimate
                 ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
                 : L('Live public-transit routing (Transitous / MOTIS). Walking legs are dotted; each ride is coloured by mode on the map.','公共交通のライブ経路検索（Transitous／MOTIS）。徒歩は点線、乗車区間はモード別に色分けして地図表示。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));
@@ -24322,6 +24369,16 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-route-mode{flex:1;border:none;background:transparent;color:var(--text-muted);font-size:17px;border-radius:8px;padding:5px 0;cursor:pointer;transition:background .15s ease,color .15s ease;}'
         +'#atlas-panel .atl-route-mode:hover{background:rgba(120,120,128,0.18);}'
         +'#atlas-panel .atl-route-mode.on{background:var(--primary-color);color:#fff;}'
+        +'#atlas-panel .atl-trips{display:flex;flex-direction:column;gap:5px;margin-bottom:2px;}'
+        +'#atlas-panel .atl-trip{border:1px solid rgba(128,128,128,0.16);border-radius:10px;padding:7px 10px;cursor:pointer;transition:border-color .15s,background .15s;}'
+        +'#atlas-panel .atl-trip:hover{border-color:rgba(128,128,128,0.34);}'
+        +'#atlas-panel .atl-trip.on{border-color:var(--primary-color);background:rgba(10,132,255,0.06);}'
+        +'#atlas-panel .atl-trip-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}'
+        +'#atlas-panel .atl-trip-time{font-size:12.5px;color:var(--text-main);}'
+        +'#atlas-panel .atl-trip-dur{font-size:11px;color:var(--text-muted);white-space:nowrap;}'
+        +'#atlas-panel .atl-trip-seq{font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.35;}'
+        +'#atlas-panel .atl-trip-legs{display:none;margin-top:5px;max-height:200px;overflow:auto;}'
+        +'#atlas-panel .atl-trip.on .atl-trip-legs{display:block;}'
         +'#atlas-panel .atl-traj-row{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 2px;}'
         +'#atlas-panel .atl-traj-btn{font-size:11px;font-weight:600;color:var(--text-main);background:rgba(120,120,128,0.12);border:1px solid rgba(128,128,128,0.2);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease,border-color .15s ease;}'
         +'#atlas-panel .atl-traj-btn:hover{background:rgba(120,120,128,0.22);border-color:var(--primary-color);}'
@@ -24438,6 +24495,10 @@ window.addEventListener('DOMContentLoaded', () => {
           mtg.classList.toggle('on',show); mtg.setAttribute('aria-checked',show?'true':'false'); return; }
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
+        const trp=e.target.closest&&e.target.closest('.atl-trip[data-ai]');
+        if(trp){ const ai=+trp.getAttribute('data-ai'); const box=trp.parentElement;   /* (#R86) select a transit alternative → expand it + redraw on the map */
+          if(box){ box.querySelectorAll('.atl-trip').forEach(t=>t.classList.remove('on')); } trp.classList.add('on');
+          try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(ai); }catch(_){} return; }
         const rmb=e.target.closest&&e.target.closest('.atl-route-mode[data-rmode]');
         if(rmb&&_lastRouteCtx){ const m=rmb.getAttribute('data-rmode');   /* (#R85d) re-route in the message on a different mode */
           const act={type:'directions',from:_lastRouteCtx.from,to:_lastRouteCtx.to,via:_lastRouteCtx.via,mode:m};
