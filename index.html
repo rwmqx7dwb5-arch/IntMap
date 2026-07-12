@@ -20851,12 +20851,14 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<button class="sv-ext" title="'+LL('Open in Google Maps','Googleマップで開く','In Google Maps öffnen','Открыть в Google Maps','Abrir en Google Maps')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;padding:2px 4px;">↗</button>'
         +'<button class="sv-close" title="'+LL('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;padding:2px 4px;">✕</button></div>'
         /* (#R85b) heading controls — turn the view; the map marker's cone points the same way so you always see on the map which way you are looking */
-        +'<div class="sv-nav" style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--input-bg);border-top:1px solid rgba(128,128,128,0.14);">'
-          +'<span style="font-size:10.5px;color:var(--text-muted);flex:0 0 auto;">🧭</span>'
-          +'<button class="sv-turn-l" title="'+LL('Turn left','左を向く','Nach links','Влево','Izquierda')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:32px;height:26px;cursor:pointer;font-size:14px;">◀</button>'
-          +'<span class="sv-hdg" style="flex:1;text-align:center;font-size:12px;font-weight:600;color:var(--text-main);">N&nbsp;0°</span>'
-          +'<button class="sv-turn-r" title="'+LL('Turn right','右を向く','Nach rechts','Вправо','Derecha')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:32px;height:26px;cursor:pointer;font-size:14px;">▶</button>'
-          +'<span style="font-size:9.5px;color:var(--text-muted);flex:0 0 auto;">'+LL('shown on map','地図に表示','auf Karte','на карте','en el mapa')+'</span>'
+        +'<div class="sv-nav" style="flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:5px 9px;background:var(--input-bg);border-top:1px solid rgba(128,128,128,0.14);">'
+          +'<button class="sv-turn-l" title="'+LL('Turn left','左を向く','Nach links','Влево','Izquierda')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:30px;height:26px;cursor:pointer;font-size:13px;">↺</button>'
+          +'<span class="sv-hdg" style="flex:1;text-align:center;font-size:12px;font-weight:600;color:var(--text-main);min-width:52px;">N&nbsp;0°</span>'
+          +'<button class="sv-turn-r" title="'+LL('Turn right','右を向く','Nach rechts','Вправо','Derecha')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:30px;height:26px;cursor:pointer;font-size:13px;">↻</button>'
+          +'<span style="width:1px;height:18px;background:rgba(128,128,128,0.3);flex:0 0 auto;margin:0 2px;"></span>'
+          +'<button class="sv-back" title="'+LL('Step back','後退','Zurück','Назад','Atrás')+'" style="border:none;background:var(--popup-bg,#222);color:var(--text-main);border-radius:7px;width:30px;height:26px;cursor:pointer;font-size:13px;">▼</button>'
+          +'<button class="sv-fwd" title="'+LL('Step forward','前進','Vorwärts','Вперёд','Adelante')+'" style="border:none;background:var(--primary-color);color:#fff;border-radius:7px;width:34px;height:26px;cursor:pointer;font-size:13px;font-weight:700;">▲</button>'
+          +'<span style="font-size:9px;color:var(--text-muted);flex:0 0 auto;line-height:1.15;">'+LL('move here<br>= map syncs','移動＝<br>地図同期','bewegen<br>= Karte','движение<br>= карта','mover<br>= mapa')+'</span>'
         +'</div>'
         +'<div class="sv-body" style="flex:1 1 auto;position:relative;background:#000;min-height:0;"><iframe class="sv-if" style="width:100%;height:100%;border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
         +'<div class="sv-hint" style="position:absolute;left:0;right:0;bottom:0;font-size:10px;color:#ddd;background:rgba(0,0,0,0.5);padding:3px 8px;pointer-events:none;">'+LL('Drag to look; use ◀ ▶ to turn (the map shows your facing).','ドラッグで見回し／◀ ▶ で向きを変更（地図に向きを表示）。','Ziehen zum Umsehen; ◀ ▶ zum Drehen.','Тяните; ◀ ▶ — поворот (направление на карте).','Arrastra; ◀ ▶ para girar (dirección en el mapa).')+'</div></div>';
@@ -20864,6 +20866,8 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.querySelector('.sv-close').onclick=()=>{ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} _clearHere(); };
       panel.querySelector('.sv-turn-l').onclick=()=>_rotateHere(-30);
       panel.querySelector('.sv-turn-r').onclick=()=>_rotateHere(30);
+      panel.querySelector('.sv-fwd').onclick=()=>_moveHere(1);
+      panel.querySelector('.sv-back').onclick=()=>_moveHere(-1);
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sv-head')); }catch(_){}
       return panel; }
     function _compass(h){ h=((h%360)+360)%360; const dirs=['N','NE','E','SE','S','SW','W','NW']; return dirs[Math.round(h/45)%8]+'&nbsp;'+Math.round(h)+'°'; }
@@ -20889,10 +20893,16 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
       _updHeadingLabel(); }
     function _updHeadingLabel(){ try{ if(panel){ const h=panel.querySelector('.sv-hdg'); if(h) h.innerHTML=_compass(_hereHdg); } }catch(_){} }
+    function _reloadEmbed(){ try{ if(iframe&&_hereLL) iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+(_hereLL.lat).toFixed(6)+','+(_hereLL.lng).toFixed(6)+'&cbp=11,'+_hereHdg+',0,0,0&output=svembed'; }catch(_){} }
     function _rotateHere(delta){ if(!_hereLL) return; _hereHdg=((_hereHdg+delta)%360+360)%360;
       try{ if(_hereMarker) _hereMarker.setRotation(_hereHdg); }catch(_){}
-      try{ if(iframe) iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+(_hereLL.lat).toFixed(6)+','+(_hereLL.lng).toFixed(6)+'&cbp=11,'+_hereHdg+',0,0,0&output=svembed'; }catch(_){}
-      _updHeadingLabel(); }
+      _reloadEmbed(); _updHeadingLabel(); }
+    /* (#R85b) step the viewpoint forward/back along the current heading so the panorama AND the map marker move
+       together — the Google embed is cross-origin so we can't read its own "walk", so we drive the movement here. */
+    function _moveHere(sign){ if(!_hereLL) return; const stepM=18*sign, R=6378137, tr=Math.PI/180;
+      const nlat=_hereLL.lat+((stepM*Math.cos(_hereHdg*tr))/R)/tr;
+      const nlng=_hereLL.lng+((stepM*Math.sin(_hereHdg*tr))/(R*Math.max(0.15,Math.cos(_hereLL.lat*tr))))/tr;
+      _setHere(nlng,nlat,_hereHdg); _reloadEmbed(); }
     function _clearHere(){ _hereLL=null; try{ if(_hereMarker){ _hereMarker.remove(); _hereMarker=null; } }catch(_){} }
     function open(ll,label){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return false; const p=ensure();
       const lat=(+ll.lat).toFixed(6), lng=(+ll.lng).toFixed(6); const hdg0=(ll.heading!=null&&isFinite(+ll.heading))?((+ll.heading%360)+360)%360:0;
@@ -20948,7 +20958,24 @@ window.addEventListener('DOMContentLoaded', () => {
     const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
     const ISOTOPES={ 'cs137':{n:'Cs-137',h:264289,dose:2.0e-6}, 'i131':{n:'I-131',h:192.5,dose:1.5e-6}, 'cs134':{n:'Cs-134',h:18045,dose:5.4e-6}, 'sr90':{n:'Sr-90',h:252648,dose:0.2e-6} };
-    const SOURCES={ 'chernobyl':{n:'Chernobyl-scale',bq:8.5e16}, 'fukushima':{n:'Fukushima-scale',bq:1.5e16}, 'dirtybomb':{n:'Dirty bomb (RDD)',bq:3.7e13}, 'research':{n:'Small/research',bq:1e12} };
+    const SOURCES={ 'chernobyl':{n:'Chernobyl-scale',bq:8.5e16,ll:[30.0997,51.3892]}, 'fukushima':{n:'Fukushima-scale',bq:1.5e16,ll:[141.0329,37.4211]}, 'dirtybomb':{n:'Dirty bomb (RDD)',bq:3.7e13}, 'research':{n:'Small/research',bq:1e12} };
+    /* (#R85b) built-in gazetteer of major nuclear sites so "福島第一原発 / Fukushima Daiichi / Chernobyl / Zaporizhzhia"
+       ALWAYS resolve even when the online geocoder truncates/misses the name ("Where is the release source?"). */
+    const SITES=[
+      {re:/fukushima\s*dai\s*ichi|福島第一|福岛第一|fukushima\s*i\b|fukushima\s*(nuclear|daiichi)|福島原発|福岛核电|第一核电站/i, ll:[141.0329,37.4211], n:'Fukushima Daiichi'},
+      {re:/fukushima\s*daini|福島第二|福岛第二|fukushima\s*ii\b/i, ll:[141.0210,37.3160], n:'Fukushima Daini'},
+      {re:/chernobyl|chornobyl|チェルノブイリ|チョルノービリ|切尔诺贝利|車諾比|чорнобиль|чернобыль/i, ll:[30.0997,51.3892], n:'Chernobyl'},
+      {re:/zaporizh|zaporozh|запор|ザポリージャ|ザポロジエ|扎波罗热/i, ll:[34.5857,47.5122], n:'Zaporizhzhia NPP'},
+      {re:/three\s*mile|スリーマイル/i, ll:[-76.7247,40.1533], n:'Three Mile Island'},
+      {re:/kashiwazaki|柏崎刈羽|柏崎/i, ll:[138.5959,37.4290], n:'Kashiwazaki-Kariwa'},
+      {re:/sellafield|windscale|セラフィールド/i, ll:[-3.4986,54.4200], n:'Sellafield'},
+      {re:/la\s*hague|ラアーグ/i, ll:[-1.8792,49.6781], n:'La Hague'},
+      {re:/mayak|マヤーク|kyshtym|マヤク/i, ll:[60.8028,55.6900], n:'Mayak'},
+      {re:/hanford|ハンフォード/i, ll:[-119.4880,46.5500], n:'Hanford'},
+      {re:/bushehr|ブーシェフル/i, ll:[52.2300,28.8290], n:'Bushehr'},
+      {re:/ohi|大飯|takahama|高浜|sendai\s*nuclear|川内原発|hamaoka|浜岡/i, ll:[135.6520,35.5420], n:'Ōi / Kansai NPP'}
+    ];
+    function resolveSite(q){ q=String(q||'').trim(); if(!q) return null; for(const s of SITES){ if(s.re.test(q)) return {lng:s.ll[0],lat:s.ll[1],name:s.n}; } return null; }
     /* Cs-137 ground-deposition zones — the real Chernobyl thresholds (Ci/km² → kBq/m²): 40/15/5/1 */
     const ZONES=[ {min:1480,c:'#8a0f0f',n:['Exclusion — permanent resettlement','立入禁止（強制移住）','Sperrzone','Зона отчуждения','Exclusión'],mSv:'>5'},
       {min:555,c:'#ff453a',n:['Mandatory evacuation','義務的避難','Zwangsumsiedlung','Обязательное отселение','Evacuación obligatoria'],mSv:'1–5'},
@@ -21072,7 +21099,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
         zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
     try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ const s=map.getSource(SRC); if(s&&s._data&&s._data.features&&s._data.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
-    return { run, clear, ISOTOPES, SOURCES, ZONES };
+    return { run, clear, ISOTOPES, SOURCES, ZONES, resolveSite };
   })();
   /* ===== (#R84) 3-D ARC OVERLAY — a screen-space canvas that lifts a ground track off the map by REAL altitude so
      ballistic trajectories read as a dimensional arc (「地図にのっぺりではなく立体的な軌道」), coloured by altitude.
@@ -23178,8 +23205,17 @@ window.addEventListener('DOMContentLoaded', () => {
           let ok=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.open) ok=window.IntMapStreetView.open({lng:+ll.lng,lat:+ll.lat},ll.name||''); }catch(_){}
           return R(ok, ok?note('🧍 '+L('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')+': '+esc(ll.name||((+ll.lat).toFixed(4)+', '+(+ll.lng).toFixed(4)))):warn('⚠')); }
         case 'radiation': case 'fallout': case 'dispersion': case 'plume': case 'radiationSim': {
-          const ll=(a.lng!=null&&isFinite(+a.lng)&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:a.place||''}:await geocode(a.place||a.from||a.at||a.source);
-          if(!ll) return R(false, warn('⚠ '+L('Where is the release source?','放出源はどこですか？','Wo ist die Quelle?','Где источник выброса?','¿Dónde está la fuente?')));
+          /* (#R85b) robust source resolution ("福島第一原発 → Where is the release source?"): explicit coords →
+             built-in nuclear-site gazetteer → online geocode → simplified retry → source-preset default coords. */
+          const _place=String(a.place||a.from||a.at||a.source||'').trim();
+          let ll=(a.lng!=null&&isFinite(+a.lng)&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:a.place||''}:null;
+          if(!ll){ try{ ll=window.IntMapRadiation.resolveSite&&window.IntMapRadiation.resolveSite(_place); }catch(_){} }
+          if(!ll&&_place){ try{ ll=await geocode(_place); }catch(_){} }
+          if(!ll&&_place){ /* strip generic words the geocoder chokes on (原発/nuclear/power plant/npp…) and retry */
+            const _clean=_place.replace(/(原子力発電所|原発|発電所|nuclear\s*power\s*(plant|station)?|power\s*(plant|station)|nuclear|npp|reactor|станция|аэс)/ig,'').replace(/\s{2,}/g,' ').trim();
+            if(_clean&&_clean!==_place){ try{ ll=window.IntMapRadiation.resolveSite&&window.IntMapRadiation.resolveSite(_clean); }catch(_){} if(!ll){ try{ ll=await geocode(_clean); }catch(_){} } } }
+          if(!ll){ const _sp=(window.IntMapRadiation.SOURCES||{})[String(a.source||'').toLowerCase()]; if(_sp&&_sp.ll) ll={lng:_sp.ll[0],lat:_sp.ll[1],name:_sp.n}; }   /* fall back to the preset's own location */
+          if(!ll) return R(false, warn('⚠ '+L('Where is the release source? Name a plant/place, or right-click a point.','放出源はどこですか？（原発名・地名の指定、または地点を右クリック）','Wo ist die Quelle?','Где источник выброса?','¿Dónde está la fuente?')));
           /* (#R85) selectable source term / emission duration / isotope / start date-time + a FINAL deposition map
              with real dose zones ("放出量や放出時間、日時等も選べるように … 最終的な飛散もマッピング … 地点によってどの程度の
              放射線被害があるかも説明"). */
@@ -24177,12 +24213,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if(cid){ const cb=document.getElementById(cid); if(cb&&cb.type==='checkbox') return {cb,label:el.getAttribute('data-layer')||cid}; }
         return resolveLayer(el.getAttribute('data-layer')||''); }catch(_){ return null; } };
       panel.addEventListener('click',e=>{ try{
-        const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
-        if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
+        /* (#R85b) BUGFIX "Atlasの返答内のオンオフボタンが機能していない": the map-overlay toggle ALSO carries the
+           .atl-ctl-toggle class, so the layer-toggle branch below used to intercept it first (find no cb → do
+           nothing → return), which is exactly why every "Shown on the map" switch was dead. Check the map-toggle
+           FIRST. */
         const mtg=e.target.closest&&e.target.closest('.atl-map-toggle');
         if(mtg){ const row=mtg.closest('.atl-mapctl'); const kinds=((row&&row.getAttribute('data-ovls'))||'').split(',').filter(Boolean);
           const show=!mtg.classList.contains('on'); kinds.forEach(k=>{ try{ overlayToggle(k,show); }catch(_){} });
           mtg.classList.toggle('on',show); mtg.setAttribute('aria-checked',show?'true':'false'); return; }
+        const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
+        if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
         const rdb=e.target.closest&&e.target.closest('.atl-traj-btn[data-rad]');
         if(rdb&&_lastRadCtx){ let o={}; try{ o=JSON.parse(rdb.getAttribute('data-rad')||'{}'); }catch(_){}   /* (#R85) re-run the fallout with a preset scenario */
           const act=Object.assign({type:'radiation',place:_lastRadCtx.place,lng:_lastRadCtx.lng,lat:_lastRadCtx.lat},o);
