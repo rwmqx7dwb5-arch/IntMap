@@ -7341,7 +7341,12 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R79b) Countries window now carries its OWN search bar + the compare dock (#stats-compare-fixed),
          stacked in the window body, so its search & country-comparison features work in workspace mode. */
       {id:'countries', sels:['#countries-search-bar','#countries-feed','#stats-compare-fixed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280],
-        onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} }},
+        /* (#R79d) the Countries window pairs with the map's country-info layer, exactly like the Countries tab:
+           showing it enables country hover/click on the map; HIDING it turns that OFF and clears the compare
+           selection + any open country popup ("国ウィンドウを閉じてもcountriesが選択されている判定になっている"). */
+        onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} try{ window._wsCountryInfo&&window._wsCountryInfo(true); }catch(_){} },
+        onShow:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} try{ window._wsCountryInfo&&window._wsCountryInfo(true); }catch(_){} },
+        onHide:()=>{ try{ window._wsCountryInfo&&window._wsCountryInfo(false); }catch(_){} try{ window._clearCompare&&window._clearCompare(); }catch(_){} try{ const p=document.getElementById('country-popup'); if(p) p.style.display='none'; }catch(_){} } },
       {id:'info',     sels:['#info-dashboard'],  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
       {id:'community', sels:['#community-feed'],  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }},
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
@@ -7358,15 +7363,19 @@ window.addEventListener('DOMContentLoaded', () => {
     function hideG(){ if(gV){ gV.style.display='none'; gH.style.display='none'; } }
     function others(w){ const a=[]; for(const id in wraps){ const o=wraps[id]; if(o&&o!==w&&o.isConnected&&o.style.display!=='none') a.push(o); } return a; }
     const SNAP=8;
-    function xCands(w){ const a=[10,innerWidth-10]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return a; }
-    function yCands(w){ const tk=(document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar'))?30:0;
-      const a=[46,innerHeight-10-tk]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return a; }
+    /* (#R79d) the workspace's usable rectangle: BELOW the 34px top menu bar, down to the TOP of the ticker
+       (the ticker owns the real screen bottom — "下端はティッカーであり実画面の下端ではない"), full width.
+       Everything measures against this so windows reach the real edges but never overlap the menu or hide
+       behind the ticker. */
+    function wsBounds(){ let tkH=0; try{ const tb=document.getElementById('ticker-bar'); if(document.body.classList.contains('ticker-on')&&tb&&getComputedStyle(tb).display!=='none') tkH=tb.offsetHeight||30; }catch(_){} return {top:34, bottom:innerHeight-tkH, left:0, right:innerWidth}; }
+    function xCands(w){ const b=wsBounds(); const a=[b.left,b.right]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return a; }
+    function yCands(w){ const b=wsBounds(); const a=[b.top,b.bottom]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return a; }
     function nearest(cands,v){ let b=null,bd=SNAP+0.001; cands.forEach(c=>{ const d=Math.abs(v-c); if(d<bd){ bd=d; b=c; } }); return b; }
     function minOf(w){ return (w&&w.__wsMin)||[220,140]; }
     function wsDrag(w,tb){
       tb.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,a')) return; if(w.dataset.resizing) return; e.preventDefault();
         try{ bringToFront(w); }catch(_){}
-        const sx=e.clientX,sy=e.clientY,sl=w.offsetLeft,st=w.offsetTop,cx=xCands(w),cy=yCands(w);
+        const sx=e.clientX,sy=e.clientY,sl=w.offsetLeft,st=w.offsetTop,cx=xCands(w),cy=yCands(w),B=wsBounds();
         const mv=ev=>{ let l=sl+ev.clientX-sx,t=st+ev.clientY-sy; hideG();
           /* snap either edge (left/right, top/bottom) to any candidate line */
           const sxl=nearest(cx,l), sxr=nearest(cx,l+w.offsetWidth);
@@ -7375,7 +7384,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const syt=nearest(cy,t), syb=nearest(cy,t+w.offsetHeight);
           if(syt!=null&&(syb==null||Math.abs(syt-t)<=Math.abs(syb-(t+w.offsetHeight)))){ t=syt; showG('h',syt); }
           else if(syb!=null){ t=syb-w.offsetHeight; showG('h',syb); }
-          l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(40,Math.min(innerHeight-44,t));   /* stay below the menu bar */
+          l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(B.top,Math.min(B.bottom-28,t));   /* (#R79d) title bar stays below the menu & above the ticker */
           w.style.left=l+'px'; w.style.top=t+'px'; };
         const up=()=>{ hideG(); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); schedSave(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
@@ -7389,7 +7398,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const d=edgeAt(e.clientX,e.clientY); if(!d) return; if(w.dataset.min) return;
         e.preventDefault(); e.stopPropagation(); w.dataset.resizing=d; try{ bringToFront(w); }catch(_){}
         const sx=e.clientX,sy=e.clientY, sw=w.offsetWidth,sh=w.offsetHeight, sl=w.offsetLeft, st=w.offsetTop;
-        const mn=minOf(w), cx=xCands(w), cy=yCands(w);
+        const mn=minOf(w), cx=xCands(w), cy=yCands(w), B=wsBounds();   /* (#R79d) hard clamp edges to the usable rect */
         /* adjacency detection at grab time: pure-edge drags pick up every neighbour abutting that edge */
         const partners=[];
         if(d.length===1){ others(w).forEach(o=>{ const r0={l:o.offsetLeft,t:o.offsetTop,w:o.offsetWidth,h:o.offsetHeight};
@@ -7402,22 +7411,24 @@ window.addEventListener('DOMContentLoaded', () => {
           if(d.indexOf('e')>=0){ let edge=sl+sw+dx;
             if(!partners.length){ const s2=nearest(cx,edge); if(s2!=null){ edge=s2; showG('v',s2); } }
             partners.forEach(p=>{ edge=Math.min(edge,p.r0.l+p.r0.w-minOf(p.o)[0]); });
+            edge=Math.min(edge,B.right);
             wd=Math.max(mn[0],edge-sl); const E=sl+wd;
             partners.forEach(p=>{ p.o.style.left=E+'px'; p.o.style.width=(p.r0.l+p.r0.w-E)+'px'; }); }
           if(d.indexOf('w')>=0){ let edge=sl+dx;
             if(!partners.length){ const s2=nearest(cx,edge); if(s2!=null){ edge=s2; showG('v',s2); } }
             partners.forEach(p=>{ edge=Math.max(edge,p.r0.l+minOf(p.o)[0]); });
-            edge=Math.min(edge,sl+sw-mn[0]); wd=sw+(sl-edge); l=edge;
+            edge=Math.max(B.left,Math.min(edge,sl+sw-mn[0])); wd=sw+(sl-edge); l=edge;
             partners.forEach(p=>{ p.o.style.width=(edge-p.r0.l)+'px'; }); }
           if(d.indexOf('s')>=0){ let edge=st+sh+dy;
             if(!partners.length){ const s2=nearest(cy,edge); if(s2!=null){ edge=s2; showG('h',s2); } }
             partners.forEach(p=>{ edge=Math.min(edge,p.r0.t+p.r0.h-minOf(p.o)[1]); });
+            edge=Math.min(edge,B.bottom);
             hg=Math.max(mn[1],edge-st); const E=st+hg;
             partners.forEach(p=>{ p.o.style.top=E+'px'; p.o.style.height=(p.r0.t+p.r0.h-E)+'px'; }); }
           if(d.indexOf('n')>=0){ let edge=st+dy;
             if(!partners.length){ const s2=nearest(cy,edge); if(s2!=null){ edge=s2; showG('h',s2); } }
             partners.forEach(p=>{ edge=Math.max(edge,p.r0.t+minOf(p.o)[1]); });
-            edge=Math.min(edge,st+sh-mn[1]); hg=sh+(st-edge); t=edge;
+            edge=Math.max(B.top,Math.min(edge,st+sh-mn[1])); hg=sh+(st-edge); t=edge;
             partners.forEach(p=>{ p.o.style.height=(edge-p.r0.t)+'px'; }); }
           w.style.left=l+'px'; w.style.top=t+'px'; w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
         const up=()=>{ delete w.dataset.resizing; hideG(); w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); };
@@ -7427,9 +7438,10 @@ window.addEventListener('DOMContentLoaded', () => {
        obvious "grab and drag to resize" the user asked for). Works alongside the invisible edge zones. */
     function wsGrip(w){ const g=document.createElement('div'); g.className='ws-grip'; g.title=T('Drag to resize','ドラッグでリサイズ','Zum Größenändern ziehen','Тяните, чтобы изменить размер','Arrastra para redimensionar'); w.appendChild(g);
       g.addEventListener('pointerdown',e=>{ if(w.dataset.min) return; e.preventDefault(); e.stopPropagation(); w.dataset.resizing='se'; try{ bringToFront(w); }catch(_){}
-        const sx=e.clientX,sy=e.clientY,sw=w.offsetWidth,sh=w.offsetHeight,mn=minOf(w);
+        const sx=e.clientX,sy=e.clientY,sw=w.offsetWidth,sh=w.offsetHeight,mn=minOf(w),B=wsBounds();
         try{ g.setPointerCapture&&g.setPointerCapture(e.pointerId); }catch(_){}
-        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(innerWidth-w.offsetLeft-4,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(innerHeight-w.offsetTop-4,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
+        /* (#R79d) clamp to the usable rect: right → screen edge, bottom → TICKER TOP (not the real screen bottom) */
+        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(B.right-w.offsetLeft,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(B.bottom-w.offsetTop,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
         const up=ev=>{ delete w.dataset.resizing; try{ g.releasePointerCapture&&g.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
     function css(){ if(styled) return; styled=true; const st=document.createElement('style'); st.id='ws-style';
@@ -7549,8 +7561,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R78e) EDGE-TO-EDGE tiled default with NO gaps ("上部と各ウィンドウ間に隙間があるのが気になる" /
          "ティッカーの上端までウィンドウを伸ばしておけ"): windows abut the menu bar (top), each other, the screen
          sides, and the ticker's top edge. Shared-border splitters then work from the start. */
-      const MENU=34, tkOn=document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar');
-      const top=MENU, bottom=H-(tkOn?30:0), B=bottom-top;
+      const _b=wsBounds(); const top=_b.top, bottom=_b.bottom, B=bottom-top;
       /* (#R79b) default layout: Countries (left) · Map (center) · Layers (top-right) · Atlas (bottom-right).
          The right column is split into Layers on top and Atlas below (they share a horizontal splitter). */
       const sideW=Math.min(360,Math.round(W*0.24)), rightW=Math.min(340,Math.round(W*0.24)); const rightX=W-rightW;
@@ -7559,10 +7570,12 @@ window.addEventListener('DOMContentLoaded', () => {
       return { countries:[0,top,sideW,B], map:[sideW,top,rightX-sideW,B],
         layers:[rightX,top,rightW,layersH], atlas:[rightX,top+layersH,rightW,B-layersH],
         news:flo(0), info:flo(1), community:flo(2) }; }
-    function clampRect(r,min){ const W=innerWidth,H=innerHeight;
-      /* (#R78e) allow EDGE-TO-EDGE placement (x=0, y=menu bottom, full width, down to the ticker) — no forced gaps */
-      let w=Math.max((min&&min[0])||220,Math.min(W,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-34,r[3]||300));
-      let x=Math.max(0,Math.min(W-w,r[0]!=null?r[0]:0)), y=Math.max(34,Math.min(H-40,r[1]!=null?r[1]:34));   /* y≥34: below the menu bar */
+    function clampRect(r,min){ const b=wsBounds();
+      /* (#R79d) clamp to the usable rect — full width, from the menu bottom down to the TICKER TOP (so a window
+         can fill the real area edge-to-edge but never overlaps the menu bar or hides behind the ticker). */
+      const maxW=b.right-b.left, maxH=b.bottom-b.top;
+      let w=Math.max((min&&min[0])||220,Math.min(maxW,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(maxH,r[3]||300));
+      let x=Math.max(b.left,Math.min(b.right-w,r[0]!=null?r[0]:b.left)), y=Math.max(b.top,Math.min(b.bottom-h,r[1]!=null?r[1]:b.top));
       return [x,y,w,h]; }
     /* (#R78e) the map's geographic centre was landing off-window because frosted-sidebar mode sets
        map.setPadding({left: sidebarWidth}) so the optical centre sits right of the overlay — stale in a
@@ -7600,7 +7613,9 @@ window.addEventListener('DOMContentLoaded', () => {
       tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; w.dataset.userHid='1'; try{ if(def.onHide) def.onHide(); }catch(_){} syncDock(); fitMap(); schedSave(); };
       tb.querySelector('.ws-d-min').onclick=()=>{ if(w.dataset.min){ delete w.dataset.min; body.style.display=''; w.style.height=(+w.dataset.h0||300)+'px'; } else { w.dataset.h0=String(w.offsetHeight); w.dataset.min='1'; body.style.display='none'; w.style.height='auto'; } fitMap(); schedSave(); };
       tb.querySelector('.ws-d-max').onclick=()=>{ if(w.dataset.maxed){ try{ const r2=JSON.parse(w.dataset.maxed); w.style.left=r2[0]+'px'; w.style.top=r2[1]+'px'; w.style.width=r2[2]+'px'; w.style.height=r2[3]+'px'; }catch(_){} delete w.dataset.maxed; }
-        else { w.dataset.maxed=JSON.stringify([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight]); w.style.left='8px'; w.style.top='8px'; w.style.width=(innerWidth-16)+'px'; w.style.height=(innerHeight-16)+'px'; }
+        /* (#R79d) maximize FITS the usable area (below the menu, down to the ticker top) — it no longer spills
+           off-screen ("画面に収まりきらないとこまで拡大されてしまう"). */
+        else { w.dataset.maxed=JSON.stringify([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight]); const b=wsBounds(); w.style.left=b.left+'px'; w.style.top=b.top+'px'; w.style.width=(b.right-b.left)+'px'; w.style.height=(b.bottom-b.top)+'px'; }
         try{ bringToFront(w); }catch(_){} fitMap(); schedSave(); };
       tb.addEventListener('dblclick',e=>{ if(e.target.closest('.ws-dot')) return; tb.querySelector('.ws-d-max').click(); });
       try{ if(def.onWrap) def.onWrap(); }catch(_){}
@@ -8789,6 +8804,9 @@ window.addEventListener('DOMContentLoaded', () => {
      window). Read from it there; fall back to the shared search in the normal tabbed sidebar. */
   function _countriesSearchVal(){ try{ const ci=document.getElementById('countries-search-input'); if(document.body.classList.contains('ws-mode')&&ci) return ci.value.trim().toLowerCase(); }catch(_){} return searchVal(); }
   window._wsRenderCountries=function(){ try{ const q=_countriesSearchVal(); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ renderStats(q); }catch(_){} }); } renderStats(q); }catch(_){} };
+  /* (#R79d) toggle the map's Country-info layer (cb-countries → country-fill/line) with the Countries window,
+     so closing the window clears the "countries selected" state visible on the map. Mirrors _setCountriesInfo. */
+  window._wsCountryInfo=function(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==!!on){ cb.checked=!!on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} };
   (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
   function renderStats(q){
     const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); clearMarkers();
