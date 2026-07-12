@@ -1822,6 +1822,11 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       <button class="ai-action-btn" id="ai-translate-btn" style="margin-top:0;">🌐 <span data-i18n="aiTranslateTitles">Translate titles</span></button>
     </div>
     <div class="content-area" id="live-news-feed"></div>
+    <!-- (#R79b) Countries gets its OWN search bar too — in workspace mode News & Countries are separate
+         windows, so Countries can no longer borrow the shared #sidebar-search-bar (which lives in News). -->
+    <div class="search-bar" id="countries-search-bar" style="display:none;">
+      <input type="text" id="countries-search-input" class="search-input" placeholder="Filter countries…" data-i18n-ph="filterCountriesPh">
+    </div>
     <div class="content-area" id="countries-feed" style="display:none;"></div><!-- (#R78e) Countries gets its OWN feed so News & Countries can be separate workspace windows -->
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
     <div class="content-area" id="community-feed" style="display:none;"></div>
@@ -1944,7 +1949,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLayerPanel">Layer panel</label><select id="setting-layerpanel"><option value="classic" data-i18n="layerPanelClassic">Classic dropdown</option><option value="right" data-i18n="layerPanelRight">Right sidebar (visual, with previews)</option></select></div>
     <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select></div>
-    <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><select id="setting-wsmode"><option value="off" data-i18n="wsOff">Off (default)</option><option value="on" data-i18n="wsOn">On — free floating, resizable windows</option></select><div class="sat-keys-hint" data-i18n="wsHint">Video-editor style: the panel, map, layers and map controls become windows you can freely move, resize, collapse and stack. Layout is saved.</div></div>
+    <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><select id="setting-wsmode"><option value="off" data-i18n="wsOff">Off (default)</option><option value="on" data-i18n="wsOn">On — free floating, resizable windows</option></select><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
     <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
@@ -2215,7 +2220,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== i18n ===== */
   const i18n={
     en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabStats:"Countries",
-      searchPh:"Search news / places...", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
+      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
@@ -2247,7 +2252,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
     jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabStats:"国",
-      searchPh:"ニュース・地域を検索...", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
+      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
@@ -2281,7 +2286,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R22) German + Russian cover the visible static UI; anything not listed falls back to English
        (the long tail of dynamically-built strings is still EN/JP only — see t() fallback). */
     de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabStats:"Länder", tabCommunity:"Community",
-      searchPh:"Nachrichten / Orte suchen...", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
+      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
       viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
       settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
       lblTheme:"Darstellung", optAuto:"Systemstandard", optLight:"Hell", optDark:"Dunkel", optClassic:"Klassisch", optCyber:"Cyber",
@@ -2327,7 +2332,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem datumsfähigen Anbieter (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Kartenbilder konnten nicht erfasst werden.",
       mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
     ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabStats:"Страны", tabCommunity:"Сообщество",
-      searchPh:"Поиск новостей / мест...", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
+      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
       viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
       settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
       lblTheme:"Оформление", optAuto:"Как в системе", optLight:"Светлая", optDark:"Тёмная", optClassic:"Классика", optCyber:"Кибер",
@@ -2374,7 +2379,7 @@ window.addEventListener('DOMContentLoaded', () => {
       mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" },
     /* (#R40) Spanish (beta). Covers the visible static UI like DE/RU; anything not listed falls back to English (t() fallback). */
     es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabStats:"Países", tabCommunity:"Comunidad",
-      searchPh:"Buscar noticias / lugares...", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
+      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
       viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
       settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
       lblTheme:"Apariencia", optAuto:"Predeterminado del sistema", optLight:"Claro", optDark:"Oscuro", optClassic:"Clásico", optCyber:"Cíber",
@@ -5647,8 +5652,11 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.style.setProperty('left',c[0]+'px','important'); panel.style.setProperty('top',c[1]+'px','important');
       panel.style.setProperty('right','auto','important'); panel.style.setProperty('bottom','auto','important');
       panel.setAttribute('data-dragged','1'); };
-    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing) return; panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
-    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing) return; const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
+    /* (#R79b) when this panel is wrapped inside a workspace window, the WINDOW owns drag/resize — the panel's
+       own handlers would fight it (the Atlas input field "moved freely" while resizing). Bail out cleanly. */
+    const _inWsWin=()=>{ try{ return !!(panel.closest&&panel.closest('.ws-win')); }catch(_){ return false; } };
+    handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()) return; panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
+    handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()) return; const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
       const up=()=>{ panelDrag=null; document.removeEventListener('touchmove',mv); document.removeEventListener('touchend',up); };
       document.addEventListener('touchmove',mv,{passive:false}); document.addEventListener('touchend',up); },{passive:false});
@@ -5667,9 +5675,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const M=9, minW=(opts.min&&opts.min[0])||220, minH=(opts.min&&opts.min[1])||130;
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
     const edgeAt=(cx,cy)=>{ const r=panel.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<0||y<0||x>r.width||y>r.height) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
-    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
+    /* (#R79b) inside a workspace window the WINDOW handles resize — skip the panel's own edge-resize */
+    const _inWsWin2=()=>{ try{ return !!(panel.closest&&panel.closest('.ws-win')); }catch(_){ return false; } };
+    panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
-    panel.addEventListener('pointerdown',(e)=>{ if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
+    panel.addEventListener('pointerdown',(e)=>{ if(_inWsWin2()) return; if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
       const r=panel.getBoundingClientRect(), op=panel.offsetParent||document.documentElement, opr=op.getBoundingClientRect();
       /* (#R48) ROOT CAUSE of the buggy resize: the Atlas panel is centred with transform:translateX(-50%) (from
          left:50%). The old code pinned left to the VISUAL rect but LEFT THE TRANSFORM ON, so on grab the panel
@@ -7291,11 +7301,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const KEY='intmap_ws2';
     const T=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
-    try{ Object.assign(i18n.en,{lblWsMode:'Window workspace (desktop)',wsOff:'Off (default)',wsOn:'On — free floating, resizable windows',wsHint:'Video-editor style: the panel, map, layers and map controls become windows you can freely move, resize, collapse and stack. Layout is saved.'});
-      Object.assign(i18n.jp,{lblWsMode:'ウィンドウ・ワークスペース（デスクトップ）',wsOff:'オフ（デフォルト）',wsOn:'オン — 自由に配置・リサイズできるウィンドウ',wsHint:'動画編集ソフト風：パネル・地図・レイヤー・地図コントロールがウィンドウになり、自由に移動・リサイズ・折りたたみ・重ね替えできます。レイアウトは保存されます。'});
-      Object.assign(i18n.de,{lblWsMode:'Fenster-Workspace (Desktop)',wsOff:'Aus (Standard)',wsOn:'An — frei bewegliche Fenster',wsHint:'Wie in einem Videoeditor: Panel, Karte, Ebenen und Kartensteuerung werden frei verschieb- und skalierbare Fenster. Das Layout wird gespeichert.'});
-      Object.assign(i18n.ru,{lblWsMode:'Оконный режим (десктоп)',wsOff:'Выкл (по умолчанию)',wsOn:'Вкл — свободные окна',wsHint:'Как в видеоредакторе: панель, карта, слои и управление картой становятся свободно перемещаемыми окнами. Раскладка сохраняется.'});
-      Object.assign(i18n.es,{lblWsMode:'Espacio de ventanas (escritorio)',wsOff:'Apagado (predeterminado)',wsOn:'Encendido — ventanas libres',wsHint:'Estilo editor de vídeo: el panel, el mapa, las capas y los controles se vuelven ventanas libres. El diseño se guarda.'}); }catch(_){}
+    try{ Object.assign(i18n.en,{lblWsMode:'Window workspace (desktop)',wsOff:'Off (default)',wsOn:'On — free floating, resizable windows',wsHint:'News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.'});
+      Object.assign(i18n.jp,{lblWsMode:'ウィンドウ・ワークスペース（デスクトップ）',wsOff:'オフ（デフォルト）',wsOn:'オン — 自由に配置・リサイズできるウィンドウ',wsHint:'ニュース・国・地図・レイヤー・Atlasがそれぞれ独立したウィンドウになり、自由に移動・リサイズ・折りたたみ・重ね替えできます。レイアウトは保存されます。'});
+      Object.assign(i18n.de,{lblWsMode:'Fenster-Workspace (Desktop)',wsOff:'Aus (Standard)',wsOn:'An — frei bewegliche Fenster',wsHint:'News, Länder, Karte, Ebenen und Atlas werden zu eigenen Fenstern, die Sie frei verschieben, skalieren, einklappen und stapeln können. Das Layout wird gespeichert.'});
+      Object.assign(i18n.ru,{lblWsMode:'Оконный режим (десктоп)',wsOff:'Выкл (по умолчанию)',wsOn:'Вкл — свободные окна',wsHint:'Новости, страны, карта, слои и Atlas становятся отдельными окнами, которые можно свободно перемещать, масштабировать, сворачивать и накладывать. Раскладка сохраняется.'});
+      Object.assign(i18n.es,{lblWsMode:'Espacio de ventanas (escritorio)',wsOff:'Apagado (predeterminado)',wsOn:'Encendido — ventanas libres',wsHint:'Noticias, países, el mapa, las capas y Atlas se convierten en ventanas propias que puedes mover, redimensionar, plegar y apilar libremente. Tu diseño se guarda.'}); }catch(_){}
     let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false, scanT=null;
     /* (#R78c) window set per the re-report: NO ticker window (「画面外の最下部に固定と何度も言っている」— it is a
        fixed bottom strip above the workspace), NO separate map-controls window (「操作パネルを新設するな」— the
@@ -7305,7 +7315,11 @@ window.addEventListener('DOMContentLoaded', () => {
        geocode row + feed + reader. Map & Layers as before. The sidebar chrome (title / language / login /
        feedback / settings) is duplicated in the top bar, so it is removed from the windows — no duplication. */
     const DEFS=[
-      {id:'news',  sels:['#sidebar-search-bar','#news-filter-toggle','#ai-geocode-row','#live-news-feed','#news-reader-pane'], t:()=>T('News','ニュース','Nachrichten','Новости','Noticias'), min:[300,280],
+      /* (#R79b) NEW default per request: Countries(left) · Map(center) · Layers(top-right) · Atlas(bottom-right).
+         News is now hidden by default (available from the Window menu). Because it is hidden, its map pins must
+         NOT appear — startNews() is gated on the News window being visible (see _wsNewsHidden), and enable()
+         calls onHide for any window that starts hidden. */
+      {id:'news',  sels:['#sidebar-search-bar','#news-filter-toggle','#ai-geocode-row','#live-news-feed','#news-reader-pane'], t:()=>T('News','ニュース','Nachrichten','Новости','Noticias'), min:[300,280], defHidden:true,
         /* (#R79) ROOT CAUSE of "workspace still shows no news": the old code called setMode('news') with NO
            btnId. setMode sets currentMode='news' then does getElementById(btnId).classList.add(...) — with
            btnId undefined that THROWS before renderUI() runs, so startNews() never fires and the feed stays
@@ -7324,13 +7338,16 @@ window.addEventListener('DOMContentLoaded', () => {
         onShow:()=>{ /* restore pins directly (setMode('news') no-ops when currentMode is already 'news') */
           try{ if(map&&map.getSource('news-points')&&typeof newsFeatures!=='undefined') map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); }catch(_){}
           try{ const b=document.getElementById('ai-view-summary-btn'); if(b&&(currentMode==='news'||currentMode==='saved')) b.style.display=''; }catch(_){} } },
-      {id:'countries', sels:['#countries-feed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280], defHidden:true, onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} }},
+      /* (#R79b) Countries window now carries its OWN search bar + the compare dock (#stats-compare-fixed),
+         stacked in the window body, so its search & country-comparison features work in workspace mode. */
+      {id:'countries', sels:['#countries-search-bar','#countries-feed','#stats-compare-fixed'], t:()=>T('Countries','国','Länder','Страны','Países'), min:[300,280],
+        onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} }},
       {id:'info',     sels:['#info-dashboard'],  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
       {id:'community', sels:['#community-feed'],  t:()=>T('Community','コミュニティ','Community','Сообщество','Comunidad'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof loadCommunity==='function') loadCommunity(); }catch(_){} }},
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
       {id:'layers',sels:['#layer-sidebar-r'], t:()=>T('Layers','レイヤー','Ebenen','Слои','Capas'), min:[260,300]},
-      /* (#R78f) Atlas is a window too ("Atlas windowをつくれ"); default hidden, available in the Window menu */
-      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], defHidden:true, ensure:()=>{ try{ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }
+      /* (#R79b) Atlas is a DEFAULT window now (bottom-right); ensure() builds #atlas-panel before it is wrapped */
+      {id:'atlas', sels:['#atlas-panel'], t:()=>T('Atlas','Atlas','Atlas','Atlas','Atlas'), min:[300,300], ensure:()=>{ try{ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); }catch(_){} } }
     ];
     /* ==== (#R78b) real window mechanics ("隣接ウィンドウの境界線で調節する機構がないし、隣接判定機構もない"):
        dedicated drag/resize with MAGNETIC SNAPPING to screen padding and other windows' edges (guide lines),
@@ -7364,7 +7381,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
     function wsResize(w){
-      const M=8, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
+      const M=11, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};   /* (#R79b) wider edge hit-zone → easier to grab */
       const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-2||y<-2||x>r.width+2||y>r.height+2) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
       w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; });
       w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing) w.style.cursor=''; });
@@ -7406,6 +7423,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const up=()=>{ delete w.dataset.resizing; hideG(); w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
+    /* (#R79b) a big, visible bottom-right grip that resizes the window (no neighbour-splitter logic — a plain,
+       obvious "grab and drag to resize" the user asked for). Works alongside the invisible edge zones. */
+    function wsGrip(w){ const g=document.createElement('div'); g.className='ws-grip'; g.title=T('Drag to resize','ドラッグでリサイズ','Zum Größenändern ziehen','Тяните, чтобы изменить размер','Arrastra para redimensionar'); w.appendChild(g);
+      g.addEventListener('pointerdown',e=>{ if(w.dataset.min) return; e.preventDefault(); e.stopPropagation(); w.dataset.resizing='se'; try{ bringToFront(w); }catch(_){}
+        const sx=e.clientX,sy=e.clientY,sw=w.offsetWidth,sh=w.offsetHeight,mn=minOf(w);
+        try{ g.setPointerCapture&&g.setPointerCapture(e.pointerId); }catch(_){}
+        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(innerWidth-w.offsetLeft-4,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(innerHeight-w.offsetTop-4,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
+        const up=ev=>{ delete w.dataset.resizing; try{ g.releasePointerCapture&&g.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); };
+        document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
     function css(){ if(styled) return; styled=true; const st=document.createElement('style'); st.id='ws-style';
       st.textContent=
         'body.ws-mode{background:var(--bg-main,#0d1117);}'
@@ -7427,6 +7453,12 @@ window.addEventListener('DOMContentLoaded', () => {
         +'.ws-gv{top:0;bottom:0;width:1px;}.ws-gh{left:0;right:0;height:1px;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
         +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
+        /* (#R79b) VISIBLE, easy-to-grab resize grip in the bottom-right corner ("リサイズがやりにくい。ドラッグ
+           アンドドロップで簡単に") — the invisible edge zones stay, but this gives an obvious drag target. */
+        +'.ws-win .ws-grip{position:absolute;right:0;bottom:0;width:22px;height:22px;cursor:nwse-resize;z-index:946;touch-action:none;}'
+        +'.ws-win .ws-grip::after{content:"";position:absolute;right:3px;bottom:3px;width:9px;height:9px;border-right:2px solid var(--text-muted,#8a8a94);border-bottom:2px solid var(--text-muted,#8a8a94);border-bottom-right-radius:3px;opacity:0.5;transition:opacity .15s ease;}'
+        +'.ws-win .ws-grip:hover::after{opacity:1;}'
+        +'.ws-win[data-min] .ws-grip{display:none;}'
         /* (#R78c) FILL the window, always: the app's own width/height rules are calc(100vw−…) formulas tied to
            body classes — inside a window they collapsed the map to 38px (measured; the "search bar flying away"
            and "map not centred" were the same bug). 100%!important pins every wrapped element to its window. */
@@ -7460,6 +7492,20 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-news #news-reader-pane{flex:1 1 auto !important;width:100% !important;min-height:0 !important;margin:0 !important;padding:10px 12px !important;box-sizing:border-box !important;}'
         +'body.ws-mode .ws-news #sidebar-search-bar{box-sizing:border-box !important;width:auto !important;margin:10px 12px 4px !important;}'
         +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
+        /* (#R79b) Countries window: its OWN search bar (top) + the compare dock (bottom) stacked in the body */
+        +'body.ws-mode .ws-countries .ws-body{flex-direction:column;}'
+        +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:10px 12px 6px !important;padding:0 !important;}'
+        +'body.ws-mode .ws-countries #countries-search-bar input{width:100% !important;box-sizing:border-box !important;}'
+        +'body.ws-mode .ws-countries #stats-compare-fixed{position:static !important;left:auto !important;right:auto !important;bottom:auto !important;top:auto !important;transform:none !important;width:100% !important;flex:0 0 auto !important;box-sizing:border-box !important;margin:0 !important;}'
+        /* (#R79b) Layers search box balance ("上に余白なし・下が空きすぎ"): the .lsr-head above it is hidden in
+           ws-mode, so give the search breathing room on top and tighten the gap to the list below. */
+        +'body.ws-mode #layer-sidebar-r .lsr-search{padding:12px 14px 6px !important;}'
+        /* (#R79b) Atlas window: keep the INPUT BAR always visible when the window is short — the suggested-
+           question chips (.atl-ex) were tall + non-shrinking and pushed the input below the window on resize.
+           Cap + scroll them so the chat area and input never get clipped. */
+        +'body.ws-mode .ws-atlas .atl-ex{flex:0 1 auto !important;min-height:0 !important;max-height:38% !important;overflow-y:auto !important;}'
+        +'body.ws-mode .ws-atlas .atl-chat{min-height:0 !important;}'
+        +'body.ws-mode .ws-atlas .atl-inbar{flex:0 0 auto !important;}'
         /* (#R78g) CONTENT WAS INVISIBLE: the window background == --card-bg == the cards' own background, and the
            card border is only 8% opacity → in dark theme the cards vanished into the window. Give the content
            windows the app's BASE background so the --card-bg cards/rows stand out, and strengthen their border. */
@@ -7505,10 +7551,14 @@ window.addEventListener('DOMContentLoaded', () => {
          sides, and the ticker's top edge. Shared-border splitters then work from the start. */
       const MENU=34, tkOn=document.body.classList.contains('ticker-on')&&document.getElementById('ticker-bar');
       const top=MENU, bottom=H-(tkOn?30:0), B=bottom-top;
-      const sideW=Math.min(360,Math.round(W*0.25)), layW=Math.min(300,Math.round(W*0.21)); const layX=W-layW;
-      const flo=(i)=>[Math.round(W*0.30)+i*26,top+24+i*30,Math.round(W*0.34),Math.round(B*0.66)];
-      return { news:[0,top,sideW,B], map:[sideW,top,layX-sideW,B], layers:[layX,top,layW,B],
-        countries:flo(0), info:flo(1), community:flo(2), atlas:[Math.round(W*0.30)+78,top+114,Math.round(W*0.30),Math.round(B*0.72)] }; }
+      /* (#R79b) default layout: Countries (left) · Map (center) · Layers (top-right) · Atlas (bottom-right).
+         The right column is split into Layers on top and Atlas below (they share a horizontal splitter). */
+      const sideW=Math.min(360,Math.round(W*0.24)), rightW=Math.min(340,Math.round(W*0.24)); const rightX=W-rightW;
+      const layersH=Math.round(B*0.50);
+      const flo=(i)=>[Math.round(W*0.30)+i*28,top+40+i*32,Math.round(W*0.32),Math.round(B*0.62)];   /* hidden windows' fallback when opened from the menu */
+      return { countries:[0,top,sideW,B], map:[sideW,top,rightX-sideW,B],
+        layers:[rightX,top,rightW,layersH], atlas:[rightX,top+layersH,rightW,B-layersH],
+        news:flo(0), info:flo(1), community:flo(2) }; }
     function clampRect(r,min){ const W=innerWidth,H=innerHeight;
       /* (#R78e) allow EDGE-TO-EDGE placement (x=0, y=menu bottom, full width, down to the ticker) — no forced gaps */
       let w=Math.max((min&&min[0])||220,Math.min(W,r[2]||300)), h=Math.max((min&&min[1])||140,Math.min(H-34,r[3]||300));
@@ -7545,7 +7595,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const r=clampRect(rect,def.min);
       w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; w.style.width=r[2]+'px'; w.style.height=r[3]+'px';
       w.__wsMin=def.min;
-      wsDrag(w,tb); wsResize(w);
+      wsDrag(w,tb); wsResize(w); wsGrip(w);
       try{ registerWindow(w); }catch(_){}
       tb.querySelector('.ws-d-close').onclick=()=>{ w.style.display='none'; w.dataset.userHid='1'; try{ if(def.onHide) def.onHide(); }catch(_){} syncDock(); fitMap(); schedSave(); };
       tb.querySelector('.ws-d-min').onclick=()=>{ if(w.dataset.min){ delete w.dataset.min; body.style.display=''; w.style.height=(+w.dataset.h0||300)+'px'; } else { w.dataset.h0=String(w.offsetHeight); w.dataset.min='1'; body.style.display='none'; w.style.height='auto'; } fitMap(); schedSave(); };
@@ -7643,6 +7693,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const shown=(st.vis&&st.vis[def.id]!==undefined)?st.vis[def.id]:!def.defHidden;
         if(!shown){ w.style.display='none'; w.dataset.userHid='1'; }
         wraps[def.id]=w; });
+      /* (#R79b) onWrap ran while every window was still visible — so a window that STARTS hidden must run its
+         onHide now to leave no artifacts on the map (a hidden News window's pins + "summarize view" button). */
+      DEFS.forEach(def=>{ const w=wraps[def.id]; if(w&&w.style.display==='none'&&def.onHide){ try{ def.onHide(); }catch(_){} } });
       mkDock(); syncDock();
       try{ ro=new ResizeObserver(()=>{ fitMap(); schedSave(); }); if(wraps.map) ro.observe(wraps.map); }catch(_){}
       document.addEventListener('pointerup',schedSave,true);
@@ -8440,6 +8493,11 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     return item.title;
   }
+  /* (#R79b) In workspace mode the News window can be hidden (it is hidden by default now). When it is,
+     news pins must NOT sit on the map ("ニュースウィンドウがオンになってないのに勝手にマップ上に現れる").
+     This is the single source of truth used by startNews so a later data refresh can't re-push stray pins. */
+  function _wsNewsHidden(){ try{ if(!document.body.classList.contains('ws-mode')) return false; const w=document.querySelector('.ws-win.ws-news'); return !!(w && w.style.display==='none'); }catch(_){ return false; } }
+  window._wsNewsHidden=_wsNewsHidden;
   function startNews(){
     const feed=document.getElementById('live-news-feed'); clearMarkers(); feed.innerHTML=''; renderedCount=0;
     if(globalData.length===0){ feed.innerHTML=`<div class="empty-msg">${t('loading')}</div>`; return; }
@@ -8459,7 +8517,8 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
     if(map&&map.isStyleLoaded()) setupIntelLayers();
-    if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
+    /* (#R79b) don't paint pins for a hidden News window (they'd appear with no window controlling them) */
+    if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:_wsNewsHidden()?[]:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
     appendNewsBatch(); updateOcclusion();
     maybeAutoEnrich();
   }
@@ -8726,7 +8785,11 @@ window.addEventListener('DOMContentLoaded', () => {
   window._showCompare=function(){ if(compareSet.size<2) return; try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.open([...compareSet]); }catch(_){} };
   window._hideCompare=function(){ renderStats(searchVal()); };
   window._backToStats=function(){ renderStats(searchVal()); };
-  window._wsRenderCountries=function(){ try{ if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ renderStats(searchVal()); }catch(_){} }); } renderStats(searchVal()); }catch(_){} };
+  /* (#R79b) Countries has its OWN search box in workspace mode (the shared #search-input lives in the News
+     window). Read from it there; fall back to the shared search in the normal tabbed sidebar. */
+  function _countriesSearchVal(){ try{ const ci=document.getElementById('countries-search-input'); if(document.body.classList.contains('ws-mode')&&ci) return ci.value.trim().toLowerCase(); }catch(_){} return searchVal(); }
+  window._wsRenderCountries=function(){ try{ const q=_countriesSearchVal(); if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ renderStats(q); }catch(_){} }); } renderStats(q); }catch(_){} };
+  (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
   function renderStats(q){
     const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); clearMarkers();
     /* (#R69) the 5-country comparison view owns the feed while it is open — a deferred renderStats (e.g. the
@@ -8768,14 +8831,19 @@ window.addEventListener('DOMContentLoaded', () => {
     feed.style.paddingBottom='92px';   /* leave room for the fixed compare panel */
     renderCompareFixed();
   }
+  /* (#R79b) Countries is "active" either as the normal Stats tab OR as its own visible workspace window
+     (in ws-mode currentMode isn't 'stats', which used to hide the compare dock → "比較機能が消えている"). */
+  function _countriesActive(){ try{ if(currentMode==='stats') return true; if(document.body.classList.contains('ws-mode')){ const w=document.querySelector('.ws-win.ws-countries'); return !!(w&&w.style.display!=='none'); } }catch(_){} return false; }
+  window._countriesActive=_countriesActive;
   /* Fixed bottom comparison panel (#26) — stays put while the country list scrolls. */
   function renderCompareFixed(){
     const panel=document.getElementById('stats-compare-fixed'); if(!panel) return;
     /* (#R70) the dock is the SELECTION tray only; the comparison itself lives in the unified view (scp-view).
        Hide the dock while that view owns the feed. */
     const scpOpen=!!document.getElementById('scp-view');
-    panel.classList.toggle('show', currentMode==='stats' && !scpOpen);
-    if(currentMode!=='stats'||scpOpen){ panel.innerHTML=''; return; }
+    const active=_countriesActive();
+    panel.classList.toggle('show', active && !scpOpen);
+    if(!active||scpOpen){ panel.innerHTML=''; return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
