@@ -45,8 +45,8 @@ Atlasは、世界について質問すると答えるAIではない。ユーザ�
 | 要求 | 実装済みの土台 | 残り |
 |---|---|---|
 | 1 操作網羅 | dispatch ~65アクション + control/module/layerの自動カタログ3経路、localPlan決定的実行、R61正直報告、R73レイヤー自己検証、**R77 UI要素100%到達**（命名スイープ538要素→無名0、date入力対応、IntMapUIAudit常設） | 競合制御 |
-| 2 状態理解 | stateContext（中心/ズーム/ベース/レイヤー/ハイライト/選択国/ピン/描画/計測/半径 + **R77: アクティブタブ・全開パネル・ツール・タイムトラベル・日付レイヤー・検索内容**）をAIプロンプトに常時注入 | 表示中記事の詳細 |
-| 3 文脈 | _hist 16行 + _lastPlace deixis + **R76 _wctx**（国・トピック・指標・カスタムスコア現行レシピ・期間を成功アクションから決定的更新→[WORKING CONTEXT]注入） | 除外条件の記憶、曖昧時のみ確認 |
+| 2 状態理解 | stateContext（中心/ズーム/ベース/レイヤー/ハイライト/選択国/ピン/描画/計測/半径 + **R77: アクティブタブ・全開パネル・ツール・タイムトラベル・日付レイヤー・検索内容** + **R80 表示中記事**＝`window._imReader`→OPEN NEWS ARTICLE行、「この記事/この出来事/それ/現地」を解決）をAIプロンプトに常時注入 | 記事本文の深掘り（analyzeへ接続済） |
+| 3 文脈 | _hist 16行 + _lastPlace deixis + **R76 _wctx**（国・トピック・指標・カスタムスコア現行レシピ・期間を成功アクションから決定的更新→[WORKING CONTEXT]注入）+ **R80 除外条件記憶**（`_wctx.exclusions` を生文から5言語パース→[WORKING CONTEXT]の常設条件、"include everything/除外を解除"でクリア） | 曖昧時のみ確認（AI側で継続） |
 | 4,8 統合分析 | analyze（news+GDELT+GoogleNews+wiki+気象+地震+統計→合成、Web検索義務、現職名はR74のWikidata P6/P35ライブ照会が優先） | 平時比較（§8の「通常時との違い」） |
 | 5,6 出来事 | ニュースはサーバー側AI地点解析済み・dedupe、**R76 events**（位置×時間×見出し類似の決定的クラスタ、媒体一覧・最初の報道→最新・イベント単位ピン） | 続報の自動更新、報道間の相違検出(AI) |
 | 7 分解 | mapReport（検索→実在事件のみをピン化+記事リンク+件数誠実化R74）, brief | 進捗の可視化 |
@@ -54,8 +54,8 @@ Atlasは、世界について質問すると答えるAIではない。ユーザ�
 | 11 影響分析 | **R75 impact** — 地点/直近地震→半径内の実施設(OSM)+実人口タグ都市+週間地震+周辺ニュース+国統計を円+ピンで地図に描画、出典明記 | 航路・代替経路(§12へ接続) |
 | 13 独自レイヤー | mapMetric/choropleth, ratio/relate, **R75 scoreMap** — 多指標加重合成（同梱指標+任意のWB指標コード、invert、5-95pctl正規化、被覆60%未満除外を明示、会話で重み調整） | 都市粒度の評価(国レベル→) |
 | 14 動的画面構成 | **R78 ワークスペースモード** — UI全体が自由配置・リサイズ可能なウィンドウ（Atlasからオン/オフ・状態認識可）。目的別の自動配置はこの土台の上に構築予定 | Atlasによる目的別レイアウト自動構成 |
-| 16 自己確認 | R61 highlight paint検証, R73 layer検証+cancel世代管理, R74 IntMapLayerAudit(常時監査+stateContextへ未描画フラグ) | 同名地検証, 分析の整合チェック |
-| 17 診断 | R74 IntMapLayerAudit.log, **R77 IntMapUIAudit**（UI到達カバレッジ%を常時計測 — 新機能が無名だと即検出）+20秒毎の自動命名で新UIを自動統合, 429フェイルオーバー(天気), 無音addLayer失敗の教訓(geo-sea) | データ鮮度・API障害の常時監視 |
+| 16 自己確認 | R61 highlight paint検証, R73 layer検証+cancel世代管理, R74 IntMapLayerAudit(常時監査+stateContextへ未描画フラグ) + **R80 同名地検証**（AMBIG 17件＝Georgia国/州・Athens・Paris…の座標表＋`_ambigNote`、flyTo/search/outlineが解決座標≤250kmで「今回は◯◯、他に△△」を正直併記） | 分析の整合チェック |
+| 17 診断 | R74 IntMapLayerAudit.log, **R77 IntMapUIAudit**（UI到達カバレッジ%を常時計測 — 新機能が無名だと即検出）+20秒毎の自動命名で新UIを自動統合, 429フェイルオーバー(天気), 無音addLayer失敗の教訓(geo-sea) + **R80 IntMapDataHealth**（news鮮度＋layer描画整合＋ライブAPI到達性を診断、`diagnose`アクション・可視時のみ25s/10分の軽量プローブ・問題時のみstateContext警告・既出EPのみで法務変更なし） | API別の詳細監視・データ異常値検出 |
 
 **標準ルール（既存のCONSTITUTION/メモリと同じ効力）**: 新機能を追加する変更は、同じ変更の中で
 dispatch/カタログへ配線し、状態を stateContext に載せ、失敗を正直に報告し、可能なら実行後検証を持つこと。
