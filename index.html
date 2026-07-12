@@ -12738,6 +12738,34 @@ window.addEventListener('DOMContentLoaded', () => {
        zoom-gated live traffic are intentionally excluded (their emptiness is legitimate).
        Diagnostics: window.IntMapLayerAudit.{run,check,log} — Atlas reads check() for honest state. */
     window._imAuditReg=window._imAuditReg||{};
+    /* (#R81) AUTO-LEARN layer ownership so the reconciler covers EVERY layer, not only the hand-maintained
+       tables. Empirically only 31 of 129 checkboxes were audit-covered — the rest (World-Bank, GIBS, ECMWF,
+       geo-theory, NATO/EU, …) had NO "checked-but-blank" self-heal, so an occasional wipe left the box ON with
+       nothing painted and nothing corrected it (the residual "レイヤーのオンオフと実態が乖離" the user still hit).
+       On every toggle-ON we diff the style's layer list to learn which real layer ids that checkbox added and
+       feed them to the SAME reconciler. STRICTLY additive + safe: the learned ids are used ONLY for the
+       "checked-but-blank" (direction-a) heal — a harmless idempotent re-fire of the box's OWN change handler —
+       NEVER to hide a layer (hiding stays with the id-table path + _sweepOrphanLayers), so a mis-attribution can
+       at worst cause a needless re-fire of the correct checkbox, never hide the wrong layer. Attribution is
+       skipped whenever another checkbox toggles during the capture window (ambiguous → conservative miss, which
+       is safe: it just falls back to today's behaviour). */
+    window._imLayerOwn=window._imLayerOwn||{};
+    (function(){
+      if(typeof map==='undefined'||!map||!map.on) return;
+      const SKIP=/^(ofm-|country-|borders-|ref-|gl-|background$|land$|water$|waterway|admin|place-|poi-|road|bridge|tunnel|building|boundary|natural|landcover|landuse|coastline|sat$|layer-sat|nlq-|pl-outline|tool-|measure|radius|user-pin|news-|hl-|highlight|iso-mask|contour-label)/;
+      const snap=()=>{ const s=new Set(); try{ (map.getStyle().layers||[]).forEach(l=>s.add(l.id)); }catch(_){} return s; };
+      let _seq=0;
+      function learn(cbId){ const mine=++_seq; const before=snap();
+        [500,1800,4000].forEach(ms=>setTimeout(()=>{ try{
+          if(mine!==_seq) return;                 /* another checkbox toggled since → ambiguous window, skip */
+          const cb=document.getElementById(cbId); if(!cb||!cb.checked) return;
+          const now=snap(), own=window._imLayerOwn[cbId]=window._imLayerOwn[cbId]||new Set();
+          now.forEach(id=>{ if(before.has(id)||SKIP.test(id)) return;
+            for(const k in window._imLayerOwn){ if(k!==cbId&&window._imLayerOwn[k]&&window._imLayerOwn[k].has(id)) return; }   /* first owner keeps it — never steal */
+            own.add(id); });
+        }catch(_){} },ms)); }
+      try{ const dd=document.getElementById('layer-dropdown'); if(dd) dd.addEventListener('change',e=>{ const cb=e.target; if(cb&&cb.type==='checkbox'&&cb.id){ if(cb.checked) learn(cb.id); else _seq++; } }); }catch(_){}
+    })();
     (function(){
       const STATIC={
         'dl-climate':['lyr-climate'],'dl-temp':['lyr-temp'],'dl-precip':['lyr-precip'],'dl-sst':['lyr-sst'],
@@ -12765,10 +12793,25 @@ window.addEventListener('DOMContentLoaded', () => {
       const sus={}, healed={}, log=[];
       const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(map.getLayer(lid)&&map.getLayoutProperty(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
-      function check(cbId){ const ids=idsFor(cbId); if(!ids||!ids.length) return null; return painted(ids); }
+      function check(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return null; return painted(ids); }
+      /* (#R81) direction-(a) heal for AUTO-LEARNED layers (those with no id-table entry). Checked-but-blank only —
+         the exact same 2-hit debounce + 4-min cooldown + idempotent off→on re-fire the id-table path uses. Never
+         hides anything (that path stays with the id tables + _sweepOrphanLayers), so learned ids can't mis-hide. */
+      /* (#R81) layers whose emptiness is LEGITIMATE (live traffic is zoom-gated / may have no data; wind is a
+         canvas) or whose handler is stateful (grid — see #R38) must NOT be re-fired by the learned-heal. Base
+         vector toggles never reach here (they are in the BASE id-table). */
+      const _LEARN_SKIP=/^(dl-ships|dl-planes|dl-wind|cb-grid)$/;
+      function _auditLearned(cb){ try{ if(!cb.checked||_LEARN_SKIP.test(cb.id)) { sus[cb.id]=0; return; }
+        const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; if(!own||!own.size) return;
+        if(painted(Array.from(own))){ sus[cb.id]=0; return; }
+        sus[cb.id]=(sus[cb.id]||0)+1;
+        if(sus[cb.id]>=2&&(!healed[cb.id]||Date.now()-healed[cb.id]>240000)){ healed[cb.id]=Date.now(); sus[cb.id]=0;
+          log.push({id:cb.id,t:Date.now(),fix:'rearm-learned'}); if(log.length>60) log.shift();
+          try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+          setTimeout(()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },420); } }catch(_){} }
       function audit(){ try{
         if(!map||!map.isStyleLoaded||!map.isStyleLoaded()) return;
-        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const ids=idsFor(cb.id); if(!ids||!ids.length) return;
+        document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
           const vis=painted(ids);
           if(cb.checked&&!vis){ sus[cb.id]=(sus[cb.id]||0)+1;
             if(sus[cb.id]>=2&&(!healed[cb.id]||Date.now()-healed[cb.id]>240000)){ healed[cb.id]=Date.now(); sus[cb.id]=0;
