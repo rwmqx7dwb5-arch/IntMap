@@ -1952,7 +1952,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLayerPanel">Layer panel</label><select id="setting-layerpanel"><option value="classic" data-i18n="layerPanelClassic">Classic dropdown</option><option value="right" data-i18n="layerPanelRight">Right sidebar (visual, with previews)</option></select></div>
     <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select></div>
-    <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><select id="setting-wsmode"><option value="off" data-i18n="wsOff">Off (default)</option><option value="on" data-i18n="wsOn">On — free floating, resizable windows</option></select><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
+    <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
     <div class="setting-group"><label data-i18n="lblNewsLang">News languages</label><select id="setting-newslang"><option value="ui" data-i18n="newsLangUi">Current language only</option><option value="multi" data-i18n="newsLangMultiSel">Multiple languages…</option></select>
@@ -7705,7 +7705,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const sp=document.createElement('div'); sp.className='ws-spacer'; dock.appendChild(sp);
       const exm=document.createElement('div'); exm.className='ws-m';
       const ex=document.createElement('button'); ex.textContent=T('Exit workspace','ワークスペースを終了','Workspace beenden','Выйти из режима','Salir del espacio');
-      ex.onclick=()=>{ disable(); try{ const s=document.getElementById('setting-wsmode'); if(s) s.value='off'; }catch(_){} };
+      ex.onclick=()=>{ disable(); };   /* (#R79g) disable() now syncs the settings mode button itself */
       exm.appendChild(ex); dock.appendChild(exm);
       document.body.appendChild(dock); }
     function syncDock(){ if(!dock) return; dock.querySelectorAll('button[data-win]').forEach(b=>{ const w=wraps[b.dataset.win]; const onW=w&&w.style.display!=='none'; const ck=b.querySelector('.ws-ck'); if(ck) ck.textContent=onW?'✓':''; }); }
@@ -7745,6 +7745,7 @@ window.addEventListener('DOMContentLoaded', () => {
       document.addEventListener('pointerup',schedSave,true);
       scanT=setInterval(scan,2500);   /* late-appearing elements (ticker) auto-join the workspace */
       fitMap(); setTimeout(fitMap,350); save({on:1});
+      try{ syncModeBtn(); }catch(_){}
       return true; }
     function disable(){ if(!on) return; on=false;
       try{ ro&&ro.disconnect(); }catch(_){} ro=null;
@@ -7761,11 +7762,20 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ ['info-dashboard','community-feed'].forEach(idc=>{ const e=document.getElementById(idc); if(e) e.style.display='none'; }); }catch(_){}
       try{ const ap=document.getElementById('atlas-panel'); if(ap){ ap.style.display='none'; ap.style.width=''; ap.style.height=''; ap.style.left=''; ap.style.top=''; ap.style.transform=''; } }catch(_){}   /* (#R78f) Atlas back to its floating default, hidden */
       try{ if(typeof setMode==='function'&&typeof currentMode!=='undefined') setMode(currentMode); }catch(_){}
-      save({on:0}); fitMap(); setTimeout(fitMap,350); }
+      save({on:0}); fitMap(); setTimeout(fitMap,350); try{ syncModeBtn(); }catch(_){}
+    }
     function toggle(){ if(on) disable(); else enable(); }
-    function bind(){ const s=document.getElementById('setting-wsmode'); if(!s) return;
-      try{ s.value=(state().on&&!isMob())?'on':'off'; }catch(_){}
-      s.addEventListener('change',()=>{ if(s.value==='on'){ if(!enable()) s.value='off'; } else disable(); }); }
+    /* (#R79g) mode switch is a BUTTON now (not a dropdown) — "設定の移動ボタンを置く形式にして". It toggles the
+       workspace on/off and reflects the current state; syncModeBtn() keeps it correct however the mode changes
+       (button, Atlas, the menu-bar Exit button, or auto-enable on load). */
+    function syncModeBtn(){ const b=document.getElementById('setting-wsmode-btn'); if(!b) return;
+      if(on){ b.textContent=T('← Exit workspace','← 通常モードに戻る','← Workspace verlassen','← Выйти из режима','← Salir del espacio');
+        b.style.background='var(--input-bg)'; b.style.color='var(--text-main)'; b.style.borderColor='var(--glass-border,rgba(128,128,128,0.35))'; }
+      else{ b.textContent=T('Switch to workspace →','ワークスペースに切り替え →','Zum Workspace-Modus →','Перейти в оконный режим →','Cambiar al espacio de ventanas →');
+        b.style.background='var(--primary-color)'; b.style.color='#fff'; b.style.borderColor='var(--primary-color)'; } }
+    function bind(){ const b=document.getElementById('setting-wsmode-btn'); if(!b) return;
+      b.addEventListener('click',()=>{ if(on) disable(); else enable(); syncModeBtn(); });
+      syncModeBtn(); }
     setTimeout(()=>{ try{ bind(); }catch(_){} try{ if(state().on&&!isMob()) enable(); }catch(_){} },1400);
     window.addEventListener('resize',()=>{ if(!on) return; for(const id in wraps){ const w=wraps[id]; if(!w||w.style.display==='none') continue; const def=DEFS.find(d=>d.id===id); const r=clampRect([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight],def&&def.min); w.style.left=r[0]+'px'; w.style.top=r[1]+'px'; }});
     return { open:enable, close:disable, toggle, active:()=>on };
@@ -20902,6 +20912,9 @@ window.addEventListener('DOMContentLoaded', () => {
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
+      /* (#R79g) ALSO linkify BARE urls the model prints without markdown syntax ("Atlas内からリンクを踏めるように")
+         — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
+      .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
       .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:13px;text-indent:-9px;">• $1</div>')
       .replace(/\n{2,}/g,'<br>').replace(/\n/g,'<br>'); }
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
@@ -21388,7 +21401,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(typeof newsDate!=='undefined'&&newsDate) lines.push('TIME TRAVEL is active — news/imagery around '+ymdISO(newsDate)+' (not today). "now/current" requests may need timeTravel reset.'); }catch(_){}
         try{ const LD=window._imLayerDates; if(LD){ const dl=[]; ['temp','precip','sst','snow','aod'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked&&LD[k]) dl.push(k+'='+LD[k]); }); if(dl.length) lines.push('Dated raster layers showing: '+dl.join(', ')+' (changeable via control "date: <layer>").'); } }catch(_){}
         try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) lines.push('Search box contains: "'+String(si.value).trim().slice(0,60)+'".'); }catch(_){}
-        try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via control "setting-wsmode"=off or IntMapWorkspace.close.'); }catch(_){}
+        try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via the "setting-wsmode-btn" button or IntMapWorkspace.close.'); }catch(_){}
         let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}
         lines.push('UI language='+currentLang+', theme='+((typeof userTheme!=='undefined')?userTheme:'auto')+(tu?(', temp unit=°'+String(tu).toUpperCase()):'')+'.');
         return lines.join('\n'); }catch(_){ return ''; } }
@@ -22217,7 +22230,7 @@ window.addEventListener('DOMContentLoaded', () => {
              (#R69) the old prompt said "use ONLY the DATA blocks", which actively FORBADE the model from using its
              web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
              REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
-          const sys2='You are Atlas, the analysis engine of the IntMap world map. Today is '+new Date().toISOString().slice(0,10)+'. Write a focused analytical answer to the QUESTION. Your evidence sources, in order: (1) the DATA blocks below; (2) your live web_search tool — you MUST actually run web searches whenever the question concerns recent events, the current situation, or "latest" anything and the DATA blocks contain no fresh, dated, question-relevant items. It is FORBIDDEN to answer "nothing notable is happening" / "no recent information is available" without having run a web search first; if you searched and truly found nothing, state what you searched for. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query") and use your web search only to corroborate or add context; if your memory disagrees with that block, the block wins. Without such a block you MUST run a web search and state ONLY the name(s) your search results give, mentioning the result\'s date; if the search cannot confirm it, say you could not verify — outputting a remembered name is forbidden. Structure: lead with the most newsworthy, question-relevant developments WITH their dates (from the data blocks or your searches); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — ONLY urls that literally appear in the DATA blocks or in your web-search results; if you have none, omit the line entirely; fabricating a URL is forbidden.';
+          const sys2='You are Atlas, the analysis engine of the IntMap world map. Today is '+new Date().toISOString().slice(0,10)+'. Write a focused analytical answer to the QUESTION. Your evidence sources, in order: (1) the DATA blocks below; (2) your live web_search tool — you MUST actually run web searches whenever the question concerns recent events, the current situation, or "latest" anything and the DATA blocks contain no fresh, dated, question-relevant items. It is FORBIDDEN to answer "nothing notable is happening" / "no recent information is available" without having run a web search first; if you searched and truly found nothing, state what you searched for. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query") and use your web search only to corroborate or add context; if your memory disagrees with that block, the block wins. Without such a block you MUST run a web search and state ONLY the name(s) your search results give, mentioning the result\'s date; if the search cannot confirm it, say you could not verify — outputting a remembered name is forbidden. RECENCY IS CRITICAL — the user complained that asking for the "近況 / recent situation" returned events from years ago. When the question asks about what is happening now / recently / latest / 近況: the answer MUST be built from the MOST RECENT developments (the DATA blocks are sorted newest-first; the LATEST NEWS + LIVE WEB SEARCH blocks and your own searches are the current picture). Treat anything older than ~6 months as BACKGROUND only, and NEVER present an old event as if it were current. EVERY development you cite must carry its date; if the freshest dated evidence you have is more than a few months old, say so explicitly and run additional web searches (add the current month and year to your queries) for newer developments before answering. Structure: lead with the most newsworthy, RECENT, question-relevant developments WITH their dates (from the data blocks or your searches); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — ONLY urls that literally appear in the DATA blocks or in your web-search results; if you have none, omit the line entirely; fabricating a URL is forbidden.';
           let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{web:true}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txt||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
@@ -22618,6 +22631,13 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
+      /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば
+         返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every reply-setting path. It only
+         scrolls when the user is already near the bottom — so a SHORT reply drops fully into view, while a LONG
+         reply (whose new content pushes the bottom far away) is left with its TOP where the dots were, so you
+         read it from the start and aren't yanked around. */
+      try{ const _auto=()=>{ try{ if(chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<150) chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} };
+        new MutationObserver(_auto).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
       panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
       /* (#R42c/#R47) minimize / restore (collapse to just the header bar). FIX: a resized panel carries an inline
