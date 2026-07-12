@@ -21162,7 +21162,15 @@ window.addEventListener('DOMContentLoaded', () => {
        banked turns, load factor (G), terrain collision with landing-vs-crash judgement, and a banking camera. */
     const AC={ m:9500, S:27, g:9.80665, Tmax:82000, CL0:0.12, CLa:5.2, aStall:0.30, CD0:0.021, k:0.075, rho0:1.225, Hs:8500, Vne:340, Vstall:53 };
     function css(){ if(styled) return; styled=true; const s=document.createElement('style'); s.id='fs-style';
-      s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:1600;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
+      s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:3002;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
+        /* (#R85c) INDEPENDENT FULLSCREEN cockpit ("既存画面にオーバーレイするのではなく独立した全画面で"): the map is
+           lifted to cover the whole viewport above all app chrome, map controls are hidden, and a HUD vignette frames it. */
+        +'body.fs-flying{overflow:hidden !important;}'
+        +'body.fs-flying #map-container{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:3000 !important;border-radius:0 !important;}'
+        +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying .ai-view-summary-btn,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend{display:none !important;}'
+        +'#fs-hud .fs-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 200px 34px rgba(0,0,0,0.5),inset 0 0 70px 0 rgba(0,0,0,0.28);}'
+        +'#fs-hud .fs-ladder{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;}'
+        +'#fs-hud .fs-bore{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));}'
         +'#fs-hud .fs-panel{position:absolute;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.35);border-radius:10px;padding:8px 11px;backdrop-filter:blur(3px);}'
         +'#fs-hud .fs-tl{left:14px;top:14px;min-width:120px;} #fs-hud .fs-tr{right:14px;top:14px;text-align:right;min-width:120px;}'
         +'#fs-hud .fs-k{font-size:10px;color:#8fb8e0;letter-spacing:0.04em;} #fs-hud .fs-v{font-size:20px;font-weight:700;line-height:1.1;}'
@@ -21183,16 +21191,25 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-htick{position:absolute;top:4px;font-size:11px;color:#bcd6f0;transform:translateX(-50%);}'
         +'#fs-hud .fs-htape-ptr{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#ffd60a;transform:translateX(-50%);}'
         +'#fs-hud .fs-hdg-box{position:absolute;left:50%;top:28px;transform:translateX(-50%);background:rgba(6,14,24,0.7);border:1px solid #ffd60a;border-radius:5px;padding:1px 8px;font-size:14px;font-weight:700;color:#ffd60a;}'
-        +'#fs-hud .fs-plane{position:absolute;left:50%;top:46%;width:120px;height:120px;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));pointer-events:none;}'
+        +'#fs-hud .fs-ladder-g line{stroke:#63ff9b;stroke-width:2.4;} #fs-hud .fs-ladder-g text{fill:#63ff9b;font-family:ui-monospace,monospace;font-size:19px;font-weight:600;} #fs-hud .fs-ladder-g .fs-dive{stroke-dasharray:14 10;}'
         +'#fs-hud .fs-sky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(10,30,80,0.0), rgba(4,10,30,0.0) 60%, rgba(2,6,20,0.55) 100%);opacity:0;transition:opacity .4s ease;}'
         +'#fs-hud .fs-boost{position:absolute;left:44px;bottom:20px;width:8px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(255,140,60,0.4);border-radius:5px;overflow:hidden;}'
         +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}';
       document.head.appendChild(s); }
     function buildHUD(){ css(); hud=document.createElement('div'); hud.id='fs-hud';
       let hlab=''; for(let d=-180;d<=540;d+=15){ const dd=((d%360)+360)%360; const nm=({0:'N',90:'E',180:'S',270:'W'})[dd]; hlab+='<span class="fs-htick" style="left:'+((d+180)*2.4)+'px;'+(nm?'color:#ffd60a;font-weight:700;':'')+'">'+(nm||(''+(dd/10|0)))+'</span>'; }
+      /* (#R85c) HUD PITCH LADDER (replaces the removed aircraft symbol — "飛行機マークも不要"): climb lines solid,
+         dive lines dashed, labelled in degrees; the group rotates with bank and slides with pitch around the fixed
+         yellow boresight, exactly like a real head-up display. */
+      let ladder='<line x1="290" y1="500" x2="710" y2="500" stroke-width="3.2"/>';
+      [-30,-20,-10,10,20,30].forEach(p=>{ const y=500-p*8, dv=p<0?' class="fs-dive"':'';
+        ladder+='<line'+dv+' x1="340" y1="'+y+'" x2="440" y2="'+y+'"/><line'+dv+' x1="560" y1="'+y+'" x2="660" y2="'+y+'"/>'
+          +'<text x="326" y="'+(y+6)+'" text-anchor="end">'+Math.abs(p)+'</text><text x="674" y="'+(y+6)+'">'+Math.abs(p)+'</text>'; });
       hud.innerHTML='<div class="fs-sky"></div>'
+        +'<svg class="fs-ladder" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g class="fs-ladder-g">'+ladder+'</g></svg>'
+        +'<svg class="fs-bore" width="164" height="46" viewBox="0 0 164 46"><g stroke="#ffd60a" stroke-width="3.2" fill="none" stroke-linecap="round"><path d="M18 22 L62 22 L72 34"/><path d="M146 22 L102 22 L92 34"/></g><circle cx="82" cy="22" r="2.8" fill="#ffd60a"/></svg>'
+        +'<div class="fs-vign"></div>'
         +'<div class="fs-htape"><div class="fs-htape-strip">'+hlab+'</div><div class="fs-htape-ptr"></div></div><div class="fs-hdg-box"><span class="fs-hdg">---</span></div>'
-        +'<svg class="fs-plane" viewBox="0 0 60 60"><g class="fs-plane-g"><path d="M30 8 L33 30 L52 40 L52 44 L33 38 L33 48 L40 53 L40 55 L30 52 L20 55 L20 53 L27 48 L27 38 L8 44 L8 40 L27 30 Z" fill="rgba(230,244,255,0.9)" stroke="#0a1a2e" stroke-width="1"/></g></svg>'
         +'<div class="fs-boost"><div class="fs-boostfill"></div></div>'
         +'<div class="fs-panel fs-tl"><div class="fs-k">'+LL('AIRSPEED','対気速度','GESCHW.','СКОРОСТЬ','VELOCIDAD')+'</div><div class="fs-v"><span class="fs-spd">0</span> <span style="font-size:11px;">km/h</span></div><div class="fs-k" style="margin-top:6px;">'+LL('V/SPEED','昇降','V/S','ВЕРТ.','V/S')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-vs">0</span> <span style="font-size:10px;">m/s</span></div></div>'
         +'<div class="fs-panel fs-tr"><div class="fs-k">'+LL('ALTITUDE','高度','HÖHE','ВЫСОТА','ALTITUD')+'</div><div class="fs-v"><span class="fs-alt">0</span> <span style="font-size:11px;">m</span></div><div class="fs-k" style="margin-top:6px;">'+LL('AGL','対地高度','ÜBER GRUND','НАД ЗЕМЛЁЙ','SOBRE SUELO')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-agl">0</span> <span style="font-size:10px;">m</span></div></div>'
@@ -21235,6 +21252,11 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
       st.alt=Math.max(st.alt, _terrAt(st.lng,st.lat)+1500);   /* never spawn inside the ground */
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
+      /* (#R85c) INDEPENDENT FULLSCREEN — take over the whole screen (browser fullscreen + the map lifted above all
+         app chrome), not an overlay. Resize the map after the container changes size. */
+      try{ document.body.classList.add('fs-flying'); }catch(_){}
+      try{ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); }catch(_){}
+      try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120);
       buildHUD(); addExtraHUD();
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
       st.t=performance.now(); raf=requestAnimationFrame(loop); return true; }
@@ -21243,6 +21265,10 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const k in keys) keys[k]=false;
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
       if(hud){ hud.remove(); hud=null; }
+      /* (#R85c) leave fullscreen + restore the normal layout */
+      try{ document.body.classList.remove('fs-flying'); }catch(_){}
+      try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(_){}
+      try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },140);
       try{ if(map.setRoll) map.setRoll(0); }catch(_){}
       /* (#R85b) restore the pre-flight view (basemap / projection / 3-D / max pitch) */
       try{ const pv=prevView; if(pv){
@@ -21264,7 +21290,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const rollDeg=st.phi*R2D, pitchDeg=st.theta*R2D;
         const hor=q('.fs-hor'); if(hor) hor.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 60 60) translate(0 '+(pitchDeg*1.4).toFixed(1)+')');
         const strip=q('.fs-htape-strip'), tape=q('.fs-htape'); if(strip&&tape){ const tw=tape.clientWidth||300; strip.style.transform='translateX('+(tw/2-(hdg+180)*2.4)+'px)'; }
-        const pg=q('.fs-plane-g'); if(pg) pg.setAttribute('transform','rotate('+rollDeg.toFixed(1)+' 30 30)');
+        const lg=q('.fs-ladder-g'); if(lg) lg.setAttribute('transform','rotate('+(-rollDeg).toFixed(2)+' 500 500) translate(0 '+(pitchDeg*8).toFixed(1)+')');
         const sky=q('.fs-sky'); if(sky) sky.style.opacity=Math.min(0.85,Math.max(0,(st.alt-3000)/11000)).toFixed(2);
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
@@ -21318,13 +21344,14 @@ window.addEventListener('DOMContentLoaded', () => {
          heading toward the horizon (near-max pitch), banked with the wings. Centre a point ahead of the nose so the
          aircraft sits in the lower view like a cockpit. ---- */
       const hdgDeg=(st.psi*R2D+360)%360;
-      const aheadKm=Math.max(0.35,Math.min(6, agl*0.0009));
+      /* look FAR ahead + near-max pitch so the canopy view is dominated by the world in front, not a top-down map */
+      const aheadKm=Math.max(0.6,Math.min(11, agl*0.0016));
       const mLatK=110.574, mLonK=(111.320*Math.cos(st.lat*Math.PI/180))||1;
       const cLng=st.lng+(aheadKm*Math.sin(st.psi))/mLonK, cLat=st.lat+(aheadKm*Math.cos(st.psi))/mLatK;
-      const targetZoom=Math.max(9.4,Math.min(16, 15.4 - Math.log2(Math.max(40,agl)/40)*0.72));
-      camZoom=(camZoom==null)?targetZoom:(camZoom+(targetZoom-camZoom)*Math.min(1,4*dt));
-      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:Math.max(60,Math.min(85, 83 - st.theta*R2D*0.28)) };
-      cam.roll=Math.max(-55,Math.min(55, -st.phi*R2D*0.9));
+      const targetZoom=Math.max(9.0,Math.min(16, 15.2 - Math.log2(Math.max(40,agl)/40)*0.7));
+      camZoom=(camZoom==null)?targetZoom:(camZoom+(targetZoom-camZoom)*Math.min(1,3.5*dt));
+      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:Math.max(72,Math.min(85, 84 - st.theta*R2D*0.16)) };
+      cam.roll=Math.max(-48,Math.min(48, -st.phi*R2D*0.8));
       try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} }
       updateHUD(agl,{stalling,overspeed,overG,landed,ab});
       raf=requestAnimationFrame(loop); }
