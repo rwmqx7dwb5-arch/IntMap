@@ -7896,6 +7896,7 @@ window.addEventListener('DOMContentLoaded', () => {
       scanT=setInterval(scan,2500);   /* late-appearing elements (ticker) auto-join the workspace */
       fitMap(); setTimeout(fitMap,350); save({on:1});
       try{ syncModeBtn(); }catch(_){}
+      try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) re-dock open legends to the map's bottom-left */
       return true; }
     function disable(){ if(!on) return; on=false;
       try{ ro&&ro.disconnect(); }catch(_){} ro=null;
@@ -7913,6 +7914,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const ap=document.getElementById('atlas-panel'); if(ap){ ap.style.display='none'; ap.style.width=''; ap.style.height=''; ap.style.left=''; ap.style.top=''; ap.style.transform=''; } }catch(_){}   /* (#R78f) Atlas back to its floating default, hidden */
       try{ if(typeof setMode==='function'&&typeof currentMode!=='undefined') setMode(currentMode); }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); try{ syncModeBtn(); }catch(_){}
+      try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) restore legends to their normal position */
     }
     function toggle(){ if(on) disable(); else enable(); }
     /* (#R79g) mode switch is a BUTTON now (not a dropdown) — "設定の移動ボタンを置く形式にして". It toggles the
@@ -8554,7 +8556,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const sumBtn=document.getElementById('ai-view-summary-btn');
     const isNewsTab=(currentMode==='news'||currentMode==='saved');
     if(searchBtn) searchBtn.style.display=isNewsTab?'':'none';
-    if(sumBtn) sumBtn.style.display=isNewsTab?'':'none';
+    /* (#R85) "要約ボタンがニュースウィンドウを開いてなくても表示される": in workspace mode renderUI still runs with
+       currentMode==='news' even when the News WINDOW is hidden, so the summarize-view button leaked onto the map.
+       Also require the News window to be visible in ws-mode (_wsNewsHidden() is always false outside ws-mode, so
+       the normal News-tab behaviour is unchanged). */
+    if(sumBtn) sumBtn.style.display=(isNewsTab && !(window._wsNewsHidden&&window._wsNewsHidden()))?'':'none';
     { const ip=document.getElementById('search-input'); if(ip) ip.placeholder = (currentMode==='stats'||currentMode==='info') ? (currentLang==='jp'?'絞り込み...':currentLang==='de'?'Filtern…':currentLang==='ru'?'Фильтр…':currentLang==='es'?'Filtrar…':'Filter…') : t('searchPh'); }
 
     /* (#R11) No tab selected → blank sidebar content (map stays prominent). News pins still load when the
@@ -12158,10 +12164,19 @@ window.addEventListener('DOMContentLoaded', () => {
       all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
          over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
+      const ws=document.body.classList.contains('ws-mode');
       let leftBase=24;
-      try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed')) leftBase=(sb.getBoundingClientRect().width||440)+24; } }catch(_){}
-      const mobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
-      if(mobile){
+      /* (#R85) BUGFIX: in workspace mode #sidebar is display:none, so getBoundingClientRect().width is 0 and the
+         old `(0||440)+24` shoved every legend 464px to the RIGHT — that is why legends never appeared at the map's
+         bottom-left in ws-mode. Only offset past the sidebar when it is genuinely visible with a real width. */
+      try{ if(!ws && document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed') && getComputedStyle(sb).display!=='none'){ const w=sb.getBoundingClientRect().width; if(w>1) leftBase=w+24; } } }catch(_){}
+      const mobile = !ws && window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+      if(ws){
+        /* (#R85) workspace mode: dock legends to the BOTTOM-LEFT of the Map window ("ワークスペースモードでレイヤーを
+           オンにしたら、凡例は地図の左下あたりに") — stack upward, clearing the coordinate readout in the corner. */
+        let bottom=30;
+        visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.top='auto'; el.style.left='12px'; el.style.right='auto'; bottom += el.getBoundingClientRect().height+10; });
+      } else if(mobile){
         /* (#R15d) Stack legends DOWNWARD from just below the search bar (top:64), left-aligned. The CSS
            default above is for the first paint; this keeps multiple open legends from overlapping. */
         let top=64;
@@ -12999,6 +13014,20 @@ window.addEventListener('DOMContentLoaded', () => {
         'cb-admin1':['ref-admin1'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];
+      /* (#R85) NEVER FIGHT THE USER. The checked-but-blank heal pulses a layer off→on to force a re-add; the
+         old 2nd half re-checked the box UNCONDITIONALLY, so if the user turned a layer OFF inside the 420 ms
+         window it snapped back ON — the "オフにしてるレイヤーが勝手につく" the user still hit on desktop. Now every
+         SYNTHETIC dispatch is tagged (cb.__syn) and every GENUINE user toggle is timestamped (cb.__userChangeT,
+         via the capture listener below); the re-arm aborts if the user touched the box, and the audit skips any
+         box the user toggled in the last 4 s. Purely additive: it can only DECLINE to act, never turn extra on. */
+      const RECENT_USER=4000;
+      const userTouched=cb=>{ try{ return !!cb.__userChangeT && (Date.now()-cb.__userChangeT)<RECENT_USER; }catch(_){ return false; } };
+      const fireSyn=cb=>{ try{ cb.__syn=(cb.__syn||0)+1; }catch(_){} try{ cb.dispatchEvent(new Event('change',{bubbles:true})); }finally{ try{ cb.__syn=Math.max(0,(cb.__syn||1)-1); }catch(_){} } };
+      function rearm(cb){ const t0=Date.now();
+        try{ cb.checked=false; fireSyn(cb); }catch(_){}
+        setTimeout(()=>{ try{ if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user intervened during the pulse → respect their choice */
+          if(!cb.checked){ cb.checked=true; fireSyn(cb); } }catch(_){} },420); }
+      try{ document.addEventListener('change',e=>{ const cb=e.target; try{ if(cb&&cb.type==='checkbox'&&!cb.__syn&&!cb.__reassertGuard&&cb.closest&&cb.closest('#layer-dropdown')) cb.__userChangeT=Date.now(); }catch(_){} },true); }catch(_){}
       const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(map.getLayer(lid)&&map.getLayoutProperty(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
       function check(cbId){ let ids=idsFor(cbId); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cbId]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return null; return painted(ids); }
@@ -13009,25 +13038,24 @@ window.addEventListener('DOMContentLoaded', () => {
          canvas) or whose handler is stateful (grid — see #R38) must NOT be re-fired by the learned-heal. Base
          vector toggles never reach here (they are in the BASE id-table). */
       const _LEARN_SKIP=/^(dl-ships|dl-planes|dl-wind|cb-grid)$/;
-      function _auditLearned(cb){ try{ if(!cb.checked||_LEARN_SKIP.test(cb.id)) { sus[cb.id]=0; return; }
+      function _auditLearned(cb){ try{ if(!cb.checked||_LEARN_SKIP.test(cb.id)||userTouched(cb)) { sus[cb.id]=0; return; }
         const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; if(!own||!own.size) return;
         if(painted(Array.from(own))){ sus[cb.id]=0; return; }
         sus[cb.id]=(sus[cb.id]||0)+1;
         if(sus[cb.id]>=2&&(!healed[cb.id]||Date.now()-healed[cb.id]>240000)){ healed[cb.id]=Date.now(); sus[cb.id]=0;
           log.push({id:cb.id,t:Date.now(),fix:'rearm-learned'}); if(log.length>60) log.shift();
-          try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
-          setTimeout(()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },420); } }catch(_){} }
+          rearm(cb); } }catch(_){} }
       function audit(){ try{
         if(!map||!map.isStyleLoaded||!map.isStyleLoaded()) return;
         document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const ids=idsFor(cb.id); if(!ids||!ids.length){ _auditLearned(cb); return; }
+          if(userTouched(cb)){ sus[cb.id]=0; return; }   /* (#R85) defer to a very recent user toggle — never race it */
           const vis=painted(ids);
           if(cb.checked&&!vis){ sus[cb.id]=(sus[cb.id]||0)+1;
             if(sus[cb.id]>=2&&(!healed[cb.id]||Date.now()-healed[cb.id]>240000)){ healed[cb.id]=Date.now(); sus[cb.id]=0;
               log.push({id:cb.id,t:Date.now(),fix:'rearm'}); if(log.length>60) log.shift();
               if(BASE[cb.id]){ /* base vector layer: idempotent handler → ONE gentle re-fire, no label flicker */
-                try{ cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
-              else { try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
-                setTimeout(()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },420); } } }
+                fireSyn(cb); }
+              else { rearm(cb); } } }
           else if(!cb.checked&&vis){ log.push({id:cb.id,t:Date.now(),fix:'hide'}); if(log.length>60) log.shift();
             ids.forEach(lid=>{ try{ if(map.getLayer(lid)) map.setLayoutProperty(lid,'visibility','none'); }catch(_){} }); sus[cb.id]=0; }
           else sus[cb.id]=0; });
@@ -15172,14 +15200,18 @@ window.addEventListener('DOMContentLoaded', () => {
           const sp=Math.hypot(w[0],w[1]); const li=(Math.min(255,(sp/42*255)|0))*3; const idx=(y*W+x)*4;
           d[idx]=LUT[li]; d[idx+1]=LUT[li+1]; d[idx+2]=LUT[li+2]; d[idx+3]=178; } }
       fc.putImageData(img,0,0); fieldReady=true;
-      /* (#R84) robust image handoff for the speed-COLOUR field ("Wind(animated)は粒子のみで地図に色がつかない"):
-         updateImage is the fast path, but if it is missing (older MapLibre) or the source got into a bad state,
-         RE-CREATE the image source with the fresh data URL so the colour field always paints, not only particles. */
-      try{ const url=fieldCanvas.toDataURL(); const src=map.getSource(FIELD_SRC);
-        if(src&&src.updateImage){ src.updateImage({url:url}); }
-        else { try{ if(map.getLayer(FIELD_LYR)) map.removeLayer(FIELD_LYR); }catch(_){} try{ if(map.getSource(FIELD_SRC)) map.removeSource(FIELD_SRC); }catch(_){}
-          try{ map.addSource(FIELD_SRC,{type:'image',url:url,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
-            map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':(on?fieldOpacity:0),'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId()); }catch(_){} } }catch(_){}
+      /* (#R85) GUARANTEED paint for the speed-COLOUR field ("Wind(animated)は粒子のみで地図に色がつかない" — STILL
+         re-reported after R84). ImageSource.updateImage({url}) proved unreliable across MapLibre builds: it
+         resolved without error yet the raster never repainted, so only the white particles showed. Stop trusting
+         the in-place update — REBUILD the image source from the fresh data URL every render (remove the old
+         layer+source, re-add with the current colours below the first label layer). This is cheap (once per
+         10-min grid refresh / style reload) and can never silently no-op. */
+      try{ const url=fieldCanvas.toDataURL();
+        try{ if(map.getLayer(FIELD_LYR)) map.removeLayer(FIELD_LYR); }catch(_){}
+        try{ if(map.getSource(FIELD_SRC)) map.removeSource(FIELD_SRC); }catch(_){}
+        map.addSource(FIELD_SRC,{type:'image',url:url,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
+        map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':(on?fieldOpacity:0),'raster-opacity-transition':{duration:250},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
+      }catch(_){}
     }
     function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
     const BLANK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
@@ -15204,8 +15236,10 @@ window.addEventListener('DOMContentLoaded', () => {
        layer — the old floating top-center pill overlapped the search box. Just refresh the legend. */
     function updateTimePill(){ const old=document.getElementById('wind-ts'); if(old) old.remove(); try{ window._updateWindLegend&&window._updateWindLegend(); }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ try{ updateTimePill(); }catch(_){} });
-    /* Re-attach the field after a style reload (theme/basemap switch drops custom sources). */
-    if(map) map.on('styledata',()=>{ if(on){ setTimeout(()=>{ if(ensureFieldLayer()){ if(fieldReady) renderFieldImage(); showField(true); } },60); } });
+    /* Re-attach the field after a style reload (theme/basemap switch drops custom sources).
+       (#R85) render whenever the GRID exists (not only when fieldReady was already set) — on first load the field
+       source is created here once the style finishes loading, which is what makes the colour actually paint. */
+    if(map) map.on('styledata',()=>{ if(on){ setTimeout(()=>{ if(ensureFieldLayer()){ if(grid||fieldReady) renderFieldImage(); showField(true); } },60); } });
     /* Seed a particle at a random GEOGRAPHIC point inside the current view (so the field fills the
        visible area at any zoom). */
     function spawn(p){
@@ -15264,7 +15298,12 @@ window.addEventListener('DOMContentLoaded', () => {
       raf=requestAnimationFrame(step);
     }
     function start(){ on=true; cv.style.display='block'; resize(); ensureParts(); updateTimePill();
-      fetchGrid().then(()=>{ if(grid){ const tryField=(n)=>{ if(ensureFieldLayer()){ renderFieldImage(); showField(true); } else if((n||0)<20) setTimeout(()=>tryField((n||0)+1),150); }; tryField(0); } updateTimePill(); });
+      /* (#R85) PERSISTENT field creation. The colour field can only be added once map.isStyleLoaded() is true; the
+         old 3 s retry gave up if the grid arrived before the style finished, leaving only particles ("粒子のみで
+         色がつかない"). Retry for ~16 s AND hook the map's next idle, so the field paints as soon as the style is
+         ready however the timing falls. renderFieldImage() itself rebuilds the source, so it can't silently no-op. */
+      fetchGrid().then(()=>{ if(grid){ let n=0; const tryField=()=>{ if(!on) return; if(ensureFieldLayer()){ renderFieldImage(); showField(true); } else if(n++<80) setTimeout(tryField,200); }; tryField();
+        try{ map.once('idle',()=>{ if(on&&grid&&ensureFieldLayer()){ renderFieldImage(); showField(true); } }); }catch(_){} } updateTimePill(); });
       cancelAnimationFrame(raf); raf=requestAnimationFrame(step); }
     function stop(){ on=false; cancelAnimationFrame(raf); try{ ctx.clearRect(0,0,cv.width,cv.height); }catch(_){} cv.style.display='none'; showField(false); updateTimePill(); }
     window.addEventListener('resize',()=>{ if(on){ resize(); } });
@@ -20743,22 +20782,53 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.querySelector('.sv-close').onclick=()=>{ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} };
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sv-head')); }catch(_){}
       return panel; }
+    /* (#R85) "現在のストリートビュー表示箇所はどこを映しているのか地図上に表示" — a live marker + facing cone on the
+       map showing the exact spot (and initial heading) the Street View panel is viewing. Painted INSTANTLY on
+       select so there is immediate feedback while Google's embed loads (the embed reload is the only slow part
+       and is Google's, not ours; the marker makes point-picking feel responsive again). */
+    let _here=null, _hereBound=false;
+    function _ensureHere(){ try{ if(map.getSource('sv-here-src')) return true; if(!map.isStyleLoaded()) return false;
+        map.addSource('sv-here-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+        map.addLayer({id:'sv-here-cone',type:'fill',source:'sv-here-src',filter:['==','$type','Polygon'],paint:{'fill-color':'#39b3ff','fill-opacity':0.3}});
+        map.addLayer({id:'sv-here-halo',type:'circle',source:'sv-here-src',filter:['==','$type','Point'],paint:{'circle-radius':15,'circle-color':'#39b3ff','circle-opacity':0.2}});
+        map.addLayer({id:'sv-here-pt',type:'circle',source:'sv-here-src',filter:['==','$type','Point'],paint:{'circle-radius':7,'circle-color':'#39b3ff','circle-stroke-color':'#fff','circle-stroke-width':3}});
+        if(!_hereBound){ _hereBound=true; try{ map.on('styledata',()=>{ if(_here) setTimeout(()=>{ if(_ensureHere()) _paintHere(); },140); }); }catch(_){} }
+        return true; }catch(_){ return false; } }
+    function _conePoly(lng,lat,hdg,fov,rangeM){ const R=6378137,tr=Math.PI/180,out=[[lng,lat]],n=12;
+      for(let i=0;i<=n;i++){ const a=(hdg-fov/2+fov*i/n)*tr, dx=Math.sin(a)*rangeM, dy=Math.cos(a)*rangeM;
+        out.push([lng+(dx/(R*Math.cos(lat*tr)))/tr, lat+(dy/R)/tr]); } out.push([lng,lat]);
+      return {type:'Polygon',coordinates:[out]}; }
+    function _paintHere(){ if(!_here) return; try{ const s=map.getSource('sv-here-src'); if(!s) return;
+      s.setData({type:'FeatureCollection',features:[
+        {type:'Feature',geometry:{type:'Point',coordinates:[_here.lng,_here.lat]},properties:{}},
+        {type:'Feature',geometry:_conePoly(_here.lng,_here.lat,_here.hdg||0,66,90),properties:{}}]}); }catch(_){} }
+    function _setHere(lng,lat,hdg){ _here={lng:+lng,lat:+lat,hdg:+hdg||0};
+      if(_ensureHere()) _paintHere(); else { let n=0; const t=setInterval(()=>{ if(_ensureHere()||n++>20){ clearInterval(t); _paintHere(); } },150); }
+      try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){} }
+    function _clearHere(){ _here=null; try{ const s=map.getSource('sv-here-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     function open(ll,label){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return false; const p=ensure();
       const lat=(+ll.lat).toFixed(6), lng=(+ll.lng).toFixed(6);
-      try{ iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+lat+','+lng+'&cbp=11,0,0,0,0&output=svembed'; }catch(_){}
+      try{ _setHere(+ll.lng,+ll.lat,(ll.heading!=null?+ll.heading:0)); }catch(_){}   /* instant map feedback */
+      try{ iframe.src='https://maps.google.com/maps?q=&layer=c&cbll='+lat+','+lng+'&cbp=11,'+((ll.heading!=null?+ll.heading:0))+',0,0,0&output=svembed'; }catch(_){}
       const t=p.querySelector('.sv-title'); if(t) t.textContent='🧍 '+(label?String(label):(LL('Street View','ストリートビュー','Street View','Просмотр улиц','Street View')))+' · '+lat+', '+lng;
       const ext=p.querySelector('.sv-ext'); if(ext) ext.onclick=()=>{ try{ window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+lat+','+lng,'_blank','noopener'); }catch(_){} };
       p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
       return true; }
-    function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } }
+    function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } _clearHere(); }
     /* (#R84) COVERAGE MODE ("地図上の水色の線、ポイントから選択できるように") — Google-Maps-pegman style: tint the
        basemap's own road lines light-blue and make the whole map clickable to open Street View at that spot. Works
        on any vector basemap (clones its road line layers); falls back to click-anywhere on a raster basemap. */
     let _cov=false, _covLayers=[], _covClick=null, _covHint=null, _covStyled=false;
     function roadLineLayers(){ const out=[]; try{ (map.getStyle().layers||[]).forEach(l=>{ if(l.type!=='line') return; const sl=((l['source-layer']||'')+' '+(l.id||'')); if(/road|transport|street|highway|motorway|trunk|primary|secondary|tertiary|residential|服务/i.test(sl)) out.push(l); }); }catch(_){} return out; }
     function addRoadLayers(){ _covLayers.forEach(id=>{ try{ if(map.getLayer(id)) map.removeLayer(id); }catch(_){} }); _covLayers=[];
-      roadLineLayers().forEach((l,i)=>{ const id='sv-cov-'+i; try{ const def={id:id,type:'line',source:l.source,paint:{'line-color':'#39b3ff','line-width':['interpolate',['linear'],['zoom'],6,1,11,2.5,16,6],'line-opacity':0.9}};
-        if(l['source-layer']) def['source-layer']=l['source-layer']; if(l.filter) def.filter=l.filter; if(l.minzoom!=null) def.minzoom=l.minzoom;
+      /* (#R85) LIGHTER coverage ("地点選択時が非常に重い"): the old code cloned EVERY matching road line layer — on a
+         full vector basemap that is 20–40 extra layers, each re-styling the whole road network, which is what made
+         entering coverage mode and clicking feel heavy. Add ONE highlight layer per (source, source-layer) instead
+         and drop the per-class filter so all roads in that layer light up together — typically 1–3 layers total. */
+      const seen=new Set();
+      roadLineLayers().forEach((l)=>{ const key=(l.source||'')+'|'+(l['source-layer']||''); if(seen.has(key)) return; seen.add(key);
+        const id='sv-cov-'+_covLayers.length; try{ const def={id:id,type:'line',source:l.source,paint:{'line-color':'#39b3ff','line-width':['interpolate',['linear'],['zoom'],6,1,11,2.5,16,6],'line-opacity':0.9}};
+        if(l['source-layer']) def['source-layer']=l['source-layer']; if(l.minzoom!=null) def.minzoom=Math.min(l.minzoom,10);
         map.addLayer(def); _covLayers.push(id); }catch(_){} });
       return _covLayers.length; }
     function coverage(on){ if(on===undefined) on=!_cov; on=!!on; if(on===_cov) return _cov; _cov=on;
@@ -20869,8 +20939,15 @@ window.addEventListener('DOMContentLoaded', () => {
     function show(d){ ensure(); resize(); data=d; prog=(d&&d.prog!=null)?d.prog:1; cv.style.display='block'; draw(); }
     function hide(){ cancelAnimationFrame(raf); data=null; if(cv&&ctx){ ctx.clearRect(0,0,cv.width,cv.height); cv.style.display='none'; } }
     function draw(){ if(!cv||!ctx||!data) return; const W=cv.width/dpr, H=cv.height/dpr; ctx.clearRect(0,0,W,H);
-      const N=data.pts.length; if(N<2) return; const apo=data.apogee||1; const altScale=(0.46*H)/apo;
-      const scr=[]; for(let i=0;i<N;i++){ let p; try{ p=map.project(data.pts[i]); }catch(_){ p={x:0,y:0}; } scr.push({x:p.x, gy:p.y, y:p.y-(data.alts[i]||0)*altScale, alt:data.alts[i]||0}); }
+      const N=data.pts.length; if(N<2) return; const apo=data.apogee||1;
+      /* (#R85) WORLD-SCALE altitude ("立体軌道が全くのでたらめ・ズームレベルによって高さが変わる・現実に忠実に描画"):
+         lift each ground point by its REAL altitude at the SAME pixels-per-km the map draws the ground with, so the
+         arc is geometrically to scale and grows/shrinks WITH the zoom (the old code used a fixed 0.46·screenHeight
+         fraction, which is exactly why the height looked wrong and changed with zoom). Measure the live scale from
+         the projection each frame (a 50 km north step at the view centre). */
+      let pxPerKm=0.1; try{ const c=map.getCenter(); const p0=map.project([c.lng,c.lat]); const p1=map.project([c.lng,c.lat+50/111.32]); const d=Math.hypot(p1.x-p0.x,p1.y-p0.y)/50; if(isFinite(d)&&d>0) pxPerKm=d; }catch(_){}
+      const maxLift=0.92*H;   /* clamp so an extreme apogee at high zoom can't shoot off-canvas */
+      const scr=[]; for(let i=0;i<N;i++){ let p; try{ p=map.project(data.pts[i]); }catch(_){ p={x:0,y:0}; } const lift=Math.min(maxLift,(data.alts[i]||0)*pxPerKm); scr.push({x:p.x, gy:p.y, y:p.y-lift, alt:data.alts[i]||0}); }
       /* ground track (dashed) */
       ctx.setLineDash([5,5]); ctx.strokeStyle='rgba(255,90,90,0.35)'; ctx.lineWidth=1.3; ctx.beginPath(); scr.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.gy):ctx.moveTo(p.x,p.gy); }); ctx.stroke(); ctx.setLineDash([]);
       /* vertical altitude stems */
@@ -21106,7 +21183,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R44) conversation MEMORY + last-referenced place — the user reported "文脈理解が壊滅的": Atlas was sending
        ONLY the current message to the model with no history and no map state, so follow-ups ("there", "turn it
        off", "more", "the same country over time") had nothing to resolve against. */
-    let _hist=[]; let _lastPlace=null;
+    let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null;   /* (#R85) last missile shot → trajectory-preset buttons re-fly it */
     /* (#R83) "Ask AI about here" is ABSORBED into Atlas ("独立させるな。Atlasに吸収しろ"): a right-click point (or
        the askHere action) pins an exact coordinate here, and buildPrompt injects it so EVERY question in the
        conversation resolves "here/this spot/この地点" to it — no separate research panel. Cleared on clearAll. */
@@ -21757,9 +21834,24 @@ window.addEventListener('DOMContentLoaded', () => {
       if(cb.id){ const o=document.getElementById('op-'+cb.id.replace(/^dl-/,''))||document.getElementById(cb.id.replace(/^dl-/,'op-')); if(o&&o.type==='range') return o; } }catch(_){} return null; }
     const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
     /* (#R44) deictic references → the place Atlas last touched, else the current map centre. */
-    const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|現在地|この場所|同じ場所)$/i;
+    const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|この場所|同じ場所)$/i;
+    /* (#R85) "現在地" means the DEVICE'S real GPS location, NOT deixis. The old code lumped 現在地 into DEIXIS_RE, so
+       "現在地の天気 / 現在地のストリートビュー / 現在地から東京への経路" all resolved to wherever Atlas last touched (or the
+       map centre) — "Atlasが現在地というワードをユーザーの現在地だと認識できない". Now these phrases actually read the
+       browser geolocation (cached 5 min), and only fall back to deixis/centre if permission is denied/unavailable. */
+    const SELFLOC_RE=/^\s*(現在地|現在の位置|今(いる|の)(場所|位置)|自分の(位置|居場所|現在地)|マイ ?ロケーション|my (current )?(location|position)|current (location|position)|where i ?am|где я|моё ?местоположение|mi ubicación|mein standort)\s*$/i;
+    let _selfLocCache=null,_selfLocT=0;
+    function _selfLoc(){ return new Promise(res=>{ try{
+        if(_selfLocCache && Date.now()-_selfLocT<300000) return res(_selfLocCache);
+        if(!navigator.geolocation) return res(null);
+        navigator.geolocation.getCurrentPosition(
+          p=>{ _selfLocCache={lng:+p.coords.longitude,lat:+p.coords.latitude,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; _selfLocT=Date.now(); res(_selfLocCache); },
+          ()=>res(null), {enableHighAccuracy:false,timeout:8000,maximumAge:300000});
+      }catch(_){ res(null); } }); }
+    window._imSelfLoc=_selfLoc;
     async function geocode(place){ place=String(place||'').trim();
-      if(!place||DEIXIS_RE.test(place)){
+      if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); if(sl) return _setLast({lng:sl.lng,lat:sl.lat,name:sl.name}); /* denied → fall through to deixis/centre */ }
+      if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)){
         if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=map.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
       try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length) return _setLast({lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}); } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
@@ -21867,7 +21959,7 @@ window.addEventListener('DOMContentLoaded', () => {
         return {lng:+best.lon, lat:+best.lat, name:(best.display_name||place).split(',')[0], box, geojson:best.geojson||null, adminPoly,
           osmType:best.osm_type||'', osmId:+best.osm_id||0}; }catch(_){}
       return null; }
-    async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||WORLD_RE.test(place)) return null;
+    async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)||WORLD_RE.test(place)) return null;   /* (#R85) 現在地 has no Nominatim extent — resolve it via geocode()→device GPS */
       /* 1) macro-region with a known real extent (Nominatim has no clean polygon for these). */
       const reg=regionBox(place); if(reg) return reg;
       /* 2) "city centre of X" → the city core at a close view (a small box around the city point). */
@@ -22539,18 +22631,38 @@ window.addEventListener('DOMContentLoaded', () => {
        true apogee altitude, burnout & re-entry velocity, and Kepler-timed flight — then animates the re-entry
        vehicle along the ground track with a physically-timed pace (fast at launch/re-entry, slow near apogee)
        and draws a to-scale altitude cross-section. Optional warhead effects use cube-root blast scaling. ==== */
-    const _MU=398600.4418, _RE=6371.0;   /* km³/s² gravitational parameter, mean Earth radius (km) */
-    function ballisticSolve(rangeKm){ const R=_RE; const d=Math.max(1,Math.min(rangeKm,Math.PI*R-40));
+    const _MU=398600.4418, _RE=6371.0, _OMEGA=7.2921159e-5;   /* km³/s² grav. parameter, mean Earth radius (km), Earth spin (rad/s) */
+    /* (#R85) ICBM rebuild ("立体軌道が全くのでたらめ … 現実に忠実に … ブースト推力・空気抵抗・機動再突入体・コリオリ力も
+       考慮 … 軌道もボタンで変更可能に"). The core is still the exact Keplerian two-body solution, but the launch angle
+       is now a FREE parameter so the same range can be flown minimum-energy, LOFTED (steep, high apogee) or
+       DEPRESSED (flat, low apogee) — all three are valid ellipses through the same two surface points. Drag
+       (Allen–Eggers re-entry), a boost estimate and Coriolis cross-range are computed on top. */
+    function ballisticSolve(rangeKm, loft){ const R=_RE; const d=Math.max(1,Math.min(rangeKm,Math.PI*R-40));
       const theta=d/R, half=theta/2, c=Math.cos(half), s=Math.sin(half);
-      const e=Math.max(1e-4,Math.min(0.98,(1-s)/c));   /* minimum-energy eccentricity for a symmetric arc */
-      const p=R*(1-e*c);                                /* semi-latus rectum from the launch-radius condition */
+      const eME=Math.max(1e-4,Math.min(0.98,(1-s)/c));      /* minimum-energy eccentricity for a symmetric arc */
+      const eCap=Math.min(0.985, 0.94/Math.max(1e-3,c));    /* r(νL)=R needs e·cos(half)<1 → keep a margin */
+      const mode=String(loft||'').toLowerCase();
+      let e;
+      if(mode==='lofted'||mode==='loft'||mode==='high') e=eME+0.6*(eCap-eME);
+      else if(mode==='depressed'||mode==='depress'||mode==='flat'||mode==='low') e=Math.max(1e-4,eME*0.42);
+      else if(typeof loft==='number'&&isFinite(loft)) e=Math.max(1e-4,Math.min(eCap,eME*loft));
+      else e=eME;                                            /* minimum energy (default) */
+      const p=R*(1-e*c);                                     /* semi-latus rectum from the launch-radius condition */
       const a=p/(1-e*e), ra=a*(1+e), apogee=ra-R;
-      const vLaunch=Math.sqrt(_MU*(2/R-1/a));           /* vis-viva speed at burnout radius R (km/s) */
-      const nuL=Math.PI-half;                            /* true anomaly at launch (apogee = π) */
+      const vLaunch=Math.sqrt(_MU*(2/R-1/a));                /* vis-viva speed at burnout radius R (km/s) */
+      const nuL=Math.PI-half;                                /* true anomaly at launch (apogee = π) */
+      const gammaL=Math.atan2(e*Math.sin(nuL),1+e*Math.cos(nuL));   /* launch flight-path angle above local horizontal (rad) */
       const EL=2*Math.atan2(Math.sqrt(1-e)*Math.sin(nuL/2),Math.sqrt(1+e)*Math.cos(nuL/2));
       const ML=EL-e*Math.sin(EL), P=2*Math.PI*Math.sqrt(a*a*a/_MU);
-      const tof=(P/Math.PI)*(Math.PI-ML);               /* launch→impact time (s), symmetric about apogee */
-      return {theta,e,a,p,ra,apogee,vLaunch,tof,half,nuL,ML}; }
+      const tof=(P/Math.PI)*(Math.PI-ML);                    /* launch→impact time (s), symmetric about apogee */
+      /* (#R85) atmospheric drag on the re-entry vehicle — Allen–Eggers ballistic-entry closed form. β = ballistic
+         coefficient (kg/m²); a heavy MIRV RV is ~8000. v_impact = v_entry·exp(−ρ0·H/(2β·sinγ)). Vacuum energy gives
+         v_entry at the ~100 km interface; drag then bleeds it to the ground impact speed. */
+      const vEntry=Math.sqrt(Math.max(0,_MU*(2/(R+100)-1/a)));      /* speed at 100 km altitude (km/s) */
+      const beta=8000, rho0=1.225, Hs=7160;                        /* kg/m², kg/m³, m */
+      const kDrag=(rho0*Hs)/(2*beta*Math.max(0.09,Math.sin(gammaL)));
+      const vImpact=vEntry*Math.exp(-kDrag);                       /* drag-reduced ground impact speed (km/s) */
+      return {theta,e,eME,a,p,ra,apogee,vLaunch,vEntry,vImpact,tof,half,nuL,ML,gammaL,mode:mode||'minenergy'}; }
     function ballisticAlt(sol,f){ const nu=sol.nuL+f*sol.theta; const r=sol.p/(1+sol.e*Math.cos(nu)); return Math.max(0,r-_RE); }
     function ballisticTimeFrac(sol,f){ const nu=sol.nuL+f*sol.theta;
       const E=2*Math.atan2(Math.sqrt(1-sol.e)*Math.sin(nu/2),Math.sqrt(1+sol.e)*Math.cos(nu/2));
@@ -22582,6 +22694,22 @@ window.addEventListener('DOMContentLoaded', () => {
       const feats=[]; rings.forEach(rg=>{ try{ (diskFillPolys([center.lng,center.lat],rg.r,96)||[]).forEach(poly=>feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:poly},properties:{color:rg.c}})); }catch(_){} });
       try{ const src=map.getSource('nlq-blast-src'); if(src) src.setData({type:'FeatureCollection',features:feats}); _blastActive=true; }catch(_){}
       return rings; }
+    /* (#R85) ground track with CORIOLIS + optional MaRV terminal manoeuvre. In an inertial (non-rotating) frame a
+       ballistic trajectory projects to a great circle; the spinning Earth then smears it. We aim the inertial arc
+       at where the target will have rotated to after the flight time (lead = Ω·T in longitude) and un-rotate each
+       point by the Earth spin elapsed up to its OWN time — reproducing the real cross-range curvature. A MaRV adds
+       a damped terminal S-weave that still converges on the aim point. */
+    function _ballTrack(A,B,sol,N,opts){ opts=opts||{}; const coriolis=opts.coriolis!==false, marv=!!opts.marv;
+      const T=sol.tof||0, leadDeg=coriolis?((_OMEGA*T)*180/Math.PI):0;
+      const Bin={lng:B.lng+leadDeg,lat:B.lat};
+      const perp=(_gcBearing(A,B)+90)*Math.PI/180;
+      const pts=[],alts=[]; let maxDev=0;
+      for(let i=0;i<=N;i++){ const f=i/N; const ip=_gcPoint(A,Bin,f); const tau=ballisticTimeFrac(sol,f);
+        let lng=ip.lng-leadDeg*tau, lat=ip.lat;
+        if(marv&&f>0.86){ const u=(f-0.86)/0.14, amp=0.6*Math.sin(3*Math.PI*u)*(1-u); lat+=amp*Math.cos(perp); lng+=amp*Math.sin(perp)/Math.max(0.2,Math.cos(lat*Math.PI/180)); }
+        try{ const gc=_gcPoint(A,B,f); const dev=_gcKm({lng,lat},gc); if(dev>maxDev) maxDev=dev; }catch(_){}
+        pts.push([lng,lat]); alts.push(ballisticAlt(sol,f)); }
+      return {pts,alts,Bin,leadDeg,crossRangeKm:maxDev}; }
     async function ballisticAnimate(A,B,opts){ opts=opts||{}; const km=_gcKm(A,B); if(!isFinite(km)||km<1) return {ok:false,km:0};
       const sol=ballisticSolve(km); clearFly(); if(!ensureFlyLayers()) return {ok:false,km,sol};
       const secs=Math.max(8,Math.min(55,+opts.seconds||Math.round(10+km/850)));
@@ -22847,6 +22975,19 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof measurePoints!=='undefined') measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
+        /* (#R85) workspace (floating-window) mode via Atlas ("ワークスペースモードの切り替えがAtlasでできない") */
+        case 'workspace': case 'windows': case 'windowMode': case 'windowWorkspace': {
+          if(!window.IntMapWorkspace) return R(false, warn('⚠'));
+          const active=!!(window.IntMapWorkspace.active&&window.IntMapWorkspace.active());
+          const m=String(a.mode||a.action||a.state||'').toLowerCase();
+          const want = (a.on===false||/^(off|exit|close|normal|stop|disable|leave)$/.test(m)) ? false
+                     : (a.on===true ||/^(on|enter|open|start|enable|switch)$/.test(m)) ? true
+                     : !active;   /* unspecified → toggle */
+          if(want===active) return R(true, note('✓ '+(active?L('Already in workspace mode','すでにワークスペースモードです','Bereits im Workspace-Modus','Уже в оконном режиме','Ya en modo espacio'):L('Already in normal mode','すでに通常モードです','Bereits im Normalmodus','Уже в обычном режиме','Ya en modo normal'))));
+          let ok=false; try{ if(want){ ok=(window.IntMapWorkspace.open()!==false); } else { window.IntMapWorkspace.close(); ok=true; } }catch(_){}
+          return R(ok, ok? note(want?'🗔 '+L('Workspace mode on — News, Countries, the map, layers and Atlas are now free-floating windows','ワークスペースモードをオン — ニュース・国・地図・レイヤー・Atlasが自由なウィンドウになりました','Workspace-Modus an','Оконный режим включён','Modo espacio activado')
+                                   :'✓ '+L('Back to the normal layout','通常レイアウトに戻しました','Zurück zum Normal-Layout','Обычный вид','De vuelta al diseño normal'))
+                       : warn('⚠ '+L('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio'))); }
         case 'shortcuts': case 'keyboard': case 'hotkeys': { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note('⌨ '+L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
@@ -23115,33 +23256,43 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!A||!B) return R(false, warn('⚠ '+L('Need a launch site and a target','発射地点と目標が必要です','Startort & Ziel nötig','Нужны точка пуска и цель','Se necesita origen y objetivo')));
           const km=_gcKm(A,B); const cls=missileClass(a.missile||a.weapon||a.name);
           let rangeWarn=''; if(cls&&cls.range&&km>cls.range*1.02) rangeWarn=warn('⚠ '+L(esc(cls.name)+' max range is ~'+cls.range.toLocaleString()+' km, but this shot is '+Math.round(km).toLocaleString()+' km — beyond its reach','「'+esc(cls.name)+'」の最大射程は約'+cls.range.toLocaleString()+' kmですが、この距離は'+Math.round(km).toLocaleString()+' kmで射程外です',esc(cls.name)+' Reichweite ~'+cls.range.toLocaleString()+' km, Schuss '+Math.round(km).toLocaleString()+' km — außer Reichweite',esc(cls.name)+' дальность ~'+cls.range.toLocaleString()+' км, а тут '+Math.round(km).toLocaleString()+' км — вне досягаемости',esc(cls.name)+' alcance ~'+cls.range.toLocaleString()+' km, pero son '+Math.round(km).toLocaleString()+' km — fuera de alcance'));
-          /* (#R84) 3-D altitude-coloured arc (not a flat line): build the ground track + real altitude per point,
-             fit the view so the whole arc is visible, then animate the warhead in the BACKGROUND. */
-          const sol=ballisticSolve(km); const mm=Math.floor(sol.tof/60), ss=Math.round(sol.tof%60);
+          /* (#R85) selectable trajectory (min-energy / lofted / depressed), Coriolis ground track, MaRV weave and a
+             world-scale 3-D altitude arc. Real Keplerian core + Allen–Eggers drag for the impact speed. */
+          const loft=(a.loft||a.trajectory||a.traj||(/^(lofted|depressed|minenergy|min-energy|minimum-energy|flat|high|low)$/i.test(String(a.mode||''))?a.mode:'')||'minenergy');
+          const marv=!!(a.marv||a.maneuver||a.maneuvering||/marv|maneuv|機動/i.test(String(a.mode||'')+' '+String(a.missile||'')));
+          const sol=ballisticSolve(km, loft); const mm=Math.floor(sol.tof/60), ss=Math.round(sol.tof%60);
+          _lastMissileCtx={from:a.from,to:(a.to||a.place||a.target),missile:(a.missile||a.weapon||a.name||''),yieldKt:(a.yield!=null?+a.yield:((a.blast||a.warhead||a.nuclear)&&cls?cls.yield:0)),marv};
           try{ clearFly(); }catch(_){}
-          const N=Math.max(80,Math.min(400,Math.round(km/40))); const pts=[], alts=[];
-          for(let i=0;i<=N;i++){ const f=i/N, p=_gcPoint(A,B,f); pts.push([p.lng,p.lat]); alts.push(ballisticAlt(sol,f)); }
+          const N=Math.max(80,Math.min(400,Math.round(km/40)));
+          const track=_ballTrack(A,B,sol,N,{coriolis:a.coriolis!==false, marv}); const pts=track.pts, alts=track.alts;
           try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); });
-            if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:{top:150,bottom:80,left:80,right:80},maxZoom:6,duration:900}); }catch(_){}
+            if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:{top:160,bottom:80,left:80,right:80},maxZoom:6,duration:900}); }catch(_){}
           const secs=Math.max(10,Math.min(40,+a.seconds||Math.round(9+km/900)));
           try{ window.IntMapArc3D.show({pts,alts,apogee:sol.apogee,prog:0}); setTimeout(()=>{ try{ window.IntMapArc3D.animate(secs); }catch(_){} },950); }catch(_){}
-          const r={ok:true,km,sol};
-          if(!r.ok||!r.sol) return R(false, warn('⚠ '+L('The simulation could not run (map still loading)','シミュレーションを実行できませんでした（地図読込中）','Simulation nicht möglich (Karte lädt)','Симуляция не запустилась (карта грузится)','No se pudo ejecutar la simulación')));
           /* optional warhead-effect rings at the impact point */
           clearBlast(); let rings=null; const Y=(a.yield!=null&&isFinite(+a.yield))?+a.yield:((a.blast||a.warhead||a.nuclear)&&cls?cls.yield:0);
           if(Y>0){ rings=drawBlastRings(B,Y); }
           const nm=cls?(' · '+esc(cls.name)):'';
-          let h='<div style="font-weight:600;margin:2px 0 3px;">🚀 '+esc(A.name||a.from)+' → '+esc(B.name||a.to||a.place)+nm+'</div>';
-          h+=ballisticProfileSVG(sol,r.km);
+          const modeLbl={minenergy:L('Minimum-energy','最小エネルギー','Minimalenergie','Мин. энергия','Energía mínima'),lofted:L('Lofted','ロフテッド','Gelobt','Настильная','Elevada'),depressed:L('Depressed','ディプレスト','Flach','Пониженная','Deprimida')}[sol.mode]||sol.mode;
+          const angDeg=(sol.gammaL*180/Math.PI);
+          let h='<div style="font-weight:600;margin:2px 0 3px;">🚀 '+esc(A.name||a.from)+' → '+esc(B.name||a.to||a.place)+nm+' · '+esc(modeLbl)+(marv?(' · MaRV'):'')+'</div>';
+          h+=ballisticProfileSVG(sol,km);
           h+='<div style="font-size:12px;line-height:1.7;">'
-            +'<div>'+L('Ground range','地上射程','Bodenreichweite','Дальность','Alcance')+': <b>'+Math.round(r.km).toLocaleString()+' km</b></div>'
+            +'<div>'+L('Ground range','地上射程','Bodenreichweite','Дальность','Alcance')+': <b>'+Math.round(km).toLocaleString()+' km</b></div>'
             +'<div>'+L('Apogee (peak altitude)','アポジー（最高高度）','Apogäum','Апогей','Apogeo')+': <b>'+Math.round(sol.apogee).toLocaleString()+' km</b></div>'
+            +'<div>'+L('Launch angle','打上げ角','Startwinkel','Угол пуска','Ángulo de lanzamiento')+': <b>'+angDeg.toFixed(1)+'°</b> '+L('above horizontal','（水平から）','über Horizont','над горизонтом','sobre horizontal')+'</div>'
             +'<div>'+L('Burnout velocity','ブーストアウト速度','Brennschlussgeschw.','Скорость выгорания','Velocidad de apagado')+': <b>'+sol.vLaunch.toFixed(2)+' km/s</b> (Mach '+Math.round(sol.vLaunch/0.34)+')</div>'
-            +'<div>'+L('Re-entry velocity','再突入速度','Wiedereintritt','Скорость входа','Reentrada')+': <b>'+sol.vLaunch.toFixed(2)+' km/s</b></div>'
+            +'<div>'+L('Re-entry velocity (100 km)','再突入速度（高度100km）','Wiedereintritt (100 km)','Скорость входа (100 км)','Reentrada (100 km)')+': <b>'+sol.vEntry.toFixed(2)+' km/s</b></div>'
+            +'<div>'+L('Impact velocity (after drag)','着弾速度（空気抵抗後）','Aufschlag (nach Luftwiderstand)','Скорость удара (с трением)','Impacto (con rozamiento)')+': <b>'+sol.vImpact.toFixed(2)+' km/s</b> (Mach '+Math.round(sol.vImpact/0.34)+')</div>'
+            +'<div>'+L('Coriolis cross-range','コリオリ横偏差','Coriolis-Querablage','Кориолис (боковой снос)','Desvío Coriolis')+': <b>'+Math.round(track.crossRangeKm).toLocaleString()+' km</b></div>'
             +'<div>'+L('Flight time','飛翔時間','Flugzeit','Время полёта','Tiempo de vuelo')+': <b>'+mm+' min '+ss+' s</b></div>'
             +'</div>';
           if(rings){ h+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.6;">💥 '+L('Warhead','弾頭','Sprengkopf','Боеголовка','Ojiva')+' '+Y.toLocaleString()+' kt — '+rings.map(rg=>esc(rg.l)+' ('+rg.r.toFixed(1)+' km)').join(' · ')+'</div>'; }
-          h+=note(L('Minimum-energy Keplerian model (vacuum, non-rotating Earth) — ignores boost thrust profile, atmospheric drag, MaRV manoeuvres and Coriolis; real systems can fly depressed or lofted. Educational estimate.','最小エネルギー・ケプラー軌道モデル（真空・地球自転無視）。ブースト推力・空気抵抗・機動再突入体・コリオリ力は考慮していません。実弾はロフテッド/ディプレスト軌道も取り得ます。教育目的の概算です。','Minimalenergie-Kepler-Modell (Vakuum, ohne Erdrotation) — ohne Schub/Luftwiderstand/Coriolis. Bildungsschätzung.','Кеплерова модель минимальной энергии (вакуум, без вращения Земли). Образовательная оценка.','Modelo kepleriano de energía mínima (vacío, sin rotación). Estimación educativa.'));
+          /* (#R85) trajectory-preset buttons ("軌道もボタンで変更可能にしろ") — re-fly the SAME shot on a different profile */
+          const _tb=(m,lbl)=>'<button class="atl-traj-btn'+(sol.mode===m?' on':'')+'" data-traj="'+m+'">'+esc(lbl)+'</button>';
+          h+='<div class="atl-traj-row">'+_tb('minenergy',L('Min-energy','最小エネルギー','Min-Energie','Мин.','Mín'))+_tb('lofted',L('Lofted','ロフテッド','Gelobt','Настильн.','Elevada'))+_tb('depressed',L('Depressed','ディプレスト','Flach','Пониж.','Deprimida'))
+            +'<button class="atl-traj-btn'+(marv?' on':'')+'" data-traj="marv">MaRV '+(marv?'✓':'')+'</button></div>';
+          h+=note(L('Keplerian two-body core with a selectable launch angle, plus Allen–Eggers atmospheric drag on the re-entry vehicle, an Earth-rotation (Coriolis) ground track and an optional MaRV terminal weave. Boost thrust is treated as an impulsive burnout at ~200 km; the 3-D arc is drawn to real world scale. Educational estimate — not an operational tool.','ケプラー二体問題を核に、打上げ角を可変化し、再突入体にアレン–エッグスの空気抵抗、地球自転（コリオリ）による地上軌跡、任意で機動再突入体（MaRV）の終末機動を加えています。ブースト推力は高度約200kmでの瞬間的な燃焼終了として近似。立体軌道は実スケールで描画。教育目的の概算であり運用ツールではありません。','Kepler-Zweikörperkern mit wählbarem Startwinkel, Allen–Eggers-Luftwiderstand, Coriolis-Bodenspur und optionalem MaRV-Endmanöver. Bildungsschätzung.','Кеплерова задача двух тел с выбираемым углом пуска, аэродинамическим торможением (Аллен–Эггерс), кориолисовой трассой и опциональным манёвром MaRV. Образовательная оценка.','Núcleo kepleriano con ángulo de lanzamiento variable, rozamiento de reentrada (Allen–Eggers), traza de Coriolis y maniobra MaRV opcional. Estimación educativa.'));
           return R(true, rangeWarn+h); }
         case 'elevationBelow': case 'belowSeaLevel': case 'elevationHighlight': case 'elevationScan': {
           clearElev();
@@ -23329,10 +23480,15 @@ window.addEventListener('DOMContentLoaded', () => {
             const sinkKeys=new Set(sinkClean.map(s=>_key(s.url)));
             const cited=sinkClean.filter(s=>citedSet.has(_key(s.url)));
             const rest=sinkClean.filter(s=>!citedSet.has(_key(s.url)));
-            const extraAI=srcUrls.filter(u=>!sinkKeys.has(_key(u))).map(u=>({url:u}));
-            const cardsHtml=linkCards(cited.concat(extraAI).concat(rest));
+            /* (#R85) NEVER render the model's own SOURCES-line URLs that we did not actually gather ("Atlasに記載
+               されたソースリンクがまったくのでたらめ"): an LLM hallucinates plausible-looking article URLs that 404,
+               and the browser cannot verify them (CORS). Show ONLY sources grounded in srcSink — the REAL articles
+               (loaded news + GDELT + Google News, each with its true URL) we literally fed the model. The ones it
+               explicitly cited float to the top; the rest follow. Honest beats impressive. */
+            void sinkKeys;
+            const cardsHtml=linkCards(cited.concat(rest));
             if(cardsHtml) html+='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+cardsHtml;
-          }catch(_){ if(srcUrls.length) html+=linkCards(srcUrls.map(u=>({url:u}))); }
+          }catch(_){}
           const usedAll=usedNames.concat([L('AI live web search','AIライブWeb検索','KI-Live-Websuche','живой веб-поиск ИИ','búsqueda web en vivo (IA)')]);   /* (#R69) the provider-side web_search tool is enabled for every analysis */
           html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+(missing.length?(' · '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponible')+': '+missing.join(', ')):'')+'</div>';
           return R(true, html); }
@@ -23589,13 +23745,13 @@ window.addEventListener('DOMContentLoaded', () => {
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
-        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling","via"?:[str,…]} = REAL Google-Maps-style ROAD directions (OSRM turn-by-turn on OpenStreetMap): draws the route and returns distance, time and step-by-step guidance — use for "東京から大阪への経路", "directions from A to B", "how do I drive/walk to X"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
+        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling","via"?:[str,…]} = REAL Google-Maps-style ROAD directions (OSRM turn-by-turn on OpenStreetMap): draws the route and returns distance, time and step-by-step guidance — use for "東京から大阪への経路", "directions from A to B", "how do I drive/walk to X"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
         +'RESEARCH MAPPED ONTO THE MAP: {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic with LIVE WEB SEARCH (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, dated incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. USE THIS (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate something ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X") OR asks to research/look into a topic whose findings have real locations — incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. If the user asks a research question and the answer naturally lives at places on a map, prefer mapReport; combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
         +'ANIMATED FLIGHT: {"type":"fly","from":str,"to":str,"mode"?:"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory (plane/cruise stay level; use for "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. {"type":"clear","what":"flight"} removes the trajectory.\n'
-        +'BALLISTIC MISSILE SIMULATION (real physics — use THIS for any ballistic/ICBM/弾道ミサイル request, NOT "fly"): {"type":"missile","from":str,"to":str,"missile"?:str,"yield"?:number_kt,"blast"?:bool,"seconds"?:8-55} = solves the actual minimum-energy Keplerian trajectory for the great-circle range and animates the re-entry vehicle with Kepler-timed motion (fast at launch/re-entry, slow at apogee), then reports the REAL apogee altitude, burn-out & re-entry velocity and flight time with a to-scale altitude cross-section. "missile" may name a class (e.g. "Minuteman III","DF-41","Iskander","Sarmat","Trident II") to check its range and default warhead; pass "yield" (kilotons) or "blast":true to also draw warhead-effect rings (20/5/1 psi + thermal) at the impact point. Use for "モスクワからワシントンへ弾道ミサイルをシミュレート", "simulate an ICBM strike on X", "launch a Minuteman from Y to Z". {"type":"clear","what":"missile"} removes it.\n'
+        +'BALLISTIC MISSILE SIMULATION (real physics — use THIS for any ballistic/ICBM/弾道ミサイル request, NOT "fly"): {"type":"missile","from":str,"to":str,"missile"?:str,"loft"?:"minenergy"|"lofted"|"depressed","marv"?:bool,"yield"?:number_kt,"blast"?:bool,"seconds"?:8-55} = solves the Keplerian trajectory for the great-circle range at a SELECTABLE launch angle (loft: minimum-energy default, "lofted"=steep/high-apogee, "depressed"=flat/low), applies Allen–Eggers atmospheric DRAG for the impact velocity, curves the ground track by the Earth\'s rotation (Coriolis), optionally adds a MaRV terminal weave ("marv":true), and draws a WORLD-SCALE 3-D altitude-coloured arc (correct under any zoom). Reports apogee, launch angle, burn-out / re-entry / drag-reduced impact velocity, Coriolis cross-range and flight time. "missile" may name a class ("Minuteman III","DF-41","Sarmat","Trident II"); pass "yield" (kt) or "blast":true for warhead-effect rings. The reply has buttons to re-fly it lofted/depressed/MaRV. Use for "モスクワからワシントンへ弾道ミサイル", "lofted ICBM from X to Y", "depressed trajectory strike on Z". {"type":"clear","what":"missile"} removes it.\n'
         +'ELEVATION HIGHLIGHT (real DEM data): {"type":"elevationBelow","place":str,"threshold"?:meters,"above"?:bool,"km"?:num} = samples the real Copernicus elevation model on a grid over the place/region and shades every cell below (default) or above the threshold, graduated by depth/height. Use for "カスピ海周辺の海抜0m以下地点をハイライトして" → {"type":"elevationBelow","place":"Caspian Sea","threshold":0}, "highlight land below sea level around the Dead Sea", "show areas above 3000 m in the Alps" → add "above":true,"threshold":3000. Omit place to scan the current view. {"type":"clear","what":"elevation"} removes it.\n'
         +'HISTORICAL / POWER MAP: {"type":"historicalMap","era":str} = colours the country fills by faction for a historical moment (mapped onto modern borders, clearly labelled approximate). Use for "第一次世界大戦1916年3月の勢力図をマッピングして" → {"type":"historicalMap","era":"World War I March 1916"}, "map the Cold War alliances in 1962", "WWII in 1942". A curated, accurate WWI-1916 map is built in; other eras are composed live. {"type":"clear","what":"historical"} removes it.\n'
         +'RADIATION DISPERSION SIMULATION: {"type":"radiation","place":str,"hours"?:12-72,"halfLifeHours"?:num} = a real Lagrangian particle plume from a release point, advected by the LIVE Open-Meteo wind field (space+time varying), spread by turbulent diffusion (stability from temperature), scavenged by real precipitation (wet deposition) and decayed by half-life — animated on the map with a concentration heatmap. Use for "福島第一原発からの放射性物質の拡散をシミュレートして", "simulate a radiation release at Chernobyl", "fallout dispersion from X". It reports wind direction, plume reach and whether rain is washing particles down, with an educational-only caveat. {"type":"clear","what":"radiation"} removes it.\n'
@@ -23646,6 +23802,10 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-dots i:nth-child(2){animation-delay:.15s;} #atlas-panel .atl-dots i:nth-child(3){animation-delay:.3s;}'
         +'@keyframes atlDot{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-3.5px);opacity:1;}}'
         +'#atlas-panel .atl-ex{display:flex;flex-wrap:wrap;gap:6px;padding:6px 16px 2px;}'
+        +'#atlas-panel .atl-traj-row{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 2px;}'
+        +'#atlas-panel .atl-traj-btn{font-size:11px;font-weight:600;color:var(--text-main);background:rgba(120,120,128,0.12);border:1px solid rgba(128,128,128,0.2);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease,border-color .15s ease;}'
+        +'#atlas-panel .atl-traj-btn:hover{background:rgba(120,120,128,0.22);border-color:var(--primary-color);}'
+        +'#atlas-panel .atl-traj-btn.on{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}'
         +'#atlas-panel .atl-chip{font-size:11px;color:var(--text-main);background:rgba(120,120,128,0.10);border:1px solid rgba(128,128,128,0.16);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:left;transition:background .15s ease,border-color .15s ease;}'
         +'#atlas-panel .atl-chip:hover{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
         +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:10px 12px 12px;border-top:1px solid rgba(128,128,128,0.12);}'
@@ -23754,6 +23914,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(mtg){ const row=mtg.closest('.atl-mapctl'); const kinds=((row&&row.getAttribute('data-ovls'))||'').split(',').filter(Boolean);
           const show=!mtg.classList.contains('on'); kinds.forEach(k=>{ try{ overlayToggle(k,show); }catch(_){} });
           mtg.classList.toggle('on',show); mtg.setAttribute('aria-checked',show?'true':'false'); return; }
+        const tjb=e.target.closest&&e.target.closest('.atl-traj-btn');
+        if(tjb&&_lastMissileCtx){ const m=tjb.getAttribute('data-traj'); const c2=_lastMissileCtx;   /* (#R85) re-fly the shot on the chosen trajectory profile */
+          const act={type:'missile',from:c2.from,to:c2.to,missile:c2.missile,yield:c2.yieldKt,marv:c2.marv};
+          if(m==='marv') act.marv=!c2.marv; else act.loft=m;
+          const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); const gen=++_runGen;
+          runActions(ai,'',[act],gen).catch(()=>{}); return; }
         const bt=e.target.closest&&e.target.closest('.atl-ctl-btn');
         if(bt){ const cmd=decodeURIComponent(bt.getAttribute('data-run')||''); if(cmd) run(cmd); return; }
         const ch=e.target.closest&&e.target.closest('.atl-choice');
@@ -23797,12 +23963,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R84) MAP-OVERLAY TOGGLE ("Atlasによって地図上にマッピングされた類のものは、Atlasのメッセージ内から
        オンオフできるように"): a reply that painted something on the map gets a live on/off switch. */
     const _OVL={ highlight:['nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line'], choropleth:['nlq-choro'], compare:['imcmp-fill','imcmp-line'],
-      poi:['nlq-poi-c','nlq-poi-t'], elevation:['nlq-elev-fill'], historical:['nlq-fac-fill','nlq-fac-line'], route:['imroute-cas','imroute-line','imroute-pt'],
-      radiation:['imrad-heat','imrad-pt','imrad-srcpt'], blast:['nlq-blast-fill','nlq-blast-line'], lines:['nlq-line'], outline:['pl-outline-fill','pl-outline-line'] };
+      poi:['nlq-poi-c','nlq-poi-t'], elevation:['nlq-elev-fill'], historical:['nlq-fac-fill','nlq-fac-line'], route:['imroute-cas','imroute-line','imroute-pt','imroute-walk','imroute-rail','imroute-transfer'],
+      radiation:['imrad-heat','imrad-pt','imrad-srcpt','imrad-dep'], blast:['nlq-blast-fill','nlq-blast-line'], lines:['nlq-line'], outline:['pl-outline-fill','pl-outline-line'],
+      /* (#R85) close the "できないものもある" gap — flight paths, line-of-sight, isolate mask, pins and street-view marker were painted but had no in-message on/off. */
+      fly:['nlq-fly-line','nlq-fly-head'], los:['los-cover','los-shadow','los-cover-line','los-site'], isolate:['iso-mask'], pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'] };
     const OVL_OF={ highlight:'highlight', mapMetric:'choropleth', choropleth:'choropleth', poi:'poi', elevationBelow:'elevation', belowSeaLevel:'elevation', elevationHighlight:'elevation', elevationScan:'elevation',
       historicalMap:'historical', historical:'historical', powerMap:'historical', allianceMap:'historical', radiation:'radiation', fallout:'radiation', dispersion:'radiation', plume:'radiation', radiationSim:'radiation',
-      directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:'arc', ballistic:'arc', ballisticMissile:'arc', strike:'arc', icbm:'arc',
-      compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', events:'poi', impact:'poi' };
+      directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:['arc','fly'], ballistic:['arc','fly'], ballisticMissile:['arc','fly'], strike:['arc','fly'], icbm:['arc','fly'],
+      fly:'fly', flight:'fly', flyTo:null, flyPath:'fly', greatCircle:'fly', los:'los', lineOfSight:'los', radarShadow:'los', viewshed:'los',
+      isolate:'isolate', isolateRegion:'isolate', focus:'isolate', pin:'pin', marker:'pin', locate:'pin', myLocation:'pin', whereAmI:'pin', streetview:'streetview', streetView:'streetview', pano:'streetview',
+      compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', events:'poi', impact:'poi', runway:'poi' };
     function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_OVL[kind]||[]; for(const id of ids){ try{ if(map.getLayer(id)&&map.getLayoutProperty(id,'visibility')!=='none') return true; }catch(_){} } return false; }
     function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
       const ids=_OVL[kind]||[]; if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
@@ -23813,7 +23983,7 @@ window.addEventListener('DOMContentLoaded', () => {
       let body=''; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a); }
-      try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; const k=OVL_OF[a&&a.type]; if(k&&_ovlVisible(k)) mapped.push(k); }); if(mapped.length) body+=mapToggleChip(mapped); }catch(_){}
+      try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); }); if(mapped.length) body+=mapToggleChip(mapped); }catch(_){}
       if(gen!=null&&gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return fails; }
       let head=say?('<div style="margin-bottom:6px;">'+esc(say)+'</div>'):'';
       if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
@@ -23887,9 +24057,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(/^(show |turn on |enable )?(the )?(bottom )?ticker$|^ティッカー(を)?(表示|オン)?(に)?(して)?$/i.test(low)&&!/off|オフ|消/.test(low)) return A({type:'ticker',on:true});
       if(/^(hide |turn off |disable )(the )?(bottom )?ticker$|^ティッカー(を)?(オフ|非表示|消して)(に)?(して)?$/i.test(low)) return A({type:'ticker',on:false});
       /* (#R83) ballistic-missile simulation — deterministic for the clear "A → B (弾道)ミサイル/ICBM" phrasings */
-      fm=low.match(/^(?:simulate |launch |fire |run )?(?:an? |the )?(?:icbm|ballistic missile|ballistic|missile)\s+(?:strike |launch |flight )?from\s+(.+?)\s+to\s+(.+?)$/i)
-        ||s.match(/^(.+?)(?:から|より)\s*(.+?)(?:へ|に|まで|への)\s*(?:の)?(?:弾道)?(?:ミサイル|ICBM|icbm)(?:攻撃|発射|の(?:飛翔|軌道))?(?:を)?(?:シミュ(?:レート|レーション)?|発射|撃(?:って|込|つ)|飛ば(?:して)?|表示)?(?:して)?$/i);
-      if(fm&&(fm[1]||'').trim()&&(fm[2]||'').trim()) return A({type:'missile',from:fm[1].trim(),to:fm[2].trim()});
+      fm=low.match(/^(?:simulate |launch |fire |run )?(?:an? |the )?(?:lofted |depressed |minimum[-\s]?energy |min[-\s]?energy |marv )*(?:icbm|ballistic missile|ballistic|missile)\s+(?:strike |launch |flight )?from\s+(.+?)\s+to\s+(.+?)$/i)
+        ||s.match(/^(?:ロフテッド軌道で|ディプレスト軌道で|低伸軌道で|機動再突入体で)?(.+?)(?:から|より)\s*(.+?)(?:へ|に|まで|への)\s*(?:の)?(?:弾道)?(?:ミサイル|ICBM|icbm)(?:攻撃|発射|の(?:飛翔|軌道))?(?:を)?(?:シミュ(?:レート|レーション)?|発射|撃(?:って|込|つ)|飛ば(?:して)?|表示)?(?:して)?$/i);
+      if(fm&&(fm[1]||'').trim()&&(fm[2]||'').trim()){
+        /* (#R85) also read the trajectory profile / MaRV off the phrasing */
+        const _lo=/ロフテッド|lofted|高高度軌道|高い軌道/i.test(s)?'lofted':(/ディプレスト|depressed|低伸|低い軌道|フラット軌道/i.test(s)?'depressed':undefined);
+        const _mv=(/marv|機動再突入|機動弾頭|maneuv/i.test(s))||undefined;
+        const _from=fm[1].trim().replace(/^(?:lofted|depressed|min(?:imum)?[-\s]?energy|marv)\s+/i,'').trim();
+        return A(Object.assign({type:'missile',from:_from,to:fm[2].trim()}, _lo?{loft:_lo}:{}, _mv?{marv:true}:{})); }
       /* (#R83) elevation / below-sea-level highlight (real DEM) — "カスピ海周辺の海抜0m以下地点をハイライト" */
       fm=s.match(/^(.+?)(?:周辺|付近)?の?(?:海抜|標高)\s*(-?\d+)\s*m?\s*(以下|未満|以上|超え?)?(?:の?(?:地点|エリア|地域|場所|ところ))?\s*を?\s*(?:ハイライト|強調表示|強調|表示|マッピング|マップ)(?:して)?[。]?$/i);
       if(fm) return A({type:'elevationBelow',place:(fm[1]||'').trim(),threshold:+fm[2],above:/以上|超/.test(fm[3]||'')});
@@ -23899,6 +24074,10 @@ window.addEventListener('DOMContentLoaded', () => {
       fm=s.match(/^(.+?(?:世界大戦|大戦|冷戦)[^。]*?)の?(?:勢力図|勢力|同盟|陣営|地図|マップ)を?(?:マッピング|マップ|表示|作成|描(?:いて|画)|作って)(?:して)?[。]?$/i)
         ||low.match(/^(?:map|show|draw|display)\s+(?:the\s+)?(.+?(?:world war|wwi|wwii|first world war|cold war)[^.]*?)(?:\s+(?:power|alliance|faction)s?\s*map)?\.?$/i);
       if(fm&&(fm[1]||'').trim()&&histMatch(fm[1])) return A({type:'historicalMap',era:(fm[1]||'').trim()});
+      /* (#R85) workspace (floating-window) mode toggle via Atlas ("ワークスペースモードの切り替えがAtlasでできない").
+         Check OFF before ON so "ワークスペースをオフ" isn't swallowed by the ON pattern. */
+      if(/(?:ワークスペース|ウィンドウ)(?:モード)?(?:を|から)?(?:オフ|終了|解除|抜け(?:て|る)?|やめ(?:て|る)?|閉じ(?:て|る)?)|(?:通常|標準|ノーマル)(?:モード|表示|レイアウト)?に?(?:戻して|戻る|切り替え)/i.test(s)||/^(?:exit|leave|turn off|disable|close)\s+(?:the\s+)?(?:window\s+)?workspace(?:\s+mode)?$|^(?:back to |return to )?normal (?:mode|layout|view)$/i.test(low)) return A({type:'workspace',on:false});
+      if(/^(?:ワークスペース|ウィンドウ(?:ワークスペース)?)(?:モード)?(?:に|を|へ)?(?:切り替え(?:て)?|きりかえ(?:て)?|移行(?:して)?|オン(?:に)?|有効(?:に)?|入(?:って|る)|開始|して|する)?(?:して)?[。]?$/i.test(s)||/^(?:enter|switch to|turn on|enable|open|go to)\s+(?:the\s+)?(?:window\s+)?workspace(?:\s+mode)?$|^workspace(?:\s+mode)?$/i.test(low)) return A({type:'workspace',on:true});
       /* (#R84) open the empty directions panel — bare "経路案内" / "directions" / "route planner" */
       if(/^(?:経路(?:案内|検索)?|ルート(?:案内|検索)?|道案内|ナビ)(?:を)?(?:開いて|表示|出して|開く|して)?[。]?$/i.test(s)||/^(?:directions|route planner|open directions|routing)$/i.test(low)) return A({type:'directions'});
       /* (#R83) road directions (Google-Maps-like) — "東京から大阪への経路", "directions from A to B" */
