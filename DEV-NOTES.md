@@ -3920,3 +3920,24 @@ ATLAS-VISION.md の実装対応表「残り」列のうち、当面最優先5つ
 - **レイヤープレビュー修正（#6→#12）**: **setView をアスペクト補正**＝任意のクロップ枠をキャンバスの真の2:1 web-mercatorに拡張してから投影（EU members・Volcanoesの横伸び解消。検証: 補正後アスペクト1.983=目標）。ECMWF雲=実MODISトゥルーカラータイル、Live aircraft=実空港間の大圏ルート網に刷新。地震/タイムゾーンは既に実データ・正比。※ヘッドレスではWebGLが凍結し新規スクショ撮影は不可（sea-level/historical-borders等の非タイル系は正比の実描画のまま。実スクショ差し込みは preview_*.png 方式で後日可能）。
 - **出典/プライバシー更新**: DATA_SOURCESに OSRM・Google Street View を追加、Open-Meteo記述に拡散/標高グリッドを追記。プライバシー§4（日英）に道路経路(OSRM=起終点/経由座標)・埋め込みSV(Google=座標)・拡散/標高のグリッド座標送信を明記。
 - 新規 window.* : IntMapRouting / IntMapStreetView / IntMapRadiation / IntMapFlightSim。Atlas新action: missile, elevationBelow, historicalMap, radiation, flightSim, directions, streetview（＋SYS/ localPlan/ clear/ clearAll 連携）。boot後 console error 0・全モジュール存在・129レイヤ行を確認。
+
+---
+
+## R84 — batch 2: follow-up fixes & polish (workspace, Atlas, sims, previews, i18n)
+
+25件の第2バッチ。実ブラウザで parse/console/state を検証（WebGLはヘッドレスで凍結のため、幾何・DOM・正規表現・モジュール存在・CORSで実証）。
+
+- **ワークスペース列リサイズ（#13/#1）**: 仕切りドラッグを DIVIDER モデルに刷新＝同一ラインを共有する**両側の全ウィンドウ（同列の仲間も）**が追従。既定配置を Countries|Map|Layers/Atlas に復元（ロールベース `computeTiles`：countries=左・map=中央・残り=右列）。storage KEY→ws4。
+- **右クリックの「Atlas console (beta)」削除（#14）**。
+- **放射拡散が「使えない」根治（#17）**: `run()` が42秒アニメを await して返答が出ず、地図操作で即キャンセルされていた。→ 即座にレポート返却＋背景アニメ（パン/ズームで消えない）＋`ensureLayers` リトライ。
+- **ICBM立体軌道＋高度着色（#20）**: MapLibreのlineは浮かせられないため、`IntMapArc3D`＝スクリーン空間キャンバスで地上トラックを実高度ぶん持ち上げた**立体アーク**を高度カラーランプで描画、弾頭が飛翔。
+- **ストリートビューのカバレッジ（#21）**: `IntMapStreetView.coverage()`＝ベースマップの道路を水色にクローンし、クリックでその地点のSVを開く（Googleペグマン風）。ラスター地図では「どこでもクリック」。
+- **Atlasマップ物のオンオフ（#18a）**: マッピング系アクションの返答に地図オーバーレイの on/off トグルを付与（`OVL_OF`/`overlayToggle`）。**選択形式の質問（#18c）**: 新 `ask` アクション＝質問＋クリック選択肢チップ＋自由入力欄。情報不足時はAIがこれを使うようSYS更新。
+- **ソースリンク404（#19）**: `answer`/`analyze` の本文にURLを出させない（出典名のみ、実URLは証拠から自動付与）とSYSで明示。
+- **Compare表示（#16）**: 時系列の年号は preserveAspectRatio="none" のSVG内で潰れていた→年号をHTMLに移して常に鮮明。棒グラフはワークスペースの狭い窓で列幅を縮小しトラック長を統一。
+- **8プレビューを実IntMap風に（#24）**: `_bmShot`＝**実CARTOベースマップ2タイル（真の2:1）＋実レイヤー**を合成（setView再利用）＝ライブ地図のスクショと同等。EU/火山/地震/タイムゾーン/歴史境界/海面/航空機/ECMWF雲。CORS非汚染を実測確認。
+- **リッチ経路UI（#22）**: `IntMapRouting.openPanel`＝Google/Apple Map風パネル（出発/目的地の編集、車/徒歩/自転車切替、入替、地図クリックで地点選択、距離・時間・ターンバイターン、ライブ再計算）。Atlas `directions` から起動。
+- **フライトSimをゲーム級に（#23）**: スクロール式ヘディングテープ、バンクする自機シンボル、高度スカイティント、アフターバーナー（Shift）、人工水平儀。
+- **DE/RU/ES完全化（#25）**: 実測でDEは383/383完備、RU/ESが各64キー欠落（レイヤー名・凡例・テーマ・寄付/Pro/出典等）→ 全て翻訳追加。5言語すべて全キー網羅（`window.i18n`診断で0欠落を確認）。
+- **Wind色場＋監査ガード（#15/#9）**: 風の速度カラー場（WebGLラスター）が `updateImage` 欠如時に無色化する経路へ**ソース再生成フォールバック**。監査の所有学習SKIPに新オーバーレイ層（imcmp/imrad/imroute/sv-cov/wind-field）を追加。※一般のトグル乖離はヘッドレスWebGL凍結で再現不可のため、既存の負荷を担う reconcile 本体は改変せず（回帰回避）。
+- **出典/プライバシー**は前回R83で更新済み（OSRM・Google Street View）。新規外部エンドポイント: CARTOベースマップ（プレビュー合成、既存出典）・Open-Meteo geocoding（経路パネル、既存出典に含む）。
