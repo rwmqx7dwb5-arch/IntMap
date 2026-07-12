@@ -8730,6 +8730,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function openArticleInSidebar(item){
     readerOpen=true; readerCurrent=item;
+    /* (#R80) vision §2 — Atlas must know the ARTICLE the user is reading right now (not just that the News tab is
+       open), so follow-ups like "この記事について詳しく"/"translate this"/"背景は？"/"where did this happen" resolve.
+       globalData is closure-scoped, so bridge the open article onto window (same pattern as window._imLayerDates). */
+    try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
     try{ document.getElementById('sidebar').classList.remove('collapsed'); if(map) setTimeout(()=>map.resize(),60); }catch(_){}
     try{ if(window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('full'); }catch(_){}
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='none';
@@ -8813,6 +8817,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function closeArticleReader(){
     readerOpen=false; readerCurrent=null;
+    try{ window._imReader=null; }catch(_){ }   /* (#R80) clear the open-article bridge (vision §2) */
     const pane=document.getElementById('news-reader-pane'); if(pane){ pane.style.display='none'; pane.innerHTML=''; }
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='';
     renderUI();
@@ -20449,7 +20454,7 @@ window.addEventListener('DOMContentLoaded', () => {
        object is what Atlas *knows*: the current focus countries, topic under investigation, metrics in play,
        the exact components of an active custom score (so "家賃を重視して" re-emits the real current recipe),
        and the time-travel period. Updated deterministically from the actions that actually SUCCEEDED. */
-    const _wctx={countries:[],topic:'',metrics:[],scoreComponents:null,period:''};
+    const _wctx={countries:[],topic:'',metrics:[],scoreComponents:null,period:'',exclusions:[]};
     function updateWctx(acts,fails){ try{ (acts||[]).forEach(a=>{ if(!a||(fails||[]).indexOf(a)>=0) return;
       if((a.type==='compareStats'||a.type==='compareCountries'||a.type==='statsCompare')&&a.countries) _wctx.countries=[].concat(a.countries).map(String).slice(0,10);
       if((a.type==='analyze'||a.type==='research')&&(a.question||a.query)) _wctx.topic=String(a.question||a.query).slice(0,140);
@@ -20460,13 +20465,68 @@ window.addEventListener('DOMContentLoaded', () => {
       if(a.type==='reset'||a.type==='clearAll'){ _wctx.scoreComponents=null; }
       if(a.type==='timeTravel'){ _wctx.period=String(a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40); }
     }); }catch(_){} }
+    /* (#R80) vision §3 — REMEMBER exclusion conditions ("除外条件…を保持"). These are stated in natural language
+       ("except Europe", "◯◯を除いて", "not counting China", "アメリカ以外"), not encoded in an action, so parse the
+       raw message. A fresh exclusion phrase REPLACES the set; "include everything / 除外を解除" clears it; otherwise
+       it persists as a standing condition the AI is told to honour. */
+    const _INCL_RE=/^(?:include (?:everything|all|them)|show (?:everything|all)|(?:clear|reset|remove|drop) (?:the )?exclusions?|no exclusions?|除外(?:を)?(?:解除|なし|リセット|クリア)|全部(?:含めて|表示)|すべて含めて|全て含めて)$/i;
+    function _parseExclusions(q){ try{ const s=String(q||'').trim(); if(!s) return;
+      if(_INCL_RE.test(s.toLowerCase())||_INCL_RE.test(s)){ _wctx.exclusions=[]; return; }
+      const found=[]; const push=v=>{ v=String(v||'').replace(/["'「」『』.。,、;]+$/,'').trim(); if(v&&v.length<=40&&found.indexOf(v)<0) found.push(v); };
+      let m; const g=re=>{ re.lastIndex=0; while((m=re.exec(s))&&found.length<4){ push(m[1]); } };
+      g(/(?:except(?:\s+for)?|excluding|not counting|other than|apart from|but not|without|save for)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 &'-]{1,38})/gi);   /* EN */
+      g(/(?:außer|ausgenommen|mit ausnahme von)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 &'-]{1,38})/gi);   /* DE */
+      g(/(?:excepto|salvo|menos|aparte de|sin contar)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9 &'-]{1,38})/gi);   /* ES */
+      g(/(?:кроме|исключая|за исключением|помимо)\s+([А-Яа-яЁё][А-Яа-яЁё0-9 &'-]{1,38})/gi);   /* RU */
+      g(/([^\s、。,，;；「」『』]{1,30}?)(?:を除いて|を除く|を除外|は除外|を抜き(?:で|にして)?|抜きで|以外(?:で|は|の)?)/g);   /* JP */
+      if(found.length) _wctx.exclusions=found.slice(0,4); }catch(_){ } }
     function wctxBlock(){ try{ const ln=[];
       if(_wctx.countries.length) ln.push('Focus countries (last comparison): '+_wctx.countries.join(', '));
       if(_wctx.topic) ln.push('Topic under investigation: '+_wctx.topic);
       if(_wctx.metrics.length) ln.push('Metrics recently in play: '+_wctx.metrics.join(', '));
       if(_wctx.scoreComponents) ln.push('ACTIVE custom score recipe (adjust THIS when the user says weight/drop/add): '+_wctx.scoreComponents);
       if(_wctx.period) ln.push('Time-travel period: '+_wctx.period);
+      if(_wctx.exclusions&&_wctx.exclusions.length) ln.push('EXCLUSIONS the user set (a standing condition — do NOT include these in rankings/analysis/highlights unless the user changes it; they said "include everything / 除外を解除" to clear it): '+_wctx.exclusions.join('; '));
       return ln.length?ln.join('\n'):''; }catch(_){ return ''; } }
+    /* (#R80) vision §16 自己確認 — SAME-NAME PLACE verification. Many names denote very different real places
+       (Georgia the country vs the US state; Athens Greece vs Athens GA; Paris France vs Paris TX). After Atlas
+       resolves such a name it states WHICH one it mapped and offers the alternatives, so a wrong same-name guess
+       is caught and correctable instead of silently wrong. Fires only when the resolved point is confidently one
+       of the known candidates (≤250 km), so it never nags on unambiguous places. */
+    const AMBIG={
+      georgia:[{en:'Georgia (the country)',jp:'ジョージア（国）',lng:43.4,lat:42.2},{en:'Georgia, USA (the state)',jp:'ジョージア州（米国）',lng:-83.5,lat:32.9}],
+      athens:[{en:'Athens, Greece',jp:'アテネ（ギリシャ）',lng:23.73,lat:37.98},{en:'Athens, Georgia (USA)',jp:'アセンズ（米ジョージア州）',lng:-83.38,lat:33.96}],
+      paris:[{en:'Paris, France',jp:'パリ（フランス）',lng:2.35,lat:48.85},{en:'Paris, Texas (USA)',jp:'パリス（米テキサス州）',lng:-95.56,lat:33.66}],
+      cambridge:[{en:'Cambridge, UK',jp:'ケンブリッジ（英国）',lng:0.12,lat:52.2},{en:'Cambridge, Massachusetts (USA)',jp:'ケンブリッジ（米マサチューセッツ州）',lng:-71.11,lat:42.37}],
+      naples:[{en:'Naples, Italy',jp:'ナポリ（イタリア）',lng:14.27,lat:40.85},{en:'Naples, Florida (USA)',jp:'ネイプルズ（米フロリダ州）',lng:-81.79,lat:26.14}],
+      alexandria:[{en:'Alexandria, Egypt',jp:'アレクサンドリア（エジプト）',lng:29.92,lat:31.2},{en:'Alexandria, Virginia (USA)',jp:'アレクサンドリア（米バージニア州）',lng:-77.05,lat:38.8}],
+      tripoli:[{en:'Tripoli, Libya',jp:'トリポリ（リビア）',lng:13.19,lat:32.89},{en:'Tripoli, Lebanon',jp:'トリポリ（レバノン）',lng:35.84,lat:34.44}],
+      cordoba:[{en:'Córdoba, Spain',jp:'コルドバ（スペイン）',lng:-4.78,lat:37.89},{en:'Córdoba, Argentina',jp:'コルドバ（アルゼンチン）',lng:-64.18,lat:-31.42}],
+      valencia:[{en:'Valencia, Spain',jp:'バレンシア（スペイン）',lng:-0.38,lat:39.47},{en:'Valencia, Venezuela',jp:'バレンシア（ベネズエラ）',lng:-68.0,lat:10.16}],
+      santiago:[{en:'Santiago, Chile',jp:'サンティアゴ（チリ）',lng:-70.67,lat:-33.45},{en:'Santiago de Compostela, Spain',jp:'サンティアゴ・デ・コンポステーラ（スペイン）',lng:-8.54,lat:42.88}],
+      sanjose:[{en:'San José, Costa Rica',jp:'サンホセ（コスタリカ）',lng:-84.08,lat:9.93},{en:'San Jose, California (USA)',jp:'サンノゼ（米カリフォルニア州）',lng:-121.89,lat:37.34}],
+      sydney:[{en:'Sydney, Australia',jp:'シドニー（豪）',lng:151.21,lat:-33.87},{en:'Sydney, Nova Scotia (Canada)',jp:'シドニー（カナダ・ノバスコシア）',lng:-60.19,lat:46.14}],
+      guadalajara:[{en:'Guadalajara, Mexico',jp:'グアダラハラ（メキシコ）',lng:-103.35,lat:20.67},{en:'Guadalajara, Spain',jp:'グアダラハラ（スペイン）',lng:-3.16,lat:40.63}],
+      stpetersburg:[{en:'Saint Petersburg, Russia',jp:'サンクトペテルブルク（ロシア）',lng:30.34,lat:59.93},{en:'St. Petersburg, Florida (USA)',jp:'セントピーターズバーグ（米フロリダ州）',lng:-82.64,lat:27.77}],
+      birmingham:[{en:'Birmingham, UK',jp:'バーミンガム（英国）',lng:-1.9,lat:52.48},{en:'Birmingham, Alabama (USA)',jp:'バーミングハム（米アラバマ州）',lng:-86.81,lat:33.52}],
+      manchester:[{en:'Manchester, UK',jp:'マンチェスター（英国）',lng:-2.24,lat:53.48},{en:'Manchester, New Hampshire (USA)',jp:'マンチェスター（米ニューハンプシャー州）',lng:-71.46,lat:42.99}],
+      perth:[{en:'Perth, Australia',jp:'パース（豪）',lng:115.86,lat:-31.95},{en:'Perth, Scotland (UK)',jp:'パース（スコットランド）',lng:-3.43,lat:56.4}]
+    };
+    const _ambNorm=s=>{ try{ return String(s==null?'':s).normalize('NFD').replace(new RegExp('['+String.fromCharCode(0x300)+'-'+String.fromCharCode(0x36f)+']','g'),'').toLowerCase().replace(/^(the|el|la)\s+/,'').replace(/[^a-z0-9]+/g,''); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]+/g,''); } };
+    function _ambigNote(rawName,lng,lat){ try{ if(lng==null||lat==null||!isFinite(lng)||!isFinite(lat)) return '';
+      const cands=AMBIG[_ambNorm(rawName)]; if(!cands||cands.length<2) return '';
+      const km=(a,b,c,d)=>{ const x=(a-c)*Math.cos((b+d)/2*Math.PI/180), y=(b-d); return Math.hypot(x,y)*111; };
+      let best=-1,bd=1e9; cands.forEach((c,i)=>{ const d=km(+lng,+lat,c.lng,c.lat); if(d<bd){ bd=d; best=i; } });
+      if(best<0||bd>250) return '';   /* only when we are confident WHICH candidate is shown */
+      const pick=o=>_mirrorLang()==='jp'?o.jp:o.en;
+      const shown=pick(cands[best]); const others=cands.filter((_,i)=>i!==best).map(pick);
+      return '<div style="font-size:11px;color:var(--text-muted);margin:3px 0;line-height:1.5;border-left:2px solid var(--primary-color);padding-left:7px;">ℹ '
+        +L('“'+esc(rawName)+'” is an ambiguous name — I showed '+esc(shown)+'. Also possible: '+others.map(esc).join(', ')+'. Say e.g. “'+esc(others[0])+'” if you meant that one.',
+           '「'+esc(rawName)+'」は同名の場所が複数あります。今回は'+esc(shown)+'を表示しました。他に'+others.map(esc).join('・')+'も。別の場所なら「'+esc(others[0])+'」のように指定してください。',
+           '„'+esc(rawName)+'“ ist mehrdeutig — gezeigt: '+esc(shown)+'. Auch möglich: '+others.map(esc).join(', ')+'. Sonst z. B. „'+esc(others[0])+'“ sagen.',
+           '«'+esc(rawName)+'» — неоднозначное название. Показано: '+esc(shown)+'. Также: '+others.map(esc).join(', ')+'. Иначе укажите, напр. «'+esc(others[0])+'».',
+           '«'+esc(rawName)+'» es ambiguo — mostré '+esc(shown)+'. También: '+others.map(esc).join(', ')+'. Di p. ej. «'+esc(others[0])+'» si era ese.')
+        +'</div>'; }catch(_){ return ''; } }
     /* (#R42c) ROOT CAUSE of "地図へのマッピングが行われない": highlights targeted the shared `countries` source,
        which only exists AFTER the Countries(info) layer is enabled (addCountryLayers) — so ensureHlLayers bailed
        and nothing painted. Use our OWN geojson source built from window.countryGeo (always available once
@@ -21366,6 +21426,46 @@ window.addEventListener('DOMContentLoaded', () => {
     async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c; try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats[code]){ const s=countryStats[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
     /* short human label for a step, used in the honest failure summary */
     function actLabel(a){ if(!a||!a.type) return ''; const x=a.name||a.place||a.country||a.metric||a.query||a.mode||a.lang||a.unit||a.from||a.target||''; return a.type+(x?(' "'+String(x).slice(0,26)+'"'):''); }
+    /* (#R80) vision §17 — IntMap SELF-DIAGNOSIS. Atlas monitors whether IntMap's OWN data pipeline is healthy:
+       is the news feed still updating, are the live data APIs Atlas relies on reachable, and are the layers the
+       user turned on actually painting? All checks reuse data/endpoints IntMap ALREADY uses (no new external
+       source): news + layer checks are purely local; endpoint probes hit USGS / Open-Meteo / GDELT, which are
+       already disclosed in Sources & Privacy §4. A synchronous flag from the cache surfaces problems to Atlas in
+       stateContext; the "diagnose" action runs a fresh full check on demand. */
+    const _HEALTH={ endpoints:null, probedAt:0, probing:false };
+    function _newsHealth(){ try{ if(typeof globalData==='undefined'||!globalData||!globalData.length) return {count:0,ageH:null,stale:true};
+      let newest=0; globalData.forEach(it=>{ let t=0; try{ t=(typeof parseDate==='function'&&parseDate(it.pubDate))?parseDate(it.pubDate).getTime():Date.parse(it.pubDate); }catch(_){} if(t&&t>newest) newest=t; });
+      const ageH=newest?Math.max(0,Math.round((Date.now()-newest)/3600000)):null;
+      return {count:globalData.length, ageH, stale:(ageH==null||ageH>12)}; }catch(_){ return {count:0,ageH:null,stale:true}; } }
+    function _layerHealth(){ try{ let on=0,bad=0; const badN=[]; layerCatalog().forEach(c=>{ if(c.cb&&c.cb.checked){ on++; try{ if(window.IntMapLayerAudit&&window.IntMapLayerAudit.check(c.cb.id)===false){ bad++; if(badN.length<6) badN.push(c.label); } }catch(_){} } }); return {on,bad,badN}; }catch(_){ return {on:0,bad:0,badN:[]}; } }
+    const _PROBES=[
+      {k:'USGS earthquakes', u:'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson', mode:'direct'},
+      {k:'Open-Meteo', u:'https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m', mode:'direct'},
+      {k:'GDELT news', u:'https://api.gdeltproject.org/api/v2/doc/doc?query=news&mode=artlist&maxrecords=1&format=json&timespan=1d', mode:'proxy'}
+    ];
+    async function _probeOne(p){ const t0=Date.now();
+      if(p.mode==='proxy'){ try{ /* cap the proxy ladder (direct+2 proxies could take ~27 s) so a health check stays responsive */
+        const j=await Promise.race([_fetchJSON(p.u), new Promise(r=>setTimeout(()=>r('__to__'),8000))]); const okp=(!!j&&j!=='__to__'); return {ok:okp, ms:Date.now()-t0, status:okp?200:0}; }catch(_){ return {ok:false, ms:Date.now()-t0, status:0}; } }
+      try{ const c=('AbortController' in window)?new AbortController():null; const to=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },7000):null;
+        const r=await fetch(p.u,c?{signal:c.signal,cache:'no-store'}:{cache:'no-store'}); if(to) clearTimeout(to); return {ok:!!(r&&r.ok), ms:Date.now()-t0, status:r?r.status:0}; }catch(e){ return {ok:false, ms:Date.now()-t0, status:0, err:(e&&e.name)||'error'}; } }
+    async function probeEndpoints(force){ if(_HEALTH.probing) return _HEALTH.endpoints; if(!force&&_HEALTH.endpoints&&(Date.now()-_HEALTH.probedAt)<300000) return _HEALTH.endpoints;
+      _HEALTH.probing=true; try{ const res={}; await Promise.all(_PROBES.map(async p=>{ res[p.k]=await _probeOne(p); })); _HEALTH.endpoints=res; _HEALTH.probedAt=Date.now(); return res; } finally{ _HEALTH.probing=false; } }
+    async function healthCheck(opts){ opts=opts||{}; const news=_newsHealth(), layers=_layerHealth();
+      let endpoints=_HEALTH.endpoints; if(opts.probe!==false){ try{ endpoints=await probeEndpoints(opts.probe===true); }catch(_){} }
+      const down=endpoints?Object.keys(endpoints).filter(k=>!endpoints[k].ok):[];
+      const ok=(!news.stale)&&(layers.bad===0)&&(down.length===0);
+      return {ok, news, layers, endpoints, down, probedAt:_HEALTH.probedAt}; }
+    /* synchronous flag from the CACHE only (no network) — safe to call inside stateContext every turn. */
+    function _healthFlag(){ try{ const parts=[]; const n=_newsHealth(); if(n.stale&&n.count) parts.push('the loaded news feed looks stale (newest item is '+(n.ageH==null?'undated':n.ageH+'h old')+' — the feed may have stopped updating)');
+      const l=_layerHealth(); if(l.bad) parts.push(l.bad+' enabled layer(s) are NOT painting on the map'+(l.badN.length?(' ('+l.badN.join(', ')+')'):'')+' — their data may be loading or their source may be down');
+      const ep=_HEALTH.endpoints; if(ep){ const down=Object.keys(ep).filter(k=>!ep[k].ok); if(down.length) parts.push('these live data sources were unreachable at the last check: '+down.join(', ')); }
+      return parts.length?('SELF-DIAGNOSIS ALERT (IntMap health) — '+parts.join('; ')+'. If the question depends on this data, tell the user honestly and, where possible, use an alternative; suggest they say "diagnose" for a full check.'):''; }catch(_){ return ''; } }
+    try{ window.IntMapDataHealth={ check:o=>healthCheck(o), news:_newsHealth, layers:_layerHealth, probe:f=>probeEndpoints(f), flag:_healthFlag, last:()=>_HEALTH.endpoints }; }catch(_){}
+    /* light "常時監視": one probe ~25 s after load, then every 10 min — but ONLY while the tab is visible, so a
+       backgrounded tab never spams the network (also keeps the headless preview quiet). */
+    try{ const _tick=()=>{ try{ if(document.visibilityState==='visible') probeEndpoints(false).catch(()=>{}); }catch(_){} };
+      setTimeout(_tick,25000); setInterval(_tick,600000);
+      document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='visible'&&(!_HEALTH.probedAt||(Date.now()-_HEALTH.probedAt)>600000)) _tick(); }catch(_){} }); }catch(_){}
     /* (#R44) a compact snapshot of what is CURRENTLY on screen, fed to the model so it can ground references
        ("there", "this country", "turn that layer off", "zoom in more", "the same") in the real map state. */
     function stateContext(){ try{ const lines=[]; const c=map.getCenter(), z=map.getZoom();
@@ -21381,6 +21481,10 @@ window.addEventListener('DOMContentLoaded', () => {
         if(_choroMetric&&METRICS[_choroMetric]) lines.push('The map is currently shaded (choropleth) by '+lx(METRICS[_choroMetric].label)+'.');
         else if(_choroMetric==='__custom'&&_customScoreName) lines.push('The map is currently shaded by a CUSTOM Atlas evaluation score: "'+_customScoreName+'" — follow-ups like "weight X more" / "drop Y" should re-emit scoreMap with adjusted components.');
         try{ if(window._cpCurrent&&window._cpCurrent.name) lines.push('Open country card: '+window._cpCurrent.name+' — "this country"/"it"/"over time" refer to it.'); }catch(_){}
+        /* (#R80) vision §2 — the news ARTICLE currently open in the reader. "This article / this event / この記事 /
+           この出来事 / それ" and a bare "詳しく / 背景は / なぜ / translate this" refer to THIS; its place is where the
+           event happened, so "there / 現地" map to it too. */
+        try{ const rd=window._imReader; if(rd&&rd.open&&rd.title){ lines.push('OPEN NEWS ARTICLE (the user is reading this right now): "'+String(rd.title).slice(0,140)+'"'+(rd.publisher?(' — '+rd.publisher):'')+(rd.pubDate?(', '+String(rd.pubDate).slice(0,16)):'')+(rd.place?(', about '+rd.place):'')+'. "This article / this event / この記事 / この出来事 / それ / a bare 詳しく・背景・なぜ・translate this" refer to THIS article'+((rd.loc&&isFinite(rd.loc[0]))?('; its location is '+(+rd.loc[1]).toFixed(2)+','+(+rd.loc[0]).toFixed(2)+' — "there / 現地" map here'):'')+'.'); } }catch(_){}
         /* (#R73) vision §2 — Atlas must see EVERYTHING on the map: its own pins/drawings, user tools, panels */
         try{ if(_pois&&_pois.length) lines.push(_pois.length+' Atlas pins are on the map'+((_pois[0]&&_pois[0].sum)?' (research-report pins with summaries)':' (facility/POI pins)')+'.'); }catch(_){}
         try{ if(_hlPolys&&_hlPolys.length){ const nms=_hlPolys.map(p=>p.name).filter(Boolean).slice(0,4).join(', '); lines.push(_hlPolys.length+' Atlas polygon highlight(s)'+(nms?(': '+nms):'')+'.'); } }catch(_){}
@@ -21403,6 +21507,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via the "setting-wsmode-btn" button or IntMapWorkspace.close.'); }catch(_){}
         let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}
         lines.push('UI language='+currentLang+', theme='+((typeof userTheme!=='undefined')?userTheme:'auto')+(tu?(', temp unit=°'+String(tu).toUpperCase()):'')+'.');
+        try{ const hf=_healthFlag(); if(hf) lines.push(hf); }catch(_){}   /* (#R80) vision §17 — surface any IntMap data-health problem so Atlas is honest about it proactively */
         return lines.join('\n'); }catch(_){ return ''; } }
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
@@ -21801,13 +21906,13 @@ window.addEventListener('DOMContentLoaded', () => {
           if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
-            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('📍 '+esc(ext.name||placeStr))); } }
+            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('📍 '+esc(ext.name||placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }
           /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
           const ll=await geocode(placeStr);
           if(ll){ if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
             else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
             else { map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
-            return R(true, note('📍 '+esc(ll.name||placeStr))); }
+            return R(true, note('📍 '+esc(ll.name||placeStr))+_ambigNote(placeStr,ll.lng,ll.lat)); }
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
         case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'brief': { /* (#R62) AI Brief is INTEGRATED into Atlas — same structured brief, rendered inline in this chat. */
@@ -21861,7 +21966,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'widgets': { let ok=false; try{ if(window.IntMapWidgets&&window.IntMapWidgets.toggle){ window.IntMapWidgets.toggle(); ok=true; } else ok=clickId('btn-widgets'); }catch(_){} return R(ok, ok?note('✓ '+L('Widgets','ウィジェット','Widgets','Виджеты','Widgets')):warn('⚠')); }
         case 'screenshot': { const ok=clickId('btn-screenshot'); return R(ok, ok?note('✓ '+L('Screenshot','スクショ','Screenshot','Снимок','Captura')):warn('⚠')); }
         case 'share': { let ok=false; try{ if(window.IntMapShare&&window.IntMapShare.open){ window.IntMapShare.open(); ok=true; } else ok=clickId('btn-share'); }catch(_){} return R(ok, ok?note('✓ '+L('Share panel','共有パネル','Teilen','Поделиться','Compartir')):warn('⚠')); }
-        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))); } return R(false, warn('⚠ '+esc(q))); }
+        case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
         case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
         case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof unitMode!=='undefined') unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
         case 'timeTravel': { let ok=false; try{ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650; let da=(a.daysAgo!=null)?Math.round(+a.daysAgo):null;
@@ -21875,6 +21980,17 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
         case 'shortcuts': case 'keyboard': case 'hotkeys': { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note('⌨ '+L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
+        /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
+        case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
+          const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
+          let h='<div style="font-weight:600;margin:2px 0 6px;">🩺 '+L('IntMap self-diagnosis','IntMap 自己診断','IntMap-Selbstdiagnose','Самодиагностика IntMap','Autodiagnóstico de IntMap')+'</div><div style="font-size:12px;line-height:1.75;">';
+          h+=dot(!H.news.stale)+' '+L('News feed','ニュース','Nachrichten','Новости','Noticias')+': '+(H.news.count?(H.news.count+' '+L('articles','件','Artikel','статей','artículos')+(H.news.ageH==null?(' — '+L('undated','日付なし','ohne Datum','без дат','sin fecha')):(' — '+L('newest','最新','neuste','свежесть','más reciente')+' '+H.news.ageH+'h'))+(H.news.stale?(' ⚠ '+L('may have stopped updating','更新停止の可能性','evtl. keine Updates','возможно не обновляется','quizá no se actualiza')):'')):L('not loaded yet','未読込','noch nicht geladen','ещё не загружено','no cargado'))+'<br>';
+          h+=dot(H.layers.bad===0)+' '+L('Layers','レイヤー','Ebenen','Слои','Capas')+': '+H.layers.on+' '+L('on','オン','an','вкл','activas')+(H.layers.bad?(' ⚠ '+H.layers.bad+' '+L('not painting','未描画','nicht gezeichnet','не отрисованы','sin pintar')+(H.layers.badN.length?(' ('+H.layers.badN.map(esc).join(', ')+')'):'')):(' — '+L('all painting','全て描画','alle ok','все ок','todas ok')))+'<br>';
+          if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
+          else h+='⚪ '+L('Live APIs: not probed','ライブAPI: 未確認','Live-APIs: nicht geprüft','Живые API: не проверены','APIs: sin comprobar')+'<br>';
+          h+='</div>';
+          h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):('⚠ '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
+          return R(true, h); }
         case 'clearAll': { try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
         case 'outline': case 'extent': case 'showExtent': { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado'))); }
           const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
@@ -21885,7 +22001,7 @@ window.addEventListener('DOMContentLoaded', () => {
              have no polygon — the user: "領域がわからない地名は全部長方形になるとかクソ"). */
           const ctx=ext?{lng:ext.lng,lat:ext.lat,fit:true}:{fit:true};
           let ok=false; try{ ok=await window.IntMapOutline.show((ext&&ext.name)||place, ctx); }catch(_){}
-          return R(!!ok, (ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place)):warn('⚠ '+L('No precise boundary for','正確な境界がありません','Keine genaue Grenze für','Нет точной границы для','Sin límite preciso para')+': '+esc((ext&&ext.name)||place)))+ocw); }
+          return R(!!ok, (ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place))+(ext?_ambigNote(place,ext.lng,ext.lat):''):warn('⚠ '+L('No precise boundary for','正確な境界がありません','Keine genaue Grenze für','Нет точной границы для','Sin límite preciso para')+': '+esc((ext&&ext.name)||place)))+ocw); }
         /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
            actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
            publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
@@ -22509,7 +22625,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"route","from":str,"to":str} (sea route); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
-        +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet).\n'
+        +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
         +'RESEARCH MAPPED ONTO THE MAP: {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic with LIVE WEB SEARCH (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, dated incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. USE THIS (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate something ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X") OR asks to research/look into a topic whose findings have real locations — incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. If the user asks a research question and the answer naturally lives at places on a map, prefer mapReport; combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
@@ -22763,6 +22879,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(/^(clear|remove|delete) (all )?(the )?(radius(es)?|circles?)$|^(半径|サークル|円)(を)?(全部|すべて)?(消して|削除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'radius'});
       if(/^(clear|remove) (the )?(highlights?|shading)$|^(ハイライト|色分け|濃淡)(を)?(消して|解除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'highlights'});
       if(/^(screenshot|take a screenshot|capture the map|スクショ((を)?(撮って|とって))?|スクリーンショット((を)?(撮って|とって))?)$/i.test(low)) return A({type:'screenshot'});
+      /* (#R80) vision §17 — self-diagnosis on demand */
+      if(/^(diagnose|self-?check|health ?check|system ?status|status|are you (ok|working)|診断(して)?|自己診断|システム(の)?(状態|状況|チェック)|ヘルスチェック|データは最新[?？]?|正常[?？]?)$/i.test(low)) return A({type:'diagnose'});
+      if(/^(何か|なにか|なんか)?(問題|不具合|異常|エラー)(は|が)?(ある|あります)[?？]?$/.test(s)||/^(any )?(issues?|problems?|errors?)\??$/i.test(low)) return A({type:'diagnose'});
       /* (#R62) POI mapping — 「東京にある石油施設を表示して」/ "map the oil facilities in Texas". */
       if(/^(clear|remove) (the )?(facilit(y|ies)|pois?|markers?)$|^(施設|マーカー)(を)?(全部|すべて)?(消して|削除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'poi'});
       fm=s.match(/^(.+?)にある\s*(.+?)\s*(?:関連)?(?:施設)?を(?:地図に)?(?:表示|マッピング|マップ|出して|プロット)(?:して)?$/);
@@ -22899,7 +23018,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); }
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
-    function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){}
+    function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){} try{ _parseExclusions(q); }catch(_){}
       try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
       _hist.push('User: '+q.slice(0,260)); _hist.push(a); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }

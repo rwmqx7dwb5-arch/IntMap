@@ -467,6 +467,19 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     選択中の国・言語/テーマ/単位）＋`[RECENT CONVERSATION]`（直近の往復を真実に基づき要約=`recordTurn`）＋`[NEW REQUEST]`** に
     再構成（`buildPrompt`/`stateContext`）。指示代名詞・追従はこの文脈で解決し、短い追従は前ターンの**微修正**として扱うよう
     SYS()に明記。`geocode()` は「here/there/そこ/ここ/現在地」等を直前に触れた場所(`_lastPlace`)＝無ければ地図中心に解決。
+  - **#R80 残ギャップの実装（Central OS完成へ・§2/§3/§16/§17）**（詳細は DEV-NOTES R80）: ATLAS-VISION実装表の
+    「残り」列＝当面最優先を加算的に実装。①**§2 表示中記事**: `openArticleInSidebar`→`window._imReader` へ開いている記事
+    （title/publisher/pubDate/place/loc）をブリッジ、`stateContext` に `OPEN NEWS ARTICLE` 行を注入し「この記事/この出来事/
+    それ/現地」を解決（`closeArticleReader` でクリア）。②**§3 除外条件記憶**: `_wctx.exclusions` を `recordTurn(q)` の生文から
+    `_parseExclusions`（5言語＝except/excluding/außer/excepto/кроме/を除いて/以外…）でパースし [WORKING CONTEXT] の常設条件に。
+    "include everything/除外を解除" と reset/clearAll でクリア。③**§16 同名地検証（自己確認）**: `AMBIG` 座標表17件
+    （Georgia国/州・Athens・Paris・Cambridge・Naples…）＋`_ambigNote(name,lng,lat)`。flyTo/search/outline が地名解決後、
+    解決座標が候補の一つに一致（≤250km）したときだけ「今回は◯◯を表示、他に△△も。別なら『△△』」と正直併記（非曖昧地では黙る）。
+    ④**§17 自己診断**: `IntMapDataHealth`＝news鮮度（`globalData`最新pubDate経過h）＋layer描画整合（`IntMapLayerAudit`）＋
+    ライブAPI到達性（USGS/Open-Meteo直・GDELTはプロキシ梯子・**8s上限**・既出EPのみ）。`diagnose`/`health`/`selfCheck`/`status`
+    アクション（🟢/🔴、429は「rate-limited(429)」）、localPlanアンカー（"診断"/"何か問題ある？"/"any issues?"）、
+    **問題時のみ** `stateContext` へ SELF-DIAGNOSIS ALERT、SYS()にアクション登録、**可視時のみ25s後＋10分毎の軽量プローブ**
+    （背面タブ/ヘッドレスでは走らない）。新規外部EPなし＝法務/出典変更不要（LEGAL_DATE 2026-07-12 据置）。
   ウィンドウは**最小化・サイズ変更可**、×で地図上のハイライト/色分けも消去。起動: ツールバー `⌖` / 右クリック / **Ctrl・⌘+K**。
 - **天気ポップアップ（右クリック→「ここの天気」, #R40/#R42)** — Open-Meteo の現況＋5日予報（常に最新）。
   気温は設定の °C/°F/両方に完全対応（両方モードは日別予報も °F を併記, #R42）。ドラッグ移動・⟳更新可。
