@@ -21730,6 +21730,17 @@ window.addEventListener('DOMContentLoaded', () => {
        ONLY the current message to the model with no history and no map state, so follow-ups ("there", "turn it
        off", "more", "the same country over time") had nothing to resolve against. */
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
+    /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
+       great-circle distance (keyless, instant), keeping the first point as the fixed start; the ordered tour is then
+       driven on the real OSM road network (OSRM). Good for "10地点を最短順に並べ替える". */
+    function _tspOrder(pts){ const n=pts.length; if(n<=2) return pts.map((_,i)=>i);
+      const D=(a,b)=>{ const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180,la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
+      const used=new Array(n).fill(false); const order=[0]; used[0]=true;
+      for(let k=1;k<n;k++){ const last=order[order.length-1]; let bi=-1,bd=1e18; for(let j=0;j<n;j++){ if(used[j]) continue; const d=D(pts[last],pts[j]); if(d<bd){bd=d;bi=j;} } order.push(bi); used[bi]=true; }
+      const tot=(o)=>{ let s=0; for(let i=0;i<o.length-1;i++) s+=D(pts[o[i]],pts[o[i+1]]); return s; };
+      let improved=true, guard=0; while(improved && guard++<60){ improved=false;
+        for(let i=1;i<n-1;i++) for(let k=i+1;k<n;k++){ const a=order.slice(); const seg=a.slice(i,k+1).reverse(); a.splice(i,seg.length,...seg); if(tot(a)<tot(order)-1e-6){ order.splice(0,n,...a); improved=true; } } }
+      return order; }
     /* (#R83) "Ask AI about here" is ABSORBED into Atlas ("独立させるな。Atlasに吸収しろ"): a right-click point (or
        the askHere action) pins an exact coordinate here, and buildPrompt injects it so EVERY question in the
        conversation resolves "here/this spot/この地点" to it — no separate research panel. Cleared on clearAll. */
@@ -23461,6 +23472,25 @@ window.addEventListener('DOMContentLoaded', () => {
             +note(L('Reachable area along the REAL road network (Valhalla / OpenStreetMap) — drive / walk / cycle, not a distance circle. Adjust mode & time in the 🎯 panel.','実際の道路網に沿った到達圏（Valhalla／OpenStreetMap）— 車・徒歩・自転車で、距離の円ではありません。モードと時間は🎯パネルで調整できます。','Erreichbarkeit entlang des echten Straßennetzes (Valhalla/OSM) — Auto/Fuß/Rad, kein Distanzkreis.','Зона доступности по реальной дорожной сети (Valhalla/OSM) — авто/пешком/вело, не круг.','Área alcanzable por la red vial real (Valhalla/OSM) — coche/pie/bici, no un círculo.')));
           return R(false, warn('🎯 '+L('Could not compute the reachable area (routing service busy) — try again.','到達圏を算出できませんでした（サービス混雑）— 再試行してください。','Erreichbarkeit fehlgeschlagen — erneut versuchen.','Не удалось рассчитать — попробуйте снова.','No se pudo calcular — reintenta.'))); }
         case 'route': { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ map.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
+        case 'optimizeRoute': case 'tsp': case 'multiStop': case 'optimize': case 'optimizeStops': {
+          let names=[]; if(Array.isArray(a.places)) names=a.places; else if(Array.isArray(a.points)) names=a.points; else if(Array.isArray(a.stops)) names=a.stops; else if(typeof a.places==='string') names=a.places.split(/[,、，]/); else if(typeof a.stops==='string') names=a.stops.split(/[,、，]/);
+          names=names.map(x=>String(x).trim()).filter(Boolean).slice(0,12);
+          const rawM2=String(a.mode||a.profile||'').toLowerCase(); const mode2=/walk|foot|徒歩|zu ?fu|пешк|a ?pie/.test(rawM2)?'walking':(/bike|bicycle|cycl|自転車|\brad\b|вело|bici/.test(rawM2)?'cycling':'driving');
+          let pts=[];
+          if(names.length){ for(const nm of names){ try{ const g=await geocode(nm); if(g) pts.push({lng:g.lng,lat:g.lat,name:g.name||nm}); }catch(_){} } }
+          else if(typeof userPins!=='undefined' && userPins && userPins.length>=2){ pts=userPins.map((p,i)=>({lng:p.lng,lat:p.lat,name:L('Pin','ピン','Pin','Метка','Pin')+' '+(i+1)})); }
+          if(pts.length<2) return R(false, warn('⚠ '+L('Give me at least 2 places to visit (comma-separated), or drop pins first.','巡回する地点を2つ以上（カンマ区切り）指定するか、先にピンを置いてください。','Mind. 2 Orte (kommagetrennt) angeben oder Pins setzen.','Укажите ≥2 места через запятую или поставьте метки.','Indica ≥2 lugares separados por comas o coloca pines.')));
+          const ord=_tspOrder(pts); const seq=ord.map(i=>pts[i]);
+          const mi=mode2==='walking'?'🚶':mode2==='cycling'?'🚲':'🚗';
+          let r=null; try{ r=await window.IntMapRouting.route({lng:seq[0].lng,lat:seq[0].lat},{lng:seq[seq.length-1].lng,lat:seq[seq.length-1].lat},{mode:mode2,via:seq.slice(1,-1).map(p=>({lng:p.lng,lat:p.lat}))}); }catch(_){}
+          const listHtml=seq.map((p,i)=>'<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--primary-color);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">'+(i+1)+'</span><span style="flex:1;min-width:0;font-size:12.5px;">'+esc(p.name)+'</span></div>').join('');
+          let summ=''; if(r&&r.ok&&r.distance!=null){ const km=r.distance/1000, mn=Math.round(r.duration/60), h=Math.floor(mn/60), rm=mn%60; summ=mi+' <b>'+(h?(h+' h '+rm+' min'):(mn+' min'))+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km'; }
+          else { try{ map.fitBounds([[Math.min.apply(null,seq.map(p=>p.lng)),Math.min.apply(null,seq.map(p=>p.lat))],[Math.max.apply(null,seq.map(p=>p.lng)),Math.max.apply(null,seq.map(p=>p.lat))]],{padding:70,duration:900}); }catch(_){} }
+          return R(true, note('🧭 '+L('Optimized order','最短順路','Optimierte Reihenfolge','Оптимальный порядок','Orden óptimo')+' · '+pts.length+' '+L('stops','地点','Stopps','точек','paradas'))
+            +(summ?('<div style="font-size:13px;margin:3px 0 4px;">'+summ+'</div>'):'')
+            +'<div>'+listHtml+'</div>'
+            +note(r&&r.ok? L('Ordered shortest-first (nearest-neighbour + 2-opt), then driven on the OSM road network (OSRM). The first stop is fixed as the start.','最近傍＋2-optで最短順に並べ替え、OSMの道路網（OSRM）で経路化。最初の地点を起点に固定します。','Kürzeste Reihenfolge (Nächster-Nachbar + 2-opt), auf dem OSM-Straßennetz (OSRM).','Кратчайший порядок (ближайший сосед + 2-opt) по дорожной сети OSM (OSRM).','Orden más corto (vecino más cercano + 2-opt) por la red vial OSM (OSRM).')
+              : L('Ordered shortest-first (nearest-neighbour + 2-opt). Road routing is busy — the optimized ORDER is shown; try again for the drawn route.','最近傍＋2-optで最短順に並べ替えました。道路経路サービスが混雑中 — 順路は表示済み、描画は再試行してください。','Reihenfolge optimiert; Straßenrouting ausgelastet.','Порядок оптимизирован; дорожный маршрут занят.','Orden optimizado; el enrutamiento está ocupado.'))); }
         case 'directions': case 'roadRoute': case 'navigate': case 'drivingRoute': case 'walkingRoute': case 'transitRoute': {
           /* (#R85d) FULL Google/Apple-Maps-style routing UI INSIDE the Atlas message — NO popup ("よけいなポップアップを
              増設するな。Atlas内のメッセージでUIやれ"). Mode switcher (car/transit/walk/cycle) re-routes in place. */
@@ -24797,6 +24827,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(fm){ const mm={drive:'auto',driving:'auto',car:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle'}[fm[3]]||'auto'; let mnt=+fm[1]; if(/^h/.test(fm[2])) mnt*=60; return A({type:'isochrone',place:fm[4].trim(),mode:mm,minutes:mnt}); }
         fm=low.match(/^(?:the )?(?:isochrone|reachable area|reachability|catchment(?: area)?)\s+(?:for|from|of|around|at)\s+(.+?)\.?$/i);
         if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()}); }
+      /* (#R86c) multi-stop route optimisation (TSP) — "A・B・Cを最短で回る", "optimize route through A, B, C" */
+      { fm=low.match(/^(?:optimi[sz]e|plan|find|best|shortest)\s+(?:the\s+)?(?:route|order|tour|trip|itinerary|path)\s+(?:to\s+)?(?:visit(?:ing)?|through|for|of|via|around|between)\s+(.+?)\.?$/i)
+          ||low.match(/^(?:best|shortest|optimal|most efficient)\s+(?:order|way|route)\s+to\s+visit\s+(.+?)\.?$/i);
+        if(fm&&(fm[1]||'').trim()){ const parts=fm[1].split(/\s*,\s*|\s+and\s+|\s*&\s*/).map(x=>x.trim()).filter(Boolean); if(parts.length>=2) return A({type:'optimizeRoute',places:parts}); }
+        fm=s.match(/^(.+?)(?:を)?(?:最短(?:で|順|経路で)?|効率(?:よく|的に)|一番(?:早く|短く))(?:回る|巡る|訪(?:れる|問)|周る)(?:順(?:番|路)?|ルート|経路)?(?:を)?(?:教えて|出して|表示|計算|並べ替え|して)?[。？?]?$/i);
+        if(fm&&(fm[1]||'').trim()){ const parts=fm[1].split(/\s*[,、，･・]\s*|\s+と\s+/).map(x=>x.trim()).filter(Boolean); if(parts.length>=2) return A({type:'optimizeRoute',places:parts}); } }
       /* (#R83) flight simulator */
       if(/^(?:(?:フライト|飛行)シミュ(?:レータ[ー]?|レーション)?|フライトシム)(?:を)?(?:起動|開始|始めて|開いて|やって|使いたい|プレイ|して)?[。]?$/i.test(s)) return A({type:'flightSim'});
       fm=s.match(/^(.+?)(?:の上空|上空|周辺)(?:を)?(?:飛行機で)?(?:飛(?:びたい|んで|ぶ)|操縦(?:したい|して))(?:みたい)?[。]?$/);
