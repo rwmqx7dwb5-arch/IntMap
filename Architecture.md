@@ -495,6 +495,23 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     Atlasを束縛＝`IntMapOS.dispatch({type:'control'…})` で全UIをカーネル経由操作可、`catalog()` が全操作面を列挙。
     実測: 実ボタンclick→exec 1回（二重実行なし）、NL dispatch→`view.base.map/atlas`、theme/layerもカーネル経由、
     `.click()`互換維持、コンソールエラー0。残コントロールは以降のパスで順次コマンド化（段階移行）。
+  - **#R83 バッチ: ワークスペース自動タイル・Atlas経路/SV/各種シミュ・比較着色・プレビュー・自動ON整理**（詳細は DEV-NOTES R83）:
+    ①**Countries(info)自動ONを廃止**（Countriesタブ/窓は cb-countries を自動トグルしない＝完全手動）。②**ワークスペース既定を
+    Map+Layersのみ**に（countries/atlas=defHidden、storage KEY→ws3）。③**自動タイル＋ジャンクション**: `computeTiles/retile` で
+    可視窓を隙間なく自動配置（開閉/最大最小/リサイズで再タイル）、3枚以上が接するT/十字点に `buildJunctions/addJunction` の
+    ドラッグハンドル＝縦横の仕切りを同時移動（「三つ同時に境界」）。④**Ask AI about here を Atlas に吸収**（`IntMapConsole.askHere`＋
+    `_herePoint`＋buildPromptの`[PINNED POINT]`、右クリック/ dispatch）。⑤**Compareの色を地図に**（`IntMapStatsCompare.paintOnMap`＝
+    PAL[i]でチップと厳密一致のカテゴリfill、Show comparison時／選択変更で同期、`_clearCompare`で消去）。⑥**Atlas経路案内**
+    （`IntMapRouting`＝公開OSRMで車/徒歩/自転車のターンバイターン、dispatch `directions`。`route`は海路のまま）。⑦**ストリートビュー**
+    （`IntMapStreetView`＝キー不要の maps.google.com svembed 埋め込みパネル、右クリック/ dispatch `streetview`）。⑧**海抜以下ハイライト**
+    （`elevationBelow`＝Copernicus DEMグリッド標本→閾値以下/以上を深度段階fill）＋**歴史勢力図**（`historicalMap`＝curated WWI1916＋他年代AI生成）。
+    ⑨**弾道ミサイルSim刷新**（`missile`＝最小エネルギーのケプラー軌道: 実アポジー/速度/飛翔時間＋高度断面SVG＋任意の弾頭効果環。
+    検証: 1万km→1319km/7.2km・s/32分）。⑩**放射性物質拡散Sim**（`radiation`＝ラグランジュ粒子: Open-Meteoの時空間風で移流＋安定度依存の
+    乱流拡散＋湿性/乾性沈着＋半減期、粒子＋濃度ヒートマップ）。⑪**フライトシミュレーター**（`IntMapFlightSim`＝実地図上を飛べる
+    協調旋回/失速/地形衝突モデル＋HUD、キー W/S・↑↓・←→・A/D・Esc、dispatch `flightSim`）。⑫**レイヤープレビュー**: `setView` を
+    **アスペクト補正**（クロップ枠を真の2:1 web-mercatorに拡張＝EU members・Volcanoesの横伸び解消）、ECMWF雲=実MODISトゥルーカラー、
+    Live aircraft=実空港間の大圏ルート網。出典/プライバシーに OSRM・Google Street View を追加。新規 window.*: IntMapRouting/
+    IntMapStreetView/IntMapRadiation/IntMapFlightSim。全モジュール存在・コンソールエラー0・129レイヤ行を実測確認。
   ウィンドウは**最小化・サイズ変更可**、×で地図上のハイライト/色分けも消去。起動: ツールバー `⌖` / 右クリック / **Ctrl・⌘+K**。
 - **天気ポップアップ（右クリック→「ここの天気」, #R40/#R42)** — Open-Meteo の現況＋5日予報（常に最新）。
   気温は設定の °C/°F/両方に完全対応（両方モードは日別予報も °F を併記, #R42）。ドラッグ移動・⟳更新可。
