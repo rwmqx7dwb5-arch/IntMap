@@ -7306,7 +7306,18 @@ window.addEventListener('DOMContentLoaded', () => {
        feedback / settings) is duplicated in the top bar, so it is removed from the windows — no duplication. */
     const DEFS=[
       {id:'news',  sels:['#sidebar-search-bar','#news-filter-toggle','#ai-geocode-row','#live-news-feed','#news-reader-pane'], t:()=>T('News','ニュース','Nachrichten','Новости','Noticias'), min:[300,280],
-        onWrap:()=>{ try{ if(typeof setMode==='function') setMode('news'); }catch(_){} },
+        /* (#R79) ROOT CAUSE of "workspace still shows no news": the old code called setMode('news') with NO
+           btnId. setMode sets currentMode='news' then does getElementById(btnId).classList.add(...) — with
+           btnId undefined that THROWS before renderUI() runs, so startNews() never fires and the feed stays
+           empty on fresh boot (data was in globalData all along). Do it deterministically: if we're already on
+           news/saved just renderUI(); otherwise switch via setMode WITH the real button id ('btn-news'). */
+        onWrap:()=>{ try{
+            if(currentMode==='news'||currentMode==='saved'){ if(typeof renderUI==='function') renderUI(); }
+            else if(typeof setMode==='function'){ setMode('news','btn-news'); }
+            /* if the feed is still empty (globalData not fetched yet), kick a fetch; its completion re-renders
+               via `if(currentMode==='news') startNews()` now that currentMode is correctly 'news'. */
+            try{ const f=document.getElementById('live-news-feed'); if(f&&!f.querySelector('.news-item')&&typeof fetchData==='function'&&(typeof globalData==='undefined'||!globalData.length)) fetchData(); }catch(_){}
+          }catch(_){} },
         /* (#R78f) closing the News window must stop its map pins + the "summarize view" button ("永遠に地図に
            ニュース記事や要約ボタンがあるまま。news windowを閉じたらやめろ") */
         onHide:()=>{ try{ if(map&&map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; }catch(_){} },
@@ -7444,6 +7455,9 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R78f) BALANCED padding — the .content-area scrollbar hack (margin-right:-10px) made content flush-left
            but 10px past the right; neutralise it and give even 10px gutters. Search bar was overflowing right. */
         +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed{margin:0 !important;padding:10px 12px !important;box-sizing:border-box;gap:8px;}'
+        /* (#R79) the news READER pane is stacked in the same window — kill its -10px scrollbar-hack margin too
+           (otherwise it overflows the window's right edge when a user opens an article to read) */
+        +'body.ws-mode .ws-news #news-reader-pane{flex:1 1 auto !important;width:100% !important;min-height:0 !important;margin:0 !important;padding:10px 12px !important;box-sizing:border-box !important;}'
         +'body.ws-mode .ws-news #sidebar-search-bar{box-sizing:border-box !important;width:auto !important;margin:10px 12px 4px !important;}'
         +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
         /* (#R78g) CONTENT WAS INVISIBLE: the window background == --card-bg == the cards' own background, and the
@@ -12589,8 +12603,20 @@ window.addEventListener('DOMContentLoaded', () => {
         'dl-pop':['pop-fill'],'dl-hdi':['hdi-fill'],'dl-dem':['dem-fill'],'dl-gdppc':['gdppc-fill'],
         'dl-tfr':['tfr-fill'],'dl-milSpend':['milSpend-fill'],'dl-milSpendGDP':['milSpendGDP-fill']
       };
+      /* (#R79) the base VECTOR toggles were never audited (idsFor returned null) — yet they are the most
+         VISIBLE layers of all: default-on country borders, place names, water labels, state lines. Those are
+         exactly the ones a user notices when the checkbox says ON but the map shows nothing. Cover them with
+         the same reconciler. Their change handlers are idempotent + retry-hardened (ensurePlaceLabels /
+         ensureBordersLayer / ensureRefLayers / applyCountryVisibility), so the heal is a single gentle
+         re-fire of the change event (see BASE branch below) — no off→on flicker of the whole label stack. */
+      const BASE={
+        'cb-names':['ofm-country','ofm-city','ofm-other'],
+        'cb-geolabels':['ofm-water','ofm-water2','ofm-river','ofm-peak','geo-sea'],
+        'cb-borders':['borders-only-line'],'cb-countries':['country-fill'],
+        'cb-admin1':['ref-admin1'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
+      };
       const sus={}, healed={}, log=[];
-      const idsFor=cbId=>STATIC[cbId]||window._imAuditReg[cbId]||null;
+      const idsFor=cbId=>STATIC[cbId]||BASE[cbId]||window._imAuditReg[cbId]||null;
       function painted(ids){ try{ for(const lid of ids){ if(map.getLayer(lid)&&map.getLayoutProperty(lid,'visibility')!=='none') return true; } }catch(_){} return false; }
       function check(cbId){ const ids=idsFor(cbId); if(!ids||!ids.length) return null; return painted(ids); }
       function audit(){ try{
@@ -12600,13 +12626,25 @@ window.addEventListener('DOMContentLoaded', () => {
           if(cb.checked&&!vis){ sus[cb.id]=(sus[cb.id]||0)+1;
             if(sus[cb.id]>=2&&(!healed[cb.id]||Date.now()-healed[cb.id]>240000)){ healed[cb.id]=Date.now(); sus[cb.id]=0;
               log.push({id:cb.id,t:Date.now(),fix:'rearm'}); if(log.length>60) log.shift();
-              try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
-              setTimeout(()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },420); } }
+              if(BASE[cb.id]){ /* base vector layer: idempotent handler → ONE gentle re-fire, no label flicker */
+                try{ cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
+              else { try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){}
+                setTimeout(()=>{ try{ if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} },420); } } }
           else if(!cb.checked&&vis){ log.push({id:cb.id,t:Date.now(),fix:'hide'}); if(log.length>60) log.shift();
             ids.forEach(lid=>{ try{ if(map.getLayer(lid)) map.setLayoutProperty(lid,'visibility','none'); }catch(_){} }); sus[cb.id]=0; }
           else sus[cb.id]=0; });
       }catch(_){} }
       setTimeout(()=>{ setInterval(()=>{ if(!document.hidden) audit(); },15000); },25000);
+      /* (#R79) The audit was RIGHT but too SLOW: on a 15s cadence a checked-but-blank layer (source failed,
+         or a base-map/style swap wiped the overlay and nothing re-added it) stayed visibly wrong for up to
+         ~30s — that latency IS the "レイヤーのオンオフが実情と対応していないことがある" the user still notices.
+         Trigger the SAME audit() (same thresholds, same 2-hit debounce, same 4-min heal cooldown) shortly
+         after the map SETTLES (idle → every engine's styledata re-add has run) and when the tab regains
+         focus (a background wipe otherwise waited out the whole 15s). So real desyncs now self-heal in a
+         couple of seconds instead of half a minute — no new heal logic, just more trigger points. */
+      try{ let _st=null; const soon=()=>{ clearTimeout(_st); _st=setTimeout(()=>{ if(!document.hidden) audit(); },1200); };
+        if(map&&map.on){ map.on('idle',soon); }
+        document.addEventListener('visibilitychange',()=>{ if(!document.hidden) soon(); }); }catch(_){}
       window.IntMapLayerAudit={run:audit,check,log:()=>log.slice(-20)};
     })();
   })();
@@ -21228,7 +21266,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const r=await fetch(p(url),c?{signal:c.signal}:undefined); if(t2) clearTimeout(t2); if(r&&r.ok) return await r.json(); }catch(_){} }
       return null; }
     function _agoH(d){ try{ const t2=(typeof parseDate==='function')?parseDate(d).getTime():Date.parse(d); if(!t2) return null; return Math.max(0,Math.round((Date.now()-t2)/3600000)); }catch(_){ return null; } }
-    function _newsData(ctx,q){ try{ if(typeof globalData==='undefined'||!globalData||!globalData.length) return null;
+    function _newsData(ctx,q,sink){ try{ if(typeof globalData==='undefined'||!globalData||!globalData.length) return null;
       let items=globalData.slice();
       if(ctx&&ctx.box){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n=ctx.box[1][1]; items=items.filter(it=>{ const l=it.analysis&&it.analysis.loc; return l&&l[0]>=w&&l[0]<=e&&l[1]>=s2&&l[1]<=n; }); }
       else if(ctx&&ctx.lng!=null&&isFinite(ctx.lng)){ items=items.filter(it=>{ const l=it.analysis&&it.analysis.loc; if(!l) return false; return Math.hypot((l[0]-ctx.lng)*Math.cos(((ctx.lat||0))*Math.PI/180), l[1]-ctx.lat)<=6; }); }
@@ -21236,7 +21274,11 @@ window.addEventListener('DOMContentLoaded', () => {
         if(terms.length){ const kw=items.filter(it=>{ const t2=(it.title||'').toLowerCase(); return terms.some(w=>t2.indexOf(w)>=0); }); if(kw.length) items=kw; } }
       if(!items.length) return null;
       items=items.slice().sort((x,y)=>{ const a2=_agoH(x.pubDate), b2=_agoH(y.pubDate); return (a2==null?1e9:a2)-(b2==null?1e9:b2); });
-      return items.slice(0,12).map(it=>{ const a2=it.analysis||{}; const h=_agoH(it.pubDate); return '- '+String(it.title||'').slice(0,140)+' ['+(it.publisher||'?')+(a2.name?(' @ '+a2.name):'')+(h!=null?(' · '+h+'h ago'):'')+']'; }).join('\n')||null; }catch(_){ return null; } }
+      const top=items.slice(0,12);
+      /* (#R79) collect the REAL article {url,title,src} so Atlas can render ChatGPT-style source cards that
+         do NOT depend on the model echoing a SOURCES line (the loaded feed's links were being discarded). */
+      try{ if(sink) top.forEach(it=>{ const a2=it.analysis||{}; if(it.link) sink.push({url:it.link,title:it.title,src:(it.publisher||a2.name||'')}); }); }catch(_){}
+      return top.map(it=>{ const a2=it.analysis||{}; const h=_agoH(it.pubDate); return '- '+String(it.title||'').slice(0,140)+' ['+(it.publisher||'?')+(a2.name?(' @ '+a2.name):'')+(h!=null?(' · '+h+'h ago'):'')+']'; }).join('\n')||null; }catch(_){ return null; } }
     async function _quakeData(ctx){ const j=await _fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'); if(!j||!Array.isArray(j.features)||!j.features.length) return null;
       let fs=j.features;
       if(ctx&&ctx.box){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n=ctx.box[1][1]; fs=fs.filter(f=>{ const c=f.geometry&&f.geometry.coordinates; return c&&c[0]>=w&&c[0]<=e&&c[1]>=s2&&c[1]<=n; }); }
@@ -21275,12 +21317,13 @@ window.addEventListener('DOMContentLoaded', () => {
        news search across ~all outlets, last 72 h, CORS-open) + Wikipedia REST summaries. This is what fixes the
        "provided data is insufficient to describe current events around Taiwan" class of reply: the loaded RSS
        feed is no longer the only news source. ---- */
-    async function _gdeltNews(q2){ const query=String(q2||'').trim(); if(!query) return null;
+    async function _gdeltNews(q2,sink){ const query=String(q2||'').trim(); if(!query) return null;
       const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan=3d&sort=hybridrel');
       const arts=j&&j.articles; if(!Array.isArray(arts)||!arts.length) return null;
       const seen=new Set(); const rows2=[];
       for(const a2 of arts){ const t2=String(a2.title||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
         let when=''; try{ const s2=String(a2.seendate||''); if(s2.length>=8) when=s2.slice(0,4)+'-'+s2.slice(4,6)+'-'+s2.slice(6,8); }catch(_){}
+        try{ if(sink&&a2.url) sink.push({url:a2.url,title:t2,src:(a2.domain||'')}); }catch(_){}   /* (#R79) real URL → source card */
         rows2.push('- '+t2.slice(0,150)+' ['+(a2.domain||'?')+(when?(' · '+when):'')+']'); if(rows2.length>=12) break; }
       return rows2.length?rows2.join('\n'):null; }
     /* (#R64) second live-news engine: Google News RSS search (multi-language, topic-aware). GDELT alone failed
@@ -21290,7 +21333,7 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const p of PROX){ try{ const c=('AbortController' in window)?new AbortController():null; const t2=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },9000):null;
         const r=await fetch(p(url),c?{signal:c.signal}:undefined); if(t2) clearTimeout(t2); if(r&&r.ok){ const tx=await r.text(); if(tx&&tx.length>40) return tx; } }catch(_){} }
       return null; }
-    async function _gnewsNews(q2){ const query=String(q2||'').trim(); if(!query) return null;
+    async function _gnewsNews(q2,sink){ const query=String(q2||'').trim(); if(!query) return null;
       const LOCS={jp:['ja','JP','JP:ja'],de:['de','DE','DE:de'],ru:['ru','RU','RU:ru'],es:['es','ES','ES:es']};
       const locs=[LOCS[currentLang]||['en','US','US:en']]; if(currentLang!=='en'&&LOCS[currentLang]) locs.push(['en','US','US:en']);
       for(const loc of locs){ try{
@@ -21301,6 +21344,7 @@ window.addEventListener('DOMContentLoaded', () => {
         for(const it of items){ const t2=(it.querySelector('title')&&it.querySelector('title').textContent||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
           const src=(it.querySelector('source')&&it.querySelector('source').textContent)||''; let when='';
           try{ const d=it.querySelector('pubDate')&&it.querySelector('pubDate').textContent; if(d) when=new Date(d).toISOString().slice(0,10); }catch(_){}
+          try{ if(sink){ const lk=(it.querySelector('link')&&it.querySelector('link').textContent||'').trim(); if(lk) sink.push({url:lk,title:t2,src:(src||'')}); } }catch(_){}   /* (#R79) real URL → source card */
           rows2.push('- '+t2.slice(0,150)+' ['+(src||'?')+(when?(' · '+when):'')+']'); }
         if(rows2.length) return rows2.join('\n'); }catch(_){} }
       return null; }
@@ -21614,16 +21658,18 @@ window.addEventListener('DOMContentLoaded', () => {
           const nm3=(ll&&ll.name)||String(a.place||'').trim(); if(!nm3) return R(false, warn('⚠ '+esc(a.place||'')));
           if(ll&&isFinite(ll.lng)){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4),duration:900}); }catch(_){} try{ _setLast(ll); }catch(_){} }
           const today=new Date().toISOString().slice(0,10); const langB=_langLine();
-          let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
-          try{ const g2=await _gdeltNews('"'+nm3+'"'); if(g2) hl2+='\n\nLive web news search results (last 72 h) — use for "Recent developments":\n'+g2; }catch(_){}
-          try{ const g3=await _gnewsNews(nm3); if(g3) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+g3; }catch(_){}
+          const srcSink=[];   /* (#R79) collect real article URLs → ChatGPT-style source cards under the brief */
+          let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3,srcSink); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
+          try{ const g2=await _gdeltNews('"'+nm3+'"',srcSink); if(g2) hl2+='\n\nLive web news search results (last 72 h) — use for "Recent developments":\n'+g2; }catch(_){}
+          try{ const g3=await _gnewsNews(nm3,srcSink); if(g3) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+g3; }catch(_){}
           const sysB='You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. You have a live web_search tool — USE it for the "Recent developments" section when the supplied headlines are thin or stale; never claim there is no recent news without having searched. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
           let txtB=''; try{ txtB=await askAI(pB,sysB,null,{web:true}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
              "AI briefってワードをわざわざAtlasで出すな"). */
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+note(L('AI-generated — verify important facts with primary sources.','AI生成 — 重要な事実は一次情報で確認してください。','KI-generiert — wichtige Fakten mit Primärquellen prüfen.','Сгенерировано ИИ — проверяйте важные факты.','Generado por IA — verifica los datos importantes.'))); }
+          let srcCardsB=''; try{ srcCardsB=linkCards(srcSink); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards */
+          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+srcCardsB+note(L('AI-generated — verify important facts with primary sources.','AI生成 — 重要な事実は一次情報で確認してください。','KI-generiert — wichtige Fakten mit Primärquellen prüfen.','Сгенерировано ИИ — проверяйте важные факты.','Generado por IA — verifica los datos importantes.'))); }
         case 'askHere': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapAIResearch&&window.IntMapAIResearch.askHere){ window.IntMapAIResearch.askHere({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('✓ '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'rank': { await ensureData(); const n=clampN(a.n); const list=rank(a.metric,a.order==='bottom'?'bottom':'top',n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+(METRICS[a.metric]?lx(METRICS[a.metric].label):esc(a.metric||'')); return R(!!(list&&list.length), listHtml(t,list,a.metric)); }
         case 'ratio': { await ensureData(); const n=clampN(a.n); const list=ratio(a.metricA,a.metricB,a.order==='bottom'?'bottom':'top',n); const t=(METRICS[a.metricA]?lx(METRICS[a.metricA].label):a.metricA)+' / '+(METRICS[a.metricB]?lx(METRICS[a.metricB].label):a.metricB); return list?R(true, listHtml(t,list.map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')):R(false, warn('⚠ '+esc(a.metricA||''))); }
@@ -21975,9 +22021,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const en3=String(s3.nameEn||''), jp3=String(s3.nameJp||'');
             if((en3.length>3&&q.toLowerCase().indexOf(en3.toLowerCase())>=0)||(jp3.length>1&&q.indexOf(jp3)>=0)){ codes.push(cd); if(codes.length>=3) break; } } }catch(_){} }
           /* gather — defaults: news + quakes + stats(+weather when a place anchors it); air/marine/elevation on request. */
-          const got={}, missing=[];
+          const got={}, missing=[], srcSink=[];   /* (#R79) srcSink collects real article {url,title,src} for ChatGPT-style source cards */
           if(wantD('news')!==false){ if(typeof globalData!=='undefined'&&(!globalData||!globalData.length)){ try{ if(typeof fetchData==='function') await fetchData(); }catch(_){} }
-            got.news=_newsData(ctx,q); if(!got.news) missing.push(L('loaded news','読み込み済みニュース','geladene News','загруженные новости','noticias cargadas')); }
+            got.news=_newsData(ctx,q,srcSink); if(!got.news) missing.push(L('loaded news','読み込み済みニュース','geladene News','загруженные новости','noticias cargadas')); }
           const jobs=[];
           /* (#R62) LIVE WEB SEARCH is now a first-class dataset (default ON) — the loaded RSS feed alone produced
              honest-but-useless "insufficient data" answers (the Taiwan report). GDELT covers current events across
@@ -21988,9 +22034,9 @@ window.addEventListener('DOMContentLoaded', () => {
             let topicEn=topic; try{ const cd0=codes[0]||(pt?codeAtPoint(pt.lng,pt.lat):null); if(cd0&&countryStats[cd0]&&countryStats[cd0].nameEn) topicEn=countryStats[cd0].nameEn; }catch(_){}
             let gq=topicEn?('"'+topicEn.replace(/"/g,'')+'"'):'';
             if(!gq){ try{ gq=q.split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>3).slice(0,4).join(' '); }catch(_){ gq=q.slice(0,60); } }
-            jobs.push((async()=>{ let v=null; if(gq){ v=await _gdeltNews(gq); if(!v&&gq.indexOf('"')>=0) v=await _gdeltNews(gq.replace(/"/g,'')); }
+            jobs.push((async()=>{ let v=null; if(gq){ v=await _gdeltNews(gq,srcSink); if(!v&&gq.indexOf('"')>=0) v=await _gdeltNews(gq.replace(/"/g,''),srcSink); }
               if(v) got.web=v;
-              let v2=null; try{ v2=await _gnewsNews(topic||topicEn||q.slice(0,60)); }catch(_){}
+              let v2=null; try{ v2=await _gnewsNews(topic||topicEn||q.slice(0,60),srcSink); }catch(_){}
               if(v2) got.web2=v2;
               if(!v&&!v2) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')); })());
             if(topic) jobs.push(_wikiSummary(topic).then(v=>{ if(v) got.wiki=v; })); }
@@ -22033,7 +22079,22 @@ window.addEventListener('DOMContentLoaded', () => {
           let srcUrls=[]; try{ txt=String(txt).replace(/\n?\s*SOURCES?\s*[:：]\s*([^\n]+)\s*$/i,(m,g)=>{ srcUrls=g.split(/[|\s]+/).filter(u=>/^https?:\/\//i.test(u)).slice(0,4); return ''; }); }catch(_){}
           let html='<div style="font-weight:600;margin:2px 0 5px;">🧭 '+L('Integrated analysis','統合分析','Integrierte Analyse','Комплексный анализ','Análisis integrado')+'</div>';
           html+='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(String(txt).trim())+'</div>';
-          if(srcUrls.length) html+=linkCards(srcUrls.map(u=>({url:u})));
+          /* (#R79) SOLID ChatGPT-style source cards — render the REAL articles we actually fed the model
+             (srcSink: loaded news + GDELT + Google News, each with its true URL), ordered so any the model
+             explicitly cited in its SOURCES line come first, then the rest of the gathered set, then any extra
+             URL the model's own web_search surfaced. No longer a facade that only appears if the model echoes
+             a SOURCES line — the links are always there when Atlas actually used articles. */
+          try{
+            const _key=u=>String(u||'').replace(/[#?].*$/,'').replace(/\/$/,'');
+            const citedSet=new Set(srcUrls.map(_key));
+            const sinkClean=srcSink.filter(s=>s&&s.url&&/^https?:\/\//i.test(s.url));
+            const sinkKeys=new Set(sinkClean.map(s=>_key(s.url)));
+            const cited=sinkClean.filter(s=>citedSet.has(_key(s.url)));
+            const rest=sinkClean.filter(s=>!citedSet.has(_key(s.url)));
+            const extraAI=srcUrls.filter(u=>!sinkKeys.has(_key(u))).map(u=>({url:u}));
+            const cardsHtml=linkCards(cited.concat(extraAI).concat(rest));
+            if(cardsHtml) html+='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+cardsHtml;
+          }catch(_){ if(srcUrls.length) html+=linkCards(srcUrls.map(u=>({url:u}))); }
           const usedAll=usedNames.concat([L('AI live web search','AIライブWeb検索','KI-Live-Websuche','живой веб-поиск ИИ','búsqueda web en vivo (IA)')]);   /* (#R69) the provider-side web_search tool is enabled for every analysis */
           html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+(missing.length?(' · '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponible')+': '+missing.join(', ')):'')+'</div>';
           return R(true, html); }
@@ -22372,6 +22433,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-ctl-btn{align-self:flex-start;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:6px 12px;font-size:11.5px;font-weight:600;cursor:pointer;}'
         +'#atlas-panel .atl-ctl-btn:hover{border-color:var(--primary-color);color:var(--primary-color);}'
         /* (#R74) ChatGPT-style source link cards */
+        +'#atlas-panel .atl-src-h{font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);margin:9px 0 1px;}'   /* (#R79) ChatGPT-style Sources label above the cards */
         +'#atlas-panel .atl-lc-row{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 3px;}'
         +'#atlas-panel .atl-lc{display:flex;align-items:center;gap:7px;max-width:100%;min-width:0;padding:5px 10px 5px 6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:11px;background:var(--input-bg);text-decoration:none;transition:border-color .15s ease,background .15s ease;}'
         +'#atlas-panel .atl-lc:hover{border-color:var(--primary-color);}'
