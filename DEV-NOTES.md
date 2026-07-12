@@ -3899,3 +3899,24 @@ ATLAS-VISION.md の実装対応表「残り」列のうち、当面最優先5つ
 - **実測検証（ヘッドレスでも同期状態変化は観測可）**: ①起動OK・`IntMapOS` 生成・8コマンド登録・`ready=true`・`state()`非空・catalog 4区分 ②UIパス: `exec('view.base.sat')`→btn-view-sat=active/map=非active（逆も）③**実ボタンclick**→onclick→exec が**1回だけ**ログ（`view.base.sat/ui`、二重実行なし）④**NLパス**: `IntMapConsole.dispatch({type:'base',mode:'map'})`→`view.base.map/atlas` 1件・btn-view-map=active（clickId模倣ではなくコマンド直実行）⑤projection/tab も NL→カーネル（`view.proj.flat/atlas`・`tab.community/atlas`）⑥カーネル経由で theme・layer(earthquakes) 操作OK ⑦統合ログに ui/atlas/api の混在を記録 ⑧コンソールエラー0。
 - **互換性**: 既存の `getElementById('btn-...').click()`（キーボードショートカット #3643・共有復元 #20171 等）は新onclick→exec→コマンドを発火＝同一効果を保持（click testで確認）。newsfilter等の周辺ハンドラは不変。
 - 新規外部エンドポイントなし・法務/出典変更なし。次パス: 残りコントロール群（ツール/設定/レイヤーの各トグル）を順次カーネルコマンド化し、UIバインディングをexec経由へ移行（第六段階の完成へ）。
+
+---
+
+## R83 — batch: workspace auto-tiling, Atlas routing/streetview/sims, compare-paint, previews, Countries(info) & Ask-AI absorption
+
+12件の要望を追加的に実装（既存ロジック不破壊・全機能維持）。検証は http://localhost の実ブラウザで parse/console/state を確認（マップWebGLはヘッドレスで凍結＝スクショ不可のため、物理・幾何・正規表現・モジュール存在を独立evalで実証）。
+
+- **Countries(info) 自動ONの廃止（#1）**: `setMode('stats')` の `_setCountriesInfo(true)` と離脱時の自動OFF、ワークスペースCountries窓の `_wsCountryInfo(true)` を撤去。cb-countries は完全に手動トグルへ。
+- **デフォルトで全窓ONをやめる（#2）**: DEFS の countries・atlas に `defHidden:true`。既定表示は **Map + Layers のみ**。News/Info/Community/Countries/Atlas はWindowメニューから。storage KEY を `intmap_ws2`→`intmap_ws3` に更新（旧4窓レイアウトを持ち越さない）。
+- **ワークスペース自動タイル＋ジャンクション（#3）**: `computeTiles()`（1=全面/2=左右62:38/3+=Mainが左・残りは右列に積む）＋`retile()` で**可視窓を隙間なく自動配置**。窓の開閉・最大最小化・ブラウザリサイズ・scanで自動再タイル。`buildJunctions()` が**3枚以上が接するT/十字点**にドラッグハンドルを生成し、`addJunction()` が縦仕切り(jx)と横仕切り(jy)を**同時に移動**＝接する全ての境界を一括ドラッグ（「三つ同時に境界を動かせる」）。手動ドラッグ/リサイズ後もジャンクション再構築。検証: 2窓[0,34,893,836]+[893,34,547,836]、3窓は完全gapless、ジャンクション1点[835,452]を正しく検出。
+- **Ask AI about here を Atlas に吸収（#9→#4）**: 独立パネル(IntMapAIResearch)呼び出しを撤去。`IntMapConsole.askHere(ll)` を新設＝Atlasを開き `_herePoint` に正確な座標をピン留め、`buildPrompt` が `[PINNED POINT]` を注入し会話全体で「ここ/this spot」がこの座標に解決。右クリックメニュー「ここをAtlasに聞く」＋dispatch `askHere`（質問付きなら analyze で即答）。
+- **Compareの色を地図にも（#5）**: `IntMapStatsCompare.paintOnMap()`＝countryGeoから選択国のみのカテゴリfill（PAL[i]でチップ/棒と厳密一致）を独自ソース `imcmp-src` に描画。open()・chipRow()で同期、`_clearCompare` で消去。Atlas/styledata再適用対応。
+- **Atlas 経路案内（Google Map的, #6）**: `IntMapRouting`＝公開OSRM（車=router.project-osrm.org / 徒歩・自転車=routing.openstreetmap.de）でターンバイターン。dispatch `directions`（`route`は海路のまま）＋日英localPlan。距離/所要時間/手順を返信。検証: 東京→大阪 494km/6.3h（CORS直, OK）。
+- **ストリートビュー（#7）**: `IntMapStreetView`＝APIキー不要の maps.google.com `output=svembed` を埋め込む可動パネル＋Googleマップへジャンプ。右クリック「ここのストリートビュー」＋dispatch `streetview`＋localPlan。
+- **Atlas: 海抜以下ハイライト＋WWI勢力図（#5→#8）**: `elevationBelow`＝Open-MeteoのCopernicus DEMをグリッド標本化し閾値以下/以上のセルを深度段階fill（「カスピ海周辺の海抜0m以下」）。`historicalMap`＝curatedのWWI1916年3月勢力図（中央同盟/連合国/中立の現代ISO3マッピング＋注記）＋他年代はAIでfaction生成。日英localPlan＋SYS。
+- **弾道ミサイルSim刷新（#12→#11）**: 旧=放物線カメラのみ。新=**最小エネルギーのケプラー軌道**を解き（Bate/Mueller/White）、真のアポジー高度・ブーストアウト/再突入速度・飛翔時間を算出、Kepler時間で弾頭を移動＋縮尺付き高度断面SVG＋任意の弾頭効果環（20/5/1psi・熱線）。検証: 10000km→アポジー1319km・7.2km/s・32分（実ICBM相当）。dispatch `missile`＋`fly`のicbm系を委譲。
+- **放射性物質拡散Sim（#10→#9）**: `IntMapRadiation`＝ラグランジュ粒子モデル。Open-Meteo 6×6グリッド×72hの**時空間の風**で移流＋気温由来の安定度でスケールした乱流拡散＋降水による湿性沈着＋乾性沈着＋半減期。粒子＋濃度ヒートマップをアニメ。dispatch `radiation`＋日英localPlan。検証: 福島周辺6地点×72h取得OK。
+- **フライトシミュレーター（#11→#10）**: `IntMapFlightSim`＝実際の地図上を飛べるアーケード飛行モデル（協調旋回・ピッチ/スロットル・失速・重力・地形衝突、カメラ=コックピット、HUD=対気速度/高度/方位/人工水平儀）。キー W/S・↑↓・←→・A/D・Esc。dispatch `flightSim`＋日英localPlan。start/stop/HUD検証OK。
+- **レイヤープレビュー修正（#6→#12）**: **setView をアスペクト補正**＝任意のクロップ枠をキャンバスの真の2:1 web-mercatorに拡張してから投影（EU members・Volcanoesの横伸び解消。検証: 補正後アスペクト1.983=目標）。ECMWF雲=実MODISトゥルーカラータイル、Live aircraft=実空港間の大圏ルート網に刷新。地震/タイムゾーンは既に実データ・正比。※ヘッドレスではWebGLが凍結し新規スクショ撮影は不可（sea-level/historical-borders等の非タイル系は正比の実描画のまま。実スクショ差し込みは preview_*.png 方式で後日可能）。
+- **出典/プライバシー更新**: DATA_SOURCESに OSRM・Google Street View を追加、Open-Meteo記述に拡散/標高グリッドを追記。プライバシー§4（日英）に道路経路(OSRM=起終点/経由座標)・埋め込みSV(Google=座標)・拡散/標高のグリッド座標送信を明記。
+- 新規 window.* : IntMapRouting / IntMapStreetView / IntMapRadiation / IntMapFlightSim。Atlas新action: missile, elevationBelow, historicalMap, radiation, flightSim, directions, streetview（＋SYS/ localPlan/ clear/ clearAll 連携）。boot後 console error 0・全モジュール存在・129レイヤ行を確認。
