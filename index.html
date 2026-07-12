@@ -20887,14 +20887,16 @@ window.addEventListener('DOMContentLoaded', () => {
       return {ok:true,transit:true,railEstimate:true,duration:Math.round(railS+walkS+transferS),transfers:transfers,legs:legs,railKm:rr.railKm,mode:'transit',
         lines:(rr.segs||[]).map(sg=>currentLang==='jp'?(sg.name||sg.en):(sg.en||sg.name)).filter(Boolean)};
     }
-    /* (#R86) transit alternatives — every MOTIS itinerary gets a DISTINCT route colour (like the Google/Apple-Maps
-       screenshot). ALL alternatives are drawn at once: the selected one bright & on top, the others dimmed & thin;
-       tapping one in the reply selects it. Per-leg MODE colours stay in the itinerary detail list. */
+    /* (#R86) transit alternatives — ALL alternatives are drawn at once (like the Google/Apple-Maps screenshot): the
+       selected one bright & on top, the others dimmed & thin in their own DISTINCT palette colour; tapping one in the
+       reply selects it. (#R86d) The SELECTED route is coloured PER LEG BY MODE on the map (walk grey-dotted, subway
+       orange, rail blue, bus purple, tram green, ferry teal) — matching the itinerary detail list — so you can see at
+       a glance where you walk vs ride and on what. Unselected alternatives keep their single palette colour. */
     const ALT_PAL=['#1a73e8','#e8710a','#12a150','#a142f4','#e52592'];
     let _tAlts=[], _ends=null;
     function _drawAlts(sel){ if(!_tAlts.length) return; sel=Math.max(0,Math.min(_tAlts.length-1,sel|0));
       const feats=[]; const order=[]; for(let i=0;i<_tAlts.length;i++) if(i!==sel) order.push(i); order.push(sel);   /* selected last = on top within each layer */
-      order.forEach(i=>{ const a=_tAlts[i], on=(i===sel); (a.lines||[]).forEach(ln=>{ feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.coords},properties:{col:a.color,walk:ln.walk,w:on?(ln.walk?4.5:6):(ln.walk?3:3.5),op:on?1:0.4}}); }); });
+      order.forEach(i=>{ const a=_tAlts[i], on=(i===sel); (a.lines||[]).forEach(ln=>{ const col=on?(ln.col||a.color):a.color; feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.coords},properties:{col:col,walk:ln.walk,w:on?(ln.walk?4.5:6):(ln.walk?3:3.5),op:on?1:0.4}}); }); });   /* (#R86d) selected route → each leg its MODE colour (walk grey-dotted, subway orange, rail blue, bus purple, tram green, ferry teal); other alternatives → their distinct palette colour, dimmed */
       const sa=_tAlts[sel]; (sa.stops||[]).forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:s},properties:{k:'stop',col:sa.color}}));
       if(_ends){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:_ends[0]},properties:{color:'#34a853'}}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:_ends[1]},properties:{color:'#ea4335'}}); }
       try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
@@ -20915,7 +20917,7 @@ window.addEventListener('DOMContentLoaded', () => {
         (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
           let coords=null; try{ if(l.legGeometry&&l.legGeometry.points) coords=_decodePoly(l.legGeometry.points,l.legGeometry.precision||7); }catch(_){}
           if((!coords||coords.length<2)&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to); if(isFinite(a.lng)&&isFinite(b.lng)) coords=[[a.lng,a.lat],[b.lng,b.lat]]; }
-          if(coords&&coords.length>1) lines.push({coords:coords,walk:walk});
+          if(coords&&coords.length>1) lines.push({coords:coords,walk:walk,col:col});   /* (#R86d) keep the per-leg MODE colour on the geometry so the map can colour each leg by type (walk/subway/rail/bus/…) — not just one colour per alternative */
           if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) stops.push([a.lng,a.lat]); }
             if(l.to&&l.to.lat!=null){ const b=P(l.to); if(isFinite(b.lng)) stops.push([b.lng,b.lat]); } }
           legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col}); });
