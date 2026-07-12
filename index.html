@@ -20879,16 +20879,22 @@ window.addEventListener('DOMContentLoaded', () => {
        INSTANTLY without waiting for map.isStyleLoaded() (the old GeoJSON-layer version silently didn't paint when
        the style wasn't ready → "地図上で分からない"), and rotates with the map so its cone always points where the
        panorama faces. */
-    let _hereLL=null, _hereHdg=0, _hereMarker=null;
-    function _hereEl(){ const d=document.createElement('div'); d.style.cssText='width:64px;height:64px;pointer-events:none;';
+    let _hereLL=null, _hereHdg=0, _hereMarker=null, _svDragging=false;
+    function _hereEl(){ const d=document.createElement('div'); d.style.cssText='width:64px;height:64px;pointer-events:auto;cursor:grab;';
+      d.title=LL('Street View viewpoint — drag me to move it','ストリートビューの視点 — ドラッグで移動','Street-View-Standpunkt — ziehen','Точка обзора — тяните','Punto de vista — arrástralo');
       d.innerHTML='<svg width="64" height="64" viewBox="0 0 64 64" style="overflow:visible;display:block;">'
         +'<path d="M32 32 L12 -2 A 38 38 0 0 1 52 -2 Z" fill="rgba(57,179,255,0.34)" stroke="rgba(57,179,255,0.6)" stroke-width="1.2"/>'
         +'<circle cx="32" cy="32" r="15" fill="rgba(57,179,255,0.16)"/>'
         +'<circle cx="32" cy="32" r="7.5" fill="#39b3ff" stroke="#fff" stroke-width="3"/></svg>';
       return d; }
+    /* (#R85d) the marker IS the Street-View viewpoint and is DRAGGABLE — drop it anywhere and the panorama reloads
+       there, so the map always shows exactly where SV is looking (the keyless Google embed is cross-origin, so we
+       drive the position from the map instead of reading it back). */
     function _setHere(lng,lat,hdg){ _hereLL={lng:+lng,lat:+lat}; if(hdg!=null&&isFinite(+hdg)) _hereHdg=((+hdg%360)+360)%360;
-      try{ if(!_hereMarker){ _hereMarker=new maplibregl.Marker({element:_hereEl(),rotationAlignment:'map',pitchAlignment:'map'}); }
-        _hereMarker.setLngLat([+lng,+lat]).setRotation(_hereHdg);
+      try{ if(!_hereMarker){ _hereMarker=new maplibregl.Marker({element:_hereEl(),rotationAlignment:'map',pitchAlignment:'map',draggable:true});
+          _hereMarker.on('dragstart',()=>{ _svDragging=true; try{ _hereMarker.getElement().style.cursor='grabbing'; }catch(_){} });
+          _hereMarker.on('dragend',()=>{ try{ const p=_hereMarker.getLngLat(); _hereLL={lng:p.lng,lat:p.lat}; _hereMarker.getElement().style.cursor='grab'; }catch(_){} _svDragging=false; _reloadEmbed(); }); }
+        if(!_svDragging) _hereMarker.setLngLat([+lng,+lat]); _hereMarker.setRotation(_hereHdg);
         if(!_hereMarker._map){ _hereMarker.addTo(map); } }catch(_){}
       try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
       _updHeadingLabel(); }
@@ -20962,10 +20968,10 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R85b) built-in gazetteer of major nuclear sites so "福島第一原発 / Fukushima Daiichi / Chernobyl / Zaporizhzhia"
        ALWAYS resolve even when the online geocoder truncates/misses the name ("Where is the release source?"). */
     const SITES=[
-      {re:/fukushima\s*dai\s*ichi|福島第一|福岛第一|fukushima\s*i\b|fukushima\s*(nuclear|daiichi)|福島原発|福岛核电|第一核电站/i, ll:[141.0329,37.4211], n:'Fukushima Daiichi'},
-      {re:/fukushima\s*daini|福島第二|福岛第二|fukushima\s*ii\b/i, ll:[141.0210,37.3160], n:'Fukushima Daini'},
-      {re:/chernobyl|chornobyl|チェルノブイリ|チョルノービリ|切尔诺贝利|車諾比|чорнобиль|чернобыль/i, ll:[30.0997,51.3892], n:'Chernobyl'},
-      {re:/zaporizh|zaporozh|запор|ザポリージャ|ザポロジエ|扎波罗热/i, ll:[34.5857,47.5122], n:'Zaporizhzhia NPP'},
+      {re:/fukushima\s*dai\s*ichi|福島第一|fukushima\s*i\b|fukushima\s*(nuclear|daiichi)|福島原発/i, ll:[141.0329,37.4211], n:'Fukushima Daiichi'},
+      {re:/fukushima\s*daini|福島第二|fukushima\s*ii\b/i, ll:[141.0210,37.3160], n:'Fukushima Daini'},
+      {re:/chernobyl|chornobyl|チェルノブイリ|チョルノービリ|чорнобиль|чернобыль/i, ll:[30.0997,51.3892], n:'Chernobyl'},
+      {re:/zaporizh|zaporozh|запор|ザポリージャ|ザポロジエ/i, ll:[34.5857,47.5122], n:'Zaporizhzhia NPP'},
       {re:/three\s*mile|スリーマイル/i, ll:[-76.7247,40.1533], n:'Three Mile Island'},
       {re:/kashiwazaki|柏崎刈羽|柏崎/i, ll:[138.5959,37.4290], n:'Kashiwazaki-Kariwa'},
       {re:/sellafield|windscale|セラフィールド/i, ll:[-3.4986,54.4200], n:'Sellafield'},
@@ -21027,21 +21033,28 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R85) FULL Lagrangian run computed once (fast, headless) → the FINAL DEPOSITION field (Bq/m² per cell) that
        both the settled-ground map layer AND the dose report read from. q0 = per-particle activity so a real Bq
        source term maps to a real deposition density. */
-    function computeDeposition(F,src,opts){ const maxP=opts.pN||1500, hours=opts.hours, emitHours=Math.min(hours,opts.emitHours), halfLifeH=opts.halfLifeHours, q0=opts.bq/maxP;
-      const steps=Math.max(60,Math.round(hours*2)), dH=hours/steps, depRes=opts.depRes||0.035, base=opts.startHour||0;
+    function computeDeposition(F,src,opts){ const maxP=opts.pN||2600, hours=opts.hours, emitHours=Math.min(hours,opts.emitHours), halfLifeH=opts.halfLifeHours;
+      /* (#R85d) higher-quality model: only a DEPOSITABLE FRACTION of the source term is ground-depositable particulate
+         (the rest is noble gas / stays aloft), so near-source deposition isn't an unrealistic solid blob; a modest
+         PLUME RISE + gravitational settling velocity per particle; a size-dependent dry-deposition velocity. */
+      const DEP_FRAC=0.55, q0=opts.bq*DEP_FRAC/maxP;
+      const steps=Math.max(72,Math.round(hours*3)), dH=hours/steps, depRes=opts.depRes||0.03, base=opts.startHour||0;
       const key=(lng,lat)=>Math.round(lng/depRes)+'_'+Math.round(lat/depRes);
       const parts=[], dep=new Map(); let emitted=0; const perStep=Math.max(1,Math.ceil(maxP/Math.max(1,emitHours/dH)));
       for(let st=0;st<=steps;st++){ const simH=st*dH;
-        if(simH<=emitHours&&emitted<maxP){ const want=Math.min(maxP-emitted,perStep); for(let k=0;k<want;k++){ parts.push({lng:src.lng+(Math.random()-0.5)*0.02,lat:src.lat+(Math.random()-0.5)*0.02,act:1,dead:false}); emitted++; } }
+        if(simH<=emitHours&&emitted<maxP){ const want=Math.min(maxP-emitted,perStep); for(let k=0;k<want;k++){ parts.push({lng:src.lng+(Math.random()-0.5)*0.012,lat:src.lat+(Math.random()-0.5)*0.012,z:200+Math.random()*600,vs:0.002+Math.random()*0.02,act:1,dead:false}); emitted++; } }
         for(const p of parts){ if(p.dead) continue; const s=sample(F,p.lng,p.lat,base+simH);
           const stab=Math.max(0.4,Math.min(2.2,0.6+(s.tp-5)/25)), K=380*stab, sig=Math.sqrt(2*K*dH*3600);
           const mLat=111000, mLon=111000*Math.cos(p.lat*Math.PI/180)||1;
           p.lng+=(s.u*dH*3600+grnd()*sig)/mLon; p.lat+=(s.v*dH*3600+grnd()*sig)/mLat;
+          p.z=Math.max(0,p.z - p.vs*dH*3600 + grnd()*Math.sqrt(2*20*dH*3600));   /* settle + vertical turbulence */
           p.act*=Math.pow(0.5,dH/halfLifeH);
-          let dv=false; if(s.pr>0.05&&Math.random()<Math.min(0.96,s.pr*0.16*dH)) dv=true; else if(Math.random()<0.011*dH) dv=true;
+          let dv=false; if(s.pr>0.05&&Math.random()<Math.min(0.96,s.pr*0.18*dH)) dv=true;    /* wet scavenging */
+          else if(p.z<=40) dv=true;                                                          /* touched ground */
+          else if(Math.random()<0.006*dH*(p.z<300?2:1)) dv=true;                             /* dry deposition (faster low) */
           if(dv){ p.dead=true; const kk=key(p.lng,p.lat); dep.set(kk,(dep.get(kk)||0)+p.act*q0); } }
       }
-      for(const p of parts){ if(p.dead) continue; const kk=key(p.lng,p.lat); dep.set(kk,(dep.get(kk)||0)+p.act*q0*0.6); }   /* settle the remainder */
+      for(const p of parts){ if(p.dead) continue; const kk=key(p.lng,p.lat); dep.set(kk,(dep.get(kk)||0)+p.act*q0*0.5); }   /* settle the remainder */
       return {dep,depRes}; }
     function depFeatures(res,iso){ const {dep,depRes}=res; const feats=[]; const zoneKm2=[0,0,0,0,0]; let peak=0,peakLL=null,totBq=0;
       dep.forEach((bq,kk)=>{ const [gx,gy]=kk.split('_').map(Number); const lng=gx*depRes, lat=gy*depRes;
@@ -21085,7 +21098,7 @@ window.addEventListener('DOMContentLoaded', () => {
          the layers when the style is ready, retrying up to ~14 s + on the next idle. The report never depends on the
          layer being paintable at that instant. */
       const F=await fetchField(src.lng,src.lat,{date:opts.date,hours}); if(!F) return {ok:false,reason:'wind'};
-      const P={bq,hours,emitHours,halfLifeHours,startHour:F.startHour,depRes:0.035,pN:1500};
+      const P={bq,hours,emitHours,halfLifeHours,startHour:F.startHour,depRes:0.03,pN:2600};
       const dr=computeDeposition(F,src,P); const dz=depFeatures(dr,iso);
       const s0=sample(F,src.lng,src.lat,F.startHour); const spd=Math.hypot(s0.u,s0.v), toward=(Math.atan2(s0.u,s0.v)*180/Math.PI+360)%360;
       const estReach=Math.round(Math.min(spd*hours*3600/1000,900)), wet=estimateWet(F);
@@ -21206,7 +21219,8 @@ window.addEventListener('DOMContentLoaded', () => {
         ladder+='<line'+dv+' x1="340" y1="'+y+'" x2="440" y2="'+y+'"/><line'+dv+' x1="560" y1="'+y+'" x2="660" y2="'+y+'"/>'
           +'<text x="326" y="'+(y+6)+'" text-anchor="end">'+Math.abs(p)+'</text><text x="674" y="'+(y+6)+'">'+Math.abs(p)+'</text>'; });
       hud.innerHTML='<div class="fs-sky"></div>'
-        +'<svg class="fs-ladder" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g class="fs-ladder-g">'+ladder+'</g></svg>'
+        +'<svg class="fs-ladder" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g class="fs-ladder-g">'+ladder+'</g>'
+          +'<g><polygon points="500,318 489,300 511,300" fill="rgba(99,255,155,0.6)"/><polygon class="fs-rollptr" points="500,306 489,286 511,286" fill="#ffd60a" stroke="#0a1a2e" stroke-width="1"/></g></svg>'
         +'<svg class="fs-bore" width="164" height="46" viewBox="0 0 164 46"><g stroke="#ffd60a" stroke-width="3.2" fill="none" stroke-linecap="round"><path d="M18 22 L62 22 L72 34"/><path d="M146 22 L102 22 L92 34"/></g><circle cx="82" cy="22" r="2.8" fill="#ffd60a"/></svg>'
         +'<div class="fs-vign"></div>'
         +'<div class="fs-htape"><div class="fs-htape-strip">'+hlab+'</div><div class="fs-htape-ptr"></div></div><div class="fs-hdg-box"><span class="fs-hdg">---</span></div>'
@@ -21290,7 +21304,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const rollDeg=st.phi*R2D, pitchDeg=st.theta*R2D;
         const hor=q('.fs-hor'); if(hor) hor.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 60 60) translate(0 '+(pitchDeg*1.4).toFixed(1)+')');
         const strip=q('.fs-htape-strip'), tape=q('.fs-htape'); if(strip&&tape){ const tw=tape.clientWidth||300; strip.style.transform='translateX('+(tw/2-(hdg+180)*2.4)+'px)'; }
-        const lg=q('.fs-ladder-g'); if(lg) lg.setAttribute('transform','rotate('+(-rollDeg).toFixed(2)+' 500 500) translate(0 '+(pitchDeg*8).toFixed(1)+')');
+        /* (#R85d) level-horizon camera → the pitch ladder only translates with pitch; bank is read on the ADI + roll pointer */
+        const lg=q('.fs-ladder-g'); if(lg) lg.setAttribute('transform','translate(0 '+(pitchDeg*8).toFixed(1)+')');
+        const rp=q('.fs-rollptr'); if(rp) rp.setAttribute('transform','rotate('+rollDeg.toFixed(1)+' 500 500)');
         const sky=q('.fs-sky'); if(sky) sky.style.opacity=Math.min(0.85,Math.max(0,(st.alt-3000)/11000)).toFixed(2);
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
@@ -21307,14 +21323,14 @@ window.addEventListener('DOMContentLoaded', () => {
       /* ---- controls: throttle, elevator (pitch attitude), aileron (roll), rudder (yaw) ---- */
       if(keys['w']) st.thr=Math.min(1,st.thr+0.5*dt); if(keys['s']||keys['control']) st.thr=Math.max(0,st.thr-0.5*dt);
       const ab=!!keys['shift']&&st.thr>0.9;
-      const authority=Math.min(1.4,Math.max(0.15,st.V/85));   /* control effectiveness scales with airspeed */
+      const authority=Math.min(1.15,Math.max(0.15,st.V/90));   /* control effectiveness scales with airspeed */
       const preAoa=st.theta-st.gamma;   /* limit the pull so you can't yank the nose past the stall AoA (~22°) */
-      if(keys['arrowup']){ const room=Math.max(0,Math.min(1,(AC.aStall+0.08-preAoa)/0.15)); st.theta+=0.95*authority*room*dt; }
-      else if(keys['arrowdown']) st.theta-=0.95*authority*dt;
+      if(keys['arrowup']){ const room=Math.max(0,Math.min(1,(AC.aStall+0.08-preAoa)/0.15)); st.theta+=0.6*authority*room*dt; }
+      else if(keys['arrowdown']) st.theta-=0.6*authority*dt;
       if(preAoa>AC.aStall) st.theta-=Math.min(1.6,(preAoa-AC.aStall)*4)*dt;   /* stalled → nose-drop moment (recover by unloading) */
       st.theta=Math.max(-1.05,Math.min(1.05,st.theta));
-      if(keys['arrowleft']) st.phi-=2.3*authority*dt; else if(keys['arrowright']) st.phi+=2.3*authority*dt; else st.phi*=Math.pow(0.5,dt);   /* wings auto-level slowly */
-      st.phi=Math.max(-1.25,Math.min(1.25,st.phi));
+      if(keys['arrowleft']) st.phi-=1.35*authority*dt; else if(keys['arrowright']) st.phi+=1.35*authority*dt; else st.phi*=Math.pow(0.35,dt);   /* smoother roll + wings auto-level */
+      st.phi=Math.max(-1.15,Math.min(1.15,st.phi));
       let rud=0; if(keys['a']) rud=-1; if(keys['d']) rud=1;
       /* ---- aerodynamics ---- */
       const rho=AC.rho0*Math.exp(-st.alt/AC.Hs), V=Math.max(8,st.V), q=0.5*rho*V*V, CLmax=AC.CL0+AC.CLa*AC.aStall;
@@ -21344,14 +21360,15 @@ window.addEventListener('DOMContentLoaded', () => {
          heading toward the horizon (near-max pitch), banked with the wings. Centre a point ahead of the nose so the
          aircraft sits in the lower view like a cockpit. ---- */
       const hdgDeg=(st.psi*R2D+360)%360;
-      /* look FAR ahead + near-max pitch so the canopy view is dominated by the world in front, not a top-down map */
-      const aheadKm=Math.max(0.6,Math.min(11, agl*0.0016));
+      /* (#R85d) STABLE forward view ("視点がおかしい"): keep the horizon LEVEL (no camera roll — that was the
+         disorienting part; bank is shown on the HUD ladder + ADI instead) and look forward-and-down from a point
+         ahead of the nose. Pitch stays a steady ~70° so you always see the terrain ahead AND the horizon. */
+      const aheadKm=Math.max(0.5,Math.min(9, 0.4+agl*0.0011));
       const mLatK=110.574, mLonK=(111.320*Math.cos(st.lat*Math.PI/180))||1;
       const cLng=st.lng+(aheadKm*Math.sin(st.psi))/mLonK, cLat=st.lat+(aheadKm*Math.cos(st.psi))/mLatK;
-      const targetZoom=Math.max(9.0,Math.min(16, 15.2 - Math.log2(Math.max(40,agl)/40)*0.7));
-      camZoom=(camZoom==null)?targetZoom:(camZoom+(targetZoom-camZoom)*Math.min(1,3.5*dt));
-      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:Math.max(72,Math.min(85, 84 - st.theta*R2D*0.16)) };
-      cam.roll=Math.max(-48,Math.min(48, -st.phi*R2D*0.8));
+      const targetZoom=Math.max(9.2,Math.min(15.5, 15 - Math.log2(Math.max(45,agl)/45)*0.66));
+      camZoom=(camZoom==null)?targetZoom:(camZoom+(targetZoom-camZoom)*Math.min(1,3*dt));
+      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:Math.max(64,Math.min(80, 72 - st.theta*R2D*0.25)), roll:0 };
       try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} }
       updateHUD(agl,{stalling,overspeed,overG,landed,ab});
       raf=requestAnimationFrame(loop); }
@@ -21461,7 +21478,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R44) conversation MEMORY + last-referenced place — the user reported "文脈理解が壊滅的": Atlas was sending
        ONLY the current message to the model with no history and no map state, so follow-ups ("there", "turn it
        off", "more", "the same country over time") had nothing to resolve against. */
-    let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null;   /* (#R85) last missile / radiation → preset buttons re-run it */
+    let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
     /* (#R83) "Ask AI about here" is ABSORBED into Atlas ("独立させるな。Atlasに吸収しろ"): a right-click point (or
        the askHere action) pins an exact coordinate here, and buildPrompt injects it so EVERY question in the
        conversation resolves "here/this spot/この地点" to it — no separate research panel. Cleared on clearAll. */
@@ -22542,7 +22559,8 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(document.body.classList.contains('ws-mode')) lines.push('WORKSPACE MODE is on — the UI is free-floating windows (News / Countries / Information / Community / Map / Layers), a top menu bar (View/Tools/Window/Settings) and a fixed bottom ticker; hidden windows reopen from the Window menu; turn off via the "setting-wsmode-btn" button or IntMapWorkspace.close.'); }catch(_){}
         let tu=''; try{ tu=(window.imUnitTemp||localStorage.getItem('intmap_temp_unit')||''); }catch(_){}
         lines.push('UI language='+currentLang+', theme='+((typeof userTheme!=='undefined')?userTheme:'auto')+(tu?(', temp unit=°'+String(tu).toUpperCase()):'')+'.');
-        try{ const hf=_healthFlag(); if(hf) lines.push(hf); }catch(_){}   /* (#R80) vision §17 — surface any IntMap data-health problem so Atlas is honest about it proactively */
+        /* (#R85d) DO NOT volunteer self-diagnosis to the user ("自己診断ってやつがうざい。ユーザーに報告して何の意味がある") —
+           the health flag is no longer injected into every reply. It stays available on demand via the "diagnose" action. */
         return lines.join('\n'); }catch(_){ return ''; } }
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
@@ -23180,18 +23198,22 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'isolate': { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off'))); } const c=await resolveCountry(a.country||a.place); if(c){ if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} } let ok=false; try{ if(c.code&&window.IntMapIsolate&&window.IntMapIsolate.enter){ window.IntMapIsolate.enter(c.code); ok=true; } else if(c.ll&&window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(c.ll.lng,c.ll.lat,c.name); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(c.name||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.country||a.place||''))); }
         case 'los': case 'lineOfSight': { const ll=await geocode(a.place||a.from); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),8)}); }catch(_){} let ok=false; try{ if(window.IntMapLOS&&window.IntMapLOS.open){ window.IntMapLOS.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('📡 '+L('Line of sight','見通し線','Sichtlinie','Линия видимости','Línea de visión')+': '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||a.from||''))); }
         case 'route': { const A=await geocode(a.from); const B=await geocode(a.to); let any=false; try{ if(window.IntMapRoute&&window.IntMapRoute.open) window.IntMapRoute.open(); }catch(_){} try{ if(A&&window.IntMapRoute&&window.IntMapRoute.setStart){ window.IntMapRoute.setStart({lng:A.lng,lat:A.lat}); any=true; } }catch(_){} try{ if(B&&window.IntMapRoute&&window.IntMapRoute.setEnd){ window.IntMapRoute.setEnd({lng:B.lng,lat:B.lat}); any=true; } }catch(_){} if(A&&B){ try{ map.fitBounds([[Math.min(A.lng,B.lng),Math.min(A.lat,B.lat)],[Math.max(A.lng,B.lng),Math.max(A.lat,B.lat)]],{padding:80,duration:900}); }catch(_){} } return R(any, any?note('🚢 '+L('Sea route','海路','Seeroute','Морской путь','Ruta marítima')+': '+esc((A&&A.name)||a.from||'')+' → '+esc((B&&B.name)||a.to||'')):warn('⚠ '+L('Need start & destination','始点と終点が必要','Start & Ziel nötig','Нужны старт и финиш','Origen y destino'))); }
-        case 'directions': case 'roadRoute': case 'navigate': case 'drivingRoute': case 'walkingRoute': {
-          /* (#R84) rich Maps-style directions panel + a compact chat summary */
-          if(!a.from&&!a.to&&!a.place){ try{ window.IntMapRouting.openPanel&&window.IntMapRouting.openPanel(); }catch(_){} return R(true, note('🧭 '+L('Opened the directions panel — enter a start and destination','経路案内パネルを開きました — 出発地と目的地を入力してください','Routen-Panel geöffnet','Панель маршрута открыта','Panel de rutas abierto'))); }
+        case 'directions': case 'roadRoute': case 'navigate': case 'drivingRoute': case 'walkingRoute': case 'transitRoute': {
+          /* (#R85d) FULL Google/Apple-Maps-style routing UI INSIDE the Atlas message — NO popup ("よけいなポップアップを
+             増設するな。Atlas内のメッセージでUIやれ"). Mode switcher (car/transit/walk/cycle) re-routes in place. */
+          const _rmodes=(cur)=>{ const ms=[['driving','🚗'],['transit','🚆'],['walking','🚶'],['cycling','🚲']];
+            return '<div class="atl-route-modes">'+ms.map(m=>'<button class="atl-route-mode'+(m[0]===cur?' on':'')+'" data-rmode="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'; };
+          if(!a.from&&!a.to&&!a.place){ return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))); }
           const A=await geocode(a.from); const B=await geocode(a.to||a.place||a.destination);
-          if(!A||!B) return R(false, warn('⚠ '+L('Need an origin and a destination','出発地と目的地が必要です','Start & Ziel nötig','Нужны пункт отправления и назначения','Se necesitan origen y destino')));
-          let via=[]; if(Array.isArray(a.via)){ for(const v of a.via.slice(0,6)){ try{ const g=await geocode(String(v)); if(g) via.push({lng:g.lng,lat:g.lat}); }catch(_){} } }
-          const rawMode=String(a.mode||a.profile||(a.type==='walkingRoute'?'walking':'')).toLowerCase();
+          const rawMode=String(a.mode||a.profile||(a.type==='walkingRoute'?'walking':a.type==='transitRoute'?'transit':'')).toLowerCase();
           const isTr=/transit|train|rail|public|metro|subway|tram|bus|ferry|電車|鉄道|地下鉄|バス|公共|列車/.test(rawMode);
-          const mode=isTr?'transit':(rawMode||'driving');
-          try{ window.IntMapRouting.openPanel&&window.IntMapRouting.openPanel({lng:A.lng,lat:A.lat,name:A.name||a.from},{lng:B.lng,lat:B.lat,name:B.name||a.to},mode); }catch(_){}
+          const mode=isTr?'transit':(({car:'driving',drive:'driving',driving:'driving',foot:'walking',walk:'walking',walking:'walking',bike:'cycling',cycle:'cycling',cycling:'cycling'})[rawMode]||'driving');
+          _lastRouteCtx={from:a.from,to:(a.to||a.place||a.destination),via:a.via};
+          const _hdr='<div style="font-weight:600;">'+(mode==='transit'?'🚆':mode==='walking'?'🚶':mode==='cycling'?'🚲':'🚗')+' '+esc((A&&A.name)||a.from)+' → '+esc((B&&B.name)||a.to||a.place)+'</div>'+_rmodes(mode);
+          if(!A||!B) return R(false, _hdr+warn('⚠ '+L('Could not find one of those places','地点を特定できませんでした','Ort nicht gefunden','Место не найдено','Lugar no encontrado')));
+          let via=[]; if(Array.isArray(a.via)){ for(const v of a.via.slice(0,6)){ try{ const g=await geocode(String(v)); if(g) via.push({lng:g.lng,lat:g.lat}); }catch(_){} } }
           let r=null; try{ r=await window.IntMapRouting.route({lng:A.lng,lat:A.lat},{lng:B.lng,lat:B.lat},{mode,via,time:a.time||a.datetime||a.depart}); }catch(_){}
-          if(r&&r.transit){   /* (#R85) real public-transit itinerary — colour-coded walk vs rail legs on the map + a leg list */
+          if(r&&r.transit){
             const totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min'); const tf=r.transfers||0;
             const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
             const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(currentLang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
@@ -23200,26 +23222,22 @@ window.addEventListener('DOMContentLoaded', () => {
               const head=l.walk?(L('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+esc(l.to)):'')):((l.route?('<b>'+esc(l.route)+'</b> '):'')+esc(l.headsign||l.to||''));
               const sub=l.walk?'':(esc(l.from||'')+(l.dep?(' · '+_tm(l.dep)):''));
               return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; }).join('');
-            let h='<div style="font-weight:600;">🚆 '+esc(A.name||a.from)+' → '+esc(B.name||a.to||a.place)+'</div>'
-              +'<div style="font-size:13px;margin:3px 0 3px;"><b>'+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):'')+'</div>'
-              +'<div style="font-size:12px;margin-bottom:4px;">'+seq+'</div>'
-              +'<div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'
-              +note(L('Live public-transit routing (Transitous / MOTIS, worldwide GTFS). Walking legs are dotted; each ride is coloured by mode on the map. Coverage depends on the open transit feeds for the area.','公共交通のライブ経路検索（Transitous／MOTIS、世界のGTFS）。徒歩は点線、各乗車区間はモード別に色分けして地図表示します。対応範囲はその地域の公開交通データ次第です。','Live-ÖPNV-Routing (Transitous/MOTIS).','Живой транзитный маршрут (Transitous/MOTIS).','Enrutamiento de transporte en vivo (Transitous/MOTIS).'));
+            let h=_hdr+'<div style="font-size:13px;margin:3px 0 3px;"><b>'+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):'')+'</div>'
+              +'<div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'
+              +note(L('Live public-transit routing (Transitous / MOTIS). Walking legs are dotted; each ride is coloured by mode on the map.','公共交通のライブ経路検索（Transitous／MOTIS）。徒歩は点線、乗車区間はモード別に色分けして地図表示。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));
             return R(true, h); }
-          if(!r||!r.ok){ if(isTr) return R(false, warn('🚆 '+L('No public-transit route found for this pair — the area may have no open transit data yet. Try driving/walking, or a route within a covered city.','この区間の公共交通経路が見つかりませんでした。対応データが未整備の可能性があります。車・徒歩、または対応都市内の経路をお試しください。','Keine ÖPNV-Verbindung gefunden.','Транзитный маршрут не найден.','Sin ruta de transporte para este par.')));
-            return R(false, warn('⚠ '+L('No road route found — there may be no road connection (e.g. across an ocean; try the sea route) or the routing service is busy','道路経路が見つかりませんでした。陸路がつながっていない（海を越えるなど → 海路をお試しください）か、経路サービスが混雑しています','Keine Straßenroute gefunden — evtl. keine Straßenverbindung (Meer → Seeroute) oder Dienst überlastet','Дорожный маршрут не найден — возможно, нет дороги (океан → морской путь) или сервис занят','Sin ruta por carretera — quizá no hay conexión (océano → ruta marítima) o el servicio está ocupado'))); }
+          if(!r||!r.ok){ if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
+            return R(true, _hdr+warn('⚠ '+L('No route found (no road connection, or the router is busy).','経路が見つかりません（陸路がない/サービス混雑）。','Keine Route gefunden.','Маршрут не найден.','Sin ruta.'))); }
           const km=r.distance/1000, totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min');
-          const modeLbl=({driving:L('driving','車','Auto','авто','coche'),car:L('driving','車','Auto','авто','coche'),walking:L('walking','徒歩','zu Fuß','пешком','a pie'),foot:L('walking','徒歩','zu Fuß','пешком','a pie'),cycling:L('cycling','自転車','Rad','вело','bici'),bike:L('cycling','自転車','Rad','вело','bici')})[mode]||mode;
           const ARW={left:'←','slight left':'↖','sharp left':'⬅',right:'→','slight right':'↗','sharp right':'➡',straight:'↑',uturn:'↩'};
           const stepRows=(r.steps||[]).map(s=>{ const m=s.maneuver||{}; const nm=String(s.name||'').trim(); const dm=s.distance||0;
             let gl=(m.type==='depart')?'🚩':(m.type==='arrive')?'🏁':(m.type==='roundabout'||m.type==='rotary')?'◯':(ARW[m.modifier]||'↑');
             const dist=dm>=1000?((dm/1000).toFixed(1)+' km'):(Math.round(dm)+' m');
             const txt=(m.type==='arrive')?L('Arrive at destination','目的地に到着','Ziel erreicht','Прибытие','Llegada'):(m.type==='depart')?(L('Head out','出発','Losfahren','Отправление','Salida')+(nm?(' · '+nm):'')):(nm||L('Continue','道なりに進む','weiter','далее','continuar'));
             return '<div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:18px;text-align:center;">'+gl+'</span><span style="flex:1;min-width:0;">'+esc(txt)+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10.5px;">'+dist+'</span></div>'; }).join('');
-          let h='<div style="font-weight:600;">🧭 '+esc(A.name||a.from)+' → '+esc(B.name||a.to||a.place)+'</div>'
-            +'<div style="font-size:13px;margin:3px 0 5px;"><b>'+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km</b> · '+dur+' · '+modeLbl+'</div>'
+          let h=_hdr+'<div style="font-size:13px;margin:3px 0 5px;"><b>'+dur+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km</div>'
             +(stepRows?('<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;">'+stepRows+'</div>'):'')
-            +note(L('Road routing via OSRM on OpenStreetMap data. Times are estimates. Clear it with "clear the route".','OpenStreetMapデータのOSRMによる道路経路です。所要時間は目安です。「経路を消して」で削除できます。','Straßenrouting via OSRM (OpenStreetMap). Zeiten sind Schätzungen.','Дорожный маршрут OSRM (OpenStreetMap). Время — оценка.','Ruta por carretera vía OSRM (OpenStreetMap). Tiempos estimados.'));
+            +note(L('Road routing via OSRM (OpenStreetMap). Clear it with "clear the route".','OSRM（OpenStreetMap）の道路経路。「経路を消して」で削除。','Straßenrouting OSRM (OpenStreetMap).','Дорожный маршрут OSRM.','Ruta por carretera OSRM.'));
           return R(true, h); }
         case 'streetview': case 'streetView': case 'pano': {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
@@ -23272,13 +23290,22 @@ window.addEventListener('DOMContentLoaded', () => {
           if(r.peakKBqM2>0){ const uH=r.peakDoseUSvH, yr=annualMSv(uH);
             h+='<div style="font-size:11.5px;margin-top:4px;">📈 '+L('Peak deposition','最大沈着','Spitzendeposition','Пик','Pico')+': <b>'+Math.round(r.peakKBqM2).toLocaleString()+' kBq/m²</b> → '+L('external dose rate','外部被ばく線量率','Dosisleistung','мощность дозы','tasa de dosis')+' ≈ <b>'+(uH>=1?uH.toFixed(1):uH.toFixed(2))+' µSv/h</b> ('+L('about','約','ca.','≈','≈')+' '+(yr>=1?Math.round(yr):yr.toFixed(1))+' mSv/'+L('yr','年','a','год','año')+')</div>';
             h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+L('For reference: natural background ≈ 2–3 mSv/yr; Japan\'s Fukushima evacuation criterion was 20 mSv/yr; Chernobyl\'s permanent-exclusion zone ≥1480 kBq/m².','参考：自然放射線 約2–3 mSv/年、福島の避難基準 20 mSv/年、チェルノブイリの永久立入禁止 1480 kBq/m²以上。','Referenz: Untergrund ≈2–3 mSv/a.','Для справки: фон ≈2–3 мЗв/год.','Referencia: fondo ≈2–3 mSv/año.')+'</div>'; }
-          /* parameter buttons ("放出量や放出時間・日時等も選べるように") — re-run with a preset scenario */
-          _lastRadCtx={place:(a.place||a.from||a.source||ll.name),lng:ll.lng,lat:ll.lat};
+          /* (#R85d) FULL inline configuration IN the message ("こちらで設定できない項目が多すぎる" — no popup): isotope,
+             source term, emission duration, simulation hours, start time — each re-runs the model in place. */
+          _lastRadCtx={place:(a.place||a.from||a.source||ll.name),lng:ll.lng,lat:ll.lat,bq:r.bq,isotope:String(opts.isotope||'cs137').toLowerCase(),emitHours:r.emitHours,hours:r.hours,date:opts.date||''};
+          const cur=_lastRadCtx;
           const _rb=(o,lbl)=>'<button class="atl-traj-btn" data-rad=\''+esc(JSON.stringify(o))+'\'>'+esc(lbl)+'</button>';
-          h+='<div class="atl-traj-row">'+_rb({source:'chernobyl',emitHours:10,hours:60},L('Chernobyl-scale','チェルノブイリ級',' Tschernobyl','Чернобыль','Chernóbil'))
-            +_rb({source:'fukushima',emitHours:8,hours:48},L('Fukushima-scale','福島級','Fukushima','Фукусима','Fukushima'))
-            +_rb({source:'dirtybomb',isotope:'cs137',emitHours:0.5,hours:24},L('Dirty bomb','ダーティボム','Schmutzige Bombe','Грязная бомба','Bomba sucia'))
-            +_rb({isotope:'i131',emitHours:6,hours:36},'I-131')+'</div>';
+          const _sel=(key,list,val)=>'<select class="atl-rad-sel" data-radp="'+key+'">'+list.map(o=>'<option value="'+o[0]+'"'+((''+o[0])===(''+val)||(key==='bq'&&Math.abs(+o[0]-+val)<+o[0]*0.03)?' selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select>';
+          const _step=(key,val,delta,min,max,unit,label)=>'<div class="atl-rad-ctl"><span>'+label+'</span><button class="atl-traj-btn atl-rad-mini" data-rad=\''+esc(JSON.stringify({[key]:Math.max(min,val-delta)}))+'\'>−</button><b>'+val+unit+'</b><button class="atl-traj-btn atl-rad-mini" data-rad=\''+esc(JSON.stringify({[key]:Math.min(max,val+delta)}))+'\'>＋</button></div>';
+          h+='<div class="atl-rad-cfg">'
+            +'<div class="atl-rad-ctl"><span>'+L('Isotope','核種','Isotop','Изотоп','Isótopo')+'</span>'+_sel('isotope',[['cs137','Cs-137 (30y)'],['i131','I-131 (8d)'],['cs134','Cs-134 (2y)'],['sr90','Sr-90 (29y)']],cur.isotope)+'</div>'
+            +'<div class="atl-rad-ctl"><span>'+L('Source','放出量','Quelle','Выброс','Fuente')+'</span>'+_sel('bq',[[8.5e16,'Chernobyl · 85 PBq'],[1.5e16,'Fukushima · 15 PBq'],[1e15,'1 PBq'],[3.7e13,'Dirty bomb · 37 TBq'],[1e12,'1 TBq']],cur.bq)+'</div>'
+            +_step('emitHours',cur.emitHours,2,0.5,72,'h',L('Emission','放出時間','Freisetzung','Выброс','Emisión'))
+            +_step('hours',cur.hours,12,6,80,'h',L('Sim window','計算時間','Zeitfenster','Окно','Ventana'))
+            +'</div>';
+          h+='<div class="atl-traj-row">'+_rb({source:'chernobyl',emitHours:10,hours:60},L('Chernobyl','チェルノブイリ級','Tschernobyl','Чернобыль','Chernóbil'))
+            +_rb({source:'fukushima',emitHours:8,hours:48},L('Fukushima','福島級','Fukushima','Фукусима','Fukushima'))
+            +_rb({source:'dirtybomb',isotope:'cs137',emitHours:0.5,hours:24},L('Dirty bomb','ダーティボム','Schmutzige Bombe','Грязная бомба','Bomba sucia'))+'</div>';
           h+=note(L('Lagrangian particle model on LIVE Open-Meteo wind/temperature/precipitation (or the ERA5 archive for a past date): advection + stability-scaled turbulent diffusion + wet & dry deposition + radioactive decay. The source term (Bq), emission duration, isotope half-life and start time are yours to set; the coloured ground zones are the final deposition classified by the real Chernobyl Cs-137 thresholds, and the dose figures assume a Cs-137 ground-shine conversion. EDUCATIONAL approximation, NOT an operational forecast — in a real emergency follow official authorities (SPEEDI / IAEA / local government).','ラグランジュ粒子モデル。Open-Meteoのライブ風・気温・降水（過去日はERA5アーカイブ）で移流＋安定度依存の乱流拡散＋湿性乾性沈着＋放射性崩壊を計算。放出量(Bq)・放出時間・核種半減期・開始時刻を指定できます。色分けゾーンは最終沈着を実際のチェルノブイリのCs-137しきい値で分類、線量はCs-137地表γ線換算です。教育目的の近似であり運用予報ではありません。実際の緊急時は公的機関（SPEEDI／IAEA／自治体）に従ってください。','Lagrange-Partikelmodell mit Live-Wetter — Bildungsnäherung.','Лагранжева модель с реальной погодой — образовательная.','Modelo lagrangiano con clima real — educativo.'));
           return R(true, h); }
         case 'flightSim': case 'flightsim': case 'flightsimulator': case 'flysim': case 'pilot': {
@@ -24053,9 +24080,8 @@ window.addEventListener('DOMContentLoaded', () => {
        falls back to the UI language. */
     let _lastUserMsg='';
     function _replyLang(){ const s=String(_lastUserMsg||'');
-      if(/[぀-ヿ]/.test(s)) return 'Japanese';
+      if(/[぀-ヿ]/.test(s)) return 'Japanese';   /* kana present → unambiguously Japanese */
       if(/[가-힯]/.test(s)) return 'Korean';
-      if(/[一-鿿]/.test(s)) return 'Chinese';
       if(/[؀-ۿ]/.test(s)) return 'Arabic';
       if(/[а-яё]/i.test(s)) return 'Russian';
       if(/[a-zà-ÿœß]/i.test(s)){ const low=' '+s.toLowerCase()+' ';
@@ -24065,6 +24091,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if(/\s(il|lo|gli|una?|dove|mostra|paese|per favore)\s/.test(low)) return 'Italian';
         if(/\s(the|is|are|show|please|what|where|map|and|of|to)\s/.test(low)) return 'English';
       }
+      /* (#R85d) CJK ideographs WITHOUT kana: NEVER assume Chinese — IntMap does not reply in Chinese, and its users
+         write Japanese in kanji ("漢字で入力したら中国語で返答される" bug). Mirror the user's chosen UI language. */
+      if(/[一-鿿㐀-䶿]/.test(s)) return ({jp:'Japanese',de:'German',ru:'Russian',es:'Spanish',en:'English'}[currentLang])||'Japanese';
       return (typeof _aiLangName==='function')?_aiLangName():'English'; }
     const _langLine=()=>{ const l2=_replyLang(); return 'the language the user\'s message is written in (it appears to be '+l2+' — ALWAYS mirror the user\'s language, never the UI language)'; };
     function SYS(){ const lang=_langLine();
@@ -24134,6 +24163,14 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-dots i:nth-child(2){animation-delay:.15s;} #atlas-panel .atl-dots i:nth-child(3){animation-delay:.3s;}'
         +'@keyframes atlDot{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-3.5px);opacity:1;}}'
         +'#atlas-panel .atl-ex{display:flex;flex-wrap:wrap;gap:6px;padding:6px 16px 2px;}'
+        +'#atlas-panel .atl-rad-cfg{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 4px;padding:7px 9px;background:rgba(120,120,128,0.1);border:1px solid rgba(128,128,128,0.16);border-radius:10px;}'
+        +'#atlas-panel .atl-rad-ctl{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);} #atlas-panel .atl-rad-ctl>span:first-child{flex:0 0 auto;} #atlas-panel .atl-rad-ctl b{color:var(--text-main);min-width:34px;text-align:center;}'
+        +'#atlas-panel .atl-rad-sel{flex:1;min-width:0;background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:7px;font-size:11px;padding:3px 4px;}'
+        +'#atlas-panel .atl-rad-mini{padding:2px 8px;font-size:13px;min-width:26px;}'
+        +'#atlas-panel .atl-route-modes{display:flex;gap:4px;margin:6px 0 5px;background:rgba(120,120,128,0.12);border-radius:11px;padding:3px;}'
+        +'#atlas-panel .atl-route-mode{flex:1;border:none;background:transparent;color:var(--text-muted);font-size:17px;border-radius:8px;padding:5px 0;cursor:pointer;transition:background .15s ease,color .15s ease;}'
+        +'#atlas-panel .atl-route-mode:hover{background:rgba(120,120,128,0.18);}'
+        +'#atlas-panel .atl-route-mode.on{background:var(--primary-color);color:#fff;}'
         +'#atlas-panel .atl-traj-row{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 2px;}'
         +'#atlas-panel .atl-traj-btn{font-size:11px;font-weight:600;color:var(--text-main);background:rgba(120,120,128,0.12);border:1px solid rgba(128,128,128,0.2);border-radius:999px;padding:5px 11px;cursor:pointer;transition:background .15s ease,border-color .15s ease;}'
         +'#atlas-panel .atl-traj-btn:hover{background:rgba(120,120,128,0.22);border-color:var(--primary-color);}'
@@ -24250,9 +24287,14 @@ window.addEventListener('DOMContentLoaded', () => {
           mtg.classList.toggle('on',show); mtg.setAttribute('aria-checked',show?'true':'false'); return; }
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
+        const rmb=e.target.closest&&e.target.closest('.atl-route-mode[data-rmode]');
+        if(rmb&&_lastRouteCtx){ const m=rmb.getAttribute('data-rmode');   /* (#R85d) re-route in the message on a different mode */
+          const act={type:'directions',from:_lastRouteCtx.from,to:_lastRouteCtx.to,via:_lastRouteCtx.via,mode:m};
+          const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); const gen=++_runGen;
+          runActions(ai,'',[act],gen).catch(()=>{}); return; }
         const rdb=e.target.closest&&e.target.closest('.atl-traj-btn[data-rad]');
-        if(rdb&&_lastRadCtx){ let o={}; try{ o=JSON.parse(rdb.getAttribute('data-rad')||'{}'); }catch(_){}   /* (#R85) re-run the fallout with a preset scenario */
-          const act=Object.assign({type:'radiation',place:_lastRadCtx.place,lng:_lastRadCtx.lng,lat:_lastRadCtx.lat},o);
+        if(rdb&&_lastRadCtx){ let o={}; try{ o=JSON.parse(rdb.getAttribute('data-rad')||'{}'); }catch(_){}   /* (#R85) re-run the fallout, carrying the current settings */
+          const c=_lastRadCtx; const act=Object.assign({type:'radiation',place:c.place,lng:c.lng,lat:c.lat,bq:c.bq,isotope:c.isotope,emitHours:c.emitHours,hours:c.hours,date:c.date},o);
           const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); const gen=++_runGen;
           runActions(ai,'',[act],gen).catch(()=>{}); return; }
         const tjb=e.target.closest&&e.target.closest('.atl-traj-btn[data-traj]');
@@ -24275,6 +24317,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const rl=_ctlLayer(sl); if(!rl) return;
         const real=layerOpacityControl(rl.cb); if(!real) return;
         real.value=sl.value; real.dispatchEvent(new Event('input',{bubbles:true})); real.dispatchEvent(new Event('change',{bubbles:true}));
+      }catch(_){} });
+      panel.addEventListener('change',e=>{ try{   /* (#R85d) radiation inline config selects (isotope / source term) re-run the sim */
+        const rs=e.target.closest&&e.target.closest('.atl-rad-sel[data-radp]'); if(!rs||!_lastRadCtx) return;
+        const key=rs.getAttribute('data-radp'); const val=(key==='bq')?+rs.value:rs.value; const c=_lastRadCtx;
+        const act=Object.assign({type:'radiation',place:c.place,lng:c.lng,lat:c.lat,bq:c.bq,isotope:c.isotope,emitHours:c.emitHours,hours:c.hours,date:c.date},{[key]:val});
+        const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); const gen=++_runGen;
+        runActions(ai,'',[act],gen).catch(()=>{});
       }catch(_){} });
       panel.addEventListener('keydown',e=>{ try{ if(e.key!=='Enter') return; const inp=e.target.closest&&e.target.closest('.atl-choice-in'); if(!inp) return; e.preventDefault(); const v=inp.value.trim(); if(v){ inp.value=''; run(v); } }catch(_){} });
       /* (#R73) REVERSE sync ("レイヤーの凡例等との同期ができていない"): when a layer is toggled or its opacity
