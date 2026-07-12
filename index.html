@@ -7446,6 +7446,14 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed{margin:0 !important;padding:10px 12px !important;box-sizing:border-box;gap:8px;}'
         +'body.ws-mode .ws-news #sidebar-search-bar{box-sizing:border-box !important;width:auto !important;margin:10px 12px 4px !important;}'
         +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
+        /* (#R78g) CONTENT WAS INVISIBLE: the window background == --card-bg == the cards' own background, and the
+           card border is only 8% opacity → in dark theme the cards vanished into the window. Give the content
+           windows the app's BASE background so the --card-bg cards/rows stand out, and strengthen their border. */
+        +'body.ws-mode .ws-news,body.ws-mode .ws-countries,body.ws-mode .ws-info,body.ws-mode .ws-community{background:var(--bg-color,#0b0b0d) !important;}'
+        +'body.ws-mode .ws-news .news-item{border:1px solid rgba(128,128,128,0.26) !important;box-shadow:0 1px 4px rgba(0,0,0,0.22) !important;}'
+        +'body.ws-mode .ws-countries .stat-row{border-bottom:1px solid rgba(128,128,128,0.14) !important;}'
+        /* (#R78g) pin the elevation/coordinate readout to the MAP window's bottom-left, above the canvas */
+        +'body.ws-mode #coord-readout{position:absolute !important;left:12px !important;bottom:12px !important;right:auto !important;top:auto !important;z-index:950 !important;}'
         /* (#R78f) COMPACT news cards so more fit per screen ("上下方向に冗長") */
         +'body.ws-mode .ws-news .news-item{padding:9px 11px !important;border-radius:11px !important;}'
         +'body.ws-mode .ws-news .news-item .news-title{margin-top:4px !important;line-height:1.32 !important;}'
