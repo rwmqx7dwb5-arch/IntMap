@@ -6574,23 +6574,22 @@ window.addEventListener('DOMContentLoaded', () => {
       'gx-gxco':G('AIRS_L3_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Daily_Day',6,'2025-06-15','png',3,22,-4),  /* African burning season */
       'gx-gxsoil':G('AMSRU2_Soil_Moisture_SCA_Day',6,'2025-06-15','png',3,90,24),              /* Bengal delta */
       'eco-dl-worldcover':'https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=6&TILEROW='+_tNile.y+'&TILECOL='+_tNile.x+'&FORMAT=image/png&TIME=2021-01-01',   /* Nile delta: crops vs desert */
-      /* (#R79f) self-hosted, genuinely-rendered previews (per request "適切なスクショに差し替えて") — replacing
-         the old hand-drawn sketches. Rendered offline from the layers' OWN real data (RESOLVE ecoregion polygons
-         with their official colours; Peter-Bird PB2002 plate boundaries; global wind streamlines over real coasts). */
-      'eco-dl-ecoregions':'preview_ecoregions.png',
-      'eco-dl-plates':'preview_plates.png',
-      'dl-wind':'preview_wind.png',
-      'beta-dl-ukrfront':'preview_ukraine.png',   /* (#R79g) real basemap + live DeepState frontline (green = UA gains, red = occupied) */
+      /* (#R79i) ACTUAL IntMap screenshots ("IntMapやぞ…スクショ取るだけで済むこと") — captured from the live map
+         canvas (render-tick capture) with each layer enabled, self-hosted. No external tiles, no synthetic art. */
+      'eco-dl-ecoregions':'preview_ecoregions.png',   /* RESOLVE ecoregions on the real map (Africa-centred) */
+      'eco-dl-plates':'preview_plates.png',           /* tectonic plates on the real map */
+      'dl-wind':'preview_wind.png',                   /* wind speed field + animated streamlines, real capture */
+      'beta-dl-ukrfront':'preview_ukraine.png',       /* (#R79g) real basemap + live DeepState frontline (green = UA gains, red = occupied) */
       'cb-rail2':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',   /* German rail web */
       'ox-oxrail':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',
       'beta-dl-rail':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',
       'ox-oxsea':'https://tiles.openseamap.org/seamark/7/63/42.png',   /* Dover Strait — dense real seamarks */
-      /* (#R79g) real OpenTopoMap contour screenshot (Matterhorn), self-hosted so it always loads */
+      /* (#R79i) actual IntMap contour-line render captured over the Alps (Zermatt/Matterhorn) */
       'dl-contours':'preview_contours.png',
       /* (#R74) ECMWF SST preview = the real GHRSST product (equatorial-Pacific crop, distinct from dl-sst's Gulf Stream) */
       'dl-ec-sst':G('GHRSST_L4_MUR_Sea_Surface_Temperature',7,'2024-07-04','png',3,-150,0),
       /* (#R78e) real CARTO basemap cartography for the vector-overlay layers (each a distinct, recognisable region) */
-      'cb-names':'preview_basemap.png',        /* (#R79f) real CARTO base map (Central Europe: borders + city labels + water) — the "Base map & labels" screenshot */
+      'cb-names':'preview_basemap.png',        /* (#R79i) actual IntMap base map & labels captured over Central Europe (names + borders + roads) */
       'cb-geolabels':CT('rastertiles/voyager',6,23.0,37.8),        /* Aegean — sea & island labels */
       'cb-borders':CT('light_all',6,8.2,48.9),                     /* Alpine borders — DE/FR/CH/AT crisp */
       'cb-admin1':CT('light_all',6,-96.0,39.5),                    /* US Great Plains — state lines */
