@@ -3818,3 +3818,8 @@ Big batch; every item below is a direct user report.
 - **「デフォルトは 右上レイヤー／右下Atlas／中央地図／左Countries」**: defRects を刷新（Countries=左フル高、Map=中央、Layers=右上、Atlas=右下＝Layersと水平スプリッタで隣接）。既定表示は Countries/Map/Layers/Atlas、News/Information/Community は非表示（Windowメニューから開ける）。実測(1440×900): Countries[0,34 346×866]／Map[346,34 754×866]／Layers[1100,34 340×433]／Atlas[1100,467 340×433]。
 - **「レイヤー窓の検索窓が上に余白なし・下が空きすぎ」**: ws中は .lsr-head 非表示なので `.lsr-search` の padding を 2px/10px → 12px/6px に。実測: 検索窓 上12px・下6px。
 - 回帰: 129レイヤー行、クリーン既定の7窓配置、国検索/比較、Atlas短縮、コンソールエラー0。法務変更なし。
+
+### R79c — 「比較機能死んでんぞ」実測根治＋タイムゾーン初期透明度50%
+- **国比較（IntMapStatsCompare）が完全に不可視 = 実測根因**: 比較ビュー `#scp-view` は `#live-news-feed`（＝旧statsフィード）へマウントしていたが、国リストは R78e で `#countries-feed` へ移設済み。よって「国を比較」を押すと `#scp-view` は **Newsフィード**に描画され、Statsタブでは display:none、ワークスペースでは既定非表示のNews窓の中 → **比較が一切見えなかった**（通常タブ・ws両方で壊れていた）。根治: `IntMapStatsCompare.open()` のマウント先を `#countries-feed || #live-news-feed` に是正（renderStats・戻るボタンと同じ要素）、かつ **ws中はタブが無い**ので `btn-stats.click()` を実行しない（currentModeを勝手に'stats'へ変える副作用も回避）。実測(ws・クリーン既定): 2国選択→「国を比較」→ `#scp-view` が **Countries窓内**（countries-feed内）に可視描画（320×673・チャート有）、戻る→252行復元、コンソールエラー0。通常タブでも countries-feed が可視フィードなので同修正で解消。
+- **タイムゾーンレイヤーの初期透明度を50%に**: `tzl-fill` の初期 paint を 0.15→**0.5**、かつ `_registerLayerOpacity` の既定値に `id==='tz'?0.5` を追加（従来は汎用既定0.85が120ms後に上書きしていた）。これで初期表示・不透明度スライダー既定とも50%に一致（保存済みユーザー値がある場合はそれを尊重＝`opacities.tz==null`ガード）。※ヘッドレスではjsDelivrのtz境界GeoJSON取得が完了せず凡例未生成のためコード検証（両経路とも0.5）。
+- 回帰: 129レイヤー行、ws既定7窓、国検索/比較（表示までEnd-to-End）、コンソールエラー0。法務変更なし。
