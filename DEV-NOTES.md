@@ -3847,3 +3847,13 @@ Big batch; every item below is a direct user report.
 ### R79g — maritime zones の改悪を撤回：種別ごとの色分けを保持したまま「明るく」
 - **謝罪案件**: R79fで海洋境界を全種別1色（ネオン緑）に潰したのは誤り。EEZ(200海里)/領海(12海里)/条約/中間線/司法判断/共同管理/一方的主張/係争中/基線/接続線 という**種別ごとの色分けこそがこのレイヤーの価値**であり、それを破壊していた（ユーザー激怒）。
 - **正しい修正**: MarineRegions WMSの `line_type` 属性（GetLegendGraphic JSONで全15値を取得）で**種別ごとにフィルタするSLD**を組み、各種別を**明るく視認性の高い配色**に再描画（200NM=#39FF6A緑・12NM=#12E3D6シアン・条約=#4D8BFF青・中間線=#B6FF3Aライム・司法=#FFC21A金・共同=#FF9E3D琥珀・一方的=#E64DFFマゼンタ・係争=#FF4D4D赤・係争中間線=#FF7A3D赤橙・基線=#E6ECF2淡灰・接続=#C8D0D8灰）。線幅も1→1.5〜1.9に。ダッシュ（基線・係争の破線）も保持し種別を判別可能に。`EEZ_STYLE` テーブルが**SLDと凡例の両方を駆動**（常に一致）。curlで多色描画を検証（複数の明色ピクセル確認）。実測: 凡例11行・各行が別の明色swatch（glow付き）、コンソールエラー0。
+
+### R79g(2) — レイヤー例画像を「実基盤地図＋実データ」の本物スクショ風に（合成の作り直し）
+- **前回のフラット大陸合成が却下（「スクショって言ってるやろが」）**。ヘッドレスtabは `document.hidden`＝WebGL地図が描画されず `map.on('load')` も発火しない＝**生キャプチャ不可**を確認。そこで **実CARTOタイルの基盤地図＋各レイヤーの実データ**をPILで合成し、実際のアプリ画面と見分けのつかない画像を自己ホスト：
+  - **Tectonic plates** = 実CARTO dark基盤（実大陸）＋PB2002境界（橙）。
+  - **Wind** = 実CARTO dark基盤＋全球流線（速度で配色）。
+  - **Ukraine frontline** = 実CARTO dark基盤（都市ラベル付）＋**DeepState `history/last` を実取得**しアプリと同じフィルタ（Polygonのみ・ウクライナbbox lng20–42.5/lat43.9–54.5）＋**各featureの自前fill/stroke色**で描画（緑=ウクライナのクルスク進出・赤/えんじ=露占領。fill不透明度0.32相当）。
+  - **Night lights** = 実VIIRS Black Marble（GIBS）の**ナイルデルタ＋イスラエル**タイル（要望どおり）。
+  - **Contours** = 実OpenTopoMap（マッターホルン）の等高線タイル。
+  - **Köppen** = **縦横比修正**（歪みを解消、lng−12..44を2:1でクロップ、黒海洋を暗色化）。
+- `IMG{}` に nightsat/contours/ukrfront を追記、plates/wind/koppen は同名PNGを更新。実測: 6枚とも480×240で読込OK・into()最優先解決・コンソールエラー0。
