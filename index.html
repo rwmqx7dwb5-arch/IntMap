@@ -9238,8 +9238,54 @@ window.addEventListener('DOMContentLoaded', () => {
       if(n>34){ clearInterval(window._baseReassertT); }
     },150);
   }
-  document.getElementById('btn-view-map').onclick=(e)=>{ currentMapType='map'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); };
-  document.getElementById('btn-view-sat').onclick=(e)=>{ currentMapType='sat'; satPanelDismissed=false; e.currentTarget.classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); };
+  /* ===================================================================
+     (#R82) IntMap OS — the ATLAS KERNEL.  ★ Structural inversion (ATLAS-VISION 最終定義) ★
+     Not "Atlas lives inside IntMap" but "all of IntMap runs ON TOP OF Atlas." Every operation flows through
+     THIS one kernel. The graphical UI and the Atlas chat are both thin SHELLS that submit intents to it; the
+     kernel executes them via registered commands (the real engine work) and the Atlas action dispatcher. This
+     replaces the old indirection where Atlas operated IntMap by SIMULATING UI clicks (clickId) — now the UI
+     shell → kernel → engine AND the NL shell → kernel → engine (one path, observable). Additive + staged: the
+     map-view + tab controls are TRULY inverted this round (their real logic lives in kernel COMMANDS that both
+     the button onclick and Atlas call); the rest of the UI stays reachable through the bound Atlas dispatch
+     (IntMapOS.dispatch) + catalogued (IntMapOS.catalog) and is logged, then progressively converted. Every op
+     from either shell is recorded in the syscall log + broadcast on the bus. ============================= */
+  window.IntMapOS=(function(){
+    const OS={}, commands={}, subs=[], _log=[];
+    let _dispatch=null;
+    function emit(ev){ subs.forEach(f=>{ try{ f(ev); }catch(_){} }); }
+    function rec(o){ _log.push(o); if(_log.length>200) _log.shift(); emit(o); return o; }
+    OS.register=function(id,run,meta){ if(id&&typeof run==='function') commands[id]={run:run,meta:meta||{}}; return id; };
+    OS.has=function(id){ return !!commands[id]; };
+    OS.meta=function(id){ return commands[id]?commands[id].meta:null; };
+    OS.list=function(){ return Object.keys(commands); };
+    OS.on=function(fn){ if(typeof fn==='function'){ subs.push(fn); return function(){ const i=subs.indexOf(fn); if(i>=0) subs.splice(i,1); }; } return function(){}; };
+    OS.emit=emit;
+    OS.log=function(){ return _log.slice(-80); };
+    /* exec(id, ctx) — run a registered COMMAND: the canonical, INVERTED path (real engine work). */
+    OS.exec=function(id, ctx){ ctx=ctx||{}; const c=commands[id];
+      const r={t:Date.now(), cmd:id, source:ctx.source||'ui', ok:true};
+      if(!c){ r.ok=false; r.err='no command'; rec(r); return {ok:false,err:'no command: '+id}; }
+      let res; try{ res=c.run(ctx); if(res&&res.ok===false) r.ok=false; }catch(e){ r.ok=false; r.err=(e&&e.message)||'error'; }
+      rec(r); return (res===undefined)?{ok:r.ok}:res; };
+    /* dispatch(action) — the Atlas semantic (typed-action) layer, attached by Atlas at init. A bare
+       {cmd:'id'} runs a registered command; everything else goes to the Atlas dispatcher. Both are logged. */
+    OS.dispatch=function(a, ctx){ ctx=ctx||{};
+      if(a&&a.cmd&&commands[a.cmd]) return OS.exec(a.cmd,{source:ctx.source||'api',params:a});
+      rec({t:Date.now(), cmd:(a&&a.type)||'action', source:ctx.source||'api', ok:true, action:true});
+      if(_dispatch) return _dispatch(a); return {ok:false,err:'kernel dispatcher not ready'}; };
+    OS.state=function(){ return ''; };                       /* replaced by Atlas (stateContext) */
+    OS.catalog=function(){ return {commands:OS.list()}; };   /* replaced by Atlas (full control/layer/module catalog) */
+    OS._setDispatch=function(fn){ _dispatch=fn; };
+    OS._bindState=function(fn){ if(typeof fn==='function') OS.state=fn; };
+    OS._bindCatalog=function(fn){ if(typeof fn==='function') OS.catalog=fn; };
+    OS.ready=function(){ return !!_dispatch; };
+    return OS;
+  })();
+  /* map basemap — TRUE kernel commands (logic lives here; button + Atlas both call the SAME command). */
+  IntMapOS.register('view.base.map', ()=>{ currentMapType='map'; document.getElementById('btn-view-map').classList.add('active'); document.getElementById('btn-view-sat').classList.remove('active'); applyTheme(); if(map) map.once('idle',()=>{ try{ if(currentMapType==='map') applyTheme(); }catch(_){} }); _reassertBase('map'); }, {label:'Map basemap', btn:'btn-view-map', group:'view'});
+  IntMapOS.register('view.base.sat', ()=>{ currentMapType='sat'; satPanelDismissed=false; document.getElementById('btn-view-sat').classList.add('active'); document.getElementById('btn-view-map').classList.remove('active'); applyTheme(); satReady(()=>{ satRenderController(); satApply(false); }); if(map) map.once('idle',()=>{ try{ if(currentMapType==='sat') applyTheme(); }catch(_){} }); _reassertBase('sat'); }, {label:'Satellite basemap', btn:'btn-view-sat', group:'view'});
+  document.getElementById('btn-view-map').onclick=()=>IntMapOS.exec('view.base.map',{source:'ui'});
+  document.getElementById('btn-view-sat').onclick=()=>IntMapOS.exec('view.base.sat',{source:'ui'});
   /* Self-heal: whenever the style changes (a layer add/remove can re-stack or reset basemap visibility),
      re-assert the basemap if it no longer matches the chosen mode. Guarded to a real mismatch → no loop. */
   if(map) map.on('styledata',()=>{ try{ if(!map.isStyleLoaded()||!map.getLayer('layer-sat')) return; const wantSat=(currentMapType==='sat'); const isSat=(map.getLayoutProperty('layer-sat','visibility')==='visible'); if(wantSat!==isSat) applyTheme(); }catch(_){} });
@@ -9247,8 +9293,11 @@ window.addEventListener('DOMContentLoaded', () => {
      1.4 left the world bigger than a portrait phone, so it felt "stuck" — phones get 0 (full world),
      desktop keeps a sensible floor. */
   function flatMinZoom(){ return isMobile()?0:1.2; }
-  document.getElementById('btn-view-flat').onclick=(e)=>{ currentProj='flat'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} };
-  document.getElementById('btn-view-globe').onclick=(e)=>{ currentProj='globe'; e.currentTarget.classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} };
+  /* projection — TRUE kernel commands (UI + Atlas both call these). */
+  IntMapOS.register('view.proj.flat', ()=>{ currentProj='flat'; document.getElementById('btn-view-flat').classList.add('active'); document.getElementById('btn-view-globe').classList.remove('active'); if(!map)return; try{ map.setProjection({type:'mercator'}); }catch(err){} map.setMinZoom(flatMinZoom()); try{ applyFlatPanSetting(); }catch(_){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Flat map', btn:'btn-view-flat', group:'view'});
+  IntMapOS.register('view.proj.globe', ()=>{ currentProj='globe'; document.getElementById('btn-view-globe').classList.add('active'); document.getElementById('btn-view-flat').classList.remove('active'); if(!map)return; try{ map.setMaxBounds(null); map.setRenderWorldCopies(false); }catch(_){} map.setMinZoom(0); try{ map.setProjection({type:'globe'}); }catch(err){} updateOcclusion(); try{ window._cmpFollowProj&&window._cmpFollowProj(); }catch(_){} }, {label:'Globe', btn:'btn-view-globe', group:'view'});
+  document.getElementById('btn-view-flat').onclick=()=>IntMapOS.exec('view.proj.flat',{source:'ui'});
+  document.getElementById('btn-view-globe').onclick=()=>IntMapOS.exec('view.proj.globe',{source:'ui'});
 
   /* ===== 3D terrain (Google-Earth-style relief) ===== */
   let terrain3D=false;
@@ -9307,13 +9356,18 @@ window.addEventListener('DOMContentLoaded', () => {
     if(mode==='stats'){ if(!countryDataLoaded)loadCountryData(); _setCountriesInfo(true); } else if(wasStats){ _setCountriesInfo(false); }
     renderUI();
   }
-  document.getElementById('btn-news').onclick=()=>setMode('news','btn-news');
+  /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
+  IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
+  IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Information tab', btn:'btn-info', group:'tab'});
+  IntMapOS.register('tab.stats', ()=>setMode('stats','btn-stats'), {label:'Countries tab', btn:'btn-stats', group:'tab'});
+  IntMapOS.register('tab.community', ()=>setMode('community','btn-community'), {label:'Community tab', btn:'btn-community', group:'tab'});
+  document.getElementById('btn-news').onclick=()=>IntMapOS.exec('tab.news',{source:'ui'});
   /* Saved is now a sub-filter inside the News tab (keeps btn-news active) */
   document.getElementById('newsfilter-all').onclick=()=>{ if(currentMode!=='news') setMode('news','btn-news'); };
   document.getElementById('newsfilter-saved').onclick=()=>{ if(currentMode!=='saved') setMode('saved','btn-news'); };
-  document.getElementById('btn-info').onclick=()=>setMode('info','btn-info');
-  document.getElementById('btn-stats').onclick=()=>setMode('stats','btn-stats');
-  document.getElementById('btn-community').onclick=()=>setMode('community','btn-community');
+  document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
+  document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
+  document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.community',{source:'ui'});
 
   /* ===== Language ===== */
   function setLang(lang){
@@ -21270,6 +21324,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map.fitBounds(box,{padding:46,duration:1100,maxZoom:16}); return true; }catch(_){} return false; }
     /* ---- generic UI helpers for the full-control action set ---- */
     const clickId=id=>{ const el=document.getElementById(id); if(el){ el.click(); return true; } return false; };
+    /* (#R82) kexec = run an OS KERNEL command directly (the inverted path: Atlas → kernel → engine, no UI-click
+       simulation), falling back to a UI click only if the kernel/command isn't available. Both Atlas and the UI
+       button converge on the SAME registered command. */
+    const kexec=(cmd,fallbackBtnId)=>{ try{ if(window.IntMapOS&&window.IntMapOS.has&&window.IntMapOS.has(cmd)){ const r=window.IntMapOS.exec(cmd,{source:'atlas'}); return !(r&&r.ok===false); } }catch(_){} return fallbackBtnId?clickId(fallbackBtnId):false; };
     function setSel(id,val){ const el=document.getElementById(id); if(!el) return false; el.value=val; el.dispatchEvent(new Event('change',{bubbles:true})); return true; }
     /* ---- (#R42d) UNIVERSAL control layer so Atlas can operate ANY control in IntMap, not just the enumerated
        semantic actions ("all actions, literally"). It fuzzy-matches a target name/id against EVERY button,
@@ -21940,8 +21998,8 @@ window.addEventListener('DOMContentLoaded', () => {
               ctl+='</div>'; } }catch(_){} }
           return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl); }
         case 'opacity': { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','透明度調整なし: ','Keine Deckkraft: ','Нет прозрачности: ','Sin opacidad: ')+esc(r.label))); }
-        case 'projection': { const flat=(a.mode==='flat'); const ok=clickId(flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo'))):warn('⚠')); }
-        case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=clickId(sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa'))):warn('⚠')); }
+        case 'projection': { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo'))):warn('⚠')); }
+        case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa'))):warn('⚠')); }
         case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); }
         case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim();
           /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
@@ -21996,7 +22054,9 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'pitch': case 'tilt': { let tp=null; try{ tp=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); map.easeTo({pitch:tp,duration:600}); }catch(_){}
           return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:map.getPitch())+'°')); }
         case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; map.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
-        case 'tab': { const ids={news:'btn-news',information:'btn-info',info:'btn-info',stats:'btn-stats',statistics:'btn-stats',data:'btn-stats',countries:'btn-stats',nations:'btn-stats',community:'btn-community'}; const id=ids[String(a.name||'').toLowerCase()]; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
+        case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',community:'tab.community'}[String(a.name||'').toLowerCase()];
+          const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.community':'btn-community'}[cmd];
+          if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
         case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))); } return R(false, warn('⚠')); }
         case 'selectCountry': case 'country': { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note('🏳 '+esc(c.name))); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }
         case 'timeSeries': case 'timeseries': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} let ok=false; try{ if(window.IntMapTimeSeries&&window.IntMapTimeSeries.open){ window.IntMapTimeSeries.open(); ok=true; } }catch(_){} return R(ok, ok?note('📈 '+L('Time-series','時系列','Zeitreihe','Динамика','Series temporales')+': '+esc(c.name)):warn('⚠')); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||''))); }
@@ -23085,6 +23145,17 @@ window.addEventListener('DOMContentLoaded', () => {
         ai.innerHTML=(r&&r.html)||''; recordTurn('Research: '+String(name||''),'',[act],(r&&r.ok)?[]:[act]);
       }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; else { ai.innerHTML=_cancelledNote(); return; } }
       msgTools(ai,null); }
+    /* (#R82) wire Atlas INTO the kernel: the OS's semantic dispatcher = Atlas's action layer; its state = the
+       live map/UI state; its catalog = the full control/layer/module surface. After this, IntMapOS.dispatch(action)
+       runs the SAME dispatch the NL chat uses, IntMapOS.state() is the canonical state, and IntMapOS.catalog()
+       enumerates every operation the OS can perform — so the whole UI is registered as the OS's surface, and both
+       shells (GUI + chat) execute through the one kernel. */
+    try{ if(window.IntMapOS){
+      window.IntMapOS._setDispatch(a=>dispatch(a));
+      window.IntMapOS._bindState(()=>{ try{ return stateContext(); }catch(_){ return ''; } });
+      window.IntMapOS._bindCatalog(()=>{ try{ return { commands:window.IntMapOS.list(), controls:controlCatalog(), layers:layerCatalogText(), modules:moduleCatalog() }; }catch(_){ return { commands:window.IntMapOS.list() }; } });
+      window.IntMapOS.brief=(n,ll)=>{ try{ return briefEntry(n,ll); }catch(_){} };
+    } }catch(_){}
     /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
        (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
     return { open, toggle, run, brief:briefEntry, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
