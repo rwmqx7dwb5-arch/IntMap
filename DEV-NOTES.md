@@ -5,6 +5,14 @@
 
 ---
 
+## R94f — The MAP's own borders follow the clock (not the overlay layer) (tag `#R94f`)
+
+Re-report (same message): *"国境線も変えろ（historical bordersではなく、地図の国境線を）"* — change the map's actual border lines with the clock, not the optional overlay.
+
+- `window.IntMapTimeBorders`: on travel to a past year it loads the era's polygons from aourednik/historical-basemaps (the nearest snapshot ≤ the year; the repo jumps 1960→1994, so **1960 covers the late-Cold-War world incl. the USSR**), draws them as a crisp `imtb-line` (matched to the modern `borders-only-line` style) plus `imtb-lbl` uppercase country names, and **hides the modern boundary line (`borders-only-line`) and country labels (`ofm-country`)**. At "Now" it restores them (captured `ofmWas` visibility). Re-asserts on `styledata` (a globe/flat/satellite swap wipes runtime layers). Shares the `hb_<year>` IntMapCache with the Historical-borders layer, so no duplicate fetching. Fixed a race: the kernel handler now `clearTimeout`s the pending apply before branching, so "Now" right after a fast travel really clears.
+- Because the aourednik data is a full world map, this shows **every state of the era as borders + labels — the Ottoman Empire (1914), Austria-Hungary, the German/Russian empires, colonies and mandates** — which is how the "cover all 1900+ states / colonies & mandates" request is met at the map level (the Countries-tab data registry stays the major former states, since Maddison only covers ~53–69 entities before 1950).
+- Verified: module loads (0 console errors); nearest-year logic (1970→1960, 2005→2000, 1985→1960); the aourednik **1960 snapshot really contains Soviet Union + Yugoslavia + Czechoslovakia** (197 features); kernel-driven `current()` = 1960 at 1970, `null` at Now. NOT verified visually — the headless preview's WebGL map never fires `load` (screenshots time out), a known limitation; the layer swap uses the same `setLayoutProperty` pattern as the working layers.
+
 ## R94e — Maddison historical GDP/population back to 1900 (USSR appears in GDP; pre-1970 data for all) (tag `#R94e`)
 
 Re-report: *"ソ連がGDにないじゃねーか。それに、1970年以前の各国のデータも集めろ。旧国家は1900年以降は少なくともすべて網羅しろ。植民地や委任統治領なども考慮しろ。国境線も変えろ（historical bordersではなく、地図の国境線を）"* — at 1970 the USSR had **no** GDP (its estimate was gated to 1985+ and WB has no pre-1990 republic GDP), and the World Bank floor of 1960 meant no deep-past data.
