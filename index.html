@@ -27187,6 +27187,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
       if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(150,150,150,0.9)','line-opacity':0.92,'line-width':['interpolate',['linear'],['zoom'],1,0.55,4,1,8,1.7,12,2.4]}}, before);
       if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
+      /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
+         era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
+      if(!map.__imtbClick){ map.__imtbClick=true;
+        const _resolve=(nm)=>{ if(!nm) return null; const low=String(nm).toLowerCase().trim();
+          for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; if((s.nameEn||'').toLowerCase()===low) return c; }
+          try{ const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(nm)&&countryStats[S.code]) return S.code; } } }catch(_){}
+          let best=null,bl=0; for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; const n=(s.nameEn||'').toLowerCase(); if(n&&n.length>3&&(low.indexOf(n)>=0||n.indexOf(low)>=0)&&n.length>bl){ best=c; bl=n.length; } }
+          return best; };
+        const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; const code=_resolve(nm); if(code&&typeof showCountryDetail==='function') showCountryDetail(code); }catch(_){} };
+        ['imtb-lbl','imtb-line'].forEach(id=>{ map.on('click',id,_clk); map.on('mouseenter',id,()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} }); map.on('mouseleave',id,()=>{ try{ map.getCanvas().style.cursor=''; }catch(_){} }); });
+      }
       return true; }catch(_){ return false; } }
     /* visibility is owned by `window._applyBorders()`; `applyTheme()` additionally swaps the Carto base to its
        label-free variant while travelling (so the base tiles' BAKED-IN modern borders/labels disappear). */
