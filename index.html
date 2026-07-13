@@ -17205,7 +17205,7 @@ window.addEventListener('DOMContentLoaded', () => {
        dismissable popup with the measured value + rename/recolor/delete. */
     function add(geom,opts){ opts=opts||{}; const id='an'+(++seq); items.push({id,geom,color:opts.color||'#ff9500',op:(opts.op!=null?opts.op:0.16),name:opts.name||((jp()?'注記 ':'Annotation ')+seq),value:opts.value||''}); refresh(); return id; }
     function remove(id){ const i=items.findIndex(x=>x.id===id); if(i>=0){ items.splice(i,1); refresh(); } if(popup){ try{popup.remove();}catch(_){} popup=null; } }
-    return { add, remove, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };
+    return { add, remove, refresh, clear:()=>{ items.length=0; refresh(); }, open:openPop, _items:items };   /* (#R88) expose refresh so the Object List can recolour an annotation live */
   })();
   /* Densify a click-path into a great-circle polyline so the saved annotation matches the drawn arc. */
   function _gcDensify(pts){ if(!hasTurf()||pts.length<2) return pts.slice(); const out=[pts[0].slice()];
@@ -20345,7 +20345,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const mc=document.getElementById('map-container');
     if(mc){ mc.addEventListener('dragover',e=>{ if(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files')) e.preventDefault(); });
       mc.addEventListener('drop',e=>{ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){ e.preventDefault(); handleFiles(e.dataTransfer.files); } }); }
-    window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, _items:items };
+    window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, remove:removeItem, _items:items };   /* (#R88) expose remove so the universal Object List can delete an uploaded layer */
   })();
 
   /* ===== (#R40) Comprehensive LIVE weather popup (right-click → "Weather here"). Open-Meteo forecast API
@@ -23660,6 +23660,9 @@ window.addEventListener('DOMContentLoaded', () => {
                                    :'✓ '+L('Back to the normal layout','通常レイアウトに戻しました','Zurück zum Normal-Layout','Обычный вид','De vuelta al diseño normal'))
                        : warn('⚠ '+L('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio'))); }
         case 'shortcuts': case 'keyboard': case 'hotkeys': { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note('⌨ '+L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
+        /* (#R88) universal object list — see & manage every pin/drawing/radius/route/upload/isochrone in one panel */
+        case 'objects': case 'objectList': case 'manageObjects': case 'listObjects': case 'myObjects': { let n=0; try{ if(window.IntMapObjects){ n=window.IntMapObjects.count(); window.IntMapObjects.open(); } }catch(_){}
+          return R(true, note('🗂 '+L('Objects','オブジェクト一覧','Objekte','Объекты','Objetos')+' · '+n+' '+L('on the map','件','Objekte','объектов','objetos'))+note(L('Manage every pin, drawing, radius, route, uploaded layer and reachable-area here — rename, recolour, hide or delete.','ピン・図形・半径・経路・アップロード・到達圏をここで一括管理（名称変更・色変更・非表示・削除）。','Alle Objekte hier verwalten.','Управляйте всеми объектами здесь.','Gestiona todos los objetos aquí.'))); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
@@ -24832,6 +24835,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(fm){ const mm={drive:'auto',driving:'auto',car:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle'}[fm[3]]||'auto'; let mnt=+fm[1]; if(/^h/.test(fm[2])) mnt*=60; return A({type:'isochrone',place:fm[4].trim(),mode:mm,minutes:mnt}); }
         fm=low.match(/^(?:the )?(?:isochrone|reachable area|reachability|catchment(?: area)?)\s+(?:for|from|of|around|at)\s+(.+?)\.?$/i);
         if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()}); }
+      /* (#R88) universal object list — "オブジェクト一覧", "manage objects", "show all my objects/pins/drawings" */
+      if(/^(?:(?:汎用)?オブジェクト(?:の)?(?:一覧|リスト|管理|マネージャ)|オブジェクトを(?:管理|一覧|表示)|ピンや?(?:図形|描画)?(?:の)?(?:一覧|管理)|地図上の(?:オブジェクト|もの)を(?:管理|一覧)|(?:manage|list|show|open)\s+(?:all\s+)?(?:my\s+)?(?:map\s+)?objects?|object\s+(?:list|manager|panel)|manage\s+(?:pins|drawings|shapes|everything on the map))[。.!?！？]?$/i.test(s)) return A({type:'objects'});
       /* (#R86c) multi-stop route optimisation (TSP) — "A・B・Cを最短で回る", "optimize route through A, B, C" */
       { fm=low.match(/^(?:optimi[sz]e|plan|find|best|shortest)\s+(?:the\s+)?(?:route|order|tour|trip|itinerary|path)\s+(?:to\s+)?(?:visit(?:ing)?|through|for|of|via|around|between)\s+(.+?)\.?$/i)
           ||low.match(/^(?:best|shortest|optimal|most efficient)\s+(?:order|way|route)\s+to\s+visit\s+(.+?)\.?$/i);
@@ -25681,6 +25686,98 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-webcams-lbl'); if(s) s.textContent='📷 '+lbl(); try{ if(on) updateLegend(); }catch(_){} });
     if(document.readyState!=='loading') setTimeout(buildUI,900); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,900));
   })();
+
+  /* ===== (#R88) UNIVERSAL OBJECT LIST ("汎用オブジェクト一覧") — ONE place to see & manage EVERY user object on the
+     map (pins · radius circles · kept drawings/annotations · uploaded GeoJSON · the active route · the reachable-area
+     isochrone), instead of six scattered UIs. Per object: fly-to, rename, recolour, hide, delete — done where each
+     subsystem supports it. Reads the REAL existing state and calls the REAL existing remove APIs (fully additive — no
+     subsystem is refactored). A small count-badge button appears bottom-left whenever ≥1 object exists. ===== */
+  window.IntMapObjects=(function(){
+    if(typeof map==='undefined'||!map) return { open(){}, close(){}, toggle(){}, refresh(){}, count(){ return 0; } };
+    const OL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[currentLang]||en;
+    const labels={}, hiddenUp={};   /* labels: rename side-store for objects with no native name; hiddenUp: upload sid→hidden */
+    let panel=null, fab=null, openState=false;
+    const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function srcFeats(id){ try{ const s=map.getSource(id); return (s&&s._data&&s._data.features)||[]; }catch(_){ return []; } }
+    function fitFeats(feats){ try{ let a=180,b=90,c=-180,d=-90; const eat=co=>{ if(typeof co[0]==='number'){ if(co[0]<a)a=co[0]; if(co[1]<b)b=co[1]; if(co[0]>c)c=co[0]; if(co[1]>d)d=co[1]; } else co.forEach(eat); };
+      feats.forEach(f=>{ if(f&&f.geometry&&f.geometry.coordinates) eat(f.geometry.coordinates); });
+      if(isFinite(a)&&c>=a){ if(a===c&&b===d) map.flyTo({center:[a,b],zoom:Math.max(map.getZoom(),12),duration:800}); else map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:800}); } }catch(_){} }
+    /* one normalised object list gathered live from every subsystem */
+    function collect(){ const out=[];
+      try{ (userPins||[]).forEach((p,i)=>out.push({ id:p.id, kind:'pin', dot:'#ff3b30', name:labels[p.id]||(OL('Pin','ピン','Pin','Метка','Pin')+' '+(i+1)),
+        focus:()=>map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),13),duration:800}), rename:v=>{ labels[p.id]=v; }, remove:()=>{ try{ removePin(p.id); }catch(_){} } })); }catch(_){}
+      try{ (radiusItems||[]).forEach(c=>out.push({ id:c.id, kind:'radius', dot:c.color, color:c.color, name:labels[c.id]||(c.radiusKm+' km '+OL('radius','半径','Radius','радиус','radio')),
+        focus:()=>map.flyTo({center:c.center,duration:800}), rename:v=>{ labels[c.id]=v; }, setColor:col=>{ c.color=col; try{ refreshTool(); }catch(_){} }, remove:()=>{ try{ window.removeRadiusItem(c.id); }catch(_){} } })); }catch(_){}
+      try{ const IA=window.IntMapAnnotations; ((IA&&IA._items)||[]).forEach(it=>out.push({ id:it.id, kind:'annot', dot:it.color, color:it.color, name:it.name||OL('Drawing','図形','Zeichnung','Фигура','Dibujo'),
+        focus:()=>{ if(it.geom) fitFeats([{geometry:it.geom}]); }, rename:v=>{ it.name=v; }, setColor:col=>{ it.color=col; try{ IA.refresh&&IA.refresh(); }catch(_){} }, remove:()=>{ try{ IA.remove(it.id); }catch(_){} } })); }catch(_){}
+      try{ const GU=window.GeoJSONUpload; ((GU&&GU._items)||[]).forEach(it=>{ const oid='up_'+it.n; out.push({ id:oid, kind:'upload', dot:it.col, color:it.col, name:labels[oid]||it.name||'GeoJSON', hidden:!!hiddenUp[it.sid],
+        focus:()=>fitFeats(srcFeats(it.sid)), rename:v=>{ labels[oid]=v; },
+        setColor:col=>{ it.col=col; ['-fill','-line','-pt'].forEach((sfx,k)=>{ const L=it.sid+sfx; try{ if(map.getLayer(L)) map.setPaintProperty(L, k===0?'fill-color':k===1?'line-color':'circle-color', col); }catch(_){} }); },
+        toggleHide:()=>{ hiddenUp[it.sid]=!hiddenUp[it.sid]; const v=hiddenUp[it.sid]?'none':'visible'; ['-fill','-line','-pt'].forEach(sfx=>{ const L=it.sid+sfx; try{ if(map.getLayer(L)) map.setLayoutProperty(L,'visibility',v); }catch(_){} }); },
+        remove:()=>{ try{ if(GU.remove) GU.remove(it.n); }catch(_){} } }); }); }catch(_){}
+      try{ const rf=srcFeats('imroute-src').filter(f=>f.geometry&&f.geometry.type==='LineString'); if(rf.length) out.push({ id:'route', kind:'route', dot:'#1a73e8', name:OL('Route','経路','Route','Маршрут','Ruta'),
+        focus:()=>fitFeats(rf), remove:()=>{ try{ window.IntMapRouting&&window.IntMapRouting.clear(); }catch(_){} } }); }catch(_){}
+      try{ const isf=srcFeats('im-iso-src'); if(isf.length) out.push({ id:'iso', kind:'iso', dot:'#0a84ff', name:OL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable'),
+        focus:()=>fitFeats(isf), remove:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.clear(); }catch(_){} } }); }catch(_){}
+      return out; }
+    function count(){ try{ return collect().length; }catch(_){ return 0; } }
+    const ICON={ pin:'📍', radius:'⭕', annot:'✏️', upload:'📂', route:'🧭', iso:'🎯' };
+    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable') })[k]||k; }
+    let _objs=[];
+    function renderList(){ if(!panel) return; const body=panel.querySelector('.iol-body'); if(!body) return;
+      _objs=collect(); const order=['pin','radius','annot','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });
+      if(!_objs.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:14px 4px;line-height:1.6;">'+OL('No objects yet. Drop a pin, draw, add a radius, upload GeoJSON, or make a route — they all show up here to manage in one place.','まだオブジェクトがありません。ピン・図形・半径・GeoJSON・経路を作ると、ここで一括管理できます。','Noch keine Objekte.','Пока нет объектов.','Aún no hay objetos.')+'</div>'; return; }
+      let h=''; order.forEach(k=>{ const g=groups[k]; if(!g||!g.length) return;
+        h+='<div class="iol-grp"><span>'+ICON[k]+' '+esc(kindLbl(k))+'</span><span style="color:var(--text-muted);font-weight:600;">'+g.length+'</span></div>';
+        g.forEach(o=>{ const i=_objs.indexOf(o);
+          h+='<div class="iol-row" data-i="'+i+'">'
+            +'<span class="iol-dot" style="background:'+esc(o.dot||'#888')+';"></span>'
+            +'<span class="iol-name" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">'+esc(o.name)+'</span>'
+            +(o.setColor?('<label class="iol-ic" title="'+esc(OL('Colour','色','Farbe','Цвет','Color'))+'"><input type="color" value="'+esc(o.color||'#888888')+'" data-act="color"></label>'):'')
+            +(o.toggleHide?('<button class="iol-ic" data-act="hide" title="'+esc(OL('Show / hide','表示切替','Ein/Aus','Показать/скрыть','Mostrar/ocultar'))+'">'+(o.hidden?'🙈':'👁')+'</button>'):'')
+            +'<button class="iol-ic" data-act="focus" title="'+esc(OL('Fly to','移動','Anfliegen','Перейти','Ir'))+'">◎</button>'
+            +(o.rename?('<button class="iol-ic" data-act="rename" title="'+esc(OL('Rename','名称変更','Umbenennen','Переименовать','Renombrar'))+'">✎</button>'):'')
+            +'<button class="iol-ic iol-del" data-act="del" title="'+esc(OL('Delete','削除','Löschen','Удалить','Eliminar'))+'">✕</button>'
+          +'</div>'; });
+      });
+      body.innerHTML=h; }
+    function ensurePanel(){ if(panel) return panel;
+      panel=document.createElement('div'); panel.id='iol-panel';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);max-height:74vh;z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.innerHTML='<div class="iol-head" style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🗂 '+esc(OL('Objects','オブジェクト一覧','Objekte','Объекты','Objetos'))+'</span><button class="iol-clear" style="border:none;background:transparent;color:var(--info-mil,#ff3b30);font-size:11px;font-weight:700;cursor:pointer;">'+esc(OL('Clear all','全消去','Alles löschen','Очистить','Borrar todo'))+'</button><button class="iol-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<div class="iol-body" style="flex:1 1 auto;overflow-y:auto;padding:6px 10px 12px;"></div>';
+      document.body.appendChild(panel);
+      if(!document.getElementById('iol-css')){ const st=document.createElement('style'); st.id='iol-css';
+        st.textContent='#iol-panel .iol-grp{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;color:var(--text-main);text-transform:uppercase;letter-spacing:.03em;padding:9px 3px 4px;}'
+          +'#iol-panel .iol-row{display:flex;align-items:center;gap:6px;padding:4px 3px;border-top:1px solid rgba(128,128,128,0.12);}'
+          +'#iol-panel .iol-dot{flex:0 0 auto;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.15);}'
+          +'#iol-panel .iol-name{flex:1;min-width:0;font-size:12.5px;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}'
+          +'#iol-panel .iol-ic{flex:0 0 auto;width:26px;height:26px;border:none;background:transparent;color:var(--text-muted);font-size:13px;cursor:pointer;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0;}'
+          +'#iol-panel .iol-ic:hover{background:var(--input-bg);color:var(--text-main);}'
+          +'#iol-panel .iol-ic input[type=color]{width:16px;height:16px;border:none;background:none;padding:0;cursor:pointer;}'
+          +'#iol-panel .iol-del:hover{color:#fff;background:var(--info-mil,#ff3b30);}'
+          +'#iol-fab{position:fixed;left:16px;bottom:104px;z-index:1401;display:none;align-items:center;gap:6px;height:38px;padding:0 13px;border:none;border-radius:19px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));box-shadow:0 6px 20px rgba(0,0,0,0.35);font-size:13px;font-weight:700;cursor:pointer;}';
+        document.head.appendChild(st); }
+      panel.querySelector('.iol-close').onclick=()=>close();
+      panel.querySelector('.iol-clear').onclick=()=>{ if(!_objs.length) return; _objs.slice().forEach(o=>{ try{ o.remove&&o.remove(); }catch(_){} }); setTimeout(renderList,60); };
+      panel.querySelector('.iol-body').addEventListener('click',e=>{ const row=e.target.closest&&e.target.closest('.iol-row'); if(!row) return; const o=_objs[+row.getAttribute('data-i')]; if(!o) return; const act=(e.target.getAttribute&&e.target.getAttribute('data-act'))||(e.target.closest('[data-act]')&&e.target.closest('[data-act]').getAttribute('data-act'));
+        if(act==='focus'){ try{ o.focus&&o.focus(); }catch(_){} }
+        else if(act==='del'){ try{ o.remove&&o.remove(); }catch(_){} setTimeout(renderList,60); }
+        else if(act==='hide'){ try{ o.toggleHide&&o.toggleHide(); }catch(_){} renderList(); }
+        else if(act==='rename'){ const cur=o.name; const v=window.prompt(OL('New name','新しい名前','Neuer Name','Новое имя','Nuevo nombre'),cur); if(v!=null&&v.trim()){ try{ o.rename&&o.rename(v.trim()); }catch(_){} renderList(); } } });
+      panel.querySelector('.iol-body').addEventListener('input',e=>{ if(!(e.target.getAttribute&&e.target.getAttribute('data-act')==='color')) return; const row=e.target.closest('.iol-row'); const o=row&&_objs[+row.getAttribute('data-i')]; if(o&&o.setColor){ try{ o.setColor(e.target.value); }catch(_){} const dot=row.querySelector('.iol-dot'); if(dot) dot.style.background=e.target.value; } });
+      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.iol-head')); }catch(_){}
+      return panel; }
+    function ensureFab(){ if(fab) return fab; ensurePanel(); fab=document.createElement('button'); fab.id='iol-fab';
+      fab.innerHTML='🗂 <span class="iol-fab-n">0</span>'; fab.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos');
+      fab.onclick=()=>toggle(); document.body.appendChild(fab); return fab; }
+    function tickFab(){ try{ ensureFab(); const n=count(); const ns=fab.querySelector('.iol-fab-n'); if(ns) ns.textContent=n; fab.style.display=(n>0&&!openState)?'inline-flex':'none'; }catch(_){} }
+    function open(){ ensurePanel(); renderList(); panel.style.display='flex'; openState=true; tickFab(); }
+    function close(){ if(panel) panel.style.display='none'; openState=false; tickFab(); }
+    function toggle(){ (openState&&panel&&panel.style.display!=='none')?close():open(); }
+    function refresh(){ if(openState) renderList(); tickFab(); }
+    setInterval(tickFab, 2200); setTimeout(tickFab, 1500);
+    return { open, close, toggle, refresh, count }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
