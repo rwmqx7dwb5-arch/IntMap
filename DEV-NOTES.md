@@ -5,6 +5,17 @@
 
 ---
 
+## R94k — Era-accurate empires & identities (Qing/ROC, German Empire, British Raj, Austria-Hungary…) + Time-machine UI + faster borders + back-to-stats colour (tag `#R94k`)
+
+Re-report: at 1913 the Countries tab showed **People's Republic of China, modern India, modern flags**, and **no Austria-Hungary** — *"全部史実に対応させろ… (言われた例だけ対処して終わりにするな)"*.
+
+- **Empires as former states** (`IntMapHistStates`): added Austria-Hungary (→1918; AUT/HUN/CZE/SVK/SVN/HRV/BIH), Ottoman Empire (→1922; TUR/SYR/LBN/IRQ/JOR/ISR/PSE), Russian Empire (→1917; the 15 SSRs + FIN + POL), British Raj (→1947; IND/PAK/BGD), Empire of Japan (1910–1945; JPN/KOR/PRK/TWN) — each with an inline flag, faithful dates and Maddison-aggregated figures, and `hbRe` map-colour matching.
+- **Single-country identities** (`IntMapHistId`): a country whose territory is ~unchanged but whose **name+flag** differed by era — China (Qing → Republic of China → PRC), German Empire, Kingdom of Italy, Persia, Siam, Dutch East Indies. The engine calls `IntMapHistId.apply(when)` after the former-states pass (skips `_histHidden` successors) and `.clear()` on restore; the country keeps its own Maddison data but shows the era name/flag (and `wiki` for the card intro). Verified **1913**: US · **Republic of China** · **German Empire** · UK · **British Raj** · France · **Kingdom of Italy** · **Empire of Japan** · **Russian Empire** · **Austria-Hungary** · **Ottoman** — no PRC, no modern India/Austria/Indonesia; all with era flags. Data-driven → more eras = more table rows.
+- **Time-machine UI** (`#R94k`): removed the tacky all-caps ("TIME MACHINE" → "Time machine", `text-transform:none`), bigger prominent date label, custom slim slider with a soft primary fill + round thumb, centred year field, tidier spacing.
+- **Faster border swap:** the aourednik snapshots are prefetched into IndexedDB (IntMapCache) on idle, and the travel debounce cut 320→120 ms, so entering a year changes the borders near-instantly.
+- **"Back to statistics" colour** now really clears: the styledata re-paint fired because `codes[]` was still populated after leaving; it's guarded on `#scp-view` being open.
+- (Still open from this list: making the historical **map labels clickable** like modern countries — next.) 0 console errors.
+
 ## R94i — Former-state flag too big/floating + the ROOT CAUSE of "1900–1950 borders don't change" (baked-in raster borders) + readout + basis (tag `#R94i`/`#R94j`)
 
 Re-reports: *"ソ連の国旗が明らかに大きすぎる…縦横比や四隅の形状も旧国家は浮いている"* and *"20世紀前半の国データや国境線は設定年月日と同期されていない"* (I first mis-read "20s前半" as the 2020s — it means the **first half of the 20th century**).

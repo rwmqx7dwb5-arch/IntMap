@@ -677,19 +677,24 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ntl-toggle{ background:var(--input-bg); border:none; color:var(--text-main); width:36px; height:36px; font-size:16px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .ntl-toggle:hover{ background:var(--primary-color); color:#fff; }
     .news-timeline.active .ntl-toggle{ background:var(--primary-color); color:#fff; }
-    .ntl-body{ display:flex; flex-direction:column; gap:4px; padding:4px 8px; min-width:340px; }
-    .ntl-head{ display:flex; align-items:center; gap:8px; }
-    .ntl-label{ font-size:13px; font-weight:600; min-width:120px; }
-    .ntl-date{ background:var(--input-bg); border:1px solid rgba(128,128,128,0.15); border-radius:8px; padding:5px 8px; font-size:12px; color:var(--text-main); outline:none; color-scheme:inherit; }
+    .ntl-body{ display:flex; flex-direction:column; gap:7px; padding:6px 10px 8px; min-width:344px; }
+    .ntl-head{ display:flex; align-items:center; gap:7px; }
+    .ntl-label{ font-size:15px; font-weight:700; min-width:104px; color:var(--text-main); letter-spacing:-0.01em; }
+    .ntl-date{ background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); border-radius:9px; padding:6px 8px; font-size:12px; color:var(--text-main); outline:none; color-scheme:inherit; }
     [data-theme="dark"] .ntl-date{ color-scheme:dark; }
-    .ntl-today{ background:var(--primary-color); border:none; color:#fff; font-size:11px; font-weight:600; padding:6px 10px; border-radius:8px; cursor:pointer; }
+    .ntl-today{ background:var(--primary-color); border:none; color:#fff; font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:9px; cursor:pointer; margin-left:auto; }
     .ntl-today:hover{ filter:brightness(1.08); }
-    .ntl-slider{ width:100%; accent-color:var(--primary-color); margin:2px 0; }
-    .ntl-scale{ display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); padding:0 4px; }
-    /* (#R94) master-clock chrome: a title, a deep-time year field and a "what's synced" readout */
-    .ntl-title{ font-size:11px; font-weight:700; letter-spacing:0.03em; color:var(--text-muted); text-transform:uppercase; margin:0 0 1px; display:flex; align-items:center; gap:5px; }
-    .ntl-title::before{ content:"⏳"; font-size:12px; }
-    .ntl-year{ width:64px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.15); border-radius:8px; padding:5px 6px; font-size:12px; color:var(--text-main); outline:none; -moz-appearance:textfield; }
+    /* (#R94k) refreshed slider: a slim track with a soft primary fill and a clean round thumb */
+    .ntl-slider{ -webkit-appearance:none; appearance:none; width:100%; height:5px; border-radius:99px; margin:5px 0 1px; cursor:pointer; outline:none;
+      background:linear-gradient(90deg,var(--primary-color) 0%,var(--primary-color) var(--ntl-fill,100%),rgba(128,128,128,0.22) var(--ntl-fill,100%),rgba(128,128,128,0.22) 100%); }
+    .ntl-slider::-webkit-slider-thumb{ -webkit-appearance:none; appearance:none; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 4px rgba(0,0,0,0.35); cursor:pointer; }
+    .ntl-slider::-moz-range-thumb{ width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid var(--primary-color); box-shadow:0 1px 4px rgba(0,0,0,0.35); cursor:pointer; }
+    .ntl-scale{ display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-muted); padding:0 2px; }
+    /* (#R94k) header: a proper (not all-caps) title + a deep-time year field and a "what's synced" readout */
+    .ntl-title{ font-size:13.5px; font-weight:700; letter-spacing:-0.01em; color:var(--text-main); text-transform:none; margin:0 0 2px; display:flex; align-items:center; gap:7px; }
+    .ntl-title::before{ content:"⏳"; font-size:15px; }
+    .ntl-year{ width:60px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); border-radius:9px; padding:6px 7px; font-size:12px; font-weight:600; color:var(--text-main); outline:none; -moz-appearance:textfield; text-align:center; }
+    .ntl-year:focus{ border-color:var(--primary-color); }
     .ntl-year::-webkit-outer-spin-button,.ntl-year::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     .ntl-synced{ font-size:10.5px; line-height:1.5; color:var(--text-muted); margin-top:4px; display:none; }
     .news-timeline.active .ntl-synced{ display:block; }
@@ -15188,7 +15193,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let curYear=null;          /* the year currently overlaid, or null */
     let seq=0, deb=null;
     function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
-    function restore(){ try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries first */
+    function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
+      try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
       if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
@@ -15222,6 +15228,8 @@ window.addEventListener('DOMContentLoaded', () => {
       curYear=year; window._imTimeYear=year; window._imTimeReal=useM;
       /* former states: replace successors with the historical state for its real lifespan (uses the year values just overlaid) */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(window.IntMapTime.when()); }catch(_){}
+      /* then rename/re-flag the remaining single countries to their era identity (Qing/ROC, German Empire, …) */
+      try{ if(window.IntMapHistId) window.IntMapHistId.apply(window.IntMapTime.when()); }catch(_){}
     }
     function repaint(){
       try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof searchVal==='function')?searchVal():''); }catch(_){}
@@ -15279,6 +15287,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_SDN=flag('<rect width="30" height="6.667" fill="#D21034"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#000000"/><path d="M0,0 12,10 0,20Z" fill="#007229"/>');
     const F_ETH=flag('<rect width="30" height="6.667" fill="#078930"/><rect y="6.667" width="30" height="6.667" fill="#FCDD09"/><rect y="13.333" width="30" height="6.667" fill="#DA121A"/>');
     const F_IDN=flag('<rect width="30" height="10" fill="#FF0000"/><rect y="10" width="30" height="10" fill="#ffffff"/>');
+    /* (#R94k) pre-WWI empires — flags drawn inline (simplified but recognisable; heraldry approximated) */
+    const F_AUH=flag('<rect width="15" height="6.667" fill="#ED2939"/><rect y="6.667" width="15" height="6.667" fill="#ffffff"/><rect y="13.333" width="15" height="6.667" fill="#ED2939"/><rect x="15" width="15" height="6.667" fill="#CE2939"/><rect x="15" y="6.667" width="15" height="6.667" fill="#ffffff"/><rect x="15" y="13.333" width="15" height="6.667" fill="#436F4D"/>');
+    const F_OTT=flag('<rect width="30" height="20" fill="#D00000"/><circle cx="12" cy="10" r="5" fill="#ffffff"/><circle cx="13.7" cy="10" r="4" fill="#D00000"/>'+STAR(18.6,10,2.1,'#ffffff'));
+    const F_RUE=flag('<rect width="30" height="6.667" fill="#ffffff"/><rect y="6.667" width="30" height="6.667" fill="#0039A6"/><rect y="13.333" width="30" height="6.667" fill="#D52B1E"/>');
+    const F_RAJ=flag('<rect width="30" height="20" fill="#012169"/><path d="M0,0 30,20 M30,0 0,20" stroke="#ffffff" stroke-width="3.4"/><path d="M0,0 30,20 M30,0 0,20" stroke="#C8102E" stroke-width="1.6"/><path d="M15,0 V20 M0,10 H30" stroke="#ffffff" stroke-width="5"/><path d="M15,0 V20 M0,10 H30" stroke="#C8102E" stroke-width="3"/>');
+    const F_JEM=flag('<rect width="30" height="20" fill="#ffffff"/><circle cx="15" cy="10" r="6" fill="#BC002D"/>');
     /* code = synthetic ISO-like id · from/to = real lifespan · succ = modern ISO3 successors to aggregate & hide */
     const STATES=[
       { code:'SUN', from:'1922-12-30', to:'1991-12-26', flag:F_SUN, region:'Eurasia', wiki:'Soviet Union',
@@ -15314,7 +15328,23 @@ window.addEventListener('DOMContentLoaded', () => {
         succ:['ETH','ERI'] },
       { code:'IDU', from:'1976-07-17', to:'2002-05-20', flag:F_IDN, region:'Southeast Asia', wiki:'Indonesian occupation of East Timor',
         name:{en:'Indonesia (incl. East Timor)',jp:'インドネシア（東ティモール含む）',de:'Indonesien (mit Osttimor)',ru:'Индонезия (с Восточным Тимором)',es:'Indonesia (con Timor Oriental)'},
-        succ:['IDN','TLS'] }
+        succ:['IDN','TLS'] },
+      /* (#R94k) pre-WWI / interwar EMPIRES — the multi-nation states that dominated the early 20th century */
+      { code:'AUH', from:'1867-06-08', to:'1918-11-11', flag:F_AUH, region:'Europe', wiki:'Austria-Hungary',
+        name:{en:'Austria-Hungary',jp:'オーストリア＝ハンガリー帝国',de:'Österreich-Ungarn',ru:'Австро-Венгрия',es:'Austria-Hungría'},
+        succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'] },
+      { code:'OTT', from:'1876-01-01', to:'1922-11-01', flag:F_OTT, region:'Middle East', wiki:'Ottoman Empire',
+        name:{en:'Ottoman Empire',jp:'オスマン帝国',de:'Osmanisches Reich',ru:'Османская империя',es:'Imperio otomano'},
+        succ:['TUR','SYR','LBN','IRQ','JOR','ISR','PSE'] },
+      { code:'RUE', from:'1800-01-01', to:'1917-11-07', flag:F_RUE, region:'Eurasia', wiki:'Russian Empire',
+        name:{en:'Russian Empire',jp:'ロシア帝国',de:'Russisches Kaiserreich',ru:'Российская империя',es:'Imperio ruso'},
+        succ:['RUS','UKR','BLR','LTU','LVA','EST','MDA','GEO','ARM','AZE','KAZ','UZB','TKM','KGZ','TJK','FIN','POL'] },
+      { code:'RAJ', from:'1858-06-28', to:'1947-08-15', flag:F_RAJ, region:'South Asia', wiki:'British Raj',
+        name:{en:'British Raj (British India)',jp:'イギリス領インド帝国',de:'Britisch-Indien',ru:'Британская Индия',es:'India británica'},
+        succ:['IND','PAK','BGD'] },
+      { code:'JEM', from:'1910-08-29', to:'1945-09-02', flag:F_JEM, region:'East Asia', wiki:'Empire of Japan',
+        name:{en:'Empire of Japan',jp:'大日本帝国',de:'Japanisches Kaiserreich',ru:'Японская империя',es:'Imperio del Japón'},
+        succ:['JPN','KOR','PRK','TWN'] }
     ];
     const CODES=STATES.map(S=>S.code);
     function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
@@ -15361,8 +15391,46 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* used by renderStats when the tab renders (countryStats already carries the applied entries + hidden flags) */
     /* (#R94h) match a former state to its polygon NAME in the aourednik era-borders data (for map colouring) */
-    const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i };
+    const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i,
+      AUH:/austria.?hungary|austro.?hungar|austrian empire/i, OTT:/ottoman/i, RUE:/russian empire|^russia$/i, RAJ:/british raj|british india|^india$/i, JEM:/^japan$|japanese empire|empire of japan/i };
     return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
+  })();
+
+  /* ============================================================================
+   *  (#R94k) HISTORICAL COUNTRY IDENTITY — a modern country whose TERRITORY is roughly the same but whose
+   *  NAME and FLAG were different in an earlier era (China: Qing→Republic of China→PRC; German Empire; Kingdom
+   *  of Italy; Persia; Siam …). When the clock is in that era, the country keeps its own Maddison data but shows
+   *  the historical name + flag. Multi-nation empires that HID several modern countries live in IntMapHistStates
+   *  instead; this is only for single-country renamings. ============================================= */
+  window.IntMapHistId=(function(){
+    const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
+    const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
+    const F_GEMP=flag('<rect width="30" height="6.667" fill="#000000"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DD0000"/>');
+    const F_ITK=flag('<rect width="30" height="20" fill="#ffffff"/><rect width="10" height="20" fill="#009246"/><rect x="20" width="10" height="20" fill="#CE2B37"/><rect x="12.6" y="6.6" width="4.8" height="6.8" fill="#ffffff" stroke="#0038A8" stroke-width="0.5"/><rect x="14.55" y="6.6" width="0.9" height="6.8" fill="#C8102E"/><rect x="12.6" y="9.55" width="4.8" height="0.9" fill="#C8102E"/>');
+    const F_QING=flag('<rect width="30" height="20" fill="#FFDE00"/><circle cx="7" cy="6" r="2.1" fill="#DE2910"/><path d="M4,15 C9,10 13,17 18,12 C22,9 26,13 27,12.5" stroke="#0055A4" stroke-width="1.5" fill="none" stroke-linecap="round"/>');
+    const F_ROC=flag('<rect width="30" height="4" fill="#DE2910"/><rect y="4" width="30" height="4" fill="#FFCC00"/><rect y="8" width="30" height="4" fill="#0000A0"/><rect y="12" width="30" height="4" fill="#ffffff"/><rect y="16" width="30" height="4" fill="#000000"/>');
+    const F_PERSIA=flag('<rect width="30" height="6.667" fill="#239F40"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DA0000"/><circle cx="15" cy="10" r="2.3" fill="#E8B800"/>');
+    const F_SIAM=flag('<rect width="30" height="20" fill="#A51931"/><rect y="4" width="30" height="12" fill="#ffffff"/><rect y="7" width="30" height="6" fill="#2D2A4A"/>');
+    const F_NLD=flag('<rect width="30" height="6.667" fill="#AE1C28"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#21468B"/>');
+    const ID={
+      CHN:[{from:1636,to:1912,name:{en:'Qing Empire',jp:'清',de:'Qing-Reich',ru:'Империя Цин',es:'Imperio Qing'},flag:F_QING,wiki:'Qing dynasty'},
+           {from:1912,to:1949,name:{en:'Republic of China',jp:'中華民国',de:'Republik China',ru:'Китайская Республика',es:'República de China'},flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
+      DEU:[{from:1871,to:1918,name:{en:'German Empire',jp:'ドイツ帝国',de:'Deutsches Kaiserreich',ru:'Германская империя',es:'Imperio alemán'},flag:F_GEMP,wiki:'German Empire'}],
+      ITA:[{from:1861,to:1946,name:{en:'Kingdom of Italy',jp:'イタリア王国',de:'Königreich Italien',ru:'Королевство Италия',es:'Reino de Italia'},flag:F_ITK,wiki:'Kingdom of Italy'}],
+      IRN:[{from:1800,to:1935,name:{en:'Persia',jp:'ペルシャ',de:'Persien',ru:'Персия',es:'Persia'},flag:F_PERSIA,wiki:'Qajar Iran'}],
+      THA:[{from:1800,to:1939,name:{en:'Siam',jp:'シャム',de:'Siam',ru:'Сиам',es:'Siam'},flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
+      IDN:[{from:1800,to:1945,name:{en:'Dutch East Indies',jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'},flag:F_NLD,wiki:'Dutch East Indies'}]
+    };
+    function at(code,year){ const arr=ID[code]; if(!arr||!year) return null; for(const e of arr){ if(year>=e.from&&year<=e.to) return e; } return null; }
+    let _applied=null;
+    function clear(){ if(!_applied) return; for(const code in _applied){ const s=countryStats[code]; if(!s) continue; const o=_applied[code];
+      s.nameEn=o.nameEn; s.nameJp=o.nameJp; s.name=o.name; s.flag=o.flag; s.wiki=o.wiki; if(!o._hid) delete s._histId; } _applied=null; }
+    function apply(date){ clear(); const year=new Date(date).getFullYear(); const saved={};
+      for(const code in ID){ const s=countryStats[code]; if(!s||s._histHidden) continue; const e=at(code,year); if(!e) continue;
+        saved[code]={nameEn:s.nameEn,nameJp:s.nameJp,name:s.name,flag:s.flag,wiki:s.wiki,_hid:!!s._histId};
+        s.nameEn=e.name.en; s.nameJp=e.name.jp; s.name=e.name; s.flag=e.flag; s.wiki=e.wiki; s._histId=true; }
+      if(Object.keys(saved).length) _applied=saved; }
+    return { at, apply, clear, _applied:()=>_applied };
   })();
 
   /* (#R94) Köppen climate era follows the clock (uses the existing period rasters, no new assets). Only
@@ -18644,7 +18712,9 @@ window.addEventListener('DOMContentLoaded', () => {
       return feats.length>0; }
     function clearMap(){ try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     /* re-apply after a base-style swap (globe/flat/satellite reload wipes runtime sources) */
-    try{ if(typeof map!=='undefined'&&map) map.on('styledata',()=>{ if(codes&&codes.length){ setTimeout(()=>{ try{ paintOnMap(); }catch(_){} },160); } }); }catch(_){}
+    /* (#R94k) only re-paint while the comparison is actually OPEN — otherwise a styledata after "Back to
+       statistics" (codes[] is still populated) re-painted the cleared map colouring. */
+    try{ if(typeof map!=='undefined'&&map) map.on('styledata',()=>{ if(codes&&codes.length&&document.getElementById('scp-view')){ setTimeout(()=>{ try{ if(document.getElementById('scp-view')) paintOnMap(); }catch(_){} },160); } }); }catch(_){}
     /* (#R94) re-render the OPEN comparison when the master clock moves — bars/table/focus follow the year. */
     let _ttReb=null;
     try{ if(window.IntMapTime) window.IntMapTime.on(()=>{ if(host&&document.getElementById('scp-view')){ clearTimeout(_ttReb); _ttReb=setTimeout(()=>{ try{ render(); }catch(_){} },380); } }); }catch(_){}
@@ -27130,7 +27200,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
       if(e.isLive || e.year>=new Date().getFullYear() || e.year>YEARS[YEARS.length-1]){ clear(); return; }
-      go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },320); });
+      go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },120); });
+    /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
+       (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
+    (function warm(){ const pf=()=>{ let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); };
+      if('requestIdleCallback' in window) requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,3500); })();
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
