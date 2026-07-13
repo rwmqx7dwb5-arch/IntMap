@@ -22087,11 +22087,41 @@ window.addEventListener('DOMContentLoaded', () => {
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false, camZoom=null; const keys={};
+    let acKey='airliner', camMode='chase', stabilizeCam=false, paused=false;   /* (#R94p) selectable aircraft + camera state */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
-    /* (#R85) REAL flight model ("根本的に作り替えろ・完全体にしろ") — a point-mass 3-DOF aircraft: lift/drag/thrust/
-       weight, angle-of-attack-driven lift with a genuine stall break, air density falling with altitude, coordinated
-       banked turns, load factor (G), terrain collision with landing-vs-crash judgement, and a banking camera. */
-    const AC={ m:9500, S:27, g:9.80665, Tmax:82000, CL0:0.12, CLa:5.2, aStall:0.30, CD0:0.021, k:0.075, rho0:1.225, Hs:8500, Vne:340, Vstall:53 };
+    /* ===== (#R94p) FULL RIGID-BODY FLIGHT MODEL ("感性(慣性)や空気抵抗、機体による差…すべてを考慮した完璧なモデル").
+       Rebuilt from the 3-DOF R85 model. New physics:
+        • ROTATIONAL INERTIA — the stick commands angular ACCELERATION (a moment ÷ inertia), damped; roll/pitch RATES
+          integrate to attitude, so a bank HOLDS when you centre the ailerons (it no longer snaps to wings-level) and
+          pitch carries momentum. Control power scales with dynamic pressure q̄ (mushy when slow, crisp when fast).
+        • FULL AERODYNAMICS — lift CL(α) with a real stall break, parasite + induced drag (CD0 + k·CL²), flap/gear/
+          speed-brake drag, thrust that falls with air density (props vs jets differ), ISA air density vs altitude.
+        • PER-AIRCRAFT DIFFERENCES — mass, wing area, CL curve/stall, thrust(+afterburner), drag, inertia (roll/pitch
+          authority & damping), static stability, never-exceed & stall speed, structural G limit, ceiling.
+       Each machine flies distinctly: a Cessna is docile & slow, the airliner is heavy (slow to roll), the F-16 is
+       razor-sharp with afterburner, the glider is engineless. ===== */
+    const AIRCRAFT={
+      cessna:{ name:{en:'Cessna 172 · trainer',jp:'セスナ172 · 練習機',de:'Cessna 172 · Schulflugzeug',ru:'Cessna 172 · учебный',es:'Cessna 172 · escuela'}, icon:'🛩',
+        m:1110, S:16.2, Tmax:3400, prop:true, CL0:0.34, CLa:5.7, aStall:0.30, CD0:0.032, k:0.052, Vne:87, Vstall:27, Vcruise:57, ceil:4100, gLim:4.4,
+        rollAuth:3.6, rollDamp:2.7, pitchAuth:2.5, pitchDamp:2.9, pitchStab:2.4, yawAuth:0.55, aTrim:0.055, ab:false, thrRefV:60 },
+      warbird:{ name:{en:'P-51 Mustang · warbird',jp:'P-51 マスタング · 大戦機',de:'P-51 Mustang',ru:'P-51 Mustang',es:'P-51 Mustang'}, icon:'✈',
+        m:4300, S:21.8, Tmax:16000, prop:true, CL0:0.24, CLa:5.6, aStall:0.28, CD0:0.025, k:0.05, Vne:220, Vstall:43, Vcruise:150, ceil:12700, gLim:8,
+        rollAuth:5.6, rollDamp:2.5, pitchAuth:3.2, pitchDamp:2.4, pitchStab:1.7, yawAuth:0.6, aTrim:0.04, ab:false, thrRefV:150 },
+      airliner:{ name:{en:'Airliner A320 · jet',jp:'旅客機 A320 · ジェット',de:'Verkehrsjet A320',ru:'Авиалайнер A320',es:'Avión A320'}, icon:'🛫',
+        m:64000, S:122, Tmax:220000, prop:false, CL0:0.22, CLa:5.4, aStall:0.27, CD0:0.021, k:0.043, Vne:265, Vstall:64, Vcruise:175, ceil:12500, gLim:2.5,
+        rollAuth:1.3, rollDamp:1.7, pitchAuth:1.0, pitchDamp:1.9, pitchStab:2.0, yawAuth:0.3, aTrim:0.05, ab:false, thrRefV:200 },
+      fighter:{ name:{en:'F-16 · fighter',jp:'F-16 · 戦闘機',de:'F-16 · Jäger',ru:'F-16 · истребитель',es:'F-16 · caza'}, icon:'🚀',
+        m:9500, S:27, Tmax:76000, abMax:127000, prop:false, CL0:0.14, CLa:5.2, aStall:0.36, CD0:0.020, k:0.09, Vne:600, Vstall:60, Vcruise:230, ceil:15200, gLim:9,
+        rollAuth:8.5, rollDamp:2.1, pitchAuth:5.0, pitchDamp:2.0, pitchStab:1.0, yawAuth:0.7, aTrim:0.03, ab:true, thrRefV:250 },
+      glider:{ name:{en:'Glider · sailplane',jp:'グライダー · 滑空機',de:'Segelflugzeug',ru:'Планёр',es:'Planeador'}, icon:'🪂',
+        m:600, S:15, Tmax:0, prop:false, CL0:0.35, CLa:5.9, aStall:0.30, CD0:0.011, k:0.026, Vne:75, Vstall:19, Vcruise:33, ceil:8000, gLim:5.3,
+        rollAuth:3.2, rollDamp:2.4, pitchAuth:2.7, pitchDamp:2.7, pitchStab:2.0, yawAuth:0.5, aTrim:0.06, ab:false, thrRefV:35 }
+    };
+    const AKEYS=['cessna','warbird','airliner','fighter','glider'];
+    const AC=()=>AIRCRAFT[acKey]||AIRCRAFT.airliner;
+    const g0=9.80665;
+    /* ISA atmosphere — air density falls with altitude (troposphere power law, then exponential above 11 km). */
+    function rhoAt(alt){ const a=Math.max(0,alt||0); if(a<11000){ return 1.225*Math.pow(1-0.0065*a/288.15,4.256); } return 0.36392*Math.exp(-(a-11000)/6341.6); }
     function css(){ if(styled) return; styled=true; const s=document.createElement('style'); s.id='fs-style';
       s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:3002;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
         /* (#R85c) INDEPENDENT FULLSCREEN cockpit ("既存画面にオーバーレイするのではなく独立した全画面で"): the map is
@@ -22125,8 +22155,37 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-ladder-g line{stroke:#63ff9b;stroke-width:2.4;} #fs-hud .fs-ladder-g text{fill:#63ff9b;font-family:ui-monospace,monospace;font-size:19px;font-weight:600;} #fs-hud .fs-ladder-g .fs-dive{stroke-dasharray:14 10;}'
         +'#fs-hud .fs-sky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(10,30,80,0.0), rgba(4,10,30,0.0) 60%, rgba(2,6,20,0.55) 100%);opacity:0;transition:opacity .4s ease;}'
         +'#fs-hud .fs-boost{position:absolute;left:44px;bottom:20px;width:8px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(255,140,60,0.4);border-radius:5px;overflow:hidden;}'
-        +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}';
+        +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}'
+        /* (#R94p) aircraft badge + configuration chips (flaps/gear/camera) + side control decks */
+        +'#fs-hud .fs-acbadge{position:absolute;left:50%;top:52px;transform:translateX(-50%);background:rgba(6,14,24,0.52);border:1px solid rgba(120,190,255,0.32);border-radius:8px;padding:3px 12px;font-size:12px;font-weight:700;color:#cfe6ff;white-space:nowrap;}'
+        +'#fs-hud .fs-config{position:absolute;left:50%;top:80px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none;}'
+        +'#fs-hud .fs-cfg{font-size:10px;font-weight:700;letter-spacing:0.03em;color:#8fb8e0;background:rgba(6,14,24,0.45);border:1px solid rgba(120,190,255,0.25);border-radius:6px;padding:2px 7px;white-space:nowrap;}'
+        +'#fs-hud .fs-cfg.on{color:#04120a;background:#63ff9b;border-color:#63ff9b;}'
+        +'#fs-hud .fs-mach{font-size:10px;color:#8fb8e0;margin-top:4px;}'
+        +'#fs-hud .fs-aircraft{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:6;}'
+        +'#fs-hud .fs-acchip{font-size:11px;font-weight:600;color:#cfe6ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left;white-space:nowrap;transition:.15s;}'
+        +'#fs-hud .fs-acchip.on{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
+        +'#fs-hud .fs-deck{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:6;}'
+        +'#fs-hud .fs-act{min-width:60px;height:38px;font-size:11px;font-weight:700;color:#e8f4ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.32);border-radius:9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;transition:.15s;}'
+        +'#fs-hud .fs-act small{font-size:8.5px;color:#8fb8e0;font-weight:600;}'
+        +'#fs-hud .fs-act.on{background:#34c759;border-color:#34c759;color:#04120a;} #fs-hud .fs-act.on small{color:#04120a;}'
+        +'#fs-hud .fs-act.amber.on{background:#ff9f0a;border-color:#ff9f0a;}'
+        +'@media(max-width:640px){#fs-hud .fs-aircraft,#fs-hud .fs-deck{top:auto;bottom:96px;transform:none;flex-direction:row;flex-wrap:wrap;max-width:44vw;} #fs-hud .fs-aircraft{left:8px;} #fs-hud .fs-deck{right:8px;justify-content:flex-end;} #fs-hud .fs-act{min-width:46px;height:34px;} #fs-hud .fs-hint{display:none;}}';
       document.head.appendChild(s); }
+    /* (#R94p) refresh the non-numeric HUD chrome (aircraft name, flap/gear/camera chips, button highlights) —
+       called on build and whenever an action key/button changes a discrete state. */
+    function syncHUDChrome(){ if(!hud||!st) return; const ac=AC(), q=s=>hud.querySelector(s);
+      const nm=(ac.name&&(ac.name[currentLang]||ac.name.en))||acKey; const nEl=q('.fs-acname'); if(nEl) nEl.textContent=(ac.icon?ac.icon+' ':'')+nm;
+      const mc=q('.fs-mach'); if(mc) mc.textContent=(!ac.prop&&st.V>120)?('M'+(st.V/300).toFixed(2)):'';
+      const upL=LL('UP','格納','EIN','УБР','ARR');
+      const fl=q('.fs-cfg-flaps'); if(fl){ const p=st.flaps>0.99?'FULL':st.flaps>0.5?'②':st.flaps>0.1?'①':upL; fl.textContent=LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛКИ','FLAPS')+' '+p; fl.classList.toggle('on',st.flaps>0.05); }
+      const gr=q('.fs-cfg-gear'); if(gr){ gr.textContent=LL('GEAR','脚','FAHRW','ШАССИ','TREN')+' '+(st.gear>0.5?LL('DOWN','出','AUS','ВЫП','ABAJO'):upL); gr.classList.toggle('on',st.gear>0.5); }
+      const cm=q('.fs-cfg-cam'); if(cm){ cm.textContent=(camMode==='cockpit'?LL('COCKPIT','コックピット','COCKPIT','КАБИНА','CABINA'):LL('FOLLOW','追従','VERFOLG.','СЛЕЖЕН.','SEGUIR'))+(stabilizeCam?' · '+LL('LVL','水平','HOR','ГОР','NIV'):''); cm.classList.toggle('on',stabilizeCam); }
+      hud.querySelectorAll('.fs-acchip').forEach(b=>b.classList.toggle('on',b.getAttribute('data-ac')===acKey));
+      const gb=q('.fs-deck [data-act="g"]'); if(gb) gb.classList.toggle('on',st.gear>0.5);
+      const fb=q('.fs-deck [data-act="f"]'); if(fb) fb.classList.toggle('on',st.flaps>0.05);
+      const pb=q('.fs-deck [data-act="p"]'); if(pb) pb.classList.toggle('on',paused);
+      const vb=q('.fs-deck [data-act="v"]'); if(vb) vb.classList.toggle('on',stabilizeCam); }
     function buildHUD(){ css(); hud=document.createElement('div'); hud.id='fs-hud';
       let hlab=''; for(let d=-180;d<=540;d+=15){ const dd=((d%360)+360)%360; const nm=({0:'N',90:'E',180:'S',270:'W'})[dd]; hlab+='<span class="fs-htick" style="left:'+((d+180)*2.4)+'px;'+(nm?'color:#ffd60a;font-weight:700;':'')+'">'+(nm||(''+(dd/10|0)))+'</span>'; }
       /* (#R85c) HUD PITCH LADDER (replaces the removed aircraft symbol — "飛行機マークも不要"): climb lines solid,
@@ -22151,26 +22210,63 @@ window.addEventListener('DOMContentLoaded', () => {
             +'<line x1="30" y1="40" x2="90" y2="40" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><line x1="30" y1="80" x2="90" y2="80" stroke="rgba(255,255,255,0.6)" stroke-width="1"/></g></g>'
           +'<circle cx="60" cy="60" r="52" fill="none" stroke="#8fb8e0" stroke-width="2"/>'
           +'<line x1="26" y1="60" x2="46" y2="60" stroke="#ffd60a" stroke-width="3.5"/><line x1="74" y1="60" x2="94" y2="60" stroke="#ffd60a" stroke-width="3.5"/><circle cx="60" cy="60" r="2.5" fill="#ffd60a"/></svg>'
-        +'<div class="fs-hint">'+LL('W / S — throttle<br>Shift — afterburner<br>↑ / ↓ — pitch<br>← / → — bank<br>A / D — rudder<br>Esc — exit','W / S — 出力<br>Shift — ブースト<br>↑ / ↓ — ピッチ<br>← / → — バンク<br>A / D — ラダー<br>Esc — 終了','W / S — Schub<br>Shift — Nachbrenner<br>↑ / ↓ — Nick<br>← / → — Roll<br>A / D — Ruder<br>Esc — Ende','W / S — тяга<br>Shift — форсаж<br>↑ / ↓ — тангаж<br>← / → — крен<br>A / D — руль<br>Esc — выход','W / S — gas<br>Shift — poscombustión<br>↑ / ↓ — cabeceo<br>← / → — alabeo<br>A / D — timón<br>Esc — salir')+'</div>'
+        +'<div class="fs-hint">'+LL('W/S throttle · Shift afterburner<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space airbrake<br>C view · V level horizon<br>P pause · R reset · 1–5 aircraft · Esc exit','W/S 出力 · Shift ブースト<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space 抵抗板<br>C 視点 · V 水平維持<br>P 一時停止 · R 復帰 · 1–5 機体 · Esc 終了','W/S Schub · Shift Nachbrenner<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>C Sicht · V Horizont<br>P Pause · R Reset · 1–5 Flugzeug · Esc Ende','W/S тяга · Shift форсаж<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>C вид · V горизонт<br>P пауза · R сброс · 1–5 самолёт · Esc выход','W/S gas · Shift poscombustión<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>C vista · V horizonte<br>P pausa · R reinicio · 1–5 avión · Esc salir')+'</div>'
         +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
         +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
-        +'<div class="fs-btns"><button data-k="arrowleft">←</button><button data-k="arrowdown">▼</button><button data-k="arrowup">▲</button><button data-k="arrowright">→</button><button data-k="w">+</button><button data-k="s">−</button></div>';
+        +'<div class="fs-btns"><button data-k="arrowleft">←</button><button data-k="arrowdown">▼</button><button data-k="arrowup">▲</button><button data-k="arrowright">→</button><button data-k="w">+</button><button data-k="s">−</button></div>'
+        /* (#R94p) aircraft name + config chips + on-screen control decks (aircraft select · gear/flaps/brake/view/level/pause/reset) */
+        +'<div class="fs-acbadge"><span class="fs-acname">—</span><span class="fs-mach"></span></div>'
+        +'<div class="fs-config"><span class="fs-cfg fs-cfg-flaps">FLAPS</span><span class="fs-cfg fs-cfg-gear">GEAR</span><span class="fs-cfg fs-cfg-cam">CAM</span></div>'
+        +'<div class="fs-aircraft">'+AKEYS.map(function(k){ var a=AIRCRAFT[k], nm=((a.name&&(a.name[currentLang]||a.name.en))||k).split('·')[0].trim(); return '<button class="fs-acchip" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('')+'</div>'
+        +'<div class="fs-deck">'
+          +'<button class="fs-act" data-act="g">⚙<small>'+LL('GEAR','脚','FAHRW','ШАССИ','TREN')+'</small></button>'
+          +'<button class="fs-act" data-act="f">⬇<small>'+LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛ','FLAPS')+'</small></button>'
+          +'<button class="fs-act amber" data-hold=" ">✋<small>'+LL('BRAKE','抵抗板','BREMSE','ТОРМОЗ','FRENO')+'</small></button>'
+          +'<button class="fs-act" data-act="c">🎥<small>'+LL('VIEW','視点','SICHT','ВИД','VISTA')+'</small></button>'
+          +'<button class="fs-act" data-act="v">⊞<small>'+LL('LEVEL','水平','HORIZ.','ГОРИЗ.','NIVEL')+'</small></button>'
+          +'<button class="fs-act" data-act="p">⏸<small>'+LL('PAUSE','一時停止','PAUSE','ПАУЗА','PAUSA')+'</small></button>'
+          +'<button class="fs-act" data-act="r">⟳<small>'+LL('RESET','リセット','RESET','СБРОС','REINICIO')+'</small></button>'
+        +'</div>';
       document.body.appendChild(hud);
       hud.querySelector('.fs-x').onclick=()=>stop();
       hud.querySelectorAll('.fs-btns button').forEach(b=>{ const k=b.getAttribute('data-k');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
-        b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); }); }
+        b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
+      hud.querySelectorAll('.fs-acchip').forEach(b=>b.addEventListener('click',()=>{ selectAircraft(b.getAttribute('data-ac')); }));
+      hud.querySelectorAll('.fs-deck [data-act]').forEach(b=>b.addEventListener('click',()=>{ fsAction(b.getAttribute('data-act')); }));
+      hud.querySelectorAll('.fs-deck [data-hold]').forEach(b=>{ const k=b.getAttribute('data-hold');
+        const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
+        b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
+      try{ syncHUDChrome(); }catch(_){} }
+    const HELD=['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '];
+    /* one-shot actions (debounced against key auto-repeat via keys['_a_'+k]) */
+    function fsAction(k){ if(!st) return false;
+      if(k==='f') st.flaps=(st.flaps>=0.99)?0:Math.min(1,Math.round((st.flaps+0.34)*100)/100);   /* flaps notch: 0→⅓→⅔→full→up */
+      else if(k==='g') st.gear=st.gear>0.5?0:1;                                                    /* landing gear */
+      else if(k==='c'){ camMode=(camMode==='cockpit')?'chase':'cockpit'; camZoom=null; }           /* Follow ↔ Cockpit */
+      else if(k==='v') stabilizeCam=!stabilizeCam;                                                  /* level-horizon toggle */
+      else if(k==='p') paused=!paused;                                                              /* pause */
+      else if(k==='r') respawn();                                                                   /* reset in place */
+      else if(/^[1-5]$/.test(k)) selectAircraft(AKEYS[+k-1]);                                       /* pick aircraft */
+      else return false;
+      try{ syncHUDChrome(); }catch(_){} return true; }
     function onKey(e){ const k=e.key.toLowerCase(); if(k==='escape'){ stop(); return; }
-      if(k==='shift'||k==='control'){ keys[k]=true; return; }   /* boost / brake modifiers (no preventDefault) */
-      if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '].includes(k)){ keys[k]=true; e.preventDefault(); e.stopPropagation(); } }
-    function onKeyUp(e){ keys[e.key.toLowerCase()]=false; }
+      if(k==='shift'||k==='control'){ keys[k]=true; return; }   /* afterburner modifier (no preventDefault) */
+      if(HELD.includes(k)){ keys[k]=true; e.preventDefault(); e.stopPropagation(); return; }
+      if(!keys['_a_'+k]){ if(fsAction(k)){ keys['_a_'+k]=true; e.preventDefault(); e.stopPropagation(); } } }
+    function onKeyUp(e){ const k=e.key.toLowerCase(); keys[k]=false; keys['_a_'+k]=false; }
     function _terrAt(lng,lat){ let t=0; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) t=te; } }catch(_){} return t; }
     function addExtraHUD(){ if(!hud) return; const tl=hud.querySelector('.fs-tl'); if(tl&&!tl.querySelector('.fs-g')){ const d=document.createElement('div'); d.style.cssText='margin-top:6px;display:flex;gap:14px;'; d.innerHTML='<div><div class="fs-k">'+LL('LOAD','荷重','LAST','ПЕРЕГР.','CARGA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-g">1.0</span><span style="font-size:10px;">g</span></div></div><div><div class="fs-k">'+LL('AoA','迎角','AoA','УГОЛ','AoA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-aoa">0</span><span style="font-size:10px;">°</span></div></div>'; tl.appendChild(d); } }
     let prevView=null;
     function start(opts){ if(on) return true; on=true; opts=opts||{};
-      const c=map.getCenter();
+      if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
+      const c=map.getCenter(), ac=AC();
       st={ lng:(opts.lng!=null?+opts.lng:c.lng), lat:(opts.lat!=null?+opts.lat:c.lat), alt:(opts.alt!=null?+opts.alt:2500),
-        V:170, gamma:0, psi:((map.getBearing()||90)*Math.PI/180), theta:0.045, phi:0, thr:0.72, G:1, aoa:0.045, vs:0, onGround:false, t:performance.now() };
+        V:(opts.speed!=null?+opts.speed:ac.Vcruise), gamma:0, psi:((map.getBearing()||90)*Math.PI/180), theta:ac.aTrim, phi:0,
+        p:0, q:0, elev:0, ail:0, rud:0, thr:(ac.Tmax>0?0.62:0), flaps:0, gear:0, brake:0,
+        G:1, aoa:ac.aTrim, vs:0, onGround:false, t:performance.now() };
+      paused=false; stabilizeCam=false; camMode='chase';
+      computeTrim();
       camZoom=null;
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
@@ -22211,8 +22307,18 @@ window.addEventListener('DOMContentLoaded', () => {
       } }catch(_){}
       prevView=null;
       if(prevCam){ try{ map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,roll:prevCam.roll||0,duration:800}); }catch(_){ try{ if(map.setRoll) map.setRoll(0); map.easeTo({center:prevCam.center,zoom:prevCam.zoom,bearing:prevCam.bearing,pitch:prevCam.pitch,duration:800}); }catch(__){} } } }
-    function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ','ACCIDENTE'); w.style.display='block'; w.style.color='#ff453a'; }
-      st.alt=_terrAt(st.lng,st.lat)+1500; st.V=175; st.gamma=0.04; st.theta=0.06; st.phi=0; st.thr=0.75; st.G=1; st.onGround=false;
+    /* trim for level flight at the current speed & altitude: solve the AoA that makes lift = weight, and the
+       throttle that makes thrust = drag. This stops the aircraft climbing/sinking on its own at spawn, and the
+       trimmed AoA becomes the stability target so the machine holds its trimmed speed (speed stability). */
+    function computeTrim(){ if(!st) return; const ac=AC(), rho=rhoAt(st.alt), Vt=Math.max(20,st.V), qd=0.5*rho*Vt*Vt;
+      let CLn=ac.m*g0/Math.max(1,qd*ac.S); CLn=Math.max(ac.CL0+0.02,Math.min(ac.CL0+ac.CLa*(ac.aStall-0.05),CLn));
+      st.trimA=Math.max(0.005,(CLn-ac.CL0)/ac.CLa);
+      const CD=ac.CD0+ac.k*CLn*CLn, Drag=qd*ac.S*CD, densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
+      st.thr=ac.Tmax>0?Math.max(0.05,Math.min(1,Drag/(ac.Tmax*densF))):0;
+      st.theta=st.trimA; st.aoa=st.trimA; st.gamma=0; st.q=0; }
+    function respawn(){ const ac=AC(); st.alt=_terrAt(st.lng,st.lat)+1500; st.V=ac.Vcruise; st.phi=0; st.p=0; st.q=0; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.G=1; st.onGround=false; paused=false; computeTrim(); }
+    function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ — сброс','ACCIDENTE — reinicio'); w.style.display='block'; w.style.color='#ff453a'; }
+      respawn();
       setTimeout(()=>{ const w2=hud&&hud.querySelector('.fs-warn'); if(w2&&(w2.textContent.indexOf('CRAS')>=0||w2.textContent.indexOf('墜')>=0)) w2.style.display='none'; },1500); }
     function updateHUD(agl,f){ if(!hud) return; const q=s=>hud.querySelector(s), R2D=180/Math.PI;
       try{ q('.fs-spd').textContent=Math.round(st.V*3.6); q('.fs-alt').textContent=Math.round(st.alt).toLocaleString(); q('.fs-agl').textContent=Math.round(Math.max(0,agl)).toLocaleString();
@@ -22227,6 +22333,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const rp=q('.fs-rollptr'); if(rp) rp.setAttribute('transform','rotate('+rollDeg.toFixed(1)+' 500 500)');
         const sky=q('.fs-sky'); if(sky) sky.style.opacity=Math.min(0.85,Math.max(0,(st.alt-3000)/11000)).toFixed(2);
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
+        const mc=q('.fs-mach'); if(mc){ const ac=AC(); mc.textContent=(!ac.prop&&st.V>110)?('M '+(st.V/300).toFixed(2)):''; }
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
         const aEl=q('.fs-aoa'); if(aEl){ aEl.textContent=Math.round(st.aoa*R2D); aEl.parentNode.style.color=f.stalling?'#ff9f0a':''; }
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
@@ -22236,61 +22343,85 @@ window.addEventListener('DOMContentLoaded', () => {
           else if(f.overG){ w.style.display='block'; w.style.color='#ff453a'; w.textContent=LL('G-LIMIT','G制限超過','G-GRENZE','ПЕРЕГРУЗКА','LÍMITE G'); }
           else w.style.display='none'; }
       }catch(_){} }
-    function loop(){ if(!on) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.001,Math.min(0.05,dt));
-      const R2D=180/Math.PI;
-      /* ---- controls: throttle, elevator (pitch attitude), aileron (roll), rudder (yaw) ---- */
-      if(keys['w']) st.thr=Math.min(1,st.thr+0.5*dt); if(keys['s']||keys['control']) st.thr=Math.max(0,st.thr-0.5*dt);
-      const ab=!!keys['shift']&&st.thr>0.9;
-      const authority=Math.min(1.15,Math.max(0.15,st.V/90));   /* control effectiveness scales with airspeed */
-      const preAoa=st.theta-st.gamma;   /* limit the pull so you can't yank the nose past the stall AoA (~22°) */
-      if(keys['arrowup']){ const room=Math.max(0,Math.min(1,(AC.aStall+0.08-preAoa)/0.15)); st.theta+=0.6*authority*room*dt; }
-      else if(keys['arrowdown']) st.theta-=0.6*authority*dt;
-      if(preAoa>AC.aStall) st.theta-=Math.min(1.6,(preAoa-AC.aStall)*4)*dt;   /* stalled → nose-drop moment (recover by unloading) */
-      st.theta=Math.max(-1.05,Math.min(1.05,st.theta));
-      if(keys['arrowleft']) st.phi-=1.35*authority*dt; else if(keys['arrowright']) st.phi+=1.35*authority*dt; else st.phi*=Math.pow(0.35,dt);   /* smoother roll + wings auto-level */
-      st.phi=Math.max(-1.15,Math.min(1.15,st.phi));
-      let rud=0; if(keys['a']) rud=-1; if(keys['d']) rud=1;
-      /* ---- aerodynamics ---- */
-      const rho=AC.rho0*Math.exp(-st.alt/AC.Hs), V=Math.max(8,st.V), q=0.5*rho*V*V, CLmax=AC.CL0+AC.CLa*AC.aStall;
+    /* one deterministic physics step of dt seconds — split out of loop() so it can be stepped headlessly for
+       verification (see IntMapFlightSim._dbg.step). Returns the frame's status flags + AGL for the HUD/camera. */
+    function physics(dt){ const ac=AC(), R2D=180/Math.PI, D2R=Math.PI/180;
+      /* ---- throttle + airbrake (hold Space) ---- */
+      if(keys['w']) st.thr=Math.min(1,st.thr+0.5*dt); if(keys['s']) st.thr=Math.max(0,st.thr-0.5*dt);
+      st.brake=keys[' ']?1:0;
+      const ab=ac.ab&&!!keys['shift']&&st.thr>0.95;
+      /* ---- control surfaces move at a finite RATE toward the keyed command (no instant full deflection) ---- */
+      const cmd=(lo,hi)=>((keys[lo]?-1:0)+(keys[hi]?1:0)), sweep=(cur,to,r)=>cur+Math.max(-r*dt,Math.min(r*dt,to-cur));
+      st.elev=sweep(st.elev, cmd('arrowdown','arrowup'), 4.5);
+      st.ail =sweep(st.ail , cmd('arrowleft','arrowright'), 5.0);
+      st.rud =sweep(st.rud , cmd('a','d'), 4.0);
+      /* ---- atmosphere & aerodynamics ---- */
+      const rho=rhoAt(st.alt), V=Math.max(6,st.V), qd=0.5*rho*V*V;
+      const qbar=Math.max(0.05,Math.min(2.4, qd/(0.5*1.225*ac.thrRefV*ac.thrRefV)));   /* control power ∝ dynamic pressure (mushy slow, crisp fast) */
       st.aoa=st.theta-st.gamma;
-      let CL; if(st.aoa<=AC.aStall) CL=AC.CL0+AC.CLa*st.aoa; else CL=Math.max(0.15,CLmax*(1-0.7*Math.min(1,(st.aoa-AC.aStall)/0.35)));   /* genuine stall break */
-      const L=q*AC.S*CL, Dg=q*AC.S*(AC.CD0+AC.k*CL*CL), Th=AC.Tmax*st.thr*(ab?1.5:1), m=AC.m, g=AC.g, Vs=Math.max(18,st.V);
-      /* ---- 3-DOF point-mass integration ---- */
-      st.V=Math.max(0, st.V+((Th*Math.cos(st.aoa)-Dg)/m - g*Math.sin(st.gamma))*dt);
-      st.gamma+=((L*Math.cos(st.phi)+Th*Math.sin(st.aoa)-m*g*Math.cos(st.gamma))/(m*Vs))*dt; st.gamma=Math.max(-1.35,Math.min(1.35,st.gamma));
-      st.psi=(st.psi+((L*Math.sin(st.phi))/(m*Vs*Math.max(0.25,Math.cos(st.gamma)))+rud*0.55)*dt)%(2*Math.PI);
-      st.G=L/(m*g);
+      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, CLmax=ac.CL0+flapCL+ac.CLa*aStall, VstallEff=ac.Vstall*(1-0.12*st.flaps);
+      let CL; if(st.aoa<=aStall) CL=ac.CL0+flapCL+ac.CLa*st.aoa; else CL=Math.max(0.18, CLmax*(1-0.72*Math.min(1,(st.aoa-aStall)/0.35)));   /* genuine stall break */
+      const CD=ac.CD0 + ac.k*CL*CL + st.flaps*0.020 + st.gear*0.022 + st.brake*0.055;   /* parasite + induced + config drag */
+      const Lift=qd*ac.S*CL, Drag=qd*ac.S*CD;
+      const densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);   /* thrust lapses with altitude */
+      const Th=(ab?(ac.abMax||ac.Tmax*1.6):ac.Tmax)*st.thr*densF, m=ac.m;
+      /* ---- ROTATIONAL dynamics WITH INERTIA: the stick commands an angular ACCELERATION (moment ÷ inertia), damped;
+         the rate integrates to attitude, so a bank HOLDS when you centre the ailerons and pitch carries momentum.
+         A pull is softened near the stall AoA so you can't hinge the nose straight past it. ---- */
+      const elevRoom=(st.elev>0&&st.aoa>aStall-0.04)?Math.max(0,(aStall+0.05-st.aoa)/0.09):1;
+      const trimA=(st.trimA!=null?st.trimA:ac.aTrim);   /* speed/pitch stability returns AoA toward the trimmed value */
+      st.p += (ac.rollAuth*st.ail*qbar - ac.rollDamp*st.p)*dt;
+      st.q += (ac.pitchAuth*st.elev*elevRoom*qbar - ac.pitchDamp*st.q - ac.pitchStab*(st.aoa-trimA))*dt;
+      st.phi += st.p*dt; st.theta += st.q*dt;
+      st.phi=Math.max(-Math.PI,Math.min(Math.PI,st.phi));   /* full aileron rolls allowed */
+      st.theta=Math.max(-1.3,Math.min(1.3,st.theta));
+      /* ---- TRANSLATIONAL point-mass along the flight path ---- */
+      const cg=Math.cos(st.gamma), Vg=Math.max(10,st.V);
+      st.V=Math.max(0, st.V+((Th*Math.cos(st.aoa)-Drag)/m - g0*Math.sin(st.gamma))*dt);
+      st.gamma += ((Lift*Math.cos(st.phi)+Th*Math.sin(st.aoa)-m*g0*cg)/(m*Vg))*dt;
+      st.gamma=Math.max(-1.4,Math.min(1.4,st.gamma));
+      st.psi += ((Lift*Math.sin(st.phi))/(m*Vg*Math.max(0.25,cg)) + st.rud*ac.yawAuth*qbar)*dt;   /* coordinated turn + rudder yaw */
+      st.psi=(st.psi%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+      st.G=Lift/(m*g0);
       /* ---- kinematics ---- */
       st.vs=st.V*Math.sin(st.gamma); st.alt+=st.vs*dt;
-      const vh=st.V*Math.cos(st.gamma), mLat=111320, mLon=(111320*Math.cos(st.lat*Math.PI/180))||1;
+      const vh=st.V*cg, mLat=111320, mLon=(111320*Math.cos(st.lat*D2R))||1;
       st.lat+=vh*Math.cos(st.psi)*dt/mLat; st.lng+=vh*Math.sin(st.psi)*dt/mLon;
       st.lat=Math.max(-85,Math.min(85,st.lat)); if(st.lng>180) st.lng-=360; else if(st.lng<-180) st.lng+=360;
-      /* ---- terrain: crash vs landing judgement ---- */
-      const terr=_terrAt(st.lng,st.lat), agl=st.alt-terr; let landed=false;
-      if(agl<=1.2){ st.alt=terr+1.2; const descent=-st.vs, bankDeg=Math.abs(st.phi*R2D);
-        if(st.V>46&&(descent>6||bankDeg>22)){ crash(); }
-        else { st.onGround=true; st.gamma=0; if(st.theta>0.06) st.theta=0.06; st.vs=Math.max(0,st.vs);
-          st.V=Math.max(0, st.V-(1.2+(keys['control']?9:0))*dt);   /* rolling friction + wheel brakes on S/Ctrl */
-          if(st.V<52&&bankDeg<12) landed=true; }
+      /* ---- terrain: crash vs landing judgement (gear + descent rate + bank + speed) ---- */
+      const terr=_terrAt(st.lng,st.lat), agl=st.alt-terr, gearDown=st.gear>0.5; let landed=false;
+      if(agl<=1.4){ st.alt=terr+1.4; const descent=-st.vs, bankDeg=Math.abs(st.phi*R2D);
+        if(descent>7 || bankDeg>18 || (!gearDown&&st.V>ac.Vstall*1.3) || st.V>ac.Vne*0.72) crash();
+        else { st.onGround=true; st.gamma=Math.max(0,st.gamma); if(st.q>0.1)st.q=0.1; if(st.theta>0.09)st.theta=0.09; st.vs=Math.max(0,st.vs);
+          st.p*=Math.pow(0.015,dt); st.phi*=Math.pow(0.02,dt);   /* wheels straighten it out on the ground */
+          st.V=Math.max(0, st.V-(1.3+(st.brake>0.5?9:0)+(keys['s']?4:0))*dt);   /* rolling drag + wheel brakes */
+          if(st.V<VstallEff*0.95&&bankDeg<10) landed=true; }
       } else st.onGround=false;
-      const stalling=(st.aoa>AC.aStall*0.95)||(!st.onGround&&st.V<AC.Vstall*1.03), overspeed=st.V>AC.Vne, overG=st.G>8.5;
-      /* ---- FIRST-PERSON cockpit camera ("主観視点にしろ"): sit just behind the aircraft, look FORWARD along the
-         heading toward the horizon (near-max pitch), banked with the wings. Centre a point ahead of the nose so the
-         aircraft sits in the lower view like a cockpit. ---- */
-      const hdgDeg=(st.psi*R2D+360)%360;
-      /* (#R85d) STABLE forward view ("視点がおかしい"): keep the horizon LEVEL (no camera roll — that was the
-         disorienting part; bank is shown on the HUD ladder + ADI instead) and look forward-and-down from a point
-         ahead of the nose. Pitch stays a steady ~70° so you always see the terrain ahead AND the horizon. */
-      const aheadKm=Math.max(0.5,Math.min(9, 0.4+agl*0.0011));
-      const mLatK=110.574, mLonK=(111.320*Math.cos(st.lat*Math.PI/180))||1;
-      const cLng=st.lng+(aheadKm*Math.sin(st.psi))/mLonK, cLat=st.lat+(aheadKm*Math.cos(st.psi))/mLatK;
-      const targetZoom=Math.max(9.2,Math.min(15.5, 15 - Math.log2(Math.max(45,agl)/45)*0.66));
+      const stalling=(st.aoa>aStall*0.97)||(!st.onGround&&st.V<VstallEff*1.03), overspeed=st.V>ac.Vne, overG=Math.abs(st.G)>ac.gLim;
+      return { agl, stalling, overspeed, overG, landed, ab }; }
+    function loop(){ if(!on) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.001,Math.min(0.05,dt));
+      if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
+      const f=physics(dt), R2D=180/Math.PI, D2R=Math.PI/180, agl=f.agl;
+      /* ---- CAMERA: a forward view that banks WITH the aircraft (physically-correct horizon tilt) — the previous
+         level-locked horizon was the "視点がおかしい". A Stabilize toggle (V) restores the level horizon for anyone
+         who prefers it; C cycles Follow ↔ Cockpit. ---- */
+      const hdgDeg=(st.psi*R2D+360)%360, pitchDeg=st.theta*R2D, rollDeg=st.phi*R2D;
+      const bank=stabilizeCam?0:Math.max(-78,Math.min(78,rollDeg));
+      const cockpit=(camMode==='cockpit');
+      const aheadKm=cockpit?Math.max(0.2,Math.min(3.5,0.25+agl*0.0006)):Math.max(0.5,Math.min(9,0.45+agl*0.0011));
+      const cLng=st.lng+(aheadKm*Math.sin(st.psi))/((111.320*Math.cos(st.lat*D2R))||1), cLat=st.lat+(aheadKm*Math.cos(st.psi))/110.574;
+      const camPitch=Math.max(52,Math.min(84, (cockpit?83:72) - pitchDeg*(cockpit?0.85:0.4)));
+      const tzBase=cockpit?15.6:15, tzFloor=cockpit?11:9.2;
+      const targetZoom=Math.max(tzFloor,Math.min(tzBase, tzBase - Math.log2(Math.max(40,agl)/40)*(cockpit?0.6:0.66)));
       camZoom=(camZoom==null)?targetZoom:(camZoom+(targetZoom-camZoom)*Math.min(1,3*dt));
-      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:Math.max(64,Math.min(80, 72 - st.theta*R2D*0.25)), roll:0 };
+      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:camPitch, roll:bank };
       try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} }
-      updateHUD(agl,{stalling,overspeed,overG,landed,ab});
+      updateHUD(agl,f);
       raf=requestAnimationFrame(loop); }
-    return { start, stop, active:()=>on }; })();
+    /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
+    function selectAircraft(k){ if(!AIRCRAFT[k]) return; acKey=k; if(st){ const ac=AIRCRAFT[k]; st.V=ac.Vcruise; st.p=0; st.q=0; st.flaps=0; st.gear=0; computeTrim(); } try{ syncHUDChrome(); }catch(_){} }
+    return { start, stop, active:()=>on, aircraft:selectAircraft, list:()=>AKEYS.slice(), _st:()=>st,
+      _dbg:{ step:(dt)=>{ try{ return physics(dt||0.02); }catch(e){ return {err:String(e)}; } }, key:(k,v)=>{ keys[String(k).toLowerCase()]=!!v; }, clearKeys:()=>{ for(const k in keys) keys[k]=false; }, trim:()=>{ try{ computeTrim(); }catch(_){} } } }; })();
   window.IntMapConsole=(function(){
     if(typeof map==='undefined'||!map) return { open(){}, run(){}, toggle(){} };
     /* (#R64) Atlas MIRRORS the language of the user's message ("別の言語で話しかけても、言語設定の言語でしか返答
@@ -24300,6 +24431,13 @@ window.addEventListener('DOMContentLoaded', () => {
           const opts={}; let nm=''; let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place||a.over||a.from){ try{ ll=await geocode(a.place||a.over||a.from); }catch(_){} }
           if(ll){ opts.lng=ll.lng; opts.lat=ll.lat; nm=ll.name||a.place||''; try{ map.flyTo({center:[ll.lng,ll.lat],zoom:11,duration:500}); }catch(_){} }
           if(a.alt!=null&&isFinite(+a.alt)) opts.alt=+a.alt;
+          /* (#R94p) pick the aircraft by name (explicit field only — never the geocoded place) */
+          const _acs=String(a.aircraft||a.plane||a.craft||a.mode||'').toLowerCase();
+          if(/fighter|f-?16|戦闘機|jäger|истреб|caza/.test(_acs)) opts.aircraft='fighter';
+          else if(/airliner|a320|737|旅客機|verkehr|авиалайнер|avión|ジェット/.test(_acs)) opts.aircraft='airliner';
+          else if(/cessna|trainer|セスナ|練習|schul|учебн|escuela/.test(_acs)) opts.aircraft='cessna';
+          else if(/glider|sailplane|グライダー|滑空|segelflug|планёр|planeador/.test(_acs)) opts.aircraft='glider';
+          else if(/mustang|p-?51|warbird|大戦|マスタング|大戦機/.test(_acs)) opts.aircraft='warbird';
           let ok=false; try{ if(window.IntMapFlightSim&&window.IntMapFlightSim.start) ok=window.IntMapFlightSim.start(opts); }catch(_){}
           return R(ok, ok?note('✈ '+L('Flight simulator started','飛行シミュレーターを開始','Flugsimulator gestartet','Авиасимулятор запущен','Simulador de vuelo iniciado')+(nm?(' · '+esc(nm)):'')+' — '+L('W/S throttle · ↑↓ pitch · ←→ bank · A/D rudder · Esc exit','W/S 出力・↑↓ ピッチ・←→ バンク・A/D ラダー・Esc 終了','W/S Schub · ↑↓ Nick · ←→ Roll · A/D Ruder · Esc Ende','W/S тяга · ↑↓ тангаж · ←→ крен · A/D руль · Esc выход','W/S gas · ↑↓ cabeceo · ←→ alabeo · A/D timón · Esc salir')):warn('⚠ '+L('Could not start the flight simulator','飛行シミュレーターを開始できませんでした','Konnte den Flugsimulator nicht starten','Не удалось запустить','No se pudo iniciar'))); }
         case 'runway': case 'airports': { const ll=await geocode(a.place); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),7)}); }catch(_){} let ok=false; try{ if(window.RunwaySearch&&window.RunwaySearch.open){ window.RunwaySearch.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('🛬 '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
