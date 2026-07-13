@@ -5301,13 +5301,13 @@ window.addEventListener('DOMContentLoaded', () => {
       +`</div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
-    _fillCountryIntro((s&&s._hist&&s.wiki)||name);
+    _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); _fillCountryIntro((s&&s._hist&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
     /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the
        global clock moves — closes over the live idStr/body/topBtns for the currently-open country. */
-    window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro((s&&s._hist&&s.wiki)||name); } }catch(_){} };
+    window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro((s&&(s._hist||s._histId)&&s.wiki)||name); } }catch(_){} };
     popup.style.display='block';
     /* Initial centered position (viewport coords). Drag handle wires in once. */
     if(!popup.dataset.placed){
@@ -18719,11 +18719,16 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map.addLayer({id:'imcmp-fill',type:'fill',source:'imcmp-src',paint:{'fill-color':['coalesce',['get','color'],'#0a84ff'],'fill-opacity':0.5}},before);
         map.addLayer({id:'imcmp-line',type:'line',source:'imcmp-src',paint:{'line-color':['coalesce',['get','color'],'#0a84ff'],'line-width':1.6,'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
     function paintOnMap(){ if(!ensureCmpMap()) return false; const g=window.countryGeo||(typeof countryGeo!=='undefined'?countryGeo:null); if(!g) return false;
-      const byCode={}; codes.forEach((cd,i)=>{ byCode[String(cd)]=PAL[i%PAL.length]; });
-      const feats=[]; g.features.forEach(f=>{ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const col=byCode[cd]; if(!col||!f.geometry) return; feats.push({type:'Feature',geometry:f.geometry,properties:{color:col}}); });
-      /* (#R94h) former states have no MODERN polygon — paint their era polygon from the clock's historical borders */
-      try{ const HS=window.IntMapHistStates, TB=window.IntMapTimeBorders;
-        if(HS&&TB&&TB.geomFor){ codes.forEach((cd,i)=>{ const S=_histEntry(cd); if(!S) return; const re=HS.hbRe&&HS.hbRe(cd); const geom=re?TB.geomFor(re):null; if(geom) feats.push({type:'Feature',geometry:geom,properties:{color:PAL[i%PAL.length]}}); }); } }catch(_){}
+      const TB=window.IntMapTimeBorders; const traveling=!!(TB&&TB.active&&TB.active());
+      const modernOf={}; g.features.forEach(f=>{ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); if(f.geometry&&!modernOf[cd]) modernOf[cd]=f.geometry; });
+      /* (#R94h/#R94n) while travelling, paint each compared country's ERA polygon (its borders THAT year) rather
+         than the modern one, so the Compare highlight matches history — the German Empire's 1910 extent (≠ modern
+         Germany), 1910 France (no Alsace-Lorraine), and former states like the USSR that have no modern polygon
+         at all. Off-era (LIVE) or when the era shape is unavailable, it falls back to the modern polygon. */
+      const feats=[]; codes.forEach((cd,i)=>{ const col=PAL[i%PAL.length]; let geom=null;
+        if(traveling&&TB.geomForCode){ try{ geom=TB.geomForCode(cd); }catch(_){} }
+        if(!geom) geom=modernOf[String(cd)]||null;
+        if(geom) feats.push({type:'Feature',geometry:geom,properties:{color:col}}); });
       try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:feats}); }catch(_){}
       return feats.length>0; }
     function clearMap(){ try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
@@ -20871,11 +20876,14 @@ window.addEventListener('DOMContentLoaded', () => {
              (REST summary probe, CORS*). Opens the article in a new tab. */
           const w=document.querySelector('.plc-wiki');
           if(w){ const wl=jp?'ja':'en';
-            fetch('https://'+wl+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(String(name).replace(/ /g,'_')))
-              .then(r=>r.ok?r.json():null).then(j=>{
-                const url=j&&j.content_urls&&j.content_urls.desktop&&j.content_urls.desktop.page;
-                if(url){ w.style.display='inline-block'; w.onclick=()=>{ try{ window.open(url,'_blank','noopener'); }catch(_){} }; }
-              }).catch(()=>{}); }
+            /* (#R94n) a historical entity passes an explicit Wikipedia title (opts.wiki: "German Empire",
+               "Kingdom of Italy", "Qajar Iran"…) so the button opens the ERA article, not the modern namesake
+               (the bug: German Empire → modern Germany). Those titles are English; if the current-language wiki
+               has no such article, fall back to English rather than silently missing — never a wrong modern page. */
+            const wtitle=(opts&&opts.wiki)||name;
+            const _probe=(lang,title)=>fetch('https://'+lang+'.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(String(title).replace(/ /g,'_'))).then(r=>r.ok?r.json():null).catch(()=>null);
+            const _showW=(j)=>{ const url=j&&j.content_urls&&j.content_urls.desktop&&j.content_urls.desktop.page; if(url){ w.style.display='inline-block'; w.onclick=()=>{ try{ window.open(url,'_blank','noopener'); }catch(_){} }; return true; } return false; };
+            _probe(wl,wtitle).then(j=>{ if(_showW(j)) return; if(opts&&opts.wiki&&wl!=='en') _probe('en',wtitle).then(_showW); }); }
           /* (#R20) AI Research Assistant entry point */
           const ai=document.querySelector('.plc-ai');
           if(ai) ai.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.brief){ window.IntMapConsole.brief(name,lngLat); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(name,lngLat); } }catch(_){} };   /* (#R62) brief runs inside Atlas */
@@ -27212,16 +27220,16 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!map.__imtbClick){ map.__imtbClick=true;
-        const _resolve=(nm)=>{ if(!nm) return null; const low=String(nm).toLowerCase().trim();
-          for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; if((s.nameEn||'').toLowerCase()===low) return c; }
-          try{ const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(nm)&&countryStats[S.code]) return S.code; } } }catch(_){}
-          let best=null,bl=0; for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; const n=(s.nameEn||'').toLowerCase(); if(n&&n.length>3&&(low.indexOf(n)>=0||n.indexOf(low)>=0)&&n.length>bl){ best=c; bl=n.length; } }
-          return best; };
         const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return;
           /* (#R94m) EXACTLY the modern-country reaction: the same place popup (Copy/Wikipedia/AI brief/Isolate)
-             + blue outline — here the era polygon is outlined. No bespoke behaviour. */
-          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(e.lngLat,nm,true,{geojson:f.geometry}); }
-          else { const code=_resolve(nm); if(code&&typeof showCountryDetail==='function') showCountryDetail(code); } }catch(_){} };
+             + blue outline — here the era polygon is outlined. No bespoke behaviour.
+             (#R94n) resolve to the app's historical ENTITY → the era NAME + Wikipedia title (so the card/popup and
+             the Wikipedia link land on e.g. "German Empire", NOT modern Germany), and take the FULL source polygon
+             — the click event's feature.geometry is CLIPPED to the vector tile the tap landed in (a geojson-vt
+             artifact), which is what drew the highlight "cut off in straight lines" for big countries. */
+          const R=resolveHist(nm,e.lngLat); const dispName=R.name||nm; const geom=R.geometry||f.geometry;
+          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(e.lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm}); }
+          else if(R.code&&typeof showCountryDetail==='function'){ showCountryDetail(R.code); } }catch(_){} };
         ['imtb-fill','imtb-lbl','imtb-line'].forEach(id=>{ map.on('click',id,_clk); map.on('mouseenter',id,()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} }); map.on('mouseleave',id,()=>{ try{ map.getCanvas().style.cursor=''; }catch(_){} }); });
       }
       return true; }catch(_){ return false; } }
@@ -27230,12 +27238,15 @@ window.addEventListener('DOMContentLoaded', () => {
     /* travelling → the robust `window._applyBorders()` (forces the label-free base + raises the era layers).
        Restoring at Now → `applyTheme()` (brings the labelled Carto base + modern labels back). */
     const _restoreBase=()=>{ try{ if(typeof applyTheme==='function') applyTheme(); else window._applyBorders(); }catch(_){ try{ window._applyBorders(); }catch(__){} } };
+    /* (#R94n) once the era polygons are in, re-paint an OPEN Compare so it uses this year's borders (its own
+       clock re-render can race ahead of the border fetch on the first, uncached travel to a year). */
+    function _afterApply(){ try{ const C=window.IntMapStatsCompare; if(C&&C.paintOnMap&&document.getElementById('scp-view')) C.paintOnMap(); }catch(_){} }
     function apply(fc){
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
          borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker. */
-      try{ const s=map.getSource('imtb-src'); if(s){ s.setData(fc); window._applyBorders(); return; } }catch(_){}
-      if(ensure()){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} }
+      try{ const s=map.getSource('imtb-src'); if(s){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
+      if(ensure()){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
       else map.once('idle',()=>{ if(active) apply(fc); }); }
     function clear(){ const was=active; active=false; shownY=null; _restoreBase(); }
     async function go(year){ active=true; const ny=nearest(year); const my=++seq;
@@ -27256,7 +27267,70 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('styledata',()=>{ if(active&&shownY!=null&&map.isStyleLoaded()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
     /* (#R94h) geometry of the first era polygon whose NAME matches — used to paint compared former states */
     function geomFor(re){ try{ const fc=cache.get(shownY); if(!fc||!re) return null; const f=fc.features.find(ff=>{ const n=(ff.properties&&(ff.properties.NAME||ff.properties.name))||''; return re.test(n); }); return f?f.geometry:null; }catch(_){ return null; } }
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, _nearest:nearest };
+    /* ===== (#R94n) geometry + historical-entity resolution shared by the click popup and the Compare paint ===== */
+    function _bbox(geom){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geom.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>=a&&d>=b)?[a,b,c,d]:null; }
+    function _bboxArea(geom){ const bb=_bbox(geom); return bb?((bb[2]-bb[0])*(bb[3]-bb[1])):Infinity; }
+    function _contains(geom,lng,lat){ try{ if(typeof turf!=='undefined'&&turf.booleanPointInPolygon&&geom&&/Polygon/.test(geom.type||'')) return turf.booleanPointInPolygon(turf.point([lng,lat]),{type:'Feature',geometry:geom,properties:{}}); }catch(_){}
+      const bb=_bbox(geom); return !!(bb&&lng>=bb[0]&&lng<=bb[2]&&lat>=bb[1]&&lat<=bb[3]); }
+    /* several interior sample points of a polygon (a bbox grid kept to strictly-inside points, + one guaranteed
+       on-surface point as a fallback). Used to match a modern country to its era polygon by MAJORITY VOTE — a
+       single point can land on a coastline or in territory that changed hands (modern Italy's South Tyrol was
+       Austria-Hungary in 1900), which would mis-key; the vote is robust to a few stray samples. */
+    function _interiorPts(geom,k){ const pts=[]; try{ const bb=_bbox(geom); if(!bb) return pts; const N=7;
+      for(let i=1;i<N&&pts.length<k;i++){ for(let j=1;j<N&&pts.length<k;j++){ const x=bb[0]+(bb[2]-bb[0])*i/N, y=bb[1]+(bb[3]-bb[1])*j/N; if(_contains(geom,x,y)) pts.push([x,y]); } }
+      if(!pts.length){ try{ if(typeof turf!=='undefined'&&turf.pointOnFeature){ const p=turf.pointOnFeature({type:'Feature',geometry:geom,properties:{}}); if(p&&p.geometry&&Array.isArray(p.geometry.coordinates)) pts.push(p.geometry.coordinates); } }catch(_){}
+        if(!pts.length) pts.push([(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]); }
+    }catch(_){} return pts; }
+    /* per-FeatureCollection bbox+area index, built once and reused across the compared codes of one paint */
+    function _fcIdx(fc){ if(fc.__imtbIdx) return fc.__imtbIdx; const idx=fc.features.map(ff=>{ const bb=ff.geometry?_bbox(ff.geometry):null; return { ff, bb, area: bb?((bb[2]-bb[0])*(bb[3]-bb[1])):Infinity }; }); try{ Object.defineProperty(fc,'__imtbIdx',{value:idx,enumerable:false,configurable:true}); }catch(_){ fc.__imtbIdx=idx; } return idx; }
+    /* the FULL, untruncated source feature (NAME match, preferring one that contains the click) — the click
+       event only ever hands back a tile-clipped copy, so we look the original up in the cached FeatureCollection. */
+    function featureAt(nm,lngLat){ try{ const fc=cache.get(shownY); if(!fc||!fc.features) return null; const low=String(nm||'').toLowerCase().trim(); if(!low) return null;
+      const named=fc.features.filter(ff=>String((ff.properties&&(ff.properties.NAME||ff.properties.name))||'').toLowerCase().trim()===low);
+      if(!named.length) return null; if(named.length===1||!lngLat||!isFinite(lngLat.lng)) return named[0];
+      return named.find(ff=>_contains(ff.geometry,lngLat.lng,lngLat.lat))||named[0]; }catch(_){ return null; } }
+    /* resolve an era polygon (its NAME + the click point) to the app's historical entity → the era display name,
+       Wikipedia title and the full geometry. countryStats already carries the era name/wiki (IntMapHistId +
+       IntMapHistStates ran on this travel), so this just has to find the right code. */
+    function resolveHist(nm,lngLat){ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; const out={ name:nm, wiki:nm, code:null, geometry:null };
+      try{ const ftr=featureAt(nm,lngLat); if(ftr&&ftr.geometry) out.geometry=ftr.geometry; }catch(_){}
+      let code=null, empire=false;
+      /* 1) empires / former states — the era polygon NAME matches a former-state regex. The historical basemap is
+         AUTHORITATIVE about identity, so use the registry's canonical era name + Wikipedia even when the state has
+         no Maddison economic data this year and so was never injected into countryStats (e.g. the Ottoman Empire in
+         1914 — it is still the Ottoman Empire on the map, not modern Turkey). The faithful lifespan disambiguates
+         loose patterns (^russia$/^india$/yugoslav) so they only bind inside the state's own era. */
+      try{ const HS=window.IntMapHistStates; const when=(window.IntMapTime&&window.IntMapTime.when)?window.IntMapTime.when():null;
+        if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!re||!re.test(nm)) continue;
+          let act=true; try{ if(when){ const t=+when,a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a&&t<=b); } }catch(_){}
+          if(!act) continue;
+          empire=true; const nmS=(S.name&&(S.name[lg]||S.name.en))||S.name; if(nmS) out.name=nmS; if(S.wiki) out.wiki=S.wiki;
+          if(countryStats[S.code]&&!countryStats[S.code]._histHidden){ code=S.code; out.code=S.code; }
+          break; } } }catch(_){}
+      if(!empire){
+        /* 2) exact modern name still present (a country that kept its name: France, Turkey, Weimar Germany…) */
+        { const low=String(nm||'').toLowerCase().trim(); for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; if((s.nameEn||'').toLowerCase()===low){ code=c; break; } } }
+        /* 3) point-in-polygon over the MODERN polygons — the robust catch-all that survives aourednik name variance
+              (e.g. "Kingfom of Italy" typo, "Italy"→our "Kingdom of Italy") by using WHERE the click landed */
+        if(!code&&lngLat&&isFinite(lngLat.lng)){ try{ const g=window.countryGeo; if(g&&g.features){ let best=null,bestA=Infinity; for(const f of g.features){ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const s=countryStats[cd]; if(!s||s._histHidden||!f.geometry) continue; if(_contains(f.geometry,lngLat.lng,lngLat.lat)){ const a=_bboxArea(f.geometry); if(a<bestA){ bestA=a; best=cd; } } } if(best) code=best; } }catch(_){} }
+        if(code){ const s=countryStats[code]; if(s){ out.code=code; const nm2=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(nm2) out.name=nm2; if(s.wiki) out.wiki=s.wiki; } }
+      }
+      return out; }
+    /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
+       contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its
+       THAT-YEAR extent, e.g. the German Empire's 1910 borders instead of modern Germany's). */
+    function geomForCode(code){ try{ const fc=cache.get(shownY); if(!fc||!fc.features) return null;
+      const HS=window.IntMapHistStates; const re=HS&&HS.hbRe&&HS.hbRe(code); if(re){ const g=geomFor(re); if(g) return g; }
+      const g=window.countryGeo; if(!g||!g.features) return null;
+      const cf=g.features.find(f=>String(f.id!=null?f.id:(f.properties&&f.properties.__code))===String(code)); if(!cf||!cf.geometry) return null;
+      const samples=_interiorPts(cf.geometry,16); if(!samples.length) return null;
+      /* majority vote: the era feature containing the MOST interior samples of this modern country (smallest
+         bbox wins ties, so an enclosing empire never out-votes the actual country). bbox pre-filter keeps it cheap. */
+      const idx=_fcIdx(fc); const tally=new Map();
+      for(const pt of samples){ let best=null,bestA=Infinity; for(const e of idx){ const bb=e.bb; if(!bb||pt[0]<bb[0]||pt[0]>bb[2]||pt[1]<bb[1]||pt[1]>bb[3]) continue; if(e.area<bestA&&_contains(e.ff.geometry,pt[0],pt[1])){ bestA=e.area; best=e.ff; } } if(best) tally.set(best,(tally.get(best)||0)+1); }
+      let win=null,wc=0; tally.forEach((c,ff)=>{ if(c>wc){ wc=c; win=ff; } });
+      return win?win.geometry:null; }catch(_){ return null; } }
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest };
   })();
 
   /* ===== Init ===== */
