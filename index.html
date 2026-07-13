@@ -23663,6 +23663,10 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R88) universal object list — see & manage every pin/drawing/radius/route/upload/isochrone in one panel */
         case 'objects': case 'objectList': case 'manageObjects': case 'listObjects': case 'myObjects': { let n=0; try{ if(window.IntMapObjects){ n=window.IntMapObjects.count(); window.IntMapObjects.open(); } }catch(_){}
           return R(true, note('🗂 '+L('Objects','オブジェクト一覧','Objekte','Объекты','Objetos')+' · '+n+' '+L('on the map','件','Objekte','объектов','objetos'))+note(L('Manage every pin, drawing, radius, route, uploaded layer and reachable-area here — rename, recolour, hide or delete.','ピン・図形・半径・経路・アップロード・到達圏をここで一括管理（名称変更・色変更・非表示・削除）。','Alle Objekte hier verwalten.','Управляйте всеми объектами здесь.','Gestiona todos los objetos aquí.'))); }
+        /* (#R89) slope / aspect terrain analysis */
+        case 'slope': case 'aspect': case 'terrainAnalysis': case 'steepness': case 'gradient': { const m=(a.type==='aspect'||/aspect|direction|方向|向き/i.test(String(a.mode||a.what||'')))?'aspect':'slope';
+          try{ const cb=document.getElementById('dl-slope'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } if(window.IntMapSlope){ window.IntMapSlope.setMode(m); } }catch(_){}
+          return R(true, note('⛰ '+(m==='aspect'?L('Slope aspect (direction each slope faces)','斜面の向き（方位）','Hangexposition','Экспозиция склона','Orientación'):L('Slope steepness (angle)','傾斜の急さ（角度）','Hangneigung','Крутизна склона','Pendiente'))+' — '+L('computed from the real elevation model for the current view; pan/zoom to update.','現在の表示範囲の標高データから算出。移動・拡大で更新。','aus dem echten Höhenmodell.','по реальной модели высот.','del modelo de elevación real.'))); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
@@ -25778,6 +25782,89 @@ window.addEventListener('DOMContentLoaded', () => {
     function refresh(){ if(openState) renderList(); tickFab(); }
     setInterval(tickFab, 2200); setTimeout(tickFab, 1500);
     return { open, close, toggle, refresh, count }; })();
+
+  /* ===== (#R89) TERRAIN ELEVATION SAMPLER — shared keyless DEM access for slope/aspect, viewshed (RF) and
+     terrain shadows. Decodes Mapzen/AWS "terrarium" terrain-RGB tiles (public S3, CORS-OK for canvas readback,
+     elevation = R*256 + G + B/256 − 32768 metres) into an elevAt(lng,lat) sampler for a given bounds+zoom. ===== */
+  window.IntMapTerrain=(function(){
+    const cache={};
+    const tileURL=(z,x,y)=>'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+z+'/'+x+'/'+y+'.png';
+    function loadTile(z,x,y){ const key=z+'/'+x+'/'+y; if(cache[key]) return cache[key];
+      const pr=new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous';
+        im.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=im.naturalWidth; cv.height=im.naturalHeight; const cx=cv.getContext('2d'); cx.drawImage(im,0,0); res({data:cx.getImageData(0,0,cv.width,cv.height).data,w:cv.width,h:cv.height}); }catch(e){ res(null); } };
+        im.onerror=()=>res(null); im.src=tileURL(z,x,y); });
+      cache[key]=pr; return pr; }
+    const lon2x=(lon,z)=>(lon+180)/360*Math.pow(2,z);
+    const lat2y=(lat,z)=>{ const r=lat*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z); };
+    async function sampler(bounds,z){ let [w,s,e,n]=bounds; z=Math.max(1,Math.min(14,Math.round(z)));
+      const N=Math.pow(2,z), wrap=x=>((x%N)+N)%N;
+      const x0=Math.floor(lon2x(w,z)), x1=Math.floor(lon2x(e,z)), y0=Math.max(0,Math.floor(lat2y(n,z))), y1=Math.min(N-1,Math.floor(lat2y(s,z)));
+      if((x1-x0+1)*(y1-y0+1)>48) return null;   /* too many tiles → caller should lower zoom */
+      const tiles={}, jobs=[];
+      for(let x=x0;x<=x1;x++) for(let y=y0;y<=y1;y++){ jobs.push(loadTile(z,wrap(x),y).then(t=>{ tiles[x+'/'+y]=t; })); }
+      await Promise.all(jobs);
+      let got=0; for(const k in tiles) if(tiles[k]) got++; if(!got) return null;
+      function elevAt(lon,lat){ const fx=lon2x(lon,z), fy=lat2y(lat,z); const tx=Math.floor(fx), ty=Math.floor(fy); const t=tiles[tx+'/'+ty]; if(!t) return null;
+        const px=Math.min(t.w-1,Math.max(0,Math.floor((fx-tx)*t.w))), py=Math.min(t.h-1,Math.max(0,Math.floor((fy-ty)*t.h))); const i=(py*t.w+px)*4;
+        return (t.data[i]*256+t.data[i+1]+t.data[i+2]/256)-32768; }
+      return { elevAt, z }; }
+    return { sampler, loadTile }; })();
+
+  /* ===== (#R89) SLOPE / ASPECT ANALYSIS ("傾斜・方角解析") — colour-codes terrain steepness (slope angle) or the
+     direction each slope faces (aspect), computed from the real DEM over the current view. Disaster / hiking /
+     construction / military use. Keyless (terrarium DEM). Recomputes on pan/zoom. ===== */
+  window.IntMapSlope=(function(){
+    if(typeof map==='undefined'||!map) return { toggle(){}, run(){}, clear(){}, setMode(){} };
+    const SRC='imslope-src'; let on=false, mode='slope', busy=false, moveT=null, lastKey='';
+    const SL=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[currentLang]||en;
+    function slopeColor(d){ return d<2?'#1a9850':d<5?'#66bd63':d<10?'#a6d96a':d<15?'#fee08b':d<20?'#fdae61':d<30?'#f46d43':d<40?'#d73027':'#a50026'; }
+    function aspectColor(a){ return 'hsl('+Math.round(a)+',72%,55%)'; }
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'imslope-fill',type:'fill',source:SRC,paint:{'fill-color':['coalesce',['get','col'],'#888'],'fill-opacity':0.55,'fill-antialias':false}});
+      return true; }catch(_){ return false; } }
+    async function run(){ if(busy||!on||!map) return; let b; try{ b=map.getBounds(); }catch(_){ return; }
+      const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth(); const z=Math.max(3,Math.min(13,Math.round(map.getZoom())));
+      const key=[mode,z,w.toFixed(3),s.toFixed(3),e.toFixed(3),n.toFixed(3)].join(','); if(key===lastKey) return; lastKey=key; busy=true;
+      try{ const samp=await window.IntMapTerrain.sampler([w,s,e,n],z); if(!samp||!on){ busy=false; return; }
+        const COLS=48, dLng=(e-w)/COLS, dLat=(n-s)/COLS, midLat=(s+n)/2;
+        const mLat=110540, mLng=111320*Math.cos(midLat*Math.PI/180); const feats=[];
+        for(let i=0;i<COLS;i++)for(let j=0;j<COLS;j++){ const lng=w+(i+0.5)*dLng, lat=s+(j+0.5)*dLat;
+          const zE=samp.elevAt(lng+dLng,lat), zW=samp.elevAt(lng-dLng,lat), zN=samp.elevAt(lng,lat+dLat), zS=samp.elevAt(lng,lat-dLat);
+          if(zE==null||zW==null||zN==null||zS==null) continue;
+          const dzdx=(zE-zW)/(2*dLng*mLng), dzdy=(zN-zS)/(2*dLat*mLat);
+          const slope=Math.atan(Math.hypot(dzdx,dzdy))*180/Math.PI; let col;
+          if(mode==='aspect'){ let asp=(Math.atan2(-dzdx,-dzdy)*180/Math.PI+360)%360; col=slope<1.5?'#b8b8b8':aspectColor(asp); } else col=slopeColor(slope);   /* downslope azimuth (the direction the slope faces), clockwise from north */
+          feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w+i*dLng,s+j*dLat],[w+(i+1)*dLng,s+j*dLat],[w+(i+1)*dLng,s+(j+1)*dLat],[w+i*dLng,s+(j+1)*dLat],[w+i*dLng,s+j*dLat]]]},properties:{col:col}});
+        }
+        if(on){ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){} updateLegend(feats.length); }
+      }catch(_){}
+      busy=false; }
+    function updateLegend(nc){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('slope',[lbl(),lbl(),lbl(),lbl()],['imslope-fill'],'dl-slope'); if(!el) return; let h=el.querySelector('.sl-note'); if(!h){ h=document.createElement('div'); h.className='sl-note'; h.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:6px;line-height:1.5;'; el.appendChild(h);}
+      const modeBtn='<button id="sl-mode" style="margin-top:5px;padding:3px 9px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+(mode==='slope'?SL('▸ Show aspect (direction)','▸ 斜面方向を表示','▸ Exposition','▸ Экспозиция','▸ Orientación'):SL('▸ Show slope (steepness)','▸ 傾斜角を表示','▸ Neigung','▸ Крутизна','▸ Pendiente'))+'</button>';
+      const ramp=mode==='slope'?SL('flat → steep: green · yellow · orange · red (° gradient)','平坦→急: 緑・黄・橙・赤（傾斜角）','flach→steil','пологий→крутой','llano→empinado'):SL('slope direction (hue = compass bearing it faces)','斜面の向き（色相＝方位）','Hangrichtung','направление склона','orientación');
+      h.innerHTML=ramp+'<br>'+modeBtn; const mb=h.querySelector('#sl-mode'); if(mb) mb.onclick=()=>setMode(mode==='slope'?'aspect':'slope'); }catch(_){} }
+    const lbl=()=>SL('Slope / aspect','傾斜・斜面方向','Neigung / Exposition','Уклон / экспозиция','Pendiente / orientación');
+    function setMode(m){ mode=(m==='aspect')?'aspect':'slope'; lastKey=''; run(); }
+    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ if(map.once) map.once('idle',apply); return; }
+      try{ map.setLayoutProperty('imslope-fill','visibility',on?'visible':'none'); }catch(_){}
+      if(on){ lastKey=''; run(); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} } else { try{ window._hideGenericLegend&&window._hideGenericLegend('slope'); }catch(_){} try{ const src=map.getSource(SRC); if(src) src.setData({type:'FeatureCollection',features:[]}); }catch(_){} } };
+      apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
+    map.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(run,500); });
+    map.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ try{ map.setLayoutProperty('imslope-fill','visibility','visible'); }catch(_){} } },80); });
+    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-slope')) return;
+      const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-slope';
+      const lab=document.createElement('label'); lab.className='layer-option';
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.id='dl-slope';
+      const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background='#f46d43';
+      const sp=document.createElement('span'); sp.id='dl-slope-lbl'; sp.textContent='⛰ '+lbl();
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
+      w.appendChild(lab); dd.appendChild(w);
+      cb.addEventListener('change',ev=>{ w.classList.toggle('on',ev.target.checked); toggle(ev.target.checked); });
+      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
+    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-slope-lbl'); if(s) s.textContent='⛰ '+lbl(); });
+    if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
+    return { toggle, run, clear:()=>toggle(false), setMode }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
