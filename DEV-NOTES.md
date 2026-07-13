@@ -5,6 +5,14 @@
 
 ---
 
+## R88 — Universal Object List (汎用オブジェクト一覧) (tag `#R88`)
+
+"現在地図に存在するピン、描画、半径、経路、アップロードデータを一覧化し、表示・非表示・名称変更・色変更・削除を一か所で。今は機能ごとに管理場所が分散している。"
+
+- **`window.IntMapObjects`** — ONE floating panel that gathers EVERY user object live from its real subsystem and manages it in place: **pins** (`userPins`→`removePin`) · **radius circles** (`radiusItems`→`removeRadiusItem`, recolour via `refreshTool`) · **kept drawings/annotations** (`IntMapAnnotations._items`→`remove`, native name+colour) · **uploaded GeoJSON** (`GeoJSONUpload._items`→`remove`, per-layer recolour + show/hide via `setPaint/setLayout`) · **active route** (`imroute-src`→`IntMapRouting.clear`) · **reachable-area isochrone** (`im-iso-src`→`IntMapIsochrone.clear`). Per object: **fly-to · rename · recolour · hide · delete** — each shown only where the subsystem supports it (rename uses the native name field where one exists, else a side-label store; pins have no colour field so no swatch). Fully **additive**: reads existing state and calls existing remove APIs; the only subsystem changes are exposing `GeoJSONUpload.remove` and `IntMapAnnotations.refresh` (one word each). Placed INSIDE the main closure so it can read the module-scoped `userPins`/`radiusItems`/`removePin`/`refreshTool` directly.
+- **Discoverability**: a count-badge FAB appears bottom-left whenever ≥1 object exists (`🗂 N`), opening the panel; also `IntMapObjects.open/close/toggle`, an Atlas action (`objects`/`objectList`/`manageObjects`/…), and deterministic NL ("オブジェクト一覧", "オブジェクトを管理", "manage/list/show all objects", "object list/manager"). Draggable via `makeDraggable`.
+- **Verified (headless-safe, DOM+logic):** boots clean (all `IntMap*` modules defined, no console errors); with 2 annotations added → panel shows 2 correctly-named rows + 2 colour inputs + 2 delete buttons; recolour writes through to the subsystem (`#0000ff`); deleting a row removes it from the real store (count 2→1) and matches the live subsystem; `clear all` → 0; the Atlas `objects` action opens the panel. Map-paint side (fly-to/hide) can't be exercised in the hidden tab (`isStyleLoaded` gate) but uses the same proven fitBounds/setLayout primitives.
+
 ## R87 — live-camera coverage GREATLY expanded (tags `#R87`)
 
 Re-report: "ライブカメラ…coverageが限定的すぎる。すくなくとも今の20倍の利用可能数にしろ。しっかりしたものを（ハリボテNG）".
