@@ -2551,10 +2551,27 @@ window.addEventListener('DOMContentLoaded', () => {
   window._applyBorders=function(){ try{ if(typeof map==='undefined'||!map) return;
     const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const bon=!!bordersOn;
+    /* modern boundary line: only when NOT travelling (and the toggle is on). */
     if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
-    ['imtb-line','imtb-lbl'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',(bon&&traveling)?'visible':'none'); });
+    /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
+       (not gated by the modern-border toggle, which previously left the map border-less). */
+    ['imtb-fill','imtb-hl','imtb-line','imtb-lbl'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',traveling?'visible':'none'); });
+    /* modern country labels off while travelling — the era names come from imtb-lbl. */
     if(map.getLayer('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } map.setLayoutProperty('ofm-country','visibility','none'); }
       else if(_imbOfmWas!==null){ map.setLayoutProperty('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
+    /* (#R94l) the CARTO *_all raster base BAKES modern borders + labels into the tiles — hiding vector layers
+       can't remove them. Force the label-free variant DIRECTLY while travelling (don't rely on applyTheme's
+       timing, which was why the era borders never appeared), and RAISE the era layers above the raster. */
+    try{ const sat=(typeof currentMapType!=='undefined'&&currentMapType==='sat');
+      const mc=(window.imMapColor||'auto'); const mapLight=(mc==='light')?true:(mc==='dark')?false:(document.documentElement.getAttribute('data-theme')==='light');
+      if(traveling&&!sat){
+        if(map.getLayer('layer-dark'))     map.setLayoutProperty('layer-dark','visibility','none');
+        if(map.getLayer('layer-light'))    map.setLayoutProperty('layer-light','visibility','none');
+        if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',mapLight?'none':'visible');
+        if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',mapLight?'visible':'none');
+        try{ if(map.getLayer('imtb-line')) map.moveLayer('imtb-line'); if(map.getLayer('imtb-lbl')) map.moveLayer('imtb-lbl'); }catch(_){}
+      }
+    }catch(_){}
   }catch(_){} };
   function applyTheme(){
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
@@ -27185,7 +27202,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function ensure(){ try{ if(!map.isStyleLoaded()) return false;
       if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
-      if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(150,150,150,0.9)','line-opacity':0.92,'line-width':['interpolate',['linear'],['zoom'],1,0.55,4,1,8,1.7,12,2.4]}}, before);
+      /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
+      if(!map.getLayer('imtb-fill')) map.addLayer({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
+      if(!map.getLayer('imtb-hl')) map.addLayer({id:'imtb-hl',type:'fill',source:'imtb-src',filter:['==',['coalesce',['get','NAME'],['get','name'],''],' '],paint:{'fill-color':'#ffd21e','fill-opacity':0.35}}, before);
+      if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
       if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
@@ -27195,17 +27215,22 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(nm)&&countryStats[S.code]) return S.code; } } }catch(_){}
           let best=null,bl=0; for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; const n=(s.nameEn||'').toLowerCase(); if(n&&n.length>3&&(low.indexOf(n)>=0||n.indexOf(low)>=0)&&n.length>bl){ best=c; bl=n.length; } }
           return best; };
-        const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; const code=_resolve(nm); if(code&&typeof showCountryDetail==='function') showCountryDetail(code); }catch(_){} };
-        ['imtb-lbl','imtb-line'].forEach(id=>{ map.on('click',id,_clk); map.on('mouseenter',id,()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} }); map.on('mouseleave',id,()=>{ try{ map.getCanvas().style.cursor=''; }catch(_){} }); });
+        const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||'';
+          try{ if(map.getLayer('imtb-hl')) map.setFilter('imtb-hl',['==',['coalesce',['get','NAME'],['get','name'],''],nm]); }catch(_){}   /* highlight it like a modern country */
+          const code=_resolve(nm); if(code&&typeof showCountryDetail==='function') showCountryDetail(code); }catch(_){} };
+        ['imtb-fill','imtb-lbl','imtb-line'].forEach(id=>{ map.on('click',id,_clk); map.on('mouseenter',id,()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} }); map.on('mouseleave',id,()=>{ try{ map.getCanvas().style.cursor=''; }catch(_){} }); });
       }
       return true; }catch(_){ return false; } }
     /* visibility is owned by `window._applyBorders()`; `applyTheme()` additionally swaps the Carto base to its
        label-free variant while travelling (so the base tiles' BAKED-IN modern borders/labels disappear). */
-    const _refresh=()=>{ try{ if(typeof applyTheme==='function') applyTheme(); else window._applyBorders(); }catch(_){ try{ window._applyBorders(); }catch(__){} } };
-    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} _refresh(); }
-    function clear(){ const was=active; active=false; shownY=null; if(was) _refresh(); else { try{ window._applyBorders(); }catch(_){} } }
-    async function go(year){ const was=active; active=true; const ny=nearest(year); const my=++seq;
-      if(shownY===ny){ if(!was) _refresh(); else { try{ window._applyBorders(); }catch(_){} } return; }
+    /* travelling → the robust `window._applyBorders()` (forces the label-free base + raises the era layers).
+       Restoring at Now → `applyTheme()` (brings the labelled Carto base + modern labels back). */
+    const _restoreBase=()=>{ try{ if(typeof applyTheme==='function') applyTheme(); else window._applyBorders(); }catch(_){ try{ window._applyBorders(); }catch(__){} } };
+    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){}
+      [200,700].forEach(ms=>setTimeout(()=>{ try{ if(active){ ensure(); window._applyBorders(); } }catch(_){} },ms)); }   /* re-assert (label/base layers can settle late) */
+    function clear(){ const was=active; active=false; shownY=null; _restoreBase(); }
+    async function go(year){ active=true; const ny=nearest(year); const my=++seq;
+      if(shownY===ny){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
       const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; apply(fc); } }
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
