@@ -5,6 +5,14 @@
 
 ---
 
+## R94h — 3 fixes: former-state GDP-per-capita missing in Compare + map-colour former states + clear colour on "Back to statistics" (tag `#R94h`)
+
+Re-report: *"ソ連のGDP per capitaの棒グラフがない。また、比較中の国は着色される機能が旧国家では無い。また、着色は、back to statistics押せば消えるように。"*
+
+- **USSR GDP-per-capita bar missing.** The Compare's Maddison path (`_madField`) only mapped `gdp`/`pop`, so `gdppc` fell through to World Bank — which has no FSU-republic figures before 1990, so the USSR's per-capita was blank (and normal countries showed WB *nominal* per-capita while their GDP bar was Maddison *real* — inconsistent). Fixed: `_madField` now also returns `gdppc`; a shared `_madOne(M,mf,cd,year)` returns `gdpBil*1e9` / `popN` / `gdppc` (unscaled real int$); `_histAddLatest`/`_histAddSeries`/`blockData` use it, and for a summed former state per-capita = **ΣGDP / Σpop**. Verified 1960: **USSR $6.3k, USA $18.1k** (both Maddison real; src Maddison) — the per-capita now matches the GDP basis.
+- **Compared countries weren't colour-painted on the map for former states.** `paintOnMap` matched the chart colours to `countryGeo` (MODERN polygons), so the USSR (no modern polygon) never painted. Fixed: former-state codes now paint their **era polygon** from the clock's historical borders — `IntMapHistStates.hbRe(code)` (a name regex, e.g. `/soviet|u\.?s\.?s\.?r/i`) → `IntMapTimeBorders.geomFor(re)` → the geometry, pushed into `imcmp-src` in the same PAL colour. Verified `geomFor(SUN)` returns a MultiPolygon at 1960.
+- **Colour didn't clear on "Back to statistics".** The `.scp-back` handler now calls `clearMap()` before tearing down the view. 0 console errors.
+
 ## R94g — 3 fixes: USSR flag rendered as raw text in Compare + Country-borders fast-blink + border INTEGRATION (tag `#R94g`)
 
 Re-report: *"ソ連の国旗がバグっている。また、Country borders labelをオンオフしたら、高速点滅というバグ。それに、わたしがしてほしいのは国境線の上塗りじゃなくてCountry bordersとの統合"*.
