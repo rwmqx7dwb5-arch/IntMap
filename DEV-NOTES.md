@@ -5,6 +5,14 @@
 
 ---
 
+## R89b — RF / radio coverage (電波・通信圏) (tag `#R89`)
+
+"アンテナ位置、高さ、出力、周波数を入力し、地形を考慮した通信可能範囲を表示する。"
+
+- **`window.IntMapRF`** — from an antenna (position + height + TX power dBm + frequency MHz) draws the **terrain line-of-sight viewshed**: a 52×52 grid over the max-range bbox where each cell is covered only if NO closer terrain rises into the line of sight from the mast top (4/3-earth curvature drop applied) — real shadow gaps, no overstated coverage. Max range = min(radio horizon `4.12·(√h+√2)` km, free-space-path-loss range from the link budget, 80 km). Draggable panel (height/power/frequency inputs + click-to-place mast + covered-km² readout), Atlas actions (`rfCoverage`/`coverage`/`viewshed`/`lineOfSight`/…). Keyless (terrarium DEM via `IntMapTerrain`).
+- **Bug caught in verification & fixed:** the first radial version `break`-ed the ray at the first angle decrease → 0.2 km reach from a 3,700 m peak (absurd), and a solid reach-polygon would have overstated coverage across shadow gaps (a facade). Replaced with the proper per-cell viewshed.
+- **Verified (real physics, headless-safe):** Fuji-summit 30 m mast → **1,656 km²** covered / 28.4 km range; same mast in the valley NW → **165 km²** (10× less — terrain shadowing works); summit **100 m** mast → 47 km range / **5,149 km²** (taller mast reaches farther). Boots clean, no console errors.
+
 ## R89 — Slope/aspect terrain analysis + shared DEM sampler (tag `#R89`)
 
 "地形から傾斜角、斜面方向、急傾斜地を色分けする。災害・登山・建設・軍事分析に使える。"
