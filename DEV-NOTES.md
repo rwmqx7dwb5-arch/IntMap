@@ -5,6 +5,14 @@
 
 ---
 
+## R94g — 3 fixes: USSR flag rendered as raw text in Compare + Country-borders fast-blink + border INTEGRATION (tag `#R94g`)
+
+Re-report: *"ソ連の国旗がバグっている。また、Country borders labelをオンオフしたら、高速点滅というバグ。それに、わたしがしてほしいのは国境線の上塗りじゃなくてCountry bordersとの統合"*.
+
+- **Flag rendered as raw `<img …>` text in Compare.** A former state's `flag` is an `<img class="hist-flag">` string; the Compare `esc()`'d the whole `flag+name`, so an emoji survived (it's a char) but the `<img>` became visible tag text. Fixed at all 4 Compare sites (bar rows, chips, country picker, pivot-table `cLbl`) to insert the flag **raw** and `esc()` only the NAME; the bar's `title=` gets the plain name. Verified: the USSR bar now has a real `<img class="hist-flag">` (`hasImg:true`), no raw text. (renderStats already did this right.)
+- **Fast-blink when toggling "Country borders".** `IntMapTimeBorders`'s `styledata` handler re-asserted on EVERY styledata by calling `setLayoutProperty`, which itself fires `styledata` → an infinite ~140 ms loop; and the toggle's `mkBorders` (direct set + `applyTheme`) fought it. Fixed: the handler now re-asserts **only when a base-style swap WIPED our layers** (detected by a missing `imtb-line`), so it never responds to its own visibility writes.
+- **Integration, not an overlay.** New single source of truth `window._applyBorders()`: the SAME `bordersOn` toggle governs BOTH the modern boundary line (shown only when **live**) AND the clock's historical borders `imtb-line` (shown only when **travelling**) — plus hides the modern country labels while travelling (captured `_imbOfmWas`, restored at Now). Every border-visibility site (`applyTheme`, the `cb-borders` toggle, the OFM-load re-assert, the sourcedata listener, and `IntMapTimeBorders` apply/clear/go) now calls this one function, so the two layers can't fight and the toggle really controls the era borders. `IntMapTimeBorders` exposes `active()`. Verified: `_applyBorders` idempotent (5× no throw), `active()` true while travelling / false + `current()`=null at Now, 0 console errors. (Layer PIXELS still can't be verified headlessly — WebGL never loads; check the live site.)
+
 ## R94f — The MAP's own borders follow the clock (not the overlay layer) (tag `#R94f`)
 
 Re-report (same message): *"国境線も変えろ（historical bordersではなく、地図の国境線を）"* — change the map's actual border lines with the clock, not the optional overlay.
