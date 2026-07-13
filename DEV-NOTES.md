@@ -5,6 +5,15 @@
 
 ---
 
+## R94m — Historical click = the SAME reaction as a modern country + borders update on a 2nd year change + kill the flicker (tag `#R94m`)
+
+Re-report: my click added a *bespoke* card (user: *"この反応と同じようにって言ってるだろうが。勝手に新たな動作増やすな"* — do the SAME as the normal country-label reaction), the borders **don't change on a second year change** (need to go to Now first), and travelling to an old year **flickers badly**.
+
+- **Exact same reaction:** exposed the existing place popup as `window._imPlacePopup` (the Copy/Wikipedia/AI brief/Isolate popup + blue `IntMapOutline`), added an `opts.geojson` so the caller can outline the era polygon (an empire, not just one modern country). The historical label/fill/border click now calls **that** — no custom card, no bespoke yellow highlight (removed `imtb-hl`). Verified `_imPlacePopup` is wired.
+- **Borders didn't update on a 2nd travel:** `apply()` early-returned when `ensure()` transiently reported the style not-loaded, which blocked the `setData` — so a second year change kept the first year's borders until you went to Now. Now it sets the data on the **existing source directly** (the source persists once created), only falling back to `ensure()`/idle on the very first travel. Verified 1914 → 1938 updates (`current()` 1914 then 1938, no Now between).
+- **Flicker:** removed the 200/700 ms re-assert timeouts and the per-call `map.moveLayer` (the era layers are already above the raster via `before ofm-country`), so a travel now touches the map once instead of repainting several times.
+- (CRLF note: a `sed` edit flipped the file to LF; converted back to CRLF. `git diff -w` confirms only 11/6 real content lines changed.) 0 console errors. ⚠ still can't see the map here (both browser surfaces unavailable) — please confirm the click-reaction, the 2nd-travel border change, and the flicker on the live site.
+
 ## R94l — Make the era borders/labels ACTUALLY render (direct base swap + raise) + clickable/highlightable + data-coverage note (tag `#R94l`)
 
 Re-report (1930 screenshot): the map still showed **modern labels ("Israel", "Ukraine", "Belarus" separate) and no era borders**, the historical labels weren't clickable/highlightable, and deep-past has too many "—".

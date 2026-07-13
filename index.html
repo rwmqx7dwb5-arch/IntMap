@@ -2555,7 +2555,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
     /* (#R94l) era borders + names show WHENEVER travelling — the whole point of moving the clock is to see them
        (not gated by the modern-border toggle, which previously left the map border-less). */
-    ['imtb-fill','imtb-hl','imtb-line','imtb-lbl'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',traveling?'visible':'none'); });
+    ['imtb-fill','imtb-line','imtb-lbl'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',traveling?'visible':'none'); });
     /* modern country labels off while travelling — the era names come from imtb-lbl. */
     if(map.getLayer('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } map.setLayoutProperty('ofm-country','visibility','none'); }
       else if(_imbOfmWas!==null){ map.setLayoutProperty('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
@@ -2569,7 +2569,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if(map.getLayer('layer-light'))    map.setLayoutProperty('layer-light','visibility','none');
         if(map.getLayer('layer-dark-nl'))  map.setLayoutProperty('layer-dark-nl','visibility',mapLight?'none':'visible');
         if(map.getLayer('layer-light-nl')) map.setLayoutProperty('layer-light-nl','visibility',mapLight?'visible':'none');
-        try{ if(map.getLayer('imtb-line')) map.moveLayer('imtb-line'); if(map.getLayer('imtb-lbl')) map.moveLayer('imtb-lbl'); }catch(_){}
       }
     }catch(_){}
   }catch(_){} };
@@ -20859,7 +20858,8 @@ window.addEventListener('DOMContentLoaded', () => {
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
            boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
         if(!opts.noOutline){
-          if(!isCountry){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }
+          if(opts.geojson){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{geojson:opts.geojson,lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }   /* (#R94m) caller-supplied polygon (historical era border) */
+          else if(!isCountry){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }
           /* (#R62) "国名のラベルをクリックしても国の範囲がハイライトされない" — countries now outline too, from the
              LOCAL countryGeo polygon (point-in-polygon; no network, no wrong-namesake risk). */
           else { try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]);
@@ -20930,6 +20930,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function tryWire(n){ if(map.getLayer('ofm-country')) wire(); else if((n||0)<60) setTimeout(()=>tryWire((n||0)+1),200); }
     if(map.isStyleLoaded()) tryWire(0); else map.on('load',()=>tryWire(0));
     map.on('styledata',()=>{ setTimeout(()=>{ ensureHL(); }, 120); });   /* re-create the highlight layers after a style swap (click handlers persist by layer id) */
+    /* (#R94m) EXACT same reaction for historical labels: reuse this place popup (Copy/Wikipedia/AI brief/Isolate
+       + blue outline). `geojson` lets the caller outline the era polygon (an empire, not just one modern country). */
+    window._imPlacePopup=(lngLat,name,isCountry,opts)=>{ try{ showPopup(lngLat,name,isCountry,opts); }catch(_){} };
   })();
 
   /* ===== (#R9/#49) User GeoJSON upload — load any .geojson/.json from the Layers menu OR by dropping
@@ -27204,7 +27207,6 @@ window.addEventListener('DOMContentLoaded', () => {
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
       if(!map.getLayer('imtb-fill')) map.addLayer({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
-      if(!map.getLayer('imtb-hl')) map.addLayer({id:'imtb-hl',type:'fill',source:'imtb-src',filter:['==',['coalesce',['get','NAME'],['get','name'],''],' '],paint:{'fill-color':'#ffd21e','fill-opacity':0.35}}, before);
       if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
       if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
@@ -27215,9 +27217,11 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(nm)&&countryStats[S.code]) return S.code; } } }catch(_){}
           let best=null,bl=0; for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; const n=(s.nameEn||'').toLowerCase(); if(n&&n.length>3&&(low.indexOf(n)>=0||n.indexOf(low)>=0)&&n.length>bl){ best=c; bl=n.length; } }
           return best; };
-        const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||'';
-          try{ if(map.getLayer('imtb-hl')) map.setFilter('imtb-hl',['==',['coalesce',['get','NAME'],['get','name'],''],nm]); }catch(_){}   /* highlight it like a modern country */
-          const code=_resolve(nm); if(code&&typeof showCountryDetail==='function') showCountryDetail(code); }catch(_){} };
+        const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return;
+          /* (#R94m) EXACTLY the modern-country reaction: the same place popup (Copy/Wikipedia/AI brief/Isolate)
+             + blue outline — here the era polygon is outlined. No bespoke behaviour. */
+          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(e.lngLat,nm,true,{geojson:f.geometry}); }
+          else { const code=_resolve(nm); if(code&&typeof showCountryDetail==='function') showCountryDetail(code); } }catch(_){} };
         ['imtb-fill','imtb-lbl','imtb-line'].forEach(id=>{ map.on('click',id,_clk); map.on('mouseenter',id,()=>{ try{ map.getCanvas().style.cursor='pointer'; }catch(_){} }); map.on('mouseleave',id,()=>{ try{ map.getCanvas().style.cursor=''; }catch(_){} }); });
       }
       return true; }catch(_){ return false; } }
@@ -27226,8 +27230,13 @@ window.addEventListener('DOMContentLoaded', () => {
     /* travelling → the robust `window._applyBorders()` (forces the label-free base + raises the era layers).
        Restoring at Now → `applyTheme()` (brings the labelled Carto base + modern labels back). */
     const _restoreBase=()=>{ try{ if(typeof applyTheme==='function') applyTheme(); else window._applyBorders(); }catch(_){ try{ window._applyBorders(); }catch(__){} } };
-    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){}
-      [200,700].forEach(ms=>setTimeout(()=>{ try{ if(active){ ensure(); window._applyBorders(); } }catch(_){} },ms)); }   /* re-assert (label/base layers can settle late) */
+    function apply(fc){
+      /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
+         SECOND year change didn't update: ensure() could transiently return false and block setData, so the
+         borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker. */
+      try{ const s=map.getSource('imtb-src'); if(s){ s.setData(fc); window._applyBorders(); return; } }catch(_){}
+      if(ensure()){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} }
+      else map.once('idle',()=>{ if(active) apply(fc); }); }
     function clear(){ const was=active; active=false; shownY=null; _restoreBase(); }
     async function go(year){ active=true; const ny=nearest(year); const my=++seq;
       if(shownY===ny){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
