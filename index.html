@@ -22424,10 +22424,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); if(sl) return _setLast({lng:sl.lng,lat:sl.lat,name:sl.name}); /* denied → fall through to deixis/centre */ }
       if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)){
         if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=map.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
-      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length) return _setLast({lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}); } }catch(_){}
+      /* (#R93d) A 'capital' fuzzy match carries the COUNTRY's centroid, NOT the city — up to ~80 km off (searching
+         "Riga" gave Latvia's centroid 83 km from the city, "Paris" gives France's centroid, …), which put the point
+         out in the countryside where transit/road routers find no stop → a false "no route". So DON'T short-circuit on
+         a capital match: prefer precise Nominatim coords for it, and keep the coarse fuzzy result only as a fallback. */
+      let _fz=null;
+      try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length){ _fz={lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
       try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
+      if(_fz) return _setLast(_fz);   /* capital match + Nominatim unreachable → fall back to the coarse centroid */
       return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
     /* (#R51) DYNAMIC navigation. The user: "固定値でいいはずがない／静的なコーディングだと所変われば不具合". Correct — a
