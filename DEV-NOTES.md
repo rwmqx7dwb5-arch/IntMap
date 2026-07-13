@@ -5,6 +5,14 @@
 
 ---
 
+## R91 — Transit isochrone: reachable by rail (鉄道で1時間以内) (tag `#R91`)
+
+Completes the isochrone feature ("車で30分／徒歩15分／鉄道で1時間以内") — the drive/walk/cycle side was Valhalla (#R86); this adds the rail side.
+
+- **`window.IntMapTransitReach`** — the area reachable from a point within a time budget riding the REAL OSM rail network. Fetches rail ways + station nodes (Overpass, bbox sized to `min(90, minutes×1.4)` km, 3-mirror + corsproxy ladder, partial-result rejection), builds a welded graph (edge time = length ÷ per-class speed: rail 70 / light-rail 38 / subway 35 / tram 22 km/h; near-coincident nodes welded < 30 m so separate ways connect), then Dijkstra from the nearest station (seeded with the walk-to-station time at 4 km/h). Every station reached within budget is plotted **coloured green→orange by minutes**, and a reachable-area **convex hull** (buffered by the leftover-walk radius, via turf) is drawn. Honest caveat surfaced: distance/speed model, not a live timetable.
+- **Wired into the existing isochrone entry points**: the Atlas `isochrone` action branches to rail when the mode matches `transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車`; deterministic NL extended (JP "○○から電車で60分以内", EN "60 min train from X"). 
+- **Verified end-to-end with REAL data (Overpass responded):** from Umeda/Osaka, 12-min budget → **242 real stations reachable** (今宮 9m, JR難波 10m, 東淀川 5m, ユニバーサルシティ 7m…), 3,882 rail nodes, sensible times. Boots clean, no console errors.
+
 ## R90 — Sun & shadow (日照・影) (tag `#R90`)
 
 "日付と時刻を指定し、建物や地形による日照・影の移動を3D表示する。"

@@ -23467,6 +23467,13 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'isochrone': case 'reach': case 'reachability': case 'reachable': case 'catchment': {
           const ll=await geocode(a.place||a.from||a.origin||a.center); if(!ll) return R(false, warn('⚠ '+L('From where? Give a place.','どこから？地点を指定してください。','Von wo? Ort angeben.','Откуда? Укажите место.','¿Desde dónde? Indica un lugar.')+' '+esc(a.place||a.from||'')));
           const rawM=String(a.mode||a.profile||a.by||'').toLowerCase();
+          if(/transit|train|rail|metro|subway|tram|電車|鉄道|地下鉄|列車|公共/.test(rawM)){   /* (#R91) rail reachability isochrone */
+            let tmin=Array.isArray(a.minutes)?Math.max.apply(null,a.minutes.map(Number)):(+a.minutes||+a.time||+a.mins||60);
+            try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(8,11-tmin/20)}); }catch(_){}
+            let tr=null; try{ tr=await window.IntMapTransitReach.open({lng:ll.lng,lat:ll.lat},tmin); }catch(_){}
+            if(tr&&tr.ok) return R(true, note('🚆 '+esc(ll.name||a.place||'')+' — '+tr.minutes+' '+L('min by rail','分・鉄道到達圏','Min per Bahn','мин по ж/д','min en tren'))+note(tr.stations.length+' '+L('stations reachable within the time budget, riding the REAL OSM rail network (edge time = length ÷ line-class speed) — coloured green→orange by minutes. Not a live timetable.','駅に時間内で到達可能。実在のOSM鉄道網を辿り（所要＝距離÷路線種別速度）、緑→橙で所要時間を色分け。実時刻表ではありません。','Bahnhöfe im Zeitbudget erreichbar (echtes OSM-Bahnnetz).','станций достижимо (реальная ж/д сеть OSM).','estaciones alcanzables (red ferroviaria real OSM).')));
+            return R(false, warn('🚆 '+L('No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.','この時間で到達できる鉄道が見つかりません（またはデータ混雑）。駅の近くや車・徒歩をお試しください。','Kein Bahnnetz erreichbar.','Ж/д недоступна.','Sin ferrocarril alcanzable.')));
+          }
           const mode=/walk|foot|徒歩|pedestr|zu ?fu|пешк|a ?pie/.test(rawM)?'pedestrian':(/bike|bicycle|cycl|自転車|\brad\b|вело|bici/.test(rawM)?'bicycle':'auto');
           let mins=[]; if(Array.isArray(a.minutes)) mins=a.minutes.map(Number); else if(a.minutes!=null) mins=[+a.minutes]; else if(a.time!=null) mins=[+a.time]; else if(a.mins!=null) mins=[+a.mins];
           mins=mins.filter(x=>isFinite(x)&&x>0&&x<=120); if(!mins.length) mins=[15,30];
@@ -24839,13 +24846,13 @@ window.addEventListener('DOMContentLoaded', () => {
       fm=low.match(/^(?:simulate |show |model |run )?(?:a |the )?(?:radiation|radioactive|fallout|nuclear)\s+(?:material\s+)?(?:dispersion|plume|dispersal|fallout|release|spread|cloud)\s+(?:from|at|near|around|over)\s+(.+?)\.?$/i);
       if(fm&&(fm[1]||'').trim()) return A({type:'radiation',place:(fm[1]||'').trim()});
       /* (#R86) isochrone / 到達圏 — "○○から車で30分の範囲", "30 minute walk from X", "reachable area from X" */
-      { const _IM={'車':'auto','自動車':'auto','ドライブ':'auto','徒歩':'pedestrian','歩き':'pedestrian','自転車':'bicycle','チャリ':'bicycle'};
-        fm=s.match(/^(.+?)(?:から|より|の)?\s*(車|自動車|ドライブ|徒歩|歩き|自転車|チャリ)(?:で|なら)?\s*(\d+)\s*(分|時間)(?:以内|圏内|圏|の(?:範囲|到達圏|エリア|届く範囲))(?:を)?(?:表示|見せて|出して|マップ|マッピング|教えて)?(?:して)?[。？?]?$/i);
+      { const _IM={'車':'auto','自動車':'auto','ドライブ':'auto','徒歩':'pedestrian','歩き':'pedestrian','自転車':'bicycle','チャリ':'bicycle','電車':'transit','鉄道':'transit','地下鉄':'transit','列車':'transit','メトロ':'transit'};
+        fm=s.match(/^(.+?)(?:から|より|の)?\s*(車|自動車|ドライブ|徒歩|歩き|自転車|チャリ|電車|鉄道|地下鉄|列車|メトロ)(?:で|なら)?\s*(\d+)\s*(分|時間)(?:以内|圏内|圏|の(?:範囲|到達圏|エリア|届く範囲))(?:を)?(?:表示|見せて|出して|マップ|マッピング|教えて)?(?:して)?[。？?]?$/i);
         if(fm&&(fm[1]||'').trim()){ let mnt=+fm[3]; if(fm[4]==='時間') mnt*=60; return A({type:'isochrone',place:fm[1].trim(),mode:_IM[fm[2]]||'auto',minutes:mnt}); }
         fm=s.match(/^(.+?)(?:の|から|周辺の)(?:到達圏|到達範囲|アイソクロン|届く範囲)(?:を)?(?:表示|見せて|出して|教えて)?(?:して)?[。？?]?$/i);
         if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()});
-        fm=low.match(/^(?:show |map |draw )?(?:the |a )?(\d+)\s*[-\s]?(min|minute|minutes|hour|hours|hr|h)\s+(drive|driving|car|walk|walking|foot|bike|bicycle|cycle|cycling)\s+(?:radius |isochrone |area |zone |catchment )?(?:from|of|around|at)\s+(.+?)\.?$/i);
-        if(fm){ const mm={drive:'auto',driving:'auto',car:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle'}[fm[3]]||'auto'; let mnt=+fm[1]; if(/^h/.test(fm[2])) mnt*=60; return A({type:'isochrone',place:fm[4].trim(),mode:mm,minutes:mnt}); }
+        fm=low.match(/^(?:show |map |draw )?(?:the |a )?(\d+)\s*[-\s]?(min|minute|minutes|hour|hours|hr|h)\s+(drive|driving|car|walk|walking|foot|bike|bicycle|cycle|cycling|train|rail|transit|subway|metro|tram)\s+(?:radius |isochrone |area |zone |catchment )?(?:from|of|around|at)\s+(.+?)\.?$/i);
+        if(fm){ const mm={drive:'auto',driving:'auto',car:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle',train:'transit',rail:'transit',transit:'transit',subway:'transit',metro:'transit',tram:'transit'}[fm[3]]||'auto'; let mnt=+fm[1]; if(/^h/.test(fm[2])) mnt*=60; return A({type:'isochrone',place:fm[4].trim(),mode:mm,minutes:mnt}); }
         fm=low.match(/^(?:the )?(?:isochrone|reachable area|reachability|catchment(?: area)?)\s+(?:for|from|of|around|at)\s+(.+?)\.?$/i);
         if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()}); }
       /* (#R88) universal object list — "オブジェクト一覧", "manage objects", "show all my objects/pins/drawings" */
@@ -26031,6 +26038,74 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); drawShadows(); }
     function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.setLight&&map.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
     return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes }; })();
+
+  /* ===== (#R91) TRANSIT ISOCHRONE — REACHABLE BY RAIL ("鉄道で1時間以内") — the area you can reach from a point
+     within a time budget riding the REAL OSM rail network: fetch rail ways + stations (Overpass), build a welded
+     graph, Dijkstra from the nearest station (edge time = length / class speed), then every station reached within
+     budget is plotted (coloured by minutes) and a reachable-area hull (stations buffered by the leftover walk time)
+     is drawn. Complements the drive/walk/cycle Valhalla isochrone. Keyless. ===== */
+  window.IntMapTransitReach=(function(){
+    if(typeof map==='undefined'||!map) return { run(){ return Promise.resolve({ok:false}); }, open(){}, clear(){} };
+    const SRC='imtr-src'; let busy=false;
+    const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'imtr-area',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#1558d6','fill-opacity':0.14}});
+      map.addLayer({id:'imtr-area-l',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#1558d6','line-width':1.4,'line-dasharray':[2,1.5]}});
+      map.addLayer({id:'imtr-stn',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':['interpolate',['linear'],['zoom'],6,3,12,5.5],'circle-color':['coalesce',['get','col'],'#1558d6'],'circle-stroke-color':'#fff','circle-stroke-width':1.4}});
+      return true; }catch(_){ return false; } }
+    const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+    async function fetchNet(bb){ const q='[out:json][timeout:60];(way["railway"~"^(rail|light_rail|subway|tram|narrow_gauge|monorail)$"][!"service"]('+bb+');node["railway"~"^(station|halt)$"]('+bb+'););out body;>;out skel qt;';
+      const _partial=j=>/timed out|out of memory|runtime error/i.test((j&&j.remark)||'');
+      const _fetchT=(u,o)=>{ const ac=new AbortController(),t=setTimeout(()=>{try{ac.abort();}catch(_){}} ,55000); return fetch(u,Object.assign({signal:ac.signal},o||{})).finally(()=>clearTimeout(t)); };
+      for(const ep of EPS){ try{ const r=await _fetchT(ep,{method:'POST',body:'data='+encodeURIComponent(q)}); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length&&!_partial(j)) return j; } }catch(_){} }
+      try{ const r=await _fetchT('https://corsproxy.io/?url='+encodeURIComponent(EPS[0]+'?data='+encodeURIComponent(q))); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&!_partial(j)) return j; } }catch(_){}
+      return null; }
+    const SPD={rail:70,light_rail:38,subway:35,tram:22,narrow_gauge:45,monorail:40};
+    async function run(from,minutes){ if(busy) return {ok:false,reason:'busy'}; minutes=Math.max(10,Math.min(120,+minutes||60));
+      const A=[+from.lng,+from.lat]; const radKm=Math.min(90,minutes*1.4); const buf=radKm/111;
+      const bb=(A[1]-buf).toFixed(4)+','+(A[0]-buf/Math.cos(A[1]*Math.PI/180)).toFixed(4)+','+(A[1]+buf).toFixed(4)+','+(A[0]+buf/Math.cos(A[1]*Math.PI/180)).toFixed(4);
+      busy=true; try{
+        const data=await fetchNet(bb); if(!data){ busy=false; return {ok:false,reason:'overpass'}; }
+        const coord={}, ways=[], stns=[];
+        data.elements.forEach(el=>{ if(el.type==='node'){ coord[el.id]=[el.lon,el.lat]; const t=el.tags; if(t&&/^(station|halt)$/.test(t.railway||'')){ const nm=t.name||t['name:en']||t['name:ja']; stns.push({ll:[el.lon,el.lat],name:nm||'',id:el.id}); } }
+          else if(el.type==='way'&&el.nodes&&el.nodes.length>1){ ways.push(el); } });
+        const idx={}, xy=[]; for(const id in coord){ idx[id]=xy.length; xy.push(coord[id]); }
+        const N=xy.length; if(N<2){ busy=false; return {ok:false,reason:'no-rail'}; }
+        const adj=Array.from({length:N},()=>[]);
+        ways.forEach(el=>{ const t=el.tags||{}; const sp=SPD[t.railway]||60;
+          for(let i=0;i<el.nodes.length-1;i++){ const a=idx[el.nodes[i]], b=idx[el.nodes[i+1]]; if(a==null||b==null) continue; const mins=_hav(xy[a],xy[b])/sp*60; adj[a].push([b,mins]); adj[b].push([a,mins]); } });
+        /* weld near-coincident nodes so separate ways connect (walk-free transfer ≤ small penalty) */
+        const CELL=0.03*1.15/111, grid=new Map();
+        for(let i=0;i<N;i++){ const k=Math.round(xy[i][0]/CELL)+'_'+Math.round(xy[i][1]/CELL); let a=grid.get(k); if(!a){a=[];grid.set(k,a);} a.push(i); }
+        for(let i=0;i<N;i++){ const cx=Math.round(xy[i][0]/CELL), cy=Math.round(xy[i][1]/CELL);
+          for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){ const cell=grid.get((cx+dx)+'_'+(cy+dy)); if(!cell) continue; for(const j of cell){ if(j<=i) continue; const d=_hav(xy[i],xy[j]); if(d<0.03){ const m=d/4*60; adj[i].push([j,m]); adj[j].push([i,m]); } } } }
+        /* nearest rail node to origin + walk time to it (4 km/h); budget minus that walk starts Dijkstra */
+        let sN=-1,sd=1e18; for(let i=0;i<N;i++){ const d=_hav(xy[i],A); if(d<sd){sd=d;sN=i;} } if(sN<0){ busy=false; return {ok:false,reason:'no-rail'}; }
+        const walkToStart=sd/4*60; if(walkToStart>minutes){ busy=false; return {ok:false,reason:'too-far-from-rail'}; }
+        const dist=new Float64Array(N).fill(Infinity); dist[sN]=walkToStart;
+        const heap=[[walkToStart,sN]]; const up=i=>{ while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0])break; const t=heap[p];heap[p]=heap[i];heap[i]=t; i=p; } };
+        const down=()=>{ const top=heap[0],last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=2*i+2,m=i; if(l<heap.length&&heap[l][0]<heap[m][0])m=l; if(r<heap.length&&heap[r][0]<heap[m][0])m=r; if(m===i)break; const t=heap[m];heap[m]=heap[i];heap[i]=t; i=m; } } return top; };
+        let guard=0; while(heap.length&&guard++<8000000){ const t=down(); const d=t[0],u=t[1]; if(d>dist[u]) continue; if(d>minutes) continue; const au=adj[u];
+          for(let k=0;k<au.length;k++){ const v=au[k][0], nd=d+au[k][1]; if(nd<dist[v]&&nd<=minutes){ dist[v]=nd; heap.push([nd,v]); up(heap.length-1); } } }
+        /* reachable stations (nearest graph node within budget) + build the reachable point cloud for the hull */
+        const stride=Math.max(1,Math.floor(N/6000)); const reachPts=[]; for(let i=0;i<N;i+=stride){ if(isFinite(dist[i])&&dist[i]<=minutes) reachPts.push({ll:xy[i],t:dist[i]}); }
+        const rStns=[]; stns.forEach(st=>{ let bi=-1,bd=1e18; for(let i=0;i<N;i++){ const d=_hav(xy[i],st.ll); if(d<bd){bd=d;bi=i;} } if(bi>=0&&isFinite(dist[bi])&&dist[bi]<=minutes&&bd<0.4){ rStns.push({name:st.name,ll:st.ll,t:dist[bi]}); } });
+        busy=false; return { ok:true, minutes, origin:A, walkToStart, reachPts, stations:rStns, nodesReached:reachPts.length };
+      }catch(err){ busy=false; return {ok:false,reason:'error'}; } }
+    function colFor(t,minutes){ const f=t/minutes; return f<0.33?'#12a150':f<0.66?'#e8a70a':'#e8500a'; }
+    function draw(r){ ensure(); const feats=[];
+      /* reachable-area hull: buffer the reachable node cloud by the leftover-walk radius, via turf if present */
+      try{ if(typeof turf!=='undefined'&&r.reachPts.length>=3){ const pts=turf.featureCollection(r.reachPts.map(p=>turf.point(p.ll)));
+        let hull=turf.convex(pts); if(hull){ try{ hull=turf.buffer(hull,Math.min(3,(r.minutes*0.02)),{units:'kilometers'}); }catch(_){} feats.push({type:'Feature',geometry:hull.geometry,properties:{}}); } } }catch(_){}
+      r.stations.forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:s.ll},properties:{col:colFor(s.t,r.minutes),k:'stn',name:s.name,t:Math.round(s.t)}}));
+      feats.push({type:'Feature',geometry:{type:'Point',coordinates:r.origin},properties:{col:'#ff3b30',k:'origin'}});
+      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+      try{ let a=180,b=90,c=-180,d=-90; r.stations.concat([{ll:r.origin}]).forEach(s=>{ a=Math.min(a,s.ll[0]);b=Math.min(b,s.ll[1]);c=Math.max(c,s.ll[0]);d=Math.max(d,s.ll[1]); }); if(isFinite(a)&&c>a) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:12,duration:900}); }catch(_){} }
+    async function open(from,minutes){ ensure();
+      try{ if(window.satToast) satToast(currentLang==='jp'?'鉄道到達圏を計算中…':'Computing rail reach…'); }catch(_){}
+      const r=await run(from,minutes); if(r&&r.ok){ draw(r); } return r; }
+    return { run, open, draw, clear:()=>{ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
