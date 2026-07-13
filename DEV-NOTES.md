@@ -5,6 +5,15 @@
 
 ---
 
+## R94i — Former-state flag too big/floating + the ROOT CAUSE of "1900–1950 borders don't change" (baked-in raster borders) + readout + basis (tag `#R94i`/`#R94j`)
+
+Re-reports: *"ソ連の国旗が明らかに大きすぎる…縦横比や四隅の形状も旧国家は浮いている"* and *"20世紀前半の国データや国境線は設定年月日と同期されていない"* (I first mis-read "20s前半" as the 2020s — it means the **first half of the 20th century**).
+
+- **Flag too big / floating.** `.hist-flag` was a fixed 26×18 with a `box-shadow` outline while emoji flags render at the container font-size with no border. Now sized in **em** (`width:0.82em;height:0.547em`, 3:2 like the SVGs) so it tracks the emoji in every context (18×12 in the 22px list, ~10×7 in the 12px compare), and the box-shadow is gone. Verified 18×12 in the stat list, `box-shadow:none`.
+- **★ ROOT CAUSE — the map's borders didn't change for the early 20th century.** The base map is CARTO **raster**; with place-names on it uses `dark_all`/`light_all`, which have the **modern borders & country names BAKED INTO the raster tiles**. Hiding `borders-only-line`/`ofm-country` can't remove those, so the era borders (`imtb-line`) just drew ON TOP of the baked-in modern ones → looked un-synced. Fix (`#R94j`): while travelling, `applyTheme` forces `showCartoLabels=false` → the label-free base (`dark_nolabels`/`light_nolabels`), and `IntMapTimeBorders` calls `applyTheme()` on travel start/stop so the base swaps. The era borders + names come from `imtb-line`/`imtb-lbl`. (Programmatic data/border sync was already correct — 1910/1925/1938 give distinct GDP and border snapshots, and aourednik 1914/1938 are rich: Ottoman Empire, British Raj, colonies — the baked base was hiding the change.)
+- **"Synced to" readout was conditional.** The Countries chip only showed if the tab/a data-layer was on, the Borders chip only if the old histb overlay was on — so at 1940 the readout didn't confirm the (real) sync. Now both are unconditional: "Countries 1940 · real · Borders 1938" (and "Borders current" past 2010).
+- **Basis correctness.** Maddison covers 1900–2018; for 2019+ there is no Maddison year, so the engine keeps World Bank **nominal** and marks `_imTimeReal=false` (banner/label say World Bank, not "real 2011 int$"). The Compare's Maddison path is gated to ≤2018 and **falls back to World Bank** for 2019+ (it used to return an empty map → blank bars). Recent years (after aourednik's last 2010 snapshot) keep the **modern** borders (accurate, incl. South Sudan). Verified 2022 Compare → USA $26.05T / Japan $4.45T (World Bank). 0 console errors. (Map PIXELS still unverifiable here — both the in-app WebGL preview and the real-Chrome extension were unavailable — but the baked-raster root cause is addressed directly.)
+
 ## R94h — 3 fixes: former-state GDP-per-capita missing in Compare + map-colour former states + clear colour on "Back to statistics" (tag `#R94h`)
 
 Re-report: *"ソ連のGDP per capitaの棒グラフがない。また、比較中の国は着色される機能が旧国家では無い。また、着色は、back to statistics押せば消えるように。"*

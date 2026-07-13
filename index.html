@@ -300,8 +300,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .stats-timebanner.warn{ background:rgba(240,170,50,0.14); border-color:rgba(240,170,50,0.42); }
     .stats-timebanner b{ font-weight:700; }
     /* (#R94b) former-state flag (inline SVG) + card note */
-    .hist-flag{ width:22px; height:15px; border-radius:2px; vertical-align:middle; object-fit:cover; box-shadow:0 0 0 1px rgba(0,0,0,0.18); }
-    .stat-flag .hist-flag{ width:26px; height:18px; }
+    /* (#R94i) sized in em so it tracks the emoji flags in EVERY context (list 22px, compare 12px, card…): the
+       emoji flag box is ~1em square with the visible flag ~0.82em wide; match that, 3:2 like the SVGs. No
+       box-shadow border — emoji flags have none, so the outline was what made former-state flags "float". */
+    .hist-flag{ width:0.82em; height:0.547em; border-radius:1.5px; vertical-align:-0.09em; object-fit:cover; }
     .cp-histnote{ margin:0 0 10px; padding:8px 11px; border-radius:10px; font-size:11.5px; line-height:1.5; background:rgba(175,130,60,0.14); border:1px solid rgba(175,130,60,0.4); color:var(--text-main); }
     .cp-histnote b{ font-weight:700; }
     .stat-row{ display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:12px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); transition:0.2s; }
@@ -2584,7 +2586,12 @@ window.addEventListener('DOMContentLoaded', () => {
        satellite mode and provide Japanese / native-script labels on the map (#41/#42/#43). The
        reliable CartoDB English labels stay as the default for EN map view. */
     const vecMap = namesOn && mapLabelsViaVector();        /* vector labels on the (non-sat) map */
-    const showCartoLabels = namesOn && !vecMap;            /* labeled carto basemap */
+    /* (#R94j) while the clock is on a past year the labelled Carto base (dark_all/light_all) must NOT be used:
+       it has the MODERN borders & country names BAKED INTO the raster, which would survive under the era
+       borders and make the map look un-synced. Force the label-free base; the era borders/names come from
+       imtb-line / imtb-lbl. */
+    const _travelingBase = !!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
+    const showCartoLabels = namesOn && !vecMap && !_travelingBase;   /* labeled carto basemap */
     if(map.getLayer('layer-sat-labels')) map.setLayoutProperty('layer-sat-labels','visibility','none');  /* Esri labels retired */
     map.setLayoutProperty('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
     map.setLayoutProperty('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
@@ -13291,10 +13298,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const y=e.year, chips=[];
       const within10=((new Date()-e.when)/864e5)<=3660;
       chips.push('<span class="ntl-chip">📰 '+(within10?L5('News','ニュース','News','Новости','Noticias'):L5('News (sparse)','ニュース(希薄)','News (spärlich)','Новости (мало)','Noticias (escasas)'))+'</span>');
-      if((window._countriesActive&&window._countriesActive())||on('dl-pop')||on('dl-gdppc')||on('dl-tfr')||on('dl-milSpend')||on('dl-milSpendGDP'))
-        chips.push('<span class="ntl-chip">📊 '+L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b></span>');
+      /* (#R94i) country data + map borders now follow the clock ALWAYS (not only when a layer is on), so the
+         readout says so unconditionally — that a chip was conditional was why the early-20th-century sync
+         looked absent. GDP/pop are real (Maddison) up to 2018, World Bank nominal after. */
+      chips.push('<span class="ntl-chip">📊 '+L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b>'+(y<=2018?' · '+L5('real','実質','real','реальн.','real'):'')+'</span>');
+      chips.push('<span class="ntl-chip">🗺 '+L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+(y>hbAt(y)&&y>2010?L5('current','現在','aktuell','текущие','actuales'):hbAt(y))+'</b></span>');
       if(on('dl-climate')) chips.push('<span class="ntl-chip">🌦 '+L5('Köppen','ケッペン','Köppen','Кёппен','Köppen')+' <b>'+kEra(y)+'</b></span>');
-      if(on('beta-dl-histb')) chips.push('<span class="ntl-chip">🗺 '+L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+hbAt(y)+'</b></span>');
       if(on('dl-nato')) chips.push('<span class="ntl-chip">🛡 NATO <b>'+y+'</b></span>');
       if(on('dl-eu')) chips.push('<span class="ntl-chip">⭐ EU <b>'+y+'</b></span>');
       if(['sst','snow','aod','thermal','precip'].some(k=>on('dt-'+k)||on('dl-'+k))) chips.push('<span class="ntl-chip">🛰 '+L5('Satellite','衛星','Satellit','Спутник','Satélite')+'</span>');
@@ -15195,7 +15204,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
       return out; }
     function overlay(year,data){ snapshotBase();
-      const M=window.IntMapMaddison, useM=!!(M&&M.ready());
+      /* (#R94i) Maddison covers 1900–2018; for 2019+ there is NO Maddison year → keep the World Bank NOMINAL
+         figures (and mark the basis NOT-real so the banner/labels say World Bank, not "real 2011 int$"). */
+      const M=window.IntMapMaddison, useM=!!(M&&M.ready()&&year<=(M.maxYear||2018));
       try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
         FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
         /* (#R94e) real GDP / GDP-per-capita / population from Maddison (2011 int$) — consistent across every
@@ -18139,8 +18150,8 @@ window.addEventListener('DOMContentLoaded', () => {
       if(ind.stat){ const m={}; codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) m[cd]={v:+v,y:(typeof ind.yr==='number')?ind.yr:0}; });
         return {ind,map:m,srcName:ind.src||'IntMap',mixed:false}; }
       if(ttY){   /* travelling → THAT year only, honest (no present-day gap-fill) */
-        const mf=_madField(ind);
-        if(mf && window.IntMapMaddison && window.IntMapMaddison.ready()){   /* GDP/pop → Maddison (real 2011 int$), matches the Countries tab */
+        const mf=_madField(ind), M=window.IntMapMaddison;
+        if(mf && M && M.ready() && ttY<=(M.maxYear||2018)){   /* GDP/pop → Maddison (real 2011 int$) up to 2018; 2019+ falls through to the World Bank nominal path below */
           const m2=_madMap(mf,ttY); await _histAddLatest(m2, ind, ttY);
           return {ind,map:m2,srcName:'Maddison Project',mixed:false,ttY:ttY,real:true}; }
         const wantImf2=(ind.imf&&srcSel[ind.k]==='imf');
@@ -18408,7 +18419,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R94e) GDP/pop time-series → Maddison (real 2011 int$) while travelling, matching the bar view & Countries tab */
       const _mf=_madField(ind);
       if(_ttYear()&&_mf&&window.IntMapMaddison){ try{ await window.IntMapMaddison.load(); }catch(_){} }
-      if(_ttYear() && _mf && window.IntMapMaddison && window.IntMapMaddison.ready()){
+      if(_ttYear() && _mf && window.IntMapMaddison && window.IntMapMaddison.ready() && _ttYear()<=(window.IntMapMaddison.maxYear||2018)){
         const M=window.IntMapMaddison, serMapM={};
         codes.forEach(cd=>{ const arr=[]; for(let y=M.minYear;y<=M.maxYear;y++){ const v=_madOne(M,_mf,cd,y); if(v!=null) arr.push({y,v:v}); } if(arr.length) serMapM[cd]=arr; });
         await _histAddSeries(serMapM, ind);
@@ -27107,14 +27118,18 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(150,150,150,0.9)','line-opacity':0.92,'line-width':['interpolate',['linear'],['zoom'],1,0.55,4,1,8,1.7,12,2.4]}}, before);
       if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       return true; }catch(_){ return false; } }
-    /* visibility is owned by the single `window._applyBorders()` (Country-borders toggle ⇄ modern/historical) */
-    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} }
-    function clear(){ active=false; shownY=null; try{ window._applyBorders(); }catch(_){} }
-    async function go(year){ active=true; const ny=nearest(year); const my=++seq;
-      if(shownY===ny){ try{ window._applyBorders(); }catch(_){} return; }
+    /* visibility is owned by `window._applyBorders()`; `applyTheme()` additionally swaps the Carto base to its
+       label-free variant while travelling (so the base tiles' BAKED-IN modern borders/labels disappear). */
+    const _refresh=()=>{ try{ if(typeof applyTheme==='function') applyTheme(); else window._applyBorders(); }catch(_){ try{ window._applyBorders(); }catch(__){} } };
+    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} _refresh(); }
+    function clear(){ const was=active; active=false; shownY=null; if(was) _refresh(); else { try{ window._applyBorders(); }catch(_){} } }
+    async function go(year){ const was=active; active=true; const ny=nearest(year); const my=++seq;
+      if(shownY===ny){ if(!was) _refresh(); else { try{ window._applyBorders(); }catch(_){} } return; }
       const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; apply(fc); } }
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
-      if(e.isLive || e.year>=new Date().getFullYear()){ clear(); return; }
+      /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
+         accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
+      if(e.isLive || e.year>=new Date().getFullYear() || e.year>YEARS[YEARS.length-1]){ clear(); return; }
       go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },320); });
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
