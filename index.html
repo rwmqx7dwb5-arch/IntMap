@@ -5193,7 +5193,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null; const YR=(def)=>_ty||def; const yrTag=()=>(_ty?` (${_ty})`:'');
     const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
     const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
-      [t('statGdp')+` (${YR(GDP_YEAR)})`,fmtMoney(s.gdp)],
+      [(s._gdpEst?('GDP · '+TR('est.','推計','Schätz.','оцен.','est.')):t('statGdp'))+` (${YR(GDP_YEAR)})`,fmtMoney(s.gdp)],
       s.gdpPPP?[t('statGdpPPP'),fmtMoney(s.gdpPPP)]:null,
       [t('statGdpPc')+yrTag(),fmtPc(s.gdppc)],
       s.gdppcPPP?[t('statGdpPcPPP'),fmtPc(s.gdppcPPP)]:null,
@@ -5213,7 +5213,8 @@ window.addEventListener('DOMContentLoaded', () => {
     ]);
     let histNote='';
     if(s._hist){ const yrs=(s._from?s._from.slice(0,4):'')+'–'+(s._to?s._to.slice(0,4):'');
-      histNote=`<div class="cp-histnote">🏛 <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('Figures are the aggregate of successor states’ World Bank data for the selected year','数値は選択年の後継国の世界銀行データを合算したものです','Werte = Summe der Weltbank-Daten der Nachfolgestaaten','Данные — сумма показателей стран-преемников (Всемирный банк)','Cifras = suma de datos del Banco Mundial de los estados sucesores')} (${s._histHave||0}/${s._histN||0}). ${TR('Period borders: enable the Historical-borders layer','当時の国境: 「過去の国境」レイヤーをオン','Grenzen: Ebene „Historische Grenzen“','Границы: слой «Исторические границы»','Fronteras: capa «Fronteras históricas»')}.</div>`; }
+      const estLine = s._gdpEst ? ('<br>'+TR('GDP is a real-output estimate ('+(s._estSrc||'est.')+'), not the World Bank nominal figure — that under-counts command economies at the official exchange rate.','GDPは実質産出の推計値（'+(s._estSrc||'推計')+'）です。公定為替レートの世界銀行名目値は計画経済を過小評価するため採用していません。','BIP = Schätzung der realen Wirtschaftsleistung ('+(s._estSrc||'Schätzung')+'), nicht der nominale Weltbank-Wert.','ВВП — оценка реального выпуска ('+(s._estSrc||'оценка')+'), а не номинал Всемирного банка.','El PIB es una estimación de producción real ('+(s._estSrc||'est.')+'), no el valor nominal del Banco Mundial.')) : '';
+      histNote=`<div class="cp-histnote">🏛 <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('Figures are the aggregate of successor states’ World Bank data for the selected year','数値は選択年の後継国の世界銀行データを合算したものです','Werte = Summe der Weltbank-Daten der Nachfolgestaaten','Данные — сумма показателей стран-преемников (Всемирный банк)','Cifras = suma de datos del Banco Mundial de los estados sucesores')} (${s._histHave||0}/${s._histN||0}).${estLine} ${TR('Period borders: enable the Historical-borders layer','当時の国境: 「過去の国境」レイヤーをオン','Grenzen: Ebene „Historische Grenzen“','Границы: слой «Исторические границы»','Fronteras: capa «Fronteras históricas»')}.</div>`; }
     return `<div id="cp-intro" class="cp-intro"></div>`+histNote+geo+econ+soc+pol;
   }
   /* (#R39) Fill the intro with a Wikipedia summary (extract + thumbnail + link) in the active language. */
@@ -15208,7 +15209,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const STAR=(cx,cy,s,fill,stroke)=>'<g transform="translate('+cx+','+cy+') scale('+s+')"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="'+fill+'"'+(stroke?(' stroke="'+stroke+'" stroke-width="0.09"'):'')+'/></g>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
     /* faithful flags, drawn inline (no external assets) */
-    const F_SUN=flag('<rect width="30" height="20" fill="#CE1126"/>'+STAR(5,4.6,2.6,'#FFD700')+'<text x="7.6" y="16.4" font-family="Arial,Helvetica,sans-serif" font-size="10.5" fill="#FFD700">☭</text>');
+    /* USSR: the authentic hammer-sickle-and-star emblem (public-domain vector, scaled from the 1200×600 master
+       into our 30×20 box) — the earlier ☭-glyph version rendered unnaturally / font-dependent. */
+    const _SUN_STAR='m 200.0005,37.5 -8.41933,25.911886 H 164.336 L 186.37777,79.426122 177.95844,105.338 200.0005,89.323465 222.04257,105.338 213.62324,79.426122 235.665,63.411886 h -27.24516 z m 0,13.499987 5.38828,16.583473 h 17.43718 l -14.107,10.249496 5.38827,16.583472 L 200.0005,84.167224 185.89378,94.416428 191.28205,77.832956 177.17504,67.58346 h 17.43718 z';
+    const _SUN_HAMMER='m 137.43744,171.69421 18.86296,18.9937 17.78834,-17.66589 c 27.05847,29.021 55.43807,56.99501 82.28704,86.12782 4.03444,4.06233 10.59815,4.085 14.66056,0.0506 4.06232,-4.03445 4.08499,-10.59815 0.0506,-14.66056 -28.81871,-27.1901 -57.72545,-54.60143 -86.55328,-81.89095 l 23.96499,-23.80003 -33.34026,-4.61605 z';
+    const _SUN_SICKLE='m 198.2887,110.1955 c 15.51743,8.7394 27.29872,21.28122 34.2484,34.3924 7.04394,13.28902 10.13959,27.16218 10.20325,38.25433 0.13054,22.74374 -18.43771,41.18184 -41.18183,41.18184 -12.13597,0 -23.04607,-5.24868 -30.58302,-13.60085 l -4.16863,3.51033 c -0.70999,-0.27231 -1.46387,-0.41221 -2.22429,-0.41276 -1.82948,1.9e-4 -3.56621,0.80531 -4.74859,2.20136 -2.97368,0.38896 -5.46251,2.44529 -6.40534,5.29224 -3.13486,6.28843 -8.63524,11.21997 -15.29104,13.4776 -0.0637,0.0216 -0.11992,0.05 -0.1758,0.0783 -3.07749,1.12758 -6.16259,3.1643 -8.78919,5.80245 -5.19155,5.23656 -7.72858,11.93658 -6.30024,16.63822 -0.14098,0.40857 -0.21361,0.83759 -0.21498,1.26979 1.5e-4,2.17082 1.75991,3.93058 3.93073,3.93073 0.54341,-0.002 1.08053,-0.11639 1.57745,-0.33632 4.69369,1.05881 11.06885,-1.54582 16.05444,-6.55917 2.82624,-2.85072 4.94356,-6.22349 5.98303,-9.53062 2.31696,-6.62278 7.29699,-12.01856 13.62281,-15.05312 0.15105,-0.0725 0.27303,-0.14714 0.38218,-0.22358 2.12082,-1.01408 3.67251,-2.92895 4.225,-5.2139 9.70222,11.44481 24.25255,18.75299 40.51876,19.13577 29.83352,0.70205 52.13299,-21.25802 53.16414,-52.83642 0.51894,-15.89259 -5.62993,-36.3847 -19.6412,-53.19089 -10.70835,-12.84441 -26.40987,-23.50795 -44.18699,-28.20777 z';
+    const F_SUN=flag('<rect width="30" height="20" fill="#CC0000"/><g fill="#FFD700" transform="scale(0.025)"><path d="'+_SUN_STAR+'"/><g transform="matrix(0.98931879,0,0,0.98673811,3.8297658,3.7659398)"><path d="'+_SUN_HAMMER+'"/><path d="'+_SUN_SICKLE+'"/></g></g>');
     const F_TRICOL='<rect width="30" height="20" fill="#003893"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DE2110"/>';
     const F_YUG=flag(F_TRICOL+STAR(15,10,4.7,'#DE2110','#FCD116'));
     const F_SCG=flag(F_TRICOL);
@@ -15217,7 +15223,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const STATES=[
       { code:'SUN', from:'1922-12-30', to:'1991-12-26', flag:F_SUN, region:'Eurasia', wiki:'Soviet Union',
         name:{en:'Soviet Union',jp:'ソビエト連邦',de:'Sowjetunion',ru:'СССР',es:'Unión Soviética'},
-        succ:['RUS','UKR','BLR','UZB','KAZ','GEO','AZE','LTU','MDA','LVA','KGZ','TJK','ARM','TKM','EST'] },
+        succ:['RUS','UKR','BLR','UZB','KAZ','GEO','AZE','LTU','MDA','LVA','KGZ','TJK','ARM','TKM','EST'],
+        /* World Bank nominal-USD GDP for the Soviet command economy is a known official-exchange-rate artifact
+           (successor sum ≈ $0.69T in 1990, mostly Russia), which buries a genuine #2–3 world economy. Use the
+           real-output estimate (CIA World Factbook 1990 ≈ $2.66T GNP; consistent with the Maddison Project) for
+           the late-Soviet window; earlier than that WB has no republic data, so GDP is honestly blank. */
+        gdpEst:2660, gdpEstFrom:1985, estSrc:'CIA World Factbook 1990 / Maddison' },
       { code:'YUG', from:'1945-11-29', to:'1992-04-27', flag:F_YUG, region:'Europe', wiki:'Socialist Federal Republic of Yugoslavia',
         name:{en:'Yugoslavia (SFRY)',jp:'ユーゴスラビア（社会主義連邦共和国）',de:'Jugoslawien (SFRJ)',ru:'Югославия (СФРЮ)',es:'Yugoslavia (RFSY)'},
         succ:['SVN','HRV','BIH','MKD','SRB','MNE','XKX'] },
@@ -15232,16 +15243,21 @@ window.addEventListener('DOMContentLoaded', () => {
     function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
       return STATES.filter(S=>{ const a=+new Date(S.from+'T00:00:00Z'), b=+new Date(S.to+'T23:59:59Z'); return t>=a&&t<=b; }); }
     /* aggregate successors' (already year-overlaid) countryStats into one synthetic stat object */
-    function agg(S){
-      let pop=0,gdp=0,mil=0,area=0, lN=0,lD=0, tN=0,tD=0, nN=0,nD=0, have=0, dataCountries=0;
+    function agg(S,year){
+      let pop=0,wbGdp=0,mil=0,area=0, lN=0,lD=0, tN=0,tD=0, nN=0,nD=0, have=0;
       S.succ.forEach(c=>{ const s=countryStats[c]; if(!s) return;
         if(s.pop){ pop+=s.pop; if(s.lifeExp){ lN+=s.lifeExp*s.pop; lD+=s.pop; } if(s.tfr){ tN+=s.tfr*s.pop; tD+=s.pop; } if(s.internet!=null){ nN+=s.internet*s.pop; nD+=s.pop; } }
-        if(s.gdp) gdp+=s.gdp; if(s.milSpend) mil+=s.milSpend; if(s.area) area+=s.area;
-        if(s.pop||s.gdp){ have++; } dataCountries++;
+        if(s.gdp) wbGdp+=s.gdp; if(s.milSpend) mil+=s.milSpend; if(s.area) area+=s.area;
+        if(s.pop||s.gdp){ have++; }
       });
+      /* GDP: use the sourced real-output estimate in its window (where WB nominal is a distorting artifact);
+         otherwise the honest World Bank successor-sum (null when WB has no data for the year). */
+      const useEst=!!(S.gdpEst && year && year>=(S.gdpEstFrom||0) && (!S.gdpEstTo || year<=S.gdpEstTo));
+      const gdp = useEst ? S.gdpEst : (wbGdp||null);
       const nm=S.name;
       return { code:S.code, ccn3:'', nameEn:nm.en, nameJp:nm.jp, name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
         sov:true, _hist:true, _histSucc:S.succ, _histHave:have, _histN:S.succ.length, _from:S.from, _to:S.to,
+        _gdpEst:useEst, _estSrc:(useEst?S.estSrc:''),
         capital:'', currency:'', languages:'',
         pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
         gdppc:(gdp&&pop)?(gdp*1e9/pop):null, density:(pop&&area)?pop/area:null,
@@ -15254,8 +15270,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }catch(_){} _applied=null; }
     function apply(date){ clear();
       const act=activeAt(date); if(!act.length) return;
+      const year=new Date(date).getFullYear();
       const codes=[], hidden=new Set();
-      act.forEach(S=>{ const a=agg(S); if(a._histHave<=0) return;   /* no successor data at all → skip (honest) */
+      act.forEach(S=>{ const a=agg(S,year); if(a._histHave<=0) return;   /* no successor data at all → skip (honest) */
         countryStats[S.code]=a; codes.push(S.code);
         S.succ.forEach(c=>{ if(countryStats[c]){ countryStats[c]._histHidden=true; hidden.add(c); } });
       });
