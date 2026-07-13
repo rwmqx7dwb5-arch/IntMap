@@ -13310,9 +13310,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
     /* Köppen climate era covering a given year (matches window.KOPPEN_PERIODS). */
     function kEra(y){ if(y>=1991) return '1991-2020'; if(y>=1961) return '1961-1990'; if(y>=1931) return '1931-1960'; return '1901-1930'; }
-    /* Historical-borders snapshot at or before a year (matches HB_YEARS). */
+    /* Historical-borders snapshot for a year — the readout must match what IntMapTimeBorders actually draws, so
+       delegate to its `_nearest` (closest snapshot, forward only across a ≤20yr gap; #R94o). The local fallback
+       mirrors that logic in case the module isn't up (map undefined). */
     const HBY=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
-    function hbAt(y){ let best=HBY[0]; for(const v of HBY){ if(v<=y) best=v; } return best; }
+    function hbAt(y){ try{ const TB=window.IntMapTimeBorders; if(TB&&TB._nearest) return TB._nearest(y); }catch(_){}
+      let prev=null,next=null; for(const v of HBY){ if(v<=y){ if(prev===null||v>prev) prev=v; } else if(next===null||v<next) next=v; }
+      if(prev===null) return next!=null?next:HBY[0]; if(next===null) return prev;
+      return ((next-y)<(y-prev)&&(next-prev)<=20)?next:prev; }
     function buildSynced(e){
       if(!synced) return;
       if(e.isLive){ synced.innerHTML=L5('Live — showing the present. Move the clock to travel.','ライブ — 現在を表示中。時計を動かすと過去へ。','Live — Gegenwart. Uhr bewegen zum Reisen.','Прямой эфир — настоящее. Двигайте часы.','En vivo — el presente. Mueve el reloj para viajar.'); return; }
@@ -27202,7 +27207,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     const cache=new Map(); let active=false, shownY=null, seq=0;
-    const nearest=y=>{ let b=YEARS[0]; for(const yy of YEARS){ if(yy<=y) b=yy; } return b; };
+    /* (#R94o) CLOSEST snapshot, not just the closest ≤ year — so a mid-gap year like 1910 shows the 1914 borders
+       (Japan's southern Sakhalin/Karafuto, held since 1905) instead of the staler 1900, i.e. borders change at the
+       gap midpoint, roughly halving how long a year is shown with the "wrong" borders. A FORWARD jump is only
+       taken across a MODEST gap (≤ MAXGAP yr); the huge 1960→1994 gap keeps the earlier snapshot so the 1980s
+       never render a post-Soviet world (the faithful state DATES already live in IntMapHistStates). */
+    const MAXGAP=20;
+    const nearest=y=>{ let prev=null,next=null; for(const yy of YEARS){ if(yy<=y){ if(prev===null||yy>prev) prev=yy; } else if(next===null||yy<next) next=yy; }
+      if(prev===null) return next!=null?next:YEARS[0];
+      if(next===null) return prev;
+      return ((next-y)<(y-prev) && (next-prev)<=MAXGAP) ? next : prev; };
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ cache.set(year,c); return c; } }catch(_){} }
       for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
@@ -27265,8 +27279,13 @@ window.addEventListener('DOMContentLoaded', () => {
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
     map.on('styledata',()=>{ if(active&&shownY!=null&&map.isStyleLoaded()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
-    /* (#R94h) geometry of the first era polygon whose NAME matches — used to paint compared former states */
-    function geomFor(re){ try{ const fc=cache.get(shownY); if(!fc||!re) return null; const f=fc.features.find(ff=>{ const n=(ff.properties&&(ff.properties.NAME||ff.properties.name))||''; return re.test(n); }); return f?f.geometry:null; }catch(_){ return null; } }
+    /* (#R94h) geometry of the era polygon whose NAME matches — used to paint compared former states.
+       (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
+       tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed
+       that instead of the whole subcontinent — the "British Raj highlight is a thin strip" bug. */
+    function geomFor(re){ try{ const fc=cache.get(shownY); if(!fc||!re) return null;
+      let best=null,bestA=-1; for(const ff of fc.features){ const n=(ff.properties&&(ff.properties.NAME||ff.properties.name))||''; if(!ff.geometry||!re.test(n)) continue; const a=_bboxArea(ff.geometry); if(isFinite(a)&&a>bestA){ bestA=a; best=ff; } }
+      return best?best.geometry:null; }catch(_){ return null; } }
     /* ===== (#R94n) geometry + historical-entity resolution shared by the click popup and the Compare paint ===== */
     function _bbox(geom){ let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } }; try{ scan(geom.coordinates); }catch(_){ return null; } return (isFinite(a)&&c>=a&&d>=b)?[a,b,c,d]:null; }
     function _bboxArea(geom){ const bb=_bbox(geom); return bb?((bb[2]-bb[0])*(bb[3]-bb[1])):Infinity; }
