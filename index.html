@@ -299,6 +299,11 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .stats-timebanner{ margin:0 0 8px; padding:8px 11px; border-radius:10px; font-size:12px; line-height:1.45; background:rgba(10,132,255,0.13); border:1px solid rgba(10,132,255,0.42); color:var(--text-main); }
     .stats-timebanner.warn{ background:rgba(240,170,50,0.14); border-color:rgba(240,170,50,0.42); }
     .stats-timebanner b{ font-weight:700; }
+    /* (#R94b) former-state flag (inline SVG) + card note */
+    .hist-flag{ width:22px; height:15px; border-radius:2px; vertical-align:middle; object-fit:cover; box-shadow:0 0 0 1px rgba(0,0,0,0.18); }
+    .stat-flag .hist-flag{ width:26px; height:18px; }
+    .cp-histnote{ margin:0 0 10px; padding:8px 11px; border-radius:10px; font-size:11.5px; line-height:1.5; background:rgba(175,130,60,0.14); border:1px solid rgba(175,130,60,0.4); color:var(--text-main); }
+    .cp-histnote b{ font-weight:700; }
     .stat-row{ display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:12px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); transition:0.2s; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
     .stat-flag{ font-size:22px; line-height:1; } .stat-main{ flex:1; min-width:0; }
@@ -5206,7 +5211,10 @@ window.addEventListener('DOMContentLoaded', () => {
       s.milSpend?[t('statMil')+` (${YR(2023)})`,_milB(s.milSpend)]:null,
       s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН','Miembro de la ONU'),yn(s.unMember)]:null
     ]);
-    return `<div id="cp-intro" class="cp-intro"></div>`+geo+econ+soc+pol;
+    let histNote='';
+    if(s._hist){ const yrs=(s._from?s._from.slice(0,4):'')+'–'+(s._to?s._to.slice(0,4):'');
+      histNote=`<div class="cp-histnote">🏛 <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('Figures are the aggregate of successor states’ World Bank data for the selected year','数値は選択年の後継国の世界銀行データを合算したものです','Werte = Summe der Weltbank-Daten der Nachfolgestaaten','Данные — сумма показателей стран-преемников (Всемирный банк)','Cifras = suma de datos del Banco Mundial de los estados sucesores')} (${s._histHave||0}/${s._histN||0}). ${TR('Period borders: enable the Historical-borders layer','当時の国境: 「過去の国境」レイヤーをオン','Grenzen: Ebene „Historische Grenzen“','Границы: слой «Исторические границы»','Fronteras: capa «Fronteras históricas»')}.</div>`; }
+    return `<div id="cp-intro" class="cp-intro"></div>`+histNote+geo+econ+soc+pol;
   }
   /* (#R39) Fill the intro with a Wikipedia summary (extract + thumbnail + link) in the active language. */
   const _cpIntroCache={};
@@ -9016,6 +9024,8 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
      position) — only the row outline + the fixed bottom panel update (#26). */
   window._toggleCompare=function(code){
+    /* (#R94b) former-state synthetic entries have no World Bank series → open the card instead of comparing */
+    try{ const s=countryStats[code]; if(s&&s._hist){ if(typeof showCountryDetail==='function') showCountryDetail(code); return; } }catch(_){}
     if(compareSet.has(code)) compareSet.delete(code);
     else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
@@ -9041,7 +9051,7 @@ window.addEventListener('DOMContentLoaded', () => {
        "Back to statistics" button removes the view before calling renderStats. */
     if(document.getElementById('scp-view')) return;
     if(!countryDataLoaded){ feed.innerHTML=`<div class="empty-msg">${t('loadingData')}</div>`; loadCountryData().then(()=>{ if(currentMode==='stats')renderStats(searchVal()); }); return; }
-    let arr=Object.values(countryStats).filter(s=>s.nameEn);
+    let arr=Object.values(countryStats).filter(s=>s.nameEn && !s._histHidden);   /* (#R94b) hide successors while a former state is shown */
     if(arr.length===0){ feed.innerHTML=`<div class="empty-msg">${t('noData')}</div>`; return; }
     if(q) arr=arr.filter(s=>s.nameEn.toLowerCase().includes(q)||(s.nameJp&&s.nameJp.includes(q)));
     const key=statsSort;
@@ -15136,7 +15146,8 @@ window.addEventListener('DOMContentLoaded', () => {
     let curYear=null;          /* the year currently overlaid, or null */
     let seq=0, deb=null;
     function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
-    function restore(){ if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; }
+    function restore(){ try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries first */
+      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
        A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
@@ -15155,7 +15166,10 @@ window.addEventListener('DOMContentLoaded', () => {
         FIELDS.forEach(F=>{ const v=data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
         s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
       } }catch(_){}
-      curYear=year; window._imTimeYear=year; }
+      curYear=year; window._imTimeYear=year;
+      /* former states: replace successors with the historical state for its real lifespan (uses the year values just overlaid) */
+      try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(window.IntMapTime.when()); }catch(_){}
+    }
     function repaint(){
       try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof searchVal==='function')?searchVal():''); }catch(_){}
       try{ if(typeof window._imReapplyChoros==='function') window._imReapplyChoros(); }catch(_){}
@@ -15178,6 +15192,77 @@ window.addEventListener('DOMContentLoaded', () => {
       }, 340);
     });
     return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore };
+  })();
+
+  /* ============================================================================
+   *  (#R94b) HISTORICAL / FORMER STATES — when the master clock is inside a former country's real lifespan,
+   *  the Countries tab & country card show THAT state (Soviet Union, Yugoslavia, Serbia & Montenegro,
+   *  Czechoslovakia …) with its historical flag, instead of the modern successors — faithful to the actual
+   *  dissolution dates (e.g. Yugoslavia at 1991, Serbia & Montenegro at 2000, all-separate from 2007). Its
+   *  figures are the REAL aggregate of the successor states' World Bank data for that year (populations & GDP
+   *  summed; life-expectancy / fertility / internet population-weighted) — honest, no invented numbers. The
+   *  period BORDERS come from the Historical-borders layer (aourednik) that the clock already drives. The
+   *  table is data-driven, so more former states extend it trivially. ========================================= */
+  window.IntMapHistStates=(function(){
+    const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
+    const STAR=(cx,cy,s,fill,stroke)=>'<g transform="translate('+cx+','+cy+') scale('+s+')"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="'+fill+'"'+(stroke?(' stroke="'+stroke+'" stroke-width="0.09"'):'')+'/></g>';
+    const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
+    /* faithful flags, drawn inline (no external assets) */
+    const F_SUN=flag('<rect width="30" height="20" fill="#CE1126"/>'+STAR(5,4.6,2.6,'#FFD700')+'<text x="7.6" y="16.4" font-family="Arial,Helvetica,sans-serif" font-size="10.5" fill="#FFD700">☭</text>');
+    const F_TRICOL='<rect width="30" height="20" fill="#003893"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DE2110"/>';
+    const F_YUG=flag(F_TRICOL+STAR(15,10,4.7,'#DE2110','#FCD116'));
+    const F_SCG=flag(F_TRICOL);
+    const F_CSK=flag('<rect width="30" height="20" fill="#ffffff"/><rect y="10" width="30" height="10" fill="#D7141A"/><path d="M0,0 15,10 0,20Z" fill="#11457E"/>');
+    /* code = synthetic ISO-like id · from/to = real lifespan · succ = modern ISO3 successors to aggregate & hide */
+    const STATES=[
+      { code:'SUN', from:'1922-12-30', to:'1991-12-26', flag:F_SUN, region:'Eurasia', wiki:'Soviet Union',
+        name:{en:'Soviet Union',jp:'ソビエト連邦',de:'Sowjetunion',ru:'СССР',es:'Unión Soviética'},
+        succ:['RUS','UKR','BLR','UZB','KAZ','GEO','AZE','LTU','MDA','LVA','KGZ','TJK','ARM','TKM','EST'] },
+      { code:'YUG', from:'1945-11-29', to:'1992-04-27', flag:F_YUG, region:'Europe', wiki:'Socialist Federal Republic of Yugoslavia',
+        name:{en:'Yugoslavia (SFRY)',jp:'ユーゴスラビア（社会主義連邦共和国）',de:'Jugoslawien (SFRJ)',ru:'Югославия (СФРЮ)',es:'Yugoslavia (RFSY)'},
+        succ:['SVN','HRV','BIH','MKD','SRB','MNE','XKX'] },
+      { code:'SCG', from:'1992-04-27', to:'2006-06-05', flag:F_SCG, region:'Europe', wiki:'Serbia and Montenegro',
+        name:{en:'Serbia and Montenegro',jp:'セルビア・モンテネグロ',de:'Serbien und Montenegro',ru:'Сербия и Черногория',es:'Serbia y Montenegro'},
+        succ:['SRB','MNE','XKX'] },
+      { code:'CSK', from:'1918-10-28', to:'1992-12-31', flag:F_CSK, region:'Europe', wiki:'Czechoslovakia',
+        name:{en:'Czechoslovakia',jp:'チェコスロバキア',de:'Tschechoslowakei',ru:'Чехословакия',es:'Checoslovaquia'},
+        succ:['CZE','SVK'] }
+    ];
+    const CODES=STATES.map(S=>S.code);
+    function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
+      return STATES.filter(S=>{ const a=+new Date(S.from+'T00:00:00Z'), b=+new Date(S.to+'T23:59:59Z'); return t>=a&&t<=b; }); }
+    /* aggregate successors' (already year-overlaid) countryStats into one synthetic stat object */
+    function agg(S){
+      let pop=0,gdp=0,mil=0,area=0, lN=0,lD=0, tN=0,tD=0, nN=0,nD=0, have=0, dataCountries=0;
+      S.succ.forEach(c=>{ const s=countryStats[c]; if(!s) return;
+        if(s.pop){ pop+=s.pop; if(s.lifeExp){ lN+=s.lifeExp*s.pop; lD+=s.pop; } if(s.tfr){ tN+=s.tfr*s.pop; tD+=s.pop; } if(s.internet!=null){ nN+=s.internet*s.pop; nD+=s.pop; } }
+        if(s.gdp) gdp+=s.gdp; if(s.milSpend) mil+=s.milSpend; if(s.area) area+=s.area;
+        if(s.pop||s.gdp){ have++; } dataCountries++;
+      });
+      const nm=S.name;
+      return { code:S.code, ccn3:'', nameEn:nm.en, nameJp:nm.jp, name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
+        sov:true, _hist:true, _histSucc:S.succ, _histHave:have, _histN:S.succ.length, _from:S.from, _to:S.to,
+        capital:'', currency:'', languages:'',
+        pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
+        gdppc:(gdp&&pop)?(gdp*1e9/pop):null, density:(pop&&area)?pop/area:null,
+        lifeExp:(lD?lN/lD:null), tfr:(tD?tN/tD:null), internet:(nD?nN/nD:null) };
+    }
+    let _applied=null;   /* {codes:[], hidden:Set} currently injected into countryStats */
+    function clear(){ if(!_applied) return; try{
+      _applied.codes.forEach(c=>{ try{ delete countryStats[c]; }catch(_){} });
+      _applied.hidden.forEach(c=>{ const s=countryStats[c]; if(s) delete s._histHidden; });
+    }catch(_){} _applied=null; }
+    function apply(date){ clear();
+      const act=activeAt(date); if(!act.length) return;
+      const codes=[], hidden=new Set();
+      act.forEach(S=>{ const a=agg(S); if(a._histHave<=0) return;   /* no successor data at all → skip (honest) */
+        countryStats[S.code]=a; codes.push(S.code);
+        S.succ.forEach(c=>{ if(countryStats[c]){ countryStats[c]._histHidden=true; hidden.add(c); } });
+      });
+      if(codes.length) _applied={codes,hidden};
+    }
+    /* used by renderStats when the tab renders (countryStats already carries the applied entries + hidden flags) */
+    return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied };
   })();
 
   /* (#R94) Köppen climate era follows the clock (uses the existing period rasters, no new assets). Only
@@ -17901,12 +17986,36 @@ window.addEventListener('DOMContentLoaded', () => {
         cache[key]=wrapped; }
       return cache[key]; }
     async function wbLatest(id){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const m=await _wbLatestOne(one); if(m&&Object.keys(m).length) return m; } return {}; }
+    /* (#R94) TIME MACHINE: when the master clock is on a past year, the bar/table/focus show THAT year's real
+       figures (World Bank date=<year>, IMF WEO at the year) — honestly, with no present-day gap-fill while
+       travelling. `_ttYear()` is the active year (≥1960, where WB annual series begin) or null when live. */
+    function _ttYear(){ try{ const y=window._imTimeYear; return (y&&y>=1960)?y:null; }catch(_){ return null; } }
+    function _wbYearOne(code,year){ const key='wby|'+code+'|'+year;
+      if(cache[key]===undefined){ let wrapped=null;
+        wrapped=(async()=>{ try{
+          const c=('AbortController' in window)?new AbortController():null; const tm=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },20000):null;
+          const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+encodeURIComponent(code)+'?format=json&per_page=400&date='+year,c?{signal:c.signal}:undefined);
+          const j=await r.json(); if(tm) clearTimeout(tm);
+          if(Array.isArray(j)&&j[1]){ const m={}; j[1].forEach(d=>{ if(d&&d.value!=null&&d.countryiso3code) m[d.countryiso3code]={v:+d.value,y:+d.date||year}; }); return m; }
+          if(Array.isArray(j)) return {};
+        }catch(_){} throw 0; })().catch(()=>{ if(cache[key]===wrapped) delete cache[key]; return {}; });
+        cache[key]=wrapped; }
+      return cache[key]; }
+    async function wbYear(id,year){ const ids=Array.isArray(id)?id:[id]; for(const one of ids){ const m=await _wbYearOne(one,year); if(m&&Object.keys(m).length) return m; } return {}; }
+    function imfAt(vals,scale,year){ const out={}; for(const cd in vals){ const o=vals[cd]; if(o&&o[year]!=null&&isFinite(+o[year])) out[cd]={v:+o[year]*(scale||1),y:year}; } return out; }
     function imfLatest(vals,scale){ const nowY=new Date().getFullYear(); const out={};
       for(const cd in vals){ const o=vals[cd]; let best=null; for(const y in o){ const yy=+y,vv=+o[y]; if(isFinite(yy)&&isFinite(vv)&&yy<=nowY&&(!best||yy>best.y)) best={y:yy,v:vv*(scale||1)}; } if(best) out[cd]=best; }
       return out; }
     async function latestData(ind){
+      const ttY=_ttYear();
       if(ind.stat){ const m={}; codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) m[cd]={v:+v,y:(typeof ind.yr==='number')?ind.yr:0}; });
         return {ind,map:m,srcName:ind.src||'IntMap',mixed:false}; }
+      if(ttY){   /* travelling → THAT year only, honest (no present-day gap-fill) */
+        const wantImf2=(ind.imf&&srcSel[ind.k]==='imf');
+        let m2={}, src2='World Bank';
+        if(wantImf2){ const vals=await _imfRaw(ind.imf); if(vals){ m2=Object.assign({},imfAt(vals,ind.imfScale,ttY)); if(Object.keys(m2).length) src2='IMF WEO'; } }
+        if(!Object.keys(m2).length){ m2=Object.assign({},await wbYear(ind.wb,ttY)); src2='World Bank'; }
+        return {ind,map:m2,srcName:src2,mixed:false,ttY:ttY}; }
       const wantImf=(ind.imf&&srcSel[ind.k]==='imf');
       let m={}, srcName='World Bank';
       if(wantImf){ const vals=await _imfRaw(ind.imf); if(vals){ m=Object.assign({},imfLatest(vals,ind.imfScale)); srcName='IMF WEO'; } }
@@ -17917,7 +18026,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(ind.imf&&srcName==='IMF WEO'){ const wl=await wbLatest(ind.wb); if(wl[cd]){ m[cd]=Object.assign({src:'WB'},wl[cd]); mixed=true; continue; } }
         const rf=REFV[ind.k]; if(rf){ try{ const v=rf(countryStats[cd]||{}); if(v!=null&&isFinite(+v)){ m[cd]={v:+v,y:0,src:'ref'}; mixed=true; } }catch(_){} } }
       return {ind,map:m,srcName,mixed}; }
-    function cList(){ try{ return Object.keys(countryStats).map(cd=>({code:cd,name:cName(countryStats[cd])})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }
+    function cList(){ try{ return Object.keys(countryStats).filter(cd=>!(countryStats[cd]&&countryStats[cd]._hist)).map(cd=>({code:cd,name:cName(countryStats[cd])})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }   /* (#R94b) former-state synthetic codes have no WB series → keep them out of the picker */
     function ensureView(){ if(host&&document.body.contains(host)) return host;
       if(!ensureView._css){ ensureView._css=1; const st=document.createElement('style');
       st.textContent='#scp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);border:1.5px solid transparent;}'
@@ -18009,6 +18118,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
         +'<button class="scp-mtog" id="scp-mtog"></button>'
         +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
+        +'<div id="scp-timebanner" class="stats-timebanner" style="display:none;"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
       host.querySelector('.scp-back').onclick=()=>{ try{ _endPick(); }catch(_){} try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
       host.querySelectorAll('#scp-modes button').forEach(b=>{ b.onclick=()=>{ const m=b.getAttribute('data-m'); if(m===mode) return; mode=m; render(); }; });
@@ -18181,7 +18291,7 @@ window.addEventListener('DOMContentLoaded', () => {
        unchanged signature are skipped entirely, so toggling a metric or switching one block's source no longer
        touches any other block. */
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
-      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode;
+      const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+(_ttYear()||'now');   /* (#R94) include the master-clock year so a time change re-fetches */
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
       const my=(el.__seq=(el.__seq||0)+1);
       /* (#R71) bar mode reads the FAST latest-value path (1 request per indicator); only the time-series
@@ -18222,6 +18332,11 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ wireM(fx); }catch(_){}
     }
     async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); modeRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
+      /* (#R94) time-machine banner — the bars/table below are that year's real World Bank/IMF figures */
+      try{ const tb=v.querySelector('#scp-timebanner'); if(tb){ const ty=_ttYear(), pw=(window._imTimePreWB||null);
+        if(ty){ tb.style.display='block'; tb.classList.remove('warn'); tb.innerHTML='📅 <b>'+ty+'</b> · '+LL('showing this year’s World Bank / IMF figures','この年の世界銀行・IMFの数値を表示中','Werte dieses Jahres','данные за этот год','cifras de este año'); }
+        else if(pw){ tb.style.display='block'; tb.classList.add('warn'); tb.innerHTML='📅 <b>'+pw+'</b> · '+LL('World Bank annual series begin in 1960 — latest available','世界銀行の年次データは1960年以降','Weltbank-Reihen ab 1960','ряды Всемирного банка с 1960','series desde 1960'); }
+        else tb.style.display='none'; } }catch(_){}
       const body=v.querySelector('#scp-body');
       if(!codes.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12.5px;padding:16px 2px;">'+LL('Add countries above to compare them.','上の欄から国を追加してください。','Länder oben hinzufügen.','Добавьте страны выше.','Añade países arriba.')+'</div>'; return; }
       const inds=orderedInds();
@@ -18273,10 +18388,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const cLbl=cd=>{ const s2=countryStats[cd]||{}; return esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd)); };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
-      const yrs=[]; for(let y2=new Date().getFullYear();y2>=1980;y2--) yrs.push(y2);
+      const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
+      const _selY=(tYear!=null)?tYear:_ttYear();   /* (#R94) the dropdown reflects the master clock while travelling */
       let h='<div class="scp-ttools">'
         +'<button id="scp-flip" title="'+LL('Swap rows/columns','行と列を入れ替え','Zeilen/Spalten tauschen','Поменять строки/столбцы','Intercambiar filas/columnas')+'">⇄ '+LL('Transpose','行列入替','Transponieren','Транспонировать','Transponer')+'</button>'
-        +'<select id="scp-year"><option value="">'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</option>'+yrs.map(y2=>'<option value="'+y2+'"'+(tYear===y2?' selected':'')+'>'+y2+'</option>').join('')+'</select>'
+        +'<select id="scp-year"><option value=""'+(_selY==null?' selected':'')+'>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</option>'+yrs.map(y2=>'<option value="'+y2+'"'+(_selY===y2?' selected':'')+'>'+y2+'</option>').join('')+'</select>'
         +'<button id="scp-csv">CSV</button>'
         +(tSort?('<button id="scp-unsort">'+LL('Clear sort','並べ替え解除','Sortierung aufheben','Сбросить сортировку','Quitar orden')+'</button>'):'')
         +'<span class="scp-src" style="margin-left:auto;">'+LL('Drag headers to reorder · click to sort','ヘッダーをドラッグで並べ替え・クリックでソート','Header ziehen = umordnen · Klick = sortieren','Перетащите заголовки · клик = сортировка','Arrastra encabezados · clic = ordenar')+'</span></div>';
@@ -18339,6 +18455,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function clearMap(){ try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     /* re-apply after a base-style swap (globe/flat/satellite reload wipes runtime sources) */
     try{ if(typeof map!=='undefined'&&map) map.on('styledata',()=>{ if(codes&&codes.length){ setTimeout(()=>{ try{ paintOnMap(); }catch(_){} },160); } }); }catch(_){}
+    /* (#R94) re-render the OPEN comparison when the master clock moves — bars/table/focus follow the year. */
+    let _ttReb=null;
+    try{ if(window.IntMapTime) window.IntMapTime.on(()=>{ if(host&&document.getElementById('scp-view')){ clearTimeout(_ttReb); _ttReb=setTimeout(()=>{ try{ render(); }catch(_){} },380); } }); }catch(_){}
     function open(initCodes,initMetrics,initSource,initMode){
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
       if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length){ sel=new Set(ok); indOrder=ok.slice(); } }
