@@ -2536,6 +2536,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== Theme ===== */
   let bordersOn=true;   /* (#R40) Country borders DEFAULT ON per request. The lazy-create + retry path (R39) now draws them reliably on first load, so the default is honoured (see the startup dispatch after _wireRef). */
+  /* (#R94g) ONE source of truth for the "Country borders" display so the SAME toggle governs BOTH the modern
+     boundary line AND the clock-driven historical borders (imtb-*) — one feature, one switch. While travelling
+     the modern line + modern country labels hide and the era's borders + names show; at Now the modern set
+     returns. This replaced the two layers fighting each other (which fast-blinked when the toggle was flipped). */
+  let _imbOfmWas=null;
+  window._applyBorders=function(){ try{ if(typeof map==='undefined'||!map) return;
+    const traveling=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
+    const bon=!!bordersOn;
+    if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(bon&&!traveling)?'visible':'none');
+    ['imtb-line','imtb-lbl'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',(bon&&traveling)?'visible':'none'); });
+    if(map.getLayer('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } map.setLayoutProperty('ofm-country','visibility','none'); }
+      else if(_imbOfmWas!==null){ map.setLayoutProperty('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
+  }catch(_){} };
   function applyTheme(){
     /* (#R9/#58) Tactical theme is a phosphor-green military HUD built ON the dark theme.
        (#R13c) Classic = an Age-of-Discovery parchment/nautical look built ON the LIGHT theme — warm
@@ -2579,7 +2592,7 @@ window.addEventListener('DOMContentLoaded', () => {
     map.setLayoutProperty('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
-    if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility', bordersOn?'visible':'none');
+    try{ window._applyBorders(); }catch(_){ if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility', bordersOn?'visible':'none'); }
     if(map.getLayer('grid-labels')){ map.setPaintProperty('grid-labels','text-color',mapLight?'#1d4ed8':'#7dd3fc'); map.setPaintProperty('grid-labels','text-halo-color',mapLight?'rgba(255,255,255,0.95)':'rgba(0,0,0,0.85)'); }
     if(map.getLayer('grid-labels-cross')){ map.setPaintProperty('grid-labels-cross','text-color',mapLight?'#475569':'#94a3b8'); map.setPaintProperty('grid-labels-cross','text-halo-color',mapLight?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.8)'); }
     if(map.getLayer('grid-lines')){ map.setPaintProperty('grid-lines','line-color',['case',['==',['get','kind'],'major'],mapLight?'#3a86ff':'#60a5fa',mapLight?'#6c87b3':'#94a3b8']); }
@@ -6222,8 +6235,7 @@ window.addEventListener('DOMContentLoaded', () => {
          occasionally weren't DRAWN on first load (OFM vector source + country data settle after the first
          idle). Re-assert the place labels + borders visibility a few times, and the moment the OFM source's
          tiles arrive — so names/borders appear on load without the user toggling them. */
-      const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang();
-        if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',bordersOn?'visible':'none'); }catch(_){} };
+      const _assertNamesBorders=()=>{ try{ ensurePlaceLabels(); applyLabelLang(); window._applyBorders(); }catch(_){} };
       [500,1400,3000].forEach(ms=>setTimeout(_assertNamesBorders,ms));
       map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} } });
     });
@@ -8071,7 +8083,7 @@ window.addEventListener('DOMContentLoaded', () => {
        after a reload. */
     const mkBorders=()=>{ try{ if(!map) return;
       if(bordersOn) ensureBordersLayer();
-      if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',bordersOn?'visible':'none');
+      window._applyBorders();   /* (#R94g) governs modern OR historical borders (whichever the clock wants) — one toggle */
       applyTheme();
     }catch(_){} };
     if(bordersOn){
@@ -8152,7 +8164,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R38) re-assert any checked state/road/rail ref layer the moment the OFM vector tiles (re)load. */
   try{ if(map&&map.on) map.on('sourcedata',(e)=>{ if(e&&e.sourceId==='ofm'&&e.isSourceLoaded){ ['cb-admin1','cb-roads','cb-rail2'].forEach(id=>{ const c=document.getElementById(id); if(c&&c.checked&&c.__refApply) c.__refApply(); });
     /* (#R40) re-assert OFM-sourced country borders the moment the vector tiles (re)load too */
-    try{ if(bordersOn){ ensureBordersLayer(); if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility','visible'); } }catch(_){} } }); }catch(_){}
+    try{ if(bordersOn) ensureBordersLayer(); window._applyBorders(); }catch(_){} } }); }catch(_){}
   /* (#R40) Country borders / State-province / Roads / Railways now DEFAULT ON (HTML `checked`). Fire their
      (retry-hardened) change handlers once at startup so the layers are created + shown on first load; they
      self-heal if the style/ofm source isn't ready yet. These 4 utility toggles are NOT persisted in the URL
@@ -18251,7 +18263,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const items=cList().filter(c=>{ if(!q) return true; const s2=countryStats[c.code]||{};
           return c.name.toLowerCase().indexOf(q)>=0||(s2.nameEn||'').toLowerCase().indexOf(q)>=0||(s2.nameJp||'').indexOf(qRaw)>=0; }).slice(0,300);
         listEl.innerHTML=items.map(c=>{ const s2=countryStats[c.code]||{}; const on=codes.indexOf(c.code)>=0;
-          return '<div class="scp-cr'+(on?' sel':'')+'" data-c="'+esc(c.code)+'"><span style="width:20px;text-align:center;">'+esc(s2.flag||'')+'</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;">'+esc(c.name)+'</span>'+(on?'<span style="color:var(--primary-color);font-weight:700;">✓</span>':'')+'</div>'; }).join('')
+          return '<div class="scp-cr'+(on?' sel':'')+'" data-c="'+esc(c.code)+'"><span style="width:20px;text-align:center;">'+(s2.flag||'')+'</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;">'+esc(c.name)+'</span>'+(on?'<span style="color:var(--primary-color);font-weight:700;">✓</span>':'')+'</div>'; }).join('')
           ||'<div style="padding:8px 10px;color:var(--text-muted);font-size:11.5px;">'+LL('No match','該当なし','Kein Treffer','Нет совпадений','Sin coincidencias')+'</div>';
         listEl.querySelectorAll('.scp-cr').forEach(r=>{ r.onmousedown=(e)=>{ e.preventDefault(); const cd=r.getAttribute('data-c');
           if(codes.indexOf(cd)>=0) codes=codes.filter(x=>x!==cd);
@@ -18287,7 +18299,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function _endPick(){ try{ _setPick(false); }catch(_){} }
     function chipRow(){ const w=host&&host.querySelector('#scp-chips'); if(!w) return; w.innerHTML='';
       codes.forEach((cd,i)=>{ const s2=_cs(cd); const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
-        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd))+'<span class="scp-x" title="remove">✕</span>';
+        el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+(s2.flag?s2.flag+' ':'')+esc(cName(s2)||cd)+'<span class="scp-x" title="remove">✕</span>';
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); });
       try{ paintOnMap(); }catch(_){} }   /* (#R83) keep the map fill in sync with the current selection */
     /* (#R71) grouped picker behind a single toggle ("指標選択画面が煩雑になっている。ごちゃごちゃ") */
@@ -18422,16 +18434,18 @@ window.addEventListener('DOMContentLoaded', () => {
       const hasNeg=vals.some(v=>v<0);
       const min0=Math.min(0,Math.min.apply(null,vals)), max0=Math.max(0,Math.max.apply(null,vals));
       const range=(max0-min0)||1, zero=(-min0)/range*100;
-      let html='<div class="scp-bars">'+entries.map(x=>{ const s2=countryStats[x.cd]||{};
-        const nm=esc((s2.flag?s2.flag+' ':'')+(cName(s2)||x.cd));
-        if(!x.e) return '<div class="scp-brow"><span class="scp-bnm">'+nm+'</span><span class="scp-btrack"'+(hasNeg?' data-z="1"':'')+'>'+(hasNeg?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span>'):'')+'</span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
+      let html='<div class="scp-bars">'+entries.map(x=>{ const s2=_cs(x.cd);
+        /* (#R94g) the flag may be an <img> (former states) — insert it RAW, escape only the NAME (an emoji is a
+           safe char, but esc() turned the <img> into visible tag text). The title attr gets the plain name. */
+        const nmTxt=cName(s2)||x.cd, nm=(s2.flag?s2.flag+' ':'')+esc(nmTxt), nmT=esc(nmTxt);
+        if(!x.e) return '<div class="scp-brow"><span class="scp-bnm" title="'+nmT+'">'+nm+'</span><span class="scp-btrack"'+(hasNeg?' data-z="1"':'')+'>'+(hasNeg?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span>'):'')+'</span><span class="scp-bval" style="color:var(--text-muted);">—</span></div>';
         const v=x.e.v, w=Math.max(0.8,Math.abs(v)/range*100), left=v<0?(zero-w):zero;
         const bar=hasNeg
           ?('<span class="scp-zline" style="left:'+zero.toFixed(2)+'%;"></span><span class="scp-bfill" style="left:'+Math.max(0,left).toFixed(2)+'%;width:'+w.toFixed(2)+'%;background:'+(v<0?'#ff453a':PAL[x.i])+';"></span>')
           :('<span class="scp-bfill" style="left:0;width:'+Math.max(1.2,Math.abs(v)/(max0||1)*100).toFixed(2)+'%;background:'+PAL[x.i]+';"></span>');
         const yT=x.e.y?('<span class="scp-yr">('+x.e.y+')</span>'):'';
         const srcM=x.e.src?('<span class="scp-fill" title="'+(x.e.src==='ref'?LL('from bundled reference data','内蔵参照データで補完','aus Referenzdaten','из справочных данных','de datos de referencia'):LL('filled from ','補完: ','ergänzt aus ','дополнено из ','completado de ')+x.e.src)+'">°</span>'):'';
-        return '<div class="scp-brow"><span class="scp-bnm" title="'+nm+'">'+nm+'</span><span class="scp-btrack">'+bar+'</span><span class="scp-bval">'+fmtSigned(b.ind,v)+srcM+' '+yT+'</span></div>';
+        return '<div class="scp-brow"><span class="scp-bnm" title="'+nmT+'">'+nm+'</span><span class="scp-btrack">'+bar+'</span><span class="scp-bval">'+fmtSigned(b.ind,v)+srcM+' '+yT+'</span></div>';
       }).join('')+'</div>';
       if(b.mixed) html+='<div class="scp-src" style="margin:-4px 0 8px;">° '+LL('gap filled from the other source / bundled reference','欠損値は他ソース・内蔵参照データで補完','Lücke aus anderer Quelle/Referenz ergänzt','пробел дополнен из другого источника','hueco completado de otra fuente/referencia')+'</div>';
       return html; }
@@ -18541,7 +18555,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
         const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const p=cellAt(indK,cd); return p?p.v:null; };
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
-      const cLbl=cd=>{ const s2=_cs(cd); return esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd)); };
+      const cLbl=cd=>{ const s2=_cs(cd); return (s2.flag?s2.flag+' ':'')+esc(cName(s2)||cd); };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
@@ -27069,7 +27083,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(typeof map==='undefined'||!map||!window.IntMapTime) return {};
     const YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-    const cache=new Map(); let active=false, shownY=null, seq=0, ofmWas=null;
+    const cache=new Map(); let active=false, shownY=null, seq=0;
     const nearest=y=>{ let b=YEARS[0]; for(const yy of YEARS){ if(yy<=y) b=yy; } return b; };
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ cache.set(year,c); return c; } }catch(_){} }
@@ -27084,23 +27098,20 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(150,150,150,0.9)','line-opacity':0.92,'line-width':['interpolate',['linear'],['zoom'],1,0.55,4,1,8,1.7,12,2.4]}}, before);
       if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       return true; }catch(_){ return false; } }
-    function setVis(v){ ['imtb-line','imtb-lbl'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }); }
-    function modern(show){ try{
-      if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(show&&(typeof bordersOn==='undefined'||bordersOn))?'visible':'none');
-      if(map.getLayer('ofm-country')){ if(!show){ if(ofmWas===null) ofmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; map.setLayoutProperty('ofm-country','visibility','none'); }
-        else { map.setLayoutProperty('ofm-country','visibility',ofmWas||'visible'); ofmWas=null; } }
-    }catch(_){} }
-    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} setVis(true); modern(false); }
-    function clear(){ active=false; shownY=null; setVis(false); modern(true); }
+    /* visibility is owned by the single `window._applyBorders()` (Country-borders toggle ⇄ modern/historical) */
+    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} }
+    function clear(){ active=false; shownY=null; try{ window._applyBorders(); }catch(_){} }
     async function go(year){ active=true; const ny=nearest(year); const my=++seq;
-      if(shownY===ny){ setVis(true); modern(false); return; }
+      if(shownY===ny){ try{ window._applyBorders(); }catch(_){} return; }
       const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; apply(fc); } }
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       if(e.isLive || e.year>=new Date().getFullYear()){ clear(); return; }
       go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },320); });
-    /* re-assert after a base-style swap (globe/flat/satellite reload wipes runtime layers + resets visibility) */
-    map.on('styledata',()=>{ if(active&&shownY!=null) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()){ ensure(); const fc=cache.get(shownY); if(fc){ map.getSource('imtb-src').setData(fc); setVis(true); modern(false); } } }catch(_){} },140); });
-    return { _go:go, _clear:clear, current:()=>shownY, _nearest:nearest };
+    /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
+       imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
+       (that was the fast-blink). */
+    map.on('styledata',()=>{ if(active&&shownY!=null&&map.isStyleLoaded()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, _nearest:nearest };
   })();
 
   /* ===== Init ===== */
