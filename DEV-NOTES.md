@@ -5,6 +5,14 @@
 
 ---
 
+## R93d — REAL ROOT CAUSE of London→Riga "no transit route": capital geocoded to the country centroid (tag `#R93d`)
+
+Same re-report after R93c ("ふざけんじゃねえよ") — still "no route", and the header said **"London → Latvia · Riga"** (mine said "リガ"). That "Country · Capital" name was the tell.
+
+- **Root cause:** `localFuzzyPlaces` (index.html ~6314-6320) matches a query to a country's **capital** and returns the name as `"Latvia · Riga"` — but pushes the **country's centroid** (`s.latlng`), NOT the city's coords. Measured: geocoding **"Riga" → (57.07, 25.46) = 83 km from the real city**, out in rural Latvia where MOTIS/OSRM find no stop → a false "no public-transit route". Affects every capital-name search (Paris→France centroid, etc.). `geocode()` short-circuited on this fuzzy hit before ever trying Nominatim.
+- **Fix (`geocode`):** do NOT short-circuit on a `kind:'capital'` fuzzy match — fall through to **precise Nominatim** for it, keeping the coarse centroid only as a fallback if Nominatim is unreachable. Non-capital fuzzy matches (countries, gazetteer POIs with real coords) still short-circuit as before.
+- **Verified (`?rafshim=1`, warm gazetteer):** "Riga"→9 km from the city (was 83), "リガ"→0 km, "Paris"→Paris (not France centroid). The full flow **London→Riga now returns 5 transit options** (Eurostar→Thalys→ICE→…, ~28 h) instead of "no route". No console errors. (Combined with R93c's robust MOTIS fetch, both failure modes are closed.)
+
 ## R93c — FIX "no transit route" on long international journeys (tag `#R93c`)
 
 Re-report with screenshot: "ロンドンからリガまで鉄道" → "この区間の公共交通経路が見つかりません" ("ふざけんな、Google Mapならある"). It DOES exist.
