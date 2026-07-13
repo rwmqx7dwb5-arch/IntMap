@@ -5,6 +5,14 @@
 
 ---
 
+## R90 — Sun & shadow (日照・影) (tag `#R90`)
+
+"日付と時刻を指定し、建物や地形による日照・影の移動を3D表示する。"
+
+- **`window.IntMapSun`** — pick a date + time (date field, 24-h slider, "Now", ▶ play to sweep the day at 15-min steps). Computes the sun's **altitude + azimuth + sunrise/solar-noon/sunset** for the map centre (standard SunCalc solar-position algorithm), lights maplibre's 3D scene from the sun (`setLight` position = sun azimuth/altitude so extrusions self-shade), and draws **real cast shadows**: OSM buildings in view (Overpass, ≥ z14.5) are swept along the sun vector (shadow length = height / tan(altitude), direction = az+180°) into ground-shadow polygons. Sun below horizon → night styling, no cast shadows. Atlas actions (`sun`/`shadow`/`sunlight`/`daylight`/…). Keyless.
+- **Two bugs caught & fixed in verification:** (1) initial aspect-style azimuth was fine, but (2) `sunTimes` used the fractional day `d` instead of the integer Julian cycle `n` → solar noon came out 03:42 instead of 11:43. Rewrote to the proper SunCalc transit (`n=round(d−J0−lw/2π)`, `solarTransitJ`).
+- **Verified against real ephemeris (headless-safe):** Tokyo summer-solstice noon altitude **77.7°** (theoretical 77.76° ✓), winter noon **30.9°** (30.88° ✓), azimuth due south; Tokyo summer sun **04:26 / 11:44 / 19:01 JST**, winter **06:48 / 11:40 / 16:33**, London summer **04:44 / 13:03 / 21:22 BST** — all match published times. Boots clean, no console errors. Shadow polygons + 3D light are driven by the (now-verified) sun vector; the paint itself can't be exercised in the hidden tab.
+
 ## R89b — RF / radio coverage (電波・通信圏) (tag `#R89`)
 
 "アンテナ位置、高さ、出力、周波数を入力し、地形を考慮した通信可能範囲を表示する。"

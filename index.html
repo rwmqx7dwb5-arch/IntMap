@@ -23672,6 +23672,10 @@ window.addEventListener('DOMContentLoaded', () => {
           let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=map.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
           try{ if(window.IntMapRF){ window.IntMapRF.setParams(+a.height||+a.antennaHeight||0, (a.power!=null?+a.power:null), +a.frequency||+a.freq||0); window.IntMapRF.open(ll); } }catch(_){}
           return R(true, note('📡 '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+' — '+L('line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.','実地形上の見通し到達域。パネルでアンテナ高・出力・周波数を設定、クリックで基地局を移動。','Sichtlinie über echtem Gelände.','зона прямой видимости.','área de línea de vista.'))); }
+        /* (#R90) sun & shadow */
+        case 'sun': case 'shadow': case 'shadows': case 'sunlight': case 'sunPosition': case 'daylight': case 'insolation': {
+          try{ if(window.IntMapSun){ if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ try{ map.flyTo({center:[g.lng,g.lat],zoom:Math.max(map.getZoom(),15)}); }catch(_){} } } window.IntMapSun.open(); if(a.date||a.time||a.datetime){ const d=new Date(a.datetime||((a.date||'')+(a.time?('T'+a.time):''))); if(!isNaN(d)) window.IntMapSun.setTime(d); } } }catch(_){}
+          return R(true, note('🌇 '+L('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+' — '+L('pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.','日時を選択。表示中の建物（拡大時）が実際の影を落とし、3Dは太陽方向から照らされます。▶で一日を再生。','Datum/Zeit wählen — echte Gebäudeschatten.','выберите дату/время — реальные тени зданий.','elige fecha/hora — sombras reales.'))); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
@@ -25944,6 +25948,89 @@ window.addEventListener('DOMContentLoaded', () => {
       return panel; }
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } }
     return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
+
+  /* ===== (#R90) SUN & SHADOW ("日照・影") — pick a date+time and see the sun's position, the day's sun-path times,
+     and REAL cast shadows: OSM buildings in view are projected along the sun vector (length = height / tan(altitude))
+     into ground-shadow polygons, and maplibre's 3D light is aimed from the sun so extrusions self-shade. Astronomy
+     is the standard SunCalc solar-position algorithm. Keyless. ===== */
+  window.IntMapSun=(function(){
+    if(typeof map==='undefined'||!map) return { open(){}, close(){}, setTime(){} };
+    const SRC='imsun-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
+    let panel=null, when=new Date(), busy=false, moveT=null, playing=0, bbldCache=null, bboxKey='';
+    const SN=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[currentLang]||en;
+    const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
+    function sunPos(date,lat,lng){ const lw=rad*-lng, phi=rad*lat, d=toDays(date);
+      const M=rad*(357.5291+0.98560028*d), C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)), L=M+C+rad*102.9372+Math.PI;
+      const dec=Math.asin(Math.sin(e)*Math.sin(L)), ra=Math.atan2(Math.sin(L)*Math.cos(e),Math.cos(L));
+      const th=rad*(280.16+360.9856235*d)-lw, H=th-ra;
+      const alt=Math.asin(Math.sin(phi)*Math.sin(dec)+Math.cos(phi)*Math.cos(dec)*Math.cos(H));
+      const az=Math.atan2(Math.sin(H),Math.cos(H)*Math.sin(phi)-Math.tan(dec)*Math.cos(phi));   /* from south, +west */
+      return { altitude:alt, azimuth:az, azCompass:(az/rad+180+360)%360, altDeg:alt/rad, dec:dec }; }
+    function sunTimes(date,lat,lng){ /* SunCalc times: proper Julian-cycle transit (integer n, not the fractional day) */
+      const lw=rad*-lng, phi=rad*lat, d=toDays(date), J0=0.0009;
+      const n=Math.round(d-J0-lw/(2*Math.PI)), ds=J0+lw/(2*Math.PI)+n;
+      const M=rad*(357.5291+0.98560028*ds), C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)), L=M+C+rad*102.9372+Math.PI, dec=Math.asin(Math.sin(e)*Math.sin(L));
+      const solarTransitJ=dss=>J2000+dss+0.0053*Math.sin(M)-0.0069*Math.sin(2*L);
+      const Jnoon=solarTransitJ(ds), toDate=J=>new Date((J+0.5-J1970)*dayMs);
+      const h0=rad*-0.833, cosH=(Math.sin(h0)-Math.sin(phi)*Math.sin(dec))/(Math.cos(phi)*Math.cos(dec));
+      if(cosH>1) return {polar:'night'}; if(cosH<-1) return {polar:'day'};
+      const w0=Math.acos(cosH), a=J0+(w0+lw)/(2*Math.PI)+n, Jset=solarTransitJ(a), Jrise=Jnoon-(Jset-Jnoon);
+      return { rise:toDate(Jrise), set:toDate(Jset), noon:toDate(Jnoon) }; }
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'imsun-shadow',type:'fill',source:SRC,paint:{'fill-color':'#0b1021','fill-opacity':0.30}});
+      return true; }catch(_){ return false; } }
+    /* OSM buildings in view → cast-shadow polygons (only when zoomed in enough to be useful) */
+    async function fetchBld(){ let b; try{ b=map.getBounds(); }catch(_){ return []; } if(map.getZoom()<14.5) return [];
+      const s=b.getSouth().toFixed(4),w=b.getWest().toFixed(4),n=b.getNorth().toFixed(4),eA=b.getEast().toFixed(4); const key=[s,w,n,eA].join(',');
+      if(key===bboxKey&&bbldCache) return bbldCache; bboxKey=key;
+      const q='[out:json][timeout:25];(way["building"]('+s+','+w+','+n+','+eA+'););out geom 900;';
+      const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+      for(const ep of EPS){ try{ const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q)}); if(!r.ok) continue; const j=await r.json();
+        const bld=(j.elements||[]).filter(el=>el.geometry&&el.geometry.length>2).map(el=>{ const t=el.tags||{}; let h=parseFloat(t.height)||((parseFloat(t['building:levels'])||0)*3)||10; return { ring:el.geometry.map(g=>[g.lon,g.lat]), h:Math.min(h,400) }; });
+        bbldCache=bld; return bld; }catch(_){} }
+      return bbldCache||[]; }
+    async function drawShadows(){ if(busy) return; busy=true; try{ ensure();
+      const c=map.getCenter(); const sp=sunPos(when,c.lat,c.lng);
+      updatePanel(sp);
+      try{ if(sp.altDeg>0) map.setLight&&map.setLight({anchor:'map',position:[1.5,sp.azCompass,Math.max(1,90-sp.altDeg)],color:'#fff5e6',intensity:0.5}); else map.setLight&&map.setLight({anchor:'map',position:[1.5,0,60],color:'#213',intensity:0.25}); }catch(_){}
+      if(sp.altDeg<=0.5){ try{ map.getSource(SRC).setData({type:'FeatureCollection',features:[]}); }catch(_){} busy=false; return; }   /* sun down → no cast shadows */
+      const bld=await fetchBld(); const shadowBrg=(sp.azCompass+180)%360, br=shadowBrg*rad;
+      const Lm=1/Math.tan(sp.altitude); const feats=[]; const clat=c.lat;
+      const offLng=m=>m*Math.sin(br)/(111320*Math.cos(clat*rad)), offLat=m=>m*Math.cos(br)/110540;
+      bld.forEach(bd=>{ const L=bd.h*Lm; if(!(L>0)) return; const oL=offLng(L), oA=offLat(L); const r0=bd.ring;
+        for(let i=0;i<r0.length-1;i++){ const a=r0[i], b2=r0[i+1]; feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[a[0],a[1]],[b2[0],b2[1]],[b2[0]+oL,b2[1]+oA],[a[0]+oL,a[1]+oA],[a[0],a[1]]]]},properties:{}}); }
+        feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[r0.map(p=>[p[0]+oL,p[1]+oA])]},properties:{}}); });
+      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+    }catch(_){} busy=false; }
+    function fmtT(d){ try{ return d.toLocaleTimeString(currentLang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return '—'; } }
+    function updatePanel(sp){ if(!panel) return; const c=map.getCenter(); const st=sunTimes(when,c.lat,c.lng);
+      const rd=panel.querySelector('.sun-read'); if(rd){ const dir=['N','NE','E','SE','S','SW','W','NW'][Math.round(sp.azCompass/45)%8];
+        rd.innerHTML='<b>'+(sp.altDeg>0?'☀️':'🌙')+' '+SN('Altitude','高度','Höhe','Высота','Altura')+' '+sp.altDeg.toFixed(1)+'° · '+SN('Azimuth','方位','Azimut','Азимут','Azimut')+' '+Math.round(sp.azCompass)+'° '+dir+'</b>'
+          +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">'+(st.polar?SN('polar '+st.polar,st.polar==='day'?'白夜':'極夜','Polar','полярный','polar'):('🌅 '+fmtT(st.rise)+' · ☀️ '+fmtT(st.noon)+' · 🌇 '+fmtT(st.set)))+'</div>'; } }
+    function setTime(d){ when=(d instanceof Date)?d:new Date(d); if(when<0||isNaN(when)) when=new Date(); syncInputs(); drawShadows(); }
+    function syncInputs(){ if(!panel) return; const di=panel.querySelector('.sun-date'), ti=panel.querySelector('.sun-time'), tl=panel.querySelector('.sun-slider');
+      try{ if(di) di.value=when.toISOString().slice(0,10); }catch(_){} const mins=when.getHours()*60+when.getMinutes(); if(tl) tl.value=mins; if(ti) ti.textContent=fmtT(when); }
+    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='sun-panel';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.innerHTML='<div class="sun-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌇 '+SN('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+'</span><button class="sun-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
+        +'<div style="display:flex;gap:8px;align-items:center;"><input type="date" class="sun-date" style="flex:1;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;"><button class="sun-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+SN('Now','現在','Jetzt','Сейчас','Ahora')+'</button><button class="sun-play" style="height:30px;width:34px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;"><input type="range" class="sun-slider" min="0" max="1439" value="720" style="flex:1;"><span class="sun-time" style="font-size:12px;font-weight:700;color:var(--text-main);min-width:44px;text-align:right;">12:00</span></div>'
+        +'<div class="sun-read" style="font-size:12px;color:var(--text-main);"></div>'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+SN('Shadows are cast by OSM buildings in view (zoom in past ~z15). Sun path from the SunCalc algorithm for the map centre; 3D building faces are lit from the sun.','影は表示中のOSM建物から算出（z15以上に拡大）。太陽の位置はSunCalcアルゴリズムで地図中心について計算、3D建物は太陽方向から陰影付け。','Schatten aus OSM-Gebäuden.','Тени от зданий OSM.','Sombras de edificios OSM.')+'</div></div>';
+      document.body.appendChild(panel);
+      panel.querySelector('.sun-close').onclick=()=>close();
+      panel.querySelector('.sun-now').onclick=()=>setTime(new Date());
+      panel.querySelector('.sun-date').onchange=e=>{ const p=e.target.value.split('-'); const nd=new Date(when); nd.setFullYear(+p[0],+p[1]-1,+p[2]); setTime(nd); };
+      panel.querySelector('.sun-slider').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(moveT); moveT=setTimeout(drawShadows,120); };
+      const pb=panel.querySelector('.sun-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ const nd=new Date(when.getTime()+15*60000); setTime(nd); },700); } };
+      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.sun-head')); }catch(_){}
+      return panel; }
+    map.on('moveend',()=>{ if(panel&&panel.style.display!=='none') { clearTimeout(moveT); moveT=setTimeout(drawShadows,500); } });
+    function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); drawShadows(); }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.sun-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} try{ map.setLight&&map.setLight({anchor:'viewport',position:[1.15,210,30]}); }catch(_){} }
+    return { open, close, setTime, _sunPos:sunPos, _sunTimes:sunTimes }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
