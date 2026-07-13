@@ -5,6 +5,14 @@
 
 ---
 
+## R94d — Former states are comparable + roster expanded (tag `#R94d`)
+
+Re-report: *"GDPランキングに旧国家が出ない。また、Comparisonが使えない。また、私が例に出した旧国家だけで終わるな。"* — former states didn't show in the Comparison's GDP ranking, couldn't be used there, and the roster was just the three examples.
+
+- **Comparable.** The synthetic former-state codes have no World Bank series of their own, so they were excluded from the picker and single-click routed to the card. Now `IntMapStatsCompare` aggregates the **successor ISO3 codes' data — which are in the very same `country/all` fetch** — into the former state: totals summed (`_HSUM`={gdp,pop}), every other WB indicator **population-weighted** (pop-weighted per-capita = the exact aggregate per-capita), the USSR's GDP via its sourced estimate. `_histAddLatest` adds the value to the bar/table map; `_histAddSeries` builds the time-series from the successors' series over the state's lifespan; `_cs(cd)` resolves the name/flag via `IntMapHistStates` even out of era. `cList` no longer excludes them (they're in `countryStats` only while the clock is in their span, so they appear exactly when comparable); the `_toggleCompare` card-only guard is removed. Verified at 1990: **USA $5.96T vs Soviet Union $2.66T** (GDP) and **249.62M vs 287.82M** (pop) in the bars; the USSR line appears in the time-series ($2.66T at 1991); India 545.86M vs Pakistan (incl. East Pakistan) 129.23M at 1970.
+- **Provenance check (important).** WB does **complementary historical splits** — it tracks each successor separately back to 1960 (Bangladesh 69 M + Pakistan 60 M = 129 M in 1970; Eritrea from 1960; South Sudan from 1990), so **summing successors does NOT double-count** even for pre-secession configurations. That unblocked the expansion.
+- **Roster 4 → 9:** added United Arab Republic (Egypt+Syria, 1958–1961), and the pre-secession configs Pakistan incl. East Pakistan (→PAK+BGD, to 1971-12-16), Sudan incl. South Sudan (→SDN+SSD, to 2011-07-09), Ethiopia incl. Eritrea (→ETH+ERI, to 1993-05-24), Indonesia incl. East Timor (→IDN+TLS, 1976→2002), each with an inline-SVG flag and faithful dates. Verified: 1970 → united **Pakistan is #5 by population (129 M)** with Bangladesh hidden; 1960 shows the UAR; 2005 shows Serbia & Montenegro. The card's Wikipedia intro now uses each state's `wiki` title. Data-driven — more states = more rows. 0 console errors.
+
 ## R94c — Former-states fixes: USSR missing from GDP + unnatural flag (tag `#R94c`)
 
 Re-report: *"GDPにソ連がない。そしてソ連の国旗が不自然。"*

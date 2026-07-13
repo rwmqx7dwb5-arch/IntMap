@@ -5261,13 +5261,13 @@ window.addEventListener('DOMContentLoaded', () => {
       +`</div>`;
     if(s && s.latlng) window._cpCurrent._ll={lng:s.latlng[1],lat:s.latlng[0]};
     body.innerHTML=topBtns()+renderCountryDetailBody(s);
-    _fillCountryIntro(name);
+    _fillCountryIntro((s&&s._hist&&s.wiki)||name);
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
-    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); _fillCountryIntro(name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
+    if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); _fillCountryIntro((s&&s._hist&&s.wiki)||name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
     /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the
        global clock moves — closes over the live idStr/body/topBtns for the currently-open country. */
-    window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro(name); } }catch(_){} };
+    window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro((s&&s._hist&&s.wiki)||name); } }catch(_){} };
     popup.style.display='block';
     /* Initial centered position (viewport coords). Drag handle wires in once. */
     if(!popup.dataset.placed){
@@ -9025,8 +9025,6 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
      position) — only the row outline + the fixed bottom panel update (#26). */
   window._toggleCompare=function(code){
-    /* (#R94b) former-state synthetic entries have no World Bank series → open the card instead of comparing */
-    try{ const s=countryStats[code]; if(s&&s._hist){ if(typeof showCountryDetail==='function') showCountryDetail(code); return; } }catch(_){}
     if(compareSet.has(code)) compareSet.delete(code);
     else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
@@ -15219,6 +15217,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_YUG=flag(F_TRICOL+STAR(15,10,4.7,'#DE2110','#FCD116'));
     const F_SCG=flag(F_TRICOL);
     const F_CSK=flag('<rect width="30" height="20" fill="#ffffff"/><rect y="10" width="30" height="10" fill="#D7141A"/><path d="M0,0 15,10 0,20Z" fill="#11457E"/>');
+    const F_UAR=flag('<rect width="30" height="6.667" fill="#CE1126"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#000000"/>'+STAR(11.5,10,1.7,'#007A3D')+STAR(18.5,10,1.7,'#007A3D'));
+    const F_PAK=flag('<rect width="30" height="20" fill="#01411C"/><rect width="7.5" height="20" fill="#ffffff"/><circle cx="18" cy="10" r="4.2" fill="#ffffff"/><circle cx="19.7" cy="8.8" r="3.5" fill="#01411C"/>'+STAR(21.6,7.9,1.25,'#ffffff'));
+    const F_SDN=flag('<rect width="30" height="6.667" fill="#D21034"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#000000"/><path d="M0,0 12,10 0,20Z" fill="#007229"/>');
+    const F_ETH=flag('<rect width="30" height="6.667" fill="#078930"/><rect y="6.667" width="30" height="6.667" fill="#FCDD09"/><rect y="13.333" width="30" height="6.667" fill="#DA121A"/>');
+    const F_IDN=flag('<rect width="30" height="10" fill="#FF0000"/><rect y="10" width="30" height="10" fill="#ffffff"/>');
     /* code = synthetic ISO-like id · from/to = real lifespan · succ = modern ISO3 successors to aggregate & hide */
     const STATES=[
       { code:'SUN', from:'1922-12-30', to:'1991-12-26', flag:F_SUN, region:'Eurasia', wiki:'Soviet Union',
@@ -15237,7 +15240,24 @@ window.addEventListener('DOMContentLoaded', () => {
         succ:['SRB','MNE','XKX'] },
       { code:'CSK', from:'1918-10-28', to:'1992-12-31', flag:F_CSK, region:'Europe', wiki:'Czechoslovakia',
         name:{en:'Czechoslovakia',jp:'チェコスロバキア',de:'Tschechoslowakei',ru:'Чехословакия',es:'Checoslovaquia'},
-        succ:['CZE','SVK'] }
+        succ:['CZE','SVK'] },
+      { code:'UAR', from:'1958-02-22', to:'1961-09-28', flag:F_UAR, region:'Middle East', wiki:'United Arab Republic',
+        name:{en:'United Arab Republic',jp:'アラブ連合共和国',de:'Vereinigte Arabische Republik',ru:'Объединённая Арабская Республика',es:'República Árabe Unida'},
+        succ:['EGY','SYR'] },
+      /* pre-secession configurations — WB tracks each successor separately back to 1960 (complementary split),
+         so summing is clean (e.g. Pakistan 60 M + Bangladesh 69 M = 129 M in 1970). */
+      { code:'PKU', from:'1947-08-14', to:'1971-12-16', flag:F_PAK, region:'South Asia', wiki:'East Pakistan',
+        name:{en:'Pakistan (incl. East Pakistan)',jp:'パキスタン（東パキスタン含む）',de:'Pakistan (mit Ostpakistan)',ru:'Пакистан (с Восточным Пакистаном)',es:'Pakistán (con Pakistán Oriental)'},
+        succ:['PAK','BGD'] },
+      { code:'SDU', from:'1956-01-01', to:'2011-07-09', flag:F_SDN, region:'Africa', wiki:'Sudan',
+        name:{en:'Sudan (incl. South Sudan)',jp:'スーダン（南スーダン含む）',de:'Sudan (mit Südsudan)',ru:'Судан (с Южным Суданом)',es:'Sudán (con Sudán del Sur)'},
+        succ:['SDN','SSD'] },
+      { code:'ETU', from:'1952-09-15', to:'1993-05-24', flag:F_ETH, region:'Africa', wiki:'Ethiopia',
+        name:{en:'Ethiopia (incl. Eritrea)',jp:'エチオピア（エリトリア含む）',de:'Äthiopien (mit Eritrea)',ru:'Эфиопия (с Эритреей)',es:'Etiopía (con Eritrea)'},
+        succ:['ETH','ERI'] },
+      { code:'IDU', from:'1976-07-17', to:'2002-05-20', flag:F_IDN, region:'Southeast Asia', wiki:'Indonesian occupation of East Timor',
+        name:{en:'Indonesia (incl. East Timor)',jp:'インドネシア（東ティモール含む）',de:'Indonesien (mit Osttimor)',ru:'Индонезия (с Восточным Тимором)',es:'Indonesia (con Timor Oriental)'},
+        succ:['IDN','TLS'] }
     ];
     const CODES=STATES.map(S=>S.code);
     function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
@@ -18023,6 +18043,28 @@ window.addEventListener('DOMContentLoaded', () => {
     function imfLatest(vals,scale){ const nowY=new Date().getFullYear(); const out={};
       for(const cd in vals){ const o=vals[cd]; let best=null; for(const y in o){ const yy=+y,vv=+o[y]; if(isFinite(yy)&&isFinite(vv)&&yy<=nowY&&(!best||yy>best.y)) best={y:yy,v:vv*(scale||1)}; } if(best) out[cd]=best; }
       return out; }
+    /* (#R94d) FORMER STATES are comparable: their value = the aggregate of the successor ISO3 codes (which are
+       in the very same country/all fetch) — totals summed, rates population-weighted, GDP via the sourced
+       estimate. So the Soviet Union etc. appear in the bar ranking, the time-series and the table. */
+    const _HSUM={gdp:1,pop:1};   /* WB-path totals to SUM; every other WB indicator = population-weighted mean */
+    function _histEntry(cd){ try{ const H=window.IntMapHistStates; if(!H) return null; return (H.STATES||[]).find(S=>S.code===cd)||null; }catch(_){ return null; } }
+    function _histCodes(){ try{ return codes.filter(cd=>!!_histEntry(cd)); }catch(_){ return []; } }
+    function _histMini(cd){ const S=_histEntry(cd); return S?{code:cd,nameEn:S.name.en,nameJp:S.name.jp,flag:S.flag,_hist:true}:null; }
+    const _cs=(cd)=>countryStats[cd]||_histMini(cd)||{};   /* resolve name/flag even when a former state isn't currently applied */
+    async function _histAddLatest(m, ind, year){
+      const hcs=_histCodes(); if(!hcs.length) return;
+      const needW=!_HSUM[ind.k]; let popMap=null;
+      for(const cd of hcs){ const S=_histEntry(cd); if(!S){ continue; }
+        const fy=+String(S.from).slice(0,4), ty=+String(S.to).slice(0,4);
+        if(year==null||year<fy||year>ty){ m[cd]=null; continue; }   /* outside its lifespan → no value */
+        if(ind.k==='gdp'&&S.gdpEst&&year>=(S.gdpEstFrom||0)){ m[cd]={v:S.gdpEst*1e9,y:year,hist:true,est:true}; continue; }
+        if(needW&&!popMap){ try{ popMap=await wbYear('SP.POP.TOTL',year)||{}; }catch(_){ popMap={}; } }
+        let sum=0,num=0,den=0,have=0;
+        S.succ.forEach(c=>{ const e=m[c]; if(!e||e.v==null) return; const v=e.v;
+          if(_HSUM[ind.k]){ sum+=v; have++; } else { const p=popMap[c]&&popMap[c].v; if(p){ num+=v*p; den+=p; have++; } } });
+        m[cd]= have ? {v:(_HSUM[ind.k]?sum:(den?num/den:null)), y:year, hist:true} : null;
+      }
+    }
     async function latestData(ind){
       const ttY=_ttYear();
       if(ind.stat){ const m={}; codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) m[cd]={v:+v,y:(typeof ind.yr==='number')?ind.yr:0}; });
@@ -18032,18 +18074,21 @@ window.addEventListener('DOMContentLoaded', () => {
         let m2={}, src2='World Bank';
         if(wantImf2){ const vals=await _imfRaw(ind.imf); if(vals){ m2=Object.assign({},imfAt(vals,ind.imfScale,ttY)); if(Object.keys(m2).length) src2='IMF WEO'; } }
         if(!Object.keys(m2).length){ m2=Object.assign({},await wbYear(ind.wb,ttY)); src2='World Bank'; }
+        await _histAddLatest(m2, ind, ttY);
         return {ind,map:m2,srcName:src2,mixed:false,ttY:ttY}; }
       const wantImf=(ind.imf&&srcSel[ind.k]==='imf');
       let m={}, srcName='World Bank';
       if(wantImf){ const vals=await _imfRaw(ind.imf); if(vals){ m=Object.assign({},imfLatest(vals,ind.imfScale)); srcName='IMF WEO'; } }
       if(!Object.keys(m).length){ m=Object.assign({},await wbLatest(ind.wb)); srcName='World Bank'; }
       let mixed=false;
-      for(const cd of codes){ if(m[cd]) continue;
+      for(const cd of codes){ if(m[cd]||_histEntry(cd)) continue;
         if(ind.imf&&srcName!=='IMF WEO'){ const vals=await _imfRaw(ind.imf); if(vals){ const im=imfLatest(vals,ind.imfScale); if(im[cd]){ m[cd]=Object.assign({src:'IMF'},im[cd]); mixed=true; continue; } } }
         if(ind.imf&&srcName==='IMF WEO'){ const wl=await wbLatest(ind.wb); if(wl[cd]){ m[cd]=Object.assign({src:'WB'},wl[cd]); mixed=true; continue; } }
         const rf=REFV[ind.k]; if(rf){ try{ const v=rf(countryStats[cd]||{}); if(v!=null&&isFinite(+v)){ m[cd]={v:+v,y:0,src:'ref'}; mixed=true; } }catch(_){} } }
+      await _histAddLatest(m, ind, _ttYear());   /* also when a former state lingers in the selection after leaving its era → resolves to — */
       return {ind,map:m,srcName,mixed}; }
-    function cList(){ try{ return Object.keys(countryStats).filter(cd=>!(countryStats[cd]&&countryStats[cd]._hist)).map(cd=>({code:cd,name:cName(countryStats[cd])})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }   /* (#R94b) former-state synthetic codes have no WB series → keep them out of the picker */
+    /* (#R94d) the picker lists whatever's in countryStats — former states are injected there only while the clock is inside their lifespan, so they appear exactly when they can be compared. */
+    function cList(){ try{ return Object.keys(countryStats).map(cd=>({code:cd,name:cName(_cs(cd))})).sort((a,b)=>a.name.localeCompare(b.name)); }catch(_){ return []; } }
     function ensureView(){ if(host&&document.body.contains(host)) return host;
       if(!ensureView._css){ ensureView._css=1; const st=document.createElement('style');
       st.textContent='#scp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);border:1.5px solid transparent;}'
@@ -18172,7 +18217,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(codes.length>=10){ _setPick(false); try{ imToast(LL('Maximum 10 countries','最大10か国です','Maximal 10 Länder','Максимум 10 стран','Máximo 10 países')); }catch(_){} return; }
       const cd=_pickResolve(e.lngLat);
       if(!cd){ try{ imToast(LL('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
-      const nm=cName(countryStats[cd])||cd;
+      const nm=cName(_cs(cd))||cd;
       if(codes.indexOf(cd)>=0){ try{ imToast(LL('Already added','追加済み','Bereits hinzugefügt','Уже добавлено','Ya añadido')+': '+nm); }catch(_){} return; }
       codes.push(cd); try{ render(); }catch(_){} try{ imToast('✓ '+nm); }catch(_){} }
     function _setPick(on){ _picking=!!on; window.__scpPick=_picking;
@@ -18184,7 +18229,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(_picking){ try{ imToast(LL('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} } }
     function _endPick(){ try{ _setPick(false); }catch(_){} }
     function chipRow(){ const w=host&&host.querySelector('#scp-chips'); if(!w) return; w.innerHTML='';
-      codes.forEach((cd,i)=>{ const s2=countryStats[cd]||{}; const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
+      codes.forEach((cd,i)=>{ const s2=_cs(cd); const el=document.createElement('span'); el.className='scp-chip'; el.style.borderColor=PAL[i];
         el.innerHTML='<span class="scp-dot" style="background:'+PAL[i]+';"></span>'+esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd))+'<span class="scp-x" title="remove">✕</span>';
         el.querySelector('.scp-x').onclick=()=>{ codes=codes.filter(x=>x!==cd); render(); }; w.appendChild(el); });
       try{ paintOnMap(); }catch(_){} }   /* (#R83) keep the map fill in sync with the current selection */
@@ -18252,6 +18297,26 @@ window.addEventListener('DOMContentLoaded', () => {
         else { tip.style.top=(r.top-wr.top+14)+'px'; tip.style.transform='translate(-50%,-104%)'; } };
       const leave=()=>{ cur.style.display='none'; tip.style.display='none'; };
       svg.addEventListener('pointermove',move); svg.addEventListener('pointerdown',move); svg.addEventListener('pointerleave',leave); }); }
+    /* (#R94d) build a former state's TIME-SERIES from the successor ISO3 series, over its lifespan only */
+    async function _histAddSeries(serMap, ind){
+      const hcs=_histCodes(); if(!hcs.length) return;
+      const needW=!_HSUM[ind.k];
+      for(const cd of hcs){ const S=_histEntry(cd); if(!S) continue;
+        const fy=Math.max(1960,+String(S.from).slice(0,4)), ty=Math.min(new Date().getFullYear(),+String(S.to).slice(0,4));
+        const rs=await Promise.all(S.succ.map(c=>fetchWB(c,ind.wb))); const byC={}; S.succ.forEach((c,i)=>{ if(rs[i]) byC[c]=rs[i]; });
+        let popByC=null;
+        if(needW){ const rp=await Promise.all(S.succ.map(c=>fetchWB(c,'SP.POP.TOTL'))); popByC={}; S.succ.forEach((c,i)=>{ if(rp[i]) popByC[c]=rp[i]; }); }
+        const out=[];
+        for(let y=fy;y<=ty;y++){
+          if(ind.k==='gdp'&&S.gdpEst&&y>=(S.gdpEstFrom||0)){ out.push({y,v:S.gdpEst*1e9}); continue; }
+          let sum=0,num=0,den=0,have=0;
+          S.succ.forEach(c=>{ const ser=byC[c]; if(!ser) return; const pt=ser.find(p=>p.y===y); if(!pt||pt.v==null) return;
+            if(_HSUM[ind.k]){ sum+=pt.v; have++; } else { const ps=popByC&&popByC[c]; const pp=ps&&ps.find(p=>p.y===y); if(pp&&pp.v){ num+=pt.v*pp.v; den+=pp.v; have++; } } });
+          if(have) out.push({y,v:_HSUM[ind.k]?sum:(den?num/den:null)});
+        }
+        if(out.length) serMap[cd]=out;
+      }
+    }
     async function blockData(ind){
       /* (#R70) bundled reference indicators — instant, no fetch, single latest point */
       if(ind.stat){ const y=(typeof ind.yr==='number')?ind.yr:new Date().getFullYear(); const sm={};   /* y=0 → year unknown/not meaningful, display suppressed */
@@ -18262,6 +18327,7 @@ window.addEventListener('DOMContentLoaded', () => {
       let serMap={}, srcName='World Bank', imfFail=false;
       if(wantImf){ const im=await fetchIMF(ind.imf,codes,ind.imfScale); if(im){ serMap=im; srcName='IMF WEO'; } else imfFail=true; }
       if(!Object.keys(serMap).length){ const rs=await Promise.all(codes.map(cd=>fetchWB(cd,ind.wb))); codes.forEach((cd,i)=>{ if(rs[i]) serMap[cd]=rs[i]; }); srcName='World Bank'; }
+      await _histAddSeries(serMap, ind);
       return {ind,serMap,srcName,imfFail}; }
     /* shared block header: label · WB⇄IMF switch · source · 詳細 (focus) button */
     function secHtml(ind,srcName,extra){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
@@ -18299,7 +18365,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function barBlockHtml(b){ return secHtml(b.ind,b.srcName)+barsHtml(b); }
     function blockHtml(b){
       let html=secHtml(b.ind,b.srcName,(b.imfFail?('<span class="scp-src">('+LL('IMF unavailable — World Bank used','IMF取得不可のため世界銀行','IWF nicht verfügbar — Weltbank','МВФ недоступен — Всемирный банк','FMI no disponible — Banco Mundial')+')</span>'):''));
-      html+='<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>'+codes.map((cd,i)=>{ const s2=countryStats[cd]||{}; return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
+      html+='<div class="scp-tblwrap"><table class="scp-tbl"><tr><th></th>'+codes.map((cd,i)=>{ const s2=_cs(cd); return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
       html+='<tr><td>'+LL('Latest','最新値','Aktuell','Последнее','Último')+'</td>'+codes.map(cd=>{ const s2=b.serMap[cd]; if(!s2||!s2.length) return '<td style="color:var(--text-muted);">—</td>'; const last=s2[s2.length-1]; return '<td>'+fmtSigned(b.ind,last.v)+(last.y?' <span style="color:var(--text-muted);">('+last.y+')</span>':'')+'</td>'; }).join('')+'</tr></table></div>';
       html+=mChart(b.ind,b.serMap); return html; }
     /* (#R64) PER-INDICATOR rendering: a source switch re-renders ONLY its own block, from cache when available —
@@ -18336,7 +18402,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const years=[...yset].sort((a,b2)=>b2-a).slice(0,24);
       let yt='';
       if(years.length){ yt='<div class="scp-tblwrap" style="max-height:300px;overflow-y:auto;"><table class="scp-tbl scp-xl"><tr><th>'+LL('Year','年','Jahr','Год','Año')+'</th>'
-          +codes.map((cd,i)=>{ const s2=countryStats[cd]||{}; return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
+          +codes.map((cd,i)=>{ const s2=_cs(cd); return '<th><span style="color:'+PAL[i]+';">●</span> '+esc(cName(s2)||cd)+'</th>'; }).join('')+'</tr>';
         years.forEach(y2=>{ yt+='<tr><th class="scp-rowh" style="cursor:default;">'+y2+'</th>'+codes.map(cd=>{ const p=(sb2.serMap[cd]||[]).find(q=>q.y===y2); return p?('<td>'+fmtSigned(ind,p.v)+'</td>'):'<td style="color:var(--text-muted);">—</td>'; }).join('')+'</tr>'; });
         yt+='</table></div>'; }
       fx.innerHTML='<button class="scp-back" id="scp-fxback">← '+LL('All indicators','指標一覧へ','Alle Kennzahlen','Все показатели','Todos los indicadores')+'</button>'
@@ -18402,7 +18468,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(tSort&&cols.indexOf(tSort.col)>=0){ const colKey=tSort.col;
         const cellV=(rk)=>{ const indK=tFlip?rk:colKey, cd=tFlip?colKey:rk; const p=cellAt(indK,cd); return p?p.v:null; };
         rowOrder.sort((a,b2)=>{ const va=cellV(a),vb=cellV(b2); if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1; return tSort.dir==='asc'?va-vb:vb-va; }); }
-      const cLbl=cd=>{ const s2=countryStats[cd]||{}; return esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd)); };
+      const cLbl=cd=>{ const s2=_cs(cd); return esc((s2.flag?s2.flag+' ':'')+(cName(s2)||cd)); };
       const iLbl=k2=>{ const i2=IND.find(x=>x.k===k2); return i2?esc(LL(i2.l[0],i2.l[1],i2.l[2],i2.l[3],i2.l[4])):esc(k2); };
       const hLbl=(key,isCol)=>((tFlip?isCol:!isCol)?cLbl(key):iLbl(key));
       const yrs=[]; for(let y2=new Date().getFullYear();y2>=1960;y2--) yrs.push(y2);
