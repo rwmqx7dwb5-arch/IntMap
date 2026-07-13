@@ -15005,7 +15005,8 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'RESOLVE / WWF Ecoregions 2017',u:'https://ecoregions.appspot.com/',use:{en:'Terrestrial ecoregions',jp:'生態地域（エコリージョン）'}},
     {n:'Smithsonian GVP',u:'https://volcano.si.edu/',use:{en:'Holocene volcanoes',jp:'火山（完新世）'}},
     {n:'DeepStateMap',u:'https://deepstatemap.live/',use:{en:'Ukraine frontline (beta layer)',jp:'ウクライナ前線（ベータ）'}},
-    {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders (beta layer)',jp:'過去の国境（ベータ）'}},
+    {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders — both the beta overlay layer AND the map’s own borders + country names when the time machine travels to a past year (nearest snapshot)',jp:'過去の国境 — ベータのオーバーレイに加え、タイムマシンで過去へ移動した際の地図本体の国境線・国名（最寄りのスナップショット）'}},
+    {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/',use:{en:'Authoritative HISTORICAL real GDP (constant 2011 international $) & population back to 1900 for the Time-machine — the Countries tab, choropleths & country comparison when travelling before the World Bank’s 1960 floor and for dissolved states (Former USSR/Yugoslavia/Czechoslovakia are first-class Maddison entities)',jp:'歴史的な実質GDP（2011年国際ドル）・人口（1900年以降）の権威あるデータ。タイムマシンで世界銀行の下限（1960年）より前へ移動した場合や旧国家（ソ連・ユーゴ・チェコスロバキア等はマディソンの独立項目）の国タブ・コロプレス・国比較に使用'}},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators (time-series charts, the 5-country comparison, and the Time-machine — the whole Countries tab, the hover read-outs and the country choropleths show the real figures for the year the master clock is set to)',jp:'国別の時系列指標（時系列グラフ・最大5か国比較、そしてタイムマシン——マスター時計で選んだ年の実データを国タブ・ホバー・コロプレスに反映）'}},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO',use:{en:'Govt-debt layer gap-fill + the alternative economic source in the country comparison (DataMapper API)',jp:'政府債務レイヤーの欠損補完＋国比較の経済指標の切替ソース（DataMapper API）'}},
     {n:'AI provider (Anthropic / OpenAI / Google)',u:'https://www.anthropic.com/',use:{en:'Server-side AI: news geolocation + in-app AI features (key held server-side)',jp:'サーバー側AI：ニュース地点解析・アプリ内AI機能（キーはサーバー側で管理）'}}
@@ -27057,6 +27058,49 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     window.addEventListener('intmap-lang',()=>{ LIST.forEach(L=>{ const s=document.getElementById('gx-'+L.id+'-lbl'); if(s) s.textContent=gxLbl(L); }); });
     if(document.readyState!=='loading') setTimeout(buildUI,800); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,800));
+  })();
+
+  /* ===== (#R94f) MAP BORDERS FOLLOW THE CLOCK — travel to a past year and the map's OWN borders (and the
+     country names) become that era's, drawn crisp exactly like the modern ones — NOT the optional "Historical
+     borders" overlay. Historical polygons come from aourednik/historical-basemaps (the nearest snapshot at or
+     before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
+     modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
+  window.IntMapTimeBorders=(function(){
+    if(typeof map==='undefined'||!map||!window.IntMapTime) return {};
+    const YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
+    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    const cache=new Map(); let active=false, shownY=null, seq=0, ofmWas=null;
+    const nearest=y=>{ let b=YEARS[0]; for(const yy of YEARS){ if(yy<=y) b=yy; } return b; };
+    async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
+      if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ cache.set(year,c); return c; } }catch(_){} }
+      for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
+        const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson'),ctrl?{signal:ctrl.signal}:undefined); if(to) clearTimeout(to);
+        if(!r.ok) continue; const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
+        cache.set(year,j); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,j); }catch(_){} return j;
+      }catch(_){} } return null; }
+    function ensure(){ try{ if(!map.isStyleLoaded()) return false;
+      if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
+      const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(150,150,150,0.9)','line-opacity':0.92,'line-width':['interpolate',['linear'],['zoom'],1,0.55,4,1,8,1.7,12,2.4]}}, before);
+      if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
+      return true; }catch(_){ return false; } }
+    function setVis(v){ ['imtb-line','imtb-lbl'].forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }); }
+    function modern(show){ try{
+      if(map.getLayer('borders-only-line')) map.setLayoutProperty('borders-only-line','visibility',(show&&(typeof bordersOn==='undefined'||bordersOn))?'visible':'none');
+      if(map.getLayer('ofm-country')){ if(!show){ if(ofmWas===null) ofmWas=map.getLayoutProperty('ofm-country','visibility')||'visible'; map.setLayoutProperty('ofm-country','visibility','none'); }
+        else { map.setLayoutProperty('ofm-country','visibility',ofmWas||'visible'); ofmWas=null; } }
+    }catch(_){} }
+    function apply(fc){ if(!ensure()){ map.once('idle',()=>{ if(active) apply(fc); }); return; } try{ map.getSource('imtb-src').setData(fc); }catch(_){} setVis(true); modern(false); }
+    function clear(){ active=false; shownY=null; setVis(false); modern(true); }
+    async function go(year){ active=true; const ny=nearest(year); const my=++seq;
+      if(shownY===ny){ setVis(true); modern(false); return; }
+      const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; apply(fc); } }
+    window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
+      if(e.isLive || e.year>=new Date().getFullYear()){ clear(); return; }
+      go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },320); });
+    /* re-assert after a base-style swap (globe/flat/satellite reload wipes runtime layers + resets visibility) */
+    map.on('styledata',()=>{ if(active&&shownY!=null) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()){ ensure(); const fc=cache.get(shownY); if(fc){ map.getSource('imtb-src').setData(fc); setVis(true); modern(false); } } }catch(_){} },140); });
+    return { _go:go, _clear:clear, current:()=>shownY, _nearest:nearest };
   })();
 
   /* ===== Init ===== */
