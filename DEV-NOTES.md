@@ -5,6 +5,13 @@
 
 ---
 
+## R94r — Flight camera: kill the "上下方向がありえない動き" (pitch orbiting the world) (tag `#R94r`)
+
+Re-report: after R94q the view when pitching up/down was still clearly wrong — an "impossible movement."
+
+- **Root cause:** MapLibre pivots its camera around the `center` GROUND point, so changing the camera PITCH swings it in an arc AROUND that point. R94q coupled camPitch strongly to the aircraft pitch (`base + pitchDeg·0.45/0.7`), kept a FAR look-ahead centre (up to 9 km) and let it slam the 85° hard clamp — so pulling/pushing ORBITED the whole world around a point kilometres ahead. That is the "ありえない動き."
+- **Fix:** (a) small look-ahead — follow ≤ 1.8 km, cockpit ≤ 0.35 km — so the orbit radius is small; (b) camPitch only GENTLY follows the aircraft pitch (coeff 0.32), is LOW-PASS smoothed into a new `camPitchS` (4·dt) and clamped to a comfortable **48–80°** band kept well inside MapLibre's 85° limit, so it never saturates or lurches; (c) zoom is gentler (ref 80 m, ×0.45) and more smoothed (1.8·dt). Direction stays correct — nose-up tilts the view up. `camPitchS` resets on start + on the C mode-switch. Verified deterministically over an aggressive pull-up→level: camPitch stays **66–80°** (no saturation), max **1.0°/frame** change (smooth), correct direction. 0 console errors. (The deeper cure — a camera fixed to the true eye-point — still needs a free-camera API MapLibre lacks on this build, i.e. a dedicated 3-D renderer; noted as a future phase.)
+
 ## R94q — Flight sim: true fixed-timestep 6-DOF engine (quaternion) + the 5 diagnosed bugs fixed (tag `#R94q`)
 
 Re-report: a precise 5-point diagnosis — (1) camera pitch inverted vs. the nose; (2) camera roll clamped at 78°; (3) attitude clamped at ±180° so no continuous roll; (4) the "cockpit" centre is a look-ahead ground point, not the aircraft; (5) terrain read before the DEM loads (0 m → phantom mountains/crashes) — plus a call to rebuild the flight part as an independent simulator engine (6-DOF, fixed-timestep, physics/render separation), perfecting the Cessna first.
