@@ -5,6 +5,14 @@
 
 ---
 
+## R92 — Unified disaster simulator (災害シミュレーター) (tag `#R92`)
+
+"洪水、津波、火山灰、煙、放射性物質…発生地点と条件から時間ごとの影響範囲を表示。既存の個別シミュレーションを一つの共通基盤にまとめる。"
+
+- **`window.IntMapDisaster`** — one panel + one time slider for five hazards: **flood** & **tsunami** = connected **DEM flood-fill** (bathtub inundation) from the real elevation model (via `IntMapTerrain`); **ashfall** & **smoke** = wind-advected downwind plume (widening banded cone) on **live Open-Meteo wind**; **radioactive** = delegates to the existing Lagrangian `IntMapRadiation`. Hazard buttons + per-hazard params (water-rise m / wave height m) + place-source-on-map + a 1–12 h time slider that steps the impact area; area-km²/max-depth readout. Atlas actions (`disaster`/`flood`/`tsunami`/`ashfall`/`hazard`/…). Keyless. Educational-approximation disclaimer shown.
+- **Two bugs caught & fixed in verification:** (1) terrarium DEM includes **ocean bathymetry** (negative elevations) → the flood-fill flooded the sea itself (tsunami "591 m deep"). Fixed: traverse the sea for connectivity but count/render only land ≥ −1 m. (2) A source dropped on high ground filled everything below it (Fuji-summit flood "3,567 m"). Fixed: newly-inundated land is capped at the water **rise** (deeper cells were already below the water body).
+- **Verified (real DEM, headless-safe):** coastal flood 3 m→15 km²/1.8 m, 8 m→245 km²/6.8 m, 15 m→389 km²/13.8 m (area grows, depth tracks level); tsunami 10 m→187 km²/8.3 m; flood-on-Fuji-summit → capped 5 m puddle (was 3,567 m). Boots clean, no console errors.
+
 ## R91 — Transit isochrone: reachable by rail (鉄道で1時間以内) (tag `#R91`)
 
 Completes the isochrone feature ("車で30分／徒歩15分／鉄道で1時間以内") — the drive/walk/cycle side was Valhalla (#R86); this adds the rail side.

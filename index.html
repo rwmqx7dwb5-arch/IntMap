@@ -23683,6 +23683,12 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'sun': case 'shadow': case 'shadows': case 'sunlight': case 'sunPosition': case 'daylight': case 'insolation': {
           try{ if(window.IntMapSun){ if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g){ try{ map.flyTo({center:[g.lng,g.lat],zoom:Math.max(map.getZoom(),15)}); }catch(_){} } } window.IntMapSun.open(); if(a.date||a.time||a.datetime){ const d=new Date(a.datetime||((a.date||'')+(a.time?('T'+a.time):''))); if(!isNaN(d)) window.IntMapSun.setTime(d); } } }catch(_){}
           return R(true, note('🌇 '+L('Sun & shadow','日照・影','Sonne & Schatten','Солнце и тень','Sol y sombra')+' — '+L('pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.','日時を選択。表示中の建物（拡大時）が実際の影を落とし、3Dは太陽方向から照らされます。▶で一日を再生。','Datum/Zeit wählen — echte Gebäudeschatten.','выберите дату/время — реальные тени зданий.','elige fecha/hora — sombras reales.'))); }
+        /* (#R92) unified disaster simulator */
+        case 'disaster': case 'disasterSim': case 'hazard': case 'flood': case 'tsunami': case 'ashfall': case 'floodSim': case 'inundation': {
+          const hz=(a.type==='flood'||a.type==='floodSim'||a.type==='inundation')?'flood':(a.type==='tsunami')?'tsunami':(a.type==='ashfall')?'ash':(/tsunami|津波/i.test(String(a.hazard||''))?'tsunami':/ash|火山灰|volcan/i.test(String(a.hazard||''))?'ash':/smoke|煙|wildfire|山火事/i.test(String(a.hazard||''))?'smoke':/radiat|fallout|放射/i.test(String(a.hazard||''))?'radiation':/flood|洪水|浸水/i.test(String(a.hazard||''))?'flood':'flood');
+          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat,name:g.name}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
+          try{ if(window.IntMapDisaster){ window.IntMapDisaster.setHazard(hz); window.IntMapDisaster.open(ll); } }catch(_){}
+          return R(true, note('🌐 '+L('Disaster simulator','災害シミュレーター','Katastrophen-Simulator','Симулятор ЧС','Simulador de desastres')+' — '+({flood:'🌊 '+L('flood inundation','洪水浸水','Hochwasser','наводнение','inundación'),tsunami:'🌊 '+L('tsunami inundation','津波浸水','Tsunami','цунами','tsunami'),ash:'🌋 '+L('ashfall plume','火山灰プルーム','Aschefall','пепел','ceniza'),smoke:'💨 '+L('smoke plume','煙プルーム','Rauch','дым','humo'),radiation:'☢ '+L('radioactive fallout','放射性降下物','Fallout','радиация','lluvia radiactiva')}[hz])+'. '+L('Pick the hazard & source in the panel; the time slider steps the impact area. Educational approximation — follow official authorities in a real emergency.','パネルで災害種別と発生地点を選択、時間スライダーで影響範囲が変化します。教育目的の近似——実災害時は公的機関に従ってください。','Bildungsnäherung.','Образовательная модель.','Aproximación educativa.'))); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
@@ -26106,6 +26112,102 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(window.satToast) satToast(currentLang==='jp'?'鉄道到達圏を計算中…':'Computing rail reach…'); }catch(_){}
       const r=await run(from,minutes); if(r&&r.ok){ draw(r); } return r; }
     return { run, open, draw, clear:()=>{ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} } }; })();
+
+  /* ===== (#R92) UNIFIED DISASTER SIMULATOR ("災害シミュレーター") — one framework, one panel, one time slider for
+     FLOOD & TSUNAMI (connected DEM flood-fill / inundation from real elevation), ASHFALL & SMOKE (wind-advected
+     downwind plume on live Open-Meteo wind), and RADIOACTIVE fallout (delegates to the existing Lagrangian
+     IntMapRadiation). Pick a hazard + origin + conditions; the slider steps the impact area through time. Keyless.
+     EDUCATIONAL approximation — in a real emergency follow official authorities. ===== */
+  window.IntMapDisaster=(function(){
+    if(typeof map==='undefined'||!map) return { open(){}, run(){}, clear(){} };
+    const SRC='imdis-src'; let panel=null, origin=null, hazard='flood', busy=false, tstep=3, picking=false, pickH=null;
+    const DZ=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[currentLang]||en;
+    const _hav=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'imdis-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#1e6fd0'],'fill-opacity':['coalesce',['get','op'],0.45]}});
+      map.addLayer({id:'imdis-line',type:'line',source:SRC,filter:['all',['==','$type','Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
+      map.addLayer({id:'imdis-pt',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
+      return true; }catch(_){ return false; } }
+    /* connected inundation (bathtub flood-fill) over the real DEM: flood cells reachable from the origin whose
+       ground is below the water surface. tsunami = same engine, water height attenuated inland + a propagation
+       front that advances with the time step; flood = uniform level that rises with the time step. */
+    async function inund(){ const isT=hazard==='tsunami'; const bufKm=isT?26:14, buf=bufKm/111;
+      const z=Math.max(6,Math.min(12,Math.round(13-Math.log2(bufKm)))); const bbox=[origin.lng-buf/Math.cos(origin.lat*Math.PI/180),origin.lat-buf,origin.lng+buf/Math.cos(origin.lat*Math.PI/180),origin.lat+buf];
+      const samp=await window.IntMapTerrain.sampler(bbox,z); if(!samp) return null;
+      const N=100, w0=bbox[0], s0=bbox[1], dLng=(bbox[2]-bbox[0])/N, dLat=(bbox[3]-bbox[1])/N;
+      const E=new Float32Array(N*N); for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const e=samp.elevAt(w0+(i+0.5)*dLng,s0+(j+0.5)*dLat); E[j*N+i]=(e==null?9999:e); }
+      const g0=samp.elevAt(origin.lng,origin.lat); if(g0==null) return null;
+      const level = isT ? (waveH) : (g0 + floodM*(tstep/6));        /* flood level rises over the step; tsunami uses wave height */
+      const frontKm = isT ? Math.min(bufKm, 0.72*Math.sqrt(9.81*Math.max(waveH,5))*3.6*tstep) : 1e9;   /* shallow-water wave speed × time */
+      const ci=Math.min(N-1,Math.max(0,Math.round((origin.lng-w0)/dLng-0.5))), cj=Math.min(N-1,Math.max(0,Math.round((origin.lat-s0)/dLat-0.5)));
+      const fl=new Uint8Array(N*N), dep=new Float32Array(N*N); const q=[cj*N+ci]; fl[cj*N+ci]=1; let head=0;
+      const lvlAt=(i,j)=>{ if(!isT) return level; const dk=_hav([origin.lng,origin.lat],[w0+(i+0.5)*dLng,s0+(j+0.5)*dLat]); if(dk>frontKm) return -1; return g0+Math.max(0,waveH-dk*0.35); };  /* wave attenuates ~0.35 m/km inland */
+      const SEA=-1;   /* elevations below this are existing ocean (terrarium bathymetry) — traversed for connectivity but never counted as "inundated land" */
+      dep[cj*N+ci]=Math.max(0,lvlAt(ci,cj)-E[cj*N+ci]);
+      while(head<q.length){ const cell=q[head++]; const i=cell%N, j=(cell/N)|0;
+        [[1,0],[-1,0],[0,1],[0,-1]].forEach(d=>{ const ni=i+d[0], nj=j+d[1]; if(ni<0||nj<0||ni>=N||nj>=N) return; const nc=nj*N+ni; if(fl[nc]) return; const lv=lvlAt(ni,nj); if(lv<0) return; const e=E[nc]; if(e<lv&&e<9000){ fl[nc]=1; dep[nc]=Math.max(0,lv-e); q.push(nc); } }); }
+      const cap=(isT?waveH:floodM*(tstep/6))+0.5;   /* newly-inundated LAND can only be as deep as the water rise; deeper cells were already below the water body (guards a source dropped on high ground) */
+      const feats=[]; let cells=0, maxDep=0; for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const c=j*N+i; if(!fl[c]||dep[c]<=0.05||dep[c]>cap||E[c]<SEA) continue; cells++; if(dep[c]>maxDep)maxDep=dep[c];
+        const dd=dep[c], col=dd<1?'#7ec8ff':dd<3?'#3a9bef':dd<6?'#1e6fd0':dd<12?'#12459e':'#0b2f6e';
+        feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w0+i*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+j*dLat]]]},properties:{col:col,op:0.5}}); }
+      const cellKm2=(dLng*111.32*Math.cos(origin.lat*Math.PI/180))*(dLat*110.54);
+      return { feats, areaKm2:Math.round(cells*cellKm2), maxDep:+maxDep.toFixed(1), level:+((isT?waveH:floodM*(tstep/6))).toFixed(1) }; }
+    /* wind-advected downwind plume (ashfall / smoke): a widening cone from the source along the wind, banded by
+       concentration; reach grows with the time step. Uses live Open-Meteo surface wind at the source. */
+    let _wind=null, _windKey='';
+    async function getWind(){ const key=origin.lng.toFixed(2)+','+origin.lat.toFixed(2); if(key===_windKey&&_wind) return _wind; _windKey=key;
+      try{ const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+origin.lat.toFixed(3)+'&longitude='+origin.lng.toFixed(3)+'&current=wind_speed_10m,wind_direction_10m'); const j=await r.json(); const c=j.current||{}; _wind={spd:+c.wind_speed_10m||12,dir:+c.wind_direction_10m||270}; }catch(_){ _wind={spd:12,dir:270}; }
+      return _wind; }
+    function dest(lng,lat,brgDeg,dkm){ const dr=dkm/6371, br=brgDeg*Math.PI/180, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(br)); const lo2=lo+Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
+    async function plume(){ const w=await getWind(); const toward=(w.dir+180)%360;   /* wind blows FROM dir → plume goes toward dir+180 */
+      const isAsh=hazard==='ash'; const reach=Math.min(isAsh?300:120, w.spd*3.6*tstep*(isAsh?1.1:0.9));   /* km downwind over the step */
+      const half=(isAsh?9:14)*Math.PI/180;   /* half-angle of the dispersion cone */
+      const bands=[[1,isAsh?'#6b4b2a':'#555',0.5],[0.6,isAsh?'#a07845':'#888',0.4],[0.32,isAsh?'#cbb089':'#bbb',0.3]]; const feats=[];
+      bands.forEach(bd=>{ const rr=reach*bd[0]; const ring=[[origin.lng,origin.lat]]; const steps=26;
+        for(let k=0;k<=steps;k++){ const t=k/steps; const ang=toward-half*180/Math.PI+(2*half*180/Math.PI)*t; const wobble=0.15+0.85*Math.sin(Math.PI*t); ring.push(dest(origin.lng,origin.lat,ang,rr*(0.6+0.4*wobble))); }
+        ring.push([origin.lng,origin.lat]); feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[ring]},properties:{col:bd[1],op:bd[2]}}); });
+      return { feats, reach:Math.round(reach), windSpd:w.spd, toward }; }
+    async function run(){ if(!origin||busy) return; busy=true; try{ ensure(); setStat(DZ('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
+      if(hazard==='radiation'){ try{ if(window.IntMapConsole&&window.IntMapConsole.dispatch) await window.IntMapConsole.dispatch({type:'radiation',place:(origin.name||(origin.lat.toFixed(3)+','+origin.lng.toFixed(3)))}); }catch(_){} setStat(DZ('Opened the radioactive-fallout model.','放射性物質の拡散モデルを起動しました。','Fallout-Modell geöffnet.','Модель радиации открыта.','Modelo de lluvia radiactiva.')); busy=false; return; }
+      let r=null; if(hazard==='flood'||hazard==='tsunami') r=await inund(); else r=await plume();
+      if(r){ const feats=(r.feats||[]).concat([{type:'Feature',geometry:{type:'Point',coordinates:[origin.lng,origin.lat]},properties:{}}]);
+        try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+        if(hazard==='flood'||hazard==='tsunami') setStat('<b>'+DZ('Inundated area','浸水域','Überflutet','Затоплено','Inundado')+':</b> ~'+r.areaKm2.toLocaleString()+' km² · '+DZ('max depth','最大水深','max. Tiefe','глубина','profundidad')+' '+r.maxDep+' m · '+DZ('water','水位','Wasser','вода','agua')+' +'+r.level+' m');
+        else setStat('<b>'+DZ('Plume reach','到達距離','Reichweite','дальность','alcance')+':</b> ~'+r.reach+' km '+DZ('downwind','風下','abwind','по ветру','a favor')+' · '+DZ('wind','風速','Wind','ветер','viento')+' '+r.windSpd.toFixed(1)+' m/s');
+      } else setStat(DZ('No terrain/wind data here.','この地点のデータがありません。','Keine Daten.','Нет данных.','Sin datos.'));
+    }catch(_){ setStat(DZ('Simulation failed — try again.','計算に失敗しました。','Fehlgeschlagen.','Ошибка.','Falló.')); } busy=false; }
+    function setStat(h){ if(panel){ const s=panel.querySelector('.dz-stat'); if(s) s.innerHTML=h; } }
+    let floodM=5, waveH=8;
+    function _endPick(){ picking=false; try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
+    function startPick(){ _endPick(); picking=true; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ origin={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ map.once('click',pickH); }catch(_){} }
+    const HAZ=()=>[['flood','🌊 '+DZ('Flood','洪水','Hochwasser','Наводнение','Inundación')],['tsunami','🌊 '+DZ('Tsunami','津波','Tsunami','Цунами','Tsunami')],['ash','🌋 '+DZ('Ashfall','火山灰','Aschefall','Пепел','Ceniza')],['smoke','💨 '+DZ('Smoke','煙','Rauch','Дым','Humo')],['radiation','☢ '+DZ('Radioactive','放射性物質','Radioaktiv','Радиация','Radiactivo')]];
+    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='dz-panel';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(330px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      panel.innerHTML='<div class="dz-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">🌐 '+DZ('Disaster simulator','災害シミュレーター','Katastrophen-Simulator','Симулятор ЧС','Simulador de desastres')+'</span><button class="dz-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
+        +'<div class="dz-haz" style="display:flex;flex-wrap:wrap;gap:5px;">'+HAZ().map(h=>'<button class="dz-hz" data-h="'+h[0]+'" style="flex:1 1 auto;padding:5px 7px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;white-space:nowrap;">'+h[1]+'</button>').join('')+'</div>'
+        +'<div class="dz-param"></div>'
+        +'<button class="dz-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '+DZ('Place source on map','発生地点を設置','Quelle setzen','Разместить','Colocar origen')+'</button>'
+        +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;">'+DZ('Time','経過時間','Zeit','Время','Tiempo')+'</span><input type="range" class="dz-t" min="1" max="12" value="3" style="flex:1;"><span class="dz-tv" style="font-size:11px;font-weight:700;color:var(--text-main);min-width:36px;text-align:right;">3 h</span></div>'
+        +'<div class="dz-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
+        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+DZ('Educational approximation only — in a real emergency follow official authorities. Flood/tsunami = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model.','教育目的の近似です。実際の災害時は公的機関の指示に従ってください。洪水・津波＝実標高データからの連結浸水、火山灰・煙＝実風のプルーム、放射性物質＝ラグランジュ拡散モデル。','Nur Bildungsnäherung.','Только образовательная модель.','Solo aproximación educativa.')+'</div></div>';
+      document.body.appendChild(panel);
+      panel.querySelector('.dz-close').onclick=()=>close();
+      panel.querySelector('.dz-pick').onclick=()=>startPick();
+      panel.querySelectorAll('.dz-hz').forEach(b=>b.onclick=()=>{ hazard=b.getAttribute('data-h'); syncHaz(); renderParam(); if(origin) run(); });
+      const tl=panel.querySelector('.dz-t'); tl.oninput=()=>{ tstep=+tl.value; panel.querySelector('.dz-tv').textContent=tstep+' h'; if(origin){ clearTimeout(panel._t); panel._t=setTimeout(run,150); } };
+      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.dz-head')); }catch(_){}
+      syncHaz(); renderParam(); return panel; }
+    function syncHaz(){ if(!panel) return; panel.querySelectorAll('.dz-hz').forEach(b=>{ const on=b.getAttribute('data-h')===hazard; b.style.background=on?'var(--primary-color)':'var(--input-bg)'; b.style.color=on?'#fff':'var(--text-main)'; }); }
+    function renderParam(){ if(!panel) return; const p=panel.querySelector('.dz-param'); if(!p) return; const inC='width:100%;box-sizing:border-box;height:28px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 7px;';
+      if(hazard==='flood'){ p.innerHTML='<label style="font-size:10.5px;color:var(--text-muted);">'+DZ('Peak water rise (m)','最大水位上昇 (m)','Pegelanstieg (m)','Подъём воды (м)','Subida (m)')+'<input type="number" class="dz-fm" min="1" max="60" value="'+floodM+'" style="'+inC+'"></label>'; const el=p.querySelector('.dz-fm'); el.onchange=()=>{ floodM=Math.max(1,+el.value||5); if(origin) run(); }; }
+      else if(hazard==='tsunami'){ p.innerHTML='<label style="font-size:10.5px;color:var(--text-muted);">'+DZ('Wave height at coast (m)','沿岸波高 (m)','Wellenhöhe (m)','Высота волны (м)','Altura de ola (m)')+'<input type="number" class="dz-wh" min="1" max="40" value="'+waveH+'" style="'+inC+'"></label>'; const el=p.querySelector('.dz-wh'); el.onchange=()=>{ waveH=Math.max(1,+el.value||8); if(origin) run(); }; }
+      else if(hazard==='radiation'){ p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Opens the full radioactive-fallout model (source term, isotope, wind).','放出量・核種・風を扱う放射性物質拡散モデルを開きます。','Öffnet das Fallout-Modell.','Открывает модель радиации.','Abre el modelo de lluvia radiactiva.')+'</div>'; }
+      else p.innerHTML='<div style="font-size:11px;color:var(--text-muted);">'+DZ('Plume follows the live wind at the source; the time slider extends it downwind.','プルームは発生地点の実風に沿い、時間スライダーで風下へ伸びます。','Fahne folgt dem Live-Wind.','След по ветру.','La pluma sigue el viento real.')+'</div>'; }
+    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ origin=ll; run(); } }
+    function close(){ if(panel) panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
