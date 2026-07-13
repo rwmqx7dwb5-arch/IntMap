@@ -5193,7 +5193,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null; const YR=(def)=>_ty||def; const yrTag=()=>(_ty?` (${_ty})`:'');
     const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
     const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
-      [(s._gdpEst?('GDP · '+TR('est.','推計','Schätz.','оцен.','est.')):t('statGdp'))+` (${YR(GDP_YEAR)})`,fmtMoney(s.gdp)],
+      [((s._real||window._imTimeReal)?('GDP · '+TR('real 2011 int$','実質2011年国際ドル','real, int$ 2011','реальный, межд.$ 2011','real int$ 2011')):t('statGdp'))+` (${YR(GDP_YEAR)})`,fmtMoney(s.gdp)],
       s.gdpPPP?[t('statGdpPPP'),fmtMoney(s.gdpPPP)]:null,
       [t('statGdpPc')+yrTag(),fmtPc(s.gdppc)],
       s.gdppcPPP?[t('statGdpPcPPP'),fmtPc(s.gdppcPPP)]:null,
@@ -5213,8 +5213,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ]);
     let histNote='';
     if(s._hist){ const yrs=(s._from?s._from.slice(0,4):'')+'–'+(s._to?s._to.slice(0,4):'');
-      const estLine = s._gdpEst ? ('<br>'+TR('GDP is a real-output estimate ('+(s._estSrc||'est.')+'), not the World Bank nominal figure — that under-counts command economies at the official exchange rate.','GDPは実質産出の推計値（'+(s._estSrc||'推計')+'）です。公定為替レートの世界銀行名目値は計画経済を過小評価するため採用していません。','BIP = Schätzung der realen Wirtschaftsleistung ('+(s._estSrc||'Schätzung')+'), nicht der nominale Weltbank-Wert.','ВВП — оценка реального выпуска ('+(s._estSrc||'оценка')+'), а не номинал Всемирного банка.','El PIB es una estimación de producción real ('+(s._estSrc||'est.')+'), no el valor nominal del Banco Mundial.')) : '';
-      histNote=`<div class="cp-histnote">🏛 <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('Figures are the aggregate of successor states’ World Bank data for the selected year','数値は選択年の後継国の世界銀行データを合算したものです','Werte = Summe der Weltbank-Daten der Nachfolgestaaten','Данные — сумма показателей стран-преемников (Всемирный банк)','Cifras = suma de datos del Banco Mundial de los estados sucesores')} (${s._histHave||0}/${s._histN||0}).${estLine} ${TR('Period borders: enable the Historical-borders layer','当時の国境: 「過去の国境」レイヤーをオン','Grenzen: Ebene „Historische Grenzen“','Границы: слой «Исторические границы»','Fronteras: capa «Fronteras históricas»')}.</div>`; }
+      histNote=`<div class="cp-histnote">🏛 <b>${TR('Former state','かつて存在した国家','Ehemaliger Staat','Бывшее государство','Estado desaparecido')}</b> · ${yrs}<br>${TR('GDP & population: Maddison Project (real GDP, 2011 int$). Other indicators: World Bank aggregate of the successor states.','GDP・人口: マディソン・プロジェクト（実質GDP・2011年国際ドル）。その他の指標: 後継国の世界銀行データを合算。','BIP & Bevölkerung: Maddison-Projekt (reales BIP, int$ 2011). Übrige: Weltbank-Summe der Nachfolgestaaten.','ВВП и население: проект Мэддисона (реальный ВВП, межд.$ 2011). Прочее: сумма стран-преемников (Всемирный банк).','PIB y población: Proyecto Maddison (PIB real, int$ 2011). Resto: suma del Banco Mundial de los estados sucesores.')} ${TR('Borders on the map follow the era.','地図の国境も当時のものになります。','Grenzen folgen der Epoche.','Границы на карте — той эпохи.','Las fronteras del mapa siguen la época.')}</div>`; }
     return `<div id="cp-intro" class="cp-intro"></div>`+histNote+geo+econ+soc+pol;
   }
   /* (#R39) Fill the intro with a Wikipedia summary (extract + thumbnail + link) in the active language. */
@@ -9061,8 +9060,8 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R94) Time-machine banner — the master clock has travelled to a past year, so these figures are the
        real World Bank values for THAT year (HDI/Democracy have no WB annual series → kept at latest). */
     try{ const _ty=window._imTimeYear, _pw=window._imTimePreWB;
-      if(_ty){ html+=`<div class="stats-timebanner">📅 <b>${_ty}</b> · ${currentLang==='jp'?'その年の世界銀行統計を表示中（HDI・民主主義指数は最新値）':currentLang==='de'?'Weltbank-Werte dieses Jahres (HDI/Demokratie: aktuell)':currentLang==='ru'?'Данные Всемирного банка за этот год (ИЧР/демократия — последние)':currentLang==='es'?'Cifras del Banco Mundial de ese año (IDH/democracia: actuales)':'World Bank figures for that year (HDI/Democracy: latest)'}</div>`; }
-      else if(_pw){ html+=`<div class="stats-timebanner warn">📅 <b>${_pw}</b> · ${currentLang==='jp'?'世界銀行の年次データは1960年以降。最新の入手可能な値を表示中':currentLang==='de'?'Weltbank-Jahresreihen ab 1960 — neueste verfügbare Werte':currentLang==='ru'?'Годовые ряды Всемирного банка с 1960 г. — показаны последние доступные':currentLang==='es'?'Las series anuales del Banco Mundial empiezan en 1960 — últimos valores disponibles':'World Bank annual series begin in 1960 — showing the latest available figures'}</div>`; }
+      if(_ty){ html+=`<div class="stats-timebanner">📅 <b>${_ty}</b> · ${currentLang==='jp'?'その年の実質GDP・人口（マディソン・2011年国際ドル）＋世界銀行の各指標。旧国家も当時のまま':currentLang==='de'?'Reales BIP/Bevölkerung dieses Jahres (Maddison, int$ 2011) + Weltbank; ehemalige Staaten inklusive':currentLang==='ru'?'Реальный ВВП/население за год (Мэддисон, межд.$ 2011) + Всемирный банк; включая бывшие государства':currentLang==='es'?'PIB real/población de ese año (Maddison, int$ 2011) + Banco Mundial; estados desaparecidos incluidos':'that year’s real GDP & population (Maddison, 2011 int$) + World Bank indicators; former states included'}</div>`; }
+      else if(_pw){ html+=`<div class="stats-timebanner warn">📅 <b>${_pw}</b> · ${currentLang==='jp'?'歴史データは1900年以降（マディソン）。最新の入手可能な値を表示中':currentLang==='de'?'Historische Daten ab 1900 (Maddison) — neueste verfügbare Werte':currentLang==='ru'?'Исторические данные с 1900 г. (Мэддисон) — показаны последние доступные':currentLang==='es'?'Datos históricos desde 1900 (Maddison) — últimos valores disponibles':'historical data begins in 1900 (Maddison) — showing the latest available figures'}</div>`; }
     }catch(_){}
     /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
        build the selection and the dock's view button opens the unified comparison. */
@@ -15119,6 +15118,28 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ window.IntMapTime.on(()=>{ try{ applyGlobalDate(); }catch(_){} }); }catch(_){}
 
   /* ============================================================================
+   *  (#R94e) MADDISON PROJECT — authoritative HISTORICAL GDP & population back to 1900 (real GDP in constant
+   *  2011 international dollars; Bolt & van Zanden 2020). World Bank annual series only start in 1960 and give
+   *  no figure at all for dissolved states, so the deep past & the former states (Former USSR / Yugoslavia /
+   *  Czechoslovakia are first-class Maddison entities) come from here. Bundled as data/maddison.json =
+   *  { ISO3|SUN|YUG|CSK : { year : [gdpPerCapita2011intl, populationThousands] } }, lazy-loaded on first travel.
+   *  ========================================================================== */
+  window.IntMapMaddison=(function(){
+    let data=null, promise=null;
+    function load(){ if(data) return Promise.resolve(data); if(promise) return promise;
+      promise=fetch('data/maddison.json').then(r=>r.ok?r.json():null).then(j=>{ data=j||{}; return data; }).catch(()=>{ data={}; return data; });
+      return promise; }
+    function rec(code,year){ if(!data||!code) return null; const c=data[code]; if(!c) return null; return c[year]||c[String(year)]||null; }
+    return {
+      load, ready:()=>!!data, minYear:1900, maxYear:2018,
+      has:(code,year)=>{ const r=rec(code,year); return !!(r&&(r[0]!=null||r[1]!=null)); },
+      gdppc:(code,year)=>{ const r=rec(code,year); return (r&&r[0]!=null)?r[0]:null; },                 /* real 2011 int$ per capita */
+      popN:(code,year)=>{ const r=rec(code,year); return (r&&r[1]!=null)?r[1]*1000:null; },              /* absolute persons */
+      gdpBil:(code,year)=>{ const r=rec(code,year); return (r&&r[0]!=null&&r[1]!=null)?(r[0]*r[1]/1e6):null; }  /* billions of 2011 int$ */
+    };
+  })();
+
+  /* ============================================================================
    *  (#R94) INTMAP TIME · COUNTRIES — the Countries tab, the country choropleths, the hover read-outs
    *  and the open country card all become YEAR-AWARE. When the master clock travels to a past year the
    *  real World Bank figures for THAT year (GDP, GDP/capita, population, life-expectancy, fertility,
@@ -15146,7 +15167,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let seq=0, deb=null;
     function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
     function restore(){ try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries first */
-      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; }
+      if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
        A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
@@ -15161,11 +15182,20 @@ window.addEventListener('DOMContentLoaded', () => {
       if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
       return out; }
     function overlay(year,data){ snapshotBase();
+      const M=window.IntMapMaddison, useM=!!(M&&M.ready());
       try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
-        FIELDS.forEach(F=>{ const v=data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
+        FIELDS.forEach(F=>{ const v=data[F.f]&&data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
+        /* (#R94e) real GDP / GDP-per-capita / population from Maddison (2011 int$) — consistent across every
+           country back to 1900, and the only source before the World Bank's 1960 floor. WB nominal is discarded
+           for GDP while travelling so a historical ranking is on ONE basis; life-exp/fertility/internet/military
+           stay World Bank. Population prefers Maddison, else keeps the WB value (head-count is basis-free). */
+        if(useM){ const mpc=M.gdppc(iso,year), mp=M.popN(iso,year), mg=M.gdpBil(iso,year);
+          s.gdp=(mg!=null)?mg:(M.has(iso,year)?null:s.gdp);
+          s.gdppc=(mpc!=null)?mpc:(M.has(iso,year)?null:s.gdppc);
+          if(mp!=null) s.pop=mp; }
         s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
       } }catch(_){}
-      curYear=year; window._imTimeYear=year;
+      curYear=year; window._imTimeYear=year; window._imTimeReal=useM;
       /* former states: replace successors with the historical state for its real lifespan (uses the year values just overlaid) */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(window.IntMapTime.when()); }catch(_){}
     }
@@ -15179,14 +15209,17 @@ window.addEventListener('DOMContentLoaded', () => {
       deb=setTimeout(async()=>{
         const y=e.year;
         if(e.isLive || y>=new Date().getFullYear()){ if(curYear!=null||window._imTimePreWB){ window._imTimePreWB=null; restore(); repaint(); } return; }
-        if(y<WB_FLOOR){ /* deeper than the World Bank annual series → keep present figures, flag the floor */
+        const MFLOOR=(window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900;
+        if(y<MFLOOR){ /* before the Maddison historical series → keep present figures, flag the floor */
           if(curYear!=null){ restore(); } window._imTimePreWB=y; window._imTimeYear=null; repaint(); return; }
         window._imTimePreWB=null;
         if(y===curYear) return;   /* same year → country annual data unchanged, nothing to repaint */
         try{ if(!countryDataLoaded) await loadCountryData(); }catch(_){}
-        let data; try{ data=await fetchYear(y); }catch(_){ data=null; }
+        try{ await window.IntMapMaddison.load(); }catch(_){}
+        let data; try{ data=(y>=WB_FLOOR)?await fetchYear(y):null; }catch(_){ data=null; }   /* WB annual series from 1960; earlier years = Maddison only */
         if(my!==seq) return;              /* superseded by a newer time change */
-        if(!data){ return; }
+        if(!data) data={};
+        FIELDS.forEach(F=>{ if(!data[F.f]) data[F.f]={}; });   /* ensure structure even with no WB (pre-1960) */
         restore(); overlay(y,data); repaint();
       }, 340);
     });
@@ -15264,20 +15297,24 @@ window.addEventListener('DOMContentLoaded', () => {
       return STATES.filter(S=>{ const a=+new Date(S.from+'T00:00:00Z'), b=+new Date(S.to+'T23:59:59Z'); return t>=a&&t<=b; }); }
     /* aggregate successors' (already year-overlaid) countryStats into one synthetic stat object */
     function agg(S,year){
-      let pop=0,wbGdp=0,mil=0,area=0, lN=0,lD=0, tN=0,tD=0, nN=0,nD=0, have=0;
+      const M=window.IntMapMaddison;
+      let pop=0,mil=0,area=0, lN=0,lD=0, tN=0,tD=0, nN=0,nD=0, have=0;
       S.succ.forEach(c=>{ const s=countryStats[c]; if(!s) return;
         if(s.pop){ pop+=s.pop; if(s.lifeExp){ lN+=s.lifeExp*s.pop; lD+=s.pop; } if(s.tfr){ tN+=s.tfr*s.pop; tD+=s.pop; } if(s.internet!=null){ nN+=s.internet*s.pop; nD+=s.pop; } }
-        if(s.gdp) wbGdp+=s.gdp; if(s.milSpend) mil+=s.milSpend; if(s.area) area+=s.area;
+        if(s.milSpend) mil+=s.milSpend; if(s.area) area+=s.area;
         if(s.pop||s.gdp){ have++; }
       });
-      /* GDP: use the sourced real-output estimate in its window (where WB nominal is a distorting artifact);
-         otherwise the honest World Bank successor-sum (null when WB has no data for the year). */
-      const useEst=!!(S.gdpEst && year && year>=(S.gdpEstFrom||0) && (!S.gdpEstTo || year<=S.gdpEstTo));
-      const gdp = useEst ? S.gdpEst : (wbGdp||null);
+      /* GDP & population from the Maddison Project (real 2011 int$): SUN/YUG/CSK are first-class Maddison
+         entities (used directly); the others sum their successors' Maddison values. Real & sourced. */
+      let gdp=null, mpop=null, real=false;
+      if(M&&M.ready()&&year){
+        if(M.has(S.code,year)){ gdp=M.gdpBil(S.code,year); mpop=M.popN(S.code,year); real=true; }
+        else { let g=0,p=0,gh=false,ph=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null){g+=cg;gh=true;} if(cp!=null){p+=cp;ph=true;} }); if(gh){gdp=g;real=true;} if(ph) mpop=p; }
+      }
+      if(mpop!=null&&mpop>0) pop=mpop;
       const nm=S.name;
       return { code:S.code, ccn3:'', nameEn:nm.en, nameJp:nm.jp, name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
-        sov:true, _hist:true, _histSucc:S.succ, _histHave:have, _histN:S.succ.length, _from:S.from, _to:S.to,
-        _gdpEst:useEst, _estSrc:(useEst?S.estSrc:''),
+        sov:true, _hist:true, _histSucc:S.succ, _histHave:(real?S.succ.length:have), _histN:S.succ.length, _from:S.from, _to:S.to, _real:real,
         capital:'', currency:'', languages:'',
         pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
         gdppc:(gdp&&pop)?(gdp*1e9/pop):null, density:(pop&&area)?pop/area:null,
@@ -18026,7 +18063,15 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R94) TIME MACHINE: when the master clock is on a past year, the bar/table/focus show THAT year's real
        figures (World Bank date=<year>, IMF WEO at the year) — honestly, with no present-day gap-fill while
        travelling. `_ttYear()` is the active year (≥1960, where WB annual series begin) or null when live. */
-    function _ttYear(){ try{ const y=window._imTimeYear; return (y&&y>=1960)?y:null; }catch(_){ return null; } }
+    /* read the year from the kernel (set synchronously on travel), NOT window._imTimeYear which the Countries
+       engine only writes after its ~1 s fetch — the compare re-renders sooner, so it must not race that. */
+    function _ttYear(){ try{ const T=window.IntMapTime; if(!T||T.isLive()) return null; const y=T.year(), now=new Date().getFullYear(); return (y>=1900&&y<now)?y:null; }catch(_){ const y=window._imTimeYear; return (y&&y>=1900)?y:null; } }
+    /* (#R94e) GDP & population come from Maddison (real 2011 int$) while travelling, matching the Countries tab. */
+    function _madField(ind){ return (ind&&ind.k==='gdp')?'gdp':((ind&&ind.k==='pop')?'pop':null); }
+    function _madMap(mf,year){ const M=window.IntMapMaddison; const m={}; if(!M||!M.ready()) return m;
+      const need=new Set(codes); codes.forEach(cd=>{ const S=_histEntry&&_histEntry(cd); if(S) S.succ.forEach(c=>need.add(c)); });
+      need.forEach(cd=>{ let v=null; if(mf==='gdp'){ const g=M.gdpBil(cd,year); if(g!=null) v=g*1e9; } else { v=M.popN(cd,year); } if(v!=null) m[cd]={v:v,y:year,real:true}; });
+      return m; }
     function _wbYearOne(code,year){ const key='wby|'+code+'|'+year;
       if(cache[key]===undefined){ let wrapped=null;
         wrapped=(async()=>{ try{
@@ -18053,11 +18098,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const _cs=(cd)=>countryStats[cd]||_histMini(cd)||{};   /* resolve name/flag even when a former state isn't currently applied */
     async function _histAddLatest(m, ind, year){
       const hcs=_histCodes(); if(!hcs.length) return;
+      const mf=_madField(ind), M=window.IntMapMaddison, useMad=(mf&&M&&M.ready());
       const needW=!_HSUM[ind.k]; let popMap=null;
       for(const cd of hcs){ const S=_histEntry(cd); if(!S){ continue; }
         const fy=+String(S.from).slice(0,4), ty=+String(S.to).slice(0,4);
         if(year==null||year<fy||year>ty){ m[cd]=null; continue; }   /* outside its lifespan → no value */
-        if(ind.k==='gdp'&&S.gdpEst&&year>=(S.gdpEstFrom||0)){ m[cd]={v:S.gdpEst*1e9,y:year,hist:true,est:true}; continue; }
+        if(useMad){   /* GDP / population → Maddison real: direct aggregate entity, else sum of successors */
+          let val=null;
+          if(M.has(S.code,year)){ val=(mf==='gdp')?(M.gdpBil(S.code,year)*1e9):M.popN(S.code,year); }
+          else { let sum=0,h=false; S.succ.forEach(c=>{ const cv=(mf==='gdp')?M.gdpBil(c,year):M.popN(c,year); if(cv!=null){ sum+=(mf==='gdp')?cv*1e9:cv; h=true; } }); if(h) val=sum; }
+          m[cd]=(val!=null)?{v:val,y:year,hist:true,real:true}:null; continue;
+        }
         if(needW&&!popMap){ try{ popMap=await wbYear('SP.POP.TOTL',year)||{}; }catch(_){ popMap={}; } }
         let sum=0,num=0,den=0,have=0;
         S.succ.forEach(c=>{ const e=m[c]; if(!e||e.v==null) return; const v=e.v;
@@ -18067,9 +18118,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     async function latestData(ind){
       const ttY=_ttYear();
+      if(ttY&&window.IntMapMaddison){ try{ await window.IntMapMaddison.load(); }catch(_){} }
       if(ind.stat){ const m={}; codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) m[cd]={v:+v,y:(typeof ind.yr==='number')?ind.yr:0}; });
         return {ind,map:m,srcName:ind.src||'IntMap',mixed:false}; }
       if(ttY){   /* travelling → THAT year only, honest (no present-day gap-fill) */
+        const mf=_madField(ind);
+        if(mf && window.IntMapMaddison && window.IntMapMaddison.ready()){   /* GDP/pop → Maddison (real 2011 int$), matches the Countries tab */
+          const m2=_madMap(mf,ttY); await _histAddLatest(m2, ind, ttY);
+          return {ind,map:m2,srcName:'Maddison Project',mixed:false,ttY:ttY,real:true}; }
         const wantImf2=(ind.imf&&srcSel[ind.k]==='imf');
         let m2={}, src2='World Bank';
         if(wantImf2){ const vals=await _imfRaw(ind.imf); if(vals){ m2=Object.assign({},imfAt(vals,ind.imfScale,ttY)); if(Object.keys(m2).length) src2='IMF WEO'; } }
@@ -18300,8 +18356,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R94d) build a former state's TIME-SERIES from the successor ISO3 series, over its lifespan only */
     async function _histAddSeries(serMap, ind){
       const hcs=_histCodes(); if(!hcs.length) return;
+      const mf=_madField(ind), M=window.IntMapMaddison, useMad=(mf&&M&&M.ready());
       const needW=!_HSUM[ind.k];
       for(const cd of hcs){ const S=_histEntry(cd); if(!S) continue;
+        if(useMad){   /* GDP/pop time-series from Maddison, over the state's lifespan */
+          const fy2=Math.max(M.minYear,+String(S.from).slice(0,4)), ty2=Math.min(M.maxYear,+String(S.to).slice(0,4)); const out2=[];
+          for(let y=fy2;y<=ty2;y++){ let val=null;
+            if(M.has(S.code,y)){ val=(mf==='gdp')?(M.gdpBil(S.code,y)*1e9):M.popN(S.code,y); }
+            else { let sm=0,h=false; S.succ.forEach(c=>{ const cv=(mf==='gdp')?M.gdpBil(c,y):M.popN(c,y); if(cv!=null){ sm+=(mf==='gdp')?cv*1e9:cv; h=true; } }); if(h) val=sm; }
+            if(val!=null) out2.push({y,v:val}); }
+          if(out2.length) serMap[cd]=out2; continue; }
         const fy=Math.max(1960,+String(S.from).slice(0,4)), ty=Math.min(new Date().getFullYear(),+String(S.to).slice(0,4));
         const rs=await Promise.all(S.succ.map(c=>fetchWB(c,ind.wb))); const byC={}; S.succ.forEach((c,i)=>{ if(rs[i]) byC[c]=rs[i]; });
         let popByC=null;
@@ -18322,6 +18386,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(ind.stat){ const y=(typeof ind.yr==='number')?ind.yr:new Date().getFullYear(); const sm={};   /* y=0 → year unknown/not meaningful, display suppressed */
         codes.forEach(cd=>{ const s2=countryStats[cd]; const v=s2?ind.stat(s2):null; if(v!=null&&isFinite(+v)) sm[cd]=[{y,v:+v}]; });
         return {ind,serMap:sm,srcName:ind.src||'IntMap',imfFail:false,statOnly:true}; }
+      /* (#R94e) GDP/pop time-series → Maddison (real 2011 int$) while travelling, matching the bar view & Countries tab */
+      const _mf=_madField(ind);
+      if(_ttYear()&&_mf&&window.IntMapMaddison){ try{ await window.IntMapMaddison.load(); }catch(_){} }
+      if(_ttYear() && _mf && window.IntMapMaddison && window.IntMapMaddison.ready()){
+        const M=window.IntMapMaddison, serMapM={};
+        codes.forEach(cd=>{ const arr=[]; for(let y=M.minYear;y<=M.maxYear;y++){ const v=(_mf==='gdp')?M.gdpBil(cd,y):M.popN(cd,y); if(v!=null) arr.push({y,v:(_mf==='gdp')?v*1e9:v}); } if(arr.length) serMapM[cd]=arr; });
+        await _histAddSeries(serMapM, ind);
+        return {ind,serMap:serMapM,srcName:'Maddison Project',imfFail:false,real:true}; }
       /* (#R63) source is PER-INDICATOR; IMF only where a real IMF series exists for it */
       const wantImf=(ind.imf&&srcSel[ind.k]==='imf');
       let serMap={}, srcName='World Bank', imfFail=false;

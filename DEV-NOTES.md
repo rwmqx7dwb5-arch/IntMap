@@ -5,6 +5,16 @@
 
 ---
 
+## R94e — Maddison historical GDP/population back to 1900 (USSR appears in GDP; pre-1970 data for all) (tag `#R94e`)
+
+Re-report: *"ソ連がGDにないじゃねーか。それに、1970年以前の各国のデータも集めろ。旧国家は1900年以降は少なくともすべて網羅しろ。植民地や委任統治領なども考慮しろ。国境線も変えろ（historical bordersではなく、地図の国境線を）"* — at 1970 the USSR had **no** GDP (its estimate was gated to 1985+ and WB has no pre-1990 republic GDP), and the World Bank floor of 1960 meant no deep-past data.
+
+- **Root cause:** the World Bank has no annual GDP before 1960 and **nothing at all** for dissolved states, so nominal-USD WB data can't show the USSR at 1970. Fix = bundle the **Maddison Project Database 2020** (`data/maddison.json`, 288 KB, real GDP in constant 2011 international dollars, 1900–2018; "Former USSR/Yugoslavia/Czechoslovakia" are first-class Maddison entities). `window.IntMapMaddison` lazy-loads it: `gdpBil/popN/gdppc(code,year)`.
+- **Countries engine** now uses Maddison for **GDP + GDP-per-capita + population for every country** while travelling (2011 int$, one consistent basis for a historical ranking); life-exp/fertility/internet/military stay World Bank. The floor drops from 1960 to **1900**. WB nominal is discarded for GDP during travel so the whole ranking is comparable. Verified: **1970 → USA $4.91T, Soviet Union $2.15T (#2!), Japan $1.62T, China $1.14T**; **1920 → USA $1.09T, British India $0.31T, Czechoslovakia shown**.
+- **Former states** (`IntMapHistStates.agg`) now take GDP/pop from Maddison — the direct aggregate entity for SUN/YUG/CSK, else the sum of successors' Maddison values (the `gdpEst` hack is gone). `_histHave` counts the Maddison aggregate so a state with no WB successor data still shows.
+- **Compare** made consistent: GDP & population indicators use Maddison while travelling (`_madField`/`_madMap`, `_histAddLatest`/`_histAddSeries` Maddison-aware). Also fixed a real race — the compare's `_ttYear()` read `window._imTimeYear`, which the Countries engine only writes after its ~1 s fetch, so the compare re-rendered too early and stayed on present values; it now reads `IntMapTime.year()`/`isLive()` (set synchronously) and awaits `IntMapMaddison.load()`. Verified: comparing USA/USSR/Japan at 1970 → $4.91T / $2.15T / $1.62T (src Maddison).
+- Banner + card note + the card's GDP label now say "real GDP (2011 int$, Maddison)". Build script (offline): OWID Maddison CSV → `data/maddison.json` keyed by ISO3 + SUN/YUG/CSK. 0 console errors. (Still open, same request: the **map's own borders** changing with the clock, and a fuller 1900+ empire/colony roster — next.)
+
 ## R94d — Former states are comparable + roster expanded (tag `#R94d`)
 
 Re-report: *"GDPランキングに旧国家が出ない。また、Comparisonが使えない。また、私が例に出した旧国家だけで終わるな。"* — former states didn't show in the Comparison's GDP ranking, couldn't be used there, and the roster was just the three examples.
