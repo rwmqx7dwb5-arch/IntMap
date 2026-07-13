@@ -5,6 +5,13 @@
 
 ---
 
+## R94c — Former-states fixes: USSR missing from GDP + unnatural flag (tag `#R94c`)
+
+Re-report: *"GDPにソ連がない。そしてソ連の国旗が不自然。"*
+
+- **USSR missing from GDP.** The successor-sum of World Bank **nominal-USD** GDP for 1990 is only **$687 B** (Russia alone $517 B, 12/15 republics) — a well-known artifact of the Soviet **official exchange rate**, which buries a genuine #2–3 world economy far down the ranking. Fix: the registry entry can carry a sourced **real-output estimate** (`gdpEst`/`gdpEstFrom`/`estSrc`); the USSR uses **$2.66 T** (CIA World Factbook 1990 GNP; consistent with the Maddison Project) for 1985+ (earlier, WB has no republic data so GDP stays honestly blank). `agg()` now takes the year and uses the estimate in-window, else the WB sum. The card labels it "GDP · est." and the note spells out *why* it isn't the WB nominal figure. Result: **USSR ranks #3 by GDP at $2.66 T** in 1990 (US $5.96 T, Japan $3.25 T, USSR $2.66 T, Germany $1.78 T…) — historically faithful. Population etc. stay the real WB aggregate (now 15/15 republics).
+- **Unnatural flag.** The first pass drew the emblem with the `☭` glyph (font-dependent, mis-placed at the bottom). Replaced with the **authentic public-domain Soviet-flag vector** (the real gold star + hammer-and-sickle paths, scaled from the 1200×600 master into our 30×20 box via `transform="scale(0.025)"`, emblem in the upper hoist). Verified: the data-URI `<img>` loads (225×150) and contains the real star/hammer paths. The other former-state flags (Yugoslavia tricolour+star, Serbia & Montenegro tricolour, Czechoslovakia triangle) were already correct geometric SVGs. 0 console errors.
+
 ## R94b — Time machine follow-ups: sync the Compare view + faithful FORMER STATES (USSR, Yugoslavia, Czechoslovakia…) (tag `#R94b`)
 
 Two re-reports from a 1989 screenshot: *"比較ではまだ同期されていない"* (Compare still showed 2024) and *"旧国家も、史実に忠実な時期や国旗で、おなじように見れるように"* (former states — USSR/Yugoslavia/Czechoslovakia — should be viewable faithfully, with correct split dates and flags; e.g. Slovenia forming out of Yugoslavia on the real date; period borders too).
