@@ -22086,8 +22086,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapFlightSim=(function(){
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
-    let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false, camZoom=null; const keys={};
-    let acKey='airliner', camMode='chase', stabilizeCam=false, paused=false;   /* (#R94p) selectable aircraft + camera state */
+    let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
+    let acKey='airliner', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) selectable aircraft + camera state; default = eye AT the aircraft */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
     /* ===== (#R94p) FULL RIGID-BODY FLIGHT MODEL ("感性(慣性)や空気抵抗、機体による差…すべてを考慮した完璧なモデル").
        Rebuilt from the 3-DOF R85 model. New physics:
@@ -22267,7 +22267,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function fsAction(k){ if(!st) return false;
       if(k==='f') st.flaps=(st.flaps>=0.99)?0:Math.min(1,Math.round((st.flaps+0.34)*100)/100);   /* flaps notch: 0→⅓→⅔→full→up */
       else if(k==='g') st.gear=st.gear>0.5?0:1;                                                    /* landing gear */
-      else if(k==='c'){ camMode=(camMode==='cockpit')?'chase':'cockpit'; camZoom=null; }   /* Follow ↔ Cockpit */
+      else if(k==='c'){ camMode=(camMode==='cockpit')?'chase':'cockpit'; }   /* Cockpit ↔ Follow */
       else if(k==='v') stabilizeCam=!stabilizeCam;                                                  /* level-horizon toggle */
       else if(k==='p') paused=!paused;                                                              /* pause */
       else if(k==='r') respawn();                                                                   /* reset in place */
@@ -22290,9 +22290,8 @@ window.addEventListener('DOMContentLoaded', () => {
         thr:0, elev:0, ail:0, rud:0, flaps:0, gear:0, brake:0,
         V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:((map.getBearing()||90)*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
         onGround:false, lastTerr:null, _acc:0, t:performance.now() };
-      paused=false; stabilizeCam=false; camMode='chase';
+      paused=false; stabilizeCam=false; camMode='cockpit';
       computeTrim();
-      camZoom=null;
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
@@ -22461,29 +22460,22 @@ window.addEventListener('DOMContentLoaded', () => {
     function loop(){ if(!on) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.0005,Math.min(0.1,dt));
       if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
       const f=physics(dt), R2D=180/Math.PI, D2R=Math.PI/180, agl=f.agl;
-      /* ---- CAMERA. The "上下方向がありえない動き" was the camera PITCH: MapLibre pivots the camera around the
-         `center` GROUND point, so swinging its pitch (esp. with a far look-ahead, and slamming the 85° clamp)
-         ORBITED the whole world when you pulled/pushed. Fix: (a) a SMALL look-ahead → small orbit radius; (b) the
-         camera pitch only GENTLY follows the aircraft pitch, is LOW-PASS smoothed and kept well INSIDE the limits
-         (48–80°) so it nudges the horizon instead of orbiting or saturating; (c) the zoom is gentle + smoothed.
-         Direction is still correct — nose-up tilts the view up. Roll = the true bank (no clamp → inverted shows
-         rolled over, #2/#3); Stabilize (V) locks the horizon; C cycles Follow ↔ Cockpit. ---- */
-      const hdgDeg=(st.psi*R2D+360)%360, rollDeg=st.phi*R2D;
-      const bank=stabilizeCam?0:rollDeg;
+      /* ---- CAMERA (#R94t): a TRUE eye-point view. The "視点が運動点にない" was because MapLibre looks AT a ground
+         `center` from behind — the eye was never on the aircraft. MapLibre v5 has no setFreeCameraOptions, but it
+         DOES have `calculateCameraOptionsFromTo(eye, eyeAlt, target, targetAlt)`, which returns the camera options
+         that put the EYE at a world point looking at a target. So the eye is placed AT the aircraft (Cockpit) or a
+         little behind + above it (Follow), looking along the NOSE (body +x rotated into the world), and the bank is
+         applied as roll. The viewpoint now sits on the point of motion; pitching/rolling no longer orbits a pivot. */
+      const nose=qRot(st.q,[1,0,0]);   /* world (NED) unit vector along the nose */
+      const mLatM=110574, mLonM=(111320*Math.cos(st.lat*D2R))||1, hd=Math.hypot(nose[0],nose[1])||1e-6;
       const cockpit=(camMode==='cockpit');
-      /* (#R94s) ZERO orbiting in every axis: MapLibre pivots the camera around the ground `center`, so ANY change
-         of the camera pitch — or of a look-ahead centre that depends on attitude/altitude — swings the world.
-         So the camera PITCH is now a FIXED constant (no coupling to the aircraft pitch) and the look-ahead is a
-         small CONSTANT. The centre therefore only tracks the aircraft's own position, the bearing follows the
-         heading and the roll matches the bank (those are the aircraft yawing/rolling, not an orbit). Attitude is
-         read on the HUD (pitch ladder + ADI). */
-      const aheadKm=cockpit?0.05:0.22;
-      const cLng=st.lng+(aheadKm*Math.sin(st.psi))/((111.320*Math.cos(st.lat*D2R))||1), cLat=st.lat+(aheadKm*Math.cos(st.psi))/110.574;
-      const camPitch=cockpit?78:68;
-      const tz=Math.max(cockpit?12.5:10.8, Math.min(cockpit?15:14, (cockpit?14.6:13.6) - Math.log2(Math.max(120,agl)/120)*0.4));
-      camZoom=(camZoom==null)?tz:(camZoom+(tz-camZoom)*Math.min(1,1.5*dt));
-      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:camPitch, roll:bank };
-      try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} }
+      let eLng=st.lng, eLat=st.lat, eAlt=st.alt;
+      if(!cockpit){ const back=48, up=16; eLat=st.lat-back*(nose[0]/hd)/mLatM; eLng=st.lng-back*(nose[1]/hd)/mLonM; eAlt=st.alt+up; }
+      const lookM=1800, tLat=st.lat+lookM*nose[0]/mLatM, tLng=st.lng+lookM*nose[1]/mLonM, tAlt=st.alt-lookM*nose[2];
+      let cam=null; try{ if(map.calculateCameraOptionsFromTo) cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},eAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
+      if(cam){ if(cam.pitch>85) cam.pitch=85; else if(cam.pitch<0) cam.pitch=0; if(!stabilizeCam) cam.roll=st.phi*R2D; st._cam=cam;
+        try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
+      else { const hdgDeg=(st.psi*R2D+360)%360; try{ map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:hdgDeg,pitch:70,roll:stabilizeCam?0:st.phi*R2D}); }catch(_){} }
       updateHUD(agl,f);
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */

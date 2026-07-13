@@ -5,6 +5,13 @@
 
 ---
 
+## R94t — Flight camera: a TRUE eye-point at the aircraft via `calculateCameraOptionsFromTo` (tag `#R94t`)
+
+Re-report: *"動きがおかしいし、明らかに視点が運動点にない。ふざけるな。"* — the motion is wrong and the viewpoint is clearly NOT at the aircraft (運動点 = the moving point).
+
+- **Root cause:** every previous camera looked AT a ground `center` from behind, so the eye was never on the aircraft — that offset is the wrong parallax/motion and the "viewpoint not at the moving point". I had also **wrongly recorded** that this MapLibre build has no free camera.
+- **The build is MapLibre GL JS v5.24.0.** It has no `setFreeCameraOptions` (that's Mapbox), BUT it exposes **`map.calculateCameraOptionsFromTo(eye, eyeAlt, target, targetAlt)`** → the `{center,zoom,bearing,pitch}` that put the camera EYE at a world point looking at a target. So the eye is now placed AT the aircraft (Cockpit, default) or a little behind+above it (Follow, `C`), looking along the NOSE (body +x rotated into the world by the attitude quaternion), and the bank is applied as `roll`. The viewpoint sits on the point of motion and the view rotates ABOUT the aircraft (a real cockpit) — it never orbits a distant ground pivot. Verified live: level → eye at the aircraft, bearing = heading, pitch ≈ 85° (forward); bank 32° → cam roll 32°; dive −67° → cam pitch 24° (looks down); 0 console errors. Default camera is now **Cockpit** (eye exactly on the aircraft). Removed the obsolete `camZoom` (the API computes zoom). Remaining ceiling: MapLibre pitch clamps at 85°, so looking ABOVE the horizon (nose past vertical) is still limited — a fully unlimited cockpit needs a dedicated 3-D renderer (future phase).
+
 ## R94s — Flight camera: ZERO orbiting (fixed pitch) + inverted up/down arrows (tag `#R94s`)
 
 Re-report: *"すべての方向で回り込みはゼロにしろ。あと、上下矢印の動作は反転させろ。"* — make the orbiting zero in every direction, and invert the up/down arrows.
