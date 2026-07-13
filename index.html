@@ -6250,7 +6250,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R33) Smoother MOBILE pan/zoom ("カクツク"): skip the per-frame occlusion recompute during a gesture on
        phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move. */
     const _occMob=()=>{ try{ return isMobile(); }catch(_){ return false; } };
-    map.on('move',()=>{ if(!_occMob()) occOnMove(); }); map.on('moveend',updateOcclusion);
+    map.on('move',()=>{ if(window.__fsCamActive) return; if(!_occMob()) occOnMove(); }); map.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
     map.on('rotate',updateCompass); map.on('pitch',updateCompass);
     map.on('moveend',refreshGrid); map.on('zoomend',refreshGrid);
     map.on('load',()=>{
@@ -19757,7 +19757,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R20) BIDIRECTIONAL camera sync. Main→compare follows every main move (user or programmatic);
          compare→main only on USER gestures on the compare map (originalEvent present) so the two
          jumpTo streams can never feed back into each other (plus the syncing flag). */
-      map.on('move',()=>{ if(mode!=='free') syncFromMain(); });
+      map.on('move',()=>{ if(window.__fsCamActive) return; if(mode!=='free') syncFromMain(); });   /* (#R95) don't re-sync the compare map every flight frame */
       map.on('moveend',followProjection);
       /* (#R21) Flat/Globe button calls this hook directly — the compare projection flips the same
          instant, in EVERY mode (incl. Free, where no camera sync runs). */
@@ -22042,7 +22042,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function ensure(){ if(cv) return; cv=document.createElement('canvas'); cv.id='arc3d-canvas';
       cv.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6;';
       const cont=document.getElementById('map-container'); (cont||document.body).appendChild(cv); ctx=cv.getContext('2d');
-      if(!bound){ bound=true; const rd=()=>{ if(data) draw(); }; map.on('move',rd); map.on('zoom',rd); map.on('rotate',rd); map.on('pitch',rd); window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }
+      if(!bound){ bound=true; const rd=()=>{ if(window.__fsCamActive) return; if(data) draw(); }; map.on('move',rd); map.on('zoom',rd); map.on('rotate',rd); map.on('pitch',rd); window.addEventListener('resize',()=>{ resize(); if(data) draw(); }); } }   /* (#R95) graticule redraw paused while the flight sim drives the camera */
     function resize(){ if(!cv) return; const cont=document.getElementById('map-container'); if(!cont) return; dpr=Math.min(2,window.devicePixelRatio||1); const w=cont.clientWidth,h=cont.clientHeight; cv.width=w*dpr; cv.height=h*dpr; cv.style.width=w+'px'; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); }
     function lerp(a,b,t){ return a+(b-a)*t; }
     function hx(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
@@ -22279,17 +22279,22 @@ window.addEventListener('DOMContentLoaded', () => {
       if(HELD.includes(k)){ keys[k]=true; e.preventDefault(); e.stopPropagation(); return; }
       if(!keys['_a_'+k]){ if(fsAction(k)){ keys['_a_'+k]=true; e.preventDefault(); e.stopPropagation(); } } }
     function onKeyUp(e){ const k=e.key.toLowerCase(); keys[k]=false; keys['_a_'+k]=false; }
-    function _terrAt(lng,lat){ let t=0; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) t=te; } }catch(_){} return t; }
+    /* (#R95) release every held key when the window/tab loses focus or a touch is cancelled (see start()). */
+    function onLoseFocus(){ for(const k in keys) keys[k]=false; }
+    function onVisChange(){ if(document.hidden) onLoseFocus(); }
     function addExtraHUD(){ if(!hud) return; const tl=hud.querySelector('.fs-tl'); if(tl&&!tl.querySelector('.fs-g')){ const d=document.createElement('div'); d.style.cssText='margin-top:6px;display:flex;gap:14px;'; d.innerHTML='<div><div class="fs-k">'+LL('LOAD','荷重','LAST','ПЕРЕГР.','CARGA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-g">1.0</span><span style="font-size:10px;">g</span></div></div><div><div class="fs-k">'+LL('AoA','迎角','AoA','УГОЛ','AoA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-aoa">0</span><span style="font-size:10px;">°</span></div></div>'; tl.appendChild(d); } }
     let prevView=null;
     function start(opts){ if(on) return true; on=true; opts=opts||{};
       if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
       const c=map.getCenter(), ac=AC();
+      /* (#R95) start heading = the map's bearing. The old `map.getBearing()||90` turned a perfectly valid 0° (north-
+         up map) into 90° (east) because 0 is falsy — read it properly instead. */
+      let b0=0; try{ const _b=(map.getBearing?map.getBearing():0); if(_b!=null&&isFinite(_b)) b0=_b; }catch(_){}
       st={ lng:(opts.lng!=null?+opts.lng:c.lng), lat:(opts.lat!=null?+opts.lat:c.lat), alt:(opts.alt!=null?+opts.alt:2500),
         vb:[ac.Vcruise,0,0], q:[1,0,0,0], om:[0,0,0], elevTrim:0,
         thr:0, elev:0, ail:0, rud:0, flaps:0, gear:0, brake:0,
-        V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:((map.getBearing()||90)*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
-        onGround:false, lastTerr:null, _acc:0, t:performance.now() };
+        V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:(b0*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
+        onGround:false, lastTerr:null, _settleTerr:false, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='cockpit';
       computeTrim();
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
@@ -22297,12 +22302,15 @@ window.addEventListener('DOMContentLoaded', () => {
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
          camera can look forward to the horizon. State is remembered and restored on exit. */
       try{ prevView={ base:(typeof currentMapType!=='undefined'?currentMapType:'map'), proj:(typeof currentProj!=='undefined'?currentProj:'globe'), terr:(typeof terrain3D!=='undefined'?terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
-      try{ if(map.setMaxPitch) map.setMaxPitch(85); }catch(_){}
+      try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
+      try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
       try{ if((typeof currentProj!=='undefined'&&currentProj==='globe')&&window.IntMapOS) IntMapOS.exec('view.proj.flat',{source:'flightsim'}); }catch(_){}
       try{ if(typeof currentMapType==='undefined'||currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
-      st.alt=Math.max(st.alt, _terrAt(st.lng,st.lat)+1500);   /* never spawn inside the ground */
+      /* (#R95) spawn clearance is settled once the DEM loads (see _settleTerr in stepFixed). If the ground is already
+         known under us, lift now; otherwise defer so we never read a false 0 m over the mountains. */
+      { const tr0=_terrRead(st.lng,st.lat); if(tr0.ok) st.alt=Math.max(st.alt, tr0.v+1500); else st._settleTerr=true; }
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
       /* (#R85c) INDEPENDENT FULLSCREEN — take over the whole screen (browser fullscreen + the map lifted above all
          app chrome), not an overlay. Resize the map after the container changes size. */
@@ -22311,9 +22319,18 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120);
       buildHUD(); addExtraHUD();
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
+      /* (#R95) drop every held control when focus/visibility/touch is lost mid-manoeuvre — otherwise keyup never
+         fires and the roll/pitch/throttle key sticks (e.g. tab-switch during a turn, or an interrupted touch). */
+      window.addEventListener('blur',onLoseFocus); document.addEventListener('visibilitychange',onVisChange);
+      window.addEventListener('pointercancel',onLoseFocus,true); window.addEventListener('touchcancel',onLoseFocus,true);
+      window.__fsCamActive=true;
       st.t=performance.now(); raf=requestAnimationFrame(loop); return true; }
     function stop(){ if(!on) return; on=false; if(raf) cancelAnimationFrame(raf); raf=null;
       window.removeEventListener('keydown',onKey,true); window.removeEventListener('keyup',onKeyUp,true);
+      window.removeEventListener('blur',onLoseFocus); document.removeEventListener('visibilitychange',onVisChange);
+      window.removeEventListener('pointercancel',onLoseFocus,true); window.removeEventListener('touchcancel',onLoseFocus,true);
+      window.__fsCamActive=false;
+      try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
       for(const k in keys) keys[k]=false;
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
       if(hud){ hud.remove(); hud=null; }
@@ -22346,14 +22363,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((map.getBearing?map.getBearing():90)*Math.PI/180);
       st.q=qFromEuler(0,aT,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=0; st.vs=0; st.G=1; st.phi=0; st.theta=aT; st.psi=yaw; st._acc=0; }
-    function respawn(){ const ac=AC(); st.alt=_terrAt(st.lng,st.lat)+1500; st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; paused=false; computeTrim(); }
+    function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
+      st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; paused=false; computeTrim(); }
     function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ — сброс','ACCIDENTE — reinicio'); w.style.display='block'; w.style.color='#ff453a'; }
       respawn();
       setTimeout(()=>{ const w2=hud&&hud.querySelector('.fs-warn'); if(w2&&(w2.textContent.indexOf('CRAS')>=0||w2.textContent.indexOf('墜')>=0)) w2.style.display='none'; },1500); }
     function updateHUD(agl,f){ if(!hud) return; const q=s=>hud.querySelector(s), R2D=180/Math.PI;
       try{ q('.fs-spd').textContent=Math.round(st.V*3.6); q('.fs-alt').textContent=Math.round(st.alt).toLocaleString(); q('.fs-agl').textContent=Math.round(Math.max(0,agl)).toLocaleString();
         q('.fs-vs').textContent=(st.vs>=0?'+':'')+Math.round(st.vs);
-        const hdg=(st.psi*R2D+360)%360; q('.fs-hdg').textContent=Math.round(hdg).toString().padStart(3,'0')+'°';
+        /* (#R95) heading from the NOSE vector, not qToEuler yaw — the Euler yaw jumps 180° as the pitch crosses the
+           vertical (loop), which snapped the heading tape/indicator. The nose bearing reverses smoothly instead. */
+        const _nh=qRot(st.q,[1,0,0]), hdg=(Math.atan2(_nh[1],_nh[0])*R2D+360)%360; q('.fs-hdg').textContent=Math.round(hdg).toString().padStart(3,'0')+'°';
         q('.fs-thrfill').style.height=Math.round(st.thr*100)+'%';
         const rollDeg=st.phi*R2D, pitchDeg=st.theta*R2D;
         const hor=q('.fs-hor'); if(hor) hor.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 60 60) translate(0 '+(pitchDeg*1.4).toFixed(1)+')');
@@ -22390,9 +22410,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const V=Math.hypot(u,v,w), Vs=Math.max(V,1e-3), rho=rhoAt(st.alt), qd=0.5*rho*V*V;
       const aoa=Math.atan2(w,u), beta=Math.asin(Math.max(-1,Math.min(1,v/Vs)));
       /* aero coefficients (with a genuine stall break on BOTH sides of zero AoA) */
-      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, CLmax=ac.CL0+flapCL+ac.CLa*aStall;
+      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, CLmax=ac.CL0+flapCL+ac.CLa*aStall, aStallN=-aStall+2*(ac.CL0/ac.CLa);   /* aStallN = negative-AoA stall break (same value as before, now named so the HUD stall flag can reuse it) */
       let CL; if(aoa>aStall) CL=Math.max(0.1,CLmax*(1-0.72*Math.min(1.4,(aoa-aStall)/0.30)));
-      else if(aoa<-aStall+2*(ac.CL0/ac.CLa)) CL=Math.min(-0.05,-(ac.CLa*aStall-ac.CL0+flapCL)*(1-0.72*Math.min(1.4,(-aoa-aStall)/0.30)));
+      else if(aoa<aStallN) CL=Math.min(-0.05,-(ac.CLa*aStall-ac.CL0+flapCL)*(1-0.72*Math.min(1.4,(-aoa-aStall)/0.30)));
       else CL=ac.CL0+flapCL+ac.CLa*aoa;
       const CD=ac.CD0+ac.k*CL*CL+st.flaps*0.02+st.gear*0.022+st.brake*0.055;
       const L=CL*qd*ac.S, Dg=CD*qd*ac.S, Yf=D.Cyb*beta*qd*ac.S;
@@ -22415,8 +22435,19 @@ window.addEventListener('DOMContentLoaded', () => {
       /* angular acceleration = I⁻¹·(M − ω×Iω) with a diagonal inertia tensor */
       st.om=[ p+((Lm+(ac.Iy-ac.Iz)*qq*r)/ac.Ix)*h, qq+((Mm+(ac.Iz-ac.Ix)*r*p)/ac.Iy)*h, r+((Nm+(ac.Ix-ac.Iy)*p*qq)/ac.Iz)*h ];
       st.om=st.om.map(x=>Math.max(-14,Math.min(14,x)));
-      /* translational acceleration in the rotating body frame (a = F/m − ω×v) */
-      u+=(Fx/ac.m-(qq*w-r*v))*h; v+=(Fy/ac.m-(r*u-p*w))*h; w+=(Fz/ac.m-(p*v-qq*u))*h;
+      /* translational dynamics in the rotating body frame (a = F/m − ω×v) — (#R95). Two fixes for the exact faults
+         the report flags under bug ⑨ ("人工的な横滑りやエネルギー増減が高角速度時に出る"):
+          • the OLD code fed the just-updated u into the v equation and u,v into w (sequential Gauss–Seidel) → the
+            roll was left/right asymmetric;
+          • the −ω×v frame-rotation term does NO physical work, but written as an explicit-Euler cross product it
+            inflates |v| (≈√(1+(ωh)²)) every step, so a SUSTAINED high-rate manoeuvre (a held loop) pumped speed and
+            energy without bound (a gentle climb ran away to Mach 15).
+         So: rotate the OLD velocity by the true incremental body rotation — norm-preserving, zero spurious energy —
+         then add only the physical acceleration F/m·h. This reduces to the classic −(ω×v)h at low rates (level flight
+         and gentle manoeuvres unchanged) and stays exactly left/right symmetric. */
+      const u0=u,v0=v,w0=w, wmag=Math.hypot(p,qq,r);
+      let vr; if(wmag>1e-6){ const ang=wmag*h, sh=Math.sin(ang/2)/wmag, dq=[Math.cos(ang/2),p*sh,qq*sh,r*sh]; vr=qRotInv(dq,[u0,v0,w0]); } else vr=[u0,v0,w0];
+      u=vr[0]+(Fx/ac.m)*h; v=vr[1]+(Fy/ac.m)*h; w=vr[2]+(Fz/ac.m)*h;
       st.vb=[u,v,w];
       /* attitude: q̇ = ½ q⊗(0,ω) */
       const o=st.om; st.q=qNorm([ st.q[0]+(-0.5*(st.q[1]*o[0]+st.q[2]*o[1]+st.q[3]*o[2]))*h, st.q[1]+(0.5*(st.q[0]*o[0]+st.q[2]*o[2]-st.q[3]*o[1]))*h, st.q[2]+(0.5*(st.q[0]*o[1]-st.q[1]*o[2]+st.q[3]*o[0]))*h, st.q[3]+(0.5*(st.q[0]*o[2]+st.q[1]*o[1]-st.q[2]*o[0]))*h ]);
@@ -22430,17 +22461,30 @@ window.addEventListener('DOMContentLoaded', () => {
       st.V=V; st.aoa=aoa; st.beta=beta; st.p=st.om[0]; st.vs=-vw[2]; st.gamma=Math.asin(Math.max(-1,Math.min(1,(-vw[2])/Vs)));
       st.G=-(Flz+Fdz)/(ac.m*g0);   /* normal load factor from the aero body-z force (signed: negative when pushing over) */
       /* terrain contact — only when the DEM is really loaded under us */
-      const tr=_terrRead(st.lng,st.lat), terr=tr.v, agl=st.alt-terr, gearDown=st.gear>0.5, VstallEff=ac.Vstall*(1-0.12*st.flaps); let landed=false;
-      if(tr.ok && agl<=1.2){ const descent=-st.vs, bankDeg=Math.abs(st.phi*180/Math.PI), pitchAbs=Math.abs(st.theta);
-        if(descent>7 || bankDeg>25 || pitchAbs>0.6 || (!gearDown&&st.V>ac.Vstall*1.3) || st.V>ac.Vne*0.72) crash();
-        else { st.onGround=true; st.alt=terr+1.2;
-          const vw2=qRot(st.q,st.vb); if(vw2[2]>0){ vw2[2]=0; st.vb=qRotInv(st.q,vw2); }   /* wheels stop the sink, allow rotate/climb */
+      const tr=_terrRead(st.lng,st.lat), terr=tr.v;
+      /* (#R95) ONE-TIME SPAWN SETTLE: at start/respawn the 3-D DEM has not loaded yet (queryTerrainElevation → null),
+         so we cannot know the ground height. Rather than reading 0 m (which spawns inside Himalaya-class terrain and
+         "crashes on load"), we wait: the FIRST confirmed ground read lifts the aircraft to a safe clearance if it is
+         low, re-trims level, and skips the collision test for that frame. */
+      if(st._settleTerr){ if(tr.ok){ st._settleTerr=false; if(st.alt<terr+1200){ st.alt=terr+1500; try{ computeTrim(); }catch(_){} } }
+        return { agl:st.alt-terr, stalling:false, overspeed:false, overG:false, landed:false, ab:st._ab }; }
+      const agl=st.alt-terr, gearDown=st.gear>0.5, VstallEff=ac.Vstall*(1-0.12*st.flaps), gearH=1.2; let landed=false;
+      if(tr.ok && agl<=gearH+0.3){ const descent=-st.vs, bankDeg=Math.abs(st.phi*180/Math.PI), pitchAbs=Math.abs(st.theta);
+        /* (#R95) gear-up touchdown is a belly landing → crash (it used to count as LANDED at low speed). */
+        if(descent>7 || bankDeg>25 || pitchAbs>0.6 || !gearDown || st.V>ac.Vne*0.72) crash();
+        else { st.onGround=true;
+          const vw2=qRot(st.q,st.vb);
+          if(vw2[2]>0) vw2[2]=0;                          /* wheels stop the sink … */
+          else if(st.V<VstallEff*1.05) vw2[2]=0;           /* … and hold it planted below flying speed (kills the ground bounce; lift can still fly it off once fast) */
+          st.vb=qRotInv(st.q,vw2);
+          if(st.alt<terr+gearH) st.alt=terr+gearH;          /* never below the wheels — but no per-step hard teleport when already sitting on them (hysteresis) */
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
           if(sp>1e-3){ const nf=Math.max(0,sp-fr*h)/sp; st.vb=[st.vb[0]*nf,st.vb[1]*nf,st.vb[2]*nf]; }
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
           if(st.V<VstallEff*1.02 && bankDeg<10 && descent<3) landed=true; }
       } else st.onGround=false;
-      const stalling=(aoa>aStall*0.97)||(!st.onGround&&st.V<VstallEff*1.03), overspeed=st.V>ac.Vne, overG=Math.abs(st.G)>ac.gLim;
+      /* (#R95) stall warning on BOTH sides of the CL curve — negative-AoA / inverted stall was never flagged. */
+      const stalling=(aoa>aStall*0.97)||(aoa<aStallN*0.97)||(!st.onGround&&st.V<VstallEff*1.03), overspeed=st.V>ac.Vne, overG=Math.abs(st.G)>ac.gLim;
       return { agl, stalling, overspeed, overG, landed, ab:st._ab }; }
     /* per-frame: read the controls once, then advance the physics in FIXED sub-steps so the flight characteristics
        don't change with framerate (30 vs 120 fps) and a hitch never hands one huge dt to the integrator. Split out
@@ -22460,22 +22504,36 @@ window.addEventListener('DOMContentLoaded', () => {
     function loop(){ if(!on) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.0005,Math.min(0.1,dt));
       if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
       const f=physics(dt), R2D=180/Math.PI, D2R=Math.PI/180, agl=f.agl;
-      /* ---- CAMERA (#R94t): a TRUE eye-point view. The "視点が運動点にない" was because MapLibre looks AT a ground
-         `center` from behind — the eye was never on the aircraft. MapLibre v5 has no setFreeCameraOptions, but it
-         DOES have `calculateCameraOptionsFromTo(eye, eyeAlt, target, targetAlt)`, which returns the camera options
-         that put the EYE at a world point looking at a target. So the eye is placed AT the aircraft (Cockpit) or a
-         little behind + above it (Follow), looking along the NOSE (body +x rotated into the world), and the bank is
-         applied as roll. The viewpoint now sits on the point of motion; pitching/rolling no longer orbits a pivot. */
-      const nose=qRot(st.q,[1,0,0]);   /* world (NED) unit vector along the nose */
-      const mLatM=110574, mLonM=(111320*Math.cos(st.lat*D2R))||1, hd=Math.hypot(nose[0],nose[1])||1e-6;
-      const cockpit=(camMode==='cockpit');
-      let eLng=st.lng, eLat=st.lat, eAlt=st.alt;
-      if(!cockpit){ const back=48, up=16; eLat=st.lat-back*(nose[0]/hd)/mLatM; eLng=st.lng-back*(nose[1]/hd)/mLonM; eAlt=st.alt+up; }
-      const lookM=1800, tLat=st.lat+lookM*nose[0]/mLatM, tLng=st.lng+lookM*nose[1]/mLonM, tAlt=st.alt-lookM*nose[2];
-      let cam=null; try{ if(map.calculateCameraOptionsFromTo) cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},eAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
-      if(cam){ if(cam.pitch>85) cam.pitch=85; else if(cam.pitch<0) cam.pitch=0; if(!stabilizeCam) cam.roll=st.phi*R2D; st._cam=cam;
-        try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
-      else { const hdgDeg=(st.psi*R2D+360)%360; try{ map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:hdgDeg,pitch:70,roll:stabilizeCam?0:st.phi*R2D}); }catch(_){} }
+      /* ---- CAMERA (#R95): a TRUE eye-point view driven by the attitude, NOT a ground look-at. The old code called
+         calculateCameraOptionsFromTo(eye → a ground target 1.8 km ahead) and then FORCED the resulting pitch into
+         0–85°. Three faults fell out of that: (a) center/zoom/alt were solved for the un-clamped geometry, so once
+         the pitch was crushed to 85° the eye drifted off the aircraft and jittered every frame (the "bounce" — a 1°
+         nose change moved the 1.8 km aim-point tens of metres); (b) a climb/loop could never look above the horizon;
+         (c) the roll came from qToEuler, which flips ±180° as the pitch crosses the vertical (gimbal lock).
+         Now the eye is placed AT the aircraft (Cockpit) or behind+above it (Follow) and bearing/pitch/roll are read
+         straight from the body axes via calculateCameraOptionsFromCameraLngLatAltRotation (MapLibre v5), so the view
+         follows the nose through the vertical, over the top of a loop and inverted — no clamp, no flip, no bounce.
+         roll is the bank of the wings about the view axis (continuous through the vertical, unlike the Euler roll). */
+      const fwd=qRot(st.q,[1,0,0]), rightW=qRot(st.q,[0,1,0]), bodyUp=qRot(st.q,[0,0,-1]);
+      const mLatM=110574, mLonM=(111320*Math.cos(st.lat*D2R))||1, cockpit=(camMode==='cockpit');
+      let eN=0,eE=0,eD=0;   /* eye offset from the aircraft, NED metres (0 = eye AT the aircraft, cockpit) */
+      if(!cockpit){ const back=55, up=15; eN=-back*fwd[0]+up*bodyUp[0]; eE=-back*fwd[1]+up*bodyUp[1]; eD=-back*fwd[2]+up*bodyUp[2]; }
+      const eLng=st.lng+eE/mLonM, eLat=st.lat+eN/mLatM; let eAlt=st.alt-eD;
+      if(!cockpit && st.lastTerr!=null && eAlt<st.lastTerr+3) eAlt=st.lastTerr+3;   /* keep the chase eye above the ground */
+      const bearing=(Math.atan2(fwd[1],fwd[0])*R2D+360)%360;                        /* nose heading (0=N,90=E) */
+      const pitch=Math.max(0.5,Math.min(179.5, 90 - Math.asin(Math.max(-1,Math.min(1,fwd[2])))*R2D));   /* 90=level, >90 look UP, <90 look DOWN */
+      let roll=0;
+      if(!stabilizeCam){ const a=fwd[0],b=fwd[1],c=fwd[2];   /* bank = angle of the right wing about the nose, vs the wings-level reference (world-horizontal ⟂ nose) */
+        const d1=rightW[0]*(-b)+rightW[1]*a, d2=rightW[0]*(-a*c)+rightW[1]*(-b*c)+rightW[2]*(a*a+b*b);
+        if(Math.abs(d1)>1e-9||Math.abs(d2)>1e-9) roll=Math.atan2(d2,d1)*R2D; }   /* → 0 near the vertical (degenerate) instead of flipping */
+      let cam=null; try{ if(map.calculateCameraOptionsFromCameraLngLatAltRotation) cam=map.calculateCameraOptionsFromCameraLngLatAltRotation({lng:eLng,lat:eLat},eAlt,bearing,pitch,roll); }catch(_){}
+      if(cam){ st._cam=cam; try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
+      else {   /* safety fallback (older MapLibre without the rotation API): eye→nose look-at with calculateCameraOptionsFromTo,
+                  which also resolves pitch>90 correctly — verified on 5.24.0 — but returns no roll, so we set it ourselves. */
+        const lookM=1800, tLat=st.lat+lookM*fwd[0]/mLatM, tLng=st.lng+lookM*fwd[1]/mLonM, tAlt=st.alt-lookM*fwd[2];
+        let c2=null; try{ if(map.calculateCameraOptionsFromTo) c2=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},eAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
+        if(c2){ c2.roll=roll; st._cam=c2; try{ map.jumpTo(c2); }catch(_){ try{ delete c2.roll; map.jumpTo(c2); }catch(__){} } }
+        else { try{ map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} } }
       updateHUD(agl,f);
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
