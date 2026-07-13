@@ -5,6 +5,14 @@
 
 ---
 
+## R93c — FIX "no transit route" on long international journeys (tag `#R93c`)
+
+Re-report with screenshot: "ロンドンからリガまで鉄道" → "この区間の公共交通経路が見つかりません" ("ふざけんな、Google Mapならある"). It DOES exist.
+
+- **Diagnosis:** Transitous/MOTIS actually HAS the route (verified: London→Riga returns 5 itineraries — Piccadilly → Eurostar EST 9106 → ICE 147 → … → FlixBus → Riga, ~33 h, 1,677 km). But MOTIS is slow/heavy for such long international queries and intermittently 504s / hangs on the first hit. The old `transit()` fetch was a single shot with **no timeout and no retry** — one bad response and it fell straight to `railRoute`, which rejects anything >430 km (Overpass bbox would be all of Europe) → a wrong "no public-transit route".
+- **Fix:** robust plan fetch — per-fetch `AbortController` timeout (32 s), **retry the direct endpoint** (long routes usually succeed once the router warms), then the corsproxy + allorigins ladder, and only ACCEPT a response that actually carries itineraries (a bare 200 with none is a retry, not a dead end).
+- **Verified:** London→Riga now returns `{ok:true, transit:true, 5 alternatives}` in ~13 s (was a false "no route"). No console errors. (Renders via the R93b-fixed per-mode colour path.)
+
 ## R93b — ROOT CAUSE of the all-white transit route line (tag `#R93b`)
 
 Re-report with screenshot: an Amsterdam→London transit route drew as ONE solid **white** line — "どこからどこまでどの路線なのか、どこで徒歩なのかわからない". The R85/R86/R86d per-mode-colour work never actually showed on the map.

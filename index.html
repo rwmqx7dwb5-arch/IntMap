@@ -20909,8 +20909,16 @@ window.addEventListener('DOMContentLoaded', () => {
     async function transit(from,to,opts){ opts=opts||{};
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
       const url='https://api.transitous.org/api/v1/plan?fromPlace='+(+from.lat).toFixed(6)+','+(+from.lng).toFixed(6)+'&toPlace='+(+to.lat).toFixed(6)+','+(+to.lng).toFixed(6)+'&time='+encodeURIComponent(tISO)+(opts.arriveBy?'&arriveBy=true':'');
-      let j=null; const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x)];
-      for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok){ j=await r.json(); if(j) break; } }catch(_){} }
+      /* (#R93c) ROBUST plan fetch — MOTIS is slow/heavy for long international routes (e.g. London→Riga, 1677 km, ~33 h)
+         and sometimes 504s or hangs on the first hit; the old single-shot fetch then fell straight to railRoute, which
+         rejects anything >430 km → a wrong "no transit route". Now: per-fetch timeout, RETRY the direct endpoint (long
+         routes usually succeed once the router warms), then a proxy ladder — and only ACCEPT a response that actually
+         carries itineraries (a bare 200 with none is treated as a failure to retry, not a dead end). */
+      const _fetchPlan=async(u)=>{ const ac=new AbortController(), t=setTimeout(()=>{try{ac.abort();}catch(_){}},32000);
+        try{ const r=await fetch(u,{signal:ac.signal}); if(r&&r.ok){ const jj=await r.json(); const it=jj&&(jj.itineraries||(jj.plan&&jj.plan.itineraries)); if(it&&it.length) return jj; } }catch(_){}finally{ clearTimeout(t); } return null; };
+      let j=null; const cx='https://corsproxy.io/?url='+encodeURIComponent(url), al='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
+      const attempts=[url,url,cx,al];   /* direct, direct-retry, then two CORS proxies */
+      for(let i=0;i<attempts.length;i++){ j=await _fetchPlan(attempts[i]); if(j) break; if(attempts[i]===url) await new Promise(r=>setTimeout(r,800)); }
       const its=j&&(j.itineraries||(j.plan&&j.plan.itineraries));
       if(!its||!its.length){ /* (#R85e) no open-GTFS service here (e.g. Japan intercity JR) → route on the real rail network */
         try{ const rr=await railRoute(from,to); if(rr&&rr.ok) return _renderRail(from,to,rr); }catch(_){}
