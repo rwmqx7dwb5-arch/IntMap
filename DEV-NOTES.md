@@ -5,6 +5,13 @@
 
 ---
 
+## R94s — Flight camera: ZERO orbiting (fixed pitch) + inverted up/down arrows (tag `#R94s`)
+
+Re-report: *"すべての方向で回り込みはゼロにしろ。あと、上下矢印の動作は反転させろ。"* — make the orbiting zero in every direction, and invert the up/down arrows.
+
+- **Zero orbiting.** ANY change of the MapLibre camera PITCH pivots the whole view around the ground `center` — that pivot IS the orbit — and a look-ahead centre that depends on attitude/altitude also slides it. So R94r's gentle pitch coupling still orbited a bit. Now the camera pitch is a FIXED constant (Follow **68°** / Cockpit **78°**, no coupling to the aircraft pitch at all) and the look-ahead is a small CONSTANT (0.22 / 0.05 km). The centre therefore only tracks the aircraft's own position; the bearing follows the heading and the roll matches the bank (the aircraft yawing/rolling, not an orbit); a gentle smoothed altitude→zoom stays (a zoom, not an orbit). Aircraft PITCH is read on the HUD (pitch ladder + ADI). Verified: camPitch is identical (68°) across aircraft pitch −30…+30° → zero pitch orbiting; the unused `camPitchS` smoothing was removed.
+- **Inverted pitch arrows.** ↑ = nose DOWN, ↓ = nose UP (elevator input `cmd('arrowdown','arrowup')` → arrowUp=+1, which with −Cmde pitches down). Verified deterministically (self-contained stop→start→step so the async loop can't contaminate it): ↑ → −47.8°/s (nose down), ↓ → +47.8°/s (nose up), no-input holds level (0°/s). GOTCHA that bit the test: the sim keeps flying via rAF between eval calls and `start()` no-ops when already `on`, so a headless control test must `stop()`+`start()` and zero `st.elev/ail/rud` itself. 0 console errors.
+
 ## R94r — Flight camera: kill the "上下方向がありえない動き" (pitch orbiting the world) (tag `#R94r`)
 
 Re-report: after R94q the view when pitching up/down was still clearly wrong — an "impossible movement."

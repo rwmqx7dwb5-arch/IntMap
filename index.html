@@ -22086,7 +22086,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapFlightSim=(function(){
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
-    let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false, camZoom=null, camPitchS=null; const keys={};
+    let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false, camZoom=null; const keys={};
     let acKey='airliner', camMode='chase', stabilizeCam=false, paused=false;   /* (#R94p) selectable aircraft + camera state */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
     /* ===== (#R94p) FULL RIGID-BODY FLIGHT MODEL ("感性(慣性)や空気抵抗、機体による差…すべてを考慮した完璧なモデル").
@@ -22267,7 +22267,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function fsAction(k){ if(!st) return false;
       if(k==='f') st.flaps=(st.flaps>=0.99)?0:Math.min(1,Math.round((st.flaps+0.34)*100)/100);   /* flaps notch: 0→⅓→⅔→full→up */
       else if(k==='g') st.gear=st.gear>0.5?0:1;                                                    /* landing gear */
-      else if(k==='c'){ camMode=(camMode==='cockpit')?'chase':'cockpit'; camZoom=null; camPitchS=null; }   /* Follow ↔ Cockpit */
+      else if(k==='c'){ camMode=(camMode==='cockpit')?'chase':'cockpit'; camZoom=null; }   /* Follow ↔ Cockpit */
       else if(k==='v') stabilizeCam=!stabilizeCam;                                                  /* level-horizon toggle */
       else if(k==='p') paused=!paused;                                                              /* pause */
       else if(k==='r') respawn();                                                                   /* reset in place */
@@ -22292,7 +22292,7 @@ window.addEventListener('DOMContentLoaded', () => {
         onGround:false, lastTerr:null, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='chase';
       computeTrim();
-      camZoom=null; camPitchS=null;
+      camZoom=null;
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
@@ -22450,8 +22450,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(keys['w']) st.thr=Math.min(1,st.thr+0.5*dt); if(keys['s']) st.thr=Math.max(0,st.thr-0.5*dt);
       st.brake=keys[' ']?1:0; st._ab=ac.ab&&!!keys['shift']&&st.thr>0.95;
       const cmd=(lo,hi)=>((keys[lo]?-1:0)+(keys[hi]?1:0)), sweep=(cur,to,r)=>cur+Math.max(-r*dt,Math.min(r*dt,to-cur));
-      /* elevator/rudder signs match the −Cmde / −Cndr convention: ↑ (pull) → nose UP, D → yaw RIGHT */
-      st.elev=sweep(st.elev,cmd('arrowup','arrowdown'),3.0); st.ail=sweep(st.ail,cmd('arrowleft','arrowright'),4.0); st.rud=sweep(st.rud,cmd('d','a'),3.5);
+      /* (#R94s) INVERTED pitch control (per request): ↑ = nose DOWN, ↓ = nose UP — cmd('arrowdown','arrowup')
+         gives arrowup=+1 which, with −Cmde, pitches DOWN. Rudder: D → yaw RIGHT. */
+      st.elev=sweep(st.elev,cmd('arrowdown','arrowup'),3.0); st.ail=sweep(st.ail,cmd('arrowleft','arrowright'),4.0); st.rud=sweep(st.rud,cmd('d','a'),3.5);
       st._acc=(st._acc||0)+dt; const H=1/200; let n=0, flags=null;
       while(st._acc>=H && n<24){ flags=stepFixed(H,ac); st._acc-=H; n++; }
       if(n>=24) st._acc=0;                       /* fell behind (lag) → drop the backlog, never spiral */
@@ -22467,16 +22468,21 @@ window.addEventListener('DOMContentLoaded', () => {
          (48–80°) so it nudges the horizon instead of orbiting or saturating; (c) the zoom is gentle + smoothed.
          Direction is still correct — nose-up tilts the view up. Roll = the true bank (no clamp → inverted shows
          rolled over, #2/#3); Stabilize (V) locks the horizon; C cycles Follow ↔ Cockpit. ---- */
-      const hdgDeg=(st.psi*R2D+360)%360, pitchDeg=st.theta*R2D, rollDeg=st.phi*R2D;
+      const hdgDeg=(st.psi*R2D+360)%360, rollDeg=st.phi*R2D;
       const bank=stabilizeCam?0:rollDeg;
       const cockpit=(camMode==='cockpit');
-      const aheadKm=cockpit?Math.max(0.03,Math.min(0.35,0.05+agl*0.0001)):Math.max(0.25,Math.min(1.8,0.35+agl*0.0005));
+      /* (#R94s) ZERO orbiting in every axis: MapLibre pivots the camera around the ground `center`, so ANY change
+         of the camera pitch — or of a look-ahead centre that depends on attitude/altitude — swings the world.
+         So the camera PITCH is now a FIXED constant (no coupling to the aircraft pitch) and the look-ahead is a
+         small CONSTANT. The centre therefore only tracks the aircraft's own position, the bearing follows the
+         heading and the roll matches the bank (those are the aircraft yawing/rolling, not an orbit). Attitude is
+         read on the HUD (pitch ladder + ADI). */
+      const aheadKm=cockpit?0.05:0.22;
       const cLng=st.lng+(aheadKm*Math.sin(st.psi))/((111.320*Math.cos(st.lat*D2R))||1), cLat=st.lat+(aheadKm*Math.cos(st.psi))/110.574;
-      const pitchTarget=Math.max(48,Math.min(80,(cockpit?76:71)+pitchDeg*0.32));
-      camPitchS=(camPitchS==null)?pitchTarget:(camPitchS+(pitchTarget-camPitchS)*Math.min(1,4*dt));
-      const tz=Math.max(cockpit?12.2:10.5, Math.min(cockpit?15.4:14.4, (cockpit?15:14) - Math.log2(Math.max(80,agl)/80)*0.45));
-      camZoom=(camZoom==null)?tz:(camZoom+(tz-camZoom)*Math.min(1,1.8*dt));
-      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:camPitchS, roll:bank };
+      const camPitch=cockpit?78:68;
+      const tz=Math.max(cockpit?12.5:10.8, Math.min(cockpit?15:14, (cockpit?14.6:13.6) - Math.log2(Math.max(120,agl)/120)*0.4));
+      camZoom=(camZoom==null)?tz:(camZoom+(tz-camZoom)*Math.min(1,1.5*dt));
+      const cam={ center:[cLng,cLat], zoom:camZoom, bearing:hdgDeg, pitch:camPitch, roll:bank };
       try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} }
       updateHUD(agl,f);
       raf=requestAnimationFrame(loop); }
