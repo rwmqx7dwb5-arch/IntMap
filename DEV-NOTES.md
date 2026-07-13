@@ -5,6 +5,14 @@
 
 ---
 
+## R89 — Slope/aspect terrain analysis + shared DEM sampler (tag `#R89`)
+
+"地形から傾斜角、斜面方向、急傾斜地を色分けする。災害・登山・建設・軍事分析に使える。"
+
+- **`window.IntMapTerrain`** — shared keyless DEM access reused by slope/aspect, RF viewshed and terrain shadows. Decodes Mapzen/AWS **terrarium terrain-RGB tiles** (public S3, verified CORS-OK for canvas readback; elevation = `R*256 + G + B/256 − 32768` m) into an `await sampler([w,s,e,n], z) → {elevAt(lng,lat)}`. Tile cache; caps at 48 tiles/view (caller lowers zoom otherwise).
+- **`window.IntMapSlope`** — colour-codes the current view from the REAL elevation model, two modes: **slope** (steepness angle: green→yellow→orange→red ramp) and **aspect** (the compass direction each slope faces: hue = bearing). Central-difference gradient on a 48×48 grid with proper metres-per-degree (× cos lat for longitude); recomputes on pan/zoom (debounced, view-key cached). Layer row `dl-slope` (⛰), an in-legend mode toggle, Atlas actions (`slope`/`aspect`/`terrainAnalysis`/…). 
+- **Verified against Mt Fuji (real numbers, headless-safe):** summit elevation **3,754 m** (actual 3,776 m ✓), flank slope **31.2°** (Fuji's cone ~30–35° ✓). Aspect bug caught in verification and fixed — NE flank now → **40° (NE)**, SW flank → **226° (SW)** (was mis-rotated ~95°; corrected to downslope azimuth `atan2(-dz/dx, -dz/dy)` clockwise from north). Boots clean, no console errors. Map paint uses the standard geojson-fill primitive (can't be exercised in the hidden tab).
+
 ## R88 — Universal Object List (汎用オブジェクト一覧) (tag `#R88`)
 
 "現在地図に存在するピン、描画、半径、経路、アップロードデータを一覧化し、表示・非表示・名称変更・色変更・削除を一か所で。今は機能ごとに管理場所が分散している。"
