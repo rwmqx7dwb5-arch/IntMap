@@ -5,6 +5,14 @@
 
 ---
 
+## R93b — ROOT CAUSE of the all-white transit route line (tag `#R93b`)
+
+Re-report with screenshot: an Amsterdam→London transit route drew as ONE solid **white** line — "どこからどこまでどの路線なのか、どこで徒歩なのかわからない". The R85/R86/R86d per-mode-colour work never actually showed on the map.
+
+- **Real root cause (predates R86d):** the `imroute-walk`/`-rail`/`-transfer`/`-pt` layers used a filter that **mixes a LEGACY `$type` clause with an EXPRESSION `['get',…]` clause** in one `['all',…]` — e.g. `['all',['==','$type','LineString'],['==',['get','walk'],1]]`. MapLibre **silently rejects the mixed filter and never creates the layer** (no throw — `addLayer` returns, `getLayer` is false). So only `imroute-cas` (a pure-legacy `['==','$type',…]` filter = white casing) ever rendered; the colour layers didn't exist. My R86d verification only checked FEATURE generation (a headless harness), never layer creation — the hidden tab can't paint.
+- **Fix:** convert those filters to all-EXPRESSION (`['==',['geometry-type'],'LineString']` etc.) so they're consistent with the `['get',…]` clause. Fixed all 6 imroute layers + the identically-broken `imdis-line` (disaster edge). The pure-legacy filters elsewhere (grid, tool-poly — legacy `$type`+`kind`) were left untouched (they work).
+- **Verified for real this time** (`?rafshim=1` makes the preview map load, so `queryRenderedFeatures` works): after the fix all 6 imroute layers exist and the selected Amsterdam→London route **renders per-mode** — walk `#7a7f87` grey, rail `#1558d6` blue, subway `#ff6d00` orange — with the 4 alternatives dimmed in their palette colours (8 selected legs + 32 dimmed legs actually painted). **LESSON: for any map-layer change, load the preview with `?rafshim=1` and confirm with `queryRenderedFeatures`, not just a data-level harness.**
+
 ## R93 — Earth Replay (世界を巻き戻す) (tag `#R93`)
 
 "日時を指定すると、その時点の世界を可能な限り復元する… 単なる過去地図ではなく Google Earth＋タイムマシン＋ニュースアーカイブ。現在ある歴史国境やニュースタイムラインを、地球全体の共通時計に統合する。"
