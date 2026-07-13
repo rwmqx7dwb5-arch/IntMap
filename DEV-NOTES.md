@@ -5,6 +5,13 @@
 
 ---
 
+## R93 — Earth Replay (世界を巻き戻す) (tag `#R93`)
+
+"日時を指定すると、その時点の世界を可能な限り復元する… 単なる過去地図ではなく Google Earth＋タイムマシン＋ニュースアーカイブ。現在ある歴史国境やニュースタイムラインを、地球全体の共通時計に統合する。"
+
+- **`window.IntMapEarthReplay`** — a master clock that puts the app's existing dated features onto ONE shared globe time axis rather than a separate history map. Centre-bottom panel: date field + year field + 24-h UTC slider + **▶ play** (+3 h/tick). On every change it: (1) draws a **real day/night terminator** computed for the datetime — terminator latitude = `atan(−cos H / tan dec)` per longitude, ring closed over whichever pole is in polar night — works for ANY date; (2) for dates within ~10 years, drives the existing **time-travel engine** (`dispatch{type:'timeTravel',date}`) so news / satellite imagery / earthquakes jump to that date; (3) reloads any ON **dated raster layers** (temp/precip/SST/snow/AOD/NO2/fire/… via `_imLayerDates` + `refreshDatedLayer`). Readout shows sub-solar latitude, which pole is dark, and the active scope. Atlas actions (`earthReplay`/`replay`/`rewind`/`timeMachine`/`worldAt`) + deterministic NL ("世界を巻き戻す", "rewind the world to 2022-02-24", "earth replay").
+- **Verified (real astronomy, headless-safe):** solar declination June **+23.4°** / Dec **−23.4°** / equinox **−0.1°**; terminator dark pole flips correctly — **June → South** polar night, **December → North** (124-pt ring). Boots clean, no console errors. Terminator paint + the time-travel/dated-layer orchestration reuse already-proven engines (not exercisable in the hidden tab).
+
 ## R92 — Unified disaster simulator (災害シミュレーター) (tag `#R92`)
 
 "洪水、津波、火山灰、煙、放射性物質…発生地点と条件から時間ごとの影響範囲を表示。既存の個別シミュレーションを一つの共通基盤にまとめる。"

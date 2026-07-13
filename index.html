@@ -23689,6 +23689,10 @@ window.addEventListener('DOMContentLoaded', () => {
           let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat,name:g.name}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; }catch(_){}
           try{ if(window.IntMapDisaster){ window.IntMapDisaster.setHazard(hz); window.IntMapDisaster.open(ll); } }catch(_){}
           return R(true, note('🌐 '+L('Disaster simulator','災害シミュレーター','Katastrophen-Simulator','Симулятор ЧС','Simulador de desastres')+' — '+({flood:'🌊 '+L('flood inundation','洪水浸水','Hochwasser','наводнение','inundación'),tsunami:'🌊 '+L('tsunami inundation','津波浸水','Tsunami','цунами','tsunami'),ash:'🌋 '+L('ashfall plume','火山灰プルーム','Aschefall','пепел','ceniza'),smoke:'💨 '+L('smoke plume','煙プルーム','Rauch','дым','humo'),radiation:'☢ '+L('radioactive fallout','放射性降下物','Fallout','радиация','lluvia radiactiva')}[hz])+'. '+L('Pick the hazard & source in the panel; the time slider steps the impact area. Educational approximation — follow official authorities in a real emergency.','パネルで災害種別と発生地点を選択、時間スライダーで影響範囲が変化します。教育目的の近似——実災害時は公的機関に従ってください。','Bildungsnäherung.','Образовательная модель.','Aproximación educativa.'))); }
+        /* (#R93) Earth Replay — rewind the whole globe to a datetime */
+        case 'earthReplay': case 'replay': case 'rewind': case 'timeMachine': case 'worldAt': case 'rewindWorld': {
+          try{ if(window.IntMapEarthReplay){ window.IntMapEarthReplay.open(); const dstr=a.date||a.datetime||a.when||a.time; if(dstr){ const d=new Date(/^\d{4}$/.test(String(dstr))?(dstr+'-06-21T12:00:00Z'):dstr); if(!isNaN(d)) window.IntMapEarthReplay.setWhen(d); } } }catch(_){}
+          return R(true, note('⏳ '+L('Earth Replay','世界を巻き戻す','Earth Replay','Реплей Земли','Earth Replay')+' — '+L('one clock for the whole globe: pick a date/time and the day/night terminator is drawn for it; within ~10 years the news, satellite imagery and quakes time-travel to that date, and dated weather/air layers reload. ▶ plays time forward.','地球全体を1つの時計で：日時を選ぶと昼夜境界を描画、約10年以内ならニュース・衛星画像・地震がその日付へ移動し、日付付きレイヤーも再読込。▶で再生。','Eine Uhr für die ganze Erde.','Одни часы для всей планеты.','Un reloj para todo el globo.'))); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
@@ -24863,6 +24867,9 @@ window.addEventListener('DOMContentLoaded', () => {
         if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()}); }
       /* (#R88) universal object list — "オブジェクト一覧", "manage objects", "show all my objects/pins/drawings" */
       if(/^(?:(?:汎用)?オブジェクト(?:の)?(?:一覧|リスト|管理|マネージャ)|オブジェクトを(?:管理|一覧|表示)|ピンや?(?:図形|描画)?(?:の)?(?:一覧|管理)|地図上の(?:オブジェクト|もの)を(?:管理|一覧)|(?:manage|list|show|open)\s+(?:all\s+)?(?:my\s+)?(?:map\s+)?objects?|object\s+(?:list|manager|panel)|manage\s+(?:pins|drawings|shapes|everything on the map))[。.!?！？]?$/i.test(s)) return A({type:'objects'});
+      /* (#R93) Earth Replay — "世界を巻き戻す", "earth replay", "rewind the world (to <date>)", "world on <date>" */
+      { let fm2=s.match(/(?:世界を巻き戻|地球を巻き戻|アース\s*リプレイ|世界の(?:巻き戻し|リプレイ)|earth\s*replay|rewind\s+(?:the\s+)?(?:world|earth|globe)|time\s*machine|(?:show|reconstruct)\s+the\s+world\s+(?:on|at|in))\b\s*(?:を|に|して|表示)?\s*(\d{4}(?:[-/]\d{1,2}(?:[-/]\d{1,2})?)?)?/i);
+        if(fm2) return A(Object.assign({type:'earthReplay'}, fm2[1]?{date:fm2[1].replace(/\//g,'-')}:{})); }
       /* (#R86c) multi-stop route optimisation (TSP) — "A・B・Cを最短で回る", "optimize route through A, B, C" */
       { fm=low.match(/^(?:optimi[sz]e|plan|find|best|shortest)\s+(?:the\s+)?(?:route|order|tour|trip|itinerary|path)\s+(?:to\s+)?(?:visit(?:ing)?|through|for|of|via|around|between)\s+(.+?)\.?$/i)
           ||low.match(/^(?:best|shortest|optimal|most efficient)\s+(?:order|way|route)\s+to\s+visit\s+(.+?)\.?$/i);
@@ -26208,6 +26215,75 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ origin=ll; run(); } }
     function close(){ if(panel) panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     return { open, run, clear:close, setHazard:(h)=>{ hazard=h; syncHaz&&syncHaz(); renderParam&&renderParam(); }, _inund:async(o,hz,ts,fm,wh)=>{ origin=o; hazard=hz; tstep=ts||3; if(fm)floodM=fm; if(wh)waveH=wh; return await inund(); } }; })();
+
+  /* ===== (#R93) EARTH REPLAY — "世界を巻き戻す" — a master clock that reconstructs the world at a chosen moment by
+     driving EVERY dated layer from one time axis: a real day/night terminator computed for the datetime (works for
+     ANY date), plus — for dates within the archives' reach — the time-travel of news / satellite imagery / quakes
+     (existing timeTravel engine) and any dated raster layers (temp/precip/SST/… via refreshDatedLayer). Not a
+     separate history map — it puts the existing dated features onto one shared globe clock. ▶ plays time forward. ===== */
+  window.IntMapEarthReplay=(function(){
+    if(typeof map==='undefined'||!map) return { open(){}, close(){}, setWhen(){} };
+    const SRC='imrep-src'; const rad=Math.PI/180, J1970=2440588, J2000=2451545, dayMs=86400000, e=rad*23.4397;
+    let panel=null, when=new Date(), playing=0;
+    const ER=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[currentLang]||en;
+    const toDays=d=>d.valueOf()/dayMs-0.5+J1970-J2000;
+    function solar(date){ const d=toDays(date); const M=rad*(357.5291+0.98560028*d), C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M)), L=M+C+rad*102.9372+Math.PI;
+      const dec=Math.asin(Math.sin(e)*Math.sin(L)), ra=Math.atan2(Math.sin(L)*Math.cos(e),Math.cos(L)); return { d, dec, ra }; }
+    /* day/night terminator polygon for the datetime: terminator latitude at each longitude is atan(−cos H / tan dec),
+       and the ring is closed over whichever pole is in polar night (the winter pole). */
+    function terminatorFC(date){ const {d,dec,ra}=solar(date); if(Math.abs(dec)<1e-4) return null;
+      const pts=[]; for(let lng=-180;lng<=180;lng+=3){ const th=rad*(280.16+360.9856235*d)+rad*lng; const H=th-ra; let lat=Math.atan(-Math.cos(H)/Math.tan(dec))/rad; lat=Math.max(-89.5,Math.min(89.5,lat)); pts.push([lng,lat]); }
+      const darkPole=dec>0?-90:90;   /* dec>0 = N summer → S pole dark */
+      const ring=pts.concat([[180,darkPole],[-180,darkPole],[pts[0][0],pts[0][1]]]);
+      return { type:'Feature', geometry:{type:'Polygon',coordinates:[ring]}, properties:{} }; }
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'imrep-night',type:'fill',source:SRC,paint:{'fill-color':'#04070f','fill-opacity':0.42}});
+      return true; }catch(_){ return false; } }
+    function ymd(d){ try{ return d.toISOString().slice(0,10); }catch(_){ return ''; } }
+    function drawTerminator(){ try{ ensure(); const t=terminatorFC(when); map.getSource(SRC).setData(t?{type:'FeatureCollection',features:[t]}:{type:'FeatureCollection',features:[]}); }catch(_){} }
+    let _lastTT='';
+    function apply(){ drawTerminator();
+      const now=new Date(), yrsBack=(now-when)/(365.25*dayMs), tt=ymd(when);
+      /* within the ~10-year archive reach → drive the existing time-travel engine (news / imagery / quakes) */
+      if(when<=now && yrsBack<=10 && tt!==_lastTT){ _lastTT=tt; try{ if(window.IntMapConsole&&window.IntMapConsole.dispatch) window.IntMapConsole.dispatch({type:'timeTravel',date:tt}); }catch(_){} }
+      /* any ON dated raster layers → set to the month and reload */
+      try{ const LD=window._imLayerDates; if(LD){ ['temp','precip','sst','snow','aod','no2','co','fire','truecolor','viirs'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=tt; if(window.refreshDatedLayer&&map.getLayer('lyr-'+k)) window.refreshDatedLayer(k); } }); } }catch(_){}
+      updateReadout();
+    }
+    function updateReadout(){ if(!panel) return; const r=panel.querySelector('.er-read'); if(!r) return; const now=new Date(), yrsBack=(now-when)/(365.25*dayMs);
+      const S=solar(when); const dpole=S.dec>0?ER('S pole in polar night','南極は極夜','Südpol Polarnacht','Ю. полюс — полярная ночь','Polo sur noche polar'):ER('N pole in polar night','北極は極夜','Nordpol Polarnacht','С. полюс — полярная ночь','Polo norte noche polar');
+      let scope; if(when>now) scope=ER('future — terminator only','未来 — 昼夜のみ','Zukunft','будущее','futuro'); else if(yrsBack<=10) scope=ER('news · imagery · quakes time-travelled to this date','ニュース・衛星画像・地震をこの日付へ','News/Bilder/Beben zeitversetzt','новости/снимки/толчки','noticias/imágenes/sismos');
+        else scope=ER('pre-archive date — day/night terminator + any historical layers','アーカイブ以前 — 昼夜境界＋歴史レイヤー','vor Archiv','до архива','antes del archivo');
+      r.innerHTML='<b>🌍 '+ymd(when)+' '+String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+' UTC</b><div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">☀️ '+ER('sub-solar lat','太陽直下点緯度','subsolar','подсолнечная','subsolar')+' '+(S.dec/rad).toFixed(1)+'° · '+dpole+'</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+scope+'</div>'; }
+    function setWhen(d){ when=(d instanceof Date&&!isNaN(d))?d:new Date(); syncInputs(); apply(); }
+    function syncInputs(){ if(!panel) return; const di=panel.querySelector('.er-date'), yl=panel.querySelector('.er-year'), tl=panel.querySelector('.er-time'), tv=panel.querySelector('.er-tv');
+      try{ if(di) di.value=ymd(when); }catch(_){} if(yl) yl.value=when.getUTCFullYear(); const mins=when.getUTCHours()*60+when.getUTCMinutes(); if(tl) tl.value=mins; if(tv) tv.textContent=String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+'Z'; }
+    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='er-panel';
+      panel.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:96px;width:min(440px,94vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.5);';
+      panel.innerHTML='<div class="er-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">⏳ '+ER('Earth Replay','アース・リプレイ（世界を巻き戻す）','Earth Replay','Реплей Земли','Earth Replay')+'</span><button class="er-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:9px;">'
+        +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+          +'<input type="date" class="er-date" style="height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;">'
+          +'<input type="number" class="er-year" min="1800" max="2100" style="width:74px;height:30px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;padding:0 6px;">'
+          +'<button class="er-now" style="height:30px;padding:0 10px;border:none;border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+ER('Now','現在','Jetzt','Сейчас','Ahora')+'</button>'
+          +'<button class="er-play" style="height:30px;width:36px;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-size:13px;cursor:pointer;">▶</button></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--text-muted);">UTC</span><input type="range" class="er-time" min="0" max="1439" value="720" style="flex:1;"><span class="er-tv" style="font-size:11px;font-weight:700;color:var(--text-main);min-width:52px;text-align:right;">12:00Z</span></div>'
+        +'<div class="er-read" style="font-size:12px;color:var(--text-main);"></div>'
+        +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+ER('One clock for the whole globe: the day/night terminator is computed for any date; within ~10 years the news, satellite imagery and earthquakes time-travel to the date, and any dated weather/air layers reload for it. Turn on the layers you want to replay.','地球全体を1つの時計で再生：昼夜境界はどの日付でも計算し、約10年以内ならニュース・衛星画像・地震がその日付へ移動、日付付きの気象・大気レイヤーも再読込します。再生したいレイヤーをオンにしてください。','Eine Uhr für die ganze Erde.','Одни часы для всей планеты.','Un reloj para todo el globo.')+'</div></div>';
+      document.body.appendChild(panel);
+      panel.querySelector('.er-close').onclick=()=>close();
+      panel.querySelector('.er-now').onclick=()=>setWhen(new Date());
+      panel.querySelector('.er-date').onchange=e=>{ const p=(e.target.value||'').split('-'); if(p.length===3){ const nd=new Date(when); nd.setUTCFullYear(+p[0],+p[1]-1,+p[2]); setWhen(nd); } };
+      panel.querySelector('.er-year').onchange=e=>{ const y=+e.target.value; if(y>=1800&&y<=2100){ const nd=new Date(when); nd.setUTCFullYear(y); setWhen(nd); } };
+      panel.querySelector('.er-time').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setUTCHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(panel._t); panel._t=setTimeout(apply,140); };
+      const pb=panel.querySelector('.er-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ setWhen(new Date(when.getTime()+3*3600000)); },900); } };   /* +3 h per tick */
+      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.er-head')); }catch(_){}
+      return panel; }
+    map.on('styledata',()=>{ if(panel&&panel.style.display!=='none') setTimeout(drawTerminator,90); });
+    function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); apply(); }
+    function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    return { open, close, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
