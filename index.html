@@ -15349,7 +15349,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(codes.length) _applied={codes,hidden};
     }
     /* used by renderStats when the tab renders (countryStats already carries the applied entries + hidden flags) */
-    return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied };
+    /* (#R94h) match a former state to its polygon NAME in the aourednik era-borders data (for map colouring) */
+    const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i };
+    return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
   })();
 
   /* (#R94) Köppen climate era follows the clock (uses the existing period rasters, no new assets). Only
@@ -18080,10 +18082,11 @@ window.addEventListener('DOMContentLoaded', () => {
        engine only writes after its ~1 s fetch — the compare re-renders sooner, so it must not race that. */
     function _ttYear(){ try{ const T=window.IntMapTime; if(!T||T.isLive()) return null; const y=T.year(), now=new Date().getFullYear(); return (y>=1900&&y<now)?y:null; }catch(_){ const y=window._imTimeYear; return (y&&y>=1900)?y:null; } }
     /* (#R94e) GDP & population come from Maddison (real 2011 int$) while travelling, matching the Countries tab. */
-    function _madField(ind){ return (ind&&ind.k==='gdp')?'gdp':((ind&&ind.k==='pop')?'pop':null); }
+    function _madField(ind){ return (ind&&ind.k==='gdp')?'gdp':((ind&&ind.k==='pop')?'pop':((ind&&ind.k==='gdppc')?'gdppc':null)); }
+    function _madOne(M,mf,cd,year){ if(mf==='gdp'){ const g=M.gdpBil(cd,year); return g!=null?g*1e9:null; } if(mf==='pop') return M.popN(cd,year); return M.gdppc(cd,year); }   /* gdppc = real 2011 int$ per capita (unscaled) */
     function _madMap(mf,year){ const M=window.IntMapMaddison; const m={}; if(!M||!M.ready()) return m;
       const need=new Set(codes); codes.forEach(cd=>{ const S=_histEntry&&_histEntry(cd); if(S) S.succ.forEach(c=>need.add(c)); });
-      need.forEach(cd=>{ let v=null; if(mf==='gdp'){ const g=M.gdpBil(cd,year); if(g!=null) v=g*1e9; } else { v=M.popN(cd,year); } if(v!=null) m[cd]={v:v,y:year,real:true}; });
+      need.forEach(cd=>{ const v=_madOne(M,mf,cd,year); if(v!=null) m[cd]={v:v,y:year,real:true}; });
       return m; }
     function _wbYearOne(code,year){ const key='wby|'+code+'|'+year;
       if(cache[key]===undefined){ let wrapped=null;
@@ -18116,10 +18119,11 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const cd of hcs){ const S=_histEntry(cd); if(!S){ continue; }
         const fy=+String(S.from).slice(0,4), ty=+String(S.to).slice(0,4);
         if(year==null||year<fy||year>ty){ m[cd]=null; continue; }   /* outside its lifespan → no value */
-        if(useMad){   /* GDP / population → Maddison real: direct aggregate entity, else sum of successors */
+        if(useMad){   /* GDP / population / per-capita → Maddison real: direct aggregate entity, else derive from successors */
           let val=null;
-          if(M.has(S.code,year)){ val=(mf==='gdp')?(M.gdpBil(S.code,year)*1e9):M.popN(S.code,year); }
-          else { let sum=0,h=false; S.succ.forEach(c=>{ const cv=(mf==='gdp')?M.gdpBil(c,year):M.popN(c,year); if(cv!=null){ sum+=(mf==='gdp')?cv*1e9:cv; h=true; } }); if(h) val=sum; }
+          if(M.has(S.code,year)){ val=_madOne(M,mf,S.code,year); }
+          else if(mf==='gdppc'){ let g=0,p=0,h=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null&&cp!=null){ g+=cg*1e9; p+=cp; h=true; } }); if(h&&p>0) val=g/p; }   /* aggregate per-capita = ΣGDP / Σpop */
+          else { let sum=0,h=false; S.succ.forEach(c=>{ const cv=_madOne(M,mf,c,year); if(cv!=null){ sum+=cv; h=true; } }); if(h) val=sum; }
           m[cd]=(val!=null)?{v:val,y:year,hist:true,real:true}:null; continue;
         }
         if(needW&&!popMap){ try{ popMap=await wbYear('SP.POP.TOTL',year)||{}; }catch(_){ popMap={}; } }
@@ -18251,7 +18255,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'<div id="scp-timebanner" class="stats-timebanner" style="display:none;"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
-      host.querySelector('.scp-back').onclick=()=>{ try{ _endPick(); }catch(_){} try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
+      host.querySelector('.scp-back').onclick=()=>{ try{ _endPick(); }catch(_){} try{ clearMap(); }catch(_){}   /* (#R94h) leaving the comparison clears the map colouring */
+        try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
       host.querySelectorAll('#scp-modes button').forEach(b=>{ b.onclick=()=>{ const m=b.getAttribute('data-m'); if(m===mode) return; mode=m; render(); }; });
       try{ if(typeof renderCompareFixed==='function') setTimeout(renderCompareFixed,0); }catch(_){}   /* hide the selection dock while the comparison owns the feed */
       /* (#R64) real picker: type-to-filter list with flags + check state; click toggles; Enter adds the first
@@ -18372,11 +18377,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const mf=_madField(ind), M=window.IntMapMaddison, useMad=(mf&&M&&M.ready());
       const needW=!_HSUM[ind.k];
       for(const cd of hcs){ const S=_histEntry(cd); if(!S) continue;
-        if(useMad){   /* GDP/pop time-series from Maddison, over the state's lifespan */
+        if(useMad){   /* GDP / pop / per-capita time-series from Maddison, over the state's lifespan */
           const fy2=Math.max(M.minYear,+String(S.from).slice(0,4)), ty2=Math.min(M.maxYear,+String(S.to).slice(0,4)); const out2=[];
           for(let y=fy2;y<=ty2;y++){ let val=null;
-            if(M.has(S.code,y)){ val=(mf==='gdp')?(M.gdpBil(S.code,y)*1e9):M.popN(S.code,y); }
-            else { let sm=0,h=false; S.succ.forEach(c=>{ const cv=(mf==='gdp')?M.gdpBil(c,y):M.popN(c,y); if(cv!=null){ sm+=(mf==='gdp')?cv*1e9:cv; h=true; } }); if(h) val=sm; }
+            if(M.has(S.code,y)){ val=_madOne(M,mf,S.code,y); }
+            else if(mf==='gdppc'){ let g=0,p=0,h=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,y), cp=M.popN(c,y); if(cg!=null&&cp!=null){ g+=cg*1e9; p+=cp; h=true; } }); if(h&&p>0) val=g/p; }
+            else { let sm=0,h=false; S.succ.forEach(c=>{ const cv=_madOne(M,mf,c,y); if(cv!=null){ sm+=cv; h=true; } }); if(h) val=sm; }
             if(val!=null) out2.push({y,v:val}); }
           if(out2.length) serMap[cd]=out2; continue; }
         const fy=Math.max(1960,+String(S.from).slice(0,4)), ty=Math.min(new Date().getFullYear(),+String(S.to).slice(0,4));
@@ -18404,7 +18410,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(_ttYear()&&_mf&&window.IntMapMaddison){ try{ await window.IntMapMaddison.load(); }catch(_){} }
       if(_ttYear() && _mf && window.IntMapMaddison && window.IntMapMaddison.ready()){
         const M=window.IntMapMaddison, serMapM={};
-        codes.forEach(cd=>{ const arr=[]; for(let y=M.minYear;y<=M.maxYear;y++){ const v=(_mf==='gdp')?M.gdpBil(cd,y):M.popN(cd,y); if(v!=null) arr.push({y,v:(_mf==='gdp')?v*1e9:v}); } if(arr.length) serMapM[cd]=arr; });
+        codes.forEach(cd=>{ const arr=[]; for(let y=M.minYear;y<=M.maxYear;y++){ const v=_madOne(M,_mf,cd,y); if(v!=null) arr.push({y,v:v}); } if(arr.length) serMapM[cd]=arr; });
         await _histAddSeries(serMapM, ind);
         return {ind,serMap:serMapM,srcName:'Maddison Project',imfFail:false,real:true}; }
       /* (#R63) source is PER-INDICATOR; IMF only where a real IMF series exists for it */
@@ -18620,6 +18626,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function paintOnMap(){ if(!ensureCmpMap()) return false; const g=window.countryGeo||(typeof countryGeo!=='undefined'?countryGeo:null); if(!g) return false;
       const byCode={}; codes.forEach((cd,i)=>{ byCode[String(cd)]=PAL[i%PAL.length]; });
       const feats=[]; g.features.forEach(f=>{ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const col=byCode[cd]; if(!col||!f.geometry) return; feats.push({type:'Feature',geometry:f.geometry,properties:{color:col}}); });
+      /* (#R94h) former states have no MODERN polygon — paint their era polygon from the clock's historical borders */
+      try{ const HS=window.IntMapHistStates, TB=window.IntMapTimeBorders;
+        if(HS&&TB&&TB.geomFor){ codes.forEach((cd,i)=>{ const S=_histEntry(cd); if(!S) return; const re=HS.hbRe&&HS.hbRe(cd); const geom=re?TB.geomFor(re):null; if(geom) feats.push({type:'Feature',geometry:geom,properties:{color:PAL[i%PAL.length]}}); }); } }catch(_){}
       try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:feats}); }catch(_){}
       return feats.length>0; }
     function clearMap(){ try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
@@ -27111,7 +27120,9 @@ window.addEventListener('DOMContentLoaded', () => {
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
     map.on('styledata',()=>{ if(active&&shownY!=null&&map.isStyleLoaded()&&!map.getLayer('imtb-line')) setTimeout(()=>{ try{ if(active&&map.isStyleLoaded()&&!map.getLayer('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, _nearest:nearest };
+    /* (#R94h) geometry of the first era polygon whose NAME matches — used to paint compared former states */
+    function geomFor(re){ try{ const fc=cache.get(shownY); if(!fc||!re) return null; const f=fc.features.find(ff=>{ const n=(ff.properties&&(ff.properties.NAME||ff.properties.name))||''; return re.test(n); }); return f?f.geometry:null; }catch(_){ return null; } }
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, _nearest:nearest };
   })();
 
   /* ===== Init ===== */
