@@ -295,6 +295,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .stats-toolbar{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; flex-shrink:0; }
     .stats-sort{ background:var(--input-bg); border:none; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer; }
     .stats-sort.active{ background:var(--primary-color); color:#fff; }
+    /* (#R94) time-machine banner atop the Countries list */
+    .stats-timebanner{ margin:0 0 8px; padding:8px 11px; border-radius:10px; font-size:12px; line-height:1.45; background:rgba(10,132,255,0.13); border:1px solid rgba(10,132,255,0.42); color:var(--text-main); }
+    .stats-timebanner.warn{ background:rgba(240,170,50,0.14); border-color:rgba(240,170,50,0.42); }
+    .stats-timebanner b{ font-weight:700; }
     .stat-row{ display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:12px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); transition:0.2s; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
     .stat-flag{ font-size:22px; line-height:1; } .stat-main{ flex:1; min-width:0; }
@@ -675,6 +679,15 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ntl-today:hover{ filter:brightness(1.08); }
     .ntl-slider{ width:100%; accent-color:var(--primary-color); margin:2px 0; }
     .ntl-scale{ display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); padding:0 4px; }
+    /* (#R94) master-clock chrome: a title, a deep-time year field and a "what's synced" readout */
+    .ntl-title{ font-size:11px; font-weight:700; letter-spacing:0.03em; color:var(--text-muted); text-transform:uppercase; margin:0 0 1px; display:flex; align-items:center; gap:5px; }
+    .ntl-title::before{ content:"⏳"; font-size:12px; }
+    .ntl-year{ width:64px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.15); border-radius:8px; padding:5px 6px; font-size:12px; color:var(--text-main); outline:none; -moz-appearance:textfield; }
+    .ntl-year::-webkit-outer-spin-button,.ntl-year::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+    .ntl-synced{ font-size:10.5px; line-height:1.5; color:var(--text-muted); margin-top:4px; display:none; }
+    .news-timeline.active .ntl-synced{ display:block; }
+    .ntl-synced b{ color:var(--text-main); font-weight:600; }
+    .ntl-synced .ntl-chip{ display:inline-block; margin:1px 4px 1px 0; padding:1px 6px; border-radius:6px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); white-space:nowrap; }
     @media(max-width:768px){
       .news-timeline{ bottom:auto; top:max(110px,env(safe-area-inset-top)+108px); right:8px; left:auto; max-width:calc(100vw - 16px); }
       .news-timeline.collapsed{ left:auto; right:8px; max-width:none; }
@@ -1918,17 +1931,20 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     <div id="measure-tooltip" class="measure-tooltip"></div>
     <div id="ctx-menu" class="ctx-menu"></div>
     <div id="pin-popup" class="pin-popup"></div>
-    <!-- Time-travel news timeline -->
+    <!-- (#R94) Time machine — the master spacetime clock (drives news, countries, borders, climate era, …) -->
     <div id="news-timeline" class="news-timeline collapsed">
-      <button class="ntl-toggle" id="ntl-toggle" data-i18n-title="tlTitle" title="Time-travel news">🕘</button>
+      <button class="ntl-toggle" id="ntl-toggle" data-i18n-title="tlTitle" title="Time machine">⏳</button>
       <div class="ntl-body" id="ntl-body">
+        <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Time machine</div>
         <div class="ntl-head">
           <span class="ntl-label" id="ntl-label">Today</span>
+          <input type="number" id="ntl-year" class="ntl-year" min="1900" max="2100" step="1" title="Year" aria-label="Year">
           <input type="date" id="ntl-date" class="ntl-date">
           <button class="ntl-today" id="ntl-today" data-i18n="tlToday">Today</button>
         </div>
         <input type="range" id="ntl-slider" class="ntl-slider" min="0" max="3650" value="3650" step="1">
         <div class="ntl-scale"><span data-i18n="tl10y">−10y</span><span data-i18n="tl5y">−5y</span><span data-i18n="tlNow">Now</span></div>
+        <div class="ntl-synced" id="ntl-synced"></div>
       </div>
     </div>
   </div>
@@ -2253,7 +2269,7 @@ window.addEventListener('DOMContentLoaded', () => {
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
       flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
-      ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time-travel news", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
+      ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time machine", tlMachine:"Time machine", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
       filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date", thermWin24:"Last 24 h", thermWin48:"Last 48 h", thermWin72:"Last 72 h",
@@ -2285,7 +2301,7 @@ window.addEventListener('DOMContentLoaded', () => {
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
       flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
-      ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"過去ニュース", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
+      ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"タイムマシン", tlMachine:"タイムマシン", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
       filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付", thermWin24:"過去24時間", thermWin48:"過去48時間", thermWin72:"過去72時間",
@@ -2328,7 +2344,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
       lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
       filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",
-      tlTitle:"Zeitreise-Nachrichten", tlToday:"Heute", tl10y:"−10 J", tl5y:"−5 J", tlNow:"Jetzt",
+      tlTitle:"Zeitmaschine", tlMachine:"Zeitmaschine", tlToday:"Heute", tl10y:"−10 J", tl5y:"−5 J", tlNow:"Jetzt",
       lblPinMode:"Nachrichten-Pin-Position", pinModeLoc:"Ort des Themas", pinModePub:"Ort des Herausgebers",
       aiTranslateTitles:"Titel übersetzen", aiViewSumBtn:"Diese Ansicht zusammenfassen",
       /* (#R37) full DE coverage — the 184 keys that were falling back to English (measure/stats/community/AI/satellite/context). */
@@ -2374,7 +2390,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblDataSources:"Источники данных", viewDataSources:"Показать источники данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
       lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
       filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
-      tlTitle:"Новости прошлого", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
+      tlTitle:"Машина времени", tlMachine:"Машина времени", tlToday:"Сегодня", tl10y:"−10 л", tl5y:"−5 л", tlNow:"Сейчас",
       lblPinMode:"Положение метки новости", pinModeLoc:"Место события", pinModePub:"Место издателя",
       aiTranslateTitles:"Перевести заголовки", aiViewSumBtn:"Сводка по этому виду",
       /* (#R37) full RU coverage — the same 184 keys that were falling back to English. */
@@ -2421,7 +2437,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblDataSources:"Fuentes de datos", viewDataSources:"Ver fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
       lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
       filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",
-      tlTitle:"Noticias del pasado", tlToday:"Hoy", tl10y:"−10 a", tl5y:"−5 a", tlNow:"Ahora",
+      tlTitle:"Máquina del tiempo", tlMachine:"Máquina del tiempo", tlToday:"Hoy", tl10y:"−10 a", tl5y:"−5 a", tlNow:"Ahora",
       lblPinMode:"Posición del marcador de noticias", pinModeLoc:"Lugar del suceso", pinModePub:"Lugar del medio",
       aiTranslateTitles:"Traducir títulos", aiViewSumBtn:"Resumir esta vista",
       loading:"Cargando artículos...", noMatch:"No se encontraron resultados.", networkError:"No se pudieron cargar las noticias. Reintentando…", emptyHint:"Ninguna pestaña seleccionada — el mapa está despejado.<br>Elige una pestaña arriba para mostrar contenido.",
@@ -5167,23 +5183,27 @@ window.addEventListener('DOMContentLoaded', () => {
       (s.borders&&s.borders.length)?[TR('Borders','隣接','Nachbarländer','Соседи','Fronteras'),s.borders.join(', ')]:null,
       (s.timezones&&s.timezones.length)?[TR('Timezones','時間帯','Zeitzonen','Часовые пояса','Zonas horarias'),s.timezones.slice(0,3).join(', ')+(s.timezones.length>3?'…':'')]:null
     ]);
+    /* (#R94) when the master clock has travelled to a past year, the WB-synced rows carry THAT year;
+       HDI (UNDP) and the Democracy Index (EIU) have no WB annual series so they keep their own year. */
+    const _ty=(typeof window!=='undefined'&&window._imTimeYear)||null; const YR=(def)=>_ty||def; const yrTag=()=>(_ty?` (${_ty})`:'');
+    const _milB=(v)=>'$'+(Math.round(v*10)/10)+'B';
     const econ=sec('💰 '+TR('Economy','経済','Wirtschaft','Экономика','Economía'),[
-      [t('statGdp')+` (${GDP_YEAR})`,fmtMoney(s.gdp)],
+      [t('statGdp')+` (${YR(GDP_YEAR)})`,fmtMoney(s.gdp)],
       s.gdpPPP?[t('statGdpPPP'),fmtMoney(s.gdpPPP)]:null,
-      [t('statGdpPc'),fmtPc(s.gdppc)],
+      [t('statGdpPc')+yrTag(),fmtPc(s.gdppc)],
       s.gdppcPPP?[t('statGdpPcPPP'),fmtPc(s.gdppcPPP)]:null,
       [t('statCurrency'),s.currency||'—']
     ]);
     const soc=sec('👥 '+TR('Society','社会','Gesellschaft','Общество','Sociedad'),[
-      [t('statPop')+` (${POP_YEAR})`,fmtNum(s.pop)],
+      [t('statPop')+` (${YR(POP_YEAR)})`,fmtNum(s.pop)],
       s.hdi?[t('statHDI')+' (2022)',s.hdi.toFixed(3)]:null,
-      s.lifeExp?[t('statLife'),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
-      s.internet?[t('statInet'),s.internet+'%']:null,
+      s.lifeExp?[t('statLife')+yrTag(),s.lifeExp.toFixed(1)+' '+TR('yr','年','J','лет','a')]:null,
+      s.internet?[t('statInet')+yrTag(),(Math.round(s.internet*10)/10)+'%']:null,
       [t('statLang'),s.languages||'—']
     ]);
     const pol=sec('🏛 '+TR('Politics & defense','政治・防衛','Politik & Verteidigung','Политика и оборона','Política y defensa'),[
       s.dem?[t('statDem')+' (2023)',s.dem.toFixed(2)]:null,
-      s.milSpend?[t('statMil')+' (2023)','$'+s.milSpend+'B']:null,
+      s.milSpend?[t('statMil')+` (${YR(2023)})`,_milB(s.milSpend)]:null,
       s.unMember!=null?[TR('UN member','国連加盟','UN-Mitglied','Член ООН','Miembro de la ONU'),yn(s.unMember)]:null
     ]);
     return `<div id="cp-intro" class="cp-intro"></div>`+geo+econ+soc+pol;
@@ -5236,6 +5256,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if(s && s.latlng&&map) map.flyTo({center:[s.latlng[1],s.latlng[0]],zoom:3.5,speed:1.0});
     /* Asynchronously enrich and re-render (#R9b: keep the action buttons at the top) */
     if(s) enrichCountry(idStr).then(()=>{ if(popup.style.display==='block'){ body.innerHTML=topBtns()+renderCountryDetailBody(countryStats[idStr]); _fillCountryIntro(name); } document.getElementById('cp-title').innerHTML=(s.flag?s.flag+' ':'🏳️ ')+cName(s,fallback); });
+    /* (#R94) let the time-machine refresh THIS card's numbers in place (no re-fly / no re-fetch) when the
+       global clock moves — closes over the live idStr/body/topBtns for the currently-open country. */
+    window._imCountryCardRefresh=()=>{ try{ if(popup.style.display!=='block'||!window._cpCurrent||window._cpCurrent.code!==idStr) return; const s2=countryStats[idStr]; if(s2&&body){ body.innerHTML=topBtns()+renderCountryDetailBody(s2); _fillCountryIntro(name); } }catch(_){} };
     popup.style.display='block';
     /* Initial centered position (viewport coords). Drag handle wires in once. */
     if(!popup.dataset.placed){
@@ -9026,6 +9049,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const sb=(k,lbl)=>`<button class="stats-sort ${statsSort===k?'active':''}" onclick="setStatsSort('${k}')">${lbl}</button>`;
     /* Compare selection now lives in the fixed bottom panel (#26), not in the scrolling list. */
     let html=`<div class="stats-toolbar">${sb('gdp',t('sortGdp'))}${sb('pop',t('sortPop'))}${sb('area',t('sortArea'))}${sb('hdi',t('sortHDI'))}${sb('milSpend',t('sortMil'))}${sb('name',t('sortName'))}</div>`;
+    /* (#R94) Time-machine banner — the master clock has travelled to a past year, so these figures are the
+       real World Bank values for THAT year (HDI/Democracy have no WB annual series → kept at latest). */
+    try{ const _ty=window._imTimeYear, _pw=window._imTimePreWB;
+      if(_ty){ html+=`<div class="stats-timebanner">📅 <b>${_ty}</b> · ${currentLang==='jp'?'その年の世界銀行統計を表示中（HDI・民主主義指数は最新値）':currentLang==='de'?'Weltbank-Werte dieses Jahres (HDI/Demokratie: aktuell)':currentLang==='ru'?'Данные Всемирного банка за этот год (ИЧР/демократия — последние)':currentLang==='es'?'Cifras del Banco Mundial de ese año (IDH/democracia: actuales)':'World Bank figures for that year (HDI/Democracy: latest)'}</div>`; }
+      else if(_pw){ html+=`<div class="stats-timebanner warn">📅 <b>${_pw}</b> · ${currentLang==='jp'?'世界銀行の年次データは1960年以降。最新の入手可能な値を表示中':currentLang==='de'?'Weltbank-Jahresreihen ab 1960 — neueste verfügbare Werte':currentLang==='ru'?'Годовые ряды Всемирного банка с 1960 г. — показаны последние доступные':currentLang==='es'?'Las series anuales del Banco Mundial empiezan en 1960 — últimos valores disponibles':'World Bank annual series begin in 1960 — showing the latest available figures'}</div>`; }
+    }catch(_){}
     /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
        build the selection and the dock's view button opens the unified comparison. */
     if(arr.length===0) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
@@ -9202,6 +9231,54 @@ window.addEventListener('DOMContentLoaded', () => {
   /* Time-travel state: when newsDate is set (not null), feed URLs gain after:/before: qualifiers */
   let newsDate=null;
   function ymdISO(d){ return d.toISOString().slice(0,10); }
+
+  /* ============================================================================
+   *  (#R94) INTMAP TIME — the SPACETIME KERNEL. One master clock the whole app runs on.
+   *  The time slider, the date/year inputs, Earth Replay and Atlas all WRITE to this
+   *  single kernel; every time-aware subsystem (news, the dated NASA rasters, the
+   *  Countries statistics, the NATO/EU accession fills, historical borders, the Köppen
+   *  climate era and the day/night terminator) SUBSCRIBES to it (IntMapTime.on) and
+   *  reconstructs itself for the chosen instant. `newsDate` stays the recent-archive
+   *  facet (kept in lock-step) so every existing news/raster reader is untouched; the
+   *  kernel adds deep-time reach (back to 1900) for the subsystems that carry a real
+   *  historical series. Single source of truth = _when (a Date, or null = LIVE/now).
+   *  When LIVE, every subsystem holds its own independent default; the moment you travel
+   *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
+  window.IntMapTime=(function(){
+    const subs=[]; let _when=null; let _bcast=false; const YMIN=1900;
+    const now=()=>new Date();
+    function ev(source){ const w=_when, live=(w==null); const d=live?now():new Date(w);
+      return { date: live?null:new Date(w), when:d, iso: ymdISO(d), year:d.getFullYear(), isLive:live, source:source||'api' }; }
+    function broadcast(source){ if(_bcast) return; _bcast=true;
+      const e=ev(source);
+      /* keep the recent-archive facet in lock-step: past → the instant, live → null */
+      try{ newsDate = e.isLive ? null : new Date(e.when); }catch(_){}
+      subs.forEach(f=>{ try{ f(e); }catch(_){} });
+      _bcast=false; return e; }
+    const OS={};
+    OS.get=()=>_when?new Date(_when):null;         /* the raw instant, or null when live */
+    OS.when=()=>_when?new Date(_when):now();       /* always a Date (now when live) */
+    OS.iso=()=>ymdISO(_when||now());
+    OS.year=()=>(_when||now()).getFullYear();
+    OS.isLive=()=>_when==null;
+    OS.min=YMIN;
+    OS.state=()=>ev('query');
+    OS.on=function(fn){ if(typeof fn==='function'){ subs.push(fn); return ()=>{ const i=subs.indexOf(fn); if(i>=0) subs.splice(i,1); }; } return ()=>{}; };
+    OS.set=function(d,opts){ opts=opts||{};
+      let nd=(d instanceof Date)?new Date(d):(d!=null?new Date(d):null);
+      if(nd && isNaN(nd.getTime())) return OS;
+      if(nd){ const floor=new Date(Date.UTC(YMIN,0,1)); if(nd<floor) nd=floor;
+        if(!opts.allowFuture){ const n=now(); if(nd.getTime()>n.getTime()) nd=null; } }   /* future → live */
+      _when=nd; return broadcast(opts.source), OS; };
+    OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=YMIN)) return OS;
+      const n=now(); if(y>=n.getFullYear()) return OS.setNow(opts);
+      return OS.set(new Date(Date.UTC(y,5,15,12,0,0)), opts); };   /* mid-June noon UTC: neutral season/terminator */
+    OS.setDaysAgo=function(days,opts){ days=Math.round(+days||0);
+      if(days<=0) return OS.setNow(opts);
+      const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-days); return OS.set(d,opts); };
+    OS.setNow=function(opts){ _when=null; return broadcast((opts||{}).source), OS; };
+    return OS;
+  })();
   function dateRangeQualifier(d){
     /* ±3 day window for that date */
     const start=new Date(d.getTime()-3*864e5), end=new Date(d.getTime()+3*864e5);
@@ -9530,6 +9607,13 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
   document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
   document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.community',{source:'ui'});
+  /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
+     so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
+  try{
+    IntMapOS.register('time.now', ()=>{ window.IntMapTime.setNow({source:'os'}); }, {label:'Time · now (live)', group:'time'});
+    IntMapOS.register('time.year', (ctx)=>{ const y=+((ctx&&ctx.params&&ctx.params.year)); if(y>=window.IntMapTime.min) window.IntMapTime.setYear(y,{source:'os'}); }, {label:'Time · set year', group:'time'});
+    IntMapOS.register('time.set', (ctx)=>{ const p=(ctx&&ctx.params)||{}; if(p.year!=null) window.IntMapTime.setYear(+p.year,{source:'os'}); else if(p.date!=null) window.IntMapTime.set(new Date(p.date),{source:'os'}); else if(p.daysAgo!=null) window.IntMapTime.setDaysAgo(+p.daysAgo,{source:'os'}); else window.IntMapTime.setNow({source:'os'}); }, {label:'Time · set instant', group:'time'});
+  }catch(_){}
 
   /* ===== Language ===== */
   function setLang(lang){
@@ -10277,7 +10361,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
     <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。端末の位置情報は、天気・大気質等のウィジェットや「現在地へ移動」機能の利用時にブラウザの許可を得た上でのみ取得され、端末内での地図表示に使用されます（天気・大気質の取得時のみ座標が気象API（Open-Meteo）に送信されます）。当方サーバーに保存されることはありません。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo。Open-Meteoが利用できない場合は自動的にMET Norwayへフォールバックし、対象地点の座標、または標高スキャン・放射性物質拡散機能では対象地点周辺のグリッド状の座標が送信されます。放射性物質拡散で過去の日時を指定した場合は、その時点の気象を得るためOpen-MeteoのERA5アーカイブ archive-api.open-meteo.com が使用されます）、道路経路案内（OSRM — router.project-osrm.org・routing.openstreetmap.de。Atlasに車/徒歩/自転車の経路を依頼すると、出発地・目的地・経由地の座標がOpenStreetMapの道路データ上での経路算出のため送信されます）、公共交通経路案内（Transitous／MOTIS — api.transitous.org。Atlasに電車・地下鉄・バス等の公共交通経路を依頼すると、出発地・目的地の座標が世界の公開GTFSデータ上での行程算出のため送信されます。公開時刻表が無い都市間鉄道（日本のJR/新幹線等）では、OpenStreetMap Overpass API — overpass-api.de・overpass.kumi.systems 等 — に出発地〜目的地を含む範囲が送信され、実在の鉄道網上で経路を算出します）、到達圏の算出（Valhalla／FOSSGIS — valhalla1.openstreetmap.de。Atlasで「車で30分」「徒歩15分」等の到達圏を求めると、起点の座標と指定した分数がOpenStreetMapの道路網上での到達範囲（等時線）算出のため送信されます）、ストリートビューの埋め込み（Google — 「ここのストリートビュー」パネルやAtlasのストリートビュー機能を開くと、選択した座標のGoogle製ストリートビュー埋め込みが読み込まれ、Googleのポリシーが適用されます）、流域界の算出（Global Watersheds／mghydro.com — Atlasで河川流域を描画する際、河川端点の座標が実際の流域ポリゴン算出のため送信されます）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）、Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます。またAtlasが国家指導者等の現職を回答する際のライブ照会では対象の国コードが送信されます）、ファビコン取得（Google — Atlasの回答に出典リンクカードを表示する際、引用元サイトのドメイン名がサイトアイコン取得のため送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コードと指標コードのみが送信されます）、USGS（地震データの取得）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（fxratesapi／ER-API・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェットと下部ティッカーの価格取得のみで、利用者の情報は送信されません）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。対象の国コードのみが送信されます）、ライブカメラ視聴（「ライブカメラ」レイヤーはOpenStreetMap・Transport for London（TfL JamCams）・Caltrans（カリフォルニア州DOT）・Fintraffic／Digitraffic（フィンランド）・複数の米州DOT（コロラド／インディアナ／アラスカ／アリゾナ、OpenTrafficCamMapオープンデータをjsDelivr CDN経由で利用）の公開カメラを一覧化します。地形解析（傾斜・斜面方向、電波見通し圏、日照・地形の影、洪水・津波）では公開の標高タイル（Mapzen／AWS「terrarium」DEM、AWS Open Data）を解析対象の範囲について取得しブラウザ内で復号します。日照・影と災害シミュレータはOpenStreetMap Overpass APIで建物形状や風も取得します（送信されるのは解析対象の地図座標のみで、個人データは送信しません）。カメラを開くと、その提供元の第三者コンテンツ＝数秒ごとに自動更新される静止画（カメラ/提供元から直接取得）／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／短尺クリップ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。各社のプライバシーポリシーが適用されます。</p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo。Open-Meteoが利用できない場合は自動的にMET Norwayへフォールバックし、対象地点の座標、または標高スキャン・放射性物質拡散機能では対象地点周辺のグリッド状の座標が送信されます。放射性物質拡散で過去の日時を指定した場合は、その時点の気象を得るためOpen-MeteoのERA5アーカイブ archive-api.open-meteo.com が使用されます）、道路経路案内（OSRM — router.project-osrm.org・routing.openstreetmap.de。Atlasに車/徒歩/自転車の経路を依頼すると、出発地・目的地・経由地の座標がOpenStreetMapの道路データ上での経路算出のため送信されます）、公共交通経路案内（Transitous／MOTIS — api.transitous.org。Atlasに電車・地下鉄・バス等の公共交通経路を依頼すると、出発地・目的地の座標が世界の公開GTFSデータ上での行程算出のため送信されます。公開時刻表が無い都市間鉄道（日本のJR/新幹線等）では、OpenStreetMap Overpass API — overpass-api.de・overpass.kumi.systems 等 — に出発地〜目的地を含む範囲が送信され、実在の鉄道網上で経路を算出します）、到達圏の算出（Valhalla／FOSSGIS — valhalla1.openstreetmap.de。Atlasで「車で30分」「徒歩15分」等の到達圏を求めると、起点の座標と指定した分数がOpenStreetMapの道路網上での到達範囲（等時線）算出のため送信されます）、ストリートビューの埋め込み（Google — 「ここのストリートビュー」パネルやAtlasのストリートビュー機能を開くと、選択した座標のGoogle製ストリートビュー埋め込みが読み込まれ、Googleのポリシーが適用されます）、流域界の算出（Global Watersheds／mghydro.com — Atlasで河川流域を描画する際、河川端点の座標が実際の流域ポリゴン算出のため送信されます）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）、Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます。またAtlasが国家指導者等の現職を回答する際のライブ照会では対象の国コードが送信されます）、ファビコン取得（Google — Atlasの回答に出典リンクカードを表示する際、引用元サイトのドメイン名がサイトアイコン取得のため送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コード・指標コード、およびタイムマシンでは年のみが送信されます）、USGS（地震データの取得）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（fxratesapi／ER-API・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェットと下部ティッカーの価格取得のみで、利用者の情報は送信されません）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。対象の国コードのみが送信されます）、ライブカメラ視聴（「ライブカメラ」レイヤーはOpenStreetMap・Transport for London（TfL JamCams）・Caltrans（カリフォルニア州DOT）・Fintraffic／Digitraffic（フィンランド）・複数の米州DOT（コロラド／インディアナ／アラスカ／アリゾナ、OpenTrafficCamMapオープンデータをjsDelivr CDN経由で利用）の公開カメラを一覧化します。地形解析（傾斜・斜面方向、電波見通し圏、日照・地形の影、洪水・津波）では公開の標高タイル（Mapzen／AWS「terrarium」DEM、AWS Open Data）を解析対象の範囲について取得しブラウザ内で復号します。日照・影と災害シミュレータはOpenStreetMap Overpass APIで建物形状や風も取得します（送信されるのは解析対象の地図座標のみで、個人データは送信しません）。カメラを開くと、その提供元の第三者コンテンツ＝数秒ごとに自動更新される静止画（カメラ/提供元から直接取得）／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／短尺クリップ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。各社のプライバシーポリシーが適用されます。</p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -10289,7 +10373,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
     <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side). Your device location is read only when you use the weather/air-quality widgets or the "current location" command, only after the browser asks your permission, and is used on-device to position the map (coordinates are sent only to the weather API, Open-Meteo, to fetch conditions); it is never stored on our servers.</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result; additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo, and MET Norway as an automatic fallback when Open-Meteo is unavailable — the coordinates of the point, or a grid of points around it for the elevation-scan and radiation-dispersion features, are sent; when a past date is chosen for the radiation-dispersion feature, Open-Meteo's ERA5 archive at archive-api.open-meteo.com is used to obtain the weather for that time); road routing (OSRM — router.project-osrm.org and routing.openstreetmap.de — when you ask Atlas for driving/walking/cycling directions, the origin, destination and any waypoint coordinates are sent to compute the route on OpenStreetMap road data); public-transit routing (Transitous / MOTIS — api.transitous.org — when you ask Atlas for train/subway/bus directions, the origin and destination coordinates are sent to compute the itinerary on worldwide open GTFS feeds; for intercity rail with no open timetable, e.g. Japan's JR/Shinkansen, the OpenStreetMap Overpass API — overpass-api.de, overpass.kumi.systems and similar — is queried for the rail corridor between your origin and destination to route on the real rail network); reachable-area / isochrone (Valhalla / FOSSGIS — valhalla1.openstreetmap.de — when you ask Atlas for a reachable area such as "30 min by car" or "15 min walk", the origin coordinate and the chosen number of minutes are sent to compute the time-contour area on OpenStreetMap road data); embedded Street View (Google — opening the "Street View here" panel or the Atlas street-view action loads Google's keyless street-view embed for the coordinates you chose, subject to Google's policies); watershed delineation (Global Watersheds / mghydro.com — when Atlas draws a river basin, the coordinates of the river's end points are sent to compute the real watershed polygon); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent; also the live incumbent lookup when Atlas answers who currently holds national office — the target country code is sent); favicon fetching (Google — when Atlas replies show source link cards, the domain names of the cited sites are sent to fetch their site icons); statistics APIs (World Bank, IMF DataMapper — only country and indicator codes are sent); USGS (earthquake feeds); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (fxratesapi / ER-API, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches only for the widgets and the bottom ticker; nothing about you is sent); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes; only the country code is sent); live-camera viewing — the Live-cameras layer lists public cameras from OpenStreetMap, Transport for London (TfL JamCams), Caltrans (California DOT), Fintraffic/Digitraffic (Finland) and several US state DOTs (Colorado/Indiana/Alaska/Arizona, via the OpenTrafficCamMap open dataset on the jsDelivr CDN); opening one loads that operator's third-party content (a still image auto-refreshed every few seconds directly from the camera/operator, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or a short video clip), subject to that operator's/platform's policies; terrain analysis — the slope/aspect, radio line-of-sight coverage, sun &amp; terrain shadow, and flood/tsunami tools fetch public elevation tiles (Mapzen/AWS "terrarium" DEM, AWS Open Data) for the area you analyse and decode them in your browser, and the sun-shadow &amp; disaster tools also query the OpenStreetMap Overpass API for building footprints / wind (no personal data is sent — only the map coordinates being analysed); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). Each has its own privacy policy.</p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result; additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo, and MET Norway as an automatic fallback when Open-Meteo is unavailable — the coordinates of the point, or a grid of points around it for the elevation-scan and radiation-dispersion features, are sent; when a past date is chosen for the radiation-dispersion feature, Open-Meteo's ERA5 archive at archive-api.open-meteo.com is used to obtain the weather for that time); road routing (OSRM — router.project-osrm.org and routing.openstreetmap.de — when you ask Atlas for driving/walking/cycling directions, the origin, destination and any waypoint coordinates are sent to compute the route on OpenStreetMap road data); public-transit routing (Transitous / MOTIS — api.transitous.org — when you ask Atlas for train/subway/bus directions, the origin and destination coordinates are sent to compute the itinerary on worldwide open GTFS feeds; for intercity rail with no open timetable, e.g. Japan's JR/Shinkansen, the OpenStreetMap Overpass API — overpass-api.de, overpass.kumi.systems and similar — is queried for the rail corridor between your origin and destination to route on the real rail network); reachable-area / isochrone (Valhalla / FOSSGIS — valhalla1.openstreetmap.de — when you ask Atlas for a reachable area such as "30 min by car" or "15 min walk", the origin coordinate and the chosen number of minutes are sent to compute the time-contour area on OpenStreetMap road data); embedded Street View (Google — opening the "Street View here" panel or the Atlas street-view action loads Google's keyless street-view embed for the coordinates you chose, subject to Google's policies); watershed delineation (Global Watersheds / mghydro.com — when Atlas draws a river basin, the coordinates of the river's end points are sent to compute the real watershed polygon); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent; also the live incumbent lookup when Atlas answers who currently holds national office — the target country code is sent); favicon fetching (Google — when Atlas replies show source link cards, the domain names of the cited sites are sent to fetch their site icons); statistics APIs (World Bank, IMF DataMapper — only country, indicator and, for the time-machine, year codes are sent); USGS (earthquake feeds); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (fxratesapi / ER-API, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches only for the widgets and the bottom ticker; nothing about you is sent); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes; only the country code is sent); live-camera viewing — the Live-cameras layer lists public cameras from OpenStreetMap, Transport for London (TfL JamCams), Caltrans (California DOT), Fintraffic/Digitraffic (Finland) and several US state DOTs (Colorado/Indiana/Alaska/Arizona, via the OpenTrafficCamMap open dataset on the jsDelivr CDN); opening one loads that operator's third-party content (a still image auto-refreshed every few seconds directly from the camera/operator, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or a short video clip), subject to that operator's/platform's policies; terrain analysis — the slope/aspect, radio line-of-sight coverage, sun &amp; terrain shadow, and flood/tsunami tools fetch public elevation tiles (Mapzen/AWS "terrarium" DEM, AWS Open Data) for the area you analyse and decode them in your browser, and the sun-shadow &amp; disaster tools also query the OpenStreetMap Overpass API for building footprints / wind (no personal data is sent — only the map coordinates being analysed); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). Each has its own privacy policy.</p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -11434,6 +11518,14 @@ window.addEventListener('DOMContentLoaded', () => {
       /* If no data made it through, the layer would be invisible — warn and bail. */
       if(count===0) console.warn('applyChoro: no feature-state set for',id);
     }
+    /* (#R94) Re-apply every VISIBLE country choropleth from the current countryStats — used by the
+       time-machine after it overlays a past year's World Bank figures (or restores the present). */
+    window._imReapplyChoros=function(){ try{
+      const M={ pop:s=>s.density, hdi:s=>s.hdi, dem:s=>s.dem,
+        milSpend:s=>s.milSpend, milSpendGDP:s=>(s.milSpend!=null&&s.gdp)?s.milSpend/s.gdp*100:null,
+        gdppc:s=>(s.gdppc!=null?s.gdppc:null), tfr:s=>(s.tfr!=null?s.tfr:null) };
+      Object.keys(M).forEach(id=>{ try{ if(map.getLayer(id+'-fill')&&map.getLayoutProperty(id+'-fill','visibility')==='visible') applyChoro(id,M[id]); }catch(_){} });
+    }catch(_){} };
     /* NATO members fill (#R7): brighter blue so it's clearly visible on the dark basemap, with a crisp
        outline. Built from a DEDICATED geojson (not the shared country feature-state) so we can drop the
        two member territories that lie SOUTH of the Tropic of Cancer — French Guiana (France) and Hawaii
@@ -11572,6 +11664,26 @@ window.addEventListener('DOMContentLoaded', () => {
       });
       map.on('mouseleave','eu-fill',()=>{ if(mapTooltipEl) mapTooltipEl.style.display='none'; });
     }
+
+    /* (#R94) NATO & EU enlargement follow the master spacetime clock: travel to a year → only members that
+       had already joined by then are shown; back to "Now" → every current member. The per-layer year sliders
+       in the legend still work as instant overrides and are kept in step with the clock. */
+    function _syncYearLegend(prefix,years,val){ try{
+      const v=document.querySelector('.'+prefix+'-year-val'); if(v) v.textContent=val;
+      const row=document.querySelector('.'+prefix+'-year-row'); if(!row) return;
+      const rg=row.querySelector('input[type=range]'); if(rg){ let idx=0; for(let i=0;i<years.length;i++){ if(years[i]<=val) idx=i; } rg.value=idx; }
+      const se=row.querySelector('select'); if(se){ let best=years[0]; years.forEach(y=>{ if(y<=val) best=y; }); se.value=best; }
+    }catch(_){} }
+    try{ if(window.IntMapTime) window.IntMapTime.on(e=>{
+      const nt=e.isLive?NATO_YEARS[NATO_YEARS.length-1]:e.year;
+      if(nt!==_natoYear){ _natoYear=nt;
+        try{ if(map.getLayer('nato-fill')&&map.getLayoutProperty('nato-fill','visibility')==='visible') applyNato(); }catch(_){}
+        _syncYearLegend('nato',NATO_YEARS,_natoYear); }
+      const et=e.isLive?EU_YEARS[EU_YEARS.length-1]:e.year;
+      if(et!==_euYear){ _euYear=et;
+        try{ if(map.getLayer('eu-fill')&&map.getLayoutProperty('eu-fill','visibility')==='visible') applyEu(); }catch(_){}
+        _syncYearLegend('eu',EU_YEARS,_euYear); }
+    }); }catch(_){}
 
     /* Rimland (#15,#17) — Spykman's coastal crescent as a LAND-only country fill (no sea painted). */
     const RIMLAND=new Set("GBR IRL FRA ESP PRT ITA NLD BEL DEU DNK NOR HRV ALB MNE GRC TUR SYR LBN ISR JOR IRQ IRN SAU YEM OMN ARE QAT KWT BHR PAK IND BGD LKA MMR THA KHM VNM MYS SGP IDN PHL BRN CHN KOR PRK JPN TWN".split(' '));
@@ -13136,49 +13248,74 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
   /* ================ END GROUP 4 (Pro removed) ================ */
 
-  /* ===== Time-travel timeline wiring ===== */
+  /* ===== (#R94) Time-machine wiring — the widget is now a SHELL over the IntMapTime kernel.
+     Every input WRITES to the kernel (slider = recent day-precision, year field = deep time back to
+     1900, date = exact day); a single kernel subscriber reflects the resulting instant back into the
+     UI, prints the "what's synced" readout and (debounced) refreshes the news feed. ===== */
   (function(){
     const tl=document.getElementById('news-timeline'), tg=document.getElementById('ntl-toggle');
     const slider=document.getElementById('ntl-slider'), label=document.getElementById('ntl-label');
     const datePicker=document.getElementById('ntl-date'), btnToday=document.getElementById('ntl-today');
-    let pendingTimer=null;
-    function setLabel(){
-      if(!newsDate){ label.textContent=currentLang==='jp'?'今日':currentLang==='de'?'Heute':currentLang==='ru'?'Сегодня':currentLang==='es'?'Hoy':'Today'; tl.classList.remove('active'); return; }
-      tl.classList.add('active');
-      const opts={year:'numeric',month:'short',day:'numeric'};
-      label.textContent=newsDate.toLocaleDateString(currentLang==='jp'?'ja-JP':'en-US',opts);
+    const yearInp=document.getElementById('ntl-year'), synced=document.getElementById('ntl-synced');
+    let pendingTimer=null, _self=false;
+    const L5=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+    const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
+    /* Köppen climate era covering a given year (matches window.KOPPEN_PERIODS). */
+    function kEra(y){ if(y>=1991) return '1991-2020'; if(y>=1961) return '1961-1990'; if(y>=1931) return '1931-1960'; return '1901-1930'; }
+    /* Historical-borders snapshot at or before a year (matches HB_YEARS). */
+    const HBY=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
+    function hbAt(y){ let best=HBY[0]; for(const v of HBY){ if(v<=y) best=v; } return best; }
+    function buildSynced(e){
+      if(!synced) return;
+      if(e.isLive){ synced.innerHTML=L5('Live — showing the present. Move the clock to travel.','ライブ — 現在を表示中。時計を動かすと過去へ。','Live — Gegenwart. Uhr bewegen zum Reisen.','Прямой эфир — настоящее. Двигайте часы.','En vivo — el presente. Mueve el reloj para viajar.'); return; }
+      const y=e.year, chips=[];
+      const within10=((new Date()-e.when)/864e5)<=3660;
+      chips.push('<span class="ntl-chip">📰 '+(within10?L5('News','ニュース','News','Новости','Noticias'):L5('News (sparse)','ニュース(希薄)','News (spärlich)','Новости (мало)','Noticias (escasas)'))+'</span>');
+      if((window._countriesActive&&window._countriesActive())||on('dl-pop')||on('dl-gdppc')||on('dl-tfr')||on('dl-milSpend')||on('dl-milSpendGDP'))
+        chips.push('<span class="ntl-chip">📊 '+L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b></span>');
+      if(on('dl-climate')) chips.push('<span class="ntl-chip">🌦 '+L5('Köppen','ケッペン','Köppen','Кёппен','Köppen')+' <b>'+kEra(y)+'</b></span>');
+      if(on('beta-dl-histb')) chips.push('<span class="ntl-chip">🗺 '+L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+hbAt(y)+'</b></span>');
+      if(on('dl-nato')) chips.push('<span class="ntl-chip">🛡 NATO <b>'+y+'</b></span>');
+      if(on('dl-eu')) chips.push('<span class="ntl-chip">⭐ EU <b>'+y+'</b></span>');
+      if(['sst','snow','aod','thermal','precip'].some(k=>on('dt-'+k)||on('dl-'+k))) chips.push('<span class="ntl-chip">🛰 '+L5('Satellite','衛星','Satellit','Спутник','Satélite')+'</span>');
+      synced.innerHTML='<b>'+L5('Synced to','同期先','Synchron mit','Синхронизировано с','Sincronizado con')+' '+y+':</b><br>'+chips.join('');
     }
-    function daysAgo(d){ const today=new Date(); today.setHours(0,0,0,0); const t=new Date(d); t.setHours(0,0,0,0); return Math.round((today-t)/864e5); }
-    function syncFromSlider(){
-      const v=parseInt(slider.value,10);
-      if(v>=3650){ newsDate=null; datePicker.value=''; }
-      else{ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(3650-v)); newsDate=d; datePicker.value=ymdISO(d); }
-      setLabel(); try{ window.applyGlobalDate&&window.applyGlobalDate(); }catch(_){}
-      clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } },250);
-    }
-    function syncFromPicker(){
-      if(!datePicker.value){ newsDate=null; slider.value=3650; setLabel(); }
-      else{
-        const d=new Date(datePicker.value+'T00:00:00');
-        if(isNaN(d.getTime())) return;
-        const da=daysAgo(d);
-        if(da<0){ /* future */ newsDate=null; slider.value=3650; }
-        else if(da>3650){ slider.value=0; newsDate=d; }
-        else{ slider.value=3650-da; newsDate=d; }
-        setLabel();
+    window._imTimeSyncedRefresh=()=>{ try{ buildSynced(window.IntMapTime.state()); }catch(_){} };
+    /* WRITE side: inputs → kernel */
+    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')) window._imTimeSyncedRefresh(); };
+    slider.addEventListener('input',()=>{ if(_self) return; window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); });
+    datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ window.IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) window.IntMapTime.set(d,{source:'ui'}); } });
+    yearInp.addEventListener('change',()=>{ if(_self) return; const y=parseInt(yearInp.value,10); if(y>=1900) window.IntMapTime.setYear(y,{source:'ui'}); });
+    btnToday.onclick=()=>window.IntMapTime.setNow({source:'ui'});
+    /* READ side: kernel → this widget's UI + (debounced) news fetch */
+    window.IntMapTime.on(e=>{ _self=true; try{
+      if(e.isLive){ label.textContent=L5('Today','今日','Heute','Сегодня','Hoy'); tl.classList.remove('active'); datePicker.value=''; if(+slider.value!==3650) slider.value=3650; }
+      else {
+        tl.classList.add('active');
+        label.textContent=e.when.toLocaleDateString(currentLang==='jp'?'ja-JP':currentLang==='de'?'de-DE':currentLang==='ru'?'ru-RU':currentLang==='es'?'es-ES':'en-US',{year:'numeric',month:'short',day:'numeric'});
+        const today=new Date(); today.setHours(0,0,0,0); const t=new Date(e.when); t.setHours(0,0,0,0);
+        const da=Math.round((today-t)/864e5); const sv=Math.max(0,Math.min(3650,3650-da));
+        if(+slider.value!==sv) slider.value=sv;
+        datePicker.value=(da>=0&&da<=3650)?ymdISO(e.when):'';   /* deep-past has no valid recent-picker value */
       }
-      try{ window.applyGlobalDate&&window.applyGlobalDate(); }catch(_){}
-      clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } },150);
-    }
-    tg.onclick=()=>tl.classList.toggle('collapsed');
-    slider.addEventListener('input',syncFromSlider);
-    datePicker.addEventListener('change',syncFromPicker);
-    btnToday.onclick=()=>{ newsDate=null; slider.value=3650; datePicker.value=''; setLabel(); try{ window.applyGlobalDate&&window.applyGlobalDate(); }catch(_){} globalData=[]; fetchData(); };
-    /* Set initial maximum date */
+      yearInp.value=e.year;
+      slider.style.setProperty('--ntl-fill',(slider.value/slider.max*100)+'%');
+      buildSynced(e);
+    }catch(_){}
+      _self=false;
+      /* Refetch the news feed only when the DAY (or live-state) actually changed — Earth Replay's UTC-hour
+         scrubbing keeps the same day, so it must not thrash the feed. */
+      const key=e.isLive?'live':e.iso;
+      if(key!==window._imTimeNewsKey){ window._imTimeNewsKey=key;
+        clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } },230); }
+    });
+    /* Set initial ranges + first paint */
     datePicker.max=ymdISO(new Date());
     datePicker.min=ymdISO(new Date(Date.now()-3650*864e5));
+    yearInp.max=String(new Date().getFullYear());
     tl.classList.add('collapsed');
-    setLabel();
+    label.textContent=L5('Today','今日','Heute','Сегодня','Hoy');
+    yearInp.value=new Date().getFullYear();
   })();
 
   /* =============================================================================
@@ -14861,7 +14998,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'Smithsonian GVP',u:'https://volcano.si.edu/',use:{en:'Holocene volcanoes',jp:'火山（完新世）'}},
     {n:'DeepStateMap',u:'https://deepstatemap.live/',use:{en:'Ukraine frontline (beta layer)',jp:'ウクライナ前線（ベータ）'}},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders (beta layer)',jp:'過去の国境（ベータ）'}},
-    {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators (time-series charts + the 5-country comparison)',jp:'国別の時系列指標（時系列グラフ・最大5か国比較）'}},
+    {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators (time-series charts, the 5-country comparison, and the Time-machine — the whole Countries tab, the hover read-outs and the country choropleths show the real figures for the year the master clock is set to)',jp:'国別の時系列指標（時系列グラフ・最大5か国比較、そしてタイムマシン——マスター時計で選んだ年の実データを国タブ・ホバー・コロプレスに反映）'}},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO',use:{en:'Govt-debt layer gap-fill + the alternative economic source in the country comparison (DataMapper API)',jp:'政府債務レイヤーの欠損補完＋国比較の経済指標の切替ソース（DataMapper API）'}},
     {n:'AI provider (Anthropic / OpenAI / Google)',u:'https://www.anthropic.com/',use:{en:'Server-side AI: news geolocation + in-app AI features (key held server-side)',jp:'サーバー側AI：ニュース地点解析・アプリ内AI機能（キーはサーバー側で管理）'}}
   ];
@@ -14968,6 +15105,100 @@ window.addEventListener('DOMContentLoaded', () => {
     /* update the slider gradient fill */
     const sl=document.getElementById('ntl-slider'); if(sl){ const pct=(sl.value/sl.max*100); sl.style.setProperty('--ntl-fill',pct+'%'); }
   };
+  /* (#R94) news + dated-raster + community core now runs on EVERY kernel change (the slider used to call it
+     directly; the kernel keeps newsDate in lock-step first, so applyGlobalDate reads the fresh instant). */
+  try{ window.IntMapTime.on(()=>{ try{ applyGlobalDate(); }catch(_){} }); }catch(_){}
+
+  /* ============================================================================
+   *  (#R94) INTMAP TIME · COUNTRIES — the Countries tab, the country choropleths, the hover read-outs
+   *  and the open country card all become YEAR-AWARE. When the master clock travels to a past year the
+   *  real World Bank figures for THAT year (GDP, GDP/capita, population, life-expectancy, fertility,
+   *  internet use, military spending) are fetched and overlaid onto countryStats, so the whole app shows
+   *  the world as it was; returning to "Now" restores the present. Honest by construction: WB annual
+   *  series begin in 1960 (deeper past keeps the latest figures with a clear banner), and indicators
+   *  WITHOUT a WB annual series (HDI/UNDP, Democracy Index/EIU) are never relabelled with the wrong year.
+   *  ========================================================================== */
+  window.IntMapTimeCountries=(function(){
+    const WB_FLOOR=1960;
+    /* field on countryStats ← World Bank indicator (all-countries, one year). scale normalises to the
+       units countryStats already uses (gdp & milSpend in US$ billions; the rest raw). */
+    const FIELDS=[
+      {f:'gdp',      ind:'NY.GDP.MKTP.CD', scale:1e-9},
+      {f:'gdppc',    ind:'NY.GDP.PCAP.CD', scale:1},
+      {f:'pop',      ind:'SP.POP.TOTL',    scale:1},
+      {f:'lifeExp',  ind:'SP.DYN.LE00.IN', scale:1},
+      {f:'tfr',      ind:'SP.DYN.TFRT.IN', scale:1},
+      {f:'internet', ind:'IT.NET.USER.ZS', scale:1},
+      {f:'milSpend', ind:'MS.MIL.XPND.CD', scale:1e-9}
+    ];
+    const yearCache={};        /* year -> { field -> {iso3 -> value} } */
+    let base=null;             /* present-day snapshot of the overlaid fields (+ density) */
+    let curYear=null;          /* the year currently overlaid, or null */
+    let seq=0, deb=null;
+    function snapshotBase(){ if(base) return; base={}; try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue; const o={density:s.density}; FIELDS.forEach(F=>o[F.f]=s[F.f]); base[iso]=o; } }catch(_){} }
+    function restore(){ if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; }
+    /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
+       IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
+       A run that returns essentially nothing is NOT cached, so the next travel transparently retries. */
+    async function fetchYear(year){ if(yearCache[year]) return yearCache[year];
+      const out={}; FIELDS.forEach(F=>out[F.f]={});
+      for(const F of FIELDS){ try{
+        const c=('AbortController' in window)?new AbortController():null, tm=c?setTimeout(()=>{try{c.abort();}catch(_){}}, 12000):null;
+        const r=await fetch('https://api.worldbank.org/v2/country/all/indicator/'+F.ind+'?format=json&per_page=400&date='+year, c?{signal:c.signal}:undefined);
+        const j=await r.json(); if(tm) clearTimeout(tm);
+        (j&&j[1]||[]).forEach(row=>{ if(row&&row.value!=null){ const iso=row.countryiso3code||(row.country&&row.country.id); if(iso&&iso.length===3) out[F.f][iso]=+row.value*F.scale; } });
+      }catch(_){} }
+      if(Object.keys(out.gdp).length>10||Object.keys(out.pop).length>10) yearCache[year]=out;   /* cache only a real result */
+      return out; }
+    function overlay(year,data){ snapshotBase();
+      try{ for(const iso in countryStats){ const s=countryStats[iso]; if(!s) continue;
+        FIELDS.forEach(F=>{ const v=data[F.f][iso]; s[F.f]=(v!=null&&isFinite(v))?v:null; });
+        s.density=(s.pop&&s.area)?s.pop/s.area:null;   /* density recomputed from the year's population */
+      } }catch(_){}
+      curYear=year; window._imTimeYear=year; }
+    function repaint(){
+      try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof searchVal==='function')?searchVal():''); }catch(_){}
+      try{ if(typeof window._imReapplyChoros==='function') window._imReapplyChoros(); }catch(_){}
+      try{ if(typeof window._imCountryCardRefresh==='function') window._imCountryCardRefresh(); }catch(_){}
+      try{ if(typeof window._imTimeSyncedRefresh==='function') window._imTimeSyncedRefresh(); }catch(_){}
+    }
+    window.IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
+      deb=setTimeout(async()=>{
+        const y=e.year;
+        if(e.isLive || y>=new Date().getFullYear()){ if(curYear!=null||window._imTimePreWB){ window._imTimePreWB=null; restore(); repaint(); } return; }
+        if(y<WB_FLOOR){ /* deeper than the World Bank annual series → keep present figures, flag the floor */
+          if(curYear!=null){ restore(); } window._imTimePreWB=y; window._imTimeYear=null; repaint(); return; }
+        window._imTimePreWB=null;
+        if(y===curYear) return;   /* same year → country annual data unchanged, nothing to repaint */
+        try{ if(!countryDataLoaded) await loadCountryData(); }catch(_){}
+        let data; try{ data=await fetchYear(y); }catch(_){ data=null; }
+        if(my!==seq) return;              /* superseded by a newer time change */
+        if(!data){ return; }
+        restore(); overlay(y,data); repaint();
+      }, 340);
+    });
+    return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore };
+  })();
+
+  /* (#R94) Köppen climate era follows the clock (uses the existing period rasters, no new assets). Only
+     reloads the texture when the climate layer is actually on; otherwise just remembers the era. */
+  try{ window.IntMapTime.on(e=>{
+    const on=(()=>{ try{ const c=document.getElementById('dl-climate'); return !!(c&&c.checked); }catch(_){ return false; } })();
+    const y=e.year; const era=e.isLive?'1991-2020':(y>=1991?'1991-2020':y>=1961?'1961-1990':y>=1931?'1931-1960':'1901-1930');
+    if(window._koppenPeriod===era) return;
+    if(on && typeof window.setKoppenPeriod==='function'){ window.setKoppenPeriod(era); }
+    else { window._koppenPeriod=era; }
+  }); }catch(_){}
+
+  /* (#R94) Dated NASA rasters that Earth Replay used to reload (air-temp, NO₂, CO, active-fire, true-color,
+     VIIRS) now follow the master clock centrally. sst/snow/aod/thermal/precip stay with setGlobalLayerDate
+     (called from applyGlobalDate) so each dated layer is refreshed by exactly one subscriber. GIBS lags ~2 d,
+     so the request date is clamped back to the freshest processed day. */
+  try{ window.IntMapTime.on(e=>{ try{ const LD=window._imLayerDates; if(!LD) return;
+    const maxIso=new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+    let d=e.isLive?maxIso:e.iso; if(d>maxIso) d=maxIso;
+    ['temp','no2','co','fire','truecolor','viirs'].forEach(k=>{ try{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=d; if(window.refreshDatedLayer&&map.getLayer('lyr-'+k)&&map.getLayoutProperty('lyr-'+k,'visibility')==='visible') window.refreshDatedLayer(k); } }catch(_){} });
+  }catch(_){} }); }catch(_){}
 
   /* ============================================================================
    *  PROJECTION VIEWER (#16 flat-map projections, #17 azimuthal-equidistant on a pin)
@@ -16122,6 +16353,16 @@ window.addEventListener('DOMContentLoaded', () => {
         } else if(window._hideGenericLegend) window._hideGenericLegend('histb');
       }catch(_){}
     }
+    /* (#R94) Historical borders follow the master clock: travel to a year → the nearest snapshot at/before it;
+       back to "Now" → the newest snapshot (2010). Only reloads the geojson while the layer is on. */
+    try{ if(window.IntMapTime) window.IntMapTime.on(e=>{
+      let ny; if(e.isLive) ny=HB_YEARS[HB_YEARS.length-1]; else { ny=HB_YEARS[0]; for(const v of HB_YEARS){ if(v<=e.year) ny=v; } }
+      if(ny===hbYear) return; hbYear=ny;
+      try{ const val=document.querySelector('#data-legend-histb .hb-year-val'); if(val) val.textContent=hbYear;
+        const rg=document.querySelector('#data-legend-histb .hb-year-row input[type=range]'); if(rg) rg.value=HB_YEARS.indexOf(hbYear);
+        const se=document.querySelector('#data-legend-histb .hb-year-sel'); if(se) se.value=hbYear; }catch(_){}
+      if(state.hist){ clearTimeout(hbToggle._kt); hbToggle._kt=setTimeout(()=>hbLoad(hbYear),260); }
+    }); }catch(_){}
 
     /* ---------- (#R20) Volcanoes — full Smithsonian GVP Holocene catalog (1,215), bundled locally
        (data/volcanoes_gvp.json, slimmed from the GVP WFS). Replaces the old 42-point curated layer. ---------- */
@@ -21772,7 +22013,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if((a.type==='rank'||a.type==='mapMetric'||a.type==='explore'||a.type==='findRelated')&&a.metric){ const m2=String(a.metric); if(_wctx.metrics.indexOf(m2)<0) _wctx.metrics.unshift(m2); _wctx.metrics=_wctx.metrics.slice(0,4); }
       if((a.type==='scoreMap'||a.type==='customLayer'||a.type==='evaluate')&&Array.isArray(a.components)){ try{ _wctx.scoreComponents=JSON.stringify({name:a.name||'',components:a.components}).slice(0,600); }catch(_){} }
       if(a.type==='reset'||a.type==='clearAll'){ _wctx.scoreComponents=null; }
-      if(a.type==='timeTravel'){ _wctx.period=String(a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40); }
+      if(a.type==='timeTravel'||a.type==='setTime'||a.type==='timeSet'){ _wctx.period=(a.reset||a.now||a.live)?'now':String(a.year||a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40); }
     }); }catch(_){} }
     /* (#R80) vision §3 — REMEMBER exclusion conditions ("除外条件…を保持"). These are stated in natural language
        ("except Europe", "◯◯を除いて", "not counting China", "アメリカ以外"), not encoded in an action, so parse the
@@ -23658,10 +23899,23 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'search': { const q=a.query||a.place||''; const inp=document.getElementById('ms-input')||document.getElementById('search-input'); if(inp&&q){ inp.focus(); inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true})); const btn=document.getElementById('ms-btn'); if(btn) btn.click(); else inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',keyCode:13,bubbles:true})); return R(true, note('🔍 '+esc(q))); } if(WORLD_RE.test(String(q).trim())){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:1.4,duration:1000}); }catch(_){} return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); } const ext=await placeExtent(q); if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))) map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); return R(true, note('🔍 '+esc(ext.name||q))+_ambigNote(q,ext.lng,ext.lat)); } const ll=await geocode(q); if(ll){ try{ if(ll.bbox&&_bboxOK(ll.bbox)) flyToBox(ll.bbox); else map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),10),duration:1000}); }catch(_){} return R(true, note('🔍 '+esc(ll.name||q))+_ambigNote(q,ll.lng,ll.lat)); } return R(false, warn('⚠ '+esc(q))); }
         case 'tempUnit': { const u=({c:'c',celsius:'c',f:'f',fahrenheit:'f',both:'both'})[String(a.unit||'').toLowerCase()]; if(u){ const ok=setSel('setting-temp-unit',u); try{ window.imUnitTemp=u; localStorage.setItem('intmap_temp_unit',u); }catch(_){} return R(ok, note('✓ °'+String(u).toUpperCase())); } return R(false, warn('⚠ '+esc(a.unit||''))); }
         case 'units': { const m=({metric:'metric',imperial:'imperial',both:'both'})[String(a.mode||'').toLowerCase()]; if(m){ const ok=setSel('setting-units',m); try{ if(typeof unitMode!=='undefined') unitMode=m; }catch(_){} return R(ok, note('✓ '+esc(m))); } return R(false, warn('⚠ '+esc(a.mode||''))); }
-        case 'timeTravel': { let ok=false; try{ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650; let da=(a.daysAgo!=null)?Math.round(+a.daysAgo):null;
-          if(da==null&&a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)) da=Math.round((Date.now()-t0)/86400000); }
-          if(da!=null&&(da<0||da>3650)) return R(false, warn('⚠ '+L('The time slider covers only the past 10 years','時刻スライダーは過去10年のみ対応です','Der Zeitregler deckt nur die letzten 10 Jahre ab','Ползунок времени охватывает только последние 10 лет','El control de tiempo solo cubre los últimos 10 años')));
-          if(da!=null) v=Math.max(0,3650-da); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Time-travel','時刻','Zeitreise','Время','Tiempo')):warn('⚠ '+L('Time slider unavailable','時刻スライダーなし','Zeitschieber fehlt','Нет ползунка времени','Sin control de tiempo'))); }
+        /* (#R94) time-travel now drives the WHOLE spacetime OS (IntMapTime): news, the Countries statistics,
+           borders, the climate era, NATO/EU accession & the day/night terminator all move together. Accepts a
+           year (deep time back to 1900), an exact date, or daysAgo; "now/reset" returns everything to live. */
+        case 'timeTravel': case 'setTime': case 'timeSet': { try{ const T=window.IntMapTime;
+          const synced=L('the whole map (news, countries, borders, climate era) moves with it','地図全体（ニュース・国データ・国境・気候区分）が同期します','die ganze Karte bewegt sich mit','вся карта движется вместе','todo el mapa se mueve con él');
+          const nowMsg=()=>R(true, note('✓ '+L('Back to now','現在に戻しました','Zurück zu jetzt','Вернулись в настоящее','Volvimos al presente')));
+          if(!T){ const sl=document.getElementById('ntl-slider'); if(sl){ let v=3650,da=(a.daysAgo!=null)?Math.round(+a.daysAgo):null; if(da==null&&a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)) da=Math.round((Date.now()-t0)/86400000); } if(da!=null) v=Math.max(0,Math.min(3650,3650-da)); else if(a.value!=null) v=+a.value; sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); } return R(true, note('✓')); }
+          if(a.reset||a.now||a.live){ T.setNow({source:'atlas'}); return nowMsg(); }
+          const curY=new Date().getFullYear();
+          let y=(a.year!=null)?Math.round(+a.year):null;
+          if(y==null&&typeof a.date==='string'){ const m=a.date.match(/^\s*(\d{3,4})\s*$/); if(m) y=+m[1]; }
+          if(y!=null){ if(y>=curY){ T.setNow({source:'atlas'}); return nowMsg(); } if(y<T.min) return R(false, warn('⚠ '+L('The time machine reaches back to 1900','タイムマシンは1900年まで遡れます','Bis 1900 zurück','До 1900 года','Hasta 1900'))); T.setYear(y,{source:'atlas'}); return R(true, note('⏳ '+y+' — '+synced)); }
+          if(a.date){ const t0=Date.parse(String(a.date)); if(!isNaN(t0)){ if(t0>Date.now()){ T.setNow({source:'atlas'}); return nowMsg(); } T.set(new Date(t0),{source:'atlas'}); return R(true, note('⏳ '+ymdISO(new Date(t0))+' — '+synced)); } }
+          if(a.daysAgo!=null){ const da=Math.round(+a.daysAgo); if(da<=0){ T.setNow({source:'atlas'}); return nowMsg(); } T.setDaysAgo(da,{source:'atlas'}); return R(true, note('⏳ '+ymdISO(T.when())+' — '+synced)); }
+          if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note('⏳ '+ymdISO(T.when()))); }
+          return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
+        }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
         case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); }catch(_){} return R(true, note('📍 '+esc(ll.name||a.place||''))); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'tool': { const n=String(a.name||'').toLowerCase(); const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/measur|dist|area/.test(n)?'btn-tool-measure':/grid/.test(n)?'btn-tool-grid':null; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
         case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof radiusKm!=='undefined') radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw); } return R(false, warn('⚠ '+esc(a.place||''))); }
@@ -24466,7 +24720,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map (no ranking; "on":false clears; color WITHOUT countries recolors the current highlights). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
-        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…]} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","daysAgo":int} or {"type":"timeTravel","date":"YYYY-MM-DD"} (past 10 years only); {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
+        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…]} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","year":int} (deep time, 1900→now) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = the MASTER SPACETIME CLOCK (IntMapTime): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders, the Köppen climate era, NATO/EU accession and the day/night terminator. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. Prefer this over Earth Replay for setting the time; {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
@@ -26257,21 +26511,20 @@ window.addEventListener('DOMContentLoaded', () => {
       return true; }catch(_){ return false; } }
     function ymd(d){ try{ return d.toISOString().slice(0,10); }catch(_){ return ''; } }
     function drawTerminator(){ try{ ensure(); const t=terminatorFC(when); map.getSource(SRC).setData(t?{type:'FeatureCollection',features:[t]}:{type:'FeatureCollection',features:[]}); }catch(_){} }
-    let _lastTT='';
-    function apply(){ drawTerminator();
-      const now=new Date(), yrsBack=(now-when)/(365.25*dayMs), tt=ymd(when);
-      /* within the ~10-year archive reach → drive the existing time-travel engine (news / imagery / quakes) */
-      if(when<=now && yrsBack<=10 && tt!==_lastTT){ _lastTT=tt; try{ if(window.IntMapConsole&&window.IntMapConsole.dispatch) window.IntMapConsole.dispatch({type:'timeTravel',date:tt}); }catch(_){} }
-      /* any ON dated raster layers → set to the month and reload */
-      try{ const LD=window._imLayerDates; if(LD){ ['temp','precip','sst','snow','aod','no2','co','fire','truecolor','viirs'].forEach(k=>{ const cb=document.getElementById('dl-'+k); if(cb&&cb.checked){ LD[k]=tt; if(window.refreshDatedLayer&&map.getLayer('lyr-'+k)) window.refreshDatedLayer(k); } }); } }catch(_){}
-      updateReadout();
-    }
+    /* (#R94) Earth Replay is now a SHELL on the IntMapTime kernel: it draws the day/night terminator for the
+       shared instant and plays it forward, while the kernel itself drives news / imagery / quakes / dated
+       rasters / countries / borders. apply() therefore only paints the terminator + read-out. */
+    function apply(){ drawTerminator(); updateReadout(); }
     function updateReadout(){ if(!panel) return; const r=panel.querySelector('.er-read'); if(!r) return; const now=new Date(), yrsBack=(now-when)/(365.25*dayMs);
       const S=solar(when); const dpole=S.dec>0?ER('S pole in polar night','南極は極夜','Südpol Polarnacht','Ю. полюс — полярная ночь','Polo sur noche polar'):ER('N pole in polar night','北極は極夜','Nordpol Polarnacht','С. полюс — полярная ночь','Polo norte noche polar');
       let scope; if(when>now) scope=ER('future — terminator only','未来 — 昼夜のみ','Zukunft','будущее','futuro'); else if(yrsBack<=10) scope=ER('news · imagery · quakes time-travelled to this date','ニュース・衛星画像・地震をこの日付へ','News/Bilder/Beben zeitversetzt','новости/снимки/толчки','noticias/imágenes/sismos');
         else scope=ER('pre-archive date — day/night terminator + any historical layers','アーカイブ以前 — 昼夜境界＋歴史レイヤー','vor Archiv','до архива','antes del archivo');
       r.innerHTML='<b>🌍 '+ymd(when)+' '+String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+' UTC</b><div style="font-size:10.5px;color:var(--text-muted);margin-top:3px;">☀️ '+ER('sub-solar lat','太陽直下点緯度','subsolar','подсолнечная','subsolar')+' '+(S.dec/rad).toFixed(1)+'° · '+dpole+'</div><div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+scope+'</div>'; }
-    function setWhen(d){ when=(d instanceof Date&&!isNaN(d))?d:new Date(); syncInputs(); apply(); }
+    /* setWhen now WRITES the shared kernel (allowFuture: the terminator is valid for any date, incl. the
+       future); the kernel's broadcast calls our subscriber below, which mirrors `when` and repaints. */
+    function setWhen(d){ const nd=(d instanceof Date&&!isNaN(d))?d:new Date();
+      try{ if(window.IntMapTime) return window.IntMapTime.set(nd,{allowFuture:true,source:'earthreplay'}); }catch(_){}
+      when=nd; syncInputs(); apply(); }
     function syncInputs(){ if(!panel) return; const di=panel.querySelector('.er-date'), yl=panel.querySelector('.er-year'), tl=panel.querySelector('.er-time'), tv=panel.querySelector('.er-tv');
       try{ if(di) di.value=ymd(when); }catch(_){} if(yl) yl.value=when.getUTCFullYear(); const mins=when.getUTCHours()*60+when.getUTCMinutes(); if(tl) tl.value=mins; if(tv) tv.textContent=String(when.getUTCHours()).padStart(2,'0')+':'+String(when.getUTCMinutes()).padStart(2,'0')+'Z'; }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='er-panel';
@@ -26288,15 +26541,18 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;">'+ER('One clock for the whole globe: the day/night terminator is computed for any date; within ~10 years the news, satellite imagery and earthquakes time-travel to the date, and any dated weather/air layers reload for it. Turn on the layers you want to replay.','地球全体を1つの時計で再生：昼夜境界はどの日付でも計算し、約10年以内ならニュース・衛星画像・地震がその日付へ移動、日付付きの気象・大気レイヤーも再読込します。再生したいレイヤーをオンにしてください。','Eine Uhr für die ganze Erde.','Одни часы для всей планеты.','Un reloj para todo el globo.')+'</div></div>';
       document.body.appendChild(panel);
       panel.querySelector('.er-close').onclick=()=>close();
-      panel.querySelector('.er-now').onclick=()=>setWhen(new Date());
+      panel.querySelector('.er-now').onclick=()=>{ try{ if(window.IntMapTime) return window.IntMapTime.setNow({source:'earthreplay'}); }catch(_){} setWhen(new Date()); };
       panel.querySelector('.er-date').onchange=e=>{ const p=(e.target.value||'').split('-'); if(p.length===3){ const nd=new Date(when); nd.setUTCFullYear(+p[0],+p[1]-1,+p[2]); setWhen(nd); } };
       panel.querySelector('.er-year').onchange=e=>{ const y=+e.target.value; if(y>=1800&&y<=2100){ const nd=new Date(when); nd.setUTCFullYear(y); setWhen(nd); } };
-      panel.querySelector('.er-time').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setUTCHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(panel._t); panel._t=setTimeout(apply,140); };
+      panel.querySelector('.er-time').oninput=e=>{ const m=+e.target.value; const nd=new Date(when); nd.setUTCHours(Math.floor(m/60),m%60,0,0); when=nd; syncInputs(); clearTimeout(panel._t); panel._t=setTimeout(()=>{ try{ if(window.IntMapTime) window.IntMapTime.set(nd,{allowFuture:true,source:'earthreplay'}); else apply(); }catch(_){ apply(); } },140); };
       const pb=panel.querySelector('.er-play'); pb.onclick=()=>{ if(playing){ clearInterval(playing); playing=0; pb.textContent='▶'; } else { pb.textContent='⏸'; playing=setInterval(()=>{ setWhen(new Date(when.getTime()+3*3600000)); },900); } };   /* +3 h per tick */
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.er-head')); }catch(_){}
       return panel; }
     map.on('styledata',()=>{ if(panel&&panel.style.display!=='none') setTimeout(drawTerminator,90); });
-    function open(){ ensure(); ensurePanel(); panel.style.display='flex'; syncInputs(); apply(); }
+    /* (#R94) mirror the shared kernel: any time change (this panel, the main slider, or Atlas) redraws the
+       terminator + read-out while the panel is open. */
+    try{ if(window.IntMapTime) window.IntMapTime.on(e=>{ when=e.when; syncInputs(); if(panel&&panel.style.display!=='none'){ drawTerminator(); updateReadout(); } }); }catch(_){}
+    function open(){ ensure(); ensurePanel(); try{ if(window.IntMapTime) when=window.IntMapTime.when(); }catch(_){} panel.style.display='flex'; syncInputs(); apply(); }
     function close(){ if(panel) panel.style.display='none'; if(playing){ clearInterval(playing); playing=0; const pb=panel&&panel.querySelector('.er-play'); if(pb) pb.textContent='▶'; } try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     return { open, close, setWhen, _terminatorFC:terminatorFC, _solar:solar }; })();
 
