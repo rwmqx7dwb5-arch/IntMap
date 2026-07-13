@@ -23667,6 +23667,11 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'slope': case 'aspect': case 'terrainAnalysis': case 'steepness': case 'gradient': { const m=(a.type==='aspect'||/aspect|direction|方向|向き/i.test(String(a.mode||a.what||'')))?'aspect':'slope';
           try{ const cb=document.getElementById('dl-slope'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } if(window.IntMapSlope){ window.IntMapSlope.setMode(m); } }catch(_){}
           return R(true, note('⛰ '+(m==='aspect'?L('Slope aspect (direction each slope faces)','斜面の向き（方位）','Hangexposition','Экспозиция склона','Orientación'):L('Slope steepness (angle)','傾斜の急さ（角度）','Hangneigung','Крутизна склона','Pendiente'))+' — '+L('computed from the real elevation model for the current view; pan/zoom to update.','現在の表示範囲の標高データから算出。移動・拡大で更新。','aus dem echten Höhenmodell.','по реальной модели высот.','del modelo de elevación real.'))); }
+        /* (#R89) RF / radio coverage from an antenna */
+        case 'rfCoverage': case 'coverage': case 'radioCoverage': case 'signalCoverage': case 'reception': case 'lineOfSight': case 'viewshed': {
+          let ll=null; try{ if(a.lat!=null&&a.lng!=null) ll={lng:+a.lng,lat:+a.lat}; else if(a.place||a.at||a.location){ const g=await geocode(a.place||a.at||a.location); if(g) ll={lng:g.lng,lat:g.lat}; } else if(typeof _herePoint!=='undefined'&&_herePoint) ll=_herePoint; else { const c=map.getCenter(); ll={lng:c.lng,lat:c.lat}; } }catch(_){}
+          try{ if(window.IntMapRF){ window.IntMapRF.setParams(+a.height||+a.antennaHeight||0, (a.power!=null?+a.power:null), +a.frequency||+a.freq||0); window.IntMapRF.open(ll); } }catch(_){}
+          return R(true, note('📡 '+L('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura de radio')+' — '+L('line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.','実地形上の見通し到達域。パネルでアンテナ高・出力・周波数を設定、クリックで基地局を移動。','Sichtlinie über echtem Gelände.','зона прямой видимости.','área de línea de vista.'))); }
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
@@ -25865,6 +25870,80 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-slope-lbl'); if(s) s.textContent='⛰ '+lbl(); });
     if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
     return { toggle, run, clear:()=>toggle(false), setMode }; })();
+
+  /* ===== (#R89) RF / RADIO COVERAGE ("電波・通信圏") — from an antenna (position, height, power, frequency),
+     draw the terrain-aware line-of-sight service area: 360 rays marched over the real DEM, each stopped at the
+     first ridge that breaks line of sight, capped by the radio horizon (4/3-earth) and the free-space-path-loss
+     range from the link budget. Keyless (terrarium DEM). Real viewshed, not a distance circle. ===== */
+  window.IntMapRF=(function(){
+    if(typeof map==='undefined'||!map) return { open(){}, run(){}, clear(){} };
+    const SRC='imrf-src'; let panel=null, ant=null, busy=false, picking=false, pickH=null;
+    let antH=30, txDbm=30, freq=900;   /* metres, dBm (1 W), MHz */
+    const RF=(en,j,de,ru,es)=>({en:en,jp:j,de:de,ru:ru,es:es})[currentLang]||en;
+    const R2=6371008, Reff=R2*4/3;
+    function dest(lng,lat,brg,dkm){ const dr=dkm/6371, la=lat*Math.PI/180, lo=lng*Math.PI/180; const la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(brg)); const lo2=lo+Math.atan2(Math.sin(brg)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2)); return [lo2*180/Math.PI,la2*180/Math.PI]; }
+    function horizonKm(h){ return 4.12*(Math.sqrt(Math.max(1,h))+Math.sqrt(2)); }   /* 4/3-earth radio horizon, RX at 2 m */
+    function fsplKm(){ const budget=txDbm-(-100)+3;   /* RX sensitivity −100 dBm, small antenna gain */ const d=Math.pow(10,(budget-32.44-20*Math.log10(freq))/20); return isFinite(d)?d:60; }
+    function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
+      map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      map.addLayer({id:'imrf-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':'#12b886','fill-opacity':0.32}});
+      map.addLayer({id:'imrf-line',type:'line',source:SRC,filter:['==','$type','Polygon'],paint:{'line-color':'#0ca678','line-width':1.6}});
+      map.addLayer({id:'imrf-ant',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
+      return true; }catch(_){ return false; } }
+    /* proper terrain VIEWSHED: a cell is covered only if NO closer terrain rises into the line of sight from the
+       mast top to that cell (4/3-earth curvature drop applied). Marks true shadow gaps — no overstated coverage. */
+    async function compute(lng,lat){ const maxR=Math.min(horizonKm(antH), fsplKm(), 80);
+      const buf=maxR/110*1.12, z=Math.max(6,Math.min(13,Math.round(14-Math.log2(maxR+1))));
+      const samp=await window.IntMapTerrain.sampler([lng-buf,lat-buf,lng+buf,lat+buf],z); if(!samp) return null;
+      const g0=samp.elevAt(lng,lat); if(g0==null) return null; const top=g0+antH;
+      const N=52, w0=lng-buf, s0=lat-buf, dLng=(2*buf)/N, dLat=(2*buf)/N;
+      const mLat=110540, mLng=111320*Math.cos(lat*Math.PI/180); const feats=[]; let covered=0;
+      for(let i=0;i<N;i++)for(let j=0;j<N;j++){ const clng=w0+(i+0.5)*dLng, clat=s0+(j+0.5)*dLat;
+        const dx=(clng-lng)*mLng, dy=(clat-lat)*mLat, dm=Math.hypot(dx,dy); if(dm<60) continue; if(dm/1000>maxR) continue;
+        const ce=samp.elevAt(clng,clat); if(ce==null) continue;
+        const steps=Math.max(3,Math.min(70,Math.round(dm/(dLng*mLng)))); let maxAng=-Infinity;
+        for(let k=1;k<steps;k++){ const t=k/steps, plng=lng+(clng-lng)*t, plat=lat+(clat-lat)*t, pe=samp.elevAt(plng,plat); if(pe==null) continue;
+          const pdm=dm*t, drop=pdm*pdm/(2*Reff), ang=Math.atan2((pe-drop)-top,pdm); if(ang>maxAng) maxAng=ang; }
+        const cdrop=dm*dm/(2*Reff), cAng=Math.atan2((ce-cdrop)-top,dm);
+        if(cAng>=maxAng-1e-9){ covered++; feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w0+i*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+j*dLat],[w0+(i+1)*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+(j+1)*dLat],[w0+i*dLng,s0+j*dLat]]]},properties:{}}); }
+      }
+      return { maxR, g0, feats, covered, cellKm2:(dLng*mLng/1000)*(dLat*mLat/1000) }; }
+    async function run(){ if(!ant||busy) return; busy=true; try{ ensure();
+      if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'); }
+      const r=await compute(ant.lng,ant.lat);
+      if(r){ const feats=r.feats.concat([{type:'Feature',geometry:{type:'Point',coordinates:[ant.lng,ant.lat]},properties:{}}]);
+        try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
+        try{ map.fitBounds([[ant.lng-r.maxR/95,ant.lat-r.maxR/111],[ant.lng+r.maxR/95,ant.lat+r.maxR/111]],{padding:50,duration:800}); }catch(_){}
+        if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.innerHTML='<b>'+RF('Max range','最大到達','Max. Reichweite','Дальность','Alcance')+':</b> '+r.maxR.toFixed(1)+' km · <b>'+RF('covered','受信域','abgedeckt','покрытие','cubierto')+':</b> ~'+Math.round(r.covered*r.cellKm2).toLocaleString()+' km² · '+RF('base','基地標高','Basis','база','base')+' '+Math.round(r.g0)+' m'; }
+      } else if(panel){ const st=panel.querySelector('.rf-stat'); if(st) st.textContent=RF('No terrain data here.','この地点の地形データがありません。','Keine Geländedaten.','Нет данных.','Sin datos.'); }
+    }catch(_){}
+      busy=false; }
+    function _endPick(){ picking=false; try{ if(pickH) map.off('click',pickH); }catch(_){} pickH=null; try{ map.getCanvas().style.cursor=''; }catch(_){} }
+    function startPick(){ _endPick(); picking=true; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){} pickH=e=>{ ant={lng:e.lngLat.lng,lat:e.lngLat.lat}; _endPick(); run(); }; try{ map.once('click',pickH); }catch(_){} }
+    function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.id='rf-panel';
+      panel.style.cssText='position:fixed;left:16px;top:80px;width:min(320px,92vw);z-index:1402;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
+      const inC='width:100%;box-sizing:border-box;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:12px;';
+      panel.innerHTML='<div class="rf-head" style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--input-bg);cursor:move;"><span style="flex:1;font-size:13px;font-weight:700;color:var(--text-main);">📡 '+RF('Radio coverage','電波・通信圏','Funkabdeckung','Радиопокрытие','Cobertura')+'</span><button class="rf-close" style="border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;">✕</button></div>'
+        +'<div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px;">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<label style="font-size:10.5px;color:var(--text-muted);">'+RF('Antenna height (m)','アンテナ高 (m)','Höhe (m)','Высота (м)','Altura (m)')+'<input class="rf-h" type="number" min="1" max="1000" value="'+antH+'" style="'+inC+'"></label>'
+        +'<label style="font-size:10.5px;color:var(--text-muted);">'+RF('TX power (dBm)','送信出力 (dBm)','Leistung (dBm)','Мощность','Potencia')+'<input class="rf-p" type="number" min="0" max="60" value="'+txDbm+'" style="'+inC+'"></label>'
+        +'<label style="font-size:10.5px;color:var(--text-muted);grid-column:1 / span 2;">'+RF('Frequency (MHz)','周波数 (MHz)','Frequenz (MHz)','Частота','Frecuencia')+'<input class="rf-f" type="number" min="30" max="6000" value="'+freq+'" style="'+inC+'"></label>'
+        +'</div>'
+        +'<button class="rf-pick" style="height:34px;border:none;border-radius:9px;background:var(--primary-color);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;">◎ '+RF('Place antenna on map','地図でアンテナを設置','Antenne setzen','Разместить','Colocar')+'</button>'
+        +'<div class="rf-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;"></div>'
+        +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+RF('Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.','実地形上の見通し（4/3地球の電波見通し＋自由空間損失）。回折・遮蔽物は未考慮の一次近似です。','Sichtlinie über echtem Gelände.','Прямая видимость по рельефу.','Línea de vista sobre terreno real.')+'</div></div>';
+      document.body.appendChild(panel);
+      panel.querySelector('.rf-close').onclick=()=>{ panel.style.display='none'; _endPick(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} };
+      const gv=(sel,d)=>{ const el=panel.querySelector(sel); const v=+el.value; return isFinite(v)?v:d; };
+      panel.querySelector('.rf-h').onchange=()=>{ antH=Math.max(1,gv('.rf-h',30)); if(ant) run(); };
+      panel.querySelector('.rf-p').onchange=()=>{ txDbm=gv('.rf-p',30); if(ant) run(); };
+      panel.querySelector('.rf-f').onchange=()=>{ freq=Math.max(30,gv('.rf-f',900)); if(ant) run(); };
+      panel.querySelector('.rf-pick').onclick=()=>startPick();
+      try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rf-head')); }catch(_){}
+      return panel; }
+    function open(ll){ ensure(); ensurePanel(); panel.style.display='flex'; if(ll&&ll.lng!=null){ ant={lng:ll.lng,lat:ll.lat}; run(); } }
+    return { open, run, clear:()=>{ if(panel) panel.style.display='none'; try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }, _compute:compute, setParams:(h,p,f)=>{ if(h)antH=h; if(p!=null)txDbm=p; if(f)freq=f; } }; })();
 
   /* ===== (#R40) Two more well-known, key-free RASTER overlays (non-country, per "国単位以外を中心に"):
      OpenRailwayMap (global rail infrastructure) + OpenSeaMap (nautical seamarks). Raster tiles load as
