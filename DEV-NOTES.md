@@ -5,6 +5,15 @@
 
 ---
 
+## R94o — British Raj highlight = a thin sliver + finer border steps (closest snapshot) + Sakhalin verified (tag `#R94o`)
+
+Re-report (two screenshots): (1) *"british rajのハイライトがおかしい"* — comparing the British Raj, the map highlight was a thin strip near the Iran border, not India; (2) *"サハリン全島が領土なのはおかしくない？…もっと国境線の変化の刻み幅増やしてほしい。1920になってようやく樺太が日本領の表示になる"* — is all-of-Sakhalin-as-Japanese correct (please check), and make the border steps finer; Karafuto only shows Japanese at 1920.
+
+- **British Raj was a 28-pt sliver.** The 1900/1914 aourednik snapshots contain BOTH the real "British Raj" polygon (585/623 pts, the whole subcontinent) AND a tiny mislabeled "India" feature (28 pts, a strip at 60.8–63.3°E near the Iran border). `geomFor(re)` used `.find()` = the FIRST match, and the sliver came first for the Raj regex `/british raj|british india|^india$/`. Fixed: `geomFor` now returns the LARGEST-area match. Verified: the Raj compare polygon is 623 pts and contains Delhi/Kolkata/Karachi.
+- **Finer border steps — closest snapshot, not closest-≤-year.** aourednik has fixed snapshots (1900,1914,1920,1930,1938,1945,1960,1994,2000,2010 — there is no 1905/1910 file), so `nearest` now picks the CLOSEST one (a mid-gap year like 1910 → 1914), which roughly halves how long a year is shown with the "wrong" borders. A FORWARD jump is taken only across a ≤20-year gap, so the huge 1960→1994 gap keeps 1960 — the 1980s never render a post-Soviet world (the faithful state DATES already live in IntMapHistStates). Verified `_nearest`: 1908–1913→1914, 1925→1920, 1985/1990/1993→1960 (USSR intact), 2009→2010. The "Synced to" readout's own `hbAt` now delegates to `IntMapTimeBorders._nearest`, so the chip "🗺 Borders 1914" matches what is actually drawn (at clock 1910 the chips read "Countries 1910 · real" + "Borders 1914").
+- **Sakhalin — checked, and 1920 is right.** 1900 all-Russian; 1914 SOUTHERN Sakhalin (Karafuto) = Japan, NORTHERN = Russia (correct — the 1905 Treaty of Portsmouth gave Japan the island south of 50°N); 1920 ALL of Sakhalin = Japan (correct — Japan OCCUPIED northern Sakhalin 1920–1925 during the Russian Civil War, withdrawing under the 1925 Soviet-Japanese convention). So the all-Sakhalin fill at 1920 is historically accurate, not a bug. With the closest-snapshot change, 1908–1913 now use the 1914 borders, so Karafuto shows Japanese from ~1908 (verified at 1910: the Japan polygon has southern Sakhalin but NOT northern) instead of only 1920.
+- No new external data source. 0 console errors; verified on the real site at 1910 / 1985 / Now.
+
 ## R94n — Historical highlight cut in straight lines + Compare region not historical + wiki → modern country (tag `#R94n`)
 
 Re-report (three separate bugs on the historical map): (1) clicking an old country highlighted it *"直線でぶつ切られたよう"* (chopped off by straight lines) on several countries; (2) *"Compare時のハイライトの領域が史実に対応していない"* (the Compare fill uses modern, not era, borders); (3) *"german empireをおして…wikiリンクに行くと、普通のドイツのWikipediaに飛ばされる。ほかの国家も、今の国家に飛ばされる例が多発"* (German Empire's Wikipedia opens modern Germany; many countries route to the modern state).
