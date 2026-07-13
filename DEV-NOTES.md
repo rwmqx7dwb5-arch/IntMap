@@ -5,6 +5,15 @@
 
 ---
 
+## R94l — Make the era borders/labels ACTUALLY render (direct base swap + raise) + clickable/highlightable + data-coverage note (tag `#R94l`)
+
+Re-report (1930 screenshot): the map still showed **modern labels ("Israel", "Ukraine", "Belarus" separate) and no era borders**, the historical labels weren't clickable/highlightable, and deep-past has too many "—".
+
+- **Root of "still no borders":** the previous fix routed the base-swap through `applyTheme`, whose early-return + timing meant the label-free base was often never applied, so the CARTO `*_all` raster's **baked-in modern borders/labels stayed on top of everything**, and the era layers (gated by the modern-border toggle) could be hidden too. Rewrote `window._applyBorders` to do it **directly and unconditionally while travelling**: hide `layer-dark`/`layer-light`, show the matching `*_nl` (label-free) base, hide `ofm-country`, show `imtb-fill/hl/line/lbl`, and **`map.moveLayer` the era line+labels to the top** so they can't be buried. Era borders now show whenever travelling (no longer gated by the Country-borders toggle, which had left the map border-less). The border module's `apply()` calls `_applyBorders()` directly (+ re-asserts at 200/700 ms); only "Now" goes through `applyTheme()` to bring the labelled base back.
+- **Clickable + highlight:** added `imtb-fill` (whole-country click target) and `imtb-hl` (a yellow highlight fill). Clicking a historical country now **highlights it** (setFilter on `imtb-hl`) AND opens the same card as a modern country. Cursor→pointer on hover.
+- **Data coverage:** the "more —, the older" is the Maddison Project's real coverage limit (1930 = 57/168 codes have GDP, 65 have population; pre-1950 is inherently sparse). Population is used where present; no fabrication. Documented as a known limit.
+- Verified 1930 still shows the right identities (US · Republic of China · Germany · Soviet Union · UK · British Raj), `_applyBorders` runs clean, 0 console errors. ⚠ Map PIXELS remain unverifiable in this environment (in-app WebGL never loads; the real-Chrome extension is "not connected") — the border rendering is now direct/robust by construction; please confirm on the live site.
+
 ## R94k — Era-accurate empires & identities (Qing/ROC, German Empire, British Raj, Austria-Hungary…) + Time-machine UI + faster borders + back-to-stats colour (tag `#R94k`)
 
 Re-report: at 1913 the Countries tab showed **People's Republic of China, modern India, modern flags**, and **no Austria-Hungary** — *"全部史実に対応させろ… (言われた例だけ対処して終わりにするな)"*.
