@@ -507,8 +507,11 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     （`elevationBelow`＝Copernicus DEMグリッド標本→閾値以下/以上を深度段階fill）＋**歴史勢力図**（`historicalMap`＝curated WWI1916＋他年代AI生成）。
     ⑨**弾道ミサイルSim刷新**（`missile`＝最小エネルギーのケプラー軌道: 実アポジー/速度/飛翔時間＋高度断面SVG＋任意の弾頭効果環。
     検証: 1万km→1319km/7.2km・s/32分）。⑩**放射性物質拡散Sim**（`radiation`＝ラグランジュ粒子: Open-Meteoの時空間風で移流＋安定度依存の
-    乱流拡散＋湿性/乾性沈着＋半減期、粒子＋濃度ヒートマップ）。⑪**フライトシミュレーター**（`IntMapFlightSim`＝実地図上を飛べる
-    協調旋回/失速/地形衝突モデル＋HUD、キー W/S・↑↓・←→・A/D・Esc、dispatch `flightSim`）。⑫**レイヤープレビュー**: `setView` を
+    乱流拡散＋湿性/乾性沈着＋半減期、粒子＋濃度ヒートマップ）。⑪**フライトシミュレーター**（`IntMapFlightSim`＝R94pで剛体モデルに全面刷新: **角運動量=慣性**（操縦は角加速度→レート積分、
+    バンクは手を離しても保持）、揚力CL(α)+失速/抗力（寄生CD0+誘導k·CL²+フラップ/脚/抵抗板）/推力（ISA密度で減衰+AB）、
+    **機体差5種**（セスナ172/P-51/A320/F-16/グライダー＝質量・翼面積・慣性・推力・Vne等が別）、水平がバンクに**追従する物理カメラ**
+    +安定化トグル+コックピット/追従、機体選択・脚・フラップ・抵抗板・視点・一時停止・リセットのUI+キー(F/G/Space/C/V/P/R・1-5)、
+    physics(dt)分離で決定的にテスト可、dispatch `flightSim`（機体名も指定可））。⑫**レイヤープレビュー**: `setView` を
     **アスペクト補正**（クロップ枠を真の2:1 web-mercatorに拡張＝EU members・Volcanoesの横伸び解消）、ECMWF雲=実MODISトゥルーカラー、
     Live aircraft=実空港間の大圏ルート網。出典/プライバシーに OSRM・Google Street View を追加。新規 window.*: IntMapRouting/
     IntMapStreetView/IntMapRadiation/IntMapFlightSim。全モジュール存在・コンソールエラー0・129レイヤ行を実測確認。
