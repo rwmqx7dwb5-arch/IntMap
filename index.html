@@ -20731,12 +20731,12 @@ window.addEventListener('DOMContentLoaded', () => {
         coords.push([lng/factor,lat/factor]); } return coords; }
     function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      map.addLayer({id:'imroute-cas',type:'line',source:SRC,filter:['==','$type','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['+',['coalesce',['get','w'],5],4],'line-opacity':0.6}});
-      map.addLayer({id:'imroute-walk',type:'line',source:SRC,filter:['all',['==','$type','LineString'],['==',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#7a7f87'],'line-width':['coalesce',['get','w'],4],'line-dasharray':[0,2],'line-opacity':['coalesce',['get','op'],0.95]}});
-      map.addLayer({id:'imroute-rail',type:'line',source:SRC,filter:['all',['==','$type','LineString'],['!=',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#1a73e8'],'line-width':['coalesce',['get','w'],5],'line-opacity':['coalesce',['get','op'],1]}});
-      map.addLayer({id:'imroute-line',type:'line',source:SRC,filter:['all',['==','$type','LineString'],['==',['get','walk'],9]],layout:{},paint:{'line-color':'#1a73e8','line-width':4.5}});   /* legacy no-op filter kept for _OVL id */
-      map.addLayer({id:'imroute-transfer',type:'circle',source:SRC,filter:['all',['==','$type','Point'],['==',['get','k'],'stop']],paint:{'circle-radius':4.6,'circle-color':'#fff','circle-stroke-color':['coalesce',['get','col'],'#1a73e8'],'circle-stroke-width':2.6}});
-      map.addLayer({id:'imroute-pt',type:'circle',source:SRC,filter:['all',['==','$type','Point'],['!=',['get','k'],'stop']],paint:{'circle-radius':6.5,'circle-color':['coalesce',['get','color'],'#1a73e8'],'circle-stroke-color':'#fff','circle-stroke-width':2.5}});
+      map.addLayer({id:'imroute-cas',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['+',['coalesce',['get','w'],5],4],'line-opacity':0.6}});
+      map.addLayer({id:'imroute-walk',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#7a7f87'],'line-width':['coalesce',['get','w'],4],'line-dasharray':[0,2],'line-opacity':['coalesce',['get','op'],0.95]}});
+      map.addLayer({id:'imroute-rail',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['!=',['get','walk'],1]],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['coalesce',['get','col'],'#1a73e8'],'line-width':['coalesce',['get','w'],5],'line-opacity':['coalesce',['get','op'],1]}});
+      map.addLayer({id:'imroute-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'LineString'],['==',['get','walk'],9]],layout:{},paint:{'line-color':'#1a73e8','line-width':4.5}});   /* legacy no-op filter kept for _OVL id */
+      map.addLayer({id:'imroute-transfer',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['==',['get','k'],'stop']],paint:{'circle-radius':4.6,'circle-color':'#fff','circle-stroke-color':['coalesce',['get','col'],'#1a73e8'],'circle-stroke-width':2.6}});
+      map.addLayer({id:'imroute-pt',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['!=',['get','k'],'stop']],paint:{'circle-radius':6.5,'circle-color':['coalesce',['get','color'],'#1a73e8'],'circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     function clear(){ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     const PROFILES={ driving:['router.project-osrm.org','driving'], car:['router.project-osrm.org','driving'], drive:['router.project-osrm.org','driving'],
@@ -26134,7 +26134,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function ensure(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imdis-fill',type:'fill',source:SRC,filter:['==','$type','Polygon'],paint:{'fill-color':['coalesce',['get','col'],'#1e6fd0'],'fill-opacity':['coalesce',['get','op'],0.45]}});
-      map.addLayer({id:'imdis-line',type:'line',source:SRC,filter:['all',['==','$type','Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
+      map.addLayer({id:'imdis-line',type:'line',source:SRC,filter:['all',['==',['geometry-type'],'Polygon'],['==',['get','edge'],1]],paint:{'line-color':'#0b3d91','line-width':1.2}});
       map.addLayer({id:'imdis-pt',type:'circle',source:SRC,filter:['==','$type','Point'],paint:{'circle-radius':6,'circle-color':'#ff3b30','circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
     /* connected inundation (bathtub flood-fill) over the real DEM: flood cells reachable from the origin whose
