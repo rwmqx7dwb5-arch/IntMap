@@ -5,6 +5,30 @@
 
 ---
 
+## R103 — re-report batch: past-labels ROOT CAUSE found (applyLabelLang race), scrollbar scoping, routing-in-the-Atlantic guard, Atlas UI polish, time-machine sizing (tag `#R103`)
+
+21 items, mostly R102 re-reports. **BREAKTHROUGH: `?rafshim=1` makes the map actually render in the headless preview** (`window.__imap` set, `isStyleLoaded()`=true), so the map-layer bugs (past labels, layer visibility) were finally VERIFIABLE, not just reasoned about.
+
+**Past country labels (#7) — REAL root cause + verified fix.** The modern `ofm-country` labels were **re-appearing** in the past no matter what R94/R102 did ("変化なし"). Traced live: `_applyBorders()` hides `ofm-country` while travelling, but **`applyLabelLang()` runs on many events (styledata, cb-names, language, the 2.5 s label-raise interval) and unconditionally RE-SHOWED `ofm-country` based on `namesOn`**, overriding the hide within ~2.5 s. Fixed at the root: `applyLabelLang` now keeps `ofm-country` hidden whenever travelling (city/other labels stay). **Verified rendering**: at 1930 `ofm-country` renders **0** features, `imtb-lbl2` renders unchanged countries with their CURRENT name (France→"France"), `imtb-lbl` renders changed states with the era name (Empire of Japan / Ceylon / Yugoslavia); on return to Now `ofm-country` renders 32 again and the era labels clear. `_same` split: 293 unchanged / 224 changed.
+
+**Global (#20)** the custom-scrollbar auto-hide added `sb-active` to `<html>`, so scrolling ANYTHING lit up EVERY scrollbar ("他の場所のすべてのスクロールバーも表示"). Now the scroll handler marks only the actually-scrolled element (`.sb-on`, auto-clears 900 ms) — verified 1 element gets it, not all.
+
+**Countries**: (#6) the time-machine banner said "real GDP" for EVERY indicator — now reflects the selected one (verified: population/area/military spending). (#15) dark-mode country cards were `rgb(28,28,30)` = the sidebar exactly (zero contrast) — lifted to `#2a2a2e` + stronger border (verified). (#2) card gap 12→7 px. (#8) the compare hint is icon-led + main-text colour (the muted one-liner read as "missing").
+
+**Time machine (#3)**: button 163×46 (was oversized), tucked to bottom-right (14/52 px, non-flush); popup 360→**314 px**, smaller value (26 px, still weight-500) / toggle / chips; the "Applied" chips now sit in their own row UNDER the label and no longer wrap (verified 3 chips, one line). (#12) hide the time-machine button while the flight sim is flying.
+
+**Ticker (#11)**: the far-right hide button was an absolute overlay that the scrolling text ran under ("重なって汚い") — restructured so the text lives in a clipped `.tk-scroll` flex child and the button is a real flex sibling (verified `position:static`). (#10) layer-tile caption reverted to 11 px.
+
+**Atlas**: (#19) Atlas messages have **NO bubble** (full-width, verified transparent/no-border/no-radius), the user bubble is tighter (6 px vertical), and map-move confirmations no longer echo the location ("📍 place"→"✓"). (#16) in ws mode the in-panel "Atlas beta / – ×" header is hidden (the window has its own), the intro sub-text drops once a conversation starts, the input bar's vertical padding is tighter, and the "AI can be inaccurate" note is ONE static line under the input (not appended to every message — the brief's per-message note removed). (#5) examples rewritten to Atlas's real strengths (comparison / computed ranking / live news synthesis / cross-data) with **no routing** (still rough — not advertised); (#14) the "walk dotted / colour-coded" wording dropped from the transit reply. (#18) removed the redundant per-message AI disclaimer + location echoes (the "unnecessary info").
+
+**Workspace**: (#1) the two view-control bars tightened in ws mode (group padding 4→2 px vertical, inter-bar gap 8→4 px). (#4) the coordinate/elevation readout tucked closer to the corner (9 px base / 7 px ws, non-flush) — this, not the active-layers bar, was the real "常時表示欄". (#9) the adjacency highlight now also shows LIVE while resizing/dragging (whichever edge is joined), not only on hover. (#17) a **Support** button added to the right of Feedback in the top menu. (#21) the ws chrome (menu bar + window titles) + the Countries/Info window contents now re-localize immediately on a language change (were stuck until reload).
+
+**Routing (#13)**: a CORS-proxied MOTIS response can mangle the encoded polyline → `_decodePoly` yields garbage coords (route drawn "in the Atlantic off America"). Now each decoded leg geometry is validated against the leg's own plain-lat/lon endpoints and DISCARDED if any point is >3° away, falling back to a straight from→to line.
+
+**ToS/Privacy/Sources**: no new endpoints / data flows → no legal change.
+
+---
+
 ## R102 — big re-report batch: ws early-boot, flight-sim in-app fullscreen, time-machine faithful rebuild, Countries pulldown, ticker config, wind flicker (tag `#R102`)
 
 A 28-item batch, most re-reports of R101. Everything additive/in-place; verified in the preview where the DOM/state is observable (the headless tab is `document.hidden` → `window.__imap` never sets → MapLibre-LAYER visuals verified by logic + the pieces that ARE in the DOM). Full script re-parses clean (all modules `object`, 130 layer rows, 0 errors).
