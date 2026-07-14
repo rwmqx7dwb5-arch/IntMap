@@ -5,6 +5,21 @@
 
 ---
 
+## R99 — Flight sim: real sky/haze, satellite path map, HUD/label fixes, game bugs (tag `#R99`)
+
+Screenshot-driven fixes (a real cockpit screenshot + a long critique). **Shipped:**
+- **Sky** — the black sky (no height cue) is replaced by `map.setSky()` atmosphere (blue gradient + horizon haze + distance fog; `setSky` & `setLight` exist in 5.24, `setFog` does not — fog lives in the sky spec). Restored on exit.
+- **Result path map over SATELLITE imagery** — redrawn in Web-Mercator with Esri World Imagery tiles behind the altitude-coloured path (`destination-over` as tiles load), start/end markers. Was a plain dark canvas.
+- **HUD overlap** — the aircraft name and the EAS/Mach readout ran together in the badge → separator + gap.
+- **Airspeed relabelled EAS** — `TAS·√(ρ/ρ0)` is *equivalent* airspeed, not IAS (the report's own correction). Real IAS/CAS (pitot + compressibility) is a further step.
+- **Stale control hint** — removed "1–6 aircraft" (feature gone); **LEVEL → "CAM LVL / camera-level"** (it levels the camera, not the aircraft).
+- **Minimap altitude** rounded to 10 m so the throttled minimap can't show a different exact number than the main HUD.
+- **Glider ground start** gets a winch/tow launch speed (`ac.Tmax<=0 → V=Vcruise`) — an engineless glider couldn't take off from a runway.
+- **Pause time excluded** from the flight timer; **path recording DECIMATES** (keeps the whole route, coarser) instead of dropping the oldest section (long flights under-counted distance).
+- **LANDED** now needs a real roll-out to a slow taxi speed (`< max(15, 0.55·Vstall)`, was `1.15·Vstall` ≈ approach speed); the result names the airport for a runway landing vs "off-field".
+
+**Still DEFERRED (told the user, unchanged from R97/R98 + new ones from this critique):** angular-projected HUD (project horizon/pitch-ladder/**FPM** from the camera matrix + FOV, instead of a fixed-scale SVG), a real **flight-path-vector marker**, centre-mounted speed/altitude tapes, GPWS-style **terrain/sink-rate/pull-up/PFD warnings**, per-aircraft instrument panels (fighter HUD / A320 PFD-ND / Cessna six-pack / glider vario), a **wind/turbulence field**, **Mach/α/config aero tables** + per-type `alphaStall±`/`CLmax/min`, a real **propulsion model** (prop CT/CP(J), jet spool/AB) + ceiling-from-excess-power, **true FBW G-command**, a full **landing-gear contact-point model + ground effect**, real **runway geometry** + landing **scoring**, **ECEF/WGS-84**, **control modes** (arcade/standard/sim), **touch rudder / gamepad / sensitivity**, and **sound**. Each is a focused phase; the flight model remains a strong 6-DOF single-surface model, not a panel-method sim. The **workspace-mode "no flight UI"** bug and full Community backend removal also still open (need on-screen debugging / a careful refactor).
+
 ## R98 — Flight sim: F-35 default, globe, result screen, Atlas button; de-cringe status (tag `#R98`)
 
 Concrete bug/UX fixes from a frustrated report (+ a deep physics wishlist, mostly deferred — see below).
