@@ -5,6 +5,20 @@
 
 ---
 
+## R100 — Flight sim: the REAL HUD overlaps + re-flagged physics/game fixes (tag `#R100`)
+
+The user was (rightly) furious that "UI overlap" was still there — I'd fixed the badge's internal spacing but not the structural overlap. **MEASURE, don't guess:** `getBoundingClientRect()` on every `#fs-hud` panel at 1440×900 found the two real overlaps — **the Exit button (`.fs-x`, y70–98) sat inside the altitude panel (`.fs-tr`, y14–100)**, and **the control hint (`.fs-hint`, y784–884) overlapped the minimap (`.fs-minimap`, y649–826)** (both were `right:14px` stacks). Fixed: Exit → below the altitude panel; hint → the clear bottom-left. (The remaining `.fs-htape ∩ .fs-hdg-box` is the standard heading-tape boxed readout.) Verified 0 panel overlaps except that one.
+
+Physics/game re-fixes (the ones the user said to do before the projected-HUD phase):
+- **Negative-AoA stall**: per-aircraft `aStallNeg` (a real number in `_ACX`) replaces the derived `−aStall+2(CL0+flapCL)/CLa` that made a full-flap Cessna "stall" at ≈−0.9°. Verified: −3° no stall, −13° stalls.
+- **High-speed touchdown CRASHES** (`>1.7·Vstall` OR `>110 m/s` tyre limit) instead of `0.72·Vne` (which let the F-35 "land" at ~425 m/s). Verified: 200 m/s crashes, 60 m/s lands, gear-up crashes.
+- **Altitude consistency at the ROOT**: the minimap heading/altitude are set in `updateHUD` from the SAME frame's `st.alt` as the main HUD (it runs after the throttled `updateMinimap`, so it wins) — verified identical, not a 10 m rounding band-aid.
+- **Glider "runway" = aerotow RELEASE** (airborne start, `computeTrim` into a glide) instead of a 33 m/s ground "warp".
+- **Distance accumulates full-resolution every frame** (`st._dist`) — the decimated draw-path would short-cut turns.
+- Runway wording softened to **"near <airport>"** (no real runway geometry yet).
+
+**Still DEFERRED (unchanged):** projected/FOV HUD + FPM, centre tapes, GPWS/PFD, per-aircraft instruments, wind, aero tables, true FBW, propulsion model, runway geometry + gear contact model, ground effect, scoring/modes, ECEF, sound, gamepad, DEM look-ahead (collision still skipped when the DEM is null; AGL still shows the last value). **TEST-HARNESS NOTE:** mocking `map.queryTerrainElevation` DOES reach the module (verified: ground start settles to `terr+1.2`, spy called), but test the ground-contact/landing path from a **ground start** (which settles the terrain) — an airborne start + manual `st.alt` override reads terrain inconsistently.
+
 ## R99 — Flight sim: real sky/haze, satellite path map, HUD/label fixes, game bugs (tag `#R99`)
 
 Screenshot-driven fixes (a real cockpit screenshot + a long critique). **Shipped:**
