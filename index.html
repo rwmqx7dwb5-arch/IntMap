@@ -22149,13 +22149,15 @@ window.addEventListener('DOMContentLoaded', () => {
        cap (rad/s), was a flat ±14 (~800°/s) for everything; fbw = fly-by-wire G-command (auto-limits load factor);
        CDmax = broadside flat-plate drag (deep-stall/tailslide deceleration); thrZ = thrust-line pitch arm (m);
        gLimN = negative-g limit; tailAng = tail-strike pitch on the ground; len = length (m). */
+    /* aStallNeg (#R100) = the NEGATIVE-side stall AoA (rad), a real per-aircraft number. The old derived formula
+       −aStall+2(CL0+flapCL)/CLa gave a full-flap Cessna ≈ −0.9° (it "stalled" nearly level), which was wrong. */
     const _ACX={
-      cessna:{ elevMax:0.32, ctlRate:2.0, omMax:3.4, fbw:false, CDmax:1.7, thrZ:-0.12, gLimN:-1.76, tailAng:0.20, len:8.3 },
-      warbird:{ elevMax:0.28, ctlRate:2.0, omMax:4.2, fbw:false, CDmax:1.8, thrZ:-0.10, gLimN:-3.5,  tailAng:0.27, len:9.8 },
-      airliner:{ elevMax:0.34, ctlRate:1.4, omMax:2.3, fbw:true,  CDmax:1.5, thrZ:1.2,   gLimN:-1.0,  tailAng:0.19, len:37.6 },
-      fighter:{ elevMax:0.44, ctlRate:3.2, omMax:5.6, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.26, len:15.0 },
-      glider:{  elevMax:0.48, ctlRate:2.4, omMax:3.8, fbw:false, CDmax:1.4, thrZ:0,     gLimN:-2.1,  tailAng:0.16, len:7.0 },
-      f35:{     elevMax:0.42, ctlRate:3.1, omMax:5.4, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.24, len:15.7 }
+      cessna:{ elevMax:0.32, ctlRate:2.0, omMax:3.4, fbw:false, CDmax:1.7, thrZ:-0.12, gLimN:-1.76, tailAng:0.20, len:8.3,  aStallNeg:-0.26 },
+      warbird:{ elevMax:0.28, ctlRate:2.0, omMax:4.2, fbw:false, CDmax:1.8, thrZ:-0.10, gLimN:-3.5,  tailAng:0.27, len:9.8,  aStallNeg:-0.24 },
+      airliner:{ elevMax:0.34, ctlRate:1.4, omMax:2.3, fbw:true,  CDmax:1.5, thrZ:1.2,   gLimN:-1.0,  tailAng:0.19, len:37.6, aStallNeg:-0.21 },
+      fighter:{ elevMax:0.44, ctlRate:3.2, omMax:5.6, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.26, len:15.0, aStallNeg:-0.35 },
+      glider:{  elevMax:0.48, ctlRate:2.4, omMax:3.8, fbw:false, CDmax:1.4, thrZ:0,     gLimN:-2.1,  tailAng:0.16, len:7.0,  aStallNeg:-0.27 },
+      f35:{     elevMax:0.42, ctlRate:3.1, omMax:5.4, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.24, len:15.7, aStallNeg:-0.34 }
     };
     Object.keys(_ACX).forEach(k=>{ if(AIRCRAFT[k]) Object.assign(AIRCRAFT[k],_ACX[k]); });
     const AKEYS=['cessna','warbird','airliner','fighter','glider','f35'];
@@ -22189,9 +22191,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-thr{position:absolute;left:14px;bottom:20px;width:24px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.35);border-radius:7px;overflow:hidden;}'
         +'#fs-hud .fs-thrfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#34c759,#ffd60a,#ff453a);}'
         +'#fs-hud .fs-thrlbl{position:absolute;left:14px;bottom:174px;font-size:10px;color:#8fb8e0;}'
-        +'#fs-hud .fs-hint{position:absolute;right:14px;bottom:16px;font-size:10.5px;color:#bcd6f0;text-align:right;line-height:1.6;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.3);border-radius:9px;padding:7px 10px;}'
+        +'#fs-hud .fs-hint{position:absolute;left:64px;bottom:16px;font-size:10.5px;color:#bcd6f0;text-align:left;line-height:1.6;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.3);border-radius:9px;padding:7px 10px;}'   /* (#R100) moved off the bottom-right so it no longer overlaps the minimap */
         +'#fs-hud .fs-warn{position:absolute;left:50%;top:20%;transform:translateX(-50%);font-size:22px;font-weight:800;color:#ff453a;text-shadow:0 2px 8px #000;display:none;}'
-        +'#fs-hud .fs-x{position:absolute;right:14px;top:70px;pointer-events:auto;background:rgba(255,69,58,0.85);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}'
+        +'#fs-hud .fs-x{position:absolute;right:14px;top:112px;pointer-events:auto;background:rgba(255,69,58,0.85);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}'   /* (#R100) below the altitude panel (was overlapping it) */
         +'#fs-hud .fs-heading{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:22px;font-weight:700;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.35);border-radius:9px;padding:4px 14px;}'
         +'#fs-hud .fs-btns{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:none;gap:6px;pointer-events:auto;}'
         +'@media(hover:none){#fs-hud .fs-btns{display:flex;} #fs-hud .fs-adi{bottom:70px;}}'
@@ -22368,10 +22370,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const _pMs=(st._pausedMs||0)+(st._pauseStart?performance.now()-st._pauseStart:0);
       const durS=Math.max(0,Math.round((performance.now()-(st._t0||performance.now())-_pMs)/1000));   /* (#R99) flight time excludes paused wall-time */
       const maxAltM=Math.round(st._maxAlt||st.alt), maxVk=Math.round((st._maxV||st.V)*3.6);
-      let distKm=0; for(let i=1;i<path.length;i++){ const a=path[i-1],b=path[i], dLat=(b[1]-a[1])*111.32, dLon=(b[0]-a[0])*111.32*Math.cos(b[1]*Math.PI/180); distKm+=Math.hypot(dLat,dLon); }
+      const distKm=(st._dist||0);   /* (#R100) full-resolution accumulated distance (not summed from the decimated draw-path) */
       /* (#R99) distinguish a runway landing (near a known airport) from an off-field one */
       let where=''; if(ok){ let bd=1e9,best=null; AIRPORTS.forEach(a=>{ const d=Math.hypot((a[2]-st.lat)*111.32,(a[3]-st.lng)*111.32*Math.cos(st.lat*Math.PI/180)); if(d<bd){bd=d;best=a;} });
-        where=(best&&bd<5)?(' · '+best[1]):(' · '+LL('off-field','滑走路外','abseits','вне полосы','fuera de pista')); }
+        where=(best&&bd<5)?(' · '+LL('near '+best[1],best[1]+' 周辺','bei '+best[1],'возле '+best[1],'cerca de '+best[1])):(' · '+LL('off-field','滑走路外','abseits','вне полосы','fuera de pista')); }   /* (#R100) no real runway geometry yet → "near <airport>", not a precise runway-landing claim */
       const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE'))+where;
       const ov=document.createElement('div'); ov.id='fs-result';
       ov.style.cssText='position:fixed;inset:0;z-index:3060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';
@@ -22467,11 +22469,11 @@ window.addEventListener('DOMContentLoaded', () => {
         V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:(b0*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
         onGround:false, lastTerr:null, _settleTerr:false, groundStart:false, _tookOff:true, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='cockpit';
-      resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0; st._pathIntv=350; st._pausedMs=0; st._pauseStart=0;   /* (#R98/#R99) flight-path recording + pause-time exclusion */
+      resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0; st._pathIntv=350; st._pausedMs=0; st._pauseStart=0; st._dist=0; st._lastPt=[st.lng,st.lat];   /* (#R98/#R99/#R100) flight-path recording + pause-time exclusion + full-res distance accumulation */
       /* (#R97) GROUND START: spawn stationary ON the runway (gear down, level, heading down the runway, throttle idle)
          so the user takes off; the height settles onto the real DEM (see _settleTerr). Otherwise trim for level cruise. */
-      if(opts.onGround){ const launchV=(ac.Tmax<=0?ac.Vcruise:0);   /* (#R99) an engineless glider can't self-take-off from a runway → give it a winch/tow launch speed so it can fly off */
-        st.V=launchV; st.vb=[launchV,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
+      if(opts.onGround && ac.Tmax<=0) opts=Object.assign({},opts,{onGround:false});   /* (#R100) an engineless glider can't roll for take-off → a runway choice becomes an aerotow RELEASE: an airborne start (the settle lifts it to a safe release height), not a 33 m/s ground "warp" */
+      if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
         st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }
       else computeTrim();
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
@@ -22569,7 +22571,10 @@ window.addEventListener('DOMContentLoaded', () => {
         q('.fs-vs').textContent=(st.vs>=0?'+':'')+Math.round(st.vs);
         /* (#R95) heading from the NOSE vector, not qToEuler yaw — the Euler yaw jumps 180° as the pitch crosses the
            vertical (loop), which snapped the heading tape/indicator. The nose bearing reverses smoothly instead. */
-        const _nh=qRot(st.q,[1,0,0]), hdg=(Math.atan2(_nh[1],_nh[0])*R2D+360)%360; q('.fs-hdg').textContent=Math.round(hdg).toString().padStart(3,'0')+'°';
+        const _nh=qRot(st.q,[1,0,0]), hdg=(Math.atan2(_nh[1],_nh[0])*R2D+360)%360, _hdS=Math.round(hdg).toString().padStart(3,'0'); q('.fs-hdg').textContent=_hdS+'°';
+        /* (#R100) drive the minimap heading/altitude from the SAME frame's snapshot as the main HUD (updateHUD runs after
+           the throttled updateMinimap, so this always wins) — fixes the 5,943 vs 5,947 mismatch at the root, not by rounding. */
+        { const _ma=q('.fs-mm-alt'); if(_ma) _ma.textContent=Math.round(st.alt).toLocaleString(); const _mh=q('.fs-mm-hdg'); if(_mh) _mh.textContent=_hdS; }
         q('.fs-thrfill').style.height=Math.round(st.thr*100)+'%';
         /* (#R96) attitude from the CAMERA's continuous bank (st._camRoll), NOT qToEuler roll — the Euler roll flips
            ±180° across the vertical, which spun the ADI / roll-pointer / ladder even when the outside view was fine.
@@ -22619,7 +22624,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R97) critical AoA is ASYMMETRIC: the negative-side stall (aStallN) is a smaller magnitude than the positive
          one because of camber/CL0, and flaps (flapCL) shift BOTH. Separation now starts at the correct angle for the
          sign of AoA, so the aero roll-off and the STALL flag agree (they used a symmetric ±aStall before). */
-      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, aStallN=-aStall+2*((ac.CL0+flapCL)/ac.CLa);
+      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, aStallN=(ac.aStallNeg!=null?ac.aStallNeg:-0.24)+st.flaps*0.05;   /* (#R100) per-aircraft negative stall angle; flaps shift it up (less negative) — no more −0.9° full-flap "stall" */
       const stallAng=(aoa>=0?aStall:Math.abs(aStallN)), sep=Math.max(0,Math.min(1,(Math.abs(aoa)-stallAng)/0.22)), sm=sep*sep*(3-2*sep);
       const CLatt=ac.CL0+flapCL+ac.CLa*aoa, CDmax=ac.CDmax||1.8;
       const CL=(1-sm)*CLatt + sm*(CDmax*Math.sin(aoa)*Math.cos(aoa));                         /* attached ⊕ flat-plate (symmetric ⇒ no −AoA jump) */
@@ -22721,7 +22726,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(agl>6) st._tookOff=true;   /* (#R97) airborne since spawn — only then does a later touchdown count as a LANDING (a fresh ground start isn't "LANDED") */
       if(tr.ok && agl<=gearH+0.3){ const descent=-st.vs, bankDeg=Math.abs(st.phi*180/Math.PI), pitchAbs=Math.abs(st.theta);
         /* (#R95) gear-up touchdown is a belly landing → crash (it used to count as LANDED at low speed). */
-        if(descent>7 || bankDeg>25 || pitchAbs>0.6 || !gearDown || st.V>ac.Vne*0.72) crash();
+        /* (#R100) touchdown fails on: >7 m/s sink · >25° bank · >0.6 rad nose attitude · gear up · OR too fast for the
+           tyres/gear — judged against the stall/Vref (≈1.7·Vstall, i.e. well above the ~1.3·Vstall Vref) AND an absolute
+           tyre-speed limit (~110 m/s), NOT 0.72·Vne (which let the F-35 "land" at ~425 m/s). */
+        if(descent>7 || bankDeg>25 || pitchAbs>0.6 || !gearDown || st.V>VstallEff*1.7 || st.V>110) crash();
         else { st.onGround=true;
           const vw2=qRot(st.q,st.vb);
           if(vw2[2]>0) vw2[2]=0;                          /* wheels stop the sink … */
@@ -22805,6 +22813,9 @@ window.addEventListener('DOMContentLoaded', () => {
       updateHUD(agl,f);
       /* (#R98) record the flight path (for the result-screen map) + peak stats */
       if(st.alt>(st._maxAlt||0)) st._maxAlt=st.alt; if(st.V>(st._maxV||0)) st._maxV=st.V;
+      /* (#R100) accumulate ground distance EVERY frame (full resolution) so the total is right even for a turn-heavy
+         flight — the drawn path is decimated, but computing distance from decimated points would short-cut the turns. */
+      if(st._lastPt){ const dLat=(st.lat-st._lastPt[1])*111320, dLon=(st.lng-st._lastPt[0])*111320*Math.cos(st.lat*Math.PI/180), dd=Math.hypot(dLat,dLon)/1000; if(dd<50) st._dist=(st._dist||0)+dd; } st._lastPt=[st.lng,st.lat];
       if(!st._pathT || now-st._pathT>(st._pathIntv||350)){ st._pathT=now; if(st._path){ st._path.push([st.lng,st.lat,st.alt]);
         if(st._path.length>1600){ st._path=st._path.filter((_,i)=>i%2===0); st._pathIntv=(st._pathIntv||350)*2; } } }   /* (#R99) DECIMATE (keep the whole route coarser) instead of dropping the oldest — a long flight kept losing its start & under-counting distance */
       if(f.landed){ showResult('landed'); return; }   /* completed landing → result screen */
