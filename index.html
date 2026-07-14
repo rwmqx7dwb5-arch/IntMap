@@ -22090,7 +22090,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
-    let acKey='airliner', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) selectable aircraft + camera state; default = eye AT the aircraft */
+    let acKey='f35', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) camera state; default aircraft = F-35 (#R98) */
     let minimap=null, mmOn=true, mmT=0;   /* (#R96) moving-map / nav-display (track-up mini map) state */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
     /* ===== (#R94p) FULL RIGID-BODY FLIGHT MODEL ("感性(慣性)や空気抵抗、機体による差…すべてを考慮した完璧なモデル").
@@ -22272,7 +22272,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R94p) aircraft name + config chips + on-screen control decks (aircraft select · gear/flaps/brake/view/level/pause/reset) */
         +'<div class="fs-acbadge"><span class="fs-acname">—</span><span class="fs-mach"></span></div>'
         +'<div class="fs-config"><span class="fs-cfg fs-cfg-flaps">FLAPS</span><span class="fs-cfg fs-cfg-gear">GEAR</span><span class="fs-cfg fs-cfg-cam">CAM</span></div>'
-        +'<div class="fs-aircraft">'+AKEYS.map(function(k){ var a=AIRCRAFT[k], nm=((a.name&&(a.name[currentLang]||a.name.en))||k).split('·')[0].trim(); return '<button class="fs-acchip" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('')+'</div>'
+        /* (#R98) mid-flight aircraft switching REMOVED — you pick the aircraft on the pre-flight screen; you can't swap airframes in the air. */
         +'<div class="fs-deck">'
           +'<button class="fs-act" data-act="g">⚙<small>'+LL('GEAR','脚','FAHRW','ШАССИ','TREN')+'</small></button>'
           +'<button class="fs-act" data-act="f">⬇<small>'+LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛ','FLAPS')+'</small></button>'
@@ -22293,7 +22293,6 @@ window.addEventListener('DOMContentLoaded', () => {
       hud.querySelectorAll('.fs-btns button').forEach(b=>{ const k=b.getAttribute('data-k');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
         b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
-      hud.querySelectorAll('.fs-acchip').forEach(b=>b.addEventListener('click',()=>{ selectAircraft(b.getAttribute('data-ac')); }));
       hud.querySelectorAll('.fs-deck [data-act]').forEach(b=>b.addEventListener('click',()=>{ fsAction(b.getAttribute('data-act')); }));
       hud.querySelectorAll('.fs-deck [data-hold]').forEach(b=>{ const k=b.getAttribute('data-hold');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
@@ -22328,8 +22327,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(k==='m'){ try{ toggleMinimap(); }catch(_){} }                                         /* (#R96) moving-map on/off */
       else if(k==='p') paused=!paused;                                                              /* pause */
       else if(k==='r') respawn();                                                                   /* reset in place */
-      else if(/^[1-6]$/.test(k)) selectAircraft(AKEYS[+k-1]);                                       /* pick aircraft (1–6) */
-      else return false;
+      else return false;   /* (#R98) no in-flight aircraft switching (keys 1–6 removed) — the airframe is chosen on the pre-flight screen */
       try{ syncHUDChrome(); }catch(_){} return true; }
     function onKey(e){ const k=e.key.toLowerCase(); if(k==='escape'){ stop(); return; }
       if(k==='shift'||k==='control'){ keys[k]=true; return; }   /* afterburner modifier (no preventDefault) */
@@ -22360,7 +22358,9 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
     /* (#R97) PRE-FLIGHT SETUP screen ("開始時に機種等を選択させてから"): choose the aircraft, a start location (an airport
        or the current map view) and whether to spawn ON the runway to take off, or already airborne. START → start(). */
-    function setup(opts){ if(on||document.getElementById('fs-setup')) return; opts=opts||{};
+    /* (#R98) close the Atlas console window when the sim is launched from it (the pre-flight screen / cockpit take over). */
+    function _closeAtlas(){ try{ if(window.IntMapConsole&&IntMapConsole.close) IntMapConsole.close(); }catch(_){} try{ const ap=document.getElementById('atlas-panel'); if(ap) ap.style.display='none'; }catch(_){} }
+    function setup(opts){ if(on||document.getElementById('fs-setup')) return; opts=opts||{}; _closeAtlas();
       if(!document.getElementById('fss-style')){ const s=document.createElement('style'); s.id='fss-style';
         s.textContent='#fs-setup{position:fixed;inset:0;z-index:3050;background:rgba(4,10,20,0.74);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
           +'.fss-card{width:min(460px,94vw);max-height:92vh;overflow:auto;background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid rgba(120,190,255,0.32);border-radius:18px;padding:20px 20px 18px;box-shadow:0 20px 60px rgba(0,0,0,0.6);}'
@@ -22401,7 +22401,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(state.mode==='ground') o.onGround=true; else o.alt=(o.elev!=null?o.elev+2500:2500);
         ov.remove(); start(o); };
     }
-    function start(opts){ if(on) return true; on=true; opts=opts||{};
+    function start(opts){ if(on) return true; on=true; opts=opts||{}; _closeAtlas();
       if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
       const c=map.getCenter(), ac=AC();
       /* (#R95) start heading = the map's bearing. The old `map.getBearing()||90` turned a perfectly valid 0° (north-
@@ -22426,7 +22426,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ prevView={ base:(typeof currentMapType!=='undefined'?currentMapType:'map'), proj:(typeof currentProj!=='undefined'?currentProj:'globe'), terr:(typeof terrain3D!=='undefined'?terrain3D:false), maxPitch:(map.getMaxPitch?map.getMaxPitch():60) }; }catch(_){ prevView=null; }
       try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
-      try{ if((typeof currentProj!=='undefined'&&currentProj==='globe')&&window.IntMapOS) IntMapOS.exec('view.proj.flat',{source:'flightsim'}); }catch(_){}
+      /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead. */
       try{ if(typeof currentMapType==='undefined'||currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
@@ -22653,7 +22653,11 @@ window.addEventListener('DOMContentLoaded', () => {
           else if(st.alt<terr+1200){ st.alt=terr+1500; try{ computeTrim(); }catch(_){} } }
         else if(st.groundStart){ st.alt=(st._groundAlt!=null?st._groundAlt:st.alt); st.vb=[st.vb[0]||0,0,0]; st.om=[0,0,0]; }   /* park on the runway until the DEM confirms the field height (don't freefall) */
         return { agl:st.alt-terr, stalling:false, overspeed:false, overG:false, landed:false, ab:st._ab }; }
-      const agl=st.alt-terr, gearDown=st.gear>0.5, VstallEff=ac.Vstall*(1-0.12*st.flaps), gearH=1.2; let landed=false;
+      /* (#R98) DERIVE the reference stall speed from weight + configuration + CLmax each step (Vstall = √(2mg / ρ·S·CLmax))
+         instead of a hardcoded per-aircraft number that disagreed with the aero (F-35/F-16/A320 were off by 10–30%).
+         CLmaxCfg includes the flap CL & the flap stall-angle shift; ρ is the local density (higher TAS stall up high). */
+      const CLmaxCfg=ac.CL0+flapCL+ac.CLa*aStall, VstallEff=Math.sqrt(2*ac.m*g0/(Math.max(0.02,rho)*ac.S*Math.max(0.3,CLmaxCfg)));
+      const agl=st.alt-terr, gearDown=st.gear>0.5, gearH=1.2; let landed=false;
       if(agl>6) st._tookOff=true;   /* (#R97) airborne since spawn — only then does a later touchdown count as a LANDING (a fresh ground start isn't "LANDED") */
       if(tr.ok && agl<=gearH+0.3){ const descent=-st.vs, bankDeg=Math.abs(st.phi*180/Math.PI), pitchAbs=Math.abs(st.theta);
         /* (#R95) gear-up touchdown is a belly landing → crash (it used to count as LANDED at low speed). */
@@ -24836,7 +24840,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R80) vision §17 — IntMap self-diagnosis: news freshness + layer paint integrity + live-API reachability. */
         case 'diagnose': case 'health': case 'selfCheck': case 'systemStatus': case 'status': {
           const H=await healthCheck({probe:true}); const dot=b=>b?'🟢':'🔴';
-          let h='<div style="font-weight:600;margin:2px 0 6px;">🩺 '+L('IntMap self-diagnosis','IntMap 自己診断','IntMap-Selbstdiagnose','Самодиагностика IntMap','Autodiagnóstico de IntMap')+'</div><div style="font-size:12px;line-height:1.75;">';
+          let h='<div style="font-weight:600;margin:2px 0 6px;">'+L('Data & connection status','データ・接続状態','Daten- & Verbindungsstatus','Данные и соединение','Estado de datos y conexión')+'</div><div style="font-size:12px;line-height:1.75;">';
           h+=dot(!H.news.stale)+' '+L('News feed','ニュース','Nachrichten','Новости','Noticias')+': '+(H.news.count?(H.news.count+' '+L('articles','件','Artikel','статей','artículos')+(H.news.ageH==null?(' — '+L('undated','日付なし','ohne Datum','без дат','sin fecha')):(' — '+L('newest','最新','neuste','свежесть','más reciente')+' '+H.news.ageH+'h'))+(H.news.stale?(' ⚠ '+L('may have stopped updating','更新停止の可能性','evtl. keine Updates','возможно не обновляется','quizá no se actualiza')):'')):L('not loaded yet','未読込','noch nicht geladen','ещё не загружено','no cargado'))+'<br>';
           h+=dot(H.layers.bad===0)+' '+L('Layers','レイヤー','Ebenen','Слои','Capas')+': '+H.layers.on+' '+L('on','オン','an','вкл','activas')+(H.layers.bad?(' ⚠ '+H.layers.bad+' '+L('not painting','未描画','nicht gezeichnet','не отрисованы','sin pintar')+(H.layers.badN.length?(' ('+H.layers.badN.map(esc).join(', ')+')'):'')):(' — '+L('all painting','全て描画','alle ok','все ок','todas ok')))+'<br>';
           if(H.endpoints){ Object.keys(H.endpoints).forEach(k=>{ const e=H.endpoints[k]; h+=dot(e.ok)+' '+esc(k)+': '+(e.ok?(L('reachable','到達可能','erreichbar','доступно','accesible')+' · '+e.ms+'ms'):(e.status===429?(L('rate-limited','レート制限','ratenbegrenzt','лимит запросов','límite de tasa')+' (429)'):e.status?(L('error','エラー','Fehler','ошибка','error')+' '+e.status):(L('unreachable','到達不可','nicht erreichbar','недоступно','inaccesible'))))+'<br>'; }); }
