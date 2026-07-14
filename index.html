@@ -10055,11 +10055,13 @@ window.addEventListener('DOMContentLoaded', () => {
         virus:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>',
         capitol:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M3 10l9-6 9 6"/></svg>',
         cap:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 5 2 9l10 4 10-4Z"/><path d="M6 11v5c0 1.2 2.7 2.6 6 2.6s6-1.4 6-2.6v-5"/><path d="M22 9v5"/></svg>',
-        sandbox:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a13 13 0 0 1 0 16M11 3a13 13 0 0 0 0 16M3 11h16"/><path d="m18.5 18.5 3 3"/></svg>'
+        sandbox:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M11 3a13 13 0 0 1 0 16M11 3a13 13 0 0 0 0 16M3 11h16"/><path d="m18.5 18.5 3 3"/></svg>',
+        plane:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16Z"/></svg>'
       };
       /* (#R32) Statecraft & World Sandbox ABOLISHED per request — removed from the hub. */
       const modes=[
         {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:(currentLang==='jp'?'サテライトドロップ':currentLang==='de'?'Satellite Drop':currentLang==='ru'?'Satellite Drop':currentLang==='es'?'Satellite Drop':'Satellite Drop'),d:(currentLang==='jp'?'衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。':currentLang==='de'?'Ein Satelliten-Geografiespiel: irgendwo auf der Erde abgesetzt — errate deinen Standort.':'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.'),go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
+        {svg:SV.plane,bg:'linear-gradient(135deg,#5e5ce6,#0a84ff)',t:jp()?'フライトシミュレーター':'Flight Simulator',d:jp()?'6自由度の本格フライトモデル。機体と空港を選び、実際の地形の上を滑走路から離陸・着陸。':'A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.',go:()=>{ ov.remove(); try{ window.IntMapFlightSim&&window.IntMapFlightSim.setup&&window.IntMapFlightSim.setup(); }catch(_){} }},
         {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:jp()?'パンデミック・シミュレーター':'Pandemic Simulator',d:jp()?'感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。':'Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.',go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
         {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:jp()?'クイズモード':'Quiz mode',d:jp()?'国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。':'Test your world geography: flags, capitals, map-clicks, silhouettes & duels.',go:()=>{ ov.remove();
           /* (#R33) Close the layer-selection panel/sheet when entering Quiz mode. */
@@ -22339,19 +22341,84 @@ window.addEventListener('DOMContentLoaded', () => {
     function onVisChange(){ if(document.hidden) onLoseFocus(); }
     function addExtraHUD(){ if(!hud) return; const tl=hud.querySelector('.fs-tl'); if(tl&&!tl.querySelector('.fs-g')){ const d=document.createElement('div'); d.style.cssText='margin-top:6px;display:flex;gap:14px;'; d.innerHTML='<div><div class="fs-k">'+LL('LOAD','荷重','LAST','ПЕРЕГР.','CARGA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-g">1.0</span><span style="font-size:10px;">g</span></div></div><div><div class="fs-k">'+LL('AoA','迎角','AoA','УГОЛ','AoA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-aoa">0</span><span style="font-size:10px;">°</span></div></div>'; tl.appendChild(d); } }
     let prevView=null;
+    /* (#R97) a handful of real airports (ICAO, name, lat, lon, field-elevation m, a runway heading°) so the sim can
+       spawn ON a runway and take off / land — a spread of geography and elevations (Denver 1655 m, Innsbruck alpine). */
+    const AIRPORTS=[
+      ['RJTT','Tokyo Haneda',35.5494,139.7798,6,337],['KLAX','Los Angeles',33.9416,-118.4085,38,250],
+      ['KJFK','New York JFK',40.6413,-73.7781,4,313],['KSFO','San Francisco',37.6213,-122.3790,4,284],
+      ['EGLL','London Heathrow',51.4700,-0.4543,25,270],['LFPG','Paris CDG',49.0097,2.5479,119,270],
+      ['EDDF','Frankfurt',50.0379,8.5622,111,250],['LSZH','Zürich',47.4647,8.5492,432,160],
+      ['LOWI','Innsbruck · alpine',47.2602,11.3439,581,260],['LEMD','Madrid',40.4936,-3.5668,610,180],
+      ['LIRF','Rome Fiumicino',41.8003,12.2389,5,160],['UUEE','Moscow',55.9726,37.4146,190,240],
+      ['OMDB','Dubai',25.2532,55.3657,19,300],['OERK','Riyadh',24.9576,46.6988,635,330],
+      ['VHHH','Hong Kong',22.3080,113.9185,9,70],['ZBAA','Beijing Capital',40.0801,116.5846,35,10],
+      ['RKSI','Seoul Incheon',37.4602,126.4407,7,330],['WSSS','Singapore Changi',1.3644,103.9915,7,20],
+      ['VABB','Mumbai',19.0887,72.8679,11,90],['YSSY','Sydney',-33.9461,151.1772,6,343],
+      ['NZAA','Auckland',-37.0082,174.7850,7,50],['KDEN','Denver · high',39.8561,-104.6737,1655,343],
+      ['SBGR','São Paulo',-23.4356,-46.4731,750,100],['FACT','Cape Town',-33.9715,18.6021,46,10],
+      ['CYYZ','Toronto',43.6777,-79.6248,173,50],['PHNL','Honolulu',21.3187,-157.9224,4,80]
+    ];
+    /* (#R97) PRE-FLIGHT SETUP screen ("開始時に機種等を選択させてから"): choose the aircraft, a start location (an airport
+       or the current map view) and whether to spawn ON the runway to take off, or already airborne. START → start(). */
+    function setup(opts){ if(on||document.getElementById('fs-setup')) return; opts=opts||{};
+      if(!document.getElementById('fss-style')){ const s=document.createElement('style'); s.id='fss-style';
+        s.textContent='#fs-setup{position:fixed;inset:0;z-index:3050;background:rgba(4,10,20,0.74);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
+          +'.fss-card{width:min(460px,94vw);max-height:92vh;overflow:auto;background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid rgba(120,190,255,0.32);border-radius:18px;padding:20px 20px 18px;box-shadow:0 20px 60px rgba(0,0,0,0.6);}'
+          +'.fss-h{font-size:19px;font-weight:800;margin:0 0 14px;letter-spacing:.02em;}'
+          +'.fss-lbl{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8fb8e0;margin:14px 0 7px;}'
+          +'.fss-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}'
+          +'.fss-ac{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#cfe6ff;background:rgba(6,14,24,0.6);border:1px solid rgba(120,190,255,0.28);border-radius:10px;padding:9px 10px;cursor:pointer;text-align:left;transition:.12s;}'
+          +'.fss-ac.on{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
+          +'.fss-sel{width:100%;font-size:14px;font-family:inherit;color:#e8f4ff;background:rgba(6,14,24,0.7);border:1px solid rgba(120,190,255,0.3);border-radius:10px;padding:10px;-webkit-appearance:none;appearance:none;}'
+          +'.fss-sel option{background:#0a1522;color:#e8f4ff;}'
+          +'.fss-mode{display:flex;gap:7px;}'
+          +'.fss-m{flex:1;font-size:12.5px;font-weight:700;color:#cfe6ff;background:rgba(6,14,24,0.6);border:1px solid rgba(120,190,255,0.28);border-radius:10px;padding:11px 8px;cursor:pointer;text-align:center;line-height:1.3;transition:.12s;}'
+          +'.fss-m.on{background:#34c759;border-color:#34c759;color:#04120a;}'
+          +'.fss-btns{display:flex;gap:10px;margin-top:20px;}'
+          +'.fss-cancel{flex:0 0 auto;font-size:14px;font-weight:600;color:#bcd6f0;background:transparent;border:1px solid rgba(120,190,255,0.3);border-radius:11px;padding:12px 18px;cursor:pointer;}'
+          +'.fss-go{flex:1;font-size:15px;font-weight:800;letter-spacing:.06em;color:#fff;background:linear-gradient(135deg,#0a84ff,#34c759);border:none;border-radius:11px;padding:12px;cursor:pointer;}';
+        document.head.appendChild(s); }
+      const selAc=(opts.aircraft&&AIRCRAFT[opts.aircraft])?opts.aircraft:acKey;
+      const acRows=AKEYS.map(k=>{ const a=AIRCRAFT[k], nm=((a.name&&(a.name[currentLang]||a.name.en))||k).split('·')[0].trim(); return '<button class="fss-ac'+(k===selAc?' on':'')+'" data-ac="'+k+'">'+(a.icon?a.icon+' ':'')+nm+'</button>'; }).join('');
+      const apOpts='<option value="__here">'+LL('📍 Current map view','📍 現在の地図の中心','📍 Aktuelle Kartenmitte','📍 Центр карты','📍 Vista actual')+'</option>'+AIRPORTS.map((a,i)=>'<option value="'+i+'">'+a[1]+' ('+a[0]+')</option>').join('');
+      const ov=document.createElement('div'); ov.id='fs-setup';
+      ov.innerHTML='<div class="fss-card"><div class="fss-h">✈ '+LL('Flight Simulator','フライトシミュレーター','Flugsimulator','Авиасимулятор','Simulador de vuelo')+'</div>'
+        +'<div class="fss-lbl">'+LL('Aircraft','機体','Flugzeug','Самолёт','Aeronave')+'</div><div class="fss-grid">'+acRows+'</div>'
+        +'<div class="fss-lbl">'+LL('Start location','開始地点','Startort','Место старта','Ubicación')+'</div><select class="fss-sel">'+apOpts+'</select>'
+        +'<div class="fss-lbl">'+LL('Start mode','開始状態','Startmodus','Режим старта','Modo')+'</div><div class="fss-mode">'
+          +'<button class="fss-m on" data-m="ground">🛫 '+LL('On the runway','滑走路から','Auf der Piste','На полосе','En pista')+'</button>'
+          +'<button class="fss-m" data-m="air">🛩 '+LL('Airborne','空中（巡航）','In der Luft','В воздухе','En vuelo')+'</button></div>'
+        +'<div class="fss-btns"><button class="fss-cancel">'+LL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar')+'</button><button class="fss-go">'+LL('START ▸','スタート ▸','START ▸','СТАРТ ▸','INICIAR ▸')+'</button></div></div>';
+      document.body.appendChild(ov);
+      const state={ ac:selAc, loc:(opts.lng!=null?'__here':'__here'), mode:'ground' };
+      ov.querySelectorAll('.fss-ac').forEach(b=>b.onclick=()=>{ state.ac=b.getAttribute('data-ac'); ov.querySelectorAll('.fss-ac').forEach(x=>x.classList.toggle('on',x===b)); });
+      const sel=ov.querySelector('.fss-sel'); sel.onchange=()=>{ state.loc=sel.value; };
+      ov.querySelectorAll('.fss-m').forEach(b=>b.onclick=()=>{ state.mode=b.getAttribute('data-m'); ov.querySelectorAll('.fss-m').forEach(x=>x.classList.toggle('on',x===b)); });
+      ov.querySelector('.fss-cancel').onclick=()=>ov.remove();
+      ov.querySelector('.fss-go').onclick=()=>{ const o={ aircraft:state.ac };
+        if(state.loc!=='__here'){ const a=AIRPORTS[+state.loc]; if(a){ o.lat=a[2]; o.lng=a[3]; o.elev=a[4]; o.hdg=a[5]; } }
+        else if(opts.lng!=null){ o.lng=+opts.lng; o.lat=+opts.lat; }
+        if(state.mode==='ground') o.onGround=true; else o.alt=(o.elev!=null?o.elev+2500:2500);
+        ov.remove(); start(o); };
+    }
     function start(opts){ if(on) return true; on=true; opts=opts||{};
       if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
       const c=map.getCenter(), ac=AC();
       /* (#R95) start heading = the map's bearing. The old `map.getBearing()||90` turned a perfectly valid 0° (north-
          up map) into 90° (east) because 0 is falsy — read it properly instead. */
       let b0=0; try{ const _b=(map.getBearing?map.getBearing():0); if(_b!=null&&isFinite(_b)) b0=_b; }catch(_){}
+      if(opts.hdg!=null&&isFinite(opts.hdg)) b0=+opts.hdg;   /* (#R97) runway / requested heading */
       st={ lng:(opts.lng!=null?+opts.lng:c.lng), lat:(opts.lat!=null?+opts.lat:c.lat), alt:(opts.alt!=null?+opts.alt:2500),
         vb:[ac.Vcruise,0,0], q:[1,0,0,0], om:[0,0,0], elevTrim:0,
         thr:0, elev:0, ail:0, rud:0, flaps:0, gear:0, brake:0,
         V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:(b0*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
-        onGround:false, lastTerr:null, _settleTerr:false, _acc:0, t:performance.now() };
+        onGround:false, lastTerr:null, _settleTerr:false, groundStart:false, _tookOff:true, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='cockpit';
-      computeTrim();
+      /* (#R97) GROUND START: spawn stationary ON the runway (gear down, level, heading down the runway, throttle idle)
+         so the user takes off; the height settles onto the real DEM (see _settleTerr). Otherwise trim for level cruise. */
+      if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
+        st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }
+      else computeTrim();
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
          3-D terrain (also gives queryTerrainElevation real ground for collisions), and raise the max pitch so the
@@ -22365,7 +22432,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
       /* (#R95) spawn clearance is settled once the DEM loads (see _settleTerr in stepFixed). If the ground is already
          known under us, lift now; otherwise defer so we never read a false 0 m over the mountains. */
-      { const tr0=_terrRead(st.lng,st.lat); if(tr0.ok) st.alt=Math.max(st.alt, tr0.v+1500); else st._settleTerr=true; }
+      { const tr0=_terrRead(st.lng,st.lat); if(tr0.ok){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+1500); } else st._settleTerr=true; }
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
       /* (#R85c) INDEPENDENT FULLSCREEN — take over the whole screen (browser fullscreen + the map lifted above all
          app chrome), not an overlay. Resize the map after the container changes size. */
@@ -22433,7 +22500,7 @@ window.addEventListener('DOMContentLoaded', () => {
       st.q=qFromEuler(0,aT+gamma,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
-      st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; paused=false; computeTrim(); }
+      st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; st.groundStart=false; st._tookOff=true; paused=false; computeTrim(); }
     function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ — сброс','ACCIDENTE — reinicio'); w.style.display='block'; w.style.color='#ff453a'; }
       respawn();
       setTimeout(()=>{ const w2=hud&&hud.querySelector('.fs-warn'); if(w2&&(w2.textContent.indexOf('CRAS')>=0||w2.textContent.indexOf('墜')>=0)) w2.style.display='none'; },1500); }
@@ -22581,9 +22648,13 @@ window.addEventListener('DOMContentLoaded', () => {
          so we cannot know the ground height. Rather than reading 0 m (which spawns inside Himalaya-class terrain and
          "crashes on load"), we wait: the FIRST confirmed ground read lifts the aircraft to a safe clearance if it is
          low, re-trims level, and skips the collision test for that frame. */
-      if(st._settleTerr){ if(tr.ok){ st._settleTerr=false; if(st.alt<terr+1200){ st.alt=terr+1500; try{ computeTrim(); }catch(_){} } }
+      if(st._settleTerr){ if(tr.ok){ st._settleTerr=false;
+          if(st.groundStart){ st.alt=terr+1.2; st.groundStart=false; st.onGround=true; st.vb=[st.vb[0]||0,0,0]; st.om=[0,0,0]; }   /* (#R97) settle a ground start ONTO the runway (not +1500) */
+          else if(st.alt<terr+1200){ st.alt=terr+1500; try{ computeTrim(); }catch(_){} } }
+        else if(st.groundStart){ st.alt=(st._groundAlt!=null?st._groundAlt:st.alt); st.vb=[st.vb[0]||0,0,0]; st.om=[0,0,0]; }   /* park on the runway until the DEM confirms the field height (don't freefall) */
         return { agl:st.alt-terr, stalling:false, overspeed:false, overG:false, landed:false, ab:st._ab }; }
       const agl=st.alt-terr, gearDown=st.gear>0.5, VstallEff=ac.Vstall*(1-0.12*st.flaps), gearH=1.2; let landed=false;
+      if(agl>6) st._tookOff=true;   /* (#R97) airborne since spawn — only then does a later touchdown count as a LANDING (a fresh ground start isn't "LANDED") */
       if(tr.ok && agl<=gearH+0.3){ const descent=-st.vs, bankDeg=Math.abs(st.phi*180/Math.PI), pitchAbs=Math.abs(st.theta);
         /* (#R95) gear-up touchdown is a belly landing → crash (it used to count as LANDED at low speed). */
         if(descent>7 || bankDeg>25 || pitchAbs>0.6 || !gearDown || st.V>ac.Vne*0.72) crash();
@@ -22604,7 +22675,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
           if(sp>1e-3){ const nf=Math.max(0,sp-fr*h)/sp; st.vb=[st.vb[0]*nf,st.vb[1]*nf,st.vb[2]*nf]; }
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
-          if(st.V<VstallEff*1.02 && bankDeg<10 && descent<3) landed=true; }
+          if(st._tookOff && st.V<VstallEff*1.02 && bankDeg<10 && descent<3) landed=true; }
       } else st.onGround=false;
       /* (#R97) STALL = critical-AoA exceeded (FAA: an aerofoil stalls at its critical AoA regardless of speed/attitude),
          on BOTH sides of the CL curve. The old extra `V<Vstall` term flagged a false stall whenever the plane was slow
@@ -22670,7 +22741,7 @@ window.addEventListener('DOMContentLoaded', () => {
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
     function selectAircraft(k){ if(!AIRCRAFT[k]) return; acKey=k; if(st){ st.V=AIRCRAFT[k].Vcruise; st.om=[0,0,0]; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; computeTrim(); } try{ syncHUDChrome(); }catch(_){} }
-    return { start, stop, active:()=>on, aircraft:selectAircraft, list:()=>AKEYS.slice(), _st:()=>st,
+    return { start, stop, setup, active:()=>on, aircraft:selectAircraft, list:()=>AKEYS.slice(), airports:()=>AIRPORTS.slice(), _st:()=>st,
       _dbg:{ step:(dt)=>{ try{ return physics(dt||0.02); }catch(e){ return {err:String(e)}; } }, key:(k,v)=>{ keys[String(k).toLowerCase()]=!!v; }, clearKeys:()=>{ for(const k in keys) keys[k]=false; }, trim:()=>{ try{ computeTrim(); }catch(_){} } } }; })();
   window.IntMapConsole=(function(){
     if(typeof map==='undefined'||!map) return { open(){}, run(){}, toggle(){} };
@@ -24688,8 +24759,8 @@ window.addEventListener('DOMContentLoaded', () => {
           else if(/cessna|trainer|セスナ|練習|schul|учебн|escuela/.test(_acs)) opts.aircraft='cessna';
           else if(/glider|sailplane|グライダー|滑空|segelflug|планёр|planeador/.test(_acs)) opts.aircraft='glider';
           else if(/mustang|p-?51|warbird|大戦|マスタング|大戦機/.test(_acs)) opts.aircraft='warbird';
-          let ok=false; try{ if(window.IntMapFlightSim&&window.IntMapFlightSim.start) ok=window.IntMapFlightSim.start(opts); }catch(_){}
-          return R(ok, ok?note('✈ '+L('Flight simulator started','飛行シミュレーターを開始','Flugsimulator gestartet','Авиасимулятор запущен','Simulador de vuelo iniciado')+(nm?(' · '+esc(nm)):'')+' — '+L('W/S throttle · ↑↓ pitch · ←→ bank · A/D rudder · Esc exit','W/S 出力・↑↓ ピッチ・←→ バンク・A/D ラダー・Esc 終了','W/S Schub · ↑↓ Nick · ←→ Roll · A/D Ruder · Esc Ende','W/S тяга · ↑↓ тангаж · ←→ крен · A/D руль · Esc выход','W/S gas · ↑↓ cabeceo · ←→ alabeo · A/D timón · Esc salir')):warn('⚠ '+L('Could not start the flight simulator','飛行シミュレーターを開始できませんでした','Konnte den Flugsimulator nicht starten','Не удалось запустить','No se pudo iniciar'))); }
+          let ok=false; try{ if(window.IntMapFlightSim&&window.IntMapFlightSim.setup){ window.IntMapFlightSim.setup(opts); ok=true; } else if(window.IntMapFlightSim&&window.IntMapFlightSim.start){ ok=window.IntMapFlightSim.start(opts); } }catch(_){}
+          return R(ok, ok?note('✈ '+L('Flight simulator — pick your aircraft & runway, then START','飛行シミュレーター — 機体と滑走路を選んで START','Flugsimulator — Flugzeug & Piste wählen, dann START','Авиасимулятор — выберите самолёт и полосу, затем СТАРТ','Simulador — elige avión y pista, luego INICIAR')+(nm?(' · '+esc(nm)):'')):warn('⚠ '+L('Could not start the flight simulator','飛行シミュレーターを開始できませんでした','Konnte den Flugsimulator nicht starten','Не удалось запустить','No se pudo iniciar'))); }
         case 'runway': case 'airports': { const ll=await geocode(a.place); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),7)}); }catch(_){} let ok=false; try{ if(window.RunwaySearch&&window.RunwaySearch.open){ window.RunwaySearch.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} return R(ok, ok?note('🛬 '+esc(ll.name||a.place||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'edu': case 'learn': { let ok=false; try{ if(window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; } }catch(_){} if(!ok) ok=clickId('btn-edu'); return R(ok, ok?note('🎓 '+L('Learn','学ぶ','Lernen','Обучение','Aprender')):warn('⚠')); }
         case 'ecmwf': case 'weatherLayers': { let ok=false; try{ if(window.IntMapWeatherEC&&window.IntMapWeatherEC.open){ window.IntMapWeatherEC.open(); ok=true; } }catch(_){} return R(ok, ok?note('🌦 '+L('Weather layers','気象レイヤー','Wetterebenen','Погодные слои','Capas meteorológicas')):warn('⚠')); }
