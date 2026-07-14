@@ -22092,6 +22092,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     let acKey='f35', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) camera state; default aircraft = F-35 (#R98) */
     let minimap=null, mmOn=true, mmT=0;   /* (#R96) moving-map / nav-display (track-up mini map) state */
+    let resultShown=false;   /* (#R98) a flight ends on a crash or a completed landing → the result screen (path map + fly-again/exit) */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
     /* ===== (#R94p) FULL RIGID-BODY FLIGHT MODEL ("感性(慣性)や空気抵抗、機体による差…すべてを考慮した完璧なモデル").
        Rebuilt from the 3-DOF R85 model. New physics:
@@ -22358,6 +22359,42 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
     /* (#R97) PRE-FLIGHT SETUP screen ("開始時に機種等を選択させてから"): choose the aircraft, a start location (an airport
        or the current map view) and whether to spawn ON the runway to take off, or already airborne. START → start(). */
+    /* (#R98) RESULT SCREEN — shown on a crash or a completed landing: the flight path drawn as a mini-map coloured by
+       altitude, a few stats, and a choice to fly again (back to the pre-flight screen) or exit. */
+    function showResult(kind){ if(resultShown||!st) return; resultShown=true; paused=true;
+      try{ if(raf) cancelAnimationFrame(raf); }catch(_){} raf=null;
+      const path=(st._path||[]).slice(), ok=(kind==='landed');
+      const durS=Math.round((performance.now()-(st._t0||performance.now()))/1000);
+      const maxAltM=Math.round(st._maxAlt||st.alt), maxVk=Math.round((st._maxV||st.V)*3.6);
+      let distKm=0; for(let i=1;i<path.length;i++){ const a=path[i-1],b=path[i], dLat=(b[1]-a[1])*111.32, dLon=(b[0]-a[0])*111.32*Math.cos(b[1]*Math.PI/180); distKm+=Math.hypot(dLat,dLon); }
+      const col=ok?'#34c759':'#ff453a', title=ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE');
+      const ov=document.createElement('div'); ov.id='fs-result';
+      ov.style.cssText='position:fixed;inset:0;z-index:3060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';
+      const stat=(l,v)=>'<div><div style="font-size:10px;color:#8fb8e0;">'+l+'</div><b style="font-size:14px;">'+v+'</b></div>';
+      ov.innerHTML='<div style="width:min(470px,95vw);background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid '+col+';border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">'
+        +'<div style="font-size:22px;font-weight:800;color:'+col+';margin-bottom:12px;">'+title+'</div>'
+        +'<canvas class="fsr-cv" width="440" height="230" style="width:100%;height:auto;background:rgba(0,0,0,0.4);border-radius:12px;border:1px solid rgba(120,190,255,0.2);display:block;"></canvas>'
+        +'<div style="font-size:10px;color:#8fb8e0;margin:6px 0 13px;">'+LL('Flight path — colour = altitude (blue low → red high)','飛行経路 — 色は高度（青=低 → 赤=高）','Flugweg — Farbe = Höhe','Маршрут — цвет = высота','Ruta — color = altitud')+'</div>'
+        +'<div style="display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap;">'+stat(LL('DISTANCE','飛行距離','DISTANZ','ДИСТ.','DIST.'),distKm.toFixed(1)+' km')+stat(LL('MAX ALT','最高高度','MAX HÖHE','МАКС ВЫС','ALT MÁX'),maxAltM.toLocaleString()+' m')+stat(LL('TOP SPEED','最高速度','SPITZE','МАКС СК','VEL MÁX'),maxVk.toLocaleString()+' km/h')+stat(LL('TIME','飛行時間','ZEIT','ВРЕМЯ','TIEMPO'),Math.floor(durS/60)+'m '+(durS%60)+'s')+'</div>'
+        +'<div style="display:flex;gap:10px;"><button class="fsr-again" style="flex:1;font-size:15px;font-weight:800;color:#fff;background:linear-gradient(135deg,#0a84ff,#34c759);border:none;border-radius:11px;padding:13px;cursor:pointer;">'+LL('↻ Fly again','↻ もう一度飛ぶ','↻ Nochmal','↻ Ещё раз','↻ Otra vez')+'</button>'
+          +'<button class="fsr-exit" style="flex:0 0 auto;font-size:14px;font-weight:600;color:#bcd6f0;background:transparent;border:1px solid rgba(120,190,255,0.3);border-radius:11px;padding:13px 20px;cursor:pointer;">'+LL('Exit','終了','Ende','Выход','Salir')+'</button></div></div>';
+      document.body.appendChild(ov);
+      try{ const cv=ov.querySelector('.fsr-cv'), cx=cv.getContext('2d'), W=cv.width, H=cv.height, pad=16;
+        if(path.length>1){ let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9,mna=1e9,mxa=-1e9;
+          path.forEach(p=>{ mnx=Math.min(mnx,p[0]); mxx=Math.max(mxx,p[0]); mny=Math.min(mny,p[1]); mxy=Math.max(mxy,p[1]); mna=Math.min(mna,p[2]); mxa=Math.max(mxa,p[2]); });
+          const sx=(mxx-mnx)||1e-6, sy=(mxy-mny)||1e-6, sc=Math.min((W-2*pad)/sx,(H-2*pad)/sy);
+          const ox=(W-sx*sc)/2, oy=(H-sy*sc)/2, px=lo=>ox+(lo-mnx)*sc, py=la=>H-oy-(la-mny)*sc, aR=(mxa-mna)||1;
+          cx.lineWidth=2.6; cx.lineCap='round'; cx.lineJoin='round';
+          for(let i=1;i<path.length;i++){ const a=path[i-1],b=path[i], t=Math.max(0,Math.min(1,(b[2]-mna)/aR));
+            cx.strokeStyle='hsl('+Math.round(210-t*210)+',88%,'+Math.round(48+t*10)+'%)'; cx.beginPath(); cx.moveTo(px(a[0]),py(a[1])); cx.lineTo(px(b[0]),py(b[1])); cx.stroke(); }
+          cx.fillStyle='#34c759'; cx.beginPath(); cx.arc(px(path[0][0]),py(path[0][1]),4.5,0,7); cx.fill();
+          cx.fillStyle=col; cx.beginPath(); cx.arc(px(path[path.length-1][0]),py(path[path.length-1][1]),4.5,0,7); cx.fill();
+        } else { cx.fillStyle='#8fb8e0'; cx.font='12px ui-monospace,monospace'; cx.fillText(LL('(flight too short to map)','(経路が短すぎます)','(zu kurz)','(слишком коротко)','(muy corto)'),18,H/2); }
+      }catch(_){}
+      const flyOpts=st._opts||{};
+      ov.querySelector('.fsr-again').onclick=()=>{ ov.remove(); stop(); setTimeout(()=>{ try{ setup(flyOpts); }catch(_){} },80); };
+      ov.querySelector('.fsr-exit').onclick=()=>{ ov.remove(); stop(); };
+    }
     /* (#R98) close the Atlas console window when the sim is launched from it (the pre-flight screen / cockpit take over). */
     function _closeAtlas(){ try{ if(window.IntMapConsole&&IntMapConsole.close) IntMapConsole.close(); }catch(_){} try{ const ap=document.getElementById('atlas-panel'); if(ap) ap.style.display='none'; }catch(_){} }
     function setup(opts){ if(on||document.getElementById('fs-setup')) return; opts=opts||{}; _closeAtlas();
@@ -22414,6 +22451,7 @@ window.addEventListener('DOMContentLoaded', () => {
         V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:(b0*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
         onGround:false, lastTerr:null, _settleTerr:false, groundStart:false, _tookOff:true, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='cockpit';
+      resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0;   /* (#R98) flight-path recording for the result screen */
       /* (#R97) GROUND START: spawn stationary ON the runway (gear down, level, heading down the runway, throttle idle)
          so the user takes off; the height settles onto the real DEM (see _settleTerr). Otherwise trim for level cruise. */
       if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
@@ -22457,6 +22495,7 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const k in keys) keys[k]=false;
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
       try{ destroyMinimap(); }catch(_){}   /* (#R96) tear down the moving-map's GL context */
+      resultShown=false; try{ const r=document.getElementById('fs-result'); if(r) r.remove(); }catch(_){}   /* (#R98) clear the result screen */
       if(hud){ hud.remove(); hud=null; }
       /* (#R85c) leave fullscreen + restore the normal layout */
       try{ document.body.classList.remove('fs-flying'); }catch(_){}
@@ -22501,9 +22540,8 @@ window.addEventListener('DOMContentLoaded', () => {
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
       st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; st.groundStart=false; st._tookOff=true; paused=false; computeTrim(); }
-    function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ — сброс','ACCIDENTE — reinicio'); w.style.display='block'; w.style.color='#ff453a'; }
-      respawn();
-      setTimeout(()=>{ const w2=hud&&hud.querySelector('.fs-warn'); if(w2&&(w2.textContent.indexOf('CRAS')>=0||w2.textContent.indexOf('墜')>=0)) w2.style.display='none'; },1500); }
+    function crash(){ if(resultShown) return; const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED','墜落','ABGESTÜRZT','КРУШЕНИЕ','ACCIDENTE'); w.style.display='block'; w.style.color='#ff453a'; }
+      showResult('crash');   /* (#R98) a crash ends the flight → result screen (was an auto-respawn in place); the R key still resets in-flight via respawn() */ }
     function updateHUD(agl,f){ if(!hud) return; const q=s=>hud.querySelector(s), R2D=180/Math.PI;
       try{ q('.fs-spd').textContent=Math.round(st.V*3.6); q('.fs-alt').textContent=Math.round(st.alt).toLocaleString(); q('.fs-agl').textContent=Math.round(Math.max(0,agl)).toLocaleString();
         q('.fs-vs').textContent=(st.vs>=0?'+':'')+Math.round(st.vs);
@@ -22679,7 +22717,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
           if(sp>1e-3){ const nf=Math.max(0,sp-fr*h)/sp; st.vb=[st.vb[0]*nf,st.vb[1]*nf,st.vb[2]*nf]; }
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
-          if(st._tookOff && st.V<VstallEff*1.02 && bankDeg<10 && descent<3) landed=true; }
+          if(st._tookOff && st.V<VstallEff*1.15 && bankDeg<10 && descent<3) landed=true; }   /* (#R98) achievable after a normal touchdown + short braking (was 1.02·Vstall ≈ a full stop) */
       } else st.onGround=false;
       /* (#R97) STALL = critical-AoA exceeded (FAA: an aerofoil stalls at its critical AoA regardless of speed/attitude),
          on BOTH sides of the CL curve. The old extra `V<Vstall` term flagged a false stall whenever the plane was slow
@@ -22698,13 +22736,14 @@ window.addEventListener('DOMContentLoaded', () => {
          gives arrowup=+1 which, with −Cmde, pitches DOWN. Rudder: D → yaw RIGHT. */
       st.elev=sweep(st.elev,cmd('arrowdown','arrowup'),ac.ctlRate||3.0); st.ail=sweep(st.ail,cmd('arrowleft','arrowright'),Math.max(2.6,(ac.ctlRate||3)+1)); st.rud=sweep(st.rud,cmd('d','a'),3.2);   /* (#R96) per-aircraft actuator speed — a jumbo no longer slams to full stick in 0.33 s like a fighter */
       st._acc=(st._acc||0)+dt; const H=1/200; let n=0, flags=null;
-      while(st._acc>=H && n<24){ flags=stepFixed(H,ac); st._acc-=H; n++; }
+      while(st._acc>=H && n<24 && !resultShown){ flags=stepFixed(H,ac); st._acc-=H; n++; }   /* (#R98) stop sub-stepping the instant a crash ends the flight */
       if(n>=24) st._acc=0;                       /* fell behind (lag) → drop the backlog, never spiral */
       if(!flags){ flags=stepFixed(Math.max(1e-4,st._acc),ac); st._acc=0; }   /* frame shorter than one step */
       return flags; }
-    function loop(){ if(!on) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.0005,Math.min(0.1,dt));
-      if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
+    function loop(){ if(!on||resultShown) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.0005,Math.min(0.1,dt));
+      if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
       const f=physics(dt), R2D=180/Math.PI, D2R=Math.PI/180, agl=f.agl;
+      if(resultShown) return;   /* (#R98) a crash inside physics() opened the result screen → stop the loop */
       /* ---- CAMERA (#R95): a TRUE eye-point view driven by the attitude, NOT a ground look-at. The old code called
          calculateCameraOptionsFromTo(eye → a ground target 1.8 km ahead) and then FORCED the resulting pitch into
          0–85°. Three faults fell out of that: (a) center/zoom/alt were solved for the un-clamped geometry, so once
@@ -22742,6 +22781,10 @@ window.addEventListener('DOMContentLoaded', () => {
         else { try{ map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} } }
       try{ updateMinimap(dt); }catch(_){}
       updateHUD(agl,f);
+      /* (#R98) record the flight path (for the result-screen map) + peak stats */
+      if(st.alt>(st._maxAlt||0)) st._maxAlt=st.alt; if(st.V>(st._maxV||0)) st._maxV=st.V;
+      if(!st._pathT || now-st._pathT>350){ st._pathT=now; if(st._path){ st._path.push([st.lng,st.lat,st.alt]); if(st._path.length>1200) st._path.shift(); } }
+      if(f.landed){ showResult('landed'); return; }   /* completed landing → result screen */
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
     function selectAircraft(k){ if(!AIRCRAFT[k]) return; acKey=k; if(st){ st.V=AIRCRAFT[k].Vcruise; st.om=[0,0,0]; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; computeTrim(); } try{ syncHUDChrome(); }catch(_){} }
