@@ -5,6 +5,32 @@
 
 ---
 
+## R104 — 19-item re-report/feature batch: Countries UI, time machine, workspace polish, contrast regression, Atlas ranking-highlight, transit routing without login (tag `#R104`)
+
+Several are R103 re-reports where the earlier fix was too shallow; the rest are new. Map-pixel features (era borders, route drawing) are reasoned + logic-verified in the headless preview (`document.hidden`, WebGL never finishes) — the rest verified via computed styles / DOM.
+
+**Countries** — (#1) flag 26→**30 px** and the inter-card gap 7→**4 px** (also the ws `#countries-feed` `gap:8px` override → 4). (#3/#6) the compare hint lost its **chart illustration** and is now a single line (`white-space:nowrap`); it renders in both normal & ws Countries. (#19) the indicator pulldown + sort toolbar now **sticks to the top** of the list (`#countries-feed .stats-toolbar` sticky, painted with the recessed panel tone), gaps to the search above / cards below tightened; the asc/desc button has **constant width** (both labels stacked in one grid cell → auto-sizes to the wider; verified 106 px in both states) and the plain-text ↑/↓ are replaced by a **refined SVG arrow**. (#11) the ws `!important` `border-bottom` on `.stat-row` was overriding the hover ring on the bottom edge only ("下は途切れている") → re-assert all four edges on `:hover`.
+
+**Contrast regression (#9)** — the opaque (default) sidebar painted with `--glass-fill` **== `--card-bg`**, i.e. the exact colour of the News/Info/Countries cards, so cards vanished into the panel. Restored the elevated-tile look via a recessed `--panel-bg` (light `#e9ebef` desktop sidebar; dark `#141416`) with the dark cards lifted to `#2a2a2e` (extended the R103 stat-row-only fix to news/wiki/comm). Verified: dark `#2a2a2e` cards on `#141416`; light `#fff` cards on `#e9ebef`. Frosted sidebar modes + the mobile sheet untouched.
+
+**Time machine (#2)** — the collapsed "See the past world" button tucked further into the corner (right 14→**10**, bottom 22→**16 px**, non-flush; the real rule was the later `.news-timeline` pill override, not the base). The "Applied" chips are written **smaller (9 px)** and the **News chip text is now constant** ("News" + an ok/amber dot + a range tooltip) so crossing the news-range boundary no longer changes its width → the base 3 chips stay on **one line** while the slider moves (verified `oneRow`).
+
+**Time-travel borders/labels (#4/#5)** — "国境や国名が変化しない": the R94m "moveLayer era layers to top" protection had been removed to stop a flicker loop, leaving `imtb-line/lbl/lbl2` liable to be buried after a styledata/base swap. Added them to the **`_raiseLabelLayers` STACK** (guarded by `inPlace()`, so no loop) → era borders + names stay on top while travelling. The `_same`/`imtb-lbl2` (unchanged countries keep their current label) vs `imtb-lbl` (renamed → era name) split from R103 is retained. Logic verified live: setYear(1914) → `IntMapTimeBorders.active()` true, nearest snapshot picked, aourednik fetch 200.
+
+**Atlas** — (#15) `highlight` gained a **ranked/filtered form**: `{metric,n,order,minPop,maxPop}` computes the top/bottom-N from the real country data (after a population filter) and highlights exactly those — "人口5M未満を除外したGDP per capita上位10ヵ国をハイライト" now works deterministically (executor + schema doc + `_fillMetric` for lazy metrics; verified the ranking runs & picks a non-empty set). (#16) removed the "会話で調整できます: 「家賃を重視して」…" hint line from the scoreMap reply.
+
+**Transit routing (#8) — ROOT CAUSE** — "東京から横浜まで鉄道で経路を出しても地図に出ない": `run()` executes `localPlan` deterministically (no login) but there was **no localPlan pattern for directions/routing**, so the command fell to `aiGate()`, which returns silently when logged-out → nothing drawn. Added a directions localPlan (JP "AからBまで〔鉄道/電車/車/徒歩〕で経路", mode-first "電車でAからB", EN "directions from A to B") → `{type:'directions',from,to,mode}`. **Verified**: the phrase now draws the route (5 Transitous options, full itinerary) with no account. The routing engine itself was always fine.
+
+**Search fields (#17)** — the Countries filter box + the in-map search bar unified with the **Atlas input pill**: radius 12→**21 px**, hairline `rgba(128,128,128,0.25)` border, `--card-bg` material, and the 3 px focus ring (map bar keeps its floating frost). Wording & size unchanged. A ws exception keeps the pill inside windows (the blanket `.ws-body>* border-radius:0` had squared it).
+
+**Start page (#18)** — the first-run welcome card is no longer auto-shown (`_imWelcome` kept, just not invoked).
+
+**Workspace** — (#7) the join/snap indicator made **clearly visible** ("どこで接合されるのかわからない → わかるUI"): the shared-edge bar is 4 px, full-opacity primary with a stronger glow + a gentle pulse, snap detection EPS 6→10, snap guide 2→3 px brighter. (#10) tightened the vertical padding around the Atlas "…inaccurate" note. (#12) the ws Atlas window's "Atlas" title gets a **background chip** (like normal mode) instead of a flat full-width title bar (bar → transparent, label → `--input-bg` pill). (#13) "Active layers" is **no longer ALL-CAPS** in the layers window + the gap up to the Search box tightened. (#14) a language change now **immediately** re-localizes everything in ws mode: the layer-sidebar **tiles rebuild** (verified 130 tiles EN→JP), and the News & Community windows re-render (were stuck until reload).
+
+**ToS/Privacy/Sources**: no new endpoints or data flows (Transitous/MOTIS + World Bank already listed) → no legal change.
+
+---
+
 ## R103 — re-report batch: past-labels ROOT CAUSE found (applyLabelLang race), scrollbar scoping, routing-in-the-Atlantic guard, Atlas UI polish, time-machine sizing (tag `#R103`)
 
 21 items, mostly R102 re-reports. **BREAKTHROUGH: `?rafshim=1` makes the map actually render in the headless preview** (`window.__imap` set, `isStyleLoaded()`=true), so the map-layer bugs (past labels, layer visibility) were finally VERIFIABLE, not just reasoned about.
