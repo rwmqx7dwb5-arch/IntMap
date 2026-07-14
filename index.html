@@ -264,6 +264,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .empty-msg{ text-align:center; color:var(--text-muted); font-size:13px; padding:48px 16px; line-height:1.6; }
     .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:14px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
     #live-news-feed{ gap:9px; }   /* (#R86) denser news feed — fit more cards without cramming (news only; info/community/countries feeds unaffected) */
+    #countries-feed{ gap:7px; }   /* (#R103) tighter vertical gap between country cards per request */
     .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:10; }
     /* iOS-style location pill (replaces old loc-chip) */
     .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
@@ -322,7 +323,11 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .cp-histnote b{ font-weight:700; }
     /* (#R101) tighter vertical padding so more country cards fit. (#R102) flag+name a little bigger, region/capital a
        little smaller (slash-separated), and the value column carries the number ALONE (no indicator label). */
-    .stat-row{ display:flex; align-items:center; gap:11px; background:var(--card-bg); padding:9px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); transition:0.2s; }
+    .stat-row{ display:flex; align-items:center; gap:11px; background:var(--card-bg); padding:9px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.14); transition:0.2s; }
+    /* (#R103) in dark the opaque --card-bg (#1c1c1e) was IDENTICAL to the sidebar (rgb 28,28,30) → country cards had
+       zero contrast with the background. Lift the card one elevation step lighter (the frosted-sidebar modes below
+       override this with their own frost). */
+    [data-theme="dark"] .stat-row{ background:#2a2a2e; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
     .stat-flag{ font-size:26px; line-height:1; } .stat-main{ flex:1; min-width:0; }
     .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:700; white-space:nowrap; }
@@ -519,7 +524,8 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .country-info{ display:none; position:absolute; bottom:60px; left:24px; z-index:1200; width:260px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:13px; }
     .ci-name{ font-weight:700; font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px; } .ci-row{ display:flex; justify-content:space-between; margin:3px 0; color:var(--text-muted); } .ci-row b{ color:var(--text-main); }
     .ci-details{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--primary-color); color:#fff; font-weight:600; cursor:pointer; }
-    .coord-readout{ display:none; position:absolute; bottom:16px; left:16px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
+    /* (#R103) the coordinate/elevation always-on readout tucked closer to the bottom-left corner (kept non-flush). */
+    .coord-readout{ display:none; position:absolute; bottom:9px; left:9px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
     /* Always-present "summarize what's on screen now" button (bottom-center of the map) */
     .ai-view-summary-btn{ position:absolute; left:50%; bottom:22px; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:7px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:13px; font-weight:600; padding:9px 16px; border-radius:999px; box-shadow:var(--shadow); cursor:pointer; transition:0.15s; white-space:nowrap; }
     .ai-view-summary-btn:hover{ filter:brightness(1.06); }
@@ -699,18 +705,19 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ctx-menu .ctx-divider{ height:1px; background:rgba(128,128,128,0.15); margin:4px 2px; }
     .ctx-menu .ctx-head{ padding:6px 10px 4px; font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:0.3px; text-transform:uppercase; }
     /* Time-travel news timeline — anchored on the right side of the map, raised to avoid coord readout/legends */
-    .news-timeline{ position:absolute; right:24px; bottom:72px; z-index:1100; display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:16px; padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
+    /* (#R103) tucked closer to the bottom-right (non-flush) + smaller button/popup per request. */
+    .news-timeline{ position:absolute; right:14px; bottom:54px; z-index:1100; display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:14px; padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
     .news-timeline.collapsed .ntl-body{ display:none; }
-    /* (#27) collapsed = the labeled "See the past world / 1900 to present" button */
-    .ntl-open{ display:flex; align-items:center; gap:12px; padding:11px 15px; background:transparent; border:none; cursor:pointer; text-align:left; width:100%; }
+    /* (#27) collapsed = the labeled "See the past world / 1900 to present" button (smaller, #R103) */
+    .ntl-open{ display:flex; align-items:center; gap:9px; padding:7px 11px; background:transparent; border:none; cursor:pointer; text-align:left; width:100%; }
     .ntl-open:hover{ background:var(--input-bg); }
-    .ntl-open-ico{ flex:0 0 auto; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:var(--primary-color); }
-    .ntl-open-ico svg{ width:29px; height:29px; }
-    .ntl-open-txt{ display:flex; flex-direction:column; gap:1px; min-width:0; }
-    .ntl-open-txt b{ font-size:16px; font-weight:600; color:var(--text-main); white-space:nowrap; letter-spacing:-0.01em; }
-    .ntl-open-txt small{ font-size:12px; color:var(--text-muted); white-space:nowrap; }
+    .ntl-open-ico{ flex:0 0 auto; width:25px; height:25px; display:flex; align-items:center; justify-content:center; color:var(--primary-color); }
+    .ntl-open-ico svg{ width:23px; height:23px; }
+    .ntl-open-txt{ display:flex; flex-direction:column; gap:0; min-width:0; }
+    .ntl-open-txt b{ font-size:13px; font-weight:600; color:var(--text-main); white-space:nowrap; letter-spacing:-0.01em; }
+    .ntl-open-txt small{ font-size:10.5px; color:var(--text-muted); white-space:nowrap; }
     .news-timeline:not(.collapsed) .ntl-open{ display:none; }
-    .ntl-body{ display:flex; flex-direction:column; gap:9px; padding:14px 16px 15px; width:360px; box-sizing:border-box; }
+    .ntl-body{ display:flex; flex-direction:column; gap:7px; padding:11px 13px 12px; width:314px; box-sizing:border-box; }
     .ntl-head{ display:flex; align-items:center; gap:7px; }
     .ntl-label{ font-size:15px; font-weight:700; min-width:104px; color:var(--text-main); letter-spacing:-0.01em; }
     .ntl-date{ background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); border-radius:9px; padding:6px 8px; font-size:12px; color:var(--text-main); outline:none; color-scheme:inherit; }
@@ -730,7 +737,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ntl-year:focus{ border-color:var(--primary-color); }
     .ntl-year::-webkit-outer-spin-button,.ntl-year::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     /* (#R101) redesigned time-machine popup ("反映内容" chip row + big value + mode toggle + badge) */
-    .ntl-body{ min-width:342px; }
+    .ntl-body{ min-width:0; }   /* (#R103) let the fixed width:314px win (was forcing 342px min → too big) */
     .ntl-title-row{ display:flex; align-items:center; gap:9px; }
     .ntl-title{ flex:0 0 auto; margin:0; }
     .ntl-badge{ display:none; font-size:11px; font-weight:600; color:#bcd6ff; background:rgba(10,132,255,0.2); border:1px solid rgba(10,132,255,0.4); border-radius:999px; padding:2px 10px; letter-spacing:0.01em; white-space:nowrap; }
@@ -738,21 +745,24 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .news-timeline.active .ntl-badge{ display:inline-block; }
     .ntl-x{ margin-left:auto; background:transparent; border:none; color:var(--text-muted); font-size:22px; line-height:1; font-weight:300; cursor:pointer; padding:0 3px; border-radius:8px; }
     .ntl-x:hover{ color:var(--text-main); background:var(--input-bg); }
-    .ntl-modes{ display:inline-flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; align-self:flex-start; }
-    .ntl-mode{ border:none; background:transparent; color:var(--text-muted); font-size:13px; font-weight:600; padding:6px 24px; border-radius:8px; cursor:pointer; }
+    .ntl-modes{ display:inline-flex; background:var(--input-bg); border-radius:10px; padding:2px; gap:2px; align-self:flex-start; }
+    .ntl-mode{ border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:600; padding:5px 18px; border-radius:8px; cursor:pointer; }
     .ntl-mode.on{ background:var(--primary-color); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); }
     /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
        changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
-    .ntl-valrow{ display:flex; align-items:center; gap:12px; margin:1px 0; }
-    .ntl-bigval{ flex:1 1 auto; min-width:0; font-size:32px; font-weight:500; letter-spacing:-0.02em; color:var(--text-main); line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .ntl-now{ flex:0 0 auto; background:transparent; border:1px solid var(--primary-color); color:var(--primary-color); font-size:13px; font-weight:600; padding:9px 16px; border-radius:11px; cursor:pointer; white-space:nowrap; }
+    .ntl-valrow{ display:flex; align-items:center; gap:10px; margin:0; }
+    .ntl-bigval{ flex:1 1 auto; min-width:0; font-size:26px; font-weight:500; letter-spacing:-0.02em; color:var(--text-main); line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ntl-now{ flex:0 0 auto; background:transparent; border:1px solid var(--primary-color); color:var(--primary-color); font-size:12px; font-weight:600; padding:6px 12px; border-radius:10px; cursor:pointer; white-space:nowrap; }
     .ntl-now:hover{ background:var(--primary-color); color:#fff; }
-    .ntl-synced{ font-size:11px; line-height:1.6; color:var(--text-muted); margin-top:6px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+    /* (#R103) "反映内容" label on its own line, chips in a compact NON-WRAPPING row below (smaller so they never
+       line-break — "Appliedの項目が改行されることのないように小さく記載"). */
+    .ntl-synced{ font-size:10px; line-height:1.5; color:var(--text-muted); margin-top:2px; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
     .ntl-synced .ntl-sync-lbl{ color:var(--text-muted); font-weight:600; }
+    .ntl-synced .ntl-chips{ display:flex; flex-wrap:wrap; align-items:center; gap:4px; max-width:100%; }
     .ntl-synced b{ color:var(--text-main); font-weight:600; }   /* (#11) year NOT bold */
-    .ntl-synced .ntl-chip{ display:inline-flex; align-items:center; gap:6px; margin:0; padding:4px 10px; border-radius:8px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.22); white-space:nowrap; font-size:11.5px; color:var(--text-main); }
+    .ntl-synced .ntl-chip{ display:inline-flex; align-items:center; gap:4px; margin:0; padding:3px 7px; border-radius:7px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.22); white-space:nowrap; font-size:9.5px; color:var(--text-main); }
     /* (#11) "反映内容" status dots: a blue CHECK for applied items, an amber dot for out-of-range (matches the mock). */
-    .ntl-synced .ntl-dot{ width:15px; height:15px; border-radius:50%; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:800; color:#fff; line-height:1; }
+    .ntl-synced .ntl-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; font-size:8px; font-weight:800; color:#fff; line-height:1; }
     .ntl-synced .ntl-dot.ok{ background:var(--primary-color); }
     .ntl-synced .ntl-dot.warn{ background:#ff9f0a; }
     @media(max-width:768px){
@@ -1527,10 +1537,13 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     html.custom-scrollbars *::-webkit-scrollbar-track{ background:transparent; }
     html.custom-scrollbars *::-webkit-scrollbar-corner{ background:transparent; }
     html.custom-scrollbars *::-webkit-scrollbar-thumb{ background:transparent; border-radius:8px; border:2.5px solid transparent; background-clip:padding-box; transition:background-color 0.25s ease; }
-    html.custom-scrollbars.sb-active *::-webkit-scrollbar-thumb,
+    /* (#R103) show the thumb ONLY for the element actually being scrolled (`.sb-on`) or hovered — NOT every scrollbar on
+       the page. The old `.sb-active *` lit up every scrollbar whenever anything scrolled ("どこかをスクロールしたら他の
+       場所のすべてのスクロールバーも表示されてしまう"). */
+    html.custom-scrollbars .sb-on::-webkit-scrollbar-thumb,
     html.custom-scrollbars *:hover::-webkit-scrollbar-thumb{ background:rgba(140,142,150,0.5); background-clip:padding-box; }
     html.custom-scrollbars *::-webkit-scrollbar-thumb:hover{ background:rgba(140,142,150,0.82); background-clip:padding-box; }
-    [data-theme="dark"] html.custom-scrollbars.sb-active *::-webkit-scrollbar-thumb,
+    [data-theme="dark"] html.custom-scrollbars .sb-on::-webkit-scrollbar-thumb,
     [data-theme="dark"] html.custom-scrollbars *:hover::-webkit-scrollbar-thumb{ background:rgba(170,172,180,0.45); background-clip:padding-box; }
 
     /* === Unified "Liquid Glass" material (#1,#23,#24,#26) ============================
@@ -1791,7 +1804,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .stats-compare-fixed{ display:none; position:absolute; left:0; right:0; bottom:0; z-index:30; padding:12px 14px max(14px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 24px rgba(0,0,0,0.12); }
     body.sidebar-translucent .stats-compare-fixed{ background:var(--sidebar-bg); }
     .stats-compare-fixed.show{ display:block; }
-    .scf-empty{ font-size:12px; color:var(--text-muted); text-align:center; line-height:1.5; }
+    /* (#R103) the "you can compare countries" hint made clearly visible again (icon-led, main-text colour) — the muted
+       one-liner read as "missing" ("比較できますという案内が消えている"). */
+    .scf-empty{ font-size:12px; color:var(--text-main); text-align:center; line-height:1.45; display:flex; align-items:center; justify-content:center; gap:7px; padding:3px 4px; }
+    .scf-empty svg{ flex:0 0 auto; color:var(--primary-color); }
     .scf-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .scf-head .scf-title{ font-size:12px; font-weight:700; }
     .scf-head button{ background:var(--input-bg); border:none; color:var(--text-main); font-size:11px; font-weight:600; padding:5px 10px; border-radius:8px; cursor:pointer; }
@@ -3012,8 +3028,15 @@ window.addEventListener('DOMContentLoaded', () => {
         map.setLayoutProperty('geo-sea','visibility',showGeo?'visible':'none'); map.setLayoutProperty('geo-sea','text-field',['get',gl]); }
       /* (#R64) populate the pinned lake/peak anchors immediately when the toggle turns on */
       if(showGeo) setTimeout(()=>{ try{ harvestStableLabels(); }catch(_){} },250); }catch(_){}
+    /* (#R103) ROOT FIX for "過去に戻っても国名が変わらない (変化なし)": while the time machine is on a past year the
+       MODERN country labels must stay hidden (the era names come from imtb-lbl/lbl2). applyLabelLang runs on many
+       events (styledata, cb-names, language change…) and was unconditionally RE-SHOWING ofm-country based on namesOn,
+       overriding _applyBorders → the present-day country names kept reappearing under/over the era labels. Keep
+       ofm-country hidden here whenever travelling. City/other place labels stay (they aren't country names). */
+    const _travelingLbl=!!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     ['ofm-country','ofm-city','ofm-other'].forEach(id=>{ if(!map.getLayer(id)) return;
-      map.setLayoutProperty(id,'visibility',show?'visible':'none');
+      const _showThis=(id==='ofm-country'&&_travelingLbl)?false:show;
+      map.setLayoutProperty(id,'visibility',_showThis?'visible':'none');
       map.setLayoutProperty(id,'text-field',nameExpr);
       /* dark map / satellite → light text; light map → dark text */
       const lightText = sat || isDark;
@@ -7360,7 +7383,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R101) shorter tiles per request — flatter preview thumbnail */
         +'#layer-sidebar-r .lst-prev{aspect-ratio:240/96;background-size:cover;background-position:center;background-color:#14212f;border-bottom:1px solid rgba(128,128,128,0.14);}'
         /* (#R72) tile caption: slightly larger, evenly padded, vertically centered within its fixed 2-line box */
-        +'#layer-sidebar-r .lst-nm{padding:6px 8px;font-size:12.5px;font-weight:500;line-height:1.3;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:30px;box-sizing:content-box;text-align:left;overflow-wrap:break-word;}'   /* (#R102) tile caption a bit larger per request */
+        +'#layer-sidebar-r .lst-nm{padding:5px 8px 5px;font-size:11px;font-weight:500;line-height:1.3;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:26px;box-sizing:content-box;text-align:left;overflow-wrap:break-word;}'   /* (#R103) reverted to the original 11px per request */
         +'#layer-sidebar-r .lst-check{position:absolute;top:5px;left:5px;width:17px;height:17px;border-radius:50%;background:var(--primary-color);color:#fff;display:none;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;}'
         +'#layer-sidebar-r .lst-tile.on .lst-check{display:flex;}'
         +'#layer-sidebar-r .lst-star{position:absolute;top:3px;right:3px;width:19px;height:19px;border:none;border-radius:50%;background:rgba(10,14,22,0.5);color:rgba(255,255,255,0.8);font-size:10.5px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}'
@@ -7625,8 +7648,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(d.indexOf('s')>=0&&Math.abs(bt-ot)<EPS){ const a=Math.max(l,ol),b=Math.min(r,or); if(b-a>24) return [a,bt-1.5,b-a,3]; }
         if(d.indexOf('n')>=0&&Math.abs(t-obt)<EPS){ const a=Math.max(l,ol),b=Math.min(r,or); if(b-a>24) return [a,t-1.5,b-a,3]; }
       } }catch(_){} return null; }
-    function showAdjFor(w,d){ const seg=(d&&!w.dataset.resizing)?sharedSeg(w,d):null; if(!seg){ hideAdj(); return; }
+    /* (#R102) show on hover; (#R103) ALSO show live while RESIZING/DRAGGING so you SEE the exact moment an edge joins a
+       neighbour ("片方のウィンドウをのばしてもう片方に隣接して接合されるときが、どこでそうなるのかわからない"). */
+    function showAdjFor(w,d){ const seg=d?sharedSeg(w,d):null; if(!seg){ hideAdj(); return; }
       const el=_adjBox(); el.style.display='block'; el.style.left=seg[0]+'px'; el.style.top=seg[1]+'px'; el.style.width=seg[2]+'px'; el.style.height=seg[3]+'px'; }
+    /* (#R103) while DRAGGING a window (any edge can newly meet a neighbour) show whichever edge is currently joined. */
+    function showAdjAny(w){ for(const d of ['e','w','s','n']){ const seg=sharedSeg(w,d); if(seg){ const el=_adjBox(); el.style.display='block'; el.style.left=seg[0]+'px'; el.style.top=seg[1]+'px'; el.style.width=seg[2]+'px'; el.style.height=seg[3]+'px'; return; } } hideAdj(); }
     const SNAP=8;
     /* (#R79d) the workspace's usable rectangle: BELOW the 34px top menu bar, down to the TOP of the ticker
        (the ticker owns the real screen bottom — "下端はティッカーであり実画面の下端ではない"), full width.
@@ -7650,8 +7677,8 @@ window.addEventListener('DOMContentLoaded', () => {
           if(syt!=null&&(syb==null||Math.abs(syt-t)<=Math.abs(syb-(t+w.offsetHeight)))){ t=syt; showG('h',syt); }
           else if(syb!=null){ t=syb-w.offsetHeight; showG('h',syb); }
           l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(B.top,Math.min(B.bottom-28,t));   /* (#R79d) title bar stays below the menu & above the ticker */
-          w.style.left=l+'px'; w.style.top=t+'px'; };
-        const up=()=>{ hideG(); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); schedSave(); buildJunctions(); };
+          w.style.left=l+'px'; w.style.top=t+'px'; try{ showAdjAny(w); }catch(_){} };
+        const up=()=>{ hideG(); try{ hideAdj(); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
     function wsResize(w){
@@ -7686,8 +7713,8 @@ window.addEventListener('DOMContentLoaded', () => {
             ny=Math.max(lo,Math.min(hi,ny)); showG('h',ny);
             hTop.forEach(p=>{ p.o.style.top=p.t+'px'; p.o.style.height=Math.max(90,ny-p.t)+'px'; });
             hBot.forEach(p=>{ p.o.style.top=ny+'px'; p.o.style.height=Math.max(90,p.bt-ny)+'px'; }); }
-          fitMap(); };
-        const up=()=>{ delete w.dataset.resizing; hideG(); w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
+          fitMap(); try{ showAdjFor(w,d); }catch(_){} };
+        const up=()=>{ delete w.dataset.resizing; hideG(); try{ hideAdj(); }catch(_){} w.style.cursor=''; document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
     /* (#R79b) a big, visible bottom-right grip that resizes the window (no neighbour-splitter logic — a plain,
@@ -7697,8 +7724,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const sx=e.clientX,sy=e.clientY,sw=w.offsetWidth,sh=w.offsetHeight,mn=minOf(w),B=wsBounds();
         try{ g.setPointerCapture&&g.setPointerCapture(e.pointerId); }catch(_){}
         /* (#R79d) clamp to the usable rect: right → screen edge, bottom → TICKER TOP (not the real screen bottom) */
-        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(B.right-w.offsetLeft,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(B.bottom-w.offsetTop,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); };
-        const up=ev=>{ delete w.dataset.resizing; try{ g.releasePointerCapture&&g.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
+        const mv=ev=>{ const wd=Math.max(mn[0],Math.min(B.right-w.offsetLeft,sw+ev.clientX-sx)), hg=Math.max(mn[1],Math.min(B.bottom-w.offsetTop,sh+ev.clientY-sy)); w.style.width=wd+'px'; w.style.height=hg+'px'; fitMap(); try{ showAdjFor(w,'se'); }catch(_){} };
+        const up=ev=>{ delete w.dataset.resizing; try{ g.releasePointerCapture&&g.releasePointerCapture(ev.pointerId); }catch(_){} try{ hideAdj(); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); fitMap(); schedSave(); buildJunctions(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
     function css(){ if(styled) return; styled=true; const st=document.createElement('style'); st.id='ws-style';
       st.textContent=
@@ -7750,7 +7777,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode #map-container{position:relative !important;width:100% !important;max-width:none !important;height:100% !important;margin:0 !important;flex:1 1 auto !important;}'
         /* (#R101) the map View controls (Map/Satellite/Flat/Globe/3D + the compass reset-north button) are shown in
            the MAP WINDOW's top-right, exactly like normal mode (in addition to the menu-bar View menu) — per request. */
-        +'body.ws-mode .map-controls-top{display:flex !important;position:absolute !important;top:12px !important;right:12px !important;left:auto !important;z-index:950 !important;}'
+        +'body.ws-mode .map-controls-top{display:flex !important;position:absolute !important;top:10px !important;right:10px !important;left:auto !important;z-index:950 !important;gap:4px !important;}'
+        /* (#R103) tighter view-control bars in ws mode: less vertical padding around the buttons + a smaller gap between the two bars */
+        +'body.ws-mode .map-controls-top .map-view-group{padding:2px 4px !important;}'
         /* (#R102) the map window does NOT need the Measure / Radius / Screenshot / Share / Atlas / Layers tool bar —
            every one of those lives in the top menu bar (Tools) or as its own window (Layers). Only the view controls
            (Map/Sat/Flat/Globe/3D + compass) stay in the map window's top-right, per the attached mock. */
@@ -7800,6 +7829,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-atlas .atl-ex{flex:0 1 auto !important;min-height:0 !important;max-height:38% !important;overflow-y:auto !important;}'
         +'body.ws-mode .ws-atlas .atl-chat{min-height:0 !important;}'
         +'body.ws-mode .ws-atlas .atl-inbar{flex:0 0 auto !important;}'
+        /* (#R103) the window already has its own title bar + close, so the in-panel "Atlas beta / – ×" header is redundant in ws mode. */
+        +'body.ws-mode .ws-atlas .atl-head{display:none !important;}'
         /* (#R78g) CONTENT WAS INVISIBLE: the window background == --card-bg == the cards' own background, and the
            card border is only 8% opacity → in dark theme the cards vanished into the window. Give the content
            windows the app's BASE background so the --card-bg cards/rows stand out, and strengthen their border. */
@@ -7807,7 +7838,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-news .news-item{border:1px solid rgba(128,128,128,0.26) !important;box-shadow:0 1px 4px rgba(0,0,0,0.22) !important;}'
         +'body.ws-mode .ws-countries .stat-row{border-bottom:1px solid rgba(128,128,128,0.14) !important;}'
         /* (#R78g) pin the elevation/coordinate readout to the MAP window's bottom-left, above the canvas */
-        +'body.ws-mode #coord-readout{position:absolute !important;left:12px !important;bottom:12px !important;right:auto !important;top:auto !important;z-index:950 !important;}'
+        +'body.ws-mode #coord-readout{position:absolute !important;left:7px !important;bottom:7px !important;right:auto !important;top:auto !important;z-index:950 !important;}'
         /* (#R78f) COMPACT news cards so more fit per screen ("上下方向に冗長") */
         +'body.ws-mode .ws-news .news-item{padding:9px 11px !important;border-radius:11px !important;}'
         +'body.ws-mode .ws-news .news-item .news-title{margin-top:4px !important;line-height:1.32 !important;}'
@@ -8050,6 +8081,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const b=document.createElement('button'); b.textContent=label; b.onclick=e=>{ e.stopPropagation(); opens.forEach(o=>o.classList.remove('open')); clk(id); }; dm.appendChild(b); dock.appendChild(dm); };
       directBtn(T('Settings','設定','Einstellungen','Настройки','Ajustes'),'btn-open-settings');
       directBtn(T('Feedback','フィードバック','Feedback','Обратная связь','Comentarios'),'btn-feedback-hdr');
+      directBtn(T('Support','支援','Unterstützen','Поддержать','Apoyar'),'btn-blueberry');   /* (#R103) Support button to the right of Feedback */
       { const acEl=document.getElementById('btn-account'); directBtn((acEl&&acEl.textContent.trim())||T('Account','アカウント','Konto','Аккаунт','Cuenta'),'btn-account'); }
       document.addEventListener('click',()=>{ opens.forEach(o=>{ try{ o.classList.remove('open'); }catch(_){} }); });
       const sp=document.createElement('div'); sp.className='ws-spacer'; dock.appendChild(sp);
@@ -8176,6 +8208,17 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ Promise.resolve().then(()=>_bootWS(0)); }catch(_){ setTimeout(()=>_bootWS(0),0); }
     /* (#R83) reflow the auto-tiled layout when the browser window resizes (debounced) */
     let _wsRT=null; window.addEventListener('resize',()=>{ if(!on) return; clearTimeout(_wsRT); _wsRT=setTimeout(()=>{ try{ retile(); }catch(_){} },180); });
+    /* (#R103) re-localize the workspace chrome (top menu bar + window titles) when the language changes — it used to
+       stay in the old language until reload ("言語設定を変えたときに、すべてがその言語にすぐ変わらない"). The wrapped
+       content re-localizes via the app's own updateI18n; this covers the ws-only chrome. */
+    window.addEventListener('intmap-lang',()=>{ if(!on) return;
+      try{ rebuildDock(); }catch(_){}
+      try{ DEFS.forEach(def=>{ const w=wraps[def.id]; if(w){ const ti=w.querySelector('.ws-title'); if(ti) ti.textContent=def.t(); } }); }catch(_){}
+      try{ syncModeBtn(); }catch(_){}
+      /* updateI18n() only re-renders the CURRENT-mode feed (renderUI) — in ws mode the other windows would keep the
+         old language, so re-render the ones that carry localized dynamic content. */
+      try{ if(wraps.countries&&wraps.countries.style.display!=='none'&&window._wsRenderCountries) window._wsRenderCountries(); }catch(_){}
+      try{ if(wraps.info&&wraps.info.style.display!=='none'&&typeof renderDashboard==='function') renderDashboard(); }catch(_){} });
     return { open:enable, close:disable, toggle, active:()=>on, tickerReflow, syncTicker:()=>{ try{ _syncTicker(); }catch(_){} } };
   })();
   window.IntMapTicker=(function(){
@@ -8213,12 +8256,12 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#ticker-bar .tk-lbl{color:var(--text-muted);}'
         +'#ticker-bar .tk-up{color:#34c759;} #ticker-bar .tk-dn{color:#ff453a;}'
         +'#ticker-bar a{color:var(--text-main);text-decoration:none;} #ticker-bar a:hover{color:var(--primary-color);}'
-        /* (#R102) a small hide button at the FAR RIGHT of the ticker — clicking it turns the whole ticker off ("一番右に
-           も小さく、非表示ボタンを付けて。非表示したらそれも含めてティッカーが消える"). Opaque end-cap so the scrolling
-           text tucks cleanly behind it. */
-        +'#ticker-bar .tk-hide{position:absolute;right:0;top:0;bottom:0;width:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:center;background:var(--bg-color);border-left:1px solid rgba(128,128,128,0.25);color:var(--text-muted);cursor:pointer;font-size:15px;line-height:1;z-index:3;padding:0;}'
+        /* (#R102/#R103) a small hide button at the FAR RIGHT of the ticker — clicking it turns the whole ticker off.
+           The scrolling text lives in a CLIPPED flex wrap (.tk-scroll) and the button is a real flex sibling, so the
+           text can never run under the button (the earlier absolute overlay overlapped it — "重なって汚い"). */
+        +'#ticker-bar .tk-scroll{flex:1 1 auto;min-width:0;height:100%;overflow:hidden;display:flex;align-items:center;}'
+        +'#ticker-bar .tk-hide{flex:0 0 auto;width:28px;align-self:stretch;display:flex;align-items:center;justify-content:center;background:transparent;border-left:1px solid rgba(128,128,128,0.22);color:var(--text-muted);cursor:pointer;font-size:15px;line-height:1;padding:0;}'
         +'#ticker-bar .tk-hide:hover{color:var(--text-main);background:var(--input-bg);}'
-        +'#ticker-bar .tk-track{padding-right:26px;}'
         +'@media(max-width:768px){ #ticker-bar{display:none !important;} body.ticker-on{display:block;} body.ticker-on .operation-room{height:100vh !important;height:100dvh !important;} }';
       document.head.appendChild(st); }
     async function loadMarkets(){ const out=[];
@@ -8252,8 +8295,8 @@ window.addEventListener('DOMContentLoaded', () => {
       requestAnimationFrame(()=>{ try{ const w=track.scrollWidth/2; if(w>0) track.style.setProperty('--tk-dur',Math.max(28,Math.round(w/65))+'s'); }catch(_){} }); }
     async function refresh(){ loadNews(); render(); await loadMarkets(); render(); }
     function build(){ if(built) return; built=true; css();
-      bar=document.createElement('div'); bar.id='ticker-bar'; bar.innerHTML='<div class="tk-track"></div>';
-      /* (#R102) far-right hide button — turns the ticker off entirely */
+      bar=document.createElement('div'); bar.id='ticker-bar'; bar.innerHTML='<div class="tk-scroll"><div class="tk-track"></div></div>';
+      /* (#R102/#R103) far-right hide button — a real flex sibling (not an overlay) so it never overlaps the text */
       const hb=document.createElement('button'); hb.className='tk-hide'; hb.type='button'; hb.setAttribute('aria-label',T('Hide ticker','ティッカーを隠す','Ticker ausblenden','Скрыть ленту','Ocultar cinta')); hb.title=T('Hide ticker','ティッカーを隠す','Ticker ausblenden','Скрыть ленту','Ocultar cinta'); hb.textContent='×';
       hb.onclick=(e)=>{ e.stopPropagation(); if(document.body.classList.contains('ticker-on')) toggle(); };
       bar.appendChild(hb);
@@ -9344,9 +9387,18 @@ window.addEventListener('DOMContentLoaded', () => {
       case 'tfr': return (s.tfr&&isFinite(s.tfr))?(+s.tfr).toFixed(2):'—';
       default: return fmtMoney(s.gdp);   /* gdp + name */
     } };
-    /* (#R94/#R101) Time-machine status bar — compressed to ONE line (year + "real GDP (2011 int$)") per request. */
+    /* (#R94/#R101) Time-machine status bar — year + the CURRENTLY-SORTED indicator. (#R103) it used to always say
+       "real GDP" no matter which indicator was chosen ("どの指標を選んでもGDPとなっている") — reflect the selection. */
+    const _L5b=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    const _bMetric=(key==='pop')?_L5b('population','人口','Bevölkerung','население','población')
+      :(key==='area')?_L5b('area','面積','Fläche','площадь','superficie')
+      :(key==='hdi')?'HDI'
+      :(key==='milSpend')?_L5b('military spending','軍事費','Militärausgaben','военные расходы','gasto militar')
+      :(key==='lifeExp')?_L5b('life expectancy','平均寿命','Lebenserwartung','прод. жизни','esperanza de vida')
+      :(key==='tfr')?_L5b('fertility rate','合計特殊出生率','Geburtenrate','рождаемость','fecundidad')
+      :_L5b('real GDP (2011 int$)','実質GDP（2011年国際ドル）','reales BIP (int$ 2011)','реальный ВВП (межд.$ 2011)','PIB real (int$ 2011)');
     try{ const _ty=_histY, _pw=window._imTimePreWB;
-      if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${currentLang==='jp'?'年':''}</b> · ${currentLang==='jp'?'実質GDP（2011年国際ドル）':currentLang==='de'?'reales BIP (int$ 2011)':currentLang==='ru'?'реальный ВВП (межд.$ 2011)':currentLang==='es'?'PIB real (int$ 2011)':'real GDP (2011 int$)'}</div>`; }
+      if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${currentLang==='jp'?'年':''}</b> · ${_bMetric}</div>`; }
       else if(_pw){ html+=`<div class="stats-timebanner warn"><b>${_pw}</b> · ${currentLang==='jp'?'最新の入手可能な値':currentLang==='de'?'neueste verfügbare Werte':currentLang==='ru'?'последние доступные значения':currentLang==='es'?'últimos valores disponibles':'latest available figures'}</div>`; }
     }catch(_){}
     /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
@@ -9384,7 +9436,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const active=_countriesActive();
     panel.classList.toggle('show', active && !scpOpen);
     if(!active||scpOpen){ panel.innerHTML=''; return; }
-    if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
+    if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
     let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
@@ -13601,18 +13653,19 @@ window.addEventListener('DOMContentLoaded', () => {
     function buildSynced(e){ if(!synced) return;
       const lbl='<span class="ntl-sync-lbl">'+L5('Applied','反映内容','Angewendet','Применено','Aplicado')+'</span>';
       const chip=(dot,txt)=>'<span class="ntl-chip"><span class="ntl-dot '+dot+'">'+(dot==='ok'?'✓':'')+'</span>'+txt+'</span>';
-      if(e.isLive){ synced.innerHTML=lbl+chip('ok',L5('Live (present)','ライブ（現在）','Live (Gegenwart)','Прямой эфир','En vivo')); return; }
+      if(e.isLive){ synced.innerHTML=lbl+'<div class="ntl-chips">'+chip('ok',L5('Live (present)','ライブ（現在）','Live (Gegenwart)','Прямой эфир','En vivo'))+'</div>'; return; }
       const y=e.year; const within=((new Date()-e.when)/864e5)<=3660;
       const bY=(y>hbAt(y)&&y>2010)?L5('current','現在','aktuell','текущие','actuales'):hbAt(y);
-      let html=lbl;
+      /* (#R103) chips live in their own row UNDER the "Applied" label so they stay compact & don't line-break awkwardly. */
+      let chips='';
       /* (#R94i) country data + map borders always follow the clock; GDP/pop are real (Maddison) up to 2018. */
-      html+=chip('ok', L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b>');
-      html+=chip('ok', L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+bY+'</b>');
-      html+=chip(within?'ok':'warn', within?L5('News','ニュース','News','Новости','Noticias'):L5('News out of range','ニュース対象外','News außerhalb','Новости недоступны','Noticias fuera de rango'));
-      if(on('dl-climate')) html+=chip('ok','Köppen <b>'+kEra(y)+'</b>');
-      if(on('dl-nato')) html+=chip('ok','NATO <b>'+y+'</b>');
-      if(on('dl-eu')) html+=chip('ok','EU <b>'+y+'</b>');
-      synced.innerHTML=html;
+      chips+=chip('ok', L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b>');
+      chips+=chip('ok', L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+bY+'</b>');
+      chips+=chip(within?'ok':'warn', within?L5('News','ニュース','News','Новости','Noticias'):L5('News out of range','ニュース対象外','News außerhalb','Новости недоступны','Noticias fuera de rango'));
+      if(on('dl-climate')) chips+=chip('ok','Köppen <b>'+kEra(y)+'</b>');
+      if(on('dl-nato')) chips+=chip('ok','NATO <b>'+y+'</b>');
+      if(on('dl-eu')) chips+=chip('ok','EU <b>'+y+'</b>');
+      synced.innerHTML=lbl+'<div class="ntl-chips">'+chips+'</div>';
     }
     window._imTimeSyncedRefresh=()=>{ try{ buildSynced(window.IntMapTime.state()); }catch(_){} };
     /* WRITE side: inputs → kernel */
@@ -15205,10 +15258,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const isApple=/Mac|iPhone|iPad|iPod/.test(plat) || (/Mac/.test(ua)&&navigator.maxTouchPoints>1) || /iPhone|iPad|iPod/.test(ua);
     if(isApple) return;                              /* macOS/iOS overlay scrollbars are already ideal */
     document.documentElement.classList.add('custom-scrollbars');
-    let t=null; const root=document.documentElement;
-    const ping=()=>{ root.classList.add('sb-active'); clearTimeout(t); t=setTimeout(()=>root.classList.remove('sb-active'),900); };
+    /* (#R103) mark ONLY the element that actually scrolled (`.sb-on`), auto-clearing after 900 ms — so its scrollbar
+       appears and every OTHER scrollbar on the page stays hidden. */
+    const ping=(e)=>{ let el=e&&e.target; if(el===document||el===window) el=document.scrollingElement||document.documentElement;
+      if(!el||el.nodeType!==1) return; el.classList.add('sb-on'); clearTimeout(el.__sbT); el.__sbT=setTimeout(()=>{ try{ el.classList.remove('sb-on'); }catch(_){} },900); };
     window.addEventListener('scroll',ping,{passive:true,capture:true});
-    window.addEventListener('wheel',ping,{passive:true});
   })();
 
   /* ---------- Screenshot (#18) — keeps legends, hides controls ---------- */
@@ -21927,6 +21981,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const _buildItin=(it)=>{ const legOut=[], lines=[], stops=[];
         (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
           let coords=null; try{ if(l.legGeometry&&l.legGeometry.points) coords=_decodePoly(l.legGeometry.points,l.legGeometry.precision||7); }catch(_){}
+          /* (#R103) FIX "経路がアメリカ沖の大西洋に描画される": a CORS-proxied MOTIS response can mangle the encoded
+             polyline → _decodePoly yields garbage coords (near 0,0 / wrong hemisphere). Validate the decoded geometry
+             against the leg's OWN endpoints (which come as plain lat/lon, not encoded) and DISCARD it if any point is
+             absurdly far (>3°) — then the straight-line from/to fallback below draws a sane leg instead. */
+          if(coords&&coords.length&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to);
+            if(isFinite(a.lng)&&isFinite(b.lng)){ const lo=Math.min(a.lng,b.lng)-3,hi=Math.max(a.lng,b.lng)+3,slo=Math.min(a.lat,b.lat)-3,shi=Math.max(a.lat,b.lat)+3;
+              if(coords.some(c=>!(isFinite(c[0])&&isFinite(c[1])&&c[0]>=lo&&c[0]<=hi&&c[1]>=slo&&c[1]<=shi))) coords=null; } }
           if((!coords||coords.length<2)&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to); if(isFinite(a.lng)&&isFinite(b.lng)) coords=[[a.lng,a.lat],[b.lng,b.lat]]; }
           if(coords&&coords.length>1) lines.push({coords:coords,walk:walk,col:col});   /* (#R86d) keep the per-leg MODE colour on the geometry so the map can colour each leg by type (walk/subway/rail/bus/…) — not just one colour per alternative */
           if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) stops.push([a.lng,a.lat]); }
@@ -22607,7 +22668,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.fs-flying .ws-win.ws-map{position:fixed !important;inset:0 !important;left:0 !important;top:0 !important;width:100vw !important;height:100vh !important;z-index:6000 !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:#000 !important;}'
         +'body.fs-flying .ws-win.ws-map .ws-tb,body.fs-flying .ws-win.ws-map .ws-grip{display:none !important;}'
         +'body.fs-flying #ws-menu,body.fs-flying #ticker-bar,body.fs-flying .ws-win:not(.ws-map){display:none !important;}'
-        +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying .ai-view-summary-btn,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend{display:none !important;}'
+        +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying .ai-view-summary-btn,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend,body.fs-flying #news-timeline{display:none !important;}'   /* (#R103) hide the time-machine button during flight */
         +'#fs-hud .fs-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 200px 34px rgba(0,0,0,0.5),inset 0 0 70px 0 rgba(0,0,0,0.28);}'
         +'#fs-hud .fs-ladder{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;}'
         +'#fs-hud .fs-bore{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));}'
@@ -25127,13 +25188,13 @@ window.addEventListener('DOMContentLoaded', () => {
           if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
-            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('📍 '+esc(ext.name||placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }
+            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('✓')+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R103) don't echo the moved-to location */
           /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
           const ll=await geocode(placeStr);
           if(ll){ if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
             else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
             else { map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
-            return R(true, note('📍 '+esc(ll.name||placeStr))+_ambigNote(placeStr,ll.lng,ll.lat)); }
+            return R(true, note('✓')+_ambigNote(placeStr,ll.lng,ll.lat)); }   /* (#R103) location-free confirmation */
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
         case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'brief': { /* (#R62) AI Brief is INTEGRATED into Atlas — same structured brief, rendered inline in this chat. */
@@ -25152,7 +25213,9 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
              "AI briefってワードをわざわざAtlasで出すな"). */
           let srcCardsB=''; try{ srcCardsB=linkCards(srcSink); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards */
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+srcCardsB+note(L('AI-generated — verify important facts with primary sources.','AI生成 — 重要な事実は一次情報で確認してください。','KI-generiert — wichtige Fakten mit Primärquellen prüfen.','Сгенерировано ИИ — проверяйте важные факты.','Generado por IA — verifica los datos importantes.'))); }
+          /* (#R103) the per-message "AI-generated — verify" note is dropped — the single static note under the input bar
+             now carries that disclaimer (毎メッセージに書くな). */
+          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+srcCardsB); }
         case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
             "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
@@ -25269,7 +25332,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let h=_hdr+(alts?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+alts.length+' '+L('options — tap one to show it on the map','件の候補 — タップで地図に表示','Optionen — zum Anzeigen antippen','вариантов — нажмите, чтобы показать','opciones — toca para ver en el mapa')+'</div>'):'')+body
               +note(r.railEstimate
                 ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
-                : L('Live public-transit routing (Transitous / MOTIS). Walking legs are dotted; each ride is coloured by mode on the map.','公共交通のライブ経路検索（Transitous／MOTIS）。徒歩は点線、乗車区間はモード別に色分けして地図表示。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));
+                : L('Live public-transit routing (Transitous / MOTIS).','公共交通のライブ経路検索（Transitous／MOTIS）。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request */
             return R(true, h); }
           if(!r||!r.ok){ if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
             return R(true, _hdr+warn('⚠ '+L('No route found (no road connection, or the router is busy).','経路が見つかりません（陸路がない/サービス混雑）。','Keine Route gefunden.','Маршрут не найден.','Sin ruta.'))); }
@@ -26245,10 +26308,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-x:hover{background:var(--input-bg);color:var(--text-main);}'
         +'#atlas-panel .atl-sub{padding:9px 16px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'
         +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 14px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
-        +'#atlas-panel .atl-b{padding:9px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
+        +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
         +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
-        +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:88%;background:linear-gradient(135deg,var(--primary-color),#5e5ce6);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);}'
-        +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:rgba(120,120,128,0.08);color:var(--text-main);border:1px solid rgba(128,128,128,0.13);border-radius:6px 15px 15px 15px;}'
+        /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
+        +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:88%;padding:6px 12px;background:linear-gradient(135deg,var(--primary-color),#5e5ce6);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);}'
+        +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
         +'#atlas-panel .atl-dots{display:inline-flex;gap:4px;align-items:center;padding:3px 0;}'
         +'#atlas-panel .atl-dots i{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:atlDot 1.15s infinite;}'
         +'#atlas-panel .atl-dots i:nth-child(2){animation-delay:.15s;} #atlas-panel .atl-dots i:nth-child(3){animation-delay:.3s;}'
@@ -26279,7 +26343,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-traj-btn.on{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}'
         +'#atlas-panel .atl-chip{font-size:11px;color:var(--text-main);background:rgba(120,120,128,0.10);border:1px solid rgba(128,128,128,0.16);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:left;transition:background .15s ease,border-color .15s ease;}'
         +'#atlas-panel .atl-chip:hover{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
-        +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:10px 12px 12px;border-top:1px solid rgba(128,128,128,0.12);}'
+        +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 12px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
+        /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */
+        +'#atlas-panel .atl-ainote{font-size:9.5px;color:var(--text-muted);text-align:center;padding:0 12px 7px;line-height:1.4;opacity:0.8;}'
         +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;padding:0 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;outline:none;box-sizing:border-box;transition:border-color .15s ease,box-shadow .15s ease;}'
         +'#atlas-panel .atl-in:focus{border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(10,132,255,0.18);}'
         /* (#R72) send button ("メッセージ送信ボタンがダサい"): clean filled circle + arrow-up SVG (ChatGPT-style),
@@ -26335,20 +26401,21 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R101) example prompts REWRITTEN to showcase what only Atlas can do — cross-country comparison, analytical
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
        / satellite) that the normal UI already does ("わざわざAtlasでやる必要のない無駄な動作"). */
-    /* (#R102) the JP examples stay Japan-oriented (fine for JP users); every OTHER language uses globally-relevant,
-       locally-flavoured prompts (its own capital for the transit example) instead of Tokyo/Shinjuku ones. */
+    /* (#R103) examples showcase what Atlas is UNIQUELY good at — multi-country comparison, computed rankings, live
+       news synthesis, cross-data analysis — NOT routing (still rough, so not advertised). JP stays Japan-flavoured. */
     function examples(){ return L(
-      ['Compare the USA, China and Germany — GDP, debt, population','Which countries spend the most on defense relative to GDP?','Where can I reach in 30 minutes by train from central London?','Brief me on the South China Sea'],
-      ['日本・ドイツ・インドを比較（GDP・債務・高齢化）','GDP比で国防費が最も高い国は？','新宿から電車で30分で行ける範囲は？','南シナ海の情勢をブリーフィング'],
-      ['USA, China und Deutschland vergleichen — BIP, Schulden, Bevölkerung','Welche Länder geben gemessen am BIP am meisten fürs Militär aus?','Wie weit komme ich in 30 Min mit der Bahn vom Berliner Zentrum?','Lagebericht zum Südchinesischen Meer'],
-      ['Сравнить США, Китай и Германию — ВВП, долг, население','Какие страны тратят на оборону больше всего относительно ВВП?','Куда можно доехать за 30 минут на поезде из центра Москвы?','Сводка по Южно-Китайскому морю'],
-      ['Comparar EE. UU., China y Alemania — PIB, deuda, población','¿Qué países gastan más en defensa respecto a su PIB?','¿Hasta dónde llego en 30 min en tren desde el centro de Madrid?','Resumen del Mar de China Meridional']); }
+      ['Compare the USA, China and India — GDP, defense and population','Which countries spend the most on defense relative to GDP?','Brief me on the South China Sea — the latest','Which countries have the highest life expectancy?'],
+      ['日本・ドイツ・インドを比較（GDP・国防費・人口）','GDP比で国防費が最も高い国は？','南シナ海でいま何が起きている？','日本の経済は1990年からどう変わった？'],
+      ['USA, China und Indien vergleichen — BIP, Militär, Bevölkerung','Welche Länder geben gemessen am BIP am meisten fürs Militär aus?','Lagebericht Südchinesisches Meer — was passiert gerade?','Welche Länder haben die höchste Lebenserwartung?'],
+      ['Сравнить США, Китай и Индию — ВВП, оборона, население','Какие страны тратят на оборону больше всего относительно ВВП?','Что происходит в Южно-Китайском море прямо сейчас?','В каких странах самая высокая продолжительность жизни?'],
+      ['Comparar EE. UU., China e India — PIB, defensa y población','¿Qué países gastan más en defensa respecto a su PIB?','¿Qué está pasando ahora en el Mar de China Meridional?','¿Qué países tienen mayor esperanza de vida?']); }
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='atlas-panel';
       panel.innerHTML='<div class="atl-head"><span class="atl-title">Atlas <span class="atl-beta">beta</span></span><span class="atl-btns"><button class="atl-min-btn" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'">–</button><button class="atl-x" title="'+t('close')+'">✕</button></span></div>'
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
         +'<div class="atl-ex"></div>'
         +'<div class="atl-chat"></div>'
         +'<div class="atl-inbar"><input class="atl-in" type="text" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
+        +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
@@ -26713,7 +26780,7 @@ window.addEventListener('DOMContentLoaded', () => {
       jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:非表示|オフ|消して|無効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:false}],confident:false};
       return null; }
     async function run(q){ q=String(q||'').trim(); if(!q) return; const p=ensure(); p.style.display='flex';
-      const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none';
+      const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
       _lastUserMsg=q;   /* (#R64) replies mirror the language of THIS message, not the UI setting */
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
@@ -26774,7 +26841,7 @@ window.addEventListener('DOMContentLoaded', () => {
        flies there and offers example questions — the free-form chat/input then answers with full location
        context. Replaces the old standalone IntMapAIResearch panel entry. */
     async function askHere(ll){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return; try{ open(); }catch(_){}
-      _lastUserMsg=''; const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none';
+      _lastUserMsg=''; const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
       const lng=+ll.lng, lat=+ll.lat;
       _herePoint={lng,lat,name:''}; try{ _lastPlace={lng,lat,name:''}; }catch(_){}
       try{ map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),5),duration:900}); }catch(_){}
@@ -26797,7 +26864,7 @@ window.addEventListener('DOMContentLoaded', () => {
        ("AI BriefはAtlasに統合して") — one conversation surface for everything. */
     async function briefEntry(name,ll){ try{ open(); }catch(_){}
       _lastUserMsg='';   /* (#R64) button entry has no typed message → mirror falls back to the UI language */
-      const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none';
+      const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
       /* (#R69) no 🤖 and no "AI brief" wording in the chat ("AI Briefに🤖をつけるな" / "AI briefってワードを
          わざわざAtlasで出すな") — the user bubble reads as a plain research request. */
       bubble('u',L('Research: ','調査: ','Recherche: ','Исследование: ','Investigación: ')+esc(String(name||'')));
