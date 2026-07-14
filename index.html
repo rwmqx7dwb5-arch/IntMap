@@ -298,12 +298,19 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .wiki-card-specs .spec-value{ font-weight:600; color:var(--text-main); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .wiki-card-footer{ border-top:1px solid rgba(128,128,128,0.15); padding-top:12px; display:flex; justify-content:flex-end; }
     .wiki-link{ display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--primary-color); text-decoration:none; font-weight:500; } .wiki-link:hover{ opacity:0.7; }
-    .stats-toolbar{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; flex-shrink:0; }
+    .stats-toolbar{ display:flex; gap:6px; align-items:center; margin-bottom:6px; flex-shrink:0; }
     .stats-sort{ background:var(--input-bg); border:none; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:600; color:var(--text-muted); cursor:pointer; }
     .stats-sort.active{ background:var(--primary-color); color:#fff; }
+    /* (#R102) Countries sort = an indicator PULLDOWN + an ascending/descending toggle (replaces the button row). */
+    .stats-sort-sel{ flex:1 1 auto; min-width:0; background:var(--input-bg); border:1px solid rgba(128,128,128,0.2); color:var(--text-main); font-size:12.5px; font-weight:600; padding:7px 10px; border-radius:9px; cursor:pointer; outline:none; }
+    .stats-sort-sel:focus{ border-color:var(--primary-color); }
+    .stats-sort-dir{ flex:0 0 auto; background:var(--input-bg); border:1px solid rgba(128,128,128,0.2); color:var(--text-main); font-size:12px; font-weight:600; padding:7px 11px; border-radius:9px; cursor:pointer; white-space:nowrap; }
+    .stats-sort-dir:hover{ border-color:var(--primary-color); color:var(--primary-color); }
     /* (#R94) time-machine banner atop the Countries list */
     /* (#R101) compact ONE-LINE status bar (was a multi-line blue description box) */
-    .stats-timebanner{ margin:0 0 8px; padding:5px 10px; border-radius:8px; font-size:11.5px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:rgba(10,132,255,0.13); border:1px solid rgba(10,132,255,0.42); color:var(--text-main); }
+    /* (#R102) the year + "real GDP (2011 int$)" banner MUST stay readable in the now-narrow Countries window — it was
+       nowrap+ellipsis, so it got clipped to "…" ("潰れて見えない"). Let it wrap to as many lines as needed. */
+    .stats-timebanner{ margin:0 0 8px; padding:6px 10px; border-radius:8px; font-size:11.5px; line-height:1.4; white-space:normal; overflow-wrap:anywhere; background:rgba(10,132,255,0.13); border:1px solid rgba(10,132,255,0.42); color:var(--text-main); }
     .stats-timebanner.warn{ background:rgba(240,170,50,0.14); border-color:rgba(240,170,50,0.42); }
     .stats-timebanner b{ font-weight:700; }
     /* (#R94b) former-state flag (inline SVG) + card note */
@@ -313,11 +320,12 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .hist-flag{ width:0.82em; height:0.547em; border-radius:1.5px; vertical-align:-0.09em; object-fit:cover; }
     .cp-histnote{ margin:0 0 10px; padding:8px 11px; border-radius:10px; font-size:11.5px; line-height:1.5; background:rgba(175,130,60,0.14); border:1px solid rgba(175,130,60,0.4); color:var(--text-main); }
     .cp-histnote b{ font-weight:700; }
-    /* (#R101) tighter vertical padding so more country cards fit (flag/name sizes unchanged) */
-    .stat-row{ display:flex; align-items:center; gap:10px; background:var(--card-bg); padding:8px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); transition:0.2s; }
+    /* (#R101) tighter vertical padding so more country cards fit. (#R102) flag+name a little bigger, region/capital a
+       little smaller (slash-separated), and the value column carries the number ALONE (no indicator label). */
+    .stat-row{ display:flex; align-items:center; gap:11px; background:var(--card-bg); padding:9px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); transition:0.2s; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
-    .stat-flag{ font-size:22px; line-height:1; } .stat-main{ flex:1; min-width:0; }
-    .stat-name{ font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:11px; color:var(--text-muted); } .stat-val{ text-align:right; font-size:12px; font-weight:600; }
+    .stat-flag{ font-size:26px; line-height:1; } .stat-main{ flex:1; min-width:0; }
+    .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:700; white-space:nowrap; }
     .map-container.tool-active .maplibregl-canvas{ cursor:crosshair; }
     #map{ position:absolute; inset:0; width:100%; height:100%; background:var(--bg-color); }
     /* Sidebar toggle — attached flush to the sidebar edge */
@@ -691,13 +699,18 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ctx-menu .ctx-divider{ height:1px; background:rgba(128,128,128,0.15); margin:4px 2px; }
     .ctx-menu .ctx-head{ padding:6px 10px 4px; font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:0.3px; text-transform:uppercase; }
     /* Time-travel news timeline — anchored on the right side of the map, raised to avoid coord readout/legends */
-    .news-timeline{ position:absolute; right:24px; bottom:72px; z-index:1100; display:flex; align-items:center; gap:6px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:16px; padding:6px 8px; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
-    .news-timeline.collapsed{ flex-direction:row-reverse; }
+    .news-timeline{ position:absolute; right:24px; bottom:72px; z-index:1100; display:flex; align-items:stretch; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:16px; padding:0; overflow:hidden; box-shadow:var(--shadow); backdrop-filter:blur(20px); max-width:min(560px,calc(100vw - 48px)); }
     .news-timeline.collapsed .ntl-body{ display:none; }
-    .ntl-toggle{ background:var(--input-bg); border:none; color:var(--text-main); width:36px; height:36px; font-size:16px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .ntl-toggle:hover{ background:var(--primary-color); color:#fff; }
-    .news-timeline.active .ntl-toggle{ background:var(--primary-color); color:#fff; }
-    .ntl-body{ display:flex; flex-direction:column; gap:7px; padding:6px 10px 8px; min-width:344px; }
+    /* (#27) collapsed = the labeled "See the past world / 1900 to present" button */
+    .ntl-open{ display:flex; align-items:center; gap:12px; padding:11px 15px; background:transparent; border:none; cursor:pointer; text-align:left; width:100%; }
+    .ntl-open:hover{ background:var(--input-bg); }
+    .ntl-open-ico{ flex:0 0 auto; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:var(--primary-color); }
+    .ntl-open-ico svg{ width:29px; height:29px; }
+    .ntl-open-txt{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+    .ntl-open-txt b{ font-size:16px; font-weight:600; color:var(--text-main); white-space:nowrap; letter-spacing:-0.01em; }
+    .ntl-open-txt small{ font-size:12px; color:var(--text-muted); white-space:nowrap; }
+    .news-timeline:not(.collapsed) .ntl-open{ display:none; }
+    .ntl-body{ display:flex; flex-direction:column; gap:9px; padding:14px 16px 15px; width:360px; box-sizing:border-box; }
     .ntl-head{ display:flex; align-items:center; gap:7px; }
     .ntl-label{ font-size:15px; font-weight:700; min-width:104px; color:var(--text-main); letter-spacing:-0.01em; }
     .ntl-date{ background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); border-radius:9px; padding:6px 8px; font-size:12px; color:var(--text-main); outline:none; color-scheme:inherit; }
@@ -720,22 +733,26 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ntl-body{ min-width:342px; }
     .ntl-title-row{ display:flex; align-items:center; gap:9px; }
     .ntl-title{ flex:0 0 auto; margin:0; }
-    .ntl-badge{ display:none; font-size:11px; font-weight:600; color:#fff; background:var(--primary-color); border-radius:999px; padding:2px 10px; letter-spacing:0.01em; white-space:nowrap; }
+    .ntl-badge{ display:none; font-size:11px; font-weight:600; color:#bcd6ff; background:rgba(10,132,255,0.2); border:1px solid rgba(10,132,255,0.4); border-radius:999px; padding:2px 10px; letter-spacing:0.01em; white-space:nowrap; }
+    [data-theme="light"] .ntl-badge{ color:var(--primary-color); }
     .news-timeline.active .ntl-badge{ display:inline-block; }
     .ntl-x{ margin-left:auto; background:transparent; border:none; color:var(--text-muted); font-size:22px; line-height:1; font-weight:300; cursor:pointer; padding:0 3px; border-radius:8px; }
     .ntl-x:hover{ color:var(--text-main); background:var(--input-bg); }
     .ntl-modes{ display:inline-flex; background:var(--input-bg); border-radius:11px; padding:3px; gap:3px; align-self:flex-start; }
     .ntl-mode{ border:none; background:transparent; color:var(--text-muted); font-size:13px; font-weight:600; padding:6px 24px; border-radius:8px; cursor:pointer; }
     .ntl-mode.on{ background:var(--primary-color); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); }
-    .ntl-valrow{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:1px 0; }
-    .ntl-bigval{ font-size:33px; font-weight:800; letter-spacing:-0.02em; color:var(--text-main); line-height:1.05; }
+    /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
+       changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
+    .ntl-valrow{ display:flex; align-items:center; gap:12px; margin:1px 0; }
+    .ntl-bigval{ flex:1 1 auto; min-width:0; font-size:32px; font-weight:500; letter-spacing:-0.02em; color:var(--text-main); line-height:1.05; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .ntl-now{ flex:0 0 auto; background:transparent; border:1px solid var(--primary-color); color:var(--primary-color); font-size:13px; font-weight:600; padding:9px 16px; border-radius:11px; cursor:pointer; white-space:nowrap; }
     .ntl-now:hover{ background:var(--primary-color); color:#fff; }
     .ntl-synced{ font-size:11px; line-height:1.6; color:var(--text-muted); margin-top:6px; display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
     .ntl-synced .ntl-sync-lbl{ color:var(--text-muted); font-weight:600; }
-    .ntl-synced b{ color:var(--text-main); font-weight:700; }
-    .ntl-synced .ntl-chip{ display:inline-flex; align-items:center; gap:6px; margin:0; padding:3px 9px; border-radius:8px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.22); white-space:nowrap; font-size:11px; color:var(--text-main); }
-    .ntl-synced .ntl-dot{ width:9px; height:9px; border-radius:50%; flex:0 0 auto; }
+    .ntl-synced b{ color:var(--text-main); font-weight:600; }   /* (#11) year NOT bold */
+    .ntl-synced .ntl-chip{ display:inline-flex; align-items:center; gap:6px; margin:0; padding:4px 10px; border-radius:8px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.22); white-space:nowrap; font-size:11.5px; color:var(--text-main); }
+    /* (#11) "反映内容" status dots: a blue CHECK for applied items, an amber dot for out-of-range (matches the mock). */
+    .ntl-synced .ntl-dot{ width:15px; height:15px; border-radius:50%; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:800; color:#fff; line-height:1; }
     .ntl-synced .ntl-dot.ok{ background:var(--primary-color); }
     .ntl-synced .ntl-dot.warn{ background:#ff9f0a; }
     @media(max-width:768px){
@@ -1924,7 +1941,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
           </svg>
         </button>
       </div>
-      <div class="map-view-group">
+      <div class="map-view-group" id="map-tools-group">
         <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" style="display:none;">🌐 Grid</button>
         <div class="measure-menu-container">
           <button class="view-btn" id="btn-measure-menu" title="Measurement tools">📐 <span data-i18n="measureMenuBtn">Measure</span> <span class="caret-sm">▾</span></button>
@@ -1986,7 +2003,11 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
          a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
          era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
     <div id="news-timeline" class="news-timeline collapsed">
-      <button class="ntl-toggle" id="ntl-toggle" data-i18n-title="tlTitle" title="Time machine">⏳</button>
+      <!-- (#R102/#27) collapsed = the labeled "See the past world / 1900 to present" button (per the attached mock) -->
+      <button class="ntl-open" id="ntl-toggle" type="button" title="Time machine">
+        <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l2.5 1.7"/></svg></span>
+        <span class="ntl-open-txt"><b id="ntl-open-t">See the past world</b><small id="ntl-open-s">1900 to present</small></span>
+      </button>
       <div class="ntl-body" id="ntl-body">
         <div class="ntl-title-row">
           <div class="ntl-title" id="ntl-title" data-i18n="tlMachine">Time machine</div>
@@ -2028,7 +2049,8 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     </select></div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLayerPanel">Layer panel</label><select id="setting-layerpanel"><option value="classic" data-i18n="layerPanelClassic">Classic dropdown</option><option value="right" data-i18n="layerPanelRight">Right sidebar (visual, with previews)</option></select></div>
-    <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select></div>
+    <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
+      <div id="ticker-syms" style="margin-top:10px;"></div></div>
     <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
     <div class="setting-group"><label id="lbl-units" data-i18n="lblUnits">Measurement units</label><select id="setting-units"><option value="both" data-i18n="unitBoth">Metric + Imperial</option><option value="metric" data-i18n="unitMetric">Metric only</option><option value="imperial" data-i18n="unitImperial">Imperial only</option></select></div>
     <div class="setting-group"><label data-i18n="lblTempUnit">Temperature</label><select id="setting-temp-unit"><option value="both" data-i18n="tempBoth">°C + °F</option><option value="c" data-i18n="tempC">°C only</option><option value="f" data-i18n="tempF">°F only</option></select></div>
@@ -2280,7 +2302,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let isGridOn=false, toolMode=null, measurePoints=[];
   let namesOn=true, countryInfoOn=false, geoLabelsOn=true;  /* (#R41) water/terrain labels now toggle SEPARATELY from place names */
   let map=null, markersArray=[], forceHoverLayers=new Set();
-  let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp';   /* (#R11) no tab auto-selected */
+  let globalData=[], currentMode=null, activeSearchQuery='', statsSort='gdp', statsSortDir='desc';   /* (#R11) no tab auto-selected; (#R102) Countries sort direction (desc/asc) */
   let newsFiltered=[], renderedCount=0, NEWS_BATCH=30;
   let activeDashCategories=new Set(['mil','tech','maritime','geo']);
   let bookmarks=JSON.parse(localStorage.getItem('intmap_bookmarks'))||[];
@@ -7338,7 +7360,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R101) shorter tiles per request — flatter preview thumbnail */
         +'#layer-sidebar-r .lst-prev{aspect-ratio:240/96;background-size:cover;background-position:center;background-color:#14212f;border-bottom:1px solid rgba(128,128,128,0.14);}'
         /* (#R72) tile caption: slightly larger, evenly padded, vertically centered within its fixed 2-line box */
-        +'#layer-sidebar-r .lst-nm{padding:5px 8px 5px;font-size:11px;font-weight:500;line-height:1.3;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:26px;box-sizing:content-box;text-align:left;overflow-wrap:break-word;}'
+        +'#layer-sidebar-r .lst-nm{padding:6px 8px;font-size:12.5px;font-weight:500;line-height:1.3;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:30px;box-sizing:content-box;text-align:left;overflow-wrap:break-word;}'   /* (#R102) tile caption a bit larger per request */
         +'#layer-sidebar-r .lst-check{position:absolute;top:5px;left:5px;width:17px;height:17px;border-radius:50%;background:var(--primary-color);color:#fff;display:none;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;}'
         +'#layer-sidebar-r .lst-tile.on .lst-check{display:flex;}'
         +'#layer-sidebar-r .lst-star{position:absolute;top:3px;right:3px;width:19px;height:19px;border:none;border-radius:50%;background:rgba(10,14,22,0.5);color:rgba(255,255,255,0.8);font-size:10.5px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}'
@@ -7348,8 +7370,10 @@ window.addEventListener('DOMContentLoaded', () => {
         /* Active-layers bar pinned at the top of the tile browser — COMPACT here: the chip strip is hidden
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
            overlay + Clear-all carry the same functions in one constant-height row. */
-        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -10px 3px;border-radius:0;}'
+        /* (#R102) tighten the always-shown ACTIVE-LAYERS bar's LEFT + BOTTOM gap a little more (kept non-flush) */
+        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'
         +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
+        +'#layer-sidebar-r .lsr-body{padding-top:2px;}'
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
         +'#lsr-toggle{position:fixed;top:50%;right:0;z-index:1460;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,0.18);border-right:none;color:var(--text-muted);width:22px;height:64px;padding:0;border-radius:10px 0 0 10px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:-4px 0 16px rgba(0,0,0,0.12);transition:right 0.38s cubic-bezier(0.25,1,0.5,1),background .2s,color .2s;transform:translateY(-50%);}'
         +'body.lsr-avail #lsr-toggle{display:flex;}'
@@ -7528,7 +7552,7 @@ window.addEventListener('DOMContentLoaded', () => {
       Object.assign(i18n.de,{lblWsMode:'Fenster-Workspace (Desktop)',wsOff:'Aus (Standard)',wsOn:'An — frei bewegliche Fenster',wsHint:'News, Länder, Karte, Ebenen und Atlas werden zu eigenen Fenstern, die Sie frei verschieben, skalieren, einklappen und stapeln können. Das Layout wird gespeichert.'});
       Object.assign(i18n.ru,{lblWsMode:'Оконный режим (десктоп)',wsOff:'Выкл (по умолчанию)',wsOn:'Вкл — свободные окна',wsHint:'Новости, страны, карта, слои и Atlas становятся отдельными окнами, которые можно свободно перемещать, масштабировать, сворачивать и накладывать. Раскладка сохраняется.'});
       Object.assign(i18n.es,{lblWsMode:'Espacio de ventanas (escritorio)',wsOff:'Apagado (predeterminado)',wsOn:'Encendido — ventanas libres',wsHint:'Noticias, países, el mapa, las capas y Atlas se convierten en ventanas propias que puedes mover, redimensionar, plegar y apilar libremente. Tu diseño se guarda.'}); }catch(_){}
-    let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false, scanT=null, _tickerBtn=null;   /* (#R101) menu-bar ticker toggle */
+    let on=false, wraps={}, holders={}, dock=null, saveT=null, ro=null, styled=false, scanT=null, _tickerBtn=null, _escH=null, _lastBottom=null;   /* (#R101) menu-bar ticker toggle; (#R102) ESC-fullscreen handler + last ticker-adjusted bottom */
     /* (#R78c) window set per the re-report: NO ticker window (「画面外の最下部に固定と何度も言っている」— it is a
        fixed bottom strip above the workspace), NO separate map-controls window (「操作パネルを新設するな」— the
        controls stay inside the map, where they belong), NO emoji in the titles. */
@@ -7587,7 +7611,22 @@ window.addEventListener('DOMContentLoaded', () => {
     function _guides(){ if(gV) return; gV=document.createElement('div'); gV.className='ws-guide ws-gv'; gH=document.createElement('div'); gH.className='ws-guide ws-gh'; document.body.appendChild(gV); document.body.appendChild(gH); }
     function showG(ax,pos){ _guides(); const g=ax==='v'?gV:gH; g.style.display='block'; if(ax==='v') g.style.left=(pos-0.5)+'px'; else g.style.top=(pos-0.5)+'px'; }
     function hideG(){ if(gV){ gV.style.display='none'; gH.style.display='none'; } }
-    function others(w){ const a=[]; for(const id in wraps){ const o=wraps[id]; if(o&&o!==w&&o.isConnected&&o.style.display!=='none') a.push(o); } return a; }
+    function others(w){ const a=[]; for(const id in wraps){ const o=wraps[id]; if(o&&o!==w&&o.isConnected&&o.style.display!=='none'&&!o.dataset.min) a.push(o); } return a; }
+    /* (#R102) ADJACENCY highlight: given a window + the hovered edge (n/s/e/w[+corner]), find the neighbour whose
+       opposite edge sits on the same line and return the OVERLAPPING segment [x,y,w,h] to light up (the shared,
+       draggable divider). Returns null when that edge isn't joined to anything. */
+    let _adjEl=null;
+    function _adjBox(){ if(_adjEl) return _adjEl; _adjEl=document.createElement('div'); _adjEl.className='ws-adj'; document.body.appendChild(_adjEl); return _adjEl; }
+    function hideAdj(){ if(_adjEl) _adjEl.style.display='none'; }
+    function sharedSeg(w,d){ try{ const l=w.offsetLeft,r=l+w.offsetWidth,t=w.offsetTop,bt=t+w.offsetHeight,EPS=6;
+      for(const o of others(w)){ const ol=o.offsetLeft,or=ol+o.offsetWidth,ot=o.offsetTop,obt=ot+o.offsetHeight;
+        if(d.indexOf('e')>=0&&Math.abs(r-ol)<EPS){ const a=Math.max(t,ot),b=Math.min(bt,obt); if(b-a>24) return [r-1.5,a,3,b-a]; }
+        if(d.indexOf('w')>=0&&Math.abs(l-or)<EPS){ const a=Math.max(t,ot),b=Math.min(bt,obt); if(b-a>24) return [l-1.5,a,3,b-a]; }
+        if(d.indexOf('s')>=0&&Math.abs(bt-ot)<EPS){ const a=Math.max(l,ol),b=Math.min(r,or); if(b-a>24) return [a,bt-1.5,b-a,3]; }
+        if(d.indexOf('n')>=0&&Math.abs(t-obt)<EPS){ const a=Math.max(l,ol),b=Math.min(r,or); if(b-a>24) return [a,t-1.5,b-a,3]; }
+      } }catch(_){} return null; }
+    function showAdjFor(w,d){ const seg=(d&&!w.dataset.resizing)?sharedSeg(w,d):null; if(!seg){ hideAdj(); return; }
+      const el=_adjBox(); el.style.display='block'; el.style.left=seg[0]+'px'; el.style.top=seg[1]+'px'; el.style.width=seg[2]+'px'; el.style.height=seg[3]+'px'; }
     const SNAP=8;
     /* (#R79d) the workspace's usable rectangle: BELOW the 34px top menu bar, down to the TOP of the ticker
        (the ticker owns the real screen bottom — "下端はティッカーであり実画面の下端ではない"), full width.
@@ -7618,8 +7657,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function wsResize(w){
       const M=11, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};   /* (#R79b) wider edge hit-zone → easier to grab */
       const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-2||y<-2||x>r.width+2||y>r.height+2) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
-      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; });
-      w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing) w.style.cursor=''; });
+      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; try{ showAdjFor(w,d); }catch(_){} });
+      w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing) w.style.cursor=''; try{ hideAdj(); }catch(_){} });
       w.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,textarea,a,[role="button"]')) return;
         const d=edgeAt(e.clientX,e.clientY); if(!d) return; if(w.dataset.min) return;
         e.preventDefault(); e.stopPropagation(); w.dataset.resizing=d; try{ bringToFront(w); }catch(_){}
@@ -7689,6 +7728,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'.ws-junction:hover{background:rgba(10,132,255,0.55);transform:translate(-50%,-50%) scale(1.15);}'
         +'body.capture-mode .ws-junction{display:none !important;}'
         +'.ws-gv{top:0;bottom:0;width:2px;}.ws-gh{left:0;right:0;height:2px;}'
+        /* (#R102) ADJACENCY indicator — hovering a window edge that is shared with a neighbour lights up exactly that
+           join (the draggable divider), so you can SEE where two windows are joined ("どこで接合されるのかわかるUI").
+           Minimal: only on hover, only the shared segment. */
+        +'.ws-adj{position:fixed;z-index:944;background:var(--primary-color,#0a84ff);opacity:0.6;border-radius:2px;pointer-events:none;display:none;box-shadow:0 0 8px 1px rgba(10,132,255,0.6);}'
+        +'body.capture-mode .ws-adj{display:none !important;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
         +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
         /* (#R79b) VISIBLE, easy-to-grab resize grip in the bottom-right corner ("リサイズがやりにくい。ドラッグ
@@ -7707,6 +7751,10 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R101) the map View controls (Map/Satellite/Flat/Globe/3D + the compass reset-north button) are shown in
            the MAP WINDOW's top-right, exactly like normal mode (in addition to the menu-bar View menu) — per request. */
         +'body.ws-mode .map-controls-top{display:flex !important;position:absolute !important;top:12px !important;right:12px !important;left:auto !important;z-index:950 !important;}'
+        /* (#R102) the map window does NOT need the Measure / Radius / Screenshot / Share / Atlas / Layers tool bar —
+           every one of those lives in the top menu bar (Tools) or as its own window (Layers). Only the view controls
+           (Map/Sat/Flat/Globe/3D + compass) stay in the map window's top-right, per the attached mock. */
+        +'body.ws-mode #map-tools-group{display:none !important;}'
         /* (#R78d) the place-search bar has a stack of responsive rules (absolute-centre, ms-narrow fixed-to-viewport,
            ms-hide) that all break inside a window — the "search bar flies away / is crushed" bug. Pin it cleanly
            to the top-left of the MAP window and neutralise every one of them. */
@@ -7735,6 +7783,10 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-countries .ws-body{flex-direction:column;}'
         +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:10px 12px 6px !important;padding:0 !important;}'
         +'body.ws-mode .ws-countries #countries-search-bar input{width:100% !important;box-sizing:border-box !important;}'
+        /* (#R102) hide the "Filter countries…" box while the compare view owns the feed — a higher-specificity override
+           of the show-rule above (which, with its !important, previously beat the inline display:none → "変化なし"). */
+        +'body.ws-mode.scp-open .ws-countries #countries-search-bar{display:none !important;}'
+        +'body.scp-open #sidebar-search-bar{display:none !important;}'
         +'body.ws-mode .ws-countries #stats-compare-fixed{position:static !important;left:auto !important;right:auto !important;bottom:auto !important;top:auto !important;transform:none !important;width:100% !important;flex:0 0 auto !important;box-sizing:border-box !important;margin:0 !important;}'
         /* (#R84) narrow Countries window: shrink the compare bar name/value columns so the tracks stay big and
            UNIFORM ("compareのbar-chartの長さが統一されていない") instead of being squeezed to nothing. */
@@ -7769,8 +7821,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode #ticker-bar{position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;width:100% !important;z-index:5985 !important;}'
         /* (#R78c) TOP MENU BAR ("上部から、ソフトのように選択できるようにしろ") — a real application menu strip */
         +'#ws-menu{position:fixed;left:0;top:0;right:0;height:34px;z-index:5990;display:flex;align-items:center;gap:2px;padding:0 12px;background:var(--card-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.26));-webkit-backdrop-filter:saturate(160%) blur(14px);backdrop-filter:saturate(160%) blur(14px);}'
-        /* (#R101) "IntMap" bigger AND bold, per request (same UI font as normal mode — inherited, no font-family override) */
-        +'#ws-menu .ws-brand{font-size:20px;font-weight:700;color:var(--text-main);margin-right:16px;letter-spacing:0.01em;}'
+        /* (#R102) "IntMap" NOT bold per request ("ワークスペースモードでのIntMapの文字は太字ではなくして") — medium weight,
+           same UI font as normal mode (inherited, no font-family override) */
+        +'#ws-menu .ws-brand{font-size:20px;font-weight:500;color:var(--text-main);margin-right:16px;letter-spacing:0.01em;}'
         +'#ws-menu .ws-brand span{display:none;}'
         +'#ws-menu .ws-m{position:relative;}'
         +'#ws-menu .ws-m>button{border:none;background:transparent;color:var(--text-main);font-size:12px;padding:5px 11px;border-radius:7px;cursor:pointer;}'
@@ -7794,7 +7847,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const _b=wsBounds(); const top=_b.top, bottom=_b.bottom, B=bottom-top;
       /* (#R79b) default layout: Countries (left) · Map (center) · Layers (top-right) · Atlas (bottom-right).
          The right column is split into Layers on top and Atlas below (they share a horizontal splitter). */
-      const sideW=Math.min(360,Math.round(W*0.24)), rightW=Math.min(340,Math.round(W*0.24)); const rightX=W-rightW;
+      /* (#R102) the side columns (Countries · Layers/Atlas) open at their MINIMUM width so the map gets the most room
+         ("Countries, Layers, Atlasの左右幅を、最小幅に") — NOT minimized, just as narrow as each window's min allows. */
+      const _dmin=id=>{ const d=DEFS.find(x=>x.id===id); return (d&&d.min)||[300,280]; };
+      const sideW=_dmin('countries')[0], rightW=Math.max(_dmin('layers')[0],_dmin('atlas')[0]); const rightX=W-rightW;
       const layersH=Math.round(B*0.50);
       const flo=(i)=>[Math.round(W*0.30)+i*28,top+40+i*32,Math.round(W*0.32),Math.round(B*0.62)];   /* hidden windows' fallback when opened from the menu */
       return { countries:[0,top,sideW,B], map:[sideW,top,rightX-sideW,B],
@@ -7840,8 +7896,10 @@ window.addEventListener('DOMContentLoaded', () => {
       /* column widths */
       const nCols=(left?1:0)+(center?1:0)+(right.length?1:0);
       if(nCols<=1){ /* everything stacks in one column */ let cy=y; const all=ids; all.forEach((id,i)=>{ const hh=(i===all.length-1)?(y+h-cy):Math.round(h/all.length); out[id]=[x,cy,w,hh]; cy+=hh; }); return out; }
-      const lw=left?Math.round(w*(nCols===3?0.24:0.34)):0;
-      const rw=right.length?Math.round(w*(nCols===3?0.26:0.40)):0;
+      /* (#R102) side columns at MINIMUM width (map keeps the rest) — matches the requested default. Falls back to a
+         fraction only if a window has no registered min. rw = the widest min among the stacked right-column windows. */
+      const lw=left?Math.min(Math.round(w*0.42),(minOf(wraps[left])[0]||Math.round(w*0.24))):0;
+      const rw=right.length?Math.min(Math.round(w*0.42),Math.max.apply(null,right.map(id=>minOf(wraps[id])[0]||Math.round(w*0.26)))):0;
       const cw=w-lw-rw; let cx=x;
       if(left){ out[left]=[cx,y,lw,h]; cx+=lw; }
       if(center){ out[center]=[cx,y,cw,h]; cx+=cw; }
@@ -7853,7 +7911,16 @@ window.addEventListener('DOMContentLoaded', () => {
           w.style.left=rr[0]+'px'; w.style.top=rr[1]+'px'; w.style.width=rr[2]+'px';
           /* (#R101) a minimized window keeps its collapsed (title-bar) height; its cell area below stays reserved */
           if(!w.dataset.min) w.style.height=rr[3]+'px'; }); }
-      fitMap(); buildJunctions(); schedSave(); }
+      _lastBottom=wsBounds().bottom; fitMap(); buildJunctions(); schedSave(); }
+    /* (#R102) when the ticker is toggled the usable bottom edge moves by the ticker's height. Grow/shrink the windows
+       whose bottom sits on the old edge so they fill (or vacate) that strip automatically ("ティッカーをオンオフしたら、
+       自動的にウィンドウがその隙間を埋めるように") — WITHOUT re-tiling everything, so a custom layout is preserved. */
+    function tickerReflow(){ if(!on) return; const nb=wsBounds().bottom; const ob=(_lastBottom==null)?nb:_lastBottom; const d=Math.round(nb-ob);
+      if(d){ for(const id in wraps){ const w=wraps[id]; if(!w||w.style.display==='none'||w.dataset.min) continue;
+        if(w.dataset.maxed){ w.style.height=Math.max(120,(nb-w.offsetTop))+'px'; continue; }
+        const bot=w.offsetTop+w.offsetHeight;
+        if(Math.abs(bot-ob)<=8) w.style.height=Math.max((minOf(w)[1]||120), w.offsetHeight+d)+'px'; } }
+      _lastBottom=nb; fitMap(); schedSave(); }
     let _junc=[];
     function clearJunctions(){ _junc.forEach(j=>{ try{ j.remove(); }catch(_){} }); _junc=[]; }
     /* (#R101) junction CIRCLES removed per request ("結合点にある青い丸は不要"). Adjacency is now shown by the clearer
@@ -8034,6 +8101,18 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ ro=new ResizeObserver(()=>{ fitMap(); schedSave(); }); if(wraps.map) ro.observe(wraps.map); }catch(_){}
       document.addEventListener('pointerup',schedSave,true);
       scanT=setInterval(scan,2500);   /* late-appearing elements (ticker) auto-join the workspace */
+      /* (#R102) ESC toggles the MAP window between fullscreen and its tiled size ("escキーを押すと、地図ウィンドウを
+         全画面化/解除"). Bails when an input is focused, a modal/flight-sim overlay is open, or the flight sim is flying
+         (those own ESC), so it never hijacks another ESC action. */
+      _escH=(e)=>{ try{ if(!on||e.key!=='Escape'||e.repeat) return;
+        const t=e.target; if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable)) return;
+        if(document.body.classList.contains('fs-flying')||document.getElementById('fs-setup')||document.getElementById('fs-result')) return;
+        const openModal=[...document.querySelectorAll('.modal-overlay,.modal,#compose-modal,.lightbox')].some(m=>{ try{ const s=getComputedStyle(m); return s.display!=='none'&&s.visibility!=='hidden'; }catch(_){ return false; } });
+        if(openModal) return;
+        const mw=wraps.map; if(!mw||mw.style.display==='none') return;
+        const mx=mw.querySelector('.ws-d-max'); if(mx){ e.preventDefault(); e.stopPropagation(); mx.click(); } }catch(_){} };
+      document.addEventListener('keydown',_escH,true);
+      _lastBottom=wsBounds().bottom;
       fitMap(); setTimeout(fitMap,350); save({on:1});
       try{ syncModeBtn(); }catch(_){}
       try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) re-dock open legends to the map's bottom-left */
@@ -8041,6 +8120,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function disable(){ if(!on) return; on=false;
       try{ ro&&ro.disconnect(); }catch(_){} ro=null;
       clearInterval(scanT); scanT=null; hideG(); clearJunctions();
+      try{ if(_escH) document.removeEventListener('keydown',_escH,true); }catch(_){} _escH=null;   /* (#R102) drop the ESC-fullscreen handler */
       document.removeEventListener('pointerup',schedSave,true); clearTimeout(saveT);
       for(const id in wraps){ const w=wraps[id]; if(!w) continue;
         const phs=holders[id]; if(Array.isArray(phs)) phs.forEach(pr=>{ const el=pr[0],ph=pr[1]; if(el&&ph&&ph.parentNode){ ph.parentNode.insertBefore(el,ph); ph.remove(); } });
@@ -8066,7 +8146,10 @@ window.addEventListener('DOMContentLoaded', () => {
       else{ b.textContent=T('Switch to workspace →','ワークスペースに切り替え →','Zum Workspace-Modus →','Перейти в оконный режим →','Cambiar al espacio de ventanas →');
         b.style.background='var(--primary-color)'; b.style.color='#fff'; b.style.borderColor='var(--primary-color)'; } }
     function bind(){ const b=document.getElementById('setting-wsmode-btn'); if(!b) return;
-      b.addEventListener('click',()=>{ if(on) disable(); else enable(); syncModeBtn(); });
+      b.addEventListener('click',()=>{ if(on) disable(); else enable(); syncModeBtn();
+        /* (#R102) close the Settings popup when switching between normal ⇔ workspace mode ("設定のポップアップが消える
+           ように") — a mode switch is a whole-app transition, so leaving the modal floating over it felt broken. */
+        try{ const m=document.getElementById('settings-modal'); if(m) m.style.display='none'; }catch(_){} });
       syncModeBtn(); }
     /* (#R101) DESKTOP DEFAULT = workspace ON (unless the user explicitly turned it off, i.e. saved on:0). */
     const _wantWS=()=>{ try{ const s=state(); if(s.on===0||s.on===false) return false; if(s.on===1||s.on===true) return true; return !isMob(); }catch(_){ return false; } };
@@ -8079,16 +8162,39 @@ window.addEventListener('DOMContentLoaded', () => {
           bs.textContent='html.ws-boot #sidebar,html.ws-boot .map-controls-top,html.ws-boot #layer-sidebar-r,html.ws-boot #lsr-toggle,html.ws-boot #btn-toggle-sidebar{display:none !important;}html.ws-boot .operation-room{background:var(--bg-main,#0d1117);}';
           (document.head||de).appendChild(bs); }
         setTimeout(()=>{ try{ de.classList.remove('ws-boot'); }catch(_){} },6000); } }catch(_){}
-    setTimeout(()=>{ try{ bind(); }catch(_){} try{ if(_wantWS()&&!isMob()) enable(); else { document.documentElement.classList.remove('ws-boot'); syncModeBtn(); } }catch(_){ try{ document.documentElement.classList.remove('ws-boot'); }catch(__){} } },900);
+    /* (#R102) enter workspace mode AS EARLY AS POSSIBLE — the old fixed 900 ms delay left the desktop staring at the
+       empty pre-hide background before the windows built ("読み込み開始時から開始するように…何もない画面が気持ち悪い").
+       Boot the moment the Atlas kernel exists (it's the one window that must be created via IntMapConsole.open); a
+       Promise microtask fires right after the main script finishes parsing (when IntMapConsole is already defined), then
+       a short poll as a fallback, and a hard cap so we never wait long. */
+    function _bootWS(tries){ try{ bind(); }catch(_){}
+      if(!(_wantWS()&&!isMob())){ try{ document.documentElement.classList.remove('ws-boot'); }catch(_){} try{ syncModeBtn(); }catch(_){} return; }
+      if(window.IntMapConsole&&window.IntMapConsole.open){ try{ enable(); }catch(_){ try{ document.documentElement.classList.remove('ws-boot'); }catch(__){} } return; }
+      if((tries||0)<120){ setTimeout(()=>_bootWS((tries||0)+1),25); return; }
+      try{ enable(); }catch(_){ try{ document.documentElement.classList.remove('ws-boot'); }catch(__){} }   /* give up waiting → enter anyway */
+    }
+    try{ Promise.resolve().then(()=>_bootWS(0)); }catch(_){ setTimeout(()=>_bootWS(0),0); }
     /* (#R83) reflow the auto-tiled layout when the browser window resizes (debounced) */
     let _wsRT=null; window.addEventListener('resize',()=>{ if(!on) return; clearTimeout(_wsRT); _wsRT=setTimeout(()=>{ try{ retile(); }catch(_){} },180); });
-    return { open:enable, close:disable, toggle, active:()=>on };
+    return { open:enable, close:disable, toggle, active:()=>on, tickerReflow, syncTicker:()=>{ try{ _syncTicker(); }catch(_){} } };
   })();
   window.IntMapTicker=(function(){
     const T=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const isMob=()=>window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
     let bar=null,track=null,built=false,timer=0,mkt=[],news=[];
+    /* (#R102) which symbols / items the ticker shows is user-configurable in Settings ("表示銘柄や表示項目を設定から
+       変更可能に"). Each market instrument carries a stable key; `cfg.syms` is the enabled set, `cfg.news` gates the
+       news headlines. Defaults = everything on. */
+    const TK_SYMS=[
+      {k:'usdjpy',l:'USD/JPY',g:'fx'},{k:'eurusd',l:'EUR/USD',g:'fx'},{k:'gbpusd',l:'GBP/USD',g:'fx'},{k:'usdcny',l:'USD/CNY',g:'fx'},
+      {k:'spx',l:'S&P 500',g:'idx'},{k:'dow',l:'Dow',g:'idx'},{k:'nasdaq',l:'Nasdaq',g:'idx'},{k:'nikkei',l:'Nikkei 225',g:'idx'},{k:'dax',l:'DAX',g:'idx'},
+      {k:'gold',l:()=>T('Gold','金','Gold','Золото','Oro'),g:'com'},{k:'silver',l:()=>T('Silver','銀','Silber','Серебро','Plata'),g:'com'},
+      {k:'btc',l:'BTC',g:'crypto'},{k:'eth',l:'ETH',g:'crypto'} ];
+    const CFG_KEY='intmap_ticker_cfg';
+    function loadCfg(){ try{ const j=JSON.parse(localStorage.getItem(CFG_KEY)||'null'); if(j&&Array.isArray(j.syms)) return {syms:new Set(j.syms),news:j.news!==false}; }catch(_){} return {syms:new Set(TK_SYMS.map(s=>s.k)),news:true}; }
+    let cfg=loadCfg();
+    function saveCfg(){ try{ localStorage.setItem(CFG_KEY,JSON.stringify({syms:[...cfg.syms],news:cfg.news})); }catch(_){} }
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     async function fjson(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
     async function ftext(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.text(); }catch(_){} } return null; }
@@ -8107,32 +8213,39 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#ticker-bar .tk-lbl{color:var(--text-muted);}'
         +'#ticker-bar .tk-up{color:#34c759;} #ticker-bar .tk-dn{color:#ff453a;}'
         +'#ticker-bar a{color:var(--text-main);text-decoration:none;} #ticker-bar a:hover{color:var(--primary-color);}'
+        /* (#R102) a small hide button at the FAR RIGHT of the ticker — clicking it turns the whole ticker off ("一番右に
+           も小さく、非表示ボタンを付けて。非表示したらそれも含めてティッカーが消える"). Opaque end-cap so the scrolling
+           text tucks cleanly behind it. */
+        +'#ticker-bar .tk-hide{position:absolute;right:0;top:0;bottom:0;width:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:center;background:var(--bg-color);border-left:1px solid rgba(128,128,128,0.25);color:var(--text-muted);cursor:pointer;font-size:15px;line-height:1;z-index:3;padding:0;}'
+        +'#ticker-bar .tk-hide:hover{color:var(--text-main);background:var(--input-bg);}'
+        +'#ticker-bar .tk-track{padding-right:26px;}'
         +'@media(max-width:768px){ #ticker-bar{display:none !important;} body.ticker-on{display:block;} body.ticker-on .operation-room{height:100vh !important;height:100dvh !important;} }';
       document.head.appendChild(st); }
     async function loadMarkets(){ const out=[];
       let rt=null; try{ const j=await fjson('https://api.fxratesapi.com/latest?base=USD&currencies=JPY,EUR,GBP,CNY'); rt=j&&j.rates; }catch(_){}
       if(!rt){ try{ const j2=await fjson('https://open.er-api.com/v6/latest/USD'); rt=j2&&j2.rates; }catch(_){} }
-      if(rt){ if(rt.JPY!=null) out.push({l:'USD/JPY',v:(+rt.JPY).toFixed(2)}); if(rt.EUR!=null&&+rt.EUR>0) out.push({l:'EUR/USD',v:(1/+rt.EUR).toFixed(4)}); if(rt.GBP!=null&&+rt.GBP>0) out.push({l:'GBP/USD',v:(1/+rt.GBP).toFixed(4)}); if(rt.CNY!=null) out.push({l:'USD/CNY',v:(+rt.CNY).toFixed(3)}); }
+      if(rt){ if(rt.JPY!=null) out.push({l:'USD/JPY',v:(+rt.JPY).toFixed(2),k:'usdjpy'}); if(rt.EUR!=null&&+rt.EUR>0) out.push({l:'EUR/USD',v:(1/+rt.EUR).toFixed(4),k:'eurusd'}); if(rt.GBP!=null&&+rt.GBP>0) out.push({l:'GBP/USD',v:(1/+rt.GBP).toFixed(4),k:'gbpusd'}); if(rt.CNY!=null) out.push({l:'USD/CNY',v:(+rt.CNY).toFixed(3),k:'usdcny'}); }
       /* stock indices — Yahoo Finance chart endpoint (real price + true day change vs previous close);
          Stooq rejected datacenter/proxy requests, Yahoo verified working through the proxy ladder. */
-      const YSYM=[['%5EGSPC','S&P 500'],['%5EDJI','Dow'],['%5EIXIC','Nasdaq'],['%5EN225','Nikkei 225'],['%5EGDAXI','DAX']];
-      for(const ys of YSYM){ try{ const j=await fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+ys[0]+'?range=1d&interval=1d');
+      const YSYM=[['%5EGSPC','S&P 500','spx'],['%5EDJI','Dow','dow'],['%5EIXIC','Nasdaq','nasdaq'],['%5EN225','Nikkei 225','nikkei'],['%5EGDAXI','DAX','dax']];
+      for(const ys of YSYM){ if(!cfg.syms.has(ys[2])) continue; try{ const j=await fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+ys[0]+'?range=1d&interval=1d');
         const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
         if(m&&m.regularMarketPrice!=null){ const prev=(m.chartPreviousClose!=null)?+m.chartPreviousClose:(+m.previousClose||null);
           const d=(prev&&prev>0)?((+m.regularMarketPrice-prev)/prev*100):null;
-          out.push({l:ys[1],v:(+m.regularMarketPrice).toLocaleString(undefined,{maximumFractionDigits:2}),d}); } }catch(_){} }
-      try{ const g=await fjson('https://api.gold-api.com/price/XAU'); if(g&&g.price) out.push({l:T('Gold','金','Gold','Золото','Oro'),v:'$'+(+g.price).toLocaleString(undefined,{maximumFractionDigits:0})+'/oz'}); }catch(_){}
-      try{ const s2=await fjson('https://api.gold-api.com/price/XAG'); if(s2&&s2.price) out.push({l:T('Silver','銀','Silber','Серебро','Plata'),v:'$'+(+s2.price).toFixed(2)+'/oz'}); }catch(_){}
-      try{ const c=await fjson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
-        if(c&&c.bitcoin&&c.bitcoin.usd!=null) out.push({l:'BTC',v:'$'+(+c.bitcoin.usd).toLocaleString(),d:c.bitcoin.usd_24h_change});
-        if(c&&c.ethereum&&c.ethereum.usd!=null) out.push({l:'ETH',v:'$'+(+c.ethereum.usd).toLocaleString(),d:c.ethereum.usd_24h_change}); }catch(_){}
+          out.push({l:ys[1],v:(+m.regularMarketPrice).toLocaleString(undefined,{maximumFractionDigits:2}),d,k:ys[2]}); } }catch(_){} }
+      if(cfg.syms.has('gold')){ try{ const g=await fjson('https://api.gold-api.com/price/XAU'); if(g&&g.price) out.push({l:T('Gold','金','Gold','Золото','Oro'),v:'$'+(+g.price).toLocaleString(undefined,{maximumFractionDigits:0})+'/oz',k:'gold'}); }catch(_){} }
+      if(cfg.syms.has('silver')){ try{ const s2=await fjson('https://api.gold-api.com/price/XAG'); if(s2&&s2.price) out.push({l:T('Silver','銀','Silber','Серебро','Plata'),v:'$'+(+s2.price).toFixed(2)+'/oz',k:'silver'}); }catch(_){} }
+      if(cfg.syms.has('btc')||cfg.syms.has('eth')){ try{ const c=await fjson('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+        if(cfg.syms.has('btc')&&c&&c.bitcoin&&c.bitcoin.usd!=null) out.push({l:'BTC',v:'$'+(+c.bitcoin.usd).toLocaleString(),d:c.bitcoin.usd_24h_change,k:'btc'});
+        if(cfg.syms.has('eth')&&c&&c.ethereum&&c.ethereum.usd!=null) out.push({l:'ETH',v:'$'+(+c.ethereum.usd).toLocaleString(),d:c.ethereum.usd_24h_change,k:'eth'}); }catch(_){} }
       mkt=out; }
     function loadNews(){ try{ if(typeof globalData!=='undefined'&&globalData&&globalData.length){ news=globalData.slice(0,14).map(it=>({t:String(it.title||'').slice(0,110),u:it.link||''})); }
       else { news=[]; if(typeof fetchData==='function'&&!loadNews._asked){ loadNews._asked=1; try{ fetchData(); }catch(_){} [8000,16000,30000].forEach(ms=>setTimeout(()=>{ try{ loadNews(); render(); }catch(_){} },ms)); } } }catch(_){ news=[]; } }
     function render(){ if(!track) return; const parts=[];
-      mkt.forEach(m=>{ const dd=(m.d!=null&&isFinite(m.d))?(' <span class="'+(m.d>=0?'tk-up':'tk-dn')+'">'+(m.d>=0?'▲':'▼')+Math.abs(m.d).toFixed(2)+'%</span>'):''; parts.push('<span class="tk-item"><span class="tk-lbl">'+esc(m.l)+'</span>'+esc(m.v)+dd+'</span>'); });
+      mkt.forEach(m=>{ if(m.k&&!cfg.syms.has(m.k)) return;   /* (#R102) respect the user's ticker symbol selection */
+        const dd=(m.d!=null&&isFinite(m.d))?(' <span class="'+(m.d>=0?'tk-up':'tk-dn')+'">'+(m.d>=0?'▲':'▼')+Math.abs(m.d).toFixed(2)+'%</span>'):''; parts.push('<span class="tk-item"><span class="tk-lbl">'+esc(m.l)+'</span>'+esc(m.v)+dd+'</span>'); });
       /* (#R72) no 📰 emoji on ticker items ("Tickerに📰の絵文字はいらない") */
-      news.forEach(n=>{ parts.push('<span class="tk-item">'+(n.u?('<a href="'+esc(n.u)+'" target="_blank" rel="noopener">'+esc(n.t)+'</a>'):esc(n.t))+'</span>'); });
+      if(cfg.news) news.forEach(n=>{ parts.push('<span class="tk-item">'+(n.u?('<a href="'+esc(n.u)+'" target="_blank" rel="noopener">'+esc(n.t)+'</a>'):esc(n.t))+'</span>'); });
       if(!parts.length) parts.push('<span class="tk-item tk-lbl">'+T('Loading ticker…','ティッカー読込中…','Ticker lädt…','Загрузка ленты…','Cargando cinta…')+'</span>');
       const html=parts.join('');
       track.innerHTML='<span class="tk-half">'+html+'</span><span class="tk-half" aria-hidden="true">'+html+'</span>';
@@ -8140,18 +8253,29 @@ window.addEventListener('DOMContentLoaded', () => {
     async function refresh(){ loadNews(); render(); await loadMarkets(); render(); }
     function build(){ if(built) return; built=true; css();
       bar=document.createElement('div'); bar.id='ticker-bar'; bar.innerHTML='<div class="tk-track"></div>';
+      /* (#R102) far-right hide button — turns the ticker off entirely */
+      const hb=document.createElement('button'); hb.className='tk-hide'; hb.type='button'; hb.setAttribute('aria-label',T('Hide ticker','ティッカーを隠す','Ticker ausblenden','Скрыть ленту','Ocultar cinta')); hb.title=T('Hide ticker','ティッカーを隠す','Ticker ausblenden','Скрыть ленту','Ocultar cinta'); hb.textContent='×';
+      hb.onclick=(e)=>{ e.stopPropagation(); if(document.body.classList.contains('ticker-on')) toggle(); };
+      bar.appendChild(hb);
       /* insert directly after the app shell so the bar occupies the vacated strip in normal flow */
       const or=document.querySelector('.operation-room');
       if(or&&or.parentNode){ or.parentNode.insertBefore(bar,or.nextSibling); } else document.body.appendChild(bar);
       track=bar.querySelector('.tk-track'); }
     function open(){ build(); document.body.classList.add('ticker-on'); bar.style.display='flex'; refresh(); if(!timer) timer=setInterval(refresh,300000);
-      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },350); }
+      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },350);
+      try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }   /* (#R102) ws windows fill the vacated strip */
     function close(){ if(bar) bar.style.display='none'; document.body.classList.remove('ticker-on'); if(timer){ clearInterval(timer); timer=0; }
-      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },350); }
+      try{ map&&map.resize(); }catch(_){} setTimeout(()=>{ try{ map&&map.resize(); }catch(_){} },350);
+      try{ window.IntMapWorkspace&&IntMapWorkspace.tickerReflow&&IntMapWorkspace.tickerReflow(); IntMapWorkspace.syncTicker&&IntMapWorkspace.syncTicker(); }catch(_){} }
     function toggle(){ if(document.body.classList.contains('ticker-on')){ window.imTicker='off'; close(); } else { window.imTicker='on'; open(); } try{ saveSettings&&saveSettings(); }catch(_){} }
     function apply(){ if(window.imTicker==='on') open(); else close(); }
     setTimeout(()=>{ try{ apply(); }catch(_){} },1500);   /* honour the saved setting on boot */
-    return { open, close, toggle, apply };
+    /* (#R102) config API for the Settings ticker panel: read the symbol list + current selection, write a new one
+       (persisted) and re-pull/re-render immediately. */
+    function getConfig(){ return { syms:new Set(cfg.syms), news:cfg.news, list:TK_SYMS.map(s=>({k:s.k,g:s.g,l:(typeof s.l==='function'?s.l():s.l)})) }; }
+    function setConfig(nc){ try{ if(nc){ if(nc.syms) cfg.syms=(nc.syms instanceof Set)?new Set(nc.syms):new Set(nc.syms||[]); if(nc.news!=null) cfg.news=!!nc.news; } saveCfg();
+      try{ render(); }catch(_){} try{ if(document.body.classList.contains('ticker-on')) refresh(); }catch(_){} }catch(_){} }
+    return { open, close, toggle, apply, getConfig, setConfig, isOpen:()=>document.body.classList.contains('ticker-on') };
   })();
   document.querySelectorAll('.geo-layer-cb').forEach(cb=>cb.addEventListener('change',()=>{
     /* Rimland is a country-fill (land only, #17), not a drawn polygon — route it to its own toggle. */
@@ -8673,7 +8797,14 @@ window.addEventListener('DOMContentLoaded', () => {
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
   window.flyToLoc=function(lng,lat){ if(map)map.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
   window.toggleDashCat=function(cat){ if(activeDashCategories.has(cat))activeDashCategories.delete(cat); else activeDashCategories.add(cat); renderDashboard(); };
-  window.setStatsSort=function(k){ statsSort=k; renderStats(searchVal()); };
+  /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
+     a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
+     fertility) are back-filled on demand so they are REAL, not blank. */
+  window.setStatsSort=function(k){ const D={ gdp:'desc', pop:'desc', area:'desc', hdi:'desc', milSpend:'desc', lifeExp:'desc', tfr:'desc', name:'asc' }; statsSort=k; statsSortDir=D[k]||'desc';
+    try{ if((k==='lifeExp'||k==='tfr')&&window._imFillStat) window._imFillStat(k); }catch(_){}
+    try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
+  window.toggleStatsSortDir=function(){ statsSortDir=(statsSortDir==='asc')?'desc':'asc';
+    try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
 
   /* (#R30) Does the active news-language setting include a language OTHER than the UI language? If not
      (Current-language-only, or Multi with only the UI language ticked) there is nothing to translate, so
@@ -9138,7 +9269,22 @@ window.addEventListener('DOMContentLoaded', () => {
      (bar chart default ⇄ time-series ⇄ free table) — the old separate static-bar page is merged into it.
      Selection cap raised 3→5 to match. */
   let compareSet=new Set();
-  window.setStatsSort=function(k){ statsSort=k; renderStats(searchVal()); };
+  /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
+     a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
+     fertility) are back-filled on demand so they are REAL, not blank. */
+  window.setStatsSort=function(k){ const D={ gdp:'desc', pop:'desc', area:'desc', hdi:'desc', milSpend:'desc', lifeExp:'desc', tfr:'desc', name:'asc' }; statsSort=k; statsSortDir=D[k]||'desc';
+    try{ if((k==='lifeExp'||k==='tfr')&&window._imFillStat) window._imFillStat(k); }catch(_){}
+    try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
+  window.toggleStatsSortDir=function(){ statsSortDir=(statsSortDir==='asc')?'desc':'asc';
+    try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
+  /* (#R102) back-fill a lazy World-Bank metric (life-expectancy / fertility) so sorting by it shows REAL values, not "—".
+     One indicator = one WB request; re-renders when it lands (only if that metric is still selected). */
+  window._imFillStat=async function(key){ try{ const codes={lifeExp:'SP.DYN.LE00.IN',tfr:'SP.DYN.TFRT.IN',internet:'IT.NET.USER.ZS'}; const c=codes[key]; if(!c) return;
+    let have=0; for(const cd in countryStats){ const s=countryStats[cd]; if(s&&s[key]!=null&&isFinite(s[key])) have++; } if(have>=25) return;
+    if(!(window.IntMapWB&&window.IntMapWB.fetch)) return; const m=await window.IntMapWB.fetch(c); if(!m) return;
+    for(const cd in m){ const v=m[cd]&&m[cd].v; if(v==null||!isFinite(v)) continue; const s=countryStats[cd]; if(s&&(s[key]==null||!isFinite(s[key]))) s[key]=+v; }
+    try{ if(statsSort===key && window._countriesActive && window._countriesActive()) renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){}
+  }catch(_){} };
   /* Toggle a country in the compare set WITHOUT re-rendering the whole list (keeps scroll
      position) — only the row outline + the fixed bottom panel update (#26). */
   window._toggleCompare=function(code){
@@ -9173,15 +9319,31 @@ window.addEventListener('DOMContentLoaded', () => {
     let arr=Object.values(countryStats).filter(s=>s.nameEn && !s._histHidden && s.sov!==false);
     if(arr.length===0){ feed.innerHTML=`<div class="empty-msg">${t('noData')}</div>`; return; }
     if(q) arr=arr.filter(s=>s.nameEn.toLowerCase().includes(q)||(s.nameJp&&s.nameJp.includes(q)));
-    const key=statsSort;
-    arr.sort((a,b)=> key==='name' ? (currentLang==='jp'?(a.nameJp||'').localeCompare(b.nameJp||'','ja'):(a.nameEn||'').localeCompare(b.nameEn||'')) : ((b[key]||0)-(a[key]||0)) );
-    const sb=(k,lbl)=>`<button class="stats-sort ${statsSort===k?'active':''}" onclick="setStatsSort('${k}')">${lbl}</button>`;
-    /* Compare selection now lives in the fixed bottom panel (#26), not in the scrolling list. */
-    /* (#R101) in time-machine (historical) mode the figures are REAL GDP (Maddison, 2011 int$), not nominal — so the
-       cards' GDP label must read "real GDP" to match the status bar (the old cards said "GDP (nominal)"). */
+    const key=statsSort, dir=statsSortDir;
+    /* (#R102) sort by the chosen indicator in the chosen direction. Numeric: missing/zero values sort to the END in
+       BOTH directions (so ascending never fills the top with un-populated countries). Name: locale-aware A–Z / Z–A. */
+    arr.sort((a,b)=>{
+      if(key==='name'){ const av=(currentLang==='jp'?(a.nameJp||a.nameEn||''):(a.nameEn||'')), bv=(currentLang==='jp'?(b.nameJp||b.nameEn||''):(b.nameEn||'')); const c=av.localeCompare(bv,currentLang==='jp'?'ja':undefined); return dir==='asc'?c:-c; }
+      const av=a[key], bv=b[key]; const aOk=isFinite(av)&&av>0, bOk=isFinite(bv)&&bv>0;
+      if(!aOk&&!bOk) return 0; if(!aOk) return 1; if(!bOk) return -1;
+      return dir==='asc'?(av-bv):(bv-av);
+    });
+    /* (#R102) indicator PULLDOWN + ascending/descending toggle (replaces the old button row). */
+    const IND=[['gdp',t('sortGdp')],['pop',t('sortPop')],['area',t('sortArea')],['hdi',t('sortHDI')],['milSpend',t('sortMil')],['lifeExp',t('sortLife')],['tfr',t('sortTfr')],['name',t('sortName')]];
+    const dirLbl=(dir==='asc')?('↑ '+t('sortAsc')):('↓ '+t('sortDesc'));
+    let html=`<div class="stats-toolbar"><select class="stats-sort-sel" onchange="setStatsSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${statsSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleStatsSortDir()" title="${t('sortDir')}">${dirLbl}</button></div>`;
+    /* (#R101) in time-machine (historical) mode the figures are REAL GDP (Maddison, 2011 int$), not nominal. */
     const _histY=window._imTimeYear||null;
-    const gdpLbl=_histY?(currentLang==='jp'?'実質GDP':currentLang==='de'?'reales BIP':currentLang==='ru'?'реальный ВВП':currentLang==='es'?'PIB real':'real GDP'):t('statGdp');
-    let html=`<div class="stats-toolbar">${sb('gdp',t('sortGdp'))}${sb('pop',t('sortPop'))}${sb('area',t('sortArea'))}${sb('hdi',t('sortHDI'))}${sb('milSpend',t('sortMil'))}${sb('name',t('sortName'))}</div>`;
+    /* (#R102) the value column now carries ONLY the number ($3.4T etc.) — no indicator name on the card, per request. */
+    const metricVal=(s)=>{ switch(key){
+      case 'pop': return fmtNum(s.pop);
+      case 'area': return fmtArea(s.area);
+      case 'hdi': return s.hdi?(+s.hdi).toFixed(3):'—';
+      case 'milSpend': return s.milSpend?'$'+s.milSpend+'B':'—';
+      case 'lifeExp': return (s.lifeExp&&isFinite(s.lifeExp))?((+s.lifeExp).toFixed(1)+(currentLang==='jp'?'歳':currentLang==='de'?' J':currentLang==='ru'?' л':currentLang==='es'?' a':' yr')):'—';
+      case 'tfr': return (s.tfr&&isFinite(s.tfr))?(+s.tfr).toFixed(2):'—';
+      default: return fmtMoney(s.gdp);   /* gdp + name */
+    } };
     /* (#R94/#R101) Time-machine status bar — compressed to ONE line (year + "real GDP (2011 int$)") per request. */
     try{ const _ty=_histY, _pw=window._imTimePreWB;
       if(_ty){ html+=`<div class="stats-timebanner"><b>${_ty}${currentLang==='jp'?'年':''}</b> · ${currentLang==='jp'?'実質GDP（2011年国際ドル）':currentLang==='de'?'reales BIP (int$ 2011)':currentLang==='ru'?'реальный ВВП (межд.$ 2011)':currentLang==='es'?'PIB real (int$ 2011)':'real GDP (2011 int$)'}</div>`; }
@@ -9191,15 +9353,10 @@ window.addEventListener('DOMContentLoaded', () => {
        build the selection and the dock's view button opens the unified comparison. */
     if(arr.length===0) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
     arr.forEach(s=>{
-      let sub='—', lbl='';
-      if(key==='pop'){ sub=fmtNum(s.pop); lbl=t('statPop'); }
-      else if(key==='area'){ sub=fmtArea(s.area); lbl=t('statArea'); }
-      else if(key==='hdi'){ sub=s.hdi?s.hdi.toFixed(3):'—'; lbl=t('statHDI'); }
-      else if(key==='milSpend'){ sub=s.milSpend?'$'+s.milSpend+'B':'—'; lbl=t('statMil'); }
-      else if(key==='name'){ sub=fmtMoney(s.gdp); lbl=gdpLbl; }
-      else{ sub=fmtMoney(s.gdp); lbl=gdpLbl; }
       const active=compareSet.has(s.code)?'compare-on':'';
-      html+=`<div class="stat-row ${active}" data-ccn="${s.code}"><span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${s.region||''}${s.capital?' · '+s.capital:''}</div></div><div class="stat-val">${lbl}<br>${sub}</div></div>`;
+      /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
+      const subline=`${s.region||''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
+      html+=`<div class="stat-row ${active}" data-ccn="${s.code}"><span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{
@@ -9223,13 +9380,14 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R70) the dock is the SELECTION tray only; the comparison itself lives in the unified view (scp-view).
        Hide the dock while that view owns the feed. */
     const scpOpen=!!document.getElementById('scp-view');
+    try{ document.body.classList.toggle('scp-open', scpOpen); }catch(_){}   /* (#R102) keep the filter-hide class in sync with the compare view's real presence */
     const active=_countriesActive();
     panel.classList.toggle('show', active && !scpOpen);
     if(!active||scpOpen){ panel.innerHTML=''; return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
-    let head=`<div class="scf-head"><span class="scf-title">📊 ${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
+    let head=`<div class="scf-head"><span class="scf-title">${t('compare')} (${compareSet.size}/10)</span><div style="display:flex;gap:6px;">`+
       (compareSet.size>=2?`<button onclick="_showCompare()">${t('compareView')}</button>`:'')+
       `<button onclick="_clearCompare()">${t('compareClear')}</button></div></div>`;
     panel.innerHTML=head+`<div class="scf-chips">${chips}</div>`;
@@ -13421,6 +13579,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(modeDate) modeDate.textContent=L5('Date','日付','Datum','Дата','Fecha');
       if(btnNow) btnNow.textContent=L5('Back to now','現在へ戻る','Zurück zu heute','К настоящему','Volver al presente');
       if(badge) badge.textContent=L5('Viewing the past','過去表示中','Vergangenheit','Прошлое','Viendo el pasado');
+      /* (#27) the collapsed "See the past world / 1900 to present" button labels */
+      try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
+        if(ot) ot.textContent=L5('See the past world','過去の世界を見る','Die Welt der Vergangenheit','Мир прошлого','Ver el mundo del pasado');
+        if(os) os.textContent=L5('1900 to present','1900年から現在まで','1900 bis heute','с 1900 до наших дней','1900 hasta hoy'); }catch(_){}
       buildScale();
     }
     function buildScale(){ if(!scale) return; const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
@@ -13438,7 +13600,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function buildSynced(e){ if(!synced) return;
       const lbl='<span class="ntl-sync-lbl">'+L5('Applied','反映内容','Angewendet','Применено','Aplicado')+'</span>';
-      const chip=(dot,txt)=>'<span class="ntl-chip"><span class="ntl-dot '+dot+'"></span>'+txt+'</span>';
+      const chip=(dot,txt)=>'<span class="ntl-chip"><span class="ntl-dot '+dot+'">'+(dot==='ok'?'✓':'')+'</span>'+txt+'</span>';
       if(e.isLive){ synced.innerHTML=lbl+chip('ok',L5('Live (present)','ライブ（現在）','Live (Gegenwart)','Прямой эфир','En vivo')); return; }
       const y=e.year; const within=((new Date()-e.when)/864e5)<=3660;
       const bY=(y>hbAt(y)&&y>2010)?L5('current','現在','aktuell','текущие','actuales'):hbAt(y);
@@ -14840,11 +15002,35 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ Object.assign(i18n.ru,{ lblKbd:"Горячие клавиши", viewKbd:"⌨ Показать горячие клавиши (или нажмите ?)" }); }catch(_){}
   try{ Object.assign(i18n.es,{ lblKbd:"Atajos de teclado", viewKbd:"⌨ Ver atajos de teclado (o pulsa ?)" }); }catch(_){}
   /* (#R63) bottom news/markets ticker setting — 5 languages */
-  Object.assign(i18n.en,{ lblTicker:"Bottom ticker (news & markets)", tickerOff:"Off (default)", tickerOn:"On — thin strip below the map" });
-  Object.assign(i18n.jp,{ lblTicker:"下部ティッカー（ニュース・マーケット）", tickerOff:"オフ（デフォルト）", tickerOn:"オン — 地図の下に細い帯を表示" });
-  try{ Object.assign(i18n.de,{ lblTicker:"Ticker unten (News & Märkte)", tickerOff:"Aus (Standard)", tickerOn:"An — schmaler Streifen unter der Karte" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblTicker:"Нижняя бегущая строка (новости и рынки)", tickerOff:"Выкл (по умолчанию)", tickerOn:"Вкл — тонкая полоса под картой" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblTicker:"Cinta inferior (noticias y mercados)", tickerOff:"Desactivada (predeterminado)", tickerOn:"Activada — franja fina bajo el mapa" }); }catch(_){}
+  Object.assign(i18n.en,{ lblTicker:"Bottom ticker (news & markets)", tickerOff:"Off (default)", tickerOn:"On — thin strip below the map", tkItems:"Shown items", tkNews:"News headlines", tkgFx:"Forex", tkgIdx:"Indices", tkgCom:"Commodities", tkgCrypto:"Crypto" });
+  Object.assign(i18n.jp,{ lblTicker:"下部ティッカー（ニュース・マーケット）", tickerOff:"オフ（デフォルト）", tickerOn:"オン — 地図の下に細い帯を表示", tkItems:"表示する項目", tkNews:"ニュース見出し", tkgFx:"為替", tkgIdx:"株価指数", tkgCom:"商品", tkgCrypto:"暗号資産" });
+  try{ Object.assign(i18n.de,{ lblTicker:"Ticker unten (News & Märkte)", tickerOff:"Aus (Standard)", tickerOn:"An — schmaler Streifen unter der Karte", tkItems:"Angezeigte Einträge", tkNews:"Schlagzeilen", tkgFx:"Devisen", tkgIdx:"Indizes", tkgCom:"Rohstoffe", tkgCrypto:"Krypto" }); }catch(_){}
+  try{ Object.assign(i18n.ru,{ lblTicker:"Нижняя бегущая строка (новости и рынки)", tickerOff:"Выкл (по умолчанию)", tickerOn:"Вкл — тонкая полоса под картой", tkItems:"Показывать", tkNews:"Заголовки новостей", tkgFx:"Валюты", tkgIdx:"Индексы", tkgCom:"Товары", tkgCrypto:"Крипто" }); }catch(_){}
+  try{ Object.assign(i18n.es,{ lblTicker:"Cinta inferior (noticias y mercados)", tickerOff:"Desactivada (predeterminado)", tickerOn:"Activada — franja fina bajo el mapa", tkItems:"Elementos mostrados", tkNews:"Titulares", tkgFx:"Divisas", tkgIdx:"Índices", tkgCom:"Materias primas", tkgCrypto:"Cripto" }); }catch(_){}
+  /* (#R102) new Countries sort keys (indicator pulldown labels + ascending/descending toggle) — 5 languages */
+  Object.assign(i18n.en,{ sortLife:"Life expectancy", sortTfr:"Fertility rate", sortAsc:"Ascending", sortDesc:"Descending", sortDir:"Toggle ascending / descending" });
+  Object.assign(i18n.jp,{ sortLife:"平均寿命", sortTfr:"合計特殊出生率", sortAsc:"昇順", sortDesc:"降順", sortDir:"昇順・降順を切り替え" });
+  try{ Object.assign(i18n.de,{ sortLife:"Lebenserwartung", sortTfr:"Geburtenrate", sortAsc:"Aufsteigend", sortDesc:"Absteigend", sortDir:"Auf-/absteigend umschalten" }); }catch(_){}
+  try{ Object.assign(i18n.ru,{ sortLife:"Прод. жизни", sortTfr:"Рождаемость", sortAsc:"По возрастанию", sortDesc:"По убыванию", sortDir:"Переключить порядок" }); }catch(_){}
+  try{ Object.assign(i18n.es,{ sortLife:"Esperanza de vida", sortTfr:"Fecundidad", sortAsc:"Ascendente", sortDesc:"Descendente", sortDir:"Cambiar orden" }); }catch(_){}
+  /* (#R102) ticker symbol/item picker in Settings — builds checkboxes from IntMapTicker's symbol registry + a News toggle,
+     grouped by category; each change is applied & persisted immediately via IntMapTicker.setConfig. */
+  window._populateTickerSyms=function(){ try{ const host=document.getElementById('ticker-syms'); const TK=window.IntMapTicker; if(!host||!TK||!TK.getConfig) return;
+    const cf=TK.getConfig(); const L=(k)=>{ try{ return (i18n[currentLang]&&i18n[currentLang][k])||i18n.en[k]||k; }catch(_){ return k; } };
+    const groups=[['fx',L('tkgFx')],['idx',L('tkgIdx')],['com',L('tkgCom')],['crypto',L('tkgCrypto')]];
+    let html='<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">'+L('tkItems')+'</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px 12px;">';
+    groups.forEach(([g,gl])=>{ const items=cf.list.filter(s=>s.g===g); if(!items.length) return;
+      html+='<div style="flex:1 1 44%;min-width:130px;"><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.03em;margin:2px 0 3px;">'+gl+'</div>';
+      items.forEach(s=>{ html+='<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 0;cursor:pointer;"><input type="checkbox" data-tks="'+s.k+'"'+(cf.syms.has(s.k)?' checked':'')+'> '+s.l+'</label>'; });
+      html+='</div>'; });
+    html+='</div>';
+    html+='<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;padding:6px 0 0;margin-top:6px;border-top:1px solid var(--glass-border,rgba(128,128,128,0.18));cursor:pointer;"><input type="checkbox" data-tknews="1"'+(cf.news?' checked':'')+'> '+L('tkNews')+'</label>';
+    host.innerHTML=html;
+    const commit=()=>{ const syms=Array.from(host.querySelectorAll('input[data-tks]:checked')).map(c=>c.getAttribute('data-tks'));
+      const news=!!host.querySelector('input[data-tknews]:checked'); try{ TK.setConfig({syms,news}); }catch(_){} };
+    host.querySelectorAll('input[data-tks],input[data-tknews]').forEach(c=>c.addEventListener('change',commit));
+  }catch(_){} };
 
   /* ---------- Settings persistence (#48) ---------- */
   window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='classic';
@@ -15227,6 +15413,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;
       if(v('setting-layerpanel'))    v('setting-layerpanel').value=(window.imLayerPanel||'classic');
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
+      try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
       renderNewsCountryChecks();
     });
   }
@@ -15759,6 +15946,7 @@ window.addEventListener('DOMContentLoaded', () => {
        the GPU composites it. Only the WHITE particle streaks remain on #wind-canvas. */
     const oldBg=document.getElementById('wind-bg-canvas'); if(oldBg) oldBg.style.display='none';
     let on=false, raf=0, parts=[], grid=null, fetchT=0, fetching=false, dpr=1, cssW=0, cssH=0, moving=false, gridTime=null;
+    let _fieldBusy=false, _fieldT=0;   /* (#R102) guard the field-raster rebuild against its own styledata re-entry (the rare "wind flickers" bug) */
     const R=Math.PI/180;
     const FIELD_SRC='wind-field-src', FIELD_LYR='wind-field';
     const fieldCanvas=document.createElement('canvas'); let fieldReady=false, fieldOpacity=0.72;
@@ -15845,12 +16033,16 @@ window.addEventListener('DOMContentLoaded', () => {
          the in-place update — REBUILD the image source from the fresh data URL every render (remove the old
          layer+source, re-add with the current colours below the first label layer). This is cheap (once per
          10-min grid refresh / style reload) and can never silently no-op. */
-      try{ const url=fieldCanvas.toDataURL();
+      /* (#R102) keep the known-good REBUILD (in-place updateImage was found to silently no-op — see note above), but
+         mark `_fieldBusy` around it + stamp `_fieldT` so the styledata this remove/add fires can't RE-ENTER and rebuild
+         again in a burst — that re-entrant loop, each rebuild re-running the 250 ms opacity fade-in, was the rare "点滅". */
+      try{ const url=fieldCanvas.toDataURL(); _fieldBusy=true; _fieldT=Date.now();
         try{ if(map.getLayer(FIELD_LYR)) map.removeLayer(FIELD_LYR); }catch(_){}
         try{ if(map.getSource(FIELD_SRC)) map.removeSource(FIELD_SRC); }catch(_){}
         map.addSource(FIELD_SRC,{type:'image',url:url,coordinates:[[-180,MERC_LAT],[180,MERC_LAT],[180,-MERC_LAT],[-180,-MERC_LAT]]});
         map.addLayer({id:FIELD_LYR,type:'raster',source:FIELD_SRC,paint:{'raster-opacity':(on?fieldOpacity:0),'raster-opacity-transition':{duration:250},'raster-fade-duration':0,'raster-resampling':'linear'}}, firstSymbolId());
       }catch(_){}
+      finally{ setTimeout(()=>{ _fieldBusy=false; },30); }
     }
     function firstSymbolId(){ try{ for(const l of (map.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} return undefined; }
     const BLANK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
@@ -15878,7 +16070,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* Re-attach the field after a style reload (theme/basemap switch drops custom sources).
        (#R85) render whenever the GRID exists (not only when fieldReady was already set) — on first load the field
        source is created here once the style finishes loading, which is what makes the colour actually paint. */
-    if(map) map.on('styledata',()=>{ if(on){ setTimeout(()=>{ if(ensureFieldLayer()){ if(grid||fieldReady) renderFieldImage(); showField(true); } },60); } });
+    /* (#R102) skip while our own rebuild is in flight (`_fieldBusy`) or within 500 ms of the last one — that
+       debounce collapses a styledata BURST (theme swap, other layer toggles, the field's own add/remove) into a
+       single rebuild, so the field can't rapidly re-fade ("Wind(animated)が点滅するバグがまれに発生"). A genuine
+       later style reload still lands (they are seconds apart). */
+    if(map) map.on('styledata',()=>{ if(!on||_fieldBusy) return;
+      /* debounce ONLY while the field is still present (a burst); if a real style reload actually dropped it, rebuild
+         immediately so it can never get stuck missing. */
+      let present=false; try{ present=!!(map.getSource(FIELD_SRC)&&map.getLayer(FIELD_LYR)); }catch(_){}
+      if(present&&(Date.now()-_fieldT<500)) return;
+      setTimeout(()=>{ if(on&&!_fieldBusy&&ensureFieldLayer()){ if(grid||fieldReady) renderFieldImage(); showField(true); } },60); });
     /* Seed a particle at a random GEOGRAPHIC point inside the current view (so the field fills the
        visible area at any zoom). */
     function spawn(p){
@@ -18465,7 +18666,11 @@ window.addEventListener('DOMContentLoaded', () => {
       feed.innerHTML='';
       host=document.createElement('div'); host.id='scp-view'; feed.appendChild(host);
       /* (#R101) hide the outer "Filter countries…" box while comparing — the compare view has its own add-country
-         search, so the top filter is redundant. Restored by the Back button. */
+         search, so the top filter is redundant. Restored by the Back button.
+         (#R102) in workspace mode a `!important` show-rule (body.ws-mode .ws-countries #countries-search-bar) beat the
+         inline display:none, so the box stayed ("変化なし"). Add a `scp-open` body class + a higher-specificity CSS
+         override (see ws-style) so it truly hides in BOTH modes. */
+      try{ document.body.classList.add('scp-open'); }catch(_){}
       try{ ['countries-search-bar','sidebar-search-bar'].forEach(id=>{ const e=document.getElementById(id); if(e&&e.dataset.scpPrevDisp===undefined){ e.dataset.scpPrevDisp=e.style.display||''; e.style.display='none'; } }); }catch(_){}
       host.innerHTML='<button class="scp-back">← '+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
         /* (#R101) header simplified per request: no 📊, no verbose paragraph — just the title (large) + "(up to 10)" (small). */
@@ -18485,6 +18690,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div id="scp-body" style="margin-top:6px;"></div>';
       host.querySelector('.scp-back').onclick=()=>{ try{ _endPick(); }catch(_){} try{ clearMap(); }catch(_){}   /* (#R94h) leaving the comparison clears the map colouring */
         /* (#R101) restore the outer "Filter countries…" box that was hidden while comparing */
+        try{ document.body.classList.remove('scp-open'); }catch(_){}
         try{ ['countries-search-bar','sidebar-search-bar'].forEach(id=>{ const e=document.getElementById(id); if(e&&e.dataset.scpPrevDisp!==undefined){ e.style.display=e.dataset.scpPrevDisp; delete e.dataset.scpPrevDisp; } }); }catch(_){}
         try{ const v0=document.getElementById('scp-view'); if(v0) v0.remove(); host=null; if(typeof renderStats==='function') renderStats(typeof searchVal==='function'?searchVal():''); }catch(_){} };
       host.querySelectorAll('#scp-modes button').forEach(b=>{ b.onclick=()=>{ const m=b.getAttribute('data-m'); if(m===mode) return; mode=m; render(); }; });
@@ -22316,6 +22522,7 @@ window.addEventListener('DOMContentLoaded', () => {
        EAS-linked wind noise, stall horn + airframe buffet, gear/flap servos, touchdown thud + tyre skreel, the
        overspeed clacker and GPWS voice callouts. Built on the START gesture (autoplay-safe). Mute on the HUD deck. */
     const fsAudio=(function(){
+      const MASTER_VOL=0.425;   /* (#R102) master flight-sim volume — halved to 50% of the previous 0.85 per request */
       let ctx=null, on=false, muted=false, master=null, engGain=null, engHi=null, engHiGain=null, engLP=null;
       let windBP=null, windGain=null, stallGain=null, buffetGain=null, buffetLFOg=null, clackLFOg=null;
       const engOscs=[];
@@ -22340,7 +22547,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* overspeed clacker = a bright square gated by a ~7 Hz square LFO */
           const clackOsc=ctx.createOscillator(); clackOsc.type='square'; clackOsc.frequency.value=1500; const clackGain=ctx.createGain(); clackGain.gain.value=0; clackOsc.connect(clackGain); clackGain.connect(master); clackOsc.start();
           const clackLFO=ctx.createOscillator(); clackLFO.type='square'; clackLFO.frequency.value=7; clackLFOg=ctx.createGain(); clackLFOg.gain.value=0; clackLFO.connect(clackLFOg); clackLFOg.connect(clackGain.gain); clackLFO.start();
-          master.gain.setTargetAtTime(muted?0.0001:0.85, ctx.currentTime, 0.3);
+          master.gain.setTargetAtTime(muted?0.0001:MASTER_VOL, ctx.currentTime, 0.3);
         }catch(_){}
         try{ if(ctx&&ctx.state==='suspended') ctx.resume(); }catch(_){} }
       function stop(){ if(!on) return; on=false; try{ if(master&&ctx) master.gain.setTargetAtTime(0.0001,ctx.currentTime,0.15); }catch(_){}
@@ -22383,15 +22590,23 @@ window.addEventListener('DOMContentLoaded', () => {
           else if(agl<300 && descent>18 && now-lastGpws>2600){ lastGpws=now; speak('sink rate'); }
           else if(agl<130 && st.gear<0.5 && st.V<ac.Vne*0.55 && now-lastGpws>3200){ lastGpws=now; speak('too low, gear'); } }
       }catch(_){} }
-      function toggleMute(){ muted=!muted; try{ if(master&&ctx) master.gain.setTargetAtTime(muted?0.0001:0.85,ctx.currentTime,0.1); }catch(_){} return muted; }
+      function toggleMute(){ muted=!muted; try{ if(master&&ctx) master.gain.setTargetAtTime(muted?0.0001:MASTER_VOL,ctx.currentTime,0.1); }catch(_){} return muted; }
       return { start, stop, update, toggleMute, isMuted:()=>muted, active:()=>on };
     })();
     function css(){ if(styled) return; styled=true; const s=document.createElement('style'); s.id='fs-style';
-      s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:3002;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
+      s.textContent='#fs-hud{position:fixed;left:0;right:0;bottom:0;top:0;z-index:6002;pointer-events:none;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
         /* (#R85c) INDEPENDENT FULLSCREEN cockpit ("既存画面にオーバーレイするのではなく独立した全画面で"): the map is
-           lifted to cover the whole viewport above all app chrome, map controls are hidden, and a HUD vignette frames it. */
+           lifted to cover the whole viewport above all app chrome, map controls are hidden, and a HUD vignette frames it.
+           (#R102) z-index raised to 6000+ so the cockpit sits ABOVE the workspace-mode top menu bar (5990) and ticker (5985). */
         +'body.fs-flying{overflow:hidden !important;}'
-        +'body.fs-flying #map-container{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:3000 !important;border-radius:0 !important;}'
+        +'body.fs-flying #map-container{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6000 !important;border-radius:0 !important;}'
+        /* (#R102) WORKSPACE MODE: the map lives inside a .ws-win (z-index:900) whose stacking context TRAPS the promoted
+           #map-container — so the fullscreen map was hidden behind the sibling windows/ticker/menu ("開始すると画面が
+           真っ黒"). Lift the whole MAP WINDOW to fullscreen above every chrome layer, hide its title bar/grip, and hide the
+           other windows + menu + ticker for the duration of the flight (fullscreen WITHIN IntMap, not desktop fullscreen). */
+        +'body.fs-flying .ws-win.ws-map{position:fixed !important;inset:0 !important;left:0 !important;top:0 !important;width:100vw !important;height:100vh !important;z-index:6000 !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:#000 !important;}'
+        +'body.fs-flying .ws-win.ws-map .ws-tb,body.fs-flying .ws-win.ws-map .ws-grip{display:none !important;}'
+        +'body.fs-flying #ws-menu,body.fs-flying #ticker-bar,body.fs-flying .ws-win:not(.ws-map){display:none !important;}'
         +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying .ai-view-summary-btn,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend{display:none !important;}'
         +'#fs-hud .fs-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 200px 34px rgba(0,0,0,0.5),inset 0 0 70px 0 rgba(0,0,0,0.28);}'
         +'#fs-hud .fs-ladder{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;}'
@@ -22649,7 +22864,7 @@ window.addEventListener('DOMContentLoaded', () => {
         where=(best&&bd<5)?(' · '+LL('near '+best[1],best[1]+' 周辺','bei '+best[1],'возле '+best[1],'cerca de '+best[1])):(' · '+LL('off-field','滑走路外','abseits','вне полосы','fuera de pista')); }   /* (#R100) no real runway geometry yet → "near <airport>", not a precise runway-landing claim */
       const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE'))+where;
       const ov=document.createElement('div'); ov.id='fs-result';
-      ov.style.cssText='position:fixed;inset:0;z-index:3060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';
+      ov.style.cssText='position:fixed;inset:0;z-index:6060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';   /* (#R102) above ws menu bar */
       const stat=(l,v)=>'<div><div style="font-size:10px;color:#8fb8e0;">'+l+'</div><b style="font-size:14px;">'+v+'</b></div>';
       ov.innerHTML='<div style="width:min(470px,95vw);background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid '+col+';border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">'
         +'<div style="font-size:22px;font-weight:800;color:'+col+';margin-bottom:12px;">'+title+'</div>'
@@ -22690,7 +22905,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function _closeAtlas(){ try{ if(window.IntMapConsole&&IntMapConsole.close) IntMapConsole.close(); }catch(_){} try{ const ap=document.getElementById('atlas-panel'); if(ap) ap.style.display='none'; }catch(_){} }
     function setup(opts){ if(on||document.getElementById('fs-setup')) return; opts=opts||{}; _closeAtlas();
       if(!document.getElementById('fss-style')){ const s=document.createElement('style'); s.id='fss-style';
-        s.textContent='#fs-setup{position:fixed;inset:0;z-index:3050;background:rgba(4,10,20,0.74);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'
+        s.textContent='#fs-setup{position:fixed;inset:0;z-index:6050;background:rgba(4,10,20,0.74);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;}'   /* (#R102) z-index above the workspace menu bar (5990) so the pre-flight popup comes to the front in ws mode */
           +'.fss-card{width:min(460px,94vw);max-height:92vh;overflow:auto;background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid rgba(120,190,255,0.32);border-radius:18px;padding:20px 20px 18px;box-shadow:0 20px 60px rgba(0,0,0,0.6);}'
           +'.fss-h{font-size:19px;font-weight:800;margin:0 0 14px;letter-spacing:.02em;}'
           +'.fss-lbl{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8fb8e0;margin:14px 0 7px;}'
@@ -22768,11 +22983,11 @@ window.addEventListener('DOMContentLoaded', () => {
          known under us, lift now; otherwise defer so we never read a false 0 m over the mountains. */
       { const tr0=_terrRead(st.lng,st.lat); if(tr0.ok){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+1500); } else st._settleTerr=true; }
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
-      /* (#R85c) INDEPENDENT FULLSCREEN — take over the whole screen (browser fullscreen + the map lifted above all
-         app chrome), not an overlay. Resize the map after the container changes size. */
+      /* (#R102) FULLSCREEN WITHIN IntMap — the map is lifted above all app chrome (see .fs-flying CSS), covering the whole
+         IntMap viewport. The browser `requestFullscreen()` (desktop/OS fullscreen) was REMOVED per request ("デスクトップ
+         での全画面という意味ではない"). Resize the map after the container changes size. */
       try{ document.body.classList.add('fs-flying'); }catch(_){}
-      try{ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); }catch(_){}
-      try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120);
+      try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120); setTimeout(()=>{ try{ map.resize(); }catch(_){} },320);
       buildHUD(); addExtraHUD();
       try{ fsAudio.start(); }catch(_){}   /* (#R101) start the synthesized flight audio (this call rides the START-button user gesture) */
       mmOn=true; try{ createMinimap(); }catch(_){}   /* (#R96) moving-map on by default each flight */
@@ -26120,12 +26335,14 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R101) example prompts REWRITTEN to showcase what only Atlas can do — cross-country comparison, analytical
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
        / satellite) that the normal UI already does ("わざわざAtlasでやる必要のない無駄な動作"). */
+    /* (#R102) the JP examples stay Japan-oriented (fine for JP users); every OTHER language uses globally-relevant,
+       locally-flavoured prompts (its own capital for the transit example) instead of Tokyo/Shinjuku ones. */
     function examples(){ return L(
-      ['Compare Japan, Germany and India — GDP, debt, aging','Which countries spend the most on defense relative to GDP?','Where can I reach in 30 min by train from Shinjuku?','Brief me on the South China Sea'],
+      ['Compare the USA, China and Germany — GDP, debt, population','Which countries spend the most on defense relative to GDP?','Where can I reach in 30 minutes by train from central London?','Brief me on the South China Sea'],
       ['日本・ドイツ・インドを比較（GDP・債務・高齢化）','GDP比で国防費が最も高い国は？','新宿から電車で30分で行ける範囲は？','南シナ海の情勢をブリーフィング'],
-      ['Japan, Deutschland, Indien vergleichen — BIP, Schulden, Alterung','Welche Länder geben gemessen am BIP am meisten fürs Militär aus?','Wie weit komme ich in 30 Min mit der Bahn von Shinjuku?','Lagebericht zum Südchinesischen Meer'],
-      ['Сравнить Японию, Германию и Индию — ВВП, долг, старение','Какие страны тратят на оборону больше всего относительно ВВП?','Куда доеду за 30 мин на поезде от Синдзюку?','Сводка по Южно-Китайскому морю'],
-      ['Comparar Japón, Alemania e India — PIB, deuda, envejecimiento','¿Qué países gastan más en defensa respecto a su PIB?','¿Hasta dónde llego en 30 min en tren desde Shinjuku?','Resumen del Mar de China Meridional']); }
+      ['USA, China und Deutschland vergleichen — BIP, Schulden, Bevölkerung','Welche Länder geben gemessen am BIP am meisten fürs Militär aus?','Wie weit komme ich in 30 Min mit der Bahn vom Berliner Zentrum?','Lagebericht zum Südchinesischen Meer'],
+      ['Сравнить США, Китай и Германию — ВВП, долг, население','Какие страны тратят на оборону больше всего относительно ВВП?','Куда можно доехать за 30 минут на поезде из центра Москвы?','Сводка по Южно-Китайскому морю'],
+      ['Comparar EE. UU., China y Alemania — PIB, deuda, población','¿Qué países gastan más en defensa respecto a su PIB?','¿Hasta dónde llego en 30 min en tren desde el centro de Madrid?','Resumen del Mar de China Meridional']); }
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='atlas-panel';
       panel.innerHTML='<div class="atl-head"><span class="atl-title">Atlas <span class="atl-beta">beta</span></span><span class="atl-btns"><button class="atl-min-btn" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'">–</button><button class="atl-x" title="'+t('close')+'">✕</button></span></div>'
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
@@ -26824,21 +27041,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const h1=document.createElement('div'); h1.textContent='IntMap'; h1.style.cssText='font-size:23px;font-weight:700;line-height:1.15;';
     const h2=document.createElement('div'); h2.textContent=jp?'世界を、地図で読み解く':de?'Die Welt erkunden – Ebene für Ebene':'Explore the world, one layer at a time'; h2.style.cssText='font-size:13px;color:var(--text-muted);margin-top:3px;';
     ht.appendChild(h1); ht.appendChild(h2); head.appendChild(icon); head.appendChild(ht); card.appendChild(head);
+    /* (#R102) up-to-date feature list — reflects the app as it is now (100+ layers incl. live weather, the time
+       machine, and the Atlas assistant / flight simulator), not the old "70+ / country data" copy. */
     const feats=jp?[
-      ['layers','70以上のデータレイヤー','気候・人口・経済・地政学などを地図に重ねて表示'],
+      ['layers','100以上のデータレイヤー','気候・人口・経済・地政学・ライブ気象を地図に重ねて表示'],
       ['news','ライブニュースマップ','世界のニュースを「発生した場所」にピン表示'],
-      ['globe','3D地球儀・衛星画像','地球儀／衛星・3D地形・過去にさかのぼる表示'],
-      ['chart','国データ','国をタップして統計・時系列・比較を表示']
+      ['globe','地球儀・衛星・タイムマシン','3D地形と実写衛星画像、1900年まで遡って表示'],
+      ['chart','Atlas AI・国データ','自然言語で操作、国どうしを比較、フライトシミュレーターも']
     ]:de?[
-      ['layers','Über 70 Datenebenen','Klima, Bevölkerung, Wirtschaft & Geopolitik auf der Karte'],
+      ['layers','Über 100 Datenebenen','Klima, Bevölkerung, Wirtschaft, Geopolitik & Live-Wetter'],
       ['news','Live-Nachrichtenkarte','Schlagzeilen dort angeheftet, wo sie wirklich geschehen'],
-      ['globe','Globus & Satellit','3D-Globus, Satellitenbilder, Gelände & Zeitreise'],
-      ['chart','Länderdaten','Tippe ein Land für Statistiken, Zeitreihen & Vergleiche an']
+      ['globe','Globus, Satellit & Zeitmaschine','3D-Gelände, echte Satellitenbilder, zurück bis 1900'],
+      ['chart','Atlas-KI & Länderdaten','In normaler Sprache steuern, Länder vergleichen, Flugsimulator']
     ]:[
-      ['layers','70+ data layers','Climate, population, economy & geopolitics on the map'],
+      ['layers','100+ data layers','Climate, population, economy, geopolitics & live weather'],
       ['news','Live news map','World headlines pinned to where they actually happen'],
-      ['globe','Globe & satellite','3D globe, satellite imagery, terrain & time travel'],
-      ['chart','Country data','Tap any country for stats, time-series & comparisons']
+      ['globe','Globe, satellite & time machine','3D terrain, real imagery, and travel back to 1900'],
+      ['chart','Atlas AI & country data','Ask in plain language, compare countries, even fly a jet']
     ];
     const list=document.createElement('div'); list.style.cssText='display:flex;flex-direction:column;gap:16px;margin:0 0 22px;';
     const tints=['rgba(0,122,255,0.15)','rgba(255,59,48,0.15)','rgba(52,199,89,0.15)','rgba(175,82,222,0.15)'];
@@ -26854,15 +27073,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const primary=document.createElement('button'); primary.textContent=jp?'使ってみる':de?'Loslegen':'Start exploring';
     primary.style.cssText='width:100%;padding:14px;border:none;border-radius:13px;background:var(--primary-color);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;';
     primary.onclick=close; card.appendChild(primary);
-    /* (#R35) Direct launch into Satellite Drop (the renamed World Explorer) straight from the Start page,
-       just below "Start exploring" ("start exploringの下に…そのまま行けるボタン"). */
-    const satdrop=document.createElement('button');
-    satdrop.innerHTML='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:7px;"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z"/></svg>'+(currentLang==='jp'?'サテライトドロップで遊ぶ':currentLang==='de'?'Satellite Drop spielen':'Play Satellite Drop');
-    satdrop.style.cssText='width:100%;padding:12px;margin-top:9px;border:none;border-radius:13px;background:linear-gradient(135deg,#0a84ff,#34c759);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;';
-    satdrop.onclick=()=>{ close(); setTimeout(()=>{ try{ window._pgWorldExplorer&&window._pgWorldExplorer(); }catch(_){} },380); }; card.appendChild(satdrop);
-    const tour=document.createElement('button'); tour.textContent=jp?'▶ レイヤー紹介ツアーを見る':de?'▶ Ebenen-Tour ansehen':'▶ Watch the layer tour';
-    tour.style.cssText='width:100%;padding:11px;margin-top:8px;border:none;border-radius:13px;background:transparent;color:var(--primary-color);font-size:13.5px;font-weight:600;cursor:pointer;';
-    tour.onclick=()=>{ close(); setTimeout(()=>{ try{ _imStartDemo(true); }catch(_){} },360); }; card.appendChild(tour);
+    /* (#R102) the "Play Satellite Drop" and "Watch the layer tour" buttons were removed from the Start card per request
+       ("satellite drop, watch the layer tourボタンはいらない"). Both features remain reachable — Satellite Drop from the
+       Playground, and the layer tour from Settings → Tutorial — so nothing is deleted, just off the welcome screen. */
     ov.appendChild(card);
     ov.addEventListener('click',(e)=>{ if(e.target===ov) close(); });
     (document.body||document.documentElement).appendChild(ov);
@@ -28122,11 +28335,22 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!map.getLayer('imtb-lbl2')) map.addLayer({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
+      if(!map.getLayer('imtb-lbl2')) map.addLayer({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!map.__imtbClick){ map.__imtbClick=true;
-        const _clk=(e)=>{ try{ const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return;
+        const _clk=(e)=>{ try{
+          /* (#R102) FIX "過去に戻って地名ラベルをクリックすると強制的に当時の国をクリックしたことにされる": the whole-country
+             fill / border line is a full-country click target that swallowed clicks meant for a place label. When the
+             fill/line catches a click that ALSO lands on a specific place label (city / town / water / sea / peak /
+             river), defer to that label so the PLACE opens — not the country. An era country-NAME label click
+             (imtb-lbl / imtb-lbl2) still opens the country as before. */
+          const _lyr=(e.features&&e.features[0]&&e.features[0].layer&&e.features[0].layer.id)||'';
+          if(_lyr==='imtb-fill'||_lyr==='imtb-line'){
+            try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+              if(specific.length&&e.point&&map.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
+          }
+          const f=e.features&&e.features[0]; if(!f) return; const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; if(!nm) return;
           /* (#R94m) EXACTLY the modern-country reaction: the same place popup (Copy/Wikipedia/AI brief/Isolate)
              + blue outline — here the era polygon is outlined. No bespoke behaviour.
              (#R94n) resolve to the app's historical ENTITY → the era NAME + Wikipedia title (so the card/popup and
@@ -28151,11 +28375,23 @@ window.addEventListener('DOMContentLoaded', () => {
        …) so those keep the normal label style (imtb-lbl2); renamed/vanished states (_same=0) show the era name in
        the era style (imtb-lbl). If countryStats isn't loaded yet, leave everything as era-style (safe fallback —
        nothing loses a label). */
+    /* (#R102) diacritic-insensitive normalization so "Mexico"/"Cote d'Ivoire" match regardless of accents.
+       Uses \u escapes for the combining-mark range (avoids literal combining marks in source — an OneDrive-revert gotcha). */
+    const _normNm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replace(/[.’']/g,'').replace(/\s+/g,' ').trim();
     function tagSame(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
-      const names=new Set();
-      try{ if(typeof countryStats!=='undefined'&&countryStats){ Object.values(countryStats).forEach(s=>{ if(s&&s.sov!==false){ if(s.nameEn) names.add(String(s.nameEn).toLowerCase().trim()); if(s.nameJp) names.add(String(s.nameJp).toLowerCase().trim()); } }); } }catch(_){}
-      if(!names.size) return fc;
-      fc.features.forEach(f=>{ try{ const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; f.properties=f.properties||{}; f.properties._same=names.has(String(nm).toLowerCase().trim())?1:0; }catch(_){} });
+      const lg=(typeof currentLang!=='undefined')?currentLang:'en';
+      /* normalized present-day name -> the country's CURRENT localized display name (so an unchanged country shows its
+         EXISTING label, e.g. "フランス" for a JP user — "国名が変わってない国は既存の国名ラベルのまま"). */
+      const cur=new Map();
+      try{ if(typeof countryStats!=='undefined'&&countryStats){ Object.values(countryStats).forEach(s=>{ if(s&&s.sov!==false){
+        const disp=(s.name&&(s.name[lg]||s.name.en))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||'';
+        if(s.nameEn) cur.set(_normNm(s.nameEn),disp); if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
+      if(!cur.size) return fc;
+      fc.features.forEach(f=>{ try{ const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; f.properties=f.properties||{};
+        const hit=cur.get(_normNm(nm));
+        if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
+        else { f.properties._same=0; f.properties._modName=null; }    /* renamed / vanished → era name (imtb-lbl) */
+      }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
     function apply(fc){ try{ fc=tagSame(fc); }catch(_){}
