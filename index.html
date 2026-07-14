@@ -22088,6 +22088,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const LL=(en,j,de,ru,es)=>currentLang==='jp'?j:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     let on=false, hud=null, raf=null, st=null, prevCam=null, styled=false; const keys={};
     let acKey='airliner', camMode='cockpit', stabilizeCam=false, paused=false;   /* (#R94p) selectable aircraft + camera state; default = eye AT the aircraft */
+    let minimap=null, mmOn=true, mmT=0;   /* (#R96) moving-map / nav-display (track-up mini map) state */
     const HANDLERS=['dragPan','scrollZoom','boxZoom','dragRotate','keyboard','doubleClickZoom','touchZoomRotate','touchPitch'];
     /* ===== (#R94p) FULL RIGID-BODY FLIGHT MODEL ("感性(慣性)や空気抵抗、機体による差…すべてを考慮した完璧なモデル").
        Rebuilt from the 3-DOF R85 model. New physics:
@@ -22129,10 +22130,30 @@ window.addEventListener('DOMContentLoaded', () => {
       glider:{ name:{en:'Glider · sailplane',jp:'グライダー · 滑空機',de:'Segelflugzeug',ru:'Планёр',es:'Planeador'}, icon:'🪂',
         m:600, S:15, b:18, c:0.83, Ix:2500, Iy:1150, Iz:3500, Hp:0, propTq:0,
         CL0:0.35, CLa:5.9, aStall:0.30, CD0:0.011, k:0.026, Tmax:0, prop:false, Vne:75, Vstall:19, Vcruise:33, ceil:8000, gLim:5.3, ab:false,
-        Clda:0.13, Cmde:-1.4, Cndr:-0.08, drv:{Cma:-1.0,Cmq:-14,Clp:-0.55,Cnb:0.05,Cnr:-0.08,Cyb:-0.3} }
+        Clda:0.13, Cmde:-1.4, Cndr:-0.08, drv:{Cma:-1.0,Cmq:-14,Clp:-0.55,Cnb:0.05,Cnr:-0.08,Cyb:-0.3} },
+      /* (#R96) F-35A Lightning II — real-ish figures: ~15 t, S 42.7 m², F135 125 kN dry / 191 kN wet, 9 g, M1.6, high-alpha. */
+      f35:{ name:{en:'F-35 Lightning II · stealth fighter',jp:'F-35 ライトニングII · ステルス戦闘機',de:'F-35 · Tarnkappenjäger',ru:'F-35 · истребитель-невидимка',es:'F-35 · caza furtivo'}, icon:'⚡',
+        m:15000, S:42.7, b:10.7, c:4.3, Ix:18000, Iy:190000, Iz:200000, Hp:0, propTq:0,
+        CL0:0.06, CLa:4.9, aStall:0.44, CD0:0.022, k:0.11, Tmax:125000, abMax:191000, prop:false, Vne:590, Vstall:68, Vcruise:240, ceil:15240, gLim:9, ab:true,
+        Clda:0.032, Cmde:-1.5, Cndr:-0.085, drv:{Cma:-0.4,Cmq:-6,Clp:-0.4,Cnb:0.10,Cnr:-0.4,Cyb:-1.0,Cnda:-0.004} }
     };
     Object.keys(AIRCRAFT).forEach(k=>{ AIRCRAFT[k].D=Object.assign({},_DRV,AIRCRAFT[k].drv||{}); });   /* merge derivatives over the defaults */
-    const AKEYS=['cessna','warbird','airliner','fighter','glider'];
+    /* (#R96) extra per-aircraft realism params (applied as an overlay so the verified base figures are untouched):
+       elevMax = max elevator/stabilator deflection (rad) — the stick was fed straight into Cmde (1.0 = 57°!) which
+       made pitch absurdly twitchy; ctlRate = stick/actuator sweep speed (heavy jets are slower); omMax = body-rate
+       cap (rad/s), was a flat ±14 (~800°/s) for everything; fbw = fly-by-wire G-command (auto-limits load factor);
+       CDmax = broadside flat-plate drag (deep-stall/tailslide deceleration); thrZ = thrust-line pitch arm (m);
+       gLimN = negative-g limit; tailAng = tail-strike pitch on the ground; len = length (m). */
+    const _ACX={
+      cessna:{ elevMax:0.32, ctlRate:2.0, omMax:3.4, fbw:false, CDmax:1.7, thrZ:-0.12, gLimN:-1.76, tailAng:0.20, len:8.3 },
+      warbird:{ elevMax:0.28, ctlRate:2.0, omMax:4.2, fbw:false, CDmax:1.8, thrZ:-0.10, gLimN:-3.5,  tailAng:0.27, len:9.8 },
+      airliner:{ elevMax:0.34, ctlRate:1.4, omMax:2.3, fbw:true,  CDmax:1.5, thrZ:1.2,   gLimN:-1.0,  tailAng:0.19, len:37.6 },
+      fighter:{ elevMax:0.44, ctlRate:3.2, omMax:5.6, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.26, len:15.0 },
+      glider:{  elevMax:0.48, ctlRate:2.4, omMax:3.8, fbw:false, CDmax:1.4, thrZ:0,     gLimN:-2.1,  tailAng:0.16, len:7.0 },
+      f35:{     elevMax:0.42, ctlRate:3.1, omMax:5.4, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.24, len:15.7 }
+    };
+    Object.keys(_ACX).forEach(k=>{ if(AIRCRAFT[k]) Object.assign(AIRCRAFT[k],_ACX[k]); });
+    const AKEYS=['cessna','warbird','airliner','fighter','glider','f35'];
     const AC=()=>AIRCRAFT[acKey]||AIRCRAFT.airliner;
     const g0=9.80665;
     /* ===== quaternion attitude (body→world, NED frame) — a quaternion (not Euler angles) so the aircraft can roll
@@ -22177,6 +22198,13 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-htape-ptr{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#ffd60a;transform:translateX(-50%);}'
         +'#fs-hud .fs-hdg-box{position:absolute;left:50%;top:28px;transform:translateX(-50%);background:rgba(6,14,24,0.7);border:1px solid #ffd60a;border-radius:5px;padding:1px 8px;font-size:14px;font-weight:700;color:#ffd60a;}'
         +'#fs-hud .fs-ladder-g line{stroke:#63ff9b;stroke-width:2.4;} #fs-hud .fs-ladder-g text{fill:#63ff9b;font-family:ui-monospace,monospace;font-size:19px;font-weight:600;} #fs-hud .fs-ladder-g .fs-dive{stroke-dasharray:14 10;}'
+        /* (#R96) moving-map / nav-display: a small track-up map that follows the aircraft (like a car-nav / FlightRadar mini-map) */
+        +'#fs-hud .fs-minimap{position:absolute;right:14px;bottom:74px;width:174px;height:174px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(120,190,255,0.5);box-shadow:0 4px 16px rgba(0,0,0,0.55);background:#0a1420;pointer-events:none;z-index:7;}'
+        +'#fs-hud .fs-mm-map{position:absolute;inset:0;} #fs-hud .fs-minimap .maplibregl-ctrl-attrib,#fs-hud .fs-minimap .maplibregl-control-container{display:none !important;}'
+        +'#fs-hud .fs-mm-ac{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,0.95));z-index:2;}'
+        +'#fs-hud .fs-mm-n{position:absolute;left:8px;top:7px;width:18px;height:18px;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 2px #000);}'
+        +'#fs-hud .fs-mm-lbl{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;color:#cfe6ff;background:rgba(6,14,24,0.62);text-align:center;padding:2px 0;pointer-events:none;letter-spacing:0.02em;z-index:2;}'
+        +'@media(max-width:640px){#fs-hud .fs-minimap{width:118px;height:118px;bottom:150px;right:8px;}}'
         +'#fs-hud .fs-sky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(10,30,80,0.0), rgba(4,10,30,0.0) 60%, rgba(2,6,20,0.55) 100%);opacity:0;transition:opacity .4s ease;}'
         +'#fs-hud .fs-boost{position:absolute;left:44px;bottom:20px;width:8px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(255,140,60,0.4);border-radius:5px;overflow:hidden;}'
         +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}'
@@ -22234,7 +22262,7 @@ window.addEventListener('DOMContentLoaded', () => {
             +'<line x1="30" y1="40" x2="90" y2="40" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><line x1="30" y1="80" x2="90" y2="80" stroke="rgba(255,255,255,0.6)" stroke-width="1"/></g></g>'
           +'<circle cx="60" cy="60" r="52" fill="none" stroke="#8fb8e0" stroke-width="2"/>'
           +'<line x1="26" y1="60" x2="46" y2="60" stroke="#ffd60a" stroke-width="3.5"/><line x1="74" y1="60" x2="94" y2="60" stroke="#ffd60a" stroke-width="3.5"/><circle cx="60" cy="60" r="2.5" fill="#ffd60a"/></svg>'
-        +'<div class="fs-hint">'+LL('W/S throttle · Shift afterburner<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space airbrake<br>C view · V level horizon<br>P pause · R reset · 1–5 aircraft · Esc exit','W/S 出力 · Shift ブースト<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space 抵抗板<br>C 視点 · V 水平維持<br>P 一時停止 · R 復帰 · 1–5 機体 · Esc 終了','W/S Schub · Shift Nachbrenner<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>C Sicht · V Horizont<br>P Pause · R Reset · 1–5 Flugzeug · Esc Ende','W/S тяга · Shift форсаж<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>C вид · V горизонт<br>P пауза · R сброс · 1–5 самолёт · Esc выход','W/S gas · Shift poscombustión<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>C vista · V horizonte<br>P pausa · R reinicio · 1–5 avión · Esc salir')+'</div>'
+        +'<div class="fs-hint">'+LL('W/S throttle · Shift afterburner<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space airbrake<br>V level horizon · M map<br>P pause · R reset · 1–6 aircraft · Esc exit','W/S 出力 · Shift ブースト<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space 抵抗板<br>V 水平維持 · M 地図<br>P 一時停止 · R 復帰 · 1–6 機体 · Esc 終了','W/S Schub · Shift Nachbrenner<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Horizont · M Karte<br>P Pause · R Reset · 1–6 Flugzeug · Esc Ende','W/S тяга · Shift форсаж<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V горизонт · M карта<br>P пауза · R сброс · 1–6 самолёт · Esc выход','W/S gas · Shift poscombustión<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V horizonte · M mapa<br>P pausa · R reinicio · 1–6 avión · Esc salir')+'</div>'
         +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
         +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
         +'<div class="fs-btns"><button data-k="arrowleft">←</button><button data-k="arrowdown">▼</button><button data-k="arrowup">▲</button><button data-k="arrowright">→</button><button data-k="w">+</button><button data-k="s">−</button></div>'
@@ -22246,10 +22274,16 @@ window.addEventListener('DOMContentLoaded', () => {
           +'<button class="fs-act" data-act="g">⚙<small>'+LL('GEAR','脚','FAHRW','ШАССИ','TREN')+'</small></button>'
           +'<button class="fs-act" data-act="f">⬇<small>'+LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛ','FLAPS')+'</small></button>'
           +'<button class="fs-act amber" data-hold=" ">✋<small>'+LL('BRAKE','抵抗板','BREMSE','ТОРМОЗ','FRENO')+'</small></button>'
-          +'<button class="fs-act" data-act="c">🎥<small>'+LL('VIEW','視点','SICHT','ВИД','VISTA')+'</small></button>'
+          +'<button class="fs-act" data-act="m">🗺<small>'+LL('MAP','地図','KARTE','КАРТА','MAPA')+'</small></button>'
           +'<button class="fs-act" data-act="v">⊞<small>'+LL('LEVEL','水平','HORIZ.','ГОРИЗ.','NIVEL')+'</small></button>'
           +'<button class="fs-act" data-act="p">⏸<small>'+LL('PAUSE','一時停止','PAUSE','ПАУЗА','PAUSA')+'</small></button>'
           +'<button class="fs-act" data-act="r">⟳<small>'+LL('RESET','リセット','RESET','СБРОС','REINICIO')+'</small></button>'
+        +'</div>'
+        /* (#R96) moving-map / nav display (track-up, follows the aircraft) */
+        +'<div class="fs-minimap"><div class="fs-mm-map"></div>'
+          +'<svg class="fs-mm-n" viewBox="0 0 20 20"><path d="M10 1 L14 9 L10 7 L6 9 Z" fill="#ffd60a"/><text x="10" y="19" text-anchor="middle" font-size="8" font-weight="800" fill="#ffd60a">N</text></svg>'
+          +'<svg class="fs-mm-ac" width="26" height="26" viewBox="0 0 26 26"><path d="M13 2 L20 22 L13 17.5 L6 22 Z" fill="#ffd60a" stroke="#0a1a2e" stroke-width="1.3"/></svg>'
+          +'<div class="fs-mm-lbl"><span class="fs-mm-hdg">---</span>° · <span class="fs-mm-alt">0</span> m</div>'
         +'</div>';
       document.body.appendChild(hud);
       hud.querySelector('.fs-x').onclick=()=>stop();
@@ -22262,16 +22296,36 @@ window.addEventListener('DOMContentLoaded', () => {
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
         b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
       try{ syncHUDChrome(); }catch(_){} }
+    /* ===== (#R96) moving-map / nav display — a small SECOND MapLibre map (track-up) that follows the aircraft, like a
+       car-nav / FlightRadar mini map. It reuses the app's existing Esri World Imagery raster (no NEW data source). ===== */
+    function createMinimap(){ if(minimap||!hud||typeof maplibregl==='undefined') return; const el=hud.querySelector('.fs-mm-map'); if(!el) return;
+      try{ minimap=new maplibregl.Map({ container:el, attributionControl:false, interactive:false, fadeDuration:0, refreshExpiredTiles:false, renderWorldCopies:true,
+        center:[st?st.lng:0, st?st.lat:0], zoom:11, bearing:0, pitch:0,
+        style:{ version:8, sources:{ mmsat:{ type:'raster', tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize:256, maxzoom:19, attribution:'© Esri' } }, layers:[{ id:'mmsat', type:'raster', source:'mmsat' }] } });
+        setTimeout(()=>{ try{ minimap&&minimap.resize(); }catch(_){} },40);
+      }catch(_){ minimap=null; } }
+    function destroyMinimap(){ if(minimap){ try{ minimap.remove(); }catch(_){} minimap=null; } mmT=0; }
+    function toggleMinimap(){ mmOn=!mmOn; const mm=hud&&hud.querySelector('.fs-minimap'); if(mm) mm.style.display=mmOn?'':'none';
+      if(mmOn){ createMinimap(); setTimeout(()=>{ try{ minimap&&minimap.resize(); }catch(_){} },40); } }
+    /* track-up follow, throttled to ~8 Hz (a nav map needs no per-frame redraw); zoom adapts to height AGL */
+    function updateMinimap(dt){ if(!minimap||!mmOn||!st) return; mmT+=dt; if(mmT<0.12) return; mmT=0;
+      try{ const nh=qRot(st.q,[1,0,0]), hdg=(Math.atan2(nh[1],nh[0])*180/Math.PI+360)%360;
+        const agl=Math.max(0, st.alt-(st.lastTerr!=null?st.lastTerr:0)), z=Math.max(9.5, Math.min(13.5, 13.5-Math.log2(agl/400+1)));
+        minimap.jumpTo({ center:[st.lng, st.lat], bearing:hdg, zoom:z });
+        const nEl=hud.querySelector('.fs-mm-n'); if(nEl) nEl.style.transform='rotate('+(-hdg).toFixed(0)+'deg)';
+        const hEl=hud.querySelector('.fs-mm-hdg'); if(hEl) hEl.textContent=Math.round(hdg).toString().padStart(3,'0');
+        const aEl=hud.querySelector('.fs-mm-alt'); if(aEl) aEl.textContent=Math.round(st.alt).toLocaleString();
+      }catch(_){} }
     const HELD=['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '];
     /* one-shot actions (debounced against key auto-repeat via keys['_a_'+k]) */
     function fsAction(k){ if(!st) return false;
       if(k==='f') st.flaps=(st.flaps>=0.99)?0:Math.min(1,Math.round((st.flaps+0.34)*100)/100);   /* flaps notch: 0→⅓→⅔→full→up */
       else if(k==='g') st.gear=st.gear>0.5?0:1;                                                    /* landing gear */
-      else if(k==='c'){ camMode=(camMode==='cockpit')?'chase':'cockpit'; }   /* Cockpit ↔ Follow */
       else if(k==='v') stabilizeCam=!stabilizeCam;                                                  /* level-horizon toggle */
+      else if(k==='m'){ try{ toggleMinimap(); }catch(_){} }                                         /* (#R96) moving-map on/off */
       else if(k==='p') paused=!paused;                                                              /* pause */
       else if(k==='r') respawn();                                                                   /* reset in place */
-      else if(/^[1-5]$/.test(k)) selectAircraft(AKEYS[+k-1]);                                       /* pick aircraft */
+      else if(/^[1-6]$/.test(k)) selectAircraft(AKEYS[+k-1]);                                       /* pick aircraft (1–6) */
       else return false;
       try{ syncHUDChrome(); }catch(_){} return true; }
     function onKey(e){ const k=e.key.toLowerCase(); if(k==='escape'){ stop(); return; }
@@ -22318,6 +22372,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{}); }catch(_){}
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120);
       buildHUD(); addExtraHUD();
+      mmOn=true; try{ createMinimap(); }catch(_){}   /* (#R96) moving-map on by default each flight */
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
       /* (#R95) drop every held control when focus/visibility/touch is lost mid-manoeuvre — otherwise keyup never
          fires and the roll/pitch/throttle key sticks (e.g. tab-switch during a turn, or an interrupted touch). */
@@ -22333,6 +22388,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
       for(const k in keys) keys[k]=false;
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
+      try{ destroyMinimap(); }catch(_){}   /* (#R96) tear down the moving-map's GL context */
       if(hud){ hud.remove(); hud=null; }
       /* (#R85c) leave fullscreen + restore the normal layout */
       try{ document.body.classList.remove('fs-flying'); }catch(_){}
@@ -22357,7 +22413,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function computeTrim(){ if(!st) return; const ac=AC(), rho=rhoAt(st.alt), Vt=Math.max(20,st.V||ac.Vcruise), qd=0.5*rho*Vt*Vt, D=ac.D;
       let CLn=ac.m*g0/Math.max(1,qd*ac.S); CLn=Math.max(ac.CL0+0.02,Math.min(ac.CL0+ac.CLa*(ac.aStall-0.05),CLn));
       const aT=Math.max(0.003,(CLn-ac.CL0)/ac.CLa);
-      st.elevTrim=-(D.Cm0+D.Cma*aT)/ac.Cmde;
+      st.elevTrim=-(D.Cm0+D.Cma*aT)/(ac.Cmde*(ac.elevMax||0.5));   /* (#R96) trim in real elevator-angle units */
       const CD=ac.CD0+ac.k*CLn*CLn, Drag=qd*ac.S*CD, densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
       st.thr=ac.Tmax>0?Math.max(0.05,Math.min(1,Drag/(ac.Tmax*densF))):0;
       const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((map.getBearing?map.getBearing():90)*Math.PI/180);
@@ -22375,11 +22431,13 @@ window.addEventListener('DOMContentLoaded', () => {
            vertical (loop), which snapped the heading tape/indicator. The nose bearing reverses smoothly instead. */
         const _nh=qRot(st.q,[1,0,0]), hdg=(Math.atan2(_nh[1],_nh[0])*R2D+360)%360; q('.fs-hdg').textContent=Math.round(hdg).toString().padStart(3,'0')+'°';
         q('.fs-thrfill').style.height=Math.round(st.thr*100)+'%';
-        const rollDeg=st.phi*R2D, pitchDeg=st.theta*R2D;
+        /* (#R96) attitude from the CAMERA's continuous bank (st._camRoll), NOT qToEuler roll — the Euler roll flips
+           ±180° across the vertical, which spun the ADI / roll-pointer / ladder even when the outside view was fine.
+           pitch (asin) has no flip. The pitch ladder now ROTATES with bank so its horizon stays parallel to the real one. */
+        const rollDeg=(st._camRoll!=null?st._camRoll:st.phi*R2D), pitchDeg=st.theta*R2D;
         const hor=q('.fs-hor'); if(hor) hor.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 60 60) translate(0 '+(pitchDeg*1.4).toFixed(1)+')');
         const strip=q('.fs-htape-strip'), tape=q('.fs-htape'); if(strip&&tape){ const tw=tape.clientWidth||300; strip.style.transform='translateX('+(tw/2-(hdg+180)*2.4)+'px)'; }
-        /* (#R85d) level-horizon camera → the pitch ladder only translates with pitch; bank is read on the ADI + roll pointer */
-        const lg=q('.fs-ladder-g'); if(lg) lg.setAttribute('transform','translate(0 '+(pitchDeg*8).toFixed(1)+')');
+        const lg=q('.fs-ladder-g'); if(lg) lg.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 500 500) translate(0 '+(pitchDeg*8).toFixed(1)+')');
         const rp=q('.fs-rollptr'); if(rp) rp.setAttribute('transform','rotate('+rollDeg.toFixed(1)+' 500 500)');
         const sky=q('.fs-sky'); if(sky) sky.style.opacity=Math.min(0.85,Math.max(0,(st.alt-3000)/11000)).toFixed(2);
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
@@ -22409,32 +22467,62 @@ window.addEventListener('DOMContentLoaded', () => {
       let u=st.vb[0], v=st.vb[1], w=st.vb[2];
       const V=Math.hypot(u,v,w), Vs=Math.max(V,1e-3), rho=rhoAt(st.alt), qd=0.5*rho*V*V;
       const aoa=Math.atan2(w,u), beta=Math.asin(Math.max(-1,Math.min(1,v/Vs)));
-      /* aero coefficients (with a genuine stall break on BOTH sides of zero AoA) */
-      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, CLmax=ac.CL0+flapCL+ac.CLa*aStall, aStallN=-aStall+2*(ac.CL0/ac.CLa);   /* aStallN = negative-AoA stall break (same value as before, now named so the HUD stall flag can reuse it) */
-      let CL; if(aoa>aStall) CL=Math.max(0.1,CLmax*(1-0.72*Math.min(1.4,(aoa-aStall)/0.30)));
-      else if(aoa<aStallN) CL=Math.min(-0.05,-(ac.CLa*aStall-ac.CL0+flapCL)*(1-0.72*Math.min(1.4,(-aoa-aStall)/0.30)));
-      else CL=ac.CL0+flapCL+ac.CLa*aoa;
-      const CD=ac.CD0+ac.k*CL*CL+st.flaps*0.02+st.gear*0.022+st.brake*0.055;
+      /* ===== (#R96) aerodynamics valid through the FULL AoA range. BELOW the stall it is the EXACT linear model
+         (attached flight — trim / cruise / rolls / landing — is bit-for-bit unchanged); past the stall it blends
+         (smoothstep) into a flat-plate model so CL rolls off CONTINUOUSLY on BOTH sides of zero (fixes the negative-
+         AoA lift JUMP), and drag climbs toward a broadside CDmax so a deep stall / tailslide / vertical really bleeds
+         speed. sm∈[0,1] = separation fraction (0 attached … 1 fully stalled). ===== */
+      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, aStallN=-aStall+2*(ac.CL0/ac.CLa);
+      const sep=Math.max(0,Math.min(1,(Math.abs(aoa)-aStall)/0.22)), sm=sep*sep*(3-2*sep);
+      const CLatt=ac.CL0+flapCL+ac.CLa*aoa, CDmax=ac.CDmax||1.8;
+      const CL=(1-sm)*CLatt + sm*(CDmax*Math.sin(aoa)*Math.cos(aoa));                         /* attached ⊕ flat-plate (symmetric ⇒ no −AoA jump) */
+      let CD=(1-sm)*(ac.CD0+ac.k*CLatt*CLatt) + sm*(0.02+(CDmax-0.02)*Math.sin(aoa)*Math.sin(aoa)) + st.flaps*0.02+st.gear*0.022+st.brake*0.055;
+      /* (#R96) transonic wave drag on the jets (they used low-speed aero at Mach 1.7); heavy buffet drag past Vne */
+      const aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=V/aSnd;
+      if(!ac.prop && mach>0.78){ const ms=Math.min(1,(mach-0.78)/0.28);   /* transonic drag rise, peak ~M1.06 … */
+        CD += (mach<=1.06 ? 0.040*ms : 0.040*Math.max(0.34,1-(mach-1.06)*0.5)); }   /* … then supersonic wave-drag relief so a fighter reaches ~M1.6, not stalls out at M1 */
+      if(V>ac.Vne) CD+=0.05*Math.min(4,(V/ac.Vne-1)*9);
       const L=CL*qd*ac.S, Dg=CD*qd*ac.S, Yf=D.Cyb*beta*qd*ac.S;
       /* forces in body frame: drag ∥ −velocity, lift ⟂ velocity in the x-z plane, side force ∥ y, thrust ∥ x,
          gravity rotated world→body via the attitude quaternion */
       const ux=u/Vs, uy=v/Vs, uz=w/Vs, lpx=w, lpz=-u, lpn=Math.hypot(lpx,lpz)||1;
       const Flx=L*lpx/lpn, Flz=L*lpz/lpn, Fdx=-Dg*ux, Fdy=-Dg*uy, Fdz=-Dg*uz;
-      const Th=(st._ab?(ac.abMax||ac.Tmax*1.6):ac.Tmax)*st.thr*(ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7));
+      let densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
+      if(st.alt>ac.ceil) densF*=Math.max(0,1-(st.alt-ac.ceil)/2500);              /* (#R96) service ceiling now bites (thrust fades above it) */
+      const Th=(st._ab?(ac.abMax||ac.Tmax*1.6):ac.Tmax)*st.thr*densF;
       const gb=qRotInv(st.q,[0,0,ac.m*g0]);
       const Fx=Fdx+Flx+Th+gb[0], Fy=Fdy+Yf+gb[1], Fz=Fdz+Flz+gb[2];
-      /* moments (body) from the non-dimensional derivatives + control powers */
+      /* ===== moments (body). (#R96): the real elevator angle = stick × elevMax (rad) — the raw stick used to be fed
+         straight into Cmde (1.0 = a 57° elevator!) which made pitch absurdly sensitive; FBW jets command G and fade
+         the elevator near the structural limit; the elevator/stability lose authority past the stall; the propeller
+         slipstream feeds the tail so the elevator still works at low speed / on the take-off roll; flaps and an
+         offset thrust line add pitch moments. ===== */
       const p=st.om[0], qq=st.om[1], r=st.om[2], b=ac.b, c=ac.c, S=ac.S;
       const phat=p*b/(2*Vs), qhat=qq*c/(2*Vs), rhat=r*b/(2*Vs);
-      const Cl=D.Clb*beta+D.Clp*phat+D.Clr*rhat+ac.Clda*st.ail;
-      const Cm=D.Cm0+D.Cma*aoa+D.Cmq*qhat+ac.Cmde*(st.elev+(st.elevTrim||0));
-      const Cn=D.Cnb*beta+D.Cnr*rhat+ac.Cndr*st.rud+D.Cnda*st.ail;
-      let Lm=Cl*qd*S*b, Mm=Cm*qd*S*c, Nm=Cn*qd*S*b;
+      const gLimN=(ac.gLimN!=null?ac.gLimN:-0.4*ac.gLim);
+      let de0=st.elev+(st.elevTrim||0);       /* stick + trim — trims & responds for EVERY aircraft (keeps level flight) */
+      if(ac.fbw){
+        /* (#R96) FBW G/AoA PROTECTION layered on the trimmed elevator: fade the command as the AoA (predicted 0.3 s
+           ahead from the pitch rate, so it ANTICIPATES rather than overshoots) nears the AoA that would hit the +/−
+           g-limit (or the stall, whichever comes first). This enforces gLim (was warning-only) and takes the twitch
+           out of high-speed pitch — at high q̄ the limiting AoA is tiny so the stick is heavily geared down. */
+        const q2=Math.max(1,qd*ac.S), aoaLimP=Math.min(ac.aStall*0.9,(ac.gLim*ac.m*g0/q2-ac.CL0)/ac.CLa),
+              aoaLimN=Math.max(-ac.aStall*0.9,(gLimN*ac.m*g0/q2-ac.CL0)/ac.CLa), aoaPred=aoa+qq*0.3, band=ac.aStall*0.28;
+        if(de0<0) de0*=Math.max(0,Math.min(1,(aoaLimP-aoaPred)/band));           /* pulling → limit +G / stall */
+        else if(de0>0) de0*=Math.max(0,Math.min(1,(aoaPred-aoaLimN)/band));       /* pushing → limit −G */
+      }
+      const deElev=(ac.elevMax||0.5)*de0*(1-0.6*sm);       /* real elevator angle, faded when the tail is stalled */
+      const qElev=qd+(ac.prop?Th/(2*ac.S):0);                                    /* + propeller slipstream dynamic pressure over the tail */
+      const Cl=D.Clb*beta+D.Clp*phat+D.Clr*rhat+ac.Clda*st.ail*(1-0.5*sm);
+      const CmBase=((1-sm)*(D.Cm0+D.Cma*aoa)+sm*(-0.22*Math.sin(2*aoa)))+D.Cmq*qhat-0.09*st.flaps;   /* post-stall nose-down (AC shift) + flap pitch */
+      const Cn=D.Cnb*beta+D.Cnr*rhat+ac.Cndr*st.rud*(1-0.5*sm)+D.Cnda*st.ail;
+      let Lm=Cl*qd*S*b, Mm=(CmBase*qd+ac.Cmde*deElev*qElev)*S*c, Nm=Cn*qd*S*b;
+      if(ac.thrZ) Mm+=Th*ac.thrZ;                                                /* thrust-line pitch moment (power → trim change) */
       if(ac.Hp){ Mm+=-r*ac.Hp; Nm+=qq*ac.Hp; }                                   /* prop gyroscopic precession */
       if(ac.propTq){ Lm+=-ac.propTq*Th*0.008; Nm+=ac.propTq*Th*0.02*Math.max(0,aoa); }   /* engine torque roll + P-factor yaw */
       /* angular acceleration = I⁻¹·(M − ω×Iω) with a diagonal inertia tensor */
       st.om=[ p+((Lm+(ac.Iy-ac.Iz)*qq*r)/ac.Ix)*h, qq+((Mm+(ac.Iz-ac.Ix)*r*p)/ac.Iy)*h, r+((Nm+(ac.Ix-ac.Iy)*p*qq)/ac.Iz)*h ];
-      st.om=st.om.map(x=>Math.max(-14,Math.min(14,x)));
+      { const oM=ac.omMax||8; st.om=st.om.map(x=>Math.max(-oM,Math.min(oM,x))); }   /* (#R96) per-aircraft body-rate cap (was a flat ±14≈800°/s for a jumbo and a fighter alike) */
       /* translational dynamics in the rotating body frame (a = F/m − ω×v) — (#R95). Two fixes for the exact faults
          the report flags under bug ⑨ ("人工的な横滑りやエネルギー増減が高角速度時に出る"):
           • the OLD code fed the just-updated u into the v equation and u,v into w (sequential Gauss–Seidel) → the
@@ -22460,6 +22548,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const eul=qToEuler(st.q); st.phi=eul.roll; st.theta=eul.pitch; st.psi=(eul.yaw%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
       st.V=V; st.aoa=aoa; st.beta=beta; st.p=st.om[0]; st.vs=-vw[2]; st.gamma=Math.asin(Math.max(-1,Math.min(1,(-vw[2])/Vs)));
       st.G=-(Flz+Fdz)/(ac.m*g0);   /* normal load factor from the aero body-z force (signed: negative when pushing over) */
+      /* (#R96) STRUCTURAL FAILURE: a load sustained beyond 1.5× the limit (the design ultimate factor) snaps the
+         airframe. FBW aircraft are G-limited on the elevator above and never reach it; the rest CAN over-stress. */
+      if(!st.onGround && Math.abs(st.G)>ac.gLim*1.5 && V>ac.Vstall){ st._ovg=(st._ovg||0)+h; if(st._ovg>0.12){ st._ovg=0; crash(); return { agl:9999, stalling:false, overspeed:false, overG:true, landed:false, ab:st._ab }; } } else st._ovg=0;
       /* terrain contact — only when the DEM is really loaded under us */
       const tr=_terrRead(st.lng,st.lat), terr=tr.v;
       /* (#R95) ONE-TIME SPAWN SETTLE: at start/respawn the 3-D DEM has not loaded yet (queryTerrainElevation → null),
@@ -22476,6 +22567,14 @@ window.addEventListener('DOMContentLoaded', () => {
           const vw2=qRot(st.q,st.vb);
           if(vw2[2]>0) vw2[2]=0;                          /* wheels stop the sink … */
           else if(st.V<VstallEff*1.05) vw2[2]=0;           /* … and hold it planted below flying speed (kills the ground bounce; lift can still fly it off once fast) */
+          /* (#R96) ground geometry: the aircraft rotates about its MAIN GEAR — the nose-wheel stops it pitching below
+             ~0°, the tail scrapes past tailAng (tail-strike), and a wing can't dig in. Rebuild the attitude from the
+             constrained Euler angles (no looping on the ground) and re-express the velocity in the new body frame. */
+          const geo=qToEuler(st.q), tA=ac.tailAng||0.22;
+          const gth=Math.max(-0.035,Math.min(tA,geo.pitch)), gph=Math.max(-0.14,Math.min(0.14,geo.roll));
+          if(geo.pitch>=tA && st.om[1]>0) st.om[1]=0;        /* tail-strike: no further nose-up rotation */
+          if(geo.pitch<=-0.035 && st.om[1]<0) st.om[1]=0;    /* nose-wheel: no further nose-down rotation */
+          st.q=qFromEuler(gph,gth,geo.yaw);
           st.vb=qRotInv(st.q,vw2);
           if(st.alt<terr+gearH) st.alt=terr+gearH;          /* never below the wheels — but no per-step hard teleport when already sitting on them (hysteresis) */
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
@@ -22495,7 +22594,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const cmd=(lo,hi)=>((keys[lo]?-1:0)+(keys[hi]?1:0)), sweep=(cur,to,r)=>cur+Math.max(-r*dt,Math.min(r*dt,to-cur));
       /* (#R94s) INVERTED pitch control (per request): ↑ = nose DOWN, ↓ = nose UP — cmd('arrowdown','arrowup')
          gives arrowup=+1 which, with −Cmde, pitches DOWN. Rudder: D → yaw RIGHT. */
-      st.elev=sweep(st.elev,cmd('arrowdown','arrowup'),3.0); st.ail=sweep(st.ail,cmd('arrowleft','arrowright'),4.0); st.rud=sweep(st.rud,cmd('d','a'),3.5);
+      st.elev=sweep(st.elev,cmd('arrowdown','arrowup'),ac.ctlRate||3.0); st.ail=sweep(st.ail,cmd('arrowleft','arrowright'),Math.max(2.6,(ac.ctlRate||3)+1)); st.rud=sweep(st.rud,cmd('d','a'),3.2);   /* (#R96) per-aircraft actuator speed — a jumbo no longer slams to full stick in 0.33 s like a fighter */
       st._acc=(st._acc||0)+dt; const H=1/200; let n=0, flags=null;
       while(st._acc>=H && n<24){ flags=stepFixed(H,ac); st._acc-=H; n++; }
       if(n>=24) st._acc=0;                       /* fell behind (lag) → drop the backlog, never spiral */
@@ -22514,18 +22613,23 @@ window.addEventListener('DOMContentLoaded', () => {
          straight from the body axes via calculateCameraOptionsFromCameraLngLatAltRotation (MapLibre v5), so the view
          follows the nose through the vertical, over the top of a loop and inverted — no clamp, no flip, no bounce.
          roll is the bank of the wings about the view axis (continuous through the vertical, unlike the Euler roll). */
-      const fwd=qRot(st.q,[1,0,0]), rightW=qRot(st.q,[0,1,0]), bodyUp=qRot(st.q,[0,0,-1]);
-      const mLatM=110574, mLonM=(111320*Math.cos(st.lat*D2R))||1, cockpit=(camMode==='cockpit');
-      let eN=0,eE=0,eD=0;   /* eye offset from the aircraft, NED metres (0 = eye AT the aircraft, cockpit) */
-      if(!cockpit){ const back=55, up=15; eN=-back*fwd[0]+up*bodyUp[0]; eE=-back*fwd[1]+up*bodyUp[1]; eD=-back*fwd[2]+up*bodyUp[2]; }
-      const eLng=st.lng+eE/mLonM, eLat=st.lat+eN/mLatM; let eAlt=st.alt-eD;
-      if(!cockpit && st.lastTerr!=null && eAlt<st.lastTerr+3) eAlt=st.lastTerr+3;   /* keep the chase eye above the ground */
-      const bearing=(Math.atan2(fwd[1],fwd[0])*R2D+360)%360;                        /* nose heading (0=N,90=E) */
+      const fwd=qRot(st.q,[1,0,0]), rightW=qRot(st.q,[0,1,0]);
+      const mLatM=110574, mLonM=(111320*Math.cos(st.lat*D2R))||1;
+      const eLng=st.lng, eLat=st.lat, eAlt=st.alt;   /* (#R96) COCKPIT only — the eye is AT the aircraft (the follow/chase mode was removed per request) */
+      const bearingT=(Math.atan2(fwd[1],fwd[0])*R2D+360)%360;                       /* nose heading (0=N,90=E) */
       const pitch=Math.max(0.5,Math.min(179.5, 90 - Math.asin(Math.max(-1,Math.min(1,fwd[2])))*R2D));   /* 90=level, >90 look UP, <90 look DOWN */
-      let roll=0;
+      let rollT=0;
       if(!stabilizeCam){ const a=fwd[0],b=fwd[1],c=fwd[2];   /* bank = angle of the right wing about the nose, vs the wings-level reference (world-horizontal ⟂ nose) */
         const d1=rightW[0]*(-b)+rightW[1]*a, d2=rightW[0]*(-a*c)+rightW[1]*(-b*c)+rightW[2]*(a*a+b*b);
-        if(Math.abs(d1)>1e-9||Math.abs(d2)>1e-9) roll=Math.atan2(d2,d1)*R2D; }   /* → 0 near the vertical (degenerate) instead of flipping */
+        if(Math.abs(d1)>1e-9||Math.abs(d2)>1e-9) rollT=(Math.atan2(d2,d1)*R2D+360)%360; }
+      /* (#R96) bearing & roll form a COORDINATE chart with a singularity straight up/down: as the nose crosses the
+         vertical both flip ~180° in a single frame (the "pole pop" the report saw — 方位360→180, roll45→−135). Rate-
+         limit them through the crossing (a high cap, so ONLY that instantaneous pop is clipped — real turn and roll
+         rates are far below it) and the view slews smoothly instead of snapping. pitch has no singularity → exact. */
+      const cap=900*Math.max(0.001,dt), slew=(prev,tgt)=>{ let dd=((tgt-prev+540)%360)-180; if(dd>cap)dd=cap; else if(dd<-cap)dd=-cap; return (prev+dd+360)%360; };
+      if(st._cB==null){ st._cB=bearingT; st._cR=rollT; }
+      st._cB=slew(st._cB,bearingT); st._cR=slew(st._cR,rollT);
+      const bearing=st._cB, roll=st._cR; st._camRoll=roll; st._camPitch=pitch;
       let cam=null; try{ if(map.calculateCameraOptionsFromCameraLngLatAltRotation) cam=map.calculateCameraOptionsFromCameraLngLatAltRotation({lng:eLng,lat:eLat},eAlt,bearing,pitch,roll); }catch(_){}
       if(cam){ st._cam=cam; try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
       else {   /* safety fallback (older MapLibre without the rotation API): eye→nose look-at with calculateCameraOptionsFromTo,
@@ -22534,6 +22638,7 @@ window.addEventListener('DOMContentLoaded', () => {
         let c2=null; try{ if(map.calculateCameraOptionsFromTo) c2=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},eAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
         if(c2){ c2.roll=roll; st._cam=c2; try{ map.jumpTo(c2); }catch(_){ try{ delete c2.roll; map.jumpTo(c2); }catch(__){} } }
         else { try{ map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} } }
+      try{ updateMinimap(dt); }catch(_){}
       updateHUD(agl,f);
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
