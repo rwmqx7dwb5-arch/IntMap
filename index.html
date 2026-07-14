@@ -22412,14 +22412,26 @@ window.addEventListener('DOMContentLoaded', () => {
        that zeroes the pitch moment there (Cm0+Cma·α+Cmde·δe_trim=0), and the throttle for thrust=drag. Then set the
        body-frame velocity (AoA baked in) and the attitude quaternion so the machine spawns hands-off level. */
     function computeTrim(){ if(!st) return; const ac=AC(), rho=rhoAt(st.alt), Vt=Math.max(20,st.V||ac.Vcruise), qd=0.5*rho*Vt*Vt, D=ac.D;
-      let CLn=ac.m*g0/Math.max(1,qd*ac.S); CLn=Math.max(ac.CL0+0.02,Math.min(ac.CL0+ac.CLa*(ac.aStall-0.05),CLn));
-      const aT=Math.max(0.003,(CLn-ac.CL0)/ac.CLa);
-      st.elevTrim=-(D.Cm0+D.Cma*aT)/(ac.Cmde*(ac.elevMax||0.5));   /* (#R96) trim in real elevator-angle units */
-      const CD=ac.CD0+ac.k*CLn*CLn, Drag=qd*ac.S*CD, densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
-      st.thr=ac.Tmax>0?Math.max(0.05,Math.min(1,Drag/(ac.Tmax*densF))):0;
+      /* (#R97) TRUE equilibrium trim (Fx=Fz=M=0). Solve the AoA for lift=weight WITHOUT a positive-CL floor — a fast
+         or lightly-loaded machine genuinely trims at a NEGATIVE AoA, and the old `Math.max(CL0+0.02,…)` clamp forced
+         extra lift so it accelerated UP from spawn (e.g. P-51 at 2.5 km needed CL≈0.18 but was given 0.26 ≈1.45 g).
+         The elevator trim now zeroes the pitch moment INCLUDING the propeller slipstream over the tail (qElev), the
+         thrust-line moment (large on an underslung jet like the A320) and the flap moment — the old formula omitted
+         all three. An engineless glider can't hold level, so it trims into its best steady GLIDE (path γ=−atan(CD/CL))
+         instead of flying level and then sinking. */
+      const flapCL=st.flaps*0.55;
+      let CLn=ac.m*g0/Math.max(1,qd*ac.S); CLn=Math.min(CLn, ac.CL0+flapCL+ac.CLa*(ac.aStall-0.03));   /* cap just below the stall; NO positive floor */
+      const aT=(CLn-ac.CL0-flapCL)/ac.CLa;                                                             /* trim AoA — may be negative */
+      const CD=ac.CD0+ac.k*CLn*CLn+st.flaps*0.02+st.gear*0.022, Drag=qd*ac.S*CD;
+      const densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
+      let gamma=0, Th=0;
+      if(ac.Tmax>0){ st.thr=Math.max(0.02,Math.min(1,Drag/(ac.Tmax*densF))); Th=st.thr*ac.Tmax*densF; }   /* powered: throttle for thrust=drag (level) */
+      else { st.thr=0; gamma=-Math.atan2(CD,Math.max(0.05,CLn)); }                                        /* glider: steady glide-path angle */
+      const qElev=qd+(ac.prop?Th/(2*ac.S):0), elevMax=(ac.elevMax||0.5), CmBase=D.Cm0+D.Cma*aT-0.09*st.flaps;
+      st.elevTrim=-(CmBase*qd + (ac.thrZ||0)*Th/(ac.S*ac.c))/(ac.Cmde*elevMax*qElev);   /* stick-equivalent trim (real elevator angle = stick × elevMax) */
       const yaw=(st.psi!=null&&isFinite(st.psi))?st.psi:((map.getBearing?map.getBearing():90)*Math.PI/180);
-      st.q=qFromEuler(0,aT,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
-      st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=0; st.vs=0; st.G=1; st.phi=0; st.theta=aT; st.psi=yaw; st._acc=0; }
+      st.q=qFromEuler(0,aT+gamma,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
+      st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
       st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; paused=false; computeTrim(); }
     function crash(){ const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED — resetting','墜落 — リセット','ABGESTÜRZT — Reset','КРУШЕНИЕ — сброс','ACCIDENTE — reinicio'); w.style.display='block'; w.style.color='#ff453a'; }
@@ -22442,7 +22454,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const rp=q('.fs-rollptr'); if(rp) rp.setAttribute('transform','rotate('+rollDeg.toFixed(1)+' 500 500)');
         const sky=q('.fs-sky'); if(sky) sky.style.opacity=Math.min(0.85,Math.max(0,(st.alt-3000)/11000)).toFixed(2);
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
-        const mc=q('.fs-mach'); if(mc){ const ac=AC(); mc.textContent=(!ac.prop&&st.V>110)?('M '+(st.V/300).toFixed(2)):''; }
+        /* (#R97) IAS (what a pilot flies) is separated from the panel's TAS, and Mach uses the SAME altitude-dependent
+           speed of sound as the physics (was a flat V/300 that disagreed with the aero). */
+        const mc=q('.fs-mach'); if(mc){ const ac=AC(), rho=rhoAt(st.alt), ias=Math.round(st.V*Math.sqrt(Math.max(0.05,rho/1.225))*3.6),
+          aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
+          mc.textContent='IAS '+ias+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
         const aEl=q('.fs-aoa'); if(aEl){ aEl.textContent=Math.round(st.aoa*R2D); aEl.parentNode.style.color=f.stalling?'#ff9f0a':''; }
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
@@ -22473,8 +22489,11 @@ window.addEventListener('DOMContentLoaded', () => {
          (smoothstep) into a flat-plate model so CL rolls off CONTINUOUSLY on BOTH sides of zero (fixes the negative-
          AoA lift JUMP), and drag climbs toward a broadside CDmax so a deep stall / tailslide / vertical really bleeds
          speed. sm∈[0,1] = separation fraction (0 attached … 1 fully stalled). ===== */
-      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, aStallN=-aStall+2*(ac.CL0/ac.CLa);
-      const sep=Math.max(0,Math.min(1,(Math.abs(aoa)-aStall)/0.22)), sm=sep*sep*(3-2*sep);
+      /* (#R97) critical AoA is ASYMMETRIC: the negative-side stall (aStallN) is a smaller magnitude than the positive
+         one because of camber/CL0, and flaps (flapCL) shift BOTH. Separation now starts at the correct angle for the
+         sign of AoA, so the aero roll-off and the STALL flag agree (they used a symmetric ±aStall before). */
+      const flapCL=st.flaps*0.55, aStall=ac.aStall+st.flaps*0.05, aStallN=-aStall+2*((ac.CL0+flapCL)/ac.CLa);
+      const stallAng=(aoa>=0?aStall:Math.abs(aStallN)), sep=Math.max(0,Math.min(1,(Math.abs(aoa)-stallAng)/0.22)), sm=sep*sep*(3-2*sep);
       const CLatt=ac.CL0+flapCL+ac.CLa*aoa, CDmax=ac.CDmax||1.8;
       const CL=(1-sm)*CLatt + sm*(CDmax*Math.sin(aoa)*Math.cos(aoa));                         /* attached ⊕ flat-plate (symmetric ⇒ no −AoA jump) */
       let CD=(1-sm)*(ac.CD0+ac.k*CLatt*CLatt) + sm*(0.02+(CDmax-0.02)*Math.sin(aoa)*Math.sin(aoa)) + st.flaps*0.02+st.gear*0.022+st.brake*0.055;
@@ -22555,7 +22574,7 @@ window.addEventListener('DOMContentLoaded', () => {
       st.G=-(Flz+Fdz)/(ac.m*g0);   /* normal load factor from the aero body-z force (signed: negative when pushing over) */
       /* (#R96) STRUCTURAL FAILURE: a load sustained beyond 1.5× the limit (the design ultimate factor) snaps the
          airframe. FBW aircraft are G-limited on the elevator above and never reach it; the rest CAN over-stress. */
-      if(!st.onGround && Math.abs(st.G)>ac.gLim*1.5 && V>ac.Vstall){ st._ovg=(st._ovg||0)+h; if(st._ovg>0.12){ st._ovg=0; crash(); return { agl:9999, stalling:false, overspeed:false, overG:true, landed:false, ab:st._ab }; } } else st._ovg=0;
+      if(!st.onGround && (st.G>ac.gLim*1.5 || st.G<gLimN*1.5) && V>ac.Vstall){ st._ovg=(st._ovg||0)+h; if(st._ovg>0.12){ st._ovg=0; crash(); return { agl:9999, stalling:false, overspeed:false, overG:true, landed:false, ab:st._ab }; } } else st._ovg=0;   /* (#R97) use the asymmetric ±g structural limits (negative side snaps sooner) */
       /* terrain contact — only when the DEM is really loaded under us */
       const tr=_terrRead(st.lng,st.lat), terr=tr.v;
       /* (#R95) ONE-TIME SPAWN SETTLE: at start/respawn the 3-D DEM has not loaded yet (queryTerrainElevation → null),
@@ -22587,8 +22606,11 @@ window.addEventListener('DOMContentLoaded', () => {
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
           if(st.V<VstallEff*1.02 && bankDeg<10 && descent<3) landed=true; }
       } else st.onGround=false;
-      /* (#R95) stall warning on BOTH sides of the CL curve — negative-AoA / inverted stall was never flagged. */
-      const stalling=(aoa>aStall*0.97)||(aoa<aStallN*0.97)||(!st.onGround&&st.V<VstallEff*1.03), overspeed=st.V>ac.Vne, overG=Math.abs(st.G)>ac.gLim;
+      /* (#R97) STALL = critical-AoA exceeded (FAA: an aerofoil stalls at its critical AoA regardless of speed/attitude),
+         on BOTH sides of the CL curve. The old extra `V<Vstall` term flagged a false stall whenever the plane was slow
+         even at a safe AoA (e.g. the light, low-AoA float over the top of a zoom climb); Vstall stays only as the
+         landing/reference speed (VstallEff). overG now uses the asymmetric ±g limits. */
+      const stalling=(aoa>aStall*0.97)||(aoa<aStallN*0.97), overspeed=st.V>ac.Vne, overG=(st.G>ac.gLim||st.G<gLimN);
       return { agl, stalling, overspeed, overG, landed, ab:st._ab }; }
     /* per-frame: read the controls once, then advance the physics in FIXED sub-steps so the flight characteristics
        don't change with framerate (30 vs 120 fps) and a hitch never hands one huge dt to the integrator. Split out
