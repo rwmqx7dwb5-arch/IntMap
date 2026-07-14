@@ -5,6 +5,30 @@
 
 ---
 
+## R105 — 19-item re-report/feature batch: transit-geometry ROOT CAUSE (polyline overflow), Tibet border correction, compare-view redesign, Atlas as help + no-login fallbacks, ws polish (tag `#R105`)
+
+Several R104 re-reports plus new features. Map-pixel features verified by decoding/logic in the headless preview; the rest via computed styles / DOM.
+
+**Transit routing (#6) — ROOT CAUSE** — "東京→横浜の鉄道経路が実際の路線を無視した直線になる". `_decodePoly` used 32-bit **bitwise** ops (`<<shift`,`>>1`,`&1`), which OVERFLOW for precision-7 polylines wherever a coordinate exceeds ~2³¹ — i.e. any longitude > ~107° (all of East Asia; Tokyo 139° decoded to lng **−74.98**). The garbage geometry then tripped the R103 >3° guard → discarded → the straight from→to fallback drew the "直線". Rewrote the decoder with plain arithmetic (`Math.pow`/`%2`/`/2`, exact to 2⁵³). Verified: the Tokyo→Yokohama rail leg now decodes to 139 points that follow the real JR track.
+
+**Tibet / historical clicks (#3,#18)** — aourednik's 1960 snapshot draws **Tibet as an independent country** (PRC annexed it in 1951); since 1953–1993 all resolve to that snapshot, Tibet showed independent "for a while after 1951". Added `_correctEra(fc,year)` — for any snapshot ≥ 1953 the Tibet / East-Turkestan features are **merged into China** (renamed, independent label suppressed via a `_corrected` flag `tagSame` respects). Verified 1960: 0 standalone Tibet features, 1 corrected. And clicking a pre-1951 Tibet/East-Turkestan/Manchukuo label used to resolve via point-in-polygon into modern China (PRC/ROC); a `_VANISHED` table now keeps their own identity + Wikipedia in `resolveHist` before that fallback.
+
+**Compare view (#14)** — a compact **sticky header** (Back + "Compare countries (up to 10)" + Bar/Time-series/Table + the Indicators pulldown) pinned to the top; **Back** is now white-bg/black-text with a refined SVG arrow (no "←"); the Indicators count ("5/28") is un-bolded, tabular iOS figures; dark-mode indicator-pill borders → white; opens in **bar chart by default** unless a view is asked for. `#scp-metrics` moved directly under the header. Verified all.
+
+**Atlas (#10,#13,#16)** — added deterministic **localPlan** patterns so the example questions work with NO login: compare ("Compare the USA, China and India…" → bar chart), ranking questions ("which countries have the highest life expectancy / spend the most on defense relative to GDP?" → `rank`, incl. milSpendGDP), and IntMap **HELP** ("help / 使い方 / what can you do" → a concise built-in guide). The `rank` action now loads lazy WB metrics and `rows()` also covers the XMET set (lifeExp/internet), fixing the "metric unavailable" it returned for life-expectancy. A SYS clause tells the model to answer specific how-to questions AS IntMap's help. Verified help/compare/rank all run without an account.
+
+**Countries pulldown (#15)** — GDP per capita, GDP (PPP) and GDP per capita (PPP) added to the sort indicators (real WB data; PPP fields lazy-loaded on select). **Card spacing (#1)**: in-card top/bottom padding 9→6 px, gap BETWEEN cards 4→7 px (the previous batch had these inverted). **Search↔toolbar gap (#12)** tightened.
+
+**Time machine (#2,#17)** — the collapsed "See the past world" pill tucked further down (bottom 16→10 px). While travelling it turns **blue** and its label shows the set **year/date** in place (verified: blue bg, label "1950"); back to Now restores the default — same size/shape.
+
+**Workspace (#5,#7,#8,#19)** — resize now has **magnetic snapping**: a free edge locks onto a neighbour's edge / the screen bound as you drag it there, so the JOIN is deterministic AND shown (guide line + the R104 pulsing bar; EPS 6→10). All window **title bars are one uniform grey** (`#2b2b30` dark / `#e4e6ea` light) — verified 6 bars, one colour — which is also the Atlas title's "painted background like normal mode" (dropped the R104 transparent-bar/chip). Active-layers ↔ Search gap tightened to ~2 px; not ALL-CAPS.
+
+**Also**: (#4) the "you can compare" dock no longer blanks on a transient-inactive Countries window (only when the compare VIEW owns the feed) → the hint stops "rarely disappearing". (#9) the OPEN compare view + the Atlas panel chrome now re-localize immediately on a language change (compare's `ensureView` returns the cached host, so we drop+rebuild it; Atlas used the message-mirror `L`, so its chrome now uses a `currentLang` helper) — verified EN→JP. (#11) the in-map search **button** is now a primary rounded pill matching the bar.
+
+**ToS/Privacy/Sources**: no new endpoints or data flows → no legal change.
+
+---
+
 ## R104 — 19-item re-report/feature batch: Countries UI, time machine, workspace polish, contrast regression, Atlas ranking-highlight, transit routing without login (tag `#R104`)
 
 Several are R103 re-reports where the earlier fix was too shallow; the rest are new. Map-pixel features (era borders, route drawing) are reasoned + logic-verified in the headless preview (`document.hidden`, WebGL never finishes) — the rest verified via computed styles / DOM.

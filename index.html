@@ -246,7 +246,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .ios-segment-btn.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.08); }
     [data-theme="dark"] .ios-segment-btn.active{ background:#3a3a3c; }
     /* (#R104) unified with the Atlas input pill (same rounding / hairline border / card material / focus ring) — wording & size unchanged. */
-    .search-bar{ display:flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; margin-bottom:16px; transition:border-color .15s ease, box-shadow .15s ease; }
+    .search-bar{ display:flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; margin-bottom:10px; transition:border-color .15s ease, box-shadow .15s ease; }   /* (#R105) tighter gap below the search field (to the sort toolbar / content) */
     /* (#R79e) the Countries window's own search bar is ONLY for workspace mode; keep it out of the normal sidebar
        no matter what (the ws-mode rule below has higher specificity + !important, so it still shows in-window). */
     #countries-search-bar{ display:none !important; }
@@ -265,7 +265,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .empty-msg{ text-align:center; color:var(--text-muted); font-size:13px; padding:48px 16px; line-height:1.6; }
     .news-item{ background:var(--card-bg); padding:11px 15px; border-radius:14px; font-size:13px; cursor:pointer; transition:0.3s; color:var(--text-main); box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.08); position:relative; }
     #live-news-feed{ gap:9px; }   /* (#R86) denser news feed — fit more cards without cramming (news only; info/community/countries feeds unaffected) */
-    #countries-feed{ gap:4px; padding-top:0; }   /* (#R104) vertical gap between country cards tightened a touch more (bigger flags → close the gap); no top padding so the sort toolbar hugs the search field */
+    #countries-feed{ gap:7px; padding-top:0; }   /* (#R105) a little MORE gap BETWEEN cards; the in-card top/bottom padding is tightened on .stat-row instead. No top padding so the sort toolbar hugs the search field. */
     .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:10; }
     /* iOS-style location pill (replaces old loc-chip) */
     .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
@@ -332,7 +332,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .cp-histnote b{ font-weight:700; }
     /* (#R101) tighter vertical padding so more country cards fit. (#R102) flag+name a little bigger, region/capital a
        little smaller (slash-separated), and the value column carries the number ALONE (no indicator label). */
-    .stat-row{ display:flex; align-items:center; gap:11px; background:var(--card-bg); padding:9px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.14); transition:0.2s; }
+    .stat-row{ display:flex; align-items:center; gap:11px; background:var(--card-bg); padding:6px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.14); transition:0.2s; }   /* (#R105) tighter TOP/BOTTOM padding inside the card */
     /* (#R103) in dark the opaque --card-bg (#1c1c1e) was IDENTICAL to the sidebar (rgb 28,28,30) → country cards had
        zero contrast with the background. Lift the card one elevation step lighter (the frosted-sidebar modes below
        override this with their own frost). */
@@ -893,7 +893,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .src-card .src-actions .primary{ background:var(--primary-color); color:#fff; }
     .src-card .src-actions button:hover{ filter:brightness(1.1); }
     .map-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:14px; padding:8px 4px; }
-    .map-search>button{ background:var(--input-bg); border:none; border-radius:8px; padding:8px 10px; font-size:14px; cursor:pointer; }
+    /* (#R105) the search button now matches the pill bar + the sidebar search button: a clean primary rounded button. */
+    .map-search>button{ background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:8px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:filter .15s ease; }
+    .map-search>button:hover{ filter:brightness(1.08); }
     .map-search-results{ display:none; position:absolute; top:48px; left:0; right:0; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); max-height:280px; overflow-y:auto; }
     .ms-item{ padding:10px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid rgba(128,128,128,0.1); line-height:1.4; }
     .ms-item:hover{ background:var(--input-bg); }
@@ -1669,7 +1671,13 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     }
 
     /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
-    .news-timeline{ right:10px; bottom:16px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }   /* (#R104) tucked a little further into the bottom-right corner (not flush) */
+    .news-timeline{ right:10px; bottom:10px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }   /* (#R105) tucked a little further DOWN into the corner (not flush) */
+    /* (#R105) while travelling the collapsed "See the past world" pill turns BLUE and its label shows the year/date in
+       place — same size & shape, just colour + text; returns to normal on "Now". */
+    .news-timeline.collapsed.active{ background:var(--primary-color) !important; border-color:var(--primary-color) !important; }
+    .news-timeline.collapsed.active .ntl-open-txt b,
+    .news-timeline.collapsed.active .ntl-open-txt small,
+    .news-timeline.collapsed.active .ntl-open-ico{ color:#fff !important; }
     .news-timeline:not(.collapsed){ border-radius:18px; padding:8px 12px; }
     .ntl-toggle{ width:38px; height:38px; border-radius:999px; font-size:16px; }
     .ntl-body{ padding:2px 6px; gap:7px; }
@@ -7743,14 +7751,22 @@ window.addEventListener('DOMContentLoaded', () => {
         let hY=null, hTop=[], hBot=[];
         if(d.indexOf('s')>=0||d.indexOf('n')>=0){ hY=(d.indexOf('s')>=0)?(st+sh):st;
           allW.forEach(o=>{ const t=o.offsetTop,bt=t+o.offsetHeight; if(Math.abs(bt-hY)<EPS) hTop.push({o,t,bt}); if(Math.abs(t-hY)<EPS) hBot.push({o,t,bt}); }); }
+        /* (#R105) MAGNETIC SNAP while resizing: a FREE edge (not already a shared divider) snaps onto a neighbour's
+           edge / the screen bound as you drag it there, so the moment two windows JOIN is deterministic AND shown
+           (guide line + pulsing join bar). A divider edge already abuts, so it moves freely (no self-snap). */
+        const cxSnap=xCands(w), cySnap=yCands(w);
+        const vShared=vLeft.some(p=>p.o!==w)||vRight.some(p=>p.o!==w);
+        const hShared=hTop.some(p=>p.o!==w)||hBot.some(p=>p.o!==w);
         const mv=ev=>{ const dx=ev.clientX-sx, dy=ev.clientY-sy; hideG();
           if(vX!=null){ let nx=vX+dx, lo=B.left+90, hi=B.right-90;
             vLeft.forEach(p=>{ lo=Math.max(lo,p.l+(minOf(p.o)[0]||160)); }); vRight.forEach(p=>{ hi=Math.min(hi,p.r-(minOf(p.o)[0]||160)); });
+            if(!vShared){ const sn=nearest(cxSnap,nx); if(sn!=null&&sn>=lo&&sn<=hi) nx=sn; }
             nx=Math.max(lo,Math.min(hi,nx)); showG('v',nx);
             vLeft.forEach(p=>{ p.o.style.left=p.l+'px'; p.o.style.width=Math.max(120,nx-p.l)+'px'; });
             vRight.forEach(p=>{ p.o.style.left=nx+'px'; p.o.style.width=Math.max(120,p.r-nx)+'px'; }); }
           if(hY!=null){ let ny=hY+dy, lo=B.top+70, hi=B.bottom-70;
             hTop.forEach(p=>{ lo=Math.max(lo,p.t+(minOf(p.o)[1]||120)); }); hBot.forEach(p=>{ hi=Math.min(hi,p.bt-(minOf(p.o)[1]||120)); });
+            if(!hShared){ const sn=nearest(cySnap,ny); if(sn!=null&&sn>=lo&&sn<=hi) ny=sn; }
             ny=Math.max(lo,Math.min(hi,ny)); showG('h',ny);
             hTop.forEach(p=>{ p.o.style.top=p.t+'px'; p.o.style.height=Math.max(90,ny-p.t)+'px'; });
             hBot.forEach(p=>{ p.o.style.top=ny+'px'; p.o.style.height=Math.max(90,p.bt-ny)+'px'; }); }
@@ -7777,7 +7793,9 @@ window.addEventListener('DOMContentLoaded', () => {
            radiated a halo over the neighbours around whichever window was in front ("操作中ウィンドウの放射する影は不要"). */
         +'.ws-win{position:fixed;z-index:900;display:flex;flex-direction:column;box-sizing:border-box;background:var(--bg-color,#0b0b0d);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 1px 5px rgba(0,0,0,0.16);overflow:hidden;min-width:120px;}'
         +'.ws-win.ws-ovis,.ws-win.ws-ovis .ws-body{overflow:visible;}'
-        +'.ws-tb{flex:0 0 25px;display:flex;align-items:center;gap:9px;padding:0 10px;background:var(--input-bg);border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));cursor:grab;user-select:none;-webkit-user-select:none;}'
+        /* (#R105) every window title bar is a UNIFORM grey (task: 全ウィンドウで共通の色・グレー). */
+        +'.ws-tb{flex:0 0 25px;display:flex;align-items:center;gap:9px;padding:0 10px;background:#e4e6ea;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));cursor:grab;user-select:none;-webkit-user-select:none;}'
+        +'[data-theme="dark"] .ws-tb{background:#2b2b30;}'
         +'.ws-tb:active{cursor:grabbing;}'
         +'.ws-title{font-size:11.5px;font-weight:600;color:var(--text-muted);letter-spacing:0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;}'
         +'.ws-dots{display:flex;gap:7px;flex:0 0 auto;}'
@@ -7850,8 +7868,8 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R78f) BALANCED padding — the .content-area scrollbar hack (margin-right:-10px) made content flush-left
            but 10px past the right; neutralise it and give even 10px gutters. Search bar was overflowing right. */
         +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed{margin:0 !important;padding:10px 12px !important;box-sizing:border-box;gap:8px;}'
-        /* (#R104) Countries cards: tighter vertical gap (bigger flags) + the sort toolbar hugs the search field above (task: 隙間を詰めて). */
-        +'body.ws-mode .ws-countries #countries-feed{gap:4px !important;padding-top:5px !important;}'
+        /* (#R105) Countries cards: a little more gap BETWEEN cards (in-card padding tightened on .stat-row); the sort toolbar hugs the search field above. */
+        +'body.ws-mode .ws-countries #countries-feed{gap:7px !important;padding-top:2px !important;}'
         /* (#R79) the news READER pane is stacked in the same window — kill its -10px scrollbar-hack margin too
            (otherwise it overflows the window's right edge when a user opens an article to read) */
         +'body.ws-mode .ws-news #news-reader-pane{flex:1 1 auto !important;width:100% !important;min-height:0 !important;margin:0 !important;padding:10px 12px !important;box-sizing:border-box !important;}'
@@ -7859,7 +7877,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
         /* (#R79b) Countries window: its OWN search bar (top) + the compare dock (bottom) stacked in the body */
         +'body.ws-mode .ws-countries .ws-body{flex-direction:column;}'
-        +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:10px 12px 6px !important;padding:0 !important;}'
+        +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:8px 12px 2px !important;padding:0 !important;}'
         +'body.ws-mode .ws-countries #countries-search-bar input{width:100% !important;box-sizing:border-box !important;}'
         /* (#R102) hide the "Filter countries…" box while the compare view owns the feed — a higher-specificity override
            of the show-rule above (which, with its !important, previously beat the inline display:none → "変化なし"). */
@@ -7871,10 +7889,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode #scp-view .scp-bnm{flex:0 0 84px !important;} body.ws-mode #scp-view .scp-bval{flex:0 0 78px !important;font-size:10.5px !important;}'
         /* (#R79b) Layers search box balance ("上に余白なし・下が空きすぎ"): the .lsr-head above it is hidden in
            ws-mode, so give the search breathing room on top and tighten the gap to the list below. */
-        +'body.ws-mode #layer-sidebar-r .lsr-search{padding:10px 14px 3px !important;}'
+        +'body.ws-mode #layer-sidebar-r .lsr-search{padding:9px 14px 0 !important;}'
         /* (#R104) "Active layers" must NOT be ALL-CAPS in the layers window, and the gap up to the Search box is tightened. */
         +'body.ws-mode #layer-sidebar-r #layer-active-section .lyr-head{text-transform:none !important;letter-spacing:0.01em !important;}'
-        +'body.ws-mode #layer-sidebar-r #layer-active-section{padding-top:2px !important;}'
+        +'body.ws-mode #layer-sidebar-r #layer-active-section{padding-top:0 !important;}'
+        +'body.ws-mode #layer-sidebar-r #layer-active-section .lyr-head{margin-top:0 !important;}'
         /* (#R79b) Atlas window: keep the INPUT BAR always visible when the window is short — the suggested-
            question chips (.atl-ex) were tall + non-shrinking and pushed the input below the window on resize.
            Cap + scroll them so the chat area and input never get clipped. */
@@ -7886,10 +7905,8 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R104) tighten the empty space above & below the "Atlas can be inaccurate…" disclaimer in the Atlas window. */
         +'body.ws-mode .ws-atlas .atl-inbar{padding-bottom:2px !important;}'
         +'body.ws-mode .ws-atlas .atl-ainote{padding:0 12px 3px !important;line-height:1.25 !important;}'
-        /* (#R104) paint a background just BEHIND the "Atlas" title (a chip, like normal mode) instead of flat-filling the
-           whole title bar ("背景を塗って（ウィンドウ上部の全面は塗るな）"): clear the bar, chip the label. */
-        +'body.ws-mode .ws-atlas .ws-tb{background:transparent !important;}'
-        +'body.ws-mode .ws-atlas .ws-title{background:var(--input-bg);color:var(--text-main);padding:2px 11px;border-radius:8px;pointer-events:none;}'
+        /* (#R105) the Atlas window now uses the SAME uniform grey title bar as every other window (task 19), which is
+           itself the "painted background like normal mode" for its "Atlas" title — no bespoke transparent bar / chip. */
         /* (#R78g) CONTENT WAS INVISIBLE: the window background == --card-bg == the cards' own background, and the
            card border is only 8% opacity → in dark theme the cards vanished into the window. Give the content
            windows the app's BASE background so the --card-bg cards/rows stand out, and strengthen their border. */
@@ -8910,8 +8927,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
      a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
      fertility) are back-filled on demand so they are REAL, not blank. */
-  window.setStatsSort=function(k){ const D={ gdp:'desc', pop:'desc', area:'desc', hdi:'desc', milSpend:'desc', lifeExp:'desc', tfr:'desc', name:'asc' }; statsSort=k; statsSortDir=D[k]||'desc';
+  window.setStatsSort=function(k){ const D={ gdp:'desc', gdppc:'desc', gdpPPP:'desc', gdppcPPP:'desc', pop:'desc', area:'desc', hdi:'desc', milSpend:'desc', lifeExp:'desc', tfr:'desc', name:'asc' }; statsSort=k; statsSortDir=D[k]||'desc';
     try{ if((k==='lifeExp'||k==='tfr')&&window._imFillStat) window._imFillStat(k); }catch(_){}
+    /* (#R105) sorting by a PPP indicator → ensure the World-Bank PPP fields are loaded, then re-render with real values. */
+    try{ if((k==='gdpPPP'||k==='gdppcPPP')&&typeof loadGdpPPP==='function'){ loadGdpPPP().then(()=>{ try{ if(window._countriesActive&&window._countriesActive()&&statsSort===k) renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }); } }catch(_){}
     try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
   window.toggleStatsSortDir=function(){ statsSortDir=(statsSortDir==='asc')?'desc':'asc';
     try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
@@ -9382,8 +9401,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R102) selecting an indicator applies its DEFAULT direction (numeric = descending / biggest first; A–Z = ascending;
      a "lower is better" indicator would default to ascending), then re-renders. Lazy WB metrics (life-expectancy,
      fertility) are back-filled on demand so they are REAL, not blank. */
-  window.setStatsSort=function(k){ const D={ gdp:'desc', pop:'desc', area:'desc', hdi:'desc', milSpend:'desc', lifeExp:'desc', tfr:'desc', name:'asc' }; statsSort=k; statsSortDir=D[k]||'desc';
+  window.setStatsSort=function(k){ const D={ gdp:'desc', gdppc:'desc', gdpPPP:'desc', gdppcPPP:'desc', pop:'desc', area:'desc', hdi:'desc', milSpend:'desc', lifeExp:'desc', tfr:'desc', name:'asc' }; statsSort=k; statsSortDir=D[k]||'desc';
     try{ if((k==='lifeExp'||k==='tfr')&&window._imFillStat) window._imFillStat(k); }catch(_){}
+    /* (#R105) sorting by a PPP indicator → ensure the World-Bank PPP fields are loaded, then re-render with real values. */
+    try{ if((k==='gdpPPP'||k==='gdppcPPP')&&typeof loadGdpPPP==='function'){ loadGdpPPP().then(()=>{ try{ if(window._countriesActive&&window._countriesActive()&&statsSort===k) renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }); } }catch(_){}
     try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
   window.toggleStatsSortDir=function(){ statsSortDir=(statsSortDir==='asc')?'desc':'asc';
     try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ renderStats(searchVal()); } };
@@ -9439,7 +9460,8 @@ window.addEventListener('DOMContentLoaded', () => {
       return dir==='asc'?(av-bv):(bv-av);
     });
     /* (#R102) indicator PULLDOWN + ascending/descending toggle (replaces the old button row). */
-    const IND=[['gdp',t('sortGdp')],['pop',t('sortPop')],['area',t('sortArea')],['hdi',t('sortHDI')],['milSpend',t('sortMil')],['lifeExp',t('sortLife')],['tfr',t('sortTfr')],['name',t('sortName')]];
+    /* (#R105) + GDP per capita, GDP (PPP) and GDP per capita (PPP) selectable in the Countries pulldown (real WB data). */
+    const IND=[['gdp',t('sortGdp')],['gdppc',t('statGdpPc')],['gdpPPP',t('statGdpPPP')],['gdppcPPP',t('statGdpPcPPP')],['pop',t('sortPop')],['area',t('sortArea')],['hdi',t('sortHDI')],['milSpend',t('sortMil')],['lifeExp',t('sortLife')],['tfr',t('sortTfr')],['name',t('sortName')]];
     /* (#R104) refined minimal SVG arrow instead of the plain-text ↑ / ↓ glyphs; both labels stacked so the button
        width never changes on toggle (see .ssd-labels CSS). */
     const _ssdArrow=up=>'<svg class="ssd-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+(up?'<path d="M12 19.5V5M6.5 11l5.5-6 5.5 6"/>':'<path d="M12 4.5V19M6.5 13l5.5 6 5.5-6"/>')+'</svg>';
@@ -9451,6 +9473,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const metricVal=(s)=>{ switch(key){
       case 'pop': return fmtNum(s.pop);
       case 'area': return fmtArea(s.area);
+      case 'gdppc': return (s.gdppc&&isFinite(s.gdppc))?('$'+Math.round(s.gdppc).toLocaleString()):'—';
+      case 'gdpPPP': return (s.gdpPPP&&isFinite(s.gdpPPP))?fmtMoney(s.gdpPPP):'—';
+      case 'gdppcPPP': return (s.gdppcPPP&&isFinite(s.gdppcPPP))?('$'+Math.round(s.gdppcPPP).toLocaleString()):'—';
       case 'hdi': return s.hdi?(+s.hdi).toFixed(3):'—';
       case 'milSpend': return s.milSpend?'$'+s.milSpend+'B':'—';
       case 'lifeExp': return (s.lifeExp&&isFinite(s.lifeExp))?((+s.lifeExp).toFixed(1)+(currentLang==='jp'?'歳':currentLang==='de'?' J':currentLang==='ru'?' л':currentLang==='es'?' a':' yr')):'—';
@@ -9505,7 +9530,11 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ document.body.classList.toggle('scp-open', scpOpen); }catch(_){}   /* (#R102) keep the filter-hide class in sync with the compare view's real presence */
     const active=_countriesActive();
     panel.classList.toggle('show', active && !scpOpen);
-    if(!active||scpOpen){ panel.innerHTML=''; return; }
+    /* (#R105) only BLANK the dock when the compare VIEW owns the feed. A transiently-inactive Countries window
+       (a ws re-tile / brief hide) must NOT blank it, or the "you can compare" hint vanishes and doesn't come back
+       until the next renderStats ("比較できます案内が消えることがまれにある"). Just hide it; keep the content. */
+    if(scpOpen){ panel.innerHTML=''; return; }
+    if(!active){ return; }
     if(compareSet.size===0){ panel.innerHTML=`<div class="scf-empty">${t('compareEmpty')}</div>`; return; }
     const items=[...compareSet].map(c=>countryStats[c]).filter(Boolean);
     const chips=items.map((s)=>`<span class="scb-chip">${s.flag||'🏳️'} ${cName(s)}<button onclick="_toggleCompare('${s.code}')">×</button></span>`).join('');
@@ -13764,6 +13793,16 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       const mn=+slider.min, mx=+slider.max; slider.style.setProperty('--ntl-fill',(mx>mn?((+slider.value-mn)/(mx-mn)*100):0)+'%');
       buildSynced(e);
+      /* (#R105) reflect the set year/date on the COLLAPSED "See the past world" button (it turns blue via .active) —
+         same button, just its two label lines swap to the applied period; restored to the default on "Now". */
+      try{ const ot=document.getElementById('ntl-open-t'), os=document.getElementById('ntl-open-s');
+        if(ot&&os){
+          if(e.isLive){ ot.textContent=L5('See the past world','過去の世界を見る','Die Welt der Vergangenheit','Мир прошлого','Ver el mundo del pasado');
+            os.textContent=L5('1900 to present','1900年から現在まで','1900 bis heute','с 1900 до наших дней','1900 hasta hoy'); }
+          else { ot.textContent=(mode==='year')?yLabel(e.year):e.when.toLocaleDateString(currentLang==='jp'?'ja-JP':currentLang==='de'?'de-DE':currentLang==='ru'?'ru-RU':currentLang==='es'?'es-ES':'en-US',{year:'numeric',month:'short',day:'numeric'});
+            os.textContent=L5('Viewing the past · tap','過去を表示中 · タップ','Vergangenheit · tippen','Прошлое · нажмите','Viendo el pasado · toca'); }
+        }
+      }catch(_){}
     }catch(_){} _self=false; }
     window.IntMapTime.on(e=>{ refreshUI(e);
       /* Refetch the news feed only when the DAY (or live-state) actually changed. */
@@ -18736,7 +18775,14 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-srcsw{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:8px;overflow:hidden;}'
         +'#scp-view .scp-srcsw button{border:none;background:transparent;color:var(--text-muted);font-size:10px;padding:2.5px 8px;cursor:pointer;font-weight:600;}'
         +'#scp-view .scp-srcsw button.on{background:var(--primary-color);color:#fff;}'
-        +'#scp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px;}'
+        /* (#R105) Back button: white background, black text, a refined minimal arrow (no plain "←"). */
+        +'#scp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(0,0,0,0.12);border-radius:10px;background:#ffffff;color:#111;padding:6px 12px 6px 9px;font-size:12px;font-weight:600;cursor:pointer;margin:0;flex:0 0 auto;}'
+        +'#scp-view .scp-back:hover{background:#f2f2f4;}'
+        +'#scp-view .scp-back .scp-backarr{flex:0 0 auto;display:block;}'
+        /* (#R105) sticky compact header: title + view modes + Indicators toggle pinned to the top of the compare view. */
+        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:2px 0 6px;}'
+        +'#scp-view .scp-cmptitle{font-weight:700;font-size:13px;text-transform:none;line-height:1.15;}'
+        +'#scp-view .scp-cmpsub{font-weight:500;font-size:10.5px;color:var(--text-muted);}'
         /* (#R64) proper country picker ("国を選択するときのUIがくそ"): search box + scrollable flag list with
            check state, click to add/remove — replaces the bare <datalist>. */
         +'#scp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:240px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:40;padding:4px;}'
@@ -18745,7 +18791,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-list .scp-cr.sel{background:rgba(10,132,255,0.10);}'
         +'#scp-view .ts-wrap svg{height:100px !important;}'
         /* (#R70) unified compare: mode segment + bar view + Excel-like table */
-        +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0 0 10px;}'
+        +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0;align-self:flex-start;}'
         +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;}'
         +'#scp-view .scp-modes button.on{background:var(--primary-color);color:#fff;}'
         /* (#R71) bars: FIXED name + value columns so every track is the same length ("長さが統一されていなくて
@@ -18763,7 +18809,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
         +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
         /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
-        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:8px 0 2px;}'
+        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:0;align-self:flex-start;}'
+        +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;}'   /* (#R105) selection count NOT bold, clean tabular iOS-style figures */
+        +'[data-theme="dark"] #scp-view .scp-m{border-color:rgba(255,255,255,0.85);}'   /* (#R105) dark-mode indicator pill border → white */
         +'#scp-view .scp-mcat{width:100%;font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.03em;margin:7px 0 1px;}'
         +'#scp-view .scp-ttools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 8px;}'
         +'#scp-view .scp-ttools button,#scp-view .scp-ttools select{height:28px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;padding:0 10px;cursor:pointer;outline:none;}'
@@ -18798,20 +18846,26 @@ window.addEventListener('DOMContentLoaded', () => {
          override (see ws-style) so it truly hides in BOTH modes. */
       try{ document.body.classList.add('scp-open'); }catch(_){}
       try{ ['countries-search-bar','sidebar-search-bar'].forEach(id=>{ const e=document.getElementById(id); if(e&&e.dataset.scpPrevDisp===undefined){ e.dataset.scpPrevDisp=e.style.display||''; e.style.display='none'; } }); }catch(_){}
-      host.innerHTML='<button class="scp-back">← '+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
-        /* (#R101) header simplified per request: no 📊, no verbose paragraph — just the title (large) + "(up to 10)" (small). */
-        +'<div style="font-weight:700;font-size:15px;margin:0 0 8px;">'+LL('Compare countries','国を比較','Länder vergleichen','Сравнение стран','Comparar países')+' <span style="font-weight:500;font-size:11px;color:var(--text-muted);">'+LL('(up to 10)','（最大10か国）','(bis zu 10)','(до 10)','(hasta 10)')+'</span></div>'
-        /* (#R70) view-mode segmented control — bar (the old click-country compare, default) | time-series | table */
-        +'<div id="scp-modes" class="scp-modes">'
-          +'<button data-m="bar">'+LL('Bar chart','棒グラフ','Balken','Столбцы','Barras')+'</button>'
-          +'<button data-m="ts">'+LL('Time-series','時系列','Zeitreihen','Динамика','Series temporales')+'</button>'
-          +'<button data-m="table">'+LL('Table','表','Tabelle','Таблица','Tabla')+'</button>'
+      /* (#R105) compact STICKY header: [Back] + title on one row, then the view modes, then the Indicators pulldown —
+         all pinned to the top so they stay reachable while the chart/table scrolls. */
+      const _backArr='<svg class="scp-backarr" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+      host.innerHTML='<div class="scp-stickhead">'
+          +'<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">'
+            +'<button class="scp-back">'+_backArr+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
+            +'<div class="scp-cmptitle">'+LL('Compare countries','国を比較','Länder vergleichen','Сравнение стран','Comparar países')+' <span class="scp-cmpsub">'+LL('(up to 10)','（最大10か国）','(bis zu 10)','(до 10)','(hasta 10)')+'</span></div>'
+          +'</div>'
+          /* (#R70) view-mode segmented control — bar (the old click-country compare, default) | time-series | table */
+          +'<div id="scp-modes" class="scp-modes">'
+            +'<button data-m="bar">'+LL('Bar chart','棒グラフ','Balken','Столбцы','Barras')+'</button>'
+            +'<button data-m="ts">'+LL('Time-series','時系列','Zeitreihen','Динамика','Series temporales')+'</button>'
+            +'<button data-m="table">'+LL('Table','表','Tabelle','Таблица','Tabla')+'</button>'
+          +'</div>'
+          /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
+          +'<button class="scp-mtog" id="scp-mtog"></button>'
         +'</div>'
+        +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'<div id="scp-chips" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;"></div>'
         +'<div style="position:relative;"><div style="display:flex;gap:6px;align-items:stretch;"><input class="scp-add" id="scp-add" autocomplete="off" style="flex:1;min-width:0;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><button id="scp-pick" class="scp-pickbtn" type="button" title="'+LL('Pick a country on the map','地図で国をクリックして追加','Land auf der Karte wählen','Выбрать страну на карте','Elegir país en el mapa')+'" aria-label="'+LL('Pick a country on the map','地図で国をクリックして追加','Land auf der Karte wählen','Выбрать страну на карте','Elegir país en el mapa')+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button></div><div id="scp-list"></div></div>'
-        /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
-        +'<button class="scp-mtog" id="scp-mtog"></button>'
-        +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'<div id="scp-timebanner" class="stats-timebanner" style="display:none;"></div>'
         +'<div id="scp-body" style="margin-top:6px;"></div>';
       host.querySelector('.scp-back').onclick=()=>{ try{ _endPick(); }catch(_){} try{ clearMap(); }catch(_){}   /* (#R94h) leaving the comparison clears the map colouring */
@@ -18873,8 +18927,9 @@ window.addEventListener('DOMContentLoaded', () => {
     let mOpen=false;
     function metricRow(){ const w=host&&host.querySelector('#scp-metrics'); if(!w) return; w.innerHTML='';
       const tog=host.querySelector('#scp-mtog');
-      if(tog){ tog.innerHTML=LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+' <b>('+sel.size+'/'+IND.length+')</b> '+(mOpen?'⌃':'⌄');
-        tog.onclick=()=>{ mOpen=!mOpen; w.style.display=mOpen?'flex':'none'; tog.innerHTML=LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+' <b>('+sel.size+'/'+IND.length+')</b> '+(mOpen?'⌃':'⌄'); };
+      const _mtogHTML=()=>LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+' <span class="scp-mcount">'+sel.size+'/'+IND.length+'</span> '+(mOpen?'⌃':'⌄');
+      if(tog){ tog.innerHTML=_mtogHTML();
+        tog.onclick=()=>{ mOpen=!mOpen; w.style.display=mOpen?'flex':'none'; tog.innerHTML=_mtogHTML(); };
         w.style.display=mOpen?'flex':'none'; }
       CATORD.forEach(cat=>{ const inds=IND.filter(i2=>(INDCAT[i2.k]||'base')===cat); if(!inds.length) return;
         const h=document.createElement('div'); h.className='scp-mcat'; const cl=CATL[cat]; h.textContent=LL(cl[0],cl[1],cl[2],cl[3],cl[4]); w.appendChild(h);
@@ -19206,11 +19261,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R94) re-render the OPEN comparison when the master clock moves — bars/table/focus follow the year. */
     let _ttReb=null;
     try{ if(window.IntMapTime) window.IntMapTime.on(()=>{ if(host&&document.getElementById('scp-view')){ clearTimeout(_ttReb); _ttReb=setTimeout(()=>{ try{ render(); }catch(_){} },380); } }); }catch(_){}
+    /* (#R105) re-localize the OPEN comparison immediately on a language change (was stuck until reload in ws mode).
+       ensureView() returns the EXISTING host without rebuilding its header (title/back/modes), so we drop the host
+       first → render() rebuilds it fresh in the new language (state — codes/sel/mode — is preserved in module vars). */
+    try{ window.addEventListener('intmap-lang',()=>{ try{ if(host&&document.getElementById('scp-view')){ try{ host.remove(); }catch(_){} host=null; render(); } }catch(_){} }); }catch(_){}
     function open(initCodes,initMetrics,initSource,initMode){
       if(!sel){ sel=new Set(IND.filter(i=>i.def).map(i=>i.k)); }
       if(Array.isArray(initMetrics)&&initMetrics.length){ const ok=initMetrics.filter(k=>IND.some(i=>i.k===k)); if(ok.length){ sel=new Set(ok); indOrder=ok.slice(); } }
       if(initSource==='imf'||initSource==='wb'){ IND.forEach(i2=>{ if(i2.imf) srcSel[i2.k]=initSource; }); }
-      if(initMode==='bar'||initMode==='ts'||initMode==='table') mode=initMode;   /* (#R70) callers may open straight into a view */
+      /* (#R105) default to the BAR chart unless a view is explicitly requested ("明示がない限りbar-chartを開いて"). */
+      mode=(initMode==='bar'||initMode==='ts'||initMode==='table')?initMode:'bar';   /* (#R70) callers may open straight into a view */
       if(Array.isArray(initCodes)&&initCodes.length){ codes=initCodes.filter(cd=>countryStats[cd]).slice(0,10); }   /* (#R71) cap 5→10 */
       if(!codes.length&&window._cpCurrent&&window._cpCurrent.code&&countryStats[window._cpCurrent.code]) codes=[window._cpCurrent.code];
       host=null;   /* rebuild inside the sidebar (the feed may have been re-rendered by tab switches) */
@@ -21850,10 +21910,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if(/WALK|FOOT/.test(m)) return '🚶'; if(/BIKE|CYCL/.test(m)) return '🚲';
       if(/HIGHSPEED|LONG_DISTANCE/.test(m)) return '🚄'; if(/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)) return '🚆';
       if(/CAR|DRIV/.test(m)) return '🚗'; return '🚈'; }
+    /* (#R105) ROOT CAUSE of "鉄道経路が実際の路線を無視した直線になる": the old decoder used 32-bit bitwise ops
+       (`<<shift`, `>>1`, `&1`), which OVERFLOW for precision-7 polylines wherever the coordinate exceeds ~2^31 — i.e.
+       any longitude > ~107° (all of East Asia, incl. Tokyo 139°). The longitude decoded to garbage (−74.98 for
+       Tokyo's 139.77), the R103 >3° guard then DISCARDED the geometry, and the straight from→to fallback drew the
+       "直線". Decode with plain arithmetic (Math.pow / %2 / /2) so values up to 2^53 stay exact. Verified: the Tokyo→
+       Yokohama rail leg now decodes to 139 points that follow the real JR track. */
     function _decodePoly(str,precision){ let index=0,lat=0,lng=0,coords=[],factor=Math.pow(10,precision||5);
-      while(index<str.length){ let b,shift=0,result=0; do{ b=str.charCodeAt(index++)-63; result|=(b&0x1f)<<shift; shift+=5; }while(b>=0x20); lat+=((result&1)?~(result>>1):(result>>1));
-        shift=0;result=0; do{ b=str.charCodeAt(index++)-63; result|=(b&0x1f)<<shift; shift+=5; }while(b>=0x20); lng+=((result&1)?~(result>>1):(result>>1));
-        coords.push([lng/factor,lat/factor]); } return coords; }
+      const rd=()=>{ let shift=0,result=0,b; do{ b=str.charCodeAt(index++)-63; result+=(b&0x1f)*Math.pow(2,shift); shift+=5; }while(b>=0x20);
+        return (result%2===1)?(-(result+1)/2):(result/2); };
+      while(index<str.length){ lat+=rd(); lng+=rd(); coords.push([lng/factor,lat/factor]); } return coords; }
     function ensureLayers(){ try{ if(map.getSource(SRC)) return true; if(!map.isStyleLoaded()) return false;
       map.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       map.addLayer({id:'imroute-cas',type:'line',source:SRC,filter:['==',['geometry-type'],'LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':['+',['coalesce',['get','w'],5],4],'line-opacity':0.6}});
@@ -24106,7 +24172,7 @@ window.addEventListener('DOMContentLoaded', () => {
       (polys||[]).forEach(p=>{ try{ const bb=fbbox(p.geo); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }catch(_){} });
       return (any&&isFinite(a)&&(c-a)<350)?[[a,b],[c,d]]:null; }
     /* ---- analysis ---- */
-    function rows(metric){ const m=METRICS[metric]; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }
+    function rows(metric){ const m=METRICS[metric]||XMET[metric]; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }   /* (#R105) also rank the XMET metrics (life expectancy / internet), not only the base METRICS set */
     function rank(metric,order,n){ const l=rows(metric); if(!l) return null; return order==='bottom'?l.slice(-n).reverse():l.slice(0,n); }
     function ratio(a,b,order,n){ const ma=METRICS[a],mb=METRICS[b]; if(!ma||!mb) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const va=ma.get(s),vb=mb.get(s); if(va==null||vb==null||isNaN(va)||isNaN(vb)||vb===0) continue; out.push({code,name:nm(s),val:va/vb}); } out.sort((x,y)=>y.val-x.val); return order==='bottom'?out.slice(-n).reverse():out.slice(0,n); }
     function relate(my,mx,find,n){ const Y=METRICS[my],X=METRICS[mx]; if(!Y||!X) return null; const pts=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let y=Y.get(s),x=X.get(s); if(y==null||x==null||isNaN(y)||isNaN(x)) continue; if(X.log){ if(x<=0) continue; x=Math.log(x); } pts.push({code,name:nm(s),y,xv:x,raw:Y.get(s)}); }
@@ -25297,7 +25363,8 @@ window.addEventListener('DOMContentLoaded', () => {
           const qq=String(a.question||a.query||'').trim();
           if(qq) return await dispatch({type:'analyze',question:qq,place:'there'});
           return R(true, note('📍 '+esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
-        case 'rank': { await ensureData(); const n=clampN(a.n); const list=rank(a.metric,a.order==='bottom'?'bottom':'top',n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+(METRICS[a.metric]?lx(METRICS[a.metric].label):esc(a.metric||'')); return R(!!(list&&list.length), listHtml(t,list,a.metric)); }
+        case 'rank': { await ensureData(); try{ await _fillMetric(a.metric); }catch(_){}   /* (#R105) load lazy WB metrics (lifeExp/internet/tfr) before ranking so it never falsely reports "metric unavailable" */
+          const n=clampN(a.n); const list=rank(a.metric,a.order==='bottom'?'bottom':'top',n); const _mm=METRICS[a.metric]||XMET[a.metric]; const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+(_mm?lx(_mm.label):esc(a.metric||'')); return R(!!(list&&list.length), listHtml(t,list,a.metric)); }
         case 'ratio': { await ensureData(); const n=clampN(a.n); const list=ratio(a.metricA,a.metricB,a.order==='bottom'?'bottom':'top',n); const t=(METRICS[a.metricA]?lx(METRICS[a.metricA].label):a.metricA)+' / '+(METRICS[a.metricB]?lx(METRICS[a.metricB].label):a.metricB); return list?R(true, listHtml(t,list.map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')):R(false, warn('⚠ '+esc(a.metricA||''))); }
         case 'relate': { await ensureData(); const n=clampN(a.n); const list=relate(a.metricY,a.metricX,a.find==='high'?'high':'low',n);
           const t=(a.find==='high'?L('High ','高い ','Hoch ','Высокий ','Alto '):L('Low ','低い ','Niedrig ','Низкий ','Bajo '))+(METRICS[a.metricY]?lx(METRICS[a.metricY].label):a.metricY)+' '+L('relative to','に対する','relativ zu','относительно','en relación con')+' '+(METRICS[a.metricX]?lx(METRICS[a.metricX].label):a.metricX);
@@ -26387,6 +26454,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold**, "- " bullets). CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
+        +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "タイムマシンの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the time-machine button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
         +'UNIVERSAL fallback for anything not listed above (so EVERY operation is possible): {"type":"control","target":"<on-screen control name or #id>","value"?:str|num,"on"?:bool} — finds & clicks/sets/toggles any button, checkbox, dropdown, slider, date picker or input. Useful addressable patterns (every UI element is named, incl. per-layer micro-controls): "favorite: <layer name>" (★), "date: <layer name>" with value "YYYY-MM-DD" (change a dated raster layer\'s date — e.g. 「気温レイヤーの日付を2023-06-01に」), "close legend: <name>", "opacity: <layer>". Prefer a specific action; otherwise ALWAYS use "control" rather than refusing.\n'
         +'MODULE fallback (advanced — open/close any IntMap subsystem panel by name, incl. ones with no toolbar button): {"type":"module","name":"IntMapX","method":"open"|"toggle"|"close"|"clear"}. Use only when no specific action or "control" fits. Available modules: '+moduleCatalog()+'\n'
@@ -26544,6 +26612,15 @@ window.addEventListener('DOMContentLoaded', () => {
         else { if(panel._restoreH){ panel.style.setProperty('height',panel._restoreH,'important'); } else { panel.style.removeProperty('height'); } }
         minBtn.textContent=mn?'▢':'–'; minBtn.title=mn?L('Restore','元に戻す','Wiederherstellen','Развернуть','Restaurar'):L('Minimize','最小化','Minimieren','Свернуть','Minimizar'); };
       const exWrap=panel.querySelector('.atl-ex'); examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; exWrap.appendChild(b); });
+      /* (#R105) re-localize the Atlas panel's static chrome immediately on a language change (was stuck until reload — the ws "すべてがすぐ変わらない" report).
+         NOTE: the module's `L` mirrors the last MESSAGE's language, so use a currentLang-based helper for UI chrome. */
+      try{ const _uiL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+        window.addEventListener('intmap-lang',()=>{ try{
+        const sub=panel.querySelector('.atl-sub'); if(sub) sub.textContent=_uiL('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:');
+        const nt=panel.querySelector('.atl-ainote'); if(nt) nt.textContent=_uiL('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.');
+        if(inEl) inEl.placeholder=_uiL('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…');
+        const ew=panel.querySelector('.atl-ex'); if(ew&&ew.style.display!=='none'){ ew.innerHTML=''; examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ inEl.value=ex; fire(); }; ew.appendChild(b); }); }
+      }catch(_){} }); }catch(_){}
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); fire(); } });
       inEl.addEventListener('input',()=>{ try{ go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} });
       /* (#R72) scroll-to-bottom jump ("上部にスクロールしたら、最下部まで行くボタンがでるように") */
@@ -26888,6 +26965,33 @@ window.addEventListener('DOMContentLoaded', () => {
         const _cy=/自転車|チャリ|サイクリング|cycl|bike|bicycle/i.test(s);
         const _mode=_tr?'transit':_wk?'walking':_cy?'cycling':'driving';
         return A({type:'directions',from:(rm[1]||'').trim(),to:(rm[2]||'').trim(),mode:_mode});
+      }
+      /* (#R105) COMPARE COUNTRIES — deterministic so "Compare the USA, China and India — GDP, defense and population"
+         (and "日本とドイツを比較して") open the comparison (bar chart by default) with NO AI round-trip. Any "— metrics"
+         tail is dropped (the compare shows its default indicators, which already include GDP / population / military). */
+      let cm=low.match(/^compare\s+(.+?)(?:\s*[—–]\s*.*|\s+-\s+.*)?$/)||s.match(/^(.+?)を\s*(?:比較|くらべて|比べて)(?:して)?[。！？!?]*$/);
+      if(cm){ const parts=(cm[1]||'').replace(/^the\s+/i,'').split(/\s*,\s*|、|;|\s+and\s+|\s+und\s+|\s+y\s+|\s+и\s+|と|\s+vs\.?\s+|\s*対\s*/i).map(x=>x.replace(/^the\s+/i,'').trim()).filter(Boolean);
+        if(parts.length>=2&&parts.length<=10) return A({type:'compareStats',countries:parts}); }
+      /* (#R105) RANKING QUESTIONS — "Which countries have the highest life expectancy?" / "…spend the most on defense
+         relative to GDP?" → the real ranked list, deterministically (no AI needed). */
+      let qm=low.match(/^which countr(?:y|ies)\s+(?:have|has)\s+the\s+(highest|greatest|largest|biggest|most|lowest|smallest|least)\s+(.+?)\s*\??$/)
+        ||low.match(/^which countr(?:y|ies)\s+spends?\s+the\s+(most|least)\s+on\s+(.+?)\s*\??$/);
+      if(qm){ const dir=/lowest|smallest|least/i.test(qm[1])?'bottom':'top'; let mtxt=(qm[2]||'').trim().replace(/\?+$/,''); let mk=null;
+        if(/defen[cs]e|military|軍事|国防/i.test(mtxt)&&/relative to gdp|% ?gdp|share of gdp|per gdp|to gdp/i.test(mtxt)) mk='milSpendGDP';
+        else { const t2=mtxt.replace(/\s+relative to gdp$/i,'').replace(/^spending on\s+/i,'').replace(/defen[cs]e(?:\s+spending)?/i,'military spending'); const sp=_metSpec(t2); mk=sp?sp.key:null; }
+        if(mk) return A({type:'rank',metric:mk,order:dir,n:10}); }
+      /* (#R105) IntMap HELP — Atlas doubles as the built-in guide. A general "how do I use this / what can you do /
+         使い方" gets a concise overview with NO AI round-trip; SPECIFIC how-to questions fall through to the AI, which
+         is told (in SYS) to answer them as IntMap's help. */
+      if(/^\s*(help|ヘルプ|使い方|つかいかた|使いかた|hilfe|ayuda|помощь|man)\s*[?？。]?\s*$/i.test(s)
+        ||/^(what can (you|atlas|intmap|this app) do|how (do i|to) use (this|intmap|atlas)|できること|何ができ|なにができ|どうやって使)/i.test(s.trim())
+        ||/(intmap|atlas|アトラス)\s*(の|は|って)?\s*(使い方|使いかた|できること|機能|ヘルプ)/i.test(s)){
+        return A({type:'answer',text:L(
+          'IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use the TIME MACHINE (bottom-right) to travel 1900→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: "fly to Kenya", "show the population layer", "compare Japan and Germany", "highlight the top 10 by GDP per capita", "directions from Tokyo to Osaka by train", "which countries have the highest life expectancy?", or "brief me on the South China Sea". Ask "how do I …" for any specific feature.',
+          'IntMapはインタラクティブな世界地図で、私（Atlas）が自然言語ですべてを操作できます。できること: レイヤーパネルから100以上のデータレイヤー（気候・人口・経済・ライブ気象）を表示／ニュースを発生地にピン表示／右下のタイムマシンで1900年〜現在を移動／Countriesで国データを並べ替え・比較／ワークスペースモードで可動ウィンドウ化。私にこう頼めます:「ケニアに飛んで」「人口レイヤーを表示」「日本とドイツを比較して」「一人当たりGDP上位10ヵ国をハイライト」「東京から大阪まで電車で経路」「平均寿命が高い国は？」「南シナ海のブリーフ」。個別の機能は「〜の使い方」と聞いてください。',
+          'IntMap ist ein interaktiver Weltatlas — und ich (Atlas) bediene alles per Sprache. Über 100 Datenebenen, Live-News, Zeitmaschine (1900→heute), Länder-Vergleich, Workspace-Modus. Frag z. B.: „flieg nach Kenia", „vergleiche Japan und Deutschland", „Route Tokio→Osaka mit dem Zug". Frag „wie benutze ich …" für Details.',
+          'IntMap — интерактивный атлас мира, и я (Atlas) управляю всем на обычном языке. 100+ слоёв данных, живые новости, машина времени (1900→сейчас), сравнение стран, режим рабочих окон. Спросите: «лети в Кению», «сравни Японию и Германию», «маршрут Токио→Осака на поезде». Спросите «как использовать …» для деталей.',
+          'IntMap es un atlas mundial interactivo — y yo (Atlas) lo manejo en lenguaje natural. Más de 100 capas de datos, noticias en vivo, máquina del tiempo (1900→ahora), comparación de países, modo espacio de ventanas. Pídeme: "vuela a Kenia", "compara Japón y Alemania", "ruta Tokio→Osaka en tren". Pregunta "cómo uso …" para más.')});
       }
       /* navigation (explicit motion verb + place) — rescue-grade. */
       let mm=s.match(/^(?:fly|go|navigate|take me|jump|pan|move|center|centre)\s+(?:to|me to|over to|on)\s+(.+)$/i);
@@ -28505,12 +28609,32 @@ window.addEventListener('DOMContentLoaded', () => {
       if(prev===null) return next!=null?next:YEARS[0];
       if(next===null) return prev;
       return ((next-y)<(y-prev) && (next-prev)<=MAXGAP) ? next : prev; };
+    /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
+       correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
+    const _VANISHED=[
+      {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет',es:'Tíbet'}, wiki:'Tibet_(1912%E2%80%931951)'},
+      {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:{en:'East Turkestan',jp:'東トルキスタン',de:'Ostturkestan',ru:'Восточный Туркестан',es:'Turkestán Oriental'}, wiki:'East_Turkestan'},
+      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:{en:'Manchukuo',jp:'満洲国',de:'Mandschukuo',ru:'Маньчжоу-го',es:'Manchukuo'}, wiki:'Manchukuo'}
+    ];
+    /* (#R105) correct a KNOWN anachronism in the aourednik data: it draws "Tibet" (and East Turkestan) as an
+       INDEPENDENT country in the 1960 snapshot even though the PRC annexed Tibet in 1951 / East Turkestan by 1949.
+       Because 1953–1993 all resolve to the 1960 snapshot, Tibet wrongly showed independent "for a while after 1951"
+       ("1951年以降もしばらくは独立国として表記"). For any snapshot ≥ 1953 we merge those features into China's identity:
+       renamed to China (so a click resolves to the PRC) with the independent LABEL suppressed. Snapshots ≤ 1945 keep
+       Tibet independent (correct for their era). */
+    function _correctEra(fc,year){ try{ if(!fc||!Array.isArray(fc.features)||!(year>=1953)) return fc;
+      fc.features.forEach(f=>{ try{ const n=(f.properties&&(f.properties.NAME||f.properties.name))||'';
+        if(/^\s*(tibet|xizang|thibet|east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria)\s*$/i.test(n)){
+          f.properties=f.properties||{}; f.properties.NAME='China'; f.properties.name='China';
+          f.properties._corrected=1; f.properties._same=1; f.properties._modName='';   /* merged into the PRC → no independent border label */
+        } }catch(_){} });
+      return fc; }catch(_){ return fc; } }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
-      if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ cache.set(year,c); return c; } }catch(_){} }
+      if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ const cc=_correctEra(c,year); cache.set(year,cc); return cc; } }catch(_){} }
       for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
         const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson'),ctrl?{signal:ctrl.signal}:undefined); if(to) clearTimeout(to);
         if(!r.ok) continue; const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
-        cache.set(year,j); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,j); }catch(_){} return j;
+        const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
     function ensure(){ try{ if(!map.isStyleLoaded()) return false;
       if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
@@ -28576,7 +28700,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const disp=(s.name&&(s.name[lg]||s.name.en))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||'';
         if(s.nameEn) cur.set(_normNm(s.nameEn),disp); if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
       if(!cur.size) return fc;
-      fc.features.forEach(f=>{ try{ const nm=(f.properties&&(f.properties.NAME||f.properties.name))||''; f.properties=f.properties||{};
+      fc.features.forEach(f=>{ try{ f.properties=f.properties||{};
+        if(f.properties._corrected){ return; }   /* (#R105) _correctEra already set _same/_modName (Tibet→China, label suppressed) — don't re-tag */
+        const nm=(f.properties.NAME||f.properties.name)||'';
         const hit=cur.get(_normNm(nm));
         if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
         else { f.properties._same=0; f.properties._modName=null; }    /* renamed / vanished → era name (imtb-lbl) */
@@ -28663,6 +28789,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!empire){
         /* 2) exact modern name still present (a country that kept its name: France, Turkey, Weimar Germany…) */
         { const low=String(nm||'').toLowerCase().trim(); for(const c in countryStats){ const s=countryStats[c]; if(!s||s._histHidden) continue; if((s.nameEn||'').toLowerCase()===low){ code=c; break; } } }
+        /* (#R105) 2b) VANISHED historical entities that sit ON the modern territory of ANOTHER country — the
+           point-in-polygon catch-all below would wrongly resolve them to the modern country (Tibet / East Turkestan →
+           PRC, "PRCかROC扱いになる"). Keep THEIR OWN identity + Wikipedia (post-annexation years are already merged into
+           China by _correctEra, so this only fires while the era polygon still carries the historical name). */
+        if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=(V.nm[lg]||V.nm.en); out.wiki=V.wiki; out.code=null; return out; } } }
         /* 3) point-in-polygon over the MODERN polygons — the robust catch-all that survives aourednik name variance
               (e.g. "Kingfom of Italy" typo, "Italy"→our "Kingdom of Italy") by using WHERE the click landed */
         if(!code&&lngLat&&isFinite(lngLat.lng)){ try{ const g=window.countryGeo; if(g&&g.features){ let best=null,bestA=Infinity; for(const f of g.features){ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const s=countryStats[cd]; if(!s||s._histHidden||!f.geometry) continue; if(_contains(f.geometry,lngLat.lng,lngLat.lat)){ const a=_bboxArea(f.geometry); if(a<bestA){ bestA=a; best=cd; } } } if(best) code=best; } }catch(_){} }
