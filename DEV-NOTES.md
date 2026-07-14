@@ -5,6 +5,21 @@
 
 ---
 
+## R98 — Flight sim: F-35 default, globe, result screen, Atlas button; de-cringe status (tag `#R98`)
+
+Concrete bug/UX fixes from a frustrated report (+ a deep physics wishlist, mostly deferred — see below).
+
+**Shipped:**
+- **Default aircraft = F-35** (was airliner). **Mid-flight aircraft switching removed** (the in-cockpit chips + keys 1–6) — you pick the airframe on the pre-flight screen and can't swap it in the air.
+- **Keeps the GLOBE projection** — the sim used to force flat. Verified the eye-point camera applies pitch>90 correctly in globe (bearing/pitch/roll echoed exactly).
+- **Reference stall speed DERIVED from weight + config + CLmax** each step (`√(2mg/ρ·S·CLmax)`) instead of a hardcoded per-aircraft number that disagreed with the aero (A320 → 70.7 m/s, matching the table the report quoted, vs the old 64). ρ is local so the TAS stall rises with altitude.
+- **Post-flight RESULT SCREEN** (`showResult`): on a crash OR a completed landing the flight ends on a screen showing the flight path as a mini-map **coloured by altitude** (blue low → red high) + stats (distance / max-alt / top-speed / time) and **Fly again** (back to the pre-flight screen, same setup) / **Exit**. `crash()` shows this instead of the old silent auto-respawn (the R key still resets in place mid-flight). Path recorded each loop; loop/physics halt the instant it opens; `stop()` clears it. LANDED threshold relaxed 1.02→1.15·Vstall so a normal touchdown + short braking registers ("can't land").
+- **Launching the sim closes the Atlas console** (`_closeAtlas` in `setup()`/`start()`).
+- **Sidebar "Community" button → "✨ Atlas"** that opens the Atlas console (DOM id kept to avoid churn); Community is no longer reachable from its primary entry point.
+- **Removed the "🩺 IntMap self-diagnosis" emoji/wording** from the `diagnose` action → plain "Data & connection status".
+
+**Honestly DEFERRED (told the user):** the deep-physics wishlist is a genuine multi-phase flight-model rewrite, not a one-pass job — (1) **distributed panel aero** (split wings/tail/fuselage into panels with local V=Vair+ω×r → wing-tip stall, autorotation, spin, tail stall from first principles); (2) a **wind/turbulence field** (Vair=Vground−Vwind; crosswind, shear, gusts, Dryden/von Kármán — would tie into IntMap weather); (3) **propulsion tables** (prop CT/CP(J)+RPM/torque; jet altitude/Mach/spool/AB) + make the ceiling emerge from climb-rate decay rather than forcing thrust→0; (4) **landing-gear contact-point model** (per-wheel spring/damper/friction/steering + ground effect −25%@b/4); (5) **ECEF/WGS-84** position frame (local-NED still clamps ±85°); (6) **true FBW G-command** + multi-dim `Ci=f(α,β,M,Re,p,q,r,δ)` tables; (7) numerics (Ixz, fuel/CG, exp-map attitude). Also still open: the **workspace-mode "no flight UI"** bug and the **HUD overlap** (both need on-screen visual debugging the headless preview can't do) and the full Community **backend** rip-out (only the entry point was repointed). Each is a focused follow-up.
+
 ## R97 — Flight sim: pre-flight setup + airport takeoff/landing + trim-equilibrium & stall fixes (tag `#R97`)
 
 Response to an expert physics critique + concrete feature requests.
