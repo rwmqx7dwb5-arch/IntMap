@@ -6,7 +6,7 @@
 //  here with the user's Supabase session JWT. This function:
 //
 //    1. Verifies the JWT and resolves the user  (login REQUIRED → 401 if not).
-//    2. Looks up the user's plan + daily quota   (free = 5/day; easily tiered).
+//    2. Looks up the user's plan + daily quota   (free = 30/day; easily tiered).
 //    3. Atomically consumes one use for today    (increment_ai_usage RPC).
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user
@@ -39,7 +39,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
-const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };
+const PLAN_LIMITS: Record<string, number> = { free: 30, plus: 50, pro: 200, unlimited: 1_000_000 };   /* (#R101) free 10→30/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
