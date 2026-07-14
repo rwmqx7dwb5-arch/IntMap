@@ -22507,7 +22507,11 @@ window.addEventListener('DOMContentLoaded', () => {
            g-limit (or the stall, whichever comes first). This enforces gLim (was warning-only) and takes the twitch
            out of high-speed pitch — at high q̄ the limiting AoA is tiny so the stick is heavily geared down. */
         const q2=Math.max(1,qd*ac.S), aoaLimP=Math.min(ac.aStall*0.9,(ac.gLim*ac.m*g0/q2-ac.CL0)/ac.CLa),
-              aoaLimN=Math.max(-ac.aStall*0.9,(gLimN*ac.m*g0/q2-ac.CL0)/ac.CLa), aoaPred=aoa+qq*0.3, band=ac.aStall*0.28;
+              aoaLimN=Math.max(-ac.aStall*0.9,(gLimN*ac.m*g0/q2-ac.CL0)/ac.CLa), band=ac.aStall*0.24;
+        /* lead only on the pitch rate IN EXCESS of what a steady level turn at the current load factor needs
+           (qSteady=(g/V)(n−1/n)) — so a SUSTAINED turn reaches the full g-limit (no steady under-shoot) while a rapid
+           pull-up is still anticipated (no transient overshoot past the limit). */
+        const qSteady=(g0/Vs)*(st.G-1/Math.max(1,Math.abs(st.G))), aoaPred=aoa+(qq-qSteady)*0.30;
         if(de0<0) de0*=Math.max(0,Math.min(1,(aoaLimP-aoaPred)/band));           /* pulling → limit +G / stall */
         else if(de0>0) de0*=Math.max(0,Math.min(1,(aoaPred-aoaLimN)/band));       /* pushing → limit −G */
       }
