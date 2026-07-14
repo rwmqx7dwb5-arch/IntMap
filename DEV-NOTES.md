@@ -5,6 +5,22 @@
 
 ---
 
+## R97 — Flight sim: pre-flight setup + airport takeoff/landing + trim-equilibrium & stall fixes (tag `#R97`)
+
+Response to an expert physics critique + concrete feature requests.
+
+**Feature requests (shipped):**
+- **Pre-flight `setup()` screen** ("開始時に機種等を選択させてから"): pick the aircraft (6), a start location (26 real airports with field elevation + a runway heading, or the current map view) and the mode — **on the runway (take off)** or **airborne**. This is now the entry point from the **Playground** (new "Flight Simulator" tile) and from the Atlas `flightSim` action (prefilled with any named aircraft/place).
+- **Ground start / takeoff / landing** ("空港を選択し陸地から離陸・着陸"): a ground start spawns stationary ON the runway (gear down, level, heading down the runway, idle throttle); the height settles onto the real DEM and **parks (never freefalls) while tiles load**. A fresh ground spawn is not falsely "LANDED" — a new `_tookOff` flag means a touchdown only counts once the aircraft has been airborne. Verified via `_dbg`: airliner parks (alt=field+1.2, V0, hdg0, not LANDED); fighter takes off (rotate ~72, liftoff 78 m/s ≈ 282 km/h, climbs 250 m); airliner lands, brakes, and LANDED registers.
+
+**Physics fixes (shipped):**
+- **True equilibrium trim** (`computeTrim`): removed the positive-CL floor, so a fast/light machine trims at a NEGATIVE AoA and no longer accelerates upward from spawn (P-51 verified: −0.62° AoA, holds level dV/dAlt 0 — was ~1.45 g up). The elevator trim now zeroes the pitch moment INCLUDING the propeller slipstream over the tail, the thrust-line moment (large on the A320) and the flap moment — all previously omitted. The engineless glider trims into a steady GLIDE (γ=−atan(CD/CL) ≈ 2°, constant speed) instead of level-then-sink.
+- **Stall = critical AoA** (FAA), both signs: removed the false `V<Vstall` stall (a slow but low-AoA float no longer reads STALL — Vstall stays only as the landing/reference speed); separation onset is now ASYMMETRIC (matches `aStallN`) and flaps shift both stall angles. Structural break + overG warning use the asymmetric ±g limits (`gLimN`), not `abs(G)`.
+- **HUD Mach** uses the physics' altitude-dependent speed of sound (was flat `V/300`); **IAS** shown alongside the panel's TAS.
+- Verified attached/cruise flight is bit-for-bit unchanged (the flat-plate blend is inactive below the stall).
+
+**Honestly DEFERRED (documented, not faked):** the genuinely large items in the critique — a full WIND/weather field (crosswind, drift, turbulence, windshear, mountain wave; airspeed would then differ from groundspeed), an ECEF/WGS84 global position frame (the local-NED integrator still clamps at ±85° Mercator), an independent look-ahead Terrarium terrain sampler for collision (still uses `queryTerrainElevation`, i.e. the render DEM), and re-deriving the aileron/rudder derivatives into real-angle `ailMax`/`rudMax` units (the roll/yaw OUTCOME is already tuned to verified-realistic rates, so this is a cosmetic unit cleanup, not a behaviour bug). These are separate, sizeable phases. The critique's own "最優先" four (per-aircraft elevator-angle limit, speed/G limiting, negative-AoA stall continuity, deep-stall drag) were already delivered in R96 and refined here.
+
 ## R96c — Live cameras: add the US/Canada DOT "511" network (~17,000 more, verified hotlinking) (tag `#R96c`)
 
 Request: *"ライブカメラのcoverageを今の5倍に。"* — 5× the live-camera coverage.
