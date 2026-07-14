@@ -22218,7 +22218,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-config{position:absolute;left:50%;top:80px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none;}'
         +'#fs-hud .fs-cfg{font-size:10px;font-weight:700;letter-spacing:0.03em;color:#8fb8e0;background:rgba(6,14,24,0.45);border:1px solid rgba(120,190,255,0.25);border-radius:6px;padding:2px 7px;white-space:nowrap;}'
         +'#fs-hud .fs-cfg.on{color:#04120a;background:#63ff9b;border-color:#63ff9b;}'
-        +'#fs-hud .fs-mach{font-size:10px;color:#8fb8e0;margin-top:4px;}'
+        +'#fs-hud .fs-mach{font-size:10px;color:#8fb8e0;margin-left:9px;padding-left:9px;border-left:1px solid rgba(120,190,255,0.3);}'   /* (#R99) separate the EAS/Mach from the aircraft name — they used to run together */
         +'#fs-hud .fs-aircraft{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:6;}'
         +'#fs-hud .fs-acchip{font-size:11px;font-weight:600;color:#cfe6ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left;white-space:nowrap;transition:.15s;}'
         +'#fs-hud .fs-acchip.on{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
@@ -22267,7 +22267,7 @@ window.addEventListener('DOMContentLoaded', () => {
             +'<line x1="30" y1="40" x2="90" y2="40" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><line x1="30" y1="80" x2="90" y2="80" stroke="rgba(255,255,255,0.6)" stroke-width="1"/></g></g>'
           +'<circle cx="60" cy="60" r="52" fill="none" stroke="#8fb8e0" stroke-width="2"/>'
           +'<line x1="26" y1="60" x2="46" y2="60" stroke="#ffd60a" stroke-width="3.5"/><line x1="74" y1="60" x2="94" y2="60" stroke="#ffd60a" stroke-width="3.5"/><circle cx="60" cy="60" r="2.5" fill="#ffd60a"/></svg>'
-        +'<div class="fs-hint">'+LL('W/S throttle · Shift afterburner<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space airbrake<br>V level horizon · M map<br>P pause · R reset · 1–6 aircraft · Esc exit','W/S 出力 · Shift ブースト<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space 抵抗板<br>V 水平維持 · M 地図<br>P 一時停止 · R 復帰 · 1–6 機体 · Esc 終了','W/S Schub · Shift Nachbrenner<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Horizont · M Karte<br>P Pause · R Reset · 1–6 Flugzeug · Esc Ende','W/S тяга · Shift форсаж<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V горизонт · M карта<br>P пауза · R сброс · 1–6 самолёт · Esc выход','W/S gas · Shift poscombustión<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V horizonte · M mapa<br>P pausa · R reinicio · 1–6 avión · Esc salir')+'</div>'
+        +'<div class="fs-hint">'+LL('W/S throttle · Shift afterburner<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space airbrake<br>V camera-level · M map<br>P pause · R reset · Esc exit','W/S 出力 · Shift ブースト<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space 抵抗板<br>V 視点水平 · M 地図<br>P 一時停止 · R 復帰 · Esc 終了','W/S Schub · Shift Nachbrenner<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Kamera-Horizont · M Karte<br>P Pause · R Reset · Esc Ende','W/S тяга · Shift форсаж<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V камера-горизонт · M карта<br>P пауза · R сброс · Esc выход','W/S gas · Shift poscombustión<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V cámara-horizonte · M mapa<br>P pausa · R reinicio · Esc salir')+'</div>'
         +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
         +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
         +'<div class="fs-btns"><button data-k="arrowleft">←</button><button data-k="arrowdown">▼</button><button data-k="arrowup">▲</button><button data-k="arrowright">→</button><button data-k="w">+</button><button data-k="s">−</button></div>'
@@ -22280,7 +22280,7 @@ window.addEventListener('DOMContentLoaded', () => {
           +'<button class="fs-act" data-act="f">⬇<small>'+LL('FLAPS','フラップ','KLAPPEN','ЗАКРЫЛ','FLAPS')+'</small></button>'
           +'<button class="fs-act amber" data-hold=" ">✋<small>'+LL('BRAKE','抵抗板','BREMSE','ТОРМОЗ','FRENO')+'</small></button>'
           +'<button class="fs-act" data-act="m">🗺<small>'+LL('MAP','地図','KARTE','КАРТА','MAPA')+'</small></button>'
-          +'<button class="fs-act" data-act="v">⊞<small>'+LL('LEVEL','水平','HORIZ.','ГОРИЗ.','NIVEL')+'</small></button>'
+          +'<button class="fs-act" data-act="v">⊞<small>'+LL('CAM LVL','視点水平','KAM-HOR','КАМ-ГОР','CÁM NIV')+'</small></button>'
           +'<button class="fs-act" data-act="p">⏸<small>'+LL('PAUSE','一時停止','PAUSE','ПАУЗА','PAUSA')+'</small></button>'
           +'<button class="fs-act" data-act="r">⟳<small>'+LL('RESET','リセット','RESET','СБРОС','REINICIO')+'</small></button>'
         +'</div>'
@@ -22318,7 +22318,7 @@ window.addEventListener('DOMContentLoaded', () => {
         minimap.jumpTo({ center:[st.lng, st.lat], bearing:hdg, zoom:z });
         const nEl=hud.querySelector('.fs-mm-n'); if(nEl) nEl.style.transform='rotate('+(-hdg).toFixed(0)+'deg)';
         const hEl=hud.querySelector('.fs-mm-hdg'); if(hEl) hEl.textContent=Math.round(hdg).toString().padStart(3,'0');
-        const aEl=hud.querySelector('.fs-mm-alt'); if(aEl) aEl.textContent=Math.round(st.alt).toLocaleString();
+        const aEl=hud.querySelector('.fs-mm-alt'); if(aEl) aEl.textContent=(Math.round(st.alt/10)*10).toLocaleString();   /* (#R99) round to 10 m so the throttled minimap can't show a different exact number than the main HUD */
       }catch(_){} }
     const HELD=['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '];
     /* one-shot actions (debounced against key auto-repeat via keys['_a_'+k]) */
@@ -22327,7 +22327,7 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(k==='g') st.gear=st.gear>0.5?0:1;                                                    /* landing gear */
       else if(k==='v') stabilizeCam=!stabilizeCam;                                                  /* level-horizon toggle */
       else if(k==='m'){ try{ toggleMinimap(); }catch(_){} }                                         /* (#R96) moving-map on/off */
-      else if(k==='p') paused=!paused;                                                              /* pause */
+      else if(k==='p'){ paused=!paused; if(st){ if(paused) st._pauseStart=performance.now(); else if(st._pauseStart){ st._pausedMs=(st._pausedMs||0)+(performance.now()-st._pauseStart); st._pauseStart=0; } } }   /* (#R99) exclude paused wall-time from the flight timer */
       else if(k==='r') respawn();                                                                   /* reset in place */
       else return false;   /* (#R98) no in-flight aircraft switching (keys 1–6 removed) — the airframe is chosen on the pre-flight screen */
       try{ syncHUDChrome(); }catch(_){} return true; }
@@ -22365,10 +22365,14 @@ window.addEventListener('DOMContentLoaded', () => {
     function showResult(kind){ if(resultShown||!st) return; resultShown=true; paused=true;
       try{ if(raf) cancelAnimationFrame(raf); }catch(_){} raf=null;
       const path=(st._path||[]).slice(), ok=(kind==='landed');
-      const durS=Math.round((performance.now()-(st._t0||performance.now()))/1000);
+      const _pMs=(st._pausedMs||0)+(st._pauseStart?performance.now()-st._pauseStart:0);
+      const durS=Math.max(0,Math.round((performance.now()-(st._t0||performance.now())-_pMs)/1000));   /* (#R99) flight time excludes paused wall-time */
       const maxAltM=Math.round(st._maxAlt||st.alt), maxVk=Math.round((st._maxV||st.V)*3.6);
       let distKm=0; for(let i=1;i<path.length;i++){ const a=path[i-1],b=path[i], dLat=(b[1]-a[1])*111.32, dLon=(b[0]-a[0])*111.32*Math.cos(b[1]*Math.PI/180); distKm+=Math.hypot(dLat,dLon); }
-      const col=ok?'#34c759':'#ff453a', title=ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE');
+      /* (#R99) distinguish a runway landing (near a known airport) from an off-field one */
+      let where=''; if(ok){ let bd=1e9,best=null; AIRPORTS.forEach(a=>{ const d=Math.hypot((a[2]-st.lat)*111.32,(a[3]-st.lng)*111.32*Math.cos(st.lat*Math.PI/180)); if(d<bd){bd=d;best=a;} });
+        where=(best&&bd<5)?(' · '+best[1]):(' · '+LL('off-field','滑走路外','abseits','вне полосы','fuera de pista')); }
+      const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE'))+where;
       const ov=document.createElement('div'); ov.id='fs-result';
       ov.style.cssText='position:fixed;inset:0;z-index:3060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';
       const stat=(l,v)=>'<div><div style="font-size:10px;color:#8fb8e0;">'+l+'</div><b style="font-size:14px;">'+v+'</b></div>';
@@ -22381,15 +22385,26 @@ window.addEventListener('DOMContentLoaded', () => {
           +'<button class="fsr-exit" style="flex:0 0 auto;font-size:14px;font-weight:600;color:#bcd6f0;background:transparent;border:1px solid rgba(120,190,255,0.3);border-radius:11px;padding:13px 20px;cursor:pointer;">'+LL('Exit','終了','Ende','Выход','Salir')+'</button></div></div>';
       document.body.appendChild(ov);
       try{ const cv=ov.querySelector('.fsr-cv'), cx=cv.getContext('2d'), W=cv.width, H=cv.height, pad=16;
+        /* (#R99) draw the path in Web-Mercator OVER real satellite imagery (Esri World Imagery tiles) — not a plain
+           dark canvas. Tiles are drawn behind the already-drawn path (destination-over) as they load. */
+        const merc=(lon,lat)=>[(lon+180)/360, (1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2];
         if(path.length>1){ let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9,mna=1e9,mxa=-1e9;
-          path.forEach(p=>{ mnx=Math.min(mnx,p[0]); mxx=Math.max(mxx,p[0]); mny=Math.min(mny,p[1]); mxy=Math.max(mxy,p[1]); mna=Math.min(mna,p[2]); mxa=Math.max(mxa,p[2]); });
-          const sx=(mxx-mnx)||1e-6, sy=(mxy-mny)||1e-6, sc=Math.min((W-2*pad)/sx,(H-2*pad)/sy);
-          const ox=(W-sx*sc)/2, oy=(H-sy*sc)/2, px=lo=>ox+(lo-mnx)*sc, py=la=>H-oy-(la-mny)*sc, aR=(mxa-mna)||1;
-          cx.lineWidth=2.6; cx.lineCap='round'; cx.lineJoin='round';
+          path.forEach(p=>{ const m=merc(p[0],p[1]); mnx=Math.min(mnx,m[0]); mxx=Math.max(mxx,m[0]); mny=Math.min(mny,m[1]); mxy=Math.max(mxy,m[1]); mna=Math.min(mna,p[2]); mxa=Math.max(mxa,p[2]); });
+          let spanX=(mxx-mnx)||1e-7, spanY=(mxy-mny)||1e-7; const pf=0.12; mnx-=spanX*pf; mxx+=spanX*pf; mny-=spanY*pf; mxy+=spanY*pf; spanX=mxx-mnx; spanY=mxy-mny;
+          const sc=Math.min((W-2*pad)/spanX,(H-2*pad)/spanY), ox=(W-spanX*sc)/2, oy=(H-spanY*sc)/2, aR=(mxa-mna)||1;
+          const px=lon=>ox+((lon+180)/360-mnx)*sc, pyl=lat=>oy+(merc(0,lat)[1]-mny)*sc;
+          cx.lineWidth=2.8; cx.lineCap='round'; cx.lineJoin='round';
           for(let i=1;i<path.length;i++){ const a=path[i-1],b=path[i], t=Math.max(0,Math.min(1,(b[2]-mna)/aR));
-            cx.strokeStyle='hsl('+Math.round(210-t*210)+',88%,'+Math.round(48+t*10)+'%)'; cx.beginPath(); cx.moveTo(px(a[0]),py(a[1])); cx.lineTo(px(b[0]),py(b[1])); cx.stroke(); }
-          cx.fillStyle='#34c759'; cx.beginPath(); cx.arc(px(path[0][0]),py(path[0][1]),4.5,0,7); cx.fill();
-          cx.fillStyle=col; cx.beginPath(); cx.arc(px(path[path.length-1][0]),py(path[path.length-1][1]),4.5,0,7); cx.fill();
+            cx.strokeStyle='hsl('+Math.round(210-t*210)+',96%,'+Math.round(54+t*8)+'%)'; cx.beginPath(); cx.moveTo(px(a[0]),pyl(a[1])); cx.lineTo(px(b[0]),pyl(b[1])); cx.stroke(); }
+          cx.lineWidth=1.6; cx.strokeStyle='#fff'; cx.fillStyle='#00e676'; cx.beginPath(); cx.arc(px(path[0][0]),pyl(path[0][1]),4.5,0,7); cx.fill(); cx.stroke();
+          cx.fillStyle=col; cx.beginPath(); cx.arc(px(path[path.length-1][0]),pyl(path[path.length-1][1]),4.5,0,7); cx.fill(); cx.stroke();
+          let z=Math.max(4,Math.min(16,Math.round(Math.log2(sc/256))||4)), tp=Math.pow(2,z);
+          let tx0=Math.floor(mnx*tp),tx1=Math.floor(mxx*tp),ty0=Math.floor(mny*tp),ty1=Math.floor(mxy*tp);
+          while((tx1-tx0+1)*(ty1-ty0+1)>24 && z>4){ z--; tp=Math.pow(2,z); tx0=Math.floor(mnx*tp);tx1=Math.floor(mxx*tp);ty0=Math.floor(mny*tp);ty1=Math.floor(mxy*tp); }
+          const ts=sc/tp;
+          for(let tx=tx0;tx<=tx1;tx++) for(let ty=ty0;ty<=ty1;ty++){ if(ty<0||ty>=tp) continue; const im=new Image();
+            im.onload=(function(tx,ty,im){ return function(){ try{ cx.save(); cx.globalCompositeOperation='destination-over'; cx.drawImage(im, ox+(tx/tp-mnx)*sc, oy+(ty/tp-mny)*sc, ts+1, ts+1); cx.restore(); }catch(_){} }; })(tx,((ty%tp)+tp)%tp,im);
+            im.src='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+(((ty%tp)+tp)%tp)+'/'+(((tx%tp)+tp)%tp); }
         } else { cx.fillStyle='#8fb8e0'; cx.font='12px ui-monospace,monospace'; cx.fillText(LL('(flight too short to map)','(経路が短すぎます)','(zu kurz)','(слишком коротко)','(muy corto)'),18,H/2); }
       }catch(_){}
       const flyOpts=st._opts||{};
@@ -22452,10 +22467,11 @@ window.addEventListener('DOMContentLoaded', () => {
         V:(opts.speed!=null?+opts.speed:ac.Vcruise), phi:0, theta:0, psi:(b0*Math.PI/180), gamma:0, aoa:0, beta:0, vs:0, G:1,
         onGround:false, lastTerr:null, _settleTerr:false, groundStart:false, _tookOff:true, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='cockpit';
-      resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0;   /* (#R98) flight-path recording for the result screen */
+      resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0; st._pathIntv=350; st._pausedMs=0; st._pauseStart=0;   /* (#R98/#R99) flight-path recording + pause-time exclusion */
       /* (#R97) GROUND START: spawn stationary ON the runway (gear down, level, heading down the runway, throttle idle)
          so the user takes off; the height settles onto the real DEM (see _settleTerr). Otherwise trim for level cruise. */
-      if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
+      if(opts.onGround){ const launchV=(ac.Tmax<=0?ac.Vcruise:0);   /* (#R99) an engineless glider can't self-take-off from a runway → give it a winch/tow launch speed so it can fly off */
+        st.V=launchV; st.vb=[launchV,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
         st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }
       else computeTrim();
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
@@ -22466,6 +22482,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(map.setMaxPitch) map.setMaxPitch(179); }catch(_){}                                       /* (#R95) let the camera look UP past the vertical (climb / loop) — MapLibre v5 accepts ≤180 */
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(false); }catch(_){}            /* keep the eye above ground when pitch>90° (per MapLibre docs) */
       /* (#R98) KEEP THE GLOBE — the sim used to force a flat projection; fly on the real curved Earth instead. */
+      /* (#R99) REAL SKY & HAZE — the sky was pure black (no height cue). MapLibre 5's sky spec gives a blue gradient,
+         pale horizon haze and distance fog; restored on exit. */
+      try{ prevView.sky=(map.getSky?map.getSky():undefined); }catch(_){}
+      try{ if(map.setSky) map.setSky({'sky-color':'#3f78c2','sky-horizon-blend':0.75,'horizon-color':'#cfe0ee','horizon-fog-blend':0.55,'fog-color':'#dbe6f0','fog-ground-blend':0.35,'atmosphere-blend':['interpolate',['linear'],['zoom'],0,0.9,10,0.55,15,0.1]}); }catch(_){}
       try{ if(typeof currentMapType==='undefined'||currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
       try{ const b3=document.getElementById('btn-view-3d'); if(b3&&!b3.classList.contains('active')) b3.click(); }catch(_){}
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
@@ -22506,6 +22526,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R85b) restore the pre-flight view (basemap / projection / 3-D / max pitch) */
       try{ const pv=prevView; if(pv){
         if(map.setMaxPitch) map.setMaxPitch(pv.maxPitch||60);
+        try{ if(map.setSky) map.setSky(pv.sky||undefined); }catch(_){}   /* (#R99) restore the pre-flight sky */
         if(pv.base!=='sat'&&typeof currentMapType!=='undefined'&&currentMapType==='sat'){ const b=document.getElementById('btn-view-map'); if(b) b.click(); }
         if(!pv.terr&&typeof terrain3D!=='undefined'&&terrain3D){ const b3=document.getElementById('btn-view-3d'); if(b3) b3.click(); }
         if(pv.proj==='globe'&&typeof currentProj!=='undefined'&&currentProj!=='globe'&&window.IntMapOS){ IntMapOS.exec('view.proj.globe',{source:'flightsim'}); }
@@ -22564,7 +22585,7 @@ window.addEventListener('DOMContentLoaded', () => {
            speed of sound as the physics (was a flat V/300 that disagreed with the aero). */
         const mc=q('.fs-mach'); if(mc){ const ac=AC(), rho=rhoAt(st.alt), ias=Math.round(st.V*Math.sqrt(Math.max(0.05,rho/1.225))*3.6),
           aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
-          mc.textContent='IAS '+ias+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }
+          mc.textContent='EAS '+ias+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }   /* (#R99) TAS·√(ρ/ρ0) is EQUIVALENT airspeed (EAS), not IAS — labelled correctly */
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
         const aEl=q('.fs-aoa'); if(aEl){ aEl.textContent=Math.round(st.aoa*R2D); aEl.parentNode.style.color=f.stalling?'#ff9f0a':''; }
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
@@ -22718,7 +22739,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
           if(sp>1e-3){ const nf=Math.max(0,sp-fr*h)/sp; st.vb=[st.vb[0]*nf,st.vb[1]*nf,st.vb[2]*nf]; }
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
-          if(st._tookOff && st.V<VstallEff*1.15 && bankDeg<10 && descent<3) landed=true; }   /* (#R98) achievable after a normal touchdown + short braking (was 1.02·Vstall ≈ a full stop) */
+          if(st._tookOff && st.V<Math.max(15,VstallEff*0.55) && bankDeg<10 && descent<3) landed=true; }   /* (#R99) require a real roll-out to a slow taxi speed, not near approach speed (LANDED was confirming before the aircraft had slowed) */
       } else st.onGround=false;
       /* (#R97) STALL = critical-AoA exceeded (FAA: an aerofoil stalls at its critical AoA regardless of speed/attitude),
          on BOTH sides of the CL curve. The old extra `V<Vstall` term flagged a false stall whenever the plane was slow
@@ -22784,7 +22805,8 @@ window.addEventListener('DOMContentLoaded', () => {
       updateHUD(agl,f);
       /* (#R98) record the flight path (for the result-screen map) + peak stats */
       if(st.alt>(st._maxAlt||0)) st._maxAlt=st.alt; if(st.V>(st._maxV||0)) st._maxV=st.V;
-      if(!st._pathT || now-st._pathT>350){ st._pathT=now; if(st._path){ st._path.push([st.lng,st.lat,st.alt]); if(st._path.length>1200) st._path.shift(); } }
+      if(!st._pathT || now-st._pathT>(st._pathIntv||350)){ st._pathT=now; if(st._path){ st._path.push([st.lng,st.lat,st.alt]);
+        if(st._path.length>1600){ st._path=st._path.filter((_,i)=>i%2===0); st._pathIntv=(st._pathIntv||350)*2; } } }   /* (#R99) DECIMATE (keep the whole route coarser) instead of dropping the oldest — a long flight kept losing its start & under-counting distance */
       if(f.landed){ showResult('landed'); return; }   /* completed landing → result screen */
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
