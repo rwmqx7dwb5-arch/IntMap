@@ -1825,7 +1825,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       <button class="mode-btn" id="btn-news" data-i18n="tabNews">News</button>
       <button class="mode-btn" id="btn-info" data-i18n="tabInfo">Information</button>
       <button class="mode-btn" id="btn-stats" data-i18n="tabStats">Countries</button><!-- (#R73) tab renamed Stats→Data→Countries (user picked from 5 candidates) -->
-      <button class="mode-btn" id="btn-community" data-i18n="tabCommunity">Community</button>
+      <button class="mode-btn" id="btn-community" title="Atlas">✨ Atlas</button><!-- (#R98) Community removed; this sidebar slot now opens the Atlas AI console (id kept to avoid churn) -->
     </div>
     <div class="search-bar" id="sidebar-search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
@@ -9654,7 +9654,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('newsfilter-saved').onclick=()=>{ if(currentMode!=='saved') setMode('saved','btn-news'); };
   document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
   document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
-  document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.community',{source:'ui'});
+  /* (#R98) Community feature removed — this sidebar button now opens the Atlas AI console. */
+  document.getElementById('btn-community').onclick=()=>{ try{ if(window.IntMapConsole){ if(IntMapConsole.open) IntMapConsole.open(); else if(IntMapConsole.toggle) IntMapConsole.toggle(); } }catch(_){} };
   /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
      so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
   try{
