@@ -26536,8 +26536,9 @@ window.addEventListener('DOMContentLoaded', () => {
           push2('EARTHQUAKES (USGS, last 24 h'+(ctx?', in the area':'')+')',L('earthquakes','地震','Erdbeben','землетрясения','sismos'),got.quakes);
           push2('COUNTRY STATISTICS',L('country stats','国別統計','Länderstatistik','статистика','estadísticas'),got.stats);
           const st=stateContext(); if(st) block+='[CURRENT MAP STATE]\n'+st+'\n\n';
-          /* (#R69) empty client-side gathering NO LONGER aborts — the model has a live web-search tool and MUST
-             use it instead ("ネット検索しろや。逃げてんじゃねーよ"). */
+          /* (#R113) IntMap already ran the live web-news search (GDELT + Google News) into the DATA blocks above;
+             the model does NOT have its own web-search tool by default, so it works from that evidence and answers
+             honestly when the evidence is thin (rather than the old "the model MUST search" assertion). */
           const lang=_langLine();
           /* (#R64) REPORT quality ("クソみたいなレポート出力してんじゃねーよ"): lead with what is actually happening
              (news, dated), analyse rather than recite — no weather/quake/statistics dumps unless they answer the
