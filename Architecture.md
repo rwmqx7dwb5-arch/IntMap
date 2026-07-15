@@ -100,10 +100,15 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     ④**AI Brief統合** — `brief` はAtlasチャット内にインライン描画（GDELT見出し＋周辺ニュースを反映）。地名ポップアップ・
     国カードのAI調査ボタンは `IntMapConsole.brief()` へルーティング（旧パネルはaskHere用に存置）。
     ⑤**UI刷新** — ChatGPT風（グラデーションロゴ・洗練バブル・タイピングドット・フォーカスリング付きコンポーザー）。
-    起動ボタンはグラデーションピル「⌖ Atlas」。**#R111：フローティングのポップアップは廃止し、通常モード（モバイル・
-    デスクトップ両方）では #sidebar 内に開いてサイドバーを占有**（`_atlInSidebar`=`!ws-mode`、`body.atl-in-sheet` CSS。
-    モバイルはボトムシートを全開、デスクトップは左パネルに充填、×で元のタブへ復帰）。ワークスペースモードのみ専用の
-    Atlasウィンドウを維持。
+    サイドバー第4タブ「Atlas」（グラデーションピル）。**#R112：通常モード（モバイル・デスクトップ両方）では Atlas は
+    News/Information/Countries と全く同じ「サイドバーの本物のタブ」**：専用のコンテンツ領域 `#atlas-feed`（`#live-news-feed`
+    等の兄弟）にコンソールを**通常フローで**マウントし、タブバー＋ヘッダーは表示したまま、その下に描画（`.atl-tab` CSS＝
+    `position:relative;width/height:100%`・ポップアップの枠/影/角丸/ヘッダーを除去）。`#btn-community`→`IntMapOS.exec('tab.atlas')`
+    →`setMode('atlas')`、`renderUI()` の `atlas` 分岐が `IntMapConsole.mountTab()` を呼ぶ。全入口（タブ/⌘K/右クリック「ここを
+    Atlasに聞く」/国AI Brief）がこのタブに着地。モバイルは他タブと同じ挙動を自動共有し、入力欄が下端にあるためシートは
+    **全開**まで持ち上がる。**#R111 の「ポップアップをサイドバーに貼り付けた（`body.atl-in-sheet` オーバーレイ＝
+    他要素を visibility:hidden で隠す）」方式は廃止**（`_atlSheetMount`/`_atlInSidebar` 削除）。ワークスペースモードのみ
+    従来どおり専用の Atlas ウィンドウを維持（`_atlWs()` で分岐、`open()` はタブにマウントしない）。
     ⑥**国比較の再構築 `IntMapStatsCompare`** — 最大5か国×約22指標（複数選択）、**出典切替 世界銀行⇄IMF WEO**（IMF未収載は
     行ごとに正直表示）、最新値テーブル＋複数国重ね時系列チャート（共有クロスヘア）。入口=国カード/統計タブ/Atlas
     `compareStats`（「日本と韓国を比較して」はlocalPlanで決定的）。モバイルはコンパクトCSS。
