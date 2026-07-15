@@ -79,7 +79,10 @@ const FALLBACK_MAX_OUTPUT = 1800;
 const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
 
 // (#R113) Which tasks want JSON output (structured-output / responseMimeType json).
-const JSON_TASKS = new Set(["atlas_plan", "map_report", "json_extract"]);
+// (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
+// latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
+// client strips any fence). map_report / json_extract keep structured output where it matters most.
+const JSON_TASKS = new Set(["map_report", "json_extract"]);
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,
@@ -128,7 +131,7 @@ function parseDataUrl(d: string): ImgPart | null {
 // (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit (which
 // terminates it with an opaque 546 the client can't parse). Abort each provider call well before that so it fails
 // as a clean, classified 503 instead. 45s is generous for Gemini "low" yet safe for a MALFORMED retry (2×45<limit).
-const PROVIDER_TIMEOUT_MS = 45_000;
+const PROVIDER_TIMEOUT_MS = 55_000;
 async function fetchWithTimeout(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS): Promise<Response> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
@@ -308,6 +311,26 @@ async function callGemini(model: string, key: string, prompt: string, system: st
   return { text, finishReason, webAttached: attachSearch };
 }
 
+// (#R113c) Transient Google errors — 503 "the model is overloaded" / other 5xx / rate-limit — are common for a busy
+// model and usually clear on a retry (Gemini's own guidance is to retry with backoff). Retry those up to twice with a
+// short backoff. Timeouts and MALFORMED are handled elsewhere (retrying a timeout would just burn another 45s).
+async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
+  const MAX = 3;   // 1 attempt + up to 2 retries
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await callGemini(model, key, prompt, system, imgs, opts);
+    } catch (e) {
+      const ps = (e instanceof ProviderError && e.meta && typeof e.meta.providerStatus === "number") ? e.meta.providerStatus as number : 0;
+      const transient = e instanceof ProviderError && (e.code === "provider_rate_limit" || (e.code === "provider_unavailable" && ps >= 500));
+      if (transient && attempt < MAX) {
+        await new Promise((r) => setTimeout(r, 700 * attempt));
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
  try {
@@ -399,7 +422,7 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("GEMINI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "GEMINI_API_KEY not set", 502, false, {});
       try {
-        out = await callGemini(model, key, prompt, system, imgs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
+        out = await callGeminiRetry(model, key, prompt, system, imgs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
       } catch (e) {
         // (#R113) MALFORMED_FUNCTION_CALL → retry ONCE with tools stripped, a hardened
         // "do not call functions" system suffix, and JSON mode forced. No further retries.
