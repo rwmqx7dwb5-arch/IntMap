@@ -11295,22 +11295,31 @@ window.addEventListener('DOMContentLoaded', () => {
          data-legend behaves like the Köppen legend and stays movable on phones too (#10). */
       return el;
     }
-    const lgdHDI=makeLegend('hdi',140,(currentLang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], currentLang==='jp'?'2022 国連UNDP':currentLang==='de'?'2022 UNDP':currentLang==='ru'?'2022 ПРООН':currentLang==='es'?'2022 PNUD':'2022 UNDP');
-    const lgdDem=makeLegend('dem',140,(currentLang==='jp'?'民主主義指数':currentLang==='de'?'Demokratieindex':currentLang==='ru'?'Индекс демократии':currentLang==='es'?'Índice de democracia':'Democracy Index'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], currentLang==='jp'?'2023 EIU':'2023 EIU');
-    const lgdPop=makeLegend('pop',140,(currentLang==='jp'?'人口密度':currentLang==='de'?'Bevölkerungsdichte':currentLang==='ru'?'Плотность населения':currentLang==='es'?'Densidad de población':'Pop. density'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], currentLang==='jp'?'per km²':'per km²');
-    const lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[currentLang==='jp'?'加盟国':currentLang==='de'?'Mitglied':currentLang==='ru'?'Член':currentLang==='es'?'Miembro':'Member',''],currentLang==='jp'?'32か国':currentLang==='de'?'32 Mitglieder':currentLang==='ru'?'32 членов':currentLang==='es'?'32 miembros':'32 members');
+    /* (#R110) the core data-legends bake `currentLang` at construction, so a LANGUAGE CHANGE left already-shown
+       legends in the old language ("言語設定を変更したとき、すでに表示済みのレイヤーの凡例はその言語に切り替わらない").
+       Wrap their build in buildCoreLegends() so it can be re-run in the new language; the element refs are hoisted to
+       `let` (tileLegends & co. reference them) and reassigned on each rebuild. Opacity / date / unit VALUES live in
+       persistent JS state (opacities[], layerDates[], windUnit…), so they survive a rebuild. */
+    const CORE_LEGEND_IDS=['hdi','dem','pop','nato','gdppc','tfr','milSpend','milSpendGDP','snow','aod','nightsat','eez','temp','thermal','radar','sst','popgrid','relief','sealevel','wind'];
+    let lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdWind;
+    function buildCoreLegends(){
+      CORE_LEGEND_IDS.forEach(id=>{ const e=document.getElementById('data-legend-'+id); if(e) e.remove(); });   /* drop the old-language elements before rebuilding (no duplicate ids) */
+    lgdHDI=makeLegend('hdi',140,(currentLang==='jp'?'HDI':'HDI'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#a6d96a,#1a9850)',['0.45','0.95'], currentLang==='jp'?'2022 国連UNDP':currentLang==='de'?'2022 UNDP':currentLang==='ru'?'2022 ПРООН':currentLang==='es'?'2022 PNUD':'2022 UNDP');
+    lgdDem=makeLegend('dem',140,(currentLang==='jp'?'民主主義指数':currentLang==='de'?'Demokratieindex':currentLang==='ru'?'Индекс демократии':currentLang==='es'?'Índice de democracia':'Democracy Index'),'linear-gradient(to right,#a50026,#f46d43,#fee08b,#74add1,#313695)',['1','10'], currentLang==='jp'?'2023 EIU':'2023 EIU');
+    lgdPop=makeLegend('pop',140,(currentLang==='jp'?'人口密度':currentLang==='de'?'Bevölkerungsdichte':currentLang==='ru'?'Плотность населения':currentLang==='es'?'Densidad de población':'Pop. density'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',['2','3000+'], currentLang==='jp'?'per km²':'per km²');
+    lgdNATO=makeLegend('nato',140,'NATO',`linear-gradient(to right,#0a3d91,#1e63ff)`,[currentLang==='jp'?'加盟国':currentLang==='de'?'Mitglied':currentLang==='ru'?'Член':currentLang==='es'?'Miembro':'Member',''],currentLang==='jp'?'32か国':currentLang==='de'?'32 Mitglieder':currentLang==='ru'?'32 членов':currentLang==='es'?'32 miembros':'32 members');
     /* (#R15b / #38) Legends the value-scale layers were missing — choropleths (GDP pc, fertility, military
        spend $B & %GDP) and the snow / aerosol / night-lights rasters. They auto-gain an opacity slider via
        ensureLegendOpacity (their ids exist in `opacities`), moving that control onto the legend too. */
-    const lgdGdppc=makeLegend('gdppc',140,(currentLang==='jp'?'1人当たりGDP':currentLang==='de'?'BIP pro Kopf':currentLang==='ru'?'ВВП на душу населения':currentLang==='es'?'PIB per cápita':'GDP per capita'),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], currentLang==='jp'?'名目・米ドル':currentLang==='de'?'USD, nominal':currentLang==='ru'?'долл. США, номинал':currentLang==='es'?'USD, nominal':'USD, nominal');
-    const lgdTfr=makeLegend('tfr',140,(currentLang==='jp'?'合計特殊出生率':currentLang==='de'?'Geburtenrate (TFR)':currentLang==='ru'?'Суммарный коэффициент рождаемости':currentLang==='es'?'Tasa de fecundidad total':'Total fertility rate'),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], currentLang==='jp'?'2022 世界銀行':currentLang==='de'?'2022 Weltbank':currentLang==='ru'?'2022 Всемирный банк':currentLang==='es'?'2022 Banco Mundial':'2022 World Bank');
-    const lgdMil=makeLegend('milSpend',140,(currentLang==='jp'?'国防費（$B）':currentLang==='de'?'Militärausgaben ($ Mrd.)':currentLang==='ru'?'Военные расходы ($ млрд)':currentLang==='es'?'Gasto militar ($ mil M)':'Mil. spending ($B)'),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
-    const lgdMilGDP=makeLegend('milSpendGDP',140,(currentLang==='jp'?'国防費（対GDP）':currentLang==='de'?'Militärausgaben (% BIP)':currentLang==='ru'?'Военные расходы (% ВВП)':currentLang==='es'?'Gasto militar (% PIB)':'Mil. spending (% GDP)'),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
-    const lgdSnow=makeLegend('snow',140,(currentLang==='jp'?'積雪・海氷':currentLang==='de'?'Schnee & Eis':currentLang==='ru'?'Снег и лёд':currentLang==='es'?'Nieve y hielo':'Snow & ice'),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[currentLang==='jp'?'少':currentLang==='de'?'Wenig':currentLang==='ru'?'Мало':currentLang==='es'?'Bajo':'Low',currentLang==='jp'?'多':currentLang==='de'?'Viel':currentLang==='ru'?'Много':currentLang==='es'?'Alto':'High'], 'MODIS NDSI');
-    const lgdAod=makeLegend('aod',140,(currentLang==='jp'?'エアロゾル / 煙霧':currentLang==='de'?'Aerosol / Dunst':currentLang==='ru'?'Аэрозоль / дымка':currentLang==='es'?'Aerosol / bruma':'Aerosol / haze'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[currentLang==='jp'?'清浄':currentLang==='de'?'Klar':currentLang==='ru'?'Чисто':currentLang==='es'?'Limpio':'Clear',currentLang==='jp'?'濃い':currentLang==='de'?'Trüb':currentLang==='ru'?'Мутно':currentLang==='es'?'Brumoso':'Hazy'], 'MODIS AOD');
-    const lgdNightsat=makeLegend('nightsat',140,(currentLang==='jp'?'夜間光（衛星）':currentLang==='de'?'Nachtlichter':currentLang==='ru'?'Ночные огни':currentLang==='es'?'Luces nocturnas':'Night lights'),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[currentLang==='jp'?'暗':currentLang==='de'?'Dunkel':currentLang==='ru'?'Темно':currentLang==='es'?'Oscuro':'Dark',currentLang==='jp'?'明':currentLang==='de'?'Hell':currentLang==='ru'?'Ярко':currentLang==='es'?'Brillante':'Bright'], 'VIIRS Black Marble');
+    lgdGdppc=makeLegend('gdppc',140,(currentLang==='jp'?'1人当たりGDP':currentLang==='de'?'BIP pro Kopf':currentLang==='ru'?'ВВП на душу населения':currentLang==='es'?'PIB per cápita':'GDP per capita'),'linear-gradient(to right,#fff7ec,#fee8c8,#fdbb84,#fc8d59,#e34a33,#7f0000)',['$1k','$90k+'], currentLang==='jp'?'名目・米ドル':currentLang==='de'?'USD, nominal':currentLang==='ru'?'долл. США, номинал':currentLang==='es'?'USD, nominal':'USD, nominal');
+    lgdTfr=makeLegend('tfr',140,(currentLang==='jp'?'合計特殊出生率':currentLang==='de'?'Geburtenrate (TFR)':currentLang==='ru'?'Суммарный коэффициент рождаемости':currentLang==='es'?'Tasa de fecundidad total':'Total fertility rate'),'linear-gradient(to right,#2c7fb8,#7fcdbb,#ffffb2,#fe9929,#cc4c02)',['1.0','6.5+'], currentLang==='jp'?'2022 世界銀行':currentLang==='de'?'2022 Weltbank':currentLang==='ru'?'2022 Всемирный банк':currentLang==='es'?'2022 Banco Mundial':'2022 World Bank');
+    lgdMil=makeLegend('milSpend',140,(currentLang==='jp'?'国防費（$B）':currentLang==='de'?'Militärausgaben ($ Mrd.)':currentLang==='ru'?'Военные расходы ($ млрд)':currentLang==='es'?'Gasto militar ($ mil M)':'Mil. spending ($B)'),'linear-gradient(to right,#fff7ec,#fdd49e,#fc8d59,#d7301f,#7f0000)',['$1B','$900B+'], 'SIPRI / IISS 2023');
+    lgdMilGDP=makeLegend('milSpendGDP',140,(currentLang==='jp'?'国防費（対GDP）':currentLang==='de'?'Militärausgaben (% BIP)':currentLang==='ru'?'Военные расходы (% ВВП)':currentLang==='es'?'Gasto militar (% PIB)':'Mil. spending (% GDP)'),'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',['0.5%','6%+'], 'SIPRI / IISS 2023');
+    lgdSnow=makeLegend('snow',140,(currentLang==='jp'?'積雪・海氷':currentLang==='de'?'Schnee & Eis':currentLang==='ru'?'Снег и лёд':currentLang==='es'?'Nieve y hielo':'Snow & ice'),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[currentLang==='jp'?'少':currentLang==='de'?'Wenig':currentLang==='ru'?'Мало':currentLang==='es'?'Bajo':'Low',currentLang==='jp'?'多':currentLang==='de'?'Viel':currentLang==='ru'?'Много':currentLang==='es'?'Alto':'High'], 'MODIS NDSI');
+    lgdAod=makeLegend('aod',140,(currentLang==='jp'?'エアロゾル / 煙霧':currentLang==='de'?'Aerosol / Dunst':currentLang==='ru'?'Аэрозоль / дымка':currentLang==='es'?'Aerosol / bruma':'Aerosol / haze'),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[currentLang==='jp'?'清浄':currentLang==='de'?'Klar':currentLang==='ru'?'Чисто':currentLang==='es'?'Limpio':'Clear',currentLang==='jp'?'濃い':currentLang==='de'?'Trüb':currentLang==='ru'?'Мутно':currentLang==='es'?'Brumoso':'Hazy'], 'MODIS AOD');
+    lgdNightsat=makeLegend('nightsat',140,(currentLang==='jp'?'夜間光（衛星）':currentLang==='de'?'Nachtlichter':currentLang==='ru'?'Ночные огни':currentLang==='es'?'Luces nocturnas':'Night lights'),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[currentLang==='jp'?'暗':currentLang==='de'?'Dunkel':currentLang==='ru'?'Темно':currentLang==='es'?'Oscuro':'Dark',currentLang==='jp'?'明':currentLang==='de'?'Hell':currentLang==='ru'?'Ярко':currentLang==='es'?'Brillante':'Bright'], 'VIIRS Black Marble');
     /* EEZ legend — one row per boundary TYPE (kept distinct), swatches match the BRIGHT SLD colours in addEEZ */
-    const lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
+    lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
     /* (#R79g) restored per-type colour coding (flattening it to one colour was wrong) — but now each type is a
        BRIGHT line for visibility. Colours here MUST match EEZ_STYLE in addEEZ. */
     const EEZ_CATS=[
@@ -11334,7 +11343,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mc.appendChild(lgdEEZ);
     lgdEEZ.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-eez'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Temperature legend (MODIS LST color ramp ≈ Kelvin) */
-    const lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
+    lgdTemp=document.createElement('div'); lgdTemp.className='data-legend'; lgdTemp.id='data-legend-temp'; lgdTemp.style.bottom='140px';
     lgdTemp.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="temp" title="${t('close')}">✕</button><h4>${t('lgdTempTitle')||'Air temperature (2 m)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0050d0,#0098ff,#00e0c0,#7dff66,#fff700,#ff9000,#ed1c24,#8a0027);"></div>
       <div class="dl-scale"><span>${fmtTemp(-40)}</span><span>${fmtTemp(40)}</span></div>
@@ -11342,7 +11351,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mc.appendChild(lgdTemp);
     lgdTemp.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-temp'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Thermal anomalies legend (fire/heat-signature pixels) */
-    const lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
+    lgdThermal=document.createElement('div'); lgdThermal.className='data-legend'; lgdThermal.id='data-legend-thermal'; lgdThermal.style.bottom='140px';
     lgdThermal.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="thermal" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'熱異常(火災)':currentLang==='de'?'Thermische Anomalien':currentLang==='ru'?'Тепловые аномалии':currentLang==='es'?'Anomalías térmicas':'Thermal anomalies'}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:14px;height:14px;background:#ff3b30;border-radius:50%;box-shadow:0 0 8px rgba(255,59,48,0.6);"></span> ${currentLang==='jp'?'検知された火災・熱源':currentLang==='de'?'Erkannte Brände / Wärmequellen':currentLang==='ru'?'Обнаруженные пожары / тепловые источники':currentLang==='es'?'Fuegos activos / fuentes de calor detectados':'Detected active fire / heat source'}</div>
       <label style="display:flex; align-items:center; gap:6px; font-size:11px; margin:4px 0 2px; color:var(--text-muted);">${currentLang==='jp'?'期間':currentLang==='de'?'Zeitfenster':currentLang==='ru'?'Окно':currentLang==='es'?'Ventana':'Window'}: <select class="thermal-window" style="flex:1; padding:3px 6px; border-radius:6px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px;"><option value="24" data-i18n="thermWin24">${t('thermWin24')}</option><option value="48" data-i18n="thermWin48">${t('thermWin48')}</option><option value="72" data-i18n="thermWin72">${t('thermWin72')}</option></select></label>
@@ -11351,7 +11360,7 @@ window.addEventListener('DOMContentLoaded', () => {
     lgdThermal.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-thermal'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     { const sw=lgdThermal.querySelector('.thermal-window'); if(sw){ sw.value=window._thermalWindow||'24'; sw.addEventListener('change',()=>{ window._thermalWindow=sw.value; if(window._refreshThermal) window._refreshThermal(); try{ window._refreshLegendDates&&window._refreshLegendDates(); }catch(_){} }); } }
     /* Precipitation-radar legend (RainViewer rain-rate scale) */
-    const lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
+    lgdRadar=document.createElement('div'); lgdRadar.className='data-legend'; lgdRadar.id='data-legend-radar'; lgdRadar.style.bottom='140px';
     lgdRadar.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="radar" title="${t('close')}">✕</button><h4>${t('lgdRadarTitle')||'Rain rate'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#9bd2ff,#0080ff,#00c800,#ffe000,#ff7800,#ff0000,#c800c8);"></div>
       <div class="dl-scale"><span>${currentLang==='jp'?'弱い':currentLang==='de'?'Leicht':currentLang==='ru'?'Слабый':currentLang==='es'?'Ligero':'Light'}</span><span>${currentLang==='jp'?'激しい':currentLang==='de'?'Stark':currentLang==='ru'?'Сильный':currentLang==='es'?'Fuerte':'Heavy'}</span></div>
@@ -11359,7 +11368,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mc.appendChild(lgdRadar);
     lgdRadar.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-radar'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-surface-temperature legend (GHRSST MUR L4) */
-    const lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
+    lgdSST=document.createElement('div'); lgdSST.className='data-legend'; lgdSST.id='data-legend-sst'; lgdSST.style.bottom='140px';
     lgdSST.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sst" title="${t('close')}">✕</button><h4>${t('lgdSSTTitle')||'Sea-surface temp'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#3a0088,#0033cc,#0099ff,#00e0c0,#7dff66,#ffe000,#ff7800,#e00000);"></div>
       <div class="dl-scale"><span>${fmtTemp(-2)}</span><span>${fmtTemp(32)}</span></div>
@@ -11367,7 +11376,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mc.appendChild(lgdSST);
     lgdSST.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-sst'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Gridded population-density legend (NASA SEDAC GPW v4) */
-    const lgdPopGrid=document.createElement('div'); lgdPopGrid.className='data-legend'; lgdPopGrid.id='data-legend-popgrid'; lgdPopGrid.style.bottom='140px';
+    lgdPopGrid=document.createElement('div'); lgdPopGrid.className='data-legend'; lgdPopGrid.id='data-legend-popgrid'; lgdPopGrid.style.bottom='140px';
     lgdPopGrid.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="popgrid" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'人口密度（グリッド）':currentLang==='de'?'Bevölkerungsdichte (Raster)':currentLang==='ru'?'Плотность населения (сетка)':currentLang==='es'?'Densidad de población (malla)':'Pop. density (grid)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#ffffd4,#fee391,#fec44f,#fe9929,#ec7014,#cc4c02,#8c2d04);"></div>
       <div class="dl-scale"><span>0</span><span>1000+ /km²</span></div>
@@ -11375,7 +11384,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mc.appendChild(lgdPopGrid);
     lgdPopGrid.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-popgrid'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Color-relief elevation legend (#5) */
-    const lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
+    lgdRelief=document.createElement('div'); lgdRelief.className='data-legend'; lgdRelief.id='data-legend-relief'; lgdRelief.style.bottom='140px';
     lgdRelief.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="relief" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'標高（カラー段彩）':currentLang==='de'?'Höhe (farbig)':currentLang==='ru'?'Высота (цвет)':currentLang==='es'?'Elevación (color)':'Elevation (color)'}</h4>
       <div class="dl-bar" style="background:linear-gradient(to right,#0b4f8a,#7fb3d9,#1a7a3c,#a6d96a,#e6e08b,#d9a066,#a87b52,#cdbfb4,#ffffff);"></div>
       <div class="dl-scale"><span>${currentLang==='jp'?'深海':currentLang==='de'?'Tiefsee':currentLang==='ru'?'Глубоководье':currentLang==='es'?'Mar profundo':'Deep sea'}</span><span>${currentLang==='jp'?'高峰':currentLang==='de'?'Gipfel':currentLang==='ru'?'Вершины':currentLang==='es'?'Cumbres':'Peaks'}</span></div>
@@ -11383,7 +11392,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mc.appendChild(lgdRelief);
     lgdRelief.querySelector('.layer-popup-x').onclick=()=>{ const cb=document.getElementById('dl-relief'); if(cb){ cb.checked=false; cb.dispatchEvent(new Event('change')); } };
     /* Sea-level-rise legend (#24) */
-    const lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
+    lgdSeaLevel=document.createElement('div'); lgdSeaLevel.className='data-legend'; lgdSeaLevel.id='data-legend-sealevel'; lgdSeaLevel.style.bottom='140px';
     const slL=window._seaLevelM||0;
     lgdSeaLevel.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="sealevel" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'海面変動':currentLang==='de'?'Meeresspiegel-Änderung':currentLang==='ru'?'Изменение уровня моря':currentLang==='es'?'Cambio del nivel del mar':'Sea-level change'}</h4>
       <div style="display:flex; align-items:center; gap:8px; font-size:11px; padding:4px 0;"><span style="display:inline-block;width:16px;height:11px;border-radius:3px;background:rgba(40,120,200,0.75);border:1px solid rgba(0,0,0,0.15);"></span> ${currentLang==='jp'?'浸水域 (≤ 現海面 ':currentLang==='de'?'Überflutet (≤ heute ':currentLang==='ru'?'Затоплено (≤ текущего ':currentLang==='es'?'Inundado (≤ hoy ':'Flooded (≤ today '}<b class="sl-cur">${(slL>=0?'+':'')+slL} m</b>${currentLang==='jp'?')':')'}</div>
@@ -11414,7 +11423,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.windUnitLabel=()=>window._windUnitEntry()[1];
     window.fmtWindSpeed=(ms)=>{ const v=(ms||0)*window.windUnitFactor(); return v.toFixed(v<10?1:0)+' '+window.windUnitLabel(); };
     const _windGrad='linear-gradient(to right,rgb(16,32,92) 0%,rgb(28,108,184) 7.5%,rgb(40,168,170) 17.5%,rgb(90,205,120) 27.5%,rgb(225,215,75) 40%,rgb(242,150,52) 55%,rgb(232,70,70) 72.5%,rgb(198,55,176) 100%)';
-    const lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
+    lgdWind=document.createElement('div'); lgdWind.className='data-legend'; lgdWind.id='data-legend-wind'; lgdWind.style.bottom='140px';
     lgdWind.innerHTML=`<span class="dl-drag" title="${currentLang==='jp'?'ドラッグして移動':currentLang==='de'?'Zum Verschieben ziehen':currentLang==='ru'?'Перетащите для перемещения':currentLang==='es'?'Arrastra para mover':'Drag to move'}">⋮⋮</span><button class="layer-popup-x" data-x="wind" title="${t('close')}">✕</button><h4>${currentLang==='jp'?'風（10m）':currentLang==='de'?'Wind 10 m':currentLang==='ru'?'Ветер 10 м':currentLang==='es'?'Viento 10 m':'Wind 10 m'}</h4>
       <div class="dl-bar" style="background:${_windGrad};"></div>
       <div class="dl-scale"><span>0</span><span class="wind-scale-max"></span></div>
@@ -11429,6 +11438,8 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     { const sel=lgdWind.querySelector('#wind-unit-sel'); if(sel) sel.onchange=()=>{ window.windUnit=sel.value; try{ localStorage.setItem('intmap_wind_unit',window.windUnit); }catch(_){} window._updateWindLegend(); try{ renderCoordReadout(); }catch(_){} }; }
     window._updateWindLegend();
+    }
+    buildCoreLegends();   /* (#R110) build once now; re-run on language change (see the intmap-lang listener below) */
     /* Unified legend drag — MOUSE + TOUCH (#33), idempotent. Works for any legend whose handle is
        .dl-drag or .kl-drag, so EEZ/Temp/Thermal/… AND the Köppen legend are all movable on phones. */
     function wireDrag(el){
@@ -11474,6 +11485,23 @@ window.addEventListener('DOMContentLoaded', () => {
     wireDrag(lgdEEZ); wireDrag(lgdTemp); wireDrag(lgdThermal); wireDrag(lgdRadar); wireDrag(lgdSST); wireDrag(lgdPopGrid); wireDrag(lgdRelief); wireDrag(lgdSeaLevel);
     wireDrag(lgdHDI); wireDrag(lgdDem); wireDrag(lgdPop); wireDrag(lgdNATO);   /* the makeLegend legends drag centrally too now (#10) */
     wireDrag(lgdGdppc); wireDrag(lgdTfr); wireDrag(lgdMil); wireDrag(lgdMilGDP); wireDrag(lgdSnow); wireDrag(lgdAod); wireDrag(lgdNightsat);   /* (#R15b #38) */
+    /* (#R110) LANGUAGE CHANGE → rebuild the core legends in the new language, preserving which are open + any dragged
+       position (opacity/date/unit values live in JS state and are re-injected by tileLegends/_refreshLegendDates).
+       Generic legends re-localize their title in place; the Köppen legend rebuilds when it is open. */
+    function _rebuildCoreLegends(){ if(!lgdHDI) return;
+      const snap={};
+      CORE_LEGEND_IDS.forEach(id=>{ const el=document.getElementById('data-legend-'+id); if(el) snap[id]={disp:el.style.display,dragged:el.dataset.dragged,cssText:el.style.cssText}; });
+      buildCoreLegends();
+      [lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdHDI,lgdDem,lgdPop,lgdNATO,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,lgdWind].forEach(el=>{ try{ wireDrag(el); }catch(_){} });
+      CORE_LEGEND_IDS.forEach(id=>{ const s=snap[id]; if(!s) return; const el=document.getElementById('data-legend-'+id); if(!el) return;
+        if(s.dragged){ el.style.cssText=s.cssText; el.dataset.dragged='1'; }   /* keep a user-dragged legend exactly where it was */
+        else if(s.disp&&s.disp!=='none'){ el.style.display=s.disp; } });   /* keep an open legend open (re-tiled below) */
+      try{ document.querySelectorAll('.data-legend.generic-legend').forEach(el=>{ const id=(el.id||'').replace('data-legend-',''); if(id&&window._ensureGenericLegend) window._ensureGenericLegend(id); }); }catch(_){}
+      try{ const kl=document.getElementById('koppen-legend'); if(kl&&getComputedStyle(kl).display!=='none'&&typeof buildLegend==='function') buildLegend(); }catch(_){}
+      try{ tileLegends(); }catch(_){}
+      try{ _refreshLegendDates(); }catch(_){}
+    }
+    window.addEventListener('intmap-lang', _rebuildCoreLegends);
     /* The Köppen legend's drag handle is (re)injected inside buildLegend() so it survives the
        innerHTML rebuild that previously wiped it — that rebuild was why it "couldn't be moved" (#22). */
 
@@ -15875,11 +15903,17 @@ window.addEventListener('DOMContentLoaded', () => {
         if(y===curYear) return;   /* same year → country annual data unchanged, nothing to repaint */
         try{ if(!countryDataLoaded) await loadCountryData(); }catch(_){}
         try{ await window.IntMapMaddison.load(); }catch(_){}
+        if(my!==seq) return;
+        /* (#R110) TWO-PHASE update so the Countries tab reflects the new year IMMEDIATELY ("タイムマシンでの年代変更が、
+           すぐにCountriesに反映されない。時間がかかる"): PHASE 1 overlays the LOCAL Maddison GDP / population /
+           GDP-per-capita + the former-state identities right away (zero network) and repaints, so the tab, choropleths
+           and open card update at once. PHASE 2 then fetches the World Bank life-expectancy / fertility / internet /
+           military series for the year (the slow, throttled, sequential part) and repaints again when it lands. */
+        const emptyWB={}; FIELDS.forEach(F=>emptyWB[F.f]={});
+        restore(); overlay(y,emptyWB); repaint();
         let data; try{ data=(y>=WB_FLOOR)?await fetchYear(y):null; }catch(_){ data=null; }   /* WB annual series from 1960; earlier years = Maddison only */
         if(my!==seq) return;              /* superseded by a newer time change */
-        if(!data) data={};
-        FIELDS.forEach(F=>{ if(!data[F.f]) data[F.f]={}; });   /* ensure structure even with no WB (pre-1960) */
-        restore(); overlay(y,data); repaint();
+        if(data){ FIELDS.forEach(F=>{ if(!data[F.f]) data[F.f]={}; }); overlay(y,data); repaint(); }
       }, 340);
     });
     return { year:()=>curYear, floor:WB_FLOOR, _fetchYear:fetchYear, _restore:restore };
@@ -18628,14 +18662,22 @@ window.addEventListener('DOMContentLoaded', () => {
     const TS_W=500, TS_H=92;
     function chart(series,label,fmt){
       if(!series||series.length<2) return '<div style="color:var(--text-muted);font-size:11px;padding:3px 0 9px;">'+label+': '+(jp()?'データなし':'no data')+'</div>';
-      const W=TS_W,H=TS_H,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v), minV=Math.min(...ys), maxV=Math.max(...ys), y0=series[0].y, y1=series[series.length-1].y;
+      const W=TS_W,H=TS_H,padL=8,padR=8,padT=14,padB=16; const ys=series.map(s=>s.v); let minV=Math.min(...ys), maxV=Math.max(...ys); const y0=series[0].y, y1=series[series.length-1].y;
+      /* (#R110) 0-baseline guide line ("CountriesのTime-seriesには、0の場所に補助線を引いて…プラスマイナス系指標のように"):
+         extend the axis down to 0 so the zero line is visible whenever the data crosses zero, or is all-positive but
+         spans a wide range toward 0 (GDP, population, CO₂, military %…). A narrow high band (e.g. life-expectancy
+         60–82, minV≈0.7·maxV) keeps its zoomed scale so it is not crushed against the top. */
+      const _incZero=(minV<0)||(minV>=0&&maxV>0&&minV<maxV*0.9);   /* (#R110) show the 0 line on essentially every indicator; only skip a near-constant high band (minV within 10% of maxV) where a 0 baseline would crush the trace */
+      if(_incZero){ minV=Math.min(minV,0); maxV=Math.max(maxV,0); }
       const X=y=>padL+((y-y0)/((y1-y0)||1))*(W-padL-padR), Y=v=>padT+(1-(v-minV)/((maxV-minV)||1))*(H-padT-padB);
       let d=''; const pts=[]; series.forEach((s,i)=>{ const x=X(s.y),y=Y(s.v); d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' '; pts.push([+x.toFixed(1),+y.toFixed(1),s.y,fmt(s.v)]); });
       const last=series[series.length-1];
       const ptsAttr=JSON.stringify(pts).replace(/'/g,'&#39;');
+      const _zLine=(_incZero&&minV<=0&&maxV>=0&&(maxV-minV)>0)?('<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+Y(0).toFixed(1)+'" y2="'+Y(0).toFixed(1)+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4 4" opacity="0.5" vector-effect="non-scaling-stroke"/><text x="'+(padL+2)+'" y="'+(Y(0)-3).toFixed(1)+'" font-size="9" fill="var(--text-muted)">0</text>'):'';
       return '<div class="ts-wrap" style="margin:0 0 12px;position:relative;" data-pts=\''+ptsAttr+'\'>'
         +'<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:2px;"><b style="color:var(--text-main);">'+label+'</b><span style="color:var(--primary-color);font-weight:700;">'+fmt(last.v)+' <span style="color:var(--text-muted);font-weight:400;">('+last.y+')</span></span></div>'
         +'<svg class="ts-svg" width="100%" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="display:block;height:90px;background:var(--input-bg);border-radius:8px;cursor:crosshair;touch-action:none;">'
+          +_zLine
           +'<path d="'+d+'" fill="none" stroke="var(--primary-color)" stroke-width="2" vector-effect="non-scaling-stroke"/>'
           +'<line class="ts-cursor" y1="0" y2="'+H+'" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" style="display:none;"/>'
           +'<text x="'+padL+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)">'+y0+'</text><text x="'+(W-padR)+'" y="'+(H-3)+'" font-size="9" fill="var(--text-muted)" text-anchor="end">'+y1+'</text>'
@@ -18862,6 +18904,26 @@ window.addEventListener('DOMContentLoaded', () => {
     function _histCodes(){ try{ return codes.filter(cd=>!!_histEntry(cd)); }catch(_){ return []; } }
     function _histMini(cd){ const S=_histEntry(cd); return S?{code:cd,nameEn:S.name.en,nameJp:S.name.jp,flag:S.flag,_hist:true}:null; }
     const _cs=(cd)=>countryStats[cd]||_histMini(cd)||{};   /* resolve name/flag even when a former state isn't currently applied */
+    /* (#R110) ONE Maddison-path value for a former state in a given year — used by the bar/table (_histAddLatest) AND
+       the time-series (_histAddSeries), so they can never diverge again. Mirrors IntMapHistStates.agg's EMPIRE-ESTIMATE
+       fallback: Maddison has NO single entity for the pre-WWI multi-nation empires (Austria-Hungary, Ottoman, Russian
+       Empire…) and most of their successors have no pre-1950 data, so a raw successor-SUM collapses — Austria-Hungary
+       1915 became just Austria's 6.84M ("明らかにおかしい"), and its GDP likewise. When the sum is missing or
+       implausibly low (< 60% of the documented census/GDP estimate) fall back to that estimate, exactly as the
+       Countries tab already does. First-class Maddison entities (SUN/YUG/CSK) are used directly and never overridden. */
+    function _histMadVal(S, mf, year){ const M=window.IntMapMaddison; if(!M||!M.ready()||!S) return null;
+      if(M.has(S.code,year)) return _madOne(M,mf,S.code,year);   /* Soviet Union / Yugoslavia / Czechoslovakia = real single entity */
+      if(mf==='pop'||mf==='gdp'){ let sum=0,h=false; S.succ.forEach(c=>{ const cv=_madOne(M,mf,c,year); if(cv!=null){ sum+=cv; h=true; } });
+        let val=h?sum:null;
+        if(mf==='pop'){ if(S.popEst && (val==null || val < S.popEst*0.6)) val=S.popEst; return val; }
+        if(S.gdpEst && year>=(S.gdpEstFrom||0) && (val==null || val < S.gdpEst*1e9*0.6)) val=S.gdpEst*1e9; return val; }
+      if(mf==='gdppc'){   /* aggregate per-capita = ΣGDP / Σpop, with the SAME empire estimate so it stays consistent with the pop & GDP shown */
+        let g=0,p=0,h=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null&&cp!=null){ g+=cg*1e9; p+=cp; h=true; } });
+        let gg=h?g:null, pp=h?p:null;
+        if(S.popEst && (pp==null || pp < S.popEst*0.6)) pp=S.popEst;
+        if(S.gdpEst && year>=(S.gdpEstFrom||0) && (gg==null || gg < S.gdpEst*1e9*0.6)) gg=S.gdpEst*1e9;
+        return (gg!=null&&pp)?gg/pp:null; }
+      return null; }
     async function _histAddLatest(m, ind, year){
       const hcs=_histCodes(); if(!hcs.length) return;
       const mf=_madField(ind), M=window.IntMapMaddison, useMad=(mf&&M&&M.ready());
@@ -18869,11 +18931,8 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const cd of hcs){ const S=_histEntry(cd); if(!S){ continue; }
         const fy=+String(S.from).slice(0,4), ty=+String(S.to).slice(0,4);
         if(year==null||year<fy||year>ty){ m[cd]=null; continue; }   /* outside its lifespan → no value */
-        if(useMad){   /* GDP / population / per-capita → Maddison real: direct aggregate entity, else derive from successors */
-          let val=null;
-          if(M.has(S.code,year)){ val=_madOne(M,mf,S.code,year); }
-          else if(mf==='gdppc'){ let g=0,p=0,h=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null&&cp!=null){ g+=cg*1e9; p+=cp; h=true; } }); if(h&&p>0) val=g/p; }   /* aggregate per-capita = ΣGDP / Σpop */
-          else { let sum=0,h=false; S.succ.forEach(c=>{ const cv=_madOne(M,mf,c,year); if(cv!=null){ sum+=cv; h=true; } }); if(h) val=sum; }
+        if(useMad){   /* GDP / population / per-capita → Maddison real, with the empire-estimate fallback (see _histMadVal) */
+          const val=_histMadVal(S,mf,year);
           m[cd]=(val!=null)?{v:val,y:year,hist:true,real:true}:null; continue;
         }
         if(needW&&!popMap){ try{ popMap=await wbYear('SP.POP.TOTL',year)||{}; }catch(_){ popMap={}; } }
@@ -18956,7 +19015,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R70) unified compare: mode segment + bar view + Excel-like table */
         +'#scp-view .scp-ctrlrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}'   /* (#R106) modes + Indicators on one row */
         +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0;align-self:center;}'
-        +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:14px;font-weight:600;padding:5px 8px;cursor:pointer;}'   /* (#R109) larger text (13→14), tighter padding to keep one line */
+        +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:15px;font-weight:600;padding:5px 6px;cursor:pointer;}'   /* (#R110) larger text (14→15) with tighter padding; the @container tiers below keep "Bar chart | Time-series | Table" + Indicators on ONE line at every width ("文字サイズを大きく…二行になるのは厳禁") */
         /* (#R108) white divider lines between Bar chart / Time-series / Table (white in dark, subtle grey in light so visible in both) */
         +'#scp-view .scp-modes button + button{border-left:1px solid rgba(128,128,128,0.35);}'
         +'[data-theme="dark"] #scp-view .scp-modes button + button{border-left-color:rgba(255,255,255,0.6);}'
@@ -18976,7 +19035,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
         +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
         /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
-        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:14px;font-weight:600;padding:5px 8px;cursor:pointer;margin:0;align-self:center;white-space:nowrap;transition:background .13s,border-color .13s,color .13s;}'   /* (#R107/#R108/#R109) single line, no wrap; larger text (13→14) */
+        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:15px;font-weight:600;padding:5px 6px;cursor:pointer;margin:0;align-self:center;white-space:nowrap;transition:background .13s,border-color .13s,color .13s;}'   /* (#R107/#R108/#R110) single line, no wrap; larger text (14→15) */
         /* (#R107) count reserves a constant 2-digit width so the button never changes size / re-flows as indicators are toggled */
         +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;display:inline-block;min-width:2.9em;text-align:right;}'
         /* (#R107) Indicators button turns primary-blue while its cloud is expanded */
@@ -19007,8 +19066,13 @@ window.addEventListener('DOMContentLoaded', () => {
            WORD collapses to just its count, the mode buttons tighten — full labels return in a wider view. */
         /* (#R107) NARROW compare view (the ~270 px ws Countries window): the Indicators WORD stays visible ("Indicators
            n/m" required), so tighten the MODE buttons + the toggle instead to keep everything on ONE row. */
-        +'@container (max-width:372px){ #scp-view .scp-ctrlrow{gap:6px;} #scp-view .scp-modes button{padding:5px 6px;font-size:10.5px;} #scp-view .scp-mtog{padding:5px 7px;font-size:10.5px;gap:4px;} #scp-view .scp-mtog .scp-mcount{min-width:2.5em;} }'
-        +'@container (max-width:300px){ #scp-view .scp-modes button{padding:4px 5px;font-size:9.5px;} #scp-view .scp-mtog{padding:4px 6px;font-size:9.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.3em;} }'
+        /* (#R110) tiered so the row stays ONE line but as LARGE as fits at every container width (measured per
+           language — DE/EN are the binding case). Bigger than the old 14/10.5/9.5 everywhere: e.g. a ~340px Countries
+           window goes 10.5→14px, a ~300px one 9.5→11.5px. */
+        +'@container (max-width:349px){ #scp-view .scp-ctrlrow{gap:5px;} #scp-view .scp-modes button{padding:5px 6px;font-size:14px;} #scp-view .scp-mtog{padding:5px 6px;font-size:14px;gap:4px;} }'
+        +'@container (max-width:335px){ #scp-view .scp-modes button{padding:5px 5px;font-size:12.5px;} #scp-view .scp-mtog{padding:5px 5px;font-size:12.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.6em;} }'
+        +'@container (max-width:313px){ #scp-view .scp-modes button{padding:4px 5px;font-size:11.5px;} #scp-view .scp-mtog{padding:4px 5px;font-size:11.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.4em;} }'
+        +'@container (max-width:292px){ #scp-view .scp-modes button{padding:4px 4px;font-size:10.5px;} #scp-view .scp-mtog{padding:4px 4px;font-size:10.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.2em;} }'
         +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
@@ -19190,13 +19254,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const mf=_madField(ind), M=window.IntMapMaddison, useMad=(mf&&M&&M.ready());
       const needW=!_HSUM[ind.k];
       for(const cd of hcs){ const S=_histEntry(cd); if(!S) continue;
-        if(useMad){   /* GDP / pop / per-capita time-series from Maddison, over the state's lifespan */
+        if(useMad){   /* GDP / pop / per-capita time-series from Maddison, over the state's lifespan (empire-estimate fallback via _histMadVal — keeps the series consistent with the bar/table, fixing A-H's 6.84M) */
           const fy2=Math.max(M.minYear,+String(S.from).slice(0,4)), ty2=Math.min(M.maxYear,+String(S.to).slice(0,4)); const out2=[];
-          for(let y=fy2;y<=ty2;y++){ let val=null;
-            if(M.has(S.code,y)){ val=_madOne(M,mf,S.code,y); }
-            else if(mf==='gdppc'){ let g=0,p=0,h=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,y), cp=M.popN(c,y); if(cg!=null&&cp!=null){ g+=cg*1e9; p+=cp; h=true; } }); if(h&&p>0) val=g/p; }
-            else { let sm=0,h=false; S.succ.forEach(c=>{ const cv=_madOne(M,mf,c,y); if(cv!=null){ sm+=cv; h=true; } }); if(h) val=sm; }
-            if(val!=null) out2.push({y,v:val}); }
+          for(let y=fy2;y<=ty2;y++){ const val=_histMadVal(S,mf,y); if(val!=null) out2.push({y,v:val}); }
           if(out2.length) serMap[cd]=out2; continue; }
         const fy=Math.max(1960,+String(S.from).slice(0,4)), ty=Math.min(new Date().getFullYear(),+String(S.to).slice(0,4));
         const rs=await Promise.all(S.succ.map(c=>fetchWB(c,ind.wb))); const byC={}; S.succ.forEach((c,i)=>{ if(rs[i]) byC[c]=rs[i]; });
@@ -27329,7 +27389,13 @@ window.addEventListener('DOMContentLoaded', () => {
            Atlas filling it) is on-screen. */
         try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}
         try{ if(sb){ sb.classList.remove('collapsed'); sb.classList.add('show'); sb.style.setProperty('--sheet-ty','0px'); } }catch(_){}
-        try{ if(window.__setDetent) window.__setDetent('full'); }catch(_){} }
+        /* (#R110) setDetent MUST run with animate=false: the sheet transform is `translateY(var(--sheet-ty))`, and
+           changing that custom property while the 0.46s transform-transition is live does NOT re-trigger the
+           transition in Chromium (the transform stays stuck at the previous peek value ≈ translateY(603px)), so the
+           sidebar only rose to a thin bottom strip and Atlas still looked like a popup. animate=false toggles
+           `sheet-dragging` (transition:none) + forces a reflow, so the transform reliably jumps to translateY(0)
+           and Atlas fills the whole sidebar sheet ("サイドバーの中で開いて"). */
+        try{ if(window.__setDetent) window.__setDetent('full', false); }catch(_){} }
       else { document.body.classList.remove('atl-in-sheet');
         try{ if(sb){ sb.style.removeProperty('--sheet-ty'); } }catch(_){}   /* let the detent system own it again */
         if(p&&p.__prevParent&&p.parentNode!==p.__prevParent){ try{ p.__prevParent.appendChild(p); }catch(_){} } }
@@ -28924,9 +28990,36 @@ window.addEventListener('DOMContentLoaded', () => {
         else feats.push(f); }
       return {type:'FeatureCollection',features:feats};
     }catch(_){ return fc; } }
+    /* (#R110) the aourednik 1920 & 1930 snapshots draw "East Prussia" as a SEPARATE feature from "Germany", so the
+       interwar German exclave looked like an independent country ("東プロイセンが別国家であるかのような表記・範囲").
+       East Prussia was part of Germany the whole interwar period (an exclave beyond the Polish Corridor, but the SAME
+       state — Weimar Republic, then the Reich). Dissolve it INTO Germany — one identity, one label, one fill — exactly
+       like the Tibet merge. Its Baltic coast / corridor border remains (it really was cut off), it is just no longer a
+       separate country. The Free City of Danzig stays separate (it genuinely was a League of Nations territory). */
+    const _EPRUS_RE=/^\s*(east[ -]?prussia|ostpreu(ss|ß)en)\s*$/i;
+    const _DEU_RE=/^\s*(germany|german reich|deutsches reich|weimar republic)\s*$/i;
+    function _mergeEastPrussia(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
+      const ep=[]; let de=null;
+      fc.features.forEach(f=>{ const p=f.properties||{}; const n=String((p.NAME||p.name)||'');
+        if(!p._corrected && _EPRUS_RE.test(n)){ ep.push(f); }
+        else if(de===null && _DEU_RE.test(n)) de=f; });
+      if(!ep.length) return fc;
+      /* fallback (no turf / no Germany feature): keep East Prussia's geometry but rename it to Germany + suppress its
+         own label, so at least it no longer reads as a separate country — never worse than before. */
+      const _renameOnly=()=>({type:'FeatureCollection',features:fc.features.map(f=>{ const p=f.properties||{}; if(!p._corrected && _EPRUS_RE.test(String((p.NAME||p.name)||'')))
+        return {type:'Feature',geometry:f.geometry,properties:Object.assign({},p,{NAME:'Germany',name:'Germany',_corrected:1,_same:1,_modName:''})}; return f; })});
+      if(!de || !(window.turf&&window.turf.union)) return _renameOnly();
+      let merged=de; for(const t of ep){ try{ const u=window.turf.union(merged,t); if(u&&u.geometry) merged={type:'Feature',geometry:u.geometry,properties:de.properties}; }catch(_){} }
+      if(merged===de) return _renameOnly();   /* union produced nothing usable → don't drop East Prussia */
+      const feats=[]; for(const f of fc.features){ if(ep.indexOf(f)>=0) continue;   /* drop the dissolved East Prussia feature(s) */
+        if(f===de) feats.push({type:'Feature',geometry:merged.geometry,properties:Object.assign({},de.properties)});   /* Germany now includes East Prussia, one identity */
+        else feats.push(f); }
+      return {type:'FeatureCollection',features:feats};
+    }catch(_){ return fc; } }
     /* SNAPSHOT baking — the 1960 snapshot (only shown for years ≥1953) draws Tibet independent (aourednik anachronism);
-       merge it once and cache the merged FC. */
-    function _correctEra(fc,year){ try{ if(!fc||!Array.isArray(fc.features)||!(year>=1951)) return fc; return _mergeTibet(fc); }catch(_){ return fc; } }
+       merge it once and cache the merged FC. The East Prussia merge runs on EVERY snapshot (a no-op unless both a
+       Germany and an East Prussia feature are present, i.e. only the 1920 & 1930 snapshots). */
+    function _correctEra(fc,year){ try{ if(!fc||!Array.isArray(fc.features)) return fc; let out=fc; if(year>=1951) out=_mergeTibet(out); out=_mergeEastPrussia(out); return out; }catch(_){ return fc; } }
     /* (#R106/#R107) DISPLAY-YEAR correction: for a displayed year ≥1951 whose snapshot still carries an independent
        Tibet/E-Turkestan (the 1945 snapshot shown for 1951-1952), merge on the fly (NEW FC — the raw cached snapshot is
        left intact so pre-1951 years still show Tibet independent). */
@@ -29040,12 +29133,87 @@ window.addEventListener('DOMContentLoaded', () => {
       [/^\s*(manchuria|manchoukuo)\s*$/i,{jp:'満洲',de:'Mandschurei',ru:'Маньчжурия',es:'Manchuria'}],
       [/^\s*(cochin ?china)\s*$/i,{jp:'コーチシナ',de:'Cochinchina',ru:'Кохинхина',es:'Cochinchina'}],
       [/^\s*(gold coast)\s*$/i,{jp:'ゴールドコースト',de:'Goldküste',ru:'Золотой Берег',es:'Costa del Oro'}],
-      [/^\s*(east prussia)\s*$/i,{jp:'東プロイセン',de:'Ostpreußen',ru:'Восточная Пруссия',es:'Prusia Oriental'}]
+      [/^\s*(east prussia)\s*$/i,{jp:'東プロイセン',de:'Ostpreußen',ru:'Восточная Пруссия',es:'Prusia Oriental'}],
+      /* (#R110) further historical entities seen in the 1900–1960 snapshots ("昔の国名にするのは…未対応の国がまだ残ってる") —
+         colonial federations & territories, interwar/occupation states, and the more recognisable pre-colonial kingdoms. */
+      [/^\s*french west africa\s*$/i,{jp:'フランス領西アフリカ',de:'Französisch-Westafrika',ru:'Французская Западная Африка',es:'África Occidental Francesa'}],
+      [/^\s*french equatorial africa\s*$/i,{jp:'フランス領赤道アフリカ',de:'Französisch-Äquatorialafrika',ru:'Французская Экваториальная Африка',es:'África Ecuatorial Francesa'}],
+      [/^\s*french indo-?china\s*$/i,{jp:'フランス領インドシナ',de:'Französisch-Indochina',ru:'Французский Индокитай',es:'Indochina francesa'}],
+      [/^\s*french somaliland\s*$/i,{jp:'フランス領ソマリランド',de:'Französisch-Somaliland',ru:'Французский Сомалиленд',es:'Somalilandia Francesa'}],
+      [/^\s*french cameroons?\s*$/i,{jp:'フランス領カメルーン',de:'Französisch-Kamerun',ru:'Французский Камерун',es:'Camerún Francés'}],
+      [/^\s*belgian congo\s*$/i,{jp:'ベルギー領コンゴ',de:'Belgisch-Kongo',ru:'Бельгийское Конго',es:'Congo Belga'}],
+      [/^\s*british east africa\s*$/i,{jp:'イギリス領東アフリカ',de:'Britisch-Ostafrika',ru:'Британская Восточная Африка',es:'África Oriental Británica'}],
+      [/^\s*british somaliland\s*$/i,{jp:'イギリス領ソマリランド',de:'Britisch-Somaliland',ru:'Британский Сомалиленд',es:'Somalilandia Británica'}],
+      [/^\s*italian somaliland\s*$/i,{jp:'イタリア領ソマリランド',de:'Italienisch-Somaliland',ru:'Итальянское Сомали',es:'Somalia Italiana'}],
+      [/^\s*anglo-?egypt(ia|io)n sudan\s*$/i,{jp:'英埃領スーダン',de:'Anglo-Ägyptischer Sudan',ru:'Англо-Египетский Судан',es:'Sudán Anglo-Egipcio'}],
+      [/^\s*german south-?west africa\s*$/i,{jp:'ドイツ領南西アフリカ',de:'Deutsch-Südwestafrika',ru:'Германская Юго-Западная Африка',es:'África del Sudoeste Alemana'}],
+      [/^\s*german e(ast|\.) africa.*$/i,{jp:'ドイツ領東アフリカ',de:'Deutsch-Ostafrika',ru:'Германская Восточная Африка',es:'África Oriental Alemana'}],
+      [/^\s*portuguese east africa\s*$/i,{jp:'ポルトガル領東アフリカ',de:'Portugiesisch-Ostafrika',ru:'Португальская Восточная Африка',es:'África Oriental Portuguesa'}],
+      [/^\s*portuguese guinea\s*$/i,{jp:'ポルトガル領ギニア',de:'Portugiesisch-Guinea',ru:'Португальская Гвинея',es:'Guinea Portuguesa'}],
+      [/^\s*spanish guinea\s*$/i,{jp:'スペイン領ギニア',de:'Spanisch-Guinea',ru:'Испанская Гвинея',es:'Guinea Española'}],
+      [/^\s*spanish morocco\s*$/i,{jp:'スペイン領モロッコ',de:'Spanisch-Marokko',ru:'Испанское Марокко',es:'Marruecos Español'}],
+      [/^\s*spanish sahara\s*$/i,{jp:'スペイン領サハラ',de:'Spanisch-Sahara',ru:'Испанская Сахара',es:'Sahara Español'}],
+      [/^\s*rio de oro\s*$/i,{jp:'リオ・デ・オロ',de:'Río de Oro',ru:'Рио-де-Оро',es:'Río de Oro'}],
+      [/^\s*kamerun\s*$/i,{jp:'ドイツ領カメルーン',de:'Kamerun',ru:'Камерун (нем.)',es:'Camerún alemán'}],
+      [/^\s*togoland\s*$/i,{jp:'トーゴランド',de:'Togoland',ru:'Тоголенд',es:'Togolandia'}],
+      [/^\s*northern rhodesia\s*$/i,{jp:'北ローデシア',de:'Nordrhodesien',ru:'Северная Родезия',es:'Rodesia del Norte'}],
+      [/^\s*southern rhodesia\s*$/i,{jp:'南ローデシア',de:'Südrhodesien',ru:'Южная Родезия',es:'Rodesia del Sur'}],
+      [/^\s*netherlands indies\s*$/i,{jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'}],
+      [/^\s*trucial oman\s*$/i,{jp:'トルーシャル・オマーン',de:'Vertragsoman',ru:'Договорный Оман',es:'Omán de la Tregua'}],
+      [/^\s*muscat and oman\s*$/i,{jp:'マスカット・オマーン',de:'Maskat und Oman',ru:'Маскат и Оман',es:'Mascate y Omán'}],
+      [/^\s*hejaz\s*$/i,{jp:'ヒジャーズ',de:'Hedschas',ru:'Хиджаз',es:'Hiyaz'}],
+      [/^\s*union of south africa\s*$/i,{jp:'南アフリカ連邦',de:'Südafrikanische Union',ru:'Южно-Африканский Союз',es:'Unión Sudafricana'}],
+      [/^\s*orange free state\s*$/i,{jp:'オレンジ自由国',de:'Oranje-Freistaat',ru:'Оранжевое Свободное государство',es:'Estado Libre de Orange'}],
+      [/^\s*transvaal\s*$/i,{jp:'トランスヴァール共和国',de:'Transvaal',ru:'Трансвааль',es:'Transvaal'}],
+      [/^\s*cape colony\s*$/i,{jp:'ケープ植民地',de:'Kapkolonie',ru:'Капская колония',es:'Colonia del Cabo'}],
+      [/^\s*natal\s*$/i,{jp:'ナタール',de:'Natal',ru:'Наталь',es:'Natal'}],
+      [/^\s*zululand\s*$/i,{jp:'ズールーランド',de:'Zululand',ru:'Зулуленд',es:'Zululandia'}],
+      [/^\s*sokoto caliphate\s*$/i,{jp:'ソコト帝国',de:'Kalifat von Sokoto',ru:'Халифат Сокото',es:'Califato de Sokoto'}],
+      [/^\s*asante\s*$/i,{jp:'アシャンティ王国',de:'Aschanti',ru:'Ашанти',es:'Ashanti'}],
+      [/^\s*buganda\s*$/i,{jp:'ブガンダ王国',de:'Buganda',ru:'Буганда',es:'Buganda'}],
+      [/^\s*bunyoro\s*$/i,{jp:'ブニョロ王国',de:'Bunyoro',ru:'Буньоро',es:'Bunyoro'}],
+      [/^\s*oyo\s*$/i,{jp:'オヨ王国',de:'Oyo',ru:'Ойо',es:'Oyo'}],
+      [/^\s*kanem-?bornu\s*$/i,{jp:'カネム・ボルヌ帝国',de:'Kanem-Bornu',ru:'Канем-Борну',es:'Kanem-Bornu'}],
+      [/^\s*manchu empire\s*$/i,{jp:'満洲帝国',de:'Mandschurisches Reich',ru:'Маньчжурская империя',es:'Imperio manchú'}],
+      [/^\s*malaya\s*$/i,{jp:'マラヤ',de:'Malaya',ru:'Малайя',es:'Malaca'}],
+      [/^\s*annam\s*$/i,{jp:'安南',de:'Annam',ru:'Аннам',es:'Annam'}],
+      [/^\s*tonkin\s*$/i,{jp:'トンキン',de:'Tonkin',ru:'Тонкин',es:'Tonkín'}],
+      [/^\s*mandatory palestine\s*$/i,{jp:'委任統治領パレスチナ',de:'Mandatsgebiet Palästina',ru:'Подмандатная Палестина',es:'Palestina del Mandato'}],
+      [/^\s*danzig\s*$/i,{jp:'ダンツィヒ自由市',de:'Danzig',ru:'Данциг',es:'Dánzig'}],
+      [/^\s*saar( protectorate)?\s*$/i,{jp:'ザール保護領',de:'Saarprotektorat',ru:'Саарский протекторат',es:'Protectorado del Sarre'}],
+      [/^\s*east germany\s*$/i,{jp:'東ドイツ',de:'Ostdeutschland (DDR)',ru:'Восточная Германия',es:'Alemania Oriental'}],
+      [/^\s*west germany\s*$/i,{jp:'西ドイツ',de:'Westdeutschland',ru:'Западная Германия',es:'Alemania Occidental'}],
+      [/^\s*dominion of newfoundland\s*$/i,{jp:'ニューファンドランド自治領',de:'Dominion Neufundland',ru:'Доминион Ньюфаундленд',es:'Dominio de Terranova'}],
+      [/^\s*united kingdom of great britain and ireland\s*$/i,{jp:'グレートブリテン・アイルランド連合王国',de:'Vereinigtes Königreich Großbritannien und Irland',ru:'Соединённое Королевство Великобритании и Ирландии',es:'Reino Unido de Gran Bretaña e Irlanda'}],
+      [/^\s*sweden[\s–-]+norway\s*$/i,{jp:'スウェーデン・ノルウェー連合',de:'Schweden-Norwegen',ru:'Швеция и Норвегия',es:'Suecia y Noruega'}],
+      [/^\s*chinese warlords\s*$/i,{jp:'中国軍閥',de:'Chinesische Warlords',ru:'Китайские милитаристы',es:'Señores de la guerra chinos'}],
+      [/^\s*xinjiang\s*$/i,{jp:'新疆',de:'Xinjiang',ru:'Синьцзян',es:'Sinkiang'}],
+      [/^\s*far eastern (ssr|republic)\s*$/i,{jp:'極東共和国',de:'Fernöstliche Republik',ru:'Дальневосточная республика',es:'República del Lejano Oriente'}],
+      [/^\s*white russia\s*$/i,{jp:'白ロシア',de:'Weißrussland',ru:'Белоруссия',es:'Rusia Blanca'}],
+      [/^\s*south russia\s*$/i,{jp:'南ロシア',de:'Südrussland',ru:'Юг России',es:'Rusia del Sur'}],
+      [/^\s*rattanakosin kingdom\s*$/i,{jp:'ラッタナコーシン王国',de:'Rattanakosin-Königreich',ru:'Королевство Раттанакосин',es:'Reino de Rattanakosin'}],
+      [/^\s*kingdom of hawaii\s*$/i,{jp:'ハワイ王国',de:'Königreich Hawaiʻi',ru:'Гавайское королевство',es:'Reino de Hawái'}],
+      [/^\s*kingdom of brazil\s*$/i,{jp:'ブラジル王国',de:'Königreich Brasilien',ru:'Королевство Бразилия',es:'Reino de Brasil'}],
+      [/^\s*sult[ia]nate of zanzibar\s*$/i,{jp:'ザンジバル・スルタン国',de:'Sultanat Sansibar',ru:'Занзибарский султанат',es:'Sultanato de Zanzíbar'}],
+      [/^\s*bosnia-herzegovina\s*$/i,{jp:'ボスニア・ヘルツェゴビナ',de:'Bosnien und Herzegowina',ru:'Босния и Герцеговина',es:'Bosnia y Herzegovina'}],
+      [/^\s*arabia\s*$/i,{jp:'アラビア',de:'Arabien',ru:'Аравия',es:'Arabia'}],
+      [/^\s*imperial japan\s*$/i,{jp:'大日本帝国',de:'Kaiserreich Japan',ru:'Японская империя',es:'Imperio del Japón'}]
     ];
-    function _eraLocName(nm){ try{ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; if(lg==='en') return null; const low=String(nm||'').trim(); if(!low) return null;
-      const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(low)){ const n=S.name&&(S.name[lg]||S.name.en); if(n&&n!==low) return n; break; } } }
-      for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&(V.nm[lg]||V.nm.en); if(n&&n!==low) return n; } }
-      for(const E of _ERA_LOC){ if(E[0].test(low)){ const n=E[1][lg]; if(n&&n!==low) return n; } }
+    /* (#R110) coloniser / possessor names for the "(France)/(UK)/(Portugal)…" suffix the aourednik data appends to
+       many interwar colonies, plus the 1945 occupation zones (Germany (USA)…). */
+    const _COLONIZER={france:{jp:'フランス',de:'Frankreich',ru:'Франция',es:'Francia'},uk:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},gb:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},usa:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},us:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},portugal:{jp:'ポルトガル',de:'Portugal',ru:'Португалия',es:'Portugal'},italy:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},it:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},belgium:{jp:'ベルギー',de:'Belgien',ru:'Бельгия',es:'Bélgica'},spain:{jp:'スペイン',de:'Spanien',ru:'Испания',es:'España'},netherlands:{jp:'オランダ',de:'Niederlande',ru:'Нидерланды',es:'Países Bajos'},germany:{jp:'ドイツ',de:'Deutschland',ru:'Германия',es:'Alemania'},japan:{jp:'日本',de:'Japan',ru:'Япония',es:'Japón'},ru:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},russia:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},ussr:{jp:'ソ連',de:'UdSSR',ru:'СССР',es:'URSS'},egypt:{jp:'エジプト',de:'Ägypten',ru:'Египет',es:'Egipto'}};
+    function _eraLocName(nm){ try{ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; if(lg==='en') return null; const low0=String(nm||'').trim(); if(!low0) return null;
+      const _loc1=(low)=>{
+        const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(low)){ const n=S.name&&(S.name[lg]||S.name.en); if(n&&n!==low) return n; break; } } }
+        for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&(V.nm[lg]||V.nm.en); if(n&&n!==low) return n; } }
+        for(const E of _ERA_LOC){ if(E[0].test(low)){ const n=E[1][lg]; if(n&&n!==low) return n; } }
+        const cm=_COLONIZER[_normNm(low)]; if(cm&&cm[lg]) return cm[lg];   /* the major powers double as country-name localizations (Germany/Japan… occupation-zone bases) */
+        try{ if(typeof countryStats!=='undefined'&&countryStats){ const key=_normNm(low); for(const c in countryStats){ const s=countryStats[c]; if(s&&s.nameEn&&_normNm(s.nameEn)===key){ const d=(s.name&&(s.name[lg]||s.name.en))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn); if(d&&d!==low) return d; } } } }catch(_){}   /* modern base (Algeria, Syria…) → its localized present-day name (JP via nameJp, matching tagSame; DE/RU/ES keep the English base as elsewhere on the era map) */
+        return null; };
+      const direct=_loc1(low0); if(direct) return direct;
+      /* "(Coloniser)" / occupation suffix → localize the BASE + append the localized possessor (e.g. アルジェリア（フランス）) */
+      const m=/^(.+?)\s*\(([^)]+)\)\s*$/.exec(low0);
+      if(m){ const col=_COLONIZER[_normNm(m[2])]; if(col){ const lb=_loc1(m[1].trim())||m[1].trim(); const lc=col[lg]||m[2]; return lb+(lg==='jp'?'（'+lc+'）':' ('+lc+')'); } }
       return null; }catch(_){ return null; } }
     function tagSame(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
       const lg=(typeof currentLang!=='undefined')?currentLang:'en';
