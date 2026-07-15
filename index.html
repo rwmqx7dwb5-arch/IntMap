@@ -1303,6 +1303,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
         transition:width 0.34s var(--sheet-ease), border-radius 0.34s var(--sheet-ease), opacity 0.25s, transform 0.25s; }
       .map-search input{ width:0; min-width:0; padding:0; opacity:0; font-size:16px; transition:opacity 0.18s; }
       .map-search > button, .map-search #ms-btn{ width:46px; height:46px; flex:0 0 auto; border-radius:23px; }
+      /* (#R107) REVERT the mobile search FAB to its former solid-primary circle. The R106 desktop change (button
+         neutral-until-text) turned the mobile 🔍 FAB grey; on mobile it is a round action button, not a pill, so it
+         stays primary-blue regardless of the has-text state. */
+      .map-search > button, .map-search.has-text > button, .map-search #ms-btn{ background:var(--primary-color) !important; color:#fff !important; }
       /* Expanded width stops short of the top-right FAB column so neither is clipped or pushed off-screen.
          Keeps a fixed 46px height + full pill radius so it morphs cleanly from the circle (no vertical squish). */
       .map-search.ms-open{ width:calc(100vw - 14px - 14px - 56px); height:46px; border-radius:23px; padding:0 5px 0 16px; justify-content:flex-start; gap:6px;
@@ -1506,6 +1510,14 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ bottom:auto !important; top:64px !important; left:6px !important; right:auto !important; }
       /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centerd so they never collide. */
       .news-timeline{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
+      /* (#R107) mobile: the COLLAPSED "See the past world" pill is SMALLER and tucked closer to the right (display
+         edge) + the bottom-sheet boundary. */
+      .news-timeline.collapsed{ right:6px !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 6px) !important; }
+      .news-timeline.collapsed .ntl-open{ padding:4px 9px; gap:6px; }
+      .news-timeline.collapsed .ntl-open-ico{ width:17px; height:17px; }
+      .news-timeline.collapsed .ntl-open-ico svg{ width:16px; height:16px; }
+      .news-timeline.collapsed .ntl-open-txt b{ font-size:10.5px; }
+      .news-timeline.collapsed .ntl-open-txt small{ display:none; }
       /* !important: a later non-media rule (.ai-view-summary-btn{bottom:22px}) otherwise wins by source
          order and parks this button at bottom:22px — i.e. BEHIND the bottom sheet, which is exactly why
          it "disappeared" on phones (#13). Force it to ride just above the sheet's current top instead. */
@@ -1905,7 +1917,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
        painted with the recessed panel tone so the cards scroll cleanly under it. */
     /* (#R106) tighter Countries toolbar: the pulldown ↔ asc/desc button gap 6→4 and less top padding so it hugs the
        filter box above ("Filter Countriesと指標プルダウン、降順/昇順ボタンの間の隙間を詰めて"). */
-    #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:1px 0 4px; gap:4px; }
+    #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:1px 0 4px; gap:2px; }
 
     /* --- Mobile compact tweaks (#1,#2): denser news cards + smaller measurement popups --- */
     @media(max-width:768px){
@@ -6682,7 +6694,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const layerDropdown=document.getElementById('layer-dropdown');
   document.getElementById('btn-layers').addEventListener('click',(e)=>{ e.stopPropagation();
     /* (#R62) opt-in RIGHT layer sidebar (Settings → Layer panel) intercepts on desktop */
-    if(window.imLayerPanel==='right' && !(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) && window.IntMapLayerSidebar){ try{ window.IntMapLayerSidebar.toggle(); return; }catch(_){} }
+    if(window.imLayerPanel==='right' && window.IntMapLayerSidebar){ try{ window.IntMapLayerSidebar.toggle(); return; }catch(_){} }   /* (#R107) also intercept on mobile — the right sidebar layer panel now works on phones */
     layerDropdown.classList.toggle('show');
     /* (#R18) Frosted-glass fix: a backdrop-filter NESTED inside another backdrop-filtered surface
        (.map-view-group toolbar) can only sample within the parent's backdrop root — the map behind was
@@ -7409,6 +7421,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.lsr-avail .operation-room{position:relative;}'
         +'body.lsr-avail .map-container{transition:margin-right .38s cubic-bezier(0.25,1,0.5,1);}'
         +'body.lsr-open .map-container{margin-right:var(--lsr-w);}'
+        /* (#R107) MOBILE: the right sidebar OVERLAYS the map (never shrinks it), rides above the bottom sheet, and the
+           desktop edge-tab is hidden (the layer FAB is the entry point on phones). */
+        +'@media(max-width:768px){body.lsr-open .map-container{margin-right:0 !important;}#layer-sidebar-r{z-index:1460;box-shadow:-6px 0 30px rgba(0,0,0,0.32);}#lsr-toggle{display:none !important;}}'
         +'#layer-sidebar-r{position:absolute;top:0;right:0;bottom:0;width:var(--lsr-w);z-index:1000;background:var(--sidebar-bg);backdrop-filter:blur(25px) saturate(160%);-webkit-backdrop-filter:blur(25px) saturate(160%);border-left:1px solid rgba(128,128,128,0.18);display:flex;flex-direction:column;box-sizing:border-box;transform:translateX(102%);transition:transform .38s cubic-bezier(0.25,1,0.5,1);min-height:0;pointer-events:none;visibility:hidden;}'
         +'#layer-sidebar-r.open{transform:translateX(0);pointer-events:auto;visibility:visible;}'
         +'#layer-sidebar-r .lsr-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;padding-top:max(14px,env(safe-area-inset-top));}'
@@ -7562,7 +7577,7 @@ window.addEventListener('DOMContentLoaded', () => {
         g.querySelectorAll('.lst-tile').forEach(t2=>{ const show=!q||t2.dataset.nm.indexOf(q)>=0; t2.style.display=show?'':'none'; if(show) vis++; });
         /* while searching, a collapsed section with matches is forced open (inline display beats .closed) */
         g.style.display=vis?(q?'grid':''):'none'; const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')) h.style.display=vis?'':'none'; }); }
-    function open(){ if(isMob()) return; build();
+    function open(){ build();   /* (#R107) mobile allowed — the right-sidebar layer panel now works on phones too (overlay, no map push) */
       /* (#R72) SPEED ("layersをクリックしたときの反応が非常に遅い"): the full reorganize+rebuild ran on EVERY
          open. Now the grid is rebuilt only when the row set actually changed; an unchanged grid just re-syncs
          its ✓ states (milliseconds). */
@@ -7571,17 +7586,18 @@ window.addEventListener('DOMContentLoaded', () => {
         else{ const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(); else syncTiles(); } }catch(_){ try{ buildTiles(); }catch(__){} }
       /* (#R66) dynamic width: the map ALWAYS keeps ≥320px when geometrically possible — on a narrow window or
          with a widened left sidebar, a fixed 430px panel swallowed the map ("覆いかぶさる" perception). */
-      try{ const ls=document.getElementById('sidebar');
+      try{ if(isMob()){ document.documentElement.style.setProperty('--lsr-w','min(430px,92vw)'); }   /* (#R107) mobile: near-full-width overlay */
+        else { const ls=document.getElementById('sidebar');
         const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
         const w=Math.max(280,Math.min(430, Math.round(window.innerWidth-lw-320)));
-        document.documentElement.style.setProperty('--lsr-w', w+'px'); }catch(_){}
+        document.documentElement.style.setProperty('--lsr-w', w+'px'); } }catch(_){}
       sb.classList.add('open'); document.body.classList.add('lsr-open');
       /* (#R73) fire any lazy previews that IO missed while the panel was prebuilt off-screen */
       setTimeout(()=>{ try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(sb); }catch(_){} },450);
       /* (#R66) INLINE, decoupled: the MAP cedes the strip via its own margin (one line, no cascade, no flex
          math), the panel just slides into the vacated strip. Neither depends on the other. */
       sb.style.transform='translateX(0)'; sb.style.visibility='visible'; sb.style.pointerEvents='auto';
-      try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight='var(--lsr-w)'; }catch(_){}
+      try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=isMob()?'':'var(--lsr-w)'; }catch(_){}   /* (#R107) mobile overlays, never shrinks the map */
       /* the Active-layers bar re-homes to the top of the tile browser (returns to the dropdown on close) */
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       /* rows built by late modules (eco/l9/beta, ~1.5 s) — one deferred rebuild picks them up */
@@ -7601,8 +7617,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
       kick(); setTimeout(kick,420); }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
-    function apply(){ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail'); open(); } else { close(); document.body.classList.remove('lsr-avail'); } }
-    setTimeout(()=>{ try{ if(window.imLayerPanel==='right'&&!isMob()){ build(); document.body.classList.add('lsr-avail');
+    function apply(){ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail'); if(!isMob()) open(); } else { close(); document.body.classList.remove('lsr-avail'); } }   /* (#R107) build on mobile too; only auto-OPEN on desktop (mobile opens on the layer button) */
+    setTimeout(()=>{ try{ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail');
       /* (#R72) PRE-BUILD the tile grid while idle so the FIRST open is instant too */
       const pre=()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ buildTiles(); }catch(_){} };
       if('requestIdleCallback' in window) requestIdleCallback(pre,{timeout:4000}); else setTimeout(pre,2500);
@@ -7750,10 +7766,14 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R106) the edge hover/grab zone was too thin ("リサイズのホバー判定範囲が狭すぎる"): widen the left/right/
          bottom edges to 20 px (and a small ±5 px reach OUTSIDE the window, so the seam between two abutting windows
          is comfortably grabbable). The TOP edge stays a slim MN so it never steals the title-bar drag region. */
-      const M=18, MN=9, OUT=4, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
+      const M=22, MN=10, OUT=5, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
       const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-OUT||y<-OUT||x>r.width+OUT||y>r.height+OUT) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=MN)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
-      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; try{ showAdjFor(w,d); }catch(_){} });
-      w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing) w.style.cursor=''; try{ hideAdj(); }catch(_){} });
+      /* (#R107) ROOT CAUSE of "リサイズのホバー判定範囲が狭すぎる" (re-report after R106 widened M): over the MAP CANVAS
+         (and any child that sets its own cursor) the resize cursor set on `w` was OVERRIDDEN, so the edge felt dead
+         even though the hit-zone was wide. Toggle a `.rz-hover` class in the edge zone; a CSS rule then forces every
+         descendant to inherit `w`'s resize cursor while there — so the feedback shows over the canvas / lists too. */
+      w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; w.classList.toggle('rz-hover',!!d); try{ showAdjFor(w,d); }catch(_){} });
+      w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing){ w.style.cursor=''; w.classList.remove('rz-hover'); } try{ hideAdj(); }catch(_){} });
       w.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,textarea,a,[role="button"]')) return;
         const d=edgeAt(e.clientX,e.clientY); if(!d) return; if(w.dataset.min) return;
         e.preventDefault(); e.stopPropagation(); w.dataset.resizing=d; try{ bringToFront(w); }catch(_){}
@@ -7812,6 +7832,9 @@ window.addEventListener('DOMContentLoaded', () => {
            radiated a halo over the neighbours around whichever window was in front ("操作中ウィンドウの放射する影は不要"). */
         +'.ws-win{position:fixed;z-index:900;display:flex;flex-direction:column;box-sizing:border-box;background:var(--bg-color,#0b0b0d);border:1px solid var(--glass-border,rgba(128,128,128,0.26));border-radius:13px;box-shadow:0 1px 5px rgba(0,0,0,0.16);overflow:hidden;min-width:120px;}'
         +'.ws-win.ws-ovis,.ws-win.ws-ovis .ws-body{overflow:visible;}'
+        /* (#R107) while hovering a window's resize edge, force EVERY descendant (incl. the map canvas, which sets its
+           own grab cursor) to show the window\'s resize cursor — otherwise the edge felt "dead" over content. */
+        +'.ws-win.rz-hover *{cursor:inherit !important;}'
         /* (#R105) every window title bar is a UNIFORM grey (task: 全ウィンドウで共通の色・グレー). */
         +'.ws-tb{flex:0 0 25px;display:flex;align-items:center;gap:9px;padding:0 10px;background:#e4e6ea;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));cursor:grab;user-select:none;-webkit-user-select:none;}'
         +'[data-theme="dark"] .ws-tb{background:#2b2b30;}'
@@ -7888,7 +7911,7 @@ window.addEventListener('DOMContentLoaded', () => {
            but 10px past the right; neutralise it and give even 10px gutters. Search bar was overflowing right. */
         +'body.ws-mode .ws-news #live-news-feed,body.ws-mode .ws-countries #countries-feed{margin:0 !important;padding:10px 12px !important;box-sizing:border-box;gap:8px;}'
         /* (#R105) Countries cards: a little more gap BETWEEN cards (in-card padding tightened on .stat-row); the sort toolbar hugs the search field above. */
-        +'body.ws-mode .ws-countries #countries-feed{gap:7px !important;padding-top:2px !important;}'
+        +'body.ws-mode .ws-countries #countries-feed{gap:7px !important;padding-top:0 !important;}'   /* (#R107) flush the compare header + sort toolbar to the window top (was a 2px see-through gap) */
         /* (#R79) the news READER pane is stacked in the same window — kill its -10px scrollbar-hack margin too
            (otherwise it overflows the window's right edge when a user opens an article to read) */
         +'body.ws-mode .ws-news #news-reader-pane{flex:1 1 auto !important;width:100% !important;min-height:0 !important;margin:0 !important;padding:10px 12px !important;box-sizing:border-box !important;}'
@@ -8796,6 +8819,12 @@ window.addEventListener('DOMContentLoaded', () => {
        pin/band right under the centre crosshair and show the same popup there; tap it to open the article. */
     let _xhrNewsId=null, _xhrLink=null, _xhrProps=null;
     function _crosshairNews(){ try{
+      /* (#R107) DISABLED on mobile per request ("disable hover news pin and popping news popup in mobile version"):
+         no auto hover-highlight of the pin under the crosshair and no auto-popping news tooltip. Tapping a pin/label
+         still opens the article (that handler is separate). Clear any lingering state and bail. */
+      if(mapTooltipEl){ mapTooltipEl.style.display='none'; mapTooltipEl.style.pointerEvents='none'; }
+      if(_xhrNewsId!=null){ try{map.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; _xhrLink=null; _xhrProps=null; }
+      return;
       if(!isMobile()||!map||!map.isStyleLoaded()||!map.getLayer('news-dots')) return;
       if(toolMode||document.body.classList.contains('pg-we')){ if(mapTooltipEl) mapTooltipEl.style.display='none'; return; }
       const c=map.project(map.getCenter()); const R=22;
@@ -8905,6 +8934,26 @@ window.addEventListener('DOMContentLoaded', () => {
     const demPen = (g.demonym||g.org) ? 3 : 0;
     return (titleHit?10:0)+(descHit?3:0)+(TYPE_SCORE[g.type]||0)+(ctx?4:0)+posBonus+corro-demPen;
   }
+  /* (#R107) COUNTRY-LEVEL FALLBACK for the non-AI locator ("more reliable and flawless"): when the gazetteer scored
+     no specific place, anchor a country-level story to the country actually named (its polygon center) instead of a
+     meaningless deterministic scatter point — so far fewer "location unknown" pins, and always a REAL, correct place.
+     Purely ADDITIVE: it only runs when no subject was found, so it can never make an existing result worse. Built once
+     from countryGeo (bbox centers + word-boundary name regexes), memoized; the display name follows the UI language. */
+  let _cfIdx=null;
+  function _cfBuild(){ try{ const cg=window.countryGeo; if(!cg||!cg.features||!cg.features.length) return null;
+    const esc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); const idx=[];
+    for(const f of cg.features){ if(!f.geometry) continue; const p=f.properties||{};
+      let a=180,b=90,c=-180,d=-90; const scan=cs=>{ for(const x of cs){ if(typeof x[0]==='number'){ if(x[0]<a)a=x[0]; if(x[1]<b)b=x[1]; if(x[0]>c)c=x[0]; if(x[1]>d)d=x[1]; } else scan(x); } };
+      try{ scan(f.geometry.coordinates); }catch(_){ continue; } if(!(c>=a&&d>=b)) continue;
+      const names=[p.NAME_EN,p.ADMIN,p.NAME,p.name,p['name:en'],p.NAME_LONG,p.FORMAL_EN].filter(v=>v&&String(v).trim().length>=4);
+      const uniq=[...new Set(names.map(v=>String(v).trim()))]; if(!uniq.length) continue;
+      idx.push({ res:uniq.map(s=>new RegExp('\\b'+esc(s)+'\\b','i')), loc:[(a+c)/2,(b+d)/2], code:(f.id!=null?String(f.id):(p.__code||'')), en:(p.NAME_EN||p.ADMIN||p.NAME||p.name||''), len:Math.max.apply(null,uniq.map(s=>s.length)) }); }
+    return idx.length?idx:null; }catch(_){ return null; } }
+  function _countryFallback(hay){ try{ if(!_cfIdx) _cfIdx=_cfBuild(); if(!_cfIdx) return null;
+    let best=null; for(const c of _cfIdx){ if(c.res.some(re=>re.test(hay))){ if(!best||c.len>best.len) best=c; } }
+    if(!best) return null;
+    let nm=best.en; try{ const s=(typeof countryStats!=='undefined')&&countryStats[best.code]; if(s){ nm=(s.name&&(s.name[currentLang]||s.name.en))||((currentLang==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||best.en; } }catch(_){}
+    return { loc:best.loc, name:nm }; }catch(_){ return null; } }
   function analyzeContext(title,publisher,seed,desc){
     desc=desc||'';
     const short=currentLang==='jp'?(title.length>20?title.slice(0,20)+'…':title):(title.split(' ').slice(0,5).join(' ')+'…');
@@ -8915,7 +8964,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(s<=0) continue;
       if(s>bestScore || (s===bestScore && (!best||(TYPE_LOCAL[g.type]||0)>(TYPE_LOCAL[best.type]||0)))){ best=g; bestScore=s; }
     }
-    const subjectLoc=best?best.loc:null, subjectName=best?best.name[currentLang]:null;
+    let subjectLoc=best?best.loc:null, subjectName=best?best.name[currentLang]:null;
+    /* (#R107) no gazetteer hit → try the country actually named (real location beats a random scatter). */
+    if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; } }
     /* ---- Publisher HQ (expanded gazetteer, longest-key-first, word-boundary safe) ---- */
     const pm=matchPublisher(publisher);
     const pubLoc=pm?pm.loc:null, pubName=pm?((currentLang==='jp'?'発信: ':currentLang==='de'?'Quelle: ':currentLang==='ru'?'Источник: ':currentLang==='es'?'Fuente: ':'Source: ')+pm.label):null;
@@ -9809,7 +9860,13 @@ window.addEventListener('DOMContentLoaded', () => {
     try{ if(!activeSearchQuery && !newsDate) localStorage.setItem('intmap_news_cache', JSON.stringify({ts:Date.now(), lang:currentLang, data:globalData.slice(0,120)})); }catch(_){}
   }
   function buildItems(byLink){
-    const uniq=[...byLink.values()].sort((a,b)=>parseDate(b.pubDate)-parseDate(a.pubDate));
+    let uniq=[...byLink.values()].sort((a,b)=>parseDate(b.pubDate)-parseDate(a.pubDate));
+    /* (#R107) TIME-TRAVEL: when a past instant is set, keep ONLY items actually dated near it. Google News ignores
+       after:/before: for dates outside its recent window and returns TODAY's headlines, which then wrongly showed as
+       "past" news ("時間を過去に設定しても最新ニュースが表示される"). Filtering by pubDate drops that leakage, and
+       undated items too — so the feed shows genuine period news around that date, or NOTHING (never latest-as-past). */
+    try{ if(typeof newsDate!=='undefined' && newsDate){ const t0=newsDate.getTime(), win=8*864e5;   /* ±8 days (the fetch query uses ±3; allow timezone slack) */
+      uniq=uniq.filter(it=>{ const pd=parseDate(it.pubDate); return pd && isFinite(pd) && Math.abs(pd-t0)<=win; }); } }catch(_){}
     return uniq.slice(0,150).map(it=>{ const sp=it.title.split(' - '); const publisher=sp.length>1?sp.pop():(({en:'News',jp:'報道',de:'Nachrichten',ru:'Новости'})[currentLang]||'News'); const title=sp.join(' - '); const desc=it.desc||''; return { title, publisher, link:it.link, pubDate:it.pubDate, desc, analysis:analyzeContext(title,publisher,it.link,desc) }; });
   }
   /* ===== Server-baked news (FAST PATH) =====
@@ -13835,7 +13892,14 @@ window.addEventListener('DOMContentLoaded', () => {
       /* Refetch the news feed only when the DAY (or live-state) actually changed. */
       const key=e.isLive?'live':e.iso;
       if(key!==window._imTimeNewsKey){ window._imTimeNewsKey=key;
-        clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{ if(currentMode==='news'||currentMode==='saved'){ globalData=[]; fetchData(); } },230); } });
+        clearTimeout(pendingTimer); pendingTimer=setTimeout(()=>{
+          /* (#R107) a day/live change invalidates the loaded feed — DROP it (and the map news pins) so a past date can
+             never keep showing today's news, then re-fetch (buildItems filters to the target date). Runs for ALL modes
+             now (was news/saved only), so pins on the map also reflect the date, not the last-loaded latest set. */
+          globalData=[];
+          try{ if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); newsFeatures=[]; } }catch(_){}
+          try{ fetchData(); }catch(_){}
+        },230); } });
     /* (#R101) close the popup when the user starts operating elsewhere on the map (pan / zoom / click-away). */
     (function autoClose(){ const closeIf=()=>{ try{ if(!tl.classList.contains('collapsed')) tl.classList.add('collapsed'); }catch(_){} };
       function wireMap(){ try{ const M=window.__imap||(typeof map!=='undefined'?map:null); if(M&&M.on){ M.on('dragstart',closeIf); M.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); M.on('click',closeIf); return true; } }catch(_){} return false; }
@@ -14057,7 +14121,7 @@ window.addEventListener('DOMContentLoaded', () => {
          Arm a one-shot map tap (the communityAddArmed handler opens the composer at the tapped point); on
          mobile collapse the sheet so the map is reachable, and guide with a toast. */
       pendingPostLoc=null; communityAddArmed=true;
-      try{ if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('mini',true); }catch(_){}
+      try{ if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && window.__setDetent) window.__setDetent('peek',true); }catch(_){}   /* (#R107) 'mini' disabled → collapse to 'peek' (still frees the map) */
       imToast(currentLang==='jp'?'📍 地図をタップして投稿する場所を選んでください':currentLang==='de'?'📍 Tippe auf die Karte, um den Ort des Beitrags zu wählen':currentLang==='ru'?'📍 Коснитесь карты, чтобы выбрать место публикации':currentLang==='es'?'📍 Toca el mapa para elegir dónde publicar':'📍 Tap the map to choose where to post');
     };
     cont.querySelectorAll('.comm-sort button').forEach(b=>b.onclick=()=>{ communitySort=b.dataset.sort; renderCommunity(); });
@@ -14448,10 +14512,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!(map&&map.setPadding)) return;
       if(Math.abs(covered-_lastPad)<5) return;
       if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; _lastPad=covered; try{ map.setPadding({top:0,left:0,right:0,bottom:covered},{duration:0}); }catch(_){} }); }
-    function dragStart(y){ dragD=recompute(); maxTy=dragD.mini; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; sidebar.classList.add('sheet-dragging'); }   /* allow dragging down to MINI (#16) */
+    function dragStart(y){ dragD=recompute(); maxTy=dragD.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; sidebar.classList.add('sheet-dragging'); }   /* (#R107) PEEK is now the lowest detent — the MINI (logo-hidden) stop is disabled per request */
     function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
     function dragEnd(){ if(!dragging) return; dragging=false; sidebar.classList.remove('sheet-dragging'); const d=recompute(); const ty=curTy();
-      const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek},{n:'mini',v:d.mini}]; let target;
+      const order=[{n:'full',v:d.full},{n:'half',v:d.half},{n:'peek',v:d.peek}]; let target;   /* (#R107) 'mini' removed — 'peek' is the lowest detent now */
       if(vel>0.45) target=order.find(o=>o.v>ty+2)||order[order.length-1];
       else if(vel<-0.45){ const rev=order.slice().reverse(); target=rev.find(o=>o.v<ty-2)||order[0]; }
       else target=order.reduce((a,b)=>Math.abs(b.v-ty)<Math.abs(a.v-ty)?b:a);
@@ -18377,6 +18441,12 @@ window.addEventListener('DOMContentLoaded', () => {
           if(tries++<60){ setTimeout(apply,120); } else { try{ map.once('idle',apply); }catch(_){} } return; }
         if(!feat){ try{ imToast(jp()?'国境データが見つかりません':'Country border not found'); }catch(_){} return; }
         try{ map.getSource('iso-src').setData(maskFC(feat)); map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){}
+        /* (#R107) auto-clear any place highlight / blue boundary outline on isolate — a historical-country click
+           draws the era outline (IntMapOutline) + place-hl, which otherwise linger on top of the isolated view
+           ("昔の国をisolateしたらハイライトは自動消去するように"). */
+        try{ const _hl=map.getSource('place-hl-src'); if(_hl) _hl.setData({type:'FeatureCollection',features:[]}); }catch(_){}
+        try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){}
+        try{ const _pp=document.querySelector('.plc-popup'); if(_pp&&_pp.parentNode) _pp.remove(); }catch(_){}
         /* (#R29) Isolating a country auto-deselects "Countries (info)" — its hover-fill / info card would
            fight the isolate mask ("isolateを押したらCountries (info)は選択解除"). Dispatch change so the
            checkbox, the map layer and the Active-layers list all update together. */
@@ -18844,8 +18914,15 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
         +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
         /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
-        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:0;align-self:center;}'
-        +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;}'   /* (#R105) selection count NOT bold, clean tabular iOS-style figures */
+        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:0;align-self:center;white-space:nowrap;transition:background .13s,border-color .13s,color .13s;}'   /* (#R107) single line, no wrap */
+        /* (#R107) count reserves a constant 2-digit width so the button never changes size / re-flows as indicators are toggled */
+        +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;display:inline-block;min-width:2.9em;text-align:right;}'
+        /* (#R107) Indicators button turns primary-blue while its cloud is expanded */
+        +'#scp-view .scp-mtog.open{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}'
+        +'#scp-view .scp-mtog.open .scp-mcount{color:rgba(255,255,255,0.85);}'
+        /* (#R107) "灰色枠から白枠に" — the mode segment + the Indicators toggle get a WHITE frame in dark mode (matching
+           the R105 indicator pills); the expanded (blue) Indicators button keeps its primary border. */
+        +'[data-theme="dark"] #scp-view .scp-modes,[data-theme="dark"] #scp-view .scp-mtog:not(.open){border-color:rgba(255,255,255,0.85);}'
         +'[data-theme="dark"] #scp-view .scp-m{border-color:rgba(255,255,255,0.85);}'   /* (#R105) dark-mode indicator pill border → white */
         +'#scp-view .scp-mcat{width:100%;font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.03em;margin:7px 0 1px;}'
         +'#scp-view .scp-ttools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 8px;}'
@@ -18866,7 +18943,10 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R106) NARROW compare view (the ws Countries window is ~270 px): compact the mode segment + Indicators
            toggle so "Bar chart | Time-series | Table" + Indicators still fit on ONE row ("一列に"). The Indicators
            WORD collapses to just its count, the mode buttons tighten — full labels return in a wider view. */
-        +'@container (max-width:372px){ #scp-view .scp-modes button{padding:6px 8px;font-size:11px;} #scp-view .scp-mtog{padding:6px 8px;font-size:11px;} #scp-view .scp-mtog .scp-mtoglbl{display:none;} }'
+        /* (#R107) NARROW compare view (the ~270 px ws Countries window): the Indicators WORD stays visible ("Indicators
+           n/m" required), so tighten the MODE buttons + the toggle instead to keep everything on ONE row. */
+        +'@container (max-width:372px){ #scp-view .scp-ctrlrow{gap:6px;} #scp-view .scp-modes button{padding:5px 6px;font-size:10.5px;} #scp-view .scp-mtog{padding:5px 7px;font-size:10.5px;gap:4px;} #scp-view .scp-mtog .scp-mcount{min-width:2.5em;} }'
+        +'@container (max-width:300px){ #scp-view .scp-modes button{padding:4px 5px;font-size:9.5px;} #scp-view .scp-mtog{padding:4px 6px;font-size:9.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.3em;} }'
         +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
@@ -18971,9 +19051,11 @@ window.addEventListener('DOMContentLoaded', () => {
     let mOpen=false;
     function metricRow(){ const w=host&&host.querySelector('#scp-metrics'); if(!w) return; w.innerHTML='';
       const tog=host.querySelector('#scp-mtog');
-      const _mtogHTML=()=>'<span class="scp-mtoglbl">'+LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+'</span> <span class="scp-mcount">'+sel.size+'/'+IND.length+'</span> '+(mOpen?'⌃':'⌄');
-      if(tog){ tog.innerHTML=_mtogHTML();
-        tog.onclick=()=>{ mOpen=!mOpen; w.style.display=mOpen?'flex':'none'; tog.innerHTML=_mtogHTML(); };
+      /* (#R107) always "Indicators n/m" (word kept, never a bare number), NO ⌃/⌄ chevron, constant width (the count
+         reserves 2-digit space so it never re-flows), single line. */
+      const _mtogHTML=()=>'<span class="scp-mtoglbl">'+LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+'</span> <span class="scp-mcount">'+sel.size+'/'+IND.length+'</span>';
+      if(tog){ tog.innerHTML=_mtogHTML(); tog.classList.toggle('open',mOpen);   /* (#R107) blue while expanded */
+        tog.onclick=()=>{ mOpen=!mOpen; w.style.display=mOpen?'flex':'none'; tog.innerHTML=_mtogHTML(); tog.classList.toggle('open',mOpen); };
         w.style.display=mOpen?'flex':'none'; }
       CATORD.forEach(cat=>{ const inds=IND.filter(i2=>(INDCAT[i2.k]||'base')===cat); if(!inds.length) return;
         const h=document.createElement('div'); h.className='scp-mcat'; const cl=CATL[cat]; h.textContent=LL(cl[0],cl[1],cl[2],cl[3],cl[4]); w.appendChild(h);
@@ -24259,22 +24341,21 @@ window.addEventListener('DOMContentLoaded', () => {
       let real=um[0].replace(/[\x00-\x1f].*$/,''); try{ const h=new URL(real).hostname; if(!h||/news\.google\.com/i.test(h)||h.indexOf('.')<0) return null; }catch(_){ return null; }
       return real; }catch(_){ return null; } }
     function linkCards(list){ try{
-      const seen=new Set();
-      /* resolve each entry to a real article URL where possible, then STABLE-partition so genuine publisher-domain
-         links fill the visible slots first and any un-decodable aggregator links fall to the end. */
-      const real=[], agg=[];
+      const seen=new Set(); const cards=[];
+      /* (#R107) show ONLY links that point at the ACTUAL article ("記事へのリンクではなく情報源の一般的なリンクに
+         なっている → 該当記事のリンクをきちんと貼る"). Google-News RSS links are aggregator REDIRECTS to a
+         news.google.com page, not the article; decode the embedded publisher URL where the token carries it, and
+         DROP any that still resolve to news.google.com (a generic aggregator page is NOT the article). Better to
+         show fewer, real article links (GDELT/direct-RSS provide true URLs) than misleading generic ones. */
       (list||[]).forEach(it=>{ if(!it||!it.url) return; let u=String(it.url).trim(); if(!/^https?:\/\//i.test(u)||u.length>700) return;
-        if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; }
+        if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; else return; }   /* un-decodable aggregator → drop */
         let host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(_){ return; }
+        if(/(^|\.)news\.google\.com$/i.test(host)||/^news\.google$/i.test(host)) return;   /* still an aggregator → drop */
         const k=u.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
-        const aggregator=/(^|\.)news\.google\.com$/i.test(host);
-        const domLabel=aggregator?(String(it.src||'').trim()||'Google News'):host;   /* never a bare "news.google.com" — show the publisher */
         const title=String(it.title||it.src||host).slice(0,90);
-        const card='<a class="atl-lc" href="'+esc(u)+'" target="_blank" rel="noopener">'
+        cards.push('<a class="atl-lc" href="'+esc(u)+'" target="_blank" rel="noopener">'
           +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
-          +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(title)+'</span><span class="atl-lc-d">'+esc(domLabel)+'</span></span></a>';
-        (aggregator?agg:real).push(card); });
-      const cards=real.concat(agg);
+          +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(title)+'</span><span class="atl-lc-d">'+esc(host)+'</span></span></a>'); });
       if(!cards.length) return '';
       return '<div class="atl-lc-row">'+cards.slice(0,6).join('')+'</div>'; }catch(_){ return ''; } }
     function listHtml(title,list,metric){ if(!list||!list.length) return note('⚠ '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
@@ -25393,13 +25474,13 @@ window.addEventListener('DOMContentLoaded', () => {
           if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
-            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('✓')+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R103) don't echo the moved-to location */
+            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note('📍 '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R107) name the destination — never a bare, unexplained ✓ */
           /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
           const ll=await geocode(placeStr);
           if(ll){ if(exZ!=null){ map.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
             else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
             else { map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); }
-            return R(true, note('✓')+_ambigNote(placeStr,ll.lng,ll.lat)); }   /* (#R103) location-free confirmation */
+            return R(true, note('📍 '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat)); }   /* (#R107) name the destination — never a bare, unexplained ✓ */
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
         case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'brief': { /* (#R62) AI Brief is INTEGRATED into Atlas — same structured brief, rendered inline in this chat. */
@@ -26624,7 +26705,10 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-lc-tx{display:flex;flex-direction:column;min-width:0;}'
         +'#atlas-panel .atl-lc-t{font-size:10.5px;font-weight:600;color:var(--text-main);line-height:1.25;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
         +'#atlas-panel .atl-lc-d{font-size:9.5px;color:var(--text-muted);line-height:1.25;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-        +'@media(max-width:768px){#atlas-panel{left:8px;right:8px;width:auto;transform:none;top:auto;height:min(64vh,560px);bottom:calc(var(--sheet-cover, var(--peek-h)) + 10px);max-height:64vh;}}';
+        /* (#R107) mobile: Atlas is a flush BOTTOM SHEET, not a floating popup ("contain Atlas popup in bottom sheet /
+           no Atlas popup in mobile") — anchored to the bottom edge, full width, rounded top only, sliding up from the
+           bottom. !important so a stray header-drag can\'t relocate it off the bottom. */
+        +'@media(max-width:768px){#atlas-panel{left:0 !important;right:0 !important;width:100% !important;transform:none !important;top:auto !important;bottom:0 !important;height:min(72vh,620px) !important;max-height:80vh !important;border-radius:16px 16px 0 0 !important;border-left:none !important;border-right:none !important;border-bottom:none !important;box-shadow:0 -8px 30px rgba(0,0,0,0.30) !important;}#atlas-panel .atl-head{cursor:default;}}';
       document.head.appendChild(s); }
     function bubble(who,html){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d); try{ chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} return d; }
     /* (#R72) ChatGPT-style per-reply tools: copy + retry on ATLAS messages (user messages get nothing) */
@@ -28700,26 +28784,39 @@ window.addEventListener('DOMContentLoaded', () => {
        ("1951年以降もしばらくは独立国として表記"). For any snapshot ≥ 1953 we merge those features into China's identity:
        renamed to China (so a click resolves to the PRC) with the independent LABEL suppressed. Snapshots ≤ 1945 keep
        Tibet independent (correct for their era). */
-    function _correctEra(fc,year){ try{ if(!fc||!Array.isArray(fc.features)||!(year>=1953)) return fc;
-      fc.features.forEach(f=>{ try{ const n=(f.properties&&(f.properties.NAME||f.properties.name))||'';
-        if(/^\s*(tibet|xizang|thibet|east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria)\s*$/i.test(n)){
-          f.properties=f.properties||{}; f.properties.NAME='China'; f.properties.name='China';
-          f.properties._corrected=1; f.properties._same=1; f.properties._modName='';   /* merged into the PRC → no independent border label */
-        } }catch(_){} });
-      return fc; }catch(_){ return fc; } }
-    /* (#R106) DISPLAY-YEAR Tibet / East-Turkestan correction. _correctEra (above) bakes the merge into snapshots
-       ≥1953, but the PRC annexed Tibet in May 1951 and the NEAREST snapshot for 1951-1952 is 1945 (pre-annexation,
-       Tibet drawn INDEPENDENT) — so Tibet wrongly stayed independent "しばらく after 1951" ("1951年以降もしばらくは
-       独立国として表記"). Key the merge off the DISPLAYED year instead: for any displayed year ≥ 1951 whose snapshot
-       still carries an independent Tibet/E-Turkestan, return a CLONE with those merged into China (renamed, its
-       independent label suppressed). The raw cached snapshot is left intact, so pre-1951 years still show them
-       independent (correct for their era). A no-op when the snapshot was already baked by _correctEra. */
     const _TIBET_RE=/^\s*(tibet|xizang|thibet|east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria)\s*$/i;
+    /* (#R107) DISSOLVE Tibet/E-Turkestan INTO China's polygon (not just rename it). R105/R106 renamed the feature
+       and suppressed its LABEL, but it stayed a SEPARATE feature so imtb-line kept drawing its outline — the border
+       line stayed the independence-era one ("1951年以降もしばらくは国境線が独立時代のまま"). Here we turf.union the
+       Tibet feature(s) into the China feature so the shared internal border is dissolved, then DROP the Tibet
+       feature(s). China keeps its own name/properties so tagSame still gives it the normal localized label. Falls
+       back to the R106 rename-only (label suppressed, geometry unchanged) when turf/union or a China feature is
+       unavailable — never worse than before. Returns a NEW FeatureCollection; never mutates the input. */
+    function _mergeTibet(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
+      const tibet=[]; let china=null;
+      fc.features.forEach(f=>{ const p=f.properties||{}; const n=String((p.NAME||p.name)||'');
+        if(!p._corrected && _TIBET_RE.test(n)){ tibet.push(f); }
+        else if(china===null && /^\s*(china|people'?s republic of china|republic of china)\s*$/i.test(n)) china=f; });
+      if(!tibet.length) return fc;
+      const _renameOnly=()=>({type:'FeatureCollection',features:fc.features.map(f=>{ const p=f.properties||{}; if(!p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')))
+        return {type:'Feature',geometry:f.geometry,properties:Object.assign({},p,{NAME:'China',name:'China',_corrected:1,_same:1,_modName:''})}; return f; })});
+      if(!china || !(window.turf&&window.turf.union)) return _renameOnly();
+      let merged=china; for(const t of tibet){ try{ const u=window.turf.union(merged,t); if(u&&u.geometry) merged={type:'Feature',geometry:u.geometry,properties:china.properties}; }catch(_){} }
+      if(merged===china) return _renameOnly();   /* union produced nothing usable → don't drop Tibet */
+      const feats=[]; for(const f of fc.features){ if(tibet.indexOf(f)>=0) continue;   /* drop the dissolved Tibet feature(s) */
+        if(f===china) feats.push({type:'Feature',geometry:merged.geometry,properties:Object.assign({},china.properties)});   /* China now includes Tibet's area, one border */
+        else feats.push(f); }
+      return {type:'FeatureCollection',features:feats};
+    }catch(_){ return fc; } }
+    /* SNAPSHOT baking — the 1960 snapshot (only shown for years ≥1953) draws Tibet independent (aourednik anachronism);
+       merge it once and cache the merged FC. */
+    function _correctEra(fc,year){ try{ if(!fc||!Array.isArray(fc.features)||!(year>=1951)) return fc; return _mergeTibet(fc); }catch(_){ return fc; } }
+    /* (#R106/#R107) DISPLAY-YEAR correction: for a displayed year ≥1951 whose snapshot still carries an independent
+       Tibet/E-Turkestan (the 1945 snapshot shown for 1951-1952), merge on the fly (NEW FC — the raw cached snapshot is
+       left intact so pre-1951 years still show Tibet independent). */
     function _eraCorrect(fc,year){ try{ if(!(year>=1951)||!fc||!Array.isArray(fc.features)) return fc;
       if(!fc.features.some(f=>{ const p=f.properties||{}; return !p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')); })) return fc;
-      return {type:'FeatureCollection',features:fc.features.map(f=>{ const p=f.properties||{}; if(!p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')))
-        return {type:'Feature',geometry:f.geometry,properties:Object.assign({},p,{NAME:'China',name:'China',_corrected:1,_same:1,_modName:''})}; return f; })};
-    }catch(_){ return fc; } }
+      return _mergeTibet(fc); }catch(_){ return fc; } }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ const cc=_correctEra(c,year); cache.set(year,cc); return cc; } }catch(_){} }
       for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
@@ -28735,7 +28832,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire) → the era
          name, era style. Filtered to _same!=1 (see tagSame). */
-      if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
+      if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
@@ -28782,6 +28879,14 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R102) diacritic-insensitive normalization so "Mexico"/"Cote d'Ivoire" match regardless of accents.
        Uses \u escapes for the combining-mark range (avoids literal combining marks in source — an OneDrive-revert gotcha). */
     const _normNm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replace(/[.’']/g,'').replace(/\s+/g,' ').trim();
+    /* (#R107) localize a RENAMED / vanished era name for the map LABEL ("昔の国名は英語以外の言語も対応させて"). The
+       aourednik NAME is English (SOVIET UNION / GERMAN EMPIRE / SIAM…); resolve it to the current-language name via the
+       former-state registry (IntMapHistStates, which already carries name[lg]) or the _VANISHED table. Returns null when
+       no localization is known (→ keep the English era name) or for EN users (no work needed). */
+    function _eraLocName(nm){ try{ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; if(lg==='en') return null; const low=String(nm||'').trim(); if(!low) return null;
+      const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(low)){ const n=S.name&&(S.name[lg]||S.name.en); if(n&&n!==low) return n; break; } } }
+      for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&(V.nm[lg]||V.nm.en); if(n&&n!==low) return n; } }
+      return null; }catch(_){ return null; } }
     function tagSame(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
       const lg=(typeof currentLang!=='undefined')?currentLang:'en';
       /* normalized present-day name -> the country's CURRENT localized display name (so an unchanged country shows its
@@ -28796,7 +28901,8 @@ window.addEventListener('DOMContentLoaded', () => {
         const nm=(f.properties.NAME||f.properties.name)||'';
         const hit=cur.get(_normNm(nm));
         if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
-        else { f.properties._same=0; f.properties._modName=null; }    /* renamed / vanished → era name (imtb-lbl) */
+        else { f.properties._same=0; f.properties._modName=null;      /* renamed / vanished → era name (imtb-lbl) */
+          const loc=_eraLocName(nm); if(loc) f.properties._locName=loc; else if('_locName' in f.properties) delete f.properties._locName; }   /* (#R107) localized era label when known */
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
@@ -28824,6 +28930,10 @@ window.addEventListener('DOMContentLoaded', () => {
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
       if(e.isLive || e.year>=new Date().getFullYear() || e.year>YEARS[YEARS.length-1]){ clear(); return; }
       go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },120); });
+    /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
+       language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
+       (no re-fetch; _eraCorrect reuses the already-computed merge state via shownCorr). */
+    window.addEventListener('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(_eraCorrect(fc, shownCorr?1951:1900)); }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
     (function warm(){ const pf=()=>{ let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); };
