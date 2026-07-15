@@ -5,6 +5,28 @@
 
 ---
 
+## R108 — 18-item re-report/feature batch: no-emoji standing rule, isolate-click guard, Wikipedia-language + more era names, compare-control polish, Atlas honesty, mobile Atlas-in-sidebar, legend re-localization (tag `#R108`)
+
+Several R106/R107 re-reports (two of them REVERSALS of my own prior changes) plus new asks and a STANDING instruction. Verified via fresh-element computed styles + live compare-view interaction in the headless preview (existing-element styles/layout are FROZEN while `document.hidden`).
+
+**STANDING: no arbitrary emojis (#13).** "今後、私が明示しない限り、勝手に絵文字を使用することはやめてください。" Saved to memory (`no-arbitrary-emojis.md`). Removed the 📊 from the compare hint and the 📍 I'd added to Atlas flyTo confirmations (now plain "Moved to: <place>"); don't introduce new emoji in UI/text going forward.
+
+**Isolate (#29,#30).** (#29) while a country is isolated, a click no longer re-registers as a historical-country click (the imtb click handler early-returns when `IntMapIsolate.active()`). (#30) the "Exit country view" pill sits lower (bottom 96→64) and in DARK mode is white-bg/black-text (verified rgb(255,255,255)/rgb(17,17,17)).
+
+**Historical names + Wikipedia (#31).** The Wikipedia button opened the ENGLISH article because `wl` was ja/en-only AND a historical entity's title is English (a ja/de/ru/es probe with it fails). Now `wl` covers all languages and, for a historical entity, the CURRENT-language article is resolved via the EN **langlinks API** (`prop=langlinks&lllang=…`), English only as fallback. Also expanded era-label localization with an `_ERA_LOC` table (Persia/Siam/Abyssinia/Burma/Ceylon/Prussia/Rhodesia/Zaire/… ×20, all 5 langs).
+
+**Compare view (#32,#33,#34,#35,#40,#42,#46).** (#32) a SLIGHT painted gap above the Countries sort toolbar via its own padding-top (recessed tone, not a see-through void). (#33) "Back to statistics" vertical padding 6→3 (text size kept). (#34) "Show comparison" button → white bg / black text (verified). (#35) Bar/Time-series/Table + Indicators font 12→13 with white dividers between the mode buttons (white in dark, grey in light), still ONE row (verified sameRow at the 391 px control width). (#40) the compare hint is forced to a single line (nowrap) and the 📊 removed. (#42) the TIME-SERIES gets a 0 guide line for SIGNED indicators too (force 0 into the value range), matching the bar 0-axis. (#46 ROOT CAUSE) bar→time-series occasionally didn't switch because the incremental keep-blocks path left the old chart — a real MODE change now wipes the body and rebuilds (like the table path); verified bar→ts→bar all switch. Per-indicator thin divider between blocks too.
+
+**Atlas (#36,#39,#41).** (#36) the last bare `note('✓')` (the no-IntMapTime time-travel fallback) now says "Time set" — no standalone ✓. (#39) the analysis footer reports only the sources actually USED — the "取得不可: ライブWebニュース" list is gone. (#41 HONESTY) `highlight()` returned true whenever the layers existed even if `setFeatureState` matched no real feature (country data not loaded / a code not in the geojson) → "ハイライトしました" with nothing painted. It now returns true only when AT LEAST ONE requested country matches a real feature, so the caller's bounded retry waits and then reports honestly.
+
+**Layers (#43,#44,#45).** (#43) "Base map & labels" defaults CLOSED (sidebar), and category headers are slightly larger + NOT bold (`.lyr-head` 11→12 px / 700→500 verified; `.lst-sech` 12.5→13.5 / 600→500). (#44) every visible data-layer legend re-localizes on a language change (a central `intmap-lang` handler re-runs `ensureGenericLegend(id)` from the stored `GENERIC_LEG[id]` labels). (#45) the checkbox↔map reconciler runs sooner + more often (start 25→12 s, cadence 15→10 s); heal thresholds/cooldown unchanged (safe).
+
+**Mobile (#37,#38).** (#37) Atlas now opens INSIDE the sidebar (mounted into `#sidebar`, filling it; the sheet raises to full) rather than a floating popup/bottom-sheet — verified it mounts into #sidebar and unmounts back to #map-container on close. (#38 REVERSAL of R107) the mobile search button is NOT blue — it's the former FROSTED icon FAB (transparent bg, verified) matching the other FABs.
+
+**ToS/Privacy/Sources**: one new READ-ONLY endpoint — the Wikipedia langlinks API (`en.wikipedia.org/w/api.php`, same wikipedia.org origin already used for article summaries), used only to open the correct-language article. No new data collection → Sources note already covers Wikipedia; no ToS/Privacy change.
+
+---
+
 ## R107 — 17-item re-report/feature batch: Tibet border DISSOLVE, localized era labels, mobile overhaul (Atlas sheet, right-sidebar, detents, news-hover, search-FAB), past-news filter, Atlas links drop-generic, compare-control spec (tag `#R107`)
 
 Several R106 re-reports where the fix was too shallow (Tibet BORDER line, article links, resize hover, countries gap) + a batch of new mobile asks + a regression I introduced in R106 (mobile search FAB). Verified against real data / fresh-element computed styles in the headless preview (existing-element computed styles + layout are FROZEN while `document.hidden` — build a throwaway element with the target selector, or read after a reload).
