@@ -180,12 +180,19 @@ function classifyGemini(status: number, bodyText: string, finishReason: string, 
     return new ProviderError("provider_blocked", "Blocked by the provider's safety filter." + (blockReason ? " (" + blockReason + ")" : ""), 502, false, { finishReason, blockReason });
   }
   if (status === 429 || lc.includes("resource_exhausted") || lc.includes("exceeded your current quota") || lc.includes("rate limit")) {
-    // Distinguish a hard billing/quota exhaustion from a transient RPM/TPM rate-limit.
-    const isBilling = lc.includes("billing") || lc.includes("plan and billing") || lc.includes("free_tier") || lc.includes("quotaid");
-    if (isBilling) {
-      return new ProviderError("provider_quota", "The AI provider quota/billing limit was reached.", 502, false, { providerStatus: status });
+    // (#R113e) Gemini's 429 body is IDENTICAL for a transient per-MINUTE rate limit (clears in ~1 min) and a hard
+    // per-DAY / billing quota — both say "check your plan and billing". Distinguish by the quotaId so per-minute reads
+    // as transient and only per-day/billing reads as a hard quota. quotaId + retryAfter go into meta for diagnosis.
+    let quotaId = ""; try { const m = /quotaid["']?\s*[:=]\s*["']?([a-z0-9_.\-]+)/i.exec(bodyText || ""); if (m) quotaId = m[1].slice(0, 90); } catch (_) { /* */ }
+    let retryAfter = ""; try { const m = /retry(?:delay|after)["']?\s*[:=]\s*["']?(\d+)\s*s/i.exec(bodyText || ""); if (m) retryAfter = m[1] + "s"; } catch (_) { /* */ }
+    const qlc = (quotaId + " " + lc);
+    const perDay = qlc.includes("perday") || qlc.includes("per day") || qlc.includes("requests per day");
+    const perMinute = qlc.includes("perminute") || qlc.includes("per minute");
+    if (perDay && !perMinute) {
+      return new ProviderError("provider_quota", "The AI provider DAILY quota was reached.", 502, false, { providerStatus: status, quotaScope: "per-day", quotaId, retryAfter });
     }
-    return new ProviderError("provider_rate_limit", "The AI provider is rate-limiting requests. Try again shortly.", 503, true, { providerStatus: status });
+    // per-minute or generic 429 → transient rate-limit (the caller just needs to wait ~a minute; do NOT auto-retry).
+    return new ProviderError("provider_rate_limit", "The AI provider is rate-limiting requests" + (perMinute ? " (per-minute)" : "") + ". Try again shortly.", 503, true, { providerStatus: status, quotaScope: perMinute ? "per-minute" : "rate", quotaId, retryAfter });
   }
   if (status >= 500) {
     return new ProviderError("provider_unavailable", "The AI provider is temporarily unavailable.", 503, true, { providerStatus: status });
@@ -281,7 +288,7 @@ async function callGemini(model: string, key: string, prompt: string, system: st
   );
 
   if (!r.ok) {
-    const err = (await r.text().catch(() => "")).slice(0, 600);
+    const err = (await r.text().catch(() => "")).slice(0, 1500);   // (#R113e) wide enough to see the quotaId in a 429 body
     throw classifyGemini(r.status, err, "", "");
   }
 
@@ -321,7 +328,9 @@ async function callGeminiRetry(model: string, key: string, prompt: string, syste
       return await callGemini(model, key, prompt, system, imgs, opts);
     } catch (e) {
       const ps = (e instanceof ProviderError && e.meta && typeof e.meta.providerStatus === "number") ? e.meta.providerStatus as number : 0;
-      const transient = e instanceof ProviderError && (e.code === "provider_rate_limit" || (e.code === "provider_unavailable" && ps >= 500));
+      // (#R113e) Retry ONLY a 5xx overload — NOT a 429. Retrying a rate/quota 429 immediately just consumes another
+      // request of the SAME per-minute/per-day budget (making it worse); those need the caller to wait ~a minute.
+      const transient = e instanceof ProviderError && e.code === "provider_unavailable" && ps >= 500;
       if (transient && attempt < MAX) {
         await new Promise((r) => setTimeout(r, 700 * attempt));
         continue;
