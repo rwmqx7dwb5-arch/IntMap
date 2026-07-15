@@ -5,6 +5,34 @@
 
 ---
 
+## R107 — 17-item re-report/feature batch: Tibet border DISSOLVE, localized era labels, mobile overhaul (Atlas sheet, right-sidebar, detents, news-hover, search-FAB), past-news filter, Atlas links drop-generic, compare-control spec (tag `#R107`)
+
+Several R106 re-reports where the fix was too shallow (Tibet BORDER line, article links, resize hover, countries gap) + a batch of new mobile asks + a regression I introduced in R106 (mobile search FAB). Verified against real data / fresh-element computed styles in the headless preview (existing-element computed styles + layout are FROZEN while `document.hidden` — build a throwaway element with the target selector, or read after a reload).
+
+**Tibet border LINE — DISSOLVE, not rename (#7-cont / #18).** "1951年以降もしばらくは国境線が独立時代のまま". R106 renamed the Tibet feature to China + suppressed its label, but it stayed a SEPARATE feature so `imtb-line` kept drawing its outline. `_mergeTibet(fc)` now `turf.union`s Tibet/E-Turkestan INTO the China feature and DROPS the Tibet feature(s) — the internal border is dissolved, China becomes one MultiPolygon covering Tibet's area (no hole). Both the snapshot baker (`_correctEra`, ≥1951) and the display-year path (`_eraCorrect`) route through it; falls back to R106 rename-only if turf/union or a China feature is missing. **Verified against real `world_1945.geojson`**: 1 Tibet + 1 China → 0 Tibet + 1 China (MultiPolygon), total 227→226.
+
+**Historical labels multi-language (#14).** "昔の国名は英語以外の言語も対応させて". The aourednik NAME is English (SOVIET UNION / GERMAN EMPIRE / SIAM). `_eraLocName(nm)` resolves a renamed/vanished era name to the current language via the former-state registry (`IntMapHistStates`, which carries `name[lg]`) or the `_VANISHED` table; `tagSame` writes it to `_locName`, and `imtb-lbl`'s text-field coalesces `_locName` first. Re-localizes live on a language change while travelling. Verified: SUN → "ソビエト連邦", `hbRe` matches.
+
+**Isolate clears highlight (#12).** Isolating now clears the place-highlight source + `IntMapOutline` + the place popup, so a historical-country click's blue era outline no longer lingers on top of the isolated view.
+
+**Atlas (#19,#20).** (a) Article links: `linkCards` now DROPS any Google-News aggregator link it cannot decode to a real publisher URL (and any that still resolve to news.google.com) — only genuine article links (GDELT / decoded-Google / direct RSS) render, so a card is never a generic aggregator page. Verified: decodable→reuters.com, direct→apnews.com, opaque→dropped. (b) No bare `✓`: the two `note('✓')` flyTo confirmations now name the destination (`📍 <place>`).
+
+**Past-time news (#28).** "時間を過去に設定しても最新ニュースが表示される". Google News ignores `after:/before:` for dates outside its recent window and returns TODAY's headlines. `buildItems` now filters to items whose `pubDate` is within ±8 days of the set instant (undated items dropped too), and a day/live change clears the loaded feed + map pins for ALL modes before re-fetching — so a past date shows genuine period news or NOTHING, never latest-as-past. Verified filter keeps only date-matching items.
+
+**News geolocation (#27).** A safe, ADDITIVE country-level fallback (`_countryFallback`): when the gazetteer scores no specific place, anchor the story to the country actually named (its countryGeo polygon center, word-boundary regex, memoized) instead of a random hash-scatter — measurably fewer "location unknown" pins, always a real place; only fires when nothing else matched (can't worsen an existing result). Name follows the UI language.
+
+**Compare controls (#17).** Indicators toggle: always "Indicators n/m" (never a bare number), NO ⌃/⌄ chevron, constant width (count reserves a 2-digit box), single line, and PRIMARY-BLUE while its cloud is expanded (`.scp-mtog.open`). The mode segment + Indicators toggle get a WHITE frame in dark mode (matching the R105 pills; light keeps a visible grey — white would vanish). Narrow-window container-query keeps them one row WITH the word (mode buttons shrink instead of hiding the word).
+
+**Countries / compare gaps (#15,#16).** ws `#countries-feed padding-top` 2→0 → the sort toolbar AND the Compare header now sit FLUSH with the window top (was a 2px see-through seam); search→toolbar 0, pulldown↔sort 4→2. Verified 0/0/2.
+
+**Workspace resize hover (#13) — ROOT CAUSE.** Re-report after R106 widened M. The real cause: over the MAP CANVAS (which sets its own grab cursor) the resize cursor on `w` was OVERRIDDEN, so the edge felt dead even with a wide hit-zone. Now a `.rz-hover` class toggles in the edge zone and `.ws-win.rz-hover *{cursor:inherit !important}` forces every descendant (canvas, lists) to show the resize cursor. M also 18→22 (top edge 10, ±5 outside).
+
+**Mobile (#21-26).** (#23 REGRESSION FIX) the search FAB is solid-primary-blue again — the R106 desktop "neutral-until-text" base greyed it; restored on mobile with `!important` (verified blue). (#21) Atlas is a flush BOTTOM SHEET (bottom:0, full width, rounded top) not a floating popup — verified reaches viewport bottom. (#22) the collapsed "See the past world" pill is smaller (subtitle dropped, tighter) and tucked 6px from the right + 6px above the sheet. (#24) the right-sidebar layer panel now works on phones: an OVERLAY (92vw ≈ 345px, never shrinks the map; desktop edge-tab hidden) — verified translateX(0), map margin 0. (#25) the lowest "mini" sheet detent is DISABLED — `peek` is now the lowest (drag capped at peek, `mini` removed from the snap order, the community-post collapse redirected to peek). (#26) the mobile auto hover-pin + crosshair news popup is disabled (`_crosshairNews` no-ops; tapping a pin still opens the article).
+
+**ToS/Privacy/Sources**: no new endpoints or data flows (turf bundled; aourednik / Google News / GDELT / countryGeo already used) → no legal change.
+
+---
+
 ## R106 — 11-item re-report/feature batch: historical-country isolate, Tibet DISPLAY-year fix, compare one-row + de-coloured sticky bars, Atlas AI-fallback + real article links, ws language/gaps/resize (tag `#R106`)
 
 Several R104/R105 re-reports where the earlier fix was too shallow, plus new asks. Map-pixel features (isolate mask, era borders) reasoned + logic-verified against real data in the headless preview (`document.hidden` → **computed-style recalc is FROZEN** for existing elements: verify via `getBoundingClientRect` after a reload, DOM-property reads, and FRESH-element `getComputedStyle` — a mutated existing element returns stale computed values).
