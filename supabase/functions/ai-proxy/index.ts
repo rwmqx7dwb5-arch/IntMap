@@ -125,6 +125,23 @@ function parseDataUrl(d: string): ImgPart | null {
   return m ? { mime: m[1], b64: m[2] } : null;
 }
 
+// (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit (which
+// terminates it with an opaque 546 the client can't parse). Abort each provider call well before that so it fails
+// as a clean, classified 503 instead. 45s is generous for Gemini "low" yet safe for a MALFORMED retry (2×45<limit).
+const PROVIDER_TIMEOUT_MS = 45_000;
+async function fetchWithTimeout(url: string, init: RequestInit, ms = PROVIDER_TIMEOUT_MS): Promise<Response> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctl.signal });
+  } catch (e) {
+    const aborted = (e as Error)?.name === "AbortError";
+    throw new ProviderError("provider_unavailable", aborted ? "The AI provider timed out." : ("Network error contacting the AI provider: " + String((e as Error)?.message || e)), 503, true, { timeout: aborted });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 // (#R113) Typed provider failure → mapped to an HTTP status that is NEVER 429
 // (429 means the IntMap daily quota) so the client can tell them apart.
 type AIProxyErrorCode =
@@ -184,7 +201,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   if (system) body.system = system;
   // Anthropic has a NATIVE web-search tool; unlike Gemini it is safe to attach on demand.
   if (web) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
+  const r = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(body),
@@ -209,7 +226,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   messages.push({ role: "user", content: userContent });
   const reqBody: Record<string, unknown> = { model, messages, temperature: 0.3, max_tokens: maxTokens };
   if (wantJson) reqBody.response_format = { type: "json_object" };
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+  const r = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify(reqBody),
@@ -255,7 +272,7 @@ async function callGemini(model: string, key: string, prompt: string, system: st
   if (system) body.systemInstruction = { parts: [{ text: system }] };
   if (attachSearch) body.tools = [{ google_search: {} }];
 
-  const r = await fetch(
+  const r = await fetchWithTimeout(
     "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
     { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
   );
@@ -293,6 +310,7 @@ async function callGemini(model: string, key: string, prompt: string, system: st
 
 // ---------------------------------------------------------------------------
 Deno.serve(async (req) => {
+ try {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "method" }, 405);
 
@@ -419,4 +437,11 @@ Deno.serve(async (req) => {
     }
     return json({ error: "provider_unavailable", message: String((e as Error)?.message || e), retryable: false, meta: { provider, model, task } }, 502);
   }
+ } catch (topErr) {
+  // (#R113b) LAST-RESORT guard: any error not caught above (auth/parse/etc.) returns a clean, CLASSIFIED JSON error
+  // instead of a bare 546 the client can't display. (A hard runtime resource-kill can't reach here — the per-fetch
+  // timeouts above cover the slow/hung-call case that would otherwise hit the wall-clock limit.)
+  try { console.error("ai-proxy UNCAUGHT", String((topErr as Error)?.name || ""), String((topErr as Error)?.message || topErr).slice(0, 300)); } catch (_) { /* ignore */ }
+  return json({ error: "provider_unavailable", message: "The AI service hit an unexpected error — please try again.", retryable: true }, 500);
+ }
 });
