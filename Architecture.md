@@ -676,8 +676,24 @@ supabase/
   - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（R40で free=10/日 `PLAN_LIMITS`）→
     (3)`increment_ai_usage` RPC で当日分を原子的に消費（超過は 429）→ (4)**サーバー保持の鍵**でプロバイダ呼び出し →
     (5)失敗時は `refund_ai_usage` で消費分を返金。
-  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎）。
+  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、現行=`gemini-3.5-flash`）。
   - 用途：ニュースタイトル翻訳、ビューの要約、画像解析など**ユーザー操作のAI機能**。
+  - **#R113 Gemini 3.5 Flash / `thinkingLevel:"low"` 移行 — 責任分離。** クライアントは**タスク種別**
+    （`atlas_plan|map_report|analysis|free_text|json_extract|brief`）と**`webMode`**（`off|auto|required`）を送り、
+    ai-proxy がタスク毎に**出力トークン上限**（`TASK_MAX_OUTPUT`。map_reportは件数比例、上限5000。旧`MAX_TOKENS=1600`固定を廃止）・
+    **Structured Output**（JSONタスクは`responseMimeType:"application/json"`、map_reportはサーバー定義の`responseSchema`）・
+    **Web方針**を選択。Google Search groundingは `webMode!=="off"` かつ `GEMINI_SEARCH_ENABLED==="true"`（Secret・**既定OFF**）の時のみ付与
+    ＝既定のmapReportは**モデルにWeb検索させず**IntMapが集めた証拠だけで動く（Google側429を回避）。プロバイダ失敗は**分類**
+    （`provider_rate_limit`/`provider_quota`/`provider_malformed`/`provider_empty`/`provider_blocked`/`provider_unavailable`）し
+    **502/503で返す（429はIntMapの1日上限専用）**。`MALFORMED_FUNCTION_CALL`は**ツールを外し「関数を呼ぶな」を明記して1回だけ再試行**。
+    クライアント`aiCallServer`は型付きプロバイダエラーを**日次上限とは別の**5言語メッセージ（`aiProviderErrMsg`）に対応。
+    Atlasプランナーのプロンプトは「アクションの`type`名はJSONデータであり呼び出し可能な関数ではない（functionCall禁止・fence禁止）」を明記。
+    `mapReport`は**証拠ID方式**に再構築：IntMapがGDELT＋Google News＋読み込み済みニュースを集め`e1,e2,…`のID付き証拠にし、
+    モデルは`{name,locationName,country,summary,date,evidenceIds}`のみ返す（**座標・URL・出典を生成させない**）。クライアントが
+    evidenceIdの実在を検証し、locationName+countryを**geocode**（または証拠の既知座標）して位置を確定、URL/出典/日付は**引用した証拠から**充填、
+    確認できない位置はピンにせず一覧のみ。`analyze`/`brief`は付いていないWeb検索ツールを断定しない誠実プロンプトに変更。
+    現実の現在日と地図のタイムトラベル日付を分離送信。**デプロイ済み**（バンドル成功＝TS検証、実機で構造化401を確認）。
+    ログイン必須の実機E2Eは利用者側で実施。
 - **ニュース地点解析AI** — `refresh-news` が**同じ鍵・同じ AI_PROVIDER 規約**でサーバー側実行（ユーザー枠は消費しない＝運用者の鍵）。
 - フロントに見えるのは結果だけ。鍵・モデル選択UIはユーザーに見せない。
 
