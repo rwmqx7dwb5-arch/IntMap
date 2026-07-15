@@ -391,6 +391,11 @@ Deno.serve(async (req) => {
             "The action/type names in the instructions are plain JSON string values, not callable functions. " +
             "Return the final answer directly" + (wantJson ? " as valid JSON." : ".");
           out = await callGemini(model, key, prompt, hardened, imgs, { maxTokens, web: false, searchEnabled: false, wantJson, responseSchema, noTools: true });
+        } else if (e instanceof ProviderError && responseSchema && e.meta && e.meta.providerStatus === 400) {
+          // (#R113) A 400 while a responseSchema was attached is most likely a schema-dialect rejection by this
+          // model — retry ONCE without the schema. responseMimeType:"application/json" still forces valid JSON,
+          // and the prompt + client-side validation enforce the shape, so map_report keeps working either way.
+          out = await callGemini(model, key, prompt, system, imgs, { maxTokens, web, searchEnabled, wantJson, responseSchema: undefined });
         } else {
           throw e;
         }
