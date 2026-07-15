@@ -894,7 +894,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .src-card .src-actions button:hover{ filter:brightness(1.1); }
     .map-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:14px; padding:8px 4px; }
     /* (#R105) the search button now matches the pill bar + the sidebar search button: a clean primary rounded button. */
-    .map-search>button{ background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:8px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:filter .15s ease; }
+    /* (#R106) the search button is a NEUTRAL pill by default and only turns primary-blue once the input carries
+       text ("入力テキストがある場合のみ青くなるように"). The .has-text class is toggled on the bar from the input. */
+    .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:999px; padding:8px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
+    .map-search.has-text>button{ background:var(--primary-color); color:#fff; }
     .map-search>button:hover{ filter:brightness(1.08); }
     .map-search-results{ display:none; position:absolute; top:48px; left:0; right:0; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); max-height:280px; overflow-y:auto; }
     .ms-item{ padding:10px 12px; font-size:12px; cursor:pointer; border-bottom:1px solid rgba(128,128,128,0.1); line-height:1.4; }
@@ -1843,7 +1846,11 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     /* (#R103) the "you can compare countries" hint made clearly visible again (icon-led, main-text colour) — the muted
        one-liner read as "missing" ("比較できますという案内が消えている"). */
     /* (#R104) compare hint: NO chart illustration, kept to a SINGLE line ("グラフのイラストはいらない／１行に"). */
-    .scf-empty{ font-size:11.5px; color:var(--text-main); text-align:center; line-height:1.3; padding:2px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* (#R106) the "you can compare countries" hint made clearly PROMINENT per request ("目立たせて。白背景黒文字にする等"):
+       a solid white callout pill with dark text, an icon and a soft shadow so it stands out from the frosted dock in
+       BOTH themes (a deliberate highlighted tip). */
+    .scf-empty{ font-size:12px; font-weight:600; color:#0b0b0c; background:#ffffff; border:1px solid rgba(0,0,0,0.12); border-radius:11px; text-align:center; line-height:1.35; padding:9px 12px; box-shadow:0 2px 9px rgba(0,0,0,0.16); display:flex; align-items:center; justify-content:center; gap:7px; }
+    .scf-empty::before{ content:'📊'; font-size:14px; flex:0 0 auto; }
     .scf-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .scf-head .scf-title{ font-size:12px; font-weight:700; }
     .scf-head button{ background:var(--input-bg); border:none; color:var(--text-main); font-size:11px; font-weight:600; padding:5px 10px; border-radius:8px; cursor:pointer; }
@@ -1896,7 +1903,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     #live-news-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--glass-fill); margin:0 0 8px; padding:4px 0 8px; }
     /* (#R104) Countries sort toolbar sticks to the TOP of the list and hugs the search field above / cards below;
        painted with the recessed panel tone so the cards scroll cleanly under it. */
-    #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:3px 0 5px; }
+    /* (#R106) tighter Countries toolbar: the pulldown ↔ asc/desc button gap 6→4 and less top padding so it hugs the
+       filter box above ("Filter Countriesと指標プルダウン、降順/昇順ボタンの間の隙間を詰めて"). */
+    #countries-feed .stats-toolbar{ position:sticky; top:0; z-index:6; background:var(--panel-bg,var(--glass-fill)); margin:0 0 4px; padding:1px 0 4px; gap:4px; }
 
     /* --- Mobile compact tweaks (#1,#2): denser news cards + smaller measurement popups --- */
     @media(max-width:768px){
@@ -6658,6 +6667,9 @@ window.addEventListener('DOMContentLoaded', () => {
       doGeocode();
     };
     inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter') doGeocode(); });
+    /* (#R106) blue only while the field has text — toggle a class the CSS keys off. */
+    const _msHas=()=>{ try{ box.classList.toggle('has-text', !!inp.value.trim()); }catch(_){} };
+    inp.addEventListener('input',_msHas); _msHas();
     /* (#R16) Warm the bundled country data the moment the user reaches for search, so country/capital
        names match LOCALLY (instant, offline) by the time they finish typing — without slowing startup. */
     inp.addEventListener('focus',()=>{ try{ if(typeof loadCountryData==='function') loadCountryData(); }catch(_){} },{once:true});
@@ -7440,7 +7452,7 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R102) tighten the always-shown ACTIVE-LAYERS bar's LEFT + BOTTOM gap a little more (kept non-flush) */
         +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'
         +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
-        +'#layer-sidebar-r .lsr-body{padding-top:2px;}'
+        +'#layer-sidebar-r .lsr-body{padding-top:0;}'   /* (#R106) flush the Search box to the Active-layers bar (was a 2px see-through seam) */
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
         +'#lsr-toggle{position:fixed;top:50%;right:0;z-index:1460;background:var(--sidebar-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,0.18);border-right:none;color:var(--text-muted);width:22px;height:64px;padding:0;border-radius:10px 0 0 10px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:-4px 0 16px rgba(0,0,0,0.12);transition:right 0.38s cubic-bezier(0.25,1,0.5,1),background .2s,color .2s;transform:translateY(-50%);}'
         +'body.lsr-avail #lsr-toggle{display:flex;}'
@@ -7598,7 +7610,11 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R104) rebuild the tile grid on a language change so the layer NAMES follow the new language immediately
        (the tiles are a copy of the classic dropdown, which updateI18n localizes — rebuild AFTER that). This was
        the biggest "ワークスペースで言語を変えてもすぐ変わらない（再読み込みが必要）" offender (dozens of layer names). */
-    window.addEventListener('intmap-lang',()=>{ if(!sb) return; setTimeout(()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ buildTiles(); }catch(_){} },40); });
+    window.addEventListener('intmap-lang',()=>{ if(!sb) return;
+      /* (#R106) the "Search layers…" placeholder was set once at build and never re-localized ("言語設定を変えても
+         すぐ変わらない" in ws mode — the layers window search stayed English). Update it live on a language change. */
+      try{ const q=sb.querySelector('#lsr-q'); if(q) q.placeholder=T('Search layers…','レイヤーを検索…','Ebenen suchen…','Поиск слоёв…','Buscar capas…'); }catch(_){}
+      setTimeout(()=>{ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} try{ buildTiles(); }catch(_){} },40); });
     return { open, close, toggle, apply };
   })();
   /* ===== (#R63) BOTTOM TICKER ("設定から選択すれば、画面下部に最新ニュースや為替、株価やその他指標が取引所の
@@ -7731,8 +7747,11 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
     function wsResize(w){
-      const M=11, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};   /* (#R79b) wider edge hit-zone → easier to grab */
-      const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-2||y<-2||x>r.width+2||y>r.height+2) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
+      /* (#R106) the edge hover/grab zone was too thin ("リサイズのホバー判定範囲が狭すぎる"): widen the left/right/
+         bottom edges to 20 px (and a small ±5 px reach OUTSIDE the window, so the seam between two abutting windows
+         is comfortably grabbable). The TOP edge stays a slim MN so it never steals the title-bar drag region. */
+      const M=18, MN=9, OUT=4, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
+      const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-OUT||y<-OUT||x>r.width+OUT||y>r.height+OUT) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=MN)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
       w.addEventListener('pointermove',e=>{ if(w.dataset.resizing) return; const d=edgeAt(e.clientX,e.clientY); w.style.cursor=d?CUR[d]:''; try{ showAdjFor(w,d); }catch(_){} });
       w.addEventListener('pointerleave',()=>{ if(!w.dataset.resizing) w.style.cursor=''; try{ hideAdj(); }catch(_){} });
       w.addEventListener('pointerdown',e=>{ if(e.target.closest('button,input,select,textarea,a,[role="button"]')) return;
@@ -7877,7 +7896,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode .ws-news #news-filter-toggle,body.ws-mode .ws-news #ai-geocode-row{box-sizing:border-box !important;margin-left:12px !important;margin-right:12px !important;}'
         /* (#R79b) Countries window: its OWN search bar (top) + the compare dock (bottom) stacked in the body */
         +'body.ws-mode .ws-countries .ws-body{flex-direction:column;}'
-        +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:8px 12px 2px !important;padding:0 !important;}'
+        +'body.ws-mode .ws-countries #countries-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:8px 12px 0 !important;padding:0 !important;}'   /* (#R106) 2→0 bottom margin: hug the sort toolbar below */
+        /* (#R106) LIGHT-MODE colored bar: the sticky Countries toolbar + Compare header used the grey --panel-bg,
+           which stands out against the ws window's --bg-color background ("上部スティック欄の背景に色がついてる、やめて").
+           In a window, paint them with the window's own background so they blend (no distinct bar), light or dark. */
+        +'body.ws-mode .ws-countries #countries-feed .stats-toolbar,body.ws-mode #scp-view .scp-stickhead{background:var(--bg-color) !important;}'
         +'body.ws-mode .ws-countries #countries-search-bar input{width:100% !important;box-sizing:border-box !important;}'
         /* (#R102) hide the "Filter countries…" box while the compare view owns the feed — a higher-specificity override
            of the show-rule above (which, with its !important, previously beat the inline display:none → "変化なし"). */
@@ -7889,7 +7912,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode #scp-view .scp-bnm{flex:0 0 84px !important;} body.ws-mode #scp-view .scp-bval{flex:0 0 78px !important;font-size:10.5px !important;}'
         /* (#R79b) Layers search box balance ("上に余白なし・下が空きすぎ"): the .lsr-head above it is hidden in
            ws-mode, so give the search breathing room on top and tighten the gap to the list below. */
-        +'body.ws-mode #layer-sidebar-r .lsr-search{padding:9px 14px 0 !important;}'
+        +'body.ws-mode #layer-sidebar-r .lsr-search{padding:6px 14px 3px !important;}'   /* (#R106) tighter cluster: less top slack, a small flush gap to the Active-layers bar */
         /* (#R104) "Active layers" must NOT be ALL-CAPS in the layers window, and the gap up to the Search box is tightened. */
         +'body.ws-mode #layer-sidebar-r #layer-active-section .lyr-head{text-transform:none !important;letter-spacing:0.01em !important;}'
         +'body.ws-mode #layer-sidebar-r #layer-active-section{padding-top:0 !important;}'
@@ -11675,6 +11698,10 @@ window.addEventListener('DOMContentLoaded', () => {
            The existing idle/styledata self-heal (labels-on-top block) keeps labels on top during the demo. */
         if(!window._imDemoActive) setTimeout(()=>{ try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} },700); }
     });
+    /* (#R106) re-localize the "Active layers" heading (+ empty/chip text) on a language change. _refreshActiveLayers
+       early-returns when the layer SET is unchanged (a signature guard), so the heading stayed in the old language
+       ("言語設定を変えてもすぐ変わらない" in the Layers window). Clear the sig so it truly re-renders. */
+    window.addEventListener('intmap-lang',()=>{ try{ const sec=document.getElementById('layer-active-section'); if(sec) sec.dataset.sig='relang'; /* a sentinel that never equals a real layer-name signature (incl. the empty "0 layers" case) → truly forces a re-render */ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){} });
     /* (#R28) SCROLL-CANCEL guard — only cancel a layer toggle when the gesture was a REAL scroll/drag,
        NOT a tap that jittered a little. The R27 version cancelled ANY click after a >10px pointer move,
        which silently DROPPED legitimate taps (a finger tap easily moves >10px on a phone) → that was the
@@ -18371,11 +18398,18 @@ window.addEventListener('DOMContentLoaded', () => {
     function enterByName(name){ withGeo(()=>applyFeature(findByName(name))); }
     /* (#R29.1) enter by the tapped point first (reliable), fall back to the label name. */
     function enterAt(lng,lat,name){ withGeo(()=>{ let f=findByLngLat(lng,lat); if(!f && name) f=findByName(name); applyFeature(f); }); }
+    /* (#R106) ROOT CAUSE of "昔の国をisolateできない": historical / former-state polygons (Tibet, the German Empire,
+       the Ottoman Empire…) do not exist in the MODERN countryGeo, so enterAt / enterByName either found nothing
+       ("border not found") or the point-in-polygon landed on the modern occupant (Tibet → China) and isolated the
+       WRONG country. When a click already carries the correct era polygon (the place popup passes opts.geojson),
+       isolate THAT geometry directly — no countryGeo lookup at all. Accepts a bare geometry or a Feature. */
+    function enterGeom(geom,name){ try{ if(!geom) return; const g=(geom.type==='Feature')?geom.geometry:geom; if(!g||!/Polygon/.test(g.type||'')) return;
+      applyFeature({type:'Feature',geometry:g,properties:{name:name||''}}); }catch(_){} }
     function exit(){ active=false; try{ map.setLayoutProperty('iso-mask','visibility','none'); }catch(_){} try{ map.setMaxBounds(null); }catch(_){} if(btn) btn.style.display='none'; }
     map.on('styledata',()=>{ if(active){ setTimeout(()=>{ if(ensure()){ try{ map.setPaintProperty('iso-mask','fill-color',bg()); map.setLayoutProperty('iso-mask','visibility','visible'); toTop(); }catch(_){} } },80); } });
     /* Keep the mask on top after any layer toggle / data load settles (#R12). */
     map.on('idle',()=>{ if(active) toTop(); });
-    return { enter, enterByName, enterAt, exit, active:()=>active };
+    return { enter, enterByName, enterAt, enterGeom, exit, active:()=>active };
   })();
 
   /* (#R29) "通常の状態でも、国名の地名ラベルを押したら、isolate機能を使えるボタンが出るように。"
@@ -18791,7 +18825,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-list .scp-cr.sel{background:rgba(10,132,255,0.10);}'
         +'#scp-view .ts-wrap svg{height:100px !important;}'
         /* (#R70) unified compare: mode segment + bar view + Excel-like table */
-        +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0;align-self:flex-start;}'
+        +'#scp-view .scp-ctrlrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}'   /* (#R106) modes + Indicators on one row */
+        +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0;align-self:center;}'
         +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;padding:6px 14px;cursor:pointer;}'
         +'#scp-view .scp-modes button.on{background:var(--primary-color);color:#fff;}'
         /* (#R71) bars: FIXED name + value columns so every track is the same length ("長さが統一されていなくて
@@ -18809,7 +18844,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
         +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
         /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
-        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:0;align-self:flex-start;}'
+        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer;margin:0;align-self:center;}'
         +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;}'   /* (#R105) selection count NOT bold, clean tabular iOS-style figures */
         +'[data-theme="dark"] #scp-view .scp-m{border-color:rgba(255,255,255,0.85);}'   /* (#R105) dark-mode indicator pill border → white */
         +'#scp-view .scp-mcat{width:100%;font-size:10.5px;color:var(--text-muted);font-weight:700;letter-spacing:.03em;margin:7px 0 1px;}'
@@ -18828,6 +18863,10 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view{container-type:inline-size;}'
         +'@container (max-width:430px){ #scp-view .scp-bnm{flex-basis:94px;} #scp-view .scp-bval{flex-basis:82px;font-size:10.5px;} }'
         +'@container (max-width:340px){ #scp-view .scp-brow{flex-wrap:wrap;gap:2px 8px;} #scp-view .scp-bnm{flex:1 1 100%;} #scp-view .scp-btrack{flex:1 1 62%;min-width:70px;} #scp-view .scp-bval{flex:0 0 auto;text-align:left;} }'
+        /* (#R106) NARROW compare view (the ws Countries window is ~270 px): compact the mode segment + Indicators
+           toggle so "Bar chart | Time-series | Table" + Indicators still fit on ONE row ("一列に"). The Indicators
+           WORD collapses to just its count, the mode buttons tighten — full labels return in a wider view. */
+        +'@container (max-width:372px){ #scp-view .scp-modes button{padding:6px 8px;font-size:11px;} #scp-view .scp-mtog{padding:6px 8px;font-size:11px;} #scp-view .scp-mtog .scp-mtoglbl{display:none;} }'
         +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
@@ -18854,16 +18893,21 @@ window.addEventListener('DOMContentLoaded', () => {
             +'<button class="scp-back">'+_backArr+LL('Back to statistics','統計一覧へ戻る','Zurück zur Statistik','Назад к статистике','Volver a estadísticas')+'</button>'
             +'<div class="scp-cmptitle">'+LL('Compare countries','国を比較','Länder vergleichen','Сравнение стран','Comparar países')+' <span class="scp-cmpsub">'+LL('(up to 10)','（最大10か国）','(bis zu 10)','(до 10)','(hasta 10)')+'</span></div>'
           +'</div>'
-          /* (#R70) view-mode segmented control — bar (the old click-country compare, default) | time-series | table */
-          +'<div id="scp-modes" class="scp-modes">'
-            +'<button data-m="bar">'+LL('Bar chart','棒グラフ','Balken','Столбцы','Barras')+'</button>'
-            +'<button data-m="ts">'+LL('Time-series','時系列','Zeitreihen','Динамика','Series temporales')+'</button>'
-            +'<button data-m="table">'+LL('Table','表','Tabelle','Таблица','Tabla')+'</button>'
+          /* (#R106) view modes (Bar chart | Time-series | Table) + the Indicators pulldown on ONE row per request
+             ("Bar chart/Time-series/Table, Indicatorsは一列に") */
+          +'<div class="scp-ctrlrow">'
+            +'<div id="scp-modes" class="scp-modes">'
+              +'<button data-m="bar">'+LL('Bar chart','棒グラフ','Balken','Столбцы','Barras')+'</button>'
+              +'<button data-m="ts">'+LL('Time-series','時系列','Zeitreihen','Динамика','Series temporales')+'</button>'
+              +'<button data-m="table">'+LL('Table','表','Tabelle','Таблица','Tabla')+'</button>'
+            +'</div>'
+            /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
+            +'<button class="scp-mtog" id="scp-mtog"></button>'
           +'</div>'
-          /* (#R71) indicators live behind ONE compact toggle; the cloud itself is grouped by category */
-          +'<button class="scp-mtog" id="scp-mtog"></button>'
+          /* (#R106) the indicator cloud lives INSIDE the sticky header (was floating at the top of the non-sticky
+             body — "Indicatorsの選択肢はスティックではないほうの上部に表示されてしまう"). */
+          +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'</div>'
-        +'<div class="scp-metrics" id="scp-metrics" style="display:none;"></div>'
         +'<div id="scp-chips" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;"></div>'
         +'<div style="position:relative;"><div style="display:flex;gap:6px;align-items:stretch;"><input class="scp-add" id="scp-add" autocomplete="off" style="flex:1;min-width:0;" placeholder="'+LL('Search & add countries…','国を検索して追加…','Länder suchen & hinzufügen…','Найти и добавить страны…','Buscar y añadir países…')+'"><button id="scp-pick" class="scp-pickbtn" type="button" title="'+LL('Pick a country on the map','地図で国をクリックして追加','Land auf der Karte wählen','Выбрать страну на карте','Elegir país en el mapa')+'" aria-label="'+LL('Pick a country on the map','地図で国をクリックして追加','Land auf der Karte wählen','Выбрать страну на карте','Elegir país en el mapa')+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button></div><div id="scp-list"></div></div>'
         +'<div id="scp-timebanner" class="stats-timebanner" style="display:none;"></div>'
@@ -18927,7 +18971,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let mOpen=false;
     function metricRow(){ const w=host&&host.querySelector('#scp-metrics'); if(!w) return; w.innerHTML='';
       const tog=host.querySelector('#scp-mtog');
-      const _mtogHTML=()=>LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+' <span class="scp-mcount">'+sel.size+'/'+IND.length+'</span> '+(mOpen?'⌃':'⌄');
+      const _mtogHTML=()=>'<span class="scp-mtoglbl">'+LL('Indicators','指標を選択','Kennzahlen','Показатели','Indicadores')+'</span> <span class="scp-mcount">'+sel.size+'/'+IND.length+'</span> '+(mOpen?'⌃':'⌄');
       if(tog){ tog.innerHTML=_mtogHTML();
         tog.onclick=()=>{ mOpen=!mOpen; w.style.display=mOpen?'flex':'none'; tog.innerHTML=_mtogHTML(); };
         w.style.display=mOpen?'flex':'none'; }
@@ -21415,7 +21459,12 @@ window.addEventListener('DOMContentLoaded', () => {
           const ai=document.querySelector('.plc-ai');
           if(ai) ai.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.brief){ window.IntMapConsole.brief(name,lngLat); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(name,lngLat); } }catch(_){} };   /* (#R62) brief runs inside Atlas */
           const iso=document.querySelector('.plc-iso');
-          if(iso) iso.onclick=()=>{ try{ popup&&popup.remove(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); }catch(_){} };
+          if(iso) iso.onclick=()=>{ try{ popup&&popup.remove(); }catch(_){}
+            /* (#R106) a historical country click carries its era polygon (opts.geojson) → isolate THAT exact shape,
+               not the modern country under the point ("昔の国をisolateできない" — Tibet/empires resolved to the
+               wrong modern occupant). Modern country clicks (no geojson) keep the reliable point-in-polygon path. */
+            try{ if(opts&&opts.geojson&&window.IntMapIsolate&&window.IntMapIsolate.enterGeom){ window.IntMapIsolate.enterGeom(opts.geojson,name); }
+              else if(window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); } }catch(_){} };
         },0);
       }catch(_){}
     }
@@ -24199,15 +24248,33 @@ window.addEventListener('DOMContentLoaded', () => {
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
        mapReport and any reply that carries real article URLs. Only http(s) URLs that came from evidence or
        search results are ever passed in; nothing here is fabricated client-side. */
+    /* (#R106) Google News RSS links are aggregator REDIRECTS (news.google.com/rss/articles/CBMi…), not the real
+       article — this was the "情報源の一般的なリンク" the user saw (every card read "news.google.com"). The token after
+       /articles/ usually embeds the publisher URL; decode it (base64 → find the http URL) so the card links to and
+       shows the ACTUAL article. Returns null when the token is the newer opaque form (then we label by publisher). */
+    function _isAggUrl(u){ try{ return /(^|\.)news\.google\.com$/i.test(new URL(u).hostname); }catch(_){ return false; } }
+    function _decGNewsUrl(u){ try{ const m=String(u||'').match(/news\.google\.com\/(?:rss\/)?articles\/([A-Za-z0-9_\-]{16,})/i); if(!m) return null;
+      let b=m[1].replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4) b+='='; let bin=''; try{ bin=atob(b); }catch(_){ return null; }
+      const um=bin.match(/https?:\/\/[A-Za-z0-9._~:\/?#\[\]@!$&'()*+,;=%-]{6,}/); if(!um) return null;
+      let real=um[0].replace(/[\x00-\x1f].*$/,''); try{ const h=new URL(real).hostname; if(!h||/news\.google\.com/i.test(h)||h.indexOf('.')<0) return null; }catch(_){ return null; }
+      return real; }catch(_){ return null; } }
     function linkCards(list){ try{
-      const seen=new Set(); const cards=[];
-      (list||[]).forEach(it=>{ if(!it||!it.url) return; const u=String(it.url).trim(); if(!/^https?:\/\//i.test(u)||u.length>300) return;
+      const seen=new Set();
+      /* resolve each entry to a real article URL where possible, then STABLE-partition so genuine publisher-domain
+         links fill the visible slots first and any un-decodable aggregator links fall to the end. */
+      const real=[], agg=[];
+      (list||[]).forEach(it=>{ if(!it||!it.url) return; let u=String(it.url).trim(); if(!/^https?:\/\//i.test(u)||u.length>700) return;
+        if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; }
         let host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(_){ return; }
         const k=u.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
+        const aggregator=/(^|\.)news\.google\.com$/i.test(host);
+        const domLabel=aggregator?(String(it.src||'').trim()||'Google News'):host;   /* never a bare "news.google.com" — show the publisher */
         const title=String(it.title||it.src||host).slice(0,90);
-        cards.push('<a class="atl-lc" href="'+esc(u)+'" target="_blank" rel="noopener">'
+        const card='<a class="atl-lc" href="'+esc(u)+'" target="_blank" rel="noopener">'
           +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
-          +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(title)+'</span><span class="atl-lc-d">'+esc(host)+'</span></span></a>'); });
+          +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(title)+'</span><span class="atl-lc-d">'+esc(domLabel)+'</span></span></a>';
+        (aggregator?agg:real).push(card); });
+      const cards=real.concat(agg);
       if(!cards.length) return '';
       return '<div class="atl-lc-row">'+cards.slice(0,6).join('')+'</div>'; }catch(_){ return ''; } }
     function listHtml(title,list,metric){ if(!list||!list.length) return note('⚠ '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
@@ -25344,7 +25411,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3,srcSink); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
           try{ const g2=await _gdeltNews('"'+nm3+'"',srcSink); if(g2) hl2+='\n\nLive web news search results (last 72 h) — use for "Recent developments":\n'+g2; }catch(_){}
           try{ const g3=await _gnewsNews(nm3,srcSink); if(g3) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+g3; }catch(_){}
-          const sysB='You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. You have a live web_search tool — USE it for the "Recent developments" section when the supplied headlines are thin or stale; never claim there is no recent news without having searched. Respond in '+langB+'.';
+          const sysB='You are a geopolitical and area-studies research assistant. Today is '+today+'. Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. You have a live web_search tool — USE it for the "Recent developments" section when the supplied headlines are thin or stale; never claim there is no recent news without having searched. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from the supplied headlines or a web_search result you actually obtained this turn — never invent a plausible-sounding recent event from memory; if you found nothing recent, say so rather than fabricating. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
           let txtB=''; try{ txtB=await askAI(pB,sysB,null,{web:true}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
@@ -26149,7 +26216,7 @@ window.addEventListener('DOMContentLoaded', () => {
              (#R69) the old prompt said "use ONLY the DATA blocks", which actively FORBADE the model from using its
              web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
              REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
-          const sys2='You are Atlas, the analysis engine of the IntMap world map. Today is '+new Date().toISOString().slice(0,10)+'. Write a focused analytical answer to the QUESTION. Your evidence sources, in order: (1) the DATA blocks below; (2) your live web_search tool — you MUST actually run web searches whenever the question concerns recent events, the current situation, or "latest" anything and the DATA blocks contain no fresh, dated, question-relevant items. It is FORBIDDEN to answer "nothing notable is happening" / "no recent information is available" without having run a web search first; if you searched and truly found nothing, state what you searched for. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query") and use your web search only to corroborate or add context; if your memory disagrees with that block, the block wins. Without such a block you MUST run a web search and state ONLY the name(s) your search results give, mentioning the result\'s date; if the search cannot confirm it, say you could not verify — outputting a remembered name is forbidden. RECENCY IS CRITICAL — the user complained that asking for the "近況 / recent situation" returned events from years ago. When the question asks about what is happening now / recently / latest / 近況: the answer MUST be built from the MOST RECENT developments (the DATA blocks are sorted newest-first; the LATEST NEWS + LIVE WEB SEARCH blocks and your own searches are the current picture). Treat anything older than ~6 months as BACKGROUND only, and NEVER present an old event as if it were current. EVERY development you cite must carry its date; if the freshest dated evidence you have is more than a few months old, say so explicitly and run additional web searches (add the current month and year to your queries) for newer developments before answering. Structure: lead with the most newsworthy, RECENT, question-relevant developments WITH their dates (from the data blocks or your searches); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — ONLY urls that literally appear in the DATA blocks or in your web-search results; if you have none, omit the line entirely; fabricating a URL is forbidden.';
+          const sys2='You are Atlas, the analysis engine of the IntMap world map. Today is '+new Date().toISOString().slice(0,10)+'. Write a focused analytical answer to the QUESTION. Your evidence sources, in order: (1) the DATA blocks below; (2) your live web_search tool — you MUST actually run web searches whenever the question concerns recent events, the current situation, or "latest" anything and the DATA blocks contain no fresh, dated, question-relevant items. It is FORBIDDEN to answer "nothing notable is happening" / "no recent information is available" without having run a web search first; if you searched and truly found nothing, state what you searched for. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query") and use your web search only to corroborate or add context; if your memory disagrees with that block, the block wins. Without such a block you MUST run a web search and state ONLY the name(s) your search results give, mentioning the result\'s date; if the search cannot confirm it, say you could not verify — outputting a remembered name is forbidden. RECENCY IS CRITICAL — the user complained that asking for the "近況 / recent situation" returned events from years ago. When the question asks about what is happening now / recently / latest / 近況: the answer MUST be built from the MOST RECENT developments (the DATA blocks are sorted newest-first; the LATEST NEWS + LIVE WEB SEARCH blocks and your own searches are the current picture). Treat anything older than ~6 months as BACKGROUND only, and NEVER present an old event as if it were current. EVERY development you cite must carry its date; if the freshest dated evidence you have is more than a few months old, say so explicitly and run additional web searches (add the current month and year to your queries) for newer developments before answering. Structure: lead with the most newsworthy, RECENT, question-relevant developments WITH their dates (from the data blocks or your searches); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). GROUNDING RULE (critical — the user reported Atlas "存在しない出来事をハルシネーションする", inventing events that never happened): EVERY event, figure, name and date in your answer must be traceable to the DATA blocks above or to a result your web_search tool actually returned THIS turn. You may NOT state a specific development, statistic or quote from parametric memory. If, after actually searching, you cannot find dated, question-relevant evidence, say plainly — in the answer language — that you could not find recent verifiable information on this topic and name what you searched for; an honest "not found" is REQUIRED and is always better than a plausible-sounding but unverified or fabricated event. Do not embellish a thin fact into a fuller narrative. NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — ONLY urls that literally appear in the DATA blocks or in your web-search results; if you have none, omit the line entirely; fabricating a URL is forbidden.';
           let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{web:true}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txt||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
@@ -27017,7 +27084,18 @@ window.addEventListener('DOMContentLoaded', () => {
          account nor spends a daily AI credit, so the most common operations ALWAYS work (the core of the user's
          "claims it did X but didn't" report). The AI path below is still gated as before. */
       if(lp&&lp.confident&&lp.actions&&lp.actions.length){ const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai,q); return; }
-      try{ if(typeof aiGate==='function'&&!aiGate()) return; }catch(_){}
+      /* (#R106) AI FALLBACK & AVAILABILITY — "LocalPlanで無理ならAIにフォールバック / できる限りAIを使用 / エラーが多い".
+         Prefer AI for anything localPlan can't confidently handle. But when AI is unavailable (logged out or the daily
+         quota is spent) we must NOT dead-end into a silent return + login modal (the frequent "何もせずエラー" case):
+         run the best-effort local plan so Atlas still ACTS without an account, and only surface the login/limit gate
+         when there is genuinely nothing to run. `_aiReady` mirrors aiGate WITHOUT its side effect (opening the modal),
+         so the local fallback doesn't pop a needless login prompt. */
+      let _aiReady=false; try{ _aiReady = !!(typeof currentUser!=='undefined'&&currentUser) && !(typeof aiUsage!=='undefined'&&aiUsage&&aiUsage.date===aiToday()&&typeof aiUsesLeft==='function'&&aiUsesLeft()<=0); }catch(_){ _aiReady=false; }
+      if(!_aiReady){
+        if(lp&&lp.actions&&lp.actions.length){ const ai2=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); try{ const fails=await runActions(ai2,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai2.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai2,q); return; }
+        try{ if(typeof aiGate==='function') aiGate(); }catch(_){}   /* opens the login modal / shows the daily-limit toast */
+        const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof currentUser!=='undefined'&&currentUser)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
+      }
       const ai=bubble('a','<span class="atl-dots" aria-label="'+L('Thinking…','考え中…','Denke nach…','Думаю…','Pensando…')+'"><i></i><i></i><i></i></span>');
       try{ let plan=await askAIJSON(buildPrompt(q),SYS());
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
@@ -28598,7 +28676,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(typeof map==='undefined'||!map||!window.IntMapTime) return {};
     const YEARS=[1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-    const cache=new Map(); let active=false, shownY=null, seq=0;
+    const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
     /* (#R94o) CLOSEST snapshot, not just the closest ≤ year — so a mid-gap year like 1910 shows the 1914 borders
        (Japan's southern Sakhalin/Karafuto, held since 1905) instead of the staler 1900, i.e. borders change at the
        gap midpoint, roughly halving how long a year is shown with the "wrong" borders. A FORWARD jump is only
@@ -28629,6 +28707,19 @@ window.addEventListener('DOMContentLoaded', () => {
           f.properties._corrected=1; f.properties._same=1; f.properties._modName='';   /* merged into the PRC → no independent border label */
         } }catch(_){} });
       return fc; }catch(_){ return fc; } }
+    /* (#R106) DISPLAY-YEAR Tibet / East-Turkestan correction. _correctEra (above) bakes the merge into snapshots
+       ≥1953, but the PRC annexed Tibet in May 1951 and the NEAREST snapshot for 1951-1952 is 1945 (pre-annexation,
+       Tibet drawn INDEPENDENT) — so Tibet wrongly stayed independent "しばらく after 1951" ("1951年以降もしばらくは
+       独立国として表記"). Key the merge off the DISPLAYED year instead: for any displayed year ≥ 1951 whose snapshot
+       still carries an independent Tibet/E-Turkestan, return a CLONE with those merged into China (renamed, its
+       independent label suppressed). The raw cached snapshot is left intact, so pre-1951 years still show them
+       independent (correct for their era). A no-op when the snapshot was already baked by _correctEra. */
+    const _TIBET_RE=/^\s*(tibet|xizang|thibet|east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria)\s*$/i;
+    function _eraCorrect(fc,year){ try{ if(!(year>=1951)||!fc||!Array.isArray(fc.features)) return fc;
+      if(!fc.features.some(f=>{ const p=f.properties||{}; return !p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')); })) return fc;
+      return {type:'FeatureCollection',features:fc.features.map(f=>{ const p=f.properties||{}; if(!p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')))
+        return {type:'Feature',geometry:f.geometry,properties:Object.assign({},p,{NAME:'China',name:'China',_corrected:1,_same:1,_modName:''})}; return f; })};
+    }catch(_){ return fc; } }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
       if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ const cc=_correctEra(c,year); cache.set(year,cc); return cc; } }catch(_){} }
       for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
@@ -28716,7 +28807,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const s=map.getSource('imtb-src'); if(s){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
       if(ensure()){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
       else map.once('idle',()=>{ if(active) apply(fc); }); }
-    function clear(){ const was=active; active=false; shownY=null;
+    function clear(){ const was=active; active=false; shownY=null; shownCorr=false;
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
@@ -28724,8 +28815,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
     async function go(year){ active=true; const ny=nearest(year); const my=++seq;
-      if(shownY===ny){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
-      const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; apply(fc); } }
+      /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
+      const corr=(year>=1951);
+      if(shownY===ny&&shownCorr===corr){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
+      const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; shownCorr=corr; apply(_eraCorrect(fc,year)); } }
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
