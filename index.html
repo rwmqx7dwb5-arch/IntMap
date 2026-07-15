@@ -25200,8 +25200,8 @@ window.addEventListener('DOMContentLoaded', () => {
        news search across ~all outlets, last 72 h, CORS-open) + Wikipedia REST summaries. This is what fixes the
        "provided data is insufficient to describe current events around Taiwan" class of reply: the loaded RSS
        feed is no longer the only news source. ---- */
-    async function _gdeltNews(q2,sink){ const query=String(q2||'').trim(); if(!query) return null;
-      const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan=3d&sort=hybridrel');
+    async function _gdeltNews(q2,sink,timespan){ const query=String(q2||'').trim(); if(!query) return null;   /* (#R113d) optional timespan (default 3d) so a brief can widen the window */
+      const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan='+encodeURIComponent(timespan||'3d')+'&sort=hybridrel');
       const arts=j&&j.articles; if(!Array.isArray(arts)||!arts.length) return null;
       const seen=new Set(); const rows2=[];
       for(const a2 of arts){ const t2=String(a2.title||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
@@ -25717,8 +25717,17 @@ window.addEventListener('DOMContentLoaded', () => {
           const today=new Date().toISOString().slice(0,10); const langB=_langLine();
           const srcSink=[];   /* (#R79) collect real article URLs → ChatGPT-style source cards under the brief */
           let hl2=''; try{ const heads=_newsData(ll&&isFinite(ll.lng)?{lng:ll.lng,lat:ll.lat}:null,nm3,srcSink); if(heads) hl2='\n\nRecent nearby news headlines — reflect these in "Recent developments":\n'+heads; }catch(_){}
-          try{ const g2=await _gdeltNews('"'+nm3+'"',srcSink); if(g2) hl2+='\n\nLive web news search results (last 72 h) — use for "Recent developments":\n'+g2; }catch(_){}
-          try{ const g3=await _gnewsNews(nm3,srcSink); if(g3) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+g3; }catch(_){}
+          /* (#R113d) recent-news evidence for "Recent developments": GDELT (exact phrase → unquoted fallback, last 7
+             days for wider coverage than 72 h) + Google News, in parallel. Empty results just leave the section honest
+             (no fabrication) — but the quoted-only, 3-day, no-fallback version was returning nothing for topics like
+             "South China Sea", which is why the section came back empty. */
+          try{ const [gd,gn]=await Promise.all([
+              (async()=>{ let v=await _gdeltNews('"'+nm3+'"',srcSink,'7d'); if(!v) v=await _gdeltNews(nm3,srcSink,'7d'); return v; })().catch(()=>null),
+              _gnewsNews(nm3,srcSink).catch(()=>null)
+            ]);
+            if(gd) hl2+='\n\nLive web news search results (GDELT, last 7 days) — use for "Recent developments":\n'+gd;
+            if(gn) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+gn;
+          }catch(_){}
           const sysB='You are a geopolitical and area-studies research assistant. The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: a web-search or function-calling tool is NOT necessarily attached to this request — do NOT call any tool or function, and do NOT claim to have searched the web. For "Recent developments" use the supplied recent-news headlines below (and, ONLY if a web-search tool actually is attached, its results). GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from the supplied headlines (or an attached web-search result you actually obtained this turn) — never invent a plausible-sounding recent event from memory; if the supplied headlines have nothing recent, say so rather than fabricating. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
           let txtB=''; try{ txtB=await askAI(pB,sysB,null,{task:'brief',webMode:'auto'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
