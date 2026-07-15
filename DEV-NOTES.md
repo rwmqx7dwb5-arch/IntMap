@@ -5,6 +5,30 @@
 
 ---
 
+## R109 — 15-item re-report/feature batch: historical DATA fixes (Germany eras, Austria-Hungary population, USSR), legend re-localization ROOT CAUSE, mobile-Atlas mount ROOT CAUSE, ts 0-line for signed indicators, WB/IMF year-gate, Köppen-minimize (tag `#R109`)
+
+Several R108 re-reports whose fix missed the real cause + new historical-data bugs found by inspecting the aourednik/Maddison data live.
+
+**Germany eras (#57).** 1920/1940 Germany showed as MODERN Germany because `IntMapHistId` only had DEU=German Empire (1871-1918). Added **Weimar Republic** (1919-1932, black-red-gold) and **Nazi Germany / German Reich** (1933-1945) — the swastika flag is deliberately NOT rendered; the 1933-35 black-white-red tricolor stands in. The aourednik polygon stays "Germany", so `tagSame` now maps the modern polygon name → the current era display name (MODNM table) for the LABEL; the click already resolved via point-in-polygon → the era-renamed countryStats (name/flag/wiki). Verified: 1920→Weimar Republic, 1940→Nazi Germany, 1910→German Empire, all with correct wikis.
+
+**Austria-Hungary population/GDP (#59).** A-H 1915 read 6.84 M (≈ modern Austria) because Maddison has NO single A-H entity and its successor-sum only found Austria (the other successors are null for 1915). Added documented **popEst/gdpEst** to the multi-nation empires (AUH 52.8 M, OTT, RUE 166 M, RAJ); `agg` uses them whenever Maddison lacks the entity AND the computed value is < 60 % of the estimate. Verified AUH 1915 → 52.8 M / 190 B.
+
+**USSR in 1940s Countries (#58).** Testing showed the USSR **does** appear (my earlier "missing" was a stale `window.countryStats` reference, which is NOT the module's). Hardened: empires with popEst now always inject (`_histHave` counts popEst).
+
+**Legend localization (#54) — ROOT CAUSE.** The R108 handler targeted `.generic-legend`, but the common legends are DEDICATED `.data-legend` built once by makeLegend — so it matched NOTHING. Now the central `intmap-lang` handler refreshes every visible `.data-legend` <h4> from the layer's CURRENT localized checkbox-label name (generic ones still via ensureGenericLegend). Verified the Air-temperature legend re-localizes EN→JP→DE.
+
+**Mobile Atlas-in-sidebar (#50) — ROOT CAUSE.** R108 mounted it into #sidebar, but the sheet stayed `collapsed` with a translateY that left it off-screen. `_atlSheetMount` now removes `collapsed`, adds `show`, and pins `--sheet-ty:0` inline (restored on close). Verified: mounts into #sidebar, collapsed cleared, --sheet-ty 0.
+
+**Compare view (#48,#49,#52,#53,#56,#60).** (#48) a slight painted gap above "Back to statistics" (stickhead pad-top 2→8). (#49) mode/Indicators font 13→14 with tighter padding — still ONE row at the 391 px sidebar width (verified sameRow). (#52) removed "(up to 10)." from the hint (all langs). (#53) the TIME-SERIES 0 line now shows for SIGNED-capable indicators (growth/inflation/current-account/FDI — `ind.signed`) even when the visible data is all-positive, matching the bar 0-axis. (#56) per-indicator dividers whiter + thicker (1→2 px, dark rgba .4→.75). (#60) the WB/IMF toggle only shows for years IMF WEO covers (~1980+; deep-past travel hides it).
+
+**Layers (#54 above, #55, #47, #61).** (#55) added a TARGETED post-toggle heal: ~2.8 s after a user turns a layer ON, if it hasn't painted it re-fires ONCE (same cooldown/skip list) — faster than the 2-hit background audit. (#47) +16 more localized era names (Kingdom of Hungary/Romania/Bulgaria/Serbia/Greece/Yugoslavia, Gran Colombia, Congo Free State, French Indochina, Kingdom of Egypt/Iraq, Manchuria, Cochinchina, Gold Coast, East Prussia). (#61) minimizing the Köppen legend keeps Period + Opacity accessible (only the climate-class swatches collapse).
+
+**Mobile (#51).** the 🔍 in the search FAB is flex-centred (padding 0) — was off-centre from the desktop-base padding.
+
+**ToS/Privacy/Sources**: no new endpoints (Maddison/aourednik/World-Bank/IMF all already used) → no legal change.
+
+---
+
 ## R108 — 18-item re-report/feature batch: no-emoji standing rule, isolate-click guard, Wikipedia-language + more era names, compare-control polish, Atlas honesty, mobile Atlas-in-sidebar, legend re-localization (tag `#R108`)
 
 Several R106/R107 re-reports (two of them REVERSALS of my own prior changes) plus new asks and a STANDING instruction. Verified via fresh-element computed styles + live compare-view interaction in the headless preview (existing-element styles/layout are FROZEN while `document.hidden`).

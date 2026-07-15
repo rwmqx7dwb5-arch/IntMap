@@ -1195,6 +1195,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .data-legend .dl-drag, .koppen-legend .kl-drag{ display:none !important; }
     .data-legend h4, .koppen-legend h4{ padding-left:18px; }
     .legend-collapsed .dl-bar, .legend-collapsed .dl-scale, .legend-collapsed .dl-hint, .legend-collapsed .kl-item, .legend-collapsed .kl-hint, .legend-collapsed .kl-clear, .legend-collapsed .dl-op-row, .legend-collapsed .dl-op-extra{ display:none !important; }
+    /* (#R109) minimizing the KÖPPEN legend keeps Period + Opacity accessible — only the climate-class swatches collapse. */
+    .koppen-legend.legend-collapsed .kl-period, .koppen-legend.legend-collapsed .dl-op-row{ display:flex !important; }
+    .koppen-legend.legend-collapsed .dl-op-extra{ display:block !important; }
     /* Minimize/expand button on legends + popups (so a kept-open legend doesn't hog the screen, esp. mobile).
        Non-essential content is hidden in JS (toggleLegendMin) so it works for every legend shape. */
     .legend-min{ position:absolute; top:6px; right:34px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px; font-weight:600; line-height:1; padding:2px 7px; border-radius:6px; }
@@ -1937,8 +1940,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       .tool-panel .tp-hint{ display:none !important; }   /* compact: drop the help line on phones */
       .news-timeline{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; }
       /* Mobile-only: restore the 🔍 glyph in the round place-search FAB (text "Search" doesn't fit). */
-      #ms-btn{ font-size:0 !important; }
-      #ms-btn::after{ content:'🔍'; font-size:18px; }
+      /* (#R109) centre the 🔍 in the round button — flex-centre + zero padding (the desktop base padding pushed it off-centre). */
+      #ms-btn{ font-size:0 !important; display:flex !important; align-items:center !important; justify-content:center !important; padding:0 !important; line-height:1 !important; }
+      #ms-btn::after{ content:'🔍'; font-size:18px; line-height:1; }
       .map-search.ms-open #ms-btn::after{ font-size:15px; }
       /* Mobile layer list: balanced full-width rows (was left-skewed). */
       .m-sheet .layer-dropdown .layer-option{ width:100%; box-sizing:border-box; justify-content:flex-start; }
@@ -2435,7 +2439,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
       filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date", thermWin24:"Last 24 h", thermWin48:"Last 48 h", thermWin72:"Last 72 h",
-      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap country rows to select and compare (up to 10).", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
+      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap country rows to select and compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
       satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
       aiSecTitle:"AI features", aiSecHint:"Built-in AI — free for logged-in users (up to 30 uses per day). No API key needed.",
       aiProvider:"AI provider", aiModel:"Model", aiApiKey:"API key", aiKeyConnected:"Connected", aiKeyNone:"No key", aiGetKey:"Get a key ↗", aiOnDevice:"Runs on-device in Chrome — no API key needed.",
@@ -2467,7 +2471,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
       filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付", thermWin24:"過去24時間", thermWin48:"過去48時間", thermWin72:"過去72時間",
-      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして国を選び比較（最大10か国）", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
+      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして国を選び比較", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
       satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
       aiSecTitle:"AI機能", aiSecHint:"内蔵AI — ログインすると無料でご利用いただけます（1日30回まで）。APIキーは不要です。",
       aiProvider:"AIプロバイダ", aiModel:"モデル", aiApiKey:"APIキー", aiKeyConnected:"接続済み", aiKeyNone:"未登録", aiGetKey:"キーを取得 ↗", aiOnDevice:"Chrome内で端末内実行されます（APIキー不要）。",
@@ -2522,7 +2526,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"Pin hier setzen", ctxMeasureFrom:"Messung hier beginnen", ctxPostHere:"Hier posten (Community)", ctxDistFrom:"Entfernung vom vorherigen Pin", ctxCopy:"Koordinaten kopieren", ctxClearPins:"Alle Pins entfernen", ctxThisPoint:"Dieser Punkt", coords:"Koordinaten", depth:"Tiefe", climate:"Klima",
       lyrEEZ:"Meeres-AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrThermal:"Wärmeanomalien (Brände)", planesZoomHint:"🔍 Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"🔍 Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenen-Datum",
       commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Posten", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte zeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Angesagt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
-      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen (bis zu 10).", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
+      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
       satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ersatz umgeschaltet",
       aiProvider:"KI-Anbieter", aiModel:"Modell", aiApiKey:"API-Schlüssel", aiKeyConnected:"Verbunden", aiKeyNone:"Kein Schlüssel", aiGetKey:"Schlüssel erhalten ↗", aiOnDevice:"Läuft lokal in Chrome — kein API-Schlüssel nötig.", aiTest:"Verbindung testen", aiTesting:"Test läuft…", aiTestOk:"Verbindung OK ✓", aiNoKey:"Fügen Sie zuerst einen KI-API-Schlüssel unter Einstellungen → KI-Funktionen hinzu.", aiNoVision:"Dieses Modell kann keine Bilder lesen. Wählen Sie GPT-4o, Claude 3.5 Sonnet oder Gemini 1.5 Pro.", aiChromeUnavail:"Die in Chrome integrierte KI ist hier nicht verfügbar. Verwenden Sie Chrome 127+ mit aktivierter On-Device-KI oder einen anderen Anbieter.", aiThinking:"KI analysiert…", aiError:"KI-Anfrage fehlgeschlagen", aiCopy:"Kopieren", aiCopied:"Kopiert ✓", aiClose:"Schließen", aiRetry:"Wiederholen",
       aiGeoBtn:"✨ Alle Nachrichten per KI verorten", aiGeoBtnSub:"✨ Thema per KI verorten", aiGeoBtnPub:"✨ Herausgeber per KI verorten", aiGeoBusy:"Verorten…", aiGeoNone:"Nichts zu verorten.", aiGeoDone:"{n} Meldungen verortet", aiGeoErr:"Geokodierung fehlgeschlagen", aiTransBusy:"Übersetzen…", aiTransDone:"{n} Titel übersetzt", aiTransNone:"Titel bereits in Ihrer Sprache.", aiTranslate:"Übersetzen", aiShowOriginal:"Original", aiTransNoText:"Kein Artikeltext zum Übersetzen — versuchen Sie die Web-Ansicht.",
@@ -2568,7 +2572,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"Поставить метку здесь", ctxMeasureFrom:"Начать измерение отсюда", ctxPostHere:"Опубликовать здесь (сообщество)", ctxDistFrom:"Расстояние от предыдущей метки", ctxCopy:"Скопировать координаты", ctxClearPins:"Удалить все метки", ctxThisPoint:"Эта точка", coords:"Координаты", depth:"Глубина", climate:"Климат",
       lyrEEZ:"Морская ИЭЗ / 12 миль", lyrShips:"Суда в реальном времени", lyrPlanes:"Самолёты в реальном времени", lyrThermal:"Тепловые аномалии (пожары)", planesZoomHint:"🔍 Приблизьте, чтобы загрузить самолёты", shipsZoomHint:"🔍 Приблизьте, чтобы загрузить суда", aisNoKey:"Для судов нужен бесплатный ключ API AISstream.io — добавьте его в Настройках.", trafficFilter:"Фильтр", lyrTime:"Дата слоя",
       commAdd:"+ Новый пост", commAddArmed:"Нажмите на карту, чтобы поставить метку", commTitle:"Заголовок", commBody:"Поделитесь наблюдением, вопросом или теорией...", commPost:"Опубликовать", commCancel:"Отмена", commEmpty:"Пока нет постов. Нажмите \"+ Новый пост\", чтобы начать обсуждение.", commComment:"Комментировать", commLocate:"Показать на карте", commDelete:"Удалить", commReply:"Ответить", commWrite:"Написать комментарий...", commPostNew:"Новый пост", commPlacedAt:"Размещено в", commSortHot:"Популярное", commSortNew:"Новое", commSortTop:"Лучшее", commSearchPh:"Поиск постов…", commInView:"В поле зрения", commCat:"Категория", commCatAll:"Все", commEdit:"Изменить", commEdited:"изменено", commEditPost:"Редактировать пост", commSaveEdit:"Сохранить изменения", commNoMatch:"Нет постов по вашим фильтрам.",
-      compare:"Сравнить", compareEmpty:"Нажимайте на строки стран, чтобы выбрать и сравнить (до 10).", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
+      compare:"Сравнить", compareEmpty:"Нажимайте на строки стран, чтобы выбрать и сравнить.", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
       satCtrlTitle:"Спутниковые снимки", satProvider:"Провайдер", satDate:"Дата съёмки", satLatest:"Самые свежие", satMosaicSuffix:"безоблачная мозаика", satLocked:"добавьте ключ API", satPrevDay:"Предыдущий день", satNextDay:"Следующий день", satKeyConnected:"Подключено", satKeyNone:"Нет ключа", satErrAuth:"{provider}: ошибка аутентификации — проверьте ключ API", satErrTiles:"{provider}: снимки недоступны — переключено на резерв",
       aiProvider:"Провайдер ИИ", aiModel:"Модель", aiApiKey:"Ключ API", aiKeyConnected:"Подключено", aiKeyNone:"Нет ключа", aiGetKey:"Получить ключ ↗", aiOnDevice:"Работает локально в Chrome — ключ API не нужен.", aiTest:"Проверить подключение", aiTesting:"Проверка…", aiTestOk:"Подключение в порядке ✓", aiNoKey:"Сначала добавьте ключ API ИИ в Настройки → Функции ИИ.", aiNoVision:"Эта модель не читает изображения. Выберите GPT-4o, Claude 3.5 Sonnet или Gemini 1.5 Pro.", aiChromeUnavail:"Встроенный ИИ Chrome здесь недоступен. Используйте Chrome 127+ с включённым ИИ на устройстве или выберите другого провайдера.", aiThinking:"ИИ анализирует…", aiError:"Сбой запроса к ИИ", aiCopy:"Копировать", aiCopied:"Скопировано ✓", aiClose:"Закрыть", aiRetry:"Повторить",
       aiGeoBtn:"✨ Определить места всех новостей (ИИ)", aiGeoBtnSub:"✨ Определить место события (ИИ)", aiGeoBtnPub:"✨ Определить место издателя (ИИ)", aiGeoBusy:"Определение…", aiGeoNone:"Нечего определять.", aiGeoDone:"Определено новостей: {n}", aiGeoErr:"Ошибка геокодирования", aiTransBusy:"Перевод…", aiTransDone:"Переведено заголовков: {n}", aiTransNone:"Заголовки уже на вашем языке.", aiTranslate:"Перевести", aiShowOriginal:"Оригинал", aiTransNoText:"Нет текста статьи для перевода — попробуйте веб-вид.",
@@ -2614,7 +2618,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"Poner marcador aquí", ctxMeasureFrom:"Empezar a medir desde aquí", ctxPostHere:"Publicar aquí (comunidad)", ctxDistFrom:"Distancia desde el marcador anterior", ctxCopy:"Copiar coordenadas", ctxClearPins:"Quitar todos los marcadores", ctxThisPoint:"Este punto", coords:"Coordenadas", depth:"Profundidad", climate:"Clima",
       lyrEEZ:"ZEE marítima / 12 mn", lyrShips:"Tráfico marítimo en vivo", lyrPlanes:"Tráfico aéreo en vivo", lyrThermal:"Anomalías térmicas (incendios)", planesZoomHint:"🔍 Acerca para cargar aviones en vivo", shipsZoomHint:"🔍 Acerca para cargar barcos en vivo", aisNoKey:"Los barcos en vivo necesitan una clave API gratuita de AISstream.io — añádela en Ajustes.", trafficFilter:"Filtro", lyrTime:"Fecha de la capa",
       commAdd:"+ Nueva publicación", commAddArmed:"Haz clic en el mapa para poner un marcador", commTitle:"Título", commBody:"Comparte una observación, pregunta o teoría...", commPost:"Publicar", commCancel:"Cancelar", commEmpty:"Aún no hay publicaciones. Haz clic en \"+ Nueva publicación\" para empezar.", commComment:"Comentar", commLocate:"Mostrar en el mapa", commDelete:"Eliminar", commReply:"Responder", commWrite:"Escribe un comentario...", commPostNew:"Nueva publicación", commPlacedAt:"Colocado en", commSortHot:"Popular", commSortNew:"Nuevo", commSortTop:"Top", commSearchPh:"Buscar publicaciones…", commInView:"En vista", commCat:"Categoría", commCatAll:"Todas", commEdit:"Editar", commEdited:"editado", commEditPost:"Editar publicación", commSaveEdit:"Guardar cambios", commNoMatch:"Ninguna publicación coincide con tus filtros.",
-      compare:"Comparar", compareEmpty:"Toca filas de países para elegir y comparar (hasta 10).", compareView:"Mostrar comparación", compareClear:"Borrar", back:"Atrás", deletePin:"Eliminar",
+      compare:"Comparar", compareEmpty:"Toca filas de países para elegir y comparar.", compareView:"Mostrar comparación", compareClear:"Borrar", back:"Atrás", deletePin:"Eliminar",
       satCtrlTitle:"Imágenes de satélite", satProvider:"Proveedor", satDate:"Fecha de captura", satLatest:"Más reciente disponible", satMosaicSuffix:"mosaico sin nubes", satLocked:"añadir clave API", satPrevDay:"Día anterior", satNextDay:"Día siguiente", satKeyConnected:"Conectado", satKeyNone:"Sin clave", satErrAuth:"{provider}: fallo de autenticación — comprueba la clave API", satErrTiles:"{provider}: imágenes no disponibles — se cambió a reserva",
       aiProvider:"Proveedor de IA", aiModel:"Modelo", aiApiKey:"Clave API", aiKeyConnected:"Conectado", aiKeyNone:"Sin clave", aiGetKey:"Obtener una clave ↗", aiOnDevice:"Se ejecuta localmente en Chrome — sin clave API.", aiTest:"Probar conexión", aiTesting:"Probando…", aiTestOk:"Conexión correcta ✓", aiNoKey:"Primero añade una clave API de IA en Ajustes → Funciones de IA.", aiNoVision:"Este modelo no puede leer imágenes. Elige GPT-4o, Claude 3.5 Sonnet o Gemini 1.5 Pro.", aiChromeUnavail:"La IA integrada de Chrome no está disponible aquí. Usa Chrome 127+ con la IA en el dispositivo activada, o elige otro proveedor.", aiThinking:"La IA está analizando…", aiError:"Falló la solicitud de IA", aiCopy:"Copiar", aiCopied:"Copiado ✓", aiClose:"Cerrar", aiRetry:"Reintentar",
       aiGeoBtn:"✨ Localizar todas las noticias (IA)", aiGeoBtnSub:"✨ Localizar el tema (IA)", aiGeoBtnPub:"✨ Localizar el medio (IA)", aiGeoBusy:"Localizando…", aiGeoNone:"Nada que localizar.", aiGeoDone:"{n} noticias localizadas", aiGeoErr:"Falló la geocodificación", aiTransBusy:"Traduciendo…", aiTransDone:"{n} títulos traducidos", aiTransNone:"Los títulos ya están en tu idioma.", aiTranslate:"Traducir", aiShowOriginal:"Original", aiTransNoText:"No hay texto de artículo para traducir — prueba la vista web.",
@@ -11086,7 +11090,7 @@ window.addEventListener('DOMContentLoaded', () => {
       lyrEEZ:"Maritime AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrThermal:"Wärmeanomalien (Brände)",
       planesZoomHint:"🔍 Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"🔍 Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenendatum",
       commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Veröffentlichen", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte anzeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Beliebt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
-      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen (bis zu 10).", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
+      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
       satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ausweichquelle umgeschaltet",
       aiProvider:"KI-Anbieter", aiModel:"Modell", aiApiKey:"API-Schlüssel", aiKeyConnected:"Verbunden", aiKeyNone:"Kein Schlüssel", aiGetKey:"Schlüssel erhalten ↗", aiOnDevice:"Läuft auf dem Gerät in Chrome — kein API-Schlüssel nötig.", aiTest:"Verbindung testen", aiTesting:"Wird getestet…", aiTestOk:"Verbindung OK ✓", aiNoKey:"Fügen Sie zuerst einen KI-API-Schlüssel unter Einstellungen → KI-Funktionen hinzu.", aiNoVision:"Dieses Modell kann keine Bilder lesen. Wählen Sie GPT-4o, Claude 3.5 Sonnet oder Gemini 1.5 Pro.", aiChromeUnavail:"Die integrierte Chrome-KI ist hier nicht verfügbar. Verwenden Sie Chrome 127+ mit aktivierter On-Device-KI oder wählen Sie einen anderen Anbieter.", aiThinking:"KI analysiert…", aiError:"KI-Anfrage fehlgeschlagen", aiCopy:"Kopieren", aiCopied:"Kopiert ✓", aiClose:"Schließen", aiRetry:"Erneut versuchen",
       aiGeoBtn:"✨ Alle Nachrichten per KI verorten", aiGeoBtnSub:"✨ Thema per KI verorten", aiGeoBtnPub:"✨ Herausgeber per KI verorten", aiGeoBusy:"Wird verortet…", aiGeoNone:"Nichts zu verorten.", aiGeoDone:"{n} Meldungen verortet", aiGeoErr:"Geokodierung fehlgeschlagen", aiTransBusy:"Wird übersetzt…", aiTransDone:"{n} Titel übersetzt", aiTransNone:"Titel bereits in Ihrer Sprache.", aiTranslate:"Übersetzen", aiShowOriginal:"Original", aiTransNoText:"Kein Artikeltext zum Übersetzen — versuchen Sie die Web-Ansicht.",
@@ -13601,10 +13605,22 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ setTimeout(()=>{ try{ setLayerOpacity(id,opacities[id]); }catch(_){} },120); }catch(_){}
       return el; }catch(_){ return null; } };
     window._hideGenericLegend=function(id){ const el=document.getElementById('data-legend-'+id); if(el) el.style.display='none'; try{ tileLegends(); }catch(_){} };
-    /* (#R108) re-localize every VISIBLE data-layer legend on a language change ("言語設定を変更したとき、レイヤーの
-       凡例は対応していないことが多い"). ensureGenericLegend re-renders the title + the "what is this" description in the
-       current language from the stored GENERIC_LEG[id] labels (module-specific colour ramps keep their own listeners). */
-    window.addEventListener('intmap-lang',()=>{ try{ document.querySelectorAll('.generic-legend').forEach(el=>{ if(!el||el.style.display==='none') return; const id=(el.id||'').replace(/^data-legend-/,''); if(id&&GENERIC_LEG[id]){ try{ ensureGenericLegend(id); }catch(_){} } }); }catch(_){} });
+    /* (#R108/#R109) re-localize every VISIBLE data-layer legend on a language change ("言語設定を変更したとき、すでに
+       表示済みのレイヤーの凡例はその言語に切り替わらない"). ROOT CAUSE of the R108 miss: the common legends are
+       DEDICATED `.data-legend` built once by makeLegend (NOT `.generic-legend`), so the old selector matched nothing.
+       Now: generic legends re-render via ensureGenericLegend (title + description from GENERIC_LEG); dedicated legends
+       get their <h4> title refreshed from the layer's CURRENT localized checkbox-label name (which updateI18n/the
+       modules already re-localize). */
+    window.addEventListener('intmap-lang',()=>{ setTimeout(()=>{ try{
+      const _cleanName=(cb)=>{ try{ const lab=cb&&(cb.closest('label')||cb.closest('.lyr-row')); if(!lab) return ''; const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label')||lab.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb):not(.dl-drag)'); let s=(sp?sp.textContent:lab.textContent)||''; return s.replace(/\s+/g,' ').trim(); }catch(_){ return ''; } };
+      document.querySelectorAll('.data-legend').forEach(el=>{ try{ if(!el||getComputedStyle(el).display==='none') return;
+        const id=(el.id||'').replace(/^data-legend-/,''); if(!id) return;
+        if(el.classList.contains('generic-legend')&&GENERIC_LEG[id]){ ensureGenericLegend(id); return; }   /* generic → curated multi-lang title + desc */
+        const h4=el.querySelector('h4'); if(!h4) return;                                                    /* dedicated → localized layer name from its checkbox */
+        const cb=document.getElementById('dl-'+id)||document.getElementById('cb-'+id)||document.getElementById(id);
+        const nm=_cleanName(cb); if(nm) h4.textContent=nm;
+      }catch(_){} });
+    }catch(_){} },40); });
     /* (#R74) LAYER-STATE AUDIT ("レイヤーのオンオフが実情と対応していないことがある" / vision §16-17):
        a background reconciler that compares every layer CHECKBOX against the map's REAL style layers.
        Two mismatch directions, both observed in the wild:
@@ -13720,6 +13736,18 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R108) periodic audit runs a bit sooner + more often (25s→12s start, 15s→10s cadence) so a checked-but-blank
          layer self-corrects faster ("選択状況と表示状況があっていない"); heal thresholds/cooldown unchanged (safe). */
       setTimeout(()=>{ setInterval(()=>{ if(!document.hidden) audit(); },10000); },12000);
+      /* (#R109) TARGETED post-toggle heal — the moment a USER turns a layer ON, check ~2.8 s later whether its layers
+         actually painted; if not (and they haven't re-toggled it), re-fire ONCE right away instead of waiting for the
+         2-hit background audit. Directly attacks "選択状況と表示状況が合っていない" for a freshly-toggled layer, using
+         the SAME cooldown + skip list so it can never fight the user. */
+      try{ document.addEventListener('change',e=>{ const cb=e.target;
+        try{ if(!(cb&&cb.type==='checkbox'&&!cb.__syn&&cb.checked&&cb.closest&&cb.closest('#layer-dropdown'))) return; if(_LEARN_SKIP.test(cb.id)) return;
+          const t0=Date.now(); setTimeout(()=>{ try{ if(!cb.checked) return; if(cb.__userChangeT&&cb.__userChangeT>t0) return;   /* user re-toggled → respect it */
+            let ids=idsFor(cb.id); if(!ids||!ids.length){ const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; ids=(own&&own.size)?Array.from(own):null; } if(!ids||!ids.length) return;
+            if(painted(ids)) return; if(healed[cb.id]&&Date.now()-healed[cb.id]<240000) return; healed[cb.id]=Date.now();
+            log.push({id:cb.id,t:Date.now(),fix:'toggle-heal'}); if(log.length>60) log.shift();
+            if(BASE[cb.id]) fireSyn(cb); else rearm(cb); }catch(_){} },2800);
+        }catch(_){} },true); }catch(_){}
       /* (#R79) The audit was RIGHT but too SLOW: on a 15s cadence a checked-but-blank layer (source failed,
          or a base-map/style swap wiped the overlay and nothing re-added it) stayed visibly wrong for up to
          ~30s — that latency IS the "レイヤーのオンオフが実情と対応していないことがある" the user still notices.
@@ -15929,18 +15957,23 @@ window.addEventListener('DOMContentLoaded', () => {
         name:{en:'Indonesia (incl. East Timor)',jp:'インドネシア（東ティモール含む）',de:'Indonesien (mit Osttimor)',ru:'Индонезия (с Восточным Тимором)',es:'Indonesia (con Timor Oriental)'},
         succ:['IDN','TLS'] },
       /* (#R94k) pre-WWI / interwar EMPIRES — the multi-nation states that dominated the early 20th century */
+      /* (#R109) EMPIRE-WIDE population/GDP estimates: Maddison has NO single entity for these multi-nation empires, so
+         agg's successor-sum was INCOMPLETE (only modern-territory successors WITH data contributed — Austria-Hungary
+         collapsed to just Austria's 6.84M). popEst = absolute persons (well-documented census figures); gdpEst =
+         billions of 2011 int$ (successor GDPpc × the full population). Used by agg + the time-series when Maddison
+         lacks the entity (see agg). */
       { code:'AUH', from:'1867-06-08', to:'1918-11-11', flag:F_AUH, region:'Europe', wiki:'Austria-Hungary',
         name:{en:'Austria-Hungary',jp:'オーストリア＝ハンガリー帝国',de:'Österreich-Ungarn',ru:'Австро-Венгрия',es:'Austria-Hungría'},
-        succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'] },
+        succ:['AUT','HUN','CZE','SVK','SVN','HRV','BIH'], popEst:52800000, gdpEst:190, estSrc:'A-H census 1910 (~51.4M) / Maddison GDPpc' },
       { code:'OTT', from:'1876-01-01', to:'1922-11-01', flag:F_OTT, region:'Middle East', wiki:'Ottoman Empire',
         name:{en:'Ottoman Empire',jp:'オスマン帝国',de:'Osmanisches Reich',ru:'Османская империя',es:'Imperio otomano'},
-        succ:['TUR','SYR','LBN','IRQ','JOR','ISR','PSE'] },
+        succ:['TUR','SYR','LBN','IRQ','JOR','ISR','PSE'], popEst:23000000, gdpEst:35, estSrc:'Ottoman census ~1914 / Maddison GDPpc' },
       { code:'RUE', from:'1800-01-01', to:'1917-11-07', flag:F_RUE, region:'Eurasia', wiki:'Russian Empire',
         name:{en:'Russian Empire',jp:'ロシア帝国',de:'Russisches Kaiserreich',ru:'Российская империя',es:'Imperio ruso'},
-        succ:['RUS','UKR','BLR','LTU','LVA','EST','MDA','GEO','ARM','AZE','KAZ','UZB','TKM','KGZ','TJK','FIN','POL'] },
+        succ:['RUS','UKR','BLR','LTU','LVA','EST','MDA','GEO','ARM','AZE','KAZ','UZB','TKM','KGZ','TJK','FIN','POL'], popEst:166000000, gdpEst:435, estSrc:'Russian Empire census 1897/1914 (~166M) / Maddison GDPpc' },
       { code:'RAJ', from:'1858-06-28', to:'1947-08-15', flag:F_RAJ, region:'South Asia', wiki:'British Raj',
         name:{en:'British Raj (British India)',jp:'イギリス領インド帝国',de:'Britisch-Indien',ru:'Британская Индия',es:'India británica'},
-        succ:['IND','PAK','BGD'] },
+        succ:['IND','PAK','BGD'], popEst:305000000, gdpEst:300, estSrc:'India census 1911 (~315M) / Maddison GDPpc' },
       { code:'JEM', from:'1910-08-29', to:'1945-09-02', flag:F_JEM, region:'East Asia', wiki:'Empire of Japan',
         name:{en:'Empire of Japan',jp:'大日本帝国',de:'Japanisches Kaiserreich',ru:'Японская империя',es:'Imperio del Japón'},
         succ:['JPN','KOR','PRK','TWN'] }
@@ -15965,9 +15998,15 @@ window.addEventListener('DOMContentLoaded', () => {
         else { let g=0,p=0,gh=false,ph=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null){g+=cg;gh=true;} if(cp!=null){p+=cp;ph=true;} }); if(gh){gdp=g;real=true;} if(ph) mpop=p; }
       }
       if(mpop!=null&&mpop>0) pop=mpop;
+      /* (#R109) EMPIRE ESTIMATE OVERRIDE: when Maddison has no single entity for this state, its successor-sum is
+         incomplete — fall back to the documented empire-wide figure whenever the computed value is missing or
+         implausibly low (< 60% of the estimate). "明らかにおかしい" A-H 6.84M → 52.8M. */
+      const _hasMad=!!(M&&M.ready()&&M.has(S.code,year));
+      if(S.popEst && !_hasMad && (pop==null || pop < S.popEst*0.6)){ pop=S.popEst; real=true; }
+      if(S.gdpEst && !_hasMad && (gdp==null || gdp < S.gdpEst*0.6)){ gdp=S.gdpEst; real=true; }
       const nm=S.name;
       return { code:S.code, ccn3:'', nameEn:nm.en, nameJp:nm.jp, name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
-        sov:true, _hist:true, _histSucc:S.succ, _histHave:(real?S.succ.length:have), _histN:S.succ.length, _from:S.from, _to:S.to, _real:real,
+        sov:true, _hist:true, _histSucc:S.succ, _histHave:((real||S.popEst)?S.succ.length:have), _histN:S.succ.length, _from:S.from, _to:S.to, _real:real,
         capital:'', currency:'', languages:'',
         pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
         gdppc:(gdp&&pop)?(gdp*1e9/pop):null, density:(pop&&area)?pop/area:null,
@@ -16005,6 +16044,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const svgU=(inner)=>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>';
     const flag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent(svgU(inner))+'">';
     const F_GEMP=flag('<rect width="30" height="6.667" fill="#000000"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DD0000"/>');
+    /* (#R109) Weimar Republic = black-red-gold. The Nazi-era German Reich reuses the black-white-red tricolor (F_GEMP),
+       a real 1933–35 state flag — the swastika flag is deliberately NOT rendered. */
+    const F_WEIMAR=flag('<rect width="30" height="6.667" fill="#000000"/><rect y="6.667" width="30" height="6.667" fill="#DD0000"/><rect y="13.333" width="30" height="6.667" fill="#FFCE00"/>');
     const F_ITK=flag('<rect width="30" height="20" fill="#ffffff"/><rect width="10" height="20" fill="#009246"/><rect x="20" width="10" height="20" fill="#CE2B37"/><rect x="12.6" y="6.6" width="4.8" height="6.8" fill="#ffffff" stroke="#0038A8" stroke-width="0.5"/><rect x="14.55" y="6.6" width="0.9" height="6.8" fill="#C8102E"/><rect x="12.6" y="9.55" width="4.8" height="0.9" fill="#C8102E"/>');
     const F_QING=flag('<rect width="30" height="20" fill="#FFDE00"/><circle cx="7" cy="6" r="2.1" fill="#DE2910"/><path d="M4,15 C9,10 13,17 18,12 C22,9 26,13 27,12.5" stroke="#0055A4" stroke-width="1.5" fill="none" stroke-linecap="round"/>');
     const F_ROC=flag('<rect width="30" height="4" fill="#DE2910"/><rect y="4" width="30" height="4" fill="#FFCC00"/><rect y="8" width="30" height="4" fill="#0000A0"/><rect y="12" width="30" height="4" fill="#ffffff"/><rect y="16" width="30" height="4" fill="#000000"/>');
@@ -16014,7 +16056,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const ID={
       CHN:[{from:1636,to:1912,name:{en:'Qing Empire',jp:'清',de:'Qing-Reich',ru:'Империя Цин',es:'Imperio Qing'},flag:F_QING,wiki:'Qing dynasty'},
            {from:1912,to:1949,name:{en:'Republic of China',jp:'中華民国',de:'Republik China',ru:'Китайская Республика',es:'República de China'},flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
-      DEU:[{from:1871,to:1918,name:{en:'German Empire',jp:'ドイツ帝国',de:'Deutsches Kaiserreich',ru:'Германская империя',es:'Imperio alemán'},flag:F_GEMP,wiki:'German Empire'}],
+      DEU:[{from:1871,to:1918,name:{en:'German Empire',jp:'ドイツ帝国',de:'Deutsches Kaiserreich',ru:'Германская империя',es:'Imperio alemán'},flag:F_GEMP,wiki:'German Empire'},
+           {from:1919,to:1932,name:{en:'Weimar Republic',jp:'ヴァイマル共和政',de:'Weimarer Republik',ru:'Веймарская республика',es:'República de Weimar'},flag:F_WEIMAR,wiki:'Weimar Republic'},
+           {from:1933,to:1945,name:{en:'Nazi Germany',jp:'ナチス・ドイツ',de:'Deutsches Reich (1933–1945)',ru:'Нацистская Германия',es:'Alemania nazi'},flag:F_GEMP,wiki:'Nazi Germany'}],
       ITA:[{from:1861,to:1946,name:{en:'Kingdom of Italy',jp:'イタリア王国',de:'Königreich Italien',ru:'Королевство Италия',es:'Reino de Italia'},flag:F_ITK,wiki:'Kingdom of Italy'}],
       IRN:[{from:1800,to:1935,name:{en:'Persia',jp:'ペルシャ',de:'Persien',ru:'Персия',es:'Persia'},flag:F_PERSIA,wiki:'Qajar Iran'}],
       THA:[{from:1800,to:1939,name:{en:'Siam',jp:'シャム',de:'Siam',ru:'Сиам',es:'Siam'},flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
@@ -18656,11 +18700,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const IND=[
       {k:'gdp',    wb:'NY.GDP.MKTP.CD', imf:'NGDPD',      imfScale:1e9, fmt:usd, l:['GDP (US$)','GDP（米ドル）','BIP (US$)','ВВП (долл.)','PIB (US$)'], def:1},
       {k:'gdppc',  wb:'NY.GDP.PCAP.CD', imf:'NGDPDPC',    imfScale:1,   fmt:usd, l:['GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'], def:1},
-      {k:'growth', wb:'NY.GDP.MKTP.KD.ZG', imf:'NGDP_RPCH', imfScale:1, fmt:pct, l:['GDP growth','GDP成長率','BIP-Wachstum','Рост ВВП','Crecimiento del PIB'], def:1},
-      {k:'infl',   wb:'FP.CPI.TOTL.ZG', imf:'PCPIPCH',    imfScale:1,   fmt:pct, l:['Inflation (CPI)','インフレ率','Inflation','Инфляция','Inflación'], def:0},
+      {k:'growth', wb:'NY.GDP.MKTP.KD.ZG', imf:'NGDP_RPCH', imfScale:1, fmt:pct, l:['GDP growth','GDP成長率','BIP-Wachstum','Рост ВВП','Crecimiento del PIB'], def:1, signed:1},
+      {k:'infl',   wb:'FP.CPI.TOTL.ZG', imf:'PCPIPCH',    imfScale:1,   fmt:pct, l:['Inflation (CPI)','インフレ率','Inflation','Инфляция','Inflación'], def:0, signed:1},
       {k:'unemp',  wb:'SL.UEM.TOTL.ZS', imf:'LUR',        imfScale:1,   fmt:pct, l:['Unemployment','失業率','Arbeitslosigkeit','Безработица','Desempleo'], def:0},
       {k:'debt',   wb:'GC.DOD.TOTL.GD.ZS', imf:'GGXWDG_NGDP', imfScale:1, fmt:pct, l:['Govt debt (% GDP)','政府債務(対GDP)','Staatsschulden (% BIP)','Госдолг (% ВВП)','Deuda pública (% PIB)'], def:0},
-      {k:'cab',    wb:'BN.CAB.XOKA.GD.ZS', imf:'BCA_NGDPD', imfScale:1, fmt:pct, l:['Current account (% GDP)','経常収支(対GDP)','Leistungsbilanz (% BIP)','Текущий счёт (% ВВП)','Cuenta corriente (% PIB)'], def:0},
+      {k:'cab',    wb:'BN.CAB.XOKA.GD.ZS', imf:'BCA_NGDPD', imfScale:1, fmt:pct, l:['Current account (% GDP)','経常収支(対GDP)','Leistungsbilanz (% BIP)','Текущий счёт (% ВВП)','Cuenta corriente (% PIB)'], def:0, signed:1},
       {k:'pop',    wb:'SP.POP.TOTL',    imf:'LP',         imfScale:1e6, fmt:num, l:['Population','人口','Bevölkerung','Население','Población'], def:1},
       {k:'life',   wb:'SP.DYN.LE00.IN', imf:null, fmt:v=>v.toFixed(1), l:['Life expectancy','平均寿命','Lebenserwartung','Продолж. жизни','Esperanza de vida'], def:1},
       {k:'tfr',    wb:'SP.DYN.TFRT.IN', imf:null, fmt:v=>v.toFixed(2), l:['Fertility rate','出生率','Geburtenrate','Рождаемость','Fecundidad'], def:0},
@@ -18669,7 +18713,7 @@ window.addEventListener('DOMContentLoaded', () => {
       {k:'net',    wb:'IT.NET.USER.ZS', imf:null, fmt:pct, l:['Internet users','ネット利用率','Internetnutzer','Интернет-польз.','Usuarios de internet'], def:0},
       {k:'urban',  wb:'SP.URB.TOTL.IN.ZS', imf:null, fmt:pct, l:['Urban population','都市人口率','Stadtbevölkerung','Городское население','Población urbana'], def:0},
       {k:'exp',    wb:'NE.EXP.GNFS.ZS', imf:null, fmt:pct, l:['Exports (% GDP)','輸出(対GDP)','Exporte (% BIP)','Экспорт (% ВВП)','Exportaciones (% PIB)'], def:0},
-      {k:'fdi',    wb:'BX.KLT.DINV.WD.GD.ZS', imf:null, fmt:pct, l:['FDI inflows (% GDP)','対内直接投資(対GDP)','ADI-Zuflüsse (% BIP)','ПИИ (% ВВП)','IED (% PIB)'], def:0},
+      {k:'fdi',    wb:'BX.KLT.DINV.WD.GD.ZS', imf:null, fmt:pct, l:['FDI inflows (% GDP)','対内直接投資(対GDP)','ADI-Zuflüsse (% BIP)','ПИИ (% ВВП)','IED (% PIB)'], def:0, signed:1},
       {k:'health', wb:'SH.XPD.CHEX.GD.ZS', imf:null, fmt:pct, l:['Health spending (% GDP)','医療支出(対GDP)','Gesundheitsausgaben','Здравоохранение (% ВВП)','Gasto en salud (% PIB)'], def:0},
       {k:'edu',    wb:'SE.XPD.TOTL.GD.ZS', imf:null, fmt:pct, l:['Education spending (% GDP)','教育支出(対GDP)','Bildungsausgaben','Образование (% ВВП)','Gasto en educación (% PIB)'], def:0},
       {k:'rnd',    wb:'GB.XPD.RSDV.GD.ZS', imf:null, fmt:pct, l:['R&D (% GDP)','研究開発費(対GDP)','F&E (% BIP)','НИОКР (% ВВП)','I+D (% PIB)'], def:0},
@@ -18888,8 +18932,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-tbl td:first-child,#scp-view .scp-tbl th:first-child{text-align:left;}'
         +'#scp-view .scp-sec{margin:14px 0 4px;font-weight:700;font-size:13px;color:var(--text-main);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}'
         /* (#R108) thin divider between each indicator block in the bar / time-series results (white in dark, subtle grey in light). */
-        +'#scp-view .scp-blk + .scp-blk{border-top:1px solid rgba(128,128,128,0.28);padding-top:6px;margin-top:4px;}'
-        +'[data-theme="dark"] #scp-view .scp-blk + .scp-blk{border-top-color:rgba(255,255,255,0.4);}'
+        +'#scp-view .scp-blk + .scp-blk{border-top:2px solid rgba(128,128,128,0.45);padding-top:7px;margin-top:5px;}'   /* (#R109) thicker */
+        +'[data-theme="dark"] #scp-view .scp-blk + .scp-blk{border-top-color:rgba(255,255,255,0.75);}'   /* (#R109) whiter */
         +'#scp-view .scp-src{font-size:10.5px;color:var(--text-muted);font-weight:400;}'
         +'#scp-view .scp-srcsw{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:8px;overflow:hidden;}'
         +'#scp-view .scp-srcsw button{border:none;background:transparent;color:var(--text-muted);font-size:10px;padding:2.5px 8px;cursor:pointer;font-weight:600;}'
@@ -18899,7 +18943,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-back:hover{background:#f2f2f4;}'
         +'#scp-view .scp-back .scp-backarr{flex:0 0 auto;display:block;}'
         /* (#R105) sticky compact header: title + view modes + Indicators toggle pinned to the top of the compare view. */
-        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:2px 0 6px;}'
+        +'#scp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'   /* (#R109) slight painted gap above the Back button (2→8) */
         +'#scp-view .scp-cmptitle{font-weight:700;font-size:13px;text-transform:none;line-height:1.15;}'
         +'#scp-view .scp-cmpsub{font-weight:500;font-size:10.5px;color:var(--text-muted);}'
         /* (#R64) proper country picker ("国を選択するときのUIがくそ"): search box + scrollable flag list with
@@ -18910,9 +18954,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-list .scp-cr.sel{background:rgba(10,132,255,0.10);}'
         +'#scp-view .ts-wrap svg{height:100px !important;}'
         /* (#R70) unified compare: mode segment + bar view + Excel-like table */
-        +'#scp-view .scp-ctrlrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}'   /* (#R106) modes + Indicators on one row */
+        +'#scp-view .scp-ctrlrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}'   /* (#R106) modes + Indicators on one row */
         +'#scp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;margin:0;align-self:center;}'
-        +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:13px;font-weight:600;padding:6px 10px;cursor:pointer;}'   /* (#R108) larger text */
+        +'#scp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:14px;font-weight:600;padding:5px 8px;cursor:pointer;}'   /* (#R109) larger text (13→14), tighter padding to keep one line */
         /* (#R108) white divider lines between Bar chart / Time-series / Table (white in dark, subtle grey in light so visible in both) */
         +'#scp-view .scp-modes button + button{border-left:1px solid rgba(128,128,128,0.35);}'
         +'[data-theme="dark"] #scp-view .scp-modes button + button{border-left-color:rgba(255,255,255,0.6);}'
@@ -18932,7 +18976,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#scp-view .scp-focus:hover{color:var(--primary-color);border-color:var(--primary-color);}'
         +'#scp-view #scp-fx .ts-wrap svg{height:240px !important;}'
         /* (#R71) grouped indicator picker ("指標選択画面が煩雑") */
-        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:13px;font-weight:600;padding:6px 10px;cursor:pointer;margin:0;align-self:center;white-space:nowrap;transition:background .13s,border-color .13s,color .13s;}'   /* (#R107/#R108) single line, no wrap; larger text */
+        +'#scp-view .scp-mtog{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:14px;font-weight:600;padding:5px 8px;cursor:pointer;margin:0;align-self:center;white-space:nowrap;transition:background .13s,border-color .13s,color .13s;}'   /* (#R107/#R108/#R109) single line, no wrap; larger text (13→14) */
         /* (#R107) count reserves a constant 2-digit width so the button never changes size / re-flows as indicators are toggled */
         +'#scp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;display:inline-block;min-width:2.9em;text-align:right;}'
         /* (#R107) Indicators button turns primary-blue while its cloud is expanded */
@@ -19096,7 +19140,10 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R108) SIGNED indicators (any negative value present) get a 0 guide line in the TIME-SERIES too, matching the
          bar chart's 0-axis ("Time-seriesには0の場所に補助線を…プラスマイナス系指標のように") — force 0 into the value
          range so the baseline is always visible. */
-      const _tsNeg=entries.some(e=>e.s.some(p=>p.v<0));
+      /* (#R109) SIGNED-capable indicators (growth / inflation / current account / FDI — ind.signed) ALWAYS include 0 so
+         the guide line shows even when the visible values happen to be all-positive; other indicators only when the
+         data actually crosses zero. */
+      const _tsNeg=ind.signed||entries.some(e=>e.s.some(p=>p.v<0));
       if(_tsNeg){ v0=Math.min(v0,0); v1=Math.max(v1,0); }
       const padL=8,padR=8,padT=10,padB=16; const X=y=>padL+((y-y0)/((y1-y0)||1))*(CW-padL-padR), Y=v=>padT+(1-(v-v0)/((v1-v0)||1))*(CH-padT-padB);
       let paths=''; const meta=[];
@@ -19188,7 +19235,10 @@ window.addEventListener('DOMContentLoaded', () => {
       return {ind,serMap,srcName,imfFail}; }
     /* shared block header: label · WB⇄IMF switch · source · 詳細 (focus) button */
     function secHtml(ind,srcName,extra){ const lbl=LL(ind.l[0],ind.l[1],ind.l[2],ind.l[3],ind.l[4]);
-      const sw=ind.imf
+      /* (#R109) the WB/IMF toggle only shows for years IMF WEO actually covers (~1980+; earlier years are World-Bank /
+         Maddison only) — "利用可能年度のみ表示". Deep-past travel hides it and shows the real source. */
+      const _ty=_ttYear();
+      const sw=(ind.imf && (_ty==null || (_ty>=1980 && _ty<=2030)))
         ?('<span class="scp-srcsw" data-k="'+ind.k+'"><button data-s="wb"'+(srcSel[ind.k]!=='imf'?' class="on"':'')+'>WB</button><button data-s="imf"'+(srcSel[ind.k]==='imf'?' class="on"':'')+'>IMF</button></span>'
           +'<span class="scp-src">· '+esc(srcName)+'</span>')
         :('<span class="scp-src">· '+esc(ind.stat?(ind.src||'IntMap'):srcName||'World Bank')+'</span>');
@@ -27271,11 +27321,18 @@ window.addEventListener('DOMContentLoaded', () => {
        close. Desktop / workspace are unaffected. */
     function _atlMobile(){ try{ return !document.body.classList.contains('ws-mode') && window.matchMedia && window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } }
     function _atlSheetMount(on){ try{ const p=panel; if(!p) return;
-      if(on){ const sb=document.getElementById('sidebar'); if(sb&&p.parentNode!==sb){ p.__prevParent=p.parentNode||document.getElementById('map-container')||document.body; sb.appendChild(p); }
+      const sb=document.getElementById('sidebar');
+      if(on){ if(sb&&p.parentNode!==sb){ p.__prevParent=p.parentNode||document.getElementById('map-container')||document.body; sb.appendChild(p); }
         document.body.classList.add('atl-in-sheet');
-        try{ document.body.classList.remove('sidebar-hidden'); const sb2=document.getElementById('sidebar'); if(sb2) sb2.classList.add('show'); }catch(_){}
+        /* (#R109) FORCE the sheet fully UP + visible: the sheet was 'collapsed' and setDetent alone left it off-screen
+           (translateY not 0). Un-collapse, show, and pin --sheet-ty to 0 directly so the sidebar (and the mounted
+           Atlas filling it) is on-screen. */
+        try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}
+        try{ if(sb){ sb.classList.remove('collapsed'); sb.classList.add('show'); sb.style.setProperty('--sheet-ty','0px'); } }catch(_){}
         try{ if(window.__setDetent) window.__setDetent('full'); }catch(_){} }
-      else { document.body.classList.remove('atl-in-sheet'); if(p&&p.__prevParent&&p.parentNode!==p.__prevParent){ try{ p.__prevParent.appendChild(p); }catch(_){} } }
+      else { document.body.classList.remove('atl-in-sheet');
+        try{ if(sb){ sb.style.removeProperty('--sheet-ty'); } }catch(_){}   /* let the detent system own it again */
+        if(p&&p.__prevParent&&p.parentNode!==p.__prevParent){ try{ p.__prevParent.appendChild(p); }catch(_){} } }
     }catch(_){} }
     function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
       if(p._restoreH){ p.style.setProperty('height',p._restoreH,'important'); } else if(p.style.height==='auto'){ p.style.removeProperty('height'); }
@@ -28968,7 +29025,22 @@ window.addEventListener('DOMContentLoaded', () => {
       [/^\s*(upper volta|haute-?volta)\s*$/i,{jp:'オートボルタ',de:'Obervolta',ru:'Верхняя Вольта',es:'Alto Volta'}],
       [/^\s*basutoland\s*$/i,{jp:'バストランド',de:'Basutoland',ru:'Басутоленд',es:'Basutolandia'}],
       [/^\s*bechuanaland\s*$/i,{jp:'ベチュアナランド',de:'Betschuanaland',ru:'Бечуаналенд',es:'Bechuanalandia'}],
-      [/^\s*(kampuchea|khmer republic)\s*$/i,{jp:'カンプチア',de:'Kamputschea',ru:'Кампучия',es:'Kampuchea'}]
+      [/^\s*(kampuchea|khmer republic)\s*$/i,{jp:'カンプチア',de:'Kamputschea',ru:'Кампучия',es:'Kampuchea'}],
+      [/^\s*kingdom of hungary\s*$/i,{jp:'ハンガリー王国',de:'Königreich Ungarn',ru:'Королевство Венгрия',es:'Reino de Hungría'}],
+      [/^\s*(kingdom of romania|rumania)\s*$/i,{jp:'ルーマニア王国',de:'Königreich Rumänien',ru:'Королевство Румыния',es:'Reino de Rumania'}],
+      [/^\s*kingdom of (bulgaria)\s*$/i,{jp:'ブルガリア王国',de:'Königreich Bulgarien',ru:'Царство Болгария',es:'Reino de Bulgaria'}],
+      [/^\s*kingdom of (serbia)\s*$/i,{jp:'セルビア王国',de:'Königreich Serbien',ru:'Королевство Сербия',es:'Reino de Serbia'}],
+      [/^\s*kingdom of (greece)\s*$/i,{jp:'ギリシャ王国',de:'Königreich Griechenland',ru:'Королевство Греция',es:'Reino de Grecia'}],
+      [/^\s*(kingdom of yugoslavia|kingdom of (the )?serbs.*)\s*$/i,{jp:'ユーゴスラビア王国',de:'Königreich Jugoslawien',ru:'Королевство Югославия',es:'Reino de Yugoslavia'}],
+      [/^\s*(gran colombia|greater colombia)\s*$/i,{jp:'大コロンビア',de:'Großkolumbien',ru:'Великая Колумбия',es:'Gran Colombia'}],
+      [/^\s*congo free state\s*$/i,{jp:'コンゴ自由国',de:'Kongo-Freistaat',ru:'Свободное государство Конго',es:'Estado Libre del Congo'}],
+      [/^\s*(french indochina|indochina)\s*$/i,{jp:'仏領インドシナ',de:'Französisch-Indochina',ru:'Французский Индокитай',es:'Indochina francesa'}],
+      [/^\s*kingdom of (egypt)\s*$/i,{jp:'エジプト王国',de:'Königreich Ägypten',ru:'Королевство Египет',es:'Reino de Egipto'}],
+      [/^\s*kingdom of (iraq)\s*$/i,{jp:'イラク王国',de:'Königreich Irak',ru:'Королевство Ирак',es:'Reino de Irak'}],
+      [/^\s*(manchuria|manchoukuo)\s*$/i,{jp:'満洲',de:'Mandschurei',ru:'Маньчжурия',es:'Manchuria'}],
+      [/^\s*(cochin ?china)\s*$/i,{jp:'コーチシナ',de:'Cochinchina',ru:'Кохинхина',es:'Cochinchina'}],
+      [/^\s*(gold coast)\s*$/i,{jp:'ゴールドコースト',de:'Goldküste',ru:'Золотой Берег',es:'Costa del Oro'}],
+      [/^\s*(east prussia)\s*$/i,{jp:'東プロイセン',de:'Ostpreußen',ru:'Восточная Пруссия',es:'Prusia Oriental'}]
     ];
     function _eraLocName(nm){ try{ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; if(lg==='en') return null; const low=String(nm||'').trim(); if(!low) return null;
       const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(low)){ const n=S.name&&(S.name[lg]||S.name.en); if(n&&n!==low) return n; break; } } }
@@ -28983,6 +29055,13 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof countryStats!=='undefined'&&countryStats){ Object.values(countryStats).forEach(s=>{ if(s&&s.sov!==false){
         const disp=(s.name&&(s.name[lg]||s.name.en))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||'';
         if(s.nameEn) cur.set(_normNm(s.nameEn),disp); if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
+      /* (#R109) HistId single-country renamings (Germany→Weimar/Nazi/Empire, China→Qing/ROC, Italy, Persia, Siam, Dutch
+         East Indies): the aourednik polygon keeps the MODERN name ("Germany") but countryStats is renamed to the era
+         name — map the modern polygon name → the current era display name so the LABEL shows the era name too, not the
+         modern one. Only when HistId actually renamed the entry this era (s._histId). */
+      try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies']};
+        for(const code in MODNM){ const s=(typeof countryStats!=='undefined')&&countryStats[code]; if(!s||s._histHidden||!s._histId) continue;
+          const disp=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(!disp) continue; MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
       if(!cur.size) return fc;
       fc.features.forEach(f=>{ try{ f.properties=f.properties||{};
         if(f.properties._corrected){ return; }   /* (#R105) _correctEra already set _same/_modName (Tibet→China, label suppressed) — don't re-tag */
