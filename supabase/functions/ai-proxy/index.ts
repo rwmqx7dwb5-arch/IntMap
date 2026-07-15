@@ -11,21 +11,40 @@
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user
 //       never sees a key or a model picker).
-//    5. Returns { text, used, limit, remaining }. On a provider failure the
+//    5. Returns { text, used, limit, remaining, meta }. On a provider failure the
 //       consumed slot is refunded so a failed call never costs the user a use.
 //
 //  Deploy:   supabase functions deploy ai-proxy
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
-//  Secrets:  supabase secrets set ANTHROPIC_API_KEY=sk-ant-...      (default provider)
-//            # optional overrides:
-//            supabase secrets set AI_MODEL=claude-3-5-haiku-latest
-//            supabase secrets set AI_PROVIDER=anthropic              (anthropic | openai | gemini)
-//            supabase secrets set OPENAI_API_KEY=sk-...              (if AI_PROVIDER=openai)
-//            supabase secrets set GEMINI_API_KEY=AIza...             (if AI_PROVIDER=gemini; AI_MODEL default gemini-2.0-flash)
+//  Secrets:  supabase secrets set GEMINI_API_KEY=AIza...              (AI_PROVIDER=gemini)
+//            supabase secrets set AI_PROVIDER=gemini                  (anthropic | openai | gemini)
+//            supabase secrets set AI_MODEL=gemini-3.5-flash
+//            # optional:
+//            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 default OFF — see below)
+//            supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        (if AI_PROVIDER=anthropic)
+//            supabase secrets set OPENAI_API_KEY=sk-...               (if AI_PROVIDER=openai)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY are injected.)
 //
-//  Run supabase_ai_usage.sql once to create the ai_usage table + RPCs + the
-//  optional profiles.plan / profiles.login_count columns.
+// ----------------------------------------------------------------------------
+//  (#R113) Gemini 3.5 Flash / thinkingLevel:"low" migration — RESPONSIBILITY SPLIT.
+//  The old lightweight model hid design gaps by hallucinating; Gemini Low stops
+//  instead of inventing, so the gaps surfaced as MALFORMED_FUNCTION_CALL / empty
+//  responses. This function now:
+//    • Reads a TASK type from the client (atlas_plan | map_report | analysis |
+//      free_text | json_extract | brief) and configures per-task output budget,
+//      JSON mode and web policy — instead of one MAX_TOKENS / one web flag for all.
+//    • Uses Gemini Structured Output (responseMimeType:"application/json" + an
+//      optional responseSchema) for the JSON tasks, so JSON no longer depends on
+//      the prompt alone (kills fences / prose / most MALFORMED_FUNCTION_CALLs).
+//    • NEVER attaches a tool the prompt didn't earn: Google Search grounding is
+//      attached ONLY when webMode !== "off" AND GEMINI_SEARCH_ENABLED === "true".
+//      Default OFF → map_report runs purely on client-gathered evidence.
+//    • Classifies provider failures (rate_limit / quota / malformed / empty /
+//      blocked / unavailable / invalid_structured_output) and returns 502/503 —
+//      NEVER 429 (429 is reserved for the IntMap daily free-use limit).
+//    • Retries a MALFORMED_FUNCTION_CALL exactly once with tools stripped +
+//      "do not call functions" hardened + JSON mode forced.
+//  Secrets, JWTs and full prompts are never logged.
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -44,7 +63,61 @@ const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
 const MAX_IMAGES = 4;
-const MAX_TOKENS = 1600;
+
+// (#R113) Per-TASK output budgets (replaces the single MAX_TOKENS = 1600). A 20-item
+// map_report can't fit in 1600 tokens; a quick json_extract shouldn't be allowed 3000.
+// Kept modest for cost; map_report additionally scales with the requested item count.
+const TASK_MAX_OUTPUT: Record<string, number> = {
+  atlas_plan: 1800,
+  map_report: 3200,
+  analysis: 2400,
+  free_text: 1800,
+  json_extract: 1200,
+  brief: 1800,
+};
+const FALLBACK_MAX_OUTPUT = 1800;
+const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
+
+// (#R113) Which tasks want JSON output (structured-output / responseMimeType json).
+const JSON_TASKS = new Set(["atlas_plan", "map_report", "json_extract"]);
+
+// (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
+// name/locationName/country/summary/date/evidenceIds — the client fills url, source,
+// publishedAt and the real lat/lng (geocoded) so the model can't invent coordinates
+// or sources. `type` uses the REST Schema enum (uppercase) per the generateContent docs.
+const MAP_REPORT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    title: { type: "STRING" },
+    overview: { type: "STRING" },
+    items: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          name: { type: "STRING" },
+          locationName: { type: "STRING" },
+          country: { type: "STRING" },
+          summary: { type: "STRING" },
+          date: { type: "STRING" },
+          evidenceIds: { type: "ARRAY", items: { type: "STRING" } },
+        },
+        required: ["name", "locationName", "country", "summary", "evidenceIds"],
+        propertyOrdering: ["name", "locationName", "country", "summary", "date", "evidenceIds"],
+      },
+    },
+  },
+  required: ["title", "overview", "items"],
+  propertyOrdering: ["title", "overview", "items"],
+};
+
+function maxOutputFor(task: string, requestedCount?: number): number {
+  let n = TASK_MAX_OUTPUT[task] ?? FALLBACK_MAX_OUTPUT;
+  if (task === "map_report" && typeof requestedCount === "number" && isFinite(requestedCount) && requestedCount > 0) {
+    n = Math.max(n, 1000 + Math.round(requestedCount) * 180);
+  }
+  return Math.min(HARD_MAX_OUTPUT, n);
+}
 
 interface ImgPart { mime: string; b64: string; }
 function parseDataUrl(d: string): ImgPart | null {
@@ -52,58 +125,170 @@ function parseDataUrl(d: string): ImgPart | null {
   return m ? { mime: m[1], b64: m[2] } : null;
 }
 
+// (#R113) Typed provider failure → mapped to an HTTP status that is NEVER 429
+// (429 means the IntMap daily quota) so the client can tell them apart.
+type AIProxyErrorCode =
+  | "provider_rate_limit"
+  | "provider_quota"
+  | "provider_malformed"
+  | "provider_empty"
+  | "provider_blocked"
+  | "provider_unavailable"
+  | "invalid_structured_output";
+
+class ProviderError extends Error {
+  code: AIProxyErrorCode;
+  http: number;
+  retryable: boolean;
+  meta: Record<string, unknown>;
+  constructor(code: AIProxyErrorCode, message: string, http: number, retryable: boolean, meta: Record<string, unknown> = {}) {
+    super(message);
+    this.code = code;
+    this.http = http;
+    this.retryable = retryable;
+    this.meta = meta;
+  }
+}
+
+// Classify a Google generativelanguage error body / finishReason into a typed error.
+function classifyGemini(status: number, bodyText: string, finishReason: string, blockReason: string): ProviderError {
+  const lc = (bodyText || "").toLowerCase();
+  if (finishReason === "MALFORMED_FUNCTION_CALL") {
+    return new ProviderError("provider_malformed", "Model emitted a malformed function/tool call.", 502, true, { finishReason });
+  }
+  if (finishReason === "SAFETY" || blockReason) {
+    return new ProviderError("provider_blocked", "Blocked by the provider's safety filter." + (blockReason ? " (" + blockReason + ")" : ""), 502, false, { finishReason, blockReason });
+  }
+  if (status === 429 || lc.includes("resource_exhausted") || lc.includes("exceeded your current quota") || lc.includes("rate limit")) {
+    // Distinguish a hard billing/quota exhaustion from a transient RPM/TPM rate-limit.
+    const isBilling = lc.includes("billing") || lc.includes("plan and billing") || lc.includes("free_tier") || lc.includes("quotaid");
+    if (isBilling) {
+      return new ProviderError("provider_quota", "The AI provider quota/billing limit was reached.", 502, false, { providerStatus: status });
+    }
+    return new ProviderError("provider_rate_limit", "The AI provider is rate-limiting requests. Try again shortly.", 503, true, { providerStatus: status });
+  }
+  if (status >= 500) {
+    return new ProviderError("provider_unavailable", "The AI provider is temporarily unavailable.", 503, true, { providerStatus: status });
+  }
+  return new ProviderError("provider_unavailable", "AI provider error " + status + ".", 502, false, { providerStatus: status });
+}
+
 // ---------------------------------------------------------------------------
 //  Provider calls (key lives only here, in the function's env).
 // ---------------------------------------------------------------------------
-async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web = false): Promise<string> {
+async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string }> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   content.push({ type: "text", text: prompt });
-  const body: Record<string, unknown> = { model, max_tokens: MAX_TOKENS, messages: [{ role: "user", content }] };
+  const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: [{ role: "user", content }] };
   if (system) body.system = system;
-  // (#R64) Atlas live web search: analyze/brief send {web:true} → let the model run Anthropic's native
-  // web-search tool (capped) so answers are grounded in the live web, not just the client-gathered data.
+  // Anthropic has a NATIVE web-search tool; unlike Gemini it is safe to attach on demand.
   if (web) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error("anthropic " + r.status + ": " + (await r.text().catch(() => "")).slice(0, 200));
+  if (!r.ok) {
+    const t = (await r.text().catch(() => "")).slice(0, 400);
+    throw classifyGemini(r.status, t, "", "");   // same status→code mapping applies to Anthropic
+  }
   const j = await r.json();
-  return (j.content && j.content.map((b: { text?: string }) => b.text || "").join("")) || "";
+  const text = (j.content && j.content.map((b: { text?: string }) => b.text || "").join("")) || "";
+  const finishReason = String(j?.stop_reason || "");
+  if (!text) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
+  return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[]): Promise<string> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], maxTokens: number, wantJson: boolean): Promise<{ text: string; finishReason: string }> {
   const userContent: unknown = imgs.length
     ? [{ type: "text", text: prompt }, ...imgs.map((ip) => ({ type: "image_url", image_url: { url: `data:${ip.mime};base64,${ip.b64}` } }))]
     : prompt;
   const messages: unknown[] = [];
   if (system) messages.push({ role: "system", content: system });
   messages.push({ role: "user", content: userContent });
+  const reqBody: Record<string, unknown> = { model, messages, temperature: 0.3, max_tokens: maxTokens };
+  if (wantJson) reqBody.response_format = { type: "json_object" };
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-    body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: MAX_TOKENS }),
+    body: JSON.stringify(reqBody),
   });
-  if (!r.ok) throw new Error("openai " + r.status + ": " + (await r.text().catch(() => "")).slice(0, 200));
+  if (!r.ok) {
+    const t = (await r.text().catch(() => "")).slice(0, 400);
+    throw classifyGemini(r.status, t, "", "");
+  }
   const j = await r.json();
-  return (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+  const text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+  const finishReason = String(j?.choices?.[0]?.finish_reason || "");
+  if (!text) throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
+  return { text, finishReason };
 }
 
-async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[]): Promise<string> {
+interface GeminiOpts {
+  maxTokens: number;
+  web: boolean;
+  searchEnabled: boolean;
+  wantJson: boolean;
+  responseSchema?: unknown;
+  noTools?: boolean;         // hardened retry: never attach a tool
+}
+
+async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
   const parts: unknown[] = [{ text: prompt }];
   for (const ip of imgs) parts.push({ inline_data: { mime_type: ip.mime, data: ip.b64 } });
-  const body: Record<string, unknown> = { contents: [{ role: "user", parts }], generationConfig: { temperature: 0.3, maxOutputTokens: MAX_TOKENS } };
+
+  const generationConfig: Record<string, unknown> = {
+    maxOutputTokens: opts.maxTokens,
+    thinkingConfig: { thinkingLevel: "low" },
+  };
+  // (#R113) Structured output — forces valid JSON without relying on the prompt, and
+  // (with a schema) pins the exact shape. Google Search grounding + a responseSchema
+  // can't be combined, so a schema is only sent when no search tool is attached.
+  const attachSearch = opts.web && opts.searchEnabled && !opts.noTools;
+  if (opts.wantJson) {
+    generationConfig.responseMimeType = "application/json";
+    if (opts.responseSchema && !attachSearch) generationConfig.responseSchema = opts.responseSchema;
+  }
+
+  const body: Record<string, unknown> = { contents: [{ role: "user", parts }], generationConfig };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(key), {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error("gemini " + r.status + ": " + (await r.text().catch(() => "")).slice(0, 200));
+  if (attachSearch) body.tools = [{ google_search: {} }];
+
+  const r = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent",
+    { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: JSON.stringify(body) },
+  );
+
+  if (!r.ok) {
+    const err = (await r.text().catch(() => "")).slice(0, 600);
+    throw classifyGemini(r.status, err, "", "");
+  }
+
   const j = await r.json();
-  const c = j.candidates && j.candidates[0];
-  if (c && c.finishReason === "SAFETY") throw new Error("gemini: blocked by safety filter");
-  return (c && c.content && c.content.parts && c.content.parts.map((p: { text?: string }) => p.text || "").join("")) || "";
+  const c = j?.candidates?.[0];
+  const finishReason = String(c?.finishReason || "NO_CANDIDATE");
+  const blockReason = String(j?.promptFeedback?.blockReason || "");
+
+  if (finishReason === "MALFORMED_FUNCTION_CALL" || finishReason === "SAFETY" || blockReason) {
+    throw classifyGemini(200, "", finishReason, blockReason);
+  }
+
+  // Ignore any thought-only parts and return only the user-visible answer.
+  const text = Array.isArray(c?.content?.parts)
+    ? c.content.parts
+        .filter((p: { thought?: boolean; text?: string }) => p?.thought !== true && typeof p?.text === "string")
+        .map((p: { text?: string }) => p.text || "")
+        .join("")
+        .trim()
+    : "";
+
+  // Do not silently turn a provider failure into an empty Atlas answer.
+  if (!text) {
+    throw new ProviderError("provider_empty", "gemini: empty response (finishReason=" + finishReason + (blockReason ? ", blockReason=" + blockReason : "") + ")", 502, finishReason === "MAX_TOKENS", { finishReason, blockReason });
+  }
+
+  return { text, finishReason, webAttached: attachSearch };
 }
 
 // ---------------------------------------------------------------------------
@@ -132,8 +317,6 @@ Deno.serve(async (req) => {
     if (prof && typeof prof.plan === "string" && prof.plan) plan = prof.plan;
   } catch (_) { /* profiles.plan may not exist yet → default free */ }
   // (#R31/#R32) Developer override → UNLIMITED AI, quota never consumed ("AI機能の使用は無制限に").
-  // The owner's account email is hard-coded as a default so it works even before the DEV_EMAILS /
-  // DEV_USER_IDS secrets are set; the secrets (comma-separated) extend the dev allow-list further.
   const DEFAULT_DEV_EMAILS = ["2ppzc4kk6r@privaterelay.appleid.com"];
   const devEmails = [...DEFAULT_DEV_EMAILS, ...(Deno.env.get("DEV_EMAILS") || "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean)];
   const devIds = (Deno.env.get("DEV_USER_IDS") || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -152,42 +335,83 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: "quota_unavailable", message: String((e as Error)?.message || e) }, 500);
   }
+  const refund = async () => { if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort */ } };
 
   // Parse the request body.
-  let payload: { prompt?: string; system?: string; images?: string[]; web?: boolean } = {};
+  // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
+  // web policy per feature — instead of one MAX_TOKENS / one boolean for everything.
+  let payload: {
+    prompt?: string; system?: string; images?: string[]; lang?: string;
+    web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown;
+  } = {};
   try { payload = await req.json(); } catch (_) { payload = {}; }
-  const web = payload.web === true;
+
+  const task = String(payload.task || "free_text").toLowerCase();
+  const webMode = String(payload.webMode || (payload.web === true ? "auto" : "off")).toLowerCase();
+  const web = webMode === "auto" || webMode === "required";
+  const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
   const prompt = String(payload.prompt || "").slice(0, MAX_PROMPT);
   const system = String(payload.system || "").slice(0, MAX_PROMPT);
   const imgs = (Array.isArray(payload.images) ? payload.images : [])
     .map(parseDataUrl).filter((x): x is ImgPart => !!x).slice(0, MAX_IMAGES);
   if (!prompt && !imgs.length) {
-    if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
+    await refund();
     return json({ error: "empty" }, 400);
   }
 
+  const maxTokens = maxOutputFor(task, requestedCount);
+  const wantJson = JSON_TASKS.has(task);
+  // Server owns the map_report schema; other JSON tasks may pass their own (validated shallowly).
+  const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
+    : (wantJson && payload.schema && typeof payload.schema === "object" ? payload.schema : undefined);
+  const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
+
   // 4) Provider call with the server-held key.
   const provider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+  const model = Deno.env.get("AI_MODEL") ||
+    (provider === "openai" ? "gpt-4o-mini" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");
+
   try {
-    let text = "";
+    let out: { text: string; finishReason: string; webAttached?: boolean };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
-      if (!key) throw new Error("OPENAI_API_KEY not set");
-      text = await callOpenAI(Deno.env.get("AI_MODEL") || "gpt-4o-mini", key, prompt, system, imgs);
+      if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
+      out = await callOpenAI(model, key, prompt, system, imgs, maxTokens, wantJson);
     } else if (provider === "gemini") {
       const key = Deno.env.get("GEMINI_API_KEY");
-      if (!key) throw new Error("GEMINI_API_KEY not set");
-      text = await callGemini(Deno.env.get("AI_MODEL") || "gemini-2.0-flash", key, prompt, system, imgs);
+      if (!key) throw new ProviderError("provider_unavailable", "GEMINI_API_KEY not set", 502, false, {});
+      try {
+        out = await callGemini(model, key, prompt, system, imgs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
+      } catch (e) {
+        // (#R113) MALFORMED_FUNCTION_CALL → retry ONCE with tools stripped, a hardened
+        // "do not call functions" system suffix, and JSON mode forced. No further retries.
+        if (e instanceof ProviderError && e.code === "provider_malformed") {
+          const hardened = (system ? system + "\n\n" : "") +
+            "No web-search or function-calling tool is attached to this request. Do NOT call tools or functions. " +
+            "The action/type names in the instructions are plain JSON string values, not callable functions. " +
+            "Return the final answer directly" + (wantJson ? " as valid JSON." : ".");
+          out = await callGemini(model, key, prompt, hardened, imgs, { maxTokens, web: false, searchEnabled: false, wantJson, responseSchema, noTools: true });
+        } else {
+          throw e;
+        }
+      }
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
-      if (!key) throw new Error("ANTHROPIC_API_KEY not set");
-      text = await callAnthropic(Deno.env.get("AI_MODEL") || "claude-3-5-haiku-latest", key, prompt, system, imgs, web);
+      if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
+      out = await callAnthropic(model, key, prompt, system, imgs, web, maxTokens);
     }
     // 5) Success.
-    return json({ text, used, limit, remaining: Math.max(0, limit - used) });
+    return json({
+      text: out.text, used, limit, remaining: Math.max(0, limit - used),
+      meta: { provider, model, task, webAttached: !!out.webAttached, finishReason: out.finishReason },
+    });
   } catch (e) {
-    // Provider failed → refund the consumed slot so the user isn't charged a use (dev never consumed one).
-    if (!isDev) try { await db.rpc("refund_ai_usage", { p_user: user.id }); } catch (_) { /* best-effort refund */ }
-    return json({ error: "provider", message: String((e as Error)?.message || e) }, 502);
+    await refund();   // a failed provider call never costs the user a use (dev never consumed one)
+    if (e instanceof ProviderError) {
+      // Non-sensitive telemetry only (no prompt / key / JWT).
+      try { console.error("ai-proxy provider fail", JSON.stringify({ provider, model, task, code: e.code, http: e.http, meta: e.meta })); } catch (_) { /* ignore */ }
+      return json({ error: e.code, message: e.message, retryable: e.retryable, meta: { provider, model, task, ...e.meta } }, e.http);
+    }
+    return json({ error: "provider_unavailable", message: String((e as Error)?.message || e), retryable: false, meta: { provider, model, task } }, 502);
   }
 });
