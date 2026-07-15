@@ -19066,13 +19066,16 @@ window.addEventListener('DOMContentLoaded', () => {
            WORD collapses to just its count, the mode buttons tighten — full labels return in a wider view. */
         /* (#R107) NARROW compare view (the ~270 px ws Countries window): the Indicators WORD stays visible ("Indicators
            n/m" required), so tighten the MODE buttons + the toggle instead to keep everything on ONE row. */
-        /* (#R110) tiered so the row stays ONE line but as LARGE as fits at every container width (measured per
-           language — DE/EN are the binding case). Bigger than the old 14/10.5/9.5 everywhere: e.g. a ~340px Countries
-           window goes 10.5→14px, a ~300px one 9.5→11.5px. */
-        +'@container (max-width:349px){ #scp-view .scp-ctrlrow{gap:5px;} #scp-view .scp-modes button{padding:5px 6px;font-size:14px;} #scp-view .scp-mtog{padding:5px 6px;font-size:14px;gap:4px;} }'
-        +'@container (max-width:335px){ #scp-view .scp-modes button{padding:5px 5px;font-size:12.5px;} #scp-view .scp-mtog{padding:5px 5px;font-size:12.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.6em;} }'
-        +'@container (max-width:313px){ #scp-view .scp-modes button{padding:4px 5px;font-size:11.5px;} #scp-view .scp-mtog{padding:4px 5px;font-size:11.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.4em;} }'
-        +'@container (max-width:292px){ #scp-view .scp-modes button{padding:4px 4px;font-size:10.5px;} #scp-view .scp-mtog{padding:4px 4px;font-size:10.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.2em;} }'
+        /* (#R111) The mode row + Indicators toggle are AUTO-FIT to the largest one-line font PER LANGUAGE & width by
+           _fitModeFont() (inline styles, incl. workspace-mode's narrow ~274px Countries pane). These @container tiers
+           are only the pre-JS / no-JS FALLBACK, sized to the WORST case (ES/RU labels are the LONGEST — the R110 tiers
+           were sized for DE/EN and actually wrapped ES/RU) so the row never wraps even before the JS runs; JS then
+           enlarges the shorter languages (JP fits ~13px in a 274px ws pane vs the old 10.5px). */
+        +'@container (max-width:395px){ #scp-view .scp-modes button{font-size:13.5px;} #scp-view .scp-mtog{font-size:13.5px;} }'
+        +'@container (max-width:360px){ #scp-view .scp-modes button{font-size:12px;} #scp-view .scp-mtog{font-size:12px;} }'
+        +'@container (max-width:335px){ #scp-view .scp-modes button{font-size:11px;} #scp-view .scp-mtog{font-size:11px;} #scp-view .scp-mtog .scp-mcount{min-width:2.5em;} }'
+        +'@container (max-width:313px){ #scp-view .scp-modes button{font-size:10.5px;} #scp-view .scp-mtog{font-size:10.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.4em;} }'
+        +'@container (max-width:292px){ #scp-view .scp-modes button{font-size:9.5px;} #scp-view .scp-mtog{font-size:9.5px;} #scp-view .scp-mtog .scp-mcount{min-width:2.2em;} }'
         +'@media(max-width:768px){ #scp-view .ts-wrap svg{height:84px !important;} #scp-view .scp-tbl{font-size:10.5px;} #scp-view .scp-bnm{flex-basis:96px;} }';
       document.head.appendChild(st); }
       /* render INSIDE the country-list area — no popup. (#R79c) ROOT CAUSE of "比較機能死んでんぞ": the
@@ -19084,6 +19087,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); if(!feed) return null;
       feed.innerHTML='';
       host=document.createElement('div'); host.id='scp-view'; feed.appendChild(host);
+      /* (#R111) re-fit the mode-row font whenever the pane resizes (esp. dragging a workspace-mode Countries window) */
+      try{ if('ResizeObserver' in window){ new ResizeObserver(()=>_fitModeFontSoon()).observe(host); } }catch(_){}
       /* (#R101) hide the outer "Filter countries…" box while comparing — the compare view has its own add-country
          search, so the top filter is redundant. Restored by the Back button.
          (#R102) in workspace mode a `!important` show-rule (body.ws-mode .ws-countries #countries-search-bar) beat the
@@ -19204,10 +19209,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R108) SIGNED indicators (any negative value present) get a 0 guide line in the TIME-SERIES too, matching the
          bar chart's 0-axis ("Time-seriesには0の場所に補助線を…プラスマイナス系指標のように") — force 0 into the value
          range so the baseline is always visible. */
-      /* (#R109) SIGNED-capable indicators (growth / inflation / current account / FDI — ind.signed) ALWAYS include 0 so
-         the guide line shows even when the visible values happen to be all-positive; other indicators only when the
-         data actually crosses zero. */
-      const _tsNeg=ind.signed||entries.some(e=>e.s.some(p=>p.v<0));
+      /* (#R109) SIGNED-capable indicators (growth / inflation / current account / FDI — ind.signed) ALWAYS include 0.
+         (#R111) and now, like the single-country 時系列グラフ, EVERY indicator gets the 0 baseline ("数値が0の場所に
+         補助線を引いて") — all-positive data extends down to 0 unless it is a near-constant high band (min within 10%
+         of max), where a 0 baseline would crush the traces. */
+      const _tsNeg=ind.signed||entries.some(e=>e.s.some(p=>p.v<0))||(v0>=0&&v1>0&&v0<v1*0.9);
       if(_tsNeg){ v0=Math.min(v0,0); v1=Math.max(v1,0); }
       const padL=8,padR=8,padT=10,padB=16; const X=y=>padL+((y-y0)/((y1-y0)||1))*(CW-padL-padR), Y=v=>padT+(1-(v-v0)/((v1-v0)||1))*(CH-padT-padB);
       let paths=''; const meta=[];
@@ -19415,7 +19421,22 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* (#R70) mode segmented control (bar | time-series | table) */
     function modeRow(){ const w=host&&host.querySelector('#scp-modes'); if(!w) return;
-      w.querySelectorAll('button').forEach(b=>{ b.classList.toggle('on',b.getAttribute('data-m')===mode); }); }
+      w.querySelectorAll('button').forEach(b=>{ b.classList.toggle('on',b.getAttribute('data-m')===mode); }); try{ _fitModeFont(); }catch(_){} }
+    /* (#R111) auto-fit "Bar chart | Time-series | Table" + the Indicators toggle to the LARGEST font that keeps them
+       on ONE line at the CURRENT container width AND language ("文字サイズを大きく…二行になるのは厳禁"). A fixed CSS
+       tier can't be optimal for every language (ES/RU labels are long, JP short), and it especially matters in the
+       narrow workspace-mode Countries pane (~274px). Sets inline font-size (overrides the fallback tiers); runs on
+       every render + a ResizeObserver (window/pane resize). */
+    let _fitRAF=0;
+    function _fitModeFont(){ const h=host; if(!h||!document.body.contains(h)) return;
+      const row=h.querySelector('.scp-ctrlrow'), modes=h.querySelector('#scp-modes'), tog=h.querySelector('#scp-mtog');
+      if(!row||!modes||!tog) return; const btns=[...modes.querySelectorAll('button')]; if(!btns.length) return;
+      if(!row.clientWidth) return;   /* not laid out yet */
+      const setF=f=>{ btns.forEach(b=>b.style.fontSize=f+'px'); tog.style.fontSize=f+'px'; };
+      const wrapped=()=>{ const kids=[...row.children].filter(c=>c.getClientRects().length); if(kids.length<2) return false; const t0=kids[0].offsetTop; return kids.some(k=>k.offsetTop>t0+2); };
+      let best=9; for(let f=16;f>=9;f-=0.25){ setF(f); if(!wrapped()){ best=f; break; } }
+      setF(best); }
+    function _fitModeFontSoon(){ if(_fitRAF) return; _fitRAF=requestAnimationFrame(()=>{ _fitRAF=0; try{ _fitModeFont(); }catch(_){} }); }
     /* ===== (#R70) TABLE mode — "エクセルのように、表を自由に組み替えて複数国家を複数指標で分析":
        countries × indicators grid; ⇄ transposes rows/columns; column-header click sorts (desc → asc → off);
        headers are DRAG-reorderable (real column/row rearrangement); a year selector re-reads every cell at
@@ -19949,7 +19970,7 @@ window.addEventListener('DOMContentLoaded', () => {
        variable is injected as a normal lyr-row (checkbox + opacity) into the Layers dropdown, plus one
        shared "valid time" row driving the hourly time slider. The taxonomy reorganizer then files these
        rows into the Climate & weather / Oceans groups alongside the other weather layers. */
-    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); const tl=document.querySelector('#data-legend-ecmwf .ec-time-cap'); if(tl) tl.textContent=(currentLang==='jp'?'時刻（1時間毎）':currentLang==='de'?'Gültigkeitszeit (stündlich)':currentLang==='ru'?'Время (почасово)':'Valid time (hourly)'); updateTimeLabel(); }
+    function relabelRows(){ LAYERS.forEach(l=>{ const s=document.querySelector('#lyrrow-'+l.id+' .ec-lbl'); if(s) s.textContent=ecLbl(l); }); const tl=document.querySelector('#data-legend-ecmwf .ec-time-cap'); if(tl) tl.textContent=(currentLang==='jp'?'時刻（1時間毎）':currentLang==='de'?'Gültigkeitszeit (stündlich)':currentLang==='ru'?'Время (почасово)':'Valid time (hourly)'); const eh=document.querySelector('#data-legend-ecmwf h4'); if(eh) eh.textContent=(currentLang==='jp'?'ECMWF 気象':currentLang==='de'?'ECMWF-Wetter':currentLang==='ru'?'Погода ECMWF':currentLang==='es'?'Meteo ECMWF':'ECMWF weather'); updateTimeLabel(); }   /* (#R111) the legend TITLE also re-localizes (it was baked at creation and relabelRows only touched the rows) */
     function mountRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('lyrrow-ec-temp')) return;
       LAYERS.forEach(l=>{
         const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+l.id;
@@ -26864,7 +26885,14 @@ window.addEventListener('DOMContentLoaded', () => {
            bottom. !important so a stray header-drag can\'t relocate it off the bottom. */
         /* (#R108) MOBILE: Atlas opens INSIDE the sidebar (it is mounted into #sidebar and fills it) — not a floating
            popup/bottom-sheet. It fills the sheet content; the sidebar itself provides the slide-up + frosted shell. */
-        +'@media(max-width:768px){body.atl-in-sheet #atlas-panel{position:absolute !important;inset:0 !important;left:0 !important;right:0 !important;top:0 !important;bottom:0 !important;width:100% !important;height:100% !important;max-height:none !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:inherit !important;box-shadow:none !important;background:transparent !important;z-index:30 !important;}body.atl-in-sheet #sidebar .content-area,body.atl-in-sheet #sidebar .m-sheet-head,body.atl-in-sheet #sidebar .dash-nav{display:none !important;}#atlas-panel .atl-head{cursor:default;}}';
+        /* (#R111) Atlas opens INSIDE the sidebar in BOTH mobile AND desktop normal mode — the floating popup is
+           ABOLISHED ("ポップアップは廃止"). Mounted into #sidebar, it fills the panel and the sidebar's own
+           tabs/feeds/header are hidden while it is open (restored on close). The transparent background lets the
+           sidebar's own frosted shell show through; the resizer stays usable. Workspace mode is excluded (it keeps
+           its dedicated Atlas WINDOW). */
+        +'body.atl-in-sheet:not(.ws-mode) #atlas-panel{position:absolute !important;inset:0 !important;left:0 !important;right:0 !important;top:0 !important;bottom:0 !important;width:auto !important;height:auto !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:inherit !important;box-shadow:none !important;background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;z-index:50 !important;}'
+        +'body.atl-in-sheet:not(.ws-mode) #sidebar > *:not(#atlas-panel):not(#sb-resizer){visibility:hidden !important;}'
+        +'body.atl-in-sheet #atlas-panel .atl-head{cursor:default;}';
       document.head.appendChild(s); }
     function bubble(who,html){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d); try{ chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} return d; }
     /* (#R72) ChatGPT-style per-reply tools: copy + retry on ATLAS messages (user messages get nothing) */
@@ -27379,30 +27407,35 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R108) MOBILE: Atlas opens INSIDE the sidebar (bottom sheet), not as a floating popup ("サイドバーの中で開いて").
        Mount the panel into #sidebar, fill it (CSS), and raise the sheet so Atlas is the sidebar's content; restored on
        close. Desktop / workspace are unaffected. */
-    function _atlMobile(){ try{ return !document.body.classList.contains('ws-mode') && window.matchMedia && window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } }
+    /* (#R111) Atlas mounts into the sidebar in EVERY non-workspace layout now — mobile AND desktop normal mode
+       ("ポップアップは廃止"). Workspace mode keeps its dedicated Atlas window, so it is the only exclusion. */
+    function _atlInSidebar(){ try{ return !document.body.classList.contains('ws-mode'); }catch(_){ return false; } }
+    function _atlMobileSheet(){ try{ return window.matchMedia && window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } }
     function _atlSheetMount(on){ try{ const p=panel; if(!p) return;
       const sb=document.getElementById('sidebar');
       if(on){ if(sb&&p.parentNode!==sb){ p.__prevParent=p.parentNode||document.getElementById('map-container')||document.body; sb.appendChild(p); }
         document.body.classList.add('atl-in-sheet');
-        /* (#R109) FORCE the sheet fully UP + visible: the sheet was 'collapsed' and setDetent alone left it off-screen
-           (translateY not 0). Un-collapse, show, and pin --sheet-ty to 0 directly so the sidebar (and the mounted
-           Atlas filling it) is on-screen. */
-        try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}
-        try{ if(sb){ sb.classList.remove('collapsed'); sb.classList.add('show'); sb.style.setProperty('--sheet-ty','0px'); } }catch(_){}
-        /* (#R110) setDetent MUST run with animate=false: the sheet transform is `translateY(var(--sheet-ty))`, and
-           changing that custom property while the 0.46s transform-transition is live does NOT re-trigger the
-           transition in Chromium (the transform stays stuck at the previous peek value ≈ translateY(603px)), so the
-           sidebar only rose to a thin bottom strip and Atlas still looked like a popup. animate=false toggles
-           `sheet-dragging` (transition:none) + forces a reflow, so the transform reliably jumps to translateY(0)
-           and Atlas fills the whole sidebar sheet ("サイドバーの中で開いて"). */
-        try{ if(window.__setDetent) window.__setDetent('full', false); }catch(_){} }
+        try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}   /* make sure the sidebar panel is visible */
+        try{ if(sb) sb.classList.remove('collapsed'); }catch(_){}
+        if(_atlMobileSheet()){
+          /* MOBILE only — raise the bottom sheet fully. (#R110) setDetent MUST run with animate=false: the sheet
+             transform is `translateY(var(--sheet-ty))`, and changing that custom property while the 0.46s
+             transform-transition is live does NOT re-trigger the transition in Chromium (it stays stuck at the peek
+             value ≈translateY 603px), so the sidebar only rose to a thin strip. animate=false toggles `sheet-dragging`
+             (transition:none) + forces a reflow → transform jumps to translateY(0) and Atlas fills the sheet. */
+          try{ if(sb){ sb.classList.add('show'); sb.style.setProperty('--sheet-ty','0px'); } }catch(_){}
+          try{ if(window.__setDetent) window.__setDetent('full', false); }catch(_){}
+        } else {
+          /* DESKTOP normal mode — the sidebar is a fixed left panel; the CSS makes the mounted Atlas fill it. */
+          try{ if(sb) sb.classList.add('show'); }catch(_){}
+        } }
       else { document.body.classList.remove('atl-in-sheet');
-        try{ if(sb){ sb.style.removeProperty('--sheet-ty'); } }catch(_){}   /* let the detent system own it again */
+        if(_atlMobileSheet()){ try{ if(sb) sb.style.removeProperty('--sheet-ty'); }catch(_){} }   /* let the detent system own it again */
         if(p&&p.__prevParent&&p.parentNode!==p.__prevParent){ try{ p.__prevParent.appendChild(p); }catch(_){} } }
     }catch(_){} }
     function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
       if(p._restoreH){ p.style.setProperty('height',p._restoreH,'important'); } else if(p.style.height==='auto'){ p.style.removeProperty('height'); }
-      if(_atlMobile()) _atlSheetMount(true); else _atlSheetMount(false);
+      if(_atlInSidebar()) _atlSheetMount(true); else _atlSheetMount(false);
       p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){} setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
     function _atlClose(){ const p=ensure(); p.style.display='none'; try{ _atlSheetMount(false); }catch(_){} }
     function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else _atlClose(); }
@@ -29214,7 +29247,80 @@ window.addEventListener('DOMContentLoaded', () => {
       [/^\s*yemen\s*$/i,{jp:'イエメン',de:'Jemen',ru:'Йемен',es:'Yemen'}],
       [/^\s*guinea-?bissau\s*$/i,{jp:'ギニアビサウ',de:'Guinea-Bissau',ru:'Гвинея-Бисау',es:'Guinea-Bisáu'}],
       [/^\s*libya\s*$/i,{jp:'リビア',de:'Libyen',ru:'Ливия',es:'Libia'}],
-      [/^\s*martinique\s*$/i,{jp:'マルティニーク',de:'Martinique',ru:'Мартиника',es:'Martinica'}]
+      [/^\s*martinique\s*$/i,{jp:'マルティニーク',de:'Martinique',ru:'Мартиника',es:'Martinica'}],
+      /* (#R111) remaining untranslated names ("未対応の国がまだ残ってる") — (a) modern territories the aourednik data
+         spells differently from Natural Earth so they never matched (United States, Gambia The, Swaziland…);
+         (b) more colonial / interwar territories; (c) recognisable pre-colonial polities (JP katakana + RU Cyrillic;
+         DE/ES keep the proper noun where there is no distinct local form). */
+      [/^\s*united states\s*$/i,{jp:'アメリカ合衆国',de:'Vereinigte Staaten',ru:'США',es:'Estados Unidos'}],
+      [/^\s*china\s*$/i,{jp:'中国',de:'China',ru:'Китай',es:'China'}],
+      [/^\s*norway\s*$/i,{jp:'ノルウェー',de:'Norwegen',ru:'Норвегия',es:'Noruega'}],
+      [/^\s*western sahara\s*$/i,{jp:'西サハラ',de:'Westsahara',ru:'Западная Сахара',es:'Sáhara Occidental'}],
+      [/^\s*antarctica\s*$/i,{jp:'南極',de:'Antarktis',ru:'Антарктида',es:'Antártida'}],
+      [/^\s*bahamas(,? the)?\s*$/i,{jp:'バハマ',de:'Bahamas',ru:'Багамы',es:'Bahamas'}],
+      [/^\s*(the )?gambia(,? the)?\s*$/i,{jp:'ガンビア',de:'Gambia',ru:'Гамбия',es:'Gambia'}],
+      [/^\s*tanzania, united republic of\s*$/i,{jp:'タンザニア',de:'Tansania',ru:'Танзания',es:'Tanzania'}],
+      [/^\s*swaziland\s*$/i,{jp:'スワジランド',de:'Swasiland',ru:'Свазиленд',es:'Suazilandia'}],
+      [/^\s*trinidad\s*$/i,{jp:'トリニダード',de:'Trinidad',ru:'Тринидад',es:'Trinidad'}],
+      [/^\s*rapa nui\s*$/i,{jp:'ラパ・ヌイ',de:'Rapa Nui',ru:'Рапануи',es:'Rapa Nui'}],
+      [/^\s*wallis and futuna( islands)?\s*$/i,{jp:'ウォリス・フツナ',de:'Wallis und Futuna',ru:'Уоллис и Футуна',es:'Wallis y Futuna'}],
+      [/^\s*french guiana\s*$/i,{jp:'仏領ギアナ',de:'Französisch-Guayana',ru:'Французская Гвиана',es:'Guayana Francesa'}],
+      [/^\s*guadeloupe\s*$/i,{jp:'グアドループ',de:'Guadeloupe',ru:'Гваделупа',es:'Guadalupe'}],
+      [/^\s*netherlands antilles\s*$/i,{jp:'オランダ領アンティル',de:'Niederländische Antillen',ru:'Нидерландские Антильские острова',es:'Antillas Neerlandesas'}],
+      [/^\s*korea, republic of\s*$/i,{jp:'大韓民国',de:'Republik Korea',ru:'Республика Корея',es:'República de Corea'}],
+      [/^\s*korea, democratic people'?s republic of\s*$/i,{jp:'朝鮮民主主義人民共和国',de:'Nordkorea',ru:'КНДР',es:'Corea del Norte'}],
+      [/^\s*korea\s*$/i,{jp:'朝鮮',de:'Korea',ru:'Корея',es:'Corea'}],
+      [/^\s*dutch east indies\s*$/i,{jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'}],
+      [/^\s*german empire\s*$/i,{jp:'ドイツ帝国',de:'Deutsches Kaiserreich',ru:'Германская империя',es:'Imperio alemán'}],
+      [/^\s*king(dom|fom) of italy\s*$/i,{jp:'イタリア王国',de:'Königreich Italien',ru:'Королевство Италия',es:'Reino de Italia'}],
+      [/^\s*cyr[ae]n[ae]ica.*$/i,{jp:'キレナイカ',de:'Kyrenaika',ru:'Киренаика',es:'Cirenaica'}],
+      [/^\s*tripolitan.*$/i,{jp:'トリポリタニア',de:'Tripolitanien',ru:'Триполитания',es:'Tripolitania'}],
+      [/^\s*fezzan.*$/i,{jp:'フェザーン',de:'Fessan',ru:'Феццан',es:'Fezán'}],
+      [/^\s*arabia \(nejd\)\s*$/i,{jp:'ナジュド（アラビア）',de:'Nadschd (Arabien)',ru:'Неджд (Аравия)',es:'Néyed (Arabia)'}],
+      [/^\s*hail\s*$/i,{jp:'ハーイル',de:'Hail',ru:'Хаиль',es:'Hail'}],
+      [/^\s*british guiana\s*$/i,{jp:'英領ギアナ',de:'Britisch-Guayana',ru:'Британская Гвиана',es:'Guayana Británica'}],
+      [/^\s*dutch gui(ana|nea)\s*$/i,{jp:'オランダ領ギアナ',de:'Niederländisch-Guayana',ru:'Голландская Гвиана',es:'Guayana Neerlandesa'}],
+      [/^\s*southern cameroons?\s*$/i,{jp:'南カメルーン',de:'Südkamerun',ru:'Южный Камерун',es:'Camerún del Sur'}],
+      [/^\s*gilbert and el?lice islands\s*$/i,{jp:'ギルバート・エリス諸島',de:'Gilbert- und Ellice-Inseln',ru:'Острова Гилберта и Эллис',es:'Islas Gilbert y Ellice'}],
+      [/^\s*new hebrides\s*$/i,{jp:'ニューヘブリディーズ',de:'Neue Hebriden',ru:'Новые Гебриды',es:'Nuevas Hébridas'}],
+      [/^\s*wal[bv]is bay\s*$/i,{jp:'ウォルビスベイ',de:'Walfischbai',ru:'Уолфиш-Бей',es:'Bahía de Walvis'}],
+      [/^\s*saipan\s*$/i,{jp:'サイパン',de:'Saipan',ru:'Сайпан',es:'Saipán'}],
+      [/^\s*british protectorate\s*$/i,{jp:'イギリス保護領',de:'Britisches Protektorat',ru:'Британский протекторат',es:'Protectorado británico'}],
+      [/^\s*central asian khanates\s*$/i,{jp:'中央アジアのハン国',de:'Zentralasiatische Khanate',ru:'Среднеазиатские ханства',es:'Kanatos de Asia Central'}],
+      [/^\s*m.?ori\s*$/i,{jp:'マオリ',de:'Māori',ru:'Маори',es:'Maorí'}],
+      [/^\s*accra\s*$/i,{jp:'アクラ',de:'Accra',ru:'Аккра',es:'Acra'}],
+      [/^\s*barotse\s*$/i,{jp:'バロツェ',de:'Barotse',ru:'Баротсе',es:'Barotse'}],
+      [/^\s*borgu states\s*$/i,{jp:'ボルグ諸国',de:'Borgu-Staaten',ru:'Государства Боргу',es:'Estados de Borgu'}],
+      [/^\s*calabar\s*$/i,{jp:'カラバル',de:'Calabar',ru:'Калабар',es:'Calabar'}],
+      [/^\s*cotonou\s*$/i,{jp:'コトヌー',de:'Cotonou',ru:'Котону',es:'Cotonú'}],
+      [/^\s*futa jal.?n\s*$/i,{jp:'フータ・ジャロン',de:'Futa Dschallon',ru:'Фута-Джаллон',es:'Futa Yallón'}],
+      [/^\s*futa toro\s*$/i,{jp:'フータ・トロ',de:'Futa Toro',ru:'Фута-Торо',es:'Futa Toro'}],
+      [/^\s*griqualand west\s*$/i,{jp:'西グリカランド',de:'Griqualand West',ru:'Западный Гриквеленд',es:'Griqualand Occidental'}],
+      [/^\s*ibadan\s*$/i,{jp:'イバダン',de:'Ibadan',ru:'Ибадан',es:'Ibadán'}],
+      [/^\s*imerina\s*$/i,{jp:'イメリナ',de:'Imerina',ru:'Имерина',es:'Imerina'}],
+      [/^\s*kong\s*$/i,{jp:'コング帝国',de:'Kong',ru:'Конг',es:'Kong'}],
+      [/^\s*kuba\s*$/i,{jp:'クバ王国',de:'Kuba',ru:'Куба',es:'Kuba'}],
+      [/^\s*lagos\s*$/i,{jp:'ラゴス',de:'Lagos',ru:'Лагос',es:'Lagos'}],
+      [/^\s*lozi\s*$/i,{jp:'ロジ',de:'Lozi',ru:'Лози',es:'Lozi'}],
+      [/^\s*luba\s*$/i,{jp:'ルバ王国',de:'Luba',ru:'Луба',es:'Luba'}],
+      [/^\s*lunda\s*$/i,{jp:'ルンダ王国',de:'Lunda',ru:'Лунда',es:'Lunda'}],
+      [/^\s*mbailundu\s*$/i,{jp:'ンバイルンドゥ',de:'Mbailundu',ru:'Мбаилунду',es:'Mbailundu'}],
+      [/^\s*mossi states\s*$/i,{jp:'モシ諸王国',de:'Mossi-Staaten',ru:'Государства Моси',es:'Estados Mossi'}],
+      [/^\s*ndebele\s*$/i,{jp:'ンデベレ',de:'Ndebele',ru:'Ндебеле',es:'Ndebele'}],
+      [/^\s*nguni\s*$/i,{jp:'ングニ',de:'Nguni',ru:'Нгуни',es:'Nguni'}],
+      [/^\s*ngwato\s*$/i,{jp:'ングワト',de:'Ngwato',ru:'Нгвато',es:'Ngwato'}],
+      [/^\s*opobo\s*$/i,{jp:'オポボ',de:'Opobo',ru:'Опобо',es:'Opobo'}],
+      [/^\s*ovimbundu\s*$/i,{jp:'オヴィンブンドゥ',de:'Ovimbundu',ru:'Овимбунду',es:'Ovimbundu'}],
+      [/^\s*shona\s*$/i,{jp:'ショナ',de:'Shona',ru:'Шона',es:'Shona'}],
+      [/^\s*teke\s*$/i,{jp:'テケ王国',de:'Teke',ru:'Теке',es:'Teke'}],
+      [/^\s*tukular caliphate\s*$/i,{jp:'トゥクロール帝国',de:'Tukulor-Reich',ru:'Империя Тукулёр',es:'Imperio tukulor'}],
+      [/^\s*yaka\s*$/i,{jp:'ヤカ',de:'Yaka',ru:'Яка',es:'Yaka'}],
+      [/^\s*yeke\s*$/i,{jp:'イェケ王国',de:'Yeke',ru:'Йеке',es:'Yeke'}],
+      [/^\s*(first |second )?samori empire\s*$/i,{jp:'サモリ帝国',de:'Samori-Reich',ru:'Империя Самори',es:'Imperio de Samori'}],
+      [/^\s*sultanate of utetera\s*$/i,{jp:'ウテテラ・スルタン国',de:'Sultanat Utetera',ru:'Султанат Утетера',es:'Sultanato de Utetera'}],
+      [/^\s*ato trading confederacy\s*$/i,{jp:'アト交易連合',de:'Ato-Handelskonföderation',ru:'Торговая конфедерация Ато',es:'Confederación comercial Ato'}],
+      [/^\s*mirambo.*$/i,{jp:'ミランボの領域',de:'Mirambo-Reich',ru:'Государство Мирамбо',es:'Reino de Mirambo'}],
+      [/^\s*emirate of bin shal.*$/i,{jp:'ビン・シャアラーン首長国',de:'Emirat Bin Schaalan',ru:'Эмират Бин-Шаалан',es:'Emirato de Bin Shalan'}]
     ];
     /* (#R110) coloniser / possessor names for the "(France)/(UK)/(Portugal)…" suffix the aourednik data appends to
        many interwar colonies, plus the 1945 occupation zones (Germany (USA)…). */

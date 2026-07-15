@@ -5,6 +5,22 @@
 
 ---
 
+## R111 — 5-item re-report batch: Atlas popup ABOLISHED (desktop too), compare-font AUTO-FIT (fixes an ES/RU wrap R110 introduced), compare-ts 0-line for ALL indicators, ~70 more era-name translations (JP/RU now 0 untranslated), ECMWF legend title, further legend-language coverage (tag `#R111`)
+
+Re-reports where the R110 fix was too narrow, plus scope extensions.
+
+**Atlas in the sidebar on DESKTOP too, popup abolished (#3).** R110 mounted Atlas into #sidebar only on mobile; the user now wants the floating popup GONE in desktop normal mode as well. `_atlMobile()` → `_atlInSidebar()` = `!ws-mode` (mobile AND desktop); `_atlSheetMount` only runs the bottom-sheet detent lift on mobile, and the fill CSS is no longer `@media`-gated (`body.atl-in-sheet:not(.ws-mode) #atlas-panel{position:absolute;inset:0}` + `#sidebar > *:not(#atlas-panel):not(#sb-resizer){visibility:hidden}`). Workspace mode is the sole exclusion (keeps its Atlas WINDOW). Verified: desktop → Atlas fills the 440px sidebar, close restores the tabs; mobile still fills the sheet; ws unaffected.
+
+**Compare mode/Indicator font — AUTO-FIT (#2), and a R110 bug fixed.** R110 sized the @container tiers for DE/EN, but **ES/RU labels are the LONGEST** ("Series temporales" / "Показатели") so they actually WRAPPED at the R110 sizes, while **JP labels are short** and were needlessly tiny. Replaced the fixed tiers with `_fitModeFont()`: it measures and sets (inline) the largest font that keeps "Bar chart | Time-series | Table" + Indicators on ONE line at the CURRENT width AND language, runs on render + a ResizeObserver (workspace-window resize). The @container tiers remain only as a worst-case (ES/RU) no-wrap fallback. Verified in a 274px ws Countries pane: JP 10.5→**13.75px**, EN 11.25, DE 11.5, ES/RU 10/10.25 (no longer wrapping); normal 391px sidebar JP → 16px. Never two lines in any language.
+
+**Compare Time-series 0-line for EVERY indicator (#4).** R108 drew it only for signed indicators; now (matching the single-country graph) all-positive series also extend the axis to 0 unless it is a near-constant high band. Verified: GDP / Population / Life-expectancy time-series all show the 0 line.
+
+**~70 more era-name translations (#1).** A live sweep of the real tagSame output (`_same!=1 && !_locName`) across the 1900–1960 snapshots found the residuals: modern territories the aourednik data spells differently from Natural Earth so they never matched (`United States`, `Gambia, The`, `Tanzania, United Republic of`, `Swaziland`, `Korea, Republic of`, `Netherlands Antilles`, `French Guiana`…), more colonial/interwar territories (`Dutch East Indies`, `German Empire`, `Cyrenaica`/`Tripolitania`/`Fezzan`, `British Guiana`, `New Hebrides`, `Gilbert & Ellice`…), and ~30 pre-colonial polities (`Barotse`, `Sokoto`-neighbours, `Lozi`, `Luba`, `Lunda`, `Ndebele`, `Oyo`, `Tukulor`…). Added them to `_ERA_LOC` (JP katakana + RU Cyrillic; DE/ES keep the proper noun where there is no distinct local form). Sweep result: **JP 0, RU 0 untranslated**; the DE/ES residue is names that are legitimately identical in those languages (display already correct).
+
+**Legend language (#5) — further coverage.** The core/generic/Köppen/NATO/WB-beta legends all re-localize (verified: core legends switch title + scale + units + description; Köppen via `buildLegend`). The one concrete gap was the **ECMWF legend title** ("ECMWF weather") — baked at creation and never touched by `relabelRows`; now re-localized (JP ECMWF 気象 / DE ECMWF-Wetter…).
+
+---
+
 ## R110 — 8-item re-report/feature batch: three R108/R109 "fixes" that missed the real cause (Austria-Hungary in Compare, legend language, mobile-Atlas), + East Prussia exclave, more era-name translations, Countries ts 0-line, compare-font enlargement, time-travel latency (tag `#R110`)
 
 Several of these were RE-reported because the earlier fix touched the wrong code path. Each root cause was found by driving the live app + inspecting the aourednik/Maddison data.
