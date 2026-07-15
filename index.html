@@ -29197,7 +29197,24 @@ window.addEventListener('DOMContentLoaded', () => {
       [/^\s*sult[ia]nate of zanzibar\s*$/i,{jp:'ザンジバル・スルタン国',de:'Sultanat Sansibar',ru:'Занзибарский султанат',es:'Sultanato de Zanzíbar'}],
       [/^\s*bosnia-herzegovina\s*$/i,{jp:'ボスニア・ヘルツェゴビナ',de:'Bosnien und Herzegowina',ru:'Босния и Герцеговина',es:'Bosnia y Herzegovina'}],
       [/^\s*arabia\s*$/i,{jp:'アラビア',de:'Arabien',ru:'Аравия',es:'Arabia'}],
-      [/^\s*imperial japan\s*$/i,{jp:'大日本帝国',de:'Kaiserreich Japan',ru:'Японская империя',es:'Imperio del Japón'}]
+      [/^\s*imperial japan\s*$/i,{jp:'大日本帝国',de:'Kaiserreich Japan',ru:'Японская империя',es:'Imperio del Japón'}],
+      /* (#R110) modern countries that appear in the data only with a "(Coloniser)" suffix (French/Portuguese/… rule) —
+         listed here so the suffix handler can localize the BASE in DE/RU/ES too (countryStats has no DE/RU/ES country
+         names), e.g. Syria (France) → Syrien (Frankreich) / Сирия (Франция) / Siria (Francia). */
+      [/^\s*algeria\s*$/i,{jp:'アルジェリア',de:'Algerien',ru:'Алжир',es:'Argelia'}],
+      [/^\s*angola\s*$/i,{jp:'アンゴラ',de:'Angola',ru:'Ангола',es:'Angola'}],
+      [/^\s*congo\s*$/i,{jp:'コンゴ',de:'Kongo',ru:'Конго',es:'Congo'}],
+      [/^\s*madagascar\s*$/i,{jp:'マダガスカル',de:'Madagaskar',ru:'Мадагаскар',es:'Madagascar'}],
+      [/^\s*morocco\s*$/i,{jp:'モロッコ',de:'Marokko',ru:'Марокко',es:'Marruecos'}],
+      [/^\s*mozambique\s*$/i,{jp:'モザンビーク',de:'Mosambik',ru:'Мозамбик',es:'Mozambique'}],
+      [/^\s*syria\s*$/i,{jp:'シリア',de:'Syrien',ru:'Сирия',es:'Siria'}],
+      [/^\s*eritrea\s*$/i,{jp:'エリトリア',de:'Eritrea',ru:'Эритрея',es:'Eritrea'}],
+      [/^\s*jamaica\s*$/i,{jp:'ジャマイカ',de:'Jamaika',ru:'Ямайка',es:'Jamaica'}],
+      [/^\s*rwanda\s*$/i,{jp:'ルワンダ',de:'Ruanda',ru:'Руанда',es:'Ruanda'}],
+      [/^\s*yemen\s*$/i,{jp:'イエメン',de:'Jemen',ru:'Йемен',es:'Yemen'}],
+      [/^\s*guinea-?bissau\s*$/i,{jp:'ギニアビサウ',de:'Guinea-Bissau',ru:'Гвинея-Бисау',es:'Guinea-Bisáu'}],
+      [/^\s*libya\s*$/i,{jp:'リビア',de:'Libyen',ru:'Ливия',es:'Libia'}],
+      [/^\s*martinique\s*$/i,{jp:'マルティニーク',de:'Martinique',ru:'Мартиника',es:'Martinica'}]
     ];
     /* (#R110) coloniser / possessor names for the "(France)/(UK)/(Portugal)…" suffix the aourednik data appends to
        many interwar colonies, plus the 1945 occupation zones (Germany (USA)…). */
