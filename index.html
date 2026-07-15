@@ -1998,6 +1998,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     <div class="content-area" id="countries-feed" style="display:none;"></div><!-- (#R78e) Countries gets its OWN feed so News & Countries can be separate workspace windows -->
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
     <div class="content-area" id="community-feed" style="display:none;"></div>
+    <!-- (#R112) Atlas is a REAL sidebar tab (like News/Information/Countries): in normal + mobile mode the Atlas
+         console mounts, in normal flow, INTO this content area below the tab bar — no popup overlay. Workspace mode
+         keeps its own Atlas window and never uses this. -->
+    <div id="atlas-feed" style="display:none;"></div>
     <div class="news-reader-pane" id="news-reader-pane" style="display:none;"></div>
     <div class="stats-compare-fixed" id="stats-compare-fixed"></div>
   </div>
@@ -9034,12 +9038,13 @@ window.addEventListener('DOMContentLoaded', () => {
           cfeed=document.getElementById('countries-feed'),
           dash=document.getElementById('info-dashboard'),
           comm=document.getElementById('community-feed'),
+          afeed=document.getElementById('atlas-feed'),   /* (#R112) Atlas tab content area */
           sb=document.getElementById('sidebar-search-bar'),   /* (#R79e) by ID — #countries-search-bar also has class .search-bar, so querySelector('.search-bar') could grab it after a ws cycle and renderUI would leak the "Filter countries" box into the normal sidebar */
           filterToggle=document.getElementById('news-filter-toggle');
     clearMarkers();
     try{ pushCommunityFeatures(); }catch(_){}   /* show community pins only on the Community tab */
     /* Hide all panels first (pin-mode toggle now lives inside #ai-geocode-row, #28) */
-    feed.style.display='none'; if(cfeed) cfeed.style.display='none'; dash.style.display='none'; comm.style.display='none'; filterToggle.style.display='none';
+    feed.style.display='none'; if(cfeed) cfeed.style.display='none'; dash.style.display='none'; comm.style.display='none'; if(afeed) afeed.style.display='none'; filterToggle.style.display='none';
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
     /* Stats compare panel only belongs on the Stats tab (#26) */
     if(currentMode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
@@ -9061,6 +9066,12 @@ window.addEventListener('DOMContentLoaded', () => {
        user opens the News tab. (#R19) The blank state now hosts the opt-in Apple-style widget board. */
     if(!currentMode){ if(sb) sb.style.display='none'; try{ window.IntMapWidgets2&&window.IntMapWidgets2.sync(); }catch(_){} try{ updateOcclusion(); }catch(_){} return; }
     try{ window.IntMapWidgets2&&window.IntMapWidgets2.sync(); }catch(_){}
+    /* (#R112) Atlas tab — the console renders IN FLOW inside #atlas-feed (below the tab bar), exactly like News /
+       Information / Countries. Its own input replaces the news search bar. Workspace mode never reaches here (Atlas
+       is its own window there). */
+    if(currentMode==='atlas'){ if(afeed) afeed.style.display='flex'; if(sb) sb.style.display='none';
+      try{ window.IntMapConsole&&window.IntMapConsole.mountTab&&window.IntMapConsole.mountTab(); }catch(_){}
+      try{ updateOcclusion(); }catch(_){} return; }
     if(currentMode==='info'){ dash.style.display='flex'; sb.style.display='flex'; renderDashboard(); updateOcclusion(); return; }
     if(currentMode==='community'){ comm.style.display='flex'; sb.style.display='none'; loadCommunity(); updateOcclusion(); return; }
     if(currentMode==='stats'){ if(cfeed) cfeed.style.display='flex'; sb.style.display='flex'; renderStats(searchVal()); return; }
@@ -10134,15 +10145,20 @@ window.addEventListener('DOMContentLoaded', () => {
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
   IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Information tab', btn:'btn-info', group:'tab'});
   IntMapOS.register('tab.stats', ()=>setMode('stats','btn-stats'), {label:'Countries tab', btn:'btn-stats', group:'tab'});
-  IntMapOS.register('tab.community', ()=>setMode('community','btn-community'), {label:'Community tab', btn:'btn-community', group:'tab'});
+  /* (#R112) The 4th sidebar slot is Atlas. In normal + mobile mode it is a REAL tab (setMode → renders into
+     #atlas-feed like News/Info/Countries); in workspace mode Atlas keeps its own floating window. */
+  const _atlasTab=()=>{ try{ if(document.body.classList.contains('ws-mode')){ if(window.IntMapConsole&&IntMapConsole.open) IntMapConsole.open(); } else setMode('atlas','btn-community'); }catch(_){} };
+  IntMapOS.register('tab.atlas', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});
+  IntMapOS.register('tab.community', _atlasTab, {label:'Atlas tab', btn:'btn-community', group:'tab'});   /* legacy alias */
   document.getElementById('btn-news').onclick=()=>IntMapOS.exec('tab.news',{source:'ui'});
   /* Saved is now a sub-filter inside the News tab (keeps btn-news active) */
   document.getElementById('newsfilter-all').onclick=()=>{ if(currentMode!=='news') setMode('news','btn-news'); };
   document.getElementById('newsfilter-saved').onclick=()=>{ if(currentMode!=='saved') setMode('saved','btn-news'); };
   document.getElementById('btn-info').onclick=()=>IntMapOS.exec('tab.info',{source:'ui'});
   document.getElementById('btn-stats').onclick=()=>IntMapOS.exec('tab.stats',{source:'ui'});
-  /* (#R98) Community feature removed — this sidebar button now opens the Atlas AI console. */
-  document.getElementById('btn-community').onclick=()=>{ try{ if(window.IntMapConsole){ if(IntMapConsole.open) IntMapConsole.open(); else if(IntMapConsole.toggle) IntMapConsole.toggle(); } }catch(_){} };
+  /* (#R98) Community feature removed — this sidebar button is the Atlas tab. (#R112) It now behaves like the other
+     tabs (News/Info/Countries): a true kernel tab command that renders Atlas INSIDE the sidebar/bottom-sheet. */
+  document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.atlas',{source:'ui'});
   /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
      so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
   try{
@@ -14605,8 +14621,14 @@ window.addEventListener('DOMContentLoaded', () => {
       sc.addEventListener('touchend',end,{passive:true}); sc.addEventListener('touchcancel',end,{passive:true});
     });
     /* tapping a tab while collapsed lifts the sheet; focusing search expands it */
+    /* (#R112) The Atlas tab is a chat whose INPUT sits at the bottom of the panel, so 'half' would leave it off-screen —
+       it lifts the sheet to FULL (matching how a messaging sheet opens). Other tabs keep the peek→half behaviour. The
+       Atlas lift uses animate=false because (per #R110) changing --sheet-ty while the transform-transition is live does
+       NOT re-trigger it in Chromium (the sheet stays stuck at peek); animate=false forces the reflow so it snaps to full.
+       The delay lets this win over any earlier detent set in the same click. */
     document.querySelectorAll('.control-panel .mode-btn').forEach(b=>{
-      b.addEventListener('click',()=>{ if(!mq.matches) return; const wasPeek=currentDetent==='peek'; setTimeout(()=>{ if(wasPeek) setDetent('half'); else setDetent(currentDetent,false); },70); });
+      const isAtlas=(b.id==='btn-community');
+      b.addEventListener('click',()=>{ if(!mq.matches) return; const wasPeek=currentDetent==='peek'; setTimeout(()=>{ if(isAtlas) setDetent('full', false); else if(wasPeek) setDetent('half'); else setDetent(currentDetent,false); },70); });
     });
     const si=document.getElementById('search-input'); if(si) si.addEventListener('focus',()=>{ if(mq.matches && currentDetent!=='full') setDetent('full'); });
 
@@ -25706,8 +25728,8 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'pitch': case 'tilt': { let tp=null; try{ tp=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); map.easeTo({pitch:tp,duration:600}); }catch(_){}
           return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:map.getPitch())+'°')); }
         case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; map.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
-        case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',community:'tab.community'}[String(a.name||'').toLowerCase()];
-          const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.community':'btn-community'}[cmd];
+        case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];
+          const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
           if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
         case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))); } return R(false, warn('⚠')); }
         case 'selectCountry': case 'country': { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note('🏳 '+esc(c.name))); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }
@@ -26880,19 +26902,16 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-lc-tx{display:flex;flex-direction:column;min-width:0;}'
         +'#atlas-panel .atl-lc-t{font-size:10.5px;font-weight:600;color:var(--text-main);line-height:1.25;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
         +'#atlas-panel .atl-lc-d{font-size:9.5px;color:var(--text-muted);line-height:1.25;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
-        /* (#R107) mobile: Atlas is a flush BOTTOM SHEET, not a floating popup ("contain Atlas popup in bottom sheet /
-           no Atlas popup in mobile") — anchored to the bottom edge, full width, rounded top only, sliding up from the
-           bottom. !important so a stray header-drag can\'t relocate it off the bottom. */
-        /* (#R108) MOBILE: Atlas opens INSIDE the sidebar (it is mounted into #sidebar and fills it) — not a floating
-           popup/bottom-sheet. It fills the sheet content; the sidebar itself provides the slide-up + frosted shell. */
-        /* (#R111) Atlas opens INSIDE the sidebar in BOTH mobile AND desktop normal mode — the floating popup is
-           ABOLISHED ("ポップアップは廃止"). Mounted into #sidebar, it fills the panel and the sidebar's own
-           tabs/feeds/header are hidden while it is open (restored on close). The transparent background lets the
-           sidebar's own frosted shell show through; the resizer stays usable. Workspace mode is excluded (it keeps
-           its dedicated Atlas WINDOW). */
-        +'body.atl-in-sheet:not(.ws-mode) #atlas-panel{position:absolute !important;inset:0 !important;left:0 !important;right:0 !important;top:0 !important;bottom:0 !important;width:auto !important;height:auto !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:inherit !important;box-shadow:none !important;background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;z-index:50 !important;}'
-        +'body.atl-in-sheet:not(.ws-mode) #sidebar > *:not(#atlas-panel):not(#sb-resizer){visibility:hidden !important;}'
-        +'body.atl-in-sheet #atlas-panel .atl-head{cursor:default;}';
+        /* (#R112) Atlas as a NATIVE sidebar TAB (normal + mobile). The panel is mounted, IN NORMAL FLOW, into
+           #atlas-feed — a content area below the tab bar, sibling of #live-news-feed / #countries-feed / #info-dashboard
+           — so the sidebar header + tab bar stay visible and Atlas reads as native sidebar content, exactly like the
+           News / Information / Countries tabs. There is NO popup overlay (the old #atl-in-sheet "popup pasted onto the
+           sidebar" hack is gone). #atlas-feed provides the positioning context + fill; .atl-tab strips every floating
+           popup style off the panel and hides its popup header (the sidebar tab bar is the chrome). Workspace mode is
+           excluded via :not(.ws-mode) — there Atlas keeps its own floating WINDOW. */
+        +'body:not(.ws-mode) #atlas-feed{position:relative;flex:1 1 auto;min-height:0;flex-direction:column;margin:0;padding:0;overflow:hidden;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab{position:relative !important;left:auto !important;top:auto !important;right:auto !important;bottom:auto !important;inset:auto !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;z-index:auto !important;resize:none !important;display:flex !important;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-head{display:none !important;}';
       document.head.appendChild(s); }
     function bubble(who,html){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d); try{ chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} return d; }
     /* (#R72) ChatGPT-style per-reply tools: copy + retry on ATLAS messages (user messages get nothing) */
@@ -26938,7 +26957,7 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const _auto=()=>{ try{ if(chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<150) chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} };
         new MutationObserver(_auto).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
-      panel.querySelector('.atl-x').onclick=()=>{ panel.style.display='none'; try{ _atlSheetMount(false); }catch(_){} try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
+      panel.querySelector('.atl-x').onclick=()=>{ try{ _atlClose(); }catch(_){ panel.style.display='none'; } try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
       /* (#R42c/#R47) minimize / restore (collapse to just the header bar). FIX: a resized panel carries an inline
          height:!important that beat the class → minimize did nothing. Now we stash & clear it on minimize and
          restore it after (and the CSS adds min-height:0). */
@@ -27404,41 +27423,47 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const did=(acts||[]).filter(a=>(fails||[]).indexOf(a)<0).map(actLabel).filter(Boolean);
       let a='Atlas: '+String(say||'(done)').slice(0,180); if(did.length) a+=' [did: '+did.join('; ').slice(0,260)+']'; if((fails||[]).length) a+=' [failed: '+fails.map(actLabel).join('; ').slice(0,160)+']';
       _hist.push('User: '+q.slice(0,260)); _hist.push(a); if(_hist.length>16) _hist=_hist.slice(-16); }catch(_){} }
-    /* (#R108) MOBILE: Atlas opens INSIDE the sidebar (bottom sheet), not as a floating popup ("サイドバーの中で開いて").
-       Mount the panel into #sidebar, fill it (CSS), and raise the sheet so Atlas is the sidebar's content; restored on
-       close. Desktop / workspace are unaffected. */
-    /* (#R111) Atlas mounts into the sidebar in EVERY non-workspace layout now — mobile AND desktop normal mode
-       ("ポップアップは廃止"). Workspace mode keeps its dedicated Atlas window, so it is the only exclusion. */
-    function _atlInSidebar(){ try{ return !document.body.classList.contains('ws-mode'); }catch(_){ return false; } }
-    function _atlMobileSheet(){ try{ return window.matchMedia && window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } }
-    function _atlSheetMount(on){ try{ const p=panel; if(!p) return;
-      const sb=document.getElementById('sidebar');
-      if(on){ if(sb&&p.parentNode!==sb){ p.__prevParent=p.parentNode||document.getElementById('map-container')||document.body; sb.appendChild(p); }
-        document.body.classList.add('atl-in-sheet');
-        try{ document.body.classList.remove('sidebar-hidden'); }catch(_){}   /* make sure the sidebar panel is visible */
-        try{ if(sb) sb.classList.remove('collapsed'); }catch(_){}
-        if(_atlMobileSheet()){
-          /* MOBILE only — raise the bottom sheet fully. (#R110) setDetent MUST run with animate=false: the sheet
-             transform is `translateY(var(--sheet-ty))`, and changing that custom property while the 0.46s
-             transform-transition is live does NOT re-trigger the transition in Chromium (it stays stuck at the peek
-             value ≈translateY 603px), so the sidebar only rose to a thin strip. animate=false toggles `sheet-dragging`
-             (transition:none) + forces a reflow → transform jumps to translateY(0) and Atlas fills the sheet. */
-          try{ if(sb){ sb.classList.add('show'); sb.style.setProperty('--sheet-ty','0px'); } }catch(_){}
-          try{ if(window.__setDetent) window.__setDetent('full', false); }catch(_){}
-        } else {
-          /* DESKTOP normal mode — the sidebar is a fixed left panel; the CSS makes the mounted Atlas fill it. */
-          try{ if(sb) sb.classList.add('show'); }catch(_){}
-        } }
-      else { document.body.classList.remove('atl-in-sheet');
-        if(_atlMobileSheet()){ try{ if(sb) sb.style.removeProperty('--sheet-ty'); }catch(_){} }   /* let the detent system own it again */
-        if(p&&p.__prevParent&&p.parentNode!==p.__prevParent){ try{ p.__prevParent.appendChild(p); }catch(_){} } }
+    /* (#R112) Atlas is a REAL sidebar TAB in normal + mobile mode — the console mounts, IN NORMAL FLOW, into its own
+       content area (#atlas-feed) BELOW the sidebar tab bar, exactly like the News / Information / Countries tabs. The
+       header + tabs stay visible; there is NO popup overlay (the old "popup forcibly pasted onto the sidebar"
+       #atl-in-sheet hack is abolished — the user called it a クソUI). Selecting Atlas goes through the sidebar's own
+       tab engine (setMode via the tab button), so the mobile bottom-sheet lift and every other tab behaviour is shared
+       automatically. WORKSPACE MODE is unchanged: Atlas keeps its own floating window there (the sole exclusion). */
+    function _atlWs(){ try{ return document.body.classList.contains('ws-mode'); }catch(_){ return false; } }
+    /* Mount the panel, in flow, into the sidebar's Atlas content area (#atlas-feed). Idempotent — called by renderUI's
+       'atlas' branch whenever the Atlas tab becomes/stays active. */
+    function mountTab(){ try{ const p=ensure(); const af=document.getElementById('atlas-feed'); if(!af) return;
+      p.classList.add('atl-tab'); p.classList.remove('atl-min');
+      try{ document.body.classList.remove('atl-in-sheet'); }catch(_){}   /* retire any leftover popup-paste state */
+      if(p.parentNode!==af){ af.appendChild(p); }
+      /* shed any floating-popup geometry a previous drag/resize left inline, so the in-flow fill CSS wins */
+      ['left','top','width','height','transform'].forEach(k=>{ try{ p.style.removeProperty(k); }catch(_){} });
+      const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
+      p.style.display='flex';
+      setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },60);
     }catch(_){} }
     function open(){ const p=ensure(); p.classList.remove('atl-min'); const mb=p.querySelector('.atl-min-btn'); if(mb){ mb.textContent='–'; }
-      if(p._restoreH){ p.style.setProperty('height',p._restoreH,'important'); } else if(p.style.height==='auto'){ p.style.removeProperty('height'); }
-      if(_atlInSidebar()) _atlSheetMount(true); else _atlSheetMount(false);
-      p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){} setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },60); }
-    function _atlClose(){ const p=ensure(); p.style.display='none'; try{ _atlSheetMount(false); }catch(_){} }
-    function toggle(){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else _atlClose(); }
+      if(_atlWs()){
+        /* Workspace mode — Atlas is its own window (unchanged behaviour). */
+        p.classList.remove('atl-tab');
+        if(p._restoreH){ p.style.setProperty('height',p._restoreH,'important'); } else if(p.style.height==='auto'){ p.style.removeProperty('height'); }
+        p.style.display='flex'; try{ if(typeof bringToFront==='function') bringToFront(p); }catch(_){}
+        setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },60); return;
+      }
+      /* Normal / mobile — show the Atlas sidebar tab. Route through the real tab button so the shared tab behaviour
+         (mobile sheet-lift, active state) fires exactly as it does for News/Info/Countries. Never toggles OFF here. */
+      try{
+        if(typeof currentMode!=='undefined' && currentMode==='atlas'){ mountTab(); }
+        else { const b=document.getElementById('btn-community'); if(b) b.click(); else if(typeof setMode==='function') setMode('atlas','btn-community'); else mountTab(); }
+      }catch(_){ mountTab(); }
+      setTimeout(()=>{ try{ inEl&&inEl.focus(); }catch(_){} },80); }
+    function _atlClose(){ const p=ensure();
+      if(_atlWs()){ p.style.display='none'; return; }
+      /* Normal / mobile — "closing" Atlas = deselecting its tab (blank sidebar), like tapping an active tab again. */
+      try{ if(typeof setMode==='function' && typeof currentMode!=='undefined' && currentMode==='atlas') setMode('atlas','btn-community'); }catch(_){} }
+    function toggle(){ if(_atlWs()){ const p=ensure(); if(p.style.display==='none'||!p.style.display) open(); else _atlClose(); return; }
+      /* Normal / mobile — toggle the Atlas tab (select / deselect), matching a tab-button tap. */
+      try{ const b=document.getElementById('btn-community'); if(b){ b.click(); } else if(typeof setMode==='function'){ setMode('atlas','btn-community'); } }catch(_){} }
     /* (#R83) "Ask AI about here" absorbed into Atlas: opens the console, pins the exact clicked coordinate (so
        the whole conversation resolves "here/this spot" to it), reverse-geocodes a friendly name where possible,
        flies there and offers example questions — the free-form chat/input then answers with full location
@@ -27492,7 +27517,7 @@ window.addEventListener('DOMContentLoaded', () => {
     } }catch(_){}
     /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
        (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
-    return { open, toggle, run, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    return { open, toggle, close:_atlClose, mountTab, run, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */

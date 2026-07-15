@@ -5,6 +5,17 @@
 
 ---
 
+## R112 — Atlas is now a REAL sidebar TAB (normal + mobile), not a popup pasted onto the sidebar (tag `#R112`)
+
+**Re-report of the R108→R111 chain — the real cause was the *approach*, not the mount target.** The user clarified: "News/Information/Countriesと同じようにサイドバー・ボトムシート内にUIを作ってほしい（いまはポップアップを無理やりサイドバーに張り付けただけのクソUI）". R108–R111 mounted the floating `#atlas-panel` into `#sidebar` as an **absolute overlay** (`position:absolute;inset:0`) that **hid every other sidebar child** (`#sidebar > *{visibility:hidden}`) — i.e. the popup was force-pasted over the whole sidebar, covering the header + the News/Info/Countries tab bar. Structurally it "filled the sidebar", but it was not a native tab. (This also explains why the earlier fixes "verified" fine yet kept being re-reported — they were all measuring the overlay, not building a tab.) **Workspace mode was never in scope and is unchanged** (Atlas keeps its own floating window there).
+
+**The fix — Atlas becomes the 4th sidebar tab, exactly like News / Information / Countries.**
+- New content area `#atlas-feed` (sibling of `#live-news-feed` / `#countries-feed` / `#info-dashboard`) hosts the console **in normal flow, below the tab bar**, so the sidebar header + tab bar stay visible.
+- A real `'atlas'` mode drives it through the sidebar's own engine: `renderUI()` has an `atlas` branch (show `#atlas-feed`, hide the news search bar, `IntMapConsole.mountTab()`); the tab button `#btn-community` → `IntMapOS.exec('tab.atlas')` → `setMode('atlas','btn-community')`; OS commands `tab.atlas` (+ `tab.community` alias) and the Atlas NL `tab` action both resolve "atlas".
+- `IntMapConsole.mountTab()` moves `#atlas-panel` into `#atlas-feed`, adds `.atl-tab` (CSS: `position:relative;width/height:100%`, no popup border/shadow/radius/backdrop, **`.atl-head` hidden** — the tab bar is the chrome) and sheds any stale drag/resize inline geometry. `open()`/`toggle()`/`close()` route to the tab in normal+mobile mode and keep the **unchanged window path** under `_atlWs()` (ws-mode). Every entry point (tab button, ⌘/Ctrl-K, right-click "Ask Atlas about here", country AI-brief) lands in the tab.
+- **Mobile**: selecting the tab shares the other tabs' behaviour automatically (it *is* a `.mode-btn`), and because Atlas's input sits at the **bottom** of the panel, its tab lifts the bottom-sheet to **full** (others go peek→half) so the input is reachable — same as the old popup's full-lift.
+- The old `#atl-in-sheet` overlay CSS + `_atlSheetMount`/`_atlInSidebar`/`_atlMobileSheet` are **removed**. Verified live (headless DOM/computed-style): desktop normal → `#atlas-panel` is `position:relative` inside `#atlas-feed` at y≈124 **below** the visible tab bar (header + tabs stay), `.atl-head` `display:none`; News⇄Atlas tab-switch preserves the conversation; mobile → same, sheet at full; every entry point (tab / Ctrl-K / askHere) lands in `#atlas-feed`; ws-mode `open()` still leaves the panel out of `#atlas-feed` and strips `.atl-tab` (window path intact); no console errors.
+
 ## R111 — 5-item re-report batch: Atlas popup ABOLISHED (desktop too), compare-font AUTO-FIT (fixes an ES/RU wrap R110 introduced), compare-ts 0-line for ALL indicators, ~70 more era-name translations (JP/RU now 0 untranslated), ECMWF legend title, further legend-language coverage (tag `#R111`)
 
 Re-reports where the R110 fix was too narrow, plus scope extensions.
