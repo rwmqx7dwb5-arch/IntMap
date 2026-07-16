@@ -5,6 +5,32 @@
 
 ---
 
+## R120 — 残課題実行: GIBS逆引きサンプラー + aircraft/ships/choropleth統合 + objectIds拡大(poly/outline/upload) + FS燃料/ILS/ゲームパッド (tag `#R120`)
+
+R119の「残課題（次ラウンド）」を実行。全て加算的・既存挙動不変。
+
+### IntMapLayers 13→30登録
+- **GIBSカラーマップ逆引きサンプラー**（`sampleGx`）: gxレイヤーが描くのと同一URLの実タイルを `Image(crossOrigin)`→canvas で読み、地点ピクセル色を SCALES 勾配（R42でGIBSカラーマップXMLから実測したストップ列）へ**線分射影**して勾配位置→凡例レンジの実値へ逆変換。温度=°C/°F変換、アノマリー=±表示、%系=そのまま、定性系（NDVI等）=「80% (sparse → dense)」形式。**透明ピクセル=null（データ無し）、全線分からRGB距離>60=null（海岸線・ラベル色を値と誤認しない）**。タイルImageDataは30枚キャッシュ。SCALESを持つ14ラスタ全てを `gx-<id>` で register（on=state直読み・time=GDATE・source=GIBS製品名）。実測: サハラLST 46°C・南極海氷90%・SSTアノマリー地点別に−2.4/+0.4/+2.8°C・アマゾンNDVI 80%密・陸上SSTアノマリー=null・雲量ITCZ 100%・AMSR2土壌水分スワス外=null（正直）。
+- **aircraft/ships**: `src-planes`/`src-ships` のfeaturesIn＋件数summary＋`lyr-*`可視性のon()。layerDataのフィーチャ名抽出に `callsign`/`ident` を追加（航空機はnameを持たない）。
+- **choropleth**: コア7種（pop/hdi/dem/milSpend/milSpendGDP/gdppc/tfr）=既存 `choroValueAt`、WBベータ5種（cpi/lifeexp/unemp/internet/precip）=`queryRenderedFeatures` でフィーチャ`properties.raw/s`直読み（5言語ラベル+単位整形）。**画面外の点はnull**（queryRenderedFeaturesの制約を正直に）。ヘッドレスは isStyleLoaded 不完了でWBレイヤー自体が構築されないため実描画検証は実機のみ（既知の制約）。
+- SYSのlayerData記述にGIBSラスタ/コロプレス/航空機・船舶を明記。stateContextの「Readable layer data」行にも自動で乗る（実測: Sea-ice concentration [time=2026-07-14 · src=…] ）。
+
+### objectIds 対象拡大（Atlasの「さっき作ったやつ」）
+- **drawPolygon**: `_hlPolys` エントリに `poly_N` idを付与（`window._imHlPolys`=list/tagId/remove/repaint/clear を新公開）。dispatchが `objectIds:[poly_N]` を返し、**IntMapObjectsに kind:'poly' として列挙**（改名・色変更(repaint)・フォーカス・削除可、Object Listにもグループ表示）。
+- **outline**: `IntMapOutline.current()/focus()` 新設 → kind:'outline'（id固定'outline'）で列挙、outlineアクションが `objectIds:['outline']` を返す。objectアクションで削除可。
+- **upload**: GeoJSONアップロード（addFC）が `window._imNoteObjects(['up_N'])`（Atlas側で新公開、`_wctx.lastObjects` へ記録）を呼ぶ＝ファイル読込直後に「さっき読み込んだやつを消して」が実体解決。
+- SYS objectアクションのkindへ poly/outline を追記。実測: dispatch drawPolygon→poly:poly_1列挙→object remove(kind:poly,index:1)成功、outline(Hokkaido)→objectIds:['outline']→列挙名「北海道」→remove成功。
+
+### フライトシム: 燃料・ILS・ゲームパッド
+- **燃料システム**: 実搭載量（C172 144kg/201L・P-51 730kg・A320 18,700kg/23,860L・F-16 3,200kg・F-35A 8,280kg・グライダー無し=表示なし）。プロペラ=`thr×burnMax`（実最大燃費流量）、ジェット=`推力×TSFC`（CFM56巡航≈0.55lb/lbf/h、戦闘機ドライ2.3e-5、**AB時5.8e-5 kg/(N·s)**）。**空タンク=フレームアウト**（Th=0・AB解除。質量は不変＝R118/119の着陸回帰パラメータに影響しない設計）。HUD補助行に「FUEL n%」、警告チェーンに「FUEL OUT」（LANDED/OVERSPEED優先の後）。R（リセット）で再給油。実測: P-51全開で燃料単調減、A320も減、fuel=0.3→0でflags.fuelOut+FUEL OUT表示+FUEL 0.0%。
+- **ILS誘導表示**: `_updIls`（全計器盤共通、PAPIと同じ共有クローム）。スポーン滑走路の**最寄りスレッショルド→反対端**をコース、3°パスをGSとし、LOC±2.5°/GS±0.7°フルスケールの**fly-toニードル**（縦バー=ローカライザ横偏位・横バー=グライドスロープ、点線十字ボックス54px、ラベル「ILS 34R 6.5km」）。表示条件=PAPI同様（接近方向dot>0.3・0.25〜25km・空中）。**針の向きを実測検証**: 中心線の右400mオフセット→LOCバー8%(左=fly left)、パス下200m→GSバー8%(上=fly up)。モバイル375×812でHUD要素との矩形衝突0。
+- **ゲームパッド**: Gamepad APIは poll型なので `physics()` 冒頭で `_gpPoll(dt)`。標準マッピング: 左スティック=ピッチ/ロール**アナログ**（前倒し=機首下げ=反転矢印規約と一致、`st._gpP/_gpR` がキーより優先・タッチスティックが最優先）、軸2ツイスト/LB/RB=ラダー、RT/LT=アナログスロットル増減、A=ブレーキ保持、B=AB保持、X=フラップ、Y=脚、Back=視点水平、Start=ポーズ（エッジ検出でfsAction）。デッドゾーン0.12。**未接続時は st._gp*=null で完全no-op**（calm等価維持）。接続トーストと操作ヒント5言語。
+- 回帰確認: 物理変更は「fuel>0中は力に無影響（減算のみ）」「パッド無しはno-op」の構造で、R119のcalm等価・着陸判定に非干渉。ヘッドレス実測で通常飛行・ILS・燃料切れ動作を確認（無操縦フルスロットルP-51の墜落はDEM無しヘッドレスの既知アーティファクト＋無操縦で実挙動）。
+
+### 検証・残課題
+- ページRUN確認: コンソールエラー0・IntMap*全定義・レイヤー行112（ヘッドレス起動直後の値）・全レイヤーグループUI存在。
+- 残（次ラウンド候補）: FS 3D機体モデル・ミッション/チャレンジ・詳細機体システム（FADEC/油圧/電気）、GIBS残り（SCALES未定義ラスタ）、choroplethの画面外サンプリング（feature-state直読み化）。
+
 ## R119 — 残課題実行: IntMapLayersデータ契約 + OSコマンド拡張 + 範囲要約/衛星比較のAtlas統合 + FS実滑走路/ライブ風/PAPI + objectIds (tag `#R119`)
 
 ### IntMapLayers — 共通レイヤーデータ契約（本ラウンドの核）
