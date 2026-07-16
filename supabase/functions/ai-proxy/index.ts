@@ -56,6 +56,10 @@
 //      meta.webUsed / meta.webSearches so the client can keep "latest" claims honest.
 //    • insufficient_quota / billing-hard-limit → provider_quota (hard 502), never a
 //      transient retry. Gemini + Anthropic paths are unchanged and still selectable.
+//  (#R115) Luna quality tuning: on OpenAI, atlas_plan also runs in JSON mode (the
+//  R113c exclusion was Gemini-latency-only — malformed planner JSON was a major
+//  "could not interpret" source); an EMPTY/incomplete response (reasoning ate the
+//  budget) is retried once with a bigger budget; atlas_plan budget 1800→2200.
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -79,7 +83,7 @@ const MAX_IMAGES = 4;
 // map_report can't fit in 1600 tokens; a quick json_extract shouldn't be allowed 3000.
 // Kept modest for cost; map_report additionally scales with the requested item count.
 const TASK_MAX_OUTPUT: Record<string, number> = {
-  atlas_plan: 1800,
+  atlas_plan: 2200,   // (#R115) 1800→2200: multi-action plans + "say" were clipping on complex requests
   map_report: 3200,
   analysis: 2400,
   free_text: 1800,
@@ -467,14 +471,17 @@ Deno.serve(async (req) => {
   }
 
   const maxTokens = maxOutputFor(task, requestedCount);
-  const wantJson = JSON_TASKS.has(task);
+  // 4) Provider call with the server-held key. (Provider read BEFORE wantJson — see below.)
+  const provider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+  // (#R115) On OpenAI, atlas_plan ALSO runs in JSON mode: the R113c exclusion was a GEMINI-latency
+  // workaround (forced responseMimeType slowed the big planner prompt into 45s timeouts). OpenAI's
+  // json_object format has no such issue and guarantees parseable plans — a large share of the
+  // "Sorry, I could not interpret that" failures were the planner's JSON arriving malformed.
+  const wantJson = JSON_TASKS.has(task) || (provider === "openai" && task === "atlas_plan");
   // Server owns the map_report schema; other JSON tasks may pass their own (validated shallowly).
   const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
     : (wantJson && payload.schema && typeof payload.schema === "object" ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
-
-  // 4) Provider call with the server-held key.
-  const provider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
   const model = Deno.env.get("AI_MODEL") ||
     (provider === "openai" ? "gpt-4o-mini" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");
 
@@ -484,7 +491,18 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
-      out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required");
+      try {
+        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required");
+      } catch (e) {
+        // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
+        // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
+        // budget (still capped) instead of surfacing "empty response" to the user.
+        if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
+          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required");
+        } else {
+          throw e;
+        }
+      }
     } else if (provider === "gemini") {
       const key = Deno.env.get("GEMINI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "GEMINI_API_KEY not set", 502, false, {});

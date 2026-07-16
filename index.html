@@ -64,148 +64,10 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#48484d; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px; }
     /* (#R101) --text-muted brightened toward white for legibility on dark ("灰色文字は見えにくい") — was #a6a6ad */
     [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#cfcfd6; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
-    /* ===== (#R22) CYBER theme — Settings → Appearance → "Cyber". A retro-computer / cyberpunk terminal
-       look (replaces the old "Tactical" military HUD): deep indigo-black, neon CYAN primary with a MAGENTA
-       accent, monospace type, glowing text, CRT scanlines, sharp corners. Built on the dark theme. ===== */
-    body.theme-cyber{ --bg-color:#05070f; --sidebar-bg:rgba(8,11,24,0.94); --primary-color:#00e5ff; --text-main:#d6f6ff; --text-muted:#7c93c4; --card-bg:#0b1024; --input-bg:rgba(0,210,255,0.08); --popup-bg:rgba(8,11,24,0.95); --shadow:0 6px 30px rgba(0,0,0,0.82); --info-hub:#00e5ff; --glass-border:rgba(0,210,255,0.30); --neon:#ff39e6; }
-    body.theme-cyber, body.theme-cyber input, body.theme-cyber select, body.theme-cyber button, body.theme-cyber textarea{ font-family:ui-monospace,'SFMono-Regular','Consolas','Courier New',monospace !important; }
-    body.theme-cyber h2,body.theme-cyber h3,body.theme-cyber h4,body.theme-cyber .dash-nav-btn,body.theme-cyber .mode-btn,body.theme-cyber .layer-group-title,body.theme-cyber .lyr-head,body.theme-cyber .m-sheet-title{ text-transform:uppercase; letter-spacing:0.10em; }
-    body.theme-cyber h2{ text-shadow:0 0 10px rgba(0,229,255,0.55), 0 0 3px rgba(0,229,255,0.8); }
-    body.theme-cyber h2::before{ content:'▌ '; color:var(--neon); }
-    body.theme-cyber .sidebar,body.theme-cyber .modal-content,body.theme-cyber .layer-dropdown,body.theme-cyber .measure-dropdown,body.theme-cyber .tool-panel,body.theme-cyber .data-legend,body.theme-cyber .koppen-legend,body.theme-cyber .country-info,body.theme-cyber .pin-popup,body.theme-cyber .country-popup,body.theme-cyber .news-item,body.theme-cyber .m-sheet,body.theme-cyber .ctx-menu,body.theme-cyber .coord-readout,body.theme-cyber .view-btn,body.theme-cyber .search-bar,body.theme-cyber input,body.theme-cyber select,body.theme-cyber .ai-action-btn,body.theme-cyber .ai-test-btn,body.theme-cyber .btn-settings,body.theme-cyber .modal-close-btn{ border-radius:3px !important; }
-    body.theme-cyber .sidebar,body.theme-cyber .modal-content,body.theme-cyber .layer-dropdown,body.theme-cyber .measure-dropdown,body.theme-cyber .tool-panel,body.theme-cyber .data-legend,body.theme-cyber .koppen-legend,body.theme-cyber .country-info,body.theme-cyber .pin-popup,body.theme-cyber .country-popup,body.theme-cyber .news-item,body.theme-cyber .m-sheet,body.theme-cyber .ctx-menu,body.theme-cyber .coord-readout{ border:1px solid rgba(0,210,255,0.28); }
-    body.theme-cyber .sidebar{ border-right:2px solid rgba(0,229,255,0.5) !important; box-shadow:inset 0 0 0 1px rgba(0,229,255,0.10); }
-    body.theme-cyber .btn-settings,body.theme-cyber .modal-close-btn,body.theme-cyber .mode-btn.active,body.theme-cyber .search-btn{ background:linear-gradient(135deg,#00e5ff,#7a2bff) !important; color:#02121c !important; box-shadow:0 0 12px rgba(0,229,255,0.5); font-weight:700; text-shadow:none; }
-    body.theme-cyber .news-item{ border-left:2px solid var(--neon); }
-    body.theme-cyber .loc-chip{ background:rgba(0,210,255,0.16); color:#aef0ff; }
-    body.theme-cyber .loc-chip.unmapped{ background:rgba(255,57,230,0.18) !important; color:#ff9cf2 !important; }
-    body.theme-cyber ::selection{ background:#00e5ff; color:#02121c; }
-    body.theme-cyber .control-panel{ background:rgba(14,20,46,0.55); border:1px solid rgba(0,210,255,0.22); }
-    body.theme-cyber .layer-group-title,body.theme-cyber .lyr-head{ color:var(--neon) !important; border-bottom:1px dashed rgba(255,57,230,0.30); padding-bottom:2px; text-shadow:0 0 7px rgba(255,57,230,0.35); }
-    body.theme-cyber .btn-bookmark.active{ color:var(--neon); }
-    body.theme-cyber .lang-btn.active{ background:#00e5ff; color:#02121c; }
-    /* CRT scanlines over the sidebar (cyan, very subtle). */
-    body.theme-cyber .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,rgba(0,229,255,0.05) 0 1px,transparent 1px 3px); z-index:9; }
-    /* ===== (#R13c) CLASSIC theme — Age-of-Discovery parchment / nautical chart. Built on the LIGHT
-       base: warm sepia surfaces, serif type, brass accents, an aged-paper tint over the basemap and a
-       decorative compass rose on the map. Settings → Appearance → "Classic". ===== */
-    body.theme-classic{ --bg-color:#e7d8b6; --sidebar-bg:rgba(238,227,201,0.94); --primary-color:#8a5a2b; --text-main:#3a2a16; --text-muted:#7b6038; --card-bg:#f3e8cc; --input-bg:rgba(120,90,50,0.08); --popup-bg:rgba(244,234,210,0.97); --shadow:0 10px 30px rgba(80,55,20,0.28); --glass-border:rgba(120,90,50,0.34); --info-hub:#8a5a2b; }
-    body.theme-classic, body.theme-classic input, body.theme-classic select, body.theme-classic button, body.theme-classic textarea{ font-family:"Hoefler Text","Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif !important; }
-    body.theme-classic h2,body.theme-classic h3,body.theme-classic h4,body.theme-classic .layer-group-title,body.theme-classic .lyr-head,body.theme-classic .dash-nav-btn,body.theme-classic .m-sheet-title{ letter-spacing:0.04em; font-variant:small-caps; color:#5a3d1e; }
-    body.theme-classic h2{ text-shadow:0 1px 0 rgba(255,250,235,0.7); }
-    body.theme-classic .layer-group-title,body.theme-classic .lyr-head{ border-bottom:1px solid rgba(138,90,43,0.28); padding-bottom:2px; }
-    /* aged-paper grain on parchment surfaces */
-    body.theme-classic .sidebar,body.theme-classic .modal-content,body.theme-classic .layer-dropdown,body.theme-classic .tool-panel,body.theme-classic .data-legend,body.theme-classic .koppen-legend,body.theme-classic .country-popup,body.theme-classic .pin-popup,body.theme-classic .m-sheet,body.theme-classic .ctx-menu,body.theme-classic .control-panel{ background-image:radial-gradient(rgba(150,110,60,0.05) 1px,transparent 1px),radial-gradient(rgba(120,85,40,0.04) 1px,transparent 1px); background-size:7px 7px,11px 11px; background-position:0 0,3px 4px; border-color:rgba(138,90,43,0.34) !important; }
-    body.theme-classic .sidebar{ border-right:2px solid rgba(138,90,43,0.45) !important; box-shadow:inset -1px 0 0 rgba(255,248,232,0.5); }
-    body.theme-classic .btn-settings,body.theme-classic .modal-close-btn,body.theme-classic .mode-btn.active,body.theme-classic .search-btn,body.theme-classic .lang-btn.active{ background:linear-gradient(180deg,#b98a4e,#8a5a2b) !important; color:#fdf6e6 !important; box-shadow:0 1px 4px rgba(80,55,20,0.4); border:1px solid rgba(90,61,30,0.5) !important; }
-    body.theme-classic .loc-chip{ background:rgba(138,90,43,0.15); color:#5a3d1e; }
-    body.theme-classic ::selection{ background:#8a5a2b; color:#fdf6e6; }
-    /* parchment / antique tint over ONLY the WebGL basemap (markers, HUD, controls stay crisp) */
-    body.theme-classic .maplibregl-canvas{ filter:sepia(0.46) saturate(0.82) contrast(0.94) brightness(1.05) hue-rotate(-6deg); }
-    /* decorative compass rose, lower-right of the map (purely cosmetic, never blocks input) */
-    body.theme-classic .map-container::after{ content:''; position:absolute; right:18px; bottom:34px; width:118px; height:118px; opacity:0.34; pointer-events:none; z-index:6; background-repeat:no-repeat; background-size:contain; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg stroke='%236b4a23' stroke-width='1.1' fill='none'%3E%3Ccircle cx='60' cy='60' r='55'/%3E%3Ccircle cx='60' cy='60' r='45'/%3E%3C/g%3E%3Cg stroke='%236b4a23' stroke-width='0.7' opacity='0.8'%3E%3Cline x1='60' y1='5' x2='60' y2='115'/%3E%3Cline x1='5' y1='60' x2='115' y2='60'/%3E%3Cline x1='23' y1='23' x2='97' y2='97'/%3E%3Cline x1='97' y1='23' x2='23' y2='97'/%3E%3C/g%3E%3Cpolygon points='60,7 67,60 60,51 53,60' fill='%238a2b1e'/%3E%3Cpolygon points='60,113 53,60 60,69 67,60' fill='%236b4a23'/%3E%3Cpolygon points='113,60 60,53 69,60 60,67' fill='%236b4a23'/%3E%3Cpolygon points='7,60 60,67 51,60 60,53' fill='%236b4a23'/%3E%3C/svg%3E"); }
-    @media(max-width:768px){ body.theme-classic .map-container::after{ display:none; } }
-    /* (#R21) Classic theme — richer, more ornamental ("より装飾的で豪華に") without touching layout:
-       gilt-edged parchment cards (double inner keyline), embossed brass buttons, engraved headers,
-       ornamental flourishes on section heads. Pure paint — every control keeps its size and place. */
-    body.theme-classic .news-item, body.theme-classic .wiki-card, body.theme-classic .stat-row, body.theme-classic .comm-post{
-      background:linear-gradient(180deg,#f8efd6,#efe1bd) !important;
-      border:1px solid rgba(138,90,43,0.42) !important;
-      box-shadow:inset 0 0 0 3px rgba(248,240,220,0.9), inset 0 0 0 4px rgba(138,90,43,0.30), 0 8px 22px rgba(80,55,20,0.20) !important;
-    }
-    body.theme-classic .map-view-group, body.theme-classic .map-search{
-      background:linear-gradient(180deg,rgba(246,237,214,0.96),rgba(233,217,182,0.96)) !important;
-      border:1px solid rgba(138,90,43,0.5) !important;
-      box-shadow:inset 0 1px 0 rgba(255,250,235,0.8), 0 6px 18px rgba(80,55,20,0.28) !important;
-    }
-    body.theme-classic .data-legend, body.theme-classic .koppen-legend, body.theme-classic .tool-panel{
-      background:linear-gradient(180deg,#f5ebd3,#ecdcba) !important;
-      border:1px solid rgba(138,90,43,0.5) !important;
-      box-shadow:inset 0 0 0 3px rgba(248,240,220,0.85), inset 0 0 0 4px rgba(138,90,43,0.26), 0 12px 30px rgba(80,55,20,0.28) !important;
-    }
-    body.theme-classic .ai-test-btn, body.theme-classic .view-btn, body.theme-classic .dash-nav-btn{
-      background:linear-gradient(180deg,#f3e7c8,#e6d2a8); border:1px solid rgba(138,90,43,0.45);
-      box-shadow:inset 0 1px 0 rgba(255,250,235,0.75), 0 1px 3px rgba(80,55,20,0.25); color:#4a341c;
-    }
-    body.theme-classic .view-btn.active, body.theme-classic .dash-nav-btn.active{
-      background:linear-gradient(180deg,#b98a4e,#8a5a2b) !important; color:#fdf6e6 !important;
-      box-shadow:inset 0 1px 0 rgba(255,235,200,0.45), 0 1px 4px rgba(80,55,20,0.4) !important;
-    }
-    body.theme-classic .lyr-head, body.theme-classic .layer-group-title{ border-bottom:double 3px rgba(138,90,43,0.45); }
-    body.theme-classic .dash-cards-container::before{ content:'❦'; display:block; text-align:center; color:rgba(138,90,43,0.6); font-size:15px; margin:0 0 2px; }
-    body.theme-classic .tp-title{ font-variant:small-caps; letter-spacing:0.05em; color:#5a3d1e; }
-    body.theme-classic .modal-content{ box-shadow:inset 0 0 0 4px rgba(248,240,220,0.9), inset 0 0 0 5px rgba(138,90,43,0.3), 0 18px 50px rgba(80,55,20,0.4) !important; }
-    /* (#R29.1) CYBER — pushed further toward a cmd/terminal look ("もっとcmdのように"): a blinking block
-       cursor after the title, a `>` command prompt before every section header, and a brighter phosphor. */
-    body.theme-cyber{ --primary-color:#00ff9c; --neon:#00e5ff; }
-    @keyframes cyberBlink{ 50%{ opacity:0; } }
-    body.theme-cyber h2::after{ content:'_'; color:#00ff9c; margin-left:3px; animation:cyberBlink 1.05s steps(1) infinite; text-shadow:0 0 8px rgba(0,255,156,0.8); }
-    body.theme-cyber .lyr-head::before, body.theme-cyber .layer-group-title::before, body.theme-cyber .m-sheet-title::before{ content:'> '; color:#00ff9c; }
-    body.theme-cyber .news-item::before{ content:'C:\\> '; color:rgba(0,255,156,0.6); font-size:10px; }
-    body.theme-cyber .mode-btn.active{ box-shadow:0 0 10px rgba(0,255,156,0.55) !important; }
-    /* (#R29.1) CLASSIC = "Age of Discovery" (大航海時代) — add a portolan rhumb-line wash + ornament so it
-       reads more like an antique sea chart. */
-    body.theme-classic .sidebar::after{ content:''; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:0.5; background-image:repeating-linear-gradient(60deg,rgba(138,90,43,0.05) 0 1px,transparent 1px 26px),repeating-linear-gradient(-60deg,rgba(138,90,43,0.05) 0 1px,transparent 1px 26px); }
-    body.theme-classic h2::before{ content:'⚓ '; font-size:15px; color:#7a4a1e; }
-
-    /* ===== (#R29.1) PSYCHEDELIC — "薬中でキマリまくった幻覚" — animated rainbow everything ===== */
-    body.theme-psychedelic{ --bg-color:#160028; --sidebar-bg:rgba(38,0,64,0.80); --primary-color:#ff2bd6; --text-main:#fdeaff; --text-muted:#cf9bf0; --card-bg:rgba(70,0,110,0.55); --input-bg:rgba(255,120,255,0.14); --popup-bg:rgba(40,0,70,0.86); --shadow:0 10px 44px rgba(180,0,255,0.55); --glass-border:rgba(255,90,255,0.55); --info-hub:#ff2bd6; }
-    @keyframes psyShift{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
-    @keyframes psyHue{ to{ filter:saturate(2.1) hue-rotate(360deg) contrast(1.08); } }
-    @keyframes psyText{ to{ background-position:300% center; } }
-    body.theme-psychedelic .map-container::before{ content:''; position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(45deg,#ff0080,#ff8c00,#ffee00,#00ff8c,#00d4ff,#8c00ff,#ff0080); background-size:420% 420%; animation:psyShift 13s ease infinite; mix-blend-mode:overlay; opacity:0.45; }
-    body.theme-psychedelic .maplibregl-canvas{ filter:saturate(2.1) hue-rotate(0deg) contrast(1.08); animation:psyHue 16s linear infinite; }
-    body.theme-psychedelic h2,body.theme-psychedelic .mode-btn.active,body.theme-psychedelic .btn-settings{ background:linear-gradient(90deg,#ff0080,#00d4ff,#ffee00,#00ff8c,#ff0080); background-size:300% auto; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; animation:psyText 5s linear infinite; }
-    body.theme-psychedelic .btn-settings,body.theme-psychedelic .mode-btn.active,body.theme-psychedelic .search-btn{ -webkit-text-fill-color:#fff; color:#fff; background:linear-gradient(120deg,#ff2bd6,#7a2bff,#00d4ff); background-size:200% auto; animation:psyShift 8s ease infinite; box-shadow:0 0 18px rgba(255,43,214,0.6); }
-    body.theme-psychedelic .news-item,body.theme-psychedelic .wiki-card,body.theme-psychedelic .stat-row{ border:1px solid rgba(255,120,255,0.3); box-shadow:0 0 14px rgba(180,0,255,0.25); }
-    body.theme-psychedelic ::selection{ background:#00ff8c; color:#160028; }
-
-    /* ===== (#R29.1) MILITARY — olive-drab command HUD, stencil caps, NV-tinted map ===== */
-    body.theme-military{ --bg-color:#171b12; --sidebar-bg:rgba(28,34,22,0.95); --primary-color:#7d8c3a; --text-main:#e2e8d2; --text-muted:#9aa57e; --card-bg:#222a1a; --input-bg:rgba(160,180,90,0.10); --popup-bg:rgba(26,32,20,0.96); --shadow:0 6px 24px rgba(0,0,0,0.62); --glass-border:rgba(150,170,80,0.38); --info-hub:#a8b84a; }
-    body.theme-military,body.theme-military input,body.theme-military select,body.theme-military button,body.theme-military textarea{ font-family:"Roboto Condensed","Arial Narrow",'DIN Condensed',sans-serif !important; }
-    body.theme-military h2,body.theme-military h3,body.theme-military h4,body.theme-military .lyr-head,body.theme-military .layer-group-title,body.theme-military .mode-btn,body.theme-military .m-sheet-title,body.theme-military .dash-nav-btn{ text-transform:uppercase; letter-spacing:0.14em; font-weight:800; }
-    body.theme-military h2::before{ content:'★ '; color:#a8b84a; }
-    body.theme-military .btn-settings,body.theme-military .mode-btn.active,body.theme-military .search-btn,body.theme-military .lang-btn.active{ background:#566321 !important; color:#eef2dd !important; border:1px solid #39431a !important; border-radius:3px !important; box-shadow:inset 0 0 0 1px rgba(168,184,74,0.25); }
-    body.theme-military .sidebar{ border-right:3px solid #4a5520 !important; background-image:repeating-linear-gradient(45deg,rgba(0,0,0,0.06) 0 8px,transparent 8px 16px); }
-    body.theme-military .maplibregl-canvas{ filter:saturate(0.62) brightness(0.92) sepia(0.22) hue-rotate(40deg); }
-    body.theme-military .lyr-head,body.theme-military .layer-group-title{ color:#a8b84a !important; border-bottom:1px dashed rgba(168,184,74,0.4); }
-    body.theme-military .news-item{ border-left:3px solid #7d8c3a; }
-    body.theme-military ::selection{ background:#7d8c3a; color:#171b12; }
-    body.theme-military .map-container::after{ content:''; position:absolute; right:20px; top:80px; width:54px; height:54px; pointer-events:none; z-index:6; opacity:0.5; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 54 54'%3E%3Cg stroke='%23a8b84a' stroke-width='1.4' fill='none'%3E%3Ccircle cx='27' cy='27' r='22'/%3E%3Cline x1='27' y1='1' x2='27' y2='15'/%3E%3Cline x1='27' y1='39' x2='27' y2='53'/%3E%3Cline x1='1' y1='27' x2='15' y2='27'/%3E%3Cline x1='39' y1='27' x2='53' y2='27'/%3E%3C/g%3E%3Ccircle cx='27' cy='27' r='2' fill='%23a8b84a'/%3E%3C/svg%3E"); }
-
-    /* ===== (#R29.1) MEDICAL — clinical white/teal, red cross, animated EKG vitals line ===== */
-    body.theme-medical{ --bg-color:#eaf3f5; --sidebar-bg:rgba(255,255,255,0.97); --primary-color:#00a6a6; --text-main:#163138; --text-muted:#5d7a82; --card-bg:#ffffff; --input-bg:rgba(0,150,160,0.07); --popup-bg:rgba(255,255,255,0.98); --shadow:0 8px 28px rgba(20,80,90,0.16); --glass-border:rgba(0,166,166,0.32); --info-hub:#00a6a6; }
-    body.theme-medical h2::before{ content:'✚'; color:#e2453a; font-weight:800; margin-right:7px; }
-    @keyframes ekgMove{ to{ background-position:-260px 0; } }
-    body.theme-medical .sidebar::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:26px; pointer-events:none; opacity:0.7; background-repeat:repeat-x; background-position:0 0; background-size:260px 26px; animation:ekgMove 2.6s linear infinite; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='26' viewBox='0 0 260 26'%3E%3Cpath d='M0 13 H80 l6 -10 l6 20 l5 -16 l5 6 H140 l6 -10 l6 20 l5 -16 l5 6 H260' fill='none' stroke='%2300a6a6' stroke-width='1.6'/%3E%3C/svg%3E"); }
-    body.theme-medical .btn-settings,body.theme-medical .mode-btn.active,body.theme-medical .search-btn,body.theme-medical .lang-btn.active{ background:linear-gradient(135deg,#00a6a6,#0089b3) !important; color:#fff !important; }
-    body.theme-medical .sidebar{ border-right:3px solid #e2453a !important; }
-    body.theme-medical .news-item{ border-left:3px solid #00a6a6; }
-    body.theme-medical .lyr-head,body.theme-medical .layer-group-title{ color:#0089a0 !important; }
-    body.theme-medical ::selection{ background:#00a6a6; color:#fff; }
-
-    /* ===== (#R29.1) BAROQUE — opulent European salon: ivory + gilt gold + burgundy, Didone serif ===== */
-    body.theme-baroque{ --bg-color:#ece1c8; --sidebar-bg:rgba(248,241,225,0.97); --primary-color:#9c1f2e; --text-main:#3a2a14; --text-muted:#7a5c34; --card-bg:#fbf5e6; --input-bg:rgba(156,31,46,0.07); --popup-bg:rgba(250,244,230,0.98); --shadow:0 14px 44px rgba(90,60,20,0.34); --glass-border:rgba(168,134,58,0.55); --info-hub:#9c1f2e; }
-    body.theme-baroque,body.theme-baroque input,body.theme-baroque select,body.theme-baroque button,body.theme-baroque textarea{ font-family:"Didot","Bodoni MT","Hoefler Text",Garamond,"Times New Roman",serif !important; }
-    body.theme-baroque h2,body.theme-baroque h3,body.theme-baroque h4,body.theme-baroque .lyr-head,body.theme-baroque .layer-group-title,body.theme-baroque .m-sheet-title{ letter-spacing:0.03em; color:#5a3010; }
-    body.theme-baroque h2::before{ content:'❧ '; color:#a8863a; }
-    body.theme-baroque h2::after{ content:' ❧'; color:#a8863a; }
-    body.theme-baroque .btn-settings,body.theme-baroque .mode-btn.active,body.theme-baroque .search-btn,body.theme-baroque .lang-btn.active{ background:linear-gradient(180deg,#caa54e,#9c7a2b) !important; color:#fff7e6 !important; border:1px solid #6e5320 !important; box-shadow:0 1px 5px rgba(80,55,20,0.45),inset 0 1px 0 rgba(255,245,210,0.5); }
-    body.theme-baroque .sidebar{ border-right:3px solid #a8863a !important; background-image:radial-gradient(rgba(168,134,58,0.07) 1.5px,transparent 1.5px); background-size:14px 14px; }
-    body.theme-baroque .modal-content,body.theme-baroque .country-popup{ box-shadow:inset 0 0 0 3px rgba(250,244,230,0.95), inset 0 0 0 5px rgba(168,134,58,0.6), 0 18px 50px rgba(90,60,20,0.45) !important; }
-    body.theme-baroque .news-item,body.theme-baroque .wiki-card,body.theme-baroque .stat-row{ border:1px solid rgba(168,134,58,0.4); }
-    body.theme-baroque ::selection{ background:#9c1f2e; color:#fff7e6; }
-
-    /* ===== (#R29.1) TAISHO — 大正ロマン: warm paper, indigo+crimson, Mincho serif, asanoha pattern ===== */
-    body.theme-taisho{ --bg-color:#efe6d6; --sidebar-bg:rgba(244,237,225,0.97); --primary-color:#9b2335; --text-main:#2b2733; --text-muted:#6d5d6e; --card-bg:#faf4e8; --input-bg:rgba(48,42,86,0.07); --popup-bg:rgba(247,240,228,0.98); --shadow:0 10px 32px rgba(40,20,50,0.24); --glass-border:rgba(120,40,60,0.38); --info-hub:#2b3a67; }
-    body.theme-taisho,body.theme-taisho input,body.theme-taisho select,body.theme-taisho button,body.theme-taisho textarea{ font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",'游明朝',serif !important; }
-    body.theme-taisho h2,body.theme-taisho h3,body.theme-taisho .lyr-head,body.theme-taisho .layer-group-title,body.theme-taisho .m-sheet-title{ letter-spacing:0.06em; color:#2b3a67; }
-    body.theme-taisho h2::before{ content:'❖ '; color:#9b2335; }
-    body.theme-taisho .btn-settings,body.theme-taisho .mode-btn.active,body.theme-taisho .search-btn,body.theme-taisho .lang-btn.active{ background:linear-gradient(180deg,#b3324a,#7d1a2c) !important; color:#f6ece0 !important; border:1px solid #5a1320 !important; }
-    body.theme-taisho .sidebar{ border-right:3px solid #2b3a67 !important; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='24' viewBox='0 0 40 24'%3E%3Cg stroke='%239b2335' stroke-width='0.5' fill='none' opacity='0.18'%3E%3Cpath d='M0 12 L10 6 L20 12 L10 18 Z M20 12 L30 6 L40 12 L30 18 Z M10 6 L10 -6 M30 6 L30 -6 M10 18 L10 30 M30 18 L30 30'/%3E%3C/g%3E%3C/svg%3E"); background-size:40px 24px; }
-    body.theme-taisho .news-item{ border-left:3px solid #9b2335; }
-    body.theme-taisho .lyr-head,body.theme-taisho .layer-group-title{ color:#9b2335 !important; border-bottom:1px solid rgba(43,58,103,0.3); }
-    body.theme-taisho ::selection{ background:#9b2335; color:#f6ece0; }
+    /* (#R115) The R33-retired skin themes' CSS (cyber/classic/psychedelic/military/medical/baroque/taisho)
+       was DEAD CODE: applyTheme() strips every theme-* body class and coerces a saved skin to 'auto', so none
+       of those selectors could ever match. Removed per the dead-code cleanup request; the coercion in
+       applyTheme() stays so old saved settings keep migrating. */
 
     body,input,select{ margin:0; padding:0; background-color:var(--bg-color); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--text-main); -webkit-font-smoothing:antialiased; }
     button{ margin:0; padding:0; cursor:pointer; font-family:inherit; color:var(--text-main); }
@@ -411,7 +273,8 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
        never shift. */
     /* (#R101) tighter LEFT + BOTTOM gap on the always-visible active-layers bar (padding 12→10 / bottom 6+7 → 4+5),
        kept off flush per request ("左と下の隙間をもうちょっと詰めて。ただし完全密着はさせないように"). */
-    #layer-active-section{ position:sticky; top:0; z-index:4; background:var(--glass-fill); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); margin:0 -12px 4px; padding:7px 10px 5px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:12px 12px 0 0; }
+    /* (#R115) Active layers = OPAQUE (card-bg, no glass/blur) — the user asked that this UI never be transparent. */
+    #layer-active-section{ position:sticky; top:0; z-index:4; background:var(--card-bg); margin:0 -12px 4px; padding:7px 10px 5px; border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22)); border-radius:12px 12px 0 0; }
     /* flush with the panel's top edge only when it actually IS the first element (#R65: the negative margin
        used to overlap the search box when that was inserted above the bar) */
     #layer-active-section:first-child{ margin-top:-12px; top:-12px; }
@@ -718,6 +581,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
        the choice ("設定画面がいつも透過"). Opaque mode → solid --card-bg; translucent/glass modes → keep the frost. */
     #settings-modal .modal-content{ background:var(--card-bg); }
     #settings-modal .settings-foot{ background:var(--card-bg); }
+    /* (#R115) Support popup = OPAQUE always ("Do not make … Support popup transparent") — even in frosted
+       sidebar modes it must not use the translucent --popup-bg. */
+    #blueberry-modal .modal-content{ background:var(--card-bg) !important; }
     body.sidebar-translucent #settings-modal .modal-content, body.sidebar-glass2 #settings-modal .modal-content{ background:var(--popup-bg); }
     /* (#R101) WORKSPACE-mode settings = a floating workspace-style panel (matching the windows), NOT the centered
        heavy-dim modal — a new UI suited for workspace mode, same content. */
@@ -1437,7 +1303,12 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       /* (#R22) iOS-style grouped-list headers: category names noticeably BIGGER + bolder + higher
          contrast than the rows (they were 10.5px, smaller than the 13.5px rows — "分類名を大きくして
          コントラストを"). A hairline separator + extra top margin makes each section read as a group. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:18px 2px 5px !important; padding:0 4px 6px !important; font-size:15px !important; font-weight:800 !important; color:var(--text-main) !important; text-transform:uppercase; letter-spacing:0.03em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.22); }
+      /* (#R115) NO all-caps on mobile ("Do not use all-capital texts in layer classification names") — the
+         category names keep their natural casing; desktop keeps its own style. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:18px 2px 5px !important; padding:0 4px 6px !important; font-size:15px !important; font-weight:800 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.22); }
+      /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
+         scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
+      .m-sheet #layer-active-section .lyr-head{ text-transform:none !important; letter-spacing:0.01em !important; }
       /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
          (desktop keeps them) (#12). */
       .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
@@ -1852,6 +1723,13 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       .alc-row input[type=range]{ display:none; }
       .alc-row .alc-x{ width:30px; height:30px; font-size:14px; }
       .active-lyr-chip .alc-x{ width:22px; height:22px; font-size:13px; }
+      /* (#R115) mobile layer NAMES all use the BIGGER of the two sizes that coexisted (13.5px list rows vs
+         11px active-chips / 12px expander rows) — "adopt the bigger one". Chip strip stays a CONSTANT height
+         (the R64 0px-reflow guarantee is about constancy, not the specific number). */
+      .active-lyr-chip{ font-size:13.5px; padding:5px 7px 5px 12px; }
+      .active-lyr-chips{ height:34px; }
+      .active-lyr-chip .alc-name{ max-width:200px; }
+      .alc-row .alcr-name{ font-size:13.5px; }
     }
 
     /* --- Opacity moved into the legend / layer-control popup (#17) --- */
@@ -3392,27 +3270,12 @@ window.addEventListener('DOMContentLoaded', () => {
     mapReady:()=>{ try{ return !!(map&&map.isStyleLoaded()); }catch(e){ return 'err:'+e.message; } } }; }catch(_){}
 
   /* =====================================================================
-   *  AI ENGINE — BYOK (OpenAI / Anthropic / Google Gemini) + Chrome on-device.
-   *  Single entry point:  askAI(prompt, systemPrompt, imageDatas) -> Promise<string>
-   *  All four AI features (geocoding, translation, area summary, vision change
-   *  detection) route through this wrapper, so every per-provider difference
-   *  lives in ONE place. Mirrors the satellite BYOK pattern (registry +
-   *  localStorage + Settings UI). Keys never leave the browser.
+   *  AI ENGINE — account-based, first-party (#R27; BYOK retired, its dead client
+   *  call/model-picker code removed in #R115). Single entry point:
+   *  askAI(prompt, systemPrompt, imageDatas, opts) -> Promise<string> — every AI
+   *  feature routes through the ai-proxy Edge Function with the user's session JWT;
+   *  provider keys live ONLY on the server.
    * ===================================================================== */
-  /* Providers = the 4 API integrations. The MODEL is NOT a fixed list — it's free text
-     (per provider), so any model the provider offers (incl. ones newer than IntMap) works.
-     `suggest` is just a non-binding datalist; `defaultModel` is the fallback/placeholder.
-     `vision` is now a PROVIDER capability (only Chrome on-device can't take images). */
-  /* Models are NOT pinned by IntMap — they are fetched live from each provider's API
-     (see aiListModels), so new/renamed/retired models are picked up automatically.
-     `fallbackModel` is only used if that live fetch fails (offline/CORS); `tier` is a
-     light preference for auto-selecting a fast/cheap current model from the live list. */
-  const AI_PROVIDERS=[
-    { id:'openai', name:{en:'OpenAI',jp:'OpenAI'}, needsKey:true, vision:true, keyPh:'sk-…', getKey:'https://platform.openai.com/api-keys', fallbackModel:'gpt-4o-mini', tier:/mini/i },
-    { id:'anthropic', name:{en:'Anthropic (Claude)',jp:'Anthropic (Claude)'}, needsKey:true, vision:true, keyPh:'sk-ant-…', getKey:'https://console.anthropic.com/settings/keys', fallbackModel:'claude-3-5-haiku-latest', tier:/haiku/i },
-    { id:'gemini', name:{en:'Google Gemini',jp:'Google Gemini'}, needsKey:true, vision:true, keyPh:'AIza…', getKey:'https://aistudio.google.com/app/apikey', fallbackModel:'gemini-2.0-flash', tier:/flash/i },
-    { id:'chrome', name:{en:'Chrome Built-in AI',jp:'Chrome内蔵AI'}, needsKey:false, vision:false, onDevice:true, getKey:'https://developer.chrome.com/docs/ai/built-in' }
-  ];
   let aiConfig={ provider:'openai', models:{}, keys:{} };
   try{ const s=JSON.parse(localStorage.getItem('intmap_ai_config')||'null'); if(s&&typeof s==='object'){
     if(s.provider) aiConfig.provider=s.provider;
@@ -3421,11 +3284,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(typeof s.model==='string' && s.model && !aiConfig.models[aiConfig.provider]) aiConfig.models[aiConfig.provider]=s.model; /* migrate legacy single-model field */
   } }catch(_){}
   const saveAIConfig=()=>{ try{ localStorage.setItem('intmap_ai_config',JSON.stringify(aiConfig)); }catch(_){} };
-  const aiProviderById=(id)=>AI_PROVIDERS.find(p=>p.id===id)||AI_PROVIDERS[0];
-  /* The live-selected model for a provider; emergency fallback only if the list fetch failed. */
-  function aiModelFor(p){ return (aiConfig.models&&aiConfig.models[p.id]&&String(aiConfig.models[p.id]).trim())||p.fallbackModel||''; }
-  function aiCurrent(){ const p=aiProviderById(aiConfig.provider); return {p, model:aiModelFor(p)}; }
-  function aiKeyFor(p){ return (aiConfig.keys&&aiConfig.keys[p.id]&&String(aiConfig.keys[p.id]).trim())||''; }
   /* (#R27) Account-based AI: the first-party server proxy is ALWAYS configured (see INTMAP_AI_PROXY
      below), so the engine is always "ready" to RECEIVE a click. The real gate — login required + the
      per-day free quota — is enforced in aiGate() at click time and authoritatively re-checked on the
@@ -3434,36 +3292,6 @@ window.addEventListener('DOMContentLoaded', () => {
   function aiVisionReady(){ return aiReady(); }
   function aiErrSnippet(txt){ try{ const j=JSON.parse(txt); return (j.error&&(j.error.message||j.error.code))||JSON.stringify(j).slice(0,180); }catch(_){ return String(txt||'').slice(0,180); } }
 
-  /* Fetch the CURRENT model list straight from the provider with the user's key, so
-     IntMap never hardcodes a model name. Returns string[] (model ids) or null on failure. */
-  async function aiListModels(p,key){
-    try{
-      if(p.id==='openai'){
-        const r=await fetch('https://api.openai.com/v1/models',{headers:{'Authorization':'Bearer '+key}});
-        if(!r.ok) return null; const j=await r.json();
-        return (j.data||[]).map(m=>m.id).filter(id=>/^(gpt-|o[0-9]|chatgpt)/i.test(id) && !/(embedding|whisper|tts|audio|realtime|image|dall-e|moderation|transcribe|search|babbage|davinci)/i.test(id)).sort();
-      }
-      if(p.id==='anthropic'){
-        const r=await fetch('https://api.anthropic.com/v1/models?limit=100',{headers:{'x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}});
-        if(!r.ok) return null; const j=await r.json();
-        return (j.data||[]).map(m=>m.id);
-      }
-      if(p.id==='gemini'){
-        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(key));
-        if(!r.ok) return null; const j=await r.json();
-        return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>String(m.name||'').replace(/^models\//,'')).filter(id=>/gemini/i.test(id));
-      }
-    }catch(_){}
-    return null;
-  }
-  /* Auto-pick a sensible CURRENT model from the live list (prefers the provider's fast tier). */
-  function aiPickDefaultModel(p,list){
-    if(!list||!list.length) return p.fallbackModel||'';
-    const stable=list.filter(id=>!/(preview|exp|nightly|thinking|tts|image|audio|embedding)/i.test(id));
-    const pool=stable.length?stable:list;
-    if(p.tier){ const hit=pool.filter(id=>p.tier.test(id)); if(hit.length) return hit.sort().reverse()[0]; }
-    return pool.sort().reverse()[0];
-  }
 
   /* ---- (#R27) FIRST-PARTY, ACCOUNT-BASED AI -----------------------------------------------------
      BYOK is retired. Every AI call now routes through a Supabase Edge Function (ai-proxy) that holds
@@ -3606,57 +3434,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const seg=s.match(/[\[{][\s\S]*[\]}]/); if(seg) s=seg[0];
     try{ return JSON.parse(s); }catch(_){ try{ return JSON.parse(s.replace(/,\s*([\]}])/g,'$1')); }catch(__){ return null; } }
   }
-  function aiImgPart(d){ const m=/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(d||''); return m?{mime:m[1],b64:m[2]}:null; }
-
-  async function aiCallOpenAI(model,key,prompt,system,imgs){
-    const userContent = imgs.length ? [{type:'text',text:prompt}, ...imgs.map(d=>({type:'image_url',image_url:{url:d}}))] : prompt;
-    const messages=[]; if(system) messages.push({role:'system',content:system});
-    messages.push({role:'user',content:userContent});
-    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({model,messages,temperature:0.3,max_tokens:1600})});
-    if(!r.ok) throw new Error('OpenAI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
-    const j=await r.json(); return (j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
-  }
-  async function aiCallAnthropic(model,key,prompt,system,imgs){
-    const content=[];
-    imgs.forEach(d=>{ const ip=aiImgPart(d); if(ip) content.push({type:'image',source:{type:'base64',media_type:ip.mime,data:ip.b64}}); });
-    content.push({type:'text',text:prompt});
-    const body={model,max_tokens:1600,messages:[{role:'user',content}]}; if(system) body.system=system;
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify(body)});
-    if(!r.ok) throw new Error('Anthropic '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
-    const j=await r.json(); return (j.content&&j.content.map(b=>b.text||'').join(''))||'';
-  }
-  async function aiCallGemini(model,key,prompt,system,imgs){
-    const parts=[{text:prompt}];
-    imgs.forEach(d=>{ const ip=aiImgPart(d); if(ip) parts.push({inline_data:{mime_type:ip.mime,data:ip.b64}}); });
-    const body={contents:[{role:'user',parts}],generationConfig:{temperature:0.3,maxOutputTokens:1600}};
-    if(system) body.systemInstruction={parts:[{text:system}]};
-    const url='https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent?key='+encodeURIComponent(key);
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok) throw new Error('Gemini '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
-    const j=await r.json(); const c=j.candidates&&j.candidates[0];
-    if(c&&c.finishReason==='SAFETY') throw new Error('Gemini: blocked by safety filter');
-    return (c&&c.content&&c.content.parts&&c.content.parts.map(p=>p.text||'').join(''))||'';
-  }
-  /* Chrome Built-in AI (global LanguageModel / window.ai). The API shape has shifted
-     across Chrome versions, so probe several. No image support (Gemini Nano = text). */
-  async function aiCallChrome(prompt,system){
-    try{
-      if(typeof self!=='undefined' && self.LanguageModel && self.LanguageModel.create){
-        const s=await self.LanguageModel.create(system?{initialPrompts:[{role:'system',content:system}]}:{});
-        const out=await s.prompt(prompt); try{ s.destroy&&s.destroy(); }catch(_){} return out;
-      }
-      if(window.ai){
-        const lm=window.ai.languageModel||window.ai.assistant;
-        if(lm&&lm.create){ const s=await lm.create(system?{systemPrompt:system}:{}); const out=await s.prompt(prompt); try{ s.destroy&&s.destroy(); }catch(_){} return out; }
-        if(window.ai.createTextSession){ const s=await window.ai.createTextSession(); const out=await s.prompt((system?system+'\n\n':'')+prompt); try{ s.destroy&&s.destroy(); }catch(_){} return out; }
-      }
-    }catch(e){ throw new Error('Chrome AI: '+((e&&e.message)||e)); }
-    throw new Error(t('aiChromeUnavail'));
-  }
 
   /* ---- Shared UI: toast + report popup (used by all four features) ---- */
   function aiToast(msg){
@@ -3741,48 +3518,7 @@ window.addEventListener('DOMContentLoaded', () => {
       `</div>`;
   }
   window.aiRenderSettings=aiRenderSettings;
-  /* Populate the model dropdown from the provider's live list; never blocks the user. */
-  async function aiLoadModelsIntoSelect(){
-    const p=aiProviderById(aiConfig.provider); if(p.onDevice) return;
-    const wrap=document.getElementById('ai-model-wrap'); if(!wrap) return;
-    const key=aiKeyFor(p);
-    if(p.needsKey && !key){ wrap.innerHTML=`<select id="ai-model" disabled><option>${currentLang==='jp'?'先にAPIキーを入力してください':currentLang==='de'?'Bitte zuerst den API-Schlüssel eingeben':currentLang==='ru'?'Сначала введите API-ключ':currentLang==='es'?'Introduce primero tu clave API':'Enter your API key first'}</option></select>`; return; }
-    wrap.innerHTML=`<select id="ai-model" disabled><option>${currentLang==='jp'?'読み込み中…':currentLang==='de'?'Lädt…':currentLang==='ru'?'Загрузка…':currentLang==='es'?'Cargando…':'Loading…'}</option></select>`;
-    const list=await aiListModels(p,key);
-    if(!list||!list.length){
-      /* Live list unavailable (offline/CORS): fall back to a free-text box so nothing is blocked. */
-      wrap.innerHTML=`<input type="text" class="sat-key-input" id="ai-model" value="${aiEsc((aiConfig.models&&aiConfig.models[p.id])||'')}" placeholder="${aiEsc(p.fallbackModel||'')}">
-        <div style="font-size:10.5px;color:var(--text-muted);margin-top:5px;">${currentLang==='jp'?'モデル一覧を取得できませんでした。必要ならモデル名を直接入力できます。':currentLang==='de'?'Modellliste konnte nicht geladen werden — Modellname ggf. direkt eingeben.':currentLang==='ru'?'Не удалось загрузить список моделей — при необходимости введите имя модели.':currentLang==='es'?'No se pudo cargar la lista de modelos — escribe el nombre si es necesario.':'Could not load the model list — type a model name if needed.'}</div>`;
-      const mi=document.getElementById('ai-model'); if(mi) mi.onchange=()=>aiReadModelInput();
-      return;
-    }
-    if(!aiConfig.models) aiConfig.models={};
-    let cur=aiConfig.models[p.id];
-    if(!cur || !list.includes(cur)){ cur=aiPickDefaultModel(p,list); aiConfig.models[p.id]=cur; saveAIConfig(); }
-    wrap.innerHTML=`<select id="ai-model">${list.map(id=>`<option value="${aiEsc(id)}"${id===cur?' selected':''}>${aiEsc(id)}</option>`).join('')}</select>`;
-    const s=document.getElementById('ai-model'); if(s) s.onchange=()=>{ aiConfig.models[p.id]=s.value; saveAIConfig(); try{ aiSyncFeatureButtons(); }catch(_){} };
-    try{ aiSyncFeatureButtons(); }catch(_){}
-  }
-  function aiReadKeyInput(){ const ki=document.getElementById('ai-key-input'); if(!ki) return; const p=aiProviderById(aiConfig.provider); const v=ki.value.trim(); if(v) aiConfig.keys[p.id]=v; else delete aiConfig.keys[p.id]; }
-  function aiReadModelInput(){ const mi=document.getElementById('ai-model'); if(!mi) return; const p=aiProviderById(aiConfig.provider); if(!aiConfig.models) aiConfig.models={}; const v=mi.value.trim(); if(v) aiConfig.models[p.id]=v; else delete aiConfig.models[p.id]; }
-  function aiSaveSettings(){
-    const pv=document.getElementById('ai-provider'); if(pv) aiConfig.provider=pv.value;
-    aiReadModelInput(); aiReadKeyInput(); saveAIConfig();
-    try{ aiSyncFeatureButtons(); }catch(_){}
-  }
-  async function aiTestConnection(){
-    const pv=document.getElementById('ai-provider'); if(pv) aiConfig.provider=pv.value;
-    aiReadModelInput(); aiReadKeyInput();
-    const btn=document.getElementById('ai-test-btn'), msg=document.getElementById('ai-test-msg'); if(!btn||!msg) return;
-    btn.disabled=true; msg.className='ai-test-msg'; msg.textContent=t('aiTesting');
-    try{
-      await askAI('Reply with exactly: OK', 'You are a connectivity tester. Reply with only the two letters: OK');
-      saveAIConfig();
-      const m2=document.getElementById('ai-test-msg'); if(m2){ m2.className='ai-test-msg ok'; m2.textContent=t('aiTestOk'); }
-      const badge=document.querySelector('#ai-settings-body .ai-status'); if(badge){ badge.classList.add('on'); badge.textContent='● '+t('aiKeyConnected'); }
-    }catch(e){ const m2=document.getElementById('ai-test-msg'); if(m2){ m2.className='ai-test-msg err'; m2.textContent=(e&&e.message)||t('aiError'); } }
-    finally{ const b2=document.getElementById('ai-test-btn'); if(b2) b2.disabled=false; }
-  }
+  function aiSaveSettings(){ saveAIConfig(); try{ aiSyncFeatureButtons(); }catch(_){} }   /* (#R115) BYOK inputs are gone — nothing to read back */
   /* Each AI feature registers a syncer here; called after the AI config changes so
      feature buttons can refresh their enabled/disabled state. */
   const aiButtonSyncers=[];
@@ -3794,7 +3530,7 @@ window.addEventListener('DOMContentLoaded', () => {
     else { btn.disabled=false; if(btn.dataset.olabel!=null){ btn.textContent=btn.dataset.olabel; delete btn.dataset.olabel; } }
   }
   /* Debug hook (same spirit as window.__sat / window.__imap). */
-  try{ window.__ai={ providers:AI_PROVIDERS, config:()=>aiConfig, ready:aiReady, visionReady:aiVisionReady,
+  try{ window.__ai={ config:()=>aiConfig, ready:aiReady, visionReady:aiVisionReady,
     ask:askAI, askJSON:askAIJSON, parse:aiParseJSON, report:aiReport, toast:aiToast, render:aiRenderSettings }; }catch(_){}
 
   /* ===== AI FEATURE 4: satellite change detection (vision) =====
@@ -3934,7 +3670,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ['+ / −',KL('Zoom in / out','ズームイン / アウト','Zoom rein / raus','Приблизить / отдалить','Acercar / alejar')],
         ['?',KL('This help','このヘルプ','Diese Hilfe','Эта справка','Esta ayuda')]
       ];
-      m.innerHTML='<div style="background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);width:min(430px,calc(100vw - 32px));max-height:80vh;overflow-y:auto;padding:18px 20px;">'
+      m.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);width:min(430px,calc(100vw - 32px));max-height:80vh;overflow-y:auto;padding:18px 20px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b style="font-size:15px;">⌨ '+KL('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')+'</b><button id="kbd-x" style="background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;">✕</button></div>'
         +rows.map(r=>'<div style="display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-bottom:1px solid rgba(128,128,128,0.12);font-size:12.5px;"><span style="font-family:ui-monospace,monospace;color:var(--primary-color);font-weight:700;white-space:nowrap;">'+r[0]+'</span><span style="text-align:right;color:var(--text-main);">'+r[1]+'</span></div>').join('')
         +'</div>';
@@ -7544,7 +7280,7 @@ window.addEventListener('DOMContentLoaded', () => {
            (it turns into clutter as layers pile up — "選択レイヤーが増加すると煩雑"); the counter + List
            overlay + Clear-all carry the same functions in one constant-height row. */
         /* (#R102) tighten the always-shown ACTIVE-LAYERS bar's LEFT + BOTTOM gap a little more (kept non-flush) */
-        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--sidebar-bg);z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'
+        +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--card-bg);z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'   /* (#R115) opaque — never transparent */
         +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
         +'#layer-sidebar-r .lsr-body{padding-top:0;}'   /* (#R106) flush the Search box to the Active-layers bar (was a 2px see-through seam) */
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
@@ -7906,7 +7642,9 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
     function css(){ if(styled) return; styled=true; const st=document.createElement('style'); st.id='ws-style';
       st.textContent=
-        'body.ws-mode{background:var(--bg-main,#0d1117);}'
+        /* (#R115) theme-aware: --bg-main was NEVER defined, so the fallback #0d1117 made ws-mode BLACK even in
+           light mode ("In light mode, in workspace mode, do not make background black"). --bg-color follows the theme. */
+        'body.ws-mode{background:var(--bg-color,#0d1117);}'
         +'body.ws-mode .operation-room{display:block;background:radial-gradient(circle at 1px 1px, rgba(128,148,178,0.13) 1px, transparent 1.5px);background-size:22px 22px;}'
         /* (#R101) all windows share ONE background (the Countries window colour = --bg-color) so the title bars read
            uniformly ("上部の色が濃い黒とグレーで混在" → unified). Big 0 18px 50px shadow REMOVED — on tiled windows it
@@ -8021,6 +7759,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.ws-mode #layer-sidebar-r #layer-active-section .lyr-head{text-transform:none !important;letter-spacing:0.01em !important;}'
         +'body.ws-mode #layer-sidebar-r #layer-active-section{padding-top:0 !important;}'
         +'body.ws-mode #layer-sidebar-r #layer-active-section .lyr-head{margin-top:0 !important;}'
+        /* (#R115) ws Layers window: an ON layer must be clearly visible ("Make on-layer more visible") —
+           thicker accent ring, an accent-tinted tile fill (color-mix; older engines just skip it and keep
+           the ring), and the layer NAME itself in the accent colour + bold. */
+        +'body.ws-mode #layer-sidebar-r .lst-tile.on{border-color:var(--primary-color);box-shadow:0 0 0 2px var(--primary-color);background:color-mix(in srgb, var(--primary-color) 14%, var(--card-bg));}'
+        +'body.ws-mode #layer-sidebar-r .lst-tile.on .lst-nm{color:var(--primary-color);font-weight:700;}'
         /* (#R79b) Atlas window: keep the INPUT BAR always visible when the window is short — the suggested-
            question chips (.atl-ex) were tall + non-shrinking and pushed the input below the window on resize.
            Cap + scroll them so the chat area and input never get clipped. */
@@ -8397,7 +8140,7 @@ window.addEventListener('DOMContentLoaded', () => {
        timer clears it no matter what. The map is a flex child, so hiding the sidebar lets it fill immediately. */
     try{ if(_wantWS()&&!isMob()){ const de=document.documentElement; de.classList.add('ws-boot');
         if(!document.getElementById('ws-boot-style')){ const bs=document.createElement('style'); bs.id='ws-boot-style';
-          bs.textContent='html.ws-boot #sidebar,html.ws-boot .map-controls-top,html.ws-boot #layer-sidebar-r,html.ws-boot #lsr-toggle,html.ws-boot #btn-toggle-sidebar{display:none !important;}html.ws-boot .operation-room{background:var(--bg-main,#0d1117);}';
+          bs.textContent='html.ws-boot #sidebar,html.ws-boot .map-controls-top,html.ws-boot #layer-sidebar-r,html.ws-boot #lsr-toggle,html.ws-boot #btn-toggle-sidebar{display:none !important;}html.ws-boot .operation-room{background:var(--bg-color,#0d1117);}';   /* (#R115) theme-aware (was the undefined --bg-main → always black) */
           (document.head||de).appendChild(bs); }
         setTimeout(()=>{ try{ de.classList.remove('ws-boot'); }catch(_){} },6000); } }catch(_){}
     /* (#R102) enter workspace mode AS EARLY AS POSSIBLE — the old fixed 900 ms delay left the desktop staring at the
@@ -8693,8 +8436,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.ensureMapTooltip=ensureMapTooltip; window.positionTooltip=positionTooltip;   /* (#R23) beta choropleths reuse the same hover tooltip as HDI */
   /* (#R32) Is the current UI/map dark? The news band must FLIP color by theme — a dark pill is invisible on
      the dark map ("ダークモードでは視認性が悪い"). */
-  function _newsUIDark(){ try{ if(document.documentElement.getAttribute('data-theme')==='dark') return true;
-      return ['theme-cyber','theme-military','theme-psychedelic'].some(c=>document.body.classList.contains(c)); }catch(_){ return false; } }
+  function _newsUIDark(){ try{ return document.documentElement.getAttribute('data-theme')==='dark'; }catch(_){ return false; } }   /* (#R115) skin themes retired (R33) — dark = data-theme only */
   /* iOS-style frosted "pill" behind news labels — generated as a stretchable sprite. Theme-aware (#R32):
      LIGHT map → near-black pill + white text; DARK map → near-white pill + dark text, so the band is always
      legible. A subtle 1px border defines it against same-tone backgrounds. */
@@ -9665,7 +9407,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const active=compareSet.has(s.code)?'compare-on':'';
       /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
       const subline=`${s.region||''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
-      html+=`<div class="stat-row ${active}" data-ccn="${s.code}"><span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
+      html+=`<div class="stat-row ${active}" data-ccn="${s.code}" title="${String(cName(s)||'').replace(/"/g,'&quot;')}"><span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{
@@ -18620,7 +18363,7 @@ window.addEventListener('DOMContentLoaded', () => {
   window.IntMapIsolate=(function(){
     if(!map) return { enter(){}, exit(){}, active:()=>false };
     const jp=()=>currentLang==='jp'; let active=false, btn=null;
-    function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark' || document.body.classList.contains('theme-cyber')) ? '#05060a' : '#f2f2f4'; }
+    function bg(){ return (document.documentElement.getAttribute('data-theme')==='dark') ? '#05060a' : '#f2f2f4'; }   /* (#R115) skin themes retired (R33) */
     function ensure(){ if(map.getSource('iso-src')) return true; if(!map.isStyleLoaded()) return false;
       try{ map.addSource('iso-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'iso-mask',type:'fill',source:'iso-src',layout:{visibility:'none'},paint:{'fill-color':bg(),'fill-opacity':1}});
@@ -19698,7 +19441,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!codes.length&&window._cpCurrent&&window._cpCurrent.code&&countryStats[window._cpCurrent.code]) codes=[window._cpCurrent.code];
       host=null;   /* rebuild inside the sidebar (the feed may have been re-rendered by tab switches) */
       render(); try{ paintOnMap(); }catch(_){} }
-    return { open, paintOnMap, clearMap };
+    /* (#R115) Atlas needs the indicator vocabulary to honour "compare … — GDP, defense and population":
+       expose the valid metric keys + a localized label so the compareStats action can resolve & report them. */
+    function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; const li=({en:0,jp:1,de:2,ru:3,es:4})[currentLang]||0; return (i2.l&&(i2.l[li]||i2.l[0]))||k; }catch(_){ return k; } }
+    return { open, paintOnMap, clearMap, indKeys:()=>IND.map(i2=>i2.k), indLabel };
   })();
 
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
@@ -25054,7 +24800,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const sorted=vals.slice().sort((x,y)=>y.raw-x.raw); const top=sorted[0], bot=sorted[sorted.length-1];
       const loTxt=esc(fmtVal(metricKey, m.log?Math.exp(lo):lo)), hiTxt=esc(fmtVal(metricKey, m.log?Math.exp(hi):hi));
       const grad='linear-gradient(90deg,'+_choroRamp.join(',')+')';
-      let html='<div style="font-weight:600;margin:2px 0 5px;">🗺 '+esc(lx(m.label))+' — '+L('map shading','地図の濃淡','Kartenfärbung','окраска карты','sombreado del mapa')+'</div>';
+      let html='<div style="font-weight:600;margin:2px 0 5px;">'+esc(lx(m.label))+' — '+L('map shading','地図の濃淡','Kartenfärbung','окраска карты','sombreado del mapa')+'</div>';
       html+='<div style="height:12px;border-radius:6px;background:'+grad+';margin:4px 0;"></div>';
       html+='<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-muted);"><span>'+(bottom?hiTxt:loTxt)+'</span><span>'+(bottom?loTxt:hiTxt)+'</span></div>';
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('High','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Low','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
@@ -25783,7 +25529,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim();
           /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
           if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ map.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
-          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note('📍 '+(+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
+          if(a.lng!=null&&a.lat!=null){ map.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(map.getZoom(),6),duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
             if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ map.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(map.getZoom(),9),duration:1100}); } return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
@@ -25838,7 +25584,7 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),5),duration:900}); }catch(_){}
           const qq=String(a.question||a.query||'').trim();
           if(qq) return await dispatch({type:'analyze',question:qq,place:'there'});
-          return R(true, note('📍 '+esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
+          return R(true, note(esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
         case 'rank': { await ensureData(); try{ await _fillMetric(a.metric); }catch(_){}   /* (#R105) load lazy WB metrics (lifeExp/internet/tfr) before ranking so it never falsely reports "metric unavailable" */
           const n=clampN(a.n); const list=rank(a.metric,a.order==='bottom'?'bottom':'top',n); const _mm=METRICS[a.metric]||XMET[a.metric]; const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+(_mm?lx(_mm.label):esc(a.metric||'')); return R(!!(list&&list.length), listHtml(t,list,a.metric)); }
         case 'ratio': { await ensureData(); const n=clampN(a.n); const list=ratio(a.metricA,a.metricB,a.order==='bottom'?'bottom':'top',n); const t=(METRICS[a.metricA]?lx(METRICS[a.metricA].label):a.metricA)+' / '+(METRICS[a.metricB]?lx(METRICS[a.metricB].label):a.metricB); return list?R(true, listHtml(t,list.map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')):R(false, warn('⚠ '+esc(a.metricA||''))); }
@@ -26019,7 +25765,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const zLbls=r.zones||[]; const rows=[];
           for(let z=0;z<zLbls.length;z++){ const km2=(r.zoneKm2&&r.zoneKm2[z])||0; if(km2<=0) continue;
             rows.push('<div style="display:flex;align-items:center;gap:7px;padding:2px 0;"><span style="width:12px;height:12px;border-radius:3px;flex:0 0 auto;background:'+zLbls[z].c+';"></span><span style="flex:1;">'+esc(zLbls[z].n[({en:0,jp:1,de:2,ru:3,es:4})[currentLang]]||zLbls[z].n[0])+'</span><span style="color:var(--text-muted);">≥'+zLbls[z].min+' kBq/m² · '+km2.toFixed(km2<10?1:0)+' km²</span></div>'); }
-          h+='<div style="font-weight:600;margin:6px 0 2px;font-size:12px;">🗺 '+L('Final ground deposition (Cs-137-equivalent zones)','最終的な地表沈着（Cs-137換算ゾーン）','Endgültige Bodendeposition','Итоговое выпадение','Deposición final')+'</div>';
+          h+='<div style="font-weight:600;margin:6px 0 2px;font-size:12px;">'+L('Final ground deposition (Cs-137-equivalent zones)','最終的な地表沈着（Cs-137換算ゾーン）','Endgültige Bodendeposition','Итоговое выпадение','Deposición final')+'</div>';
           h+=rows.length?('<div style="font-size:11.5px;">'+rows.join('')+'</div>'):('<div style="font-size:11.5px;color:var(--text-muted);">'+L('Deposition stays below mapped thresholds in this run (winds carried most activity out of the modelled area).','この条件では地図化しきい値未満（大半が領域外へ運ばれました）。','unter den Schwellen','ниже порогов','por debajo de umbrales')+'</div>');
           if(r.peakKBqM2>0){ const uH=r.peakDoseUSvH, yr=annualMSv(uH);
             h+='<div style="font-size:11.5px;margin-top:4px;">📈 '+L('Peak deposition','最大沈着','Spitzendeposition','Пик','Pico')+': <b>'+Math.round(r.peakKBqM2).toLocaleString()+' kBq/m²</b> → '+L('external dose rate','外部被ばく線量率','Dosisleistung','мощность дозы','tasa de dosis')+' ≈ <b>'+(uH>=1?uH.toFixed(1):uH.toFixed(2))+' µSv/h</b> ('+L('about','約','ca.','≈','≈')+' '+(yr>=1?Math.round(yr):yr.toFixed(1))+' mSv/'+L('yr','年','a','год','año')+')</div>';
@@ -26082,11 +25828,11 @@ window.addEventListener('DOMContentLoaded', () => {
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note('⏳ '+ymdISO(T.when()))); }
           return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
         }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
-        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); }catch(_){} return R(true, note('📍 '+esc(ll.name||a.place||''))); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); }catch(_){} return R(true, note(esc(ll.name||a.place||''))); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'tool': { const n=String(a.name||'').toLowerCase(); const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/measur|dist|area/.test(n)?'btn-tool-measure':/grid/.test(n)?'btn-tool-grid':null; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
         case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof radiusKm!=='undefined') radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof measurePoints!=='undefined') measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
-        case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note('📊 '+L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
+        case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
         /* (#R85) workspace (floating-window) mode via Atlas ("ワークスペースモードの切り替えがAtlasでできない") */
         case 'workspace': case 'windows': case 'windowMode': case 'windowWorkspace': {
@@ -26101,7 +25847,7 @@ window.addEventListener('DOMContentLoaded', () => {
           return R(ok, ok? note(want?'🗔 '+L('Workspace mode on — News, Countries, the map, layers and Atlas are now free-floating windows','ワークスペースモードをオン — ニュース・国・地図・レイヤー・Atlasが自由なウィンドウになりました','Workspace-Modus an','Оконный режим включён','Modo espacio activado')
                                    :'✓ '+L('Back to the normal layout','通常レイアウトに戻しました','Zurück zum Normal-Layout','Обычный вид','De vuelta al diseño normal'))
                        : warn('⚠ '+L('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio'))); }
-        case 'shortcuts': case 'keyboard': case 'hotkeys': { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note('⌨ '+L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
+        case 'shortcuts': case 'keyboard': case 'hotkeys': { let ok=false; try{ if(window.IntMapKbdHelp){ window.IntMapKbdHelp(); ok=true; } }catch(_){} return R(ok, ok?note(L('Keyboard shortcuts','キーボードショートカット','Tastaturkürzel','Горячие клавиши','Atajos de teclado')):warn('⚠')); }
         /* (#R88) universal object list — see & manage every pin/drawing/radius/route/upload/isochrone in one panel */
         case 'objects': case 'objectList': case 'manageObjects': case 'listObjects': case 'myObjects': { let n=0; try{ if(window.IntMapObjects){ n=window.IntMapObjects.count(); window.IntMapObjects.open(); } }catch(_){}
           return R(true, note('🗂 '+L('Objects','オブジェクト一覧','Objekte','Объекты','Objetos')+' · '+n+' '+L('on the map','件','Objekte','объектов','objetos'))+note(L('Manage every pin, drawing, radius, route, uploaded layer and reachable-area here — rename, recolour, hide or delete.','ピン・図形・半径・経路・アップロード・到達圏をここで一括管理（名称変更・色変更・非表示・削除）。','Alle Objekte hier verwalten.','Управляйте всеми объектами здесь.','Gestiona todos los objetos aquí.'))); }
@@ -26306,7 +26052,7 @@ window.addEventListener('DOMContentLoaded', () => {
             try{ navigator.geolocation.getCurrentPosition(p2=>{ const lng=+p2.coords.longitude, lat=+p2.coords.latitude;
                 try{ map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),11),duration:1100}); }catch(_){}
                 try{ _lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
-                fin(R(true, note('📍 '+L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')')));
+                fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')')));
               }, _=>fin(R(false, warn('⚠ '+L('Location permission denied or unavailable','位置情報を取得できません（許可が必要です）','Standort verweigert oder nicht verfügbar','Нет доступа к геолокации','Ubicación denegada o no disponible')))), {enableHighAccuracy:false,timeout:9000,maximumAge:120000});
             }catch(_){ fin(R(false, warn('⚠'))); }
             setTimeout(()=>fin(R(false, warn('⚠ '+L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')))),10000); }); }
@@ -26518,7 +26264,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(key&&HIST_SCENARIOS[key]){ const sc=HIST_SCENARIOS[key]; const n=paintFactions(sc.factions);
             for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); if(paintFactions(sc.factions)) break; }
             try{ map.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
-            let h='<div style="font-weight:600;margin:2px 0 5px;">🗺 '+esc(sc.title)+'</div>'
+            let h='<div style="font-weight:600;margin:2px 0 5px;">'+esc(sc.title)+'</div>'
               +'<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">'+sc.factions.map(f=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;background:'+f.color+';display:inline-block;flex:0 0 auto;"></span><span>'+esc(f.name)+'</span> <span style="color:var(--text-muted);font-size:10.5px;">('+f.codes.length+')</span></div>').join('')+'</div>'
               +note(sc.note);
             return R(paintFactions(sc.factions)>0, h); }
@@ -26529,7 +26275,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const groups=jr.factions.slice(0,6).map(f=>({name:String(f.name||''),color:(parseColor(f.color)||'#8a8f98'),codes:(Array.isArray(f.countries)?f.countries.map(c=>String(c).toUpperCase()):[])}));
           let n=paintFactions(groups); for(let i2=0;i2<6&&!n;i2++){ await new Promise(r2=>setTimeout(r2,600)); n=paintFactions(groups); }
           try{ map.flyTo({center:[18,32],zoom:1.6,duration:1000}); }catch(_){}
-          let h='<div style="font-weight:600;margin:2px 0 5px;">🗺 '+esc(jr.title||era)+'</div>'
+          let h='<div style="font-weight:600;margin:2px 0 5px;">'+esc(jr.title||era)+'</div>'
             +'<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">'+groups.map(f=>'<div style="display:flex;align-items:center;gap:7px;"><span style="width:13px;height:13px;border-radius:3px;background:'+f.color+';display:inline-block;flex:0 0 auto;"></span><span>'+esc(f.name)+'</span> <span style="color:var(--text-muted);font-size:10.5px;">('+f.codes.length+')</span></div>').join('')+'</div>'
             +note(jr.note||L('Approximate — historical powers mapped onto modern borders.','概略 — 歴史上の勢力を現代の国境上に表示。','Näherung — auf modernen Grenzen.','Приблизительно — на современных границах.','Aproximado — sobre fronteras actuales.'));
           return R(n>0, h); }
@@ -26698,10 +26444,18 @@ window.addEventListener('DOMContentLoaded', () => {
           const cds=[],missC=[]; for(const nm2 of rawC){ const c=await resolveCountry(nm2); if(c&&c.code){ if(cds.indexOf(c.code)<0) cds.push(c.code); } else missC.push(nm2); }
           if(!cds.length) return R(false, warn('⚠ '+L('Which countries should I compare?','どの国を比較しますか？','Welche Länder vergleichen?','Какие страны сравнить?','¿Qué países comparo?')));
           const viewM=({bar:'bar',bars:'bar',timeseries:'ts',ts:'ts','time-series':'ts',table:'table',pivot:'table'})[String(a.view||a.mode||'').toLowerCase()]||null;   /* (#R70) open straight into a view */
-          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,10),Array.isArray(a.metrics)?a.metrics:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM); okC=true; } }catch(_){}
-          let h2=okC?note('📊 '+L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(10,cds.length)+')'):warn('⚠');
+          /* (#R115) honour the REQUESTED indicators ("Compare … — GDP, defense and population" ignored them):
+             resolve names/keys tolerantly (5 languages + synonyms) onto the panel's real IND keys. */
+          const rawM=Array.isArray(a.metrics)?a.metrics.map(x=>String(x)):(a.metrics?[String(a.metrics)]:[]);
+          const mkeys=[],missM=[];
+          rawM.forEach(mm=>{ const mr=_cmpMetricKeys(mm); mr.keys.forEach(k=>{ if(mkeys.indexOf(k)<0) mkeys.push(k); }); mr.miss.forEach(x=>missM.push(x)); });
+          let okC=false; try{ if(window.IntMapStatsCompare&&window.IntMapStatsCompare.open){ window.IntMapStatsCompare.open(cds.slice(0,10),mkeys.length?mkeys:null,(a.source==='imf'||a.source==='wb')?a.source:null,viewM); okC=true; } }catch(_){}
+          /* (#R108/#R115) plain text, NO emoji in Atlas replies; name the indicators actually selected. */
+          let mlbl=''; try{ if(okC&&mkeys.length&&window.IntMapStatsCompare.indLabel) mlbl=' — '+mkeys.map(k=>window.IntMapStatsCompare.indLabel(k)).join(', '); }catch(_){}
+          let h2=okC?note(L('Country comparison opened','国の比較を開きました','Ländervergleich geöffnet','Сравнение стран открыто','Comparación abierta')+' ('+Math.min(10,cds.length)+')'+esc(mlbl)):warn('⚠');
           if(cds.length>10) h2+=warn('⚠ '+L('Only the first 10 countries are compared','比較は最大10か国です','Nur die ersten 10 Länder','Только первые 10 стран','Solo los primeros 10 países'));
           if(missC.length) h2+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(missC.join(', ')));
+          if(missM.length) h2+=warn('⚠ '+L('Not an available indicator','比較指標にない項目','Kein verfügbarer Indikator','Нет такого показателя','Indicador no disponible')+': '+esc(missM.join(', ')));
           return R(okC,h2); }
         case 'scoreMap': case 'customLayer': case 'evaluate': { /* (#R75) vision §13 — a NEW evaluation layer composed
           from weighted real indicators (bundled metrics and/or World-Bank codes), not a canned choropleth. */
@@ -26944,7 +26698,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'NAVIGATION/VIEW: {"type":"flyTo","place":str} — just give the place name; the engine frames it to its REAL size automatically (a country fills like a country, a city like a city — you do NOT pick a zoom). For the whole planet use {"type":"flyTo","place":"world"}. Only add "zoom":num if the user explicitly asked for a specific closeness. (lng/lat form: {"type":"flyTo","lng":num,"lat":num,"zoom":num}.) {"type":"zoom","to":num|"delta":num|"dir":"in"|"out"}; {"type":"pan","dir":"north"|"south"|"east"|"west"|"northeast"|…}; {"type":"pitch","deg":0-85} (tilt; 0=top-down, 60=oblique); {"type":"projection","mode":"globe"|"flat"}; {"type":"terrain3d","on":bool}; {"type":"base","mode":"map"|"satellite"}; {"type":"bearing","deg":num} (rotate); {"type":"resetNorth"}; {"type":"search","query":str} (place-search box). For a REGION (continent, "Central Europe", "Southern Italy", "Middle East", "the Caribbean") just pass its name to flyTo — the engine knows region extents and slices directional names from the real country; never substitute a tiny sub-place. {"type":"outline","place":str,"color"?:str} draws the real boundary of that place or region as a polygon on the map (and {"type":"outline","place":"clear"} removes it). {"type":"locate"} flies to the user\'s real GPS position (asks browser permission). {"type":"fullscreen","on":bool}. "bearing" also takes {"dir":"west"|"northeast"|…}; zoom/pitch/bearing/pan accept exact numbers for precise commands ("zoom to 5" → {"type":"zoom","to":5}; "tilt 30°" → {"type":"pitch","deg":30}).\n'
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map ("on":false clears; color WITHOUT countries recolors the current highlights). RANKED/FILTERED form (use this instead of "countries" when the user asks to highlight the "top/bottom N by <metric>", optionally with a filter): {"type":"highlight","metric":KEY,"n":int,"order":"top"|"bottom","minPop"?:num,"maxPop"?:num,"color"?:str} — the app computes the top/bottom-N countries by that metric from the REAL data itself (never guess the members) after excluding any below "minPop" / above "maxPop" (population thresholds, in people; accept "5M"/"5000000"). e.g. "人口5M未満を除外したGDP per capita上位10ヵ国をハイライト" → {"type":"highlight","metric":"gdppc","n":10,"order":"top","minPop":5000000}; "highlight the 5 least populous countries" → {"type":"highlight","metric":"pop","n":5,"order":"bottom"}. metric KEYs are the same as rank/mapMetric below (+ lifeExp, internet). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
-        +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して").\n'
+        +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"metrics"?:[str,…],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して"). When the user names SPECIFIC indicators (e.g. "compare the USA and China — GDP, defense and population"), pass them in "metrics" using these keys: gdp, gdppc, gdpppp, gdppcppp, growth, infl (inflation), unemp (unemployment), debt, cab (current account), pop (population), life (life expectancy), tfr (fertility), mil (military % GDP), milb (military spending $ — use for "defense"/"military"), co2, net (internet), urban, exp (exports), fdi, health, edu, rnd, renew, forest, hom (homicide), area, hdi, demi (democracy index). Omit "metrics" when no indicators are named (the defaults open).\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…]} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","year":int} (deep time, 1900→now) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = the MASTER SPACETIME CLOCK (IntMapTime): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders, the Köppen climate era, NATO/EU accession and the day/night terminator. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. Prefer this over Earth Replay for setting the time; {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
@@ -27076,7 +26830,26 @@ window.addEventListener('DOMContentLoaded', () => {
            excluded via :not(.ws-mode) — there Atlas keeps its own floating WINDOW. */
         +'body:not(.ws-mode) #atlas-feed{position:relative;flex:1 1 auto;min-height:0;flex-direction:column;margin:0;padding:0;overflow:hidden;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab{position:relative !important;left:auto !important;top:auto !important;right:auto !important;bottom:auto !important;inset:auto !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;z-index:auto !important;resize:none !important;display:flex !important;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-head{display:none !important;}';
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-head{display:none !important;}'
+        /* (#R115) MOBILE Atlas ≈ the ChatGPT app ("Atlas UI in sidebar bigger… like ChatGPT app"): bigger message
+           text, a wider text zone (tighter side padding, full-width Atlas replies), a taller rounded input pill
+           (16px font also stops the iOS focus auto-zoom) LIFTED clearly above the sheet's bottom edge/home
+           indicator, and slightly bigger suggestion chips / inline controls to match. */
+        +'@media(max-width:768px){'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chat{padding:10px 12px 8px;gap:12px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b{font-size:15px;line-height:1.62;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.u{max-width:86%;padding:8px 14px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a{padding:2px 1px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 12px 2px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 12px 6px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;border-radius:24px;padding:0 16px;font-size:16px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-go{width:44px;height:44px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(16px + env(safe-area-inset-bottom,0px));}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ctl-lbl{font-size:13px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt button{font-size:11.5px;padding:4px 8px;}'
+        +'}';
       document.head.appendChild(s); }
     function bubble(who,html){ const d=document.createElement('div'); d.className='atl-b '+(who==='u'?'u':'a'); d.innerHTML=html; chatEl.appendChild(d); try{ chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} return d; }
     /* (#R72) ChatGPT-style per-reply tools: copy + retry on ATLAS messages (user messages get nothing) */
@@ -27250,7 +27023,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
       const ids=_OVL[kind]||[]; if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
     function mapToggleChip(kinds){ const K=Array.from(new Set((kinds||[]).filter(k=>_OVL[k]||k==='arc'))); if(!K.length) return '';
-      return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">🗺 '+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
+      return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">'+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
         +'<button class="atl-ctl-toggle atl-map-toggle on" role="switch" aria-checked="true" title="'+L('Show / hide on the map','地図で表示 / 非表示','Auf der Karte ein/aus','Показать/скрыть на карте','Mostrar/ocultar en el mapa')+'"><span class="atl-ctl-knob"></span></button></div>'; }
     async function runActions(ai, say, acts, gen){
       let body=''; const fails=[]; let cancelled=false;
@@ -27272,6 +27045,50 @@ window.addEventListener('DOMContentLoaded', () => {
        {actions, confident}: `confident` (a fully-anchored single intent) runs immediately and skips the AI;
        non-confident matches (navigation / layer toggle) are used only to RESCUE a failed AI plan, so the AI still
        owns every compound / contextual / ambiguous request. */
+    /* (#R115) Compare-indicator resolver — "Compare the USA, China and India — GDP, defense and population"
+       opened the panel but IGNORED the named indicators (localPlan dropped the "— metrics" tail on purpose, and
+       the AI was never told a "metrics" parameter exists). Map free-text indicator names (5 languages + common
+       synonyms like defense→military spending) onto IntMapStatsCompare's real IND keys. */
+    const _CMP_ALIAS={
+      'gdp':'gdp','gross domestic product':'gdp','経済規模':'gdp','bip':'gdp','ввп':'gdp','pib':'gdp',
+      'gdp per capita':'gdppc','per capita gdp':'gdppc','per-capita gdp':'gdppc','一人当たりgdp':'gdppc','1人当たりgdp':'gdppc','一人あたりgdp':'gdppc','bip pro kopf':'gdppc','ввп на душу':'gdppc','pib per cápita':'gdppc',
+      'gdp ppp':'gdpppp','gdp (ppp)':'gdpppp','purchasing power':'gdpppp','購買力平価':'gdpppp',
+      'gdp per capita ppp':'gdppcppp',
+      'growth':'growth','gdp growth':'growth','economic growth':'growth','成長率':'growth','経済成長':'growth','wachstum':'growth','рост':'growth','crecimiento':'growth',
+      'inflation':'infl','cpi':'infl','インフレ':'infl','物価':'infl','инфляция':'infl','inflación':'infl',
+      'unemployment':'unemp','jobless':'unemp','失業':'unemp','arbeitslosigkeit':'unemp','безработица':'unemp','desempleo':'unemp',
+      'debt':'debt','government debt':'debt','public debt':'debt','債務':'debt','政府債務':'debt','staatsschulden':'debt','госдолг':'debt','deuda':'debt',
+      'current account':'cab','経常収支':'cab','leistungsbilanz':'cab','текущий счёт':'cab','cuenta corriente':'cab',
+      'population':'pop','people':'pop','人口':'pop','bevölkerung':'pop','население':'pop','población':'pop',
+      'life expectancy':'life','longevity':'life','平均寿命':'life','寿命':'life','lebenserwartung':'life','продолжительность жизни':'life','esperanza de vida':'life',
+      'fertility':'tfr','birth rate':'tfr','births':'tfr','出生率':'tfr','geburtenrate':'tfr','рождаемость':'tfr','fecundidad':'tfr',
+      'defense':'milb','defence':'milb','military':'milb','military spending':'milb','defense spending':'milb','defence spending':'milb','military budget':'milb','military expenditure':'milb','軍事費':'milb','国防費':'milb','防衛費':'milb','軍事':'milb','国防':'milb','militär':'milb','verteidigung':'milb','оборона':'milb','военные расходы':'milb','defensa':'milb','gasto militar':'milb',
+      'military % gdp':'mil','military share of gdp':'mil','defense % gdp':'mil','軍事費対gdp':'mil',
+      'co2':'co2','co₂':'co2','carbon':'co2','emissions':'co2','排出':'co2','emisiones':'co2','выбросы':'co2',
+      'internet':'net','インターネット':'net','ネット利用':'net','интернет':'net',
+      'urban':'urban','urbanization':'urban','urbanisation':'urban','都市人口':'urban','都市化':'urban','urbanización':'urban',
+      'exports':'exp','輸出':'exp','exporte':'exp','экспорт':'exp','exportaciones':'exp',
+      'fdi':'fdi','foreign direct investment':'fdi','直接投資':'fdi',
+      'health':'health','healthcare':'health','医療':'health','gesundheit':'health','здравоохранение':'health','salud':'health',
+      'education':'edu','教育':'edu','bildung':'edu','образование':'edu','educación':'edu',
+      'r&d':'rnd','research':'rnd','研究開発':'rnd','forschung':'rnd','ниокр':'rnd','i+d':'rnd',
+      'renewable':'renew','renewables':'renew','再エネ':'renew','再生可能':'renew','erneuerbare':'renew','возобновляем':'renew','renovable':'renew',
+      'forest':'forest','森林':'forest','wald':'forest','лес':'forest','bosque':'forest',
+      'homicide':'hom','murder':'hom','crime':'hom','殺人':'hom','mordrate':'hom','убийства':'hom','homicidios':'hom',
+      'area':'area','size':'area','面積':'area','fläche':'area','площадь':'area','superficie':'area',
+      'hdi':'hdi','human development':'hdi','人間開発':'hdi','ичр':'hdi','idh':'hdi',
+      'democracy':'demi','民主主義':'demi','demokratie':'demi','демократия':'demi','democracia':'demi'
+    };
+    function _cmpMetricKey(t2){ let s2=String(t2||'').toLowerCase().trim().replace(/[.。、,]$/,'').replace(/\s+/g,' '); if(!s2) return null;
+      let KEYS=[]; try{ KEYS=(window.IntMapStatsCompare&&window.IntMapStatsCompare.indKeys)?window.IntMapStatsCompare.indKeys():[]; }catch(_){}
+      if(KEYS.indexOf(s2)>=0) return s2;
+      if(_CMP_ALIAS[s2]) return _CMP_ALIAS[s2];
+      let best=null,bl=0; for(const al in _CMP_ALIAS){ if(al.length>bl && al.length>=3 && (s2.indexOf(al)>=0||(s2.length>=3&&al.indexOf(s2)>=0))){ best=_CMP_ALIAS[al]; bl=al.length; } }
+      return best; }
+    function _cmpMetricKeys(str){ const out=[],miss=[];
+      String(str||'').split(/,|、|・|;|\/|\s+and\s+|\s+und\s+|\s+y\s+|\s+и\s+|と/i).map(x=>x.trim()).filter(Boolean).forEach(mm=>{
+        const k=_cmpMetricKey(mm); if(k){ if(out.indexOf(k)<0) out.push(k); } else miss.push(mm.slice(0,30)); });
+      return {keys:out,miss}; }
     function localPlan(q){ const s=String(q||'').trim(); if(!s) return null; const low=s.toLowerCase();
       const A=a=>({actions:[a],confident:true});
       if(/^(switch to |go |set |enable |turn on )?(dark( ?mode| ?theme)?|ダーク(モード|テーマ)?|暗い(テーマ|モード)|dunkel(modus|es design)?|тёмн(ая|ый)( тема| режим)?|modo oscuro|tema oscuro)$/i.test(low)) return A({type:'theme',mode:'dark'});
@@ -27485,12 +27302,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const _mode=_tr?'transit':_wk?'walking':_cy?'cycling':'driving';
         return A({type:'directions',from:(rm[1]||'').trim(),to:(rm[2]||'').trim(),mode:_mode});
       }
-      /* (#R105) COMPARE COUNTRIES — deterministic so "Compare the USA, China and India — GDP, defense and population"
-         (and "日本とドイツを比較して") open the comparison (bar chart by default) with NO AI round-trip. Any "— metrics"
-         tail is dropped (the compare shows its default indicators, which already include GDP / population / military). */
-      let cm=low.match(/^compare\s+(.+?)(?:\s*[—–]\s*.*|\s+-\s+.*)?$/)||s.match(/^(.+?)を\s*(?:比較|くらべて|比べて)(?:して)?[。！？!?]*$/);
+      /* (#R105/#R115) COMPARE COUNTRIES — deterministic so "Compare the USA, China and India — GDP, defense and
+         population" (and "日本とドイツを比較して") open the comparison with NO AI round-trip. The "— metrics" tail is
+         now PARSED and honoured ("don't choose the specified indicators" bug): names resolve via _cmpMetricKeys
+         onto the panel's real indicator keys and are passed as metrics. An unresolvable tail keeps the defaults. */
+      let cm=low.match(/^compare\s+(.+?)(?:\s*[—–:]\s*(.+)|\s+-\s+(.+)|\s+by\s+(.+))?$/)||s.match(/^(.+?)を\s*(?:比較|くらべて|比べて)(?:して)?[。！？!?]*\s*(?:[—–:：]\s*(.+))?$/);
       if(cm){ const parts=(cm[1]||'').replace(/^the\s+/i,'').split(/\s*,\s*|、|;|\s+and\s+|\s+und\s+|\s+y\s+|\s+и\s+|と|\s+vs\.?\s+|\s*対\s*/i).map(x=>x.replace(/^the\s+/i,'').trim()).filter(Boolean);
-        if(parts.length>=2&&parts.length<=10) return A({type:'compareStats',countries:parts}); }
+        if(parts.length>=2&&parts.length<=10){ const act={type:'compareStats',countries:parts};
+          const tail=cm[2]||cm[3]||cm[4]||''; if(tail){ const mr=_cmpMetricKeys(tail); if(mr.keys.length) act.metrics=mr.keys; }
+          return A(act); } }
       /* (#R105) RANKING QUESTIONS — "Which countries have the highest life expectancy?" / "…spend the most on defense
          relative to GDP?" → the real ranked list, deterministically (no AI needed). */
       let qm=low.match(/^which countr(?:y|ies)\s+(?:have|has)\s+the\s+(highest|greatest|largest|biggest|most|lowest|smallest|least)\s+(.+?)\s*\??$/)
