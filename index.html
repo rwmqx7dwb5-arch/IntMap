@@ -236,10 +236,28 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
        nowrap + a font/padding that fits the longest label keeps text inside the button with no extra rows. */
     .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:11.5px; font-weight:500; border-radius:10px; transition:0.3s; white-space:nowrap; text-align:center; }
     .mode-btn.active{ background:var(--primary-color); color:#fff; box-shadow:0 4px 12px rgba(0,122,255,0.3); }
-    /* (#R101) the sidebar Atlas button keeps the News/Countries pill SHAPE but takes the existing Atlas-button
-       gradient background (no ✨). Specificity (0,2,0) also wins over the mobile `.mode-btn{background:transparent}`. */
-    .mode-btn.mode-atlas,.mode-btn.mode-atlas.active{ background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
+    /* (#R114) sidebar Atlas tab — SELECTED = the full Atlas gradient fill (unchanged, as before); UNSELECTED =
+       FRAME ONLY: a gradient outline ring (masked ::before so it follows the pill radius) over the normal neutral
+       tab fill, with Atlas-indigo text. Was: both states filled identically. Specificity (0,3,0) still wins over the
+       mobile `.mode-btn{background:transparent}`. */
+    .mode-btn.mode-atlas{ position:relative; }
+    .mode-btn.mode-atlas:not(.active){ background:var(--input-bg); color:#5e5ce6; box-shadow:none; }
+    [data-theme="dark"] .mode-btn.mode-atlas:not(.active){ color:#a5a3ff; }
+    .mode-btn.mode-atlas:not(.active)::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+    .mode-btn.mode-atlas.active{ background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
     .mode-btn.mode-atlas:hover{ filter:brightness(1.07); }
+    /* (#R114) Settings → Accent color picker. Round swatches drive --primary-color; the "default" swatch is a
+       hollow ring (= no override → theme blue), the last swatch is a rainbow "pick any colour" with a hidden
+       native <input type=color>. The currently-applied one gets a focus ring. */
+    .accent-picker{ display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-top:9px; }
+    .accent-sw{ width:27px; height:27px; border-radius:50%; border:none; background:var(--sw,#0a84ff); cursor:pointer; padding:0; box-shadow:inset 0 0 0 1px rgba(128,128,128,0.28); transition:transform .12s ease; }
+    .accent-sw:hover{ transform:scale(1.1); }
+    .accent-sw.sel{ box-shadow:0 0 0 2px var(--card-bg),0 0 0 4px var(--sw,#0a84ff); }
+    .accent-sw[data-accent="default"]{ background:var(--input-bg); box-shadow:inset 0 0 0 2px var(--sw); }
+    .accent-sw[data-accent="default"].sel{ box-shadow:inset 0 0 0 2px var(--sw),0 0 0 2px var(--card-bg),0 0 0 4px var(--sw); }
+    .accent-custom{ display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; border-radius:50%; cursor:pointer; overflow:hidden; box-shadow:inset 0 0 0 1px rgba(128,128,128,0.28); background:conic-gradient(from 0deg,#ff3b30,#ff9500,#ffcc00,#34c759,#30b0c7,#0a84ff,#5e5ce6,#af52de,#ff2d55,#ff3b30); }
+    .accent-custom input[type=color]{ opacity:0; width:150%; height:150%; border:none; padding:0; margin:0; cursor:pointer; }
+    .accent-custom.sel{ box-shadow:0 0 0 2px var(--card-bg),0 0 0 4px var(--text-main); }
     /* iOS-style segmented control (for News pin mode and other small toggles) */
     .ios-segment{ display:inline-flex; background:var(--input-bg); border-radius:10px; padding:2px; gap:2px; }
     .ios-segment-btn{ background:transparent; border:none; color:var(--text-muted); padding:5px 10px; font-size:11px; font-weight:600; border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
@@ -2041,7 +2059,8 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
         <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
         <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view">🔗</button>
-        <button class="view-btn atlas-launch" id="btn-atlas" data-i18n-title="atlasBtn" title="Atlas — ask in plain language (beta)"><span class="atlas-l-txt">Atlas</span></button>
+        <!-- (#R114) top-bar Atlas launch button removed (requested). Atlas stays reachable via the left-sidebar
+             Atlas tab (normal/mobile) and the Window menu (workspace mode); the #btn-atlas wiring below is guarded. -->
         <div class="layer-menu-container">
           <button class="view-btn" id="btn-layers" data-i18n="layersBtn" style="background:rgba(0,0,0,0.05); margin-left:4px;">Layers ▾</button>
           <div class="layer-dropdown" id="layer-dropdown">
@@ -2135,6 +2154,21 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       <option value="light" data-i18n="optLight">Light</option>
       <option value="dark" data-i18n="optDark">Dark</option>
     </select></div>
+    <!-- (#R114) Accent color — recolours the UI accent (buttons, active tabs, sliders = --primary-color). -->
+    <div class="setting-group"><label data-i18n="lblAccent">Accent color</label>
+      <div class="accent-picker" id="accent-picker">
+        <button type="button" class="accent-sw" data-accent="default" style="--sw:#0a84ff" data-i18n-title="accentDefault" title="Default"></button>
+        <button type="button" class="accent-sw" data-accent="#5e5ce6" style="--sw:#5e5ce6" title="Indigo"></button>
+        <button type="button" class="accent-sw" data-accent="#af52de" style="--sw:#af52de" title="Purple"></button>
+        <button type="button" class="accent-sw" data-accent="#ff2d55" style="--sw:#ff2d55" title="Pink"></button>
+        <button type="button" class="accent-sw" data-accent="#ff3b30" style="--sw:#ff3b30" title="Red"></button>
+        <button type="button" class="accent-sw" data-accent="#ff9500" style="--sw:#ff9500" title="Orange"></button>
+        <button type="button" class="accent-sw" data-accent="#34c759" style="--sw:#34c759" title="Green"></button>
+        <button type="button" class="accent-sw" data-accent="#30b0c7" style="--sw:#30b0c7" title="Teal"></button>
+        <button type="button" class="accent-sw" data-accent="#8e8e93" style="--sw:#8e8e93" title="Graphite"></button>
+        <label class="accent-custom" data-i18n-title="accentCustom" title="Custom color"><input type="color" id="setting-accent-custom" value="#007aff"></label>
+      </div>
+    </div>
     <div class="setting-group"><label data-i18n="lblMapColor">Map color</label><select id="setting-map-color"><option value="auto" data-i18n="mapColorAuto">Same as appearance</option><option value="light" data-i18n="mapColorLight">Light (white)</option><option value="dark" data-i18n="mapColorDark">Dark (black)</option></select></div>
     <div class="setting-group"><label data-i18n="lblLayerPanel">Layer panel</label><select id="setting-layerpanel"><option value="classic" data-i18n="layerPanelClassic">Classic dropdown</option><option value="right" data-i18n="layerPanelRight">Right sidebar (visual, with previews)</option></select></div>
     <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
@@ -3538,6 +3572,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const j=await r.json().catch(()=>null);
     if(j==null) return '';
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
+    /* (#R114) expose the last call's meta (provider/webAttached/webUsed/webSearches/…) so a caller can tell
+       whether the web-search tool ACTUALLY ran — used to keep "latest" features honest. */
+    try{ window._aiLastMeta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null; }catch(_){}
     if(typeof j==='string') return j;
     if(typeof j.text==='string') return j.text;
     if(j.content&&Array.isArray(j.content)) return j.content.map(b=>b.text||'').join('');
@@ -7498,8 +7535,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#layer-sidebar-r .lst-prev{aspect-ratio:240/96;background-size:cover;background-position:center;background-color:#14212f;border-bottom:1px solid rgba(128,128,128,0.14);}'
         /* (#R72) tile caption: slightly larger, evenly padded, vertically centered within its fixed 2-line box */
         +'#layer-sidebar-r .lst-nm{padding:5px 8px 5px;font-size:11px;font-weight:500;line-height:1.3;color:var(--text-main);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:26px;box-sizing:content-box;text-align:left;overflow-wrap:break-word;}'   /* (#R103) reverted to the original 11px per request */
-        +'#layer-sidebar-r .lst-check{position:absolute;top:5px;left:5px;width:17px;height:17px;border-radius:50%;background:var(--primary-color);color:#fff;display:none;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;}'
-        +'#layer-sidebar-r .lst-tile.on .lst-check{display:flex;}'
+        /* (#R114) .lst-check ✓ badge removed — the `.on` accent border is the ON-layer highlight now. */
         +'#layer-sidebar-r .lst-star{position:absolute;top:3px;right:3px;width:19px;height:19px;border:none;border-radius:50%;background:rgba(10,14,22,0.5);color:rgba(255,255,255,0.8);font-size:10.5px;line-height:1;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}'
         +'#layer-sidebar-r .lst-tile:hover .lst-star,#layer-sidebar-r .lst-star.on{display:flex;}'
         +'#layer-sidebar-r .lst-star.on{color:#ffd60a;}'
@@ -7556,8 +7592,9 @@ window.addEventListener('DOMContentLoaded', () => {
       const pv=document.createElement('div'); pv.className='lst-prev'; if(r.gk) pv.dataset.gk=r.gk;
       try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.into(pv,r.id,r.name); }catch(_){}
       const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=r.name; nm.title=r.name;
-      const ck=document.createElement('span'); ck.className='lst-check'; ck.textContent='✓';
-      d.appendChild(pv); d.appendChild(nm); d.appendChild(ck);
+      /* (#R114) no ✓ badge on the ON-layer highlight (requested): the `.on` accent border already marks an
+         enabled layer, and a bare ✓ is exactly what the standing UI rule tells us to drop. */
+      d.appendChild(pv); d.appendChild(nm);
       /* ★ favorite — the SAME store as the classic panel (imLayerFavs), mirrored both ways */
       try{ if(typeof layerCbInfo==='function'&&Array.isArray(window.imLayerFavs)){ const info=layerCbInfo(r.cb);
         if(info){ const st=document.createElement('button'); st.className='lst-star'+(window.imLayerFavs.includes(info.key)?' on':''); st.type='button'; st.textContent='★'; st.title='Favorite';
@@ -8226,7 +8263,7 @@ window.addEventListener('DOMContentLoaded', () => {
         {label:T('Radius','半径','Radius','Радиус','Radio'),run:()=>clk('btn-tool-radius')},'sep',
         {label:T('Screenshot','スクリーンショット','Screenshot','Скриншот','Captura'),run:()=>clk('btn-screenshot')},
         {label:T('Share this view','この表示を共有','Ansicht teilen','Поделиться','Compartir'),run:()=>clk('btn-share')},'sep',
-        {label:T('Atlas (assistant)','Atlas（アシスタント）','Atlas','Atlas','Atlas'),run:()=>clk('btn-atlas')},
+        {label:T('Atlas (assistant)','Atlas（アシスタント）','Atlas','Atlas','Atlas'),run:()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.toggle){ window.IntMapConsole.toggle(); return; } }catch(_){} clk('btn-community'); }},   /* (#R114) top-bar #btn-atlas removed → open the console directly (fallback: sidebar Atlas tab) */
         {label:T('Grid + labels','グリッド＋ラベル','Gitter','Сетка','Cuadrícula'),run:()=>clk('btn-tool-grid')} ]);
       /* Window — show/hide each window + reset */
       const winItems=DEFS.filter(d=>wraps[d.id]).map(def=>({label:def.t(),win:def.id,stay:1,
@@ -10322,6 +10359,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function closeSettings(){
     if(settingsDirty && !confirm(currentLang==='jp'?'変更を保存していません。破棄して閉じますか？':currentLang==='de'?'Ungespeicherte Änderungen verwerfen?':currentLang==='ru'?'Изменения не сохранены. Отменить их?':currentLang==='es'?'Hay cambios sin guardar. ¿Descartarlos?':'You have unsaved changes. Discard them?')) return;
     settingsDirty=false; modal.style.display='none';
+    try{ window._accentPending=window.imAccent; applyAccent(); }catch(_){}   /* (#R114) discard any live accent preview → back to the committed colour */
   }
   modal.addEventListener('input', ()=>{ settingsDirty=true; });
   modal.addEventListener('change', ()=>{ settingsDirty=true; });
@@ -10914,7 +10952,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-07-15';   /* (#R101) Privacy §4: flight-simulator audio note (Web Audio synthesized locally; GPWS voice callouts use the browser's Web Speech API) */
+  const LEGAL_DATE='2026-07-16';   /* (#R114) Terms §6 + sources: AI provider is now OpenAI (gpt-5.6-luna) and AI features may run web searches. (#R101) Privacy §4: flight-simulator audio note. */
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -10922,7 +10960,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>3. アカウント</b> — 正確な情報を登録し、パスワードとアカウントの管理責任を負うものとします。13歳以上である必要があります。</p>
     <p><b>4. ユーザー投稿</b> — コミュニティ投稿・コメント・画像の権利は投稿者に帰属しますが、本サービス上での表示に必要な範囲のライセンスを当方に許諾するものとします。違法・権利侵害・差別的・有害な内容を投稿してはなりません。当方は投稿の削除やアカウント停止を行う場合があります。</p>
     <p><b>5. 禁止事項</b> — スクレイピング、不正利用、リバースエンジニアリング、サービス妨害、第三者APIの濫用を禁じます。</p>
-    <p><b>6. 第三者サービス・AI</b> — ニュース、地図・衛星タイル、AI機能は各第三者の規約に従います。AI機能はサーバー側（Supabase Edge Function）が当方の管理するキーで実行し、無料利用枠（1日あたりの上限）が適用されます。ブラウザにAIキーを入力・保存することはありません。衛星タイルのキー等を任意で入力した場合は、お使いのブラウザ内にのみ保存されます。</p>
+    <p><b>6. 第三者サービス・AI</b> — ニュース、地図・衛星タイル、AI機能は各第三者の規約に従います。AI機能はサーバー側（Supabase Edge Function）が当方の管理するキーで実行し、無料利用枠（1日あたりの上限）が適用されます。ブラウザにAIキーを入力・保存することはありません。時事的な質問に答えるため、AI機能はWeb検索を実行し、必要なクエリのみをAIプロバイダーに送信する場合があります。衛星タイルのキー等を任意で入力した場合は、お使いのブラウザ内にのみ保存されます。</p>
     <p><b>7. 知的財産</b> — 本サービスのコード・デザインは保護されています。第三者データの権利は各権利者に帰属します。</p>
     <p><b>8. 免責</b> — データは不正確・遅延・利用不可となる場合があり、いかなる保証も行いません。</p>
     <p><b>9. 責任の制限</b> — 法律で認められる範囲で、本サービス利用に起因する損害について当方は責任を負いません。</p>
@@ -10935,7 +10973,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>3. Accounts.</b> You must provide accurate information, keep your password secure, are responsible for activity on your account, and must be at least 13 years old.</p>
     <p><b>4. User content.</b> You retain rights to community posts, comments and images you submit, and grant IntMap a license to display them within the Service. You must not post unlawful, infringing, hateful or harmful content. We may remove content and suspend accounts.</p>
     <p><b>5. Acceptable use.</b> No scraping, abuse, reverse engineering, disrupting the Service, or misusing third-party APIs.</p>
-    <p><b>6. Third-party services & AI.</b> News, map/satellite tiles and AI features rely on third parties under their own terms. AI features run server-side (a Supabase Edge Function) using our own key, subject to a free daily usage limit — you never enter or store an AI key in your browser. Any satellite-tile key you optionally enter is stored only in your browser.</p>
+    <p><b>6. Third-party services & AI.</b> News, map/satellite tiles and AI features rely on third parties under their own terms. AI features run server-side (a Supabase Edge Function) using our own key, subject to a free daily usage limit — you never enter or store an AI key in your browser. To answer questions about current events, AI features may perform web searches, sharing only the necessary query text with the AI provider. Any satellite-tile key you optionally enter is stored only in your browser.</p>
     <p><b>7. Intellectual property.</b> IntMap's code and design are protected. Third-party data belongs to its respective owners.</p>
     <p><b>8. Disclaimers.</b> Data may be inaccurate, delayed or unavailable; no warranties are given.</p>
     <p><b>9. Limitation of liability.</b> To the maximum extent permitted by law, we are not liable for damages arising from your use of the Service.</p>
@@ -15358,6 +15396,12 @@ window.addEventListener('DOMContentLoaded', () => {
     blueberryBtn:"サポート", blueberryTitle:"IntMapを支援する",
     blueberryBody:"IntMapは、地理・気候・歴史・生態・人口・世界の出来事をひとつの画面で探索できる地図を目指しています。\nIntMapは個人で開発しており、新しいレイヤー・データセット・機能を継続的に追加しています。\nIntMapを気に入っていただけて、今後の開発を応援したい方は、下記からご支援いただけます。",
     blueberryGo:"支援ページへ ↗", blueberryNote:"外部サイト（Stripe）へ遷移します。" });
+  /* (#R114) Accent colour picker — Settings → the UI accent (buttons, active tabs, sliders). 5 languages. */
+  Object.assign(i18n.en,{ lblAccent:"Accent color", accentDefault:"Default", accentCustom:"Custom color" });
+  Object.assign(i18n.jp,{ lblAccent:"アクセントカラー", accentDefault:"デフォルト", accentCustom:"カスタムカラー" });
+  try{ Object.assign(i18n.de,{ lblAccent:"Akzentfarbe", accentDefault:"Standard", accentCustom:"Eigene Farbe" }); }catch(_){}
+  try{ Object.assign(i18n.ru,{ lblAccent:"Акцентный цвет", accentDefault:"По умолчанию", accentCustom:"Свой цвет" }); }catch(_){}
+  try{ Object.assign(i18n.es,{ lblAccent:"Color de acento", accentDefault:"Predeterminado", accentCustom:"Color personalizado" }); }catch(_){}
   /* (#R42) Share-this-view + Atlas console button tooltips — 5 languages. */
   Object.assign(i18n.en,{ shareView:"Share this view (copy link)", atlasBtn:"Atlas — ask in plain language (beta) · Ctrl/⌘+K" });
   Object.assign(i18n.jp,{ shareView:"この表示を共有（リンクをコピー）", atlasBtn:"Atlas — 自然言語で操作（beta）· Ctrl/⌘+K" });
@@ -15423,8 +15467,42 @@ window.addEventListener('DOMContentLoaded', () => {
     tr:{name:{en:'Türkiye',jp:'トルコ'},flag:'🇹🇷'}, eg:{name:{en:'Egypt',jp:'エジプト'},flag:'🇪🇬'}
   };
   window.NEWS_COUNTRY_FEEDS=NEWS_COUNTRY_FEEDS;
+  /* (#R114) ===== Accent color ===== recolour the UI accent (--primary-color) from Settings.
+     window.imAccent = 'default' (theme blue) | '#rrggbb'. A custom value is injected as an !important override on
+     :root/body so it beats each theme's --primary-color; 'default' removes it. Persisted in intmap_settings (so it
+     syncs to the account) and applied on load. Live-previews while the panel is open; commits on Apply, reverts on Cancel. */
+  if(typeof window.imAccent==='undefined') window.imAccent='default';
+  function applyAccentColor(val){ try{
+    const ok=(typeof val==='string')&&/^#[0-9a-fA-F]{6}$/.test(val);
+    let st=document.getElementById('im-accent-style');
+    if(ok){ if(!st){ st=document.createElement('style'); st.id='im-accent-style'; (document.head||document.documentElement).appendChild(st); }
+      st.textContent=':root,body{--primary-color:'+val+' !important;}'; }
+    else if(st&&st.parentNode){ st.parentNode.removeChild(st); }
+  }catch(_){} }
+  function applyAccent(){ applyAccentColor((window.imAccent&&window.imAccent!=='default')?window.imAccent:null); }
+  window.applyAccent=applyAccent;
+  (function(){
+    const pk=()=>document.getElementById('accent-picker');
+    const ci=()=>document.getElementById('setting-accent-custom');
+    function markSel(val){ const p=pk(); if(!p) return;
+      p.querySelectorAll('.accent-sw,.accent-custom').forEach(el=>el.classList.remove('sel'));
+      const hex=/^#[0-9a-fA-F]{6}$/.test(val||''); let sw=null;
+      if(val==='default') sw=p.querySelector('.accent-sw[data-accent="default"]');
+      else if(hex){ const lc=String(val).toLowerCase(); sw=Array.prototype.find.call(p.querySelectorAll('.accent-sw'),b=>(b.getAttribute('data-accent')||'').toLowerCase()===lc)||null; }
+      if(sw){ sw.classList.add('sel'); }
+      else if(hex){ const c=p.querySelector('.accent-custom'); if(c) c.classList.add('sel'); const x=ci(); if(x) x.value=val; }
+    }
+    function preview(val){ window._accentPending=val; applyAccentColor(val==='default'?null:val); markSel(val); }
+    window._accentPending=window.imAccent||'default';
+    /* reflect the COMMITTED accent in the picker (called on Settings open + after Atlas changes it) */
+    window._syncAccentPicker=function(){ window._accentPending=window.imAccent||'default'; const x=ci(); if(x&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent||'')) x.value=window.imAccent; markSel(window.imAccent||'default'); };
+    /* delegated so it works regardless of when the modal mounts; buttons don't fire input/change → set dirty here */
+    document.addEventListener('click',(e)=>{ try{ const p=pk(); if(!p) return; const b=e.target&&e.target.closest&&e.target.closest('.accent-sw'); if(!b||!p.contains(b)) return; e.preventDefault(); preview(b.getAttribute('data-accent')||'default'); try{ settingsDirty=true; }catch(_){} }catch(_){} });
+    document.addEventListener('input',(e)=>{ try{ const t2=e.target; if(!t2||t2.id!=='setting-accent-custom') return; preview(String(t2.value||'')); try{ settingsDirty=true; }catch(_){} }catch(_){} });
+  })();
   function loadSettings(){
     let s={}; try{ s=JSON.parse(localStorage.getItem('intmap_settings')||'{}')||{}; }catch(_){ s={}; }
+    window.imAccent=(typeof s.accent==='string'&&s.accent)?s.accent:'default'; try{ applyAccent(); }catch(_){}   /* (#R114) restore accent */
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
     if(['en','jp','de','ru','es'].includes(s.lang)){ currentLang=s.lang; ['en','jp','de','ru','es'].forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.newsPinMode) newsPinMode=s.newsPinMode;
@@ -15444,7 +15522,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
-      theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode,
+      theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, ticker:window.imTicker,
       newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
@@ -15742,7 +15820,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/',use:{en:'Authoritative HISTORICAL real GDP (constant 2011 international $) & population back to 1900 for the Time-machine — the Countries tab, choropleths & country comparison when travelling before the World Bank’s 1960 floor and for dissolved states (Former USSR/Yugoslavia/Czechoslovakia are first-class Maddison entities)',jp:'歴史的な実質GDP（2011年国際ドル）・人口（1900年以降）の権威あるデータ。タイムマシンで世界銀行の下限（1960年）より前へ移動した場合や旧国家（ソ連・ユーゴ・チェコスロバキア等はマディソンの独立項目）の国タブ・コロプレス・国比較に使用'}},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators (time-series charts, the 5-country comparison, and the Time-machine — the whole Countries tab, the hover read-outs and the country choropleths show the real figures for the year the master clock is set to)',jp:'国別の時系列指標（時系列グラフ・最大5か国比較、そしてタイムマシン——マスター時計で選んだ年の実データを国タブ・ホバー・コロプレスに反映）'}},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO',use:{en:'Govt-debt layer gap-fill + the alternative economic source in the country comparison (DataMapper API)',jp:'政府債務レイヤーの欠損補完＋国比較の経済指標の切替ソース（DataMapper API）'}},
-    {n:'AI provider (Anthropic / OpenAI / Google)',u:'https://www.anthropic.com/',use:{en:'Server-side AI: news geolocation + in-app AI features (key held server-side)',jp:'サーバー側AI：ニュース地点解析・アプリ内AI機能（キーはサーバー側で管理）'}}
+    {n:'AI provider — OpenAI (Anthropic / Google selectable)',u:'https://openai.com/',use:{en:'Server-side AI (key held server-side): Atlas assistant, news geolocation, in-app AI features, and web search for current-events questions',jp:'サーバー側AI（キーはサーバー側で管理）：Atlasアシスタント・ニュース地点解析・アプリ内AI機能、および時事的な質問のためのWeb検索'}}
   ];
   function openSourcesModal(){
     const m=document.getElementById('sources-modal'); if(!m) return;
@@ -15790,12 +15868,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-layerpanel'))    v('setting-layerpanel').value=(window.imLayerPanel||'classic');
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
+      try{ window._syncAccentPicker&&window._syncAccentPicker(); }catch(_){}   /* (#R114) reflect the committed accent */
       renderNewsCountryChecks();
     });
   }
   { const apply=document.getElementById('btn-close-settings');
     if(apply) apply.addEventListener('click',()=>{
       const v=(id)=>document.getElementById(id);
+      if(window._accentPending!=null){ window.imAccent=window._accentPending; try{ applyAccent(); }catch(_){} }   /* (#R114) commit the previewed accent (saveSettings below persists it) */
       if(v('setting-sidebar-style')) window.imSidebarStyle=v('setting-sidebar-style').value;
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
       if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
@@ -19443,10 +19523,15 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ wireM(fx); }catch(_){}
     }
     async function render(){ const v=ensureView(); if(!v) return; chipRow(); metricRow(); modeRow(); try{ v.__refreshList&&v.__refreshList(); }catch(_){}
-      /* (#R94) time-machine banner — the bars/table below are that year's real World Bank/IMF figures */
+      /* (#R114) time-machine banner — HONEST about the source. While travelling, GDP & population come from the
+         Maddison long-run series (real 2011 int$); other indicators show their World Bank / IMF value for that year
+         WHERE the annual series reaches it (WB/IMF begin in 1960). The old copy wrongly claimed EVERY travelled year
+         was "this year's World Bank / IMF figures" (plainly false for e.g. 1939) and carried a 📅 emoji (removed). */
       try{ const tb=v.querySelector('#scp-timebanner'); if(tb){ const ty=_ttYear(), pw=(window._imTimePreWB||null);
-        if(ty){ tb.style.display='block'; tb.classList.remove('warn'); tb.innerHTML='📅 <b>'+ty+'</b> · '+LL('showing this year’s World Bank / IMF figures','この年の世界銀行・IMFの数値を表示中','Werte dieses Jahres','данные за этот год','cifras de este año'); }
-        else if(pw){ tb.style.display='block'; tb.classList.add('warn'); tb.innerHTML='📅 <b>'+pw+'</b> · '+LL('World Bank annual series begin in 1960 — latest available','世界銀行の年次データは1960年以降','Weltbank-Reihen ab 1960','ряды Всемирного банка с 1960','series desde 1960'); }
+        if(ty){ tb.style.display='block';
+          if(ty<1960){ tb.classList.add('warn'); tb.innerHTML='<b>'+ty+'</b> · '+LL('long-run estimates for this year — World Bank / IMF annual series begin in 1960','この年の長期推計値 — 世界銀行・IMFの年次データは1960年以降','Langzeitschätzungen für dieses Jahr — Weltbank-/IWF-Reihen ab 1960','долгосрочные оценки за этот год — ряды Всемирного банка/МВФ с 1960','estimaciones de largo plazo para este año — las series del Banco Mundial/FMI empiezan en 1960'); }
+          else { tb.classList.remove('warn'); tb.innerHTML='<b>'+ty+'</b> · '+LL('each indicator’s value for this year, by its own source','この年の各指標の値（各出典による）','Werte je Kennzahl für dieses Jahr, nach Quelle','значение каждого показателя за этот год, по своему источнику','valor de cada indicador para este año, según su fuente'); } }
+        else if(pw){ tb.style.display='block'; tb.classList.add('warn'); tb.innerHTML='<b>'+pw+'</b> · '+LL('World Bank annual series begin in 1960 — latest available','世界銀行の年次データは1960年以降','Weltbank-Reihen ab 1960','ряды Всемирного банка с 1960','series desde 1960'); }
         else tb.style.display='none'; } }catch(_){}
       const body=v.querySelector('#scp-body');
       /* (#R108) FIX the rare "bar→time-series が切り替わらない（tableを経由すると変わる）" bug: a MODE change must fully
@@ -25728,16 +25813,23 @@ window.addEventListener('DOMContentLoaded', () => {
             if(gd) hl2+='\n\nLive web news search results (GDELT, last 7 days) — use for "Recent developments":\n'+gd;
             if(gn) hl2+='\n\nLive Google News search results — use for "Recent developments":\n'+gn;
           }catch(_){}
-          const sysB='You are a geopolitical and area-studies research assistant. The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: a web-search or function-calling tool is NOT necessarily attached to this request — do NOT call any tool or function, and do NOT claim to have searched the web. For "Recent developments" use the supplied recent-news headlines below (and, ONLY if a web-search tool actually is attached, its results). GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from the supplied headlines (or an attached web-search result you actually obtained this turn) — never invent a plausible-sounding recent event from memory; if the supplied headlines have nothing recent, say so rather than fabricating. Respond in '+langB+'.';
+          /* (#R114) LUNA: the brief PROMISES latest developments, so it now really searches. The old prompt
+             attached the tool (webMode) yet ordered the model "do NOT call any tool" — a Gemini-era contradiction
+             that left 0 web searches run. Prompt is now tool-CONDITIONAL (use search if attached; else the supplied
+             headlines) and the call is webMode:'required' so the proxy forces the search. */
+          const sysB='You are a geopolitical and area-studies research assistant. The real current date is '+today+' (never treat it as a future date). Be factual and concise; include concrete years, dates and figures (population, GDP, troop counts, distances) wherever possible; clearly flag anything uncertain. IMPORTANT: if a web-search tool is attached to this request, USE it to find and verify the most recent developments, and cite each recent event with its date and a source; if no web-search tool is attached, rely only on the supplied recent-news headlines below and do not claim to have searched. Either way, treat the supplied headlines as leads. GROUNDING (the user reported hallucinated, non-existent events): every RECENT development you list must come from your web-search results this turn OR the supplied headlines — never invent a plausible-sounding recent event from memory. If neither surfaces anything recent, say so plainly under "Recent developments" rather than fabricating one or presenting an old event as if it were current. Respond in '+langB+'.';
           const pB='Write a concise intelligence brief on "'+nm3+'"'+((ll&&isFinite(ll.lat))?(' (around '+ll.lat.toFixed(2)+', '+ll.lng.toFixed(2)+')'):'')+' with the sections:\n## Background\n## History (date the key events)\n## Economy (latest figures with their year)\n## Military & strategic significance\n## Recent developments (prioritise the last 1-2 years; date each event)\n2-4 sentences per section, section headers translated into '+langB+'. Prefer named entities, dates and numbers over generalities.'+hl2;
-          let txtB=''; try{ txtB=await askAI(pB,sysB,null,{task:'brief',webMode:'auto'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
+          let txtB=''; try{ txtB=await askAI(pB,sysB,null,{task:'brief',webMode:'required'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
              "AI briefってワードをわざわざAtlasで出すな"). */
           let srcCardsB=''; try{ srcCardsB=linkCards(srcSink); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards */
           /* (#R103) the per-message "AI-generated — verify" note is dropped — the single static note under the input bar
              now carries that disclaimer (毎メッセージに書くな). */
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+srcCardsB); }
+          /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
+             (meta.webUsed) so a search-less brief is never mistaken for fresh "latest" intelligence. */
+          let asofB=''; try{ const _m=window._aiLastMeta||{}; asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
+          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+asofB+srcCardsB); }
         case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
             "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
@@ -25755,6 +25847,17 @@ window.addEventListener('DOMContentLoaded', () => {
           return R(!!(list&&list.length), listHtml(t,list,a.metricY)); }
         case 'mapMetric': case 'choropleth': { await ensureData(); return drawChoro(a.metric,a.order,a.color); }
         case 'theme': { const m=({dark:'dark',light:'light',auto:'auto',system:'auto'})[String(a.mode||'').toLowerCase()]||'auto'; const ok=setSel('setting-theme',m); try{ if(typeof userTheme!=='undefined'){ userTheme=m; if(typeof applyTheme==='function') applyTheme(); } }catch(_){} return R(ok||(typeof userTheme!=='undefined'&&userTheme===m), note('✓ '+L('Theme','テーマ','Thema','Тема','Tema')+': '+m)); }
+        case 'accent': case 'accentColor': case 'accentColour': {   /* (#R114) recolour the UI accent (--primary-color) */
+          const raw=String(a.color||a.value||a.mode||a.name||'').trim().toLowerCase();
+          const NAMED={blue:'#0a84ff',indigo:'#5e5ce6',purple:'#af52de',violet:'#af52de',magenta:'#bf5af2',pink:'#ff2d55',rose:'#ff2d55',red:'#ff3b30',orange:'#ff9500',amber:'#ff9500',green:'#34c759',teal:'#30b0c7',cyan:'#30b0c7',mint:'#00c7be',graphite:'#8e8e93',gray:'#8e8e93',grey:'#8e8e93'};
+          let val=null;
+          if(/^(default|reset|auto|none|off)$/.test(raw)) val='default';
+          else if(/^#[0-9a-f]{6}$/.test(raw)) val=raw;
+          else if(/^#[0-9a-f]{3}$/.test(raw)) val='#'+raw.slice(1).split('').map(c=>c+c).join('');
+          else if(NAMED[raw]) val=NAMED[raw];
+          if(!val) return R(false, warn('⚠ '+L('Unknown colour','不明な色','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color||a.value||a.mode||'')));
+          try{ window.imAccent=val; if(typeof applyAccent==='function') applyAccent(); if(typeof window._syncAccentPicker==='function') window._syncAccentPicker(); if(typeof saveSettings==='function') saveSettings(); }catch(_){}
+          return R(true, note(L('Accent colour','アクセントカラー','Akzentfarbe','Акцентный цвет','Color de acento')+': '+(val==='default'?L('default','デフォルト','Standard','по умолчанию','predeterminado'):val))); }
         case 'language': { const lg=({en:'en',english:'en',jp:'jp',ja:'jp',japanese:'jp','日本語':'jp',de:'de',german:'de',deutsch:'de',ru:'ru',russian:'ru',es:'es',spanish:'es','español':'es'})[String(a.lang||'').toLowerCase()]; if(lg){ let ok=false; try{ setLang(lg); ok=true; }catch(_){ ok=clickId('lang-'+lg); } return R(ok, note('✓ '+L('Language','言語','Sprache','Язык','Idioma')+': '+lg)); } return R(false, warn('⚠ '+L('Unsupported language','非対応の言語','Sprache nicht unterstützt','Язык не поддерживается','Idioma no admitido')+': '+esc(a.lang||''))); }
         case 'terrain3d': { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on')):warn('⚠')); }
         case 'grid': { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on')):warn('⚠')); }
@@ -26555,7 +26658,7 @@ window.addEventListener('DOMContentLoaded', () => {
              (#R69) the old prompt said "use ONLY the DATA blocks", which actively FORBADE the model from using its
              web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
              REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
-          const sys2='You are Atlas, the analysis engine of the IntMap world map. The real current date is '+new Date().toISOString().slice(0,10)+' (never treat it as a future date). Write a focused analytical answer to the QUESTION. Your evidence is the DATA blocks below — they already include the LIVE web-news search results (GDELT + Google News) that IntMap ran for you, plus loaded news, live Wikidata leaders, Wikipedia background, and more. IMPORTANT: a web-search or function-calling tool is NOT necessarily attached to this request; do NOT call any tool or function, and do NOT claim to have searched the web — work from the DATA blocks (and, ONLY if a web-search tool actually is attached, its results). When the DATA blocks contain no fresh, dated, question-relevant items, do NOT assert "nothing is happening"; instead say honestly, in the answer language, that the available evidence has nothing recent on this topic and name what the evidence covered. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query"); if your memory disagrees with that block, the block wins. Without such a block, state a current officeholder ONLY if the DATA blocks (or attached search results) name them with a date; otherwise say you could not verify it from the available evidence — outputting a remembered name is forbidden. RECENCY IS CRITICAL — the user complained that asking for the "近況 / recent situation" returned events from years ago. When the question asks about what is happening now / recently / latest / 近況: build the answer from the MOST RECENT developments in the DATA blocks (they are sorted newest-first; the LATEST NEWS + LIVE WEB SEARCH blocks are the current picture). Treat anything older than ~6 months as BACKGROUND only, and NEVER present an old event as if it were current. EVERY development you cite must carry its date; if the freshest dated evidence is more than a few months old, say so explicitly rather than presenting it as current. Structure: lead with the most newsworthy, RECENT, question-relevant developments WITH their dates (from the DATA blocks); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). GROUNDING RULE (critical — the user reported Atlas "存在しない出来事をハルシネーションする", inventing events that never happened): EVERY event, figure, name and date in your answer must be traceable to the DATA blocks above (or to attached web-search results, if a tool was attached this turn). You may NOT state a specific development, statistic or quote from parametric memory. If the available evidence has no dated, question-relevant items, say plainly — in the answer language — that you could not find recent verifiable information on this topic and name what the evidence covered; an honest "not found" is REQUIRED and is always better than a plausible-sounding but unverified or fabricated event. Do not embellish a thin fact into a fuller narrative. NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — ONLY urls that literally appear in the DATA blocks; if you have none, omit the line entirely; fabricating a URL is forbidden.';
+          const sys2='You are Atlas, the analysis engine of the IntMap world map. The real current date is '+new Date().toISOString().slice(0,10)+' (never treat it as a future date). Write a focused analytical answer to the QUESTION. Your evidence is the DATA blocks below — they already include the LIVE web-news search results (GDELT + Google News) that IntMap ran for you, plus loaded news, live Wikidata leaders, Wikipedia background, and more. IMPORTANT: if a web-search tool is attached to this request, USE it to fill gaps and verify recent, dated, question-relevant developments (cite the source URLs); if no web-search tool is attached, do not claim to have searched the web. Work primarily from the DATA blocks below, which already include the live web-news search results IntMap ran for you. When the DATA blocks (and any search results) contain no fresh, dated, question-relevant items, do NOT assert "nothing is happening"; instead say honestly, in the answer language, that the available evidence has nothing recent on this topic and name what the evidence covered. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query"); if your memory disagrees with that block, the block wins. Without such a block, state a current officeholder ONLY if the DATA blocks (or attached search results) name them with a date; otherwise say you could not verify it from the available evidence — outputting a remembered name is forbidden. RECENCY IS CRITICAL — the user complained that asking for the "近況 / recent situation" returned events from years ago. When the question asks about what is happening now / recently / latest / 近況: build the answer from the MOST RECENT developments in the DATA blocks (they are sorted newest-first; the LATEST NEWS + LIVE WEB SEARCH blocks are the current picture). Treat anything older than ~6 months as BACKGROUND only, and NEVER present an old event as if it were current. EVERY development you cite must carry its date; if the freshest dated evidence is more than a few months old, say so explicitly rather than presenting it as current. Structure: lead with the most newsworthy, RECENT, question-relevant developments WITH their dates (from the DATA blocks); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). GROUNDING RULE (critical — the user reported Atlas "存在しない出来事をハルシネーションする", inventing events that never happened): EVERY event, figure, name and date in your answer must be traceable to the DATA blocks above (or to attached web-search results, if a tool was attached this turn). You may NOT state a specific development, statistic or quote from parametric memory. If the available evidence has no dated, question-relevant items, say plainly — in the answer language — that you could not find recent verifiable information on this topic and name what the evidence covered; an honest "not found" is REQUIRED and is always better than a plausible-sounding but unverified or fabricated event. Do not embellish a thin fact into a fuller narrative. NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — use only urls that appear in the DATA blocks or that you actually obtained from web search this turn; if you have none, omit the line entirely; fabricating a URL is forbidden.';
           let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{task:'analysis',webMode:'auto'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txt||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
@@ -26859,7 +26962,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'RELATED-INDICATOR DISCOVERY: {"type":"explore","metric":KEY,"n"?:int} — computes which other indicators statistically move with the given one across all countries (Spearman + Pearson on the real data, sample sizes, biggest exception country) and presents them WITHOUT causal claims (use for "少子化と関連する指標を探して", "what correlates with democracy?"). Combine with mapMetric/scoreMap freely.\n'
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
-        +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
+        +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
         +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words; you may use ## section lines, **bold**, "- " bullets). CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "タイムマシンの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the time-machine button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
