@@ -6352,6 +6352,32 @@ window.addEventListener('DOMContentLoaded', () => {
       featuresIn:b=>_srcFeatsIn('volc2-src',b), source:()=>'Smithsonian GVP' });
     register('elevation',{ label:()=>L5('Elevation','標高','Höhe','Высота','Elevación'), on:()=>true,
       sampleAt:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:(Math.round(v)+' m'); }catch(_){ return null; } }, source:()=>'Mapzen/AWS terrarium DEM' });
+    /* ---- (#R120) live traffic layers — the REAL features currently on the map (same geojson the symbols paint) ---- */
+    const _lyrVis=id=>{ try{ return !!(map.getLayer(id)&&map.getLayoutProperty(id,'visibility')==='visible'); }catch(_){ return false; } };
+    register('aircraft',{ label:()=>L5('Live aircraft','航空機（リアルタイム）','Live-Flugverkehr','Самолёты (онлайн)','Aviones en vivo'),
+      on:()=>_lyrVis('lyr-planes'), featuresIn:b=>_srcFeatsIn('src-planes',b),
+      summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B' });
+    register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
+      on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
+      summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'aisstream.io AIS' });
+    /* ---- (#R120) country choropleths — the value of the topmost VISIBLE choropleth at a point. Core stat fills
+       go through window.choroValueAt (countryStats); the World-Bank beta fills carry their raw value in the
+       feature properties. queryRenderedFeatures needs the point on screen — off-screen returns null (honest). ---- */
+    const _WBF={ 'wb-cpi-f':{lb:()=>L5('Corruption (control, WGI)','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Índice de corrupción'),fmt:p=>Math.round(+p.s)+' / 100'},
+      'wb-le-f':{lb:()=>L5('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),fmt:p=>(+p.raw).toFixed(1)+' '+L5('yrs','年','J.','лет','años')},
+      'wb-unemp-f':{lb:()=>L5('Unemployment','失業率','Arbeitslosenquote','Безработица','Desempleo'),fmt:p=>(+p.raw).toFixed(1)+'%'},
+      'wb-internet-f':{lb:()=>L5('Internet users','インターネット普及率','Internetnutzer','Пользователи интернета','Usuarios de internet'),fmt:p=>(+p.raw).toFixed(1)+'%'},
+      'wb-precip-f':{lb:()=>L5('Annual precipitation','年降水量','Jahresniederschlag','Годовые осадки','Precipitación anual'),fmt:p=>Math.round(+p.raw)+' mm'} };
+    const _CHF=['pop','hdi','dem','milSpend','milSpendGDP','gdppc','tfr'].map(id=>id+'-fill');
+    register('choropleth',{ label:()=>L5('Country choropleth','国別コロプレス','Länder-Choroplethe','Хороплет по странам','Coropleta por países'),
+      on:()=>_CHF.some(_lyrVis)||Object.keys(_WBF).some(_lyrVis),
+      sampleAt:(x,y)=>{ try{ const v=window.choroValueAt&&window.choroValueAt(x,y); if(v) return v; }catch(_){}
+        try{ const ids=Object.keys(_WBF).filter(_lyrVis); if(!ids.length) return null;
+          const pt=map.project([x,y]); const cv=map.getCanvas();
+          if(!pt||pt.x<0||pt.y<0||pt.x>((cv&&cv.clientWidth)||1e9)||pt.y>((cv&&cv.clientHeight)||1e9)) return null;
+          const hit=map.queryRenderedFeatures(pt,{layers:ids});
+          if(hit&&hit.length){ const f=hit[0], p=f.properties||{}, W=_WBF[f.layer.id]; if(W) return W.lb()+': '+W.fmt(p)+(p.iso?(' ('+p.iso+')'):''); } }catch(_){}
+        return null; }, source:()=>'World Bank / SIPRI / UNDP' });
     return { register, list, active:activeIds, state, sampleAt, featuresIn, context };
   })();
 
@@ -21924,6 +21950,7 @@ window.addEventListener('DOMContentLoaded', () => {
         map.addLayer({id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},before);
       }catch(_){}
       items.push({n,sid,name,col}); renderList(); fit(fc);
+      try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}   /* (#R120) uploads join Atlas's "さっき作ったやつ" deixis */
       toast((jp()?'GeoJSONを表示: ':'GeoJSON added: ')+name);
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
@@ -22305,7 +22332,10 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(map.getLayer('pl-outline-line')) map.removeLayer('pl-outline-line'); }catch(_){}
         try{ if(map.getLayer('pl-outline-fill')) map.removeLayer('pl-outline-fill'); }catch(_){}
         try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){} } });
-    return { show, clear, setColor, active:()=>_active };
+    /* (#R120) current()/focus() — the active outline is a first-class map object (Object List + objectIds) */
+    return { show, clear, setColor, active:()=>_active,
+      current:()=>(_active&&_last)?{name:_last.name}:null,
+      focus:()=>{ try{ if(_active&&_last){ const bb=bboxOf(_last.geo); if(bb&&(bb[1][0]-bb[0][0])<340) map.fitBounds(bb,{padding:60,maxZoom:12,duration:800}); } }catch(_){} } };
   })();
   /* ===== (#R83) ROAD ROUTING ("Atlasで経路機能を…（Google Map）のような") — real turn-by-turn directions from the
      public OSRM road network (car via router.project-osrm.org; foot/bike via routing.openstreetmap.de). Draws the
@@ -23117,13 +23147,17 @@ window.addEventListener('DOMContentLoaded', () => {
        −aStall+2(CL0+flapCL)/CLa gave a full-flap Cessna ≈ −0.9° (it "stalled" nearly level), which was wrong. */
     /* (#R101) `disp` = the instrument set that gives each machine its own world: props → an analog SIX-PACK, the
        airliner → a glass PFD (+ the moving-map as the ND), fighters → the head-up display. */
+    /* (#R120) FUEL SYSTEM — real usable-fuel loads and burn laws: props burn ∝ power setting (burnMax kg/s at
+       full throttle, from real max fuel-flow figures); jets burn ∝ THRUST via TSFC (sfc kg/(N·s), dry; sfcAB wet).
+       C172 ≈ 144 kg usable (201 L) / ~27 kg/h full-rich; P-51 ≈ 730 kg internal / ~340 kg/h at war power;
+       A320 ≈ 18,700 kg (23,860 L), CFM56 cruise TSFC ≈ 0.55 lb/lbf/h; F-16 3,200 kg internal; F-35A 8,280 kg. */
     const _ACX={
-      cessna:{ elevMax:0.32, ctlRate:2.0, omMax:3.4, fbw:false, CDmax:1.7, thrZ:-0.12, gLimN:-1.76, tailAng:0.20, len:8.3,  aStallNeg:-0.26, disp:'sixpack' },
-      warbird:{ elevMax:0.28, ctlRate:2.0, omMax:4.2, fbw:false, CDmax:1.8, thrZ:-0.10, gLimN:-3.5,  tailAng:0.27, len:9.8,  aStallNeg:-0.24, disp:'sixpack' },
-      airliner:{ elevMax:0.34, ctlRate:1.4, omMax:2.3, fbw:true,  CDmax:1.5, thrZ:1.2,   gLimN:-1.0,  tailAng:0.19, len:37.6, aStallNeg:-0.21, disp:'glass' },
-      fighter:{ elevMax:0.44, ctlRate:3.2, omMax:5.6, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.26, len:15.0, aStallNeg:-0.35, disp:'hud' },
+      cessna:{ elevMax:0.32, ctlRate:2.0, omMax:3.4, fbw:false, CDmax:1.7, thrZ:-0.12, gLimN:-1.76, tailAng:0.20, len:8.3,  aStallNeg:-0.26, disp:'sixpack', fuelKg:144, burnMax:0.0075 },
+      warbird:{ elevMax:0.28, ctlRate:2.0, omMax:4.2, fbw:false, CDmax:1.8, thrZ:-0.10, gLimN:-3.5,  tailAng:0.27, len:9.8,  aStallNeg:-0.24, disp:'sixpack', fuelKg:730, burnMax:0.095 },
+      airliner:{ elevMax:0.34, ctlRate:1.4, omMax:2.3, fbw:true,  CDmax:1.5, thrZ:1.2,   gLimN:-1.0,  tailAng:0.19, len:37.6, aStallNeg:-0.21, disp:'glass', fuelKg:18700, sfc:1.56e-5 },
+      fighter:{ elevMax:0.44, ctlRate:3.2, omMax:5.6, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.26, len:15.0, aStallNeg:-0.35, disp:'hud', fuelKg:3200, sfc:2.3e-5, sfcAB:5.8e-5 },
       glider:{  elevMax:0.48, ctlRate:2.4, omMax:3.8, fbw:false, CDmax:1.4, thrZ:0,     gLimN:-2.1,  tailAng:0.16, len:7.0,  aStallNeg:-0.27, disp:'sixpack' },
-      f35:{     elevMax:0.42, ctlRate:3.1, omMax:5.4, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.24, len:15.7, aStallNeg:-0.34, disp:'hud' }
+      f35:{     elevMax:0.42, ctlRate:3.1, omMax:5.4, fbw:true,  CDmax:1.6, thrZ:0,     gLimN:-3.0,  tailAng:0.24, len:15.7, aStallNeg:-0.34, disp:'hud', fuelKg:8280, sfc:2.3e-5, sfcAB:5.8e-5 }
     };
     Object.keys(_ACX).forEach(k=>{ if(AIRCRAFT[k]) Object.assign(AIRCRAFT[k],_ACX[k]); });
     const AKEYS=['cessna','warbird','airliner','fighter','glider','f35'];
@@ -23288,6 +23322,15 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-papi i{width:10px;height:10px;border-radius:50%;background:#ff3b30;box-shadow:0 0 5px currentColor;display:block;}'
         +'#fs-hud .fs-papi .fs-papi-lbl{font-size:8.5px;color:#8fb8e0;margin-left:3px;letter-spacing:0.05em;}'
         +'@media(max-width:640px){#fs-hud .fs-papi{left:8px;bottom:calc(286px + env(safe-area-inset-bottom,0px));}}'
+        /* (#R120) ILS box — crosshair + fly-to localizer (vertical bar, moves left/right) & glide-slope (horizontal bar, moves up/down) */
+        +'#fs-hud .fs-ils{position:absolute;left:14px;bottom:236px;display:none;flex-direction:column;align-items:center;gap:3px;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:6px 8px;pointer-events:none;z-index:5;}'
+        +'#fs-hud .fs-ils-scale{position:relative;width:54px;height:54px;}'
+        +'#fs-hud .fs-ils-scale::before{content:"";position:absolute;left:0;top:50%;width:100%;height:0;border-top:1px dotted rgba(143,184,224,0.55);}'
+        +'#fs-hud .fs-ils-scale::after{content:"";position:absolute;top:0;left:50%;height:100%;width:0;border-left:1px dotted rgba(143,184,224,0.55);}'
+        +'#fs-hud .fs-ils-loc{position:absolute;top:4%;left:50%;width:3px;height:92%;margin-left:-1.5px;background:#63ff9b;border-radius:2px;box-shadow:0 0 5px rgba(99,255,155,0.7);transition:left 0.15s linear;}'
+        +'#fs-hud .fs-ils-gs{position:absolute;left:4%;top:50%;height:3px;width:92%;margin-top:-1.5px;background:#63ff9b;border-radius:2px;box-shadow:0 0 5px rgba(99,255,155,0.7);transition:top 0.15s linear;}'
+        +'#fs-hud .fs-ils-lbl{font-size:8.5px;color:#8fb8e0;letter-spacing:0.05em;white-space:nowrap;}'
+        +'@media(max-width:640px){#fs-hud .fs-ils{left:8px;bottom:calc(326px + env(safe-area-inset-bottom,0px));}}'
         /* (#R94p) aircraft badge + configuration chips (flaps/gear/camera) + side control decks */
         +'#fs-hud .fs-acbadge{position:absolute;left:50%;top:52px;transform:translateX(-50%);background:rgba(6,14,24,0.52);border:1px solid rgba(120,190,255,0.32);border-radius:8px;padding:3px 12px;font-size:12px;font-weight:700;color:#cfe6ff;white-space:nowrap;}'
         +'#fs-hud .fs-config{position:absolute;left:50%;top:80px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none;}'
@@ -23361,7 +23404,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R101) ---- shared HUD chrome (same for every aircraft): vignette, hint, warn, exit, touch pad, name badge,
        config chips, control deck and the moving-map / ND. Split out so the six-pack & PFD reuse it. ---- */
     function _fsHint(ac){ const abL=(ac&&ac.ab)?LL(' · Shift afterburner',' · Shift アフターバーナー',' · Shift Nachbrenner',' · Shift форсаж',' · Shift poscombustión'):'';   /* (#R117) the afterburner shortcut is only listed on aircraft that HAVE one (it was shown — invalid — on the Cessna/glider too) */
-      return '<div class="fs-hint">'+LL('W/S throttle'+abL+'<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space brake/airbrake<br>V camera-level · M map<br>P pause · R reset · Esc exit','W/S 出力'+abL+'<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space ブレーキ/抵抗板<br>V 視点水平 · M 地図<br>P 一時停止 · R 復帰 · Esc 終了','W/S Schub'+abL+'<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Kamera-Horizont · M Karte<br>P Pause · R Reset · Esc Ende','W/S тяга'+abL+'<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V камера-горизонт · M карта<br>P пауза · R сброс · Esc выход','W/S gas'+abL+'<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V cámara-horizonte · M mapa<br>P pausa · R reinicio · Esc salir')+'</div>'; }
+      return '<div class="fs-hint">'+LL('W/S throttle'+abL+'<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space brake/airbrake<br>V camera-level · M map<br>P pause · R reset · Esc exit<br>Gamepad: stick + triggers','W/S 出力'+abL+'<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space ブレーキ/抵抗板<br>V 視点水平 · M 地図<br>P 一時停止 · R 復帰 · Esc 終了<br>ゲームパッド対応（スティック＋トリガー）','W/S Schub'+abL+'<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Kamera-Horizont · M Karte<br>P Pause · R Reset · Esc Ende<br>Gamepad: Stick + Trigger','W/S тяга'+abL+'<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V камера-горизонт · M карта<br>P пауза · R сброс · Esc выход<br>Геймпад: стик + триггеры','W/S gas'+abL+'<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V cámara-horizonte · M mapa<br>P pausa · R reinicio · Esc salir<br>Mando: stick + gatillos')+'</div>'; }
     function sharedChromeHTML(){ return '<div class="fs-vign"></div>'+_fsHint(AC())
       +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
       +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
@@ -23374,6 +23417,8 @@ window.addEventListener('DOMContentLoaded', () => {
       +'<div class="fs-boost"><div class="fs-boostfill"></div></div>'
       /* (#R119) PAPI — 4 real precision-approach lights vs the 3° glide path to the ACTIVE runway threshold */
       +'<div class="fs-papi" title="PAPI"><i></i><i></i><i></i><i></i><span class="fs-papi-lbl">PAPI</span></div>'
+      /* (#R120) ILS — localizer/glide-slope fly-to needles vs the active runway (see _updIls) */
+      +'<div class="fs-ils" title="ILS"><div class="fs-ils-scale"><i class="fs-ils-loc"></i><i class="fs-ils-gs"></i></div><span class="fs-ils-lbl">ILS</span></div>'
       +'<div class="fs-acbadge"><span class="fs-acname">—</span><span class="fs-mach"></span></div>'
       +'<div class="fs-config"><span class="fs-cfg fs-cfg-flaps">FLAPS</span><span class="fs-cfg fs-cfg-gear">GEAR</span><span class="fs-cfg fs-cfg-cam">CAM</span></div>'
       +'<div class="fs-deck">'
@@ -23507,6 +23552,32 @@ window.addEventListener('DOMContentLoaded', () => {
         const aEl=hud.querySelector('.fs-mm-alt'); if(aEl) aEl.textContent=(Math.round(st.alt/10)*10).toLocaleString();   /* (#R99) round to 10 m so the throttled minimap can't show a different exact number than the main HUD */
       }catch(_){} }
     const HELD=['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '];
+    /* ===== (#R120) GAMEPAD — a standard-mapping pad drives the same controls as the keyboard/touch.
+       Left stick = pitch/roll ANALOG (push forward = nose down, matching the inverted arrow convention),
+       stick-X twist (axis 2) or LB/RB = rudder, RT/LT = throttle up/down (analog), A = wheel-brake/air-brake
+       hold, B = afterburner hold, X = flaps, Y = gear, Back = camera-level, Start = pause. Polled once per
+       physics() frame (the Gamepad API is poll-based); analog values override the digital keys only while
+       deflected, so keyboard and pad coexist. */
+    let _gpIdx=null; const _gpBtn={};
+    try{ window.addEventListener('gamepadconnected',e=>{ _gpIdx=e.gamepad.index;
+        try{ imToast(LL('Gamepad connected: ','ゲームパッド接続: ','Gamepad verbunden: ','Геймпад подключён: ','Mando conectado: ')+(e.gamepad.id||'').slice(0,40)); }catch(_){} });
+      window.addEventListener('gamepaddisconnected',e=>{ if(_gpIdx===e.gamepad.index) _gpIdx=null; if(st){ st._gpP=null; st._gpR=null; st._gpY=null; st._gpBrk=false; st._gpAB=false; } }); }catch(_){}
+    function _gpPoll(dt){ if(!st) return;
+      let g=null; try{ const gs=navigator.getGamepads&&navigator.getGamepads(); if(gs){ g=(_gpIdx!=null&&gs[_gpIdx]&&gs[_gpIdx].connected)?gs[_gpIdx]:null;
+        if(!g){ for(const gg of gs){ if(gg&&gg.connected){ g=gg; _gpIdx=gg.index; break; } } } } }catch(_){}
+      if(!g){ st._gpP=null; st._gpR=null; st._gpY=null; st._gpBrk=false; st._gpAB=false; return; }
+      const dz=v=>{ v=+v||0; return Math.abs(v)>0.12?((Math.abs(v)-0.12)/0.88)*Math.sign(v):0; };
+      const ax=g.axes||[], bt=g.buttons||[], bp=i=>!!(bt[i]&&bt[i].pressed);
+      const rv=dz(ax[0]), pv=dz(ax[1]), yv=dz(ax[2]);
+      st._gpR=(rv!==0)?Math.max(-1,Math.min(1,rv)):null;                       /* stick right = roll right */
+      st._gpP=(pv!==0)?Math.max(-1,Math.min(1,-pv)):null;                      /* stick forward = nose DOWN (+1 target, like ↑) */
+      const rudIn=-yv+(bp(4)?1:0)+(bp(5)?-1:0);                                 /* cmd −1 = yaw right (matches D key) */
+      st._gpY=(rudIn!==0)?Math.max(-1,Math.min(1,rudIn)):null;
+      const rt=(bt[7]&&bt[7].value)||0, lt=(bt[6]&&bt[6].value)||0;
+      if(rt>0.02||lt>0.02) st.thr=Math.max(0,Math.min(1,st.thr+(rt-lt)*0.55*dt));
+      st._gpBrk=bp(0); st._gpAB=bp(1);
+      const edge=(i,k)=>{ const p=bp(i); if(p&&!_gpBtn[i]) fsAction(k); _gpBtn[i]=p; };
+      edge(2,'f'); edge(3,'g'); edge(8,'v'); edge(9,'p'); }
     /* one-shot actions (debounced against key auto-repeat via keys['_a_'+k]) */
     function fsAction(k){ if(!st) return false;
       if(k==='f') st.flaps=(st.flaps>=0.99)?0:Math.min(1,Math.round((st.flaps+0.34)*100)/100);   /* flaps notch: 0→⅓→⅔→full→up */
@@ -23701,6 +23772,7 @@ window.addEventListener('DOMContentLoaded', () => {
       paused=false; stabilizeCam=false; camMode='cockpit';
       resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0; st._pathIntv=350; st._pausedMs=0; st._pauseStart=0; st._dist=0; st._lastPt=[st.lng,st.lat];   /* (#R98/#R99/#R100) flight-path recording + pause-time exclusion + full-res distance accumulation */
       st._rwy=(opts.rwy&&opts.rwy.A&&opts.rwy.B)?opts.rwy:null;   /* (#R119) the REAL runway line (both thresholds) — landing corridor + PAPI */
+      st.fuel=(ac.fuelKg>0)?ac.fuelKg:null;   /* (#R120) full usable fuel at engine start (null = engineless glider) */
       /* (#R119) LIVE WINDS ALOFT at the spawn area (Open-Meteo, m/s, surface + 5 pressure levels). The physics
          uses AIR-relative velocity, so a real head/cross/tailwind now affects take-off run, drift, approach and
          touchdown. Fetch is async & optional — no wind data = calm (physics unchanged). */
@@ -23810,7 +23882,7 @@ window.addEventListener('DOMContentLoaded', () => {
       st.q=qFromEuler(0,aT+gamma,yaw); st.om=[0,0,0]; st.vb=[Vt*Math.cos(aT),0,Vt*Math.sin(aT)];
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
-      st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; st.groundStart=false; st._tookOff=true; paused=false; computeTrim(); }
+      st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; st.groundStart=false; st._tookOff=true; paused=false; st.fuel=(ac.fuelKg>0)?ac.fuelKg:null; computeTrim(); }   /* (#R120) R-reset also refuels */
     function crash(why){ if(resultShown) return; if(st&&why) st._crashWhy=why;   /* (#R117) keep the reason for the result screen */
       const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED','墜落','ABGESTÜRZT','КРУШЕНИЕ','ACCIDENTE'); w.style.display='block'; w.style.color='#ff453a'; }
       showResult('crash');   /* (#R98) a crash ends the flight → result screen (was an auto-respawn in place); the R key still resets in-flight via respawn() */ }
@@ -23828,6 +23900,32 @@ window.addEventListener('DOMContentLoaded', () => {
             pp.querySelectorAll('i').forEach((d2,i2)=>{ d2.style.background=(i2<nW)?'#ffffff':'#ff3b30'; d2.style.color=(i2<nW)?'#ffffff':'#ff3b30'; });
             show=true; } } }
       pp.style.display=show?'flex':'none'; }
+    /* (#R120) ILS — localizer + glide-slope deviation vs the spawn runway (course = threshold→far-end axis,
+       glide path = 3° to the nearest threshold). Full scale: LOC ±2.5°, GS ±0.7° (real Cat-I sensitivities).
+       Shown only on approach: closing on the runway, 0.25–25 km out, airborne. The bars are FLY-TO needles:
+       bar right = the course is to your right. */
+    function _updIls(q){ const el=q('.fs-ils'); if(!el||!st) return; let show=false;
+      if(st._rwy&&!st.onGround){ const cf=Math.cos(st.lat*Math.PI/180), R2D=180/Math.PI;
+        const ends=[st._rwy.A,st._rwy.B]; let ti=0;
+        { const d0=Math.hypot((ends[0][0]-st.lng)*cf,(ends[0][1]-st.lat)), d1=Math.hypot((ends[1][0]-st.lng)*cf,(ends[1][1]-st.lat)); ti=(d1<d0)?1:0; }
+        const T=ends[ti], O=ends[1-ti];
+        const dx=(T[0]-st.lng)*111320*cf, dy=(T[1]-st.lat)*111320, dist=Math.hypot(dx,dy);
+        if(dist>250&&dist<25000){ const hd=_fsHdg()*Math.PI/180;
+          const dot=Math.cos(hd)*(dy/dist)+Math.sin(hd)*(dx/dist);
+          if(dot>0.3){
+            const crs=Math.atan2((O[0]-T[0])*cf,(O[1]-T[1]))*R2D;          /* landing course over the threshold */
+            const brg=Math.atan2(dx,dy)*R2D;                                /* bearing aircraft → threshold */
+            let devL=((brg-crs+540)%360)-180;                               /* + = the course/centreline is to the right (fly right) */
+            const thrE=(st._fieldElev!=null?st._fieldElev:(st._terrF!=null?st._terrF:0));
+            const ang=Math.atan2(st.alt-thrE,dist)*R2D, devG=ang-3;         /* + = above the glide path */
+            const loc=el.querySelector('.fs-ils-loc'); if(loc) loc.style.left=(50+Math.max(-1,Math.min(1,devL/2.5))*42)+'%';
+            const gs=el.querySelector('.fs-ils-gs'); if(gs) gs.style.top=(50+Math.max(-1,Math.min(1,devG/0.7))*42)+'%';   /* above path → bar below centre = fly DOWN */
+            const lb=el.querySelector('.fs-ils-lbl'); if(lb) lb.textContent='ILS '+(st._rwy.ident||st._rwy.id||'')+' '+(dist/1000).toFixed(1)+'km';
+            show=true; } } }
+      el.style.display=show?'flex':'none'; }
+    /* (#R120) fuel chip for every display's aux line (percent of usable fuel; '' on the glider) */
+    function _fuelText(){ try{ if(!st||st.fuel==null) return ''; const cap=AC().fuelKg||1, pct=Math.max(0,Math.min(100,st.fuel/cap*100));
+      return ' · '+LL('FUEL','燃料','SPRIT','ТОПЛ','COMB')+' '+(pct>=9.5?Math.round(pct):pct.toFixed(1))+'%'; }catch(_){ return ''; } }
     /* (#R119) live-wind chip text shared by every display's aux line */
     function _windText(){ try{ const wv=st&&st._wNE; const wsp=wv?Math.hypot(wv[0],wv[1]):0; if(wsp<=0.6) return '';
       const wdir=(Math.atan2(-wv[1],-wv[0])*180/Math.PI+360)%360;
@@ -23836,13 +23934,15 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const hdg=_fsHdg(), _hdS=Math.round(hdg).toString().padStart(3,'0');
         const _ma=q('.fs-mm-alt'); if(_ma) _ma.textContent=Math.round(st.alt).toLocaleString(); const _mh=q('.fs-mm-hdg'); if(_mh) _mh.textContent=_hdS;
         const mc=q('.fs-mach'); if(mc){ const ac=AC(), aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
-          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):'')+_windText(); }   /* (#R117) EAS main / TAS+Mach aux; (#R119) + the live wind actually flowing through the physics */
+          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):'')+_windText()+_fuelText(); }   /* (#R117) EAS main / TAS+Mach aux; (#R119) + the live wind actually flowing through the physics; (#R120) + fuel */
         try{ _updPapi(q); }catch(_){}
+        try{ _updIls(q); }catch(_){}   /* (#R120) ILS needles on the six-pack / glass too */
         const tf=q('.fs-thrfill'); if(tf) tf.style.height=Math.round(st.thr*100)+'%';   /* (#R117) throttle bar is shared chrome now — EVERY display (six-pack/glass/HUD) shows the power setting */
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
           if(f.landed){ w.style.display='block'; w.style.color='#34c759'; w.textContent=LL('LANDED','着陸成功','GELANDET','ПОСАДКА','ATERRIZÓ'); }
           else if(f.overspeed){ w.style.display='block'; w.style.color='#ff453a'; w.textContent=LL('OVERSPEED','過速度','ÜBERGESCHWIND.','ПРЕВЫШЕНИЕ','SOBREVELOCIDAD'); }
+          else if(f.fuelOut){ w.style.display='block'; w.style.color='#ff9f0a'; w.textContent=LL('FUEL OUT','燃料切れ','SPRIT LEER','ТОПЛИВО КОНЧИЛОСЬ','SIN COMBUSTIBLE'); }
           else if(f.stalling){ w.style.display='block'; w.style.color='#ff9f0a'; w.textContent=LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA'); }
           else if(f.overG){ w.style.display='block'; w.style.color='#ff453a'; w.textContent=LL('G-LIMIT','G制限超過','G-GRENZE','ПЕРЕГРУЗКА','LÍMITE G'); }
           else w.style.display='none'; }
@@ -23894,13 +23994,15 @@ window.addEventListener('DOMContentLoaded', () => {
            speed of sound as the physics (was a flat V/300 that disagreed with the aero). */
         const mc=q('.fs-mach'); if(mc){ const ac=AC(),
           aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
-          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):'')+_windText(); }   /* (#R117) main displays are EAS; (#R119) + live wind */
+          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):'')+_windText()+_fuelText(); }   /* (#R117) main displays are EAS; (#R119) + live wind; (#R120) + fuel */
         try{ _updPapi(q); }catch(_){}   /* (#R119) PAPI on the fighter HUD too */
+        try{ _updIls(q); }catch(_){}   /* (#R120) ILS needles on the fighter HUD */
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
         const aEl=q('.fs-aoa'); if(aEl){ aEl.textContent=Math.round(st.aoa*R2D); aEl.parentNode.style.color=f.stalling?'#ff9f0a':''; }
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
           if(f.landed){ w.style.display='block'; w.style.color='#34c759'; w.textContent=LL('LANDED','着陸成功','GELANDET','ПОСАДКА','ATERRIZÓ'); }
           else if(f.overspeed){ w.style.display='block'; w.style.color='#ff453a'; w.textContent=LL('OVERSPEED','過速度','ÜBERGESCHWIND.','ПРЕВЫШЕНИЕ','SOBREVELOCIDAD'); }
+          else if(f.fuelOut){ w.style.display='block'; w.style.color='#ff9f0a'; w.textContent=LL('FUEL OUT','燃料切れ','SPRIT LEER','ТОПЛИВО КОНЧИЛОСЬ','SIN COMBUSTIBLE'); }
           else if(f.stalling){ w.style.display='block'; w.style.color='#ff9f0a'; w.textContent=LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA'); }
           else if(f.overG){ w.style.display='block'; w.style.color='#ff453a'; w.textContent=LL('G-LIMIT','G制限超過','G-GRENZE','ПЕРЕГРУЗКА','LÍMITE G'); }
           else w.style.display='none'; }
@@ -23964,7 +24066,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const Flx=L*lpx/lpn, Flz=L*lpz/lpn, Fdx=-Dg*ux, Fdy=-Dg*uy, Fdz=-Dg*uz;
       let densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
       if(st.alt>ac.ceil) densF*=Math.max(0,1-(st.alt-ac.ceil)/2500);              /* (#R96) service ceiling now bites (thrust fades above it) */
-      const Th=(st._ab?(ac.abMax||ac.Tmax*1.6):ac.Tmax)*st.thr*densF;
+      let Th=(st._ab?(ac.abMax||ac.Tmax*1.6):ac.Tmax)*st.thr*densF;
+      /* (#R120) FUEL BURN — props ∝ power setting, jets ∝ actual thrust (TSFC, wet rate under afterburner).
+         Tanks dry → flame-out: thrust 0, AB off (the airframe becomes a glider; all other aero unchanged). */
+      if(st.fuel!=null){
+        if(st.fuel>0){ const burn=ac.prop?(st.thr*(ac.burnMax||0)):(Th*(st._ab?(ac.sfcAB||5.8e-5):(ac.sfc||1.6e-5)));
+          st.fuel=Math.max(0,st.fuel-burn*h); }
+        if(st.fuel<=0){ Th=0; st._ab=false; } }
       const gb=qRotInv(st.q,[0,0,ac.m*g0]);
       const Fx=Fdx+Flx+Th+gb[0], Fy=Fdy+Yf+gb[1], Fz=Fdz+Flz+gb[2];
       /* ===== moments (body). (#R96): the real elevator angle = stick × elevMax (rad) — the raw stick used to be fed
@@ -24119,18 +24227,19 @@ window.addEventListener('DOMContentLoaded', () => {
          even at a safe AoA (e.g. the light, low-AoA float over the top of a zoom climb); Vstall stays only as the
          landing/reference speed (VstallEff). overG now uses the asymmetric ±g limits. */
       const stalling=((aoa>aStall*0.97)||(aoa<aStallN*0.97)) && !(st.onGround&&st.V<Math.max(12,VstallEff*0.8)), overspeed=st.V>ac.Vne, overG=(st.G>ac.gLim||st.G<gLimN);   /* (#R117) no false STALL banner while taxiing (AoA=atan2(w,u) is meaningless at walking pace on the wheels) */
-      return { agl, stalling, overspeed, overG, landed, ab:st._ab }; }
+      return { agl, stalling, overspeed, overG, landed, ab:st._ab, fuelOut:(st.fuel!=null&&st.fuel<=0) }; }   /* (#R120) */
     /* per-frame: read the controls once, then advance the physics in FIXED sub-steps so the flight characteristics
        don't change with framerate (30 vs 120 fps) and a hitch never hands one huge dt to the integrator. Split out
        of loop() so it's deterministically steppable headlessly (IntMapFlightSim._dbg.step). */
     function physics(dt){ const ac=AC();
+      try{ _gpPoll(dt); }catch(_){}   /* (#R120) gamepad — poll-based API, read once per frame */
       if(keys['w']) st.thr=Math.min(1,st.thr+0.5*dt); if(keys['s']) st.thr=Math.max(0,st.thr-0.5*dt);
-      st.brake=keys[' ']?1:0; st._ab=ac.ab&&!!keys['shift']&&st.thr>0.95;
+      st.brake=(keys[' ']||st._gpBrk)?1:0; st._ab=ac.ab&&(!!keys['shift']||!!st._gpAB)&&st.thr>0.95;
       const cmd=(lo,hi)=>((keys[lo]?-1:0)+(keys[hi]?1:0)), sweep=(cur,to,r)=>cur+Math.max(-r*dt,Math.min(r*dt,to-cur));
       /* (#R94s) INVERTED pitch control (per request): ↑ = nose DOWN, ↓ = nose UP — cmd('arrowdown','arrowup')
          gives arrowup=+1 which, with −Cmde, pitches DOWN. Rudder: D → yaw RIGHT. */
-      const _pT=(st._tP!=null?st._tP:cmd('arrowdown','arrowup')), _rT=(st._tR!=null?st._tR:cmd('arrowleft','arrowright'));   /* (#R117) analog touch-stick targets override the digital keys when active */
-      st.elev=sweep(st.elev,_pT,ac.ctlRate||3.0); st.ail=sweep(st.ail,_rT,Math.max(2.6,(ac.ctlRate||3)+1)); st.rud=sweep(st.rud,cmd('d','a'),3.2);   /* (#R96) per-aircraft actuator speed — a jumbo no longer slams to full stick in 0.33 s like a fighter */
+      const _pT=(st._tP!=null?st._tP:(st._gpP!=null?st._gpP:cmd('arrowdown','arrowup'))), _rT=(st._tR!=null?st._tR:(st._gpR!=null?st._gpR:cmd('arrowleft','arrowright')));   /* (#R117) analog touch-stick targets override the digital keys when active; (#R120) then the gamepad stick */
+      st.elev=sweep(st.elev,_pT,ac.ctlRate||3.0); st.ail=sweep(st.ail,_rT,Math.max(2.6,(ac.ctlRate||3)+1)); st.rud=sweep(st.rud,(st._gpY!=null?st._gpY:cmd('d','a')),3.2);   /* (#R96) per-aircraft actuator speed — a jumbo no longer slams to full stick in 0.33 s like a fighter */
       st._acc=(st._acc||0)+dt; const H=1/200; let n=0, flags=null;
       while(st._acc>=H && n<24 && !resultShown){ flags=stepFixed(H,ac); st._acc-=H; n++; }   /* (#R98) stop sub-stepping the instant a crash ends the flight */
       if(n>=24) st._acc=0;                       /* fell behind (lag) → drop the backlog, never spiral */
@@ -24317,6 +24426,9 @@ window.addEventListener('DOMContentLoaded', () => {
        the exact components of an active custom score (so "家賃を重視して" re-emits the real current recipe),
        and the time-travel period. Updated deterministically from the actions that actually SUCCEEDED. */
     const _wctx={countries:[],topic:'',metrics:[],scoreComponents:null,period:'',exclusions:[]};
+    /* (#R120) non-dispatch creators (e.g. a GeoJSON file upload) report their new object ids here, so
+       "さっき読み込んだやつ" resolves via _wctx.lastObjects just like dispatch-created objects. */
+    window._imNoteObjects=ids=>{ try{ if(Array.isArray(ids)&&ids.length) _wctx.lastObjects=ids.map(String).concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} };
     function updateWctx(acts,fails){ try{ (acts||[]).forEach(a=>{ if(!a||(fails||[]).indexOf(a)>=0) return;
       if((a.type==='compareStats'||a.type==='compareCountries'||a.type==='statsCompare')&&a.countries) _wctx.countries=[].concat(a.countries).map(String).slice(0,10);
       if((a.type==='analyze'||a.type==='research')&&(a.question||a.query)) _wctx.topic=String(a.question||a.query).slice(0,140);
@@ -24436,6 +24548,12 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!ensurePolyLayer()) return false;
       try{ map.getSource('nlq-poly-src').setData({type:'FeatureCollection',features:_hlPolys.map((p,i)=>({type:'Feature',id:i,geometry:p.geo,properties:{color:p.color||_hlColor,name:p.name||'',comp:p.comp?1:0,op:(p.op!=null?p.op:null)}}))}); return true; }catch(_){ return false; } }
     function clearPolyHl(){ _hlPolys=[]; try{ const s=map.getSource('nlq-poly-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    /* (#R120) public handle on the Atlas-drawn polygons so the universal Object List (IntMapObjects) can
+       enumerate/focus/delete them and dispatch objectIds can reference them ("さっき描いたポリゴン消して"). */
+    let _hlPolySeq=0;
+    window._imHlPolys={ list:()=>_hlPolys, tagId:p=>{ if(p&&!p.id) p.id='poly_'+(++_hlPolySeq); return p&&p.id; },
+      remove:id=>{ const i=_hlPolys.findIndex(p=>String(p.id)===String(id)); if(i<0) return false; _hlPolys.splice(i,1); paintPolys(); return true; },
+      repaint:()=>paintPolys(), clear:()=>clearPolyHl() };
     map.on('styledata',()=>{ if(_hlPolys.length){ setTimeout(()=>{ try{ paintPolys(); }catch(_){} },140); } });
     /* ---- (#R65) LINE highlights — rivers as their REAL course ("河川をハイライトしてといったら、その河川を線で"),
        tributaries as thinner lines. Same lifecycle as the polygon highlights. ---- */
@@ -26201,7 +26319,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const vals=await LY.sampleAt(px,py,ids);
           const featLines=[];
           (ids||LY.active()).forEach(id=>{ try{ const fs=LY.featuresIn(id,null); if(fs&&fs.length){ const nm2=(LY.state(id)||{}).label||id;
-            const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; return String(p2.name||p2.title||p2.NAME||'').slice(0,40); }).filter(Boolean);
+            const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; return String(p2.name||p2.title||p2.NAME||p2.callsign||p2.ident||'').slice(0,40); }).filter(Boolean);   /* (#R120) aircraft have a callsign, not a name */
             featLines.push(nm2+': '+fs.length+(names.length?(' — '+names.join(', ')+(fs.length>names.length?', …':'')):'')); } }catch(_){} });
           if(!vals.length&&!featLines.length) return R(false, warn('⚠ '+L('No readable data on the active layers here. Turn a data layer on first.','ここで読み取れる表示中レイヤーのデータがありません。先にデータレイヤーをオンにしてください。','Keine lesbaren Layer-Daten hier.','Нет читаемых данных слоёв здесь.','Sin datos de capas legibles aquí.')));
           let hh=note('◈ '+esc(pname||(py.toFixed(3)+', '+px.toFixed(3))));
@@ -26493,7 +26611,7 @@ window.addEventListener('DOMContentLoaded', () => {
              have no polygon — the user: "領域がわからない地名は全部長方形になるとかクソ"). */
           const ctx=ext?{lng:ext.lng,lat:ext.lat,fit:true}:{fit:true};
           let ok=false; try{ ok=await window.IntMapOutline.show((ext&&ext.name)||place, ctx); }catch(_){}
-          return R(!!ok, (ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place))+(ext?_ambigNote(place,ext.lng,ext.lat):''):warn('⚠ '+L('No precise boundary for','正確な境界がありません','Keine genaue Grenze für','Нет точной границы для','Sin límite preciso para')+': '+esc((ext&&ext.name)||place)))+ocw); }
+          return R(!!ok, (ok?note('⬡ '+L('Outlined','範囲を表示','Umrissen','Контур','Contorno')+': '+esc((ext&&ext.name)||place))+(ext?_ambigNote(place,ext.lng,ext.lat):''):warn('⚠ '+L('No precise boundary for','正確な境界がありません','Keine genaue Grenze für','Нет точной границы для','Sin límite preciso para')+': '+esc((ext&&ext.name)||place)))+ocw, ok?{objectIds:['outline']}:null); }   /* (#R120) the outline is a referencable object */
         /* (#R52) features the user could not reach reliably through the fuzzy "control" path are now FIRST-CLASS
            actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
            publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
@@ -26907,9 +27025,10 @@ window.addEventListener('DOMContentLoaded', () => {
           if(pts.length<3) return R(false, warn('⚠ '+L('Need at least three points','3点以上必要です','Mindestens drei Punkte nötig','Нужно минимум три точки','Se necesitan al menos tres puntos')));
           if(pts[0][0]!==pts[pts.length-1][0]||pts[0][1]!==pts[pts.length-1][1]) pts.push([pts[0][0],pts[0][1]]);
           const colP=a.color?parseColor(a.color):null;
-          _hlPolys.push({geo:{type:'Polygon',coordinates:[pts]},color:colP||undefined,name:String(a.label||'')});
+          const _pgObj={geo:{type:'Polygon',coordinates:[pts]},color:colP||undefined,name:String(a.label||'')};
+          _hlPolys.push(_pgObj); const _pgId=(window._imHlPolys&&window._imHlPolys.tagId)?window._imHlPolys.tagId(_pgObj):null;   /* (#R120) drawn polygon becomes a referencable map-object */
           const okPg=paintPolys(); try{ let a2=180,b2=90,c2=-180,d2=-90; pts.forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); }); if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:80,maxZoom:9,duration:900}); }catch(_){}
-          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn('⚠')); }
+          return R(okPg, okPg?note('⬠ '+L('Polygon drawn','ポリゴンを描画しました','Polygon gezeichnet','Полигон нарисован','Polígono dibujado')+(a.label?(' — '+esc(a.label)):'')):warn('⚠'), (okPg&&_pgId)?{objectIds:[_pgId]}:null); }
         case 'controls': { /* (#R72) interactive UI inside the reply ("Atlasの返答内からもボタンやスライダーを配置") */
           const items=Array.isArray(a.items)?a.items.slice(0,8):[];
           if(!items.length) return R(false, warn('⚠'));
@@ -27325,9 +27444,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). (#R119) It ALSO receives the live values of the layers the user is displaying at the anchor point, and "scope":"drawn-area" analyses the USER-DRAWN measure polygon / circles (news inside it + layer values + WorldPop population — use for "この範囲を要約/分析して"). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
         +'SATELLITE CHANGE DETECTION: {"type":"satelliteCompare","dateA":"YYYY-MM-DD","dateB":"YYYY-MM-DD","place"?:str} = capture the dated satellite view at two dates and report the visual changes (construction, vessels, disasters, land use) with both frames shown. REQUIRES the satellite base with a dated provider to be active; if it is not, tell the user to switch to Satellite first. Use for "この2日付で衛星画像を比較", "what changed here between X and Y".\n'
-        +'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation) + the actual features in view for point layers (cameras, news, volcanoes). No place = the pinned point or map centre. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？").\n'
+        +'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation, every NASA GIBS science raster — LST, sea ice, SST anomaly, NDVI, water vapour, clouds, chlorophyll, soil moisture… read from the actual tile pixel via the colormap — and the visible country choropleth\'s value) + the actual features in view for point layers (cameras, news, volcanoes, live aircraft, live ships). No place = the pinned point or map centre. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？", "今見えている飛行機は？").\n'
         +'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num} = EXACT population inside a shape, summed from the WorldPop 100m population grid (2020). target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n'
-        +'MAP OBJECTS: {"type":"object","op":"list"|"remove"|"focus"|"rename","id"?:str,"kind"?:"pin"|"radius"|"annot"|"upload"|"route"|"iso","index"?:num,"name"?:str} = operate on objects ALREADY drawn on the map (ids are listed in CURRENT MAP STATE). "2番目の円を消して" → {"type":"object","op":"remove","kind":"radius","index":2}.\n'
+        +'MAP OBJECTS: {"type":"object","op":"list"|"remove"|"focus"|"rename","id"?:str,"kind"?:"pin"|"radius"|"annot"|"poly"|"outline"|"upload"|"route"|"iso","index"?:num,"name"?:str} = operate on objects ALREADY drawn on the map (ids are listed in CURRENT MAP STATE; "poly"=Atlas-drawn polygons, "outline"=the active boundary outline). "2番目の円を消して" → {"type":"object","op":"remove","kind":"radius","index":2}.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
         +'RESEARCH MAPPED ONTO THE MAP: {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic from LIVE NEWS EVIDENCE that IntMap gathers (GDELT + Google News + loaded IntMap news — the model does NOT web-search; it classifies/summarises the evidence) (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, dated incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. USE THIS (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate something ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X") OR asks to research/look into a topic whose findings have real locations — incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. If the user asks a research question and the answer naturally lives at places on a map, prefer mapReport; combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
         +'ANIMATED FLIGHT: {"type":"fly","from":str,"to":str,"mode"?:"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory (plane/cruise stay level; use for "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. {"type":"clear","what":"flight"} removes the trajectory.\n'
@@ -28934,13 +29053,23 @@ window.addEventListener('DOMContentLoaded', () => {
         focus:()=>fitFeats(rf), remove:()=>{ try{ window.IntMapRouting&&window.IntMapRouting.clear(); }catch(_){} } }); }catch(_){}
       try{ const isf=srcFeats('im-iso-src'); if(isf.length) out.push({ id:'iso', kind:'iso', dot:'#0a84ff', name:OL('Reachable area','到達圏','Erreichbarkeit','Зона доступности','Área alcanzable'),
         focus:()=>fitFeats(isf), remove:()=>{ try{ window.IntMapIsochrone&&window.IntMapIsochrone.clear(); }catch(_){} } }); }catch(_){}
+      /* (#R120) Atlas-drawn polygons + the active place outline join the universal inventory, so "さっき
+         描いたやつ" resolves via objectIds and they can be renamed/recoloured/deleted like everything else. */
+      try{ const HP=window._imHlPolys; ((HP&&HP.list())||[]).forEach((p,i)=>{ const pid=HP.tagId(p); if(!pid) return;
+        out.push({ id:pid, kind:'poly', dot:p.color||'#ff9500', color:p.color||'#ff9500', name:labels[pid]||p.name||(OL('Polygon','ポリゴン','Polygon','Полигон','Polígono')+' '+(i+1)),
+          focus:()=>{ if(p.geo) fitFeats([{geometry:p.geo}]); }, rename:v=>{ labels[pid]=v; },
+          setColor:col=>{ p.color=col; try{ HP.repaint(); }catch(_){} },
+          remove:()=>{ try{ HP.remove(pid); }catch(_){} } }); }); }catch(_){}
+      try{ const OT=window.IntMapOutline, cur=OT&&OT.current&&OT.current(); if(cur) out.push({ id:'outline', kind:'outline', dot:'#0a84ff',
+        name:labels.outline||cur.name||OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'),
+        focus:()=>{ try{ OT.focus&&OT.focus(); }catch(_){} }, rename:v=>{ labels.outline=v; }, remove:()=>{ try{ OT.clear(); }catch(_){} } }); }catch(_){}
       return out; }
     function count(){ try{ return collect().length; }catch(_){ return 0; } }
-    const ICON={ pin:'📍', radius:'⭕', annot:'✏️', upload:'📂', route:'🧭', iso:'🎯' };
-    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable') })[k]||k; }
+    const ICON={ pin:'📍', radius:'⭕', annot:'✏️', poly:'⬠', outline:'▢', upload:'📂', route:'🧭', iso:'🎯' };
+    function kindLbl(k){ return ({ pin:OL('Pins','ピン','Pins','Метки','Pines'), radius:OL('Radius circles','半径円','Radien','Радиусы','Radios'), annot:OL('Drawings','図形','Zeichnungen','Фигуры','Dibujos'), poly:OL('Polygons','ポリゴン','Polygone','Полигоны','Polígonos'), outline:OL('Boundary outline','行政界アウトライン','Grenzumriss','Контур границы','Contorno'), upload:OL('Uploaded data','アップロードデータ','Uploads','Загрузки','Cargas'), route:OL('Route','経路','Route','Маршрут','Ruta'), iso:OL('Reachable area','到達圏','Erreichbarkeit','Доступность','Alcanzable') })[k]||k; }
     let _objs=[];
     function renderList(){ if(!panel) return; const body=panel.querySelector('.iol-body'); if(!body) return;
-      _objs=collect(); const order=['pin','radius','annot','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });
+      _objs=collect(); const order=['pin','radius','annot','poly','outline','upload','route','iso']; const groups={}; _objs.forEach(o=>{ (groups[o.kind]=groups[o.kind]||[]).push(o); });   /* (#R120) + poly/outline */
       if(!_objs.length){ body.innerHTML='<div style="color:var(--text-muted);font-size:12px;padding:14px 4px;line-height:1.6;">'+OL('No objects yet. Drop a pin, draw, add a radius, upload GeoJSON, or make a route — they all show up here to manage in one place.','まだオブジェクトがありません。ピン・図形・半径・GeoJSON・経路を作ると、ここで一括管理できます。','Noch keine Objekte.','Пока нет объектов.','Aún no hay objetos.')+'</div>'; return; }
       let h=''; order.forEach(k=>{ const g=groups[k]; if(!g||!g.length) return;
         h+='<div class="iol-grp"><span>'+ICON[k]+' '+esc(kindLbl(k))+'</span><span style="color:var(--text-muted);font-weight:600;">'+g.length+'</span></div>';
@@ -29729,6 +29858,46 @@ window.addEventListener('DOMContentLoaded', () => {
       apply();
       if(on) [400,1500].forEach(ms=>setTimeout(apply,ms)); }
     map.on('styledata',()=>{ if(LIST.some(L=>state[L.id])) setTimeout(()=>{ LIST.forEach(L=>{ if(state[L.id]&&ensure(L)){ try{ map.setLayoutProperty(layId(L),'visibility','visible'); }catch(_){} } }); },80); });
+    /* ===== (#R120) GIBS PIXEL → PHYSICAL VALUE — the reverse of the legend: fetch the actual rendered tile
+       (same URL the layer paints), read the pixel under the point, project its colour onto the layer's
+       colormap gradient (the SCALES stops were sampled from the REAL GIBS colormap XMLs in R42), and map the
+       gradient position back onto the legend's value range. Transparent pixel = no data; a colour far from
+       every gradient segment (coastlines, labels) = null, never a guess. Registered into IntMapLayers so
+       Atlas's layerData / analyze read real numbers off every science raster. ===== */
+    const _gxPix=new Map();
+    async function _gxTilePix(L,lng,lat){ const z=Math.min(L.max,6), n=Math.pow(2,z);
+      const xf=(lng+180)/360*n, latR=lat*Math.PI/180, yf=(1-Math.log(Math.tan(latR)+1/Math.cos(latR))/Math.PI)/2*n;
+      const tx=Math.floor(xf), ty=Math.floor(yf); if(!(ty>=0&&ty<n)) return null;
+      const px=Math.max(0,Math.min(255,Math.floor((xf-tx)*256))), py=Math.max(0,Math.min(255,Math.floor((yf-ty)*256)));
+      const url='https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/'+L.gibs+'/default/'+(L.staticDate||GDATE())+'/GoogleMapsCompatible_Level'+L.max+'/'+z+'/'+ty+'/'+tx+'.'+L.ext;
+      let imgd=_gxPix.get(url);
+      if(imgd===undefined){ imgd=await new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous';
+          im.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=cv.height=256; const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(im,0,0); res(cx.getImageData(0,0,256,256)); }catch(_){ res(null); } };
+          im.onerror=()=>res(null); im.src=url; });
+        if(_gxPix.size>30) _gxPix.clear(); _gxPix.set(url,imgd); }
+      if(!imgd) return null;
+      const i=(py*256+px)*4; return [imgd.data[i],imgd.data[i+1],imgd.data[i+2],imgd.data[i+3]]; }
+    function _gxFrac(sc,rgb){ const stops=sc.grad.split(',').map(hx=>{ const v=parseInt(hx.trim().slice(1),16); return [(v>>16)&255,(v>>8)&255,v&255]; });
+      let bestT=null,bestD=Infinity;
+      for(let s2=0;s2<stops.length-1;s2++){ const A2=stops[s2],B2=stops[s2+1];
+        const ab=[B2[0]-A2[0],B2[1]-A2[1],B2[2]-A2[2]], ap=[rgb[0]-A2[0],rgb[1]-A2[1],rgb[2]-A2[2]];
+        const den=ab[0]*ab[0]+ab[1]*ab[1]+ab[2]*ab[2]; let t=den>0?(ap[0]*ab[0]+ap[1]*ab[1]+ap[2]*ab[2])/den:0; t=Math.max(0,Math.min(1,t));
+        const dx=ap[0]-ab[0]*t, dy=ap[1]-ab[1]*t, dz2=ap[2]-ab[2]*t, d2=dx*dx+dy*dy+dz2*dz2;
+        if(d2<bestD){ bestD=d2; bestT=(s2+t)/(stops.length-1); } }
+      return (bestD<=3600&&bestT!=null)?bestT:null; }   /* >60 RGB distance from every segment = not a data colour */
+    async function sampleGx(L,lng,lat){ const sc=SCALES[L.id]; if(!sc) return null;
+      const p=await _gxTilePix(L,lng,lat); if(!p||p[3]<40) return null;   /* transparent = no data at this point */
+      const fr=_gxFrac(sc,p); if(fr==null) return null;
+      const useF=(window.imUnitTemp==='f');
+      if(sc.temp){ let v=sc.temp[0]+fr*(sc.temp[1]-sc.temp[0]); if(useF) v=v*9/5+32; return Math.round(v)+(useF?'°F':'°C'); }
+      if(sc.anom){ let v=sc.anom[0]+fr*(sc.anom[1]-sc.anom[0]); if(useF) v=v*9/5; return (v>0?'+':'')+v.toFixed(1)+(useF?'°F':'°C'); }
+      if(L.id==='gxaero') return (fr*5).toFixed(1)+' AI';
+      if(sc.lo!=null&&/%$/.test(String(sc.hi))) return Math.round(fr*100)+'%';
+      if(sc.loK) return Math.round(fr*100)+'% ('+_lx(sc.loK)+' → '+_lx(sc.hiK)+')';
+      return Math.round(fr*100)+'%'; }
+    try{ if(window.IntMapLayers){ LIST.forEach(L=>{ if(!SCALES[L.id]) return;
+      window.IntMapLayers.register('gx-'+L.id,{ on:()=>!!state[L.id], label:()=>gxLbl(L),
+        sampleAt:(x,y)=>sampleGx(L,x,y), time:()=>(L.staticDate||GDATE()), source:()=>'NASA GIBS · '+L.gibs }); }); } }catch(_){}
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('gx-gxlst')) return;
       LIST.forEach(L=>{ const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+L.id;
         const lab=document.createElement('label'); lab.className='layer-option';
