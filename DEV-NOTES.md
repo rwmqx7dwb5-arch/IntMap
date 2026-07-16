@@ -5,6 +5,33 @@
 
 ---
 
+## R121 — 残課題実行(FS以外): choropleth画面外サンプリング + bx系40コロプレス統合 + earthquakes/dc/pharma/thermal登録 + thermalレイヤー根本修正 (tag `#R121`)
+
+R120の残課題からフライトシム以外を実行。全て加算的。
+
+### choropleth 画面外サンプリング（feature-state/PIP直読み化）
+- **共有PIP** `window._imPipGeo(x,y,geom)`（穴あきPolygon/MultiPolygon、IntMapLayersモジュールで公開）。単体テスト: 内側true/穴false/外false/MultiPolygon true。
+- **コア7種**: `choroValueAt` を拡張 — 画面内は従来のqueryRenderedFeatures、画面外/ミス時は**countryGeoをPIP→countryStatsを直読み**（可視fillのみ）。実測: 欧州表示中に日本(139,36)→「HDI (2022): 0.920」。
+- **WBベータ5種**: `_WBF` に src を持たせ、画面外は**レイヤー自身のソースデータをPIP**（properties.raw/s/iso）。実測: 「Life expectancy: 84.0 yrs (JPN)」。
+- **bx系 約40種を新規統合**: 所有モジュール側で `window._imBxChoroValueAt(lng,lat)` / `_imBxChoroOn()` を公開（レイヤーを持つモジュールが契約側に登録する規約どおり）。properties {nm,v} 直読み・データ無し国は「— (国名)」で正直に。実測: 「Income inequality (Gini): 32.3 (Japan)」（独33.7も確認）。
+- IntMapLayers 'choropleth' は**表示中の全系統の値を「 | 」連結**で返す。実測: `HDI 0.920 | Life expectancy 84.0 (JPN) | Gini 32.3 (Japan)`。
+
+### IntMapLayers 30→34登録
+- **earthquakes**: src-eq featuresIn＋summary（件数+最大M）。名前抽出は M{mag}+place（USGSの`title`は震級を含み二重になるためplace優先）。実測: layerDataで「M5.3 southern Mid-Atlantic Ridge」等、週間2145件。
+- **datacenters / pharma**: dc-src / ph-src の featuresIn＋件数summary（実測: 世界view 71拠点）。
+- **thermal（火災）実ピクセル検出**: FIRMS/GIBS WMS GetMap（±15km bbox, 96px）を**製品別**に取得し α>60 を**和集合マスク**で計数（センサー間の二重計上なし・描画レイヤーの見た目と一致）。0件は「none detected within ~15 km」＝実回答、フェッチ全滅のみnull。実測: 北豪アーネムランド29px・アンゴラ乾季野焼き212px・海上/シベリア地点0。
+- SYS layerData記述を拡張（全WBコロプレス・地震・DC・製薬・火災検出）。
+
+### thermalレイヤー本体の根本修正（既存バグ発見）
+- **実測根因**: GIBSのWMSは合成`LAYERS=a,b,c,d`のうち**1製品でも当日shapefile欠損だと全体がServiceException XMLになる**。検証時点でVIIRS_SNPPが当日・前日とも欠損＝**熱異常レイヤーが2日分とも完全に空**だった。
+- 修正: `_thermalLayersFor(day)`＝日別に4pxのGetMapでプローブ→例外メッセージ（"Failed to draw layer named 'X'"）から欠損製品を除外し、**実際に描けるサブセット**でソース構築（日別キャッシュ・全滅日はスロットを正直にスキップ）。実測: src-thermal-0/1 とも snpp:false・noaa+modis:true で構築、TIME=当日/前日。
+- IntMapLayers thermal の on() は4スロットいずれかの可視で判定。
+
+### 検証環境の教訓
+- **Browserペインの file:// はリロードでも編集後ファイルを拾わないことがある**（ミラー遅延。`window.__imBuild`マーカーで判別可能に）。回避策: `python -m http.server` + `preview_start({url:'http://localhost:8123/index.html?rafshim=1'})` — クエリも使えて確実。rafshim下では isStyleLoaded も完了し、コロプレス実描画＋`__imap` まで検証できた（従来「実機のみ」だった項目がヘッドレスで実測可能に）。
+- コンソールエラー0・レイヤー行112・全モジュール定義を確認。
+- 残（次ラウンド候補）: FS系（3D機体モデル・ミッション・機体システム詳細）、ATLAS-VISION表の残列（競合制御・平時比較・続報自動更新等）。
+
 ## R120 — 残課題実行: GIBS逆引きサンプラー + aircraft/ships/choropleth統合 + objectIds拡大(poly/outline/upload) + FS燃料/ILS/ゲームパッド (tag `#R120`)
 
 R119の「残課題（次ラウンド）」を実行。全て加算的・既存挙動不変。

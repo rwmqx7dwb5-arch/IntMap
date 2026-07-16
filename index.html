@@ -12,6 +12,7 @@ gtag('config', 'G-57X5MX0ZPW');
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
+window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -6360,24 +6361,74 @@ window.addEventListener('DOMContentLoaded', () => {
     register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
       on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
       summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'aisstream.io AIS' });
-    /* ---- (#R120) country choropleths — the value of the topmost VISIBLE choropleth at a point. Core stat fills
-       go through window.choroValueAt (countryStats); the World-Bank beta fills carry their raw value in the
-       feature properties. queryRenderedFeatures needs the point on screen — off-screen returns null (honest). ---- */
-    const _WBF={ 'wb-cpi-f':{lb:()=>L5('Corruption (control, WGI)','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Índice de corrupción'),fmt:p=>Math.round(+p.s)+' / 100'},
-      'wb-le-f':{lb:()=>L5('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),fmt:p=>(+p.raw).toFixed(1)+' '+L5('yrs','年','J.','лет','años')},
-      'wb-unemp-f':{lb:()=>L5('Unemployment','失業率','Arbeitslosenquote','Безработица','Desempleo'),fmt:p=>(+p.raw).toFixed(1)+'%'},
-      'wb-internet-f':{lb:()=>L5('Internet users','インターネット普及率','Internetnutzer','Пользователи интернета','Usuarios de internet'),fmt:p=>(+p.raw).toFixed(1)+'%'},
-      'wb-precip-f':{lb:()=>L5('Annual precipitation','年降水量','Jahresniederschlag','Годовые осадки','Precipitación anual'),fmt:p=>Math.round(+p.raw)+' mm'} };
+    /* ---- (#R120/#R121) country choropleths — the value of every VISIBLE choropleth family at a point.
+       Core stat fills go through window.choroValueAt (countryStats; R121: works OFF-SCREEN too via
+       point-in-polygon over countryGeo), the World-Bank beta fills carry their raw value in the feature
+       properties (R121: PIP over the source data when the point is off screen), and the ~40 bx World-Bank
+       choropleths report through window._imBxChoroValueAt (registered by their own module). ---- */
+    /* shared point-in-polygon (Polygon/MultiPolygon with holes) — also used by choroValueAt & the bx module */
+    window._imPipGeo=function(x,y,g){ const ring=r=>{ let ins=false; for(let i=0,j=r.length-1;i<r.length;j=i++){ const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) ins=!ins; } return ins; };
+      const poly=p=>{ if(!p||!p.length||!ring(p[0])) return false; for(let k=1;k<p.length;k++){ if(ring(p[k])) return false; } return true; };
+      try{ if(!g) return false; if(g.type==='Polygon') return poly(g.coordinates); if(g.type==='MultiPolygon') return g.coordinates.some(poly); }catch(_){} return false; };
+    const _WBF={ 'wb-cpi-f':{src:'wb-cpi',lb:()=>L5('Corruption (control, WGI)','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Índice de corrupción'),fmt:p=>Math.round(+p.s)+' / 100'},
+      'wb-le-f':{src:'wb-le',lb:()=>L5('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),fmt:p=>(+p.raw).toFixed(1)+' '+L5('yrs','年','J.','лет','años')},
+      'wb-unemp-f':{src:'wb-unemp',lb:()=>L5('Unemployment','失業率','Arbeitslosenquote','Безработица','Desempleo'),fmt:p=>(+p.raw).toFixed(1)+'%'},
+      'wb-internet-f':{src:'wb-internet',lb:()=>L5('Internet users','インターネット普及率','Internetnutzer','Пользователи интернета','Usuarios de internet'),fmt:p=>(+p.raw).toFixed(1)+'%'},
+      'wb-precip-f':{src:'wb-precip',lb:()=>L5('Annual precipitation','年降水量','Jahresniederschlag','Годовые осадки','Precipitación anual'),fmt:p=>Math.round(+p.raw)+' mm'} };
     const _CHF=['pop','hdi','dem','milSpend','milSpendGDP','gdppc','tfr'].map(id=>id+'-fill');
+    const _srcData=sid=>{ try{ const s=map.getSource(sid); if(!s) return null; if(s._data&&s._data.features) return s._data; const d=s.serialize&&s.serialize().data; return (d&&d.features)?d:null; }catch(_){ return null; } };
     register('choropleth',{ label:()=>L5('Country choropleth','国別コロプレス','Länder-Choroplethe','Хороплет по странам','Coropleta por países'),
-      on:()=>_CHF.some(_lyrVis)||Object.keys(_WBF).some(_lyrVis),
-      sampleAt:(x,y)=>{ try{ const v=window.choroValueAt&&window.choroValueAt(x,y); if(v) return v; }catch(_){}
-        try{ const ids=Object.keys(_WBF).filter(_lyrVis); if(!ids.length) return null;
-          const pt=map.project([x,y]); const cv=map.getCanvas();
-          if(!pt||pt.x<0||pt.y<0||pt.x>((cv&&cv.clientWidth)||1e9)||pt.y>((cv&&cv.clientHeight)||1e9)) return null;
-          const hit=map.queryRenderedFeatures(pt,{layers:ids});
-          if(hit&&hit.length){ const f=hit[0], p=f.properties||{}, W=_WBF[f.layer.id]; if(W) return W.lb()+': '+W.fmt(p)+(p.iso?(' ('+p.iso+')'):''); } }catch(_){}
-        return null; }, source:()=>'World Bank / SIPRI / UNDP' });
+      on:()=>_CHF.some(_lyrVis)||Object.keys(_WBF).some(_lyrVis)||!!(window._imBxChoroOn&&window._imBxChoroOn()),
+      sampleAt:(x,y)=>{ const outs=[];
+        try{ const v=window.choroValueAt&&window.choroValueAt(x,y); if(v) outs.push(v); }catch(_){}
+        try{ const ids=Object.keys(_WBF).filter(_lyrVis);
+          if(ids.length){ let hit=null;
+            try{ const pt=map.project([x,y]); const cv=map.getCanvas();
+              if(pt&&pt.x>=0&&pt.y>=0&&pt.x<=((cv&&cv.clientWidth)||1e9)&&pt.y<=((cv&&cv.clientHeight)||1e9)){ const h=map.queryRenderedFeatures(pt,{layers:ids}); if(h&&h.length) hit={id:h[0].layer.id,p:h[0].properties||{}}; } }catch(_){}
+            if(!hit){ for(const id of ids){ const d=_srcData(_WBF[id].src); if(!d) continue;   /* (#R121) off-screen → PIP over the layer's own data */
+              const f=d.features.find(ft=>window._imPipGeo(x,y,ft.geometry)); if(f&&f.properties&&f.properties.raw!=null){ hit={id,p:f.properties}; break; } } }
+            if(hit){ const W=_WBF[hit.id]; if(W) outs.push(W.lb()+': '+W.fmt(hit.p)+(hit.p.iso?(' ('+hit.p.iso+')'):'')); } } }catch(_){}
+        try{ const bx=window._imBxChoroValueAt&&window._imBxChoroValueAt(x,y); if(bx&&bx.length) outs.push.apply(outs,bx.slice(0,4)); }catch(_){}
+        return outs.length?outs.join(' | '):null; }, source:()=>'World Bank / SIPRI / UNDP' });
+    /* ---- (#R121) more REAL feature layers on the contract ---- */
+    register('earthquakes',{ label:()=>L5('Earthquakes','地震','Erdbeben','Землетрясения','Terremotos'),
+      on:()=>_lyrVis('eq-pt'), featuresIn:b=>_srcFeatsIn('src-eq',b),
+      summary:()=>{ const f=_srcFeatsIn('src-eq',null); if(!f) return null; let mx=null; f.forEach(q=>{ const m=q.properties&&+q.properties.mag; if(m!=null&&isFinite(m)&&(mx==null||m>mx)) mx=m; });
+        return f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')+(mx!=null?(' · max M'+mx.toFixed(1)):''); }, source:()=>'USGS' });
+    register('datacenters',{ label:()=>L5('Data centers & AI infra','データセンター・AIインフラ','Rechenzentren & KI-Infrastruktur','Дата-центры и ИИ-инфраструктура','Centros de datos e infra de IA'),
+      on:()=>_lyrVis('dc-pt'), featuresIn:b=>_srcFeatsIn('dc-src',b),
+      summary:()=>{ const f=_srcFeatsIn('dc-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
+    register('pharma',{ label:()=>L5('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros farmacéuticos'),
+      on:()=>_lyrVis('ph-pt'), featuresIn:b=>_srcFeatsIn('ph-src',b),
+      summary:()=>{ const f=_srcFeatsIn('ph-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
+    /* (#R121) thermal anomalies (active fires) — REAL pixel count from the same NASA FIRMS/GIBS WMS imagery the
+       layer paints: fetch a small GetMap around the point (per day-offset of the user's 24/48/72h window) and
+       count non-transparent pixels. 0 = "none detected" (a real answer); fetch failure = null (no data). */
+    const _fireCache=new Map();
+    async function _fireCount(lng,lat){ const R=20037508.342789244;
+      const mx=lng/180*R, my=Math.log(Math.tan((90+lat)*Math.PI/360))/Math.PI*R; if(!isFinite(my)) return null;
+      const half=15000, n={'24':2,'48':3,'72':4}[window._thermalWindow||'24']||2, W=96;
+      /* one GetMap PER PRODUCT (a combined LAYERS= request fails ENTIRELY with a ServiceException when any one
+         product has no shapefile for that day — live-verified with VIIRS_SNPP); the detections are OR-ed into a
+         pixel mask so the count matches the UNION the painted layer shows (no sensor double-counting). */
+      const days=[]; for(let off=0;off<n;off++) days.push(new Date(Date.now()-off*86400000).toISOString().slice(0,10));
+      const key=days[0]+':'+n+':'+Math.round(mx/5000)+','+Math.round(my/5000);
+      if(_fireCache.has(key)) return _fireCache.get(key);
+      const PRODUCTS=['VIIRS_NOAA20_Thermal_Anomalies_375m_All','VIIRS_SNPP_Thermal_Anomalies_375m_All','MODIS_Terra_Thermal_Anomalies_All','MODIS_Aqua_Thermal_Anomalies_All'];
+      const mask=new Uint8Array(W*W); let got=false;
+      await Promise.all(days.map(day=>Promise.all(PRODUCTS.map(ly=>new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous';
+        im.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=cv.height=W; const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(im,0,0,W,W); const d=cx.getImageData(0,0,W,W).data;
+          for(let i=0;i<W*W;i++){ if(d[i*4+3]>60) mask[i]=1; } got=true; }catch(_){} res(); };
+        im.onerror=()=>res();
+        im.src='https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+ly+'&CRS=EPSG:3857&BBOX='+(mx-half)+','+(my-half)+','+(mx+half)+','+(my+half)+'&WIDTH='+W+'&HEIGHT='+W+'&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+day; })))));
+      if(!got) return null;
+      let total=0; for(let i=0;i<W*W;i++) total+=mask[i];
+      const out= total>0 ? (total+' '+L5('fire pixels within ~15 km','火災ピクセル（約15km圏）','Feuerpixel in ~15 km','пикс. пожаров в ~15 км','píxeles de fuego en ~15 km'))
+                         : L5('none detected within ~15 km','約15km圏で検出なし','keine in ~15 km erkannt','не обнаружено в ~15 км','ninguno en ~15 km');
+      if(_fireCache.size>60) _fireCache.clear(); _fireCache.set(key,out); return out; }
+    register('thermal',{ label:()=>L5('Thermal anomalies (fires)','熱異常（火災）','Thermale Anomalien (Brände)','Тепловые аномалии (пожары)','Anomalías térmicas (incendios)'),
+      on:()=>['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'].some(_lyrVis), sampleAt:(x,y)=>_fireCount(x,y),
+      time:()=>L5('last','直近','letzte','последние','últimas')+' '+(window._thermalWindow||'24')+' h', source:()=>'NASA FIRMS / GIBS (MODIS+VIIRS)' });
     return { register, list, active:activeIds, state, sampleAt, featuresIn, context };
   })();
 
@@ -11635,17 +11686,38 @@ window.addEventListener('DOMContentLoaded', () => {
     const THERMAL_IDS=['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'];
     let _thermalOn=false;
     function _utcDayISO(back){ return new Date(Date.now()-back*86400000).toISOString().slice(0,10); }
-    function gibsThermalWMS(dayISO){ return 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+GIBS_FIRE_LAYERS+'&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+dayISO; }
+    function gibsThermalWMS(dayISO,layers){ return 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+(layers||GIBS_FIRE_LAYERS)+'&CRS=EPSG:3857&BBOX={bbox-epsg-3857}&WIDTH=256&HEIGHT=256&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+dayISO; }
     function thermalDayOffsets(){ const n={'24':2,'48':3,'72':4}[window._thermalWindow||'24']||2; const out=[]; for(let i=0;i<n;i++) out.push(i); return out; }
+    /* (#R121) ROOT FIX — a combined LAYERS= GetMap fails ENTIRELY ("msShapefileOpen(): The requested shapefile
+       cannot be found") when ANY one product has no data for that day (live-verified: VIIRS_SNPP missing for
+       today & yesterday blanked the whole thermal layer). Probe each day once with a tiny GetMap, parse the
+       failing product out of the ServiceException, and request only the products that actually draw. */
+    const _thermalDayCache={};
+    async function _thermalLayersFor(day){ if(_thermalDayCache[day]!==undefined) return _thermalDayCache[day];
+      let list=GIBS_FIRE_LAYERS.split(',');
+      for(let t=0;t<4&&list.length;t++){
+        try{ const M=20037508.34;
+          const r=await fetch('https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS='+list.join(',')+'&CRS=EPSG:3857&BBOX='+(-M)+','+(-M)+','+M+','+M+'&WIDTH=4&HEIGHT=4&FORMAT=image/png&TRANSPARENT=TRUE&STYLES=&TIME='+day);
+          const ct=(r.headers.get('content-type')||'');
+          if(r.ok&&ct.indexOf('image')>=0) break;
+          const tx=await r.text(); const m=tx.match(/named '([^']+)'/)||tx.match(/named &#39;([^&#]+)&#39;/);
+          if(!m||list.indexOf(m[1])<0){ list=[]; break; }
+          list=list.filter(x=>x!==m[1]);
+        }catch(_){ break; } }   /* network error → keep the current list (the layer may still draw) */
+      _thermalDayCache[day]=list; return list; }
     function _clearThermal(){ THERMAL_IDS.forEach((lid,i)=>{ try{ if(map.getLayer(lid)) map.removeLayer(lid); }catch(_){} try{ const sid='src-thermal-'+i; if(map.getSource(sid)) map.removeSource(sid); }catch(_){} }); }
     function addFirmsThermal(){
       _clearThermal();
       thermalDayOffsets().forEach((off,i)=>{
-        const sid='src-thermal-'+i, lid=THERMAL_IDS[i];
-        try{
-          map.addSource(sid,{type:'raster',tiles:[gibsThermalWMS(_utcDayISO(off))],tileSize:256,attribution:'NASA FIRMS / GIBS — MODIS & VIIRS active fire'});
-          map.addLayer({id:lid,type:'raster',source:sid,layout:{visibility:_thermalOn?'visible':'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
-        }catch(_){}
+        const sid='src-thermal-'+i, lid=THERMAL_IDS[i], day=_utcDayISO(off);
+        _thermalLayersFor(day).then(list=>{
+          if(!list||!list.length) return;   /* no fire product at all for that day (yet) — skip the slot honestly */
+          try{
+            if(map.getSource(sid)||map.getLayer(lid)) return;   /* a re-toggle raced us */
+            map.addSource(sid,{type:'raster',tiles:[gibsThermalWMS(day,list.join(','))],tileSize:256,attribution:'NASA FIRMS / GIBS — MODIS & VIIRS active fire'});
+            map.addLayer({id:lid,type:'raster',source:sid,layout:{visibility:_thermalOn?'visible':'none'},paint:{'raster-opacity':opacities.thermal}},beforeId);
+          }catch(_){}
+        }).catch(()=>{});
       });
     }
     function setThermalVis(on){ _thermalOn=on; THERMAL_IDS.forEach(lid=>{ if(map.getLayer(lid)) map.setLayoutProperty(lid,'visibility',on?'visible':'none'); }); }
@@ -12095,9 +12167,20 @@ window.addEventListener('DOMContentLoaded', () => {
         const fillIds=Object.keys(CHORO_META).map(id=>id+'-fill').filter(L=>map.getLayer(L));
         if(!fillIds.length) return null;
         const pt=map.project([lng,lat]);
-        const hit=map.queryRenderedFeatures(pt,{layers:fillIds});
-        if(hit&&hit.length){ const f=hit[0]; const id=f.layer.id.replace(/-fill$/,''); const meta=CHORO_META[id]; const s=countryStats[f.id];
-          if(meta&&s){ return meta.label()+': '+meta.fmt(s); } }
+        const cv=map.getCanvas();
+        const onScreen=pt&&pt.x>=0&&pt.y>=0&&pt.x<=((cv&&cv.clientWidth)||1e9)&&pt.y<=((cv&&cv.clientHeight)||1e9);
+        if(onScreen){
+          const hit=map.queryRenderedFeatures(pt,{layers:fillIds});
+          if(hit&&hit.length){ const f=hit[0]; const id=f.layer.id.replace(/-fill$/,''); const meta=CHORO_META[id]; const s=countryStats[f.id];
+            if(meta&&s){ return meta.label()+': '+meta.fmt(s); } } }
+        /* (#R121) OFF-SCREEN (or renderer miss) → resolve the country by point-in-polygon over countryGeo and
+           read the SAME countryStats the visible fill paints — the choropleth value no longer needs the point
+           to be on screen ("choropleth画面外サンプリング"). Only VISIBLE fills report. */
+        const visIds=fillIds.filter(Lid=>{ try{ return map.getLayoutProperty(Lid,'visibility')==='visible'; }catch(_){ return false; } });
+        if(!visIds.length||!countryGeo||!countryGeo.features||!window._imPipGeo) return null;
+        const f2=countryGeo.features.find(ft=>ft&&ft.id!=null&&ft.geometry&&window._imPipGeo(lng,lat,ft.geometry));
+        if(f2){ const s2=countryStats[f2.id]; if(s2){ const id2=visIds[0].replace(/-fill$/,''); const meta2=CHORO_META[id2];
+          if(meta2) return meta2.label()+': '+meta2.fmt(s2); } }
       }catch(_){}
       return null;
     };
@@ -26319,7 +26402,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const vals=await LY.sampleAt(px,py,ids);
           const featLines=[];
           (ids||LY.active()).forEach(id=>{ try{ const fs=LY.featuresIn(id,null); if(fs&&fs.length){ const nm2=(LY.state(id)||{}).label||id;
-            const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; return String(p2.name||p2.title||p2.NAME||p2.callsign||p2.ident||'').slice(0,40); }).filter(Boolean);   /* (#R120) aircraft have a callsign, not a name */
+            const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; const nm3=String(p2.name||((p2.mag!=null&&p2.place)?p2.place:'')||p2.title||p2.NAME||p2.callsign||p2.ident||p2.place||'').slice(0,40); return (p2.mag!=null&&nm3)?('M'+(+p2.mag).toFixed(1)+' '+nm3).slice(0,46):nm3; }).filter(Boolean);   /* (#R120) aircraft have a callsign, not a name; (#R121) quakes = M{mag} + place (their `title` already repeats the magnitude) */
             featLines.push(nm2+': '+fs.length+(names.length?(' — '+names.join(', ')+(fs.length>names.length?', …':'')):'')); } }catch(_){} });
           if(!vals.length&&!featLines.length) return R(false, warn('⚠ '+L('No readable data on the active layers here. Turn a data layer on first.','ここで読み取れる表示中レイヤーのデータがありません。先にデータレイヤーをオンにしてください。','Keine lesbaren Layer-Daten hier.','Нет читаемых данных слоёв здесь.','Sin datos de capas legibles aquí.')));
           let hh=note('◈ '+esc(pname||(py.toFixed(3)+', '+px.toFixed(3))));
@@ -27444,7 +27527,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). (#R119) It ALSO receives the live values of the layers the user is displaying at the anchor point, and "scope":"drawn-area" analyses the USER-DRAWN measure polygon / circles (news inside it + layer values + WorldPop population — use for "この範囲を要約/分析して"). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
         +'SATELLITE CHANGE DETECTION: {"type":"satelliteCompare","dateA":"YYYY-MM-DD","dateB":"YYYY-MM-DD","place"?:str} = capture the dated satellite view at two dates and report the visual changes (construction, vessels, disasters, land use) with both frames shown. REQUIRES the satellite base with a dated provider to be active; if it is not, tell the user to switch to Satellite first. Use for "この2日付で衛星画像を比較", "what changed here between X and Y".\n'
-        +'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation, every NASA GIBS science raster — LST, sea ice, SST anomaly, NDVI, water vapour, clouds, chlorophyll, soil moisture… read from the actual tile pixel via the colormap — and the visible country choropleth\'s value) + the actual features in view for point layers (cameras, news, volcanoes, live aircraft, live ships). No place = the pinned point or map centre. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？", "今見えている飛行機は？").\n'
+        +'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation, every NASA GIBS science raster — LST, sea ice, SST anomaly, NDVI, water vapour, clouds, chlorophyll, soil moisture… read from the actual tile pixel via the colormap — every visible country choropleth\'s value — the core stat fills AND all ~50 World-Bank choropleths, on- or off-screen — and active-fire detection: real FIRMS hot-spot pixel counts within ~15 km when the thermal layer is on) + the actual features in view for point layers (cameras, news, volcanoes, live aircraft, live ships, earthquakes with magnitude, data centers, pharma hubs). No place = the pinned point or map centre. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？", "今見えている飛行機は？", "この辺で山火事ある？").\n'
         +'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num} = EXACT population inside a shape, summed from the WorldPop 100m population grid (2020). target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n'
         +'MAP OBJECTS: {"type":"object","op":"list"|"remove"|"focus"|"rename","id"?:str,"kind"?:"pin"|"radius"|"annot"|"poly"|"outline"|"upload"|"route"|"iso","index"?:num,"name"?:str} = operate on objects ALREADY drawn on the map (ids are listed in CURRENT MAP STATE; "poly"=Atlas-drawn polygons, "outline"=the active boundary outline). "2番目の円を消して" → {"type":"object","op":"remove","kind":"radius","index":2}.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
@@ -28792,6 +28875,20 @@ window.addEventListener('DOMContentLoaded', () => {
       'Heat of Attention':{de:'Aufmerksamkeits-Heatmap',ru:'Карта внимания'}
     };
     const bxLabel=(L)=> (L.n[currentLang]) || (BX_TR[L.n.en]&&BX_TR[L.n.en][currentLang]) || L.n.en;
+    /* (#R121) point-value hooks for the layer-data contract (IntMapLayers 'choropleth'): the value of every
+       VISIBLE bx World-Bank choropleth at (lng,lat), read from the layer's OWN painted source data by
+       point-in-polygon — works on- and off-screen. Registered here because this module owns these layers. */
+    const _bxVis=L=>{ try{ const f=L.id+'-fill'; return !!(map.getLayer(f)&&map.getLayoutProperty(f,'visibility')==='visible'); }catch(_){ return false; } };
+    window._imBxChoroOn=function(){ try{ return WB.some(_bxVis); }catch(_){ return false; } };
+    window._imBxChoroValueAt=function(lng,lat){ const out=[];
+      try{ if(!window._imPipGeo) return out;
+        WB.forEach(L=>{ if(!_bxVis(L)) return;
+          const s=map.getSource('src-'+L.id); const d=s&&(s._data&&s._data.features?s._data:(s.serialize&&s.serialize().data)); if(!d||!d.features) return;
+          for(const f of d.features){ if(f&&f.geometry&&window._imPipGeo(lng,lat,f.geometry)){ const p=f.properties||{};
+            if(p.v!=null){ const a=Math.abs(+p.v); const rv=(a>=100?Math.round(+p.v):Math.round(+p.v*10)/10); out.push(bxLabel(L)+': '+rv+(L.unit||'')+(p.nm?(' ('+p.nm+')'):'')); }
+            else out.push(bxLabel(L)+': — '+(p.nm?('('+p.nm+')'):''));   /* gray no-data country = honest dash */
+            break; } } }); }catch(_){}
+      return out; };
     function buildRows(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('bx-eq')) return;
       ALL.forEach(L=>{ const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-'+L.id;
         const lab=document.createElement('label'); lab.className='layer-option';
