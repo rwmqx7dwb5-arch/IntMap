@@ -5,6 +5,29 @@
 
 ---
 
+## R119 — 残課題実行: IntMapLayersデータ契約 + OSコマンド拡張 + 範囲要約/衛星比較のAtlas統合 + FS実滑走路/ライブ風/PAPI + objectIds (tag `#R119`)
+
+### IntMapLayers — 共通レイヤーデータ契約（本ラウンドの核）
+- `window.IntMapLayers` = register/list/active/state/sampleAt/featuresIn/context。**登録13レイヤー**: temp/sst/wind/precip/snow/aod/no2/co（Open-Meteo系のライブ実値、0.25°セル共有キャッシュ）、climate（Köppenピクセル）、elevation（terrarium DEM）、webcams/news/volcanoes（featuresIn=geojsonソースのbbox抽出+件数summary）。**新レイヤー追加時は同一チェンジで register すること**（コントロールプレーン規約の拡張）。
+- 消費側3系統: ①stateContextに「Readable layer data: …」行（time/src/件数つき）②**`layerData`アクション**（place/lng,lat/ここピン/地図中心で全アクティブレイヤーの実値+表示中フィーチャ名を返す。SYS記載済み）③**analyzeの証拠に自動注入**（アンカー地点のACTIVE MAP LAYER VALUESブロック）。実測: 東京で気温25.6°C/風/AOD 0.85、富士山麓1623m、layerDataアクション動作。
+- 残り(次候補): GIBSラスタのピクセル→物理値変換（カラーマップXML逆引き）、aircraft/shipsのfeaturesIn、choropleth値の統合。
+
+### Atlas統合の残り
+- **範囲要約のAtlas吸収**: analyze `scope:"drawn-area"` = 描画ポリゴン/円内のニュース地点＋範囲中心のレイヤー実値＋WorldPop人口を証拠ブロック化。測定パネルの「この範囲をAIで要約」ボタンは **IntMapConsole.runDirect()**（新公開API=外部機能がAtlasスレッドに user バブル+実行結果を流す入口）経由でAtlas会話内に出す。旧ポップアップはconsole不在時のフォールバックとして温存。
+- **衛星変化検出のAtlas化**: `aiSatChangeDetect`を`_imSatCapture(va,vb)`/`_imSatAnalyze(...)`に分割（既存ボタンUIは不変）→ **`satelliteCompare`アクション**（dateA/dateB/place、2フレームを返信内に埋め込み+分析。日付付き衛星プロバイダ必須は正直にエラー）。SYS記載済み。
+- **objectIds**: `R(ok,html,extra)`拡張。pin/radius生成が`objectIds`を返し、runActionsが`_wctx.lastObjects`（新しい順6件）に記録→wctxBlockで「さっき作ったやつ」が実体解決。
+- **IntMapOSコマンド拡張** 12→29: layer.on/off(id)・atlas.open/close・compare.open/clear・flightsim.setup/stop・workspace.enter/exit・objects.open/remove・ticker.on/off・settings.open・isolate.exit・layers.data。薄いラッパー（ロジックは各モジュールに一元）。
+
+### フライトシム（大改修の続き）
+- **実滑走路スポーン**: セットアップSTARTでOurAirports滑走路（両端座標・R119でキャッシュv2化）を8秒予算で取得→**最長滑走路の実スレッショルドに実方位でスポーン**（実測: RJTT→16L/34R 3,360m、139.7866/35.5659）。失敗時は従来のcuratedスポーンへフォールバック。
+- **着陸コリドー判定**: st._rwy(A→B)に対し、センターライン±75m・スレッショルド間(+8%オーバーラン猶予)・軸±25°で「滑走路{ident}に着陸」を精密判定（従来のヒューリスティックは非該当時のフォールバック）。
+- **PAPI**: スポーン滑走路の最寄りスレッショルドへの3°パス比で4灯（白=高い/赤=低い）、接近方向±63°・0.25〜15kmでのみ表示。全計器盤共通(`_updPapi`)。
+- **ライブ風が物理に流入**: Open-Meteo winds aloft（地上10m+925/850/700/500/300hPa、UTC時刻合わせ）を高度線形補間、**空力はAIR相対速度**（u−qRotInv(q,wind)）で計算、位置積分は地上速度のまま。地表60mで境界層フェード（25%下限=滑走中の横風は残る）。着陸のタキシー判定・タイヤ速度制限は**地上速度**基準に変更（強向かい風で対気速度が高くても停止判定が出る）。HUD補助行に「WIND 12kt@240°」（物理に実際に入っている風）。
+- 検証: RJTT実滑走路スポーン+離陸27.1s（実風入り）、R118同一パラメータで warbird/airliner 着陸成功（3.1/2.8 m/s）＝**風リファクタは calm 等価**。注意: テストのバンバン制御はspeed±1 m/sで結果が反転する（決定的だが敏感）— 回帰判定は必ずR118と同一パラメータで。
+
+### 残課題（次ラウンド）
+- IntMapLayers: GIBSカラーマップ逆引きサンプラー/aircraft・ships featuresIn。FS: 機体システム（燃料/電気/APU）・ミッション/チャレンジ・3D機体モデル・ILS誘導表示・ゲームパッド。dispatch objectIds の対象拡大（outline/draw/upload）。
+
 ## R118 — 実条件バグ追撃（FS残り2根本原因・WB/IMF・Atlasトグル）+ 設定/モバイルUI再構成 + 範囲人口 + Atlasデータブリッジ第1弾 (tag `#R118`)
 
 ### フライトシム（実条件テストで新たに2根本原因を発見・修正）

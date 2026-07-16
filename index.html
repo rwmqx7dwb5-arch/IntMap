@@ -3642,15 +3642,13 @@ window.addEventListener('DOMContentLoaded', () => {
       setTimeout(grab,900); /* safety net if no render event fires */
     });
   }
-  async function aiSatChangeDetect(){
-    if(!aiGate()) return;
-    if(currentMapType!=='sat'){ aiToast(t('aiVisNeedsDated')); return; }
+  /* (#R119) SPLIT into reusable stages so the Atlas `satelliteCompare` action shares the exact same pipeline
+     (capture two dated frames → vision analysis) — the button UI below is unchanged. */
+  window._imSatCapture=async function(va,vb){
+    if(currentMapType!=='sat') return {err:t('aiVisNeedsDated')};
     const p=satProviderById(satState.providerId);
-    if(!p||!p.dated){ aiToast(t('aiVisNeedsDated')); return; }
-    const aEl=document.getElementById('aic-date-a'), bEl=document.getElementById('aic-date-b');
-    const va=aEl&&aEl.value, vb=bEl&&bEl.value;
-    if(!va||!vb){ aiToast(t('aiVisPickDates')); return; }
-    const btn=document.getElementById('ai-satchange-btn'); aiSetBtnBusy(btn,true,t('aiVisCapturing'));
+    if(!p||!p.dated) return {err:t('aiVisNeedsDated')};
+    if(!va||!vb) return {err:t('aiVisPickDates')};
     const save={ day:satState.day, year:satState.year, opacity:satState.opacity };
     /* hide map overlays so the captured frame is imagery, not pins/grid */
     const overlays=['news-dots','news-labels','news-pin-shadow','dash-dots','dash-labels','user-pin-dot','user-pin-shadow','grid-lines','grid-major'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
@@ -3662,20 +3660,29 @@ window.addEventListener('DOMContentLoaded', () => {
     satState.day=save.day; satState.year=save.year; satState.opacity=save.opacity;
     overlays.forEach((id,k)=>{ try{ map.setLayoutProperty(id,'visibility',vis[k]); }catch(_){} });
     try{ satApply(false); satRefreshReadout(); }catch(_){}
+    if(err||!imgA||!imgB) return {err:(err&&err.message)||t('aiVisCapFail')};
+    return {imgA,imgB}; };
+  window._imSatAnalyze=async function(va,vb,imgA,imgB){
+    const sys=(currentLang==='jp'
+      ? "あなたは衛星画像アナリストです。同一地域の2枚の衛星画像を比較します（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"
+      : "You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.")+window._aiLangLine();
+    const prompt=currentLang==='jp'?`1枚目の日付: ${va}\n2枚目の日付: ${vb}\nこの2枚を比較し、変化を報告してください。`:`First image date: ${va}\nSecond image date: ${vb}\nCompare the two images and report the changes.`;
+    return askAI(prompt,sys,[imgA,imgB]); };
+  async function aiSatChangeDetect(){
+    if(!aiGate()) return;
+    const aEl=document.getElementById('aic-date-a'), bEl=document.getElementById('aic-date-b');
+    const va=aEl&&aEl.value, vb=bEl&&bEl.value;
+    const btn=document.getElementById('ai-satchange-btn'); aiSetBtnBusy(btn,true,t('aiVisCapturing'));
+    const cap=await window._imSatCapture(va,vb);
     aiSetBtnBusy(btn,false);
-    if(err||!imgA||!imgB){ aiToast((err&&err.message)||t('aiVisCapFail')); return; }
+    if(cap.err){ aiToast(cap.err); return; }
+    const imgA=cap.imgA, imgB=cap.imgB;
     const rep=aiReport({ title:t('aiVisTitle'), sub:t('aiVisSub').replace('{a}',va).replace('{b}',vb),
       images:[{src:imgA,caption:t('aiVisBefore')+' · '+va},{src:imgB,caption:t('aiVisAfter')+' · '+vb}] });
     const run=async()=>{
       rep.setLoading(t('aiThinking'));
-      try{
-        const sys=(currentLang==='jp'
-          ? "あなたは衛星画像アナリストです。同一地域の2枚の衛星画像を比較します（1枚目=過去、2枚目=新しい日付）。軍事施設の建設・拡張、艦船・航空機・車両など装備の移動、土地造成や伐採、自然災害（洪水・火災・地滑り等）、都市・インフラの変化を日本語で報告してください。各項目は箇条書きにし、確度（高/中/低）を付けてください。変化が無ければその旨を述べ、雲量や画質・季節差による誤検出に注意してください。"
-          : "You are a satellite-imagery analyst comparing two images of the same area (first = earlier, second = later). Report: military construction/expansion, movement of ships/aircraft/vehicles, land clearing, natural disasters (floods, fires, landslides), and urban/infrastructure change. Use bullet points, each with a confidence level (high/medium/low). If nothing changed, say so, and beware false positives from clouds, image quality, or seasonal differences.")+window._aiLangLine();
-        const prompt=currentLang==='jp'?`1枚目の日付: ${va}\n2枚目の日付: ${vb}\nこの2枚を比較し、変化を報告してください。`:`First image date: ${va}\nSecond image date: ${vb}\nCompare the two images and report the changes.`;
-        const out=await askAI(prompt,sys,[imgA,imgB]);
-        rep.setBody(out||'');
-      }catch(e){ rep.setError((e&&e.message)||t('aiError'),run); }
+      try{ const out=await window._imSatAnalyze(va,vb,imgA,imgB); rep.setBody(out||''); }
+      catch(e){ rep.setError((e&&e.message)||t('aiError'),run); }
     };
     run();
   }
@@ -5927,7 +5934,13 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R34) Minimize button ("Enable − in Radius") — collapses the panel to just its header so the tool no
        longer covers the centre crosshair on mobile ("Radius widget is too big so it hides the cross pointer"). */
     { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.title=(currentLang==='jp'?(on?'展開':'最小化'):currentLang==='de'?(on?'Ausklappen':'Minimieren'):currentLang==='ru'?(on?'Развернуть':'Свернуть'):currentLang==='es'?(on?'Expandir':'Minimizar'):(on?'Expand':'Minimize')); }; }   /* (#R35) icon (line↔box) is drawn by CSS off .tp-collapsed — no text –/+ */
-    { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey'); sb.onclick=aiSummarizeArea; } }
+    { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!aiReady()); sb.title=aiReady()?'':t('aiNoKey');
+      /* (#R119) the area summary now runs INSIDE the Atlas thread (analyze scope:"drawn-area" = news in the area +
+         displayed-layer values + WorldPop population, one conversation surface). The legacy popup stays as fallback. */
+      sb.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.runDirect){
+          const q5=currentLang==='jp'?'描画した範囲内の状況を要約・分析して':currentLang==='de'?'Fasse die Lage im gezeichneten Gebiet zusammen':currentLang==='ru'?'Сводка по нарисованной области':currentLang==='es'?'Resume la situación del área dibujada':'Summarize and analyse the situation inside the drawn area';
+          window.IntMapConsole.runDirect(q5,[{type:'analyze',question:q5,scope:'drawn-area'}]); return; } }catch(_){}
+        aiSummarizeArea(); }; } }
     { const nb=p.querySelector('#news-area-btn'); if(nb) nb.onclick=()=>{ try{ window._searchNewsInArea(); }catch(_){} }; }
     { const fb=p.querySelector('#tp-finalize'); if(fb) fb.onclick=()=>{ try{ window._finalizeMeasurement(); }catch(_){} }; const pb=p.querySelector('#tp-profile'); if(pb) pb.onclick=()=>{ try{ window._elevationProfile(); }catch(_){} }; }
     /* (#R118) population inside the drawn polygon / placed circle(s) — WorldPop 100m grid (see IntMapPopArea) */
@@ -6269,6 +6282,78 @@ window.addEventListener('DOMContentLoaded', () => {
       else if(typeof e==='number'){ set(elevText(e)); }
     }catch(_){}
   }
+
+  /* ===== (#R119) IntMapLayers — the COMMON LAYER DATA CONTRACT ("Atlasが表示中レイヤーの実値を読める仕組み").
+     Every registered layer exposes the same tiny interface:
+       on()        → is it currently displayed
+       label()     → localized display name
+       sampleAt(lng,lat) → the REAL value at a point (number/string; may be async) — from the same live sources
+                     the layer itself represents (Open-Meteo / marine / air-quality / Köppen pixel sample)
+       featuresIn(bounds) → the actual FEATURES in view (point layers: webcams, news, volcanoes…)
+       time() / source() / legend() / summary()
+     Consumers: Atlas state context (per-layer live summary), the `layerData` action, and analyze evidence.
+     Register new layers here in the SAME change that adds them (control-plane rule). ===== */
+  window.IntMapLayers=(function(){
+    const REG={};
+    const L5=(en,jp2,de,ru,es)=>({en,jp:jp2,de,ru,es})[typeof currentLang!=='undefined'?currentLang:'en']||en;
+    const isOn=id=>{ const cb=document.getElementById('dl-'+id)||document.getElementById(id); return !!(cb&&cb.checked); };
+    const _numCache=new Map();   /* per (kind,0.25°cell) numeric cache shared by all Open-Meteo samplers */
+    async function _om(kind,lng,lat){ const q=v=>Math.round(v*4)/4, qla=q(lat), qlo=q(lng), key=kind+':'+qla+','+qlo;
+      if(_numCache.has(key)) return _numCache.get(key);
+      let url=null,pick=null,unit='';
+      if(kind==='temp'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&current=temperature_2m'; pick=j=>j.current&&j.current.temperature_2m; unit='°C'; }
+      else if(kind==='sst'){ url='https://marine-api.open-meteo.com/v1/marine?latitude='+qla+'&longitude='+qlo+'&current=sea_surface_temperature'; pick=j=>j.current&&j.current.sea_surface_temperature; unit='°C'; }
+      else if(kind==='wind'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&current=wind_speed_10m,wind_direction_10m'; pick=j=>j.current&&(j.current.wind_speed_10m!=null?(j.current.wind_speed_10m+' km/h @'+Math.round(j.current.wind_direction_10m||0)+'°'):null); unit=''; }
+      else if(kind==='precip'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&current=precipitation'; pick=j=>j.current&&j.current.precipitation; unit=' mm/h'; }
+      else if(kind==='snow'){ url='https://api.open-meteo.com/v1/forecast?latitude='+qla+'&longitude='+qlo+'&hourly=snow_depth&forecast_days=1'; pick=j=>j.hourly&&j.hourly.snow_depth&&j.hourly.snow_depth[0]; unit=' m'; }
+      else if(kind==='aod'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=aerosol_optical_depth'; pick=j=>j.current&&j.current.aerosol_optical_depth; unit=''; }
+      else if(kind==='no2'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=nitrogen_dioxide'; pick=j=>j.current&&j.current.nitrogen_dioxide; unit=' µg/m³'; }
+      else if(kind==='co'){ url='https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+qla+'&longitude='+qlo+'&current=carbon_monoxide'; pick=j=>j.current&&j.current.carbon_monoxide; unit=' µg/m³'; }
+      if(!url) return null;
+      try{ const r=await fetch(url); if(!r.ok) return null; const j=await r.json(); const v=pick(j);
+        const out=(v==null||v==='')?null:(typeof v==='number'?(Math.round(v*100)/100+unit):String(v));
+        if(out!=null) _numCache.set(key,out); return out; }catch(_){ return null; } }
+    function _srcFeatsIn(srcId,bounds){ try{ const s=map.getSource(srcId); if(!s||!s.serialize) return null; const d=s.serialize().data; if(!d||!Array.isArray(d.features)) return null;
+      const b=bounds||map.getBounds(); const w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
+      return d.features.filter(f=>{ try{ const c=f.geometry&&f.geometry.type==='Point'&&f.geometry.coordinates; return c&&c[0]>=w&&c[0]<=e&&c[1]>=so&&c[1]<=n; }catch(_){ return false; } }); }catch(_){ return null; } }
+    function register(id,impl){ REG[id]=impl||{}; }
+    function list(){ return Object.keys(REG); }
+    function activeIds(){ return Object.keys(REG).filter(id=>{ try{ const r=REG[id]; return r.on?!!r.on():isOn(id); }catch(_){ return false; } }); }
+    function state(id){ const r=REG[id]; if(!r) return null; const g=(fn,fb)=>{ try{ return r[fn]?r[fn]():fb; }catch(_){ return fb; } };
+      return { id, on:(r.on?!!r.on():isOn(id)), label:g('label',id), time:g('time',null), source:g('source',null), legend:g('legend',null) }; }
+    async function sampleAt(lng,lat,ids){ const out=[]; const use=(ids&&ids.length)?ids:activeIds();
+      for(const id of use){ const r=REG[id]; if(!r||!r.sampleAt) continue;
+        try{ const v=await Promise.resolve(r.sampleAt(lng,lat)); if(v!=null&&v!=='') out.push({ id, label:state(id).label, value:v }); }catch(_){} }
+      return out; }
+    function featuresIn(id,bounds){ const r=REG[id]; if(!r||!r.featuresIn) return null; try{ return r.featuresIn(bounds); }catch(_){ return null; } }
+    function context(){ try{ return activeIds().map(id=>{ const s=state(id); if(!s) return null; const bits=[];
+        if(s.time) bits.push('time='+s.time); if(s.source) bits.push('src='+s.source);
+        try{ const r=REG[id]; if(r.summary){ const sm=r.summary(); if(sm) bits.push(sm); } }catch(_){}
+        return s.label+(bits.length?(' ['+bits.join(' · ')+']'):''); }).filter(Boolean); }catch(_){ return []; } }
+    /* ---- first registration set: the layers with REAL live data hooks ---- */
+    const _ld=k=>{ try{ return (window._imLayerDates&&window._imLayerDates[k])||null; }catch(_){ return null; } };
+    register('temp',   { label:()=>L5('Air temperature','気温','Lufttemperatur','Темп. воздуха','Temp. del aire'), sampleAt:(x,y)=>_om('temp',x,y), time:()=>_ld('temp'), source:()=>'NASA GIBS (AIRS) / Open-Meteo' });
+    register('sst',    { label:()=>L5('Sea surface temp','海面水温','Meerestemperatur','Темп. моря','Temp. del mar'), sampleAt:(x,y)=>_om('sst',x,y), time:()=>_ld('sst'), source:()=>'NASA GIBS / Open-Meteo marine' });
+    register('wind',   { label:()=>L5('Wind','風','Wind','Ветер','Viento'), sampleAt:(x,y)=>_om('wind',x,y), source:()=>'Open-Meteo' });
+    register('precip', { label:()=>L5('Precipitation','降水','Niederschlag','Осадки','Precipitación'), sampleAt:(x,y)=>_om('precip',x,y), time:()=>_ld('precip'), source:()=>'NASA GIBS (IMERG) / Open-Meteo' });
+    register('snow',   { label:()=>L5('Snow & ice','積雪・氷','Schnee & Eis','Снег и лёд','Nieve y hielo'), sampleAt:(x,y)=>_om('snow',x,y), time:()=>_ld('snow'), source:()=>'NASA GIBS / Open-Meteo' });
+    register('aod',    { label:()=>L5('Aerosol / haze','エアロゾル','Aerosol','Аэрозоль','Aerosol'), sampleAt:(x,y)=>_om('aod',x,y), time:()=>_ld('aod'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
+    register('no2',    { label:()=>'NO₂', sampleAt:(x,y)=>_om('no2',x,y), time:()=>_ld('no2'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
+    register('co',     { label:()=>'CO', sampleAt:(x,y)=>_om('co',x,y), time:()=>_ld('co'), source:()=>'NASA GIBS / Open-Meteo air-quality' });
+    register('climate',{ label:()=>L5('Köppen climate','ケッペン気候区分','Köppen-Klima','Климат Кёппена','Clima de Köppen'),
+      sampleAt:(x,y)=>{ try{ const c=window.sampleKoppenAt&&window.sampleKoppenAt(x,y); if(!c) return null; const nm=window.KNAME&&window.KNAME[c]; return c+(nm?(' · '+(nm[currentLang]||nm.en)):''); }catch(_){ return null; } },
+      time:()=>{ try{ return window._koppenPeriod||null; }catch(_){ return null; } }, source:()=>'Beck et al. Köppen-Geiger' });
+    register('webcams',{ label:()=>L5('Live cameras','ライブカメラ','Live-Kameras','Камеры','Cámaras en vivo'),
+      featuresIn:b=>_srcFeatsIn('webcams-src',b), summary:()=>{ const f=_srcFeatsIn('webcams-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'OSM/DOT public cams' });
+    register('news',   { label:()=>L5('News points','ニュース地点','Nachrichtenpunkte','Точки новостей','Puntos de noticias'),
+      on:()=>{ const f=_srcFeatsIn('news-points',null); return !!(f&&f.length); },
+      featuresIn:b=>_srcFeatsIn('news-points',b), summary:()=>{ const f=_srcFeatsIn('news-points',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
+    register('volcanoes',{ label:()=>L5('Volcanoes','火山','Vulkane','Вулканы','Volcanes'), on:()=>{ try{ return !!(map.getLayer('volc2-pt')&&map.getLayoutProperty('volc2-pt','visibility')!=='none'); }catch(_){ return false; } },
+      featuresIn:b=>_srcFeatsIn('volc2-src',b), source:()=>'Smithsonian GVP' });
+    register('elevation',{ label:()=>L5('Elevation','標高','Höhe','Высота','Elevación'), on:()=>true,
+      sampleAt:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:(Math.round(v)+' m'); }catch(_){ return null; } }, source:()=>'Mapzen/AWS terrarium DEM' });
+    return { register, list, active:activeIds, state, sampleAt, featuresIn, context };
+  })();
 
   /* ===== Map event wiring ===== */
   if(map){
@@ -10074,6 +10159,30 @@ window.addEventListener('DOMContentLoaded', () => {
     IntMapOS.register('time.year', (ctx)=>{ const y=+((ctx&&ctx.params&&ctx.params.year)); if(y>=window.IntMapTime.min) window.IntMapTime.setYear(y,{source:'os'}); }, {label:'Time · set year', group:'time'});
     IntMapOS.register('time.set', (ctx)=>{ const p=(ctx&&ctx.params)||{}; if(p.year!=null) window.IntMapTime.setYear(+p.year,{source:'os'}); else if(p.date!=null) window.IntMapTime.set(new Date(p.date),{source:'os'}); else if(p.daysAgo!=null) window.IntMapTime.setDaysAgo(+p.daysAgo,{source:'os'}); else window.IntMapTime.setNow({source:'os'}); }, {label:'Time · set instant', group:'time'});
   }catch(_){}
+  /* (#R119) KERNEL COMMAND EXPANSION — every major subsystem gets a first-class OS command (UI, Atlas and any
+     future shell submit the SAME intents; the registrations are thin wrappers over each module's own API, so the
+     logic still lives in exactly one place). Commands taking params read ctx.params. Registered lazily (modules
+     defined later in the file) — each run() resolves its module at call time. */
+  (function(){ const REGL=[
+    ['layer.on',   (p)=>{ const cb=document.getElementById(String(p.id||'')); if(!cb||cb.type!=='checkbox') return {ok:false,err:'no layer '+(p.id||'')}; if(!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } return {ok:true}; }, 'Layer · on (params.id = checkbox id)','layer'],
+    ['layer.off',  (p)=>{ const cb=document.getElementById(String(p.id||'')); if(!cb||cb.type!=='checkbox') return {ok:false,err:'no layer '+(p.id||'')}; if(cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } return {ok:true}; }, 'Layer · off (params.id)','layer'],
+    ['atlas.open', ()=>{ window.IntMapConsole&&window.IntMapConsole.open(); }, 'Atlas · open','atlas'],
+    ['atlas.close',()=>{ window.IntMapConsole&&window.IntMapConsole.close(); }, 'Atlas · close','atlas'],
+    ['compare.open',(p)=>{ if(!window.IntMapStatsCompare) return {ok:false,err:'no module'}; window.IntMapStatsCompare.open(p&&p.countries,p&&p.indicators,p&&p.source); return {ok:true}; }, 'Country comparison · open (params.countries/indicators)','compare'],
+    ['compare.clear',()=>{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }, 'Country comparison · clear map paint','compare'],
+    ['flightsim.setup',(p)=>{ window.IntMapFlightSim&&window.IntMapFlightSim.setup(p||{}); }, 'Flight simulator · pre-flight screen','sim'],
+    ['flightsim.stop', ()=>{ window.IntMapFlightSim&&window.IntMapFlightSim.stop(); }, 'Flight simulator · stop','sim'],
+    ['workspace.enter',()=>{ window.IntMapWorkspace&&window.IntMapWorkspace.open&&window.IntMapWorkspace.open(); }, 'Workspace mode · enter','ws'],
+    ['workspace.exit', ()=>{ window.IntMapWorkspace&&window.IntMapWorkspace.close&&window.IntMapWorkspace.close(); }, 'Workspace mode · exit','ws'],
+    ['objects.open', ()=>{ window.IntMapObjects&&window.IntMapObjects.open(); }, 'Map objects · open list','objects'],
+    ['objects.remove',(p)=>{ const ok=!!(window.IntMapObjects&&window.IntMapObjects.remove&&window.IntMapObjects.remove(p&&p.id)); return {ok}; }, 'Map objects · remove (params.id)','objects'],
+    ['ticker.on',  ()=>{ window.imTicker='on'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · on','ui'],
+    ['ticker.off', ()=>{ window.imTicker='off'; window.IntMapTicker&&window.IntMapTicker.apply(); }, 'Bottom ticker · off','ui'],
+    ['settings.open',()=>{ const b=document.getElementById('btn-open-settings')||document.querySelector('[id*=open-settings]'); if(b) b.click(); }, 'Settings · open','ui'],
+    ['isolate.exit',()=>{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }, 'Isolate · exit','map'],
+    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=map&&map.getCenter&&map.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
+  ];
+  REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();
 
   /* ===== Language ===== */
   function setLang(lang){
@@ -23174,6 +23283,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-sky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(10,30,80,0.0), rgba(4,10,30,0.0) 60%, rgba(2,6,20,0.55) 100%);opacity:0;transition:opacity .4s ease;}'
         +'#fs-hud .fs-boost{position:absolute;left:44px;bottom:20px;width:8px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(255,140,60,0.4);border-radius:5px;overflow:hidden;}'
         +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}'
+        /* (#R119) PAPI lights (shown on approach to the spawn runway: white=high, red=low, 2+2=on the 3° path) */
+        +'#fs-hud .fs-papi{position:absolute;left:14px;bottom:196px;display:none;align-items:center;gap:4px;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 8px;pointer-events:none;z-index:5;}'
+        +'#fs-hud .fs-papi i{width:10px;height:10px;border-radius:50%;background:#ff3b30;box-shadow:0 0 5px currentColor;display:block;}'
+        +'#fs-hud .fs-papi .fs-papi-lbl{font-size:8.5px;color:#8fb8e0;margin-left:3px;letter-spacing:0.05em;}'
+        +'@media(max-width:640px){#fs-hud .fs-papi{left:8px;bottom:calc(286px + env(safe-area-inset-bottom,0px));}}'
         /* (#R94p) aircraft badge + configuration chips (flaps/gear/camera) + side control decks */
         +'#fs-hud .fs-acbadge{position:absolute;left:50%;top:52px;transform:translateX(-50%);background:rgba(6,14,24,0.52);border:1px solid rgba(120,190,255,0.32);border-radius:8px;padding:3px 12px;font-size:12px;font-weight:700;color:#cfe6ff;white-space:nowrap;}'
         +'#fs-hud .fs-config{position:absolute;left:50%;top:80px;transform:translateX(-50%);display:flex;gap:6px;pointer-events:none;}'
@@ -23258,6 +23372,8 @@ window.addEventListener('DOMContentLoaded', () => {
       +'<div class="fs-stick"><div class="fs-stick-knob"></div></div>'
       +'<div class="fs-thrlbl">'+LL('THR','出力','SCHUB','ТЯГА','GAS')+'</div><div class="fs-thr"><div class="fs-thrfill" style="height:0%"></div></div>'
       +'<div class="fs-boost"><div class="fs-boostfill"></div></div>'
+      /* (#R119) PAPI — 4 real precision-approach lights vs the 3° glide path to the ACTIVE runway threshold */
+      +'<div class="fs-papi" title="PAPI"><i></i><i></i><i></i><i></i><span class="fs-papi-lbl">PAPI</span></div>'
       +'<div class="fs-acbadge"><span class="fs-acname">—</span><span class="fs-mach"></span></div>'
       +'<div class="fs-config"><span class="fs-cfg fs-cfg-flaps">FLAPS</span><span class="fs-cfg fs-cfg-gear">GEAR</span><span class="fs-cfg fs-cfg-cam">CAM</span></div>'
       +'<div class="fs-deck">'
@@ -23451,7 +23567,17 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R99/#R117) distinguish a RUNWAY landing (aligned with the known runway axis, close to its centreline)
          from "near <airport>" and from off-field. The airport table carries one runway heading; alignment = final
          heading within ±20° of it (either direction) AND lateral offset from the runway line < 150 m. */
-      let where=''; if(ok){ let bd=1e9,best=null; AIRPORTS.forEach(a=>{ const d=Math.hypot((a[2]-st.lat)*111.32,(a[3]-st.lng)*111.32*Math.cos(st.lat*Math.PI/180)); if(d<bd){bd=d;best=a;} });
+      let where=''; let _rwyHit=null;
+      /* (#R119) PRECISE corridor test against the REAL runway line (OurAirports thresholds): touchdown within
+         ±75 m of the centreline, between the thresholds (+8% overrun grace), heading within ±25° of the axis. */
+      if(ok&&st._rwy){ try{ const A=st._rwy.A,B=st._rwy.B, cf=Math.cos(st.lat*Math.PI/180);
+        const ax=(st.lng-A[0])*111.32*cf, ay=(st.lat-A[1])*111.32;
+        const bx=(B[0]-A[0])*111.32*cf, by=(B[1]-A[1])*111.32; const L2=(bx*bx+by*by)||1e-9;
+        const tt=(ax*bx+ay*by)/L2; const xt=Math.hypot(ax-bx*tt, ay-by*tt);
+        const hd=_fsHdg(), rb=(Math.atan2(bx,by)*180/Math.PI+360)%360, dh=Math.abs(((hd-rb)%180+270)%180-90);
+        if(tt>=-0.05&&tt<=1.08&&xt<=0.075&&dh<=25) _rwyHit=String(st._rwy.id||st._rwy.ident||''); }catch(_){} }
+      if(ok&&_rwyHit){ where=' · '+LL('landed on runway '+_rwyHit,'滑走路 '+_rwyHit+' に着陸','auf Landebahn '+_rwyHit+' gelandet','посадка на ВПП '+_rwyHit,'aterrizó en pista '+_rwyHit); }
+      else if(ok){ let bd=1e9,best=null; AIRPORTS.forEach(a=>{ const d=Math.hypot((a[2]-st.lat)*111.32,(a[3]-st.lng)*111.32*Math.cos(st.lat*Math.PI/180)); if(d<bd){bd=d;best=a;} });
         if(best&&bd<5){ let rwy=false;
           try{ const hd=_fsHdg(), dh=Math.abs(((hd-best[5])%180+270)%180-90);   /* 0 = parallel with the runway axis (either direction) */
             const rr=best[5]*Math.PI/180, dx=(st.lng-best[3])*111.32*Math.cos(st.lat*Math.PI/180), dy=(st.lat-best[2])*111.32;
@@ -23541,10 +23667,23 @@ window.addEventListener('DOMContentLoaded', () => {
       const sel=ov.querySelector('.fss-sel'); sel.onchange=()=>{ state.loc=sel.value; };
       ov.querySelectorAll('.fss-m').forEach(b=>b.onclick=()=>{ state.mode=b.getAttribute('data-m'); ov.querySelectorAll('.fss-m').forEach(x=>x.classList.toggle('on',x===b)); });
       ov.querySelector('.fss-cancel').onclick=()=>ov.remove();
-      ov.querySelector('.fss-go').onclick=()=>{ const o={ aircraft:state.ac };
-        if(state.loc!=='__here'){ const a=AIRPORTS[+state.loc]; if(a){ o.lat=a[2]; o.lng=a[3]; o.elev=a[4]; o.hdg=a[5]; } }
+      ov.querySelector('.fss-go').onclick=async()=>{ const o={ aircraft:state.ac }; let icao=null;
+        if(state.loc!=='__here'){ const a=AIRPORTS[+state.loc]; if(a){ o.lat=a[2]; o.lng=a[3]; o.elev=a[4]; o.hdg=a[5]; icao=a[0]; } }
         else if(opts.lng!=null){ o.lng=+opts.lng; o.lat=+opts.lat; }
         if(state.mode==='ground') o.onGround=true; else o.alt=(o.elev!=null?o.elev+2500:2500);
+        /* (#R119) REAL RUNWAY spawn: fetch the airport's actual runways (OurAirports, both-end coordinates),
+           take the longest, spawn ON its threshold heading down the true centreline; the runway line also
+           drives the landing-corridor evaluation + PAPI. Bounded to 8 s — falls back to the curated
+           midfield+heading spawn if the data can't load. */
+        if(icao&&state.mode==='ground'&&window.RunwaySearch&&window.RunwaySearch.load){
+          const goB=ov.querySelector('.fss-go'); try{ goB.disabled=true; goB.textContent=LL('Loading runways…','滑走路データ取得中…','Pisten laden…','Загрузка ВПП…','Cargando pistas…'); }catch(_){}
+          try{ const d=await Promise.race([window.RunwaySearch.load(), new Promise(r=>setTimeout(()=>r(null),8000))]);
+            if(d){ const rws=d.filter(r=>r.apt===icao&&r.leLa!=null&&r.lenM>500);
+              if(rws.length){ rws.sort((x,y)=>y.lenM-x.lenM); const rw=rws[0];
+                const brg=(Math.atan2((rw.heLo-rw.leLo)*Math.cos((rw.leLa+rw.heLa)/2*Math.PI/180),(rw.heLa-rw.leLa))*180/Math.PI+360)%360;
+                o.lat=rw.leLa; o.lng=rw.leLo; o.hdg=brg;
+                o.rwy={ A:[rw.leLo,rw.leLa], B:[rw.heLo,rw.heLa], id:rw.rwy, ident:rw.leId||rw.rwy, len:rw.lenM }; } } }catch(_){}
+        }
         ov.remove(); start(o); };
     }
     function start(opts){ if(on) return true; on=true; opts=opts||{}; _closeAtlas();
@@ -23561,6 +23700,18 @@ window.addEventListener('DOMContentLoaded', () => {
         onGround:false, lastTerr:null, _settleTerr:false, groundStart:false, _tookOff:true, _acc:0, t:performance.now() };
       paused=false; stabilizeCam=false; camMode='cockpit';
       resultShown=false; st._path=[]; st._t0=performance.now(); st._opts=opts; st._maxAlt=st.alt; st._maxV=st.V||0; st._pathT=0; st._pathIntv=350; st._pausedMs=0; st._pauseStart=0; st._dist=0; st._lastPt=[st.lng,st.lat];   /* (#R98/#R99/#R100) flight-path recording + pause-time exclusion + full-res distance accumulation */
+      st._rwy=(opts.rwy&&opts.rwy.A&&opts.rwy.B)?opts.rwy:null;   /* (#R119) the REAL runway line (both thresholds) — landing corridor + PAPI */
+      /* (#R119) LIVE WINDS ALOFT at the spawn area (Open-Meteo, m/s, surface + 5 pressure levels). The physics
+         uses AIR-relative velocity, so a real head/cross/tailwind now affects take-off run, drift, approach and
+         touchdown. Fetch is async & optional — no wind data = calm (physics unchanged). */
+      st._wind=null; st._wNE=[0,0];
+      try{ const _wla=st.lat.toFixed(3), _wlo=st.lng.toFixed(3);
+        fetch('https://api.open-meteo.com/v1/forecast?latitude='+_wla+'&longitude='+_wlo+'&current=wind_speed_10m,wind_direction_10m&hourly=wind_speed_925hPa,wind_direction_925hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_700hPa,wind_direction_700hPa,wind_speed_500hPa,wind_direction_500hPa,wind_speed_300hPa,wind_direction_300hPa&forecast_days=1&wind_speed_unit=ms&timezone=UTC')
+          .then(r=>r.ok?r.json():null).then(j=>{ if(!j||!st) return;
+            let hr=0; try{ const iso=new Date().toISOString().slice(0,13); const arr=j.hourly&&j.hourly.time; if(arr){ const ix=arr.findIndex(t2=>String(t2).slice(0,13)===iso); if(ix>=0) hr=ix; } }catch(_){}
+            const tbl=[]; const cur=j.current||{}; if(cur.wind_speed_10m!=null) tbl.push({alt:10,sp:+cur.wind_speed_10m||0,di:+cur.wind_direction_10m||0});
+            const H=j.hourly||{}; [['925',750],['850',1500],['700',3000],['500',5600],['300',9200]].forEach(p=>{ const s2=H['wind_speed_'+p[0]+'hPa'],d2=H['wind_direction_'+p[0]+'hPa']; if(s2&&s2[hr]!=null) tbl.push({alt:p[1],sp:+s2[hr]||0,di:(d2&&+d2[hr])||0}); });
+            if(tbl.length) st._wind=tbl; }).catch(()=>{}); }catch(_){}
       /* (#R97) GROUND START: spawn stationary ON the runway (gear down, level, heading down the runway, throttle idle)
          so the user takes off; the height settles onto the real DEM (see _settleTerr). Otherwise trim for level cruise. */
       if(opts.onGround && ac.Tmax<=0) opts=Object.assign({},opts,{onGround:false});   /* (#R100) an engineless glider can't roll for take-off → a runway choice becomes an aerotow RELEASE: an airborne start (the settle lifts it to a safe release height), not a 33 m/s ground "warp" */
@@ -23665,10 +23816,28 @@ window.addEventListener('DOMContentLoaded', () => {
       showResult('crash');   /* (#R98) a crash ends the flight → result screen (was an auto-respawn in place); the R key still resets in-flight via respawn() */ }
     /* (#R101) shared readouts present in EVERY display (moving-map alt/hdg, EAS/Mach badge, the warning banner). */
     function _fsHdg(){ const _nh=qRot(st.q,[1,0,0]); return (Math.atan2(_nh[1],_nh[0])*180/Math.PI+360)%360; }
+    /* (#R119) PAPI lights vs the 3° glide path to the nearest threshold of the spawn runway — approach only */
+    function _updPapi(q){ const pp=q('.fs-papi'); if(!pp||!st) return; let show=false;
+      if(st._rwy&&!st.onGround){ const cf=Math.cos(st.lat*Math.PI/180);
+        let best=null; [st._rwy.A,st._rwy.B].forEach(E=>{ const dx=(E[0]-st.lng)*111320*cf, dy=(E[1]-st.lat)*111320; const dist=Math.hypot(dx,dy); if(!best||dist<best.dist) best={dx,dy,dist}; });
+        if(best&&best.dist>250&&best.dist<15000){ const hd=_fsHdg()*Math.PI/180;
+          const dot=Math.cos(hd)*(best.dy/best.dist)+Math.sin(hd)*(best.dx/best.dist);
+          if(dot>0.45){ const thrE=(st._fieldElev!=null?st._fieldElev:(st._terrF!=null?st._terrF:0));
+            const ang=Math.atan2(st.alt-thrE, best.dist)*180/Math.PI;
+            const nW=ang>3.5?4:ang>3.15?3:ang>2.85?2:ang>2.5?1:0;
+            pp.querySelectorAll('i').forEach((d2,i2)=>{ d2.style.background=(i2<nW)?'#ffffff':'#ff3b30'; d2.style.color=(i2<nW)?'#ffffff':'#ff3b30'; });
+            show=true; } } }
+      pp.style.display=show?'flex':'none'; }
+    /* (#R119) live-wind chip text shared by every display's aux line */
+    function _windText(){ try{ const wv=st&&st._wNE; const wsp=wv?Math.hypot(wv[0],wv[1]):0; if(wsp<=0.6) return '';
+      const wdir=(Math.atan2(-wv[1],-wv[0])*180/Math.PI+360)%360;
+      return ' · '+LL('WIND','風','WIND','ВЕТЕР','VIENTO')+' '+Math.round(wsp*1.94384)+'kt@'+Math.round(wdir).toString().padStart(3,'0')+'°'; }catch(_){ return ''; } }
     function updateShared(agl,f){ if(!hud||!st) return; const q=s=>hud.querySelector(s);
       try{ const hdg=_fsHdg(), _hdS=Math.round(hdg).toString().padStart(3,'0');
         const _ma=q('.fs-mm-alt'); if(_ma) _ma.textContent=Math.round(st.alt).toLocaleString(); const _mh=q('.fs-mm-hdg'); if(_mh) _mh.textContent=_hdS;
-        const mc=q('.fs-mach'); if(mc){ const ac=AC(), aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd; mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }   /* (#R117) the MAIN speed displays are now EAS (what a pilot flies) — this aux line carries the TAS + Mach */
+        const mc=q('.fs-mach'); if(mc){ const ac=AC(), aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
+          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):'')+_windText(); }   /* (#R117) EAS main / TAS+Mach aux; (#R119) + the live wind actually flowing through the physics */
+        try{ _updPapi(q); }catch(_){}
         const tf=q('.fs-thrfill'); if(tf) tf.style.height=Math.round(st.thr*100)+'%';   /* (#R117) throttle bar is shared chrome now — EVERY display (six-pack/glass/HUD) shows the power setting */
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
@@ -23725,7 +23894,8 @@ window.addEventListener('DOMContentLoaded', () => {
            speed of sound as the physics (was a flat V/300 that disagreed with the aero). */
         const mc=q('.fs-mach'); if(mc){ const ac=AC(),
           aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
-          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }   /* (#R117) main displays are EAS now → the aux line carries TAS + Mach */
+          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):'')+_windText(); }   /* (#R117) main displays are EAS; (#R119) + live wind */
+        try{ _updPapi(q); }catch(_){}   /* (#R119) PAPI on the fighter HUD too */
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
         const aEl=q('.fs-aoa'); if(aEl){ aEl.textContent=Math.round(st.aoa*R2D); aEl.parentNode.style.color=f.stalling?'#ff9f0a':''; }
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
@@ -23749,8 +23919,26 @@ window.addEventListener('DOMContentLoaded', () => {
        roll continuously / loop / fly inverted (quaternion = no gimbal clamp). ===== */
     function stepFixed(h, ac){ const D=ac.D;
       let u=st.vb[0], v=st.vb[1], w=st.vb[2];
-      const V=Math.hypot(u,v,w), Vs=Math.max(V,1e-3), rho=rhoAt(st.alt), qd=0.5*rho*V*V;
-      const aoa=Math.atan2(w,u), beta=Math.asin(Math.max(-1,Math.min(1,v/Vs)));
+      /* (#R119) LIVE WIND → the aerodynamics run on AIR-relative velocity (u−wind), so a real head/cross/tail
+         wind changes the take-off run, drift, approach speed over ground and touchdown — while the position
+         integration keeps using GROUND velocity. Wind = Open-Meteo winds aloft interpolated by AGL (see start()),
+         faded in the lowest 60 m (boundary layer) but never below 25% so a runway crosswind still exists. */
+      let wN=0,wE=0;
+      if(st._wind&&st._wind.length){ const tb=st._wind, aglW=Math.max(0,st.alt-((st._terrF!=null)?st._terrF:(st.lastTerr||0)));
+        const vecOf=e=>[-e.sp*Math.sin(e.di*Math.PI/180), -e.sp*Math.cos(e.di*Math.PI/180)];   /* met "from" → [E,N] flow vector */
+        let vE,vN;
+        if(aglW<=tb[0].alt){ const v0=vecOf(tb[0]); vE=v0[0]; vN=v0[1]; }
+        else if(aglW>=tb[tb.length-1].alt){ const v1=vecOf(tb[tb.length-1]); vE=v1[0]; vN=v1[1]; }
+        else{ let a2=tb[0],b2=tb[tb.length-1]; for(let i2=0;i2<tb.length-1;i2++){ if(aglW>=tb[i2].alt&&aglW<=tb[i2+1].alt){ a2=tb[i2]; b2=tb[i2+1]; break; } }
+          const f=(b2.alt===a2.alt)?0:(aglW-a2.alt)/(b2.alt-a2.alt); const vA=vecOf(a2), vB=vecOf(b2);
+          vE=vA[0]+(vB[0]-vA[0])*f; vN=vA[1]+(vB[1]-vA[1])*f; }
+        const bl=Math.max(0.25,Math.min(1,aglW/60));
+        wE=vE*bl; wN=vN*bl; }
+      st._wNE=[wN,wE];
+      const wbv=(wN||wE)?qRotInv(st.q,[wN,wE,0]):[0,0,0];
+      const ua=u-wbv[0], va=v-wbv[1], wa=w-wbv[2];
+      const V=Math.hypot(ua,va,wa), Vs=Math.max(V,1e-3), rho=rhoAt(st.alt), qd=0.5*rho*V*V;
+      const aoa=Math.atan2(wa,ua), beta=Math.asin(Math.max(-1,Math.min(1,va/Vs)));
       /* ===== (#R96) aerodynamics valid through the FULL AoA range. BELOW the stall it is the EXACT linear model
          (attached flight — trim / cruise / rolls / landing — is bit-for-bit unchanged); past the stall it blends
          (smoothstep) into a flat-plate model so CL rolls off CONTINUOUSLY on BOTH sides of zero (fixes the negative-
@@ -23772,7 +23960,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const L=CL*qd*ac.S, Dg=CD*qd*ac.S, Yf=D.Cyb*beta*qd*ac.S;
       /* forces in body frame: drag ∥ −velocity, lift ⟂ velocity in the x-z plane, side force ∥ y, thrust ∥ x,
          gravity rotated world→body via the attitude quaternion */
-      const ux=u/Vs, uy=v/Vs, uz=w/Vs, lpx=w, lpz=-u, lpn=Math.hypot(lpx,lpz)||1;
+      const ux=ua/Vs, uy=va/Vs, uz=wa/Vs, lpx=wa, lpz=-ua, lpn=Math.hypot(lpx,lpz)||1;   /* (#R119) aero axes follow the AIR flow, not the ground track */
       const Flx=L*lpx/lpn, Flz=L*lpz/lpn, Fdx=-Dg*ux, Fdy=-Dg*uy, Fdz=-Dg*uz;
       let densF=ac.prop?Math.max(0.30,rho/1.225):Math.pow(Math.max(0.18,rho/1.225),0.7);
       if(st.alt>ac.ceil) densF*=Math.max(0,1-(st.alt-ac.ceil)/2500);              /* (#R96) service ceiling now bites (thrust fades above it) */
@@ -23902,7 +24090,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(bankDeg>25) _why=LL('touched down banked '+Math.round(bankDeg)+'° (max 25°)','バンク '+Math.round(bankDeg)+'° で接地（限界 25°）','Querlage '+Math.round(bankDeg)+'° (max. 25°)','крен '+Math.round(bankDeg)+'° (макс. 25°)','alabeo '+Math.round(bankDeg)+'° (máx. 25°)');
         else if(pitchAbs>0.6) _why=LL('extreme nose attitude at touchdown','接地時の機首姿勢が過大','extreme Nicklage beim Aufsetzen','экстремальный тангаж при касании','actitud de morro extrema al tocar');
         else if(!gearDown) _why=LL('gear-up belly landing','脚上げのまま胴体着陸','Bauchlandung — Fahrwerk eingefahren','посадка на фюзеляж — шасси убрано','aterrizaje de panza — tren arriba');
-        else if(st._tookOff&&(st.V>VstallEff*1.7||st.V>110)) _why=LL('touched down too fast ('+Math.round(st.V*3.6)+' km/h)','接地速度が速すぎ（'+Math.round(st.V*3.6)+' km/h）','zu schnell aufgesetzt ('+Math.round(st.V*3.6)+' km/h)','касание на слишком большой скорости ('+Math.round(st.V*3.6)+' км/ч)','contacto demasiado rápido ('+Math.round(st.V*3.6)+' km/h)');   /* (#R117) speed test only for a real LANDING (after being airborne) — a brief wheel-hop during a fast take-off roll is not a "touchdown" */
+        else if(st._tookOff&&(st.V>VstallEff*1.7||Math.hypot(st.vb[0],st.vb[1],st.vb[2])>110)) _why=LL('touched down too fast ('+Math.round(st.V*3.6)+' km/h)','接地速度が速すぎ（'+Math.round(st.V*3.6)+' km/h）','zu schnell aufgesetzt ('+Math.round(st.V*3.6)+' km/h)','касание на слишком большой скорости ('+Math.round(st.V*3.6)+' км/ч)','contacto demasiado rápido ('+Math.round(st.V*3.6)+' km/h)');   /* (#R117) speed test only for a real LANDING (after being airborne) — a brief wheel-hop during a fast take-off roll is not a "touchdown" */
         }
         if(_why) crash(_why);
         else { if(!st.onGround&&st._tookOff) st._td={vs:descent,bank:bankDeg,V:st.V};   /* (#R117) touchdown stats for the result screen */
@@ -23924,7 +24112,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
           if(sp>1e-3){ const nf=Math.max(0,sp-fr*h)/sp; st.vb=[st.vb[0]*nf,st.vb[1]*nf,st.vb[2]*nf]; }
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
-          if(st._tookOff && st.V<Math.max(15,VstallEff*0.55) && bankDeg<10 && descent<3) landed=true; }   /* (#R99) require a real roll-out to a slow taxi speed, not near approach speed (LANDED was confirming before the aircraft had slowed) */
+          if(st._tookOff && Math.hypot(st.vb[0],st.vb[1],st.vb[2])<Math.max(15,VstallEff*0.55) && bankDeg<10 && descent<3) landed=true; }   /* (#R99) require a real roll-out to a slow taxi speed; (#R119) judged on GROUND speed (a strong headwind holds airspeed up while the wheels have stopped) */
       } else st.onGround=false;
       /* (#R97) STALL = critical-AoA exceeded (FAA: an aerofoil stalls at its critical AoA regardless of speed/attitude),
          on BOTH sides of the CL curve. The old extra `V<Vstall` term flagged a false stall whenever the plane was slow
@@ -24161,6 +24349,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(_wctx.scoreComponents) ln.push('ACTIVE custom score recipe (adjust THIS when the user says weight/drop/add): '+_wctx.scoreComponents);
       if(_wctx.period) ln.push('Time-travel period: '+_wctx.period);
       if(_wctx.highlight&&_wctx.highlight.name) ln.push('Last Atlas highlight: "'+_wctx.highlight.name+'" ('+(_wctx.highlight.n||'?')+' shapes)'+(_wctx.highlight.basis?(' — year-basis: '+_wctx.highlight.basis):''));   /* (#R118) */
+      if(_wctx.lastObjects&&_wctx.lastObjects.length) ln.push('Recently created map-object ids (newest first — "the one I just made / さっき作ったやつ" = the first; operate via the object action): '+_wctx.lastObjects.join(', '));   /* (#R119) */
       if(_wctx.exclusions&&_wctx.exclusions.length) ln.push('EXCLUSIONS the user set (a standing condition — do NOT include these in rankings/analysis/highlights unless the user changes it; they said "include everything / 除外を解除" to clear it): '+_wctx.exclusions.join('; '));
       return ln.length?ln.join('\n'):''; }catch(_){ return ''; } }
     /* (#R80) vision §16 自己確認 — SAME-NAME PLACE verification. Many names denote very different real places
@@ -24683,7 +24872,7 @@ window.addEventListener('DOMContentLoaded', () => {
        in an attention colour and every action now returns a structured {ok,html} via R() so run() can report the
        TRUTH (which steps actually ran) instead of trusting the model's optimistic "say". */
     const warn=s=>'<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+s+'</div>';
-    const R=(ok,html)=>({ok:!!ok,html:html||''});
+    const R=(ok,html,extra)=>Object.assign({ok:!!ok,html:html||''},extra||null);   /* (#R119) extra e.g. {objectIds:[…]} — creating actions expose what they made */
     /* (#R62) minimal safe markdown for AI text rendered in the chat (briefs / analyses). */
     /* (#R117) heading HIERARCHY inside Atlas replies ("見出しは大きくするなど" — the reply's own text sizes now vary
        by role: h1 > h2 > h3 ≥ body; the chat body & user-message sizes are untouched). */
@@ -25250,6 +25439,10 @@ window.addEventListener('DOMContentLoaded', () => {
            box whose style layers are NOT actually painted is flagged so Atlas never reports it as showing. */
         const active=[]; try{ layerCatalog().forEach(c2=>{ if(c2.cb.checked){ let flag=''; try{ if(window.IntMapLayerAudit&&window.IntMapLayerAudit.check(c2.cb.id)===false) flag=' [NOT painted on the map — data still loading or failed]'; }catch(_){} active.push(c2.label+flag); } }); }catch(_){}
         lines.push(active.length?('Layers ON ('+active.length+'): '+active.slice(0,40).join(', ')+'.'):'No data layers are on.');
+        /* (#R119) LAYER DATA CONTRACT — per-layer LIVE context (time/source/in-view counts) + a pointer to the
+           layerData action, so Atlas can ANALYSE what is displayed instead of only naming it. */
+        try{ const lc=window.IntMapLayers&&window.IntMapLayers.context&&window.IntMapLayers.context();
+          if(lc&&lc.length) lines.push('Readable layer data (query real values with the "layerData" action): '+lc.slice(0,10).join(' | ')+'.'); }catch(_){}
         if(_hl&&_hl.size&&_ovlVisible('highlight')) lines.push(_hl.size+' countries are highlighted by Atlas right now.');
         /* (#R118) the highlight's YEAR-BASIS travels with the state — "何年の加盟国？" has a real answer */
         try{ if(_wctx.highlight&&_wctx.highlight.name&&_ovlVisible('highlight')){ lines.push('Current Atlas highlight: "'+_wctx.highlight.name+'"'+(_wctx.highlight.basis?(' — BASIS: '+_wctx.highlight.basis+'. If the user asks what YEAR the highlighted membership/data refers to, answer from THIS basis'):'')+'.'); } }catch(_){}
@@ -25980,6 +26173,41 @@ window.addEventListener('DOMContentLoaded', () => {
             const r=await window.IntMapPopArea.estimate(geom);
             return R(true, note('👥 '+(label?label+' — ':'')+L('population: ','人口: ','Bevölkerung: ','население: ','población: ')+'<b>'+r.pop.toLocaleString()+'</b> · '+esc(r.src)+' '+r.year));
           }catch(e){ return R(false, warn('⚠ '+L('Population lookup failed (WorldPop busy) — try again.','人口を取得できませんでした（WorldPop混雑）— 再試行してください。','Bevölkerungsabfrage fehlgeschlagen — erneut.','Не удалось получить население — повторите.','Fallo al obtener población — reintenta.'))); } }
+        /* (#R119) SATELLITE CHANGE DETECTION inside the Atlas thread (absorbs the standalone panel feature —
+           same capture + vision pipeline, result returned as a normal reply with both frames embedded). */
+        case 'satelliteCompare': case 'satCompare': case 'satChange': {
+          if(!window._imSatCapture) return R(false, warn('⚠'));
+          if(a.place){ const ll=await geocode(a.place); if(ll){ try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),11),duration:800}); }catch(_){} await new Promise(r=>setTimeout(r,1400)); } }
+          const va=String(a.dateA||a.before||a.from||'').slice(0,10), vb=String(a.dateB||a.after||a.to||'').slice(0,10);
+          if(!va||!vb) return R(false, warn('⚠ '+L('Give two dates (dateA / dateB, YYYY-MM-DD).','2つの日付（dateA / dateB、YYYY-MM-DD）を指定してください。','Zwei Daten angeben (dateA/dateB).','Укажите две даты (dateA/dateB).','Indica dos fechas (dateA/dateB).')));
+          const cap=await window._imSatCapture(va,vb);
+          if(cap.err) return R(false, warn('⚠ '+esc(cap.err)));
+          let txt2=''; try{ txt2=await window._imSatAnalyze(va,vb,cap.imgA,cap.imgB); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
+          let hh='<div style="display:flex;gap:6px;margin:4px 0;"><figure style="margin:0;flex:1;"><img src="'+cap.imgA+'" style="width:100%;border-radius:8px;" alt=""><figcaption style="font-size:10px;color:var(--text-muted);text-align:center;">'+esc(va)+'</figcaption></figure>'
+            +'<figure style="margin:0;flex:1;"><img src="'+cap.imgB+'" style="width:100%;border-radius:8px;" alt=""><figcaption style="font-size:10px;color:var(--text-muted);text-align:center;">'+esc(vb)+'</figcaption></figure></div>'
+            +'<div style="font-size:12px;line-height:1.6;">'+mdMini(txt2||'')+'</div>';
+          return R(true, hh); }
+        /* (#R119) LAYER DATA — read the REAL values of displayed layers at a point, or the real features in view.
+           This is the query side of the IntMapLayers contract. */
+        case 'layerData': case 'layerValue': case 'layerQuery': {
+          const LY=window.IntMapLayers; if(!LY) return R(false, warn('⚠'));
+          const ids=a.layer?[String(a.layer)]:(Array.isArray(a.layers)?a.layers.map(String):null);
+          /* point resolution: explicit place → geocode; "here" pin; else map centre */
+          let px=null,py=null,pname='';
+          if(a.place){ const ll=await geocode(a.place); if(ll){ px=ll.lng; py=ll.lat; pname=ll.name||a.place; } }
+          if(px==null&&a.lng!=null&&isFinite(+a.lng)){ px=+a.lng; py=+a.lat; }
+          if(px==null&&_herePoint&&isFinite(_herePoint.lng)){ px=_herePoint.lng; py=_herePoint.lat; pname=_herePoint.name||''; }
+          if(px==null){ const c3=map.getCenter(); px=c3.lng; py=c3.lat; pname=L('map centre','地図中心','Kartenmitte','центр карты','centro del mapa'); }
+          const vals=await LY.sampleAt(px,py,ids);
+          const featLines=[];
+          (ids||LY.active()).forEach(id=>{ try{ const fs=LY.featuresIn(id,null); if(fs&&fs.length){ const nm2=(LY.state(id)||{}).label||id;
+            const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; return String(p2.name||p2.title||p2.NAME||'').slice(0,40); }).filter(Boolean);
+            featLines.push(nm2+': '+fs.length+(names.length?(' — '+names.join(', ')+(fs.length>names.length?', …':'')):'')); } }catch(_){} });
+          if(!vals.length&&!featLines.length) return R(false, warn('⚠ '+L('No readable data on the active layers here. Turn a data layer on first.','ここで読み取れる表示中レイヤーのデータがありません。先にデータレイヤーをオンにしてください。','Keine lesbaren Layer-Daten hier.','Нет читаемых данных слоёв здесь.','Sin datos de capas legibles aquí.')));
+          let hh=note('◈ '+esc(pname||(py.toFixed(3)+', '+px.toFixed(3))));
+          if(vals.length) hh+=note(vals.map(v=>'<b>'+esc(v.label)+'</b>: '+esc(String(v.value))).join('<br>'));
+          if(featLines.length) hh+=note(featLines.map(esc).join('<br>'));
+          return R(true, hh); }
         /* (#R118) MAP-OBJECT operations by id (see IntMapObjects.list in the state context) */
         case 'object': case 'mapObject': {
           const O=window.IntMapObjects; if(!O||!O.list) return R(false, warn('⚠'));
@@ -26196,9 +26424,11 @@ window.addEventListener('DOMContentLoaded', () => {
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note('⏳ '+ymdISO(T.when()))); }
           return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
         }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
-        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); }catch(_){} return R(true, note(esc(ll.name||a.place||''))); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),5)}); }catch(_){}
+          let _oid=null; try{ _oid=(userPins&&userPins.length)?String(userPins[userPins.length-1].id):null; }catch(_){}   /* (#R119) creating actions return the created object's id */
+          return R(true, note(esc(ll.name||a.place||'')), _oid?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'tool': { const n=String(a.name||'').toLowerCase(); const id=/radius/.test(n)?'btn-tool-radius':/draw/.test(n)?'btn-tool-draw':/measur|dist|area/.test(n)?'btn-tool-measure':/grid/.test(n)?'btn-tool-grid':null; if(id){ const ok=clickId(id); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
-        case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof radiusKm!=='undefined') radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'radius': { const ll=await geocode(a.place); if(ll){ try{ if(a.km!=null&&typeof radiusKm!=='undefined') radiusKm=Math.max(1,+a.km); }catch(_){} let cw=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc){ try{ radiusColor=pc; }catch(_){} } else cw=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); } try{ map.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} let ok=false; try{ if(window._radiusFromPoint){ window._radiusFromPoint(ll.lng,ll.lat); ok=true; } }catch(_){} let _oid=null; try{ _oid=(radiusItems&&radiusItems.length)?String(radiusItems[radiusItems.length-1].id):null; }catch(_){} return R(ok, (ok?note('⭕ '+esc(ll.name||a.place||'')+(a.km?(' · '+a.km+' km'):'')):warn('⚠'))+cw, (ok&&_oid)?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'measure': { const A=await geocode(a.from); const B=await geocode(a.to); if(A&&B){ try{ if(typeof setTool==='function') setTool('measure'); if(typeof measurePoints!=='undefined') measurePoints=[[A.lng,A.lat],[B.lng,B.lat]]; if(typeof refreshTool==='function') refreshTool(); if(typeof updateToolPanel==='function') updateToolPanel(); }catch(_){} try{ map.flyTo({center:[(A.lng+B.lng)/2,(A.lat+B.lat)/2],zoom:Math.max(map.getZoom()-1,2)}); }catch(_){} return R(true, note('📏 '+esc(A.name||a.from||'')+' → '+esc(B.name||a.to||''))); } return R(false, warn('⚠ '+L('Need two places','2地点が必要','Zwei Orte nötig','Нужны два места','Se necesitan dos lugares'))); }
         case 'correlate': { let ok=false; try{ if(window.IntMapCorrelate&&window.IntMapCorrelate.open){ window.IntMapCorrelate.open(); ok=true; } else ok=clickId('btn-correlate'); }catch(_){} return R(ok, ok?note(L('Correlation tool','相関ツール','Korrelationswerkzeug','Корреляция','Correlación')):warn('⚠')); }
         case 'settings': { const ok=clickId('btn-open-settings'); return R(ok, ok?note('✓ '+L('Settings','設定','Einstellungen','Настройки','Ajustes')):warn('⚠')); }
@@ -26750,6 +26980,21 @@ window.addEventListener('DOMContentLoaded', () => {
           if(wantD('elevation')===true){ if(pt) jobs.push(_elevData(pt.lng,pt.lat).then(v=>{ if(v) got.elev=v; else missing.push(L('elevation','標高','Höhe','высота','elevación')); })); else missing.push(L('elevation (no place given)','標高（場所未指定）','Höhe (kein Ort)','высота (нет места)','elevación (sin lugar)')); }
           if(isOffice&&codes.length) jobs.push(_leaderData(codes).then(v=>{ if(v) got.leaders=v; }).catch(()=>{}));   /* (#R74) live incumbents */
           if(wantD('quakes')!==false) jobs.push(_quakeData(ctx).then(v=>{ if(v) got.quakes=v; else missing.push(L('earthquakes','地震','Erdbeben','землетрясения','sismos')); }));
+          /* (#R119) the DISPLAYED layers' live values at the anchor point become first-class evidence */
+          if(pt&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(pt.lng,pt.lat).then(v=>{ if(v&&v.length) got.layers=v.map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
+          /* (#R119) scope:"drawn-area" — the old standalone area-summary is absorbed here: news inside the user's
+             drawn polygon / circle(s) + layer values at its centroid feed the SAME analyze pipeline. */
+          try{ const scope=String(a.scope||'').toLowerCase();
+            if(/drawn|area|circle|radius/.test(scope)&&typeof turf!=='undefined'){
+              let inside=null, ctr=null;
+              if(typeof measurePoints!=='undefined'&&measurePoints&&measurePoints.length>=3){ const poly=turf.polygon([[...measurePoints,measurePoints[0]]]); inside=(x,y)=>{ try{ return turf.booleanPointInPolygon(turf.point([x,y]),poly); }catch(_){ return false; } }; try{ const c4=turf.centroid(poly).geometry.coordinates; ctr={lng:c4[0],lat:c4[1]}; }catch(_){} }
+              else if(typeof radiusItems!=='undefined'&&radiusItems&&radiusItems.length){ inside=(x,y)=>radiusItems.some(c=>{ try{ return turf.distance(turf.point(c.center),turf.point([x,y]),{units:'kilometers'})<=c.radiusKm; }catch(_){ return false; } }); ctr={lng:radiusItems[0].center[0],lat:radiusItems[0].center[1]}; }
+              if(inside){ const rows=[];
+                try{ (typeof globalData!=='undefined'?(globalData||[]):[]).forEach(it=>{ const lc=it&&it.analysis&&it.analysis.loc; if(lc&&isFinite(lc[0])&&inside(+lc[0],+lc[1])&&rows.length<24) rows.push('- '+String(it.title||'').slice(0,120)+(it.pubDate?(' ('+String(it.pubDate).slice(0,16)+')'):'')); }); }catch(_){}
+                got.areaNews=(rows.length?rows.join('\n'):L('(no loaded news points inside the drawn area)','（描画範囲内に読み込み済みニュース地点なし）','(keine geladenen News im Gebiet)','(нет новостей в области)','(sin noticias en el área)'));
+                if(ctr&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(ctr.lng,ctr.lat).then(v=>{ if(v&&v.length) got.layersArea=v.map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
+                try{ if(window.IntMapPopArea&&typeof measurePoints!=='undefined'&&measurePoints&&measurePoints.length>=3){ jobs.push(window.IntMapPopArea.estimate({type:'Polygon',coordinates:[[...measurePoints,measurePoints[0]]]}).then(v=>{ if(v) got.areaPop=v.pop.toLocaleString()+' (WorldPop 2020, 100m grid)'; }).catch(()=>{})); } }catch(_){}
+              } } }catch(_){}
           if(wantD('stats')!==false){ got.stats=_statsData(codes); if(!got.stats&&(wantD('stats')===true||codes.length)) missing.push(L('country stats','国別統計','Länderstatistik','статистика стран','estadísticas')); }
           await Promise.all(jobs);
           /* build the DATA block + synthesize with ONE text-AI call (answers ONLY from this data). */
@@ -26764,6 +27009,10 @@ window.addEventListener('DOMContentLoaded', () => {
           push2('AIR QUALITY',L('air quality','大気質','Luftqualität','воздух','aire'),got.air);
           push2('SEA SURFACE',L('sea temperature','海水温','Meerestemperatur','темп. моря','mar'),got.sst);
           push2('ELEVATION',L('elevation','標高','Höhe','высота','elevación'),got.elev);
+          push2('ACTIVE MAP LAYER VALUES @ the anchor point (live values of the layers the user is displaying)',L('displayed-layer values','表示レイヤーの実値','Layer-Werte','значения слоёв','valores de capas'),got.layers);
+          push2('NEWS INSIDE THE USER-DRAWN AREA (loaded news points whose location falls in the drawn polygon / circles)',L('area news','範囲内ニュース','Gebiets-News','новости области','noticias del área'),got.areaNews);
+          push2('LAYER VALUES @ the drawn-area centre',L('area layer values','範囲のレイヤー実値','Gebiets-Layerwerte','значения слоёв области','valores de capas del área'),got.layersArea);
+          push2('POPULATION INSIDE THE DRAWN AREA',L('area population','範囲内人口','Gebietsbevölkerung','население области','población del área'),got.areaPop);
           push2('EARTHQUAKES (USGS, last 24 h'+(ctx?', in the area':'')+')',L('earthquakes','地震','Erdbeben','землетрясения','sismos'),got.quakes);
           push2('COUNTRY STATISTICS',L('country stats','国別統計','Länderstatistik','статистика','estadísticas'),got.stats);
           const st=stateContext(); if(st) block+='[CURRENT MAP STATE]\n'+st+'\n\n';
@@ -27074,7 +27323,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"metrics"?:[str,…],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して"). When the user names SPECIFIC indicators (e.g. "compare the USA and China — GDP, defense and population"), pass them in "metrics" using these keys: gdp, gdppc, gdpppp, gdppcppp, growth, infl (inflation), unemp (unemployment), debt, cab (current account), pop (population), life (life expectancy), tfr (fertility), mil (military % GDP), milb (military spending $ — use for "defense"/"military"), co2, net (internet), urban, exp (exports), fdi, health, edu, rnd, renew, forest, hom (homicide), area, hdi, demi (democracy index). Omit "metrics" when no indicators are named (the defaults open).\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…]} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","year":int} (deep time, 1900→now) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = the MASTER SPACETIME CLOCK (IntMapTime): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders, the Köppen climate era, NATO/EU accession and the day/night terminator. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. Prefer this over Earth Replay for setting the time; {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
-        +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
+        +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). (#R119) It ALSO receives the live values of the layers the user is displaying at the anchor point, and "scope":"drawn-area" analyses the USER-DRAWN measure polygon / circles (news inside it + layer values + WorldPop population — use for "この範囲を要約/分析して"). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
+        +'SATELLITE CHANGE DETECTION: {"type":"satelliteCompare","dateA":"YYYY-MM-DD","dateB":"YYYY-MM-DD","place"?:str} = capture the dated satellite view at two dates and report the visual changes (construction, vessels, disasters, land use) with both frames shown. REQUIRES the satellite base with a dated provider to be active; if it is not, tell the user to switch to Satellite first. Use for "この2日付で衛星画像を比較", "what changed here between X and Y".\n'
+        +'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation) + the actual features in view for point layers (cameras, news, volcanoes). No place = the pinned point or map centre. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？").\n'
         +'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num} = EXACT population inside a shape, summed from the WorldPop 100m population grid (2020). target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n'
         +'MAP OBJECTS: {"type":"object","op":"list"|"remove"|"focus"|"rename","id"?:str,"kind"?:"pin"|"radius"|"annot"|"upload"|"route"|"iso","index"?:num,"name"?:str} = operate on objects ALREADY drawn on the map (ids are listed in CURRENT MAP STATE). "2番目の円を消して" → {"type":"object","op":"remove","kind":"radius","index":2}.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
@@ -27460,7 +27711,8 @@ window.addEventListener('DOMContentLoaded', () => {
     async function runActions(ai, say, acts, gen){
       let body=''; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
-        let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a); }
+        let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a);
+        if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
         if(mapped.length){ body+=mapToggleChip(mapped); try{ ai.__ovlSnap=_ovlSnapshot(mapped); }catch(_){} } }catch(_){}   /* (#R118) capture what THIS reply drew, for its own switch */
       if(gen!=null&&gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return fails; }
@@ -27961,7 +28213,16 @@ window.addEventListener('DOMContentLoaded', () => {
     } }catch(_){}
     /* (#R75) dispatch exposed read-eval style for diagnostics/testing (vision §17) — same honest R() results.
        (#R76) wctx = read-only snapshot of the structured working context (vision §3). */
-    return { open, toggle, close:_atlClose, mountTab, run, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    /* (#R119) runDirect — the entry point for OTHER IntMap features to run actions INSIDE the Atlas thread
+       (user-labelled bubble + honest per-step results), e.g. the area-summary button. No AI planning round-trip. */
+    async function runDirect(label,acts){ try{ open(); }catch(_){}
+      _lastUserMsg=''; try{ const p2=ensure(); const exw=p2.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p2.querySelector('.atl-sub'); if(subw) subw.style.display='none'; }catch(_){}
+      bubble('u',esc(String(label||'')));
+      const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>');
+      const gen=++_runGen;
+      try{ const fails=await runActions(ai,'',acts,gen); if(gen===_runGen) recordTurn(String(label||''),'',acts,fails); }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} }
+      try{ msgTools(ai,String(label||'')); }catch(_){} }
+    return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
   try{ const _ab=document.getElementById('btn-atlas'); if(_ab) _ab.onclick=()=>{ try{ window.IntMapConsole.toggle(); }catch(_){} }; }catch(_){}
   /* (#R42) Ctrl/⌘+K opens Atlas (skip when typing in a field). */
@@ -27994,7 +28255,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(f.length||row.length){ row.push(f); out.push(row); } return out; }
     async function load(){ if(data) return data; if(loading) return null; loading=true;
       try{
-        let cached=null; try{ if(window.IntMapCache&&window.IntMapCache.get) cached=await window.IntMapCache.get('runways_v1'); }catch(_){}
+        let cached=null; try{ if(window.IntMapCache&&window.IntMapCache.get) cached=await window.IntMapCache.get('runways_v2'); }catch(_){}   /* (#R119) v2 rows carry BOTH runway-end coordinates (for the flight sim's real-threshold spawn + landing corridor) */
         if(cached&&cached.length){ data=cached; loading=false; return data; }
         const base='https://davidmegginson.github.io/ourairports-data/';
         const got=await Promise.all([ fetch(base+'runways.csv').then(r=>r.text()), fetch(base+'airports.csv').then(r=>r.text()) ]);
@@ -28006,8 +28267,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const out=[]; for(let i=1;i<Rw.length;i++){ const r=Rw[i]; if(!r||r[cCl]==='1') continue;
           const a1=parseFloat(r[cLa]),o1=parseFloat(r[cLo]),a2=parseFloat(r[cHa]),o2=parseFloat(r[cHo]); let la,lo;
           if(isFinite(a1)&&isFinite(a2)){ la=(a1+a2)/2; lo=(o1+o2)/2; } else if(isFinite(a1)){ la=a1; lo=o1; } else continue;
-          const inf=by[r[cAp]]||{}; out.push({apt:r[cAp],name:inf.name||r[cAp],muni:inf.muni||'',mil:!!inf.mil,la:la,lo:lo,lenM:Math.round((parseFloat(r[cLn])||0)*0.3048),rwy:(r[cLe]||'')+'/'+(r[cHe]||'')}); }
-        data=out; loading=false; try{ if(window.IntMapCache&&window.IntMapCache.set) window.IntMapCache.set('runways_v1',out); }catch(_){} return out;
+          const inf=by[r[cAp]]||{}; const row={apt:r[cAp],name:inf.name||r[cAp],muni:inf.muni||'',mil:!!inf.mil,la:la,lo:lo,lenM:Math.round((parseFloat(r[cLn])||0)*0.3048),rwy:(r[cLe]||'')+'/'+(r[cHe]||'')};
+          if(isFinite(a1)&&isFinite(o1)&&isFinite(a2)&&isFinite(o2)){ row.leLa=a1; row.leLo=o1; row.heLa=a2; row.heLo=o2; row.leId=r[cLe]||''; row.heId=r[cHe]||''; }   /* (#R119) both thresholds */
+          out.push(row); }
+        data=out; loading=false; try{ if(window.IntMapCache&&window.IntMapCache.set) window.IntMapCache.set('runways_v2',out); }catch(_){} return out;
       }catch(e){ loading=false; return null; }
     }
     function search(o){ if(!data) return []; const cl=o.center;
