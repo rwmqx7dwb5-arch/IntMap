@@ -219,7 +219,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     [data-theme="dark"] .stat-row{ background:#2a2a2e; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
     .stat-flag{ font-size:30px; line-height:1; } .stat-main{ flex:1; min-width:0; }   /* (#R104) flag a touch larger per request */
-    .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:700; white-space:nowrap; }
+    .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:400; white-space:nowrap; }   /* (#R116) metric value NOT bold (requested) */
     .map-container.tool-active .maplibregl-canvas{ cursor:crosshair; }
     #map{ position:absolute; inset:0; width:100%; height:100%; background:var(--bg-color); }
     /* Sidebar toggle — attached flush to the sidebar edge */
@@ -1309,6 +1309,9 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
          scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
       .m-sheet #layer-active-section .lyr-head{ text-transform:none !important; letter-spacing:0.01em !important; }
+      /* (#R116) "FAVORITE LAYERS" was the one still-uppercase classification name on mobile (found by sweeping
+         every element's computed text-transform in the sheet). */
+      .m-sheet .layer-fav-title{ text-transform:none !important; letter-spacing:0.01em !important; }
       /* Mobile: the Layers list shows every group expanded, so the ▷/▽ collapse carets aren't needed
          (desktop keeps them) (#12). */
       .m-sheet .layer-dropdown .layer-group-title::after, .m-sheet .layer-dropdown .lyr-head::after, .m-sheet .layer-dropdown .premium-group-title::after{ content:none !important; }
@@ -1707,7 +1710,7 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
     .alc-exp:hover{ color:var(--text-main); }
     .alc-exp svg{ display:block; }
     .alc-exp.on{ background:var(--primary-color); color:#fff; }
-    .alc-panel{ position:absolute; left:8px; right:8px; top:100%; margin-top:4px; z-index:60; background:var(--popup-bg); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:12px; box-shadow:var(--shadow,0 10px 30px rgba(0,0,0,0.25)); padding:6px; max-height:44vh; overflow-y:auto; }
+    .alc-panel{ position:absolute; left:8px; right:8px; top:100%; margin-top:4px; z-index:60; background:var(--card-bg); border:1px solid var(--glass-border,rgba(128,128,128,0.3)); border-radius:12px; box-shadow:var(--shadow,0 10px 30px rgba(0,0,0,0.25)); padding:6px; max-height:44vh; overflow-y:auto; }   /* (#R116) the Active-layers LIST is opaque too (the R115 fix covered only the bar) */
     .alc-row{ display:flex; align-items:center; gap:8px; padding:5px 7px; border-radius:8px; }
     .alc-row:hover{ background:var(--input-bg); }
     .alc-row .alcr-name{ flex:1; min-width:0; font-size:12px; color:var(--text-main); cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -7552,7 +7555,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const el=_adjBox(); el.style.display='block'; el.style.left=seg[0]+'px'; el.style.top=seg[1]+'px'; el.style.width=seg[2]+'px'; el.style.height=seg[3]+'px'; }
     /* (#R103) while DRAGGING a window (any edge can newly meet a neighbour) show whichever edge is currently joined. */
     function showAdjAny(w){ for(const d of ['e','w','s','n']){ const seg=sharedSeg(w,d); if(seg){ const el=_adjBox(); el.style.display='block'; el.style.left=seg[0]+'px'; el.style.top=seg[1]+'px'; el.style.width=seg[2]+'px'; el.style.height=seg[3]+'px'; return; } } hideAdj(); }
-    const SNAP=8;
+    /* (#R116) 8px snap on EVERY edge line made slow drags across a tiled layout stick repeatedly ("見えない壁の
+       ように動かせないゾーン"): each of the many candidate lines held the window for a 16px band of mouse travel.
+       6px keeps the magnetic join while roughly halving the sticky zones. */
+    const SNAP=6;
     /* (#R79d) the workspace's usable rectangle: BELOW the 34px top menu bar, down to the TOP of the ticker
        (the ticker owns the real screen bottom — "下端はティッカーであり実画面の下端ではない"), full width.
        Everything measures against this so windows reach the real edges but never overlap the menu or hide
@@ -7580,10 +7586,11 @@ window.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); });
     }
     function wsResize(w){
-      /* (#R106) the edge hover/grab zone was too thin ("リサイズのホバー判定範囲が狭すぎる"): widen the left/right/
-         bottom edges to 20 px (and a small ±5 px reach OUTSIDE the window, so the seam between two abutting windows
-         is comfortably grabbable). The TOP edge stays a slim MN so it never steals the title-bar drag region. */
-      const M=22, MN=10, OUT=5, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
+      /* (#R116) BALANCED edge zones ("リサイズ判定ホバー範囲が広すぎたり、狭すぎたり"): R106's 22px band fixed the
+         "too thin" feel but STOLE clicks on content near three window edges (a 22px frame where list taps started a
+         resize instead). Now that the R107 cursor feedback works, 12px inside + 6px outside reach is comfortable to
+         grab yet stops swallowing content clicks. The TOP edge stays a slim MN so it never steals the title-bar drag. */
+      const M=12, MN=8, OUT=6, CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
       const edgeAt=(cx,cy)=>{ const r=w.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<-OUT||y<-OUT||x>r.width+OUT||y>r.height+OUT) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=MN)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
       /* (#R107) ROOT CAUSE of "リサイズのホバー判定範囲が狭すぎる" (re-report after R106 widened M): over the MAP CANVAS
          (and any child that sets its own cursor) the resize cursor set on `w` was OVERRIDDEN, so the edge felt dead
@@ -7667,9 +7674,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'.ws-d-close::before{content:"\\00d7";}.ws-d-min::before{content:"\\2212";}.ws-d-max::before{content:"+";}'
         +'.ws-dots:hover .ws-dot::before{opacity:1;}'
         +'.ws-dot:active{filter:brightness(0.85);}'
-        /* (#R101) clearer join indicator: a brighter, slightly thicker snap guide with a stronger glow so you can
-           SEE exactly where a window edge is joining a neighbour / the screen edge while dragging or resizing. */
-        +'.ws-guide{position:fixed;z-index:5995;background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:1;box-shadow:0 0 12px 2px rgba(10,132,255,0.9);}'
+        /* (#R116) join/snap indicators TONED DOWN ("ハイライトアニメーションが大げさすぎる"): a slim guide with a
+           faint glow — visible, not theatrical. */
+        +'.ws-guide{position:fixed;z-index:5995;background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:0.85;box-shadow:0 0 4px rgba(10,132,255,0.45);}'
         /* (#R83) draggable junction handle where 3+ panes meet — moves both dividers at once */
         +'.ws-junction{position:fixed;z-index:947;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);cursor:move;background:rgba(10,132,255,0.16);border:1.5px solid rgba(10,132,255,0.55);touch-action:none;transition:background .12s ease,transform .12s ease;}'
         +'.ws-junction:hover{background:rgba(10,132,255,0.55);transform:translate(-50%,-50%) scale(1.15);}'
@@ -7681,8 +7688,8 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R104) join indicator made clearly visible ("接合されるときが、どこでそうなるのかわからない → わかるUI"):
            a crisp bright bar on the shared edge with a soft glow + a gentle pulse so the exact join reads at a glance.
            Simple & minimal — only the shared segment, only while hovering/dragging/resizing an abutting edge. */
-        +'.ws-adj{position:fixed;z-index:944;background:var(--primary-color,#0a84ff);opacity:0.95;border-radius:3px;pointer-events:none;display:none;box-shadow:0 0 12px 2px rgba(10,132,255,0.85);animation:wsAdjPulse 1.1s ease-in-out infinite;}'
-        +'@keyframes wsAdjPulse{0%,100%{opacity:0.7;}50%{opacity:1;}}'
+        /* (#R116) NO pulse, faint glow — the pulsing glow bar was "大げさ". A steady slim bar reads just as well. */
+        +'.ws-adj{position:fixed;z-index:944;background:var(--primary-color,#0a84ff);opacity:0.8;border-radius:3px;pointer-events:none;display:none;box-shadow:0 0 4px rgba(10,132,255,0.4);}'
         +'body.capture-mode .ws-adj{display:none !important;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
         +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
@@ -7763,7 +7770,7 @@ window.addEventListener('DOMContentLoaded', () => {
            thicker accent ring, an accent-tinted tile fill (color-mix; older engines just skip it and keep
            the ring), and the layer NAME itself in the accent colour + bold. */
         +'body.ws-mode #layer-sidebar-r .lst-tile.on{border-color:var(--primary-color);box-shadow:0 0 0 2px var(--primary-color);background:color-mix(in srgb, var(--primary-color) 14%, var(--card-bg));}'
-        +'body.ws-mode #layer-sidebar-r .lst-tile.on .lst-nm{color:var(--primary-color);font-weight:700;}'
+        +'body.ws-mode #layer-sidebar-r .lst-tile.on .lst-nm{color:var(--primary-color);}'   /* (#R116) accent colour only — NO bold (requested) */
         /* (#R79b) Atlas window: keep the INPUT BAR always visible when the window is short — the suggested-
            question chips (.atl-ex) were tall + non-shrinking and pushed the input below the window on resize.
            Cap + scroll them so the chat area and input never get clipped. */
@@ -24343,7 +24350,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const c=resolveCountrySync(nm); if(c&&c.code) return {code:c.code,name:c.name};
       const grp=regionGroup(nm); if(grp&&grp.codes.length) return {codes:grp.codes,name:grp.name};
       const comp=regionCompose(nm); if(comp){ const cp=await composeRegion(comp.spec,comp.key); if(cp&&cp.geo) return {poly:{name:String(nm||'').trim(),geo:cp.geo},composed:true,partial:cp.n<cp.total}; }
-      try{ const e=await _nomExtent(nm); if(e&&e.adminPoly&&e.geojson&&/Polygon/.test(e.geojson.type||'')) return {poly:{name:e.name||nm,geo:e.geojson}}; }catch(_){}
+      try{ const e=await _nomExtent(nm); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){
+        if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}};
+        /* (#R116) WATER BODIES & NATURAL FEATURES: 「大阪湾をハイライト」 was rejected here (a bay is not an
+           admin polygon), fell through the AI steps and ended at the point→country fallback, which painted
+           CHINA. Nominatim HAS real polygons for bays/straits/seas/peninsulas — accept them for highlight. */
+        if(/^(natural|water|waterway|place)$/i.test(e.cls||'') && /^(bay|strait|gulf|sea|water|lagoon|channel|sound|fjord|inlet|peninsula|isthmus|cape|archipelago|reef|shoal|wetland)$/i.test(e.typ||''))
+          return {poly:{name:e.name||nm,geo:e.geojson}};
+      } }catch(_){}
       const dir=parseDirectional(nm); if(dir){ try{ const b=await _nomExtent(dir.base);
         if(b&&b.geojson&&/Polygon/.test((b.geojson.type||''))&&b.box){ const cg=_clipGeoRect(b.geojson,sliceBox(b.box,dir.dir)); if(cg) return {poly:{name:nm,geo:cg},sliced:true}; }
         if(b&&b.box) return {poly:{name:nm,geo:_bboxSoftPoly(sliceBox(b.box,dir.dir))},soft:true}; }catch(_){} }
@@ -24354,7 +24368,12 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const aiu=await aiRegionUnits(nm); if(aiu&&!aiu.outline){ const cp2=await composeRegion(aiu,_lnorm(nm)); if(cp2&&cp2.geo&&cp2.n>=Math.max(1,Math.round(cp2.total*0.5))) return {poly:{name:String(nm||'').trim(),geo:cp2.geo},composed:true,partial:cp2.n<cp2.total}; } }catch(_){}
       const ai=await aiRegionPoly(nm); if(ai) return {poly:{name:nm,geo:ai},approx:true};
       if(rbKnown&&rbKnown.box) return {poly:{name:nm,geo:_bboxSoftPoly(rbKnown.box)},soft:true};
-      const c2=await resolveCountry(nm); if(c2&&c2.code) return {code:c2.code,name:c2.name};
+      /* (#R116) last-resort country fallback: resolveCountry may derive the country from a GEOCODED POINT
+         (codeAtPoint), which for a non-country query with a bad geocode confidently painted the WRONG country
+         (大阪湾 → "People's Republic of China"). Only accept it when the country name actually relates to the
+         query; otherwise an honest "nothing found" beats a wrong nation-sized highlight. */
+      const c2=await resolveCountry(nm); if(c2&&c2.code){ const qn=_lnorm(nm), cn=_lnorm(c2.name||'');
+        if(qn&&cn&&(cn.indexOf(qn)>=0||qn.indexOf(cn)>=0)) return {code:c2.code,name:c2.name}; }
       return null; }
     function unionBox(codes,polys){ let a=180,b=90,c=-180,d=-90,any=false;
       try{ const g=geo(); if(g&&g.features&&codes&&codes.length){ const set=new Set(codes.map(String)); g.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }); } }catch(_){}
@@ -24645,11 +24664,17 @@ window.addEventListener('DOMContentLoaded', () => {
          region is viewed at while still bounding the payload. Whole COUNTRIES never reach here (resolveCountrySync
          short-circuits first), so the worst case is a large oblast/prefecture — fine at this threshold. */
       try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
-        const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y))-((+x.importance||0)+_classBonus(x)))[0];
+        /* (#R116) EXACT-NAME bonus: for 「大阪湾」 Nominatim ranked 大坂湾 (a HAMLET in Zhejiang, China — 坂≠阪
+           fuzzy CJK match) ABOVE the real Osaka Bay, which is how "highlight Osaka Bay" painted China. A result
+           whose own name equals the query must beat a fuzzy near-miss with slightly higher importance. */
+        const _q=String(place).trim().toLowerCase();
+        const _nameBonus=x=>{ try{ return (String((x.display_name||'').split(',')[0]).trim().toLowerCase()===_q)?0.5:0; }catch(_){ return 0; } };
+        const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y)+_nameBonus(y))-((+x.importance||0)+_classBonus(x)+_nameBonus(x)))[0];
         let box=robustExtent(best.geojson);
         if(!box && Array.isArray(best.boundingbox)&&best.boundingbox.length===4){ const s=+best.boundingbox[0],n=+best.boundingbox[1],w=+best.boundingbox[2],e=+best.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
         const adminPoly=!!(best.geojson && /Polygon/.test(best.geojson.type||'') && _classBonus(best)>0);
         return {lng:+best.lon, lat:+best.lat, name:(best.display_name||place).split(',')[0], box, geojson:best.geojson||null, adminPoly,
+          cls:String(best.category||best.class||''), typ:String(best.type||''),   /* (#R116) jsonv2 = "category" (R64 gotcha); lets callers accept water/natural polygons */
           osmType:best.osm_type||'', osmId:+best.osm_id||0}; }catch(_){}
       return null; }
     async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)||WORLD_RE.test(place)) return null;   /* (#R85) 現在地 has no Nominatim extent — resolve it via geocode()→device GPS */
@@ -26836,17 +26861,29 @@ window.addEventListener('DOMContentLoaded', () => {
            (16px font also stops the iOS focus auto-zoom) LIFTED clearly above the sheet's bottom edge/home
            indicator, and slightly bigger suggestion chips / inline controls to match. */
         +'@media(max-width:768px){'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chat{padding:10px 12px 8px;gap:12px;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b{font-size:15px;line-height:1.62;}'
+        /* (#R116) EDGE-TO-EDGE: the sheet's 16px side padding left the Atlas UI 358px wide on a 390px screen
+           ("左右幅が画面幅とあっておらず") — bleed the feed to the full screen width, and kill every horizontal
+           overflow so the chat can never wiggle sideways ("左右に動いてしまう"). */
+        +'body:not(.ws-mode) #atlas-feed{margin:0 -16px !important;overflow-x:hidden !important;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab{max-width:100%;overflow-x:hidden;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chat{padding:10px 14px 8px;gap:12px;overflow-x:hidden;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b{font-size:15px;line-height:1.62;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.u{max-width:86%;padding:8px 14px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a{padding:2px 1px;}'
+        /* (#R116) user vs Atlas message text SAME size: Atlas replies carry inline 12–13px font-sizes from the
+           reply builders — lift those to the 15px bubble size (meta/footers ≤11px stay small on purpose). */
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12px"],'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.5px"],'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.8px"],'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:13px"]{font-size:15px !important;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 12px 2px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 14px 2px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 12px 6px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 14px 6px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;border-radius:24px;padding:0 16px;font-size:16px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-go{width:44px;height:44px;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(16px + env(safe-area-inset-bottom,0px));}'
+        /* (#R116) input LOWERED a bit from R115 (16px+safe-area was too high — "少し位置を下げて"). */
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ainote{font-size:10px;padding:2px 12px calc(6px + env(safe-area-inset-bottom,0px));}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ctl-lbl{font-size:13px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt button{font-size:11.5px;padding:4px 8px;}'
         +'}';
@@ -29469,8 +29506,62 @@ window.addEventListener('DOMContentLoaded', () => {
               (e.g. "Kingfom of Italy" typo, "Italy"→our "Kingdom of Italy") by using WHERE the click landed */
         if(!code&&lngLat&&isFinite(lngLat.lng)){ try{ const g=window.countryGeo; if(g&&g.features){ let best=null,bestA=Infinity; for(const f of g.features){ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const s=countryStats[cd]; if(!s||s._histHidden||!f.geometry) continue; if(_contains(f.geometry,lngLat.lng,lngLat.lat)){ const a=_bboxArea(f.geometry); if(a<bestA){ bestA=a; best=cd; } } } if(best) code=best; } }catch(_){} }
         if(code){ const s=countryStats[code]; if(s){ out.code=code; const nm2=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(nm2) out.name=nm2; if(s.wiki) out.wiki=s.wiki; } }
+        /* (#R116) ERA-SPECIFIC Wikipedia for SAME-NAME countries ("国名に変化がない国は特に、その時代の国の
+           Wikipediaに飛ばしてもらえない"): a country that kept its label (France, China, Italy…) resolved to the
+           MODERN article. When the clock is in a curated era range, link that era's own article instead (the
+           displayed name stays the map's era name; former states with their own registry entry never reach here). */
+        try{ const y=(window.IntMapTime&&!window.IntMapTime.isLive())?window.IntMapTime.year():null;
+          if(code&&y!=null&&isFinite(y)){ const spans=_ERA_WIKI[code]; if(spans){ for(const sp of spans){ if(y>=sp[0]&&y<=sp[1]){ out.wiki=sp[2]; break; } } } } }catch(_){}
       }
       return out; }
+    /* (#R116) curated era→article table (1900+ window of the time machine; en.wikipedia titles). Ranges are the
+       state-form's lifespan; anything outside every range keeps the modern article. Kept to well-established,
+       uncontroversial titles. */
+    const _ERA_WIKI={
+      FRA:[[1900,1940,'French_Third_Republic'],[1940,1944,'Vichy_France'],[1944,1946,'Provisional_Government_of_the_French_Republic'],[1946,1958,'French_Fourth_Republic']],
+      DEU:[[1900,1918,'German_Empire'],[1919,1933,'Weimar_Republic'],[1933,1945,'Nazi_Germany'],[1945,1949,'Allied-occupied_Germany'],[1949,1990,'West_Germany']],
+      CHN:[[1900,1911,'Qing_dynasty'],[1912,1949,'Republic_of_China_(1912%E2%80%931949)']],
+      JPN:[[1900,1947,'Empire_of_Japan']],
+      RUS:[[1900,1917,'Russian_Empire'],[1917,1922,'Russian_Soviet_Federative_Socialist_Republic'],[1922,1991,'Soviet_Union']],
+      ITA:[[1900,1946,'Kingdom_of_Italy']],
+      GBR:[[1900,1922,'United_Kingdom_of_Great_Britain_and_Ireland']],
+      TUR:[[1900,1922,'Ottoman_Empire']],
+      ESP:[[1900,1931,'Restoration_(Spain)'],[1931,1939,'Second_Spanish_Republic'],[1939,1975,'Francoist_Spain']],
+      PRT:[[1900,1910,'Kingdom_of_Portugal'],[1910,1926,'First_Portuguese_Republic'],[1933,1974,'Estado_Novo_(Portugal)']],
+      AUT:[[1900,1918,'Austria-Hungary'],[1919,1938,'First_Austrian_Republic'],[1945,1955,'Allied-occupied_Austria']],
+      HUN:[[1920,1946,'Kingdom_of_Hungary_(1920%E2%80%931946)'],[1949,1989,'Hungarian_People%27s_Republic']],
+      POL:[[1918,1939,'Second_Polish_Republic'],[1947,1989,'Polish_People%27s_Republic']],
+      GRC:[[1900,1924,'Kingdom_of_Greece'],[1935,1973,'Kingdom_of_Greece']],
+      ROU:[[1900,1947,'Kingdom_of_Romania'],[1947,1989,'Socialist_Republic_of_Romania']],
+      BGR:[[1908,1946,'Kingdom_of_Bulgaria'],[1946,1990,'People%27s_Republic_of_Bulgaria']],
+      SRB:[[1900,1918,'Kingdom_of_Serbia']],
+      IRN:[[1900,1925,'Qajar_Iran'],[1925,1979,'Pahlavi_Iran']],
+      THA:[[1900,1932,'Rattanakosin_Kingdom_(1782%E2%80%931932)']],
+      EGY:[[1900,1914,'Khedivate_of_Egypt'],[1914,1922,'Sultanate_of_Egypt'],[1922,1953,'Kingdom_of_Egypt'],[1958,1971,'United_Arab_Republic']],
+      ETH:[[1900,1974,'Ethiopian_Empire'],[1974,1987,'Derg']],
+      IND:[[1900,1947,'British_Raj'],[1947,1950,'Dominion_of_India']],
+      KOR:[[1900,1910,'Korean_Empire'],[1910,1945,'Korea_under_Japanese_rule']],
+      PRK:[[1910,1945,'Korea_under_Japanese_rule']],
+      VNM:[[1900,1945,'French_Indochina'],[1954,1976,'North_Vietnam']],
+      BRA:[[1900,1930,'First_Brazilian_Republic'],[1937,1946,'Estado_Novo_(Brazil)']],
+      MEX:[[1900,1911,'Porfiriato']],
+      CZE:[[1918,1992,'Czechoslovakia']],
+      SVK:[[1939,1945,'Slovak_Republic_(1939%E2%80%931945)']],
+      IRL:[[1922,1937,'Irish_Free_State']],
+      ISR:[[1920,1948,'Mandatory_Palestine']],
+      SAU:[[1900,1932,'Emirate_of_Nejd_and_Hasa']],
+      IRQ:[[1921,1932,'Mandatory_Iraq'],[1932,1958,'Kingdom_of_Iraq']],
+      SYR:[[1923,1946,'Mandate_for_Syria_and_the_Lebanon']],
+      LBY:[[1911,1943,'Italian_Libya'],[1951,1969,'Kingdom_of_Libya']],
+      IDN:[[1900,1949,'Dutch_East_Indies']],
+      PHL:[[1902,1935,'Insular_Government_of_the_Philippine_Islands'],[1935,1946,'Commonwealth_of_the_Philippines']],
+      COD:[[1908,1960,'Belgian_Congo'],[1971,1997,'Zaire']],
+      ZAF:[[1910,1961,'Union_of_South_Africa']],
+      ZWE:[[1923,1965,'Southern_Rhodesia'],[1965,1979,'Rhodesia']],
+      LKA:[[1900,1948,'British_Ceylon'],[1948,1972,'Dominion_of_Ceylon']],
+      MMR:[[1900,1948,'British_rule_in_Burma']],
+      TWN:[[1900,1945,'Taiwan_under_Japanese_rule']]
+    };
     /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
        contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its
        THAT-YEAR extent, e.g. the German Empire's 1910 borders instead of modern Germany's). */
