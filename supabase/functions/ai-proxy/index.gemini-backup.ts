@@ -14,15 +14,15 @@
 //    5. Returns { text, used, limit, remaining, meta }. On a provider failure the
 //       consumed slot is refunded so a failed call never costs the user a use.
 //
-//  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
+//  Deploy:   supabase functions deploy ai-proxy
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
-//  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-luna               (model fixed here; users never pick it)
-//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Luna via /v1/responses)
-//            # other providers stay wired but dormant:
-//            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
-//            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
+//  Secrets:  supabase secrets set GEMINI_API_KEY=AIza...              (AI_PROVIDER=gemini)
+//            supabase secrets set AI_PROVIDER=gemini                  (anthropic | openai | gemini)
+//            supabase secrets set AI_MODEL=gemini-3.5-flash
+//            # optional:
+//            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 default OFF — see below)
 //            supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        (if AI_PROVIDER=anthropic)
+//            supabase secrets set OPENAI_API_KEY=sk-...               (if AI_PROVIDER=openai)
 //  (SUPABASE_URL, SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY are injected.)
 //
 // ----------------------------------------------------------------------------
@@ -45,17 +45,6 @@
 //    • Retries a MALFORMED_FUNCTION_CALL exactly once with tools stripped +
 //      "do not call functions" hardened + JSON mode forced.
 //  Secrets, JWTs and full prompts are never logged.
-// ----------------------------------------------------------------------------
-//  (#R114) OpenAI gpt-5.6-luna migration (from Gemini) — Responses API path.
-//    • OpenAI calls go through /v1/responses (reasoning.effort:"low", store:false),
-//      text + image input, JSON mode for the JSON tasks (map_report / json_extract).
-//    • Web search is a HOSTED tool attached only when the client asks (webMode
-//      auto|required). webMode:"required" (e.g. a "latest" brief) FORCES a tool call
-//      so the search can't be silently skipped; a 400 on that forcing degrades to
-//      model-choice. We COUNT the web_search_call items actually emitted and return
-//      meta.webUsed / meta.webSearches so the client can keep "latest" claims honest.
-//    • insufficient_quota / billing-hard-limit → provider_quota (hard 502), never a
-//      transient retry. Gemini + Anthropic paths are unchanged and still selectable.
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -190,12 +179,6 @@ function classifyGemini(status: number, bodyText: string, finishReason: string, 
   if (finishReason === "SAFETY" || blockReason) {
     return new ProviderError("provider_blocked", "Blocked by the provider's safety filter." + (blockReason ? " (" + blockReason + ")" : ""), 502, false, { finishReason, blockReason });
   }
-  // (#R114) OpenAI billing/quota exhaustion (out of prepaid balance, or the project hit its hard
-  // spend limit) is a HARD stop — NOT a transient per-minute rate limit — so it must not be retried
-  // or read as "try again shortly". (Checked before the generic 429 branch below.)
-  if (lc.includes("insufficient_quota") || lc.includes("billing_hard_limit_reached") || lc.includes("billing hard limit")) {
-    return new ProviderError("provider_quota", "The AI provider account balance / spend limit was reached.", 502, false, { providerStatus: status });
-  }
   if (status === 429 || lc.includes("resource_exhausted") || lc.includes("exceeded your current quota") || lc.includes("rate limit")) {
     // (#R113e) Gemini's 429 body is IDENTICAL for a transient per-MINUTE rate limit (clears in ~1 min) and a hard
     // per-DAY / billing quota — both say "check your plan and billing". Distinguish by the quotaId so per-minute reads
@@ -244,69 +227,29 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number }> {
-  // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
-  // includes invisible reasoning tokens, so leave a modest reasoning allowance
-  // above IntMap's visible-output budget while keeping the project spend guard.
-  const content: unknown[] = [{ type: "input_text", text: prompt }];
-  for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}` });
-
-  // (#R114) Build the request. When `forceWeb`, force a tool call so a "latest" brief
-  // can't silently skip searching (the old contradiction: the tool was attached but the
-  // prompt forbade it → 0 searches). If forcing is rejected (400) the model still gets
-  // the tool and decides for itself.
-  const build = (choice: string | null): Record<string, unknown> => {
-    const b: Record<string, unknown> = {
-      model,
-      input: [{ role: "user", content }],
-      max_output_tokens: Math.min(8_000, maxTokens + 1_500),
-      reasoning: { effort: "low" },
-      store: false,
-    };
-    if (system) b.instructions = system;
-    if (wantJson) b.text = { format: { type: "json_object" } };
-    // Search is paid per tool call, so attach it only when the client explicitly
-    // asks for auto/required web mode. Ordinary Atlas work stays tool-free.
-    if (web) { b.tools = [{ type: "web_search" }]; if (choice) b.tool_choice = choice; }
-    return b;
-  };
-  const post = (body: Record<string, unknown>) => fetchWithTimeout("https://api.openai.com/v1/responses", {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], maxTokens: number, wantJson: boolean): Promise<{ text: string; finishReason: string }> {
+  const userContent: unknown = imgs.length
+    ? [{ type: "text", text: prompt }, ...imgs.map((ip) => ({ type: "image_url", image_url: { url: `data:${ip.mime};base64,${ip.b64}` } }))]
+    : prompt;
+  const messages: unknown[] = [];
+  if (system) messages.push({ role: "system", content: system });
+  messages.push({ role: "user", content: userContent });
+  const reqBody: Record<string, unknown> = { model, messages, temperature: 0.3, max_tokens: maxTokens };
+  if (wantJson) reqBody.response_format = { type: "json_object" };
+  const r = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-    body: JSON.stringify(body),
+    body: JSON.stringify(reqBody),
   });
-
-  let r = await post(build(web && forceWeb ? "required" : null));
-  if (!r.ok && web && forceWeb && r.status === 400) {
-    // tool_choice:"required" not accepted by this model/endpoint → retry letting the model choose.
-    r = await post(build(null));
-  }
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
     throw classifyGemini(r.status, t, "", "");
   }
   const j = await r.json();
-  // deno-lint-ignore no-explicit-any
-  const outputArr: any[] = Array.isArray(j?.output) ? j.output : [];
-  const text = (typeof j?.output_text === "string" ? j.output_text : "") ||
-    (outputArr
-      .filter((item: { type?: string }) => item?.type === "message")
-      .flatMap((item: { content?: unknown[] }) => Array.isArray(item.content) ? item.content : [])
-      .filter((part: { type?: string; text?: string }) => part?.type === "output_text" && typeof part.text === "string")
-      .map((part: { text?: string }) => part.text || "")
-      .join(""));
-  // (#R114) Did the hosted web-search tool ACTUALLY run this turn? Responses emits a
-  // `web_search_call` item per search — count them so the client can honestly say whether
-  // it got fresh info, instead of assuming "attached === searched".
-  const webCount = outputArr.filter((item: { type?: string }) => typeof item?.type === "string" && item.type.indexOf("web_search") === 0).length;
-  const finishReason = String(j?.status || j?.incomplete_details?.reason || "");
-  if (!text) {
-    const refused = outputArr.some((item: { content?: unknown[] }) =>
-      Array.isArray(item?.content) && item.content.some((part: { type?: string }) => part?.type === "refusal"));
-    if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
-    throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
-  }
-  return { text, finishReason, webAttached: web, webUsed: webCount > 0, webCount };
+  const text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+  const finishReason = String(j?.choices?.[0]?.finish_reason || "");
+  if (!text) throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
+  return { text, finishReason };
 }
 
 interface GeminiOpts {
@@ -479,12 +422,11 @@ Deno.serve(async (req) => {
     (provider === "openai" ? "gpt-4o-mini" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");
 
   try {
-    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number };
+    let out: { text: string; finishReason: string; webAttached?: boolean };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
-      // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
-      out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required");
+      out = await callOpenAI(model, key, prompt, system, imgs, maxTokens, wantJson);
     } else if (provider === "gemini") {
       const key = Deno.env.get("GEMINI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "GEMINI_API_KEY not set", 502, false, {});
@@ -516,9 +458,7 @@ Deno.serve(async (req) => {
     // 5) Success.
     return json({
       text: out.text, used, limit, remaining: Math.max(0, limit - used),
-      // (#R114) webUsed = the search tool ACTUALLY ran this turn (not just attached); the client uses
-      // it to keep "latest" features honest (never present a search-less answer as fresh intelligence).
-      meta: { provider, model, task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, finishReason: out.finishReason },
+      meta: { provider, model, task, webAttached: !!out.webAttached, finishReason: out.finishReason },
     });
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)
