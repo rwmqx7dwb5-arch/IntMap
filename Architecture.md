@@ -676,7 +676,7 @@ supabase/
   - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（R40で free=10/日 `PLAN_LIMITS`）→
     (3)`increment_ai_usage` RPC で当日分を原子的に消費（超過は 429）→ (4)**サーバー保持の鍵**でプロバイダ呼び出し →
     (5)失敗時は `refund_ai_usage` で消費分を返金。
-  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、現行=`gemini-3.5-flash`）。
+  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、**現行=`openai` / `gpt-5.6-luna`（Responses API）**。Gemini/Anthropic経路は温存・切替可）。
   - 用途：ニュースタイトル翻訳、ビューの要約、画像解析など**ユーザー操作のAI機能**。
   - **#R113 Gemini 3.5 Flash / `thinkingLevel:"low"` 移行 — 責任分離。** クライアントは**タスク種別**
     （`atlas_plan|map_report|analysis|free_text|json_extract|brief`）と**`webMode`**（`off|auto|required`）を送り、
@@ -694,6 +694,15 @@ supabase/
     確認できない位置はピンにせず一覧のみ。`analyze`/`brief`は付いていないWeb検索ツールを断定しない誠実プロンプトに変更。
     現実の現在日と地図のタイムトラベル日付を分離送信。**デプロイ済み**（バンドル成功＝TS検証、実機で構造化401を確認）。
     ログイン必須の実機E2Eは利用者側で実施。
+  - **#R114–#R116 OpenAI `gpt-5.6-luna` 移行（Responses API `/v1/responses`）。**
+    `reasoning.effort` はタスク別（`TASK_REASONING`：**atlas_plan/analysis=medium**、他=low）、`store:false`、テキスト＋画像入力。
+    JSONタスク（map_report/json_extract、**OpenAI時はatlas_planも**）は `text.format:json_object`。
+    **Web検索は本物**：`webMode:"required"`（brief）は `tool_choice:"required"` で**検索を強制**し、応答の `web_search_call`
+    件数から `meta.webUsed/webSearches` を返す → クライアントは「As of〈日付〉・ライブWeb検索」を**実際に検索した時だけ**表示（誠実表示）。
+    **障害耐性（R116）**：400は**フォールバック階段**（tool_choice解除→JSONモード解除（プロンプトJSONへ）→ツール解除）で降格、
+    Web付き呼び出しは90秒（タイムアウト時はツール無し40秒で1回再試行）、空応答（reasoningが予算を食い切る）は予算増で1回再試行、
+    `insufficient_quota`/支出上限は `provider_quota`（ハード）扱い。**リクエスト形の拒否がAI機能全体を殺せない**構造。
+    比較（compareStats）は `metrics` パラメータをSYSカタログに明記＋5言語シノニム解決（defense→軍事費$等）で**指名指標どおり**開く。
 - **ニュース地点解析AI** — `refresh-news` が**同じ鍵・同じ AI_PROVIDER 規約**でサーバー側実行（ユーザー枠は消費しない＝運用者の鍵）。
 - フロントに見えるのは結果だけ。鍵・モデル選択UIはユーザーに見せない。
 

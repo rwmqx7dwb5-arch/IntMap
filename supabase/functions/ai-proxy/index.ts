@@ -60,6 +60,12 @@
 //  R113c exclusion was Gemini-latency-only — malformed planner JSON was a major
 //  "could not interpret" source); an EMPTY/incomplete response (reasoning ate the
 //  budget) is retried once with a bigger budget; atlas_plan budget 1800→2200.
+//  (#R116) Outage-proofing + quality: the OpenAI call DEGRADES instead of failing —
+//  400s walk a fallback ladder (drop tool_choice → drop JSON mode → drop tools) and a
+//  timed-out web-search call retries once tool-free (webUsed stays honest), so a
+//  request-shape rejection can never blanket-kill Atlas AI again. Per-task reasoning
+//  effort: atlas_plan + analysis think at "medium" (complex/ambiguous requests were
+//  failing at "low"), extraction tasks stay "low". Web calls get a 90s leash.
 // ============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -92,6 +98,19 @@ const TASK_MAX_OUTPUT: Record<string, number> = {
 };
 const FALLBACK_MAX_OUTPUT = 1800;
 const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
+
+// (#R116) Per-task REASONING effort (OpenAI path). "low" was starving the PLANNER — complex or
+// ambiguous requests came back with wrong/empty plans ("実行できませんでした / 出力が間違ってる").
+// Planning + analysis get "medium" (the quality bottleneck); the mechanical/extraction tasks stay
+// "low" for cost & latency. The brief's freshness comes from the forced web search, not reasoning.
+const TASK_REASONING: Record<string, string> = {
+  atlas_plan: "medium",
+  analysis: "medium",
+  map_report: "low",
+  free_text: "low",
+  json_extract: "low",
+  brief: "low",
+};
 
 // (#R113) Which tasks want JSON output (structured-output / responseMimeType json).
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
@@ -248,46 +267,74 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
-  // includes invisible reasoning tokens, so leave a modest reasoning allowance
-  // above IntMap's visible-output budget while keeping the project spend guard.
+  // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
+  // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
   const content: unknown[] = [{ type: "input_text", text: prompt }];
   for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}` });
 
-  // (#R114) Build the request. When `forceWeb`, force a tool call so a "latest" brief
-  // can't silently skip searching (the old contradiction: the tool was attached but the
-  // prompt forbade it → 0 searches). If forcing is rejected (400) the model still gets
-  // the tool and decides for itself.
-  const build = (choice: string | null): Record<string, unknown> => {
+  const build = (choice: string | null, json: boolean, tools: boolean): Record<string, unknown> => {
     const b: Record<string, unknown> = {
       model,
       input: [{ role: "user", content }],
-      max_output_tokens: Math.min(8_000, maxTokens + 1_500),
-      reasoning: { effort: "low" },
+      max_output_tokens: Math.min(12_000, maxTokens + (effort === "medium" ? 3_500 : 1_500)),
+      reasoning: { effort: effort === "medium" ? "medium" : "low" },
       store: false,
     };
     if (system) b.instructions = system;
-    if (wantJson) b.text = { format: { type: "json_object" } };
+    // JSON mode. NOTE: OpenAI's json_object validator wants the word "JSON" in the request; the
+    // task prompts carry it, but a rejection is survivable via the 400 ladder below anyway.
+    if (json) b.text = { format: { type: "json_object" } };
     // Search is paid per tool call, so attach it only when the client explicitly
     // asks for auto/required web mode. Ordinary Atlas work stays tool-free.
-    if (web) { b.tools = [{ type: "web_search" }]; if (choice) b.tool_choice = choice; }
+    if (tools) { b.tools = [{ type: "web_search" }]; if (choice) b.tool_choice = choice; }
     return b;
   };
-  const post = (body: Record<string, unknown>) => fetchWithTimeout("https://api.openai.com/v1/responses", {
+  const post = (body: Record<string, unknown>, ms: number) => fetchWithTimeout("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
     body: JSON.stringify(body),
-  });
+  }, ms);
 
-  let r = await post(build(web && forceWeb ? "required" : null));
-  if (!r.ok && web && forceWeb && r.status === 400) {
-    // tool_choice:"required" not accepted by this model/endpoint → retry letting the model choose.
-    r = await post(build(null));
+  // (#R116) OUTAGE-PROOFING. The user hit a blanket "AI service temporarily unavailable": any
+  // request-shape rejection (400) or a slow hosted web_search run must DEGRADE, never kill the
+  // feature. Timeouts: a search-attached call gets a longer leash (searches legitimately run
+  // long); if it still times out, ONE fast tool-free retry answers from the supplied evidence
+  // (meta.webUsed stays false, so "latest" claims remain honest). 400s walk a fallback ladder:
+  // forced tool_choice → model-choice → drop JSON mode (prompt-only JSON; the client parser
+  // strips fences) → drop tools.
+  // 90s + 40s fallback = 130s worst case — safely inside even a 150s wall-clock limit.
+  const WEB_TIMEOUT = 90_000;
+  let usedTools = web, usedJson = wantJson;
+  let r: Response;
+  try {
+    r = await post(build(web && forceWeb ? "required" : null, wantJson, web), web ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+  } catch (e) {
+    const timedOut = e instanceof ProviderError && e.meta && (e.meta as Record<string, unknown>).timeout === true;
+    if (web && timedOut) {
+      usedTools = false;
+      r = await post(build(null, wantJson, false), 40_000);
+    } else {
+      throw e;
+    }
+  }
+  if (!r.ok && r.status === 400 && usedTools && forceWeb) {
+    r = await post(build(null, usedJson, true), WEB_TIMEOUT);
+  }
+  if (!r.ok && r.status === 400 && usedJson) {
+    usedJson = false;
+    r = await post(build(null, false, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+  }
+  if (!r.ok && r.status === 400 && usedTools) {
+    usedTools = false;
+    r = await post(build(null, usedJson, false), PROVIDER_TIMEOUT_MS);
   }
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
-    throw classifyGemini(r.status, t, "", "");
+    const pe = classifyGemini(r.status, t, "", "");
+    pe.meta.bodySnippet = t.slice(0, 160);   // (#R116) surfaced in the server log for diagnosis (no secrets in an error body)
+    throw pe;
   }
   const j = await r.json();
   // deno-lint-ignore no-explicit-any
@@ -310,7 +357,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, webAttached: web, webUsed: webCount > 0, webCount };
+  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount };
 }
 
 interface GeminiOpts {
@@ -491,14 +538,15 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
+      const effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required");
+        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required");
+          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort);
         } else {
           throw e;
         }
