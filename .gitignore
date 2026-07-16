@@ -12,3 +12,5 @@ _eco_test.json
 _thumb_*.png
 # ローカル環境固有の設定ファイルを無視
 settings.local.json
+supabase/functions/ai-proxy/supabase/
+

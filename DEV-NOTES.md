@@ -5,6 +5,45 @@
 
 ---
 
+## R117 — 歴史国家拡充ラウンド（CShapes 2.0 年次国境）+ フライトシム離着陸の根本修正 + Atlasリペアパス (tag `#R117`)
+
+### 歴史国家拡充（本ラウンドの主題）
+- **年次国境 1886–2019 = CShapes 2.0**（Schvitz et al. 2022, ETH Zürich）。aourednikの「1900年以降10枚」という上流限界を突破：CShapesは全フィーチャに**開始/終了日**を持つので、国境が変わった**その年**に地図が変わる（1990西独/東独→1991統一独、1991ソ連あり→1992ロシア、1954南北ベトナム分裂、2011南スーダン等を実測確認）。表示は**その年の7月1日時点**の状態（規約として固定）。
+  - 配信: `data/cshapes.js`（5.5MB, `window.__CSHAPES`）。ビルドはscratchpadの`cshapes_build.py`＝純Python Douglas-Peucker(0.008°)+座標3桁+**リングプール重複排除**（8,643リング→1,988ユニーク。期間をまたいで不変な境界を共有）。script-tagロード（file://対応、ecoregionsと同方式）。遅延ロード（時間旅行時のみ）＋idle warm。
+  - `IntMapTimeBorders.go()`: 1886–2019は`csFC(year)`、**aourednik経路はフォールバックとして完全温存**（cshapes.js読込失敗時に自動降格）。キャッシュキーは`'cs'+year`でaourednikと共存。Tibet/東プロイセン補正はaourednik専用（CShapesは元から史実的に正しい年次で持っている）ので素通り。
+  - **時代名テーブル `_CS_ERA`**（gwcode→[年, 表示名]の順序規則）: CShapesは植民地を後継国名で連続収録する（1900年に"Mali"と出てしまう）ため、独立年より前は時代名+宗主国サフィックス（`French Sudan (France)`等、既存のR110サフィックスローカライザに乗る）。Korean Empire→Korea (Japan)、Ottoman Empire→Turkey、Soviet Union期間などもここで吸収。`_ERA_LOC`に約55の新時代名を5言語で追加、`_COLONIZER`に9宗主国追加。
+  - 2011–2019も正確な年次国境になったため、「2010以降は現代国境」ガードを**2020以降**に変更。
+  - 国境の「ずれ・直線的」問題: CShapesは現代境界に整合した高精細ジオメトリ（簡略化0.008°≈900m）なので、aourednik比で大幅改善。
+- **HistId 時代アイデンティティ拡充**: JPN(大日本帝国)・RUS(ロシア帝国/ソビエト・ロシア)・GBR(英愛連合王国)・ESP(第二共和政)・PRT(ポルトガル王国)・BRA(ブラジル帝国)・EGY(エジプト王国)を追加（時代名5言語+時代国旗インラインSVG+時代Wikipedia）。フラグ未指定エントリは現代旗を維持する仕様に（apply()修正）。tagSameのMODNMにも7か国追加（地図ラベルも時代名化）。
+- resolveHistのフォールバックwikiタイトルから`(France)`等の宗主国サフィックスを除去（`French Sudan (France)`→Wikipedia `French Sudan`）。
+- 出典一覧にCShapes 2.0を追加。**残課題**: CShapesに1886以前は無い（現状スライダー下限1900なので実害なし）。植民地のstatus/ownerフィールドは公式GeoJSONに無いため`_CS_ERA`は手動キュレーション＝史実の異論があれば表1行で修正可。
+
+### フライトシム「離陸・着陸が100%墜落」の根本原因（3つ・全部実測）
+1. **滑走中の速度判定**: 「接地速度>1.7×Vstall→墜落」が**滑走中も毎ステップ**走っていた。F-35/F-16/A320は離陸滑走で必ずこの速度を超える＝**滑走路上で自動的に墜落**。→ 判定を**接地の瞬間（空中→接地遷移）のみ**に変更。滑走はどの速度でも墜落しない。
+2. **DEMタイル精細化ジャンプ**: 実環境ではカメラ移動でタイルがz8→z13へ精細化し、`queryTerrainElevation`が同一地点で数m〜数十m一気に変わる→機体が投げ出され自由落下→sink>7で墜落（ヘッドレスではタイル精細化が起きず再現しなかった）。→ 物理用地面`_terrF`を**レート制限付きフォロワー**に（上り h·(4+0.9V)、下り h·(2.5+0.35V)＝ジャンプが緩斜面になる）。低速時は沈む地面に車輪が追従。
+3. **半ロードDEMのゴミ値**: 羽田で`queryTerrainElevation`が**−1439m**を返す瞬間があり、スポーンがそれを信じて奈落に設置。→ 地上スタートは既知の**空港標高±150m**の妥当性ゲート（`_fieldElev`）を通った値だけ受理。
+- ほか: 構造破壊(±1.5G限界超過)の維持時間0.12→0.30s（キーボードは0.5sで全舵に張り付くため一瞬の操作で空中分解しない）; FBWの負側AoAクランプを`aStallNeg`基準に（−aStallの対称クランプは誤り）; **FBWピッチレートダンパー**（qSteady超過分に比例）→F-35無操作20秒で高度変動±6m（振動解消・実測）; 地上タキシング中の偽STALL警報抑止; 墜落理由の記録・結果画面表示（sink/バンク/姿勢/脚上げ/速度超過/空中分解、5言語）; 着陸品質（接地率+バンク+速度＋Butter〜Hard評価）表示; **滑走路着陸判定**（空港5km内+滑走路方位±20°+センターライン横偏差150m内→「滑走路に着陸」、それ以外は「空港周辺」「場外」）。
+- HUD/UI: 警告バナーは戦闘機ヘディングテープと重ならない固定スロット(116px)へ; デッキを2列グリッド化（ミニマップとの重なり解消）; スロットルバー+ブースト計を**全計器盤共通**に（six-pack/glassにも出る）; 主速度計を**EAS(≈IAS)基準**に変更しTAS/Machは補助行へ; 旋回計(TURN)を**実旋回率**（標準率3°/s=フルマーク）に; ヒントの「Shift アフターバーナー」はAB搭載機のみ表示; クラッシュ後の再開でCRASHED表示が残存するstale HUD除去。
+- **モバイル操縦**: アナログ**バーチャルスティック**（右下、連続ピッチ/ロール、離すと中立復帰、`st._tP/_tR`が物理へ直結）+ **スロットルバーがドラッグ可能**（マウスでも可）+ ラダーボタン対 + 44px以上のタップ領域 + safe-area対応 + 横画面配置調整。旧6ボタンはスティック+スロットルに置換（機能は全て維持）。
+- **§1 地名ラベル非インタラクティブ化**: 飛行中はwindowキャプチャ段階で地図キャンバス向けpointer/click/hover系イベントを遮断（`_fsBlocker`）＝`map.on('click')`系ハンドラ・queryRenderedFeatures処理が**一切走らない**（CSSベールではない）。stop()で完全復元。実測: 飛行前1/飛行中0/飛行後1でクリックハンドラ発火。ポップアップ類もfs-flying中は非表示。
+- 検証: 全6機体の地上スタート離陸/上昇、A320・P-51着陸（LANDED+接地統計）、F-35振動、ラベル遮断、を`_dbg.step`+一時停止（rt loop停止）で実測。**テスト時の注意**: `d.step(1.0)`は内部サブステップ上限24で0.12秒しか進まない（大きなdtは切り捨て）。rafshim環境ではrtループが並走するのでポーズ(p)してからstepすること。
+
+### Atlas
+- **水域クエリ強化**: `…湾/…海/灘/水道/海峡/Bay/Sea/Strait…`はNominatim実ポリゴンを1回リトライし、**AIトレース輪郭へは絶対に落ちない**（伊勢湾が房総半島に描かれたスクショの原因）。台湾/上海/熱海/東海は湾/海判定から除外（基底2文字以上ルール）。見つからなければ正直に「見つかりません」。
+- **リペアパス**: プランの一部アクションが実行失敗したら、失敗内容(type+params)を渡して**1回だけ別アプローチのプランを再生成**して同じ返信に追記実行（同一コールの再発行は拒否）。「実行できませんでした」で終わる頻度を直接削減。
+- **複雑度適応推論**: 長文/多節/条件付きリクエストは`effortHint:'high'`をai-proxyへ→ atlas_plan/analysisのみreasoning effort "high"（サーバ側ゲート、出力バジェット+5000）。**旧コードはeffort≠mediumを全部lowに潰していた**（`effort==="medium"?"medium":"low"`）のも修正。ai-proxyデプロイ済み。
+- **見出し階層**: Atlas返信のMarkdown見出しを #=15px/##=13.5px/###=12.5px に（本文・ユーザーメッセージのサイズは不変）。
+
+### モバイル レイヤーUI（3回目）
+- 行テキスト15px・行高46px・左右8px・行間ヘアライン（iOSグループリスト風）・:activeフィードバック。**分類名は非太字**（13px/weight500/ミュート色、下線廃止）＝「レイヤー分類名は太字にしないで」。Favorite/Activeヘッダも同様。Toolsボタン14.5px/12px padding。
+
+### ワークスペース
+- 見えない壁: タイル配置では隣接ウィンドウの縁線が1–3px間隔で並び±6pxスナップ帯が**重なって広い粘着回廊**になっていた→候補線を3px以内でクラスタ統合(`_dedupe`)。**Alt押下でスナップ完全無効**（ドラッグ・リサイズとも）。
+- ハイライト演出: ガイド/接合バーをopacity 0.5・グロー無しへ、ジャンクションのhover拡大(scale1.15)廃止。
+
+### その他
+- 括弧1個不足の構文エラーでページ全体が一時死んだ（`_cplx`行）。**教訓: 編集後は必ず「ページがRUNする」ことを確認**（レイヤー行数130で判定）。ブラウザでのSyntaxError行特定はblob URL+window 'error'リスナーが有効（new Functionは行番号を出さない）。
+
 ## R113 — Gemini 3.5 Flash / thinkingLevel:"low" migration: task-aware proxy + Structured Output + evidence-ID mapReport (no model web search) + provider-error classification (tag `#R113`)
 
 **Root cause (NOT "3.5 Flash Low is weak").** The old lightweight model hid design gaps by hallucinating; Gemini Low stops instead of inventing, so the gaps surfaced as `MALFORMED_FUNCTION_CALL` / empty responses. Confirmed complex problem: (1) the client told the model it had "a live web_search tool" that was NOT attached to the API request → the model tried a function call → `MALFORMED_FUNCTION_CALL`; (2) attaching Google Search grounding instead → Google-side `429` (Search-grounding quota, separate from IntMap credits); (3) JSON forced by prose alone (no Structured Output); (4) one `MAX_TOKENS=1600` for all tasks incl. 20-item `mapReport`; (5) AI free-generating coordinates/URLs/sources.

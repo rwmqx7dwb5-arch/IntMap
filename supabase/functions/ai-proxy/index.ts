@@ -278,8 +278,8 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     const b: Record<string, unknown> = {
       model,
       input: [{ role: "user", content }],
-      max_output_tokens: Math.min(12_000, maxTokens + (effort === "medium" ? 3_500 : 1_500)),
-      reasoning: { effort: effort === "medium" ? "medium" : "low" },
+      max_output_tokens: Math.min(12_000, maxTokens + (effort === "high" ? 5_000 : effort === "medium" ? 3_500 : 1_500)),
+      reasoning: { effort: effort === "high" ? "high" : effort === "medium" ? "medium" : "low" },   /* (#R117) pass "high" through (the old mapping silently crushed anything ≠ medium down to low) */
       store: false,
     };
     if (system) b.instructions = system;
@@ -506,6 +506,10 @@ Deno.serve(async (req) => {
 
   const task = String(payload.task || "free_text").toLowerCase();
   const webMode = String(payload.webMode || (payload.web === true ? "auto" : "off")).toLowerCase();
+  // (#R117) client complexity hint: a long / multi-clause / previously-failed request may ask the
+  // PLANNER (and analysis) to think at "high". Bounded: only these two tasks, only one step up —
+  // it cannot raise budgets elsewhere or be abused by other tasks.
+  const effortHint = String(payload.effortHint || "").toLowerCase();
   const web = webMode === "auto" || webMode === "required";
   const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
   const prompt = String(payload.prompt || "").slice(0, MAX_PROMPT);
@@ -538,7 +542,8 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
-      const effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
+      let effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
+      if (effortHint === "high" && (task === "atlas_plan" || task === "analysis")) effort = "high";   // (#R117) complexity hint
       try {
         out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort);
       } catch (e) {

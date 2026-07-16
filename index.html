@@ -1291,7 +1291,12 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
       /* (#R25) layer rows = a proper 44px iOS tap target. ROOT CAUSE of "Country borders を押すと place names
          がチェックされる / 勝手にレイヤーがオンになる": the rows were 32px tall (centers ~33px apart) — well below
          the 44pt minimum — so a finger aimed at one toggle routinely registered on the adjacent row. */
-      .m-sheet .layer-dropdown .layer-option{ padding:8px 6px; font-size:13.5px; min-height:44px; gap:10px; line-height:1.2; }
+      /* (#R117) mobile layers round 3 ("スマホ向けにしては小さい／余白が不均一／デスクトップ移植の域を出ない"):
+         phone-native list — 15px row text, 46px targets, even 8px side padding, a hairline BETWEEN rows
+         (iOS grouped-list feel) instead of ad-hoc gaps. */
+      .m-sheet .layer-dropdown .layer-option{ padding:10px 8px; font-size:15px; min-height:46px; gap:12px; line-height:1.25; border-bottom:1px solid rgba(128,128,128,0.10); border-radius:0; }
+      .m-sheet .layer-dropdown .layer-option:active{ background:rgba(128,128,128,0.10); }
+      .m-sheet .layer-dropdown .lyr-others-note{ font-size:12.5px; color:var(--text-muted); padding:2px 8px 6px; }
       /* (#R26) Kill the toggle "ちらつき" (flicker): a tap on a <label> that wraps a checkbox can fire the
          change TWICE on mobile (label forwards to the input AND the input gets the tap) → the box toggles
          on→off. Making the input pointer-events:none routes EVERY tap through the label exactly once, so it
@@ -1305,7 +1310,12 @@ if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=fun
          コントラストを"). A hairline separator + extra top margin makes each section read as a group. */
       /* (#R115) NO all-caps on mobile ("Do not use all-capital texts in layer classification names") — the
          category names keep their natural casing; desktop keeps its own style. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:18px 2px 5px !important; padding:0 4px 6px !important; font-size:15px !important; font-weight:800 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.22); }
+      /* (#R117) category names are NOT bold anymore ("レイヤー分類名は太字にしないで") — iOS-style section
+         labels: smaller than the rows, muted colour, generous top margin; the row hairlines carry the
+         grouping instead of a heavy underline. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:24px 2px 6px !important; padding:0 8px 4px !important; font-size:13px !important; font-weight:500 !important; color:var(--text-muted) !important; text-transform:none; letter-spacing:0.02em; min-height:0; cursor:default; border-bottom:none; }
+      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:500 !important; font-size:13px !important; color:var(--text-muted) !important; }
+      #mo-mount-layers #layer-tools button, #mo-mount-layers #layer-tools .btn-settings{ font-size:14.5px !important; padding:12px !important; border-radius:12px !important; }
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
          scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
       .m-sheet #layer-active-section .lyr-head{ text-transform:none !important; letter-spacing:0.01em !important; }
@@ -3389,6 +3399,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(body.webMode!=='off') body.web=true;   /* keep the legacy boolean in sync for the Anthropic native-search path */
       if(opts.requestedCount!=null && isFinite(+opts.requestedCount)) body.requestedCount=+opts.requestedCount;
       if(opts.schema && typeof opts.schema==='object') body.schema=opts.schema;
+      if(opts.effortHint) body.effortHint=String(opts.effortHint);   /* (#R117) complexity hint → planner/analysis may think at "high" server-side */
     }
     const r=await fetch(cfg.url,{method:'POST',headers,body:JSON.stringify(body)});
     if(r.status===401){ try{ openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
@@ -7559,13 +7570,17 @@ window.addEventListener('DOMContentLoaded', () => {
        ように動かせないゾーン"): each of the many candidate lines held the window for a 16px band of mouse travel.
        6px keeps the magnetic join while roughly halving the sticky zones. */
     const SNAP=6;
+    /* (#R117) invisible-wall killer #1: in a tiled layout MANY candidate lines sit 1–3px apart (each neighbour
+       contributes 2 edges), so their ±SNAP bands OVERLAPPED into wide sticky corridors. Merge candidates closer
+       than 3px into one line before snapping. #2: holding Alt disables snapping entirely (free drag/resize). */
+    function _dedupe(a){ const s=a.slice().sort((x,y)=>x-y), out=[]; for(const v of s){ if(!out.length||v-out[out.length-1]>3) out.push(v); } return out; }
     /* (#R79d) the workspace's usable rectangle: BELOW the 34px top menu bar, down to the TOP of the ticker
        (the ticker owns the real screen bottom — "下端はティッカーであり実画面の下端ではない"), full width.
        Everything measures against this so windows reach the real edges but never overlap the menu or hide
        behind the ticker. */
     function wsBounds(){ let tkH=0; try{ const tb=document.getElementById('ticker-bar'); if(document.body.classList.contains('ticker-on')&&tb&&getComputedStyle(tb).display!=='none') tkH=tb.offsetHeight||30; }catch(_){} return {top:34, bottom:innerHeight-tkH, left:0, right:innerWidth}; }
-    function xCands(w){ const b=wsBounds(); const a=[b.left,b.right]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return a; }
-    function yCands(w){ const b=wsBounds(); const a=[b.top,b.bottom]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return a; }
+    function xCands(w){ const b=wsBounds(); const a=[b.left,b.right]; others(w).forEach(o=>a.push(o.offsetLeft,o.offsetLeft+o.offsetWidth)); return _dedupe(a); }
+    function yCands(w){ const b=wsBounds(); const a=[b.top,b.bottom]; others(w).forEach(o=>a.push(o.offsetTop,o.offsetTop+o.offsetHeight)); return _dedupe(a); }
     function nearest(cands,v){ let b=null,bd=SNAP+0.001; cands.forEach(c=>{ const d=Math.abs(v-c); if(d<bd){ bd=d; b=c; } }); return b; }
     function minOf(w){ return (w&&w.__wsMin)||[220,140]; }
     function wsDrag(w,tb){
@@ -7573,6 +7588,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ bringToFront(w); }catch(_){}
         const sx=e.clientX,sy=e.clientY,sl=w.offsetLeft,st=w.offsetTop,cx=xCands(w),cy=yCands(w),B=wsBounds();
         const mv=ev=>{ let l=sl+ev.clientX-sx,t=st+ev.clientY-sy; hideG();
+          if(ev.altKey){ l=Math.max(-w.offsetWidth+90,Math.min(innerWidth-90,l)); t=Math.max(B.top,Math.min(B.bottom-28,t)); w.style.left=l+'px'; w.style.top=t+'px'; try{ showAdjAny(w); }catch(_){} return; }   /* (#R117) Alt = free drag, no magnetism */
           /* snap either edge (left/right, top/bottom) to any candidate line */
           const sxl=nearest(cx,l), sxr=nearest(cx,l+w.offsetWidth);
           if(sxl!=null&&(sxr==null||Math.abs(sxl-l)<=Math.abs(sxr-(l+w.offsetWidth)))){ l=sxl; showG('v',sxl); }
@@ -7623,13 +7639,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const mv=ev=>{ const dx=ev.clientX-sx, dy=ev.clientY-sy; hideG();
           if(vX!=null){ let nx=vX+dx, lo=B.left+90, hi=B.right-90;
             vLeft.forEach(p=>{ lo=Math.max(lo,p.l+(minOf(p.o)[0]||160)); }); vRight.forEach(p=>{ hi=Math.min(hi,p.r-(minOf(p.o)[0]||160)); });
-            if(!vShared){ const sn=nearest(cxSnap,nx); if(sn!=null&&sn>=lo&&sn<=hi) nx=sn; }
+            if(!vShared&&!ev.altKey){ const sn=nearest(cxSnap,nx); if(sn!=null&&sn>=lo&&sn<=hi) nx=sn; }   /* (#R117) Alt = free resize */
             nx=Math.max(lo,Math.min(hi,nx)); showG('v',nx);
             vLeft.forEach(p=>{ p.o.style.left=p.l+'px'; p.o.style.width=Math.max(120,nx-p.l)+'px'; });
             vRight.forEach(p=>{ p.o.style.left=nx+'px'; p.o.style.width=Math.max(120,p.r-nx)+'px'; }); }
           if(hY!=null){ let ny=hY+dy, lo=B.top+70, hi=B.bottom-70;
             hTop.forEach(p=>{ lo=Math.max(lo,p.t+(minOf(p.o)[1]||120)); }); hBot.forEach(p=>{ hi=Math.min(hi,p.bt-(minOf(p.o)[1]||120)); });
-            if(!hShared){ const sn=nearest(cySnap,ny); if(sn!=null&&sn>=lo&&sn<=hi) ny=sn; }
+            if(!hShared&&!ev.altKey){ const sn=nearest(cySnap,ny); if(sn!=null&&sn>=lo&&sn<=hi) ny=sn; }   /* (#R117) Alt = free resize */
             ny=Math.max(lo,Math.min(hi,ny)); showG('h',ny);
             hTop.forEach(p=>{ p.o.style.top=p.t+'px'; p.o.style.height=Math.max(90,ny-p.t)+'px'; });
             hBot.forEach(p=>{ p.o.style.top=ny+'px'; p.o.style.height=Math.max(90,p.bt-ny)+'px'; }); }
@@ -7676,10 +7692,10 @@ window.addEventListener('DOMContentLoaded', () => {
         +'.ws-dot:active{filter:brightness(0.85);}'
         /* (#R116) join/snap indicators TONED DOWN ("ハイライトアニメーションが大げさすぎる"): a slim guide with a
            faint glow — visible, not theatrical. */
-        +'.ws-guide{position:fixed;z-index:5995;background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:0.85;box-shadow:0 0 4px rgba(10,132,255,0.45);}'
+        +'.ws-guide{position:fixed;z-index:5995;background:var(--primary-color,#0a84ff);display:none;pointer-events:none;opacity:0.5;box-shadow:none;}'   /* (#R117) quieter still: hairline, no glow ("ハイライトアニメーションが大げさ") */
         /* (#R83) draggable junction handle where 3+ panes meet — moves both dividers at once */
         +'.ws-junction{position:fixed;z-index:947;width:18px;height:18px;border-radius:50%;transform:translate(-50%,-50%);cursor:move;background:rgba(10,132,255,0.16);border:1.5px solid rgba(10,132,255,0.55);touch-action:none;transition:background .12s ease,transform .12s ease;}'
-        +'.ws-junction:hover{background:rgba(10,132,255,0.55);transform:translate(-50%,-50%) scale(1.15);}'
+        +'.ws-junction:hover{background:rgba(10,132,255,0.38);}'   /* (#R117) no grow-on-hover — the scale pop read as an exaggerated highlight */
         +'body.capture-mode .ws-junction{display:none !important;}'
         +'.ws-gv{top:0;bottom:0;width:3px;}.ws-gh{left:0;right:0;height:3px;}'
         /* (#R102) ADJACENCY indicator — hovering a window edge that is shared with a neighbour lights up exactly that
@@ -7689,7 +7705,7 @@ window.addEventListener('DOMContentLoaded', () => {
            a crisp bright bar on the shared edge with a soft glow + a gentle pulse so the exact join reads at a glance.
            Simple & minimal — only the shared segment, only while hovering/dragging/resizing an abutting edge. */
         /* (#R116) NO pulse, faint glow — the pulsing glow bar was "大げさ". A steady slim bar reads just as well. */
-        +'.ws-adj{position:fixed;z-index:944;background:var(--primary-color,#0a84ff);opacity:0.8;border-radius:3px;pointer-events:none;display:none;box-shadow:0 0 4px rgba(10,132,255,0.4);}'
+        +'.ws-adj{position:fixed;z-index:944;background:var(--primary-color,#0a84ff);opacity:0.5;border-radius:3px;pointer-events:none;display:none;box-shadow:none;}'   /* (#R117) steady, subtle join bar — no glow */
         +'body.capture-mode .ws-adj{display:none !important;}'
         +'.ws-body{flex:1 1 auto;min-height:0;position:relative;display:flex;}'
         +'.ws-body>*{flex:1 1 auto;min-width:0;min-height:0;box-shadow:none !important;border-radius:0 !important;}'
@@ -15566,7 +15582,8 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'RESOLVE / WWF Ecoregions 2017',u:'https://ecoregions.appspot.com/',use:{en:'Terrestrial ecoregions',jp:'生態地域（エコリージョン）'}},
     {n:'Smithsonian GVP',u:'https://volcano.si.edu/',use:{en:'Holocene volcanoes',jp:'火山（完新世）'}},
     {n:'DeepStateMap',u:'https://deepstatemap.live/',use:{en:'Ukraine frontline (beta layer)',jp:'ウクライナ前線（ベータ）'}},
-    {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders — both the beta overlay layer AND the map’s own borders + country names when the time machine travels to a past year (nearest snapshot)',jp:'過去の国境 — ベータのオーバーレイに加え、タイムマシンで過去へ移動した際の地図本体の国境線・国名（最寄りのスナップショット）'}},
+    {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders — the beta overlay layer, and the automatic fallback for the map’s own past-year borders (nearest snapshot)',jp:'過去の国境 — ベータのオーバーレイと、タイムマシン用年次国境が読めない場合の自動フォールバック（最寄りのスナップショット）'}},
+    {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/',use:{en:'Yearly international borders 1886–2019 for the time machine (each border change dated to the year; self-hosted simplified copy)',jp:'タイムマシンの年次国境（1886–2019年、国境変更を年単位で反映。簡略化した複製を自己ホスト）'}},
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/',use:{en:'Authoritative HISTORICAL real GDP (constant 2011 international $) & population back to 1900 for the Time-machine — the Countries tab, choropleths & country comparison when travelling before the World Bank’s 1960 floor and for dissolved states (Former USSR/Yugoslavia/Czechoslovakia are first-class Maddison entities)',jp:'歴史的な実質GDP（2011年国際ドル）・人口（1900年以降）の権威あるデータ。タイムマシンで世界銀行の下限（1960年）より前へ移動した場合や旧国家（ソ連・ユーゴ・チェコスロバキア等はマディソンの独立項目）の国タブ・コロプレス・国比較に使用'}},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators (time-series charts, the 5-country comparison, and the Time-machine — the whole Countries tab, the hover read-outs and the country choropleths show the real figures for the year the master clock is set to)',jp:'国別の時系列指標（時系列グラフ・最大5か国比較、そしてタイムマシン——マスター時計で選んだ年の実データを国タブ・ホバー・コロプレスに反映）'}},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO',use:{en:'Govt-debt layer gap-fill + the alternative economic source in the country comparison (DataMapper API)',jp:'政府債務レイヤーの欠損補完＋国比較の経済指標の切替ソース（DataMapper API）'}},
@@ -15970,6 +15987,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_PERSIA=flag('<rect width="30" height="6.667" fill="#239F40"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DA0000"/><circle cx="15" cy="10" r="2.3" fill="#E8B800"/>');
     const F_SIAM=flag('<rect width="30" height="20" fill="#A51931"/><rect y="4" width="30" height="12" fill="#ffffff"/><rect y="7" width="30" height="6" fill="#2D2A4A"/>');
     const F_NLD=flag('<rect width="30" height="6.667" fill="#AE1C28"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#21468B"/>');
+    /* (#R117) era flags for the expanded identities */
+    const STARH=(cx,cy)=>'<g transform="translate('+cx+','+cy+') scale(1.05)"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="#ffffff"/></g>';
+    const F_RUEH=flag('<rect width="30" height="6.667" fill="#ffffff"/><rect y="6.667" width="30" height="6.667" fill="#0039A6"/><rect y="13.333" width="30" height="6.667" fill="#D52B1E"/>');
+    const F_RSFSR=flag('<rect width="30" height="20" fill="#CC0000"/><rect x="1.6" y="1.6" width="9" height="4.6" fill="none" stroke="#FFD700" stroke-width="0.5"/>');
+    const F_ESP2=flag('<rect width="30" height="6.667" fill="#AD1519"/><rect y="6.667" width="30" height="6.667" fill="#FABD00"/><rect y="13.333" width="30" height="6.667" fill="#63307A"/>');
+    const F_PTK=flag('<rect width="30" height="20" fill="#ffffff"/><rect width="12" height="20" fill="#003399"/><circle cx="12" cy="10" r="3.4" fill="#DA0000" stroke="#FFD700" stroke-width="0.7"/>');
+    const F_BRE=flag('<rect width="30" height="20" fill="#009B3A"/><path d="M15,2.4 27,10 15,17.6 3,10Z" fill="#FEDF00"/><circle cx="15" cy="10" r="3.4" fill="#002776"/>');
+    const F_EGYK=flag('<rect width="30" height="20" fill="#006233"/><circle cx="13.4" cy="10" r="4.6" fill="#ffffff"/><circle cx="15.1" cy="10" r="3.8" fill="#006233"/>'+STARH(18.2,7.4)+STARH(19.6,10)+STARH(18.2,12.6));
     const ID={
       CHN:[{from:1636,to:1912,name:{en:'Qing Empire',jp:'清',de:'Qing-Reich',ru:'Империя Цин',es:'Imperio Qing'},flag:F_QING,wiki:'Qing dynasty'},
            {from:1912,to:1949,name:{en:'Republic of China',jp:'中華民国',de:'Republik China',ru:'Китайская Республика',es:'República de China'},flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
@@ -15979,7 +16004,16 @@ window.addEventListener('DOMContentLoaded', () => {
       ITA:[{from:1861,to:1946,name:{en:'Kingdom of Italy',jp:'イタリア王国',de:'Königreich Italien',ru:'Королевство Италия',es:'Reino de Italia'},flag:F_ITK,wiki:'Kingdom of Italy'}],
       IRN:[{from:1800,to:1935,name:{en:'Persia',jp:'ペルシャ',de:'Persien',ru:'Персия',es:'Persia'},flag:F_PERSIA,wiki:'Qajar Iran'}],
       THA:[{from:1800,to:1939,name:{en:'Siam',jp:'シャム',de:'Siam',ru:'Сиам',es:'Siam'},flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
-      IDN:[{from:1800,to:1945,name:{en:'Dutch East Indies',jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'},flag:F_NLD,wiki:'Dutch East Indies'}]
+      IDN:[{from:1800,to:1945,name:{en:'Dutch East Indies',jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'},flag:F_NLD,wiki:'Dutch East Indies'}],
+      /* (#R117) 歴史国家拡充 — more per-era identities (era name + era flag + era Wikipedia on the country card) */
+      JPN:[{from:1868,to:1946,name:{en:'Empire of Japan',jp:'大日本帝国',de:'Japanisches Kaiserreich',ru:'Японская империя',es:'Imperio del Japón'},wiki:'Empire of Japan'}],   /* 日章旗 = the modern flag — keep it */
+      RUS:[{from:1721,to:1917,name:{en:'Russian Empire',jp:'ロシア帝国',de:'Russisches Kaiserreich',ru:'Российская империя',es:'Imperio ruso'},flag:F_RUEH,wiki:'Russian Empire'},
+           {from:1918,to:1922,name:{en:'Soviet Russia (RSFSR)',jp:'ソビエト・ロシア（ロシアSFSR）',de:'Sowjetrussland (RSFSR)',ru:'Советская Россия (РСФСР)',es:'Rusia soviética (RSFSR)'},flag:F_RSFSR,wiki:'Russian Soviet Federative Socialist Republic'}],
+      GBR:[{from:1801,to:1926,name:{en:'United Kingdom of Great Britain and Ireland',jp:'グレートブリテン・アイルランド連合王国',de:'Vereinigtes Königreich Großbritannien und Irland',ru:'Соединённое Королевство Великобритании и Ирландии',es:'Reino Unido de Gran Bretaña e Irlanda'},wiki:'United Kingdom of Great Britain and Ireland'}],
+      ESP:[{from:1931,to:1939,name:{en:'Spanish Republic',jp:'スペイン第二共和政',de:'Zweite Spanische Republik',ru:'Вторая Испанская Республика',es:'Segunda República Española'},flag:F_ESP2,wiki:'Second Spanish Republic'}],
+      PRT:[{from:1800,to:1910,name:{en:'Kingdom of Portugal',jp:'ポルトガル王国',de:'Königreich Portugal',ru:'Королевство Португалия',es:'Reino de Portugal'},flag:F_PTK,wiki:'Kingdom of Portugal'}],
+      BRA:[{from:1822,to:1889,name:{en:'Empire of Brazil',jp:'ブラジル帝国',de:'Kaiserreich Brasilien',ru:'Бразильская империя',es:'Imperio del Brasil'},flag:F_BRE,wiki:'Empire of Brazil'}],
+      EGY:[{from:1922,to:1952,name:{en:'Kingdom of Egypt',jp:'エジプト王国',de:'Königreich Ägypten',ru:'Королевство Египет',es:'Reino de Egipto'},flag:F_EGYK,wiki:'Kingdom of Egypt'}]
     };
     function at(code,year){ const arr=ID[code]; if(!arr||!year) return null; for(const e of arr){ if(year>=e.from&&year<=e.to) return e; } return null; }
     let _applied=null;
@@ -15988,7 +16022,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function apply(date){ clear(); const year=new Date(date).getFullYear(); const saved={};
       for(const code in ID){ const s=countryStats[code]; if(!s||s._histHidden) continue; const e=at(code,year); if(!e) continue;
         saved[code]={nameEn:s.nameEn,nameJp:s.nameJp,name:s.name,flag:s.flag,wiki:s.wiki,_hid:!!s._histId};
-        s.nameEn=e.name.en; s.nameJp=e.name.jp; s.name=e.name; s.flag=e.flag; s.wiki=e.wiki; s._histId=true; }
+        s.nameEn=e.name.en; s.nameJp=e.name.jp; s.name=e.name; s.flag=(e.flag||s.flag); s.wiki=e.wiki; s._histId=true; }   /* (#R117) an entry without an era flag keeps the country's own flag (e.g. Empire of Japan = 日章旗) */
       if(Object.keys(saved).length) _applied=saved; }
     return { at, apply, clear, _applied:()=>_applied };
   })();
@@ -22993,7 +23027,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body.fs-flying .ws-win.ws-map{position:fixed !important;inset:0 !important;left:0 !important;top:0 !important;width:100vw !important;height:100vh !important;z-index:6000 !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:#000 !important;}'
         +'body.fs-flying .ws-win.ws-map .ws-tb,body.fs-flying .ws-win.ws-map .ws-grip{display:none !important;}'
         +'body.fs-flying #ws-menu,body.fs-flying #ticker-bar,body.fs-flying .ws-win:not(.ws-map){display:none !important;}'
-        +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying .ai-view-summary-btn,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend,body.fs-flying #news-timeline{display:none !important;}'   /* (#R103) hide the time-machine button during flight */
+        +'body.fs-flying #map-search,body.fs-flying .map-controls-top,body.fs-flying .maplibregl-control-container,body.fs-flying #coord-readout,body.fs-flying .ai-view-summary-btn,body.fs-flying #layer-sidebar-r,body.fs-flying #lsr-toggle,body.fs-flying .sat-controller,body.fs-flying #sat-controller,body.fs-flying .btn-toggle-sidebar,body.fs-flying .data-legend,body.fs-flying .koppen-legend,body.fs-flying #news-timeline,body.fs-flying .maplibregl-popup{display:none !important;}'   /* (#R117) + any already-open feature popup stays hidden during flight */   /* (#R103) hide the time-machine button during flight */
         +'#fs-hud .fs-vign{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 200px 34px rgba(0,0,0,0.5),inset 0 0 70px 0 rgba(0,0,0,0.28);}'
         +'#fs-hud .fs-ladder{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;}'
         +'#fs-hud .fs-bore{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 0 3px rgba(0,0,0,0.7));}'
@@ -23005,12 +23039,18 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-thrfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#34c759,#ffd60a,#ff453a);}'
         +'#fs-hud .fs-thrlbl{position:absolute;left:14px;bottom:174px;font-size:10px;color:#8fb8e0;}'
         +'#fs-hud .fs-hint{position:absolute;left:64px;bottom:16px;font-size:10.5px;color:#bcd6f0;text-align:left;line-height:1.6;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.3);border-radius:9px;padding:7px 10px;}'   /* (#R100) moved off the bottom-right so it no longer overlaps the minimap */
-        +'#fs-hud .fs-warn{position:absolute;left:50%;top:20%;transform:translateX(-50%);font-size:22px;font-weight:800;color:#ff453a;text-shadow:0 2px 8px #000;display:none;}'
+        +'#fs-hud .fs-warn{position:absolute;left:50%;top:116px;transform:translateX(-50%);font-size:22px;font-weight:800;color:#ff453a;text-shadow:0 2px 8px #000;display:none;background:rgba(6,10,18,0.55);border-radius:8px;padding:2px 14px;white-space:nowrap;z-index:8;}'   /* (#R117) fixed slot BELOW the heading tape + badge + config chips — no more overlap with the fighter heading tape */
         +'#fs-hud .fs-x{position:absolute;right:14px;top:112px;pointer-events:auto;background:rgba(255,69,58,0.85);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}'   /* (#R100) below the altitude panel (was overlapping it) */
         +'#fs-hud .fs-heading{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:22px;font-weight:700;background:rgba(6,14,24,0.42);border:1px solid rgba(120,190,255,0.35);border-radius:9px;padding:4px 14px;}'
-        +'#fs-hud .fs-btns{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:none;gap:6px;pointer-events:auto;}'
-        +'@media(hover:none){#fs-hud .fs-btns{display:flex;} #fs-hud .fs-adi{bottom:70px;}}'
-        +'#fs-hud .fs-btns button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(120,190,255,0.4);background:rgba(6,14,24,0.5);color:#e8f4ff;font-size:17px;}'
+        +'#fs-hud .fs-btns{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;gap:26px;pointer-events:auto;z-index:9;}'
+        +'#fs-hud .fs-btns button{min-width:64px;height:44px;border-radius:22px;border:1px solid rgba(120,190,255,0.4);background:rgba(6,14,24,0.55);color:#e8f4ff;font-size:12px;font-weight:700;padding:0 12px;}'
+        /* (#R117) analog touch stick (right thumb): pitch + roll with natural centre return; knob follows the finger */
+        +'#fs-hud .fs-stick{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,rgba(10,22,38,0.30),rgba(6,14,24,0.55));border:1.5px solid rgba(120,190,255,0.40);display:none;pointer-events:auto;touch-action:none;z-index:9;}'
+        +'#fs-hud .fs-stick-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(120,190,255,0.28);border:1.5px solid rgba(160,215,255,0.75);box-shadow:0 2px 8px rgba(0,0,0,0.5);}'
+        +'@media(hover:none){#fs-hud .fs-btns{display:flex;left:calc(70px + env(safe-area-inset-left,0px));transform:none;} #fs-hud .fs-stick{display:block;} #fs-hud .fs-adi{bottom:70px;}'
+          +'#fs-hud .fs-thr{width:40px;pointer-events:auto;touch-action:none;height:140px;bottom:calc(20px + env(safe-area-inset-bottom,0px));} #fs-hud .fs-thrlbl{bottom:calc(166px + env(safe-area-inset-bottom,0px));}'
+          +'#fs-hud .fs-minimap{left:8px;right:auto;bottom:calc(170px + env(safe-area-inset-bottom,0px));} #fs-hud .fs-act{min-width:48px;height:44px;}}'
+        +'@media(hover:none) and (max-height:480px){#fs-hud .fs-deck{grid-template-columns:repeat(4,1fr);top:8px;bottom:auto;transform:none;right:150px;} #fs-hud .fs-minimap{left:auto;right:164px;bottom:12px;}}'   /* (#R117) landscape phones: deck as a 4-wide strip top-right, map clear of the stick */
         /* (#R84) game-grade HUD: scrolling heading tape, banking aircraft symbol, altitude sky tint, boost bar */
         +'#fs-hud .fs-htape{position:absolute;left:50%;top:12px;transform:translateX(-50%);width:min(360px,64vw);height:26px;overflow:hidden;background:rgba(6,14,24,0.5);border:1px solid rgba(120,190,255,0.35);border-radius:8px;}'
         +'#fs-hud .fs-htape-strip{position:absolute;top:0;bottom:0;left:0;will-change:transform;}'
@@ -23025,6 +23065,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-mm-n{position:absolute;left:8px;top:7px;width:18px;height:18px;pointer-events:none;z-index:2;filter:drop-shadow(0 1px 2px #000);}'
         +'#fs-hud .fs-mm-lbl{position:absolute;left:0;right:0;bottom:0;font-size:9.5px;color:#cfe6ff;background:rgba(6,14,24,0.62);text-align:center;padding:2px 0;pointer-events:none;letter-spacing:0.02em;z-index:2;}'
         +'@media(max-width:640px){#fs-hud .fs-minimap{width:118px;height:118px;bottom:150px;right:8px;}}'
+        +'@media(max-height:720px) and (min-width:641px){#fs-hud .fs-minimap{width:128px;height:128px;}}'   /* (#R117) shorter desktop windows: smaller map keeps clear of the 2-col deck */
         +'#fs-hud .fs-sky{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% -10%, rgba(10,30,80,0.0), rgba(4,10,30,0.0) 60%, rgba(2,6,20,0.55) 100%);opacity:0;transition:opacity .4s ease;}'
         +'#fs-hud .fs-boost{position:absolute;left:44px;bottom:20px;width:8px;height:150px;background:rgba(6,14,24,0.42);border:1px solid rgba(255,140,60,0.4);border-radius:5px;overflow:hidden;}'
         +'#fs-hud .fs-boostfill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#ff9f0a,#ff453a);height:0;}'
@@ -23037,12 +23078,12 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#fs-hud .fs-aircraft{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:6;}'
         +'#fs-hud .fs-acchip{font-size:11px;font-weight:600;color:#cfe6ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.3);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left;white-space:nowrap;transition:.15s;}'
         +'#fs-hud .fs-acchip.on{background:#0a84ff;border-color:#0a84ff;color:#fff;}'
-        +'#fs-hud .fs-deck{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:6;}'
+        +'#fs-hud .fs-deck{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:repeat(2,minmax(60px,1fr));gap:5px;pointer-events:auto;z-index:6;}'   /* (#R117) 2-column grid — half the height, so the deck no longer reaches down into the minimap on shorter windows */
         +'#fs-hud .fs-act{min-width:60px;height:38px;font-size:11px;font-weight:700;color:#e8f4ff;background:rgba(6,14,24,0.55);border:1px solid rgba(120,190,255,0.32);border-radius:9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;transition:.15s;}'
         +'#fs-hud .fs-act small{font-size:8.5px;color:#8fb8e0;font-weight:600;}'
         +'#fs-hud .fs-act.on{background:#34c759;border-color:#34c759;color:#04120a;} #fs-hud .fs-act.on small{color:#04120a;}'
         +'#fs-hud .fs-act.amber.on{background:#ff9f0a;border-color:#ff9f0a;}'
-        +'@media(max-width:640px){#fs-hud .fs-aircraft,#fs-hud .fs-deck{top:auto;bottom:96px;transform:none;flex-direction:row;flex-wrap:wrap;max-width:44vw;} #fs-hud .fs-aircraft{left:8px;} #fs-hud .fs-deck{right:8px;justify-content:flex-end;} #fs-hud .fs-act{min-width:46px;height:34px;} #fs-hud .fs-hint{display:none;}}'
+        +'@media(max-width:640px){#fs-hud .fs-deck{top:auto;bottom:calc(158px + env(safe-area-inset-bottom,0px));transform:none;right:8px;} #fs-hud .fs-act{min-width:48px;height:44px;} #fs-hud .fs-hint{display:none;}}'   /* (#R117) ≥44px touch targets; the deck sits above the stick zone */
         /* (#R101) analog SIX-PACK (Cessna / warbird / glider) — 2×3 round gauges, bottom-centre */
         +'#fs-hud .fs-sixpack{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,90px);grid-auto-rows:90px;gap:9px;pointer-events:none;z-index:5;}'
         +'#fs-hud .fs-g6{position:relative;width:90px;height:90px;background:radial-gradient(circle at 50% 40%,#212832,#0a0e13);border:2px solid #313b46;border-radius:50%;box-shadow:0 3px 10px rgba(0,0,0,0.6),inset 0 0 0 3px #05080b;}'
@@ -23086,11 +23127,18 @@ window.addEventListener('DOMContentLoaded', () => {
       const vb=q('.fs-deck [data-act="v"]'); if(vb) vb.classList.toggle('on',stabilizeCam); }
     /* (#R101) ---- shared HUD chrome (same for every aircraft): vignette, hint, warn, exit, touch pad, name badge,
        config chips, control deck and the moving-map / ND. Split out so the six-pack & PFD reuse it. ---- */
-    function _fsHint(){ return '<div class="fs-hint">'+LL('W/S throttle · Shift afterburner<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space airbrake<br>V camera-level · M map<br>P pause · R reset · Esc exit','W/S 出力 · Shift ブースト<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space 抵抗板<br>V 視点水平 · M 地図<br>P 一時停止 · R 復帰 · Esc 終了','W/S Schub · Shift Nachbrenner<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Kamera-Horizont · M Karte<br>P Pause · R Reset · Esc Ende','W/S тяга · Shift форсаж<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V камера-горизонт · M карта<br>P пауза · R сброс · Esc выход','W/S gas · Shift poscombustión<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V cámara-horizonte · M mapa<br>P pausa · R reinicio · Esc salir')+'</div>'; }
-    function sharedChromeHTML(){ return '<div class="fs-vign"></div>'+_fsHint()
+    function _fsHint(ac){ const abL=(ac&&ac.ab)?LL(' · Shift afterburner',' · Shift アフターバーナー',' · Shift Nachbrenner',' · Shift форсаж',' · Shift poscombustión'):'';   /* (#R117) the afterburner shortcut is only listed on aircraft that HAVE one (it was shown — invalid — on the Cessna/glider too) */
+      return '<div class="fs-hint">'+LL('W/S throttle'+abL+'<br>↑↓ pitch · ←→ roll · A/D rudder<br>F flaps · G gear · Space brake/airbrake<br>V camera-level · M map<br>P pause · R reset · Esc exit','W/S 出力'+abL+'<br>↑↓ ピッチ · ←→ ロール · A/D ラダー<br>F フラップ · G 脚 · Space ブレーキ/抵抗板<br>V 視点水平 · M 地図<br>P 一時停止 · R 復帰 · Esc 終了','W/S Schub'+abL+'<br>↑↓ Nick · ←→ Roll · A/D Ruder<br>F Klappen · G Fahrwerk · Space Bremse<br>V Kamera-Horizont · M Karte<br>P Pause · R Reset · Esc Ende','W/S тяга'+abL+'<br>↑↓ тангаж · ←→ крен · A/D руль<br>F закрылки · G шасси · Space тормоз<br>V камера-горизонт · M карта<br>P пауза · R сброс · Esc выход','W/S gas'+abL+'<br>↑↓ cabeceo · ←→ alabeo · A/D timón<br>F flaps · G tren · Space freno<br>V cámara-horizonte · M mapa<br>P pausa · R reinicio · Esc salir')+'</div>'; }
+    function sharedChromeHTML(){ return '<div class="fs-vign"></div>'+_fsHint(AC())
       +'<div class="fs-warn">'+LL('STALL','失速','STRÖMUNGSABRISS','СВАЛИВАНИЕ','PÉRDIDA')+'</div>'
       +'<button class="fs-x">✕ '+LL('Exit','終了','Ende','Выход','Salir')+'</button>'
-      +'<div class="fs-btns"><button data-k="arrowleft">←</button><button data-k="arrowdown">▼</button><button data-k="arrowup">▲</button><button data-k="arrowright">→</button><button data-k="w">+</button><button data-k="s">−</button></div>'
+      /* (#R117) touch controls: a REAL analog stick (pitch+roll, natural centre return) + the throttle bar is draggable
+         + a rudder button pair. The old 6 tiny arrow buttons are replaced by the stick (they were the roll/pitch/throttle
+         taps); every control they offered is still available (stick=↑↓←→, throttle bar=W/S, deck=rest). */
+      +'<div class="fs-btns"><button data-k="a">◀ '+LL('RUD','ラダー','SR','РН','TIM')+'</button><button data-k="d">'+LL('RUD','ラダー','SR','РН','TIM')+' ▶</button></div>'
+      +'<div class="fs-stick"><div class="fs-stick-knob"></div></div>'
+      +'<div class="fs-thrlbl">'+LL('THR','出力','SCHUB','ТЯГА','GAS')+'</div><div class="fs-thr"><div class="fs-thrfill" style="height:0%"></div></div>'
+      +'<div class="fs-boost"><div class="fs-boostfill"></div></div>'
       +'<div class="fs-acbadge"><span class="fs-acname">—</span><span class="fs-mach"></span></div>'
       +'<div class="fs-config"><span class="fs-cfg fs-cfg-flaps">FLAPS</span><span class="fs-cfg fs-cfg-gear">GEAR</span><span class="fs-cfg fs-cfg-cam">CAM</span></div>'
       +'<div class="fs-deck">'
@@ -23117,10 +23165,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<svg class="fs-ladder" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice"><g class="fs-ladder-g">'+ladder+'</g><g><polygon points="500,318 489,300 511,300" fill="rgba(99,255,155,0.6)"/><polygon class="fs-rollptr" points="500,306 489,286 511,286" fill="#ffd60a" stroke="#0a1a2e" stroke-width="1"/></g></svg>'
         +'<svg class="fs-bore" width="164" height="46" viewBox="0 0 164 46"><g stroke="#ffd60a" stroke-width="3.2" fill="none" stroke-linecap="round"><path d="M18 22 L62 22 L72 34"/><path d="M146 22 L102 22 L92 34"/></g><circle cx="82" cy="22" r="2.8" fill="#ffd60a"/></svg>'
         +'<div class="fs-htape"><div class="fs-htape-strip">'+hlab+'</div><div class="fs-htape-ptr"></div></div><div class="fs-hdg-box"><span class="fs-hdg">---</span></div>'
-        +'<div class="fs-boost"><div class="fs-boostfill"></div></div>'
         +'<div class="fs-panel fs-tl"><div class="fs-k">'+LL('AIRSPEED','対気速度','GESCHW.','СКОРОСТЬ','VELOCIDAD')+'</div><div class="fs-v"><span class="fs-spd">0</span> <span style="font-size:11px;">km/h</span></div><div class="fs-k" style="margin-top:6px;">'+LL('V/SPEED','昇降','V/S','ВЕРТ.','V/S')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-vs">0</span> <span style="font-size:10px;">m/s</span></div></div>'
         +'<div class="fs-panel fs-tr"><div class="fs-k">'+LL('ALTITUDE','高度','HÖHE','ВЫСОТА','ALTITUD')+'</div><div class="fs-v"><span class="fs-alt">0</span> <span style="font-size:11px;">m</span></div><div class="fs-k" style="margin-top:6px;">'+LL('AGL','対地高度','ÜBER GRUND','НАД ЗЕМЛЁЙ','SOBRE SUELO')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-agl">0</span> <span style="font-size:10px;">m</span></div></div>'
-        +'<div class="fs-thrlbl">'+LL('THR','出力','SCHUB','ТЯГА','GAS')+'</div><div class="fs-thr"><div class="fs-thrfill" style="height:60%"></div></div>'
         +'<svg class="fs-adi" viewBox="0 0 120 120"><defs><clipPath id="fsc"><circle cx="60" cy="60" r="52"/></clipPath></defs>'
           +'<g clip-path="url(#fsc)"><g class="fs-hor"><rect x="-80" y="-140" width="280" height="200" fill="#4a90d9"/><rect x="-80" y="60" width="280" height="200" fill="#7a5230"/><line x1="-80" y1="60" x2="200" y2="60" stroke="#fff" stroke-width="2"/>'
             +'<line x1="30" y1="40" x2="90" y2="40" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><line x1="30" y1="80" x2="90" y2="80" stroke="rgba(255,255,255,0.6)" stroke-width="1"/></g></g>'
@@ -23163,7 +23209,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="pfd-tape pfd-alt"><div class="pfd-strip pfd-alt-strip">'+alt+'</div></div><div class="pfd-box pfd-alt-box" style="right:1px;left:auto;width:50px;">0</div>'
         +'<div class="pfd-hdg"><div class="pfd-hdg-strip">'+hdg+'</div><div class="pfd-hdg-ptr"></div></div>'
       +'</div>'; }
-    function buildHUD(){ css(); const disp=(AC().disp)||'hud'; hud=document.createElement('div'); hud.id='fs-hud'; hud.dataset.disp=disp;
+    function buildHUD(){ css(); try{ document.querySelectorAll('#fs-hud').forEach(h=>h.remove()); }catch(_){}   /* (#R117) never leave a stale HUD behind (a leftover .fs-warn kept shouting CRASHED into the next flight) */
+      const disp=(AC().disp)||'hud'; hud=document.createElement('div'); hud.id='fs-hud'; hud.dataset.disp=disp;
       hud.innerHTML=(disp==='sixpack'?sixpackHTML(AC()):disp==='glass'?glassHTML(AC()):hudInstrHTML())+sharedChromeHTML();
       document.body.appendChild(hud);
       hud.querySelector('.fs-x').onclick=()=>stop();
@@ -23174,6 +23221,27 @@ window.addEventListener('DOMContentLoaded', () => {
       hud.querySelectorAll('.fs-deck [data-hold]').forEach(b=>{ const k=b.getAttribute('data-hold');
         const dn=e=>{ e.preventDefault(); keys[k]=true; }, up=e=>{ e.preventDefault(); keys[k]=false; };
         b.addEventListener('pointerdown',dn); b.addEventListener('pointerup',up); b.addEventListener('pointerleave',up); });
+      /* (#R117) analog stick: continuous pitch/roll from the finger offset, natural centre-return on release */
+      const stick=hud.querySelector('.fs-stick'), knob=hud.querySelector('.fs-stick-knob');
+      if(stick&&knob){ let sid=null;
+        const setFrom=e=>{ const r=stick.getBoundingClientRect(), R=r.width/2-12;
+          let dx=(e.clientX-(r.left+r.width/2))/R, dy=(e.clientY-(r.top+r.height/2))/R;
+          const m=Math.hypot(dx,dy); if(m>1){ dx/=m; dy/=m; }
+          if(st){ st._tR=dx; st._tP=-dy; }                       /* drag DOWN = pull = nose up (elev −1) */
+          knob.style.transform='translate('+(dx*R).toFixed(0)+'px,'+(dy*R).toFixed(0)+'px)'; };
+        const clear=()=>{ sid=null; if(st){ st._tR=null; st._tP=null; } knob.style.transform=''; };
+        stick.addEventListener('pointerdown',e=>{ e.preventDefault(); sid=e.pointerId; try{ stick.setPointerCapture(sid); }catch(_){} setFrom(e); });
+        stick.addEventListener('pointermove',e=>{ if(sid!=null&&e.pointerId===sid) setFrom(e); });
+        stick.addEventListener('pointerup',e=>{ if(sid!=null&&e.pointerId===sid) clear(); });
+        stick.addEventListener('pointercancel',clear); }
+      /* (#R117) the throttle bar is a real control now (drag/click to set power — mouse or touch) */
+      const thrEl=hud.querySelector('.fs-thr');
+      if(thrEl){ let tid=null;
+        const setT=e=>{ const r=thrEl.getBoundingClientRect(); if(st) st.thr=Math.max(0,Math.min(1,1-(e.clientY-r.top)/r.height)); };
+        thrEl.addEventListener('pointerdown',e=>{ e.preventDefault(); tid=e.pointerId; try{ thrEl.setPointerCapture(tid); }catch(_){} setT(e); });
+        thrEl.addEventListener('pointermove',e=>{ if(tid!=null&&e.pointerId===tid) setT(e); });
+        const tEnd=e=>{ if(tid!=null&&e.pointerId===tid) tid=null; };
+        thrEl.addEventListener('pointerup',tEnd); thrEl.addEventListener('pointercancel',tEnd); }
       try{ syncHUDChrome(); }catch(_){} }
     /* ===== (#R96) moving-map / nav display — a small SECOND MapLibre map (track-up) that follows the aircraft, like a
        car-nav / FlightRadar mini map. It reuses the app's existing Esri World Imagery raster (no NEW data source). ===== */
@@ -23215,6 +23283,14 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R95) release every held key when the window/tab loses focus or a touch is cancelled (see start()). */
     function onLoseFocus(){ for(const k in keys) keys[k]=false; }
     function onVisChange(){ if(document.hidden) onLoseFocus(); }
+    /* (#R117) while flying, MAP FEATURES (place labels, POIs, boundaries…) must be display-only: swallow every
+       pointer/click event aimed at the map canvas at the CAPTURE phase, so map.on('click'/'mousemove') handlers
+       (label popups, Atlas outline, cursor changes, queryRenderedFeatures work) never even run — not a CSS veil.
+       The HUD lives outside the canvas and is untouched. Installed on start(), fully removed on stop(), so the
+       pre-flight event behaviour is restored exactly. */
+    const _FSBLOCK=['click','dblclick','contextmenu','pointerdown','pointerup','pointermove','mousedown','mouseup','mousemove','touchstart','touchend','touchmove','wheel'];
+    function _fsBlocker(e){ try{ const t=e.target;
+      if(t&&t.closest&&t.closest('#map-container')&&!t.closest('#fs-hud')){ e.stopPropagation(); } }catch(_){} }
     function addExtraHUD(){ if(!hud) return; const tl=hud.querySelector('.fs-tl'); if(tl&&!tl.querySelector('.fs-g')){ const d=document.createElement('div'); d.style.cssText='margin-top:6px;display:flex;gap:14px;'; d.innerHTML='<div><div class="fs-k">'+LL('LOAD','荷重','LAST','ПЕРЕГР.','CARGA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-g">1.0</span><span style="font-size:10px;">g</span></div></div><div><div class="fs-k">'+LL('AoA','迎角','AoA','УГОЛ','AoA')+'</div><div class="fs-v" style="font-size:15px;"><span class="fs-aoa">0</span><span style="font-size:10px;">°</span></div></div>'; tl.appendChild(d); } }
     let prevView=null;
     /* (#R97) a handful of real airports (ICAO, name, lat, lon, field-elevation m, a runway heading°) so the sim can
@@ -23245,15 +23321,29 @@ window.addEventListener('DOMContentLoaded', () => {
       const durS=Math.max(0,Math.round((performance.now()-(st._t0||performance.now())-_pMs)/1000));   /* (#R99) flight time excludes paused wall-time */
       const maxAltM=Math.round(st._maxAlt||st.alt), maxVk=Math.round((st._maxV||st.V)*3.6);
       const distKm=(st._dist||0);   /* (#R100) full-resolution accumulated distance (not summed from the decimated draw-path) */
-      /* (#R99) distinguish a runway landing (near a known airport) from an off-field one */
+      /* (#R99/#R117) distinguish a RUNWAY landing (aligned with the known runway axis, close to its centreline)
+         from "near <airport>" and from off-field. The airport table carries one runway heading; alignment = final
+         heading within ±20° of it (either direction) AND lateral offset from the runway line < 150 m. */
       let where=''; if(ok){ let bd=1e9,best=null; AIRPORTS.forEach(a=>{ const d=Math.hypot((a[2]-st.lat)*111.32,(a[3]-st.lng)*111.32*Math.cos(st.lat*Math.PI/180)); if(d<bd){bd=d;best=a;} });
-        where=(best&&bd<5)?(' · '+LL('near '+best[1],best[1]+' 周辺','bei '+best[1],'возле '+best[1],'cerca de '+best[1])):(' · '+LL('off-field','滑走路外','abseits','вне полосы','fuera de pista')); }   /* (#R100) no real runway geometry yet → "near <airport>", not a precise runway-landing claim */
+        if(best&&bd<5){ let rwy=false;
+          try{ const hd=_fsHdg(), dh=Math.abs(((hd-best[5])%180+270)%180-90);   /* 0 = parallel with the runway axis (either direction) */
+            const rr=best[5]*Math.PI/180, dx=(st.lng-best[3])*111.32*Math.cos(st.lat*Math.PI/180), dy=(st.lat-best[2])*111.32;
+            const xt=Math.abs(dx*Math.cos(rr)-dy*Math.sin(rr));               /* cross-track (km) from the line through the field along the runway heading */
+            rwy=(dh<=20 && xt<=0.15); }catch(_){}
+          where=' · '+(rwy?LL('runway landing — '+best[1],best[1]+' 滑走路に着陸','Landebahn — '+best[1],'на ВПП — '+best[1],'en pista — '+best[1])
+                         :LL('near '+best[1],best[1]+' 周辺（滑走路外）','bei '+best[1],'возле '+best[1],'cerca de '+best[1])); }
+        else where=' · '+LL('off-field','場外着陸','abseits','вне полосы','fuera de pista'); }
       const col=ok?'#34c759':'#ff453a', title=(ok?LL('✓ LANDED','✓ 着陸成功','✓ GELANDET','✓ ПОСАДКА','✓ ATERRIZÓ'):LL('✕ CRASHED','✕ 墜落','✕ ABGESTÜRZT','✕ КРУШЕНИЕ','✕ ACCIDENTE'))+where;
       const ov=document.createElement('div'); ov.id='fs-result';
       ov.style.cssText='position:fixed;inset:0;z-index:6060;background:rgba(4,10,20,0.86);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#e8f4ff;';   /* (#R102) above ws menu bar */
       const stat=(l,v)=>'<div><div style="font-size:10px;color:#8fb8e0;">'+l+'</div><b style="font-size:14px;">'+v+'</b></div>';
       ov.innerHTML='<div style="width:min(470px,95vw);background:linear-gradient(180deg,rgba(10,20,34,0.98),rgba(6,14,26,0.98));border:1px solid '+col+';border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6);">'
         +'<div style="font-size:22px;font-weight:800;color:'+col+';margin-bottom:12px;">'+title+'</div>'
+        /* (#R117) explain the outcome: crash → the recorded reason; landing → touchdown quality (sink/bank/speed + a grade) */
+        +((!ok&&st._crashWhy)?('<div style="font-size:12px;color:#ffb3ad;margin:-6px 0 12px;">'+st._crashWhy+'</div>'):'')
+        +((ok&&st._td)?('<div style="font-size:12px;color:#9fe0b5;margin:-6px 0 12px;">'
+            +(st._td.vs<0.6?LL('Butter — ','超スムーズ着陸 — ','Butterweich — ','Мягчайшая — ','Suavísimo — '):st._td.vs<2?LL('Smooth — ','スムーズ — ','Sanft — ','Мягкая — ','Suave — '):st._td.vs<3.5?LL('Firm — ','やや強め — ','Fest — ','Жёсткая — ','Firme — '):LL('Hard — ','ハード — ','Hart — ','Грубая — ','Duro — '))
+            +LL('touchdown '+st._td.vs.toFixed(1)+' m/s · bank '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h','接地 '+st._td.vs.toFixed(1)+' m/s · バンク '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h','Aufsetzen '+st._td.vs.toFixed(1)+' m/s · '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h','касание '+st._td.vs.toFixed(1)+' м/с · крен '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' км/ч','contacto '+st._td.vs.toFixed(1)+' m/s · '+Math.round(st._td.bank)+'° · '+Math.round(st._td.V*3.6)+' km/h')+'</div>'):'')
         +'<canvas class="fsr-cv" width="440" height="230" style="width:100%;height:auto;background:rgba(0,0,0,0.4);border-radius:12px;border:1px solid rgba(120,190,255,0.2);display:block;"></canvas>'
         +'<div style="font-size:10px;color:#8fb8e0;margin:6px 0 13px;">'+LL('Flight path — colour = altitude (blue low → red high)','飛行経路 — 色は高度（青=低 → 赤=高）','Flugweg — Farbe = Höhe','Маршрут — цвет = высота','Ruta — color = altitud')+'</div>'
         +'<div style="display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap;">'+stat(LL('DISTANCE','飛行距離','DISTANZ','ДИСТ.','DIST.'),distKm.toFixed(1)+' km')+stat(LL('MAX ALT','最高高度','MAX HÖHE','МАКС ВЫС','ALT MÁX'),maxAltM.toLocaleString()+' m')+stat(LL('TOP SPEED','最高速度','SPITZE','МАКС СК','VEL MÁX'),maxVk.toLocaleString()+' km/h')+stat(LL('TIME','飛行時間','ZEIT','ВРЕМЯ','TIEMPO'),Math.floor(durS/60)+'m '+(durS%60)+'s')+'</div>'
@@ -23348,7 +23438,7 @@ window.addEventListener('DOMContentLoaded', () => {
          so the user takes off; the height settles onto the real DEM (see _settleTerr). Otherwise trim for level cruise. */
       if(opts.onGround && ac.Tmax<=0) opts=Object.assign({},opts,{onGround:false});   /* (#R100) an engineless glider can't roll for take-off → a runway choice becomes an aerotow RELEASE: an airborne start (the settle lifts it to a safe release height), not a 33 m/s ground "warp" */
       if(opts.onGround){ st.V=0; st.vb=[0,0,0]; st.gear=1; st.thr=0; st.onGround=true; st.groundStart=true; st._tookOff=false;
-        st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }
+        st.alt=(opts.elev!=null?+opts.elev:(st.lastTerr!=null?st.lastTerr:st.alt)); st._groundAlt=st.alt; st._fieldElev=(opts.elev!=null?+opts.elev:null); st._maxAlt=st.alt; st._maxV=0; st.q=qFromEuler(0,0,st.psi); st.aoa=0; st.theta=0; }   /* (#R117) stats start from the runway, not from the pre-settle 2 500 m init */   /* (#R117) remember the airport's REAL field elevation — DEM reads far off it while tiles load are rejected */
       else computeTrim();
       prevCam={ center:map.getCenter(), zoom:map.getZoom(), bearing:map.getBearing(), pitch:map.getPitch(), roll:(map.getRoll?map.getRoll():0) };
       /* (#R85b) "自動でSatellite, 3Dにしろ" + a real first-person cockpit view: switch to a flat satellite map with
@@ -23367,8 +23457,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const t=document.getElementById('sat-controller'); if(t) t.style.display='none'; }catch(_){}   /* keep the sat panel out of the cockpit */
       /* (#R95) spawn clearance is settled once the DEM loads (see _settleTerr in stepFixed). If the ground is already
          known under us, lift now; otherwise defer so we never read a false 0 m over the mountains. */
-      { const tr0=_terrRead(st.lng,st.lat); if(tr0.ok){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+1500); } else st._settleTerr=true; }
+      { const tr0=_terrRead(st.lng,st.lat), plaus0=tr0.ok&&(st._fieldElev==null||Math.abs(tr0.v-st._fieldElev)<150);   /* (#R117) a half-loaded DEM can read e.g. −1439 m at Haneda — never settle the runway onto garbage */
+        if(plaus0){ if(opts.onGround){ st.alt=tr0.v+1.2; st._groundAlt=st.alt; st.groundStart=false; } else st.alt=Math.max(st.alt, tr0.v+1500); } else st._settleTerr=true; }
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].disable) map[h].disable(); }); }catch(_){}
+      try{ _FSBLOCK.forEach(ev=>window.addEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) map features become display-only (see _fsBlocker) */
       /* (#R102) FULLSCREEN WITHIN IntMap — the map is lifted above all app chrome (see .fs-flying CSS), covering the whole
          IntMap viewport. The browser `requestFullscreen()` (desktop/OS fullscreen) was REMOVED per request ("デスクトップ
          での全画面という意味ではない"). Resize the map after the container changes size. */
@@ -23391,6 +23483,7 @@ window.addEventListener('DOMContentLoaded', () => {
       window.__fsCamActive=false;
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
       for(const k in keys) keys[k]=false;
+      try{ _FSBLOCK.forEach(ev=>window.removeEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) restore normal map interactivity exactly as before the flight */
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
       try{ fsAudio.stop(); }catch(_){}   /* (#R101) fade out + close the audio context */
       try{ destroyMinimap(); }catch(_){}   /* (#R96) tear down the moving-map's GL context */
@@ -23440,14 +23533,17 @@ window.addEventListener('DOMContentLoaded', () => {
       st.V=Vt; st.aoa=aT; st.beta=0; st.gamma=gamma; st.vs=Vt*Math.sin(gamma); st.G=Math.cos(gamma); st.phi=0; st.theta=aT+gamma; st.psi=yaw; st._acc=0; }
     function respawn(){ const ac=AC(); const tr=_terrRead(st.lng,st.lat); st.alt=(tr.ok?tr.v:(st.lastTerr!=null?st.lastTerr:0))+1500; if(!tr.ok) st._settleTerr=true;   /* (#R95) terrain-aware reset height (settles when the DEM confirms) */
       st.V=ac.Vcruise; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; st.brake=0; st.om=[0,0,0]; st.onGround=false; st.groundStart=false; st._tookOff=true; paused=false; computeTrim(); }
-    function crash(){ if(resultShown) return; const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED','墜落','ABGESTÜRZT','КРУШЕНИЕ','ACCIDENTE'); w.style.display='block'; w.style.color='#ff453a'; }
+    function crash(why){ if(resultShown) return; if(st&&why) st._crashWhy=why;   /* (#R117) keep the reason for the result screen */
+      const w=hud&&hud.querySelector('.fs-warn'); if(w){ w.textContent=LL('CRASHED','墜落','ABGESTÜRZT','КРУШЕНИЕ','ACCIDENTE'); w.style.display='block'; w.style.color='#ff453a'; }
       showResult('crash');   /* (#R98) a crash ends the flight → result screen (was an auto-respawn in place); the R key still resets in-flight via respawn() */ }
     /* (#R101) shared readouts present in EVERY display (moving-map alt/hdg, EAS/Mach badge, the warning banner). */
     function _fsHdg(){ const _nh=qRot(st.q,[1,0,0]); return (Math.atan2(_nh[1],_nh[0])*180/Math.PI+360)%360; }
     function updateShared(agl,f){ if(!hud||!st) return; const q=s=>hud.querySelector(s);
       try{ const hdg=_fsHdg(), _hdS=Math.round(hdg).toString().padStart(3,'0');
         const _ma=q('.fs-mm-alt'); if(_ma) _ma.textContent=Math.round(st.alt).toLocaleString(); const _mh=q('.fs-mm-hdg'); if(_mh) _mh.textContent=_hdS;
-        const mc=q('.fs-mach'); if(mc){ const ac=AC(), rho=rhoAt(st.alt), ias=Math.round(st.V*Math.sqrt(Math.max(0.05,rho/1.225))*3.6), aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd; mc.textContent='EAS '+ias+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }
+        const mc=q('.fs-mach'); if(mc){ const ac=AC(), aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd; mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }   /* (#R117) the MAIN speed displays are now EAS (what a pilot flies) — this aux line carries the TAS + Mach */
+        const tf=q('.fs-thrfill'); if(tf) tf.style.height=Math.round(st.thr*100)+'%';   /* (#R117) throttle bar is shared chrome now — EVERY display (six-pack/glass/HUD) shows the power setting */
+        const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
           if(f.landed){ w.style.display='block'; w.style.color='#34c759'; w.textContent=LL('LANDED','着陸成功','GELANDET','ПОСАДКА','ATERRIZÓ'); }
           else if(f.overspeed){ w.style.display='block'; w.style.color='#ff453a'; w.textContent=LL('OVERSPEED','過速度','ÜBERGESCHWIND.','ПРЕВЫШЕНИЕ','SOBREVELOCIDAD'); }
@@ -23457,17 +23553,19 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(_){} }
     /* (#R101) analog six-pack updater — every needle/card driven from the same state as the HUD. */
     function updateSixpack(agl,f){ if(!hud||!st) return; const R2D=180/Math.PI, q=s=>hud.querySelector(s), ac=AC();
-      try{ const rollDeg=(st._camRoll!=null?st._camRoll:st.phi*R2D), pitchDeg=st.theta*R2D, vk=st.V*3.6, vne=(ac.Vne||100)*3.6, hdg=_fsHdg();
+      try{ const rollDeg=(st._camRoll!=null?st._camRoll:st.phi*R2D), pitchDeg=st.theta*R2D, vk=st.V*Math.sqrt(Math.max(0.05,rhoAt(st.alt)/1.225))*3.6, vne=(ac.Vne||100)*3.6, hdg=_fsHdg();   /* (#R117) ASI shows EAS (≈IAS), like the real instrument */
         const asi=q('.g6-asi'); if(asi) asi.setAttribute('transform','rotate('+(-135+Math.max(0,Math.min(1,vk/vne))*270).toFixed(1)+' 50 50)'); const asd=q('.g6-asi-d'); if(asd) asd.textContent=Math.round(vk);
         const air=q('.g6-ai-roll'); if(air) air.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 50 50)'); const aip=q('.g6-ai-pitch'); if(aip) aip.setAttribute('transform','translate(0 '+(Math.max(-40,Math.min(40,pitchDeg))*0.9).toFixed(1)+')'); const bp=q('.g6-ai-bp'); if(bp) bp.setAttribute('transform','rotate('+rollDeg.toFixed(1)+' 50 50)');
         const al=q('.g6-alt'); if(al) al.setAttribute('transform','rotate('+(((st.alt%1000)+1000)%1000/1000*360).toFixed(1)+' 50 50)'); const ald=q('.g6-alt-d'); if(ald) ald.textContent=Math.round(st.alt).toLocaleString();
-        const tc=q('.g6-tc'); if(tc) tc.setAttribute('transform','rotate('+Math.max(-22,Math.min(22,rollDeg)).toFixed(1)+' 50 50)'); const tb=q('.g6-tc-ball'); if(tb) tb.setAttribute('cx',(50+Math.max(-6,Math.min(6,(st.beta||0)*R2D*0.5))).toFixed(1));
+        const tc=q('.g6-tc'); if(tc){ const _cph=Math.cos(st.phi),_sph=Math.sin(st.phi),_cth=Math.max(0.25,Math.cos(st.theta));
+          const _trn=((st.om[1]*_sph+st.om[2]*_cph)/_cth)*R2D;   /* (#R117) REAL turn rate (Euler yaw rate, °/s) — a standard-rate 3°/s turn = the full mark; it used to just repeat the bank angle */
+          tc.setAttribute('transform','rotate('+Math.max(-30,Math.min(30,_trn/3*22)).toFixed(1)+' 50 50)'); } const tb=q('.g6-tc-ball'); if(tb) tb.setAttribute('cx',(50+Math.max(-6,Math.min(6,(st.beta||0)*R2D*0.5))).toFixed(1));
         const hi=q('.g6-hi'); if(hi) hi.setAttribute('transform','rotate('+(-hdg).toFixed(1)+' 50 50)');
         const vs=q('.g6-vsi'); if(vs) vs.setAttribute('transform','rotate('+Math.max(-110,Math.min(110,(st.vs||0)*11)).toFixed(1)+' 50 50)');
       }catch(_){} }
     /* (#R101) glass PFD updater — tapes translate, the horizon rolls+pitches; the ND is the moving-map. */
     function updateGlass(agl,f){ if(!hud||!st) return; const R2D=180/Math.PI, q=s=>hud.querySelector(s);
-      try{ const rollDeg=(st._camRoll!=null?st._camRoll:st.phi*R2D), pitchDeg=st.theta*R2D, vk=st.V*3.6, hdg=_fsHdg();
+      try{ const rollDeg=(st._camRoll!=null?st._camRoll:st.phi*R2D), pitchDeg=st.theta*R2D, vk=st.V*Math.sqrt(Math.max(0.05,rhoAt(st.alt)/1.225))*3.6, hdg=_fsHdg();   /* (#R117) speed tape shows EAS (≈IAS) */
         const roll=q('.pfd-roll'); if(roll) roll.setAttribute('transform','rotate('+(-rollDeg).toFixed(1)+' 150 150)'); const pit=q('.pfd-pitch'); if(pit) pit.setAttribute('transform','translate(0 '+(pitchDeg*4.6).toFixed(1)+')');
         const ss=q('.pfd-spd-strip'); if(ss) ss.style.transform='translateY('+(vk*0.7).toFixed(1)+'px)'; const sb=q('.pfd-spd-box'); if(sb) sb.textContent=Math.round(vk);
         const as=q('.pfd-alt-strip'); if(as) as.style.transform='translateY('+(st.alt*0.10).toFixed(1)+'px)'; const ab=q('.pfd-alt-box'); if(ab) ab.textContent=Math.round(st.alt).toLocaleString();
@@ -23477,7 +23575,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(disp==='sixpack'){ updateShared(agl,f); updateSixpack(agl,f); return; }
       if(disp==='glass'){ updateShared(agl,f); updateGlass(agl,f); return; }
       const q=s=>hud.querySelector(s), R2D=180/Math.PI;
-      try{ q('.fs-spd').textContent=Math.round(st.V*3.6); q('.fs-alt').textContent=Math.round(st.alt).toLocaleString(); q('.fs-agl').textContent=Math.round(Math.max(0,agl)).toLocaleString();
+      try{ q('.fs-spd').textContent=Math.round(st.V*Math.sqrt(Math.max(0.05,rhoAt(st.alt)/1.225))*3.6); q('.fs-alt').textContent=Math.round(st.alt).toLocaleString(); q('.fs-agl').textContent=Math.round(Math.max(0,agl)).toLocaleString();   /* (#R117) main airspeed = EAS (≈IAS); TAS/Mach stay on the aux line */
         q('.fs-vs').textContent=(st.vs>=0?'+':'')+Math.round(st.vs);
         /* (#R95) heading from the NOSE vector, not qToEuler yaw — the Euler yaw jumps 180° as the pitch crosses the
            vertical (loop), which snapped the heading tape/indicator. The nose bearing reverses smoothly instead. */
@@ -23498,9 +23596,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const bf=q('.fs-boostfill'); if(bf) bf.style.height=(f.ab?100:0)+'%';
         /* (#R97) IAS (what a pilot flies) is separated from the panel's TAS, and Mach uses the SAME altitude-dependent
            speed of sound as the physics (was a flat V/300 that disagreed with the aero). */
-        const mc=q('.fs-mach'); if(mc){ const ac=AC(), rho=rhoAt(st.alt), ias=Math.round(st.V*Math.sqrt(Math.max(0.05,rho/1.225))*3.6),
+        const mc=q('.fs-mach'); if(mc){ const ac=AC(),
           aSnd=340.3*Math.sqrt(Math.max(0.55,(288.15-0.0065*Math.min(11000,Math.max(0,st.alt)))/288.15)), mach=st.V/aSnd;
-          mc.textContent='EAS '+ias+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }   /* (#R99) TAS·√(ρ/ρ0) is EQUIVALENT airspeed (EAS), not IAS — labelled correctly */
+          mc.textContent='TAS '+Math.round(st.V*3.6)+' km/h'+((!ac.prop&&mach>0.4)?(' · M '+mach.toFixed(2)):''); }   /* (#R117) main displays are EAS now → the aux line carries TAS + Mach */
         const gEl=q('.fs-g'); if(gEl){ gEl.textContent=st.G.toFixed(1); gEl.parentNode.style.color=(st.G>7.5||st.G<-1.5)?'#ff453a':(st.G>5?'#ffd60a':''); }
         const aEl=q('.fs-aoa'); if(aEl){ aEl.textContent=Math.round(st.aoa*R2D); aEl.parentNode.style.color=f.stalling?'#ff9f0a':''; }
         const w=q('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){
@@ -23569,13 +23667,14 @@ window.addEventListener('DOMContentLoaded', () => {
            g-limit (or the stall, whichever comes first). This enforces gLim (was warning-only) and takes the twitch
            out of high-speed pitch — at high q̄ the limiting AoA is tiny so the stick is heavily geared down. */
         const q2=Math.max(1,qd*ac.S), aoaLimP=Math.min(ac.aStall*0.9,(ac.gLim*ac.m*g0/q2-ac.CL0)/ac.CLa),
-              aoaLimN=Math.max(-ac.aStall*0.9,(gLimN*ac.m*g0/q2-ac.CL0)/ac.CLa), band=ac.aStall*0.24;
+              aoaLimN=Math.max(aStallN*0.9,(gLimN*ac.m*g0/q2-ac.CL0)/ac.CLa), band=ac.aStall*0.24;   /* (#R117) the NEGATIVE-side AoA floor is the aircraft's aStallNeg (−0.21…−0.35), not −aStall — the old symmetric clamp let a push-over ride past the real negative stall */
         /* lead only on the pitch rate IN EXCESS of what a steady level turn at the current load factor needs
            (qSteady=(g/V)(n−1/n)) — so a SUSTAINED turn reaches the full g-limit (no steady under-shoot) while a rapid
            pull-up is still anticipated (no transient overshoot past the limit). */
         const qSteady=(g0/Vs)*(st.G-1/Math.max(1,Math.abs(st.G))), aoaPred=aoa+(qq-qSteady)*0.30;
         if(de0<0) de0*=Math.max(0,Math.min(1,(aoaLimP-aoaPred)/band));           /* pulling → limit +G / stall */
         else if(de0>0) de0*=Math.max(0,Math.min(1,(aoaPred-aoaLimN)/band));       /* pushing → limit −G */
+        de0+=(ac.fbwQd!=null?ac.fbwQd:1.1)*(qq-qSteady);   /* (#R117) FBW pitch-rate damper (SAS): opposes rate IN EXCESS of the steady-turn rate — kills the F-35/F-16 short-period altitude oscillation without fighting a sustained pull */
       }
       const deElev=(ac.elevMax||0.5)*de0*(1-0.6*sm);       /* real elevator angle, faded when the tail is stalled */
       const qElev=qd+(ac.prop?Th/(2*ac.S):0);                                    /* + propeller slipstream dynamic pressure over the tail */
@@ -23616,14 +23715,27 @@ window.addEventListener('DOMContentLoaded', () => {
       st.G=-(Flz+Fdz)/(ac.m*g0);   /* normal load factor from the aero body-z force (signed: negative when pushing over) */
       /* (#R96) STRUCTURAL FAILURE: a load sustained beyond 1.5× the limit (the design ultimate factor) snaps the
          airframe. FBW aircraft are G-limited on the elevator above and never reach it; the rest CAN over-stress. */
-      if(!st.onGround && (st.G>ac.gLim*1.5 || st.G<gLimN*1.5) && V>ac.Vstall){ st._ovg=(st._ovg||0)+h; if(st._ovg>0.12){ st._ovg=0; crash(); return { agl:9999, stalling:false, overspeed:false, overG:true, landed:false, ab:st._ab }; } } else st._ovg=0;   /* (#R97) use the asymmetric ±g structural limits (negative side snaps sooner) */
+      if(!st.onGround && (st.G>ac.gLim*1.5 || st.G<gLimN*1.5) && V>ac.Vstall){ st._ovg=(st._ovg||0)+h; if(st._ovg>0.30){   /* (#R117) 0.30 s sustained — keyboard input slams to full deflection in ~0.5 s, so a firm but momentary push no longer snaps the airframe; a held one still does */ st._ovg=0; crash(LL('airframe failed — sustained '+st.G.toFixed(1)+' g beyond the structural limit','空中分解 — 構造限界を超える '+st.G.toFixed(1)+' G を維持','Strukturversagen bei '+st.G.toFixed(1)+' g','разрушение планера при '+st.G.toFixed(1)+' g','fallo estructural a '+st.G.toFixed(1)+' g')); return { agl:9999, stalling:false, overspeed:false, overG:true, landed:false, ab:st._ab }; } } else st._ovg=0;   /* (#R97) use the asymmetric ±g structural limits (negative side snaps sooner) */
       /* terrain contact — only when the DEM is really loaded under us */
-      const tr=_terrRead(st.lng,st.lat), terr=tr.v;
+      const tr=_terrRead(st.lng,st.lat); let terr=tr.v;
+      /* (#R117) DEM tiles REFINE while flying (coarse z8 → fine z13 under the moving camera): queryTerrainElevation
+         can step several metres in ONE frame at an unchanged position. On/near the runway that either buried the
+         wheels or dropped the ground from under the aircraft — a 10 m free-fall reads descent>7 → the reported
+         "100% crash" on take-off & landing (headless tests never reproduced it because a hidden tab never refines
+         its tiles). The PHYSICS ground is therefore a rate-limited follower of the DEM: it converges within seconds
+         but can never STEP, so tile refinements become gentle slopes. The allowed rate scales with speed (real
+         ridges approached fast) and is more generous upward (collision safety). */
+      if(tr.ok){ if(st._terrF==null) st._terrF=terr;
+        const _up=h*(4+0.9*V), _dn=h*(2.5+0.35*V), _dT=terr-st._terrF;
+        st._terrF+=(_dT>0?Math.min(_dT,_up):Math.max(_dT,-_dn));
+        terr=st._terrF; }
+      else if(st._terrF!=null) terr=st._terrF;
       /* (#R95) ONE-TIME SPAWN SETTLE: at start/respawn the 3-D DEM has not loaded yet (queryTerrainElevation → null),
          so we cannot know the ground height. Rather than reading 0 m (which spawns inside Himalaya-class terrain and
          "crashes on load"), we wait: the FIRST confirmed ground read lifts the aircraft to a safe clearance if it is
          low, re-trims level, and skips the collision test for that frame. */
-      if(st._settleTerr){ if(tr.ok){ st._settleTerr=false;
+      if(st._settleTerr){ const _plaus=tr.ok&&(st._fieldElev==null||!st.groundStart||Math.abs(tr.v-st._fieldElev)<150);   /* (#R117) reject implausible half-loaded DEM reads vs the known field elevation */
+        if(_plaus){ st._settleTerr=false; st._terrF=tr.v; terr=tr.v;   /* (#R117) seed the rate-limited ground at the first confirmed read */
           if(st.groundStart){ st.alt=terr+1.2; st.groundStart=false; st.onGround=true; st.vb=[st.vb[0]||0,0,0]; st.om=[0,0,0]; }   /* (#R97) settle a ground start ONTO the runway (not +1500) */
           else if(st.alt<terr+1200){ st.alt=terr+1500; try{ computeTrim(); }catch(_){} } }
         else if(st.groundStart){ st.alt=(st._groundAlt!=null?st._groundAlt:st.alt); st.vb=[st.vb[0]||0,0,0]; st.om=[0,0,0]; }   /* park on the runway until the DEM confirms the field height (don't freefall) */
@@ -23639,8 +23751,21 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R100) touchdown fails on: >7 m/s sink · >25° bank · >0.6 rad nose attitude · gear up · OR too fast for the
            tyres/gear — judged against the stall/Vref (≈1.7·Vstall, i.e. well above the ~1.3·Vstall Vref) AND an absolute
            tyre-speed limit (~110 m/s), NOT 0.72·Vne (which let the F-35 "land" at ~425 m/s). */
-        if(descent>7 || bankDeg>25 || pitchAbs>0.6 || !gearDown || st.V>VstallEff*1.7 || st.V>110) crash();
-        else { st.onGround=true;
+        let _why=null;   /* (#R117) record WHY a touchdown failed — shown on the result screen (was an unexplained "CRASHED") */
+        /* (#R117) judge ONLY the TOUCHDOWN INSTANT (airborne → ground). These checks used to run EVERY step while
+           rolling on the runway, so the moment the take-off roll crossed 1.7·Vstall (which an F-35/F-16/A320 MUST,
+           and a delayed rotation in anything else) the sim declared "touched down too fast" → the reported 100%
+           crash on take-off. Rolling fast on the wheels is not a crash. */
+        if(!st.onGround){
+        if(descent>7) _why=LL('sink rate '+descent.toFixed(1)+' m/s at touchdown (max 7)','接地時の降下率 '+descent.toFixed(1)+' m/s（限界 7）','Sinkrate '+descent.toFixed(1)+' m/s (max. 7)','снижение '+descent.toFixed(1)+' м/с (макс. 7)','descenso '+descent.toFixed(1)+' m/s (máx. 7)');
+        else if(bankDeg>25) _why=LL('touched down banked '+Math.round(bankDeg)+'° (max 25°)','バンク '+Math.round(bankDeg)+'° で接地（限界 25°）','Querlage '+Math.round(bankDeg)+'° (max. 25°)','крен '+Math.round(bankDeg)+'° (макс. 25°)','alabeo '+Math.round(bankDeg)+'° (máx. 25°)');
+        else if(pitchAbs>0.6) _why=LL('extreme nose attitude at touchdown','接地時の機首姿勢が過大','extreme Nicklage beim Aufsetzen','экстремальный тангаж при касании','actitud de morro extrema al tocar');
+        else if(!gearDown) _why=LL('gear-up belly landing','脚上げのまま胴体着陸','Bauchlandung — Fahrwerk eingefahren','посадка на фюзеляж — шасси убрано','aterrizaje de panza — tren arriba');
+        else if(st._tookOff&&(st.V>VstallEff*1.7||st.V>110)) _why=LL('touched down too fast ('+Math.round(st.V*3.6)+' km/h)','接地速度が速すぎ（'+Math.round(st.V*3.6)+' km/h）','zu schnell aufgesetzt ('+Math.round(st.V*3.6)+' km/h)','касание на слишком большой скорости ('+Math.round(st.V*3.6)+' км/ч)','contacto demasiado rápido ('+Math.round(st.V*3.6)+' km/h)');   /* (#R117) speed test only for a real LANDING (after being airborne) — a brief wheel-hop during a fast take-off roll is not a "touchdown" */
+        }
+        if(_why) crash(_why);
+        else { if(!st.onGround&&st._tookOff) st._td={vs:descent,bank:bankDeg,V:st.V};   /* (#R117) touchdown stats for the result screen */
+          st.onGround=true;
           const vw2=qRot(st.q,st.vb);
           if(vw2[2]>0) vw2[2]=0;                          /* wheels stop the sink … */
           else if(st.V<VstallEff*1.05) vw2[2]=0;           /* … and hold it planted below flying speed (kills the ground bounce; lift can still fly it off once fast) */
@@ -23654,6 +23779,7 @@ window.addEventListener('DOMContentLoaded', () => {
           st.q=qFromEuler(gph,gth,geo.yaw);
           st.vb=qRotInv(st.q,vw2);
           if(st.alt<terr+gearH) st.alt=terr+gearH;          /* never below the wheels — but no per-step hard teleport when already sitting on them (hysteresis) */
+          else if(st.V<VstallEff*1.05 && st.alt>terr+gearH) st.alt=terr+gearH;   /* (#R117) below flying speed the wheels FOLLOW a (rate-limited) sinking ground instead of being left in mid-air by a tile refinement */
           const sp=Math.hypot(st.vb[0],st.vb[1],st.vb[2]), fr=1.3+(st.brake>0.5?9:0)+(keys['s']?4:0);
           if(sp>1e-3){ const nf=Math.max(0,sp-fr*h)/sp; st.vb=[st.vb[0]*nf,st.vb[1]*nf,st.vb[2]*nf]; }
           st.om=[st.om[0]*Math.pow(0.03,h), st.om[1], st.om[2]*Math.pow(0.2,h)];   /* wheels damp roll & yaw */
@@ -23663,7 +23789,7 @@ window.addEventListener('DOMContentLoaded', () => {
          on BOTH sides of the CL curve. The old extra `V<Vstall` term flagged a false stall whenever the plane was slow
          even at a safe AoA (e.g. the light, low-AoA float over the top of a zoom climb); Vstall stays only as the
          landing/reference speed (VstallEff). overG now uses the asymmetric ±g limits. */
-      const stalling=(aoa>aStall*0.97)||(aoa<aStallN*0.97), overspeed=st.V>ac.Vne, overG=(st.G>ac.gLim||st.G<gLimN);
+      const stalling=((aoa>aStall*0.97)||(aoa<aStallN*0.97)) && !(st.onGround&&st.V<Math.max(12,VstallEff*0.8)), overspeed=st.V>ac.Vne, overG=(st.G>ac.gLim||st.G<gLimN);   /* (#R117) no false STALL banner while taxiing (AoA=atan2(w,u) is meaningless at walking pace on the wheels) */
       return { agl, stalling, overspeed, overG, landed, ab:st._ab }; }
     /* per-frame: read the controls once, then advance the physics in FIXED sub-steps so the flight characteristics
        don't change with framerate (30 vs 120 fps) and a hitch never hands one huge dt to the integrator. Split out
@@ -23674,7 +23800,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const cmd=(lo,hi)=>((keys[lo]?-1:0)+(keys[hi]?1:0)), sweep=(cur,to,r)=>cur+Math.max(-r*dt,Math.min(r*dt,to-cur));
       /* (#R94s) INVERTED pitch control (per request): ↑ = nose DOWN, ↓ = nose UP — cmd('arrowdown','arrowup')
          gives arrowup=+1 which, with −Cmde, pitches DOWN. Rudder: D → yaw RIGHT. */
-      st.elev=sweep(st.elev,cmd('arrowdown','arrowup'),ac.ctlRate||3.0); st.ail=sweep(st.ail,cmd('arrowleft','arrowright'),Math.max(2.6,(ac.ctlRate||3)+1)); st.rud=sweep(st.rud,cmd('d','a'),3.2);   /* (#R96) per-aircraft actuator speed — a jumbo no longer slams to full stick in 0.33 s like a fighter */
+      const _pT=(st._tP!=null?st._tP:cmd('arrowdown','arrowup')), _rT=(st._tR!=null?st._tR:cmd('arrowleft','arrowright'));   /* (#R117) analog touch-stick targets override the digital keys when active */
+      st.elev=sweep(st.elev,_pT,ac.ctlRate||3.0); st.ail=sweep(st.ail,_rT,Math.max(2.6,(ac.ctlRate||3)+1)); st.rud=sweep(st.rud,cmd('d','a'),3.2);   /* (#R96) per-aircraft actuator speed — a jumbo no longer slams to full stick in 0.33 s like a fighter */
       st._acc=(st._acc||0)+dt; const H=1/200; let n=0, flags=null;
       while(st._acc>=H && n<24 && !resultShown){ flags=stepFixed(H,ac); st._acc-=H; n++; }   /* (#R98) stop sub-stepping the instant a crash ends the flight */
       if(n>=24) st._acc=0;                       /* fell behind (lag) → drop the backlog, never spiral */
@@ -24350,14 +24477,25 @@ window.addEventListener('DOMContentLoaded', () => {
       const c=resolveCountrySync(nm); if(c&&c.code) return {code:c.code,name:c.name};
       const grp=regionGroup(nm); if(grp&&grp.codes.length) return {codes:grp.codes,name:grp.name};
       const comp=regionCompose(nm); if(comp){ const cp=await composeRegion(comp.spec,comp.key); if(cp&&cp.geo) return {poly:{name:String(nm||'').trim(),geo:cp.geo},composed:true,partial:cp.n<cp.total}; }
-      try{ const e=await _nomExtent(nm); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){
-        if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}};
-        /* (#R116) WATER BODIES & NATURAL FEATURES: 「大阪湾をハイライト」 was rejected here (a bay is not an
-           admin polygon), fell through the AI steps and ended at the point→country fallback, which painted
-           CHINA. Nominatim HAS real polygons for bays/straits/seas/peninsulas — accept them for highlight. */
-        if(/^(natural|water|waterway|place)$/i.test(e.cls||'') && /^(bay|strait|gulf|sea|water|lagoon|channel|sound|fjord|inlet|peninsula|isthmus|cape|archipelago|reef|shoal|wetland)$/i.test(e.typ||''))
-          return {poly:{name:e.name||nm,geo:e.geojson}};
-      } }catch(_){}
+      /* (#R117) recognisably WATER-shaped queries (…湾/…海/灘/水道/海峡, Bay/Gulf/Strait/Sea…) get a RETRY on the
+         real-polygon lookup and NEVER fall through to the AI-traced outline: a hallucinated blob over the wrong
+         coast (the reported "伊勢湾がまったく別の場所に描かれる" screenshot) is far worse than an honest miss.
+         (The ≥2-chars-before-湾/海 guard keeps 台湾/上海/熱海/東海 out of the water branch.) */
+      const _wq=String(nm||'').trim();
+      const isWaterQ=/^..+湾$/.test(_wq)||/^..+海$/.test(_wq)||/(灘|水道|海峡)$/.test(_wq)||/\b(bay|gulf|strait|channel|sound|sea|fjord|lagoon)\b/i.test(_wq);
+      for(let _wi=0;_wi<(isWaterQ?2:1);_wi++){
+        try{ const e=await _nomExtent(nm); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){
+          if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}};
+          /* (#R116) WATER BODIES & NATURAL FEATURES: 「大阪湾をハイライト」 was rejected here (a bay is not an
+             admin polygon), fell through the AI steps and ended at the point→country fallback, which painted
+             CHINA. Nominatim HAS real polygons for bays/straits/seas/peninsulas — accept them for highlight. */
+          if(/^(natural|water|waterway|place)$/i.test(e.cls||'') && /^(bay|strait|gulf|sea|water|lagoon|channel|sound|fjord|inlet|peninsula|isthmus|cape|archipelago|reef|shoal|wetland)$/i.test(e.typ||''))
+            return {poly:{name:e.name||nm,geo:e.geojson}};
+          break;   /* got a polygon but of another kind → no point retrying */
+        } }catch(_){}
+        if(isWaterQ&&_wi===0) await new Promise(r=>setTimeout(r,900));
+      }
+      if(isWaterQ) return null;   /* (#R117) water body not found → honest miss, never an AI-guessed outline / point→country fallback */
       const dir=parseDirectional(nm); if(dir){ try{ const b=await _nomExtent(dir.base);
         if(b&&b.geojson&&/Polygon/.test((b.geojson.type||''))&&b.box){ const cg=_clipGeoRect(b.geojson,sliceBox(b.box,dir.dir)); if(cg) return {poly:{name:nm,geo:cg},sliced:true}; }
         if(b&&b.box) return {poly:{name:nm,geo:_bboxSoftPoly(sliceBox(b.box,dir.dir))},soft:true}; }catch(_){} }
@@ -24393,8 +24531,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const warn=s=>'<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+s+'</div>';
     const R=(ok,html)=>({ok:!!ok,html:html||''});
     /* (#R62) minimal safe markdown for AI text rendered in the chat (briefs / analyses). */
+    /* (#R117) heading HIERARCHY inside Atlas replies ("見出しは大きくするなど" — the reply's own text sizes now vary
+       by role: h1 > h2 > h3 ≥ body; the chat body & user-message sizes are untouched). */
     function mdMini(s){ return esc(String(s||''))
-      .replace(/^#{1,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:9px 0 3px;font-size:12.5px;">$1</div>')
+      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:8px 0 3px;font-size:12.5px;">$1</div>')
+      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:10px 0 4px;font-size:13.5px;">$1</div>')
+      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:11px 0 5px;font-size:15px;letter-spacing:.01em;">$1</div>')
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
@@ -27406,7 +27548,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof currentUser!=='undefined'&&currentUser)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
       }
       const ai=bubble('a','<span class="atl-dots" aria-label="'+L('Thinking…','考え中…','Denke nach…','Думаю…','Pensando…')+'"><i></i><i></i><i></i></span>');
-      try{ let plan=await askAIJSON(buildPrompt(q),SYS(),null,{task:'atlas_plan'});   /* (#R113) planner → server JSON mode */
+      /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
+         "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
+      const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
+      try{ let plan=await askAIJSON(buildPrompt(q),SYS(),null,{task:'atlas_plan',effortHint:_cplx?'high':undefined});   /* (#R113) planner → server JSON mode */
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
         /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
@@ -27434,6 +27579,23 @@ window.addEventListener('DOMContentLoaded', () => {
             if(gen===_runGen) recordTurn(q,'(routed to live analysis)',[{type:'analyze',question:q}],fails); msgTools(ai,q); return; } }catch(_){}
         const fails=await runActions(ai, plan.say||'', acts, gen);
         if(gen===_runGen) recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
+        /* (#R117) REPAIR PASS — the top complaint is "実行できませんでした、が多い". When some planned actions
+           FAILED, give the model ONE shot at a different approach: it sees exactly which actions failed (type +
+           params) and must propose alternative actions (different action type / params / place spelling), never
+           repeat the identical call. Results append to the same reply. Bounded to one round, real-action fails
+           only, and only while this turn is still the newest. */
+        try{ const realFails=(fails||[]).filter(a=>a&&a.type&&a.type!=='answer');
+          if(gen===_runGen && realFails.length && acts.length<=8){
+            const fdesc=realFails.map(a=>{ try{ return JSON.stringify(a).slice(0,220); }catch(_){ return a.type; } }).join('\n');
+            const rp=await askAIJSON(buildPrompt(q)+'\n\n[REPAIR] These planned actions FAILED to execute (target not found / no data / unsupported params):\n'+fdesc+'\nPropose a DIFFERENT way to satisfy the remaining part of the request using the documented actions only (other action types, corrected names/spellings, coarser targets). Do NOT repeat an identical failed call. If genuinely impossible, reply with one "answer" action explaining specifically what is impossible and why.',SYS(),null,{task:'atlas_plan',effortHint:'high'});
+            let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
+            const racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
+            const isSame=a2=>realFails.some(f2=>{ try{ return JSON.stringify(f2)===JSON.stringify(a2); }catch(_){ return false; } });
+            const fresh=racts.filter(a2=>!isSame(a2)).slice(0,6);
+            if(gen===_runGen && fresh.length){
+              const div=document.createElement('div'); div.style.cssText='margin-top:7px;padding-top:7px;border-top:1px dashed var(--glass-border,rgba(128,128,128,0.25));'; ai.appendChild(div);
+              const rf=await runActions(div, rplan.say||'', fresh, gen);
+              if(gen===_runGen) recordTurn(q+' (repair)', rplan.say||'', fresh, rf); } } }catch(_){}
         msgTools(ai,q);
       }catch(e){ /* (#R52) network/parse failure → still try the deterministic plan before surfacing the error. */
         if(gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return; }
@@ -29033,6 +29195,111 @@ window.addEventListener('DOMContentLoaded', () => {
       if(prev===null) return next!=null?next:YEARS[0];
       if(next===null) return prev;
       return ((next-y)<(y-prev) && (next-prev)<=MAXGAP) ? next : prev; };
+    /* ===== (#R117) YEARLY borders 1886–2019 from CShapes 2.0 (Schvitz et al. 2022, ETH Zürich — international
+       borders with per-feature validity DATES, so the map changes in the exact year a border changed: no more
+       "nearest of 10 snapshots"). Self-hosted simplified copy (data/cshapes.js, ring-pooled). aourednik snapshots
+       remain the automatic FALLBACK (and nothing else about that path was removed). The displayed state of a year
+       is its JULY 1 state (mid-year convention: 1991 still shows the USSR, 1990 shows two Germanys). */
+    const CS_MIN=1886, CS_MAX=2019;
+    let _csD=null,_csP=null; const _csGeom=new Map();
+    function csLoad(){ if(_csD) return Promise.resolve(_csD); if(_csP) return _csP;
+      _csP=new Promise(res=>{ if(window.__CSHAPES){ _csD=window.__CSHAPES; res(_csD); return; }
+        const s=document.createElement('script'); s.src='data/cshapes.js'; s.async=true;
+        s.onload=()=>{ _csD=window.__CSHAPES||null; res(_csD); };
+        s.onerror=()=>{ _csP=null; res(null); };
+        document.head.appendChild(s); });
+      return _csP; }
+    /* era display names: gwcode → ordered [beforeYear, name] rules (first rule with year<beforeYear wins);
+       null name = default (the CShapes name with any "(…)" gloss stripped). "(UK)/(France)…" suffixes reuse the
+       existing coloniser-suffix localization. This is the R117 歴史国家拡充 curation table. */
+    const _CS_ERA={
+      2:[[9999,'United States']], 3:[[9999,'Alaska (USA)']], 4:[[1894,'Kingdom of Hawaii'],[1899,'Republic of Hawaii'],[9999,'Hawaii (USA)']],
+      6:[[1899,'Puerto Rico (Spain)'],[9999,'Puerto Rico (USA)']], 31:[[1973,'Bahamas (UK)']], 51:[[1962,'Jamaica (UK)']],
+      52:[[1962,'Trinidad and Tobago (UK)']], 53:[[1966,'Barbados (UK)']], 65:[[9999,'Guadeloupe (France)']], 66:[[9999,'Martinique (France)']],
+      80:[[1981,'British Honduras (UK)']], 110:[[1966,'British Guiana (UK)']], 115:[[1975,'Dutch Guiana (Netherlands)'],[9999,'Suriname']],
+      120:[[9999,'French Guiana (France)']], 205:[[1937,'Irish Free State'],[9999,'Ireland']],
+      255:[[9999,'Germany']], 260:[[1990,'West Germany'],[9999,'Germany']], 265:[[9999,'East Germany']],
+      325:[[9999,'Italy']], 343:[[9999,'North Macedonia']], 360:[[9999,'Romania']],
+      365:[[1923,'Russia'],[1992,'Soviet Union'],[9999,'Russia']], 370:[[9999,'Belarus']],
+      395:[[1918,'Iceland (Denmark)'],[1944,'Iceland (Denmark)'],[9999,'Iceland']],
+      404:[[1974,'Portuguese Guinea (Portugal)'],[9999,'Guinea-Bissau']], 411:[[1968,'Spanish Guinea (Spain)'],[9999,'Equatorial Guinea']],
+      420:[[1965,'Gambia (UK)']], 432:[[1960,'French Sudan (France)'],[9999,'Mali']], 433:[[1960,'Senegal (France)']],
+      434:[[1960,'Dahomey (France)'],[1975,'Dahomey'],[9999,'Benin']], 435:[[1960,'Mauritania (France)']],
+      436:[[1960,'Niger (France)']], 437:[[1960,"Cote d'Ivoire (France)"]], 438:[[1958,'French Guinea (France)'],[9999,'Guinea']],
+      439:[[1960,'Upper Volta (France)'],[1984,'Upper Volta'],[9999,'Burkina Faso']],
+      451:[[1961,'Sierra Leone (UK)']], 452:[[1957,'Gold Coast (UK)'],[9999,'Ghana']],
+      461:[[1960,'French Togoland (France)'],[9999,'Togo']], 471:[[1960,'French Cameroons (France)'],[9999,'Cameroon']],
+      475:[[1960,'Nigeria (UK)']], 481:[[1960,'Gabon (France)']], 482:[[1960,'Ubangi-Shari (France)'],[9999,'Central African Republic']],
+      483:[[1960,'Chad (France)']], 484:[[1960,'French Congo (France)'],[9999,'Congo']],
+      490:[[1908,'Congo Free State'],[1960,'Belgian Congo (Belgium)'],[1971,'Democratic Republic of the Congo'],[1997,'Zaire'],[9999,'Democratic Republic of the Congo']],
+      500:[[1962,'Uganda (UK)']], 501:[[1920,'British East Africa (UK)'],[1963,'Kenya (UK)'],[9999,'Kenya']],
+      510:[[1919,'German East Africa'],[1961,'Tanganyika (UK)'],[1964,'Tanganyika'],[9999,'Tanzania']],
+      511:[[1964,'Sultanate of Zanzibar']], 515:[[9999,'Ruanda-Urundi (Belgium)']],
+      521:[[1960,'British Somaliland (UK)']], 522:[[1977,'French Somaliland (France)'],[9999,'Djibouti']],
+      530:[[1937,'Abyssinia'],[9999,'Ethiopia']],
+      531:[[1941,'Eritrea (Italy)'],[1952,'Eritrea (UK)'],[1993,'Eritrea (Ethiopia)'],[9999,'Eritrea']],
+      540:[[1975,'Angola (Portugal)']], 541:[[1975,'Mozambique (Portugal)']],
+      551:[[1964,'Northern Rhodesia (UK)'],[9999,'Zambia']], 552:[[1965,'Southern Rhodesia (UK)'],[1980,'Rhodesia'],[9999,'Zimbabwe']],
+      553:[[1964,'Nyasaland (UK)'],[9999,'Malawi']], 560:[[1961,'Union of South Africa'],[9999,'South Africa']],
+      565:[[1916,'German South-West Africa'],[1990,'South West Africa (South Africa)'],[9999,'Namibia']],
+      570:[[1966,'Basutoland (UK)'],[9999,'Lesotho']], 571:[[1966,'Bechuanaland (UK)'],[9999,'Botswana']],
+      572:[[1968,'Swaziland (UK)'],[2018,'Swaziland'],[9999,'Eswatini']],
+      580:[[1960,'Madagascar (France)'],[9999,'Madagascar']], 581:[[1975,'Comoros (France)']], 585:[[9999,'Reunion (France)']],
+      590:[[1968,'Mauritius (UK)']], 600:[[1912,'Morocco'],[1956,'Morocco (France)'],[9999,'Morocco']],
+      615:[[1962,'Algeria (France)']], 616:[[1956,'Tunisia (France)']],
+      620:[[1943,'Libya (Italy)'],[1951,'Libya (UK)'],[9999,'Libya']], 625:[[1956,'Anglo-Egyptian Sudan'],[9999,'Sudan']],
+      630:[[9999,'Iran']], 640:[[1923,'Ottoman Empire'],[9999,'Turkey']], 645:[[1932,'Iraq (UK)'],[9999,'Iraq']],
+      651:[[1922,'Egypt (UK)'],[9999,'Egypt']], 652:[[1946,'Syria (France)']], 660:[[1943,'Lebanon (France)']],
+      663:[[1946,'Transjordan (UK)'],[1949,'Transjordan'],[9999,'Jordan']], 665:[[9999,'Mandatory Palestine']],
+      678:[[1967,'Yemen'],[1991,'North Yemen'],[9999,'Yemen']], 680:[[9999,'South Yemen']], 681:[[9999,'Aden (UK)']],
+      694:[[1971,'Qatar (UK)']], 696:[[1971,'Trucial Oman (UK)'],[9999,'United Arab Emirates']],
+      698:[[1970,'Muscat and Oman'],[9999,'Oman']], 703:[[9999,'Kyrgyzstan']],
+      710:[[9999,'China']], 713:[[1945,'Taiwan (Japan)'],[1950,'Taiwan (China)'],[9999,'Taiwan']],
+      730:[[1897,'Korea (Joseon)'],[1910,'Korean Empire'],[9999,'Korea (Japan)']],
+      731:[[9999,'North Korea']], 732:[[9999,'South Korea']],
+      750:[[1947,'India (UK)'],[9999,'India']],
+      775:[[1948,'Burma (UK)'],[1989,'Burma'],[9999,'Myanmar']],
+      780:[[1948,'Ceylon (UK)'],[1972,'Ceylon'],[9999,'Sri Lanka']], 781:[[1965,'Maldives (UK)']],
+      800:[[1939,'Siam'],[9999,'Thailand']],
+      811:[[1953,'Cambodia (France)'],[1976,'Cambodia'],[1990,'Kampuchea'],[9999,'Cambodia']],
+      812:[[1953,'Laos (France)']], 815:[[1887,'Annam'],[9999,'Vietnam (France)']],
+      816:[[1977,'North Vietnam'],[9999,'Vietnam']], 817:[[9999,'South Vietnam']],
+      820:[[1957,'Malaya (UK)'],[1964,'Malaya'],[9999,'Malaysia']],
+      823:[[9999,'North Borneo (UK)']], 824:[[1946,'Sarawak'],[9999,'Sarawak (UK)']],
+      830:[[1964,'Singapore (UK)'],[9999,'Singapore']], 835:[[1984,'Brunei (UK)']],
+      840:[[1899,'Philippines (Spain)'],[1946,'Philippines (USA)'],[9999,'Philippines']],
+      850:[[1950,'Dutch East Indies'],[9999,'Indonesia']],
+      851:[[1963,'Dutch New Guinea (Netherlands)'],[9999,'West Irian (Indonesia)']],
+      860:[[1976,'Portuguese Timor (Portugal)'],[2000,'East Timor (Indonesia)'],[9999,'East Timor']],
+      910:[[1975,'Papua and New Guinea (Australia)'],[9999,'Papua New Guinea']],
+      911:[[1906,'Papua (UK)'],[9999,'Papua (Australia)']], 912:[[1920,'German New Guinea'],[9999,'New Guinea (Australia)']],
+      930:[[9999,'New Caledonia (France)']], 940:[[1978,'British Solomon Islands (UK)'],[9999,'Solomon Islands']],
+      950:[[1970,'Fiji (UK)']], 960:[[9999,'French Polynesia (France)']],
+      3461:[[9999,'Bosnia (Austria-Hungary)']], 3462:[[9999,'Herzegovina (Austria-Hungary)']],
+      4781:[[9999,'Lagos Colony (UK)']], 4782:[[9999,'Oil Rivers Protectorate (UK)']],
+      4783:[[9999,'Southern Nigeria (UK)']], 4784:[[9999,'Northern Nigeria (UK)']],
+      5518:[[9999,'North-Eastern Rhodesia (UK)']], 5519:[[9999,'North-Western Rhodesia (UK)']],
+      6511:[[9999,'Gaza (Egypt)']], 6631:[[9999,'West Bank (Jordan)']],
+      7020:[[9999,'Emirate of Bukhara']], 7030:[[9999,'Khanate of Khiva']],
+      7351:[[9999,'Karafuto (Japan)']], 9401:[[9999,'German Solomon Islands']]
+    };
+    function _csName(nm,gw,y){ const rules=_CS_ERA[gw];
+      if(rules){ for(const r of rules){ if(y<r[0]) return r[1]; } }
+      return String(nm||'').replace(/\s*\([^)]*\)\s*$/,''); }   /* default: drop the "(…)" gloss (e.g. "Madagascar (Malagasy)") */
+    function _csGeomOf(d,idx){ let g=_csGeom.get(idx); if(g) return g;
+      const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
+      g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
+      _csGeom.set(idx,g); return g; }
+    function csFC(d,year){ const feats=[];
+      for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
+        const sy=f[2],sm=f[3],sd=f[4],ey=f[5],em=f[6],ed=f[7];
+        /* active on July 1 of `year` */
+        const started=(sy<year)||(sy===year&&(sm<7||(sm===7&&sd<=1)));
+        const ends=(ey>year)||(ey===year&&(em>7||(em===7&&ed>=1)));
+        if(!started||!ends) continue;
+        const NAME=_csName(f[0],f[1],year);
+        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:{NAME:NAME,name:NAME,_gw:f[1]}}); }
+      return {type:'FeatureCollection',features:feats}; }
     /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
        correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
     const _VANISHED=[
@@ -29114,7 +29381,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
     function ensure(){ try{ if(!map.isStyleLoaded()) return false;
-      if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'historical-basemaps (aourednik)'});
+      if(!map.getSource('imtb-src')) map.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · historical-basemaps (aourednik)'});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
       if(!map.getLayer('imtb-fill')) map.addLayer({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
@@ -29363,6 +29630,64 @@ window.addEventListener('DOMContentLoaded', () => {
       [/^\s*tukular caliphate\s*$/i,{jp:'トゥクロール帝国',de:'Tukulor-Reich',ru:'Империя Тукулёр',es:'Imperio tukulor'}],
       [/^\s*yaka\s*$/i,{jp:'ヤカ',de:'Yaka',ru:'Яка',es:'Yaka'}],
       [/^\s*yeke\s*$/i,{jp:'イェケ王国',de:'Yeke',ru:'Йеке',es:'Yeke'}],
+      /* (#R117) era names introduced by the CShapes 2.0 yearly borders (colonial-period display names) */
+      [/^\s*french sudan\s*$/i,{jp:'フランス領スーダン',de:'Französisch-Sudan',ru:'Французский Судан',es:'Sudán Francés'}],
+      [/^\s*british guiana\s*$/i,{jp:'イギリス領ギアナ',de:'Britisch-Guayana',ru:'Британская Гвиана',es:'Guayana Británica'}],
+      [/^\s*british honduras\s*$/i,{jp:'イギリス領ホンジュラス',de:'Britisch-Honduras',ru:'Британский Гондурас',es:'Honduras Británica'}],
+      [/^\s*dutch guiana\s*$/i,{jp:'オランダ領ギアナ',de:'Niederländisch-Guayana',ru:'Нидерландская Гвиана',es:'Guayana Neerlandesa'}],
+      [/^\s*french guinea\s*$/i,{jp:'フランス領ギニア',de:'Französisch-Guinea',ru:'Французская Гвинея',es:'Guinea Francesa'}],
+      [/^\s*french togoland\s*$/i,{jp:'フランス領トーゴランド',de:'Französisch-Togo',ru:'Французское Того',es:'Togolandia Francesa'}],
+      [/^\s*ubangi-?shari\s*$/i,{jp:'ウバンギ・シャリ',de:'Ubangi-Schari',ru:'Убанги-Шари',es:'Ubangui-Chari'}],
+      [/^\s*french congo\s*$/i,{jp:'フランス領コンゴ',de:'Französisch-Kongo',ru:'Французское Конго',es:'Congo Francés'}],
+      [/^\s*ruanda-?urundi\s*$/i,{jp:'ルアンダ＝ウルンディ',de:'Ruanda-Urundi',ru:'Руанда-Урунди',es:'Ruanda-Urundi'}],
+      [/^\s*south west africa\s*$/i,{jp:'南西アフリカ',de:'Südwestafrika',ru:'Юго-Западная Африка',es:'África del Sudoeste'}],
+      [/^\s*north yemen\s*$/i,{jp:'北イエメン',de:'Nordjemen',ru:'Северный Йемен',es:'Yemen del Norte'}],
+      [/^\s*south yemen\s*$/i,{jp:'南イエメン',de:'Südjemen',ru:'Южный Йемен',es:'Yemen del Sur'}],
+      [/^\s*north vietnam\s*$/i,{jp:'北ベトナム',de:'Nordvietnam',ru:'Северный Вьетнам',es:'Vietnam del Norte'}],
+      [/^\s*south vietnam\s*$/i,{jp:'南ベトナム',de:'Südvietnam',ru:'Южный Вьетнам',es:'Vietnam del Sur'}],
+      [/^\s*north borneo\s*$/i,{jp:'北ボルネオ',de:'Nordborneo',ru:'Северное Борнео',es:'Borneo del Norte'}],
+      [/^\s*german new guinea\s*$/i,{jp:'ドイツ領ニューギニア',de:'Deutsch-Neuguinea',ru:'Германская Новая Гвинея',es:'Nueva Guinea Alemana'}],
+      [/^\s*new guinea\s*$/i,{jp:'ニューギニア',de:'Neuguinea',ru:'Новая Гвинея',es:'Nueva Guinea'}],
+      [/^\s*papua and new guinea\s*$/i,{jp:'パプア・ニューギニア',de:'Papua und Neuguinea',ru:'Папуа и Новая Гвинея',es:'Papúa y Nueva Guinea'}],
+      [/^\s*papua\s*$/i,{jp:'パプア',de:'Papua',ru:'Папуа',es:'Papúa'}],
+      [/^\s*new caledonia( and dependencies)?\s*$/i,{jp:'ニューカレドニア',de:'Neukaledonien',ru:'Новая Каледония',es:'Nueva Caledonia'}],
+      [/^\s*french polynesia\s*$/i,{jp:'フランス領ポリネシア',de:'Französisch-Polynesien',ru:'Французская Полинезия',es:'Polinesia Francesa'}],
+      [/^\s*emirate of bukhara\s*$/i,{jp:'ブハラ・アミール国',de:'Emirat Buchara',ru:'Бухарский эмират',es:'Emirato de Bujará'}],
+      [/^\s*khanate of khiva\s*$/i,{jp:'ヒヴァ・ハン国',de:'Khanat Chiwa',ru:'Хивинское ханство',es:'Kanato de Jiva'}],
+      [/^\s*karafuto\s*$/i,{jp:'樺太',de:'Karafuto',ru:'Карафуто',es:'Karafuto'}],
+      [/^\s*straits settlements\s*$/i,{jp:'海峡植民地',de:'Straits Settlements',ru:'Стрейтс-Сетлментс',es:'Colonias del Estrecho'}],
+      [/^\s*federated malay states\s*$/i,{jp:'マレー連合州',de:'Föderierte Malaiische Staaten',ru:'Федерированные малайские государства',es:'Estados Malayos Federados'}],
+      [/^\s*unfederated malay states\s*$/i,{jp:'マレー非連合州',de:'Unföderierte Malaiische Staaten',ru:'Нефедерированные малайские государства',es:'Estados Malayos No Federados'}],
+      [/^\s*southern nigeria\s*$/i,{jp:'南ナイジェリア',de:'Südnigeria',ru:'Южная Нигерия',es:'Nigeria del Sur'}],
+      [/^\s*northern nigeria\s*$/i,{jp:'北ナイジェリア',de:'Nordnigeria',ru:'Северная Нигерия',es:'Nigeria del Norte'}],
+      [/^\s*oil rivers protectorate\s*$/i,{jp:'オイル・リバーズ保護領',de:'Oil-Rivers-Protektorat',ru:'Протекторат Ойл-Риверс',es:'Protectorado de Oil Rivers'}],
+      [/^\s*british bechuanaland\s*$/i,{jp:'イギリス領ベチュアナランド',de:'Britisch-Betschuanaland',ru:'Британский Бечуаналенд',es:'Bechuanalandia Británica'}],
+      [/^\s*federation of rhodesia and nyasaland\s*$/i,{jp:'ローデシア・ニヤサランド連邦',de:'Föderation von Rhodesien und Njassaland',ru:'Федерация Родезии и Ньясаленда',es:'Federación de Rodesia y Niasalandia'}],
+      [/^\s*federation of south arabia\s*$/i,{jp:'南アラビア連邦',de:'Südarabische Föderation',ru:'Федерация Южной Аравии',es:'Federación de Arabia del Sur'}],
+      [/^\s*east aden protectorate\s*$/i,{jp:'東アデン保護領',de:'Ost-Aden-Protektorat',ru:'Восточный Аденский протекторат',es:'Protectorado de Adén Oriental'}],
+      [/^\s*aden\s*$/i,{jp:'アデン',de:'Aden',ru:'Аден',es:'Adén'}],
+      [/^\s*(british )?solomon islands\s*$/i,{jp:'ソロモン諸島',de:'Salomonen',ru:'Соломоновы Острова',es:'Islas Salomón'}],
+      [/^\s*german solomon islands\s*$/i,{jp:'ドイツ領ソロモン諸島',de:'Deutsche Salomonen',ru:'Германские Соломоновы острова',es:'Islas Salomón Alemanas'}],
+      [/^\s*portuguese timor\s*$/i,{jp:'ポルトガル領ティモール',de:'Portugiesisch-Timor',ru:'Португальский Тимор',es:'Timor Portugués'}],
+      [/^\s*west irian\s*$/i,{jp:'西イリアン',de:'West-Irian',ru:'Западный Ириан',es:'Irián Occidental'}],
+      [/^\s*dutch new guinea\s*$/i,{jp:'オランダ領ニューギニア',de:'Niederländisch-Neuguinea',ru:'Нидерландская Новая Гвинея',es:'Nueva Guinea Neerlandesa'}],
+      [/^\s*inini\s*$/i,{jp:'イニニ',de:'Inini',ru:'Инини',es:'Inini'}],
+      [/^\s*kingdom of hawaii\s*$/i,{jp:'ハワイ王国',de:'Königreich Hawaiʻi',ru:'Гавайское королевство',es:'Reino de Hawái'}],
+      [/^\s*republic of hawaii\s*$/i,{jp:'ハワイ共和国',de:'Republik Hawaii',ru:'Республика Гавайи',es:'República de Hawái'}],
+      [/^\s*alaska\s*$/i,{jp:'アラスカ',de:'Alaska',ru:'Аляска',es:'Alaska'}],
+      [/^\s*hawaii\s*$/i,{jp:'ハワイ',de:'Hawaii',ru:'Гавайи',es:'Hawái'}],
+      [/^\s*puerto rico\s*$/i,{jp:'プエルトリコ',de:'Puerto Rico',ru:'Пуэрто-Рико',es:'Puerto Rico'}],
+      [/^\s*guadeloupe\s*$/i,{jp:'グアドループ',de:'Guadeloupe',ru:'Гваделупа',es:'Guadalupe'}],
+      [/^\s*r(e|é)union\s*$/i,{jp:'レユニオン',de:'Réunion',ru:'Реюньон',es:'Reunión'}],
+      [/^\s*irish free state\s*$/i,{jp:'アイルランド自由国',de:'Irischer Freistaat',ru:'Ирландское Свободное государство',es:'Estado Libre Irlandés'}],
+      [/^\s*korean empire\s*$/i,{jp:'大韓帝国',de:'Kaiserreich Korea',ru:'Корейская империя',es:'Imperio Coreano'}],
+      [/^\s*korea\s*$/i,{jp:'朝鮮',de:'Korea',ru:'Корея',es:'Corea'}],
+      [/^\s*lagos colony\s*$/i,{jp:'ラゴス植民地',de:'Kolonie Lagos',ru:'Колония Лагос',es:'Colonia de Lagos'}],
+      [/^\s*north-?eastern rhodesia\s*$/i,{jp:'北東ローデシア',de:'Nordostrhodesien',ru:'Северо-Восточная Родезия',es:'Rodesia del Nordeste'}],
+      [/^\s*north-?western rhodesia\s*$/i,{jp:'北西ローデシア',de:'Nordwestrhodesien',ru:'Северо-Западная Родезия',es:'Rodesia del Noroeste'}],
+      [/^\s*gaza\s*$/i,{jp:'ガザ',de:'Gaza',ru:'Газа',es:'Gaza'}],
+      [/^\s*west bank\s*$/i,{jp:'ヨルダン川西岸',de:'Westjordanland',ru:'Западный берег',es:'Cisjordania'}],
+      [/^\s*ottoman empire\s*$/i,{jp:'オスマン帝国',de:'Osmanisches Reich',ru:'Османская империя',es:'Imperio Otomano'}],
       [/^\s*(first |second )?samori empire\s*$/i,{jp:'サモリ帝国',de:'Samori-Reich',ru:'Империя Самори',es:'Imperio de Samori'}],
       [/^\s*sultanate of utetera\s*$/i,{jp:'ウテテラ・スルタン国',de:'Sultanat Utetera',ru:'Султанат Утетера',es:'Sultanato de Utetera'}],
       [/^\s*ato trading confederacy\s*$/i,{jp:'アト交易連合',de:'Ato-Handelskonföderation',ru:'Торговая конфедерация Ато',es:'Confederación comercial Ato'}],
@@ -29371,7 +29696,7 @@ window.addEventListener('DOMContentLoaded', () => {
     ];
     /* (#R110) coloniser / possessor names for the "(France)/(UK)/(Portugal)…" suffix the aourednik data appends to
        many interwar colonies, plus the 1945 occupation zones (Germany (USA)…). */
-    const _COLONIZER={france:{jp:'フランス',de:'Frankreich',ru:'Франция',es:'Francia'},uk:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},gb:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},usa:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},us:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},portugal:{jp:'ポルトガル',de:'Portugal',ru:'Португалия',es:'Portugal'},italy:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},it:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},belgium:{jp:'ベルギー',de:'Belgien',ru:'Бельгия',es:'Bélgica'},spain:{jp:'スペイン',de:'Spanien',ru:'Испания',es:'España'},netherlands:{jp:'オランダ',de:'Niederlande',ru:'Нидерланды',es:'Países Bajos'},germany:{jp:'ドイツ',de:'Deutschland',ru:'Германия',es:'Alemania'},japan:{jp:'日本',de:'Japan',ru:'Япония',es:'Japón'},ru:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},russia:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},ussr:{jp:'ソ連',de:'UdSSR',ru:'СССР',es:'URSS'},egypt:{jp:'エジプト',de:'Ägypten',ru:'Египет',es:'Egipto'}};
+    const _COLONIZER={france:{jp:'フランス',de:'Frankreich',ru:'Франция',es:'Francia'},uk:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},gb:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},usa:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},us:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},portugal:{jp:'ポルトガル',de:'Portugal',ru:'Португалия',es:'Portugal'},italy:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},it:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},belgium:{jp:'ベルギー',de:'Belgien',ru:'Бельгия',es:'Bélgica'},spain:{jp:'スペイン',de:'Spanien',ru:'Испания',es:'España'},netherlands:{jp:'オランダ',de:'Niederlande',ru:'Нидерланды',es:'Países Bajos'},germany:{jp:'ドイツ',de:'Deutschland',ru:'Германия',es:'Alemania'},japan:{jp:'日本',de:'Japan',ru:'Япония',es:'Japón'},ru:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},russia:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},ussr:{jp:'ソ連',de:'UdSSR',ru:'СССР',es:'URSS'},egypt:{jp:'エジプト',de:'Ägypten',ru:'Египет',es:'Egipto'},'south africa':{jp:'南アフリカ',de:'Südafrika',ru:'ЮАР',es:'Sudáfrica'},ethiopia:{jp:'エチオピア',de:'Äthiopien',ru:'Эфиопия',es:'Etiopía'},jordan:{jp:'ヨルダン',de:'Jordanien',ru:'Иордания',es:'Jordania'},indonesia:{jp:'インドネシア',de:'Indonesien',ru:'Индонезия',es:'Indonesia'},denmark:{jp:'デンマーク',de:'Dänemark',ru:'Дания',es:'Dinamarca'},'austria-hungary':{jp:'オーストリア＝ハンガリー',de:'Österreich-Ungarn',ru:'Австро-Венгрия',es:'Austria-Hungría'},australia:{jp:'オーストラリア',de:'Australien',ru:'Австралия',es:'Australia'},china:{jp:'中国',de:'China',ru:'Китай',es:'China'},joseon:{jp:'李氏朝鮮',de:'Joseon',ru:'Чосон',es:'Joseon'}};   /* (#R117) owners used by the CShapes era names */
     function _eraLocName(nm){ try{ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; if(lg==='en') return null; const low0=String(nm||'').trim(); if(!low0) return null;
       const _loc1=(low)=>{
         const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(low)){ const n=S.name&&(S.name[lg]||S.name.en); if(n&&n!==low) return n; break; } } }
@@ -29397,7 +29722,7 @@ window.addEventListener('DOMContentLoaded', () => {
          East Indies): the aourednik polygon keeps the MODERN name ("Germany") but countryStats is renamed to the era
          name — map the modern polygon name → the current era display name so the LABEL shows the era name too, not the
          modern one. Only when HistId actually renamed the entry this era (s._histId). */
-      try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies']};
+      try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies'],JPN:['Japan'],RUS:['Russia'],GBR:['United Kingdom'],ESP:['Spain'],PRT:['Portugal'],BRA:['Brazil'],EGY:['Egypt']};   /* (#R117) expanded identities */
         for(const code in MODNM){ const s=(typeof countryStats!=='undefined')&&countryStats[code]; if(!s||s._histHidden||!s._histId) continue;
           const disp=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(!disp) continue; MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
       if(!cur.size) return fc;
@@ -29425,7 +29750,16 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const s=map.getSource('imtb-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){}
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
-    async function go(year){ active=true; const ny=nearest(year); const my=++seq;
+    async function go(year){ active=true; const my=++seq;
+      /* (#R117) 1886–2019 → YEARLY CShapes borders (the year's July-1 state). Falls back to the aourednik
+         snapshot path below if the CShapes bundle can't be loaded. */
+      if(year>=CS_MIN&&year<=CS_MAX){ const d=await csLoad();
+        if(my!==seq||!active) return;
+        if(d){ const key='cs'+year;
+          if(shownY===key){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
+          let fc=cache.get(key); if(!fc){ try{ fc=csFC(d,year); cache.set(key,fc); }catch(_){ fc=null; } }
+          if(fc){ shownY=key; shownCorr=false; apply(fc); return; } } }
+      const ny=nearest(year);
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
       const corr=(year>=1951);
       if(shownY===ny&&shownCorr===corr){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
@@ -29433,7 +29767,7 @@ window.addEventListener('DOMContentLoaded', () => {
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
-      if(e.isLive || e.year>=new Date().getFullYear() || e.year>YEARS[YEARS.length-1]){ clear(); return; }
+      if(e.isLive || e.year>=new Date().getFullYear() || e.year>CS_MAX){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base */
       go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },120); });
     /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
        language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
@@ -29441,7 +29775,8 @@ window.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(_eraCorrect(fc, shownCorr?1951:1900)); }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
-    (function warm(){ const pf=()=>{ let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); };
+    (function warm(){ const pf=()=>{ csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
+        let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); };
       if('requestIdleCallback' in window) requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,3500); })();
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
@@ -29479,7 +29814,8 @@ window.addEventListener('DOMContentLoaded', () => {
     /* resolve an era polygon (its NAME + the click point) to the app's historical entity → the era display name,
        Wikipedia title and the full geometry. countryStats already carries the era name/wiki (IntMapHistId +
        IntMapHistStates ran on this travel), so this just has to find the right code. */
-    function resolveHist(nm,lngLat){ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; const out={ name:nm, wiki:nm, code:null, geometry:null };
+    function resolveHist(nm,lngLat){ const lg=(typeof currentLang!=='undefined')?currentLang:'en';
+      const out={ name:nm, wiki:String(nm||'').replace(/\s*\([^)]*\)\s*$/,'')||nm, code:null, geometry:null };   /* (#R117) fallback Wikipedia title without the "(France)/(UK)…" possessor suffix — "French Sudan (France)" → "French Sudan" */
       try{ const ftr=featureAt(nm,lngLat); if(ftr&&ftr.geometry) out.geometry=ftr.geometry; }catch(_){}
       let code=null, empire=false;
       /* 1) empires / former states — the era polygon NAME matches a former-state regex. The historical basemap is
