@@ -5,6 +5,40 @@
 
 ---
 
+## R129 — 範囲人口Progress根治・戦間期ユーゴ単一化・モバイル分類名整列・Countriesクリック国選択追加・歴史拡充 (tag `#R129`)
+
+ユーザー要望5件を「実現象＝根本原因特定」で処理。5並列Explore（範囲人口Progress UI・歴史クリック解決・モバイル分類名CSS・Countries検索/picker・歴史データ棚卸し）で現状を地図化し、Browserペインのデータ層で全項目をヘッドレス実測。全1コミット。
+
+### ① 範囲人口が「数十%までいってから0%から再スタート」する（UI不自然・追記）— `IntMapPopArea`
+- **根因**: コアの `done/cells.length` は単調で正しい。UIの**2つの進捗ドライバの引き継ぎが非単調**だった。measure/areaボタン(`#tp-pop-btn` 6052-)と自由描画(`_estimateDrawPop` 17200-)の両方で、(A) 時間ベースの漸近ランプ `0.92*(1-e^{-el/9})` と (B) 実タイル進捗 `onProg(done/cells.length)` が別々に描画。大面積では最初のタイル完了に5-30秒かかり、その間ランプが数十%まで登る→onProg発火時に `1/タイル数`(≈3%に clamp)へ**逆戻り**→再上昇。逆戻り幅はタイル数（面積）とともに拡大＝報告の「大きい範囲で」に一致。
+- **修正(#R129)**: 表示フラクションの最大値を保持する `_sp`（`if(f<shown) f=shown`）で単調化。実進捗はランプ引き継ぎ点 `hand=shown` より**上の帯 `[hand,1]` に再マップ**（`hand+(1-hand)*f`）→ランプが到達した位置から前進を継続、逆戻りゼロ。radius円モードの `_setProg` も `_sp` に。
+- **実測（ロジック検証）**: 8秒ランプでピーク51.6%→50タイルの onProg で 52.5→53.5→…→100%、**逆戻り0回**（旧コードは51.6%→2%へ落下）。
+
+### ② 戦間期のcompareクリック国選択が現代国境に断片化（再報告「まだ。1920sのポーランドや、アフリカの植民地時代など、誤判定が大量にある」）
+- **調査結論**: R128の `_gw`→`_GW2ISO` 解決で**大半は既に正しい**（実測: 1925ワルシャワ/クラクフ/**ルヴフ**/**ヴィリニュス**→POL、マリ/ケニア/アルジェリア/セネガル/ガーナ/アンゴラ/南ローデシア→正しい後継。IntMapHistStates.apply適用時は A-H→AUH、チェコスロバキア→CSK、オスマン→OTT も全域で単一エンティティ）。**残る決定的な誤判定は戦間期ユーゴスラビア王国**＝CShapesはgw345「Yugoslavia」1ポリゴンで描くが registry が SFRY(1945+)のみ→step3のPIPで現代 SRB/HRV/SVN/BIH/MKD/MNE に**断片化**（A-H/チェコスロバキアは単一化されるのに不整合）。
+- **修正(#R129)**: `IntMapHistStates.STATES` に **Kingdom of Yugoslavia**（`code:'YGK'`, `madCode:'YUG'`, 1918-12-01〜1945-11-28, 5言語名・王国旗`F_YUGK`＝星なし汎スラヴ三色・`wiki:'Kingdom of Yugoslavia'`, `popEst:15.4M/gdpEst:32`）を追加。`madCode` で agg が Maddison の連続YUG系列を直接参照（後継国は戦前データ皆無）。SFRYと時間的不重複（to=1945-11-28 vs from=1945-11-29）で同一名衝突なし。`agg` に `S.madCode||S.code`、`_eraLocName` の `_loc1` は**存続期間一致を優先**（非英語1925ラベルがSFRY名へ化けるのを防止）。`HB_MATCH['YGK']=/yugoslav/i`。
+- **`_pickResolve` の当時ポリゴンPIPを最小面積内包地物に**（19834）＝簡略化ポリゴンが国境で重なる場合に大きな隣国を誤取得しない（Kresy→USSR誤判定を防止）。
+- **実測**: ベオグラード/ザグレブ/リュブリャナ/サラエボ/スコピエ 1925 → **すべて Kingdom of Yugoslavia**（データ 1925=13.4M/$23.5B・1930=14.4M/$27.9B・1938=16.1M/$32B, Maddison実値、王国旗well-formed）。1943（占領期）もYGK（断片化ギャップなし）。SFRY(1960/1975)・A-H(1914)・チェコスロバキア(1925)・ソ連(1960)は**不変**。
+
+### ③ モバイル版のレイヤー分類名が小さい・余白に合ってない（再報告）
+- **根因（真の原因は箱モデル）**: R127/R128で18.5pxまで上げたが依然「小さい・余白に合ってない」。実測で判明＝分類見出しは `width:100%`（`#mo-mount-layers .layer-dropdown > *`）に**強制**されつつ `margin:27px 6px 11px`（左右6px）で押されるため、フル幅の箱がシート右端を**6px超過**（見出し right=363 vs 行 right=357）し、下線が行のハイライト分割線と**ずれていた**。文字も行15.5pxに対し+3pxのみ。
+- **修正(#R129)**: 横marginを撤廃（`margin:26px 0 0`）、横paddingを行と同じ12pxに（`padding:2px 12px 9px`）＝テキスト位置と全幅下線が**行と完全一致**。サイズ 18.5→**20px**（行比+4.5pxの明快な段差）。Active/Favorites見出し(1422)も20pxへ。
+- **実測**: 見出し「Oceans & maritime」= 20px/700・left=18/right=357、行 left=18/right=357（**leftDelta=0/rightDelta=0**）。超過/ずれ根治。
+
+### ④ 昔の年代でもCountriesの地図クリック国選択を（再報告の中核）＋ ⑤ Countries初期画面の検索欄右にクリック国選択ボタン
+- **根因**: 「マップをクリックして国選択」は開いた比較ウィンドウ内の◎（`IntMapStatsCompare._pickResolve`）にしか無く、**初期Countries画面には無かった**。初期画面でマップをクリックすると country-fill ハンドラ(5292)が**現代ポリゴンの `resolveCountryId`→`showCountryDetail`**＝タイムトラベル中も現代国を選ぶ（「クリック判定は現在の国境」の主因）。
+- **修正(#R129)**: 検索欄の右にクロスヘアボタン（`#csearch-pick`／ws-mode `#csearch-pick-ws`、5言語 `pickCountryMap`、`.search-bar` は `flex`＋入力 `flex:1;min-width:0` なので**改行しない**）。押すと era対応 picker が起動＝当時ポリゴンPIP（最小面積）→`resolveHist`（王国・植民地・帝国）→データ有れば `_toggleCompare(code)`、無ければ正直な「この年代の比較データなし」トースト（現代国へsnapしない）。`window.__scpPick` を立てて country-fill/handleMapClick を抑止、ESC/再クリック/タブ離脱で解除。`renderUI` が Countries タブ時のみ `.on-tab` で表示（News/Info タブには漏らさない）。
+- **実測**: Countriesタブでボタンが `display:flex` に、入力と**同一行**（inpTop=btnTop、btnRight=354<barRight=359）、`window.__countryPick(true)`で `__scpPick`/カーソル/`.on` 反映。解決ラダーは検証済 `resolveHist` と同一（ベオグラード1925→YGK、パリ1925→FRA）。※実maplibreクリックの発火は headless（isolated world から page-scoped `map` 不可）では非検証・ロジックレプリカで代替。
+
+### ⑥ 歴史データ拡充（継続）
+- (名/旗/統計) 上記 **Kingdom of Yugoslavia**（王国旗`F_YUGK`・5言語名・Maddison実データ）。
+- (Wiki) `_ERA_WIKI` +6コード：ALB（共和国1925-28/王国1928-39/社会主義人民共和国1946-91）・ISL（アイスランド王国1918-44）・MNE（モンテネグロ王国1900-18）・NPL（ネパール王国1900-2008）・NOR（スウェーデン=ノルウェー連合1900-05）＋LAO にラオス王国(1953-75)。全記事の実在を en.wikipedia API で確認。
+
+### 検証環境の要点
+- Browserペインは `document.hidden=true` で Map の WebGL 未init（スクショ不可・isolated worldから page-scoped `map` 不可）だが、**データ層は完全動作**: `IntMapPopArea` の Progress ロジック、`IntMapTimeBorders._go/resolveHist/currentFC`、`IntMapHistStates.agg`（Maddison実サム）、`_eraLocName`、旗の `DOMParser`、モバイルシートDOMの `getBoundingClientRect` 実測まで全てヘッドレスで確定。ローカルは `python -m http.server`+`preview_start`（cache-bust クエリで再取得）。Edit hook が保存毎に file:// タブを量産→`tabs_close`。
+
+---
+
 ## R128 — 再報告4件の根治バッチ（範囲人口の大面積失敗・通常モード分類名・昔年代クリックの決定論化・歴史データ拡充） (tag `#R128`)
 
 ユーザー再報告4件を「実現象＝根本原因特定」で処理。今回はBrowserペインの**データ層が動く**利点を最大化し、範囲人口の実サム（6/6タイル・25.3M・64秒）と `resolveHist` の `_gw` 解決（ポズナン→DEU）を**ヘッドレス実測で確定**。2並列Explore（歴史データ棚卸し・era→コードマッピング）で現状を地図化してから着手。全1コミット。

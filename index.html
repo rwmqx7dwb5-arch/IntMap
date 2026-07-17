@@ -178,6 +178,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     input::-webkit-input-placeholder, textarea::-webkit-input-placeholder{ color:var(--text-main) !important; opacity:0.82 !important; }
     .search-btn{ background:var(--primary-color); color:#fff; border:none; padding:8px 14px; font-size:13px; font-weight:600; border-radius:9px; flex-shrink:0; transition:0.2s; }
     .search-btn:hover{ filter:brightness(1.08); }
+    /* (#R129) "pick a country on the map" crosshair, shown inline at the right of the Countries search field (same
+       control as the compare window's ◎). flex:0 0 auto so it never wraps the single-row search bar. */
+    .csearch-pickbtn{ flex:0 0 auto; width:34px; height:32px; display:none; align-items:center; justify-content:center; border-radius:9px; border:1px solid rgba(128,128,128,0.3); background:var(--card-bg); color:var(--text-muted); cursor:pointer; transition:.15s; padding:0; }
+    .csearch-pickbtn.on-tab{ display:inline-flex; }
+    .csearch-pickbtn:hover{ color:var(--text-main); border-color:var(--primary-color); }
+    .csearch-pickbtn.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
     .content-area{ overflow-y:auto; flex:1; min-height:0; margin-right:-10px; padding-right:10px; padding-top:4px; padding-bottom:4px; display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; }
     .content-area::-webkit-scrollbar{ width:4px; } .content-area::-webkit-scrollbar-thumb{ background:rgba(128,128,128,0.2); border-radius:10px; }
     .empty-msg{ text-align:center; color:var(--text-muted); font-size:13px; padding:48px 16px; line-height:1.6; }
@@ -1415,11 +1421,17 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
          below the rows) and the top margin tightened a touch so the section rhythm matches the padding. */
       /* (#R124) category labels were still SMALLER than the 15.5px rows (13.5px) so they read as under-sized against
          the roomy 50px rows. (#R127) 16px was only +0.5px over the rows — still re-reported as "テキストサイズが小さい／
-         余白に合ってない／UIとしておかしい": bold alone didn't set it apart from the tall rows and 18px side padding, so
-         it read as just another row. Make them unmistakable section headers: 18.5px (a clear +3px step over the rows),
-         weight 700, full contrast, a bit more top/bottom air — a proper iOS grouped-list header. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:27px 6px 11px !important; padding:0 6px 9px !important; font-size:18.5px !important; font-weight:700 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:-0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.18) !important; }
-      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:700 !important; font-size:18.5px !important; letter-spacing:-0.01em !important; color:var(--text-main) !important; }
+         余白に合ってない／UIとしておかしい".
+         (#R129) ROOT CAUSE of the persistent "余白に合ってない" was NOT the font size — it was the BOX MODEL: the header
+         is forced to width:100% (line ~1366 `#mo-mount-layers .layer-dropdown > * {width:100%}`), and the old
+         `margin:… 6px …` (horizontal) then pushed that full-width box 6px to the RIGHT, so it overflowed the sheet's
+         right edge by 6px and its underline no longer lined up with the full-width row dividers (the header rule started
+         6px in and ended 6px past the rows). Fix: NO horizontal margin (align the box to the dropdown/rows), 12px
+         horizontal PADDING so the text sits exactly under the row text (rows use padding:12px), and the underline now
+         spans the same full width as every row hairline. Size bumped 18.5→20px = a clear +4.5px step over the 15.5px
+         rows so it unmistakably reads as a section header. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:26px 0 0 !important; padding:2px 12px 9px !important; font-size:20px !important; font-weight:700 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:-0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.18) !important; }
+      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:700 !important; font-size:20px !important; letter-spacing:-0.01em !important; color:var(--text-main) !important; }
       #mo-mount-layers #layer-tools button, #mo-mount-layers #layer-tools .btn-settings{ font-size:14.5px !important; padding:12px !important; border-radius:12px !important; min-height:44px !important; box-sizing:border-box !important; }
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
          scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
@@ -1986,6 +1998,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     <div class="search-bar" id="sidebar-search-bar">
       <input type="text" id="search-input" class="search-input" placeholder="Search..." data-i18n-ph="searchPh">
       <button class="search-btn" id="btn-search" data-i18n="searchLoadBtn" title="Search if the box has text, otherwise reload with the current news settings">Search / Load</button>
+      <button class="csearch-pickbtn" id="csearch-pick" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
     </div>
     <!-- (#R30) All/Saved AND Subject/Publisher share ONE row ("Newsのall/saved, subject/publisher locationは
          一列に"). News location is pre-analysed server-side (refresh-news → current_news); no client AI-locate. -->
@@ -2011,6 +2024,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
          windows, so Countries can no longer borrow the shared #sidebar-search-bar (which lives in News). -->
     <div class="search-bar" id="countries-search-bar" style="display:none;">
       <input type="text" id="countries-search-input" class="search-input" placeholder="Filter countries…" data-i18n-ph="filterCountriesPh">
+      <button class="csearch-pickbtn on-tab" id="csearch-pick-ws" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
     </div>
     <div class="content-area" id="countries-feed" style="display:none;"></div><!-- (#R78e) Countries gets its OWN feed so News & Countries can be separate workspace windows -->
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
@@ -2491,7 +2505,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== i18n ===== */
   const i18n={
     en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabStats:"Countries",
-      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
+      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
@@ -2524,7 +2538,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
     jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabStats:"国別統計",
-      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
+      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
@@ -2559,7 +2573,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R22) German + Russian cover the visible static UI; anything not listed falls back to English
        (the long tail of dynamically-built strings is still EN/JP only — see t() fallback). */
     de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabStats:"Länder", tabCommunity:"Community",
-      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
+      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
       viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
       settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
       setSecAppearance:"Aussehen", setSecLayout:"Layout & Panels", setSecMap:"Kartenverhalten", setSecUnits:"Einheiten & Zeit", setSecNews:"Nachrichten & Ticker", setSecAI:"KI", setSecKeys:"Integrationen & Schlüssel", setSecAbout:"Info & Support",
@@ -2606,7 +2620,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem datumsfähigen Anbieter (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Kartenbilder konnten nicht erfasst werden.",
       mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
     ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabStats:"Страны", tabCommunity:"Сообщество",
-      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
+      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
       viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
       settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
       setSecAppearance:"Внешний вид", setSecLayout:"Макет и панели", setSecMap:"Поведение карты", setSecUnits:"Единицы и время", setSecNews:"Новости и лента", setSecAI:"ИИ", setSecKeys:"Интеграции и ключи", setSecAbout:"О приложении и поддержка",
@@ -2654,7 +2668,7 @@ window.addEventListener('DOMContentLoaded', () => {
       mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" },
     /* (#R40) Spanish (beta). Covers the visible static UI like DE/RU; anything not listed falls back to English (t() fallback). */
     es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabStats:"Países", tabCommunity:"Comunidad",
-      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
+      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
       viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
       settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
       setSecAppearance:"Apariencia", setSecLayout:"Diseño y paneles", setSecMap:"Comportamiento del mapa", setSecUnits:"Unidades y hora", setSecNews:"Noticias y cinta", setSecAI:"IA", setSecKeys:"Integraciones y claves", setSecAbout:"Información y soporte",
@@ -6049,12 +6063,19 @@ window.addEventListener('DOMContentLoaded', () => {
           if(pb2&&pb2.parentNode) pb2.parentNode.insertBefore(box,pb2.nextSibling); else p.appendChild(box); }
         box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.style.display='block'; return box; };
       const _setProg=(box,frac)=>{ try{ const f=Math.max(0,Math.min(1,frac)); const fill=box.querySelector('.tp-prog-fill'), pct=box.querySelector('.tp-prog-pct'); if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} };
-      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); let t0=Date.now(), base=0, span=1, done=false, realProg=false;
+      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); let t0=Date.now(), base=0, span=1, done=false, realProg=false, shown=0, hand=0;
+        /* (#R129) MONOTONIC progress. The bar has two drivers: a time-based ramp (Driver A, below) and the estimate's
+           real per-tile fraction (Driver B, onProg). For a large tiled area the first tile takes ~5-30 s, during which
+           the ramp climbs to several-tens-of-%, then Driver B took over at 1/tiles (≈3%) and the bar SNAPPED BACKWARDS
+           to ~0 and re-climbed ("数十%までいってから0%から再スタート"). Fix: `_sp` never displays less than the highest
+           fraction already shown, and real progress is remapped into the band ABOVE the ramp's hand-off point so it
+           continues forward from where the ramp left off instead of resetting. */
+        const _sp=(f)=>{ f=Math.max(0,Math.min(1,f)); if(f<shown) f=shown; shown=f; _setProg(box,f); };
         /* (#R124) once the estimate reports REAL per-tile progress (a large tiled area), the time-based ramp yields
            to it — otherwise the bar sat at ~92% for the whole minute-long tiled sum ("読み込み中で止まる"). */
-        const tick=()=>{ if(done||realProg) return; const el=(Date.now()-t0)/1000; const ramp=0.92*(1-Math.exp(-el/9)); _setProg(box, base+span*ramp); };
+        const tick=()=>{ if(done||realProg) return; const el=(Date.now()-t0)/1000; const ramp=0.92*(1-Math.exp(-el/9)); _sp(base+span*ramp); };
         const timer=setInterval(tick,200); tick();
-        const onProg=(f)=>{ realProg=true; _setProg(box, base+span*Math.max(0.03,Math.min(0.985,f))); };
+        const onProg=(f)=>{ if(!realProg){ realProg=true; hand=shown; } f=Math.max(0,Math.min(1,f)); _sp(hand+(1-hand)*f); };
         try{
           pb2.disabled=true; pb2.textContent=t('popCalcing');
           if(toolMode==='area'&&measurePoints.length>=3){
@@ -6062,7 +6083,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const r=await window.IntMapPopArea.estimate(geom, onProg); done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
             showRes(r.pop,r.year,r.src,false); pb2.style.display='none'; return; }
           if(toolMode==='radius'&&radiusItems.length){ let tot=0, yr=2020, src='WorldPop'; const N=radiusItems.length;
-            for(let i=0;i<N;i++){ base=i/N; span=1/N; t0=Date.now(); const c=radiusItems[i]; const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r=await window.IntMapPopArea.estimate(g); tot+=r.pop; yr=r.year; src=r.src; _setProg(box,(i+1)/N); }
+            for(let i=0;i<N;i++){ base=i/N; span=1/N; t0=Date.now(); const c=radiusItems[i]; const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r=await window.IntMapPopArea.estimate(g); tot+=r.pop; yr=r.year; src=r.src; _sp((i+1)/N); }
             done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
             showRes(tot,yr,src,N>1); pb2.style.display='none'; return; }
           done=true; clearInterval(timer); box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popInArea');
@@ -9337,6 +9358,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const sumBtn=document.getElementById('ai-view-summary-btn');
     const isNewsTab=(currentMode==='news'||currentMode==='saved');
     if(searchBtn) searchBtn.style.display=isNewsTab?'':'none';
+    /* (#R129) the Countries search bar's "pick on the map" crosshair shows only on the Countries tab (the bar is
+       shared with News/Info); leaving Countries cancels an active pick so the crosshair/handler never lingers. */
+    { const cpk=document.getElementById('csearch-pick'); if(cpk) cpk.classList.toggle('on-tab', currentMode==='stats'); }
+    if(!document.body.classList.contains('ws-mode') && currentMode!=='stats' && window.__countryPickActive && window.__countryPickActive()){ try{ window.__countryPick(false); }catch(_){} }
     /* (#R85) "要約ボタンがニュースウィンドウを開いてなくても表示される": in workspace mode renderUI still runs with
        currentMode==='news' even when the News WINDOW is hidden, so the summarize-view button leaked onto the map.
        Also require the News window to be visible in ws-mode (_wsNewsHidden() is always false outside ws-mode, so
@@ -9825,6 +9850,57 @@ window.addEventListener('DOMContentLoaded', () => {
      so closing the window clears the "countries selected" state visible on the map. Mirrors _setCountriesInfo. */
   window._wsCountryInfo=function(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==!!on){ cb.checked=!!on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} };
   (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
+  /* (#R129) COUNTRIES-screen "pick a country on the map" (search-bar crosshair #csearch-pick / #csearch-pick-ws).
+     The compare pick control used to live ONLY inside the opened compare window; the INITIAL Countries screen had no
+     map-pick, and a plain map click there ran showCountryDetail on the MODERN polygon — so while time-travelling it
+     picked the present-day country, not the era one ("昔の年代でも…地図クリック国選択"). This resolver goes ERA-AWARE
+     first (Kingdom of Yugoslavia, colonies, empires via resolveHist), else the modern country, then toggles the
+     result into the compare set via _toggleCompare (same store the country rows use). */
+  (function(){
+    let picking=false, bound=null, keyH=null;
+    const _pl=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    const _btns=()=>[document.getElementById('csearch-pick'),document.getElementById('csearch-pick-ws')].filter(Boolean);
+    function resolveAt(lngLat){
+      try{ const TB=window.IntMapTimeBorders;
+        if(TB&&TB.active&&TB.active()&&typeof map!=='undefined'&&map){
+          let nm=null;
+          /* era polygon under the click — SMALLEST-area containing feature (simplified era polygons overlap at borders) */
+          try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]); let bA=Infinity;
+            for(const f of fc.features){ try{ if(f.geometry&&turf.booleanPointInPolygon(tp,f)){ const bb=turf.bbox(f); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bA){ bA=a; nm=f.properties&&(f.properties.NAME||f.properties.name); } } }catch(_){} } } }catch(_){}
+          /* coastal near-miss rescue (a shoreline click just outside the simplified era coastline) */
+          if(!nm){ try{ const fc2=TB.currentFC&&TB.currentFC(); if(fc2&&fc2.features){ let bd=0.7,bn=null;
+            const scan=(cs,f)=>{ if(typeof cs[0]==='number'){ const dx=(cs[0]-lngLat.lng)*Math.cos(lngLat.lat*Math.PI/180), dy=cs[1]-lngLat.lat; const d=Math.hypot(dx,dy); if(d<bd){ bd=d; bn=f.properties&&(f.properties.NAME||f.properties.name); } } else cs.forEach(c2=>scan(c2,f)); };
+            for(const f of fc2.features){ try{ if(!f.geometry) continue; const bb=turf.bbox(f); if(lngLat.lng<bb[0]-0.8||lngLat.lng>bb[2]+0.8||lngLat.lat<bb[1]-0.8||lngLat.lat>bb[3]+0.8) continue; scan(f.geometry.coordinates,f); }catch(_){} }
+            if(bn) nm=bn; } }catch(_){} }
+          if(nm&&TB.resolveHist){ const R=TB.resolveHist(nm,lngLat);
+            if(R&&R.code&&countryStats[R.code]) return {code:R.code};
+            /* a REAL era entity with no comparable data — report honestly, do NOT snap to the modern country */
+            if(R&&R.name) return {eraNoData:true, eraName:R.name}; }
+        } }catch(_){}
+      try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); let best=null,bA=Infinity; for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ const bb=turf.bbox(f); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bA){ bA=a; best=f; } } }catch(_){} } if(best) return {code:resolveCountryId(best)}; } }catch(_){}
+      return {code:''};
+    }
+    function onClick(e){ if(!picking||!e||!e.lngLat) return;
+      const res=resolveAt(e.lngLat)||{};
+      if(res.eraNoData){ try{ imToast(_pl('No comparable data for '+res.eraName+' in this era','「'+res.eraName+'」はこの年代の比較データがありません','Keine Vergleichsdaten für '+res.eraName+' in dieser Epoche','Нет данных для «'+res.eraName+'» в эту эпоху','Sin datos comparables para '+res.eraName+' en esta época')); }catch(_){} return; }
+      const cd=res.code; if(!cd){ try{ imToast(_pl('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
+      try{ window._toggleCompare(cd); }catch(_){}
+      try{ const s=(typeof countryStats!=='undefined')&&countryStats[cd]; const nm=(s&&((currentLang==='jp'&&s.nameJp)?s.nameJp:s.nameEn))||cd; imToast((compareSet.has(cd)?'✓ ':'− ')+nm); }catch(_){}
+    }
+    window.__countryPickActive=()=>picking;
+    window.__countryPick=function(on){ const nv=(on==null)?!picking:!!on;
+      _btns().forEach(b=>b.classList.toggle('on',nv));
+      if(nv===picking) return; picking=nv; window.__scpPick=picking;
+      try{ const cv=map&&map.getCanvas&&map.getCanvas(); if(cv) cv.style.cursor=picking?'crosshair':''; }catch(_){}
+      if(picking&&!bound){ try{ map.on('click',onClick); bound=onClick; }catch(_){} }
+      if(!picking&&bound){ try{ map.off('click',bound); }catch(_){} bound=null; }
+      if(picking&&!keyH){ keyH=(ev)=>{ if(ev.key==='Escape') window.__countryPick(false); }; try{ document.addEventListener('keydown',keyH); }catch(_){} }
+      else if(!picking&&keyH){ try{ document.removeEventListener('keydown',keyH); }catch(_){} keyH=null; }
+      if(picking){ try{ imToast(_pl('Click a country on the map to add it','地図で国をクリックすると比較に追加されます','Land auf der Karte anklicken zum Hinzufügen','Кликните страну на карте, чтобы добавить','Haz clic en un país del mapa para añadirlo')); }catch(_){} }
+    };
+    /* wire the button(s); guard against a rebuild double-binding */
+    _btns().forEach(b=>{ if(b&&!b.__cpWired){ b.__cpWired=1; b.onclick=()=>window.__countryPick(); } });
+  })();
   /* (#R122) COUNTRIES NUMERIC FILTER — filter the list by indicator thresholds (≥ / ≤), combinable with the sort.
      e.g. population ≥ 5M then sort by GDP desc. Conditions persist across re-renders. */
   let statsFilters=[], statsFilterOpen=false;
@@ -16472,6 +16548,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_SUN=flag('<rect width="30" height="20" fill="#CC0000"/><g fill="#FFD700" transform="scale(0.025)"><path d="'+_SUN_STAR+'"/><g transform="matrix(0.98931879,0,0,0.98673811,3.8297658,3.7659398)"><path d="'+_SUN_HAMMER+'"/><path d="'+_SUN_SICKLE+'"/></g></g>');
     const F_TRICOL='<rect width="30" height="20" fill="#003893"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DE2110"/>';
     const F_YUG=flag(F_TRICOL+STAR(15,10,4.7,'#DE2110','#FCD116'));
+    const F_YUGK=flag(F_TRICOL);   /* (#R129) Kingdom of Yugoslavia (1918–1941): pan-Slavic blue-white-red tricolour, NO socialist star */
     const F_SCG=flag(F_TRICOL);
     const F_CSK=flag('<rect width="30" height="20" fill="#ffffff"/><rect y="10" width="30" height="10" fill="#D7141A"/><path d="M0,0 15,10 0,20Z" fill="#11457E"/>');
     const F_UAR=flag('<rect width="30" height="6.667" fill="#CE1126"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#000000"/>'+STAR(11.5,10,1.7,'#007A3D')+STAR(18.5,10,1.7,'#007A3D'));
@@ -16498,6 +16575,16 @@ window.addEventListener('DOMContentLoaded', () => {
       { code:'YUG', from:'1945-11-29', to:'1992-04-27', flag:F_YUG, region:'Europe', wiki:'Socialist Federal Republic of Yugoslavia',
         name:{en:'Yugoslavia (SFRY)',jp:'ユーゴスラビア（社会主義連邦共和国）',de:'Jugoslawien (SFRJ)',ru:'Югославия (СФРЮ)',es:'Yugoslavia (RFSY)'},
         succ:['SVN','HRV','BIH','MKD','SRB','MNE','XKX'] },
+      /* (#R129) INTERWAR Kingdom of Yugoslavia (1918–1941) — CShapes draws it as one polygon "Yugoslavia" (gwcode 345),
+         but it had no registry entry, so a map click FRAGMENTED it into modern Serbia/Croatia/Slovenia/… under the
+         cursor (the reported "国境線と国家は昔なのに、クリック判定は現在の国境" for interwar Eastern Europe). Now it
+         resolves to ONE entity like Austria-Hungary / Czechoslovakia. `madCode:'YUG'` reuses the Maddison Project's
+         continuous Yugoslavia series (real interwar GDP/pop: 1925 ≈ $23.5B / 13.4M) since the modern successors have no
+         separate pre-war data. Temporally disjoint from the SFRY entry above (to 1945-11-28 vs from 1945-11-29), so the
+         duplicate-name never collides — activeAt() returns only one for any given date. */
+      { code:'YGK', madCode:'YUG', from:'1918-12-01', to:'1945-11-28', flag:F_YUGK, region:'Europe', wiki:'Kingdom of Yugoslavia',
+        name:{en:'Kingdom of Yugoslavia',jp:'ユーゴスラビア王国',de:'Königreich Jugoslawien',ru:'Королевство Югославия',es:'Reino de Yugoslavia'},
+        succ:['SVN','HRV','BIH','MKD','SRB','MNE'], popEst:15400000, gdpEst:32, estSrc:'1931 census ~13.9M → 1941 ~15.9M / Maddison YUG' },
       { code:'SCG', from:'1992-04-27', to:'2006-06-05', flag:F_SCG, region:'Europe', wiki:'Serbia and Montenegro',
         name:{en:'Serbia and Montenegro',jp:'セルビア・モンテネグロ',de:'Serbien und Montenegro',ru:'Сербия и Черногория',es:'Serbia y Montenegro'},
         succ:['SRB','MNE','XKX'] },
@@ -16561,15 +16648,16 @@ window.addEventListener('DOMContentLoaded', () => {
       /* GDP & population from the Maddison Project (real 2011 int$): SUN/YUG/CSK are first-class Maddison
          entities (used directly); the others sum their successors' Maddison values. Real & sourced. */
       let gdp=null, mpop=null, real=false;
+      const _mc=S.madCode||S.code;   /* (#R129) Maddison series id — lets the interwar Kingdom of Yugoslavia (code YGK) reuse the continuous "YUG" series */
       if(M&&M.ready()&&year){
-        if(M.has(S.code,year)){ gdp=M.gdpBil(S.code,year); mpop=M.popN(S.code,year); real=true; }
+        if(M.has(_mc,year)){ gdp=M.gdpBil(_mc,year); mpop=M.popN(_mc,year); real=true; }
         else { let g=0,p=0,gh=false,ph=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null){g+=cg;gh=true;} if(cp!=null){p+=cp;ph=true;} }); if(gh){gdp=g;real=true;} if(ph) mpop=p; }
       }
       if(mpop!=null&&mpop>0) pop=mpop;
       /* (#R109) EMPIRE ESTIMATE OVERRIDE: when Maddison has no single entity for this state, its successor-sum is
          incomplete — fall back to the documented empire-wide figure whenever the computed value is missing or
          implausibly low (< 60% of the estimate). "明らかにおかしい" A-H 6.84M → 52.8M. */
-      const _hasMad=!!(M&&M.ready()&&M.has(S.code,year));
+      const _hasMad=!!(M&&M.ready()&&M.has(_mc,year));
       if(S.popEst && !_hasMad && (pop==null || pop < S.popEst*0.6)){ pop=S.popEst; real=true; }
       if(S.gdpEst && !_hasMad && (gdp==null || gdp < S.gdpEst*0.6)){ gdp=S.gdpEst; real=true; }
       const nm=S.name;
@@ -16597,7 +16685,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* used by renderStats when the tab renders (countryStats already carries the applied entries + hidden flags) */
     /* (#R94h) match a former state to its polygon NAME in the aourednik era-borders data (for map colouring) */
-    const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i,
+    const HB_MATCH={ SUN:/soviet|u\.?s\.?s\.?r/i, YUG:/yugoslav/i, YGK:/yugoslav/i, SCG:/serbia and montenegro|serbia & montenegro|yugoslav/i, CSK:/czechoslovak/i, UAR:/united arab republic/i, PKU:/^pakistan$/i, SDU:/^sudan$/i, ETU:/ethiopia|abyssinia/i, IDU:/^indonesia$/i,
       AUH:/austria.?hungary|austro.?hungar|austrian empire/i, OTT:/ottoman/i, RUE:/russian empire|^russia$/i, RAJ:/british raj|british india|^india$/i, JEM:/^japan$|japanese empire|empire of japan/i };
     return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
   })();
@@ -17198,9 +17286,13 @@ window.addEventListener('DOMContentLoaded', () => {
         if(btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling); else p.appendChild(box); }
       const lbl=currentLang==='jp'?'WorldPop人口グリッドを集計中…':currentLang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':currentLang==='ru'?'Суммирование сетки населения WorldPop…':currentLang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
       box.querySelector('.tp-prog-lbl').textContent=lbl; box.style.display='block';
-      const setP=(f)=>{ try{ const v=Math.max(0,Math.min(1,f)); box.querySelector('.tp-prog-fill').style.width=(v*100).toFixed(0)+'%'; box.querySelector('.tp-prog-pct').textContent=(v*100).toFixed(0)+'%'; }catch(_){} };
+      /* (#R129) MONOTONIC progress (same fix as the measure/area panel): `setP` never shows less than the highest
+         fraction already shown, and real per-tile progress is remapped into the band above the ramp hand-off so a
+         large tiled area continues forward instead of snapping from ~40% back to ~3% ("0%から再スタート"). */
+      let shown=0, hand=0;
+      const setP=(f)=>{ try{ let v=Math.max(0,Math.min(1,f)); if(v<shown) v=shown; shown=v; box.querySelector('.tp-prog-fill').style.width=(v*100).toFixed(0)+'%'; box.querySelector('.tp-prog-pct').textContent=(v*100).toFixed(0)+'%'; }catch(_){} };
       let t0=Date.now(), done=false, realProg=false; const timer=setInterval(()=>{ if(done||realProg)return; const el=(Date.now()-t0)/1000; setP(0.92*(1-Math.exp(-el/9))); },200); setP(0);
-      const onProg=(f)=>{ realProg=true; setP(Math.max(0.03,Math.min(0.985,f))); };   /* (#R124) real per-tile progress for a large tiled area */
+      const onProg=(f)=>{ if(!realProg){ realProg=true; hand=shown; } f=Math.max(0,Math.min(1,f)); setP(hand+(1-hand)*f); };   /* (#R124/#R129) real per-tile progress for a large tiled area, remapped above the ramp hand-off */
       btn.disabled=true; const orig=btn.textContent; btn.textContent=t('popCalcing');
       try{ const r=await window.IntMapPopArea.estimate(geom, onProg); done=true; clearInterval(timer); setP(1); setTimeout(()=>{ box.style.display='none'; },500);
         const row=p.querySelector('#draw-pop-row'), val=p.querySelector('#draw-pop-val'); if(row&&val){ row.style.display=''; val.innerHTML=Number(r.pop).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+r.src+' '+r.year+(rings.length>1?' · Σ':'')+')</span>'; }
@@ -19802,8 +19894,11 @@ window.addEventListener('DOMContentLoaded', () => {
              hadn't finished rendering the pick fell through to the modern countryGeo below ("国境線と国家は昔なのに、
              クリック判定は現在の国境になっている"). The FC is authoritative regardless of render timing. */
           let nm=null;
-          try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]);
-            for(const f of fc.features){ try{ if(f.geometry&&turf.booleanPointInPolygon(tp,f)){ nm=f.properties&&(f.properties.NAME||f.properties.name); break; } }catch(_){} } } }catch(_){}
+          /* (#R129) pick the SMALLEST-area containing feature, not the first — simplified era polygons can OVERLAP at
+             borders (a big neighbour listed earlier would win a first-match and mis-resolve a border click, e.g. a
+             Polish-Kresy click grabbing the USSR polygon). Matches the popup path's majority/smallest-area logic. */
+          try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]); let bestA=Infinity;
+            for(const f of fc.features){ try{ if(f.geometry&&turf.booleanPointInPolygon(tp,f)){ const bb=turf.bbox(f); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bestA){ bestA=a; nm=f.properties&&(f.properties.NAME||f.properties.name); } } }catch(_){} } } }catch(_){}
           if(!nm){ try{ const pt=map.project([lngLat.lng,lngLat.lat]); const hit=map.queryRenderedFeatures(pt,{layers:['imtb-fill']}); nm=hit&&hit.length&&hit[0].properties&&(hit[0].properties.NAME||hit[0].properties.name); }catch(_){} }
           /* (#R125) COASTAL near-miss rescue: simplified era coastlines can exclude a shoreline city (Istanbul sits
              outside the 1914 Ottoman polygon), so the PIP above finds nothing and the pick used to fall through to
@@ -31583,7 +31678,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const _COLONIZER={france:{jp:'フランス',de:'Frankreich',ru:'Франция',es:'Francia'},uk:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},gb:{jp:'イギリス',de:'Vereinigtes Königreich',ru:'Великобритания',es:'Reino Unido'},usa:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},us:{jp:'アメリカ',de:'USA',ru:'США',es:'EE. UU.'},portugal:{jp:'ポルトガル',de:'Portugal',ru:'Португалия',es:'Portugal'},italy:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},it:{jp:'イタリア',de:'Italien',ru:'Италия',es:'Italia'},belgium:{jp:'ベルギー',de:'Belgien',ru:'Бельгия',es:'Bélgica'},spain:{jp:'スペイン',de:'Spanien',ru:'Испания',es:'España'},netherlands:{jp:'オランダ',de:'Niederlande',ru:'Нидерланды',es:'Países Bajos'},germany:{jp:'ドイツ',de:'Deutschland',ru:'Германия',es:'Alemania'},japan:{jp:'日本',de:'Japan',ru:'Япония',es:'Japón'},ru:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},russia:{jp:'ロシア',de:'Russland',ru:'Россия',es:'Rusia'},ussr:{jp:'ソ連',de:'UdSSR',ru:'СССР',es:'URSS'},egypt:{jp:'エジプト',de:'Ägypten',ru:'Египет',es:'Egipto'},'south africa':{jp:'南アフリカ',de:'Südafrika',ru:'ЮАР',es:'Sudáfrica'},ethiopia:{jp:'エチオピア',de:'Äthiopien',ru:'Эфиопия',es:'Etiopía'},jordan:{jp:'ヨルダン',de:'Jordanien',ru:'Иордания',es:'Jordania'},indonesia:{jp:'インドネシア',de:'Indonesien',ru:'Индонезия',es:'Indonesia'},denmark:{jp:'デンマーク',de:'Dänemark',ru:'Дания',es:'Dinamarca'},'austria-hungary':{jp:'オーストリア＝ハンガリー',de:'Österreich-Ungarn',ru:'Австро-Венгрия',es:'Austria-Hungría'},australia:{jp:'オーストラリア',de:'Australien',ru:'Австралия',es:'Australia'},china:{jp:'中国',de:'China',ru:'Китай',es:'China'},joseon:{jp:'李氏朝鮮',de:'Joseon',ru:'Чосон',es:'Joseon'}};   /* (#R117) owners used by the CShapes era names */
     function _eraLocName(nm){ try{ const lg=(typeof currentLang!=='undefined')?currentLang:'en'; if(lg==='en') return null; const low0=String(nm||'').trim(); if(!low0) return null;
       const _loc1=(low)=>{
-        const HS=window.IntMapHistStates; if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(re&&re.test(low)){ const n=S.name&&(S.name[lg]||S.name.en); if(n&&n!==low) return n; break; } } }
+        /* (#R129) prefer the lifespan-CORRECT former state when several share a name (interwar "Kingdom of Yugoslavia"
+           vs post-war "Yugoslavia (SFRY)" both match /yugoslav/i) — otherwise a 1925 label localized to the SFRY name. */
+        const HS=window.IntMapHistStates; if(HS&&HS.STATES){ let pick=null, matched=false, y=null;
+          try{ if(window.IntMapTime&&window.IntMapTime.year&&(!window.IntMapTime.isLive||!window.IntMapTime.isLive())) y=window.IntMapTime.year(); }catch(_){}
+          for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!(re&&re.test(low))) continue; matched=true;
+            const n=S.name&&(S.name[lg]||S.name.en); if(!(n&&n!==low)) continue;
+            if(y!=null&&S.from&&S.to){ const a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'),t=+new Date(y+'-07-01T00:00:00Z'); if(isFinite(t)&&t>=a&&t<=b) return n; }   /* era-correct wins outright */
+            if(!pick) pick=n; }
+          if(pick) return pick;   /* else first regex match (legacy behaviour) */ }
         for(const V of _VANISHED){ if(V.re.test(low)){ const n=V.nm&&(V.nm[lg]||V.nm.en); if(n&&n!==low) return n; } }
         for(const E of _ERA_LOC){ if(E[0].test(low)){ const n=E[1][lg]; if(n&&n!==low) return n; } }
         const cm=_COLONIZER[_normNm(low)]; if(cm&&cm[lg]) return cm[lg];   /* the major powers double as country-name localizations (Germany/Japan… occupation-zone bases) */
@@ -31907,7 +32010,7 @@ window.addEventListener('DOMContentLoaded', () => {
       PAK:[[1947,1956,'Dominion_of_Pakistan']],
       BGD:[[1947,1971,'East_Pakistan']],
       MYS:[[1900,1946,'British_Malaya']],
-      LAO:[[1900,1953,'French_Indochina']],
+      LAO:[[1900,1953,'French_Indochina'],[1953,1975,'Kingdom_of_Laos']],
       KHM:[[1863,1953,'French_protectorate_of_Cambodia']],
       MNG:[[1911,1924,'Bogd_Khanate_of_Mongolia'],[1924,1992,'Mongolian_People%27s_Republic']],
       CUB:[[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']],
@@ -31925,7 +32028,14 @@ window.addEventListener('DOMContentLoaded', () => {
       AFG:[[1900,1926,'Emirate_of_Afghanistan'],[1926,1973,'Kingdom_of_Afghanistan']],
       YEM:[[1918,1962,'Mutawakkilite_Kingdom_of_Yemen']],
       ERI:[[1900,1947,'Italian_Eritrea']],
-      PSE:[[1920,1948,'Mandatory_Palestine']]
+      PSE:[[1920,1948,'Mandatory_Palestine']],
+      /* (#R129) more monarchy/former-state articles that previously fell back to the modern country page (all
+         existence-verified against en.wikipedia). */
+      ALB:[[1925,1928,'Albanian_Republic_(1925%E2%80%931928)'],[1928,1939,'Albanian_Kingdom_(1928%E2%80%931939)'],[1946,1991,'People%27s_Socialist_Republic_of_Albania']],
+      ISL:[[1918,1944,'Kingdom_of_Iceland']],
+      MNE:[[1900,1918,'Kingdom_of_Montenegro']],
+      NPL:[[1900,2008,'Kingdom_of_Nepal']],
+      NOR:[[1900,1905,'Union_between_Sweden_and_Norway']]
     };
     /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
        contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its
