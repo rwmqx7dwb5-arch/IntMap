@@ -57,7 +57,38 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     }catch(e){}
   });
   </script>
-  <title>IntMap - Global Integrated Map</title>
+  </script>
+
+  <title>IntMap — Explore the world. Ask the map.</title>
+
+  <meta
+    name="description"
+    content="IntMap is an interactive world map for exploring geography, climate, history, population, global events, and more, with natural-language controls powered by Atlas."
+  >
+
+  <meta
+    property="og:title"
+    content="IntMap — Explore the world. Ask the map."
+  >
+
+  <meta
+    property="og:description"
+    content="Explore geography, climate, history, population and world events in one interactive map — then ask Atlas to control it in plain English."
+  >
+
+  <meta
+    property="og:image"
+    content="https://rwmqx7dwb5-arch.github.io/IntMap/og-image.jpg"
+  >
+
+  <meta
+    property="og:url"
+    content="https://rwmqx7dwb5-arch.github.io/IntMap/"
+  >
+
+  <meta property="og:type" content="website">
+
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
   <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
   <style>
@@ -1383,11 +1414,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
          side padding ("分類名のテキストサイズが小さい／余白に合ってない"). Bumped to 13.5px (still a clear step
          below the rows) and the top margin tightened a touch so the section rhythm matches the padding. */
       /* (#R124) category labels were still SMALLER than the 15.5px rows (13.5px) so they read as under-sized against
-         the roomy 50px rows ("テキストサイズが小さい／余白に合ってない／UIとしておかしい"). Make them PROMINENT section
-         headers: 16px (a hair larger than the rows), full-contrast text, generous top margin — a clear iOS grouped-
-         list header rather than a faint sub-label. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:24px 6px 9px !important; padding:0 6px 8px !important; font-size:16px !important; font-weight:700 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:-0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.16) !important; }
-      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:700 !important; font-size:16px !important; letter-spacing:-0.01em !important; color:var(--text-main) !important; }
+         the roomy 50px rows. (#R127) 16px was only +0.5px over the rows — still re-reported as "テキストサイズが小さい／
+         余白に合ってない／UIとしておかしい": bold alone didn't set it apart from the tall rows and 18px side padding, so
+         it read as just another row. Make them unmistakable section headers: 18.5px (a clear +3px step over the rows),
+         weight 700, full contrast, a bit more top/bottom air — a proper iOS grouped-list header. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:27px 6px 11px !important; padding:0 6px 9px !important; font-size:18.5px !important; font-weight:700 !important; color:var(--text-main) !important; text-transform:none; letter-spacing:-0.01em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.18) !important; }
+      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:700 !important; font-size:18.5px !important; letter-spacing:-0.01em !important; color:var(--text-main) !important; }
       #mo-mount-layers #layer-tools button, #mo-mount-layers #layer-tools .btn-settings{ font-size:14.5px !important; padding:12px !important; border-radius:12px !important; min-height:44px !important; box-sizing:border-box !important; }
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
          scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
@@ -5207,6 +5239,9 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R25/#28) now that countryStats exists, rebuild the geo index so the auto-country/capital
              entries join the gazetteer → the non-AI news locator gains full global coverage. */
           try{ rebuildGeoIndex(); }catch(_){}
+          /* (#R127) borders are here now → re-spread any live news pins that were placed as a tight blob while
+             countryGeo was still loading (regionFor had no polygon), so country clusters fill the real territory. */
+          try{ if(typeof _respreadNews==='function') _respreadNews(); }catch(_){}
         } else { countryDataLoaded=false; countryDataPromise=null; }
       } }
     )();
@@ -9066,57 +9101,84 @@ window.addEventListener('DOMContentLoaded', () => {
      disk when countryGeo/turf aren't available yet. */
   function _spreadDupNewsPins(feats){ try{ if(!Array.isArray(feats)||feats.length<2) return feats;
     const groups=new Map();
-    feats.forEach(f=>{ const c=f&&f.geometry&&f.geometry.coordinates; if(!c||!isFinite(+c[0])||!isFinite(+c[1])) return;
-      const k=(+c[0]).toFixed(3)+','+(+c[1]).toFixed(3); let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(f); });
+    feats.forEach(f=>{ if(!f||!f.geometry) return;
+      /* (#R127) remember each pin's ORIGINAL anchor so the spread is IDEMPOTENT — re-running it (once the async
+         country borders finish loading, see _respreadNews) re-groups by the TRUE stacked coords instead of the
+         already-scattered ones (which no longer collide → a permanent tight blob if countryGeo wasn't ready on the
+         first pass — the strongest systemic cause of "密集的に散らすだけ"). */
+      if(!f.__oc){ const c=f.geometry.coordinates; if(!c||!isFinite(+c[0])||!isFinite(+c[1])) return; f.__oc=[+c[0],+c[1]]; }
+      const c=f.__oc; const k=c[0].toFixed(3)+','+c[1].toFixed(3); let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(f); });
     const GA=2.399963229; /* golden angle (rad) */
     const cg=(window.countryGeo&&window.countryGeo.features&&window.countryGeo.features.length)?window.countryGeo:null;
     const haveTurf=(typeof turf!=='undefined');
     const _regCache=new Map();
-    /* the country polygon under an anchor + its bbox / bbox-centre (the region we spread within). */
+    /* the country polygon under an anchor + its bbox / representative centre, AND the LARGEST ring's own bbox +
+       polygon (used to spread when the whole-feature bbox is an antimeridian artifact). */
     function regionFor(c0){ if(!cg||!haveTurf) return null; const key=c0[0].toFixed(2)+','+c0[1].toFixed(2);
       if(_regCache.has(key)) return _regCache.get(key);
       let out=null; try{ const pt=turf.point(c0);
         for(const f of cg.features){ if(!f.geometry) continue; try{ if(turf.booleanPointInPolygon(pt,f)){
           const bb=turf.bbox(f);
           /* (#R124) representative point = centroid of the LARGEST ring (by bbox area), NOT the whole-feature bbox
-             centre — the latter is skewed by outlying territory (Alaska pulls the US centre up into Canada). */
-          let bc=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2];
-          try{ const polys=f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[f.geometry.coordinates]; let bestA=-1,bc2=null;
-            polys.forEach(poly=>{ const ring=poly&&poly[0]; if(!ring||ring.length<3) return; let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9,sx=0,sy=0; ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; sx+=p[0]; sy+=p[1]; }); const a=(mxx-mnx)*(mxy-mny); if(a>bestA){ bestA=a; bc2=[sx/ring.length,sy/ring.length]; } });
-            if(bc2) bc=bc2; }catch(_){}
-          out={f,bb,bc}; break; } }catch(_){} } }catch(_){}
+             centre — the latter is skewed by outlying territory (Alaska pulls the US centre up into Canada).
+             (#R127) also keep that largest ring's OWN bbox + polygon: a country whose polygon crosses the
+             antimeridian (USA/Aleutians, Russia, Fiji, NZ) has turf.bbox ≈ [-180…180], so sampling the WHOLE bbox
+             lands ~99% in open ocean → EVERY rejection sample misses → the old code collapsed to a 0.12° dot. This
+             is exactly the reported "アメリカに分類された…アメリカの領域内に分散できていない". Sample the mainland ring. */
+          let bc=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2], rbb=bb.slice(), rPoly=f;
+          try{ const polys=f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[f.geometry.coordinates]; let bestA=-1;
+            polys.forEach(poly=>{ const ring=poly&&poly[0]; if(!ring||ring.length<3) return; let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9,sx=0,sy=0; ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; sx+=p[0]; sy+=p[1]; }); const a=(mxx-mnx)*(mxy-mny); if(a>bestA){ bestA=a; bc=[sx/ring.length,sy/ring.length]; rbb=[mnx,mny,mxx,mxy]; rPoly={type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[ring]}}; } });
+          }catch(_){}
+          out={f,bb,bc,rbb,rPoly}; break; } }catch(_){} } }catch(_){}
       _regCache.set(key,out); return out; }
     function seeded(c0){ let s=Math.abs(Math.round(c0[0]*1000+c0[1]*7919))||1; return ()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
-    groups.forEach(g=>{ if(g.length<2) return; const c0=g[0].geometry.coordinates.slice();
+    groups.forEach(g=>{ if(g.length<2) return; const c0=g[0].__oc.slice();
       const ptype=String((g[0].properties&&g[0].properties.ptype)||'').toLowerCase();
       const reg=regionFor(c0);
-      /* country-level = the gazetteer typed it 'country', OR (no type, e.g. a server pin) the anchor sits near the
-         containing country's centre — i.e. it is a country-representative point, not a real city inside it. */
+      /* country-level = the gazetteer typed it 'country', OR the anchor sits near the containing country's
+         representative centre — a country-representative point (a stacked cluster ON the centroid), not a real city
+         inside it. (#R127) the proximity test now also rescues a country cluster mis-typed 'city' (a "US"/"America"
+         headline that resolved to a city term) — a genuine city almost never sits within ~1.6° of the mainland
+         centroid AND stacks dozens of duplicate stories there. */
       let countryLevel=false;
-      if(reg){ if(ptype==='country') countryLevel=true;
-        else if(!ptype){ /* (#R124) TIGHT fixed tolerance around the largest-ring centroid: a country-representative
-             anchor sits ON that point; a real city inside the country sits well away from it. */
-          countryLevel = Math.hypot(c0[0]-reg.bc[0],c0[1]-reg.bc[1]) < 2.6; } }
+      if(reg){ if(ptype==='country'||ptype==='nation') countryLevel=true;
+        else if(ptype!=='region'&&ptype!=='flashpoint'){ const near=Math.hypot(c0[0]-reg.bc[0],c0[1]-reg.bc[1]); countryLevel = near < (ptype==='city'?1.6:2.6); } }
       if(countryLevel && reg){
-        const bb=reg.bb, f=reg.f, rnd=seeded(c0), cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
-        const diag=Math.hypot(bb[2]-bb[0],bb[3]-bb[1]);
+        /* (#R127) antimeridian-safe: if the whole-feature bbox is absurdly wide it's a dateline artifact → spread
+           over the mainland ring; otherwise the full feature (best coverage for compact archipelagos like
+           Indonesia/Philippines that don't cross 180°). */
+        const crossAM=(reg.bb[2]-reg.bb[0])>180;
+        const sbb=crossAM?reg.rbb:reg.bb, sf=crossAM?reg.rPoly:reg.f, rnd=seeded(c0), cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
+        const diag=Math.hypot(sbb[2]-sbb[0],sbb[3]-sbb[1]);
         g.forEach((ft,i)=>{ let placed=null;
-          for(let k=0;k<26;k++){ const lng=bb[0]+rnd()*(bb[2]-bb[0]), lat=bb[1]+rnd()*(bb[3]-bb[1]);
-            try{ if(turf.booleanPointInPolygon(turf.point([lng,lat]),f)){ placed=[lng,lat]; break; } }catch(_){} }
-          if(!placed){ const r=Math.min(diag*0.35,0.12+0.03*Math.sqrt(i)), ang=i*GA;   /* miss → country-scale disk around the anchor */
+          for(let k=0;k<44;k++){ const lng=sbb[0]+rnd()*(sbb[2]-sbb[0]), lat=sbb[1]+rnd()*(sbb[3]-sbb[1]);
+            try{ if(turf.booleanPointInPolygon(turf.point([lng,lat]),sf)){ placed=[lng,lat]; break; } }catch(_){} }
+          if(!placed){ const r=Math.min(diag*0.42,0.5+0.14*Math.sqrt(i)), ang=i*GA;   /* miss → REGION-scaled disk (mainland diagonal), genuinely wide — not a 0.12° dot */
             placed=[c0[0]+r*Math.cos(ang)/cosl, c0[1]+r*Math.sin(ang)]; }
           ft.geometry={type:'Point',coordinates:placed}; });
       } else {
         const cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
-        const base=(ptype==='region')?0.10:(ptype==='city'||ptype==='flashpoint')?0.035:0.06;
-        const cap=(ptype==='region')?0.9:(ptype==='city'||ptype==='flashpoint')?0.22:0.4;
-        g.forEach((ft,i)=>{ if(i===0) return;   /* leave one pin on the true spot */
+        /* (#R127) widened so a mis-classified or borderless cluster still reads as DISTRIBUTED, not a dense knot;
+           still latitude-corrected and clipped back inside the containing country when one is known. */
+        const base=(ptype==='region')?0.12:(ptype==='city'||ptype==='flashpoint')?0.05:0.08;
+        const cap=(ptype==='region')?1.1:(ptype==='city'||ptype==='flashpoint')?0.32:0.5;
+        g.forEach((ft,i)=>{ if(i===0){ ft.geometry={type:'Point',coordinates:c0.slice()}; return; }   /* leave one pin on the true spot (reset on a re-spread) */
           let r=Math.min(cap,base*Math.sqrt(i)); const ang=i*GA;
           let lng=c0[0]+r*Math.cos(ang)/cosl, lat=c0[1]+r*Math.sin(ang);
           if(reg&&haveTurf){ try{ if(!turf.booleanPointInPolygon(turf.point([lng,lat]),reg.f)){ r*=0.5; lng=c0[0]+r*Math.cos(ang)/cosl; lat=c0[1]+r*Math.sin(ang); } }catch(_){} }
           ft.geometry={type:'Point',coordinates:[lng,lat]}; }); }
     });
     return feats; }catch(_){ return feats; } }
+  /* (#R127) re-run the duplicate spread on the CURRENT pins — called once the async country borders finish loading.
+     A cold-load race left a country cluster as a tight blob because regionFor() had no polygon yet; the pins kept
+     their ORIGINAL anchors in __oc, so re-spreading now fills the real territory. No-op unless news pins are live. */
+  function _respreadNews(){ try{ if(!map||!map.getSource('news-points')) return; if(!Array.isArray(newsFeatures)||newsFeatures.length<2) return;
+    const _m=(typeof currentMode!=='undefined')?currentMode:null; if(_m!=='news'&&_m!=='saved') return;
+    _spreadDupNewsPins(newsFeatures);
+    try{ map.getSource('news-points').setData({type:'FeatureCollection',features:(typeof _wsNewsHidden==='function'&&_wsNewsHidden())?[]:newsFeatures}); }catch(_){}
+    try{ scheduleNewsDeclutter(); }catch(_){}
+  }catch(_){} }
+  try{ window._respreadNews=_respreadNews; }catch(_){}
 
   /* ===== News location analysis =====
    * Now ALWAYS computes BOTH subject location AND publisher location, plus a fallback
@@ -28730,7 +28792,18 @@ window.addEventListener('DOMContentLoaded', () => {
         let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a);
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
-        if(mapped.length){ body+=mapToggleChip(mapped); try{ ai.__ovlSnap=_ovlSnapshot(mapped); mapped.forEach(k=>{ _ovlOwn[k]=ai; }); }catch(_){} } }catch(_){}   /* (#R118) capture what THIS reply drew, for its own switch; (#R122) this reply now OWNS those kinds */
+        if(mapped.length){ body+=mapToggleChip(mapped); try{ ai.__ovlSnap=_ovlSnapshot(mapped); mapped.forEach(k=>{
+          /* (#R127) TRUE INDEPENDENT COEXISTENCE on the DRAW path ("新しいものが追加されたときに古いものが勝手にオフに
+             なってしまう"): drawing a new overlay of kind k repaints the SHARED nlq-* canvas — which physically wiped
+             the previous owner's content (highlight() clearHl()s first) AND stole ownership, flipping every older
+             same-kind chip OFF. R125's clone system fixed this ONLY on the manual chip-click path; the auto-draw
+             path never cloned. Fix: before this reply takes the shared canvas, EVACUATE the previous owner to its
+             OWN per-message clone (rebuilt from that reply's snapshot), so BOTH overlays stay on the map and BOTH
+             chips stay ON. Falls back to the old ownership hand-off when the previous owner has no clonable snapshot
+             (e.g. the arc canvas). */
+          try{ const prev=_ovlOwn[k];
+            if(prev&&prev!==ai&&document.body.contains(prev)&&prev.__ovlSnap&&prev.__ovlSnap[k]&&!_ovlCloneVisible(prev,k)){ _ovlCloneShow(prev,k,prev.__ovlSnap[k]); } }catch(_){}
+          _ovlOwn[k]=ai; }); }catch(_){} } }catch(_){}   /* (#R118) capture what THIS reply drew, for its own switch; (#R122/#R127) this reply now OWNS the shared canvas; the previous owner keeps its content on a clone */
       if(gen!=null&&gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return fails; }
       let head=say?('<div style="margin-bottom:6px;">'+esc(say)+'</div>'):'';
       if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
@@ -30103,16 +30176,18 @@ window.addEventListener('DOMContentLoaded', () => {
       if(geom.type==='Polygon') return {type:'Polygon',coordinates:geom.coordinates.map(_decim)};
       if(geom.type==='MultiPolygon') return {type:'MultiPolygon',coordinates:geom.coordinates.map(poly=>poly.map(_decim))};
       return null; }catch(_){ return null; } }
-    /* one WorldPop request for a single (sub-limit) polygon → total_population number. */
-    async function _estimateOne(g){
+    /* one WorldPop request for a single (sub-limit) polygon → total_population number. `deadlineMs` lets the tiled
+       path use a shorter per-cell budget (a ≤90k km² tile normally finishes in seconds; a single free-form polygon
+       keeps the full ~2 min). */
+    async function _estimateOne(g, deadlineMs){
       const fc={type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
       const u='https://api.worldpop.org/v1/services/stats?dataset=wpgppop&year=2020&geojson='+encodeURIComponent(JSON.stringify(fc));
       const r=await fetch(u); const j=await r.json();
       if(j&&j.error&&!j.taskid) throw new Error(String(j.error_message||'WorldPop error'));
       let data=j&&j.data&&j.data.total_population!=null?j.data:null;
       if(!data&&j&&j.taskid){
-        /* (#R123) poll up to ~2 min with a gentle backoff; break IMMEDIATELY on error; ignore a transient hiccup. */
-        const t0=Date.now(), DEADLINE=125000; let iv=1200;
+        /* (#R123) poll with a gentle backoff; break IMMEDIATELY on error; ignore a transient hiccup. */
+        const t0=Date.now(), DEADLINE=deadlineMs||125000; let iv=1200;
         while(Date.now()-t0<DEADLINE){ await new Promise(rs=>setTimeout(rs,iv)); iv=Math.min(4000,iv+250);
           let j2=null; try{ const r2=await fetch('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid)); j2=await r2.json(); }catch(_){ continue; }
           if(!j2) continue;
@@ -30121,10 +30196,21 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       if(!data||data.total_population==null) throw new Error('WorldPop: no result (timeout or empty)');
       return +data.total_population; }
-    /* (#R124) FIX "大きい範囲になると失敗する": WorldPop caps EACH request at 100,000 km² (it returns
-       "The requested area was too large … allowance was 100000"), which the R123 poll-extension could not help
-       because it isn't a timeout. Tile any larger polygon into sub-limit cells, clip each to the polygon with
-       turf.bboxClip, and SUM them (a few requests concurrent). */
+    /* one tile, with a short retry — the public WorldPop API rate-limits/times-out on bursts, so a lone transient
+       failure must NOT be silently counted as 0 (that was the R124 undercount bug). Returns {ok,v} or {ok:false}. */
+    async function _tileWithRetry(cell, tries){
+      let lastErr=null; const N=tries||2;
+      for(let t=0;t<N;t++){ if(t) await new Promise(rs=>setTimeout(rs, 1600+1800*t));
+        try{ const v=await _estimateOne(cell, 60000); if(v!=null&&isFinite(v)) return {ok:true, v:+v}; }
+        catch(e){ lastErr=e; } }
+      return {ok:false, err:(lastErr&&lastErr.message)||'failed'}; }
+    /* (#R124/#R127) FIX "大きい範囲になると失敗する": WorldPop caps EACH request at 100,000 km² (it returns
+       "The requested area was too large … allowance was 100000"), which a poll-extension can't help because it
+       isn't a timeout. Tile any larger polygon into sub-limit cells, clip each to the polygon with turf.bboxClip,
+       and SUM them. R124 capped this at 80 cells (→ threw for anything past ~7M km², or a wide/ocean-spanning bbox
+       with modest land) and swallowed every tile error as 0 (→ a rate-limited land tile silently undercounted, and
+       an all-fail returned 0 as a bogus "success"). R127: raise the ceiling to cover continental selections, retry
+       transient tile failures, and account for real failures HONESTLY (partial flag) instead of zeroing them. */
     async function _estimateTiled(g, areaKm2, onProgress){
       const feat={type:'Feature',geometry:g,properties:{}}; const bb=turf.bbox(feat);   /* [w,s,e,n] */
       /* size cells for the WORST case = the bbox's equator-ward edge (highest cos → largest cells); every cell
@@ -30139,20 +30225,27 @@ window.addEventListener('DOMContentLoaded', () => {
         const gm=piece&&piece.geometry; if(!gm||!gm.coordinates||!gm.coordinates.length) continue;
         if((gm.type==='Polygon'&&gm.coordinates[0]&&gm.coordinates[0].length>=4)||(gm.type==='MultiPolygon'&&gm.coordinates.length)){ const pg=_prep(gm); if(pg) cells.push(pg); } } }
       if(!cells.length) throw new Error('WorldPop: empty area');
-      if(cells.length>80) throw new Error('WorldPop: area too large to tile precisely ('+Math.round(areaKm2).toLocaleString()+' km²)');
-      let total=0, done=0; const CONC=4;
+      /* (#R127) ~90k km²/cell → 340 cells ≈ 30M km², larger than any single country; only a near-hemispheric
+         selection exceeds it (and that genuinely can't be summed precisely at 100m). */
+      if(cells.length>340) throw new Error('WorldPop: area too large to tile precisely ('+Math.round(areaKm2).toLocaleString()+' km²)');
+      let total=0, done=0, ok=0, failed=0; const CONC=4;
       for(let i=0;i<cells.length;i+=CONC){ const batch=cells.slice(i,i+CONC);
-        const res=await Promise.all(batch.map(c=>_estimateOne(c).catch(()=>null)));   /* an ocean/edge cell may error → counts as 0 */
-        res.forEach(v=>{ if(v!=null&&isFinite(v)) total+=v; });
+        const res=await Promise.all(batch.map(c=>_tileWithRetry(c,2)));
+        res.forEach(rr=>{ if(rr.ok){ total+=rr.v; ok++; } else { failed++; } });
         done+=batch.length; if(onProgress) try{ onProgress(Math.min(1,done/cells.length)); }catch(_){} }
-      return { pop:Math.round(total), year:2020, src:'WorldPop (100m grid, '+cells.length+' tiles)' }; }
+      /* HONEST accounting: an ocean/edge tile returns a real number (usually 0) — it is NOT a failure. A failure
+         means the request itself errored after retries; never pretend those tiles are empty. */
+      if(ok===0) throw new Error('WorldPop: no tiles could be fetched (service busy) — try again');
+      const out={ pop:Math.round(total), year:2020, src:'WorldPop (100m grid, '+cells.length+' tiles)', tiles:cells.length, tilesOk:ok };
+      if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src='WorldPop (100m grid, '+ok+'/'+cells.length+' tiles)'; }
+      return out; }
     async function estimate(geom, onProgress){ const g=_prep(geom); if(!g) throw new Error('polygon required');
       const key=JSON.stringify(g); if(cache.has(key)) return cache.get(key);
       let areaKm2=0; try{ areaKm2=turf.area({type:'Feature',geometry:g,properties:{}})/1e6; }catch(_){}
       let out;
       if(areaKm2>95000){ out=await _estimateTiled(g, areaKm2, onProgress); }   /* over the per-request cap → tile + sum */
       else { const pop=await _estimateOne(g); out={ pop:Math.round(pop), year:2020, src:'WorldPop (100m grid)' }; }
-      cache.set(key,out); return out; }
+      if(!out.partial) cache.set(key,out); return out; }   /* never cache a partial (undercounted) sum */
     function circleGeom(center,km){ try{ if(typeof turf!=='undefined'&&turf.circle){ return turf.circle(center,km,{units:'kilometers',steps:48}).geometry; } }catch(_){}
       const lat=center[1]*Math.PI/180; const dLat=km/111.32, dLng=km/(111.32*Math.cos(lat)||1);
       const ring=[]; for(let i=0;i<=48;i++){ const a=i/48*2*Math.PI; ring.push([center[0]+Math.sin(a)*dLng, center[1]+Math.cos(a)*dLat]); }
@@ -31585,6 +31678,31 @@ window.addEventListener('DOMContentLoaded', () => {
            PRC, "PRCかROC扱いになる"). Keep THEIR OWN identity + Wikipedia (post-annexation years are already merged into
            China by _correctEra, so this only fires while the era polygon still carries the historical name). */
         if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=(V.nm[lg]||V.nm.en); out.wiki=V.wiki; out.code=null; return out; } } }
+        /* (#R127) 2.5) RENAMED single-countries (IntMapHistId): the era polygon keeps the BASE name ("Germany",
+           "Persia", "Siam", "Dutch East Indies", "Kingdom of Italy"…) while countryStats[code] was renamed to the
+           era identity — so the exact-name match (2) misses and the MODERN point-in-polygon (3) below wrongly hands
+           the click to whatever present-day country sits under the cursor (the German Empire's Poznań / Alsace →
+           modern Poland / France; the reported "国境線と国家は昔なのに、クリック判定は現在の国境になっている" bug).
+           The historical basemap already knows the entity — resolve the base era name straight to its modern carrier
+           code. This ALSO survives the identity-load race (countryStats['DEU'] always exists, only its label is
+           renamed later). Empires / multi-successor former states are handled by (1) above; this is single-country
+           renames only, so it never over-claims a colony's separate modern successors. */
+        if(!code){ const be=String(nmBare||'').toLowerCase().trim();
+          const BEC={ 'germany':'DEU','german empire':'DEU','german reich':'DEU','nazi germany':'DEU','weimar republic':'DEU','prussia':'DEU','kingdom of prussia':'DEU',
+            'china':'CHN','qing':'CHN','qing empire':'CHN','qing dynasty':'CHN','republic of china':'CHN','great qing':'CHN',
+            'italy':'ITA','kingdom of italy':'ITA',
+            'iran':'IRN','persia':'IRN','imperial state of iran':'IRN',
+            'thailand':'THA','siam':'THA','kingdom of siam':'THA',
+            'indonesia':'IDN','dutch east indies':'IDN','netherlands east indies':'IDN',
+            'japan':'JPN','empire of japan':'JPN',
+            'spain':'ESP','spanish state':'ESP',
+            'portugal':'PRT',
+            'brazil':'BRA','empire of brazil':'BRA',
+            'egypt':'EGY','kingdom of egypt':'EGY',
+            'hungary':'HUN','kingdom of hungary':'HUN',
+            'france':'FRA','french third republic':'FRA','vichy france':'FRA','french state':'FRA',
+            'united kingdom':'GBR','great britain':'GBR','britain':'GBR' };
+          const bc=BEC[be]; if(bc&&countryStats[bc]&&!countryStats[bc]._histHidden){ code=bc; } }
         /* 3) point-in-polygon over the MODERN polygons — the robust catch-all that survives aourednik name variance
               (e.g. "Kingfom of Italy" typo, "Italy"→our "Kingdom of Italy") by using WHERE the click landed */
         if(!code&&lngLat&&isFinite(lngLat.lng)){ try{ const g=window.countryGeo; if(g&&g.features){ let best=null,bestA=Infinity,bestHid=null,bestHidA=Infinity; for(const f of g.features){ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const s=countryStats[cd]; if(!s||!f.geometry) continue; if(_contains(f.geometry,lngLat.lng,lngLat.lat)){ const a=_bboxArea(f.geometry); if(s._histHidden){ if(a<bestHidA){ bestHidA=a; bestHid=cd; } } else if(a<bestA){ bestA=a; best=cd; } } } if(best) code=best;
