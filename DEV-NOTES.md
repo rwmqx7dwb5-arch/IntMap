@@ -5,6 +5,41 @@
 
 ---
 
+## R126 — 経路10-10コア実装＋タイムマシン国境根治＋βレイヤー+6 (tag `#R126`)
+
+R125に続き経路指示書の残り中核を実装（第1〜4段階相当のクライアント側）。4バッチ、各ヘッドレス実測→commit+push。
+
+### batch1 — 経路コア（RouteStore／リクエスト生存管理／正直なエラー分類）
+- **RouteStore**: 候補+選択を`routeSetId`（計算1回=1セット、LRU12）で管理。`_tAlts/_ends`共有グローバル廃止（指示書24.3）。Atlasトリップカード=`data-rset`、モードボタン行=`data-rctx`（そのメッセージのfrom/to/via）→**過去メッセージの候補タップ/モード切替がそのメッセージの経路にだけ作用**（16.2-16.4）。実測: モードボタン→data-rctx経由で再計算・5候補カードにdata-rset・旧セットselectAltも再描画OK。
+- **requestId+Abortプール**: 新route()が前リクエスト全fetchを中止、古い完了は`status:'cancelled'`で描画せず（24.12。実測: 並行2リクエスト→1本目cancelled/2本目描画）。
+- **計算/描画分離**: `_paint`がfeats+1回限りfitをスタッシュ、styledataで再描画。スタイル未読込でも計算成功（24.2）。復元はsource._data非依存（3.7）。
+- **エラー型8種**（success/invalid_request/no_route/no_transit/provider_timeout/provider_unavailable/rate_limited/cancelled）をパネル+Atlasで別文言5言語（2.5/5.7）。
+- **破損transit形状の直線代替廃止**: 乗車レグは形状なし+shapeGapノート、徒歩レグのみ短点線可（3.8/22.3/24.4）。
+- **railRoute/_renderRail削除**（R122無効化済の死コード144行、3.9/24.5）。
+- **経路経由corsproxy/allorigins全廃**（OSRM/Transitousは直CORS可、3.2/24.1）。
+- **NEW 偽経路ガード**: OSRMデモはデータ外地点を最寄り既知道路へスナップし"Ok"を返す——実測 Lisbon→NY で**NYが5,534km先のCascais(ポルトガル)にスナップされ41kmの"経路"が返っていた**→waypoint snap>30kmはno_route+スナップ距離表示（2.2/21.3）。
+- パネル: 入力編集で選択地点即無効（3.12/24.7）・日付変更線fitBounds（経度アンラップ、3.19）。
+
+### batch2 — ジオコード品質＋時刻UI
+- **同名地名の近接優先**（6.3/6.4）: geo1/_geoEPが最大5候補（Open-Meteo/Nominatim）→ビュー近傍≤300km最近→人口最大。Atlasは>500kmヒットを1/3未満距離の候補で置換。実測: Potsdam=ベルリンビュー→独ブランデンブルク、NY北部ビュー→米NY州（R125既知課題の根治）。目的地は出発地側へバイアス、新幹線stationLL先行。
+- **出発/到着時刻UI**（1.3/3.16/24.8）: パネルに[今すぐ出発/出発時刻/到着時刻+datetime-local]（5言語）→{time,arriveBy}をroute()へ、transitはarriveByをTransitousへ送信。道路は「時刻指定は公共交通で有効（交通状況は含まない）」と正直表示（偽の交通所要時間なし）。Atlas directionsのtime/arriveBy/arriveをSYSカタログに記載（カタログ規約）。
+- **地図クリック逆ジオコード**（6.6）: ピック地点をNominatim reverseで地名表示（6s箱・編集済みなら不適用）。
+
+### batch3 — タイムマシン歴史国境が出ないことがある（根治）
+- **根因**: `IntMapTimeBorders.apply()`は**imtb-srcソースが存在するだけで早期return**（setDataのみ）。ensure()がソース追加後レイヤー追加前に失敗（isStyleLoadedばたつき等）すると「ソースあり・レイヤーなし」に固着し、以後どの年代でも**誰も描かないソースへデータを書き続ける**＝報告現象。→ fast pathは`imtb-line`存在時のみ、欠損時はidempotentなensure()へフォールスルー。加えてaourednik取得失敗時は4s後に同年を1回再試行（seqガード）。
+- 実測（ヘッドレスで自然再現）: 1914travelでバグ状態（source n=150・imtb-line欠損）が発生→修正後、1960へ変更でレイヤー再生成（line:true/visible/164 features）。
+- Fable注: ヘッドレスはisStyleLoadedが完了しない環境なので本バグの再現器として最適だった。
+
+### batch4 — Others(beta) +6（WBライブ・自動配線）
+- 軍事費%GDP(MS.MIL.XPND.GD.ZS)/合計特殊出生率(SP.DYN.TFRT.IN)/人口密度(EN.POP.DNST)/教育支出%GDP(SE.XPD.TOTL.GD.ZS)/喫煙率(SH.PRV.SMOK)/農業就業率(SL.AGR.EMPL.ZS)。実測: 行数154→160、軍事費ON→169/258か国ライブ、日本=1.37%。
+
+### 据置（理由）
+- 経路10-10の残段階: バックエンドGateway/Provider Matrix/GTFS-RT/リアルタイム交通/実走行ナビ/オフライン/監視ダッシュボード等はサーバ基盤を要する大型案件のため段階実装継続（クライアント側で誠実にできる中核は本ラウンドで完了）。
+- ICBM第一段階・物理シミュ5種: 大型指示書、次ラウンド候補（ICBMは調査済み）。
+- 歴史国家データ拡充（国旗/Wikipedia/統計）: 継続項目。
+
+---
+
 ## R125 — 再報告根治＋経路優先ラウンド（Globe移動の傾き+右ドラッグ回転／Compare昔年代クリック完全化／Atlasトグル真の独立共存／βレイヤー+6／都市間日本レール・ブリッジ） (tag `#R125`)
 
 ユーザー指示途中で「経路機能を優先して取り組んで」→ ICBM第一段階着手前に経路へピボット。4バッチ、各ヘッドレス実測→commit+push。
