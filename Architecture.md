@@ -582,6 +582,21 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     （geocodeが仙台駅→「仙太鮨」を返すファジー事故を根治、〜駅クエリはヒット名に基名を含まない場合ベース名で再ジオコード）。
     実測: 瑞穂区役所→新宿=ローカル目安24分+名古屋→東京新幹線100分+**実JR中央線(JC)レグ**+徒歩=~2h32m、大阪駅→仙台駅=新大阪→東京→仙台 ~5h04m、
     新宿→東京駅はライブ5候補のまま、Munich→Augsburgのライブ欧州transitも不変。
+  - **#R126 経路10-10指示書コア（RouteStore/リクエスト生存管理/正直なエラー分類）**: ①**RouteStore**＝候補と選択状態は`routeSetId`
+    （計算1回=1セット、LRU12）で管理し、旧`_tAlts/_ends`共有グローバルを廃止。Atlasのトリップカードは`data-rset`、モードボタン行は
+    `data-rctx`（そのメッセージ自身のfrom/to/via）を持ち、**過去メッセージの操作はそのメッセージの経路にだけ作用**（指示書16.2-16.4/24.3）。
+    ②**requestId+AbortControllerプール**: 新しい`route()`は前リクエストの全fetchを中止、遅れて完了した古い応答は`status:'cancelled'`で**描画せず**
+    （24.12）。③**計算/描画分離**: `_paint`が特徴量+1回限りのfitをスタッシュし styledata で再描画（スタイル未読込でも計算は成功、復元は
+    source._data非依存の自前ストア、24.2/3.7）。④**エラー型**: success/invalid_request/no_route/no_transit/provider_timeout/provider_unavailable/
+    rate_limited/cancelled をパネルとAtlasで**別文言**（5言語）表示（2.5/5.7）。⑤**破損transit形状の直線代替を廃止**（乗車レグは形状なし表示+
+    shapeGapノート、徒歩レグのみ短い点線コネクタ可、3.8/22.3/24.4）。⑥死んだrailRoute/_renderRail（R122無効化済・144行）を削除（3.9/24.5）。
+    ⑦**経路経由のcorsproxy.io/allorigins全廃**（OSRM/TransitousはCORS対応、直fetch+バックオフ再試行、3.2/24.1）。⑧**偽経路ガード**: OSRMデモは
+    データ外の地点を**5,500km先の道路にスナップして"Ok"を返す**（実測: Lisbon→NY がポルトガルCascaisへスナップ→41kmの"経路"）→waypoint snap>30kmは
+    no_route+スナップ距離表示（2.2/21.3）。⑨パネル: 入力編集で選択済み地点を即無効化（3.12/24.7）・日付変更線対応fitBounds（3.19）・
+    **出発/到着時刻UI**（今すぐ/出発時刻/到着時刻+datetime-local、transitへarriveBy送信、道路は「時刻指定は公共交通で有効」と正直表示、24.8）・
+    地図クリック地点の逆ジオコーディング（6.6）。⑩**同名地名の近接優先**（6.3）: geo1/_geoEPが最大5候補から現在ビュー近傍（≤300km最近）→人口最大の
+    順で選択、Atlasはビューから>500kmのヒットを1/3距離未満の同名候補で置換（Potsdam: ベルリンビュー→独、NYビュー→米を実測）。
+    残段階（バックエンドGateway/GTFS-RT/交通情報/ナビ/オフライン等）は大型のため段階実装継続。
   - **#R94 タイムマシン＝時空カーネル `window.IntMapTime`（形骸化していた時刻スライダーを IntMap 全体の時空OSに）**（詳細は DEV-NOTES R94）:
     従来のタイムスライダーはニュース＋一部の日付ラスタしか動かさず**形骸化**していた。これを**唯一の時刻ソース**（`_when`＝Date、null=ライブ/現在）に格上げし、
     スライダー・日付入力・**深時間の年入力（1900→現在）**・Earth Replay・Atlas はすべて**この1カーネルへ書き込み**、時刻依存の全サブシステムは
@@ -726,6 +741,7 @@ supabase/
     **#R123 UI/バグ一括**: モバイルのレイヤー名選択時太字除去・分類名拡大・右上バー縦gap一致・**サイドバー見出し2行固定**(1行目IntMap+言語/2行目WS/Login/Feedback/Settings)。isolate/moveは**領域あり地名のみ**(山/川/海は非表示)、Moveのメルカトル補正はflatのみ。**Aurora radius幾何級数**(→R124で不足判明)。**ニュースピン領域内分散**(place TYPEをgazetteer→pin伝播、country=国ポリ棄却サンプリング/city=型別ディスク)。範囲人口=WorldPopポーリング延長+Draw対応。**Compare昔年代クリック**=`TB.currentFC()`PIP(描画非依存)+データ無しera正直報告。**Compare時系列=利用可能年のみ**(serMap実在年を蓄積)。**ユーゴ一括ハイライト**=`regionGroup`が末尾集合接尾辞strip。**Others(beta)+8**(PM2.5/クリーン調理/女性労働/高等教育/農村/GNI/栄養不足/ハイテク)。
     **#R124 再報告根治+新規**: **タブ文字揺れ**=`_fitTabFont`をfonts.ready後1回のみ。**Move on Globe**=剛体大円回転(Rodrigues)で真形状保存(flatはメルカトル面積補正)。**Auroraズーム消失**=ヒートマップをズームでフェードout+**密度非依存ソフト円グロー(l9-aurora-glow)**へハンドオフ。**ニュースピン実配線**=サーバ経路でsubject名から国型導出(_isCountrySubject)+ヒューリスティックを最大リング重心化。**範囲人口大面積**=WorldPop 100,000km²上限を`turf.bboxClip`でタイル分割+合算(実測380k km²→56.4M/6タイル)+実Progress。**Objects popup不透過**(--card-bg)。モバイル分類名16px/700。**Compare国追加ts同期**=`toggleCountry`差分適用(トレイ↔開いた比較ビュー)。**地図クリック国選択トグル化**(再クリック解除)。**Others(beta)+6**(固定BB/65歳以上/思春期出生/病床/研究者/過体重)。据置=Atlasトグル独立化(共有canvas→メッセージ別層の専用ラウンド)・era植民地resolveHist・あいまい地域/AI輪郭(ai-proxy検証制約)・経路10-10(GTFS収録依存)。
     **#R125 再報告根治+経路優先**: **Move on Globe傾き**=大円回転後に到着点鉛直軸まわり北整列ツイストを追加(tilt 1.15°→0.01°・辺長不変)+**右ドラッグで図形回転**(globe=鉛直軸スピン/flat=計量フレーム回転・5言語ピル)。**Compare昔年代クリック完全化**=era名の宗主接尾辞strip照合("India (UK)"→British Raj)+PIPがhidden国に当たると**吸収中の旧国家に解決**(Korea 1914→大日本帝国)+沿岸PIPミスは最近接eraリング≤0.7°スナップ(Istanbul 1914→Ottoman)。**Atlasトグル真の独立共存**=所有者がいる種別は奪わず**メッセージ別クローン層(atlm<n>-*)**へ描画(feature-state nlq/choroVもスナップショット捕捉→クローンに再適用、_ovlAdoptは元ソースとモジュール状態(_hl/_choroState)も復元、styledata再構築+LRU上限14)。**Others(beta)+6**(都市人口/観光客/送金/自殺率/飲酒量/殺人率)。**経路(ユーザー優先指示)**=都市間日本レール・ブリッジ(上記#R125詳細)。据置=ICBM第一段階以降・物理シミュ5種・経路10-10の残段階(大型指示書)。
+    **#R126 経路10-10コア+タイムマシン国境根治**: **経路**=RouteStore(routeSetId・共有グローバル廃止・Atlasカードはdata-rset/data-rctxで過去メッセージも独立動作)+requestId/Abortプール(古い応答はcancelledで描画しない)+計算/描画分離(_paintスタッシュ+styledata再描画)+エラー型8種を5言語別文言+破損transit形状の直線代替廃止(shapeGapノート)+死んだrailRoute削除+**経路経由CORSプロキシ全廃**+**OSRM偽経路ガード**(waypoint snap>30km→no_route+距離表示。実測Lisbon→NYが5,534km先Cascaisへスナップし"Ok"を返していた)+入力編集で旧座標無効化+日付変更線fitBounds+**出発/到着時刻UI**(arriveBy)+地図クリック逆ジオコード+**同名地名の近接優先**(Potsdam根治、ビュー近傍≤300km→人口順)。**タイムマシン国境が出ないことがある**=apply()がソース存在だけで早期return（レイヤー欠損だとensure()に永遠に到達せず不可視）→imtb-line存在も確認+取得失敗時4s再試行。**Others(beta)+6**(軍事費%GDP/出生率/人口密度/教育支出/喫煙率/農業就業率、160行)。
     **#R121 レイヤーデータ契約の完成度上げ（登録30→34）**: ①**choropleth画面外サンプリング**＝共有PIP（`window._imPipGeo`、穴あきPolygon/MultiPolygon対応）で、コア7種=countryGeo→countryStats直読み・WBベータ5種=ソースデータPIP・**bx系約40種のWBコロプレスを新規統合**（`window._imBxChoroValueAt/_imBxChoroOn`、所有モジュール側で公開＝契約規約どおり）。表示中の全コロプレス系統の値を「 | 」連結で返す（実測: 日本オフスクリーンで HDI 0.920 | 寿命84.0 | ジニ32.3）。②**earthquakes/datacenters/pharma** を featuresIn+summary で登録（地震は件数+最大M、名前は M{mag}+place）。③**thermal（火災）実ピクセル検出**＝FIRMS/GIBS WMS GetMap を**製品別に**取得し α>60 を和集合マスクで計数→「N fire pixels within ~15 km」/「none detected」（実測: 北豪アーネムランド29px・アンゴラ212px・海上0）。④**thermalレイヤー本体の根本修正**: 合成LAYERS=のWMSは**1製品でも当日データ欠損だと全体がServiceExceptionで空になる**（実測: SNPP欠損で当該レイヤーが全滅していた）→ 日別に小さなGetMapでプローブし、失敗製品を例外メッセージから除外した実描画可能サブセットでソース構築。⑤`window.__imBuild` ビルドマーカー（file://リロードのキャッシュ滞留診断用）。
     **#R118 Atlas文脈・UI・ブリッジ**: ①**メッセージ別オーバーレイ・スナップショット**＝各返信の「地図に表示中」トグルは**その返信が描いた内容**を復元（`__ovlSnap`+`_ovlAdopt`＝モジュール状態へ採用。旧仕様は常に最新描画を開閉していた）。②入力欄=textarea（Enter送信/Shift+Enter改行/5行自動拡張）。③解体組織ハイライトに**年代基底**を明記・記憶（`_GROUP_META`→`_wctx.highlight`。「それは何年のもの？」にタイムトラベル日付を答えない）＋明確化質問は1回まで＋空の「使用データ:」非表示。④**逆同期ブリッジ第1弾**: `IntMapStatsCompare.state()`／`IntMapObjects.list/get/remove`＋`object`アクション（id/kind+indexで削除・フォーカス・改名）／開いている記事の**本文**が `_imReader.body` 経由でAtlasに届く／旧IntMapAIResearchはmoduleCatalogから除外。⑤**`population`アクション**＝WorldPop 100mグリッド(2020)で描画範囲・円・地名境界・place+radiusKmの人口を正確集計（`IntMapPopArea`、測定ツールにもボタン、出典・プライバシー記載）。
 - **ニュース地点解析AI** — `refresh-news` が**同じ鍵・同じ AI_PROVIDER 規約**でサーバー側実行（ユーザー枠は消費しない＝運用者の鍵）。
