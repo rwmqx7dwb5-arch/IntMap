@@ -93,7 +93,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
   <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
   <style>
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
-    :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#48484d; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px; }
+    :root{ --bg-color:#f5f5f7; --sidebar-bg:rgba(255,255,255,0.85); --primary-color:#007aff; --text-main:#1d1d1f; --text-muted:#48484d; --card-bg:#ffffff; --input-bg:rgba(0,0,0,0.05); --popup-bg:rgba(255,255,255,0.72); --shadow:0 8px 30px rgba(0,0,0,0.08); --threat-unmapped:#9b59b6; --info-choke:#ff9500; --info-mil:#ff3b30; --info-tech:#007aff; --info-space:#af52de; --info-energy:#34c759; --info-hub:#5856d6; --info-maritime:#30b0c7; --sidebar-w:440px;
+      /* (#R132) Atlas accent gradient — ONE token shared by the Atlas tab (both states) and the Atlas user speech bubble.
+         The accent (var(--primary-color)) LEADS a blue→indigo→purple sweep, so it always tracks the accent AND is never a
+         flat solid fill: with the DEFAULT accent (#0a84ff≈first stop) it reproduces the rich 3-stop gradient, and with any
+         custom accent it starts on that accent and sweeps through indigo/violet. Fixes "デフォルトアクセントでべた塗". */
+      --atlas-grad:linear-gradient(135deg,var(--primary-color),#5e5ce6 56%,#bf5af2); }
     /* (#R101) --text-muted brightened toward white for legibility on dark ("灰色文字は見えにくい") — was #a6a6ad */
     [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#cfcfd6; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
     /* (#R115) The R33-retired skin themes' CSS (cyber/classic/psychedelic/military/medical/baroque/taisho)
@@ -146,11 +151,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .mode-btn.mode-atlas{ position:relative; }
     .mode-btn.mode-atlas:not(.active){ background:var(--input-bg); color:#5e5ce6; box-shadow:none; }
     [data-theme="dark"] .mode-btn.mode-atlas:not(.active){ color:#a5a3ff; }
-    .mode-btn.mode-atlas:not(.active)::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
-    /* (#R130) Selected Atlas tab now tracks the ACCENT colour — same fill as the Atlas user speech bubble
-       (`.atl-b.u`, linear-gradient(135deg,var(--primary-color),#5e5ce6)) — instead of a fixed blue-indigo-purple
-       gradient, per request ("Atlasは、Atlas内のユーザー吹き出しと同じ、アクセントカラーに応じたカラーに"). */
-    .mode-btn.mode-atlas.active{ background:linear-gradient(135deg,var(--primary-color),#5e5ce6); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
+    /* (#R132) unselected ring now uses the shared accent gradient too, so BOTH tab states track the accent ("選択前のカラーも合わせて"). */
+    .mode-btn.mode-atlas:not(.active)::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:var(--atlas-grad); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+    /* (#R130/#R132) Selected Atlas tab = the shared accent gradient (same fill as the Atlas user bubble `.atl-b.u`).
+       (#R132) The gradient LEADS with the accent then sweeps indigo→violet, so the DEFAULT accent no longer renders as a
+       flat solid fill ("デフォルトアクセントカラーでべた塗となってしまう") while any custom accent still drives it. */
+    .mode-btn.mode-atlas.active{ background:var(--atlas-grad); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
     .mode-btn.mode-atlas:hover{ filter:brightness(1.07); }
     /* (#R114) Settings → Accent color picker. Round swatches drive --primary-color; the "default" swatch is a
        hollow ring (= no override → theme blue), the last swatch is a rainbow "pick any colour" with a hidden
@@ -1255,8 +1261,8 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       .mode-btn{ flex:1 1 0; min-width:0; min-height:36px; padding:8px 4px; font-size:13px; font-weight:500; border-radius:8px; background:transparent; color:var(--text-muted); box-shadow:none !important; }   /* (#R122) slightly larger, NOT bold; JS auto-fits so it never wraps/overflows */
       /* (#R33) Selected News/Information/Stats is BLUE on mobile too (was a neutral grey card). */
       .mode-btn.active{ background:var(--primary-color) !important; color:#fff !important; box-shadow:0 2px 8px rgba(0,122,255,0.3) !important; }
-      /* (#R122) mobile: the SELECTED Atlas tab keeps the same gradient fill as normal mode (was overridden to plain blue) */
-      .mode-btn.mode-atlas.active{ background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2) !important; color:#fff !important; box-shadow:0 2px 9px rgba(94,92,230,0.32) !important; }
+      /* (#R122/#R132) mobile: SELECTED Atlas tab keeps the same shared accent gradient as normal mode (was a fixed blue→purple gradient) */
+      .mode-btn.mode-atlas.active{ background:var(--atlas-grad) !important; color:#fff !important; box-shadow:0 2px 9px rgba(94,92,230,0.32) !important; }
       .mode-btn.mode-atlas:not(.active){ color:#5e5ce6 !important; }
 
       .news-filter-toggle, .news-pin-toggle{ flex:0 0 auto; }
@@ -3553,7 +3559,11 @@ window.addEventListener('DOMContentLoaded', () => {
     };
     return M[code] || ('AI: '+(message||code||'error'));
   }
-  async function aiCallServer(prompt, system, imgs, opts){
+  /* (#R132) FULL-envelope server call: returns {text, meta, citations} for a SINGLE call (no reliance on the global
+     window._aiLastMeta, which a concurrent call can overwrite) and accepts opts.signal for real AbortController
+     cancellation (a timed-out / cancelled region-resolution call now aborts the underlying fetch instead of leaving
+     it running in the background). aiCallServer stays a thin text-only wrapper so every existing caller is unchanged. */
+  async function aiCallServerFull(prompt, system, imgs, opts){
     const cfg=window.INTMAP_AI_PROXY||{};
     const headers={'Content-Type':'application/json'};
     if(cfg.headerName && cfg.headerValue) headers[cfg.headerName]=cfg.headerValue;
@@ -3574,7 +3584,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if(opts.schema && typeof opts.schema==='object') body.schema=opts.schema;
       if(opts.effortHint) body.effortHint=String(opts.effortHint);   /* (#R117) complexity hint → planner/analysis may think at "high" server-side */
     }
-    const r=await fetch(cfg.url,{method:'POST',headers,body:JSON.stringify(body)});
+    const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
+    if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
+    const r=await fetch(cfg.url,fetchOpts);
     if(r.status===401){ try{ openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
     if(r.status===429){ let j=null; try{ j=await r.json(); }catch(_){} if(j&&typeof j.used==='number') aiSetUsage(j.used, j.limit); else { aiUsage.date=aiToday(); aiUsage.used=aiDailyLimit(); } throw new Error(aiLimitMsg()); }
     if(!r.ok){
@@ -3585,20 +3597,21 @@ window.addEventListener('DOMContentLoaded', () => {
       throw new Error('AI '+r.status+': '+aiErrSnippet(await r.text().catch(()=>'')));
     }
     const j=await r.json().catch(()=>null);
-    if(j==null) return '';
+    if(j==null) return {text:'',meta:null,citations:[]};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
-    /* (#R114) expose the last call's meta (provider/webAttached/webUsed/webSearches/…) so a caller can tell
-       whether the web-search tool ACTUALLY ran — used to keep "latest" features honest. */
-    try{ window._aiLastMeta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null; }catch(_){}
-    /* (#R131) expose the hosted web-search CITATIONS (OpenAI url_citation annotations) so analyze can show the
-       sources the model actually verified this turn — separate from the client-gathered articles. */
-    try{ window._aiLastCitations=(j&&typeof j==='object'&&Array.isArray(j.citations))?j.citations:[]; }catch(_){}
-    if(typeof j==='string') return j;
-    if(typeof j.text==='string') return j.text;
-    if(j.content&&Array.isArray(j.content)) return j.content.map(b=>b.text||'').join('');
-    if(j.choices&&j.choices[0]) return (j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
-    return '';
+    const meta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null;
+    const citations=(j&&typeof j==='object'&&Array.isArray(j.citations))?j.citations:[];
+    /* (#R114/#R131) still mirror to the globals for the many existing readers, but the ENVELOPE is authoritative per call. */
+    try{ window._aiLastMeta=meta; }catch(_){}
+    try{ window._aiLastCitations=citations; }catch(_){}
+    let text='';
+    if(typeof j==='string') text=j;
+    else if(typeof j.text==='string') text=j.text;
+    else if(j.content&&Array.isArray(j.content)) text=j.content.map(b=>b.text||'').join('');
+    else if(j.choices&&j.choices[0]) text=(j.choices[0].message&&j.choices[0].message.content)||j.choices[0].text||'';
+    return {text, meta, citations};
   }
+  async function aiCallServer(prompt, system, imgs, opts){ return (await aiCallServerFull(prompt, system, imgs, opts)).text; }
   /* ---- Unified entry point used by every AI feature ---- */
   async function askAI(prompt, systemPrompt, imageDatas, opts){
     const imgs=(imageDatas||[]).filter(Boolean);
@@ -3611,6 +3624,18 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   async function askAIJSON(prompt, systemPrompt, imageDatas, opts){ opts=opts||{}; if(!opts.task) opts.task='json_extract';   /* (#R113) JSON call → server JSON/structured-output mode by default */
     return aiParseJSON(await askAI(prompt, systemPrompt, imageDatas, opts)); }
+  /* (#R132) ENVELOPE variants — same gating as askAI/askAIJSON but return {text|data, meta, citations} for a SINGLE
+     call (no reliance on the global window._aiLastMeta a concurrent call could clobber) and forward opts.signal for
+     real AbortController cancellation. Used by the region resolver so one resolve reads exactly its own meta/citations. */
+  async function askAIEnvelope(prompt, systemPrompt, imageDatas, opts){
+    const imgs=(imageDatas||[]).filter(Boolean);
+    if(!currentUser){ try{ openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
+    if(aiUsage.date===aiToday() && aiUsesLeft()<=0){ throw new Error(aiLimitMsg()); }
+    if(aiProxyOn()) return aiCallServerFull(prompt, systemPrompt, imgs, opts);
+    throw new Error(aiLimitMsg()); }
+  async function askAIJSONEnvelope(prompt, systemPrompt, imageDatas, opts){ opts=opts||{}; if(!opts.task) opts.task='json_extract';
+    const env=await askAIEnvelope(prompt, systemPrompt, imageDatas, opts);
+    return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations }; }
   /* (#R39) Force the AI OUTPUT language to follow the app language. The inline brief/summary prompts only had
      EN/JP branches, so German/Russian users got English answers ("AI Briefがドイツ語・ロシア語では英語になる").
      Appended to the SYSTEM prompt of the free-TEXT generators ONLY — never the JSON geocoders (place names
@@ -9931,6 +9956,11 @@ window.addEventListener('DOMContentLoaded', () => {
             if(R&&R.code&&countryStats[R.code]) return {code:R.code};
             /* a REAL era entity with no comparable data — report honestly, do NOT snap to the modern country */
             if(R&&R.name) return {eraNoData:true, eraName:R.name}; }
+          /* (#R132) TRAVELLING but the era polygon under the click couldn't be resolved (FC still loading, or a click in
+             a simplified-coastline gap): report honestly — NEVER fall through to the modern countryGeo below (that is the
+             reported "国境線と国家は昔なのに、クリック判定は現在の国境になっている"). */
+          const _fcReady=(function(){ try{ const fc=TB.currentFC&&TB.currentFC(); return !!(fc&&fc.features&&fc.features.length); }catch(_){ return false; } })();
+          return _fcReady?{code:''}:{code:'', eraLoading:true};
         } }catch(_){}
       try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); let best=null,bA=Infinity; for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)){ const bb=turf.bbox(f); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bA){ bA=a; best=f; } } }catch(_){} } if(best) return {code:resolveCountryId(best)}; } }catch(_){}
       return {code:''};
@@ -9938,6 +9968,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function onClick(e){ if(!picking||!e||!e.lngLat) return;
       const res=resolveAt(e.lngLat)||{};
       if(res.eraNoData){ try{ imToast(_pl('No comparable data for '+res.eraName+' in this era','「'+res.eraName+'」はこの年代の比較データがありません','Keine Vergleichsdaten für '+res.eraName+' in dieser Epoche','Нет данных для «'+res.eraName+'» в эту эпоху','Sin datos comparables para '+res.eraName+' en esta época')); }catch(_){} return; }
+      if(res.eraLoading){ try{ imToast(_pl('Era borders are still loading here — click again in a moment','この年代の国境を読み込み中です。少し後にもう一度クリックしてください','Epochengrenzen laden noch — gleich erneut klicken','Границы эпохи ещё загружаются — кликните ещё раз','Los límites de la época aún se cargan — haz clic de nuevo')); }catch(_){} return; }
       const cd=res.code; if(!cd){ try{ imToast(_pl('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
       try{ window._toggleCompare(cd); }catch(_){}
       try{ const s=(typeof countryStats!=='undefined')&&countryStats[cd]; const nm=(s&&((currentLang==='jp'&&s.nameJp)?s.nameJp:s.nameEn))||cd; imToast((compareSet.has(cd)?'✓ ':'− ')+nm); }catch(_){}
@@ -20004,12 +20035,17 @@ window.addEventListener('DOMContentLoaded', () => {
             /* the click landed on a REAL era entity that has no comparable time-series data — do NOT silently snap
                to the modern country that sits there today. Report it honestly instead. */
             if(R&&R.name) return {code:'', eraNoData:true, eraName:R.name}; }
+          /* (#R132) TRAVELLING but the era polygon couldn't be resolved (FC loading / coastline gap): report honestly.
+             NEVER fall through to the modern countryGeo below — that IS the reported "クリック判定が現在の国境になっている". */
+          const _fcReady=(function(){ try{ const fc=TB.currentFC&&TB.currentFC(); return !!(fc&&fc.features&&fc.features.length); }catch(_){ return false; } })();
+          return _fcReady?{code:''}:{code:'', eraLoading:true};
         } }catch(_){}
       try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return {code:resolveCountryId(f)}; }catch(_){} } } }catch(_){} return {code:''}; }
     function _pickClick(e){ if(!_picking) return;
       if(!host||!document.body.contains(host)){ _setPick(false); return; }   /* panel gone → stop picking */
       const res=_pickResolve(e.lngLat)||{};
       if(res.eraNoData){ try{ imToast(LL('No comparable data for '+res.eraName+' in this era','「'+res.eraName+'」はこの年代の比較データがありません','Keine Vergleichsdaten für '+res.eraName+' in dieser Epoche','Нет данных для «'+res.eraName+'» в эту эпоху','Sin datos comparables para '+res.eraName+' en esta época')); }catch(_){} return; }
+      if(res.eraLoading){ try{ imToast(LL('Era borders are still loading here — click again in a moment','この年代の国境を読み込み中です。少し後にもう一度クリックしてください','Epochengrenzen laden noch — gleich erneut klicken','Границы эпохи ещё загружаются — кликните ещё раз','Los límites de la época aún se cargan — haz clic de nuevo')); }catch(_){} return; }
       const cd=res.code;
       if(!cd){ try{ imToast(LL('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
       const nm=cName(_cs(cd))||cd;
@@ -23620,7 +23656,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const cs=(j||[]).map(x=>({lng:+x.lon,lat:+x.lat,pop:+x.importance*1e6||0,name:(x.display_name||q).split(',').slice(0,2).join(', ')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
       return null; }
-    let panel=null,pFrom=null,pTo=null,pMode='driving',pickTarget=null,pickHandler=null;
+    let panel=null,pFrom=null,pTo=null,pMode='driving',pickTarget=null,pickHandler=null; const pAvoid=new Set();   /* (#R132) §7.3 avoid set */
     /* (#R132) 経路10-10 §12: proper turn-by-turn — interpret the FULL OSRM maneuver vocabulary (turn / merge / on-ramp
        / off-ramp / fork / end-of-road / roundabout+exit-number / U-turn / arrive-side), plus road ref, signposted
        destinations (方面), motorway exit numbers, and lane guidance (▮ valid / ▯ not) — not just "arrow + road name".
@@ -23677,6 +23713,10 @@ window.addEventListener('DOMContentLoaded', () => {
               +'<option value="depart">'+escp(LL('Depart at','出発時刻を指定','Abfahrt um','Отправление в','Salir a las'))+'</option>'
               +'<option value="arrive">'+escp(LL('Arrive by','到着時刻を指定','Ankunft bis','Прибытие к','Llegar antes de'))+'</option></select>'
             +'<input type="datetime-local" class="rp-time" style="flex:1;min-width:0;height:30px;padding:0 6px;border-radius:8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);font-size:11.5px;outline:none;display:none;box-sizing:border-box;"></div>'
+          /* (#R132) 経路10-10 §7.3: avoid toll / highway / ferry (OSRM exclude=, driving profile). Shown only for driving. */
+          +'<div class="rp-avoid" style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">'
+            +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Avoid:','回避:','Meiden:','Избегать:','Evitar:'))+'</span>'
+            +['toll','motorway','ferry'].map(k=>'<button class="rp-av" data-av="'+k+'" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp({toll:LL('Tolls','有料道路','Maut','Платные','Peajes'),motorway:LL('Highways','高速道路','Autobahn','Магистрали','Autopistas'),ferry:LL('Ferries','フェリー','Fähren','Паромы','Ferris')}[k])+'</button>').join('')+'</div>'
         +'</div>'
         +'<div class="rp-summary" style="flex:0 0 auto;padding:2px 12px;font-size:13px;color:var(--text-main);"></div>'
         +'<div class="rp-steps" style="flex:1 1 auto;overflow-y:auto;padding:2px 12px 12px;"></div>';
@@ -23697,10 +23737,14 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!now&&!timeIn.value){ const d=new Date(Date.now()+5*60000); d.setSeconds(0,0); try{ timeIn.value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }catch(_){} }
         recompute(); };
       timeIn.onchange=()=>recompute();
+      /* (#R132) §7.3 avoid toggles → pAvoid set, recompute on change */
+      panel.querySelectorAll('.rp-av').forEach(b=>b.onclick=()=>{ const k=b.getAttribute('data-av'); if(pAvoid.has(k)) pAvoid.delete(k); else pAvoid.add(k); _syncAvoid(); recompute(); });
       panel.querySelector('.rp-pick-from').onclick=()=>_startPick('from'); panel.querySelector('.rp-pick-to').onclick=()=>_startPick('to');
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rp-head')); }catch(_){}
       _syncModes(); return panel; }
-    function _syncModes(){ if(!panel) return; panel.querySelectorAll('.rp-mode').forEach(b=>{ const on=b.getAttribute('data-m')===pMode; b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; }); }
+    function _syncAvoid(){ if(!panel) return; const row=panel.querySelector('.rp-avoid'); if(row) row.style.display=(pMode==='driving')?'flex':'none';
+      panel.querySelectorAll('.rp-av').forEach(b=>{ const on=pAvoid.has(b.getAttribute('data-av')); b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; b.style.borderColor=on?'var(--primary-color)':'var(--glass-border,rgba(128,128,128,0.28))'; }); }
+    function _syncModes(){ if(!panel) return; panel.querySelectorAll('.rp-mode').forEach(b=>{ const on=b.getAttribute('data-m')===pMode; b.style.background=on?'var(--primary-color)':'transparent'; b.style.color=on?'#fff':'var(--text-muted)'; }); _syncAvoid(); }
     function _startPick(which){ _endPick(); pickTarget=which; try{ map.getCanvas().style.cursor='crosshair'; }catch(_){}
       pickHandler=async e=>{ const ll={lng:e.lngLat.lng,lat:e.lngLat.lat}; const g={lng:ll.lng,lat:ll.lat,name:ll.lat.toFixed(4)+', '+ll.lng.toFixed(4)};
         const tgt=pickTarget;
@@ -23719,6 +23763,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(sum) sum.innerHTML='<span style="color:var(--text-muted);">'+LL('Routing…','経路計算中…','Route…','Прокладка…','Calculando…')+'</span>'; if(st) st.innerHTML='';
       const _wsel=panel.querySelector('.rp-when'), _tin=panel.querySelector('.rp-time'); const _opts={mode:pMode};
       if(_wsel&&_wsel.value!=='now'&&_tin&&_tin.value){ const d=new Date(_tin.value); if(isFinite(d.getTime())){ _opts.time=d.toISOString(); _opts.arriveBy=(_wsel.value==='arrive'); } }
+      if(pMode==='driving'&&pAvoid.size) _opts.avoid=[...pAvoid];   /* (#R132) §7.3 */
       let r=null; try{ r=await route(pFrom,pTo,_opts); }catch(_){}
       if(r&&r.status==='cancelled') return;   /* (#R126) superseded by a newer request — that one updates the UI */
       if(!r||!r.ok){
@@ -25102,6 +25147,19 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R122) LAYER STASH — on flight start, turn OFF every data layer / highlight / outline / map-object so the
        cockpit shows a clean world (place-name labels stay ON); restore the exact set on exit. Idempotent + guarded. */
     let _fsStash=null;
+    /* (#R132) Atlas HIGHLIGHT / outline / choropleth overlay layers. `clearHl()`/`clearLineHl()`/`clearChoro()`/the
+       place-highlight clear all live in OTHER closures (IntMapConsole / the place-hl IIFE) and are NOT reachable from
+       here, so the old `typeof clearHl==='function'` guard was a permanent no-op and country/line/choropleth/place
+       highlights stayed painted through the whole flight ("フライトシミュレーター中は、ハイライト等も非表示に"). `map` IS
+       global, so instead of destroying them we HIDE the known overlay layer ids via the `visibility` layout property and
+       restore each to its prior value on landing — so a highlight the user set before flying reappears afterwards. */
+    const _FS_HL_LAYERS=['place-hl-fill','place-hl-line','place-hl-dot','nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line','nlq-choro','pl-outline-fill','pl-outline-line'];
+    let _fsHlVis=null;
+    function _fsHideHl(){ if(_fsHlVis) return; const saved={};
+      _FS_HL_LAYERS.forEach(id=>{ try{ if(map.getLayer(id)){ let v='visible'; try{ v=map.getLayoutProperty(id,'visibility')||'visible'; }catch(_){} saved[id]=v; map.setLayoutProperty(id,'visibility','none'); } }catch(_){} });
+      _fsHlVis=saved; }
+    function _fsShowHl(){ const s=_fsHlVis; _fsHlVis=null; if(!s) return;
+      Object.keys(s).forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility', s[id]==='none'?'none':'visible'); }catch(_){} }); }
     function _fsStashLayers(){ if(_fsStash) return; const stash=[];
       try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!cb.checked) return;
         const id=cb.id||'', dl=(cb.getAttribute&&cb.getAttribute('data-layer'))||'';
@@ -25112,8 +25170,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){}
       try{ if(window._imHlPolys&&window._imHlPolys.clear) window._imHlPolys.clear(); }catch(_){}
       try{ if(typeof clearHl==='function') clearHl(); }catch(_){}
+      try{ _fsHideHl(); }catch(_){}   /* (#R132) hide the highlight/choropleth/outline layers the closure-private clears can't reach */
       _fsStash=stash; }
-    function _fsRestoreLayers(){ const s=_fsStash; _fsStash=null; if(!s) return;
+    function _fsRestoreLayers(){ try{ _fsShowHl(); }catch(_){}   /* (#R132) un-hide the overlay layers first (data still intact) */
+      const s=_fsStash; _fsStash=null; if(!s) return;
       try{ s.forEach(tok=>{ let cb=null; if(tok.indexOf('dl:')===0){ cb=document.querySelector('#layer-dropdown [data-layer="'+tok.slice(3)+'"]'); } else { cb=document.getElementById(tok); }
         if(cb&&!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } }); }catch(_){} }
     function _terrRead(lng,lat){ let v=null; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) v=te; } }catch(_){}
@@ -26097,15 +26157,29 @@ window.addEventListener('DOMContentLoaded', () => {
       const dir=parseDirectional(nm); if(dir){ try{ const b=await _nomExtent(dir.base);
         if(b&&b.geojson&&/Polygon/.test((b.geojson.type||''))&&b.box){ const cg=_clipGeoRect(b.geojson,sliceBox(b.box,dir.dir)); if(cg) return {poly:{name:nm,geo:cg},sliced:true}; }
         if(b&&b.box) return {poly:{name:nm,geo:_bboxSoftPoly(sliceBox(b.box,dir.dir))},soft:true}; }catch(_){} }
-      /* unknown fuzzy region → the AI first JUDGES whether admin units represent it (「見極めて」); if yes it
-         names them (Wikipedia-grounded) and the SAME real-boundary composition draws it; if it answers
-         mode:"outline" (basins, ranges, belts…) we go straight to the traced outline instead. */
+      /* (#R132) GENERAL region resolver (window.IntMapRegionResolver): ONE web-grounded metadata call → REAL geometry
+         (admin union / OSM boundary / web-anchor-derived), a fail-CLOSED validation gate, and an honest ambiguous /
+         not-found result. It SUPERSEDES the old web-blind aiRegionUnits/aiRegionPoly hallucination rungs for logged-in
+         users (the "見当違いの場所にblob" source); logged-out / resolver-unavailable falls back to the legacy path. */
+      let _rrRan=false;
+      try{ const _mc=(()=>{ try{ const c=map.getCenter(); return {lat:c.lat,lng:c.lng}; }catch(_){ return null; } })();
+        const _gvNow=await _getGV();
+        const rr=await _rrResolve(nm,{mapCenter:_mc, lastCountry:(_gvNow&&_gvNow.country)||'', lang:(typeof currentLang!=='undefined'?currentLang:'en')});
+        if(rr){ _rrRan=!!rr.ran;
+          if(rr.status==='ambiguous'&&rr.candidates&&rr.candidates.length>=2) return {ambiguous:true, candidates:rr.candidates.slice(0,4), name:rr.canonicalName||String(nm||'').trim()};
+          if((rr.status==='exact'||rr.status==='derived')&&rr.geometry) return {poly:{name:rr.canonicalName||String(nm||'').trim(), geo:rr.geometry}, composed:rr.method==='admin_union', approx:rr.status==='derived', verified:true, rrMethod:rr.method, rrSource:rr.sourceName}; }
+      }catch(_){}
       const rbKnown=regionBox(nm);
-      try{ const aiu=await aiRegionUnits(nm); if(aiu&&!aiu.outline){ const cp2=await composeRegion(aiu,_lnorm(nm)); if(cp2&&cp2.geo&&cp2.n>=Math.max(1,Math.round(cp2.total*0.5))) return {poly:{name:String(nm||'').trim(),geo:cp2.geo},composed:true,partial:cp2.n<cp2.total}; } }catch(_){}
-      /* (#R130) AI-TRACED outline — the biggest hallucination source ("見当違いの場所にblob"). Accept it only when it
-         AGREES with the web-verified location; a trace far from the real place is dropped to an honest miss rather
-         than painted. Still flagged approx:true so the reply shows the ⬡ "approximate extent" note. */
-      const ai=await aiRegionPoly(nm); if(ai){ const gv=await _getGV(); if(_geoAgrees(ai, gv)) return {poly:{name:nm,geo:ai},approx:true,verified:_gvStrong(gv)}; }
+      if(!_rrRan){
+        /* legacy fallback (logged-out / resolver unavailable): admin-unit composition (real member boundaries),
+           then the validated AI outline. Skipped when the resolver actually consulted the web and returned nothing
+           reliable — trusting the stronger web-grounded verdict over a weaker web-blind re-guess. */
+        try{ const aiu=await aiRegionUnits(nm); if(aiu&&!aiu.outline){ const cp2=await composeRegion(aiu,_lnorm(nm)); if(cp2&&cp2.geo&&cp2.n>=Math.max(1,Math.round(cp2.total*0.5))) return {poly:{name:String(nm||'').trim(),geo:cp2.geo},composed:true,partial:cp2.n<cp2.total}; } }catch(_){}
+        const ai=await aiRegionPoly(nm); if(ai){ const gv=await _getGV(); if(_geoAgrees(ai, gv)) return {poly:{name:nm,geo:ai},approx:true,verified:_gvStrong(gv)}; }
+      }
+      /* curated macro-region gazetteer (Europe / Sahel / Great Plains …) — a REVIEWED extent, kept as a labelled
+         approximate fallback so these keep highlighting; it only fires for the small curated alias set, never for an
+         arbitrary name (so it can't paint a rogue rectangle). */
       if(rbKnown&&rbKnown.box) return {poly:{name:nm,geo:_bboxSoftPoly(rbKnown.box)},soft:true};
       /* (#R116) last-resort country fallback: resolveCountry may derive the country from a GEOCODED POINT
          (codeAtPoint), which for a non-country query with a bad geocode confidently painted the WRONG country
@@ -26414,14 +26488,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const _geoVerifyCache={};
     async function geoVerify(name){ const key=_lnorm(name); if(!key) return null; if(key in _geoVerifyCache) return _geoVerifyCache[key];
       let out=null;
+      /* (#R132) REAL AbortController timeout (was a 9 s Promise.race that discarded the winner but left the fetch
+         running in the background — burning usage/cost + racing _aiLastMeta). Now the timeout ABORTS the fetch, and
+         meta.webUsed is read from THIS call's envelope, not the shared global. Still fail-OPEN (any error → null). */
       try{
         const sys='You are a geographic verification service WITH web search. For the EXACT place the user names, web-search its single most authoritative CURRENT real-world location and return STRICT JSON ONLY: {"found":true|false,"lat":<number>,"lng":<number>,"kind":"country|admin1|admin2|city|water|region|river|basin|mountain|island|unknown","country":"<English name of the country it is in, or empty>","altNames":["<other names>"],"confidence":<0..1>}. lat/lng = a representative interior point on/inside the feature (for a country or region its centroid; for a bay/strait/river/range a point ON the feature). If the name is ambiguous, choose the most likely and put alternates in altNames. If you cannot verify it from a source, set found=false. Output JSON only, no prose.';
-        const j=await Promise.race([
-          askAIJSON('Place: "'+String(name).slice(0,120)+'"', sys, null, {task:'geo_verify', webMode:'required'}),
-          new Promise(res=>setTimeout(()=>res('__t__'), 9000))
-        ]);
-        if(j!=='__t__' && j && typeof j==='object' && j.found && isFinite(+j.lat) && isFinite(+j.lng) && Math.abs(+j.lat)<=90 && Math.abs(+j.lng)<=180){
-          const meta=window._aiLastMeta||{};
+        const ctl=('AbortController' in window)?new AbortController():null; let timer=null; if(ctl){ timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, 11000); }
+        let env=null; try{ env=await askAIJSONEnvelope('Place: "'+String(name).slice(0,120)+'"', sys, null, {task:'geo_verify', webMode:'required', signal:ctl?ctl.signal:null}); } finally { if(timer) clearTimeout(timer); }
+        const j=env&&env.data; const meta=(env&&env.meta)||{};
+        if(j && typeof j==='object' && j.found && isFinite(+j.lat) && isFinite(+j.lng) && Math.abs(+j.lat)<=90 && Math.abs(+j.lng)<=180){
           out={ found:true, lat:+j.lat, lng:+j.lng, kind:String(j.kind||'unknown').toLowerCase(), country:String(j.country||'').trim(),
                 altNames:(Array.isArray(j.altNames)?j.altNames.map(x=>String(x||'').trim()).filter(Boolean):[]),
                 confidence:(typeof j.confidence==='number'?j.confidence:(meta.webUsed?0.7:0.35)), webUsed:!!meta.webUsed };
@@ -26462,6 +26537,196 @@ window.addEventListener('DOMContentLoaded', () => {
           cls:String(best.category||best.class||''), typ:String(best.type||''),   /* (#R116) jsonv2 = "category" (R64 gotcha); lets callers accept water/natural polygons */
           osmType:best.osm_type||'', osmId:+best.osm_id||0}; }catch(_){}
       return null; }
+
+    /* ==================================================================================================
+       (#R132) GENERAL AMBIGUOUS-/UNREGISTERED-REGION RESOLVER — window.IntMapRegionResolver
+       --------------------------------------------------------------------------------------------------
+       Goal: draw high-accuracy REAL extents for arbitrary natural / informal / historical / economic region
+       names ("East European Plain", "関東平野", "Pannonian Basin", "Tibetan Plateau", "Levant", "Donbas",
+       "Sahel", "Fertile Crescent", "Blue Banana"…) WITHOUT the AI hallucinating a dense polygon over the
+       wrong coast, and to return an HONEST "no reliable boundary" instead of a country/continent/rectangle/blob.
+
+       DESIGN (spec P0-P2):
+       • The AI is NOT the author of boundary coordinates. ONE web-grounded geo_resolve call returns METADATA only —
+         canonicalName, aliases, featureType, expectedCountries, representativePoint, expectedBbox, geometryStrategy,
+         osmName, adminUnits, mustInclude / mustExclude points, clockwise boundaryAnchors, confidence, sources.
+       • Real data draws the geometry, most-exact first: country → admin_union (real member boundaries via
+         composeRegion) → osm_polygon (real OSM boundary via _nomExtent, anchored by the verified point) →
+         derived_anchors (a SIMPLE polygon built from the web-verified boundary anchors, clipped to the expected
+         bbox — labelled "derived / approximate"). No raw bbox is ever painted as a boundary.
+       • fail-CLOSED validation gate: bbox overlap, mustInclude coverage, mustExclude exclusion, expected-country
+         match, area/whole-world sanity — a result that does not pass is DROPPED (honest miss), never painted.
+       • ambiguous names (Georgia country vs US state, Congo…) → return candidates so Atlas asks instead of guessing.
+       • ONE web AI call per resolve; abortable (real AbortController, not a discarded Promise.race); two-layer cache
+         (session Map + IndexedDB, versioned + TTL) so a repeat is instant and a stale/old-algo entry self-expires.
+       ================================================================================================== */
+    const _RR_ALGO=1, _RR_DB='intmap_regionresolver', _RR_STORE='regions';
+    const _RR_TTL_POS=90*864e5, _RR_TTL_NEG=7*864e5;   /* keep good extents 90d, negatives 7d */
+    const _rrMem=new Map(); let _rrLast=null;
+    const _rrNow=()=>{ try{ return Date.now(); }catch(_){ return 0; } };
+    /* geo_resolve OUTPUT schema (forwarded to the Gemini path as responseSchema; the OpenAI/Luna path pins the shape
+       via the prompt + client validation). Google REST enum style (uppercase types) to match the proxy contract. */
+    const GEO_RESOLVE_SCHEMA={ type:'OBJECT', properties:{
+      found:{type:'BOOLEAN'}, canonicalName:{type:'STRING'}, aliases:{type:'ARRAY',items:{type:'STRING'}},
+      featureType:{type:'STRING'}, ambiguous:{type:'BOOLEAN'},
+      candidates:{type:'ARRAY',items:{type:'OBJECT',properties:{name:{type:'STRING'},country:{type:'STRING'},note:{type:'STRING'}}}},
+      expectedCountries:{type:'ARRAY',items:{type:'STRING'}},
+      representativePoint:{type:'OBJECT',properties:{lat:{type:'NUMBER'},lng:{type:'NUMBER'}}},
+      expectedBbox:{type:'ARRAY',items:{type:'NUMBER'}},
+      geometryStrategy:{type:'STRING'}, osmName:{type:'STRING'}, wikidata:{type:'STRING'},
+      adminUnits:{type:'ARRAY',items:{type:'OBJECT',properties:{q:{type:'STRING'},part:{type:'STRING'}}}},
+      mustInclude:{type:'ARRAY',items:{type:'OBJECT',properties:{name:{type:'STRING'},lat:{type:'NUMBER'},lng:{type:'NUMBER'}}}},
+      mustExclude:{type:'ARRAY',items:{type:'OBJECT',properties:{name:{type:'STRING'},lat:{type:'NUMBER'},lng:{type:'NUMBER'}}}},
+      boundaryAnchors:{type:'ARRAY',items:{type:'OBJECT',properties:{name:{type:'STRING'},lat:{type:'NUMBER'},lng:{type:'NUMBER'},role:{type:'STRING'}}}},
+      confidence:{type:'NUMBER'}, sources:{type:'ARRAY',items:{type:'OBJECT',properties:{title:{type:'STRING'},url:{type:'STRING'}}}}
+    }, required:['found','canonicalName','featureType','geometryStrategy'] };
+    function _rrSysPrompt(){ return [
+      'You are a geographic REGION-RESOLUTION service WITH web search. Given a place/region name (any language), web-search it to VERIFY it is a real place and to obtain its REAL extent, then return STRICT JSON ONLY (no prose, no code fence) describing HOW to draw it from real data. You do NOT output a dense boundary polygon — the client builds the geometry from the metadata you return, so your coordinates must be REAL places, never invented to fit.',
+      'Output object fields:',
+      '{"found":true|false, "canonicalName":"<English canonical name>", "aliases":["<other/native names>"], "featureType":"country|admin|region|historical_region|economic_region|cultural_region|plain|plateau|basin|valley|desert|mountain_range|coast|peninsula|isthmus|cape|island|archipelago|water|sea|gulf|strait|urban_area|corridor|other", "ambiguous":true|false, "candidates":[{"name":"","country":"","note":""}], "expectedCountries":["<English country names the feature lies in>"], "representativePoint":{"lat":<n>,"lng":<n>}, "expectedBbox":[<west>,<south>,<east>,<north>], "geometryStrategy":"country|admin_union|osm_polygon|derived_anchors|none", "osmName":"<best OpenStreetMap/Nominatim search string, include the country>", "wikidata":"<QID or empty>", "adminUnits":[{"q":"<admin unit, Country — Nominatim-searchable>","part":null}], "mustInclude":[{"name":"","lat":<n>,"lng":<n>}], "mustExclude":[{"name":"","lat":<n>,"lng":<n>}], "boundaryAnchors":[{"name":"","lat":<n>,"lng":<n>,"role":"<e.g. NW corner / eastern edge>"}], "confidence":<0..1>, "sources":[{"title":"","url":""}]}',
+      'geometryStrategy — choose the MOST EXACT that fits:',
+      '• "country": the name IS a sovereign country or dependency (return canonicalName; the client uses national borders).',
+      '• "admin_union": the region is well approximated by a union of REAL administrative units (historic provinces, groupings of states/prefectures/oblasts, economic macro-regions). List them in adminUnits as Nominatim-searchable "Unit, Country" strings (up to 40); prefer first-level units; set part to a compass octant ("N"/"S"/"E"/"W"/"NE"/…/"C") ONLY when clearly <~70% of a unit belongs.',
+      '• "osm_polygon": OpenStreetMap almost certainly has a single named boundary/relation for it (most named seas/gulfs/straits, many mountain ranges, deserts, well-defined regions). Give osmName = the exact Nominatim search string (with country).',
+      '• "derived_anchors": NO official or OSM boundary exists (informal natural/economic/historical regions — plains, plateaus, belts, corridors). Provide boundaryAnchors = 6-16 REAL NAMED places (cities, capes, river mouths, mountain passes, coastal points) that lie ON the region perimeter, listed CLOCKWISE, each with real coords; and give a good mustInclude/mustExclude set. The client builds a simple polygon from these anchors and validates it.',
+      '• "none": the name has no meaningful drawable extent (a whole continent, a hemisphere, a vague direction) or you cannot verify it — set found accordingly.',
+      'ALWAYS fill representativePoint (a point clearly INSIDE the feature), expectedBbox [west,south,east,north] in degrees, expectedCountries, and 2-8 mustInclude points (well-known places clearly inside) plus 1-6 mustExclude points (well-known places just OUTSIDE / in a neighbouring region that must NOT be covered). These are used to validate the drawn geometry, so they must be accurate.',
+      'AMBIGUITY: if the name has more than one well-known referent (e.g. "Georgia" = the country vs the US state; "Congo" = two countries and a river; "Kashmir" = a disputed multi-country region), set ambiguous:true and list 2-4 candidates ({name, country, note}); still resolve your single most-likely interpretation for the other fields. If a CONTEXT line is given, use it ONLY to break ties between otherwise-equal candidates.',
+      'found:false ONLY when the name is fictional or cannot be matched to any real place. Coordinates: lat -90..90, lng -180..180. Base every coordinate on web-search evidence or firm knowledge — NEVER fabricate coordinates to make a shape look right. Cite the pages you used in sources.'
+    ].join('\n'); }
+    function _rrCtxLine(ctx){ try{ if(!ctx) return ''; const bits=[];
+      if(ctx.mapCenter&&isFinite(+ctx.mapCenter.lat)) bits.push('map is centred near lat '+(+ctx.mapCenter.lat).toFixed(1)+', lng '+(+ctx.mapCenter.lng).toFixed(1));
+      if(ctx.lastCountry) bits.push('recently discussed country: '+String(ctx.lastCountry).slice(0,40));
+      if(ctx.lang) bits.push('user language: '+ctx.lang);
+      return bits.length?('CONTEXT (use only to disambiguate equal candidates): '+bits.join('; ')):''; }catch(_){ return ''; } }
+    /* ONE abortable, web-grounded metadata call. Returns the full envelope {data,meta,citations}. */
+    async function geoResolve(query, ctx, opts){ opts=opts||{};
+      const ctl=('AbortController' in window)?new AbortController():null; let timer=null;
+      if(ctl){ timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, opts.timeoutMs||22000); }
+      if(opts.signal&&ctl){ try{ if(opts.signal.aborted) ctl.abort(); else opts.signal.addEventListener('abort',()=>{ try{ ctl.abort(); }catch(_){} },{once:true}); }catch(_){} }
+      try{ const line=_rrCtxLine(ctx);
+        return await askAIJSONEnvelope('Region query: "'+String(query||'').slice(0,140)+'"'+(line?('\n'+line):''), _rrSysPrompt(), null, {task:'geo_resolve', webMode:'required', schema:GEO_RESOLVE_SCHEMA, signal:ctl?ctl.signal:null});
+      } finally { if(timer) clearTimeout(timer); } }
+    /* ---- geometry builders + validation (pure; covered by IntMapRegionResolverTest.run()) ---- */
+    function _rrBoxOverlap(a,b){ try{ const w=Math.max(a[0],b[0]),s=Math.max(a[1],b[1]),e=Math.min(a[2],b[2]),n=Math.min(a[3],b[3]); if(e<=w||n<=s) return 0; const inter=(e-w)*(n-s); const aa=(a[2]-a[0])*(a[3]-a[1]),ab=(b[2]-b[0])*(b[3]-b[1]); const d=Math.min(aa,ab); return d>0?inter/d:0; }catch(_){ return 0; } }
+    function _rrHull(pts){ const P=(pts||[]).filter(p=>Array.isArray(p)&&isFinite(+p[0])&&isFinite(+p[1])).map(p=>[+p[0],+p[1]]);
+      if(P.length<3) return null; P.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+      const uniq=P.filter((p,i)=>i===0||p[0]!==P[i-1][0]||p[1]!==P[i-1][1]); if(uniq.length<3) return null;
+      const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+      const lo=[]; for(const p of uniq){ while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0) lo.pop(); lo.push(p); }
+      const up=[]; for(let i=uniq.length-1;i>=0;i--){ const p=uniq[i]; while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0) up.pop(); up.push(p); }
+      lo.pop(); up.pop(); const ring=lo.concat(up); if(ring.length<3) return null; ring.push(ring[0].slice());
+      return {type:'Polygon',coordinates:[ring]}; }
+    function _rrSimple(poly){ try{ if(typeof turf!=='undefined'&&turf.kinks){ const k=turf.kinks(poly); return !(k&&k.features&&k.features.length); } }catch(_){} return true; }
+    function _rrLngSpan(pts){ let a=180,c=-180; (pts||[]).forEach(p=>{ if(p&&isFinite(+p[0])){ a=Math.min(a,+p[0]); c=Math.max(c,+p[0]); } }); return c-a; }
+    /* Build a REAL-anchor-derived polygon: prefer the AI's clockwise perimeter anchors as an ordered ring (keeps
+       concave band/corridor shapes) when it is SIMPLE (no self-crossing); else a convex hull of anchors+includes
+       (always simple). Clip to the expected bbox so it can never bleed past the region's real span. */
+    function _rrDerive(M){ try{
+      const anchors=(M.boundaryAnchors||[]).filter(p=>p&&isFinite(+p.lat)&&isFinite(+p.lng)).map(p=>[+p.lng,+p.lat]);
+      const incl=(M.mustInclude||[]).filter(p=>p&&isFinite(+p.lat)&&isFinite(+p.lng)).map(p=>[+p.lng,+p.lat]);
+      if(_rrLngSpan(anchors.concat(incl))>=180) return null;   /* antimeridian-spanning → refuse (would wrap into a world blob) */
+      let g=null;
+      if(anchors.length>=5){ const ring=anchors.slice(); ring.push(ring[0].slice()); const poly={type:'Polygon',coordinates:[ring]};
+        if(_rrSimple(poly)&&_geoArea(poly)>1e-5) g=poly; }
+      if(!g){ const all=anchors.concat(incl); if(all.length>=5){ const h=_rrHull(all); if(h&&_geoArea(h)>1e-5) g=h; } }
+      if(!g) return null;
+      if(Array.isArray(M.expectedBbox)&&M.expectedBbox.length===4){ const e=M.expectedBbox.map(Number); if(e.every(isFinite)&&e[2]>e[0]&&e[3]>e[1]){ const cg=_clipGeoRect(g,[[e[0],e[1]],[e[2],e[3]]]); if(cg&&_geoArea(cg)>1e-6) g=cg; } }
+      return g; }catch(_){ return null; } }
+    /* fail-CLOSED validation of a candidate geometry against the resolved metadata. Returns {ok,reason,checks}. */
+    function _rrValidate(geom, M){ const checks={}; M=M||{};
+      try{
+        if(!geom||(geom.type!=='Polygon'&&geom.type!=='MultiPolygon')) return {ok:false,reason:'geometry_invalid',checks};
+        const bb=fbbox(geom); if(!bb) return {ok:false,reason:'geometry_invalid',checks}; checks.bbox=bb;
+        const lngSpan=bb[2]-bb[0], latSpan=bb[3]-bb[1];
+        if(!(lngSpan>0&&latSpan>0)) return {ok:false,reason:'geometry_invalid',checks};
+        if(lngSpan>=345||latSpan>=170) return {ok:false,reason:'geometry_world',checks};   /* whole-world / continent blob */
+        const area=_geoArea(geom); checks.area=area;
+        const small=/island|cape|isthmus|reef|shoal|bay|lagoon|inlet|strait|urban/.test(String(M.featureType||''));
+        if(area<(small?1e-6:1e-4)) return {ok:false,reason:'geometry_too_small',checks};
+        if(Array.isArray(M.expectedBbox)&&M.expectedBbox.length===4){ const e=M.expectedBbox.map(Number); if(e.every(isFinite)&&e[2]>e[0]&&e[3]>e[1]){ const ov=_rrBoxOverlap(bb,e); checks.bboxOverlap=+ov.toFixed(3); if(ov<0.12) return {ok:false,reason:'geometry_bbox_mismatch',checks}; } }
+        const inc=(M.mustInclude||[]).filter(p=>p&&isFinite(+p.lat)&&isFinite(+p.lng));
+        if(inc.length){ let hit=0; inc.forEach(p=>{ if(_ptInGeo([+p.lng,+p.lat],geom)) hit++; }); checks.include=hit+'/'+inc.length;
+          if(hit<Math.ceil(inc.length*0.6)) return {ok:false,reason:'include_anchor_failed',checks}; }
+        const exc=(M.mustExclude||[]).filter(p=>p&&isFinite(+p.lat)&&isFinite(+p.lng));
+        if(exc.length){ let bad=0; exc.forEach(p=>{ if(_ptInGeo([+p.lng,+p.lat],geom)) bad++; }); checks.exclude=bad+'/'+exc.length;
+          if(bad>Math.floor(exc.length*0.15)) return {ok:false,reason:'exclude_anchor_failed',checks}; }
+        if(Array.isArray(M.expectedCountries)&&M.expectedCountries.length){ const want=new Set(); M.expectedCountries.forEach(c=>{ try{ const r=resolveCountrySync(String(c)); if(r&&r.code) want.add(r.code); }catch(_){} });
+          if(want.size){ const tp=inc.slice(0,4).map(p=>[+p.lng,+p.lat]); if(M.representativePoint&&isFinite(+M.representativePoint.lng)) tp.push([+M.representativePoint.lng,+M.representativePoint.lat]);
+            let ok=!tp.length; for(const p of tp){ try{ const cc=codeAtPoint(p[0],p[1]); if(cc&&want.has(cc)){ ok=true; break; } }catch(_){} } checks.countryOk=ok;
+            if(!ok) return {ok:false,reason:'geometry_country_mismatch',checks}; } }
+        return {ok:true,checks};
+      }catch(e){ return {ok:false,reason:'validator_error',checks}; } }
+    function _rrDisambiguated(M,ctx){ try{ if(!ctx) return false; const lc=_lnorm(ctx.lastCountry||'');
+      if(lc&&Array.isArray(M.expectedCountries)&&M.expectedCountries.some(c=>{ const x=_lnorm(c); return x&&(x.indexOf(lc)>=0||lc.indexOf(x)>=0); })) return true; }catch(_){} return false; }
+    function _rrOk(status,query,M,geom,method,src,cites){ return {status,ran:true,query, canonicalName:M.canonicalName||query, aliases:M.aliases||[], featureType:M.featureType||'', geometry:geom, method, sourceName:src, citations:cites||[], confidence:(typeof M.confidence==='number'?M.confidence:0.6), countries:M.expectedCountries||[], candidates:[], warnings:[]}; }
+    /* ---- IndexedDB persistent cache (versioned + TTL) ---- */
+    function _rrIdbOpen(){ return new Promise(res=>{ try{ if(!('indexedDB' in window)) return res(null); const rq=indexedDB.open(_RR_DB,1);
+      rq.onupgradeneeded=e=>{ try{ const db=e.target.result; if(!db.objectStoreNames.contains(_RR_STORE)) db.createObjectStore(_RR_STORE); }catch(_){} };
+      rq.onsuccess=e=>res(e.target.result); rq.onerror=()=>res(null); rq.onblocked=()=>res(null); }catch(_){ res(null); } }); }
+    async function _rrIdbGet(key){ const db=await _rrIdbOpen(); if(!db) return null; return new Promise(res=>{ try{ const rq=db.transaction(_RR_STORE,'readonly').objectStore(_RR_STORE).get(key); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>res(null); }catch(_){ res(null); } }); }
+    function _rrIdbPut(key,val){ _rrIdbOpen().then(db=>{ if(!db) return; try{ db.transaction(_RR_STORE,'readwrite').objectStore(_RR_STORE).put(val,key); }catch(_){} }); }
+    function _rrFresh(rec){ try{ if(!rec||rec.algo!==_RR_ALGO||!rec.r) return false; const pos=(rec.r.status==='exact'||rec.r.status==='derived'); return (_rrNow()-rec.ts)<(pos?_RR_TTL_POS:_RR_TTL_NEG); }catch(_){ return false; } }
+    async function _rrCacheGet(key){ const m=_rrMem.get(key); if(m){ if(_rrFresh(m)) return m.r; _rrMem.delete(key); }
+      try{ const rec=await _rrIdbGet(key); if(rec&&_rrFresh(rec)){ _rrMem.set(key,rec); return rec.r; } }catch(_){} return null; }
+    function _rrCachePut(key,r){ try{ const rec={algo:_RR_ALGO,ts:_rrNow(),r}; _rrMem.set(key,rec); _rrIdbPut(key,rec); }catch(_){} }
+    /* ---- the resolver: ONE web call → real geometry (most-exact first) → fail-closed validation ---- */
+    async function _rrResolve(query, ctx, opts){ query=String(query||'').trim(); ctx=ctx||{}; opts=opts||{};
+      if(!query) return {status:'failed',ran:false,query,reason:'empty'};
+      const key=_lnorm(query)+'|'+_RR_ALGO; const diag={query,stages:[]}; const _stage=s=>{ diag.stages.push(s); try{ if(ctx.onStage) ctx.onStage(s); }catch(_){} };
+      const cached=await _rrCacheGet(key); if(cached){ const c=Object.assign({},cached,{cached:true}); _rrLast=c; return c; }
+      if(!currentUser){ const r={status:'failed',ran:false,query,reason:'not_logged_in',diagnostics:diag}; _rrLast=r; return r; }   /* fail-open → caller keeps legacy behaviour, no auth-modal pop */
+      _stage('locating');
+      let M=null, cites=[], webUsed=false;
+      try{ const env=await geoResolve(query, ctx, opts); if(env){ M=env.data; cites=Array.isArray(env.citations)?env.citations:[]; webUsed=!!(env.meta&&env.meta.webUsed); } }
+      catch(e){ const ab=(e&&(e.name==='AbortError'||/abort/i.test(String(e.message||'')))); const r={status:'failed',ran:!ab,query,reason:ab?'aborted':'provider_error',diagnostics:diag}; _rrLast=r; return r; }
+      if(!M||typeof M!=='object'||!M.found){ const r={status:'not_found',ran:true,query,canonicalName:(M&&M.canonicalName)||query,confidence:(M&&M.confidence)||0,citations:cites,diagnostics:diag}; _rrCachePut(key,r); _rrLast=r; return r; }
+      diag.featureType=M.featureType; diag.strategy=M.geometryStrategy; diag.webUsed=webUsed;
+      /* seed the geoVerify cache from the SAME web call so any later _getGV() in resolveHlTarget is free */
+      try{ if(M.representativePoint&&isFinite(+M.representativePoint.lat)&&isFinite(+M.representativePoint.lng)&&!(_lnorm(query) in _geoVerifyCache)){
+        _geoVerifyCache[_lnorm(query)]={found:true,lat:+M.representativePoint.lat,lng:+M.representativePoint.lng,kind:String(M.featureType||'region'),country:(M.expectedCountries||[])[0]||'',altNames:M.aliases||[],confidence:(typeof M.confidence==='number'?M.confidence:0.6),webUsed}; } }catch(_){}
+      if(M.ambiguous&&Array.isArray(M.candidates)&&M.candidates.length>=2&&!_rrDisambiguated(M,ctx)){ const r={status:'ambiguous',ran:true,query,canonicalName:M.canonicalName||query,candidates:M.candidates.slice(0,4),citations:cites,confidence:M.confidence||0,diagnostics:diag}; _rrLast=r; return r; }
+      const strat=String(M.geometryStrategy||'').toLowerCase(); let geom=null, method='', src='';
+      _stage('fetching');
+      if(strat==='country'){ let cc=null; try{ cc=resolveCountrySync(M.canonicalName)||resolveCountrySync((M.expectedCountries||[])[0]||''); }catch(_){} if(cc&&cc.code){ const p=_cgPoly(cc.code); if(p&&p.geo){ geom=p.geo; method='country'; src='national boundary'; } } }
+      if(!geom&&(strat==='admin_union'||strat==='admin')){ const units=(M.adminUnits||[]).filter(u=>u&&u.q).map(u=>({q:String(u.q).slice(0,90),part:(u.part&&/^(N|S|E|W|NE|NW|SE|SW|C)$/.test(String(u.part)))?String(u.part):null})).slice(0,44);
+        if(units.length){ try{ const cp=await composeRegion({units,iso:[]}, key+'|au'); if(cp&&cp.geo&&cp.n>=Math.max(1,Math.round(cp.total*0.5))){ geom=cp.geo; method='admin_union'; src=cp.n+' administrative units'; diag.adminN=cp.n+'/'+cp.total; } }catch(_){} } }
+      if(!geom&&(strat==='osm_polygon'||strat==='osm'||!strat)){ try{ const anc=(M.representativePoint&&isFinite(+M.representativePoint.lng))?{lat:+M.representativePoint.lat,lng:+M.representativePoint.lng}:null;
+        const e=await _nomExtent(M.osmName||M.canonicalName||query, anc); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){ geom=e.geojson; method='osm_polygon'; src='OpenStreetMap boundary'; } }catch(_){} }
+      if(!geom&&(strat==='derived_anchors'||strat==='derived'||strat==='osm_polygon'||!strat)){ if(webUsed){ const g=_rrDerive(M); if(g){ geom=g; method='derived_anchors'; src=((M.boundaryAnchors||[]).length)+' web-verified boundary anchors'; } } }
+      if(!geom){ const r={status:'not_found',ran:true,query,canonicalName:M.canonicalName||query,confidence:M.confidence||0,citations:cites,warnings:['no_geometry'],diagnostics:diag}; _rrCachePut(key,r); _rrLast=r; return r; }
+      _stage('validating'); let v=_rrValidate(geom,M); diag.validation=v;
+      if(!v.ok){
+        /* an OSM/admin polygon that fails validation → try the web-anchor derived shape ONCE before giving up */
+        if(method!=='derived_anchors'&&webUsed){ const g2=_rrDerive(M); if(g2){ const v2=_rrValidate(g2,M); if(v2.ok){ geom=g2; method='derived_anchors'; src=((M.boundaryAnchors||[]).length)+' web-verified boundary anchors'; v=v2; diag.validation=v2; diag.fellBackToDerived=true; } } }
+      }
+      if(!v.ok){ const r={status:'failed',ran:true,query,canonicalName:M.canonicalName||query,confidence:M.confidence||0,citations:cites,warnings:[v.reason],reason:v.reason,diagnostics:diag}; _rrCachePut(key,r); _rrLast=r; return r; }
+      _stage('drawing'); const status=(method==='derived_anchors')?'derived':'exact'; const r=_rrOk(status,query,M,geom,method,src,cites); r.diagnostics=diag; _rrCachePut(key,r); _rrLast=r; return r; }
+    /* ---- pure-function regression harness (no AI): validates the geometry math the resolver depends on ---- */
+    function _rrSelfTest(){ const res=[]; const ok=(n,c)=>res.push({name:n,pass:!!c});
+      try{
+        const sq={type:'Polygon',coordinates:[[[0,0],[0,10],[10,10],[10,0],[0,0]]]};
+        ok('hull of a square', (()=>{ const h=_rrHull([[0,0],[0,10],[10,10],[10,0],[5,5]]); return h&&_geoArea(h)>90; })());
+        ok('boxOverlap identical=1', Math.abs(_rrBoxOverlap([0,0,10,10],[0,0,10,10])-1)<1e-6);
+        ok('boxOverlap disjoint=0', _rrBoxOverlap([0,0,1,1],[5,5,6,6])===0);
+        ok('reject whole-world blob', !_rrValidate({type:'Polygon',coordinates:[[[-179,-85],[-179,85],[179,85],[179,-85],[-179,-85]]]},{}).ok);
+        ok('reject tiny sliver', !_rrValidate({type:'Polygon',coordinates:[[[0,0],[0,0.0001],[0.0001,0.0001],[0.0001,0],[0,0]]]},{featureType:'plain'}).ok);
+        ok('accept valid vs bbox+include', _rrValidate(sq,{expectedBbox:[0,0,10,10],mustInclude:[{lat:5,lng:5}],featureType:'plain'}).ok);
+        ok('reject bbox mismatch', !_rrValidate(sq,{expectedBbox:[100,50,110,60],featureType:'plain'}).ok);
+        ok('reject include miss', !_rrValidate(sq,{mustInclude:[{lat:50,lng:50}],featureType:'plain'}).ok);
+        ok('reject exclude hit', !_rrValidate(sq,{mustExclude:[{lat:5,lng:5}],featureType:'plain'}).ok);
+        ok('derive simple ring from anchors', (()=>{ const g=_rrDerive({boundaryAnchors:[{lat:0,lng:0},{lat:10,lng:0},{lat:10,lng:10},{lat:0,lng:10}],mustInclude:[{lat:5,lng:5}],expectedBbox:[-1,-1,11,11]}); return g&&_geoArea(g)>50; })());
+        ok('refuse antimeridian span', _rrDerive({boundaryAnchors:[{lat:0,lng:-170},{lat:10,lng:-170},{lat:10,lng:170},{lat:0,lng:170}]})===null);
+        ok('cache fresh check pos', _rrFresh({algo:_RR_ALGO,ts:_rrNow(),r:{status:'exact'}}));
+        ok('cache stale algo rejected', !_rrFresh({algo:_RR_ALGO+9,ts:_rrNow(),r:{status:'exact'}}));
+      }catch(e){ res.push({name:'threw:'+String(e&&e.message||e),pass:false}); }
+      const pass=res.filter(r=>r.pass).length; const out={pass,total:res.length,ok:pass===res.length,results:res};
+      try{ console.log('[IntMapRegionResolverTest]', out.pass+'/'+out.total, out.ok?'ALL PASS':'FAIL', res.filter(r=>!r.pass).map(r=>r.name)); }catch(_){} return out; }
+    try{ window.IntMapRegionResolver={ resolve:_rrResolve, geoResolve:geoResolve, validate:_rrValidate, hull:_rrHull, derive:_rrDerive, version:_RR_ALGO,
+      clearCache:function(){ try{ _rrMem.clear(); }catch(_){} try{ indexedDB.deleteDatabase(_RR_DB); }catch(_){} } };
+      window.IntMapRegionResolverDebug={ get last(){ return _rrLast; }, mem:function(){ return Array.from(_rrMem.keys()); }, cacheGet:_rrCacheGet };
+      window.IntMapRegionResolverTest={ run:_rrSelfTest }; }catch(_){}
+
     async function placeExtent(place){ place=String(place||'').trim(); if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)||WORLD_RE.test(place)) return null;   /* (#R85) 現在地 has no Nominatim extent — resolve it via geocode()→device GPS */
       /* 1) macro-region with a known real extent (Nominatim has no clean polygon for these). */
       const reg=regionBox(place); if(reg) return reg;
@@ -27722,7 +27987,9 @@ window.addEventListener('DOMContentLoaded', () => {
           const _hdr='<div style="font-weight:600;">'+(mode==='transit'?'🚆':mode==='walking'?'🚶':mode==='cycling'?'🚲':'🚗')+' '+esc((A&&A.name)||a.from)+' → '+esc((B&&B.name)||a.to||a.place)+'</div>'+_rmodes(mode,_lastRouteCtx);
           if(!A||!B) return R(false, _hdr+warn('⚠ '+L('Could not find one of those places','地点を特定できませんでした','Ort nicht gefunden','Место не найдено','Lugar no encontrado')));
           let via=[]; if(Array.isArray(a.via)){ for(const v of a.via.slice(0,6)){ try{ const g=await geocode(String(v)); if(g) via.push({lng:g.lng,lat:g.lat}); }catch(_){} } }
-          let r=null; try{ r=await window.IntMapRouting.route({lng:A.lng,lat:A.lat},{lng:B.lng,lat:B.lat},{mode,via,time:a.time||a.datetime||a.depart||a.arrive,arriveBy:!!(a.arriveBy||a.arrive)}); }catch(_){}
+          /* (#R132) §7.3: parse an avoid list (array or comma/space string) → toll/motorway/ferry for OSRM exclude= */
+          let _avoid=null; { let av=a.avoid||a.avoids||a.exclude; if(typeof av==='string') av=av.split(/[,、\s]+/); if(Array.isArray(av)){ _avoid=av.map(x=>{ x=String(x).toLowerCase(); return /toll|有料/.test(x)?'toll':/motorway|highway|freeway|高速/.test(x)?'motorway':/ferry|フェリー/.test(x)?'ferry':''; }).filter(Boolean); if(!_avoid.length) _avoid=null; } }
+          let r=null; try{ r=await window.IntMapRouting.route({lng:A.lng,lat:A.lat},{lng:B.lng,lat:B.lat},{mode,via,time:a.time||a.datetime||a.depart||a.arrive,arriveBy:!!(a.arriveBy||a.arrive),avoid:_avoid}); }catch(_){}
           if(r&&r.transit){
             const totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min'); const tf=r.transfers||0;
             const _ic=m=>{ m=String(m||'').toUpperCase(); return /WALK|FOOT/.test(m)?'🚶':/SUBWAY|METRO/.test(m)?'🚇':/TRAM|LIGHT_RAIL|STREETCAR/.test(m)?'🚊':/BUS|COACH/.test(m)?'🚌':/FERRY|BOAT/.test(m)?'⛴':/HIGHSPEED|LONG_DISTANCE/.test(m)?'🚄':/RAIL|TRAIN|REGIONAL|SUBURBAN|NIGHT/.test(m)?'🚆':'🚈'; };
@@ -28034,7 +28301,7 @@ window.addEventListener('DOMContentLoaded', () => {
              (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…).
              (#R65) + RIVERS as their real course (line) and BASINS (tributaries + faint basin fill) — judged
              BEFORE any admin-unit logic. */
-          const found=[],polys=[],lines=[],lineNames=[],miss=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false;
+          const found=[],polys=[],lines=[],lineNames=[],miss=[],ambig=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false,anyOsm=false,anyDerived=false;
           for(const nm2 of raw){
             const bi=basinIntent(nm2);
             if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
@@ -28049,10 +28316,16 @@ window.addEventListener('DOMContentLoaded', () => {
               if(rl){ lines.push({geo:rl.geo,w:3.2,color:pc2||null,name:rl.name}); lineNames.push(rl.name); continue; } }
             let t2=null; try{ t2=await resolveHlTarget(nm2); }catch(_){}
             if(t2&&t2.verified) anyVerified=true;   /* (#R130) at least one target's location was web-search-verified */
-            if(t2&&t2.code){ if(!seen.has(t2.code)){ seen.add(t2.code); found.push(t2); } }
+            if(t2&&t2.ambiguous&&Array.isArray(t2.candidates)&&t2.candidates.length){ ambig.push({name:t2.name||nm2, candidates:t2.candidates}); }   /* (#R132) ambiguous → ask instead of guessing */
+            else if(t2&&t2.code){ if(!seen.has(t2.code)){ seen.add(t2.code); found.push(t2); } }
             else if(t2&&t2.codes){ let nAdd=0; t2.codes.forEach(cd=>{ if(!seen.has(cd)){ seen.add(cd); found.push({code:cd,_grp:1}); nAdd++; } }); grpNames.push((t2.name||nm2)+' ('+nAdd+')'); if(t2.basis) grpBases.push(t2.basis); }
-            else if(t2&&t2.poly){ if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.soft||t2.approx) anyApprox=true; if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true; }
+            else if(t2&&t2.poly){ if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
+              /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
+              if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; }
             else miss.push(nm2); }
+          /* (#R132) if the ONLY results were ambiguous, ask which one — never paint a guess */
+          const _ambHtml=arr=>arr.map(t=>'<b>'+esc(t.name)+'</b>:<br>• '+(t.candidates||[]).slice(0,4).map(c=>esc(String(c.name||'')+(c.country?(' — '+c.country):'')+(c.note?(' ('+c.note+')'):''))).join('<br>• ')).join('<br>');
+          if(!found.length&&!polys.length&&!lines.length&&ambig.length) return R(false, warn('⚠ '+L('That name is ambiguous — which did you mean?','その名称には複数の候補があります。どれを指しますか？','Der Name ist mehrdeutig — welchen meinen Sie?','Название неоднозначно — какой вариант?','Ese nombre es ambiguo — ¿cuál quiere decir?'))+note(_ambHtml(ambig))+cwarn);
           if(!found.length&&!polys.length&&!lines.length) return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn);
           /* (#R61) VERIFY the paint really happened (style may still be loading) — bounded retry, then honesty. */
           clearPolyHl(); _hlPolys=polys; clearLineHl(); _hlLines=lines;
@@ -28079,9 +28352,13 @@ window.addEventListener('DOMContentLoaded', () => {
             else if(basinInfo.noTrib) hh+=note(L('No tributaries returned by OpenStreetMap here','OpenStreetMapから支流を取得できませんでした','Keine Nebenflüsse von OSM','OSM не вернул притоков','OSM no devolvió afluentes'));
           }
           if(anyComposed) hh+=note(L('Drawn from the real administrative boundaries of the region\'s member units','構成する行政区画の実際の境界データから描画','Aus den realen Verwaltungsgrenzen der Teilgebiete gezeichnet','Построено из реальных административных границ','Dibujado a partir de los límites administrativos reales'));
+          /* (#R132) explicit BASIS lines for the general resolver */
+          if(anyOsm) hh+=note(L('Drawn from real OpenStreetMap boundary data','実際のOpenStreetMapの境界データから描画','Aus realen OpenStreetMap-Grenzdaten gezeichnet','Построено по реальным границам OpenStreetMap','Dibujado a partir de límites reales de OpenStreetMap'));
+          if(anyDerived) hh+=note(L('⬡ = approximate extent derived from web-verified boundary anchors (no official boundary exists for this region)','⬡ = 近似範囲（公式境界が存在しない地域を、Web検索で照合した境界アンカーから構築）','⬡ = ungefähre Ausdehnung aus web-verifizierten Grenzankern (keine offizielle Grenze)','⬡ = приблизительный контур из проверенных веб-поиском опорных точек (официальной границы нет)','⬡ = extensión aproximada a partir de anclas verificadas por búsqueda web (no hay límite oficial)'));
           if(anyPartial) hh+=warn('⚠ '+L('Some member boundaries could not be fetched — the shape may be missing pieces','一部の構成区画の境界を取得できませんでした（欠けがある可能性）','Einige Teilgrenzen fehlen','Часть границ получить не удалось','Faltan algunos límites'));
           if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
           if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
+          if(ambig.length) hh+=warn('⚠ '+L('Ambiguous (not drawn) — clarify','曖昧なため未描画 — 指定してください','Mehrdeutig (nicht gezeichnet)','Неоднозначно (не нарисовано)','Ambiguo (no dibujado)')+':<br>'+_ambHtml(ambig));
           if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', '))); return R(true,hh+cwarn); }
         case 'value': case 'stat': case 'lookup': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name);
           if(!c||!c.code||!countryStats[c.code]) return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||a.name||'')));
@@ -28844,7 +29121,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'LAYERS: {"type":"layer","name":EXACT_NAME,"on":bool} — copy the layer name VERBATIM from the "Available layers" list at the very end (do NOT paraphrase — paraphrasing is what selected the WRONG layer before). If you truly cannot find an exact match you MAY use a single common keyword (temperature, rain, precipitation, clouds, snow, sea ice, wind, humidity, pressure, population, gdp, co2, co, earthquakes, aurora, night lights, volcanoes, nato, eu, railways, time zones, webcams, vegetation, soil moisture, land cover, elevation) — Atlas maps these to the correct layer. {"type":"opacity","name":EXACT_NAME,"value":0..1} (or {"delta":±0..1} for "more/less transparent"); {"type":"layersOff"} turns EVERY active data layer off at once (use for "turn off all layers"); {"type":"grid","on":bool}; {"type":"countryInfo","on":bool}; {"type":"ecmwf"} (open the ECMWF weather-layer suite).\n'
         +'DATA ANALYSIS over country statistics (paints the map): {"type":"rank","metric":KEY,"order":"top"|"bottom","n":int}; {"type":"ratio","metricA":KEY,"metricB":KEY,"order":"top"|"bottom","n":int}; {"type":"relate","metricY":KEY,"metricX":KEY,"find":"low"|"high","n":int} = countries whose metricY is unusually LOW/HIGH for their metricX (regression residual; use for "Y relative to/for X", e.g. low HDI relative to GDP per capita = {"metricY":"hdi","metricX":"gdppc","find":"low"}); {"type":"mapMetric","metric":KEY,"order":"top"|"bottom","color"?:str} = CHOROPLETH that shades EVERY country by the metric with a legend (use for "colour/shade/heat-map the world by …"; optional "color" sets the shading hue, e.g. "red"); {"type":"value","metric":KEY|"capital"|"currency"|"languages","country":str} = answer ONE country\'s ACTUAL stored figure/fact (use for "what is the population of X" / "capital of X"; omit "metric" for a full stat card of that country); {"type":"highlight","countries":[str,…],"color"?:str} = highlight the named targets on the map ("on":false clears; color WITHOUT countries recolors the current highlights). RANKED/FILTERED form (use this instead of "countries" when the user asks to highlight the "top/bottom N by <metric>", optionally with a filter): {"type":"highlight","metric":KEY,"n":int,"order":"top"|"bottom","minPop"?:num,"maxPop"?:num,"color"?:str} — the app computes the top/bottom-N countries by that metric from the REAL data itself (never guess the members) after excluding any below "minPop" / above "maxPop" (population thresholds, in people; accept "5M"/"5000000"). e.g. "人口5M未満を除外したGDP per capita上位10ヵ国をハイライト" → {"type":"highlight","metric":"gdppc","n":10,"order":"top","minPop":5000000}; "highlight the 5 least populous countries" → {"type":"highlight","metric":"pop","n":5,"order":"bottom"}. metric KEYs are the same as rank/mapMetric below (+ lifeExp, internet). Targets may be COUNTRIES, admin SUBDIVISIONS ("Stavropol Krai","奈良県","Bavaria" → their real boundary polygon, NOT the whole country), NAMED/INFORMAL REGIONS ("Blue Banana","肥沃な三日月帯","旧ソ連諸国" → real member boundaries where they exist, traced outline otherwise), RIVERS ("信濃川","the Danube" → the river\'s REAL course drawn as a line) or RIVER BASINS ("アマゾン川の流域","the Nile basin" → main stem + every OSM tributary as lines + the basin as a faint fill) — pass the name as the user said it (keep 流域/basin words). "color" accepts ANY colour: basic + compound names in 5 languages ("emerald green","紺","türkis","бирюзовый") + all CSS names + #rrggbb; ALWAYS pass it when the user names a colour. {"type":"reset"} clears highlights & shading.\n'
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"metrics"?:[str,…],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して"). When the user names SPECIFIC indicators (e.g. "compare the USA and China — GDP, defense and population"), pass them in "metrics" using these keys: gdp, gdppc, gdpppp, gdppcppp, growth, infl (inflation), unemp (unemployment), debt, cab (current account), pop (population), life (life expectancy), tfr (fertility), mil (military % GDP), milb (military spending $ — use for "defense"/"military"), co2, net (internet), urban, exp (exports), fdi, health, edu, rnd, renew, forest, hom (homicide), area, hdi, demi (democracy index). Omit "metrics" when no indicators are named (the defaults open).\n'
-        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…],"time"?:"ISO 8601 date-time","arriveBy"?:bool (true = "time" is the ARRIVAL deadline, e.g. "9時までに着きたい" — transit only)} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","year":int} (deep time, 1900→now) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = the MASTER SPACETIME CLOCK (IntMapTime): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders, the Köppen climate era, NATO/EU accession and the day/night terminator. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. Prefer this over Earth Replay for setting the time; {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
+        +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…],"time"?:"ISO 8601 date-time","arriveBy"?:bool (true = "time" is the ARRIVAL deadline, e.g. "9時までに着きたい" — transit only),"avoid"?:["toll"|"motorway"|"ferry",…] (driving only — e.g. "有料道路を避けて" → ["toll"], "高速を使わずに" → ["motorway"])} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","year":int} (deep time, 1900→now) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = the MASTER SPACETIME CLOCK (IntMapTime): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders, the Köppen climate era, NATO/EU accession and the day/night terminator. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. Prefer this over Earth Replay for setting the time; {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
         +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). (#R131) For a NAMED MULTI-COUNTRY REGION ("Central Asia", "the Baltics", "the Sahel", "Central America", "the Gulf states") OR an explicitly requested set of countries, POPULATE "countries" with the actual member countries (English names) IN ADDITION to "place" — this is real geographic knowledge, not a time-sensitive fact — so the search and coverage span ALL of them instead of collapsing to one; and keep the user\'s COMPLETE question verbatim in "question" (do not truncate a monitoring/analysis prompt to a keyword). (#R119) It ALSO receives the live values of the layers the user is displaying at the anchor point, and "scope":"drawn-area" analyses the USER-DRAWN measure polygon / circles (news inside it + layer values + WorldPop population — use for "この範囲を要約/分析して"). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable, and — for a question about the latest/current situation or a monitoring/alert judgment — verifies against a LIVE web search and marks the answer provisional if that verification could not complete.\n'
         +'SATELLITE CHANGE DETECTION: {"type":"satelliteCompare","dateA":"YYYY-MM-DD","dateB":"YYYY-MM-DD","place"?:str} = capture the dated satellite view at two dates and report the visual changes (construction, vessels, disasters, land use) with both frames shown. REQUIRES the satellite base with a dated provider to be active; if it is not, tell the user to switch to Satellite first. Use for "この2日付で衛星画像を比較", "what changed here between X and Y".\n'
@@ -28900,7 +29177,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
         +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
         /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
-        +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:88%;padding:6px 12px;background:linear-gradient(135deg,var(--primary-color),#5e5ce6);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble */
+        +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:88%;padding:6px 12px;background:var(--atlas-grad);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble; (#R132) shared --atlas-grad so bubble+tab stay identical & accent-responsive without the flat default fill */
         +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
         +'#atlas-panel .atl-dots{display:inline-flex;gap:4px;align-items:center;padding:3px 0;}'
         +'#atlas-panel .atl-dots i{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:atlDot 1.15s infinite;}'
@@ -30718,7 +30995,22 @@ window.addEventListener('DOMContentLoaded', () => {
         tb.style.display=(n>0)?'inline-flex':'none'; }
       const mob=(typeof isMobile==='function'?isMobile():true);
       fab.style.display=(n>0&&!openState&&mob)?'inline-flex':'none'; }catch(_){} }
-    function open(){ ensurePanel(); renderList(); panel.style.display='flex'; openState=true; tickFab(); }
+    /* (#R132) place the panel DIRECTLY BELOW the button that opened it (was hard-pinned to the top-LEFT at
+       left:16px;top:80px while its trigger — #btn-tool-objects — sits top-RIGHT, so the popup appeared far from the
+       button: "ボタンの直下にポップアップが出るように"). Anchor right-aligned under the toolbar button on desktop, just
+       above the bottom-left FAB on mobile. Respect a user-dragged panel (data-dragged) and clamp on-screen. */
+    function _placePanel(){ try{ if(!panel||panel.hasAttribute('data-dragged')) return;
+      const w=Math.min(330, window.innerWidth*0.92);
+      const tb=document.getElementById('btn-tool-objects');
+      if(tb&&tb.offsetParent!==null){ const r=tb.getBoundingClientRect();
+        let right=Math.max(6, window.innerWidth-r.right);
+        if(right+w>window.innerWidth-6) right=Math.max(6, window.innerWidth-w-6);
+        panel.style.left='auto'; panel.style.right=right+'px'; panel.style.top=Math.round(r.bottom+8)+'px'; panel.style.bottom='auto'; return; }
+      const fb=document.getElementById('iol-fab');
+      if(fb&&fb.offsetParent!==null){ const r=fb.getBoundingClientRect();
+        panel.style.left='16px'; panel.style.right='auto'; panel.style.top='auto'; panel.style.bottom=Math.round(Math.max(6, window.innerHeight-r.top+8))+'px'; return; }
+      panel.style.left='16px'; panel.style.right='auto'; panel.style.top='80px'; panel.style.bottom='auto'; }catch(_){} }
+    function open(){ ensurePanel(); renderList(); _placePanel(); panel.style.display='flex'; openState=true; tickFab(); }
     function close(){ if(panel) panel.style.display='none'; openState=false; tickFab(); }
     function toggle(){ (openState&&panel&&panel.style.display!=='none')?close():open(); }
     function refresh(){ if(openState) renderList(); tickFab(); }
@@ -32515,7 +32807,21 @@ window.addEventListener('DOMContentLoaded', () => {
       ISL:[[1918,1944,'Kingdom_of_Iceland']],
       MNE:[[1900,1918,'Kingdom_of_Montenegro']],
       NPL:[[1900,2008,'Kingdom_of_Nepal']],
-      NOR:[[1900,1905,'Union_between_Sweden_and_Norway']]
+      NOR:[[1900,1905,'Union_between_Sweden_and_Norway']],
+      /* (#R132) further era→article coverage for entities that still linked to their MODERN page: the WWII Independent
+         State of Croatia, and colonial-era names for countries whose 1900-independence span had a distinct predecessor
+         state. All established en.wikipedia titles; the popup existence-probes each, so any miss simply hides the button. */
+      HRV:[[1941,1945,'Independent_State_of_Croatia']],
+      SGP:[[1900,1946,'Straits_Settlements'],[1946,1963,'Colony_of_Singapore']],
+      BLZ:[[1900,1981,'British_Honduras']],
+      GUY:[[1900,1966,'British_Guiana']],
+      SUR:[[1900,1975,'Surinam_(Dutch_colony)']],
+      ZMB:[[1911,1964,'Northern_Rhodesia']],
+      MWI:[[1907,1964,'Nyasaland']],
+      BWA:[[1885,1966,'Bechuanaland_Protectorate']],
+      LSO:[[1884,1966,'Basutoland']],
+      SWZ:[[1903,1968,'Swaziland_(protectorate)']],
+      UGA:[[1894,1962,'Uganda_Protectorate']]
     };
     /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
        contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its

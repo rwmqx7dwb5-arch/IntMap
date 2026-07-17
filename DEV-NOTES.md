@@ -5,6 +5,41 @@
 
 ---
 
+## R132 — 汎用地域解決基盤（IntMapRegionResolver）＋要望バッチ（Atlasタブ色・Objects直下ポップアップ・昔年代クリック根治確認・FS中ハイライト非表示・歴史Wikipedia拡充） (tag `#R132`)
+
+大型指示書＝「曖昧・未登録地域の汎用ジオメトリ解決基盤」を中心に、同梱の要望を一括処理。**指示書の完了条件どおり、AIを境界座標の作者にしない／実データ優先／曖昧は候補確認／低信頼は描画しない（fail-closed）** を実装。既存の国・国グループ・河川・流域・行政区画合成・curated compositionは温存し、**未知のfuzzy地域テールのみ**を新基盤へ段階置換（ログアウト時は従来経路にfail-open）。全1コミット（main）、ai-proxyデプロイ済み。
+
+### 1. 汎用地域解決基盤 `window.IntMapRegionResolver`（P0–P2）
+- **P0 サーバ**: `ai-proxy` に `geo_resolve` タスク追加（`TASK_MAX_OUTPUT 1800`／`TASK_REASONING "medium"`／`JSON_TASKS`）。**Web検索付き構造化メタデータのみ**を返す（最終ポリゴンの頂点列は返さない）。**デプロイ済**（"Deployed Functions … ai-proxy"）。
+- **P0 クライアント配管**: `aiCallServerFull()`＝**呼び出し単位の `{text,meta,citations}` エンベロープ**（グローバル `window._aiLastMeta` に依存しない＝並行呼び出しの取り違え解消）＋**`opts.signal` で実 AbortController**。`aiCallServer` は薄いラッパ（全既存呼び出し不変）。`askAIEnvelope`/`askAIJSONEnvelope` を追加。**`geoVerify` の 9秒 Promise.race を廃止→本物のAbort**（タイムアウトで fetch を中断・裏で走り続けない・`meta.webUsed` はこの呼び出しのエンベロープから取得）。
+- **geo_resolve が返すメタ**: `canonicalName / aliases / featureType / ambiguous+candidates / expectedCountries / representativePoint / expectedBbox / geometryStrategy(country|admin_union|osm_polygon|derived_anchors|none) / osmName / adminUnits / mustInclude / mustExclude / boundaryAnchors(時計回り) / confidence / sources`。全座標はWeb検索の根拠に基づき、形を合わせるための捏造を禁止。
+- **P1 解決ラダー（実データ最優先）**: `country`→`admin_union`（`composeRegion` で実行政境界）→`osm_polygon`（`_nomExtent` を representativePoint でアンカー）→`derived_anchors`（Web検証済み境界アンカーを **順序リング（凹帯形を保持）→自己交差check（turf.kinks）→ダメなら凸包**、expectedBbox でクリップ、`webUsed` 必須、近似表示）。単純bboxを境界として塗る処理は撤去（bboxは検索/選別/fit/検証のみ）。
+- **P1 検証ゲート（fail-closed）** `_rrValidate`: Polygon/MultiPolygon・有効座標・**全世界blob棄却**・面積下限・**expectedBbox重なり≥0.12**・**mustInclude内包≥60%**・**mustExclude侵入≤15%**・**expectedCountries一致**（`codeAtPoint`）。中心距離方式（巨大ポリゴンほど許容も巨大＝R130の穴）を置換。通らなければ描画せず正直に失敗。
+- **曖昧性**: `ambiguous+candidates≥2`（Georgia国 vs 米州, Congo…）で `status:'ambiguous'` を返し、ハイライトdispatchが**「どれ？」と候補提示**（会話コンテキストの `lastCountry` 一致時のみ自動確定）。
+- **P2 キャッシュ**: 2層（セッション `Map` ＋ **IndexedDB `intmap_regionresolver`**）。`algorithmVersion(_RR_ALGO)`＋TTL（成功90日/否定7日）で古い低品質を自動失効。2回目は即時。
+- **AI呼び出し回数**: fuzzyテール=`geo_verify`（安価・500tok・low）1回＋`geo_resolve`（medium）1回・以降キャッシュで0。geo_resolve の representativePoint を `_geoVerifyCache` にシードし後続 `_getGV()` を無料化。
+- **Atlas表示（根拠の区別）**: 「実際のOpenStreetMapの境界データから描画」「N行政区画の実境界を合成」「⬡ Web検証済み境界アンカーから構築した近似範囲」「曖昧なため未描画—候補提示」を返答に明示。**「ハイライトしました」だけを返さない**。
+- **デバッグ/テスト**: `window.IntMapRegionResolverDebug.last`（直近解決の段階・検証結果・失敗理由）、`window.IntMapRegionResolverTest.run()`＝**純粋関数13項目の回帰**（hull/boxOverlap/validate各種/derive/antimeridian拒否/cache鮮度）。**ヘッドレス実測: 13/13 PASS**。
+- **エラー観測**: `diagnostics.stages`＋失敗理由分類（`not_logged_in / aborted / provider_error / geometry_bbox_mismatch / include_anchor_failed / exclude_anchor_failed / geometry_country_mismatch / geometry_world / no_geometry`）。
+
+### 2. 通常モード左サイドバー Atlasタブの色（`#R114/#R130` の再修正）
+真因＝アクティブ塗りが `linear-gradient(135deg, var(--primary-color), #5e5ce6)` で、**デフォルトアクセント（#0a84ff）だと両端が同系青→ほぼ単色（べた塗）**。共有トークン `--atlas-grad = linear-gradient(135deg, var(--primary-color), #5e5ce6 56%, #bf5af2)` を `:root` に定義＝**アクセントが先頭 → 藍 → 菫の3ストップ**でデフォルトでも決して単色化せず、任意アクセントに追随。アクティブタブ・**非アクティブ枠(::before)**・ユーザー吹き出し `.atl-b.u`・モバイル版を全て `--atlas-grad` に統一（吹き出しとタブが一致・「選択前のカラーも合わせて」）。**実測: デフォルト=`10,132,255→94,92,230→191,90,242`（3ストップ）、カスタム#ff3b30=赤先頭で追随、枠も同一**。
+
+### 3. Objectsボタン＝ボタン直下にポップアップ
+真因＝`#iol-panel` が `left:16px;top:80px`（左上）に固定なのに起動元 `#btn-tool-objects` は右上ツールバー。`open()` に `_placePanel()` を追加＝**ボタンの `getBoundingClientRect()` に右揃え＋直下(+8px)**、モバイルFAB時はFAB直上、`data-dragged` 尊重・画面内クランプ。（ヘッドレスは innerWidth=0 で描画不可のためDOM算術で検証・実ブラウザでボタンrectから配置。）
+
+### 4. 昔年代クリックの国選択（R122〜R131 再々報告）＝**データ層は正しいことを実測確認＋フォールバック堅牢化**
+`IntMapTime.setYear()` でCShapes実ロード→**1919〜1938 の全年で Poznań→Poland**（Warsaw/Kraków/上シレジア/ポーランド回廊も POL）を **ピッカーと同一の `turf.booleanPointInPolygon`＋最小bbox＋`resolveHist`** で実測＝正しい。**Wrocław(Breslau)/Szczecin(Stettin)→Germany, Danzig→Free City は史実どおり正しい**（1920年代は独領）。3経路（country-fill click・Countries crosshair `resolveAt`・compare crosshair `_pickResolve`）とも era対応済みで既に正答。**残る唯一の理論的穴＝era解決失敗時の現代 `countryGeo` フォールバック**を封鎖＝**旅行中はフォールバックせず** `{eraLoading}`（FC未ロード）/`{code:''}`（陸地外）を返し、「年代境界を読込中—もう一度」トースト（5言語）。→旅行中クリックが現代国境に化けることは構造的に不可能に。
+
+### 5. フライトシミュレーター中はハイライト等も非表示（真因＝クロージャ跨ぎの no-op）
+`_fsStashLayers()` の `typeof clearHl==='function'` は**別クロージャ（IntMapConsole）の関数で常に false＝恒久 no-op**、国/線/コロプレス/場所ハイライトが飛行中も残存。`map` はグローバルなので **既知の overlay レイヤ群**（`place-hl-* / nlq-fill / nlq-line / nlq-poly-* / nlq-choro / pl-outline-*`）を `visibility:none` で**退避（破壊でなく）→着陸で復元**（`_fsHideHl`/`_fsShowHl` を start/stop の stash/restore へ結線）。飛行前のハイライトが着陸後に戻る。
+
+### 6. 歴史Wikipedia拡充（`_ERA_WIKI` 追加・全て新規キー＝安全）
+WWII クロアチア独立国（`HRV [1941,1945] Independent_State_of_Croatia`）＋植民地期の実記事（`SGP` 海峡植民地/シンガポール, `BLZ` 英領ホンジュラス, `GUY` 英領ギアナ, `SUR` オランダ領スリナム, `ZMB` 北ローデシア, `MWI` ニヤサランド, `BWA` ベチュアナランド, `LSO` バストランド, `SWZ` スワジランド, `UGA` ウガンダ保護領）。ポップアップが存在プローブするのでタイトル差異は「ボタン非表示」で安全。**実測: 1943 Zagreb→wiki=`Independent_State_of_Croatia`**。
+
+### 検証環境の要点
+Browserペインは `document.hidden`（Map WebGL未init・innerWidth 0）＝スクショ/実クリック/実描画は非ヘッドレス。**データ層とプランナー入力側は完全実測**: `python -m http.server`+`preview_start`（`?cb=` 必須）で `IntMapRegionResolverTest.run()`=13/13、resolver logged-out gate=`ran:false`（従来経路温存）、`--atlas-grad` の getComputedStyle、`IntMapTime.setYear`→`TB.currentFC`/`resolveHist`/turf-PIP で昔年代クリック、`_ERA_WIKI` の resolveHist wiki。実 AI 呼び出し（geo_resolve/geoVerify）はログイン必須＝**入力側（task/webMode/schema/envelope/abort配管）を全項目コードで担保**（根本原因が入力側という R131 教訓に一致）。Edit hook の file:// タブ量産→`tabs_close`。
+
 ## R131 — Atlas「直近72時間の監視判断」誤答の根治（鮮度検証・日付/証拠の意味づけ・多国カバレッジ・Web検証引用） (tag `#R131`)
 
 ユーザー報告＝中央アジア5か国の72時間監視判断で Atlas が「条件付きで引き上げる」（確信度62）を返したが、根拠が全て不正だった：①**対象期間外の7/7事件**を直接的証拠に使用、②記事の**公開日/GDELT seen dateを事件発生日と混同**、③**見出しから国家間衝突と断定**（実際は国内治安事案）、④**燃料報道を短期治安悪化と過剰解釈**、⑤**定例外交会合を強い反証**に使用、⑥**5か国中3か国のみ**で結論（カザフ/トルクメン欠落を明示せず）。正しくは「維持する」であるべきだった。
