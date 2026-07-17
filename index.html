@@ -79,7 +79,13 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .map-container{ flex:1; height:100%; position:relative; background:var(--bg-color); overflow:hidden; }
     /* (#R22) flex-wrap + gap so a narrowed (resized) sidebar wraps the Settings button below the title
        instead of shoving it OUTSIDE the sidebar ("幅を短くするとボタンがサイドバー外にはみ出す"). */
-    .header-area{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+    /* (#R123) desktop normal mode: two fixed rows — row 1 is the IntMap brand (+ language toggle) with NO action
+       buttons; row 2 is the actions row (WS / Log in / Feedback / Settings), right-aligned. Mobile reverts to a
+       single row below. */
+    .header-area{ display:flex; flex-direction:column; align-items:stretch; gap:10px; margin-bottom:20px; }
+    .header-area .title-group{ flex:1 1 auto; }
+    .header-actions{ display:flex; flex-direction:row; justify-content:flex-end; align-items:center; gap:8px; flex-wrap:wrap; }
+    .header-actions > button{ margin-right:0 !important; }
     .title-group{ display:flex; align-items:center; gap:12px; min-width:0; } h2{ font-size:22px; font-weight:600; margin:0; letter-spacing:-0.3px; }
     .btn-settings{ flex-shrink:0; }
     /* (#R11) Header EN/JP toggle removed — language is changed from Settings only. */
@@ -254,7 +260,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
        container click-through; only its actual controls capture pointer events. */
     /* (#R122) adopt the workspace-mode bar geometry in normal mode too: closer to the screen edge (10px vs 24px),
        a slimmer bar (group padding 2px 4px) and the same 4px gap. */
-    .map-controls-top{ position:absolute; top:10px; right:10px; z-index:1000; display:flex; flex-direction:column; gap:8px; align-items:flex-end; pointer-events:none; }
+    /* (#R123) the LAST remaining difference was the vertical gap BETWEEN the stacked bars — normal mode was 8px
+       while workspace mode uses 4px (see the body.ws-mode override). Match it so the bar spacing is identical. */
+    .map-controls-top{ position:absolute; top:10px; right:10px; z-index:1000; display:flex; flex-direction:column; gap:4px; align-items:flex-end; pointer-events:none; }
     .map-controls-top > *, .map-controls-top .layer-dropdown{ pointer-events:auto; }
     .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:12px; padding:2px 4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
     .view-btn{ background:transparent; border:none; padding:7px 12px; font-size:12px; font-weight:500; color:var(--text-main); border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
@@ -1171,7 +1179,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       /* (#R30) Keep account / feedback / settings on ONE row — never wrap ("横一列に並ばず改行されてしまう").
          The logged-in account button collapses to the avatar only (the long display name was forcing the
          wrap); feedback + settings stay compact. iOS top-bar feel: title left, action chips right. */
-      .header-area{ flex:0 0 auto; margin:0 0 10px; flex-wrap:nowrap; gap:6px; }
+      /* (#R123) mobile keeps the single-row top bar (the desktop-only two-row split reverts here): title left,
+         action chips right. .header-actions stays inline so account/feedback/settings sit on the same row. */
+      .header-area{ flex:0 0 auto; margin:0 0 10px; flex-direction:row; align-items:center; justify-content:space-between; flex-wrap:nowrap; gap:6px; }
+      .header-actions{ gap:6px; flex:0 0 auto; }
       h2{ font-size:22px; font-weight:700; letter-spacing:-0.4px; }
       .title-group{ gap:10px; flex:0 1 auto; min-width:0; }
       .title-group h2{ overflow:hidden; text-overflow:ellipsis; }
@@ -1346,7 +1357,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       .m-sheet .layer-dropdown .layer-option input[type=checkbox]::after{ content:""; position:absolute; left:2px; top:2px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1.5px 4px rgba(0,0,0,0.28); transition:transform .18s ease; }
       .m-sheet .layer-dropdown .layer-option input[type=checkbox]:checked{ background:var(--primary-color); }
       .m-sheet .layer-dropdown .layer-option input[type=checkbox]:checked::after{ transform:translateX(18px); }
-      .m-sheet .layer-dropdown .layer-option:has(input:checked){ font-weight:600; }
+      /* (#R123) an ON row is NO LONGER bolded ("レイヤー選択時にレイヤー名が太字になるのはいらない") — the
+         iOS switch on the right already signals state; the label keeps its normal weight. */
+      .m-sheet .layer-dropdown .layer-option:has(input:checked){ font-weight:400; }
       .m-sheet .layer-dropdown .lyr-others-note{ font-size:12.5px; color:var(--text-muted); padding:2px 8px 6px; }
       /* (#R26) Kill the toggle "ちらつき" (flicker): a tap on a <label> that wraps a checkbox can fire the
          change TWICE on mobile (label forwards to the input AND the input gets the tap) → the box toggles
@@ -1366,8 +1379,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
          grouping instead of a heavy underline. */
       /* (#R122) section headers = distinct small SPACED labels with a hairline underline — a clear step down from
          the 15.5px rows (size + letter-spacing + a rule), giving the list obvious grouping without ALL-CAPS or bold. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:26px 6px 8px !important; padding:0 6px 7px !important; font-size:11.5px !important; font-weight:600 !important; color:var(--text-muted) !important; text-transform:none; letter-spacing:0.06em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.14) !important; }
-      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:600 !important; font-size:11.5px !important; letter-spacing:0.06em !important; color:var(--text-muted) !important; }
+      /* (#R123) category labels were 11.5px against 15.5px rows — too small for the roomy 50px rows and the wide
+         side padding ("分類名のテキストサイズが小さい／余白に合ってない"). Bumped to 13.5px (still a clear step
+         below the rows) and the top margin tightened a touch so the section rhythm matches the padding. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:22px 6px 8px !important; padding:0 6px 7px !important; font-size:13.5px !important; font-weight:600 !important; color:var(--text-muted) !important; text-transform:none; letter-spacing:0.02em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.14) !important; }
+      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:600 !important; font-size:13.5px !important; letter-spacing:0.02em !important; color:var(--text-muted) !important; }
       #mo-mount-layers #layer-tools button, #mo-mount-layers #layer-tools .btn-settings{ font-size:14.5px !important; padding:12px !important; border-radius:12px !important; min-height:44px !important; box-sizing:border-box !important; }
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
          scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
@@ -1920,7 +1936,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     <div class="sheet-grip" id="sheet-grip" aria-hidden="true"></div>
     <div class="header-area">
       <div class="title-group"><h2>IntMap</h2><div class="lang-toggle"><button class="lang-btn active" id="lang-en">EN</button><button class="lang-btn" id="lang-jp">JP</button><button class="lang-btn" id="lang-de">DE</button><button class="lang-btn" id="lang-ru">RU</button><button class="lang-btn" id="lang-es" title="Español (beta)">ES</button></div></div>
-      <button class="btn-settings" id="btn-open-settings"><span id="text-settings">Settings</span></button>
+      <!-- (#R123) desktop normal mode: the action buttons (WS / Log in / Feedback / Settings) live on a fixed
+           SECOND row, so the first "IntMap" row carries no action buttons. injectAuthUI() inserts WS, Login and
+           Feedback before #btn-open-settings, so they land inside .header-actions in that exact order. -->
+      <div class="header-actions" id="header-actions"><button class="btn-settings" id="btn-open-settings"><span id="text-settings">Settings</span></button></div>
     </div>
     <div class="control-panel">
       <button class="mode-btn" id="btn-news" data-i18n="tabNews">News</button>
