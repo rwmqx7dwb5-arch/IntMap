@@ -25277,7 +25277,8 @@ window.addEventListener('DOMContentLoaded', () => {
       'eu諸国':'eu','eu加盟国':'eu','欧州連合':'eu','europäische union':'eu','евросоюз':'eu','ес':'eu','unión europea':'eu','ue':'eu',
       'nato加盟国':'nato','北大西洋条約機構':'nato','нато':'nato','otan':'nato',
       '東南アジア諸国連合':'asean','アセアン':'asean','асеан':'asean',
-      '旧ユーゴスラビア':'former yugoslavia','ユーゴスラビア':'former yugoslavia','ehemaliges jugoslawien':'former yugoslavia','jugoslawien':'former yugoslavia','бывшая югославия':'former yugoslavia','югославия':'former yugoslavia','antigua yugoslavia':'former yugoslavia','yugoslavia':'former yugoslavia',
+      '旧ユーゴスラビア':'former yugoslavia','ユーゴスラビア':'former yugoslavia','旧ユーゴ':'former yugoslavia','ehemaliges jugoslawien':'former yugoslavia','jugoslawien':'former yugoslavia','бывшая югославия':'former yugoslavia','югославия':'former yugoslavia','antigua yugoslavia':'former yugoslavia','yugoslavia':'former yugoslavia',
+      'ex-yugoslavia':'former yugoslavia','ex yugoslavia':'former yugoslavia','ex-jugoslawien':'former yugoslavia','successor states of yugoslavia':'former yugoslavia','yugoslav successor states':'former yugoslavia',   /* (#R123) ex-/former- variants that don't fit the collective-suffix strip */
       'ワルシャワ条約機構':'warsaw pact','warschauer pakt':'warsaw pact','варшавский договор':'warsaw pact','pacto de varsovia':'warsaw pact',
       'バルト三国':'baltics','バルト諸国':'baltics','baltikum':'baltics','прибалтика':'baltics','страны балтии':'baltics','países bálticos':'baltics',
       '北欧諸国':'nordics','北欧':'nordics','nordische länder':'nordics','северные страны':'nordics','países nórdicos':'nordics',
@@ -25304,7 +25305,18 @@ window.addEventListener('DOMContentLoaded', () => {
                'Mitglieder der Einheit von '+meta.era+', dargestellt als heutige Nachfolgegebiete (aktuelle Grenzen)',
                'члены объединения '+meta.era+' — показаны как территории нынешних государств-преемников',
                'miembros de la entidad de '+meta.era+', mostrados como territorios sucesores actuales (fronteras de hoy)'); }
-    function regionGroup(nm){ const k=_lnorm(nm); const key=REGION_GROUPS[k]?k:GROUP_ALIASES[k]; const list=key?REGION_GROUPS[key]:null;
+    function regionGroup(nm){ const k0=_lnorm(nm);
+      const _look=(k)=>{ if(!k) return null; const key=REGION_GROUPS[k]?k:GROUP_ALIASES[k]; return (key&&REGION_GROUPS[key])?key:null; };
+      let key=_look(k0);
+      if(!key){
+        /* (#R123) strip a trailing collective suffix so group PHRASINGS resolve to the member set instead of an
+           AI-traced polygon ("旧ユーゴスラビア諸国"→"旧ユーゴスラビア", "former Yugoslav countries"→…, "NATO諸国"→"nato").
+           The FSU entry hard-coded its 諸国 variant; this makes every group robust to the same phrasing. */
+        let k1=k0.replace(/\s*(諸国|諸邦|の国々|の国|各国|countries|states|nations|republics|nation-states|länder|staaten|страны|государства|стран|países|estados|naciones)$/u,'').trim();
+        if(k1&&k1!==k0) key=_look(k1);
+        if(!key&&k1){ const k2=k1.replace(/yugoslav$/,'yugoslavia').replace(/soviet$/,'soviet union'); if(k2!==k1) key=_look(k2); }   /* adjective → noun ("former yugoslav" → "former yugoslavia") */
+      }
+      const list=key?REGION_GROUPS[key]:null;
       if(!list) return null; return {codes:list.slice(),name:String(nm||'').trim(),key:key,basis:_groupBasis(key)}; }
     /* curated COMPOSITIONS → member admin units with REAL boundaries (Japanese 地方 = prefecture unions;
        historic/soil regions = the standard reference member lists) */
