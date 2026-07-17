@@ -6014,14 +6014,17 @@ window.addEventListener('DOMContentLoaded', () => {
           if(pb2&&pb2.parentNode) pb2.parentNode.insertBefore(box,pb2.nextSibling); else p.appendChild(box); }
         box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.style.display='block'; return box; };
       const _setProg=(box,frac)=>{ try{ const f=Math.max(0,Math.min(1,frac)); const fill=box.querySelector('.tp-prog-fill'), pct=box.querySelector('.tp-prog-pct'); if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} };
-      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); let t0=Date.now(), base=0, span=1, done=false;
-        const tick=()=>{ if(done) return; const el=(Date.now()-t0)/1000; const ramp=0.92*(1-Math.exp(-el/9)); _setProg(box, base+span*ramp); };
+      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); let t0=Date.now(), base=0, span=1, done=false, realProg=false;
+        /* (#R124) once the estimate reports REAL per-tile progress (a large tiled area), the time-based ramp yields
+           to it — otherwise the bar sat at ~92% for the whole minute-long tiled sum ("読み込み中で止まる"). */
+        const tick=()=>{ if(done||realProg) return; const el=(Date.now()-t0)/1000; const ramp=0.92*(1-Math.exp(-el/9)); _setProg(box, base+span*ramp); };
         const timer=setInterval(tick,200); tick();
+        const onProg=(f)=>{ realProg=true; _setProg(box, base+span*Math.max(0.03,Math.min(0.985,f))); };
         try{
           pb2.disabled=true; pb2.textContent=t('popCalcing');
           if(toolMode==='area'&&measurePoints.length>=3){
             const geom={type:'Polygon',coordinates:[[...measurePoints,measurePoints[0]]]};
-            const r=await window.IntMapPopArea.estimate(geom); done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
+            const r=await window.IntMapPopArea.estimate(geom, onProg); done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
             showRes(r.pop,r.year,r.src,false); pb2.style.display='none'; return; }
           if(toolMode==='radius'&&radiusItems.length){ let tot=0, yr=2020, src='WorldPop'; const N=radiusItems.length;
             for(let i=0;i<N;i++){ base=i/N; span=1/N; t0=Date.now(); const c=radiusItems[i]; const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r=await window.IntMapPopArea.estimate(g); tot+=r.pop; yr=r.year; src=r.src; _setProg(box,(i+1)/N); }
@@ -17116,9 +17119,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const lbl=currentLang==='jp'?'WorldPop人口グリッドを集計中…':currentLang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':currentLang==='ru'?'Суммирование сетки населения WorldPop…':currentLang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
       box.querySelector('.tp-prog-lbl').textContent=lbl; box.style.display='block';
       const setP=(f)=>{ try{ const v=Math.max(0,Math.min(1,f)); box.querySelector('.tp-prog-fill').style.width=(v*100).toFixed(0)+'%'; box.querySelector('.tp-prog-pct').textContent=(v*100).toFixed(0)+'%'; }catch(_){} };
-      let t0=Date.now(), done=false; const timer=setInterval(()=>{ if(done)return; const el=(Date.now()-t0)/1000; setP(0.92*(1-Math.exp(-el/9))); },200); setP(0);
+      let t0=Date.now(), done=false, realProg=false; const timer=setInterval(()=>{ if(done||realProg)return; const el=(Date.now()-t0)/1000; setP(0.92*(1-Math.exp(-el/9))); },200); setP(0);
+      const onProg=(f)=>{ realProg=true; setP(Math.max(0.03,Math.min(0.985,f))); };   /* (#R124) real per-tile progress for a large tiled area */
       btn.disabled=true; const orig=btn.textContent; btn.textContent=t('popCalcing');
-      try{ const r=await window.IntMapPopArea.estimate(geom); done=true; clearInterval(timer); setP(1); setTimeout(()=>{ box.style.display='none'; },500);
+      try{ const r=await window.IntMapPopArea.estimate(geom, onProg); done=true; clearInterval(timer); setP(1); setTimeout(()=>{ box.style.display='none'; },500);
         const row=p.querySelector('#draw-pop-row'), val=p.querySelector('#draw-pop-val'); if(row&&val){ row.style.display=''; val.innerHTML=Number(r.pop).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+r.src+' '+r.year+(rings.length>1?' · Σ':'')+')</span>'; }
         btn.style.display='none';
       }catch(e){ done=true; clearInterval(timer); box.style.display='none'; btn.disabled=false; btn.textContent=t('popFail'); setTimeout(()=>{ try{ btn.textContent=orig; }catch(_){} },2600); }
@@ -29833,18 +29837,15 @@ window.addEventListener('DOMContentLoaded', () => {
       if(geom.type==='Polygon') return {type:'Polygon',coordinates:geom.coordinates.map(_decim)};
       if(geom.type==='MultiPolygon') return {type:'MultiPolygon',coordinates:geom.coordinates.map(poly=>poly.map(_decim))};
       return null; }catch(_){ return null; } }
-    async function estimate(geom){ const g=_prep(geom); if(!g) throw new Error('polygon required');
-      const key=JSON.stringify(g); if(cache.has(key)) return cache.get(key);
+    /* one WorldPop request for a single (sub-limit) polygon → total_population number. */
+    async function _estimateOne(g){
       const fc={type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
       const u='https://api.worldpop.org/v1/services/stats?dataset=wpgppop&year=2020&geojson='+encodeURIComponent(JSON.stringify(fc));
       const r=await fetch(u); const j=await r.json();
       if(j&&j.error&&!j.taskid) throw new Error(String(j.error_message||'WorldPop error'));
       let data=j&&j.data&&j.data.total_population!=null?j.data:null;
       if(!data&&j&&j.taskid){
-        /* (#R123) WorldPop tasks for a LARGER area routinely take well over the old 24×1.5s=36s budget — the bar
-           then sat at "loading" and finally failed ("読み込み中のままで止まり、結果が出ない"). Poll up to ~2 minutes
-           with a gentle backoff, break IMMEDIATELY on an error status (instead of waiting out the whole budget), and
-           ignore a single transient poll-fetch hiccup rather than aborting the whole estimate. */
+        /* (#R123) poll up to ~2 min with a gentle backoff; break IMMEDIATELY on error; ignore a transient hiccup. */
         const t0=Date.now(), DEADLINE=125000; let iv=1200;
         while(Date.now()-t0<DEADLINE){ await new Promise(rs=>setTimeout(rs,iv)); iv=Math.min(4000,iv+250);
           let j2=null; try{ const r2=await fetch('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid)); j2=await r2.json(); }catch(_){ continue; }
@@ -29853,7 +29854,38 @@ window.addEventListener('DOMContentLoaded', () => {
           if(j2.status==='error'){ throw new Error(String(j2.error_message||'WorldPop task error')); } }
       }
       if(!data||data.total_population==null) throw new Error('WorldPop: no result (timeout or empty)');
-      const out={ pop:Math.round(+data.total_population), year:2020, src:'WorldPop (100m grid)' };
+      return +data.total_population; }
+    /* (#R124) FIX "大きい範囲になると失敗する": WorldPop caps EACH request at 100,000 km² (it returns
+       "The requested area was too large … allowance was 100000"), which the R123 poll-extension could not help
+       because it isn't a timeout. Tile any larger polygon into sub-limit cells, clip each to the polygon with
+       turf.bboxClip, and SUM them (a few requests concurrent). */
+    async function _estimateTiled(g, areaKm2, onProgress){
+      const feat={type:'Feature',geometry:g,properties:{}}; const bb=turf.bbox(feat);   /* [w,s,e,n] */
+      /* size cells for the WORST case = the bbox's equator-ward edge (highest cos → largest cells); every cell
+         poleward of it is then smaller, so ALL cells stay ≤ ~90,000 km² (safely under the 100k cap) while using the
+         fewest requests. */
+      const cLat=(bb[1]<=0&&bb[3]>=0)?0:Math.min(Math.abs(bb[1]),Math.abs(bb[3]));
+      const cosl=Math.max(0.15,Math.cos(cLat*Math.PI/180));
+      let d=Math.sqrt(90000/(12392*cosl)); d=Math.max(0.35,d);   /* cell side (deg) */
+      const cells=[];
+      for(let x=bb[0]; x<bb[2]-1e-9; x+=d){ for(let y=bb[1]; y<bb[3]-1e-9; y+=d){
+        const box=[x,y,Math.min(x+d,bb[2]),Math.min(y+d,bb[3])]; let piece=null; try{ piece=turf.bboxClip(feat,box); }catch(_){}
+        const gm=piece&&piece.geometry; if(!gm||!gm.coordinates||!gm.coordinates.length) continue;
+        if((gm.type==='Polygon'&&gm.coordinates[0]&&gm.coordinates[0].length>=4)||(gm.type==='MultiPolygon'&&gm.coordinates.length)){ const pg=_prep(gm); if(pg) cells.push(pg); } } }
+      if(!cells.length) throw new Error('WorldPop: empty area');
+      if(cells.length>80) throw new Error('WorldPop: area too large to tile precisely ('+Math.round(areaKm2).toLocaleString()+' km²)');
+      let total=0, done=0; const CONC=4;
+      for(let i=0;i<cells.length;i+=CONC){ const batch=cells.slice(i,i+CONC);
+        const res=await Promise.all(batch.map(c=>_estimateOne(c).catch(()=>null)));   /* an ocean/edge cell may error → counts as 0 */
+        res.forEach(v=>{ if(v!=null&&isFinite(v)) total+=v; });
+        done+=batch.length; if(onProgress) try{ onProgress(Math.min(1,done/cells.length)); }catch(_){} }
+      return { pop:Math.round(total), year:2020, src:'WorldPop (100m grid, '+cells.length+' tiles)' }; }
+    async function estimate(geom, onProgress){ const g=_prep(geom); if(!g) throw new Error('polygon required');
+      const key=JSON.stringify(g); if(cache.has(key)) return cache.get(key);
+      let areaKm2=0; try{ areaKm2=turf.area({type:'Feature',geometry:g,properties:{}})/1e6; }catch(_){}
+      let out;
+      if(areaKm2>95000){ out=await _estimateTiled(g, areaKm2, onProgress); }   /* over the per-request cap → tile + sum */
+      else { const pop=await _estimateOne(g); out={ pop:Math.round(pop), year:2020, src:'WorldPop (100m grid)' }; }
       cache.set(key,out); return out; }
     function circleGeom(center,km){ try{ if(typeof turf!=='undefined'&&turf.circle){ return turf.circle(center,km,{units:'kilometers',steps:48}).geometry; } }catch(_){}
       const lat=center[1]*Math.PI/180; const dLat=km/111.32, dLng=km/(111.32*Math.cos(lat)||1);
