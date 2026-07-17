@@ -22813,14 +22813,29 @@ window.addEventListener('DOMContentLoaded', () => {
       else { try{ map.setPaintProperty('immove-fill','fill-color',accent()); map.setPaintProperty('immove-line','line-color',accent()); }catch(_){} }
     }catch(_){} }
     function centroid(g){ let sx=0,sy=0,n=0; const eat=c=>{ if(typeof c[0]==='number'){ sx+=c[0]; sy+=c[1]; n++; } else c.forEach(eat); }; try{ eat(g.coordinates); }catch(_){} return n?[sx/n,sy/n]:[0,0]; }
-    /* (#R123) the Mercator true-area rescale (cos(lat0)/cos(latN)) only makes sense on the FLAT Mercator map —
-       there, high latitudes are visually inflated so the shape must be counter-scaled to keep its true size.
-       On the GLOBE true size is rendered natively, so applying that scale is wrong ("Globeでそれをやるのはおかしい"):
-       we translate the shape unchanged (s=1). */
     function _mercNow(){ try{ return (typeof currentProj==='undefined'||currentProj==='flat'); }catch(_){ return true; } }
-    function reshape(newCen){ const lat0=baseCen[1], latN=Math.max(-84,Math.min(84,newCen[1]));
-      const s=_mercNow() ? (Math.max(0.05,Math.cos(lat0*Math.PI/180))/Math.max(0.05,Math.cos(latN*Math.PI/180))) : 1;   /* Mercator true-area scale on flat; plain translate on globe */
-      const mv=c=>{ if(typeof c[0]==='number') return [ newCen[0]+(c[0]-baseCen[0])*s, latN+(c[1]-baseCen[1])*s ]; return c.map(mv); };
+    /* (#R123/#R124) FLAT (Mercator): counter-scale by cos(lat0)/cos(latN) so the shape keeps its TRUE AREA as it
+       moves through Mercator's latitude inflation. GLOBE: a plain lng/lat translation still visually DISTORTS the
+       shape (meridians converge poleward, squishing it) — "まだGlobeでも領域の形が変わってしまう". The correct move on
+       a sphere is a RIGID great-circle ROTATION that carries the centroid to the new point, preserving the shape's
+       true geodesic form (it looks identical, just relocated). */
+    function reshape(newCen){
+      if(_mercNow()){ const lat0=baseCen[1], latN=Math.max(-84,Math.min(84,newCen[1]));
+        const s=Math.max(0.05,Math.cos(lat0*Math.PI/180))/Math.max(0.05,Math.cos(latN*Math.PI/180));
+        const mv=c=>{ if(typeof c[0]==='number') return [ newCen[0]+(c[0]-baseCen[0])*s, latN+(c[1]-baseCen[1])*s ]; return c.map(mv); };
+        return { type:baseGeo.type, coordinates:mv(baseGeo.coordinates) }; }
+      /* GLOBE: rigid spherical rotation (Rodrigues) mapping baseCen → newCen, applied to every vertex. */
+      const D=Math.PI/180;
+      const toV=(lng,lat)=>{ const a=lng*D,b=lat*D,cb=Math.cos(b); return [cb*Math.cos(a),cb*Math.sin(a),Math.sin(b)]; };
+      const v0=toV(baseCen[0],baseCen[1]), v1=toV(newCen[0],newCen[1]);
+      let ax=[v0[1]*v1[2]-v0[2]*v1[1], v0[2]*v1[0]-v0[0]*v1[2], v0[0]*v1[1]-v0[1]*v1[0]];
+      const axLen=Math.hypot(ax[0],ax[1],ax[2]); const dot=Math.max(-1,Math.min(1,v0[0]*v1[0]+v0[1]*v1[1]+v0[2]*v1[2])); const ang=Math.acos(dot);
+      const k=axLen>1e-12?[ax[0]/axLen,ax[1]/axLen,ax[2]/axLen]:[0,0,1]; const ca=Math.cos(ang), sa=Math.sin(ang);
+      const rot=(v)=>{ if(axLen<1e-12) return v.slice(); const kv=[k[1]*v[2]-k[2]*v[1],k[2]*v[0]-k[0]*v[2],k[0]*v[1]-k[1]*v[0]]; const kd=k[0]*v[0]+k[1]*v[1]+k[2]*v[2];
+        return [v[0]*ca+kv[0]*sa+k[0]*kd*(1-ca), v[1]*ca+kv[1]*sa+k[1]*kd*(1-ca), v[2]*ca+kv[2]*sa+k[2]*kd*(1-ca)]; };
+      const mv=c=>{ if(typeof c[0]==='number'){ const v=rot(toV(c[0],c[1])); let lat=Math.asin(Math.max(-1,Math.min(1,v[2])))/D, lng=Math.atan2(v[1],v[0])/D;
+        while(lng-newCen[0]>180) lng-=360; while(lng-newCen[0]<-180) lng+=360;   /* keep longitudes contiguous around the new centre (no dateline split) */
+        return [lng,lat]; } return c.map(mv); };
       return { type:baseGeo.type, coordinates:mv(baseGeo.coordinates) }; }
     function paint(g){ ensure(); try{ map.getSource('immove-src').setData({type:'Feature',geometry:g,properties:{}}); }catch(_){} }
     function showPill(name){ try{ if(pill) pill.remove();
@@ -22828,7 +22843,7 @@ window.addEventListener('DOMContentLoaded', () => {
       pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:1450;display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
       const L=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
       /* (#R123) honest suffix: flat map = true-area preserved (Mercator counter-scale); globe = plain reposition. */
-      const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— reposition on globe','（地球儀上で移動）','— auf dem Globus','— на глобусе','— en el globo');
+      const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— true shape preserved','（形状を保持して移動）','— Form bleibt erhalten','— форма сохраняется','— forma conservada');
       pill.innerHTML='<span>'+L('Drag ','ドラッグで移動 · ','Ziehen · ','Перетащите · ','Arrastra · ')+'<b>'+String(name||'').replace(/[&<>"]/g,'')+'</b> '+sizeNote+'</span><button style="border:none;background:var(--primary-color);color:#fff;border-radius:15px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">'+L('Done','完了','Fertig','Готово','Listo')+'</button>';
       pill.querySelector('button').onclick=()=>stop();
       document.body.appendChild(pill); }catch(_){} }
