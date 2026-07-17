@@ -9074,7 +9074,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(_regCache.has(key)) return _regCache.get(key);
       let out=null; try{ const pt=turf.point(c0);
         for(const f of cg.features){ if(!f.geometry) continue; try{ if(turf.booleanPointInPolygon(pt,f)){
-          const bb=turf.bbox(f); out={f,bb,bc:[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]}; break; } }catch(_){} } }catch(_){}
+          const bb=turf.bbox(f);
+          /* (#R124) representative point = centroid of the LARGEST ring (by bbox area), NOT the whole-feature bbox
+             centre — the latter is skewed by outlying territory (Alaska pulls the US centre up into Canada). */
+          let bc=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2];
+          try{ const polys=f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[f.geometry.coordinates]; let bestA=-1,bc2=null;
+            polys.forEach(poly=>{ const ring=poly&&poly[0]; if(!ring||ring.length<3) return; let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9,sx=0,sy=0; ring.forEach(p=>{ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; sx+=p[0]; sy+=p[1]; }); const a=(mxx-mnx)*(mxy-mny); if(a>bestA){ bestA=a; bc2=[sx/ring.length,sy/ring.length]; } });
+            if(bc2) bc=bc2; }catch(_){}
+          out={f,bb,bc}; break; } }catch(_){} } }catch(_){}
       _regCache.set(key,out); return out; }
     function seeded(c0){ let s=Math.abs(Math.round(c0[0]*1000+c0[1]*7919))||1; return ()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
     groups.forEach(g=>{ if(g.length<2) return; const c0=g[0].geometry.coordinates.slice();
@@ -9084,8 +9091,9 @@ window.addEventListener('DOMContentLoaded', () => {
          containing country's centre — i.e. it is a country-representative point, not a real city inside it. */
       let countryLevel=false;
       if(reg){ if(ptype==='country') countryLevel=true;
-        else if(!ptype){ const diag=Math.hypot(reg.bb[2]-reg.bb[0],reg.bb[3]-reg.bb[1]);
-          countryLevel = Math.hypot(c0[0]-reg.bc[0],c0[1]-reg.bc[1]) < Math.max(1.2,diag*0.28); } }
+        else if(!ptype){ /* (#R124) TIGHT fixed tolerance around the largest-ring centroid: a country-representative
+             anchor sits ON that point; a real city inside the country sits well away from it. */
+          countryLevel = Math.hypot(c0[0]-reg.bc[0],c0[1]-reg.bc[1]) < 2.6; } }
       if(countryLevel && reg){
         const bb=reg.bb, f=reg.f, rnd=seeded(c0), cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
         const diag=Math.hypot(bb[2]-bb[0],bb[3]-bb[1]);
@@ -10146,13 +10154,26 @@ window.addEventListener('DOMContentLoaded', () => {
      A server row already carries subject/publisher coords, so we skip analyzeContext entirely.
      Used only for the default feed in single-language mode; search / time-travel / multi-language
      keep the live-RSS path below (the server only bakes the WORLD+BUSINESS UI-language editions). */
+  /* (#R124) detect whether a subject NAME is a whole COUNTRY (vs a city / region). The default news feed comes from
+     the server, which carries no subject_type, so a "USA"-classified cluster had an EMPTY ptype and relied on a
+     fragile bbox-centre heuristic (Alaska skews the US bbox north → never detected as country-level → pins stayed
+     clustered instead of spreading across the country). Deriving the type from the name makes the R123 region-aware
+     spread actually fire for real pins. */
+  let _ctryNameSet=null;
+  function _isCountrySubject(nm){ if(!nm) return false;
+    if(!_ctryNameSet){ _ctryNameSet=new Set();
+      try{ if(typeof countryStats==='object'&&countryStats){ for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; [s.nameEn,s.nameJp].forEach(n=>{ if(n) _ctryNameSet.add(String(n).toLowerCase().trim().replace(/^the\s+/,'')); }); } } }catch(_){}
+      ['usa','u.s.','u.s.a.','us','america','united states','united states of america','uk','u.k.','britain','great britain','south korea','north korea','russia','uae','drc','dr congo','czechia','ivory coast','burma','swaziland','turkey','türkiye','holland'].forEach(a=>_ctryNameSet.add(a)); }
+    const k=String(nm).toLowerCase().trim().replace(/^the\s+/,'').replace(/\s+\(.*\)$/,'');
+    return _ctryNameSet.has(k); }
   function serverRowToItem(r){
     const subjectLoc=(r.subject_lng!=null&&r.subject_lat!=null)?[r.subject_lng,r.subject_lat]:null;
     const pubLoc=(r.pub_lng!=null&&r.pub_lat!=null)?[r.pub_lng,r.pub_lat]:null;
     const subjectName=currentLang==='jp'?(r.subject_name_jp||r.subject_name_en):(r.subject_name_en||r.subject_name_jp);
     const pubName=r.pub_label?((currentLang==='jp'?'発信: ':currentLang==='de'?'Quelle: ':currentLang==='ru'?'Источник: ':currentLang==='es'?'Fuente: ':'Source: ')+r.pub_label):null;
     const short=currentLang==='jp'?(r.short_jp||r.short_en||''):(r.short_en||r.short_jp||'');
-    const analysis={ subjectLoc, subjectName, subjectType:(r.subject_type||''), pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };   /* (#R123) carry type when the server provides it; _spreadDupNewsPins falls back to a geometric heuristic otherwise */
+    const subjectType=r.subject_type||((_isCountrySubject(r.subject_name_en)||_isCountrySubject(subjectName))?'country':'');   /* (#R124) derive country-type from the name when the server omits it */
+    const analysis={ subjectLoc, subjectName, subjectType, pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };
     applyPinMode(analysis);   /* sets loc/name/mapped for the current Subject/Publisher toggle */
     return { title:r.title, publisher:r.publisher||'', link:r.link, pubDate:r.pub_date||'', desc:r.description||'', analysis };
   }
