@@ -22114,13 +22114,20 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R33) Isolate now lives in this SAME action row as Copy/Wikipedia/AI brief (for countries) — no more
          separate floating button ("既存のcopy, wikipedia, AI briefと同じ並びに、同じUIで"). */
       const de=currentLang==='de';   /* (#R33) 3-language labels */
-      const isoBtn=isCountry?`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${de?'Nur dieses Land':jp?'この国だけ':'Isolate'}</button>`:'';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}</div></div>`;
+      /* (#R122) Isolate is available for ANY outlined place now (not just countries) via the outline geometry;
+         Move drags the place (true-size) to a new spot. */
+      const isoLbl=de?'Isolieren':jp?'この地域だけ':currentLang==='ru'?'Только это':currentLang==='es'?'Aislar':'Isolate';
+      const moveLbl=de?'Verschieben':jp?'移動':currentLang==='ru'?'Переместить':currentLang==='es'?'Mover':'Move';
+      const isoBtn=`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${isoLbl}</button>`;
+      const moveBtn=`<button class="plc-move" style="background:var(--input-bg);${btnBase}">${moveLbl}</button>`;
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
            boundary (no ugly rectangle). The popup's × / click-away clears it (clearHL → IntMapOutline.clear). */
         if(!opts.noOutline){
+          /* (#R122) the place-label click highlight uses the user's ACCENT colour (falls back to the default blue). */
+          try{ if(window.IntMapOutline&&window.IntMapOutline.setColor){ const ac=(window.imAccent&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent))?window.imAccent:'#0a84ff'; window.IntMapOutline.setColor(ac); } }catch(_){}
           if(opts.geojson){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{geojson:opts.geojson,lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }   /* (#R94m) caller-supplied polygon (historical era border) */
           else if(!isCountry){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }
           /* (#R62) "国名のラベルをクリックしても国の範囲がハイライトされない" — countries now outline too, from the
@@ -22151,13 +22158,24 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R20) AI Research Assistant entry point */
           const ai=document.querySelector('.plc-ai');
           if(ai) ai.onclick=()=>{ try{ if(window.IntMapConsole&&window.IntMapConsole.brief){ window.IntMapConsole.brief(name,lngLat); } else if(window.IntMapAIResearch){ window.IntMapAIResearch.open(name,lngLat); } }catch(_){} };   /* (#R62) brief runs inside Atlas */
+          /* (#R122) resolve the clicked place's polygon: the caller-supplied era border, else the outline this
+             popup drew (works for sub-national regions / cities too), else the modern country polygon under the point. */
+          const _placeGeo=()=>{ try{ if(opts&&opts.geojson&&/Polygon/.test(opts.geojson.type||'')) return opts.geojson;
+              const c=window.IntMapOutline&&window.IntMapOutline.current&&window.IntMapOutline.current(); if(c&&c.geo&&/Polygon/.test(c.geo.type||'')) return c.geo; }catch(_){}
+            try{ if(window.countryGeo&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of window.countryGeo.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return f.geometry; }catch(_){} } } }catch(_){}
+            return null; };
+          /* the outline may still be loading (async Nominatim for a non-country) — resolve now or poll briefly */
+          const _withGeo=(cb)=>{ let g=_placeGeo(); if(g){ cb(g); return; } let n=0; const iv=setInterval(()=>{ n++; const g2=_placeGeo(); if(g2){ clearInterval(iv); cb(g2); } else if(n>15){ clearInterval(iv); cb(null); } },200); };
           const iso=document.querySelector('.plc-iso');
-          if(iso) iso.onclick=()=>{ try{ popup&&popup.remove(); }catch(_){}
-            /* (#R106) a historical country click carries its era polygon (opts.geojson) → isolate THAT exact shape,
-               not the modern country under the point ("昔の国をisolateできない" — Tibet/empires resolved to the
-               wrong modern occupant). Modern country clicks (no geojson) keep the reliable point-in-polygon path. */
-            try{ if(opts&&opts.geojson&&window.IntMapIsolate&&window.IntMapIsolate.enterGeom){ window.IntMapIsolate.enterGeom(opts.geojson,name); }
-              else if(window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); } }catch(_){} };
+          if(iso) iso.onclick=()=>{ _withGeo(g=>{ try{ popup&&popup.remove(); }catch(_){}
+            /* (#R106/#R122) isolate the EXACT clicked shape — era polygon, outlined sub-national region, city, or the
+               modern country — via enterGeom; only fall back to the point-based country path when no polygon exists. */
+            try{ if(g&&window.IntMapIsolate&&window.IntMapIsolate.enterGeom){ window.IntMapIsolate.enterGeom(g,name); }
+              else if(window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(lngLat.lng,lngLat.lat,name); } }catch(_){} }); };
+          const mv=document.querySelector('.plc-move');
+          if(mv) mv.onclick=()=>{ _withGeo(g=>{ if(!g){ try{ if(typeof imToast==='function') imToast(jp?'この場所の範囲が取得できませんでした':'No boundary available for this place'); }catch(_){} return; }
+            try{ popup&&popup.remove(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){}
+            try{ window.IntMapMoveShape&&window.IntMapMoveShape.start(g,name); }catch(_){} }); };
         },0);
       }catch(_){}
     }
@@ -22627,9 +22645,55 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(map.getSource('pl-outline-src')) map.removeSource('pl-outline-src'); }catch(_){} } });
     /* (#R120) current()/focus() — the active outline is a first-class map object (Object List + objectIds) */
     return { show, clear, setColor, active:()=>_active,
-      current:()=>(_active&&_last)?{name:_last.name}:null,
+      current:()=>(_active&&_last)?{name:_last.name, geo:_last.geo}:null,   /* (#R122) expose the geometry (Move/Isolate) */
       focus:()=>{ try{ if(_active&&_last){ const bb=bboxOf(_last.geo); if(bb&&(bb[1][0]-bb[0][0])<340) map.fitBounds(bb,{padding:60,maxZoom:12,duration:800}); } }catch(_){} } };
   })();
+  /* ===== (#R122) MOVE / TRUE-SIZE — drag any outlined place (country or sub-national/region) to a new location. In
+     Mercator, projected size distorts with latitude, so as the shape is dragged its vertices rescale by
+     cos(lat0)/cos(latNew) to keep its REAL area constant ("メルカトルでは面積一定になるように") — the classic
+     "true size of…" comparison. Painted in its own source so it never disturbs the layer state. ===== */
+  window.IntMapMoveShape=(function(){
+    if(typeof map==='undefined'||!map) return { start(){}, stop(){}, active:()=>false };
+    let baseGeo=null, baseCen=null, on=false, pill=null, handlers=[];
+    const accent=()=>{ try{ return (window.imAccent&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent))?window.imAccent:'#0a84ff'; }catch(_){ return '#0a84ff'; } };
+    function ensure(){ try{ if(!map.getSource('immove-src')) map.addSource('immove-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+      const bf=['nlq-poly-fill','pl-outline-fill','ofm-country','ofm-city'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+      if(!map.getLayer('immove-fill')) map.addLayer({id:'immove-fill',type:'fill',source:'immove-src',paint:{'fill-color':accent(),'fill-opacity':0.4}},bf);
+      if(!map.getLayer('immove-line')) map.addLayer({id:'immove-line',type:'line',source:'immove-src',paint:{'line-color':accent(),'line-width':2.6}},bf);
+      else { try{ map.setPaintProperty('immove-fill','fill-color',accent()); map.setPaintProperty('immove-line','line-color',accent()); }catch(_){} }
+    }catch(_){} }
+    function centroid(g){ let sx=0,sy=0,n=0; const eat=c=>{ if(typeof c[0]==='number'){ sx+=c[0]; sy+=c[1]; n++; } else c.forEach(eat); }; try{ eat(g.coordinates); }catch(_){} return n?[sx/n,sy/n]:[0,0]; }
+    function reshape(newCen){ const lat0=baseCen[1], latN=Math.max(-84,Math.min(84,newCen[1]));
+      const s=Math.max(0.05,Math.cos(lat0*Math.PI/180))/Math.max(0.05,Math.cos(latN*Math.PI/180));   /* Mercator true-area scale */
+      const mv=c=>{ if(typeof c[0]==='number') return [ newCen[0]+(c[0]-baseCen[0])*s, latN+(c[1]-baseCen[1])*s ]; return c.map(mv); };
+      return { type:baseGeo.type, coordinates:mv(baseGeo.coordinates) }; }
+    function paint(g){ ensure(); try{ map.getSource('immove-src').setData({type:'Feature',geometry:g,properties:{}}); }catch(_){} }
+    function showPill(name){ try{ if(pill) pill.remove();
+      pill=document.createElement('div'); pill.id='immove-pill';
+      pill.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:1450;display:flex;align-items:center;gap:10px;background:var(--popup-bg,#141414);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:22px;padding:8px 10px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.4);font-size:13px;';
+      const L=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+      pill.innerHTML='<span>'+L('Drag ','ドラッグで移動 · ','Ziehen · ','Перетащите · ','Arrastra · ')+'<b>'+String(name||'').replace(/[&<>"]/g,'')+'</b> '+L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real')+'</span><button style="border:none;background:var(--primary-color);color:#fff;border-radius:15px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">'+L('Done','完了','Fertig','Готово','Listo')+'</button>';
+      pill.querySelector('button').onclick=()=>stop();
+      document.body.appendChild(pill); }catch(_){} }
+    function start(geom,name){ if(!geom||!geom.coordinates) return false; stop();
+      try{ baseGeo=JSON.parse(JSON.stringify(geom)); }catch(_){ return false; }
+      baseCen=centroid(baseGeo); on=true; paint(baseGeo);
+      try{ map.dragPan.disable(); }catch(_){} try{ map.getCanvas().style.cursor='move'; }catch(_){}
+      let dragging=false;
+      const dn=(e)=>{ dragging=true; if(e&&e.preventDefault) try{ e.preventDefault(); }catch(_){} };
+      const mvv=(e)=>{ if(!dragging||!e.lngLat) return; paint(reshape([e.lngLat.lng,e.lngLat.lat])); };
+      const up=()=>{ dragging=false; };
+      map.on('mousedown',dn); map.on('touchstart',dn); map.on('mousemove',mvv); map.on('touchmove',mvv); map.on('mouseup',up); map.on('touchend',up);
+      handlers=[['mousedown',dn],['touchstart',dn],['mousemove',mvv],['touchmove',mvv],['mouseup',up],['touchend',up]];
+      showPill(name); return true; }
+    function stop(){ if(!on&&!handlers.length){ return; } on=false;
+      try{ handlers.forEach(([ev,fn])=>map.off(ev,fn)); }catch(_){} handlers=[];
+      try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){}
+      try{ if(map.getLayer('immove-fill')) map.removeLayer('immove-fill'); }catch(_){}
+      try{ if(map.getLayer('immove-line')) map.removeLayer('immove-line'); }catch(_){}
+      try{ if(map.getSource('immove-src')) map.removeSource('immove-src'); }catch(_){}
+      if(pill){ try{ pill.remove(); }catch(_){} pill=null; } }
+    return { start, stop, active:()=>on }; })();
   /* ===== (#R83) ROAD ROUTING ("Atlasで経路機能を…（Google Map）のような") — real turn-by-turn directions from the
      public OSRM road network (car via router.project-osrm.org; foot/bike via routing.openstreetmap.de). Draws the
      route on the map with start/end pins and returns distance, duration and step-by-step guidance. Separate from
