@@ -23335,6 +23335,38 @@ window.addEventListener('DOMContentLoaded', () => {
       const fc=[]; (sa.lines||[]).forEach(ln=>ln.coords.forEach(p=>fc.push(p)));
       _paint(feats,fc.length?fc:null,15); }
     function selectAlt(i,setId){ const rs=_rsets.get(setId||_rsActive); if(rs&&rs.alts[i]){ _drawAlts(i,setId||_rsActive); return true; } return false; }
+    /* (#R132) 経路10-10 §12.5: highlight ONE step's segment on the currently-selected road route + fly to it. Steps
+       carry a start/end coordinate index into the selected alternative's full geometry; we paint the sub-segment on
+       top and ease the camera onto it. Returns false if the set/step is unknown (a stale message card). */
+    function selectStep(setId,stepIdx,coords){ try{ const rs=_rsets.get(setId||_rsActive); if(!rs) return false;
+      const a=rs.alts[rs.sel]||rs.alts[0]; if(!a) return false;
+      _drawAlts(rs.sel,setId||_rsActive);   /* repaint base first so a previous step highlight is cleared (_lastPaint.feats now = the base) */
+      if((!coords||coords.length<2)&&a.steps&&a.steps[stepIdx]&&a.steps[stepIdx].geometry){ coords=a.steps[stepIdx].geometry.coordinates; }   /* (#R132) derive from the store so Atlas needn't carry step geometry in the DOM */
+      if(!coords||coords.length<2) return true;
+      const hi={type:'Feature',geometry:{type:'LineString',coordinates:coords},properties:{col:'#ffd23f',walk:0,w:9,op:1}};
+      const base=(_lastPaint&&_lastPaint.feats)?_lastPaint.feats:[];   /* (#R132) use our OWN paint store, not MapLibre's {geojson:…}-wrapped source._data */
+      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:base.concat([hi])}); }catch(_){}
+      try{ const bb=_bounds(coords); if(bb) map.fitBounds(bb,{padding:120,maxZoom:16,duration:800}); }catch(_){}
+      return true; }catch(_){ return false; } }
+    /* (#R132) 経路10-10 §3.3/§7.1-7.2/§10: road ALTERNATIVES — coarse-grid overlap so near-identical OSRM alternatives
+       collapse to one (keep the faster), then rank fastest-first and give each a meaningful differentiator label. */
+    function _roadSig(coords){ const s=new Set(); (coords||[]).forEach(p=>s.add(Math.round(p[0]*200)+'_'+Math.round(p[1]*200))); return s; }
+    /* OSRM's `alternatives` already guarantees the routes are meaningfully distinct (built-in sharing factor), so
+       dedup ONLY removes a near-exact repeat: high geometric overlap AND near-equal time (else two routes that share
+       a motorway corridor but diverge — e.g. Munich→Nuremberg 109 vs 119 min — get wrongly collapsed). */
+    function _roadDedup(alts){ const out=[]; alts.forEach(a=>{ a._sig=_roadSig(a.lines[0]&&a.lines[0].coords);
+      const dup=out.find(b=>{ let inter=0; const small=(a._sig.size<b._sig.size)?a._sig:b._sig, big=(a._sig.size<b._sig.size)?b._sig:a._sig; small.forEach(k=>{ if(big.has(k)) inter++; }); const ov=small.size?(inter/small.size):0;
+        const dt=Math.abs((a.duration||0)-(b.duration||0))/Math.max(1,Math.min(a.duration||1,b.duration||1)); return ov>0.92&&dt<0.03; });
+      if(dup){ if(a.duration<dup.duration){ const i=out.indexOf(dup); out[i]=a; } } else out.push(a); }); return out; }
+    function _labelRoad(alts,avoid){ if(!alts.length) return; const fast=alts[0];
+      let si=0,sd=alts[0].distance; for(let i=1;i<alts.length;i++){ if(alts[i].distance<sd){ sd=alts[i].distance; si=i; } }
+      const avoidTx=(avoid&&avoid.length)?(' · '+LL('avoids ','回避: ','ohne ','без ','evita ')+avoid.map(x=>({toll:LL('tolls','有料','Maut','платн.','peajes'),motorway:LL('highways','高速','Autobahn','магистр.','autopistas'),ferry:LL('ferries','フェリー','Fähren','паромы','ferris')}[x]||x)).join(', ')):'';
+      alts.forEach((a,i)=>{ if(i===0) a.label=LL('Fastest','最速','Schnellste','Быстрейший','Más rápido')+avoidTx;
+        else if(i===si) a.label=LL('Shortest','最短距離','Kürzeste','Кратчайший','Más corto')+avoidTx;
+        else { const dMin=Math.round((a.duration-fast.duration)/60); a.label=(dMin>0?('+'+dMin+' '+LL('min','分','Min','мин','min')):LL('Alternative','代替','Alternative','Альтернатива','Alternativa'))+avoidTx; } }); }
+    /* OSRM `exclude=` for the car profile (§7.3). The public demo accepts toll / motorway / ferry. */
+    function _osrmExclude(avoid,mode){ if(!avoid||!avoid.length) return ''; if(!/driv|car|auto/.test(mode)) return '';
+      const ok=avoid.filter(x=>/^(toll|motorway|ferry)$/.test(x)); return ok.join(','); }
     /* (#R125) plan fetch extracted from transit() so the intercity JR bridge can reuse it for ACCESS/EGRESS legs.
        (#R126) 経路10-10 §3.2/§24.1: public CORS proxies REMOVED from the routing path (api.transitous.org serves CORS
        headers directly — proxying routed third parties through corsproxy.io/allorigins leaked origin/destination
@@ -23516,9 +23548,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const mode=String(opts.mode||'driving').toLowerCase();
       if(_isTransit(mode)) return await transit(from,to,opts);
       const prof=PROFILES[mode]||PROFILES.driving;
-      const pts=[from].concat(Array.isArray(opts.via)?opts.via:[]).concat([to]);
+      const via=Array.isArray(opts.via)?opts.via:[];
+      const pts=[from].concat(via).concat([to]);
       const coordStr=pts.map(p=>(+p.lng).toFixed(6)+','+(+p.lat).toFixed(6)).join(';');
-      const url='https://'+prof[0]+'/route/v1/'+prof[1]+'/'+coordStr+'?overview=full&geometries=geojson&steps=true';
+      /* (#R132) §3.3/§7.1/§10: ask OSRM for up to 3 ALTERNATIVES (only for a plain A→B — the demo returns none when
+         there are via points) and for the `exclude=` avoid set (§7.3, car profile: toll/motorway/ferry). */
+      const excl=_osrmExclude(opts.avoid,mode);
+      const url='https://'+prof[0]+'/route/v1/'+prof[1]+'/'+coordStr+'?overview=full&geometries=geojson&steps=true'+(via.length?'':'&alternatives=3')+(excl?('&exclude='+encodeURIComponent(excl)):'');
       let j=null, errKind='provider_unavailable';
       for(let att=0;att<2&&!j;att++){
         if(rid!==_reqSeq) return {ok:false,status:'cancelled'};
@@ -23542,15 +23578,22 @@ window.addEventListener('DOMContentLoaded', () => {
          Cascais, Portugal). A snap that far is a FAKE route; report no_route with the snap distance instead. */
       const _farM=(j.waypoints||[]).reduce((mx,w)=>Math.max(mx,(w&&w.distance)||0),0);
       if(_farM>30000) return {ok:false,status:'no_route',snapKm:Math.round(_farM/1000)};
-      const rt=j.routes[0];
       const rcol=(mode==='foot'||mode==='walk'||mode==='walking')?'#7a7f87':(mode==='bike'||mode==='cycle'||mode==='cycling')?'#00897b':'#1a73e8';
       const rwalk=(mode==='foot'||mode==='walk'||mode==='walking')?1:0;
-      const feats=[{type:'Feature',geometry:rt.geometry,properties:{col:rcol,walk:rwalk,w:5.5}},
-        {type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}},
-        {type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}}];
-      _paint(feats,(rt.geometry&&rt.geometry.coordinates)||null,14);
-      const steps=[]; (rt.legs||[]).forEach(l=>(l.steps||[]).forEach(s=>steps.push(s)));
-      return {ok:true,status:'success',distance:rt.distance,duration:rt.duration,steps,mode}; }
+      /* (#R132) build every returned route into a RouteStore alternative (unified with transit — §10.1). Each carries
+         its full geometry + steps (with per-step geometry indices for §12.5 step→map), a palette colour and a
+         differentiator label; near-identical alternatives are collapsed and the set is ranked fastest-first. */
+      let alts=j.routes.slice(0,3).map((rt,i)=>{ const steps=[]; (rt.legs||[]).forEach(l=>(l.steps||[]).forEach(s=>steps.push(s)));
+        const coords=(rt.geometry&&rt.geometry.coordinates)||[];
+        return {lines:[{coords:coords,walk:rwalk,col:rcol}],stops:[],geometry:rt.geometry,coords:coords,steps:steps,
+          duration:rt.duration,distance:rt.distance,color:ALT_PAL[i%ALT_PAL.length]}; });
+      alts=_roadDedup(alts); alts.sort((a,b)=>(a.duration||0)-(b.duration||0));
+      alts.forEach((a,i)=>{ a.color=ALT_PAL[i%ALT_PAL.length]; }); _labelRoad(alts,opts.avoid);
+      const setId=_rsNew(alts,[[+from.lng,+from.lat],[+to.lng,+to.lat]]); _drawAlts(0,setId);
+      const b0=alts[0];
+      return {ok:true,status:'success',road:true,routeSetId:setId,sel:0,mode,avoid:opts.avoid||null,
+        distance:b0.distance,duration:b0.duration,steps:b0.steps,
+        alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,color:a.color}))}; }
     /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
     try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
@@ -23578,12 +23621,44 @@ window.addEventListener('DOMContentLoaded', () => {
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
       return null; }
     let panel=null,pFrom=null,pTo=null,pMode='driving',pickTarget=null,pickHandler=null;
-    function stepRows(steps,mode){ const ARW={left:'←','slight left':'↖','sharp left':'⬅',right:'→','slight right':'↗','sharp right':'➡',straight:'↑',uturn:'↩'};
-      return (steps||[]).map(s=>{ const mn=s.maneuver||{}, nm=String(s.name||'').trim(), dm=s.distance||0;
-        const gl=(mn.type==='depart')?'🚩':(mn.type==='arrive')?'🏁':(mn.type==='roundabout'||mn.type==='rotary')?'◯':(ARW[mn.modifier]||'↑');
+    /* (#R132) 経路10-10 §12: proper turn-by-turn — interpret the FULL OSRM maneuver vocabulary (turn / merge / on-ramp
+       / off-ramp / fork / end-of-road / roundabout+exit-number / U-turn / arrive-side), plus road ref, signposted
+       destinations (方面), motorway exit numbers, and lane guidance (▮ valid / ▯ not) — not just "arrow + road name".
+       Natural 5-language phrasing. Returns {icon,text,lane}. */
+    function _ord(n){ n=+n||0; if(currentLang==='jp') return n+'番目の'; if(currentLang==='de') return n+'.'; if(currentLang==='es') return n+'ª'; if(currentLang==='ru') return n+'-й'; const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+    function _maneuver(s){ const m=s.maneuver||{}, type=String(m.type||''), mod=String(m.modifier||'');
+      const nm=String(s.name||'').trim(), ref=String(s.ref||'').trim(), dest=String(s.destinations||'').trim(), exits=String(s.exits||'').trim();
+      const road=(ref&&nm)?(nm+' ('+ref+')'):(nm||ref||'');
+      const ARW={left:'←','slight left':'↖','sharp left':'⬅',right:'→','slight right':'↗','sharp right':'➡',straight:'↑',uturn:'↩'};
+      const TURN={ 'left':LL('Turn left','左折','Links abbiegen','Поверните налево','Gira a la izquierda'),'right':LL('Turn right','右折','Rechts abbiegen','Поверните направо','Gira a la derecha'),
+        'slight left':LL('Bear slightly left','斜め左へ','Leicht links halten','Держитесь левее','Ligeramente a la izquierda'),'slight right':LL('Bear slightly right','斜め右へ','Leicht rechts halten','Держитесь правее','Ligeramente a la derecha'),
+        'sharp left':LL('Turn sharply left','鋭く左折','Scharf links','Резко налево','Giro cerrado izq.'),'sharp right':LL('Turn sharply right','鋭く右折','Scharf rechts','Резко направо','Giro cerrado der.'),
+        'straight':LL('Continue straight','直進','Geradeaus','Прямо','Recto'),'uturn':LL('Make a U-turn','Uターン','Wenden','Развернитесь','Cambio de sentido') };
+      const onto=road?(LL(' onto ',' → ',' auf ',' на ',' hacia ')+road):'';
+      let icon=ARW[mod]||'↑', text='';
+      switch(type){
+        case 'depart': icon='🚩'; text=LL('Start','出発','Start','Старт','Salida')+(road?(' · '+road):''); break;
+        case 'arrive': icon='🏁'; text=LL('Arrive at destination','目的地に到着','Ziel erreicht','Прибытие','Llegar al destino')+(mod==='left'?(' — '+LL('on your left','左側','links','слева','a la izquierda')):mod==='right'?(' — '+LL('on your right','右側','rechts','справа','a la derecha')):''); break;
+        case 'roundabout': case 'rotary': { icon='◯'; const ex=m.exit?_ord(m.exit):''; text=LL('At the roundabout take the ','ラウンドアバウトで','Im Kreisverkehr die ','На кольце ','En la rotonda toma la ')+(ex?ex+' ':'')+LL('exit','出口','Ausfahrt','съезд','salida')+onto; break; }
+        case 'roundabout turn': case 'exit roundabout': case 'exit rotary': icon='◯'; text=(TURN[mod]||LL('Continue','道なり','weiter','далее','continúa'))+onto; break;
+        case 'merge': icon='⇱'; text=LL('Merge','合流','Einfädeln','Перестроение','Incorpórate')+(TURN[mod]&&mod!=='straight'?(' ('+TURN[mod]+')'):'')+onto; break;
+        case 'on ramp': icon='⇗'; text=LL('Take the on-ramp','入口ランプへ','Auffahrt nehmen','На въезд','Toma la rampa de acceso')+onto; break;
+        case 'off ramp': icon='⇘'; text=LL('Take the exit ramp','出口ランプへ','Ausfahrt nehmen','Съезд','Toma la salida')+(exits?(' '+exits):'')+onto; break;
+        case 'fork': icon=(mod.indexOf('left')>=0)?'↖':(mod.indexOf('right')>=0)?'↗':'↑'; text=LL('Keep ','分岐を','Halte dich ','На развилке держитесь ','En la bifurcación mantente ')+(mod?(TURN[mod]||mod).toLowerCase().replace(/^(turn |bear |continue )/,''):LL('straight','直進','geradeaus','прямо','recto'))+onto; break;
+        case 'end of road': icon=ARW[mod]||'↑'; text=LL('At the end of the road, ','突き当りを','Am Straßenende ','В конце дороги ','Al final de la vía ')+((TURN[mod]||'').toLowerCase()||LL('turn','曲がる','abbiegen','поверните','gira'))+onto; break;
+        case 'new name': icon=ARW[mod]||'↑'; text=(mod&&mod!=='straight')?((TURN[mod]||'')+onto):(LL('Continue','道なりに進む','Weiter','Продолжайте','Continúa')+(road?(' · '+road):'')); break;
+        case 'notification': case 'continue': icon=ARW[mod]||'↑'; text=(mod&&mod!=='straight'&&mod!=='uturn')?((TURN[mod]||'')+onto):(LL('Continue','道なりに進む','Weiter','Продолжайте','Continúa')+(road?(' · '+road):'')); break;
+        default: icon=ARW[mod]||'↑'; text=(TURN[mod]||(road?(LL('Continue on ','道なり: ','Weiter auf ','Продолжайте по ','Continúa por ')+road):LL('Continue','道なり','weiter','далее','continuar')))+(mod&&road?onto:''); break;
+      }
+      if(dest) text+=' · '+LL('toward ','方面: ','Ri. ','в сторону ','hacia ')+dest.replace(/[;,]+/g,' / ').replace(/:/g,' ');
+      if(exits&&type!=='off ramp') text+=' · '+LL('exit ','出口 ','Ausf. ','съезд ','salida ')+exits;
+      let lane=''; try{ const li=(s.intersections||[]).find(it=>it.lanes&&it.lanes.length); if(li) lane=li.lanes.map(l=>l.valid?'▮':'▯').join(''); }catch(_){}
+      return {icon,text,lane}; }
+    function stepRows(steps,mode){
+      return (steps||[]).map((s,i)=>{ const dm=s.distance||0; const mv=_maneuver(s);
         const dist=dm>=1000?((dm/1000).toFixed(1)+' km'):(Math.round(dm)+' m');
-        const txt=(mn.type==='arrive')?LL('Arrive','到着','Ziel','Прибытие','Llegada'):(mn.type==='depart')?(LL('Start','出発','Start','Старт','Salida')+(nm?(' · '+nm):'')):(nm||LL('Continue','道なり','weiter','далее','continuar'));
-        return '<div style="display:flex;gap:9px;align-items:baseline;padding:6px 2px;border-top:1px solid rgba(128,128,128,0.12);"><span style="flex:0 0 auto;width:18px;text-align:center;">'+gl+'</span><span style="flex:1;min-width:0;font-size:12px;">'+escp(txt)+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10.5px;">'+dist+'</span></div>'; }).join(''); }
+        const lane=mv.lane?('<span style="letter-spacing:1px;color:var(--primary-color);font-size:11px;margin-left:6px;">'+mv.lane+'</span>'):'';
+        return '<div class="rp-step" data-si="'+i+'" style="display:flex;gap:9px;align-items:baseline;padding:6px 2px;border-top:1px solid rgba(128,128,128,0.12);cursor:pointer;"><span style="flex:0 0 auto;width:18px;text-align:center;">'+mv.icon+'</span><span style="flex:1;min-width:0;font-size:12px;">'+escp(mv.text)+lane+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10.5px;">'+dist+'</span></div>'; }).join(''); }
     function ensurePanel(){ if(panel) return panel;
       panel=document.createElement('div'); panel.id='route-panel';
       panel.style.cssText='position:fixed;left:16px;top:78px;width:min(346px,92vw);max-height:76vh;z-index:1401;display:none;flex-direction:column;background:var(--popup-bg,#141414);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:15px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.45);';
@@ -23662,11 +23737,28 @@ window.addEventListener('DOMContentLoaded', () => {
         const tf=r.transfers||0;
         if(sum) sum.innerHTML='<b style="font-size:15px;">'+dur+'</b> · '+tf+' '+LL('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересад.','transb.')+(r.startTime?(' · '+_hm(r.startTime)+'→'+_hm(r.endTime)):'');
         if(st) st.innerHTML=legRows(r.legs); return; }
-      const km=r.distance/1000, tot=Math.round(r.duration/60), h=Math.floor(tot/60), rem=tot%60, dur=h?(h+' h '+rem+' min'):(tot+' min');
       const ml=({driving:'🚗',walking:'🚶',cycling:'🚲'})[pMode]||'';
       const timeHint=_opts.time?('<span style="color:var(--text-muted);font-size:10.5px;"> · '+LL('time option applies to transit (road times are typical, not traffic-aware)','時刻指定は公共交通で有効（道路は交通状況を含まない標準時間）','Zeitwahl gilt für ÖPNV (Straße ohne Verkehrslage)','время действует для транспорта (дорога без пробок)','la hora aplica al transporte público (carretera sin tráfico)')+'</span>'):'';
-      if(sum) sum.innerHTML='<b style="font-size:15px;">'+dur+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km '+ml+timeHint;
-      if(st) st.innerHTML=stepRows(r.steps,pMode); }
+      const _dur=sec=>{ const t=Math.round(sec/60),hh=Math.floor(t/60),mm=t%60; return hh?(hh+' h '+mm+' min'):(t+' min'); };
+      const _km=m=>{ const k=m/1000; return (k<10?k.toFixed(1):Math.round(k).toLocaleString())+' km'; };
+      /* (#R132) §7.1/§10.5-10.6: road alternatives as selectable cards (fastest/shortest/+X min), tap → redraw+resync */
+      const alts=(r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
+      if(sum) sum.innerHTML='<b style="font-size:15px;">'+_dur(r.duration)+'</b> · '+_km(r.distance)+' '+ml+timeHint;
+      if(st){ st._ctx={setId:r.routeSetId,alts,steps:r.steps,mode:pMode,sum,dur:_dur,km:_km,ml};
+        let html='';
+        if(alts){ html+='<div class="rp-alts" style="display:flex;flex-direction:column;gap:4px;margin-bottom:7px;">'+alts.map((a,i)=>'<button class="rp-alt" data-ai="'+i+'" style="text-align:left;border:none;border-left:3px solid '+a.color+';background:'+(i===0?'var(--input-bg)':'transparent')+';border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;justify-content:space-between;gap:6px;align-items:center;color:var(--text-main);"><span style="font-size:11.5px;">'+escp(a.label||'')+'</span><span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">'+_dur(a.duration)+' · '+_km(a.distance)+'</span></button>').join('')+'</div>'; }
+        html+='<div class="rp-steplist">'+stepRows(alts?alts[0].steps:r.steps,pMode)+'</div>';
+        st.innerHTML=html; st.dataset.sel='0';
+        if(!st._wired){ st._wired=true; st.addEventListener('click',ev=>{ const ctx=st._ctx; if(!ctx) return;
+          const ab=ev.target.closest&&ev.target.closest('.rp-alt[data-ai]');
+          if(ab){ const i=+ab.getAttribute('data-ai'); st.dataset.sel=String(i); st.querySelectorAll('.rp-alt').forEach(x=>x.style.background=(x===ab)?'var(--input-bg)':'transparent');
+            try{ selectAlt(i,ctx.setId); }catch(_){} const a=ctx.alts[i]; if(ctx.sum) ctx.sum.innerHTML='<b style="font-size:15px;">'+ctx.dur(a.duration)+'</b> · '+ctx.km(a.distance)+' '+ctx.ml;
+            const sl=st.querySelector('.rp-steplist'); if(sl) sl.innerHTML=stepRows(a.steps,ctx.mode); return; }
+          const sr=ev.target.closest&&ev.target.closest('.rp-step[data-si]');
+          if(sr){ const si=+sr.getAttribute('data-si'); const sel=+(st.dataset.sel||0); const steps=ctx.alts?ctx.alts[sel].steps:ctx.steps; const step=steps&&steps[si];
+            const co=step&&step.geometry&&step.geometry.coordinates; try{ selectStep(ctx.setId,si,co); }catch(_){}
+            st.querySelectorAll('.rp-step').forEach(x=>x.style.background=(x===sr)?'rgba(255,210,63,0.14)':''); } }); }
+      } }
     function _hm(iso){ try{ const d=new Date(iso); if(!isFinite(d.getTime())) return ''; return d.toLocaleTimeString(currentLang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
     /* (#R85) transit leg list — one row per leg, mode icon + colour bar + line name + endpoints + duration */
     function legRows(legs){ return (legs||[]).map(l=>{ const mn=Math.round((l.duration||0)/60); const ic=_modeIcon(l.mode);
@@ -23689,7 +23781,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const ql=q.toLowerCase();
       for(const Ln of _SHINK) for(const s of Ln.st){ if(s[0]===q||s[1].toLowerCase()===ql) return {lng:s[2],lat:s[3],name:(typeof currentLang!=='undefined'&&currentLang==='jp')?(s[0]+'駅'):(s[1]+' Station')}; }
       return null; }
-    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, stationLL, geoNear:geo1 };
+    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, selectStep, maneuver:_maneuver, stationLL, geoNear:geo1 };
   })();
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
@@ -27672,16 +27764,23 @@ window.addEventListener('DOMContentLoaded', () => {
             if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
             const snapTx=(r&&r.snapKm)?(' '+L('One point is ~'+r.snapKm+' km from the nearest routable road (outside road-data coverage / across water).','一方の地点が最寄りの経路可能な道路から約'+r.snapKm+' km離れています（道路データ対象外／水域越えの可能性）。','Ein Punkt liegt ~'+r.snapKm+' km von der nächsten routbaren Straße (außerhalb der Abdeckung).','Точка в ~'+r.snapKm+' км от ближайшей дороги (вне покрытия).','Un punto está a ~'+r.snapKm+' km de la carretera más cercana (fuera de cobertura).')):'';
             return R(true, _hdr+warn('⚠ '+L('No route found (no road connection between these points).','経路が見つかりません（この2地点間に陸路の接続がありません）。','Keine Route gefunden (keine Straßenverbindung).','Маршрут не найден (нет дорожного соединения).','Sin ruta (sin conexión por carretera).')+snapTx)); }
-          const km=r.distance/1000, totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min');
-          const ARW={left:'←','slight left':'↖','sharp left':'⬅',right:'→','slight right':'↗','sharp right':'➡',straight:'↑',uturn:'↩'};
-          const stepRows=(r.steps||[]).map(s=>{ const m=s.maneuver||{}; const nm=String(s.name||'').trim(); const dm=s.distance||0;
-            let gl=(m.type==='depart')?'🚩':(m.type==='arrive')?'🏁':(m.type==='roundabout'||m.type==='rotary')?'◯':(ARW[m.modifier]||'↑');
-            const dist=dm>=1000?((dm/1000).toFixed(1)+' km'):(Math.round(dm)+' m');
-            const txt=(m.type==='arrive')?L('Arrive at destination','目的地に到着','Ziel erreicht','Прибытие','Llegada'):(m.type==='depart')?(L('Head out','出発','Losfahren','Отправление','Salida')+(nm?(' · '+nm):'')):(nm||L('Continue','道なりに進む','weiter','далее','continuar'));
-            return '<div style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="flex:0 0 auto;width:18px;text-align:center;">'+gl+'</span><span style="flex:1;min-width:0;">'+esc(txt)+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10.5px;">'+dist+'</span></div>'; }).join('');
-          let h=_hdr+'<div style="font-size:13px;margin:3px 0 5px;"><b>'+dur+'</b> · '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' km</div>'
-            +(stepRows?('<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;">'+stepRows+'</div>'):'')
-            +note(L('Road routing via OSRM (OpenStreetMap). Clear it with "clear the route".','OSRM（OpenStreetMap）の道路経路。「経路を消して」で削除。','Straßenrouting OSRM (OpenStreetMap).','Дорожный маршрут OSRM.','Ruta por carretera OSRM.'));
+          /* (#R132) 経路10-10 §7.1/§10/§12/§16: road reply mirrors transit — selectable alternative cards
+             (fastest/shortest/+X min) in the SAME .atl-trips/.atl-trip structure the existing selectAlt handler
+             drives (data-rset), plus rich turn-by-turn (IntMapRouting.maneuver) with lane guidance and step→map. */
+          const _rdur=sec=>{ const t=Math.round(sec/60),hh=Math.floor(t/60),mm=t%60; return hh?(hh+' h '+mm+' min'):(t+' min'); };
+          const _rkm=m=>{ const k=m/1000; return (k<10?k.toFixed(1):Math.round(k).toLocaleString())+' km'; };
+          const _mvr=s=>{ try{ return window.IntMapRouting.maneuver(s); }catch(_){ return {icon:'↑',text:String(s.name||''),lane:''}; } };
+          const _stepList=(steps)=>(steps||[]).map((s,i)=>{ const dm=s.distance||0; const mv=_mvr(s); const dist=dm>=1000?((dm/1000).toFixed(1)+' km'):(Math.round(dm)+' m');
+            const lane=mv.lane?('<span style="letter-spacing:1px;color:var(--primary-color);font-size:10.5px;margin-left:5px;">'+mv.lane+'</span>'):'';
+            return '<div class="atl-rstep" data-si="'+i+'" style="display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.1);cursor:pointer;"><span style="flex:0 0 auto;width:18px;text-align:center;">'+mv.icon+'</span><span style="flex:1;min-width:0;">'+esc(mv.text)+lane+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10.5px;">'+dist+'</span></div>'; }).join('');
+          const ralts=(r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
+          let h=_hdr;
+          if(ralts){ h+='<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+ralts.length+' '+L('routes — tap one to show it on the map','経路候補 — タップで地図に表示','Routen — zum Anzeigen antippen','маршрутов — нажмите, чтобы показать','rutas — toca para ver en el mapa')+'</div>'
+              +'<div class="atl-trips" data-rset="'+esc(r.routeSetId||'')+'">'+ralts.map((a,i)=>
+                '<div class="atl-trip'+(i===0?' on':'')+'" data-ai="'+i+'" style="border-left:3px solid '+(a.color||'#1a73e8')+';"><div class="atl-trip-head"><span class="atl-trip-time"><span class="atl-trip-dot" style="background:'+(a.color||'#1a73e8')+';"></span><b>'+_rdur(a.duration)+'</b></span><span class="atl-trip-dur">'+esc(a.label||'')+' · '+_rkm(a.distance)+'</span></div><div class="atl-trip-legs">'+_stepList(a.steps)+'</div></div>').join('')+'</div>';
+          } else { h+='<div style="font-size:13px;margin:3px 0 5px;"><b>'+_rdur(r.duration)+'</b> · '+_rkm(r.distance)+'</div>'
+              +'<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;" class="atl-rsteps" data-rset="'+esc(r.routeSetId||'')+'">'+_stepList(r.steps)+'</div>'; }
+          h+=note(L('Road routing via OSRM (OpenStreetMap) — up to 3 alternatives with lane guidance. Times are typical (no live traffic). Clear it with "clear the route".','OSRM（OpenStreetMap）の道路経路 — 最大3候補・車線案内付き。所要時間は交通状況を含まない標準値です。「経路を消して」で削除。','Straßenrouting OSRM (OpenStreetMap) — bis zu 3 Alternativen mit Spurführung. Zeiten typisch (kein Live-Verkehr).','Дорожный маршрут OSRM — до 3 альтернатив с подсказкой полос. Время типовое (без пробок).','Ruta por carretera OSRM — hasta 3 alternativas con guía de carriles. Tiempos típicos (sin tráfico).'));
           return R(true, h); }
         case 'streetview': case 'streetView': case 'pano': {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
@@ -29029,6 +29128,15 @@ window.addEventListener('DOMContentLoaded', () => {
           _refreshMapChips(); return; }
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
+        /* (#R132) 経路10-10 §12.5: tap a turn-by-turn step in a road reply → highlight that segment on the map + fly to it.
+           MUST run BEFORE the .atl-trip card handler below, because a step lives INSIDE a card — otherwise the card
+           handler swallows the click and re-selects the alternative instead of highlighting the step. */
+        const rst=e.target.closest&&e.target.closest('.atl-rstep[data-si]');
+        if(rst){ const si=+rst.getAttribute('data-si'); const host=rst.closest('[data-rset]'); const rset=(host&&host.getAttribute('data-rset'))||undefined;
+          const card=rst.closest('.atl-trip[data-ai]'); if(card){ const bx=card.parentElement; if(bx){ bx.querySelectorAll('.atl-trip').forEach(t=>t.classList.remove('on')); } card.classList.add('on');
+            try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(+card.getAttribute('data-ai'),rset); }catch(_){} }
+          try{ window.IntMapRouting&&window.IntMapRouting.selectStep&&window.IntMapRouting.selectStep(rset,si); }catch(_){}
+          try{ rst.parentElement.querySelectorAll('.atl-rstep').forEach(x=>x.style.background=(x===rst)?'rgba(255,210,63,0.14)':''); }catch(_){} return; }
         const trp=e.target.closest&&e.target.closest('.atl-trip[data-ai]');
         if(trp){ const ai=+trp.getAttribute('data-ai'); const box=trp.parentElement;   /* (#R86) select a transit alternative → expand it + redraw on the map */
           if(box){ box.querySelectorAll('.atl-trip').forEach(t=>t.classList.remove('on')); } trp.classList.add('on');
