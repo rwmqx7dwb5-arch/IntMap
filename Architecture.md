@@ -954,4 +954,22 @@ supabase/
 - **プランナー**: `analyze` 説明に「名前付き多国地域／明示国セットは `place` に加え `countries` に**実際の構成国**（英名・地理知識）を入れ、`question` は完全な質問を保持」を追加（中央アジア専用コードは足さない）。
 - **回帰テスト（`window.IntMapAtlasQA`）**: 時計（2026-07-18 05:00 JST）と3見出し fixture（Kyrgyz-Uzbek国境27名拘束=seen 07-16／Kyrgyz-Tajik燃料=07-15／EU-中央アジア定例対話=07-16）を固定し、freshnessCritical・webMode=required・72h窓算出・全項目 event_date:unknown・date_type種別・国境記事がlead扱い・5か国カバレッジ明示・プロンプト各規則・単一AI呼び出しを**19項目全PASS**でヘッドレス検証。
 
+## #R132 補足（汎用地域解決基盤 `IntMapRegionResolver`・Atlasタブ色・Objects直下ポップアップ・昔年代クリック・FS中ハイライト非表示・歴史Wiki拡充）
+
+- **汎用地域解決基盤 `window.IntMapRegionResolver`**: 未登録の自然/非公式/歴史/経済地域名（East European Plain・関東平野・パンノニア平原・チベット高原・レバント・ドンバス・サヘル・肥沃な三日月地帯…）を、**AIに境界座標を書かせず**実データで解決する汎用基盤。`resolveHlTarget` の**fuzzyテール**（旧 `aiRegionUnits`/`aiRegionPoly` の幻覚経路）をログイン時のみ本基盤へ置換（ログアウトは従来経路へ fail-open）。
+  - **サーバ**: `ai-proxy` に `geo_resolve` タスク（`JSON_TASKS`・`reasoning:"medium"`・`max_output:1800`・`webMode:required`強制）。**構造化メタデータのみ**を返す（`canonicalName/aliases/featureType/ambiguous+candidates/expectedCountries/representativePoint/expectedBbox/geometryStrategy/osmName/adminUnits/mustInclude/mustExclude/boundaryAnchors(時計回り)/confidence/sources`）。最終ポリゴンの頂点列は返さない。
+  - **クライアント配管**: `aiCallServerFull()`＝呼び出し単位の `{text,meta,citations}` エンベロープ＋`opts.signal`（実Abort）。`askAIEnvelope`/`askAIJSONEnvelope`。`aiCallServer` は薄いラッパで全既存呼び出し不変。`geoVerify` は 9秒 Promise.race を廃止し**本物の AbortController**（タイムアウトで fetch 中断・`meta.webUsed` はエンベロープから）。
+  - **解決ラダー（実データ最優先）**: `country`→`admin_union`（`composeRegion`）→`osm_polygon`（`_nomExtent` を representativePoint でアンカー）→`derived_anchors`（Web検証済みアンカーの順序リング→`turf.kinks`自己交差check→凸包、expectedBbox クリップ、`webUsed`必須）。**bboxを境界として塗る処理は撤去**（bboxは検索/選別/fit/検証のみ）。
+  - **検証ゲート `_rrValidate`（fail-closed）**: Polygon/MultiPolygon・座標有効・全世界blob棄却・面積下限・expectedBbox重なり≥0.12・mustInclude内包≥60%・mustExclude侵入≤15%・expectedCountries一致（`codeAtPoint`）。R130の中心距離方式（巨大ポリゴンほど許容も巨大）を置換。通らなければ描画せず正直に失敗。
+  - **曖昧性**: `ambiguous+candidates` を返し、ハイライトdispatchが候補提示（`lastCountry` 一致時のみ自動確定）。
+  - **キャッシュ**: セッション `Map` ＋ IndexedDB `intmap_regionresolver`（`_RR_ALGO`＋TTL 成功90日/否定7日）。
+  - **AI回数**: fuzzyテール=`geo_verify`（安価）＋`geo_resolve`（medium）各1回・以降キャッシュ0。
+  - **Atlas表示**: 「実際のOSM境界データから描画」「N行政区画の実境界を合成」「⬡ Web検証済み境界アンカーから構築した近似範囲」「曖昧なため未描画—候補提示」を返答に明示。
+  - **デバッグ/テスト**: `window.IntMapRegionResolverDebug.last`／`window.IntMapRegionResolverTest.run()`（純粋関数13項目・**実測13/13 PASS**）。
+- **Atlasタブ色（`#R114/#R130`再修正）**: 共有トークン `--atlas-grad = linear-gradient(135deg, var(--primary-color), #5e5ce6 56%, #bf5af2)`（アクセント先頭の3ストップ）で**デフォルトアクセントでも単色化しない**＆任意アクセント追随。アクティブタブ・非アクティブ枠(`::before`)・ユーザー吹き出し `.atl-b.u`・モバイルを統一。
+- **Objectsポップアップ直下化**: `IntMapObjects.open()` に `_placePanel()`＝`#btn-tool-objects` の rect に右揃え＋直下(+8px)。モバイルFAB時はFAB直上。`data-dragged` 尊重・画面内クランプ。
+- **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
+- **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
+- **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*
