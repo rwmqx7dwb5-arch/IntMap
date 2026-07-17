@@ -197,6 +197,25 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .stats-sort-dir .ssd-labels[data-dir="asc"] .ssd-l-desc,
     .stats-sort-dir .ssd-labels[data-dir="desc"] .ssd-l-asc{ visibility:hidden; }
     .stats-sort-dir:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+    /* (#R122) numeric filter button + panel */
+    .stats-filter-btn{ position:relative; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; background:var(--input-bg); border:1px solid rgba(128,128,128,0.2); color:var(--text-main); padding:7px 9px; border-radius:9px; cursor:pointer; }
+    .stats-filter-btn:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+    .stats-filter-btn.on{ background:var(--primary-color); color:#fff; border-color:var(--primary-color); }
+    .stats-filter-btn.has:not(.on){ border-color:var(--primary-color); color:var(--primary-color); }
+    .stats-filter-btn .sf-badge{ position:absolute; top:-5px; right:-5px; min-width:15px; height:15px; padding:0 3px; box-sizing:border-box; background:var(--primary-color); color:#fff; font-size:9.5px; font-weight:700; line-height:15px; border-radius:8px; text-align:center; }
+    .stats-filter-panel{ background:var(--input-bg); border:1px solid rgba(128,128,128,0.2); border-radius:10px; padding:8px; margin-bottom:6px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+    .stats-filter-panel .sf-row{ display:flex; gap:5px; align-items:center; }
+    .stats-filter-panel .sf-row select, .stats-filter-panel .sf-row input{ background:var(--card-bg); color:var(--text-main); border:1px solid rgba(128,128,128,0.25); border-radius:7px; font-size:12px; padding:5px 6px; outline:none; min-width:0; }
+    .stats-filter-panel .sf-row select:first-child{ flex:1 1 auto; }
+    .stats-filter-panel .sf-row .sf-op{ flex:0 0 auto; width:52px; text-align:center; }
+    .stats-filter-panel .sf-row .sf-val{ flex:0 0 82px; width:82px; }
+    .stats-filter-panel .sf-row .sf-x{ flex:0 0 auto; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; padding:4px 6px; border-radius:6px; }
+    .stats-filter-panel .sf-row .sf-x:hover{ background:rgba(255,59,48,0.14); color:#ff3b30; }
+    .stats-filter-panel .sf-empty{ font-size:11.5px; color:var(--text-muted); padding:2px 2px 4px; }
+    .stats-filter-panel .sf-actions{ display:flex; gap:6px; }
+    .stats-filter-panel .sf-actions button{ background:var(--card-bg); border:1px solid rgba(128,128,128,0.25); color:var(--text-main); border-radius:7px; font-size:11.5px; font-weight:600; padding:5px 10px; cursor:pointer; }
+    .stats-filter-panel .sf-actions .sf-add:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+    .stats-filter-panel .sf-actions .sf-clear:hover{ border-color:#ff3b30; color:#ff3b30; }
     /* (#R94) time-machine banner atop the Countries list */
     /* (#R101) compact ONE-LINE status bar (was a multi-line blue description box) */
     /* (#R102) the year + "real GDP (2011 int$)" banner MUST stay readable in the now-narrow Countries window — it was
@@ -5955,16 +5974,31 @@ window.addEventListener('DOMContentLoaded', () => {
     { const pb2=p.querySelector('#tp-pop-btn');
       const showRes=(popv,yr,src,multi)=>{ const row=p.querySelector('#tp-pop-row'), val=p.querySelector('#tp-pop-val');
         if(row&&val){ row.style.display=''; val.innerHTML=Number(popv).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+src+' '+yr+(multi?' · Σ':'')+')</span>'; } };
-      if(pb2) pb2.onclick=async()=>{ try{
-        pb2.disabled=true; pb2.textContent=t('popCalcing');
-        if(toolMode==='area'&&measurePoints.length>=3){
-          const geom={type:'Polygon',coordinates:[[...measurePoints,measurePoints[0]]]};
-          const r=await window.IntMapPopArea.estimate(geom); showRes(r.pop,r.year,r.src,false); pb2.style.display='none'; return; }
-        if(toolMode==='radius'&&radiusItems.length){ let tot=0, yr=2020, src='WorldPop';
-          for(const c of radiusItems){ const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r=await window.IntMapPopArea.estimate(g); tot+=r.pop; yr=r.year; src=r.src; }
-          showRes(tot,yr,src,radiusItems.length>1); pb2.style.display='none'; return; }
-        pb2.disabled=false; pb2.textContent=t('popInArea');
-      }catch(e){ pb2.disabled=false; pb2.textContent=t('popFail'); setTimeout(()=>{ try{ pb2.textContent=t('popInArea'); }catch(_){} },2600); } }; }
+      /* (#R122) PROGRESS BAR — the WorldPop summation runs as a server-side task that takes ~10-30 s, so the button
+         used to just sit on "Calculating…" and read as broken ("使えない"). Show a live progress bar (same style as
+         Line-of-sight): a time-based asymptotic ramp toward ~92% (WorldPop gives no true %), snapping to 100% on the
+         real result. For multiple radius circles the bar advances per finished circle. */
+      const _progLbl=()=>currentLang==='jp'?'WorldPop人口グリッドを集計中…':currentLang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':currentLang==='ru'?'Суммирование сетки населения WorldPop…':currentLang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
+      const _mkProg=()=>{ let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
+          box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0a84ff,#5e5ce6);transition:width .2s;"></div></div>';
+          if(pb2&&pb2.parentNode) pb2.parentNode.insertBefore(box,pb2.nextSibling); else p.appendChild(box); }
+        box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.style.display='block'; return box; };
+      const _setProg=(box,frac)=>{ try{ const f=Math.max(0,Math.min(1,frac)); const fill=box.querySelector('.tp-prog-fill'), pct=box.querySelector('.tp-prog-pct'); if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} };
+      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); let t0=Date.now(), base=0, span=1, done=false;
+        const tick=()=>{ if(done) return; const el=(Date.now()-t0)/1000; const ramp=0.92*(1-Math.exp(-el/9)); _setProg(box, base+span*ramp); };
+        const timer=setInterval(tick,200); tick();
+        try{
+          pb2.disabled=true; pb2.textContent=t('popCalcing');
+          if(toolMode==='area'&&measurePoints.length>=3){
+            const geom={type:'Polygon',coordinates:[[...measurePoints,measurePoints[0]]]};
+            const r=await window.IntMapPopArea.estimate(geom); done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
+            showRes(r.pop,r.year,r.src,false); pb2.style.display='none'; return; }
+          if(toolMode==='radius'&&radiusItems.length){ let tot=0, yr=2020, src='WorldPop'; const N=radiusItems.length;
+            for(let i=0;i<N;i++){ base=i/N; span=1/N; t0=Date.now(); const c=radiusItems[i]; const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r=await window.IntMapPopArea.estimate(g); tot+=r.pop; yr=r.year; src=r.src; _setProg(box,(i+1)/N); }
+            done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
+            showRes(tot,yr,src,N>1); pb2.style.display='none'; return; }
+          done=true; clearInterval(timer); box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popInArea');
+        }catch(e){ done=true; clearInterval(timer); box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popFail'); setTimeout(()=>{ try{ pb2.textContent=t('popInArea'); }catch(_){} },2600); } }; }
     const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; if(toolMode==='area'){ toolMode='measure'; try{ _syncToolBtns(); }catch(_){} } hideMeasureTip(); refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
@@ -9615,6 +9649,21 @@ window.addEventListener('DOMContentLoaded', () => {
      so closing the window clears the "countries selected" state visible on the map. Mirrors _setCountriesInfo. */
   window._wsCountryInfo=function(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==!!on){ cb.checked=!!on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} };
   (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
+  /* (#R122) COUNTRIES NUMERIC FILTER — filter the list by indicator thresholds (≥ / ≤), combinable with the sort.
+     e.g. population ≥ 5M then sort by GDP desc. Conditions persist across re-renders. */
+  let statsFilters=[], statsFilterOpen=false;
+  const _sfL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+  function _sfParse(str){ let s=String(str==null?'':str).trim().replace(/[, _]/g,'').replace(/%$/,''); if(!s) return NaN;
+    const m=s.match(/^(-?\d*\.?\d+)\s*([kmbtKMBT万億兆])?$/); if(!m) return (isFinite(+s)?+s:NaN);
+    let v=+m[1]; const u=(m[2]||'').toLowerCase(); const mul={k:1e3,m:1e6,b:1e9,t:1e12,'万':1e4,'億':1e8,'兆':1e12}[u]||1; return v*mul; }
+  function _sfRerender(){ try{ renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){ try{ renderStats(searchVal()); }catch(__){} } }
+  window._sfToggle=()=>{ statsFilterOpen=!statsFilterOpen; _sfRerender(); };
+  window._sfAdd=()=>{ statsFilters.push({key:'pop',op:'gte',raw:'',val:NaN}); statsFilterOpen=true; _sfRerender(); };
+  window._sfRemove=(i)=>{ statsFilters.splice(i,1); _sfRerender(); };
+  window._sfClear=()=>{ statsFilters=[]; _sfRerender(); };
+  window._sfSetKey=(i,k)=>{ if(statsFilters[i]){ statsFilters[i].key=k; _sfRerender(); } };
+  window._sfSetOp=(i,op)=>{ if(statsFilters[i]){ statsFilters[i].op=op; _sfRerender(); } };
+  window._sfSetVal=(i,raw)=>{ if(statsFilters[i]){ statsFilters[i].raw=raw; statsFilters[i].val=_sfParse(raw); _sfRerender(); } };
   function renderStats(q){
     const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); clearMarkers();
     /* (#R69) the 5-country comparison view owns the feed while it is open — a deferred renderStats (e.g. the
@@ -9628,6 +9677,10 @@ window.addEventListener('DOMContentLoaded', () => {
     let arr=Object.values(countryStats).filter(s=>s.nameEn && !s._histHidden && s.sov!==false);
     if(arr.length===0){ feed.innerHTML=`<div class="empty-msg">${t('noData')}</div>`; return; }
     if(q) arr=arr.filter(s=>s.nameEn.toLowerCase().includes(q)||(s.nameJp&&s.nameJp.includes(q)));
+    /* (#R122) apply the numeric threshold filters (each active condition must hold; a country missing that
+       indicator is excluded from a threshold on it — honest, not counted as passing). */
+    const _actF=statsFilters.filter(f=>f&&f.key&&isFinite(f.val));
+    if(_actF.length) arr=arr.filter(s=>_actF.every(f=>{ const v=s[f.key]; if(!isFinite(v)) return false; return f.op==='lte'?(v<=f.val):(v>=f.val); }));
     const key=statsSort, dir=statsSortDir;
     /* (#R102) sort by the chosen indicator in the chosen direction. Numeric: missing/zero values sort to the END in
        BOTH directions (so ascending never fills the top with un-populated countries). Name: locale-aware A–Z / Z–A. */
@@ -9644,7 +9697,16 @@ window.addEventListener('DOMContentLoaded', () => {
        width never changes on toggle (see .ssd-labels CSS). */
     const _ssdArrow=up=>'<svg class="ssd-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+(up?'<path d="M12 19.5V5M6.5 11l5.5-6 5.5 6"/>':'<path d="M12 4.5V19M6.5 13l5.5 6 5.5-6"/>')+'</svg>';
     const dirLbl=_ssdArrow(dir==='asc')+'<span class="ssd-labels" data-dir="'+(dir==='asc'?'asc':'desc')+'"><span class="ssd-l ssd-l-asc">'+t('sortAsc')+'</span><span class="ssd-l ssd-l-desc">'+t('sortDesc')+'</span></span>';
-    let html=`<div class="stats-toolbar"><select class="stats-sort-sel" onchange="setStatsSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${statsSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleStatsSortDir()" title="${t('sortDir')}">${dirLbl}</button></div>`;
+    /* (#R122) numeric-filter control next to the sort. Indicators = the sortable numeric ones (drop 'name'). */
+    const _FIND=IND.filter(([k])=>k!=='name');
+    const _nActF=statsFilters.filter(f=>f&&f.key&&isFinite(f.val)).length;
+    const _funnel='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>';
+    const filterBtn=`<button type="button" class="stats-filter-btn${statsFilterOpen?' on':''}${_nActF?' has':''}" onclick="_sfToggle()" title="${_sfL('Filter by value','数値で絞り込み','Nach Wert filtern','Фильтр по значению','Filtrar por valor')}">${_funnel}${_nActF?`<span class="sf-badge">${_nActF}</span>`:''}</button>`;
+    const _sfPanel=(()=>{ if(!statsFilterOpen) return '';
+      const opts=(sel)=>_FIND.map(([k,l])=>`<option value="${k}"${sel===k?' selected':''}>${l}</option>`).join('');
+      const rows=statsFilters.map((f,i)=>`<div class="sf-row"><select onchange="_sfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" onchange="_sfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${_sfL('value (5M, 20000…)','値（5M, 20000…）','Wert','значение','valor')}" onchange="_sfSetVal(${i},this.value)"><button type="button" class="sf-x" onclick="_sfRemove(${i})" title="${t('remove')||'✕'}">✕</button></div>`).join('');
+      return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${_sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_sfAdd()">+ ${_sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${statsFilters.length?`<button type="button" class="sf-clear" onclick="_sfClear()">${_sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
+    let html=`<div class="stats-toolbar"><select class="stats-sort-sel" onchange="setStatsSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${statsSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleStatsSortDir()" title="${t('sortDir')}">${dirLbl}</button>${filterBtn}</div>${_sfPanel}`;
     /* (#R101) in time-machine (historical) mode the figures are REAL GDP (Maddison, 2011 int$), not nominal. */
     const _histY=window._imTimeYear||null;
     /* (#R102) the value column now carries ONLY the number ($3.4T etc.) — no indicator name on the card, per request. */
