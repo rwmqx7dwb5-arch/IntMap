@@ -29469,7 +29469,14 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbadofert', code:'SP.ADO.TFRT', n:{en:'Adolescent fertility /1k',jp:'思春期出生率 /1k',de:'Teenager-Geburtenrate /1k',ru:'Подростковая рождаемость /1k'}, ramp:[2,'#1a9850',15,'#a6d96a',40,'#fee08b',80,'#f46d43',130,'#a50026'], unit:''},
       {id:'wbbeds', code:'SH.MED.BEDS.ZS', n:{en:'Hospital beds /1k',jp:'病床数 /1k人',de:'Krankenhausbetten /1k',ru:'Больничные койки /1k'}, ramp:[0.5,'#a50026',2,'#f46d43',4,'#fee08b',8,'#a6d96a',13,'#1a9850'], unit:''},
       {id:'wbresearch', code:'SP.POP.SCIE.RD.P6', n:{en:'Researchers /million',jp:'研究者数 /100万人',de:'Forscher /Mio.',ru:'Исследователи /млн'}, ramp:[50,'#fff7ec',500,'#fdd49e',2000,'#fc8d59',5000,'#66bd63',8000,'#006837'], unit:''},
-      {id:'wboverwt', code:'SH.STA.OWAD.ZS', n:{en:'Overweight adults %',jp:'成人過体重率 %',de:'Übergewichtige Erwachsene %',ru:'Избыточный вес у взрослых %'}, ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'}
+      {id:'wboverwt', code:'SH.STA.OWAD.ZS', n:{en:'Overweight adults %',jp:'成人過体重率 %',de:'Übergewichtige Erwachsene %',ru:'Избыточный вес у взрослых %'}, ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'},
+      /* (#R125) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
+      {id:'wburban', code:'SP.URB.TOTL.IN.ZS', n:{en:'Urban population %',jp:'都市人口比率 %',de:'Stadtbevölkerung %',ru:'Городское население %'}, ramp:[20,'#edf8e9',40,'#bae4b3',60,'#74c476',80,'#31a354',95,'#006d2c'], unit:'%'},
+      {id:'wbtourism', code:'ST.INT.ARVL', n:{en:'Tourist arrivals',jp:'外国人観光客数',de:'Touristenankünfte',ru:'Прибытия туристов'}, ramp:[100000,'#fff7fb',1000000,'#d0d1e6',5000000,'#74a9cf',20000000,'#0570b0',60000000,'#023858'], unit:''},
+      {id:'wbremit', code:'BX.TRF.PWKR.DT.GD.ZS', n:{en:'Remittances % GDP',jp:'海外送金受取 %GDP',de:'Rücküberweisungen % BIP',ru:'Денежные переводы % ВВП'}, ramp:[0.5,'#fff7ec',2,'#fdd49e',5,'#fc8d59',12,'#d7301f',25,'#7f0000'], unit:'%'},
+      {id:'wbsuicide', code:'SH.STA.SUIC.P5', n:{en:'Suicide rate /100k',jp:'自殺率 /10万人',de:'Suizidrate /100k',ru:'Уровень суицида /100k'}, ramp:[3,'#1a9850',7,'#a6d96a',12,'#fee08b',20,'#f46d43',30,'#a50026'], unit:''},
+      {id:'wbalcohol', code:'SH.ALC.PCAP.LI', n:{en:'Alcohol per capita L',jp:'一人当たり飲酒量 L',de:'Alkohol pro Kopf L',ru:'Алкоголь на душу, л'}, ramp:[1,'#fff7ec',4,'#fdd49e',7,'#fc8d59',10,'#d7301f',14,'#7f0000'], unit:' L'},
+      {id:'wbhomicide', code:'VC.IHR.PSRC.P5', n:{en:'Homicide rate /100k',jp:'殺人発生率 /10万人',de:'Mordrate /100k',ru:'Убийства /100k'}, ramp:[1,'#1a9850',3,'#a6d96a',8,'#fee08b',20,'#f46d43',40,'#a50026'], unit:''}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
