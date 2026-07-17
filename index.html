@@ -9012,6 +9012,23 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window.highlightDashMarker=function(id,on){ if(map&&map.getSource('dash-points')){ try{ map.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
   function clearIntelSources(){ if(map){ if(map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); if(map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
+  /* (#R122) SPREAD DUPLICATE NEWS PINS — many stories geolocate to the SAME anchor (a country/city centroid, e.g.
+     everything filed under "USA" lands on one point), so their pins stack and only the top one is clickable. Pins
+     sharing a location are fanned out over a deterministic phyllotaxis (golden-angle) spiral around that point; the
+     spread radius grows with the group size (a country-sized cluster spreads wider, a city cluster stays tight) and
+     the longitude step is corrected for latitude so the fan stays roughly circular on the ground / within the region. */
+  function _spreadDupNewsPins(feats){ try{ if(!Array.isArray(feats)||feats.length<2) return feats;
+    const groups=new Map();
+    feats.forEach(f=>{ const c=f&&f.geometry&&f.geometry.coordinates; if(!c||!isFinite(+c[0])||!isFinite(+c[1])) return;
+      const k=(+c[0]).toFixed(3)+','+(+c[1]).toFixed(3); let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(f); });
+    const GA=2.399963229; /* golden angle (rad) */
+    groups.forEach(g=>{ if(g.length<2) return; const c0=g[0].geometry.coordinates.slice();
+      const cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
+      const base=0.055+Math.min(0.05,g.length*0.002);   /* wider fan for bigger clusters, capped */
+      g.forEach((f,i)=>{ if(i===0) return;   /* leave one pin on the true anchor */
+        const r=base*Math.sqrt(i), ang=i*GA; const dlat=r*Math.sin(ang), dlng=r*Math.cos(ang)/cosl;
+        f.geometry={type:'Point',coordinates:[c0[0]+dlng, c0[1]+dlat]}; }); });
+    return feats; }catch(_){ return feats; } }
 
   /* ===== News location analysis =====
    * Now ALWAYS computes BOTH subject location AND publisher location, plus a fallback
@@ -9251,6 +9268,7 @@ window.addEventListener('DOMContentLoaded', () => {
       newsFeatures.push({type:'Feature',id:fid,geometry:{type:'Point',coordinates:a.loc},properties:{
         fid, mapped:mappedStr, title:item.title, name:a.name||'', short:a.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate }});
     }});
+    _spreadDupNewsPins(newsFeatures);   /* (#R122) fan out pins sharing an anchor */
     map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){}
   }
   const AI_GEO_CAP=120;  /* cover essentially the whole feed in one click (calls are batched) */
@@ -9346,6 +9364,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }});
       }
     });
+    _spreadDupNewsPins(newsFeatures);   /* (#R122) fan out pins sharing an anchor so each is individually clickable */
     if(map&&map.isStyleLoaded()) setupIntelLayers();
     /* (#R79b) don't paint pins for a hidden News window (they'd appear with no window controlling them) */
     if(map&&map.getSource('news-points')){ map.getSource('news-points').setData({type:'FeatureCollection',features:_wsNewsHidden()?[]:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){} }
@@ -30806,7 +30825,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
       if(e.isLive || e.year>=new Date().getFullYear() || e.year>CS_MAX){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base */
-      go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },120); });
+      go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },45); });   /* (#R122) 120→45ms: a single year change applies almost immediately, while a fast slider drag still coalesces */
     /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
        language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
        (no re-fetch; _eraCorrect reuses the already-computed merge state via shownCorr). */
@@ -30815,7 +30834,9 @@ window.addEventListener('DOMContentLoaded', () => {
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
     (function warm(){ const pf=()=>{ csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
         let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); };
-      if('requestIdleCallback' in window) requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,3500); })();
+      /* (#R122) load the CShapes bundle EAGERLY (was idle-gated up to 6 s) so the FIRST time-travel doesn't block on
+         parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path. */
+      setTimeout(pf,900); })();
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
