@@ -379,7 +379,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .layer-option input[type="checkbox"]:checked::after{ content:''; position:absolute; left:6.5px; top:2.5px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); box-sizing:border-box; }
     .layer-option:active input[type="checkbox"]:not(:checked){ border-color:var(--primary-color); }
     .lyr-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset; }
-    .layer-group-title{ font-size:11px; font-weight:700; text-transform:none; letter-spacing:0.02em; color:var(--text-muted); margin:8px 2px 2px; }   /* (#R122) category names no longer ALL-CAPS in normal mode */
+    .layer-group-title{ font-size:15.5px; font-weight:700; text-transform:none; letter-spacing:-0.01em; color:var(--text-main); margin:14px 2px 6px; }   /* (#R122) no ALL-CAPS in normal mode; (#R128) same real-heading size as .lyr-head (was 11px muted, dwarfed by its 13px rows) */
     /* Collapsible layer groups (accordion) — keeps a long layer list tidy */
     .layer-group-title, .lyr-head, .premium-group-title{ cursor:pointer; user-select:none; display:flex; align-items:center; }
     .layer-group-title::after, .lyr-head::after, .premium-group-title::after{ content:'▾'; margin-left:auto; font-size:9px; opacity:0.6; }
@@ -11534,7 +11534,12 @@ window.addEventListener('DOMContentLoaded', () => {
       .lyr-row{ display:flex; flex-direction:column; gap:2px; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
       .lyr-op{ width:100%; accent-color:var(--primary-color); display:none; margin:0 0 4px 24px; }
       .lyr-row.on .lyr-op{ display:block; }
-      .lyr-head{ font-size:12.5px; font-weight:600; color:var(--text-muted); margin:6px 2px 2px; text-transform:none; letter-spacing:0.02em; }   /* (#R108) category text slightly larger, not bold; (#R122) no ALL-CAPS in normal mode */
+      /* (#R128) NORMAL / desktop category heading. It was 12.5px muted — SMALLER and greyer than its own 13px
+         layer rows, so a section title read as a de-emphasised sub-item ("分類名のテキストサイズが小さい・余白に
+         合ってない・UIとしておかしい"). Make it a real heading: clearly larger than the rows (15.5px vs 13px),
+         bold, full text colour, with a top margin that gives each group visible breathing room. Mirrors the mobile
+         sheet's 18.5px-over-15.5px step (R127). */
+      .lyr-head{ font-size:15.5px; font-weight:700; color:var(--text-main); margin:14px 2px 6px; text-transform:none; letter-spacing:-0.01em; }
       /* (#R15 / #26) "Others (beta)" group note */
       .lyr-others-note{ font-size:10.5px; color:var(--text-muted); opacity:0.8; margin:0 2px 4px; line-height:1.4; font-style:italic; }
       /* (#R8c) Desktop Köppen legend: FULL-HEIGHT by default (no scroll — all ~30 classes fit), and the
@@ -16536,7 +16541,10 @@ window.addEventListener('DOMContentLoaded', () => {
         succ:['IND','PAK','BGD'], popEst:305000000, gdpEst:300, estSrc:'India census 1911 (~315M) / Maddison GDPpc' },
       { code:'JEM', from:'1910-08-29', to:'1945-09-02', flag:F_JEM, region:'East Asia', wiki:'Empire of Japan',
         name:{en:'Empire of Japan',jp:'大日本帝国',de:'Japanisches Kaiserreich',ru:'Японская империя',es:'Imperio del Japón'},
-        succ:['JPN','KOR','PRK','TWN'] }
+        /* (#R128) Empire of Japan c.1940 ≈ 105M incl. colonies (Japan ~73M + Korea ~24M + Taiwan ~6M + Karafuto/
+           Kwantung). Maddison lacks pre-1945 Korea/Taiwan, so the raw successor-sum collapsed to ~Japan-only; the
+           documented empire figure keeps the pre-1945 aggregate honest (same override as AUH/OTT/RUE/RAJ). */
+        succ:['JPN','KOR','PRK','TWN'], popEst:105000000, gdpEst:230, estSrc:'Japan Empire c.1940 (~105M incl. Korea/Taiwan) / Maddison GDPpc' }
     ];
     const CODES=STATES.map(S=>S.code);
     function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
@@ -16621,6 +16629,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_PTK=flag('<rect width="30" height="20" fill="#ffffff"/><rect width="12" height="20" fill="#003399"/><circle cx="12" cy="10" r="3.4" fill="#DA0000" stroke="#FFD700" stroke-width="0.7"/>');
     const F_BRE=flag('<rect width="30" height="20" fill="#009B3A"/><path d="M15,2.4 27,10 15,17.6 3,10Z" fill="#FEDF00"/><circle cx="15" cy="10" r="3.4" fill="#002776"/>');
     const F_EGYK=flag('<rect width="30" height="20" fill="#006233"/><circle cx="13.4" cy="10" r="4.6" fill="#ffffff"/><circle cx="15.1" cy="10" r="3.8" fill="#006233"/>'+STARH(18.2,7.4)+STARH(19.6,10)+STARH(18.2,12.6));
+    /* (#R128) imperial Ethiopia = plain green-yellow-red tricolor (the imperial civil ensign; the modern flag adds a
+       blue national-emblem disc, so this is a real era difference). */
+    const F_ETHIMP=flag('<rect width="30" height="6.667" fill="#009A44"/><rect y="6.667" width="30" height="6.667" fill="#FEDD00"/><rect y="13.333" width="30" height="6.667" fill="#DA121A"/>');
+    /* (#R128) Kingdom of Hungary (1920–1946) = red-white-green tricolor + the crowned "middle" coat of arms
+       (Árpád bars + patriarchal cross on a green mound, under the Holy Crown) — modern Hungary is a plain tricolor. */
+    const F_HUNK=flag('<rect width="30" height="6.667" fill="#CE2939"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#477050"/><g transform="translate(15,10.6)"><path d="M-3.1,-3.3 H3.1 V0.4 C3.1,2.8 1.6,4.2 0,4.9 C-1.6,4.2 -3.1,2.8 -3.1,0.4 Z" fill="#ffffff" stroke="#7a5b00" stroke-width="0.25"/><g><rect x="-3.1" y="-3.3" width="3.1" height="1.03" fill="#CE2939"/><rect x="-3.1" y="-1.24" width="3.1" height="1.03" fill="#CE2939"/><rect x="-3.1" y="0.82" width="3.1" height="1.03" fill="#CE2939"/></g><path d="M0,-3.3 H3.1 V0.4 C3.1,2.6 1.7,3.9 0,4.7 Z" fill="#f2f2f2"/><path d="M0,3.6 C0.9,2.4 2.2,2.2 3.0,2.4 V0.4 C3.1,2.6 1.7,3.6 0,4.4 Z" fill="#2e7d46"/><g stroke="#ffffff" stroke-width="0.5" stroke-linecap="square"><line x1="1.55" y1="-2.6" x2="1.55" y2="1.4"/><line x1="0.75" y1="-1.7" x2="2.35" y2="-1.7"/><line x1="0.55" y1="-0.6" x2="2.55" y2="-0.6"/></g><path d="M-2.4,-4.2 H2.4 L2.0,-3.5 H-2.0 Z" fill="#E8B800" stroke="#7a5b00" stroke-width="0.2"/><path d="M-0.35,-5.5 L0.35,-5.5 L0.35,-4.85 L0.75,-4.85 L0.75,-4.2 H-0.75 L-0.75,-4.85 L-0.35,-4.85 Z" fill="#E8B800"/></g>');
     const ID={
       CHN:[{from:1636,to:1912,name:{en:'Qing Empire',jp:'清',de:'Qing-Reich',ru:'Империя Цин',es:'Imperio Qing'},flag:F_QING,wiki:'Qing dynasty'},
            {from:1912,to:1949,name:{en:'Republic of China',jp:'中華民国',de:'Republik China',ru:'Китайская Республика',es:'República de China'},flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
@@ -16642,7 +16656,11 @@ window.addEventListener('DOMContentLoaded', () => {
       EGY:[{from:1922,to:1952,name:{en:'Kingdom of Egypt',jp:'エジプト王国',de:'Königreich Ägypten',ru:'Королевство Египет',es:'Reino de Egipto'},flag:F_EGYK,wiki:'Kingdom of Egypt'}],
       /* (#R118) further era identities — era Wikipedia + era name (flags unchanged where the flag was the same) */
       FRA:[{from:1870,to:1940,name:{en:'French Third Republic',jp:'フランス第三共和政',de:'Dritte Französische Republik',ru:'Третья французская республика',es:'Tercera República Francesa'},wiki:'French Third Republic'}],
-      HUN:[{from:1920,to:1946,name:{en:'Kingdom of Hungary',jp:'ハンガリー王国',de:'Königreich Ungarn',ru:'Королевство Венгрия',es:'Reino de Hungría'},wiki:'Kingdom of Hungary (1920–1946)'}]
+      HUN:[{from:1920,to:1946,name:{en:'Kingdom of Hungary',jp:'ハンガリー王国',de:'Königreich Ungarn',ru:'Королевство Венгрия',es:'Reino de Hungría'},flag:F_HUNK,wiki:'Kingdom of Hungary (1920–1946)'}],
+      /* (#R128) more per-era identities so the card shows the era name/flag (not the modern "South Korea"/"Ethiopia").
+         KOR keeps the Taegukgi (historically continuous); imperial Ethiopia uses the plain tricolor (F_ETHIMP). */
+      KOR:[{from:1897,to:1910,name:{en:'Korean Empire',jp:'大韓帝国',de:'Kaiserreich Korea',ru:'Корейская империя',es:'Imperio coreano'},wiki:'Korean Empire'}],
+      ETH:[{from:1855,to:1974,name:{en:'Ethiopian Empire',jp:'エチオピア帝国',de:'Kaiserreich Abessinien',ru:'Эфиопская империя',es:'Imperio etíope'},flag:F_ETHIMP,wiki:'Ethiopian Empire'}]
     };
     function at(code,year){ const arr=ID[code]; if(!arr||!year) return null; for(const e of arr){ if(year>=e.from&&year<=e.to) return e; } return null; }
     let _applied=null;
@@ -30180,33 +30198,49 @@ window.addEventListener('DOMContentLoaded', () => {
       if(geom.type==='Polygon') return {type:'Polygon',coordinates:geom.coordinates.map(_decim)};
       if(geom.type==='MultiPolygon') return {type:'MultiPolygon',coordinates:geom.coordinates.map(poly=>poly.map(_decim))};
       return null; }catch(_){ return null; } }
-    /* one WorldPop request for a single (sub-limit) polygon → total_population number. `deadlineMs` lets the tiled
-       path use a shorter per-cell budget (a ≤90k km² tile normally finishes in seconds; a single free-form polygon
-       keeps the full ~2 min). */
+    /* (#R128) fetch with a HARD per-request timeout (AbortController). ROOT CAUSE of "大きい範囲になると失敗する":
+       the public WorldPop endpoint frequently STALLS a connection under load (measured: 30s+ with NO response when
+       several requests are in flight) and a bare fetch() has no timeout, so ONE hung tile froze the whole Promise.all
+       batch until the browser's default socket timeout (minutes) — the tiled sum then never finished and the panel
+       looked broken. R124/R127 bounded only the POLLING loop, never the create/poll fetch()es themselves. Aborting
+       each request turns a stall into a fast retry instead of a permanent freeze. */
+    function _fetchT(url, ms){
+      let ctl=null, timer=null; try{ ctl=new AbortController(); }catch(_){ ctl=null; }
+      const opt=ctl?{signal:ctl.signal}:{};
+      if(ctl) timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, ms||28000);
+      return fetch(url,opt).finally(()=>{ if(timer) clearTimeout(timer); }); }
+    /* one WorldPop request for a single (sub-limit) polygon → total_population number. `deadlineMs` bounds the WHOLE
+       call (create + polling); each individual fetch aborts well inside it (a ≤90k km² tile normally finishes in
+       seconds; a single free-form polygon keeps the full ~2 min). */
     async function _estimateOne(g, deadlineMs){
+      const t0=Date.now(), DEADLINE=deadlineMs||125000;
       const fc={type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
       const u='https://api.worldpop.org/v1/services/stats?dataset=wpgppop&year=2020&geojson='+encodeURIComponent(JSON.stringify(fc));
-      const r=await fetch(u); const j=await r.json();
+      const r=await _fetchT(u, Math.min(30000, DEADLINE)); const j=await r.json();
       if(j&&j.error&&!j.taskid) throw new Error(String(j.error_message||'WorldPop error'));
       let data=j&&j.data&&j.data.total_population!=null?j.data:null;
       if(!data&&j&&j.taskid){
-        /* (#R123) poll with a gentle backoff; break IMMEDIATELY on error; ignore a transient hiccup. */
-        const t0=Date.now(), DEADLINE=deadlineMs||125000; let iv=1200;
+        /* (#R123/#R128) poll with a gentle backoff; each poll fetch is itself abortable so a stalled poll can't hang;
+           break IMMEDIATELY on a real task error; ignore a transient hiccup. */
+        let iv=1200;
         while(Date.now()-t0<DEADLINE){ await new Promise(rs=>setTimeout(rs,iv)); iv=Math.min(4000,iv+250);
-          let j2=null; try{ const r2=await fetch('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid)); j2=await r2.json(); }catch(_){ continue; }
+          let j2=null; try{ const r2=await _fetchT('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid), 18000); j2=await r2.json(); }catch(_){ continue; }
           if(!j2) continue;
           if(j2.status==='finished'){ if(j2.error) throw new Error(String(j2.error_message||'WorldPop task error')); data=j2.data; break; }
           if(j2.status==='error'){ throw new Error(String(j2.error_message||'WorldPop task error')); } }
       }
       if(!data||data.total_population==null) throw new Error('WorldPop: no result (timeout or empty)');
       return +data.total_population; }
-    /* one tile, with a short retry — the public WorldPop API rate-limits/times-out on bursts, so a lone transient
-       failure must NOT be silently counted as 0 (that was the R124 undercount bug). Returns {ok,v} or {ok:false}. */
+    /* one tile, with retries — the public WorldPop API rate-limits/stalls on bursts, so a lone transient failure must
+       NOT be silently counted as 0 (that was the R124 undercount bug). (#R128) 3 attempts with a growing backoff and
+       a 90s per-attempt budget (create can take ~15s under load + task processing); a stalled request now aborts fast
+       (see _fetchT) so a retry actually gets a fresh connection instead of waiting on a dead socket. A "too large"
+       error is FATAL (retrying can't help) and bubbles up. Returns {ok,v} or {ok:false,err,fatal?}. */
     async function _tileWithRetry(cell, tries){
-      let lastErr=null; const N=tries||2;
-      for(let t=0;t<N;t++){ if(t) await new Promise(rs=>setTimeout(rs, 1600+1800*t));
-        try{ const v=await _estimateOne(cell, 60000); if(v!=null&&isFinite(v)) return {ok:true, v:+v}; }
-        catch(e){ lastErr=e; } }
+      let lastErr=null; const N=tries||4;
+      for(let t=0;t<N;t++){ if(t) await new Promise(rs=>setTimeout(rs, 2000+3000*t));   /* 2s,5s,8s,11s — long enough to ride out a WorldPop rate-limit window */
+        try{ const v=await _estimateOne(cell, 105000); if(v!=null&&isFinite(v)) return {ok:true, v:+v}; }
+        catch(e){ lastErr=e; if(/too large/i.test(String(e&&e.message||''))) return {ok:false, err:e.message, fatal:true}; } }
       return {ok:false, err:(lastErr&&lastErr.message)||'failed'}; }
     /* (#R124/#R127) FIX "大きい範囲になると失敗する": WorldPop caps EACH request at 100,000 km² (it returns
        "The requested area was too large … allowance was 100000"), which a poll-extension can't help because it
@@ -30227,28 +30261,42 @@ window.addEventListener('DOMContentLoaded', () => {
       for(let x=bb[0]; x<bb[2]-1e-9; x+=d){ for(let y=bb[1]; y<bb[3]-1e-9; y+=d){
         const box=[x,y,Math.min(x+d,bb[2]),Math.min(y+d,bb[3])]; let piece=null; try{ piece=turf.bboxClip(feat,box); }catch(_){}
         const gm=piece&&piece.geometry; if(!gm||!gm.coordinates||!gm.coordinates.length) continue;
+        /* (#R128) skip a degenerate clip-sliver (< 0.05 km²) — for a jagged coastline the bbox spawns many near-zero
+           edge tiles that hold ~0 people yet each cost a full (slow) request; dropping only numerical noise cuts the
+           request count sharply for irregular shapes without measurably affecting the sum. */
+        try{ if((turf.area(piece)/1e6)<0.05) continue; }catch(_){}
         if((gm.type==='Polygon'&&gm.coordinates[0]&&gm.coordinates[0].length>=4)||(gm.type==='MultiPolygon'&&gm.coordinates.length)){ const pg=_prep(gm); if(pg) cells.push(pg); } } }
       if(!cells.length) throw new Error('WorldPop: empty area');
       /* (#R127) ~90k km²/cell → 340 cells ≈ 30M km², larger than any single country; only a near-hemispheric
          selection exceeds it (and that genuinely can't be summed precisely at 100m). */
       if(cells.length>340) throw new Error('WorldPop: area too large to tile precisely ('+Math.round(areaKm2).toLocaleString()+' km²)');
-      let total=0, done=0, ok=0, failed=0; const CONC=4;
-      for(let i=0;i<cells.length;i+=CONC){ const batch=cells.slice(i,i+CONC);
-        const res=await Promise.all(batch.map(c=>_tileWithRetry(c,2)));
-        res.forEach(rr=>{ if(rr.ok){ total+=rr.v; ok++; } else { failed++; } });
-        done+=batch.length; if(onProgress) try{ onProgress(Math.min(1,done/cells.length)); }catch(_){} }
+      /* (#R128) STAGGERED WORKER POOL rather than fixed Promise.all batches. A batch waits for its slowest tile, so a
+         single 30s-stall stalled the whole batch; a pool keeps CONC requests continuously in flight and pulls the next
+         cell the instant one finishes. CONC=2 — measured: WorldPop serves ~4 concurrent CREATES but rate-limits under
+         the SUSTAINED create+poll load of a many-tile sum (a 6-tile run during a self-inflicted burst lost 3 tiles);
+         2-wide + patient retries trades a little speed for actually completing. Worker starts staggered ~300ms. */
+      let total=0, done=0, ok=0, failed=0, fatal=null; let idx=0; const CONC=Math.min(2, cells.length);
+      async function _worker(w){ if(w) await new Promise(rs=>setTimeout(rs, w*300));
+        for(;;){ const my=idx++; if(my>=cells.length) return;
+          const rr=await _tileWithRetry(cells[my], 3);
+          if(rr.ok){ total+=rr.v; ok++; } else { failed++; if(rr.fatal&&!fatal) fatal=rr.err; }
+          done++; if(onProgress){ try{ onProgress(Math.min(1, done/cells.length)); }catch(_){} } } }
+      await Promise.all(Array.from({length:CONC}, (_,w)=>_worker(w)));
+      if(fatal) throw new Error(fatal);
       /* HONEST accounting: an ocean/edge tile returns a real number (usually 0) — it is NOT a failure. A failure
          means the request itself errored after retries; never pretend those tiles are empty. */
       if(ok===0) throw new Error('WorldPop: no tiles could be fetched (service busy) — try again');
       const out={ pop:Math.round(total), year:2020, src:'WorldPop (100m grid, '+cells.length+' tiles)', tiles:cells.length, tilesOk:ok };
-      if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src='WorldPop (100m grid, '+ok+'/'+cells.length+' tiles)'; }
+      if(failed>0){ out.partial=true; out.tilesFailed=failed; out.src='WorldPop (100m grid, '+ok+'/'+cells.length+' tiles, '+failed+' unavailable)'; }
       return out; }
     async function estimate(geom, onProgress){ const g=_prep(geom); if(!g) throw new Error('polygon required');
       const key=JSON.stringify(g); if(cache.has(key)) return cache.get(key);
       let areaKm2=0; try{ areaKm2=turf.area({type:'Feature',geometry:g,properties:{}})/1e6; }catch(_){}
       let out;
       if(areaKm2>95000){ out=await _estimateTiled(g, areaKm2, onProgress); }   /* over the per-request cap → tile + sum */
-      else { const pop=await _estimateOne(g); out={ pop:Math.round(pop), year:2020, src:'WorldPop (100m grid)' }; }
+      /* (#R128) even a SINGLE sub-cap request now goes through the retry wrapper — a lone stalled connection used to
+         hang the panel on "Calculating…" forever; now it aborts and retries, so a transient WorldPop hiccup recovers. */
+      else { const rr=await _tileWithRetry(g, 3); if(!rr.ok) throw new Error(rr.err||'WorldPop failed'); out={ pop:Math.round(rr.v), year:2020, src:'WorldPop (100m grid)' }; }
       if(!out.partial) cache.set(key,out); return out; }   /* never cache a partial (undercounted) sum */
     function circleGeom(center,km){ try{ if(typeof turf!=='undefined'&&turf.circle){ return turf.circle(center,km,{units:'kilometers',steps:48}).geometry; } }catch(_){}
       const lat=center[1]*Math.PI/180; const dLat=km/111.32, dLng=km/(111.32*Math.cos(lat)||1);
@@ -31128,10 +31176,16 @@ window.addEventListener('DOMContentLoaded', () => {
       return {type:'FeatureCollection',features:feats}; }
     /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
        correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
+    /* (#R128) flags for the vanished entities (were name+wiki only). Inline SVG data-URIs, no external assets —
+       same mechanism as IntMapHistStates/IntMapHistId. Surfaced by resolveHist step 2b + the click popup. */
+    const _vflag=(inner)=>'<img class="hist-flag" alt="" src="data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20">'+inner+'</svg>')+'">';
+    const F_TIBET=_vflag('<rect width="30" height="20" fill="#1560BD"/><path d="M15.00,11.00 L8.27,-14.11 L21.73,-14.11 Z" fill="#9E1B32"/><path d="M15.00,11.00 L21.73,-14.11 L33.38,-7.38 Z" fill="#1560BD"/><path d="M15.00,11.00 L33.38,-7.38 L40.11,4.27 Z" fill="#9E1B32"/><path d="M15.00,11.00 L40.11,4.27 L40.11,17.73 Z" fill="#1560BD"/><path d="M15.00,11.00 L40.11,17.73 L33.38,29.38 Z" fill="#9E1B32"/><path d="M15.00,11.00 L33.38,29.38 L21.73,36.11 Z" fill="#1560BD"/><path d="M15.00,11.00 L21.73,36.11 L8.27,36.11 Z" fill="#9E1B32"/><path d="M15.00,11.00 L8.27,36.11 L-3.38,29.38 Z" fill="#1560BD"/><path d="M15.00,11.00 L-3.38,29.38 L-10.11,17.73 Z" fill="#9E1B32"/><path d="M15.00,11.00 L-10.11,17.73 L-10.11,4.27 Z" fill="#1560BD"/><path d="M15.00,11.00 L-10.11,4.27 L-3.38,-7.38 Z" fill="#9E1B32"/><path d="M15.00,11.00 L-3.38,-7.38 L8.27,-14.11 Z" fill="#1560BD"/><circle cx="15" cy="11" r="3.1" fill="#FFDE00"/><path d="M4,20 L11,11 L15,15 L19,11 L26,20 Z" fill="#ffffff"/><rect x="0.6" y="0.6" width="28.8" height="18.8" fill="none" stroke="#FFDE00" stroke-width="1.2"/>');
+    const F_ETRK=_vflag('<rect width="30" height="20" fill="#0099DC"/><circle cx="12" cy="10" r="4.4" fill="#ffffff"/><circle cx="13.7" cy="10" r="3.5" fill="#0099DC"/><g transform="translate(17.4,10) scale(1.7)"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="#ffffff"/></g>');
+    const F_MANK=_vflag('<rect width="30" height="20" fill="#FDD900"/><rect width="12" height="2.5" fill="#D7000F"/><rect y="2.5" width="12" height="2.5" fill="#002D9C"/><rect y="5" width="12" height="2.5" fill="#ffffff"/><rect y="7.5" width="12" height="2.5" fill="#111111"/>');
     const _VANISHED=[
-      {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет',es:'Tíbet'}, wiki:'Tibet_(1912%E2%80%931951)'},
-      {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:{en:'East Turkestan',jp:'東トルキスタン',de:'Ostturkestan',ru:'Восточный Туркестан',es:'Turkestán Oriental'}, wiki:'East_Turkestan'},
-      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:{en:'Manchukuo',jp:'満洲国',de:'Mandschukuo',ru:'Маньчжоу-го',es:'Manchukuo'}, wiki:'Manchukuo'}
+      {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет',es:'Tíbet'}, wiki:'Tibet_(1912%E2%80%931951)', flag:F_TIBET},
+      {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:{en:'East Turkestan',jp:'東トルキスタン',de:'Ostturkestan',ru:'Восточный Туркестан',es:'Turkestán Oriental'}, wiki:'East_Turkestan', flag:F_ETRK},
+      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:{en:'Manchukuo',jp:'満洲国',de:'Mandschukuo',ru:'Маньчжоу-го',es:'Manchukuo'}, wiki:'Manchukuo', flag:F_MANK}
     ];
     /* (#R105) correct a KNOWN anachronism in the aourednik data: it draws "Tibet" (and East Turkestan) as an
        INDEPENDENT country in the 1960 snapshot even though the PRC annexed Tibet in 1951 / East Turkestan by 1949.
@@ -31651,12 +31705,40 @@ window.addEventListener('DOMContentLoaded', () => {
       const named=fc.features.filter(ff=>String((ff.properties&&(ff.properties.NAME||ff.properties.name))||'').toLowerCase().trim()===low);
       if(!named.length) return null; if(named.length===1||!lngLat||!isFinite(lngLat.lng)) return named[0];
       return named.find(ff=>_contains(ff.geometry,lngLat.lng,lngLat.lat))||named[0]; }catch(_){ return null; } }
+    /* (#R128) CShapes gwcode (Gleditsch-Ward) → modern carrier ISO3. EVERY CShapes era feature carries this code
+       in properties._gw (csFC, ~31127); it is border- and name-independent, so resolving through it deterministically
+       fixes the whole long tail that the modern point-in-polygon fallback got WRONG ("国境線と国家は昔なのに、
+       クリック判定は現在の国境になっている…まだ不完全"): a renamed/RESIZED single state whose historical territory
+       spilled into today's neighbours (German Empire gw255 → DEU for the WHOLE feature incl. Poznań/Alsace; interwar
+       Poland gw290 → POL incl. Lwów) and colonies with a different modern name (French Sudan gw432 → Mali). Only
+       SINGLE-successor codes are listed; multi-successor empires (Austria-Hungary 300, Czechoslovakia 315,
+       Yugoslavia 345…) and Tibet (711, a _VANISHED identity) are deliberately absent so step 1 / _VANISHED keep
+       priority, and the _histHidden guard at the call site defers to an ACTIVE former state (Korea under the Empire
+       of Japan). Table generated from data/cshapes.js (252 gwcodes actually used, 1886–2019). */
+    const _GW2ISO={
+      2:'USA',3:'USA',4:'USA',6:'PRI',20:'CAN',21:'CAN',31:'BHS',40:'CUB',41:'HTI',42:'DOM',51:'JAM',52:'TTO',53:'BRB',70:'MEX',80:'BLZ',90:'GTM',
+      91:'HND',92:'SLV',93:'NIC',94:'CRI',95:'PAN',100:'COL',101:'VEN',110:'GUY',115:'SUR',130:'ECU',135:'PER',140:'BRA',145:'BOL',150:'PRY',155:'CHL',160:'ARG',
+      165:'URY',200:'GBR',205:'IRL',210:'NLD',211:'BEL',212:'LUX',220:'FRA',225:'CHE',230:'ESP',235:'PRT',255:'DEU',260:'DEU',265:'DEU',290:'POL',291:'POL',305:'AUT',
+      310:'HUN',316:'CZE',317:'SVK',325:'ITA',338:'MLT',339:'ALB',340:'SRB',341:'MNE',343:'MKD',344:'HRV',346:'BIH',347:'KOS',349:'SVN',350:'GRC',352:'CYP',355:'BGR',
+      359:'MDA',360:'ROU',365:'RUS',366:'EST',367:'LVA',368:'LTU',369:'UKR',370:'BLR',371:'ARM',372:'GEO',373:'AZE',375:'FIN',380:'SWE',385:'NOR',390:'DNK',395:'ISL',
+      402:'CPV',404:'GNB',411:'GNQ',420:'GMB',432:'MLI',433:'SEN',434:'BEN',435:'MRT',436:'NER',437:'CIV',438:'GIN',439:'BFA',450:'LBR',451:'SLE',452:'GHA',460:'TGO',
+      461:'TGO',462:'GHA',470:'CMR',471:'CMR',475:'NGA',481:'GAB',482:'CAF',483:'TCD',484:'COG',490:'COD',500:'UGA',501:'KEN',510:'TZA',511:'TZA',516:'BDI',517:'RWA',
+      520:'SOM',521:'SOM',522:'DJI',530:'ETH',531:'ERI',540:'AGO',541:'MOZ',551:'ZMB',552:'ZWE',553:'MWI',560:'ZAF',561:'ZAF',562:'ZAF',563:'ZAF',564:'ZAF',565:'NAM',
+      570:'LSO',571:'BWA',572:'SWZ',580:'MDG',581:'COM',590:'MUS',600:'MAR',602:'MAR',609:'ESH',615:'DZA',616:'TUN',620:'LBY',625:'SDN',626:'SSD',630:'IRN',640:'TUR',
+      645:'IRQ',651:'EGY',652:'SYR',660:'LBN',663:'JOR',665:'PSE',666:'ISR',670:'SAU',678:'YEM',680:'YEM',681:'YEM',690:'KWT',692:'BHR',694:'QAT',696:'ARE',698:'OMN',
+      700:'AFG',701:'TKM',702:'TJK',703:'KGZ',704:'UZB',705:'KAZ',710:'CHN',712:'MNG',713:'TWN',730:'KOR',731:'PRK',732:'KOR',740:'JPN',750:'IND',760:'BTN',770:'PAK',
+      771:'BGD',775:'MMR',780:'LKA',781:'MDV',790:'NPL',800:'THA',811:'KHM',812:'LAO',815:'VNM',816:'VNM',817:'VNM',820:'MYS',821:'MYS',822:'MYS',823:'MYS',824:'MYS',
+      830:'SGP',835:'BRN',840:'PHL',850:'IDN',851:'IDN',860:'TLS',900:'AUS',901:'AUS',902:'AUS',903:'AUS',904:'AUS',905:'AUS',906:'AUS',910:'PNG',911:'PNG',912:'PNG',
+      920:'NZL',940:'SLB',950:'FJI',3461:'BIH',3462:'BIH',4781:'NGA',4782:'NGA',4783:'NGA',4784:'NGA',5200:'SOM',5518:'ZMB',5519:'ZMB',5612:'BWA',6021:'MAR',6511:'PSE',6631:'PSE',
+      6801:'YEM',6812:'YEM',7020:'UZB',7030:'UZB',7351:'RUS',7506:'IND',7708:'PAK',8201:'MYS',8202:'MYS',8203:'MYS',9401:'SLB'
+    };
     /* resolve an era polygon (its NAME + the click point) to the app's historical entity → the era display name,
        Wikipedia title and the full geometry. countryStats already carries the era name/wiki (IntMapHistId +
        IntMapHistStates ran on this travel), so this just has to find the right code. */
     function resolveHist(nm,lngLat){ const lg=(typeof currentLang!=='undefined')?currentLang:'en';
       const out={ name:nm, wiki:String(nm||'').replace(/\s*\([^)]*\)\s*$/,'')||nm, code:null, geometry:null };   /* (#R117) fallback Wikipedia title without the "(France)/(UK)…" possessor suffix — "French Sudan (France)" → "French Sudan" */
-      try{ const ftr=featureAt(nm,lngLat); if(ftr&&ftr.geometry) out.geometry=ftr.geometry; }catch(_){}
+      let gwCode=null;   /* (#R128) the era feature's CShapes Gleditsch-Ward code (properties._gw), for deterministic resolution below */
+      try{ const ftr=featureAt(nm,lngLat); if(ftr){ if(ftr.geometry) out.geometry=ftr.geometry; if(ftr.properties&&ftr.properties._gw!=null) gwCode=ftr.properties._gw; } }catch(_){}
       let code=null, empire=false;
       /* 1) empires / former states — the era polygon NAME matches a former-state regex. The historical basemap is
          AUTHORITATIVE about identity, so use the registry's canonical era name + Wikipedia even when the state has
@@ -31682,7 +31764,14 @@ window.addEventListener('DOMContentLoaded', () => {
            point-in-polygon catch-all below would wrongly resolve them to the modern country (Tibet / East Turkestan →
            PRC, "PRCかROC扱いになる"). Keep THEIR OWN identity + Wikipedia (post-annexation years are already merged into
            China by _correctEra, so this only fires while the era polygon still carries the historical name). */
-        if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=(V.nm[lg]||V.nm.en); out.wiki=V.wiki; out.code=null; return out; } } }
+        if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=(V.nm[lg]||V.nm.en); out.wiki=V.wiki; if(V.flag) out.flag=V.flag; out.code=null; return out; } } }   /* (#R128) pass the vanished-state flag to the click popup */
+        /* (#R128) 2.4) DETERMINISTIC gwcode → modern carrier. The era feature's own CShapes _gw is authoritative and
+           border/name-independent, so it resolves the entire renamed/RESIZED/colonial long tail WITHOUT depending on
+           the modern point-in-polygon fallback (step 3) that grabbed whatever present-day country sat under the cursor
+           (German Empire's Poznań → modern Poland). Runs after the exact-name (2) and _VANISHED (2b) checks so those
+           keep priority, and BEFORE BEC (2.5) / PIP (3). The _histHidden guard defers to an ACTIVE former state so a
+           successor absorbed by an empire this year (Korea under the Empire of Japan) still routes through step 3b. */
+        if(!code && gwCode!=null){ const gc=_GW2ISO[gwCode]; if(gc&&countryStats[gc]&&!countryStats[gc]._histHidden) code=gc; }
         /* (#R127) 2.5) RENAMED single-countries (IntMapHistId): the era polygon keeps the BASE name ("Germany",
            "Persia", "Siam", "Dutch East Indies", "Kingdom of Italy"…) while countryStats[code] was renamed to the
            era identity — so the exact-name match (2) misses and the MODERN point-in-polygon (3) below wrongly hands
@@ -31821,7 +31910,22 @@ window.addEventListener('DOMContentLoaded', () => {
       LAO:[[1900,1953,'French_Indochina']],
       KHM:[[1863,1953,'French_protectorate_of_Cambodia']],
       MNG:[[1911,1924,'Bogd_Khanate_of_Mongolia'],[1924,1992,'Mongolian_People%27s_Republic']],
-      CUB:[[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']]
+      CUB:[[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']],
+      /* (#R128) further era→article coverage — the remaining Soviet republics (only 5 of 15 were covered before, so a
+         click on Soviet-era Armenia/Latvia/… linked the modern article) plus Afghanistan/Yemen/Eritrea/Palestine. */
+      ARM:[[1920,1991,'Armenian_Soviet_Socialist_Republic']],
+      AZE:[[1920,1991,'Azerbaijan_Soviet_Socialist_Republic']],
+      LVA:[[1940,1991,'Latvian_Soviet_Socialist_Republic']],
+      LTU:[[1940,1991,'Lithuanian_Soviet_Socialist_Republic']],
+      EST:[[1940,1991,'Estonian_Soviet_Socialist_Republic']],
+      MDA:[[1940,1991,'Moldavian_Soviet_Socialist_Republic']],
+      TKM:[[1925,1991,'Turkmen_Soviet_Socialist_Republic']],
+      KGZ:[[1936,1991,'Kirghiz_Soviet_Socialist_Republic']],
+      TJK:[[1929,1991,'Tajik_Soviet_Socialist_Republic']],
+      AFG:[[1900,1926,'Emirate_of_Afghanistan'],[1926,1973,'Kingdom_of_Afghanistan']],
+      YEM:[[1918,1962,'Mutawakkilite_Kingdom_of_Yemen']],
+      ERI:[[1900,1947,'Italian_Eritrea']],
+      PSE:[[1920,1948,'Mandatory_Palestine']]
     };
     /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
        contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its

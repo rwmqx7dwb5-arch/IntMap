@@ -921,4 +921,11 @@ supabase/
 - **ニュースピンの重複分散 `_spreadDupNewsPins`**: 同一アンカーに積み重なるピンを領域内に散布。**#R127**: `regionFor` が**最大リング（本土）のbbox+ポリゴン**も返し、全体bbox幅>180°（日付変更線アーティファクト＝米/露/フィジー/NZ）なら**本土リングでサンプル**（旧: 全体bbox=幅358.9°で44回中2回しかヒットせず0.12°の点に退化）。各ピンの原座標を `__oc` に保持して散布を**冪等化**し、`countryGeo` ロード完了時に `_respreadNews()` で再散布（コールドロード競合を根治）。実測: 米本土リングで30/30配置・経度41.5°×緯度17.5°。
 - **モバイル通常モードのレイヤー分類名**: `.m-sheet .lyr-head`。**#R127**: 16px（行15.5pxとの差+0.5px）で埋没していたため **18.5px/700**（行比+3px）に、上下マージン27/11pxで明快なセクションヘッダに。
 
+## #R128 補足（再報告4件の根治・上記各モジュールの現状）
+
+- **範囲人口 `IntMapPopArea`（大面積失敗の根治）**: 真の失敗モードは**`fetch()`にタイムアウトが無い**こと＝WorldPop公開APIが負荷時に接続をストールさせると`Promise.all`バッチ全体が数分凍結し「失敗」。**#R128**: `_fetchT`＝AbortController付きfetch（create 30s/poll 18s中断）、固定バッチ→**staggered worker pool**、**CONC 4→2**（多タイルの持続負荷でレート制限されるため）、retry 2→4・長バックオフ、単一ポリゴンもリトライ経由、極小クリップ片(<0.05km²)スキップ。正直partialは維持。実測: 290,851km²→6/6タイル・25,316,807人・64秒（ハング根治）。
+- **昔年代クリックの決定論解決 `IntMapTimeBorders.resolveHist`**: 全CShapes era featureは`properties._gw`（Gleditsch-Wardコード）を持つが両呼出元で捨てられていた。**#R128**: `data/cshapes.js`由来の**`_GW2ISO`表（235件・単一継承コードのみ）**を追加し、step2.4＝`_gw`→現代キャリアを**境界/名前非依存**で直接解決（step1帝国・`_VANISHED`の後、BEC/PIPの前）。改名/**領土変化**国の長い尾（独帝国のポズナン/アルザス→DEU、植民地→現代後継）をPIPフォールバックに頼らず根治。多継承帝国(A-H 300/CSK 315/YUG 345)とTibet(711)は非収載でstep1/`_VANISHED`優先、`_histHidden`ガードで能動的帝国下の後継はstep3bへ委譲。実測: ポズナン→DEU（PIP=POL）。
+- **レイヤー分類名（通常モード）**: 通常/デスクトップ`.lyr-head`・`.layer-group-title`。**#R128**: 12.5px/600/muted（配下の行`.layer-option`13px/500/text-mainより小さく薄く、見出しが下位に見えた）→**15.5px/700/text-main**・上マージン14pxで明快なヘッダに（モバイル18.5px `!important`は不変）。
+- **歴史データ拡充（継続）**: (旗) `_VANISHED`の3消滅国（Tibet/East Turkestan/Manchukuo）にインラインSVG旗を追加し`resolveHist` step2b が`out.flag`を渡すよう配線（従来は旗皆無）。`IntMapHistId`のHUNに戴冠紋章旗`F_HUNK`。(統計) `IntMapHistStates` JEM（大日本帝国）に`popEst:105M/gdpEst:230/estSrc`（pre-1945後継sum崩壊の帝国推計override）。(Wiki) `_ERA_WIKI` +14（残ソ連構成共和国9＋AFG/YEM/ERI/PSE、全て実在確認）。(名) `IntMapHistId`にKOR（大韓帝国）/ETH（エチオピア帝国・帝政三色旗）の年代identity。
+
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*
