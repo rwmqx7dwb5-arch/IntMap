@@ -159,6 +159,11 @@ function maxOutputFor(task: string, requestedCount?: number): number {
 }
 
 interface ImgPart { mime: string; b64: string; }
+// (#R131) A single hosted-web-search citation the model emitted (Responses API url_citation
+// annotation). Kept end-to-end so the client can show the sources the model ACTUALLY read/cited
+// this turn, distinct from the articles IntMap gathered on the client. The old code threw these
+// away, so a correctly web-verified source could vanish from the UI.
+interface WebCitation { url: string; title: string; startIndex?: number; endIndex?: number; }
 function parseDataUrl(d: string): ImgPart | null {
   const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/.exec(d || "");
   return m ? { mime: m[1], b64: m[2] } : null;
@@ -269,7 +274,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -341,13 +346,37 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   const j = await r.json();
   // deno-lint-ignore no-explicit-any
   const outputArr: any[] = Array.isArray(j?.output) ? j.output : [];
-  const text = (typeof j?.output_text === "string" ? j.output_text : "") ||
-    (outputArr
-      .filter((item: { type?: string }) => item?.type === "message")
-      .flatMap((item: { content?: unknown[] }) => Array.isArray(item.content) ? item.content : [])
-      .filter((part: { type?: string; text?: string }) => part?.type === "output_text" && typeof part.text === "string")
-      .map((part: { text?: string }) => part.text || "")
-      .join(""));
+  // deno-lint-ignore no-explicit-any
+  const msgParts: any[] = outputArr
+    .filter((item: { type?: string }) => item?.type === "message")
+    .flatMap((item: { content?: unknown[] }) => Array.isArray(item.content) ? item.content : []);
+  // deno-lint-ignore no-explicit-any
+  const textParts: any[] = msgParts.filter((part: { type?: string; text?: string }) => part?.type === "output_text" && typeof part.text === "string");
+  const text = (typeof j?.output_text === "string" && j.output_text ? j.output_text : "") ||
+    textParts.map((part: { text?: string }) => part.text || "").join("");
+  // (#R131) Preserve the hosted web-search CITATIONS. The Responses API attaches `url_citation`
+  // annotations to the output_text parts (the URLs the model actually consulted this turn). The old
+  // code only read `part.text` and discarded `part.annotations`, so even when the web search verified
+  // the right article, the client had no way to show it and could only surface the client-gathered
+  // headlines. Keep url/title/offsets so the client can render them as the primary, web-verified sources.
+  const citations: WebCitation[] = [];
+  const seenCite = new Set<string>();
+  for (const part of textParts) {
+    const anns = Array.isArray((part as { annotations?: unknown[] }).annotations) ? (part as { annotations: Array<Record<string, unknown>> }).annotations : [];
+    for (const an of anns) {
+      if (an && an.type === "url_citation" && typeof an.url === "string" && an.url) {
+        const key = an.url.replace(/[#?].*$/, "");
+        if (seenCite.has(key)) continue;
+        seenCite.add(key);
+        citations.push({
+          url: an.url,
+          title: String(an.title || ""),
+          startIndex: typeof an.start_index === "number" ? an.start_index : undefined,
+          endIndex: typeof an.end_index === "number" ? an.end_index : undefined,
+        });
+      }
+    }
+  }
   // (#R114) Did the hosted web-search tool ACTUALLY run this turn? Responses emits a
   // `web_search_call` item per search — count them so the client can honestly say whether
   // it got fresh info, instead of assuming "attached === searched".
@@ -359,7 +388,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount };
+  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations };
 }
 
 interface GeminiOpts {
@@ -539,7 +568,7 @@ Deno.serve(async (req) => {
     (provider === "openai" ? "gpt-4o-mini" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");
 
   try {
-    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number };
+    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[] };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
@@ -592,6 +621,9 @@ Deno.serve(async (req) => {
       // (#R114) webUsed = the search tool ACTUALLY ran this turn (not just attached); the client uses
       // it to keep "latest" features honest (never present a search-less answer as fresh intelligence).
       meta: { provider, model, task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, finishReason: out.finishReason },
+      // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows
+      // these as the primary, web-verified sources — separate from the client-gathered headlines.
+      citations: Array.isArray(out.citations) ? out.citations : [],
     });
   } catch (e) {
     await refund();   // a failed provider call never costs the user a use (dev never consumed one)

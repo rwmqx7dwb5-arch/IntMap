@@ -5,6 +5,31 @@
 
 ---
 
+## R131 — Atlas「直近72時間の監視判断」誤答の根治（鮮度検証・日付/証拠の意味づけ・多国カバレッジ・Web検証引用） (tag `#R131`)
+
+ユーザー報告＝中央アジア5か国の72時間監視判断で Atlas が「条件付きで引き上げる」（確信度62）を返したが、根拠が全て不正だった：①**対象期間外の7/7事件**を直接的証拠に使用、②記事の**公開日/GDELT seen dateを事件発生日と混同**、③**見出しから国家間衝突と断定**（実際は国内治安事案）、④**燃料報道を短期治安悪化と過剰解釈**、⑤**定例外交会合を強い反証**に使用、⑥**5か国中3か国のみ**で結論（カザフ/トルクメン欠落を明示せず）。正しくは「維持する」であるべきだった。
+
+**方針（指示書どおり）**: 新しい多段AIパイプラインは作らず、**推論を増やさず**（analyze の AI呼び出しは 1回・reasoning effort は medium 据置）、既に存在する Hosted Web Search・meta.webUsed・引用annotation・並列検索を**正しく接続**して根治。指示書の「実装上の優先順位」9項目＋直結する2項目（引用表示・プランナー多国化）を実装。
+
+### 根本原因と修正（すべて `index.html` の Atlas IIFE ＋ `ai-proxy/index.ts`）
+- **原因1: `webMode:"auto"` で Web検証が保証されない** → `_analyzeFreshness(q)`（5言語）で明示時間窓/最新/監視/FC/直接的証拠を検出し、`freshness.critical` なら **`webMode:"required"`**（検索強制）。安定知識質問は `auto` 据置＝応答時間・回数不変。
+- **原因5: 現在日付が UTC 基準（時刻・TZ無し）** → `_nowContext(nowMs?)`＝`Intl.DateTimeFormat('sv-SE',{timeZone})` でローカル時刻＋TZ、明示窓があれば `Requested evidence window` を `[TIME CONTEXT]` に付与（nowMs 注入可）。
+- **原因2/3: 見出しを証拠として渡す・記事日付を事件日に見せる** → `_analyzeEvidence`/`_evidenceBlock` が **1つの `[NEWS EVIDENCE]`**（新着順・`[eN]`・`article_date`＋`date_type`（publication_date/gdelt_seen_date）＋**`event_date: unknown`**）へ統合。各フェッチャ（`_gdeltNews`/`_gnewsNews`/`_newsData`）srcSink に `dateType`/`origin` 付与。
+- **原因6: 多国でも最初の国へ縮む**（`topicEn=codes[0]`上書き）→ **地域GDELT＋要求国ORのGDELT＋ユーザー言語Google News** の3系統（GDELT2件はジョブ内直列でGDELT自IPレート配慮）。`[REQUESTED COVERAGE]` で要求国を渡す（単一国は従来不変）。
+- **原因4/9: 「newest-first」記述の実装不一致・230語制限がユーザー形式より優先** → `_analysisSystemPrompt` 全面改訂: 公開/seen date≠事件日／見出しは lead（当事者・因果・国内 vs 国家間・分類を推定しない）／深刻な見出し≠escalation／「問題を報じる記事」≠「危機発生」／窓内に確認済み事件が無ければ**低アラート（維持）優先**／定例会合は**弱い反証**／直接的証拠・未確認兆候・背景・反証を**分離**／多国は情報不足国を明示／**ユーザー指定形式を語数制限より優先**／誤 "newest-first" 撤去。
+- **原因7: 収集ソースと使用ソースを混同** → ソースカードを **①Web検証済み（url_citation）→②モデル引用の収集記事→③その他の収集記事** に分離。
+- **原因8: proxy が Web検索引用 annotation を捨てる**（`ai-proxy`・**デプロイ済**）→ `callOpenAI` が `output_text.annotations` の `url_citation`（`{url,title,startIndex,endIndex}`）を抽出→返却値＋成功レスポンス top-level `citations`。client `aiCallServer` が `window._aiLastCitations` に格納。
+- **最優先2: `webUsed` を通常分析でも確認** → `freshness.critical && !meta.webUsed`（検索未実行 or タイムアウト fallback）なら**暫定評価バナー**（5言語）。`webUsed` 時のみ「使用データ」に「ライブWeb検証」を追加。
+- **プランナー**: `analyze` 説明に「多国地域/明示国セットは `place` に加え `countries` に実構成国、`question` は完全保持」を追記。
+
+### 回帰テスト（`window.IntMapAtlasQA.run()`）
+時計（2026-07-18 05:00 JST）＋3見出し fixture（Kyrgyz-Uzbek国境27名拘束=seen 07-16／Kyrgyz-Tajik燃料=07-15／EU-中央アジア定例対話=07-16）を固定。`_analyzeFreshness`/`_nowContext`/`_analyzeEvidence`/`_evidenceBlock`/`_analyzeHeaderBlock`/`_analysisSystemPrompt`（**実パスと共有**）を叩き、freshnessCritical・webMode=required・72h窓・全項目 event_date:unknown・date_type種別・国境記事がlead・5か国カバレッジ・プロンプト各規則（低アラート優先/弱い反証/lead/形式優先/newest-first撤去）・単一AI呼び出しを検証。**実測: 19/19 PASS・window=`2026-07-15 05:00 through 2026-07-18 05:00`（7/7事件は窓外）・鮮度分類11/11・コンソールエラー0・レイヤー160行・主要`window.IntMap*`定義。**
+
+### 検証環境の要点
+- Browserペインは `document.hidden`（Map WebGL未init）だが**データ層は完全動作**: `window.IntMapAtlasQA` を明示的に window へ公開し isolated world から実行（`countryStats` 等の closure は不可のため多国クエリ構築はコード読解＋fixtureで担保）。実 AI呼び出しはログイン必須のため非ヘッドレス（プロンプト/config/DATAブロックの**入力側**を全項目実測＝根本原因は全て入力側にあった）。ローカルは `python -m http.server`+`preview_start`（`?cb=` 必須）。Edit hook の file:// タブ量産→`tabs_close`。
+
+---
+
 ## R130 — 要望10件バッチ（昔年代クリックの真の根治・Atlas UI群・歴史拡充・ハイライトWeb検証） (tag `#R130`)
 
 ユーザー要望10件を10並列Explore（Workflow）で現状マップ化→Browserペインのデータ層でヘッドレス実測しながら実装。全項目を根本原因ベースで処理。ai-proxyは `geo_verify` タスク追加→デプロイ済み。
