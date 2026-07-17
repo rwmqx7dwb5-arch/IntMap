@@ -29601,7 +29601,14 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbremit', code:'BX.TRF.PWKR.DT.GD.ZS', n:{en:'Remittances % GDP',jp:'海外送金受取 %GDP',de:'Rücküberweisungen % BIP',ru:'Денежные переводы % ВВП'}, ramp:[0.5,'#fff7ec',2,'#fdd49e',5,'#fc8d59',12,'#d7301f',25,'#7f0000'], unit:'%'},
       {id:'wbsuicide', code:'SH.STA.SUIC.P5', n:{en:'Suicide rate /100k',jp:'自殺率 /10万人',de:'Suizidrate /100k',ru:'Уровень суицида /100k'}, ramp:[3,'#1a9850',7,'#a6d96a',12,'#fee08b',20,'#f46d43',30,'#a50026'], unit:''},
       {id:'wbalcohol', code:'SH.ALC.PCAP.LI', n:{en:'Alcohol per capita L',jp:'一人当たり飲酒量 L',de:'Alkohol pro Kopf L',ru:'Алкоголь на душу, л'}, ramp:[1,'#fff7ec',4,'#fdd49e',7,'#fc8d59',10,'#d7301f',14,'#7f0000'], unit:' L'},
-      {id:'wbhomicide', code:'VC.IHR.PSRC.P5', n:{en:'Homicide rate /100k',jp:'殺人発生率 /10万人',de:'Mordrate /100k',ru:'Убийства /100k'}, ramp:[1,'#1a9850',3,'#a6d96a',8,'#fee08b',20,'#f46d43',40,'#a50026'], unit:''}
+      {id:'wbhomicide', code:'VC.IHR.PSRC.P5', n:{en:'Homicide rate /100k',jp:'殺人発生率 /10万人',de:'Mordrate /100k',ru:'Убийства /100k'}, ramp:[1,'#1a9850',3,'#a6d96a',8,'#fee08b',20,'#f46d43',40,'#a50026'], unit:''},
+      /* (#R126) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
+      {id:'wbmilgdp', code:'MS.MIL.XPND.GD.ZS', n:{en:'Military spending % GDP',jp:'軍事費 %GDP',de:'Militärausgaben % BIP',ru:'Военные расходы % ВВП'}, ramp:[0.5,'#1a9850',1.5,'#a6d96a',2.5,'#fee08b',4,'#f46d43',8,'#a50026'], unit:'%'},
+      {id:'wbfert', code:'SP.DYN.TFRT.IN', n:{en:'Fertility rate (births/woman)',jp:'合計特殊出生率',de:'Geburtenrate (Kinder/Frau)',ru:'Суммарный коэфф. рождаемости'}, ramp:[1.2,'#2c7fb8',1.8,'#7fcdbb',2.5,'#ffffb2',4,'#fe9929',6,'#cc4c02'], unit:''},
+      {id:'wbdensity', code:'EN.POP.DNST', n:{en:'Population density /km²',jp:'人口密度 /km²',de:'Bevölkerungsdichte /km²',ru:'Плотность населения /км²'}, ramp:[5,'#fff7ec',25,'#fdd49e',100,'#fc8d59',300,'#d7301f',1000,'#7f0000'], unit:'/km²'},
+      {id:'wbedu', code:'SE.XPD.TOTL.GD.ZS', n:{en:'Education spending % GDP',jp:'教育支出 %GDP',de:'Bildungsausgaben % BIP',ru:'Расходы на образование % ВВП'}, ramp:[2,'#a50026',3,'#f46d43',4.5,'#fee08b',6,'#a6d96a',8,'#1a9850'], unit:'%'},
+      {id:'wbsmoke', code:'SH.PRV.SMOK', n:{en:'Smoking prevalence %',jp:'喫煙率 %',de:'Raucherquote %',ru:'Распространённость курения %'}, ramp:[8,'#1a9850',15,'#a6d96a',22,'#fee08b',30,'#f46d43',40,'#a50026'], unit:'%'},
+      {id:'wbagremp', code:'SL.AGR.EMPL.ZS', n:{en:'Employment in agriculture %',jp:'農業就業率 %',de:'Beschäftigung Landwirtschaft %',ru:'Занятость в сельском хоз-ве %'}, ramp:[2,'#fff7ec',10,'#fdd49e',25,'#fc8d59',45,'#d7301f',70,'#7f0000'], unit:'%'}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
