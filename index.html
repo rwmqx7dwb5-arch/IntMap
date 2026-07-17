@@ -23181,29 +23181,131 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
       try{ let a=180,b=90,c=-180,d=-90; (sa.lines||[]).forEach(ln=>ln.coords.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); })); if(isFinite(a)&&c>a) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:15,duration:900}); }catch(_){} }
     function selectAlt(i){ if(_tAlts&&_tAlts[i]){ ensureLayers(); _drawAlts(i); return true; } return false; }
-    async function transit(from,to,opts){ opts=opts||{};
+    /* (#R125) plan fetch extracted from transit() so the intercity JR bridge can reuse it for ACCESS/EGRESS legs.
+       (#R93c behaviour kept: per-fetch timeout, direct retry, proxy ladder, only accept responses WITH itineraries.) */
+    async function _planItins(from,to,opts){ opts=opts||{};
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
       const url='https://api.transitous.org/api/v1/plan?fromPlace='+(+from.lat).toFixed(6)+','+(+from.lng).toFixed(6)+'&toPlace='+(+to.lat).toFixed(6)+','+(+to.lng).toFixed(6)+'&time='+encodeURIComponent(tISO)+(opts.arriveBy?'&arriveBy=true':'');
-      /* (#R93c) ROBUST plan fetch — MOTIS is slow/heavy for long international routes (e.g. London→Riga, 1677 km, ~33 h)
-         and sometimes 504s or hangs on the first hit; the old single-shot fetch then fell straight to railRoute, which
-         rejects anything >430 km → a wrong "no transit route". Now: per-fetch timeout, RETRY the direct endpoint (long
-         routes usually succeed once the router warms), then a proxy ladder — and only ACCEPT a response that actually
-         carries itineraries (a bare 200 with none is treated as a failure to retry, not a dead end). */
-      const _fetchPlan=async(u)=>{ const ac=new AbortController(), t=setTimeout(()=>{try{ac.abort();}catch(_){}},32000);
+      const tmo=opts.quick?15000:32000;
+      const _fetchPlan=async(u)=>{ const ac=new AbortController(), t=setTimeout(()=>{try{ac.abort();}catch(_){}},tmo);
         try{ const r=await fetch(u,{signal:ac.signal}); if(r&&r.ok){ const jj=await r.json(); const it=jj&&(jj.itineraries||(jj.plan&&jj.plan.itineraries)); if(it&&it.length) return jj; } }catch(_){}finally{ clearTimeout(t); } return null; };
-      let j=null; const cx='https://corsproxy.io/?url='+encodeURIComponent(url), al='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
-      const attempts=[url,url,cx,al];   /* direct, direct-retry, then two CORS proxies */
-      for(let i=0;i<attempts.length;i++){ j=await _fetchPlan(attempts[i]); if(j) break; if(attempts[i]===url) await new Promise(r=>setTimeout(r,800)); }
+      const cx='https://corsproxy.io/?url='+encodeURIComponent(url), al='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
+      const attempts=opts.quick?[url,cx]:[url,url,cx,al];
+      let j=null; for(let i=0;i<attempts.length;i++){ j=await _fetchPlan(attempts[i]); if(j) break; if(!opts.quick&&attempts[i]===url) await new Promise(r=>setTimeout(r,800)); }
       const its=j&&(j.itineraries||(j.plan&&j.plan.itineraries));
-      if(!its||!its.length){ /* (#R122) DISABLED the OSM rail-corridor fallback (railRoute). It only walked the OSM
-           track graph — freight lines, non-passenger spurs, wrong operators, no stop/timetable model — so it produced
-           nonsense passenger "routes" (瑞穂区役所→新宿 via 大井川鐵道/山手貨物線, 徒歩1321分). Until a real GTFS /
-           journey-planner covers the area we return an HONEST "no transit route" instead of drawing track connectivity
-           as if it were a rider's itinerary. Real GTFS (Transitous/MOTIS) above still works where it has coverage. */
+      return (its&&its.length)?its:null; }
+    const _P=l=>({lng:+(l.lon!=null?l.lon:l.lng),lat:+l.lat});
+    /* ===== (#R125) INTERCITY JAPAN RAIL BRIDGE ("瑞穂区役所から新宿まで電車で、というのに対応していない").
+       Transitous/MOTIS only carries Japan's OPEN GTFS (Tokyo/ODPT etc. — Shinjuku→Tokyo works), but JR Central and
+       the Shinkansen publish no open timetable, so any Nagoya↔Tokyo ask returned a flat "no transit". This bridge
+       answers intercity Japan asks with REAL infrastructure: a curated registry of the actual Shinkansen network
+       (real lines, real stations + coordinates, express-pattern segment minutes and service headways from the
+       operators' PUBLISHED timetables) routed with Dijkstra, plus local access/egress legs planned on Transitous
+       where it HAS coverage and otherwise shown as clearly-labelled distance estimates. Times are frequency-based
+       estimates (headway/2 boarding wait), NEVER invented clock times, and the reply says so. The drawn intercity
+       line passes through the real stations it stops at (the alignment BETWEEN stations is schematic — labelled,
+       not passed off as track geometry; the R122 rule against fake OSM-graph passenger routes stands). */
+    const _SHINK=[
+      {jp:'東海道・山陽新幹線',en:'Tokaido–Sanyo Shinkansen',head:8,st:[
+        ['東京','Tokyo',139.7671,35.6812,0],['品川','Shinagawa',139.7387,35.6284,7],['新横浜','Shin-Yokohama',139.6178,35.5093,18],
+        ['小田原','Odawara',139.1557,35.2565,34],['熱海','Atami',139.0776,35.1039,44],['三島','Mishima',138.9109,35.1265,52],
+        ['静岡','Shizuoka',138.3890,34.9719,66],['浜松','Hamamatsu',137.7345,34.7038,88],['豊橋','Toyohashi',137.3820,34.7629,97],
+        ['名古屋','Nagoya',136.8816,35.1706,100],['岐阜羽島','Gifu-Hashima',136.6856,35.3155,112],['米原','Maibara',136.2897,35.3143,124],
+        ['京都','Kyoto',135.7585,34.9855,135],['新大阪','Shin-Osaka',135.5000,34.7335,150],['新神戸','Shin-Kobe',135.1950,34.7067,163],
+        ['姫路','Himeji',134.6903,34.8290,180],['岡山','Okayama',133.9184,34.6669,201],['福山','Fukuyama',133.3627,34.4877,217],
+        ['広島','Hiroshima',132.4753,34.3979,237],['徳山','Tokuyama',131.8065,34.0522,261],['新山口','Shin-Yamaguchi',131.3963,34.0938,273],
+        ['小倉','Kokura',130.8823,33.8870,288],['博多','Hakata',130.4207,33.5902,304]]},
+      {jp:'東北新幹線',en:'Tohoku Shinkansen',head:14,st:[
+        ['東京','Tokyo',139.7671,35.6812,0],['上野','Ueno',139.7770,35.7138,6],['大宮','Omiya',139.6236,35.9064,25],
+        ['宇都宮','Utsunomiya',139.8987,36.5594,49],['郡山','Koriyama',140.3889,37.3986,78],['福島','Fukushima',140.4590,37.7541,92],
+        ['仙台','Sendai',140.8824,38.2600,112],['盛岡','Morioka',141.1367,39.7015,154],['八戸','Hachinohe',141.4883,40.5123,183],
+        ['新青森','Shin-Aomori',140.6932,40.8272,209]]},
+      {jp:'上越新幹線',en:'Joetsu Shinkansen',head:18,st:[
+        ['東京','Tokyo',139.7671,35.6812,0],['大宮','Omiya',139.6236,35.9064,25],['高崎','Takasaki',139.0128,36.3229,50],
+        ['越後湯沢','Echigo-Yuzawa',138.8087,36.9351,71],['長岡','Nagaoka',138.8513,37.4468,89],['新潟','Niigata',139.0614,37.9124,104]]},
+      {jp:'北陸新幹線',en:'Hokuriku Shinkansen',head:22,st:[
+        ['東京','Tokyo',139.7671,35.6812,0],['大宮','Omiya',139.6236,35.9064,25],['高崎','Takasaki',139.0128,36.3229,50],
+        ['軽井沢','Karuizawa',138.6356,36.3428,66],['長野','Nagano',138.1889,36.6433,84],['富山','Toyama',137.2137,36.7008,130],
+        ['金沢','Kanazawa',136.6576,36.5783,149],['福井','Fukui',136.2237,36.0621,172],['敦賀','Tsuruga',136.0553,35.6453,189]]},
+      {jp:'九州新幹線',en:'Kyushu Shinkansen',head:22,st:[
+        ['博多','Hakata',130.4207,33.5902,0],['熊本','Kumamoto',130.6884,32.7900,35],['鹿児島中央','Kagoshima-Chuo',130.5427,31.5838,78]]},
+      {jp:'北海道新幹線',en:'Hokkaido Shinkansen',head:60,st:[
+        ['新青森','Shin-Aomori',140.6932,40.8272,0],['新函館北斗','Shin-Hakodate-Hokuto',140.6488,41.9054,58]]}
+    ];
+    let _jrG=null;
+    function _jrGraph(){ if(_jrG) return _jrG;
+      const nodes=[]; const byName=new Map();
+      _SHINK.forEach((Ln,li)=>{ Ln.st.forEach((s,si)=>{ const id=nodes.length; nodes.push({li,si,s,Ln});
+        if(!byName.has(s[0])) byName.set(s[0],[]); byName.get(s[0]).push(id); }); });
+      const adj=nodes.map(()=>[]);
+      nodes.forEach((n,id)=>{ const st=n.Ln.st; if(n.si+1<st.length){ const o=id+1, dt=Math.abs(st[n.si+1][4]-n.s[4]); adj[id].push([o,dt]); adj[o].push([id,dt]); } });
+      byName.forEach(ids=>{ for(let i=0;i<ids.length;i++) for(let j2=i+1;j2<ids.length;j2++){ adj[ids[i]].push([ids[j2],15]); adj[ids[j2]].push([ids[i],15]); } });
+      return _jrG={nodes,adj,byName}; }
+    function _jrRoute(fromName,toName){ const G=_jrGraph(); const S=G.byName.get(fromName)||[], T=new Set(G.byName.get(toName)||[]);
+      if(!S.length||!T.size) return null;
+      const dist=G.nodes.map(()=>Infinity), prev=G.nodes.map(()=>-1), done=G.nodes.map(()=>false);
+      S.forEach(id=>{ dist[id]=0; });
+      for(;;){ let u=-1,bd=Infinity; for(let i=0;i<dist.length;i++) if(!done[i]&&dist[i]<bd){ bd=dist[i]; u=i; }
+        if(u<0) break; done[u]=true; if(T.has(u)) break;
+        for(const [v,w] of G.adj[u]) if(!done[v]&&dist[u]+w<dist[v]){ dist[v]=dist[u]+w; prev[v]=u; } }
+      let end=-1,bd=Infinity; T.forEach(id=>{ if(dist[id]<bd){ bd=dist[id]; end=id; } });
+      if(end<0||!isFinite(bd)) return null;
+      const path=[]; for(let u=end;u>=0;u=prev[u]) path.unshift(u);
+      /* group into per-line ride segments (skip 0-length transfer hops) */
+      const G2=_jrGraph(); const segs=[]; let cur=null;
+      for(let i=0;i<path.length;i++){ const n=G2.nodes[path[i]];
+        if(cur&&cur.li===n.li) cur.stops.push(n);
+        else { if(cur&&cur.stops.length>1) segs.push(cur); cur={li:n.li,Ln:n.Ln,stops:[n]}; } }
+      if(cur&&cur.stops.length>1) segs.push(cur);
+      return {segs, rideMin:bd}; }
+    async function _jrAccess(p,st,toStation,opts){ const d=_hav([p.lng,p.lat],[st[2],st[3]]);
+      const jpn=(typeof currentLang!=='undefined'&&currentLang==='jp');
+      const stName=jpn?st[0]:st[1];
+      if(d<=1.2){ const sec=Math.round(d*14*60);
+        return {legs:[{mode:'WALK',walk:1,route:'',headsign:'',from:toStation?'':stName,to:toStation?stName:'',duration:sec,color:_modeColor('WALK')}],
+          lines:[{coords:toStation?[[p.lng,p.lat],[st[2],st[3]]]:[[st[2],st[3]],[p.lng,p.lat]],walk:1,col:_modeColor('WALK')}],stops:[],sec}; }
+      try{ const A=toStation?p:{lng:st[2],lat:st[3]}, B=toStation?{lng:st[2],lat:st[3]}:p;
+        const its=await _planItins(A,B,{quick:true,time:opts&&opts.time});
+        if(its&&its.length){ const b=_buildItin(its[0]); return {legs:b.legs,lines:b.lines,stops:b.stops,sec:(b.duration||0),live:true}; } }catch(_){}
+      /* no open timetable here (e.g. Nagoya subway) → an honest, clearly-labelled local estimate leg */
+      const sec=Math.round((8+d*2.4)*60);
+      const lbl=jpn?'ローカル区間（公開時刻表なし・目安）':(currentLang==='de'?'Lokaler Abschnitt (kein offener Fahrplan, Schätzung)':currentLang==='ru'?'Местный участок (нет открытого расписания, оценка)':currentLang==='es'?'Tramo local (sin horario abierto, estimación)':'Local segment (no open timetable, estimate)');
+      return {legs:[{mode:'LOCAL',walk:0,route:'',headsign:lbl,from:toStation?'':stName,to:toStation?stName:'',duration:sec,color:'#9aa0a6',est:1}],
+        lines:[{coords:toStation?[[p.lng,p.lat],[st[2],st[3]]]:[[st[2],st[3]],[p.lng,p.lat]],walk:1,col:'#9aa0a6'}],stops:[],sec,est:true}; }
+    async function _jrPlan(from,to,opts){
+      const inJP=p=>p&&isFinite(+p.lng)&&p.lng>=127&&p.lng<=146.5&&p.lat>=30&&p.lat<=46;
+      if(!inJP(from)||!inJP(to)) return null;
+      const gc=_hav([from.lng,from.lat],[to.lng,to.lat]); if(gc<70) return null;
+      const near=p=>{ let b=null,bd=Infinity; _SHINK.forEach(Ln=>Ln.st.forEach(s=>{ const d=_hav([p.lng,p.lat],[s[2],s[3]]); if(d<bd){ bd=d; b={s,d}; } })); return (b&&b.d<=130)?b:null; };
+      const A=near(from), B=near(to); if(!A||!B||A.s[0]===B.s[0]) return null;
+      const jr=_jrRoute(A.s[0],B.s[0]); if(!jr||!jr.segs.length) return null;
+      const jpn=(typeof currentLang!=='undefined'&&currentLang==='jp');
+      const [acc,egr]=await Promise.all([_jrAccess(from,A.s,true,opts),_jrAccess(to,B.s,false,opts)]);
+      const legs=[],lines=[],stops=[]; let waitMin=0;
+      legs.push.apply(legs,acc.legs); lines.push.apply(lines,acc.lines); stops.push.apply(stops,acc.stops);
+      jr.segs.forEach(seg=>{ const st0=seg.stops[0].s, st1=seg.stops[seg.stops.length-1].s;
+        const min=Math.abs(st1[4]-st0[4]); waitMin+=seg.Ln.head/2;
+        legs.push({mode:'HIGHSPEED_RAIL',walk:0,route:jpn?seg.Ln.jp:seg.Ln.en,headsign:jpn?st1[0]:st1[1],from:jpn?st0[0]:st0[1],to:jpn?st1[0]:st1[1],duration:min*60,color:_modeColor('HIGHSPEED')});
+        lines.push({coords:seg.stops.map(n=>[n.s[2],n.s[3]]),walk:0,col:_modeColor('HIGHSPEED')});
+        seg.stops.forEach(n=>stops.push([n.s[2],n.s[3]])); });
+      legs.push.apply(legs,egr.legs); lines.push.apply(lines,egr.lines); stops.push.apply(stops,egr.stops);
+      const durSec=acc.sec+egr.sec+(jr.rideMin+waitMin)*60;
+      const transfers=Math.max(0,legs.filter(l=>!l.walk).length-1);
+      ensureLayers();
+      const itin={lines,stops,legs,duration:durSec,transfers,startTime:null,endTime:null,color:ALT_PAL[0],jrEstimate:true};
+      _tAlts=[itin]; _ends=[[+from.lng,+from.lat],[+to.lng,+to.lat]]; _drawAlts(0);
+      return {ok:true,transit:true,jrEstimate:true,duration:durSec,transfers,legs,startTime:null,endTime:null,mode:'transit',sel:0,
+        alternatives:[{duration:durSec,transfers,legs,startTime:null,endTime:null,color:itin.color}]}; }
+    async function transit(from,to,opts){ opts=opts||{};
+      const its=await _planItins(from,to,opts);
+      if(!its||!its.length){ /* (#R122) OSM rail-corridor fallback stays DISABLED (freight/non-passenger nonsense).
+           (#R125) but intercity JAPAN gets the curated Shinkansen bridge above — real stations, published-timetable
+           estimates — before we give up with an honest "no transit". */
+        try{ const jr=await _jrPlan(from,to,opts); if(jr) return jr; }catch(_){}
         return {ok:false,reason:'no-transit'}; }
       ensureLayers();   /* best-effort — the leg list still returns even if the style isn't ready to paint yet */
-      const P=l=>({lng:+(l.lon!=null?l.lon:l.lng),lat:+l.lat});
-      const _buildItin=(it)=>{ const legOut=[], lines=[], stops=[];
+      return _transitBuild(its,from,to); }
+    function _buildItin(it){ const P=_P; const legOut=[], lines=[], stops=[];
         (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
           let coords=null; try{ if(l.legGeometry&&l.legGeometry.points) coords=_decodePoly(l.legGeometry.points,l.legGeometry.precision||7); }catch(_){}
           /* (#R103) FIX "経路がアメリカ沖の大西洋に描画される": a CORS-proxied MOTIS response can mangle the encoded
@@ -23218,7 +23320,8 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) stops.push([a.lng,a.lat]); }
             if(l.to&&l.to.lat!=null){ const b=P(l.to); if(isFinite(b.lng)) stops.push([b.lng,b.lat]); } }
           legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col}); });
-        return {lines:lines,stops:stops,legs:legOut,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; };
+        return {lines:lines,stops:stops,legs:legOut,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; }
+    function _transitBuild(its,from,to){
       /* rank: itineraries that actually ride something first (a bare all-walk plan is unhelpful), then by duration; keep up to 5 */
       const ranked=its.slice().sort((x,y)=>{ const rx=(x.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1, ry=(y.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1; return (rx-ry)||((x.duration||1e9)-(y.duration||1e9)); });
       _tAlts=ranked.slice(0,5).map(_buildItin); if(!_tAlts.length) return {ok:false,reason:'no-transit'};
@@ -23329,7 +23432,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(from){ if(typeof from==='object'&&from.lng!=null){ pFrom=from; fEl.value=from.name||(from.lat.toFixed(3)+', '+from.lng.toFixed(3)); } else { fEl.value=String(from); pFrom=await geo1(String(from)); if(pFrom) fEl.value=pFrom.name; } }
       if(to){ if(typeof to==='object'&&to.lng!=null){ pTo=to; tEl.value=to.name||(to.lat.toFixed(3)+', '+to.lng.toFixed(3)); } else { tEl.value=String(to); pTo=await geo1(String(to)); if(pTo) tEl.value=pTo.name; } }
       recompute(); }
-    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt };
+    /* (#R125) exact station lookup for the curated Shinkansen registry ("仙台駅" → the real 仙台駅, not a fuzzy
+       POI hit like 仙太鮨) — accepts the name with/without 駅 and the English name, case-insensitive. */
+    function stationLL(q){ q=String(q||'').trim().replace(/駅$/,'').replace(/\s+station$/i,''); if(!q) return null;
+      const ql=q.toLowerCase();
+      for(const Ln of _SHINK) for(const s of Ln.st){ if(s[0]===q||s[1].toLowerCase()===ql) return {lng:s[2],lat:s[3],name:(typeof currentLang!=='undefined'&&currentLang==='jp')?(s[0]+'駅'):(s[1]+' Station')}; }
+      return null; }
+    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, stationLL };
   })();
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
@@ -27063,7 +27172,17 @@ window.addEventListener('DOMContentLoaded', () => {
           const _rmodes=(cur)=>{ const ms=[['driving','🚗'],['transit','🚆'],['walking','🚶'],['cycling','🚲']];
             return '<div class="atl-route-modes">'+ms.map(m=>'<button class="atl-route-mode'+(m[0]===cur?' on':'')+'" data-rmode="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'; };
           if(!a.from&&!a.to&&!a.place){ return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))); }
-          const A=await geocode(a.from); const B=await geocode(a.to||a.place||a.destination);
+          /* (#R125) endpoint resolution hardened for rail asks: an exact Shinkansen-station name resolves to the
+             REAL station (geocode fuzzy-matched 仙台駅 to a POI named 仙太鮨…), and a query ending in 駅/station
+             whose geocode hit doesn't even CONTAIN the base name retries with the base (city) name instead. */
+          const _geoEP=async q=>{ q=String(q||'').trim(); if(!q) return null;
+            try{ const st=window.IntMapRouting.stationLL&&window.IntMapRouting.stationLL(q); if(st) return st; }catch(_){}
+            let g=null; try{ g=await geocode(q); }catch(_){}
+            const m=q.match(/^(.{2,}?)(駅|\s+station)$/i);
+            if(m){ const base=m[1].trim();
+              if(!g||(g.name&&String(g.name).indexOf(base)<0)){ try{ const g2=await geocode(base); if(g2) g=g2; }catch(_){} } }
+            return g; };
+          const A=await _geoEP(a.from); const B=await _geoEP(a.to||a.place||a.destination);
           const rawMode=String(a.mode||a.profile||(a.type==='walkingRoute'?'walking':a.type==='transitRoute'?'transit':'')).toLowerCase();
           const isTr=/transit|train|rail|public|metro|subway|tram|bus|ferry|電車|鉄道|地下鉄|バス|公共|列車/.test(rawMode);
           const mode=isTr?'transit':(({car:'driving',drive:'driving',driving:'driving',foot:'walking',walk:'walking',walking:'walking',bike:'cycling',cycle:'cycling',cycling:'cycling'})[rawMode]||'driving');
@@ -27082,7 +27201,7 @@ window.addEventListener('DOMContentLoaded', () => {
               const sub=l.walk?'':(esc(l.from||'')+(l.dep?(' · '+_tm(l.dep)):''));
               return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; };
             const legHtml=(r.legs||[]).map(_legRow).join('');
-            const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km'+(r.lines&&r.lines.length?(' · '+r.lines.slice(0,3).map(esc).join(' → ')):(' '+L('by rail','鉄道','per Bahn','по ж/д','por vía')))):('<b>'+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
+            const summ=r.railEstimate?('<b>~'+dur+'</b> · '+Math.round(r.railKm).toLocaleString()+' km'+(r.lines&&r.lines.length?(' · '+r.lines.slice(0,3).map(esc).join(' → ')):(' '+L('by rail','鉄道','per Bahn','по ж/д','por vía')))):('<b>'+(r.jrEstimate?'~':'')+dur+'</b> · '+tf+' '+L('transfer'+(tf===1?'':'s'),'回乗換','Umst.','пересадок','transb.')+(r.startTime?(' · '+_tm(r.startTime)+'→'+_tm(r.endTime)):''));
             /* (#R86) list EVERY alternative itinerary (Google/Apple-Maps style — the Berlin→Amsterdam screenshot); the
                selected one is expanded, tapping another redraws it on the map via IntMapRouting.selectAlt. */
             const alts=(!r.railEstimate&&r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
@@ -27095,7 +27214,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 return '<div class="atl-trip'+(i===selI?' on':'')+'" data-ai="'+i+'" style="border-left:3px solid '+(av.color||'#1a73e8')+';"><div class="atl-trip-head"><span class="atl-trip-time">'+dot+times+'</span><span class="atl-trip-dur">'+(av.startTime?('<b>'+adur+'</b> · '):'')+atf+' '+L('transfer'+(atf===1?'':'s'),'乗換','Umst.','пер.','transb.')+'</span></div><div class="atl-trip-seq">'+aseq+'</div><div class="atl-trip-legs">'+(av.legs||[]).map(_legRow).join('')+'</div></div>'; }).join('')+'</div>';
             } else { body='<div style="font-size:13px;margin:3px 0 3px;">'+summ+'</div><div style="font-size:12px;margin-bottom:4px;">'+seq+'</div><div style="max-height:220px;overflow:auto;">'+legHtml+'</div>'; }
             let h=_hdr+(alts?('<div style="font-size:11px;color:var(--text-muted);margin:2px 0 5px;">'+alts.length+' '+L('options — tap one to show it on the map','件の候補 — タップで地図に表示','Optionen — zum Anzeigen antippen','вариантов — нажмите, чтобы показать','opciones — toca para ver en el mapa')+'</div>'):'')+body
-              +note(r.railEstimate
+              +note(r.jrEstimate
+                ? L('Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.','日本の都市間鉄道: 実在の新幹線路線・停車駅に基づき、所要時間は各社の公表時刻表（速達パターン＋運行頻度）からの概算です（リアルタイムではありません）。ローカル区間は公開GTFS（Transitous）があれば実データ、無い地域（例: 名古屋圏）は距離ベースの目安と明記しています。駅間の線形は概略です。','Japan-Fernverkehr: echte Shinkansen-Linien/Bahnhöfe, Zeiten aus den veröffentlichten Fahrplänen geschätzt (kein Echtzeitfahrplan). Lokale Abschnitte per offenem GTFS, sonst gekennzeichnete Distanzschätzung. Linienverlauf zwischen Bahnhöfen schematisch.','Междугородние ж/д Японии: реальные линии и станции синкансэна, время — оценка по опубликованным расписаниям (не в реальном времени). Местные участки — открытый GTFS, иначе помеченная оценка по расстоянию. Линия между станциями схематична.','Tren interurbano de Japón: líneas y estaciones reales de Shinkansen, tiempos estimados de los horarios publicados (no en vivo). Tramos locales con GTFS abierto o estimación marcada. Trazado entre estaciones esquemático.')
+                : r.railEstimate
                 ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
                 : L('Live public-transit routing (Transitous / MOTIS).','公共交通のライブ経路検索（Transitous／MOTIS）。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request */
             return R(true, h); }
