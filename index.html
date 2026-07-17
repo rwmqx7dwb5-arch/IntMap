@@ -29250,7 +29250,17 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbref', code:'SM.POP.REFG', n:{en:'Refugees hosted',jp:'難民受入数',de:'Aufgenommene Flüchtlinge',ru:'Принято беженцев'}, ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
       {id:'wbco2t', code:'EN.GHG.CO2.MT.CE.AR5', n:{en:'CO₂ emissions (Mt)',jp:'CO₂排出量（百万t）',de:'CO₂-Emissionen (Mt)',ru:'Выбросы CO₂ (млн т)'}, ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
       {id:'wbpatent', code:'IP.PAT.RESD', n:{en:'Patent applications (resident)',jp:'特許出願数（居住者）',de:'Patentanmeldungen',ru:'Патентные заявки'}, ramp:[10,'#fff7ec',500,'#fdd49e',5000,'#fc8d59',50000,'#d7301f',500000,'#7f0000'], unit:''},
-      {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:{en:'Women in parliament %',jp:'女性議員比率 %',de:'Frauen im Parlament %',ru:'Женщины в парламенте %'}, ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'}
+      {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:{en:'Women in parliament %',jp:'女性議員比率 %',de:'Frauen im Parlament %',ru:'Женщины в парламенте %'}, ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'},
+      /* (#R123) +8 NEW beta choropleths (World Bank, latest value per country — same resilient mrnev fetch, hover
+         values + source note; auto-wired into the layer list, Others(beta), Atlas layer-data + point sampling). */
+      {id:'wbpm25', code:'EN.ATM.PM25.MC.M3', n:{en:'PM2.5 air pollution (µg/m³)',jp:'PM2.5大気汚染（µg/m³）',de:'PM2,5-Luftverschmutzung (µg/m³)',ru:'Загрязнение PM2.5 (мкг/м³)'}, ramp:[5,'#1a9850',10,'#a6d96a',25,'#fee08b',50,'#f46d43',100,'#a50026'], unit:' µg/m³'},
+      {id:'wbcook', code:'EG.CFT.ACCS.ZS', n:{en:'Clean cooking fuel access %',jp:'クリーン調理燃料 普及率 %',de:'Zugang zu sauberem Kochbrennstoff %',ru:'Доступ к чистому топливу для готовки %'}, ramp:[10,'#a50026',40,'#f46d43',70,'#fee08b',90,'#a6d96a',100,'#1a9850'], unit:'%'},
+      {id:'wbflfp', code:'SL.TLF.CACT.FE.ZS', n:{en:'Female labour participation %',jp:'女性労働参加率 %',de:'Frauenerwerbsquote %',ru:'Участие женщин в раб. силе %'}, ramp:[15,'#a50026',30,'#f46d43',45,'#fee08b',60,'#a6d96a',80,'#1a9850'], unit:'%'},
+      {id:'wbtert', code:'SE.TER.ENRR', n:{en:'Tertiary enrollment %',jp:'高等教育就学率 %',de:'Hochschulquote %',ru:'Охват высшим образованием %'}, ramp:[5,'#fff7ec',20,'#fdd49e',40,'#fc8d59',65,'#66bd63',95,'#006837'], unit:'%'},
+      {id:'wbrural', code:'SP.RUR.TOTL.ZS', n:{en:'Rural population %',jp:'農村人口比率 %',de:'Landbevölkerung %',ru:'Сельское население %'}, ramp:[10,'#2c7fb8',30,'#7fcdbb',50,'#ffffb2',70,'#fe9929',90,'#cc4c02'], unit:'%'},
+      {id:'wbgni', code:'NY.GNP.PCAP.CD', n:{en:'GNI per capita (Atlas, US$)',jp:'一人当たりGNI（アトラス法, US$）',de:'BNE pro Kopf (Atlas, US$)',ru:'ВНД на душу (Атлас, US$)'}, ramp:[1000,'#fff7ec',5000,'#fdd49e',15000,'#fc8d59',40000,'#66bd63',90000,'#006837'], unit:''},
+      {id:'wbunder', code:'SN.ITK.DEFC.ZS', n:{en:'Undernourishment %',jp:'栄養不足人口比率 %',de:'Unterernährung %',ru:'Недоедание %'}, ramp:[2.5,'#1a9850',10,'#a6d96a',25,'#fee08b',40,'#f46d43',60,'#a50026'], unit:'%'},
+      {id:'wbhitech', code:'TX.VAL.TECH.MF.ZS', n:{en:'High-tech exports %',jp:'ハイテク製品輸出比率 %',de:'Hightech-Exporte %',ru:'Высокотехнологичный экспорт %'}, ramp:[1,'#fff7ec',5,'#fdd49e',15,'#fc8d59',30,'#66bd63',50,'#006837'], unit:'%'}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
