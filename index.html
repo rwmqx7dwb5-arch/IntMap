@@ -9735,6 +9735,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R122) highlight the current selection on the map AS it is built in the Countries tab (not only once the
        compare view opens) — "Countriesで国を選択した時点でハイライト". */
     try{ const C=window.IntMapStatsCompare; if(C&&C.previewOnMap){ if(compareSet.size) C.previewOnMap([...compareSet]); else C.clearMap&&C.clearMap(); } }catch(_){}
+    /* (#R124) if the compare view is already open, mirror this toggle into it so its time-series updates without a
+       reload (the Countries tray and an open compare view now stay in sync). */
+    try{ const C2=window.IntMapStatsCompare; if(C2&&C2.toggleCountry) C2.toggleCountry(code, compareSet.has(code)); }catch(_){}
     renderCompareFixed();
   };
   window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#countries-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }catch(_){} };
@@ -20151,13 +20154,24 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!codes.length&&window._cpCurrent&&window._cpCurrent.code&&countryStats[window._cpCurrent.code]) codes=[window._cpCurrent.code];
       host=null;   /* rebuild inside the sidebar (the feed may have been re-rendered by tab switches) */
       render(); try{ paintOnMap(); }catch(_){} }
+    /* (#R124) sync a single Countries-tab toggle into an ALREADY-OPEN compare view. The bug: the Countries tray
+       (compareSet) and this panel's `codes` are separate stores, so adding a country in the Countries tab while
+       the compare view was open never updated `codes` → the time-series only reflected it after a reload
+       ("国を追加したとき、Time-seriesは再読み込みしないと反映されない"). This applies the DELTA (never clobbers a
+       country added via the panel's own input) and re-renders in place, PRESERVING the current mode (bar/ts/table). */
+    function toggleCountry(code, on){ if(!code||!countryStats[code]) return false;
+      const i=codes.indexOf(code);
+      if(on){ if(i>=0) return false; if(codes.length>=10) return false; codes.push(code); }
+      else { if(i<0) return false; codes.splice(i,1); }
+      if(host&&host.isConnected&&document.getElementById('scp-view')){ try{ render(); }catch(_){} try{ paintOnMap(); }catch(_){} }
+      return true; }
     /* (#R115) Atlas needs the indicator vocabulary to honour "compare … — GDP, defense and population":
        expose the valid metric keys + a localized label so the compareStats action can resolve & report them. */
     function indLabel(k){ try{ const i2=IND.find(x=>x.k===k); if(!i2) return k; const li=({en:0,jp:1,de:2,ru:3,es:4})[currentLang]||0; return (i2.l&&(i2.l[li]||i2.l[0]))||k; }catch(_){ return k; } }
     /* (#R118) state() — the compare panel's LIVE state (also when the user built it BY HAND), so Atlas's
        working context reflects reality instead of only its own past actions. */
     function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }
-    return { open, paintOnMap, previewOnMap, clearMap, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
+    return { open, paintOnMap, previewOnMap, clearMap, toggleCountry, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
   })();
 
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
