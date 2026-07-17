@@ -28388,7 +28388,17 @@ window.addEventListener('DOMContentLoaded', () => {
              of each kind; turning OFF releases ownership. _refreshMapChips then re-derives EVERY chip's state from
              ownership+visibility, so each message toggles independently and old chips flip off truthfully. */
           const bEl=mtg.closest('.atl-b'); const snap=bEl&&bEl.__ovlSnap;
-          kinds.forEach(k=>{ try{ if(show){ if(snap&&snap[k]) _ovlAdopt(k,snap[k]); _ovlOwn[k]=bEl; overlayToggle(k,true); } else { overlayToggle(k,false); if(_ovlOwn[k]===bEl) _ovlOwn[k]=null; } }catch(_){} });
+          /* (#R125) independent coexistence: if ANOTHER message currently owns this kind's shared canvas, paint into
+             this message's own clone layers instead of stealing (the other chip stays ON, untouched). The shared
+             canvas is only (re)claimed when it is free or already ours. */
+          kinds.forEach(k=>{ try{ if(show){
+              const owner=_ovlOwn[k]; const ownedElsewhere=owner&&owner!==bEl&&document.body.contains(owner)&&_ovlVisible(k);
+              if(ownedElsewhere&&snap&&snap[k]&&_ovlCloneShow(bEl,k,snap[k])) return;
+              if(snap&&snap[k]) _ovlAdopt(k,snap[k]); _ovlOwn[k]=bEl; overlayToggle(k,true);
+            } else {
+              _ovlCloneHide(bEl,k);
+              if(_ovlOwn[k]===bEl){ overlayToggle(k,false); _ovlOwn[k]=null; }
+            } }catch(_){} });
           _refreshMapChips(); return; }
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
@@ -28482,7 +28492,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _ovlOwn={};
     function _refreshMapChips(){ try{ const pnl=document.getElementById('atlas-panel'); if(!pnl) return;
       pnl.querySelectorAll('.atl-mapctl').forEach(row=>{ const b=row.closest('.atl-b'); const kinds=(row.getAttribute('data-ovls')||'').split(',').filter(Boolean);
-        const on=kinds.length&&kinds.every(k=>_ovlOwn[k]===b&&_ovlVisible(k));
+        const on=kinds.length&&kinds.every(k=>(_ovlOwn[k]===b&&_ovlVisible(k))||_ovlCloneVisible(b,k));   /* (#R125) a clone counts as ON */
         const t=row.querySelector('.atl-map-toggle'); if(t){ t.classList.toggle('on',!!on); t.setAttribute('aria-checked',on?'true':'false'); } }); }catch(_){} }
     function overlayToggle(kind,show){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); if(cv){ if(show===undefined) show=(cv.style.display==='none'); cv.style.display=show?'block':'none'; } return show; }
       const ids=_OVL[kind]||[]; if(show===undefined) show=!_ovlVisible(kind); ids.forEach(id=>{ try{ if(map.getLayer(id)) map.setLayoutProperty(id,'visibility',show?'visible':'none'); }catch(_){} }); return show; }
@@ -28499,7 +28509,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const pp={}; _OVL_PAINT.forEach(p=>{ try{ const v=map.getPaintProperty(id,p); if(v!=null) pp[p]=JSON.parse(JSON.stringify(v)); }catch(_){} });
         if(Object.keys(pp).length) L2.paint=pp;
         S.layers[id]=L2;
-        const sid=ly.source; if(sid&&!S.sources[sid]){ try{ const src=map.getSource(sid); const ser=src&&src.serialize&&src.serialize(); if(ser&&ser.type==='geojson'&&ser.data&&typeof ser.data==='object') S.sources[sid]=JSON.parse(JSON.stringify(ser.data)); }catch(_){} }
+        const sid=ly.source; if(sid&&!S.sources[sid]){ try{ const src=map.getSource(sid); const ser=src&&src.serialize&&src.serialize(); if(ser&&ser.type==='geojson'&&ser.data&&typeof ser.data==='object'){ S.sources[sid]=JSON.parse(JSON.stringify(ser.data));
+          /* (#R125) country highlights / choropleths paint via FEATURE-STATE (nlq / choroV on promoteId'd codes),
+             which serialize() does NOT carry — capture each feature's state so a per-message clone can re-apply it. */
+          try{ const sty=(map.getStyle().sources||{})[sid]||{}; if(sty.promoteId){ S.promote=S.promote||{}; S.promote[sid]=sty.promoteId; }
+            const st={}; ((S.sources[sid]&&S.sources[sid].features)||[]).forEach(f=>{ const fid=(f.id!=null)?f.id:(sty.promoteId&&f.properties?f.properties[sty.promoteId]:null); if(fid==null) return;
+              try{ const fs=map.getFeatureState({source:sid,id:fid}); if(fs&&Object.keys(fs).length) st[fid]=JSON.parse(JSON.stringify(fs)); }catch(_){} });
+            if(Object.keys(st).length){ S.states=S.states||{}; S.states[sid]=st; } }catch(_){} } }catch(_){} }
       }catch(_){} });
       if(Object.keys(S.layers).length||Object.keys(S.sources).length) snap[kind]=S; });
       return snap; }
@@ -28514,6 +28530,16 @@ window.addEventListener('DOMContentLoaded', () => {
        snapshot therefore also makes its content the module's CURRENT state — switching an old reply ON literally
        makes that reply the active highlight. */
     function _ovlAdopt(kind,S){ if(!_ovlRestore(kind,S)) return false;
+      /* (#R125) restore FEATURE-STATES on the ORIGINAL sources too (country highlight nlq / choropleth choroV are
+         states, not data) and make them the module's CURRENT state (_hl/_choroState) so the styledata reassert
+         keeps this reply's content instead of the previous owner's. */
+      try{ if(S.states){
+        if(kind==='highlight'){ try{ clearHl(); }catch(_){} }
+        if(kind==='choropleth'){ try{ for(const c in _choroState){ map.setFeatureState({source:'nlq-src',id:c},{choroV:null}); } _choroState={}; }catch(_){} }
+        for(const sid in S.states){ const st=S.states[sid]; for(const fid in st){ try{ map.setFeatureState({source:sid,id:fid},st[fid]);
+          if(kind==='highlight'&&st[fid].nlq) try{ _hl.add(String(fid)); }catch(_){}
+          if(kind==='choropleth'&&st[fid].choroV!=null) try{ _choroState[String(fid)]=st[fid].choroV; }catch(_){}
+        }catch(_){} } } } }catch(_){}
       try{
         if(kind==='highlight'){ const d=S.sources&&S.sources['nlq-poly-src'];
           if(d&&Array.isArray(d.features)) _hlPolys=d.features.map(f=>({ geo:f.geometry, name:(f.properties&&f.properties.name)||'', color:(f.properties&&f.properties.color)||null, comp:!!(f.properties&&f.properties.comp), op:(f.properties&&f.properties.op!=null)?f.properties.op:null })); }
@@ -28521,6 +28547,55 @@ window.addEventListener('DOMContentLoaded', () => {
           if(d&&Array.isArray(d.features)) _hlLines=d.features.map(f=>({ geo:f.geometry, color:(f.properties&&f.properties.color)||null, w:(f.properties&&f.properties.w)||2.5, op:(f.properties&&f.properties.op!=null)?f.properties.op:null })); }
       }catch(_){}
       return true; }
+    /* (#R125) TRUE INDEPENDENT COEXISTENCE ("一つをオンオフしたら他のものが勝手にオンオフしてしまう"): when a chip is
+       turned ON while ANOTHER message owns the shared nlq-* canvas of that kind, we no longer steal ownership (which
+       flipped the other chip off). Instead the message's snapshot is painted into its OWN per-message CLONE layers
+       (atlm<n>-…), built from the original layer definitions + the snapshot's geojson data — so both messages'
+       results show on the map at once and each chip only ever controls its own content. Clones are re-asserted
+       after a style swap (styledata) from the stored defs, and hidden entries are LRU-evicted so the layer count
+       stays bounded. Kinds without a geojson snapshot (e.g. the arc canvas) keep the R122 ownership behaviour. */
+    const _ovlClones=new Map(); let _atlmSeq=0;
+    function _cloneEnt(bEl,kind,make){ let reg=_ovlClones.get(bEl); if(!reg){ if(!make) return null; reg={}; _ovlClones.set(bEl,reg); }
+      if(!reg[kind]&&make) reg[kind]={defs:[],srcs:{},visible:false,t:0}; return reg[kind]||null; }
+    function _ovlCloneShow(bEl,kind,S){ if(!S||!S.sources||!Object.keys(S.sources).length) return false;
+      try{
+        if(!bEl.__atlmId) bEl.__atlmId=++_atlmSeq;
+        const kid='atlm'+bEl.__atlmId+'-'+kind, ids=_OVL[kind]||[];
+        const ent=_cloneEnt(bEl,kind,true);
+        if(!ent.defs.length){   /* first show: clone the ORIGINAL layer definitions with remapped ids/sources */
+          const style=map.getStyle(); const byId={}; (style.layers||[]).forEach(l=>{ byId[l.id]=l; });
+          const srcMap={}; for(const sid in S.sources){ const csid=kid+'-s-'+sid; srcMap[sid]=csid; ent.srcs[csid]=JSON.parse(JSON.stringify(S.sources[sid]));
+            if(S.promote&&S.promote[sid]){ ent.promote=ent.promote||{}; ent.promote[csid]=S.promote[sid]; }
+            if(S.states&&S.states[sid]){ ent.states=ent.states||{}; ent.states[csid]=JSON.parse(JSON.stringify(S.states[sid])); } }
+          ids.forEach(id=>{ const def=byId[id]; if(!def) return; const sid=def.source; if(!srcMap[sid]) return;
+            const nd=JSON.parse(JSON.stringify(def)); nd.id=kid+'-'+id; nd.source=srcMap[sid]; delete nd['source-layer'];
+            const L2=(S.layers&&S.layers[id])||{}; if('filter' in L2) nd.filter=L2.filter; if(L2.paint) nd.paint=Object.assign({},nd.paint||{},L2.paint);
+            nd.layout=Object.assign({},nd.layout||{},{visibility:'visible'}); nd.__before=id;   /* insert next to the original */
+            ent.defs.push(nd); });
+          if(!ent.defs.length){ delete _ovlClones.get(bEl)[kind]; return false; } }
+        /* (re)create sources + layers as needed, then show (promoteId + feature-states re-applied so
+           feature-state-driven kinds — country highlight / choropleth — actually paint on the clone) */
+        for(const csid in ent.srcs){ try{ if(map.getSource(csid)) map.getSource(csid).setData(ent.srcs[csid]); else { const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; map.addSource(csid,o); }
+          const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ map.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
+        ent.defs.forEach(nd=>{ try{ if(!map.getLayer(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; map.addLayer(d2, map.getLayer(nd.__before)?nd.__before:undefined); }
+          map.setLayoutProperty(nd.id,'visibility','visible'); }catch(_){} });
+        ent.visible=true; ent.t=++_atlmSeq; _ovlCloneGC();
+        return true; }catch(_){ return false; } }
+    function _ovlCloneHide(bEl,kind){ const ent=_cloneEnt(bEl,kind,false); if(!ent) return false;
+      ent.defs.forEach(nd=>{ try{ if(map.getLayer(nd.id)) map.setLayoutProperty(nd.id,'visibility','none'); }catch(_){} });
+      const was=ent.visible; ent.visible=false; return was; }
+    function _ovlCloneVisible(bEl,kind){ const ent=_cloneEnt(bEl,kind,false); return !!(ent&&ent.visible); }
+    function _ovlCloneGC(){ try{ const all=[]; _ovlClones.forEach((reg,b)=>{ for(const k in reg) all.push([b,k,reg[k]]); });
+      const hidden=all.filter(e=>!e[2].visible).sort((a,b2)=>a[2].t-b2[2].t);
+      while(all.length>14&&hidden.length){ const [b,k,ent]=hidden.shift(); all.splice(all.findIndex(e=>e[2]===ent),1);
+        ent.defs.forEach(nd=>{ try{ if(map.getLayer(nd.id)) map.removeLayer(nd.id); }catch(_){} });
+        for(const csid in ent.srcs){ try{ if(map.getSource(csid)) map.removeSource(csid); }catch(_){} }
+        try{ delete _ovlClones.get(b)[k]; }catch(_){} } }catch(_){} }
+    try{ if(typeof map!=='undefined'&&map) map.on('styledata',()=>{ clearTimeout(_ovlCloneShow._t); _ovlCloneShow._t=setTimeout(()=>{ try{
+      _ovlClones.forEach(reg=>{ for(const k in reg){ const ent=reg[k]; if(!ent.visible) continue;
+        for(const csid in ent.srcs){ try{ if(!map.getSource(csid)){ const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; map.addSource(csid,o); }
+          const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ map.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
+        ent.defs.forEach(nd=>{ try{ if(!map.getLayer(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; map.addLayer(d2, map.getLayer(nd.__before)?nd.__before:undefined); } }catch(_){} }); } }); }catch(_){} },600); }); }catch(_){}
     function mapToggleChip(kinds){ const K=Array.from(new Set((kinds||[]).filter(k=>_OVL[k]||k==='arc'))); if(!K.length) return '';
       return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">'+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
         +'<button class="atl-ctl-toggle atl-map-toggle on" role="switch" aria-checked="true" title="'+L('Show / hide on the map','地図で表示 / 非表示','Auf der Karte ein/aus','Показать/скрыть на карте','Mostrar/ocultar en el mapa')+'"><span class="atl-ctl-knob"></span></button></div>'; }
