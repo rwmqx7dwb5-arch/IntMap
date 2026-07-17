@@ -19725,6 +19725,14 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]);
             for(const f of fc.features){ try{ if(f.geometry&&turf.booleanPointInPolygon(tp,f)){ nm=f.properties&&(f.properties.NAME||f.properties.name); break; } }catch(_){} } } }catch(_){}
           if(!nm){ try{ const pt=map.project([lngLat.lng,lngLat.lat]); const hit=map.queryRenderedFeatures(pt,{layers:['imtb-fill']}); nm=hit&&hit.length&&hit[0].properties&&(hit[0].properties.NAME||hit[0].properties.name); }catch(_){} }
+          /* (#R125) COASTAL near-miss rescue: simplified era coastlines can exclude a shoreline city (Istanbul sits
+             outside the 1914 Ottoman polygon), so the PIP above finds nothing and the pick used to fall through to
+             the MODERN borders ("クリック判定は現在の国境…まだ不完全"). Snap to the era feature whose ring passes
+             closest to the click (vertex distance, ≤0.7°) — never a cross-country jump. */
+          if(!nm){ try{ const fc2=TB.currentFC&&TB.currentFC(); if(fc2&&fc2.features){ let bd=0.7,bn=null;
+            const scan=(cs,f)=>{ if(typeof cs[0]==='number'){ const dx=(cs[0]-lngLat.lng)*Math.cos(lngLat.lat*Math.PI/180), dy=cs[1]-lngLat.lat; const d=Math.hypot(dx,dy); if(d<bd){ bd=d; bn=f.properties&&(f.properties.NAME||f.properties.name); } } else cs.forEach(c2=>scan(c2,f)); };
+            for(const f of fc2.features){ try{ if(!f.geometry) continue; const bb=turf.bbox(f); if(lngLat.lng<bb[0]-0.8||lngLat.lng>bb[2]+0.8||lngLat.lat<bb[1]-0.8||lngLat.lat>bb[3]+0.8) continue; scan(f.geometry.coordinates,f); }catch(_){} }
+            if(bn) nm=bn; } }catch(_){} }
           if(nm&&TB.resolveHist){ const R=TB.resolveHist(nm,lngLat);
             if(R&&R.code&&countryStats[R.code]) return {code:R.code};
             /* the click landed on a REAL era entity that has no comparable time-series data — do NOT silently snap
@@ -22876,21 +22884,44 @@ window.addEventListener('DOMContentLoaded', () => {
        shape (meridians converge poleward, squishing it) — "まだGlobeでも領域の形が変わってしまう". The correct move on
        a sphere is a RIGID great-circle ROTATION that carries the centroid to the new point, preserving the shape's
        true geodesic form (it looks identical, just relocated). */
-    function reshape(newCen){
+    /* (#R125) shared Rodrigues rotation of vector v about UNIT axis k by angle ang (radians). */
+    const _rodr=(v,k,ang)=>{ const ca=Math.cos(ang), sa=Math.sin(ang);
+      const kv=[k[1]*v[2]-k[2]*v[1],k[2]*v[0]-k[0]*v[2],k[0]*v[1]-k[1]*v[0]]; const kd=k[0]*v[0]+k[1]*v[1]+k[2]*v[2];
+      return [v[0]*ca+kv[0]*sa+k[0]*kd*(1-ca), v[1]*ca+kv[1]*sa+k[1]*kd*(1-ca), v[2]*ca+kv[2]*sa+k[2]*kd*(1-ca)]; };
+    const _D=Math.PI/180;
+    const _toV=(lng,lat)=>{ const a=lng*_D,b=lat*_D,cb=Math.cos(b); return [cb*Math.cos(a),cb*Math.sin(a),Math.sin(b)]; };
+    function reshape(newCen,rotAng){ rotAng=rotAng||0;
       if(_mercNow()){ const lat0=baseCen[1], latN=Math.max(-84,Math.min(84,newCen[1]));
         const s=Math.max(0.05,Math.cos(lat0*Math.PI/180))/Math.max(0.05,Math.cos(latN*Math.PI/180));
-        const mv=c=>{ if(typeof c[0]==='number') return [ newCen[0]+(c[0]-baseCen[0])*s, latN+(c[1]-baseCen[1])*s ]; return c.map(mv); };
+        /* (#R125) optional right-drag spin: rotate in a locally METRIC frame around the destination centroid
+           (x scaled by cos(lat) so the spin doesn't shear the shape on the Mercator plane). */
+        const cr=Math.cos(rotAng), sr=Math.sin(rotAng), cl=Math.max(0.05,Math.cos(latN*_D));
+        const mv=c=>{ if(typeof c[0]==='number'){
+            const dxm=(c[0]-baseCen[0])*s*cl, dym=(c[1]-baseCen[1])*s;
+            return [ newCen[0]+(dxm*cr-dym*sr)/cl, latN+(dxm*sr+dym*cr) ]; }
+          return c.map(mv); };
         return { type:baseGeo.type, coordinates:mv(baseGeo.coordinates) }; }
-      /* GLOBE: rigid spherical rotation (Rodrigues) mapping baseCen → newCen, applied to every vertex. */
-      const D=Math.PI/180;
-      const toV=(lng,lat)=>{ const a=lng*D,b=lat*D,cb=Math.cos(b); return [cb*Math.cos(a),cb*Math.sin(a),Math.sin(b)]; };
-      const v0=toV(baseCen[0],baseCen[1]), v1=toV(newCen[0],newCen[1]);
+      /* GLOBE (#R125): rigid great-circle rotation baseCen→newCen, PLUS a twist about the destination vertical that
+         re-aligns the transported north with true north — a bare Rodrigues rotation carries the centroid correctly
+         but leaves the shape TILTED at some destinations ("場所によっては傾いてしまう") because the transported local
+         frame no longer points north. rotAng (right-drag) then adds the user's deliberate spin. */
+      const v0=_toV(baseCen[0],baseCen[1]), v1=_toV(newCen[0],newCen[1]);
       let ax=[v0[1]*v1[2]-v0[2]*v1[1], v0[2]*v1[0]-v0[0]*v1[2], v0[0]*v1[1]-v0[1]*v1[0]];
       const axLen=Math.hypot(ax[0],ax[1],ax[2]); const dot=Math.max(-1,Math.min(1,v0[0]*v1[0]+v0[1]*v1[1]+v0[2]*v1[2])); const ang=Math.acos(dot);
-      const k=axLen>1e-12?[ax[0]/axLen,ax[1]/axLen,ax[2]/axLen]:[0,0,1]; const ca=Math.cos(ang), sa=Math.sin(ang);
-      const rot=(v)=>{ if(axLen<1e-12) return v.slice(); const kv=[k[1]*v[2]-k[2]*v[1],k[2]*v[0]-k[0]*v[2],k[0]*v[1]-k[1]*v[0]]; const kd=k[0]*v[0]+k[1]*v[1]+k[2]*v[2];
-        return [v[0]*ca+kv[0]*sa+k[0]*kd*(1-ca), v[1]*ca+kv[1]*sa+k[1]*kd*(1-ca), v[2]*ca+kv[2]*sa+k[2]*kd*(1-ca)]; };
-      const mv=c=>{ if(typeof c[0]==='number'){ const v=rot(toV(c[0],c[1])); let lat=Math.asin(Math.max(-1,Math.min(1,v[2])))/D, lng=Math.atan2(v[1],v[0])/D;
+      const k=axLen>1e-12?[ax[0]/axLen,ax[1]/axLen,ax[2]/axLen]:[0,0,1];
+      const gcRot=v=>axLen<1e-12?v.slice():_rodr(v,k,ang);
+      /* twist = angle between transported north and true north at the destination (both tangents at newCen). */
+      const aB=newCen[0]*_D, bB=newCen[1]*_D;
+      const northB=[-Math.sin(bB)*Math.cos(aB), -Math.sin(bB)*Math.sin(aB), Math.cos(bB)];
+      const eastB=[-Math.sin(aB), Math.cos(aB), 0];
+      const aA=baseCen[0]*_D, bA=baseCen[1]*_D;
+      const nAr=gcRot([-Math.sin(bA)*Math.cos(aA), -Math.sin(bA)*Math.sin(aA), Math.cos(bA)]);
+      const twist=Math.atan2(nAr[0]*eastB[0]+nAr[1]*eastB[1]+nAr[2]*eastB[2], nAr[0]*northB[0]+nAr[1]*northB[1]+nAr[2]*northB[2]);
+      /* rotation about the OUTWARD vertical by +ang maps a tangent at bearing θ to θ−ang (north→west), so the
+         twist (transported north sitting `twist` east-of-north) is cancelled by spin=+twist. */
+      const spin=twist+rotAng;
+      const mv=c=>{ if(typeof c[0]==='number'){ let v=gcRot(_toV(c[0],c[1])); if(spin) v=_rodr(v,v1,spin);
+        let lat=Math.asin(Math.max(-1,Math.min(1,v[2])))/_D, lng=Math.atan2(v[1],v[0])/_D;
         while(lng-newCen[0]>180) lng-=360; while(lng-newCen[0]<-180) lng+=360;   /* keep longitudes contiguous around the new centre (no dateline split) */
         return [lng,lat]; } return c.map(mv); };
       return { type:baseGeo.type, coordinates:mv(baseGeo.coordinates) }; }
@@ -22901,28 +22932,42 @@ window.addEventListener('DOMContentLoaded', () => {
       const L=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
       /* (#R123) honest suffix: flat map = true-area preserved (Mercator counter-scale); globe = plain reposition. */
       const sizeNote=_mercNow()?L('— true size preserved','（実面積を保持）','— echte Größe','— истинный размер','— tamaño real'):L('— true shape preserved','（形状を保持して移動）','— Form bleibt erhalten','— форма сохраняется','— forma conservada');
-      pill.innerHTML='<span>'+L('Drag ','ドラッグで移動 · ','Ziehen · ','Перетащите · ','Arrastra · ')+'<b>'+String(name||'').replace(/[&<>"]/g,'')+'</b> '+sizeNote+'</span><button style="border:none;background:var(--primary-color);color:#fff;border-radius:15px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">'+L('Done','完了','Fertig','Готово','Listo')+'</button>';
+      const rotNote=L(' · right-drag to rotate',' · 右ドラッグで回転',' · Rechtsziehen: drehen',' · правая кнопка — поворот',' · clic derecho: girar');
+      pill.innerHTML='<span>'+L('Drag ','ドラッグで移動 · ','Ziehen · ','Перетащите · ','Arrastra · ')+'<b>'+String(name||'').replace(/[&<>"]/g,'')+'</b> '+sizeNote+rotNote+'</span><button style="border:none;background:var(--primary-color);color:#fff;border-radius:15px;padding:6px 14px;font-size:12.5px;font-weight:600;cursor:pointer;">'+L('Done','完了','Fertig','Готово','Listo')+'</button>';
       pill.querySelector('button').onclick=()=>stop();
       document.body.appendChild(pill); }catch(_){} }
     function start(geom,name){ if(!geom||!geom.coordinates) return false; stop();
       try{ baseGeo=JSON.parse(JSON.stringify(geom)); }catch(_){ return false; }
       baseCen=centroid(baseGeo); on=true; paint(baseGeo);
-      try{ map.dragPan.disable(); }catch(_){} try{ map.getCanvas().style.cursor='move'; }catch(_){}
-      let dragging=false;
-      const dn=(e)=>{ dragging=true; if(e&&e.preventDefault) try{ e.preventDefault(); }catch(_){} };
-      const mvv=(e)=>{ if(!dragging||!e.lngLat) return; paint(reshape([e.lngLat.lng,e.lngLat.lat])); };
-      const up=()=>{ dragging=false; };
-      map.on('mousedown',dn); map.on('touchstart',dn); map.on('mousemove',mvv); map.on('touchmove',mvv); map.on('mouseup',up); map.on('touchend',up);
-      handlers=[['mousedown',dn],['touchstart',dn],['mousemove',mvv],['touchmove',mvv],['mouseup',up],['touchend',up]];
+      /* (#R125) placement state persists across gestures: left-drag re-positions (curCen), RIGHT-drag spins the
+         shape about its own centroid ("右クリックしながら動かしたら回転させられるように") — screen-angle around the
+         projected centroid drives rotAng, so the shape follows the cursor like a dial. */
+      let curCen=baseCen.slice(), rotAng=0;
+      try{ map.dragPan.disable(); }catch(_){} try{ if(map.dragRotate) map.dragRotate.disable(); }catch(_){}
+      try{ map.getCanvas().style.cursor='move'; }catch(_){}
+      let dragging=false, rotating=false, rotStart=0, rotBase=0;
+      const angAt=(e)=>{ try{ const c=map.project({lng:curCen[0],lat:curCen[1]}); return Math.atan2(e.point.y-c.y,e.point.x-c.x); }catch(_){ return 0; } };
+      const dn=(e)=>{ const btn=e&&e.originalEvent&&e.originalEvent.button;
+        if(btn===2){ rotating=true; rotStart=angAt(e); rotBase=rotAng; }
+        else dragging=true;
+        if(e&&e.preventDefault) try{ e.preventDefault(); }catch(_){} };
+      const mvv=(e)=>{
+        if(rotating&&e.point){ rotAng=rotBase-(angAt(e)-rotStart); paint(reshape(curCen,rotAng)); return; }
+        if(!dragging||!e.lngLat) return; curCen=[e.lngLat.lng,e.lngLat.lat]; paint(reshape(curCen,rotAng)); };
+      const up=()=>{ dragging=false; rotating=false; };
+      const ctx=(e)=>{ if(e&&e.preventDefault) try{ e.preventDefault(); }catch(_){} };   /* no browser context menu while placing */
+      map.on('mousedown',dn); map.on('touchstart',dn); map.on('mousemove',mvv); map.on('touchmove',mvv); map.on('mouseup',up); map.on('touchend',up); map.on('contextmenu',ctx);
+      handlers=[['mousedown',dn],['touchstart',dn],['mousemove',mvv],['touchmove',mvv],['mouseup',up],['touchend',up],['contextmenu',ctx]];
       showPill(name); return true; }
     function stop(){ if(!on&&!handlers.length){ return; } on=false;
       try{ handlers.forEach(([ev,fn])=>map.off(ev,fn)); }catch(_){} handlers=[];
-      try{ map.dragPan.enable(); }catch(_){} try{ map.getCanvas().style.cursor=''; }catch(_){}
+      try{ map.dragPan.enable(); }catch(_){} try{ if(map.dragRotate) map.dragRotate.enable(); }catch(_){}
+      try{ map.getCanvas().style.cursor=''; }catch(_){}
       try{ if(map.getLayer('immove-fill')) map.removeLayer('immove-fill'); }catch(_){}
       try{ if(map.getLayer('immove-line')) map.removeLayer('immove-line'); }catch(_){}
       try{ if(map.getSource('immove-src')) map.removeSource('immove-src'); }catch(_){}
       if(pill){ try{ pill.remove(); }catch(_){} pill=null; } }
-    return { start, stop, active:()=>on }; })();
+    return { start, stop, active:()=>on, _reshape:(cen,rot)=>reshape(cen,rot||0) }; })();
   /* ===== (#R83) ROAD ROUTING ("Atlasで経路機能を…（Google Map）のような") — real turn-by-turn directions from the
      public OSRM road network (car via router.project-osrm.org; foot/bike via routing.openstreetmap.de). Draws the
      route on the map with start/end pins and returns distance, duration and step-by-step guidance. Separate from
@@ -31299,8 +31344,12 @@ window.addEventListener('DOMContentLoaded', () => {
          no Maddison economic data this year and so was never injected into countryStats (e.g. the Ottoman Empire in
          1914 — it is still the Ottoman Empire on the map, not modern Turkey). The faithful lifespan disambiguates
          loose patterns (^russia$/^india$/yugoslav) so they only bind inside the state's own era. */
+      /* (#R125) test BOTH the raw era name and the possessor-suffix-stripped one ("India (UK)" → "India") — CShapes
+         dependencies carry the "(UK)/(France)/(Japan)…" gloss, which made ^india$-style patterns miss entirely, so a
+         click on 1914 British India resolved to NOTHING ("まだ不完全"). */
+      const nmBare=String(nm||'').replace(/\s*\([^)]*\)\s*$/,'').trim();
       try{ const HS=window.IntMapHistStates; const when=(window.IntMapTime&&window.IntMapTime.when)?window.IntMapTime.when():null;
-        if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!re||!re.test(nm)) continue;
+        if(HS&&HS.STATES){ for(const S of HS.STATES){ const re=HS.hbRe&&HS.hbRe(S.code); if(!re||!(re.test(nm)||re.test(nmBare))) continue;
           let act=true; try{ if(when){ const t=+when,a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a&&t<=b); } }catch(_){}
           if(!act) continue;
           empire=true; const nmS=(S.name&&(S.name[lg]||S.name.en))||S.name; if(nmS) out.name=nmS; if(S.wiki) out.wiki=S.wiki;
@@ -31316,7 +31365,15 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!code){ const vlow=String(nm||'').trim(); for(const V of _VANISHED){ if(V.re.test(vlow)){ out.name=(V.nm[lg]||V.nm.en); out.wiki=V.wiki; out.code=null; return out; } } }
         /* 3) point-in-polygon over the MODERN polygons — the robust catch-all that survives aourednik name variance
               (e.g. "Kingfom of Italy" typo, "Italy"→our "Kingdom of Italy") by using WHERE the click landed */
-        if(!code&&lngLat&&isFinite(lngLat.lng)){ try{ const g=window.countryGeo; if(g&&g.features){ let best=null,bestA=Infinity; for(const f of g.features){ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const s=countryStats[cd]; if(!s||s._histHidden||!f.geometry) continue; if(_contains(f.geometry,lngLat.lng,lngLat.lat)){ const a=_bboxArea(f.geometry); if(a<bestA){ bestA=a; best=cd; } } } if(best) code=best; } }catch(_){} }
+        if(!code&&lngLat&&isFinite(lngLat.lng)){ try{ const g=window.countryGeo; if(g&&g.features){ let best=null,bestA=Infinity,bestHid=null,bestHidA=Infinity; for(const f of g.features){ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); const s=countryStats[cd]; if(!s||!f.geometry) continue; if(_contains(f.geometry,lngLat.lng,lngLat.lat)){ const a=_bboxArea(f.geometry); if(s._histHidden){ if(a<bestHidA){ bestHidA=a; bestHid=cd; } } else if(a<bestA){ bestA=a; best=cd; } } } if(best) code=best;
+          /* (#R125) the modern country here is HIDDEN because an ACTIVE former state absorbs it this year (India
+             1914 → British Raj, Korea 1914 → Empire of Japan). Resolve to THAT state — its aggregate series is the
+             comparable data for this territory — instead of returning nothing. */
+          else if(bestHid){ try{ const HS=window.IntMapHistStates, when2=(window.IntMapTime&&window.IntMapTime.when)?window.IntMapTime.when():null;
+            if(HS&&HS.STATES){ for(const S of HS.STATES){ if(!S.succ||S.succ.indexOf(bestHid)<0) continue;
+              let act=true; try{ if(when2){ const t=+when2,a2=+new Date(S.from+'T00:00:00Z'),b2=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a2&&t<=b2); } }catch(_){}
+              if(!act||!countryStats[S.code]||countryStats[S.code]._histHidden) continue;
+              code=S.code; break; } } }catch(_){} } } }catch(_){} }
         if(code){ const s=countryStats[code]; if(s){ out.code=code; const nm2=(s.name&&(s.name[lg]||s.name.en))||s.nameEn; if(nm2) out.name=nm2; if(s.wiki) out.wiki=s.wiki; } }
         /* (#R116) ERA-SPECIFIC Wikipedia for SAME-NAME countries ("国名に変化がない国は特に、その時代の国の
            Wikipediaに飛ばしてもらえない"): a country that kept its label (France, China, Italy…) resolved to the
