@@ -9045,22 +9045,62 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window.highlightDashMarker=function(id,on){ if(map&&map.getSource('dash-points')){ try{ map.setFeatureState({source:'dash-points',id},{hover:on}); }catch(e){} } };
   function clearIntelSources(){ if(map){ if(map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); if(map.getSource('dash-points')) map.getSource('dash-points').setData({type:'FeatureCollection',features:[]}); newsFeatures=[]; dashFeatures=[]; } }
-  /* (#R122) SPREAD DUPLICATE NEWS PINS — many stories geolocate to the SAME anchor (a country/city centroid, e.g.
-     everything filed under "USA" lands on one point), so their pins stack and only the top one is clickable. Pins
-     sharing a location are fanned out over a deterministic phyllotaxis (golden-angle) spiral around that point; the
-     spread radius grows with the group size (a country-sized cluster spreads wider, a city cluster stays tight) and
-     the longitude step is corrected for latitude so the fan stays roughly circular on the ground / within the region. */
+  /* (#R122/#R123) SPREAD DUPLICATE NEWS PINS — many stories geolocate to the SAME anchor (a country/city point, e.g.
+     everything filed under "USA" lands on one dot), so pins stack and only the top one is clickable.
+     (#R123) FIX "対象領域に分散的に配置できていない": the R122 version fanned every cluster over a FIXED small spiral,
+     so a country cluster stayed a tiny dot in the middle of the country. Now the spread is REGION-AWARE using the
+     place type carried on each pin (ptype) and the real country polygon (window.countryGeo):
+       • country-typed clusters are DISTRIBUTED ACROSS the country's real boundary (deterministic rejection sampling
+         inside the polygon → a US cluster fills the US, a UK cluster fills the UK);
+       • city / flashpoint / region clusters fan over a golden-angle disk sized to the type (a city stays tight, a
+         region spreads wider), latitude-corrected and clipped to the containing country so they never spill over a
+         border.
+     Deterministic (seeded from the anchor) so the layout is stable across re-renders. Degrades to the golden-angle
+     disk when countryGeo/turf aren't available yet. */
   function _spreadDupNewsPins(feats){ try{ if(!Array.isArray(feats)||feats.length<2) return feats;
     const groups=new Map();
     feats.forEach(f=>{ const c=f&&f.geometry&&f.geometry.coordinates; if(!c||!isFinite(+c[0])||!isFinite(+c[1])) return;
       const k=(+c[0]).toFixed(3)+','+(+c[1]).toFixed(3); let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(f); });
     const GA=2.399963229; /* golden angle (rad) */
+    const cg=(window.countryGeo&&window.countryGeo.features&&window.countryGeo.features.length)?window.countryGeo:null;
+    const haveTurf=(typeof turf!=='undefined');
+    const _regCache=new Map();
+    /* the country polygon under an anchor + its bbox / bbox-centre (the region we spread within). */
+    function regionFor(c0){ if(!cg||!haveTurf) return null; const key=c0[0].toFixed(2)+','+c0[1].toFixed(2);
+      if(_regCache.has(key)) return _regCache.get(key);
+      let out=null; try{ const pt=turf.point(c0);
+        for(const f of cg.features){ if(!f.geometry) continue; try{ if(turf.booleanPointInPolygon(pt,f)){
+          const bb=turf.bbox(f); out={f,bb,bc:[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]}; break; } }catch(_){} } }catch(_){}
+      _regCache.set(key,out); return out; }
+    function seeded(c0){ let s=Math.abs(Math.round(c0[0]*1000+c0[1]*7919))||1; return ()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
     groups.forEach(g=>{ if(g.length<2) return; const c0=g[0].geometry.coordinates.slice();
-      const cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
-      const base=0.055+Math.min(0.05,g.length*0.002);   /* wider fan for bigger clusters, capped */
-      g.forEach((f,i)=>{ if(i===0) return;   /* leave one pin on the true anchor */
-        const r=base*Math.sqrt(i), ang=i*GA; const dlat=r*Math.sin(ang), dlng=r*Math.cos(ang)/cosl;
-        f.geometry={type:'Point',coordinates:[c0[0]+dlng, c0[1]+dlat]}; }); });
+      const ptype=String((g[0].properties&&g[0].properties.ptype)||'').toLowerCase();
+      const reg=regionFor(c0);
+      /* country-level = the gazetteer typed it 'country', OR (no type, e.g. a server pin) the anchor sits near the
+         containing country's centre — i.e. it is a country-representative point, not a real city inside it. */
+      let countryLevel=false;
+      if(reg){ if(ptype==='country') countryLevel=true;
+        else if(!ptype){ const diag=Math.hypot(reg.bb[2]-reg.bb[0],reg.bb[3]-reg.bb[1]);
+          countryLevel = Math.hypot(c0[0]-reg.bc[0],c0[1]-reg.bc[1]) < Math.max(1.2,diag*0.28); } }
+      if(countryLevel && reg){
+        const bb=reg.bb, f=reg.f, rnd=seeded(c0), cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
+        const diag=Math.hypot(bb[2]-bb[0],bb[3]-bb[1]);
+        g.forEach((ft,i)=>{ let placed=null;
+          for(let k=0;k<26;k++){ const lng=bb[0]+rnd()*(bb[2]-bb[0]), lat=bb[1]+rnd()*(bb[3]-bb[1]);
+            try{ if(turf.booleanPointInPolygon(turf.point([lng,lat]),f)){ placed=[lng,lat]; break; } }catch(_){} }
+          if(!placed){ const r=Math.min(diag*0.35,0.12+0.03*Math.sqrt(i)), ang=i*GA;   /* miss → country-scale disk around the anchor */
+            placed=[c0[0]+r*Math.cos(ang)/cosl, c0[1]+r*Math.sin(ang)]; }
+          ft.geometry={type:'Point',coordinates:placed}; });
+      } else {
+        const cosl=Math.max(0.2,Math.cos(c0[1]*Math.PI/180));
+        const base=(ptype==='region')?0.10:(ptype==='city'||ptype==='flashpoint')?0.035:0.06;
+        const cap=(ptype==='region')?0.9:(ptype==='city'||ptype==='flashpoint')?0.22:0.4;
+        g.forEach((ft,i)=>{ if(i===0) return;   /* leave one pin on the true spot */
+          let r=Math.min(cap,base*Math.sqrt(i)); const ang=i*GA;
+          let lng=c0[0]+r*Math.cos(ang)/cosl, lat=c0[1]+r*Math.sin(ang);
+          if(reg&&haveTurf){ try{ if(!turf.booleanPointInPolygon(turf.point([lng,lat]),reg.f)){ r*=0.5; lng=c0[0]+r*Math.cos(ang)/cosl; lat=c0[1]+r*Math.sin(ang); } }catch(_){} }
+          ft.geometry={type:'Point',coordinates:[lng,lat]}; }); }
+    });
     return feats; }catch(_){ return feats; } }
 
   /* ===== News location analysis =====
@@ -9142,13 +9182,14 @@ window.addEventListener('DOMContentLoaded', () => {
       if(s>bestScore || (s===bestScore && (!best||(TYPE_LOCAL[g.type]||0)>(TYPE_LOCAL[best.type]||0)))){ best=g; bestScore=s; }
     }
     let subjectLoc=best?best.loc:null, subjectName=best?best.name[currentLang]:null;
+    let subjectType=best?best.type:null;   /* (#R123) remember the place TYPE (country/city/flashpoint/region) so duplicate pins can be spread WITHIN the right area */
     /* (#R107) no gazetteer hit → try the country actually named (real location beats a random scatter). */
-    if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; } }
+    if(!subjectLoc){ const cf=_countryFallback(title+' '+desc); if(cf){ subjectLoc=cf.loc; subjectName=cf.name; subjectType='country'; } }
     /* ---- Publisher HQ (expanded gazetteer, longest-key-first, word-boundary safe) ---- */
     const pm=matchPublisher(publisher);
     const pubLoc=pm?pm.loc:null, pubName=pm?((currentLang==='jp'?'発信: ':currentLang==='de'?'Quelle: ':currentLang==='ru'?'Источник: ':currentLang==='es'?'Fuente: ':'Source: ')+pm.label):null;
     /* Remember title/publisher so the toggle/AI passes can re-seed fallbacks later */
-    const res={ subjectLoc, subjectName, pubLoc, pubName, short, _title:title, _pub:publisher };
+    const res={ subjectLoc, subjectName, subjectType, pubLoc, pubName, short, _title:title, _pub:publisher };
     applyPinMode(res);
     return res;
   }
@@ -9161,15 +9202,15 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!a) return;
     const title=a._title||'', pub=a._pub||'';
     if(newsPinMode==='publisher'){
-      if(a.pubLoc){ a.loc=a.pubLoc; a.name=a.pubName; a.mapped='publisher'; }
+      if(a.pubLoc){ a.loc=a.pubLoc; a.name=a.pubName; a.mapped='publisher'; a.ptype='city'; }   /* (#R123) publisher HQ is a city-scale point */
       /* (#R35) "Publisher locationにすると位置不明のピンが多い" — when the outlet HQ can't be resolved, fall
          back to the SUBJECT (event) location instead of scattering to a random hash point. A real place is far
          more useful than a dim "unknown" dot, so the number of unlocated publisher pins drops sharply. */
-      else if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=(pub?pub+' · ':'')+(a.subjectName||''); a.mapped='publisher'; }
-      else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(currentLang==='jp'?'発信元不明':currentLang==='de'?'Herausgeber unbekannt':currentLang==='ru'?'Издатель неизвестен':currentLang==='es'?'Editor desconocido':'Publisher unknown'); a.mapped=false; }
+      else if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=(pub?pub+' · ':'')+(a.subjectName||''); a.mapped='publisher'; a.ptype=a.subjectType||''; }
+      else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(currentLang==='jp'?'発信元不明':currentLang==='de'?'Herausgeber unbekannt':currentLang==='ru'?'Издатель неизвестен':currentLang==='es'?'Editor desconocido':'Publisher unknown'); a.mapped=false; a.ptype=''; }
     } else {
-      if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; }
-      else { a.loc=hashLocFromString('sub:'+title); a.name=(currentLang==='jp'?'場所不明':currentLang==='de'?'Ort unbekannt':currentLang==='ru'?'Место неизвестно':currentLang==='es'?'Ubicación desconocida':'Location unknown'); a.mapped=false; }
+      if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; a.ptype=a.subjectType||''; }
+      else { a.loc=hashLocFromString('sub:'+title); a.name=(currentLang==='jp'?'場所不明':currentLang==='de'?'Ort unbekannt':currentLang==='ru'?'Место неизвестно':currentLang==='es'?'Ubicación desconocida':'Location unknown'); a.mapped=false; a.ptype=''; }
     }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
@@ -9299,7 +9340,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const fid='n_'+Math.random().toString(36).slice(2,10);
       const mappedStr=a.mapped===true?'true':(a.mapped==='publisher'?'publisher':'none');
       newsFeatures.push({type:'Feature',id:fid,geometry:{type:'Point',coordinates:a.loc},properties:{
-        fid, mapped:mappedStr, title:item.title, name:a.name||'', short:a.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate }});
+        fid, mapped:mappedStr, ptype:a.ptype||'', title:item.title, name:a.name||'', short:a.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate }});
     }});
     _spreadDupNewsPins(newsFeatures);   /* (#R122) fan out pins sharing an anchor */
     map.getSource('news-points').setData({type:'FeatureCollection',features:newsFeatures}); try{scheduleNewsDeclutter();}catch(_){}
@@ -9392,7 +9433,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const fid='n_'+Math.random().toString(36).slice(2,10);
         const mappedStr = item.analysis.mapped===true?'true':(item.analysis.mapped==='publisher'?'publisher':'none');
         newsFeatures.push({type:'Feature',id:fid,geometry:{type:'Point',coordinates:item.analysis.loc},properties:{
-          fid, mapped:mappedStr, title:item.title, name:item.analysis.name||'',
+          fid, mapped:mappedStr, ptype:item.analysis.ptype||'', title:item.title, name:item.analysis.name||'',
           short:item.analysis.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate
         }});
       }
@@ -10104,7 +10145,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const subjectName=currentLang==='jp'?(r.subject_name_jp||r.subject_name_en):(r.subject_name_en||r.subject_name_jp);
     const pubName=r.pub_label?((currentLang==='jp'?'発信: ':currentLang==='de'?'Quelle: ':currentLang==='ru'?'Источник: ':currentLang==='es'?'Fuente: ':'Source: ')+r.pub_label):null;
     const short=currentLang==='jp'?(r.short_jp||r.short_en||''):(r.short_en||r.short_jp||'');
-    const analysis={ subjectLoc, subjectName, pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };
+    const analysis={ subjectLoc, subjectName, subjectType:(r.subject_type||''), pubLoc, pubName, short, _title:r.title, _pub:r.publisher||'' };   /* (#R123) carry type when the server provides it; _spreadDupNewsPins falls back to a geometric heuristic otherwise */
     applyPinMode(analysis);   /* sets loc/name/mapped for the current Subject/Publisher toggle */
     return { title:r.title, publisher:r.publisher||'', link:r.link, pubDate:r.pub_date||'', desc:r.description||'', analysis };
   }
