@@ -23400,9 +23400,50 @@ window.addEventListener('DOMContentLoaded', () => {
       alts.forEach((a,i)=>{ if(i===0) a.label=LL('Fastest','最速','Schnellste','Быстрейший','Más rápido')+avoidTx;
         else if(i===si) a.label=LL('Shortest','最短距離','Kürzeste','Кратчайший','Más corto')+avoidTx;
         else { const dMin=Math.round((a.duration-fast.duration)/60); a.label=(dMin>0?('+'+dMin+' '+LL('min','分','Min','мин','min')):LL('Alternative','代替','Alternative','Альтернатива','Alternativa'))+avoidTx; } }); }
-    /* OSRM `exclude=` for the car profile (§7.3). The public demo accepts toll / motorway / ferry. */
-    function _osrmExclude(avoid,mode){ if(!avoid||!avoid.length) return ''; if(!/driv|car|auto/.test(mode)) return '';
-      const ok=avoid.filter(x=>/^(toll|motorway|ferry)$/.test(x)); return ok.join(','); }
+    /* (#R132) 経路10-10 §7.3/§4.7: AVOID toll / highway / ferry. The public OSRM demo REJECTS `exclude=` ("Exclude
+       flag combination is not supported"), so an avoid request would be a broken button — instead we route it on
+       Valhalla (FOSSGIS, keyless — the same server used for isochrones), which honours costing_options.use_* and
+       genuinely reroutes (measured: Munich→Nuremberg avoiding highways = 218 km/252 min vs 169 km/109 min). This is
+       real provider-selection-by-feature, not a facade. Valhalla's maneuver `type` maps onto the SAME _maneuver()
+       pseudo-step so the 5-language turn-by-turn + lane/step-highlight all work unchanged. */
+    function _vhStep(m){ const T=m.type;
+      const MAP={1:['depart',''],2:['depart',''],3:['depart',''],7:['new name','straight'],8:['continue','straight'],
+        9:['turn','slight right'],10:['turn','right'],11:['turn','sharp right'],12:['turn','uturn'],13:['turn','uturn'],
+        14:['turn','sharp left'],15:['turn','left'],16:['turn','slight left'],
+        17:['on ramp','straight'],18:['on ramp','right'],19:['on ramp','left'],20:['off ramp','right'],21:['off ramp','left'],
+        22:['fork','straight'],23:['fork','slight right'],24:['fork','slight left'],25:['merge','straight'],
+        26:['roundabout',''],27:['continue','straight'],28:['notification',''],29:['notification',''],
+        4:['arrive',''],5:['arrive','right'],6:['arrive','left'],37:['arrive','']};
+      const e=MAP[T]||['continue','straight'];
+      const step={maneuver:{type:e[0],modifier:e[1]},name:(m.street_names&&m.street_names[0])||'',distance:(m.length||0)*1000};
+      if(T===26&&m.roundabout_exit_count) step.maneuver.exit=m.roundabout_exit_count;
+      return step; }
+    async function _roadValhalla(from,to,opts){ const rid=opts._rid; const av=new Set(opts.avoid||[]);
+      const co={}; if(av.has('toll')) co.use_tolls=0; if(av.has('motorway')) co.use_highways=0.1; if(av.has('ferry')) co.use_ferry=0;
+      const body={locations:[{lat:+from.lat,lon:+from.lng}].concat((Array.isArray(opts.via)?opts.via:[]).map(p=>({lat:+p.lat,lon:+p.lng}))).concat([{lat:+to.lat,lon:+to.lng}]),
+        costing:'auto',costing_options:{auto:co},directions_options:{units:'kilometers'}};
+      const url='https://valhalla1.openstreetmap.de/route?json='+encodeURIComponent(JSON.stringify(body));
+      let j=null,errKind='provider_unavailable'; const ac=_mkAC(22000);
+      try{ const r=await fetch(url,{signal:ac.signal});
+        if(r.status===429) errKind='rate_limited';
+        else if(r.ok){ const jj=await r.json(); if(jj&&jj.trip&&jj.trip.status===0&&jj.trip.legs&&jj.trip.legs.length) j=jj; else errKind='no_route'; }
+        else if(r.status>=400&&r.status<500) errKind='no_route'; }
+      catch(e){ errKind=(e&&e.name==='AbortError')?((rid!==_reqSeq)?'cancelled':'provider_timeout'):'provider_unavailable'; }
+      finally{ _rmAC(ac); }
+      if(rid!==_reqSeq) return {ok:false,status:'cancelled'};
+      if(!j) return {ok:false,status:errKind,provider:'valhalla'};
+      const trip=j.trip; let shape=[]; const steps=[];
+      trip.legs.forEach(leg=>{ const seg=_decodePoly(leg.shape,6);
+        (leg.maneuvers||[]).forEach(m=>{ const st=_vhStep(m); const b=Math.max(0,m.begin_shape_index||0), e2=Math.max(b,m.end_shape_index||0);
+          st.geometry={type:'LineString',coordinates:seg.slice(b,e2+1)}; steps.push(st); });
+        shape=shape.length?shape.concat(seg):seg; });
+      const avoidTx=(opts.avoid&&opts.avoid.length)?(LL('avoids ','回避: ','ohne ','без ','evita ')+opts.avoid.map(x=>({toll:LL('tolls','有料道路','Maut','платные','peajes'),motorway:LL('highways','高速道路','Autobahn','магистрали','autopistas'),ferry:LL('ferries','フェリー','Fähren','паромы','ferris')}[x]||x)).join(', ')):LL('Route','経路','Route','Маршрут','Ruta');
+      const alt={lines:[{coords:shape,walk:0,col:'#1a73e8'}],stops:[],geometry:{type:'LineString',coordinates:shape},coords:shape,steps:steps,
+        duration:trip.summary.time,distance:(trip.summary.length||0)*1000,color:ALT_PAL[0],label:avoidTx};
+      const setId=_rsNew([alt],[[+from.lng,+from.lat],[+to.lng,+to.lat]]); _drawAlts(0,setId);
+      return {ok:true,status:'success',road:true,provider:'valhalla',routeSetId:setId,sel:0,mode:'driving',avoid:opts.avoid,
+        distance:alt.distance,duration:alt.duration,steps:steps,
+        alternatives:[{duration:alt.duration,distance:alt.distance,steps:steps,label:alt.label,color:alt.color}]}; }
     /* (#R125) plan fetch extracted from transit() so the intercity JR bridge can reuse it for ACCESS/EGRESS legs.
        (#R126) 経路10-10 §3.2/§24.1: public CORS proxies REMOVED from the routing path (api.transitous.org serves CORS
        headers directly — proxying routed third parties through corsproxy.io/allorigins leaked origin/destination
@@ -23561,8 +23602,14 @@ window.addEventListener('DOMContentLoaded', () => {
           if(gap) legOut._gap=true;
           if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) stops.push([a.lng,a.lat]); }
             if(l.to&&l.to.lat!=null){ const b=P(l.to); if(isFinite(b.lng)) stops.push([b.lng,b.lat]); } }
-          legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col}); });
-        return {lines:lines,stops:stops,legs:legOut,shapeGap:!!legOut._gap,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; }
+          /* (#R132) 経路10-10 §2.4/§9.6: MOTIS marks each leg realTime true/false and carries scheduledStartTime.
+             Surface whether a leg's time is LIVE (real-time) or timetable-based, and any delay (actual − scheduled),
+             so the reply can say "real-time" only when it truly is — never dress a static timetable as live. */
+          const rt=(l.realTime===true); let delay=0;
+          try{ if(rt&&l.startTime&&l.scheduledStartTime){ delay=Math.round((new Date(l.startTime).getTime()-new Date(l.scheduledStartTime).getTime())/60000); if(!isFinite(delay)) delay=0; } }catch(_){ delay=0; }
+          legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col,rt:rt,delay:delay}); });
+        const anyRt=legOut.some(l=>!l.walk&&l.rt);
+        return {lines:lines,stops:stops,legs:legOut,shapeGap:!!legOut._gap,realtime:anyRt,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; }
     function _transitBuild(its,from,to){
       /* rank: itineraries that actually ride something first (a bare all-walk plan is unhelpful), then by duration; keep up to 5 */
       const ranked=its.slice().sort((x,y)=>{ const rx=(x.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1, ry=(y.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1; return (rx-ry)||((x.duration||1e9)-(y.duration||1e9)); });
@@ -23571,8 +23618,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const setId=_rsNew(alts,[[+from.lng,+from.lat],[+to.lng,+to.lat]]);
       _drawAlts(0,setId);
       const b0=alts[0];
-      return {ok:true,status:'success',transit:true,routeSetId:setId,duration:b0.duration,transfers:b0.transfers,legs:b0.legs,shapeGap:alts.some(a=>a.shapeGap),startTime:b0.startTime,endTime:b0.endTime,mode:'transit',sel:0,
-        alternatives:alts.map(a=>({duration:a.duration,transfers:a.transfers,legs:a.legs,startTime:a.startTime,endTime:a.endTime,color:a.color}))}; }
+      return {ok:true,status:'success',transit:true,routeSetId:setId,duration:b0.duration,transfers:b0.transfers,legs:b0.legs,shapeGap:alts.some(a=>a.shapeGap),realtime:alts.some(a=>a.realtime),startTime:b0.startTime,endTime:b0.endTime,mode:'transit',sel:0,
+        alternatives:alts.map(a=>({duration:a.duration,transfers:a.transfers,legs:a.legs,realtime:a.realtime,startTime:a.startTime,endTime:a.endTime,color:a.color}))}; }
     /* (#R126) 経路10-10 §3.1–§3.5/§17/§24: road routing goes DIRECT to the router (no public CORS proxy — §24.1),
        carries a requestId so stale responses never draw (§24.12), separates calculation from drawing (§24.2 — a
        route computed while the style is loading still succeeds; _paint repaints on styledata), and returns a TYPED
@@ -23583,14 +23630,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const rid=++_reqSeq; _abortInflight(); opts._rid=rid;
       const mode=String(opts.mode||'driving').toLowerCase();
       if(_isTransit(mode)) return await transit(from,to,opts);
+      /* (#R132) §7.3/§4.7: an AVOID request (driving) goes to Valhalla, which actually honours it. If Valhalla is
+         unreachable, fall through to OSRM without the avoid and flag it so the reply is honest (avoid not applied). */
+      if(opts.avoid&&opts.avoid.length&&/driv|car|auto/.test(mode)){ const vr=await _roadValhalla(from,to,opts);
+        if(vr&&(vr.ok||vr.status==='cancelled')) return vr; opts._avoidDropped=true; }
       const prof=PROFILES[mode]||PROFILES.driving;
       const via=Array.isArray(opts.via)?opts.via:[];
       const pts=[from].concat(via).concat([to]);
       const coordStr=pts.map(p=>(+p.lng).toFixed(6)+','+(+p.lat).toFixed(6)).join(';');
       /* (#R132) §3.3/§7.1/§10: ask OSRM for up to 3 ALTERNATIVES (only for a plain A→B — the demo returns none when
-         there are via points) and for the `exclude=` avoid set (§7.3, car profile: toll/motorway/ferry). */
-      const excl=_osrmExclude(opts.avoid,mode);
-      const url='https://'+prof[0]+'/route/v1/'+prof[1]+'/'+coordStr+'?overview=full&geometries=geojson&steps=true'+(via.length?'':'&alternatives=3')+(excl?('&exclude='+encodeURIComponent(excl)):'');
+         there are via points). */
+      const url='https://'+prof[0]+'/route/v1/'+prof[1]+'/'+coordStr+'?overview=full&geometries=geojson&steps=true'+(via.length?'':'&alternatives=3');
       let j=null, errKind='provider_unavailable';
       for(let att=0;att<2&&!j;att++){
         if(rid!==_reqSeq) return {ok:false,status:'cancelled'};
@@ -23627,7 +23677,7 @@ window.addEventListener('DOMContentLoaded', () => {
       alts.forEach((a,i)=>{ a.color=ALT_PAL[i%ALT_PAL.length]; }); _labelRoad(alts,opts.avoid);
       const setId=_rsNew(alts,[[+from.lng,+from.lat],[+to.lng,+to.lat]]); _drawAlts(0,setId);
       const b0=alts[0];
-      return {ok:true,status:'success',road:true,routeSetId:setId,sel:0,mode,avoid:opts.avoid||null,
+      return {ok:true,status:'success',road:true,routeSetId:setId,sel:0,mode,avoid:opts.avoid||null,avoidDropped:!!opts._avoidDropped,
         distance:b0.distance,duration:b0.duration,steps:b0.steps,
         alternatives:alts.map(a=>({duration:a.duration,distance:a.distance,steps:a.steps,label:a.label,color:a.color}))}; }
     /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
@@ -23788,7 +23838,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const _km=m=>{ const k=m/1000; return (k<10?k.toFixed(1):Math.round(k).toLocaleString())+' km'; };
       /* (#R132) §7.1/§10.5-10.6: road alternatives as selectable cards (fastest/shortest/+X min), tap → redraw+resync */
       const alts=(r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
-      if(sum) sum.innerHTML='<b style="font-size:15px;">'+_dur(r.duration)+'</b> · '+_km(r.distance)+' '+ml+timeHint;
+      const avNote=(r.avoidDropped)?('<div style="color:#ff9f0a;font-size:10.5px;">⚠ '+LL('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.')+'</div>'):(r.provider==='valhalla'?('<div style="color:var(--text-muted);font-size:10px;">'+LL('Avoid routing via Valhalla (OSM).','回避経路は Valhalla（OSM）。','Meiden-Route via Valhalla (OSM).','Маршрут с исключениями через Valhalla (OSM).','Ruta con exclusiones vía Valhalla (OSM).')+'</div>'):'');
+      if(sum) sum.innerHTML='<b style="font-size:15px;">'+_dur(r.duration)+'</b> · '+_km(r.distance)+' '+ml+timeHint+avNote;
       if(st){ st._ctx={setId:r.routeSetId,alts,steps:r.steps,mode:pMode,sum,dur:_dur,km:_km,ml};
         let html='';
         if(alts){ html+='<div class="rp-alts" style="display:flex;flex-direction:column;gap:4px;margin-bottom:7px;">'+alts.map((a,i)=>'<button class="rp-alt" data-ai="'+i+'" style="text-align:left;border:none;border-left:3px solid '+a.color+';background:'+(i===0?'var(--input-bg)':'transparent')+';border-radius:6px;padding:5px 8px;cursor:pointer;display:flex;justify-content:space-between;gap:6px;align-items:center;color:var(--text-main);"><span style="font-size:11.5px;">'+escp(a.label||'')+'</span><span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">'+_dur(a.duration)+' · '+_km(a.distance)+'</span></button>').join('')+'</div>'; }
@@ -28001,7 +28052,9 @@ window.addEventListener('DOMContentLoaded', () => {
             const _tm=iso=>{ try{ const d=new Date(iso); return isFinite(d.getTime())?d.toLocaleTimeString(currentLang==='jp'?'ja-JP':'en-GB',{hour:'2-digit',minute:'2-digit'}):''; }catch(_){ return ''; } };
             const seq=(r.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
             const _legRow=(l)=>{ const mn=Math.round((l.duration||0)/60);
-              const head=l.walk?(L('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+esc(l.to)):'')):((l.route?('<b>'+esc(l.route)+'</b> '):'')+esc(l.headsign||l.to||''));
+              /* (#R132) §2.4/§9.6/§9.12: live badge + delay for a real-time leg (green = on time, orange = +N late) */
+              const rtTag=(!l.walk&&l.rt)?('<span style="font-size:9px;font-weight:700;color:'+((l.delay||0)>0?'#ff9f0a':'#34a853')+';margin-left:5px;">● '+((l.delay||0)>0?('+'+l.delay+' '+L('min late','分遅れ','Min Versp.','мин опозд.','min tarde')):L('on time','定刻','pünktlich','по расписанию','a tiempo'))+'</span>'):'';
+              const head=l.walk?(L('Walk','徒歩','Zu Fuß','Пешком','A pie')+(l.to?(' → '+esc(l.to)):'')):((l.route?('<b>'+esc(l.route)+'</b> '):'')+esc(l.headsign||l.to||'')+rtTag);
               const sub=l.walk?'':(esc(l.from||'')+(l.dep?(' · '+_tm(l.dep)):''));
               return '<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(128,128,128,0.1);"><span style="width:18px;text-align:center;">'+_ic(l.mode)+'</span><span style="flex:0 0 auto;width:3px;align-self:stretch;border-radius:2px;background:'+(l.color||'#7a7f87')+';"></span><span style="flex:1;min-width:0;font-size:11.5px;line-height:1.4;">'+head+(sub?('<div style="color:var(--text-muted);font-size:10px;">'+sub+'</div>'):'')+'</span><span style="flex:0 0 auto;color:var(--text-muted);font-size:10px;">'+mn+' '+L('min','分','Min','мин','min')+'</span></div>'; };
             const legHtml=(r.legs||[]).map(_legRow).join('');
@@ -28022,7 +28075,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 ? L('Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.','日本の都市間鉄道: 実在の新幹線路線・停車駅に基づき、所要時間は各社の公表時刻表（速達パターン＋運行頻度）からの概算です（リアルタイムではありません）。ローカル区間は公開GTFS（Transitous）があれば実データ、無い地域（例: 名古屋圏）は距離ベースの目安と明記しています。駅間の線形は概略です。','Japan-Fernverkehr: echte Shinkansen-Linien/Bahnhöfe, Zeiten aus den veröffentlichten Fahrplänen geschätzt (kein Echtzeitfahrplan). Lokale Abschnitte per offenem GTFS, sonst gekennzeichnete Distanzschätzung. Linienverlauf zwischen Bahnhöfen schematisch.','Междугородние ж/д Японии: реальные линии и станции синкансэна, время — оценка по опубликованным расписаниям (не в реальном времени). Местные участки — открытый GTFS, иначе помеченная оценка по расстоянию. Линия между станциями схематична.','Tren interurbano de Japón: líneas y estaciones reales de Shinkansen, tiempos estimados de los horarios publicados (no en vivo). Tramos locales con GTFS abierto o estimación marcada. Trazado entre estaciones esquemático.')
                 : r.railEstimate
                 ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
-                : L('Live public-transit routing (Transitous / MOTIS).','公共交通のライブ経路検索（Transitous／MOTIS）。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request */
+                : r.realtime
+                ? L('Public-transit routing (Transitous / MOTIS) — includes REAL-TIME updates for this trip (live departures / delays where the operator publishes them).','公共交通の経路検索（Transitous／MOTIS）— この旅程はリアルタイム運行情報（事業者が公開する実時刻・遅延）を含みます。','ÖPNV (Transitous/MOTIS) — mit ECHTZEIT-Daten für diese Verbindung (Live-Abfahrten/Verspätungen).','Транзит (Transitous/MOTIS) — с данными в РЕАЛЬНОМ ВРЕМЕНИ по этому маршруту (задержки/отправления).','Transporte (Transitous/MOTIS) — con datos en TIEMPO REAL para este viaje (salidas/retrasos).')
+                : L('Public-transit routing (Transitous / MOTIS) — timetable-based (no real-time data for this trip).','公共交通の経路検索（Transitous／MOTIS）— 時刻表ベース（この旅程のリアルタイム情報はありません）。','ÖPNV (Transitous/MOTIS) — fahrplanbasiert (keine Echtzeitdaten für diese Verbindung).','Транзит (Transitous/MOTIS) — по расписанию (без данных реального времени).','Transporte (Transitous/MOTIS) — según horario (sin datos en tiempo real para este viaje).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request; (#R132) §2.4/§9.6 honest live-vs-timetable */
             if(r.shapeGap) h+=note(L('Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).','一部の乗車区間の形状を取得できませんでした — 該当区間は行程に表示しますが、地図には描画しません（直線での代用はしません）。','Einige Fahrt-Abschnittsformen fehlen — diese Abschnitte stehen in der Liste, werden aber nicht gezeichnet (kein Geraden-Ersatz).','Форма части участков недоступна — они в списке, но не рисуются на карте (без замены прямыми).','No se pudo obtener la forma de algunos tramos — se listan pero no se dibujan (sin sustitutos en línea recta).'));
             return R(true, h); }
           if(!r||!r.ok){ const stt=(r&&r.status)||'';
@@ -28052,7 +28107,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 '<div class="atl-trip'+(i===0?' on':'')+'" data-ai="'+i+'" style="border-left:3px solid '+(a.color||'#1a73e8')+';"><div class="atl-trip-head"><span class="atl-trip-time"><span class="atl-trip-dot" style="background:'+(a.color||'#1a73e8')+';"></span><b>'+_rdur(a.duration)+'</b></span><span class="atl-trip-dur">'+esc(a.label||'')+' · '+_rkm(a.distance)+'</span></div><div class="atl-trip-legs">'+_stepList(a.steps)+'</div></div>').join('')+'</div>';
           } else { h+='<div style="font-size:13px;margin:3px 0 5px;"><b>'+_rdur(r.duration)+'</b> · '+_rkm(r.distance)+'</div>'
               +'<div style="max-height:220px;overflow:auto;font-size:11.5px;line-height:1.5;" class="atl-rsteps" data-rset="'+esc(r.routeSetId||'')+'">'+_stepList(r.steps)+'</div>'; }
-          h+=note(L('Road routing via OSRM (OpenStreetMap) — up to 3 alternatives with lane guidance. Times are typical (no live traffic). Clear it with "clear the route".','OSRM（OpenStreetMap）の道路経路 — 最大3候補・車線案内付き。所要時間は交通状況を含まない標準値です。「経路を消して」で削除。','Straßenrouting OSRM (OpenStreetMap) — bis zu 3 Alternativen mit Spurführung. Zeiten typisch (kein Live-Verkehr).','Дорожный маршрут OSRM — до 3 альтернатив с подсказкой полос. Время типовое (без пробок).','Ruta por carretera OSRM — hasta 3 alternativas con guía de carriles. Tiempos típicos (sin tráfico).'));
+          h+=note(r.provider==='valhalla'
+            ? L('Road routing with your avoid options via Valhalla (OpenStreetMap). Times are typical (no live traffic). Clear it with "clear the route".','回避条件付きの道路経路（Valhalla／OpenStreetMap）。所要時間は交通状況を含まない標準値です。「経路を消して」で削除。','Straßenrouting mit Meiden-Optionen via Valhalla (OpenStreetMap). Zeiten typisch (kein Live-Verkehr).','Дорожный маршрут с исключениями через Valhalla (OpenStreetMap). Время типовое (без пробок).','Ruta con exclusiones vía Valhalla (OpenStreetMap). Tiempos típicos (sin tráfico).')
+            : L('Road routing via OSRM (OpenStreetMap) — up to 3 alternatives with lane guidance. Times are typical (no live traffic). Clear it with "clear the route".','OSRM（OpenStreetMap）の道路経路 — 最大3候補・車線案内付き。所要時間は交通状況を含まない標準値です。「経路を消して」で削除。','Straßenrouting OSRM (OpenStreetMap) — bis zu 3 Alternativen mit Spurführung. Zeiten typisch (kein Live-Verkehr).','Дорожный маршрут OSRM — до 3 альтернатив с подсказкой полос. Время типовое (без пробок).','Ruta por carretera OSRM — hasta 3 alternativas con guía de carriles. Tiempos típicos (sin tráfico).'));
+          if(r.avoidDropped) h+=warn('⚠ '+L('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.'));
           return R(true, h); }
         case 'streetview': case 'streetView': case 'pano': {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
