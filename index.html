@@ -22397,7 +22397,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const areaTools=!opts.noAreaTools;
       const isoBtn=areaTools?`<button class="plc-iso" style="background:var(--input-bg);${btnBase}">${isoLbl}</button>`:'';
       const moveBtn=areaTools?`<button class="plc-move" style="background:var(--input-bg);${btnBase}">${moveLbl}</button>`:'';
-      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;">${safe}</div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
+      /* (#R127) historical entities pass their flag (opts.flag = the countryStats/registry flag HTML) so the click
+         popup shows it too — previously the flag only appeared in the full country card, never here ("国旗…まだ詰め
+         られる箇所が大量にある"). Modern place labels pass no flag, so their popup is unchanged. */
+      const flagHtml=(opts&&opts.flag)?('<span class="plc-flag" style="flex:0 0 auto;line-height:0;display:inline-flex;align-items:center;font-size:19px;">'+opts.flag+'</span>'):'';
+      const html=`<div style="min-width:172px;"><div style="font-weight:700;font-size:14px;color:var(--text-main);margin-bottom:9px;padding-right:34px;display:flex;align-items:center;gap:8px;">${flagHtml}<span>${safe}</span></div><div class="plc-acts"><button class="plc-copy" style="background:var(--input-bg);${btnBase}">${de?'Kopieren':jp?'コピー':'Copy'}</button><button class="plc-wiki" style="display:none;background:var(--input-bg);${btnBase}">Wikipedia</button><button class="plc-ai" style="background:linear-gradient(135deg,rgba(106,90,205,0.30),rgba(30,144,255,0.30));${btnBase}">${de?'KI-Bericht':jp?'AI調査':'AI brief'}</button>${isoBtn}${moveBtn}</div></div>`;
       try{ popup=new maplibregl.Popup({closeButton:true,closeOnClick:false,maxWidth:'300px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html).addTo(map);
         /* (#R59) draw this place's REAL boundary as a polygon (cities/towns/regions; NOT countries). IntMapOutline
            uses point-in-polygon (no fixed threshold → no far same-named place) and draws NOTHING if there is no real
@@ -31240,7 +31244,7 @@ window.addEventListener('DOMContentLoaded', () => {
              — the click event's feature.geometry is CLIPPED to the vector tile the tap landed in (a geojson-vt
              artifact), which is what drew the highlight "cut off in straight lines" for big countries. */
           const R=resolveHist(nm,e.lngLat); const dispName=R.name||nm; const geom=R.geometry||f.geometry;
-          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(e.lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm}); }
+          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(e.lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm,flag:R.flag}); }
           else if(R.code&&typeof showCountryDetail==='function'){ showCountryDetail(R.code); } }catch(_){} };
         /* (#R122) ONLY the era country-NAME labels open the country card — NOT the whole-country fill/line. Clicking
            empty land inside a past country (no name label, no place label there) must NOT force a country-name click
@@ -31668,6 +31672,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let act=true; try{ if(when){ const t=+when,a=+new Date(S.from+'T00:00:00Z'),b=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a&&t<=b); } }catch(_){}
           if(!act) continue;
           empire=true; const nmS=(S.name&&(S.name[lg]||S.name.en))||S.name; if(nmS) out.name=nmS; if(S.wiki) out.wiki=S.wiki;
+          if(S.flag) out.flag=S.flag;   /* (#R127) registry flag — shows even for a data-less empire (Ottoman 1914) not yet in countryStats */
           if(countryStats[S.code]&&!countryStats[S.code]._histHidden){ code=S.code; out.code=S.code; }
           break; } } }catch(_){}
       if(!empire){
@@ -31722,6 +31727,10 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ const y=(window.IntMapTime&&!window.IntMapTime.isLive())?window.IntMapTime.year():null;
           if(code&&y!=null&&isFinite(y)){ const spans=_ERA_WIKI[code]; if(spans){ for(const sp of spans){ if(y>=sp[0]&&y<=sp[1]){ out.wiki=sp[2]; break; } } } } }catch(_){}
       }
+      /* (#R127) surface the entity's flag (the era flag IntMapHistId/HistStates put on countryStats[code], e.g. the
+         German Empire's flag on DEU, Siam's on THA) so the click popup can show it — the historical click path only
+         passed name+wiki before, so historical flags never appeared on the map ("国旗…まだ詰められる箇所が大量にある"). */
+      try{ if(!out.flag&&out.code&&countryStats[out.code]&&countryStats[out.code].flag) out.flag=countryStats[out.code].flag; }catch(_){}
       return out; }
     /* (#R116) curated era→article table (1900+ window of the time machine; en.wikipedia titles). Ranges are the
        state-form's lifespan; anything outside every range keeps the modern article. Kept to well-established,
@@ -31769,7 +31778,50 @@ window.addEventListener('DOMContentLoaded', () => {
       ZWE:[[1923,1965,'Southern_Rhodesia'],[1965,1979,'Rhodesia']],
       LKA:[[1900,1948,'British_Ceylon'],[1948,1972,'Dominion_of_Ceylon']],
       MMR:[[1900,1948,'British_rule_in_Burma']],
-      TWN:[[1900,1945,'Taiwan_under_Japanese_rule']]
+      TWN:[[1900,1945,'Taiwan_under_Japanese_rule']],
+      /* (#R127) colonial-era + former-state articles for entities that previously linked to the MODERN article (or
+         showed no Wikipedia button at all) — "Wikipedia…まだ詰められる箇所が大量にある". A colony resolves to its
+         modern successor code via the point-in-polygon fallback, so the era-Wikipedia override picks these by year.
+         Titles are established en.wikipedia articles; the popup existence-probes each, so a miss just hides the button. */
+      DZA:[[1900,1962,'French_Algeria']],
+      MAR:[[1912,1956,'French_protectorate_in_Morocco']],
+      TUN:[[1881,1956,'French_protectorate_of_Tunisia']],
+      SEN:[[1900,1960,'French_West_Africa']],
+      MLI:[[1900,1960,'French_Sudan']],
+      CIV:[[1900,1960,'French_West_Africa']],
+      NER:[[1900,1960,'French_West_Africa']],
+      GIN:[[1900,1958,'French_West_Africa']],
+      BFA:[[1919,1960,'French_Upper_Volta']],
+      BEN:[[1900,1960,'French_Dahomey']],
+      TCD:[[1910,1960,'French_Equatorial_Africa']],
+      GAB:[[1910,1960,'French_Equatorial_Africa']],
+      COG:[[1910,1960,'French_Equatorial_Africa']],
+      CAF:[[1910,1958,'Ubangi-Shari']],
+      MDG:[[1897,1958,'French_Madagascar']],
+      CMR:[[1884,1916,'Kamerun'],[1916,1960,'French_Cameroon']],
+      KEN:[[1895,1920,'East_Africa_Protectorate'],[1920,1963,'Colony_of_Kenya']],
+      NGA:[[1914,1960,'Colonial_Nigeria']],
+      GHA:[[1900,1957,'Gold_Coast_(British_colony)']],
+      SDN:[[1899,1956,'Anglo-Egyptian_Sudan']],
+      TZA:[[1900,1919,'German_East_Africa'],[1919,1961,'Tanganyika_(territory)']],
+      AGO:[[1900,1975,'Portuguese_Angola']],
+      MOZ:[[1900,1975,'Portuguese_Mozambique']],
+      NAM:[[1900,1915,'German_South_West_Africa'],[1915,1990,'South_West_Africa']],
+      UKR:[[1919,1991,'Ukrainian_Soviet_Socialist_Republic']],
+      BLR:[[1919,1991,'Byelorussian_Soviet_Socialist_Republic']],
+      KAZ:[[1936,1991,'Kazakh_Soviet_Socialist_Republic']],
+      UZB:[[1924,1991,'Uzbek_Soviet_Socialist_Republic']],
+      GEO:[[1921,1991,'Georgian_Soviet_Socialist_Republic']],
+      FIN:[[1900,1917,'Grand_Duchy_of_Finland']],
+      LBN:[[1920,1943,'Greater_Lebanon']],
+      JOR:[[1921,1946,'Emirate_of_Transjordan']],
+      PAK:[[1947,1956,'Dominion_of_Pakistan']],
+      BGD:[[1947,1971,'East_Pakistan']],
+      MYS:[[1900,1946,'British_Malaya']],
+      LAO:[[1900,1953,'French_Indochina']],
+      KHM:[[1863,1953,'French_protectorate_of_Cambodia']],
+      MNG:[[1911,1924,'Bogd_Khanate_of_Mongolia'],[1924,1992,'Mongolian_People%27s_Republic']],
+      CUB:[[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']]
     };
     /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
        contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its
