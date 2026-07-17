@@ -26679,8 +26679,13 @@ window.addEventListener('DOMContentLoaded', () => {
       _stage('locating');
       let M=null, cites=[], webUsed=false;
       try{ const env=await geoResolve(query, ctx, opts); if(env){ M=env.data; cites=Array.isArray(env.citations)?env.citations:[]; webUsed=!!(env.meta&&env.meta.webUsed); } }
-      catch(e){ const ab=(e&&(e.name==='AbortError'||/abort/i.test(String(e.message||'')))); const r={status:'failed',ran:!ab,query,reason:ab?'aborted':'provider_error',diagnostics:diag}; _rrLast=r; return r; }
-      if(!M||typeof M!=='object'||!M.found){ const r={status:'not_found',ran:true,query,canonicalName:(M&&M.canonicalName)||query,confidence:(M&&M.confidence)||0,citations:cites,diagnostics:diag}; _rrCachePut(key,r); _rrLast=r; return r; }
+      catch(e){ const ab=(e&&(e.name==='AbortError'||/abort/i.test(String(e.message||''))));
+        /* (#R132) ALWAYS fail-OPEN on an aborted OR errored call (ran:false) so resolveHlTarget keeps its legacy
+           fallbacks — a transient provider blip must not suppress a highlight that used to work. */
+        const r={status:'failed',ran:false,query,reason:ab?'aborted':'provider_error',diagnostics:diag}; _rrLast=r; return r; }
+      /* a null/unparseable payload is a call FAILURE (fail-open); only an explicit found:false is a trusted "no region" verdict */
+      if(!M||typeof M!=='object'){ const r={status:'failed',ran:false,query,reason:'no_data',diagnostics:diag}; _rrLast=r; return r; }
+      if(!M.found){ const r={status:'not_found',ran:true,query,canonicalName:M.canonicalName||query,confidence:M.confidence||0,citations:cites,diagnostics:diag}; _rrCachePut(key,r); _rrLast=r; return r; }
       diag.featureType=M.featureType; diag.strategy=M.geometryStrategy; diag.webUsed=webUsed;
       /* seed the geoVerify cache from the SAME web call so any later _getGV() in resolveHlTarget is free */
       try{ if(M.representativePoint&&isFinite(+M.representativePoint.lat)&&isFinite(+M.representativePoint.lng)&&!(_lnorm(query) in _geoVerifyCache)){
