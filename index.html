@@ -9635,6 +9635,9 @@ window.addEventListener('DOMContentLoaded', () => {
     else if(compareSet.size<10) compareSet.add(code);
     else { const first=compareSet.values().next().value; compareSet.delete(first); compareSet.add(code); }
     document.querySelectorAll('#countries-feed .stat-row').forEach(r=>r.classList.toggle('compare-on',compareSet.has(r.getAttribute('data-ccn'))));
+    /* (#R122) highlight the current selection on the map AS it is built in the Countries tab (not only once the
+       compare view opens) — "Countriesで国を選択した時点でハイライト". */
+    try{ const C=window.IntMapStatsCompare; if(C&&C.previewOnMap){ if(compareSet.size) C.previewOnMap([...compareSet]); else C.clearMap&&C.clearMap(); } }catch(_){}
     renderCompareFixed();
   };
   window._clearCompare=function(){ compareSet.clear(); document.querySelectorAll('#countries-feed .stat-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCompareFixed(); try{ window.IntMapStatsCompare&&window.IntMapStatsCompare.clearMap&&window.IntMapStatsCompare.clearMap(); }catch(_){} };
@@ -19856,19 +19859,23 @@ window.addEventListener('DOMContentLoaded', () => {
       const before=['nlq-fill','ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
       try{ map.addLayer({id:'imcmp-fill',type:'fill',source:'imcmp-src',paint:{'fill-color':['coalesce',['get','color'],'#0a84ff'],'fill-opacity':0.5}},before);
         map.addLayer({id:'imcmp-line',type:'line',source:'imcmp-src',paint:{'line-color':['coalesce',['get','color'],'#0a84ff'],'line-width':1.6,'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
-    function paintOnMap(){ if(!ensureCmpMap()) return false; const g=window.countryGeo||(typeof countryGeo!=='undefined'?countryGeo:null); if(!g) return false;
+    /* (#R94h/#R94n) while travelling, paint each compared country's ERA polygon (its borders THAT year) rather
+       than the modern one, so the Compare highlight matches history — the German Empire's 1910 extent (≠ modern
+       Germany), 1910 France (no Alsace-Lorraine), and former states like the USSR that have no modern polygon
+       at all. Off-era (LIVE) or when the era shape is unavailable, it falls back to the modern polygon. */
+    function _paintCodes(list){ if(!ensureCmpMap()) return false; const g=window.countryGeo||(typeof countryGeo!=='undefined'?countryGeo:null); if(!g) return false;
       const TB=window.IntMapTimeBorders; const traveling=!!(TB&&TB.active&&TB.active());
       const modernOf={}; g.features.forEach(f=>{ const cd=String(f.id!=null?f.id:(f.properties&&f.properties.__code)); if(f.geometry&&!modernOf[cd]) modernOf[cd]=f.geometry; });
-      /* (#R94h/#R94n) while travelling, paint each compared country's ERA polygon (its borders THAT year) rather
-         than the modern one, so the Compare highlight matches history — the German Empire's 1910 extent (≠ modern
-         Germany), 1910 France (no Alsace-Lorraine), and former states like the USSR that have no modern polygon
-         at all. Off-era (LIVE) or when the era shape is unavailable, it falls back to the modern polygon. */
-      const feats=[]; codes.forEach((cd,i)=>{ const col=PAL[i%PAL.length]; let geom=null;
+      const feats=[]; (list||[]).forEach((cd,i)=>{ const col=PAL[i%PAL.length]; let geom=null;
         if(traveling&&TB.geomForCode){ try{ geom=TB.geomForCode(cd); }catch(_){} }
         if(!geom) geom=modernOf[String(cd)]||null;
         if(geom) feats.push({type:'Feature',geometry:geom,properties:{color:col}}); });
       try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:feats}); }catch(_){}
       return feats.length>0; }
+    function paintOnMap(){ return _paintCodes(codes); }
+    /* (#R122) live preview from the Countries-tab selection tray (compareSet) BEFORE the compare view opens — the
+       same imcmp-src / palette, so selecting a country in Countries highlights it on the map immediately. */
+    function previewOnMap(list){ return _paintCodes(Array.isArray(list)?list:[]); }
     function clearMap(){ try{ const s=map.getSource('imcmp-src'); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     /* re-apply after a base-style swap (globe/flat/satellite reload wipes runtime sources) */
     /* (#R94k) only re-paint while the comparison is actually OPEN — otherwise a styledata after "Back to
@@ -19897,7 +19904,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R118) state() — the compare panel's LIVE state (also when the user built it BY HAND), so Atlas's
        working context reflects reality instead of only its own past actions. */
     function state(){ try{ return { open:!!(host&&host.isConnected&&document.getElementById('scp-view')), codes:codes.slice(), indicators:(indOrder||[]).slice(), mode, sources:Object.assign({},srcSel) }; }catch(_){ return null; } }
-    return { open, paintOnMap, clearMap, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
+    return { open, paintOnMap, previewOnMap, clearMap, indKeys:()=>IND.map(i2=>i2.k), indLabel, state };
   })();
 
   /* ===== (#R11) Line-of-sight / radar-shadow viewshed. Place a "radar site", set antenna height + range,
