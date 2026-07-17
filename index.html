@@ -29084,7 +29084,14 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbmanuf', code:'NV.IND.MANF.ZS', n:{en:'Manufacturing % GDP',jp:'製造業 対GDP %'}, ramp:[5,'#fff7ec',12,'#fdd49e',20,'#fc8d59',28,'#d7301f',40,'#7f0000'], unit:'%'},
       {id:'wbu5mort', code:'SH.DYN.MORT', n:{en:'Under-5 mortality /1k',jp:'5歳未満死亡率 /1k'}, ramp:[3,'#1a9850',10,'#a6d96a',30,'#fee08b',70,'#f46d43',120,'#a50026'], unit:''},
       {id:'wbpopgrow', code:'SP.POP.GROW', n:{en:'Population growth %',jp:'人口増加率 %'}, ramp:[-1,'#2c7fb8',0,'#7fcdbb',1.5,'#ffffb2',3,'#fe9929',5,'#cc4c02'], unit:'%'},
-      {id:'wbenergy', code:'EG.USE.PCAP.KG.OE', n:{en:'Energy use /capita',jp:'エネルギー消費 /人'}, ramp:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000'], unit:''}
+      {id:'wbenergy', code:'EG.USE.PCAP.KG.OE', n:{en:'Energy use /capita',jp:'エネルギー消費 /人'}, ramp:[200,'#fff7ec',1000,'#fdd49e',3000,'#fc8d59',6000,'#d7301f',12000,'#7f0000'], unit:''},
+      /* (#R122) +6 NEW beta choropleths (World Bank, latest value per country — same resilient mrnev fetch, hover values + source note). */
+      {id:'wbrnd', code:'GB.XPD.RSDV.GD.ZS', n:{en:'R&D spending % GDP',jp:'研究開発費 対GDP %',de:'F&E-Ausgaben % BIP',ru:'Расходы на НИОКР % ВВП'}, ramp:[0.1,'#fff7ec',0.5,'#fdd49e',1.5,'#a6d96a',2.5,'#66bd63',4.5,'#006837'], unit:'%'},
+      {id:'wbtour', code:'ST.INT.ARVL', n:{en:'Intl. tourist arrivals',jp:'外国人観光客数',de:'Touristenankünfte',ru:'Прибытия туристов'}, ramp:[500000,'#fff7ec',3000000,'#fdd49e',10000000,'#fc8d59',40000000,'#d7301f',90000000,'#7f0000'], unit:''},
+      {id:'wbref', code:'SM.POP.REFG', n:{en:'Refugees hosted',jp:'難民受入数',de:'Aufgenommene Flüchtlinge',ru:'Принято беженцев'}, ramp:[1000,'#fff7ec',20000,'#fee08b',100000,'#fc8d59',500000,'#d7301f',2000000,'#7f0000'], unit:''},
+      {id:'wbco2t', code:'EN.GHG.CO2.MT.CE.AR5', n:{en:'CO₂ emissions (Mt)',jp:'CO₂排出量（百万t）',de:'CO₂-Emissionen (Mt)',ru:'Выбросы CO₂ (млн т)'}, ramp:[5,'#1a9850',50,'#a6d96a',300,'#fee08b',1500,'#f46d43',10000,'#a50026'], unit:' Mt'},
+      {id:'wbpatent', code:'IP.PAT.RESD', n:{en:'Patent applications (resident)',jp:'特許出願数（居住者）',de:'Patentanmeldungen',ru:'Патентные заявки'}, ramp:[10,'#fff7ec',500,'#fdd49e',5000,'#fc8d59',50000,'#d7301f',500000,'#7f0000'], unit:''},
+      {id:'wbwomparl', code:'SG.GEN.PARL.ZS', n:{en:'Women in parliament %',jp:'女性議員比率 %',de:'Frauen im Parlament %',ru:'Женщины в парламенте %'}, ramp:[5,'#a50026',15,'#f46d43',30,'#fee08b',45,'#a6d96a',60,'#1a9850'], unit:'%'}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
