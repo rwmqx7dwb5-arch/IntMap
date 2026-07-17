@@ -8243,7 +8243,7 @@ window.addEventListener('DOMContentLoaded', () => {
           h.style.left=vx+'px'; h.style.top=hy+'px'; fitMap(); };
         const up=ev=>{ try{ h.releasePointerCapture&&h.releasePointerCapture(ev.pointerId); }catch(_){} document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',up); buildJunctions(); schedSave(); };
         document.addEventListener('pointermove',mv); document.addEventListener('pointerup',up); }); }
-    function mkWin(def,rect){
+    function mkWin(def,rect,skipWrap){
       /* (#R78e) a window can host MULTIPLE source elements stacked in its body (the News window = search bar +
          filter + geocode row + feed + reader), each restored to its exact original slot on exit */
       if(def.ensure){ try{ def.ensure(); }catch(_){} }   /* (#R78f) create the element first (Atlas panel) */
@@ -8274,7 +8274,9 @@ window.addEventListener('DOMContentLoaded', () => {
         else { w.dataset.maxed=JSON.stringify([w.offsetLeft,w.offsetTop,w.offsetWidth,w.offsetHeight]); const b=wsBounds(); w.style.left=b.left+'px'; w.style.top=b.top+'px'; w.style.width=(b.right-b.left)+'px'; w.style.height=(b.bottom-b.top)+'px'; }
         try{ bringToFront(w); }catch(_){} fitMap(); schedSave(); };
       tb.addEventListener('dblclick',e=>{ if(e.target.closest('.ws-dot')) return; tb.querySelector('.ws-d-max').click(); });
-      try{ if(def.onWrap) def.onWrap(); }catch(_){}
+      /* (#R122) skip onWrap for a window that starts HIDDEN — running it (e.g. News → setMode('news') → pins) only
+         to hide it again a beat later caused the "起動時にニュースが一瞬オンになってからオフ" flicker. */
+      try{ if(def.onWrap && !skipWrap) def.onWrap(); }catch(_){}
       return w; }
     /* (#R78c) TOP MENU BAR replaces the toy dock ("上部から、ソフトのように選択できるようにしろ"):
        IntMap — Workspace | ウィンドウ▾ (checkmarked show/hide list + reset) | … | 終了 */
@@ -8374,13 +8376,14 @@ window.addEventListener('DOMContentLoaded', () => {
       on=true; document.body.classList.add('ws-mode');
       try{ document.documentElement.classList.remove('ws-boot'); }catch(_){}   /* (#R101) release the anti-flicker pre-hide — the windows are being built now */
       const st=state(), dr=defRects();
-      DEFS.forEach(def=>{ const w=mkWin(def,(st.rects&&st.rects[def.id])||dr[def.id]); if(!w) return;
-        if(st.minz&&st.minz[def.id]) w.querySelector('.ws-d-min').click();
+      DEFS.forEach(def=>{
         /* (#R79f) The default state is ONLY the layout windows (Countries/Map/Layers/Atlas). The on-demand
            windows (News/Information/Community, def.defHidden) NEVER auto-open — they don't persist their open
            state, so a saved layout can't accumulate them ("デフォルト状態で全部のウィンドウをオンにするのは
            やめろ" — keep open only the default-layout ones). The 4 layout windows still persist open/closed. */
         const shown = def.defHidden ? false : ((st.vis&&st.vis[def.id]!==undefined)?st.vis[def.id]:true);
+        const w=mkWin(def,(st.rects&&st.rects[def.id])||dr[def.id], !shown); if(!w) return;   /* (#R122) compute `shown` FIRST → skip onWrap for windows that start hidden (no news flicker) */
+        if(st.minz&&st.minz[def.id]) w.querySelector('.ws-d-min').click();
         if(!shown){ w.style.display='none'; w.dataset.userHid='1'; }
         wraps[def.id]=w; });
       /* (#R79b) onWrap ran while every window was still visible — so a window that STARTS hidden must run its
@@ -8425,6 +8428,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ ['info-dashboard','community-feed'].forEach(idc=>{ const e=document.getElementById(idc); if(e) e.style.display='none'; }); }catch(_){}
       try{ const ap=document.getElementById('atlas-panel'); if(ap){ ap.style.display='none'; ap.style.width=''; ap.style.height=''; ap.style.left=''; ap.style.top=''; ap.style.transform=''; } }catch(_){}   /* (#R78f) Atlas back to its floating default, hidden */
       try{ if(typeof setMode==='function'&&typeof currentMode!=='undefined') setMode(currentMode); }catch(_){}
+      /* (#R122) after leaving ws-mode, the map must reflect the NORMAL sidebar — clear the news pins the ws News
+         window may have left on the map unless the sidebar is actually on News/Saved ("オフ時にもニュースウィンドウ
+         がオンのときの地図表示になる"). */
+      try{ const _m=(typeof currentMode!=='undefined')?currentMode:null; if(_m!=='news'&&_m!=='saved'){ if(map&&map.getSource('news-points')) map.getSource('news-points').setData({type:'FeatureCollection',features:[]}); const b=document.getElementById('ai-view-summary-btn'); if(b) b.style.display='none'; } }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); try{ syncModeBtn(); }catch(_){}
       try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) restore legends to their normal position */
     }
