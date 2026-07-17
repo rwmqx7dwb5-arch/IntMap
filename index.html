@@ -17039,6 +17039,9 @@ window.addEventListener('DOMContentLoaded', () => {
         `<div class="tp-row" style="flex-direction:column;align-items:stretch;gap:5px;"><span>${jp()?'解像度（平滑化）':'Resolution (smoothing)'}</span>`+
           `<input type="range" id="draw-res" min="0" max="100" step="1" value="${smoothing}" style="width:100%;accent-color:var(--primary-color);"></div>`+
         `<div class="tp-hint">${hint}</div>`+
+        /* (#R123) POPULATION inside the drawn loop(s) — same WorldPop 100m grid as the measure/radius tools, now
+           available for the freehand Draw tool too ("Drawでも使えるように"). Shown once the trace encloses an area. */
+        ((lockedArea>0 && loopRings.length) ? `<div class="tp-row" id="draw-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="draw-pop-val">—</b></div><button class="ai-action-btn" id="draw-pop-btn" style="margin-top:6px;">${t('popInArea')}</button>` : '')+
         `<div style="display:flex;gap:6px;margin-top:8px;">`+
           `<button class="tp-clear" id="draw-finish" style="flex:1;">${jp()?'地図に残す':'Keep on map'}</button>`+
           `<button class="tp-clear" id="draw-redo" style="flex:1;">${jp()?'やり直し':'Redraw'}</button>`+
@@ -17048,6 +17051,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const res=p.querySelector('#draw-res'); if(res) res.oninput=()=>{ smoothing=+res.value; recomputeLine(); /* AREA stays locked to raw */ setData(); updateNumbers(); };
       const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=keepOnMap;
       const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; state='armed'; setData(); renderPanel(); };
+      const popBtn=p.querySelector('#draw-pop-btn'); if(popBtn) popBtn.onclick=()=>_estimateDrawPop(p,popBtn);
     }
     function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=simplified.length+'/'+raw.length; }
 
@@ -17066,6 +17070,25 @@ window.addEventListener('DOMContentLoaded', () => {
       if(lockedArea===0 && raw.length>=3){ try{ const ring=raw.concat([raw[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(raw[raw.length-1],raw[0],64); } }catch(_){} }
       setData(); state='done'; try{ map.dragPan.enable(); }catch(_){} renderPanel(); }
 
+    /* (#R123) POPULATION inside the drawn loop(s) — reuses IntMapPopArea (real WorldPop 100m grid, never a guess).
+       Multiple enclosed loops are summed as a MultiPolygon. Same live progress bar as the measure/radius panels so
+       the button never just sits on "Calculating…". */
+    async function _estimateDrawPop(p, btn){
+      const rings=(loopRings||[]).filter(r=>r&&r.length>=4); if(!rings.length || !window.IntMapPopArea) return;
+      const geom = rings.length===1 ? {type:'Polygon',coordinates:[rings[0]]} : {type:'MultiPolygon',coordinates:rings.map(r=>[r])};
+      let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
+        box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0a84ff,#5e5ce6);transition:width .2s;"></div></div>';
+        if(btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling); else p.appendChild(box); }
+      const lbl=currentLang==='jp'?'WorldPop人口グリッドを集計中…':currentLang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':currentLang==='ru'?'Суммирование сетки населения WorldPop…':currentLang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
+      box.querySelector('.tp-prog-lbl').textContent=lbl; box.style.display='block';
+      const setP=(f)=>{ try{ const v=Math.max(0,Math.min(1,f)); box.querySelector('.tp-prog-fill').style.width=(v*100).toFixed(0)+'%'; box.querySelector('.tp-prog-pct').textContent=(v*100).toFixed(0)+'%'; }catch(_){} };
+      let t0=Date.now(), done=false; const timer=setInterval(()=>{ if(done)return; const el=(Date.now()-t0)/1000; setP(0.92*(1-Math.exp(-el/9))); },200); setP(0);
+      btn.disabled=true; const orig=btn.textContent; btn.textContent=t('popCalcing');
+      try{ const r=await window.IntMapPopArea.estimate(geom); done=true; clearInterval(timer); setP(1); setTimeout(()=>{ box.style.display='none'; },500);
+        const row=p.querySelector('#draw-pop-row'), val=p.querySelector('#draw-pop-val'); if(row&&val){ row.style.display=''; val.innerHTML=Number(r.pop).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+r.src+' '+r.year+(rings.length>1?' · Σ':'')+')</span>'; }
+        btn.style.display='none';
+      }catch(e){ done=true; clearInterval(timer); box.style.display='none'; btn.disabled=false; btn.textContent=t('popFail'); setTimeout(()=>{ try{ btn.textContent=orig; }catch(_){} },2600); }
+    }
     /* (#R34) "Keep on map" — the button used to be wired to finish(), which early-returns once the trace is
        done, so it did NOTHING ("keep on map button is not working"). Now it actually PERSISTS the drawing as
        permanent annotations (same IntMapAnnotations path the measure/area/radius "Keep on map" uses), so the
@@ -29685,10 +29708,19 @@ window.addEventListener('DOMContentLoaded', () => {
       const r=await fetch(u); const j=await r.json();
       if(j&&j.error&&!j.taskid) throw new Error(String(j.error_message||'WorldPop error'));
       let data=j&&j.data&&j.data.total_population!=null?j.data:null;
-      if(!data&&j&&j.taskid){ for(let i=0;i<24;i++){ await new Promise(rs=>setTimeout(rs,1500));
-        const r2=await fetch('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid)); const j2=await r2.json();
-        if(j2&&j2.status==='finished'){ if(j2.error) throw new Error(String(j2.error_message||'WorldPop task error')); data=j2.data; break; } } }
-      if(!data||data.total_population==null) throw new Error('WorldPop: no result');
+      if(!data&&j&&j.taskid){
+        /* (#R123) WorldPop tasks for a LARGER area routinely take well over the old 24×1.5s=36s budget — the bar
+           then sat at "loading" and finally failed ("読み込み中のままで止まり、結果が出ない"). Poll up to ~2 minutes
+           with a gentle backoff, break IMMEDIATELY on an error status (instead of waiting out the whole budget), and
+           ignore a single transient poll-fetch hiccup rather than aborting the whole estimate. */
+        const t0=Date.now(), DEADLINE=125000; let iv=1200;
+        while(Date.now()-t0<DEADLINE){ await new Promise(rs=>setTimeout(rs,iv)); iv=Math.min(4000,iv+250);
+          let j2=null; try{ const r2=await fetch('https://api.worldpop.org/v1/tasks/'+encodeURIComponent(j.taskid)); j2=await r2.json(); }catch(_){ continue; }
+          if(!j2) continue;
+          if(j2.status==='finished'){ if(j2.error) throw new Error(String(j2.error_message||'WorldPop task error')); data=j2.data; break; }
+          if(j2.status==='error'){ throw new Error(String(j2.error_message||'WorldPop task error')); } }
+      }
+      if(!data||data.total_population==null) throw new Error('WorldPop: no result (timeout or empty)');
       const out={ pop:Math.round(+data.total_population), year:2020, src:'WorldPop (100m grid)' };
       cache.set(key,out); return out; }
     function circleGeom(center,km){ try{ if(typeof turf!=='undefined'&&turf.circle){ return turf.circle(center,km,{units:'kilometers',steps:48}).geometry; } }catch(_){}
