@@ -5,6 +5,38 @@
 
 ---
 
+## R128 — 再報告4件の根治バッチ（範囲人口の大面積失敗・通常モード分類名・昔年代クリックの決定論化・歴史データ拡充） (tag `#R128`)
+
+ユーザー再報告4件を「実現象＝根本原因特定」で処理。今回はBrowserペインの**データ層が動く**利点を最大化し、範囲人口の実サム（6/6タイル・25.3M・64秒）と `resolveHist` の `_gw` 解決（ポズナン→DEU）を**ヘッドレス実測で確定**。2並列Explore（歴史データ棚卸し・era→コードマッピング）で現状を地図化してから着手。全1コミット。
+
+### ① 範囲人口が大きい範囲で失敗（再報告・R124/R127で未達）— `IntMapPopArea`
+- **根因（真の失敗モードを実測特定）**: `_estimateOne` の create/poll `fetch()` に **AbortController/タイムアウトが無い**。WorldPop公開APIは負荷時に接続を**ストール**させる（curl実測: 8並行中5件が30秒無応答=HTTP000）。裸の`fetch()`はタイムアウトせず、**1タイルのハングが`Promise.all`バッチ全体を数分間凍結**→タイルドサムが永遠に完了せず「失敗」。R124/R127はポーリングループしか時間制限しておらず、create/poll `fetch` 自体は無制限だった。
+- **修正**: (A) `_fetchT`=AbortController付きfetch（create 30s / poll 18s で中断→即リトライ）。(B) 固定バッチ→**staggered worker pool**（バッチは最遅タイル待ちでストールが伝播、poolは常時CONC本を流し続ける）。(C) **CONC 4→2**（実測: WorldPopはcreate 4並行までは捌くが多タイルの持続的create+poll負荷でレート制限）。(D) retry 2→4・長バックオフ（2/5/8/11s）・per-tile 105s。(E) 単一ポリゴン経路も`_tileWithRetry`経由に（ハング→リトライ回復）。(F) 極小クリップ片(<0.05km²)スキップで海岸線形状のリクエスト数削減。正直partial会計は維持。
+- **実測**: 290,851km²（西アフリカ）→ **6/6タイル成功・25,316,807人・64秒**（partialなし）。※自前curlストレスと同時実行した最初の回は3/6失敗の汚染データ（WorldPopが自IPをレート制限）→クリーン再実行で6/6。ハングは根治（無限凍結→正直な完了）。
+
+### ② 通常モードのレイヤー分類名が小さい（再報告に「通常モード」明記）
+- **根因**: R127はモバイル(`.m-sheet .lyr-head`=18.5px)のみ修正。**通常/デスクトップの`.lyr-head`は12.5px/600/muted**（line 11537）＝自分の配下の行ラベル（`.layer-option` 13px/500/text-main）より**小さく・薄い**→見出しが項目より下位に見える「UIとしておかしい」。
+- **修正**: 通常モードの`.lyr-head`と`.layer-group-title`を **15.5px/700/text-main**（行13pxより明快に上位）・上マージン14pxに。モバイル18.5pxは`!important`で不変。
+- **実測**: 見出し15.5px/700/near-white・行13px/500 の階層をライブ計測確認。
+
+### ③ 昔年代のcompareクリックが現代国境になる（再報告・R122/123/125/127で未完＝「まだ不完全」）
+- **根因**: R127のBEC表（step2.5）は**名前ベースで網羅性に限界**。改名/**領土変化**した単一国（独帝国のポズナン/アルザスは現ポーランド/フランス領）や植民地が、名前照合に漏れると**現代ポリゴンPIP（step3）がカーソル下の現代国に置換**。
+- **決定論的修正**: **全CShapes era featureは`properties._gw`（Gleditsch-Wardコード）を保持**（`csFC`が付与、151/151確認）が両呼出元で捨てられていた。`data/cshapes.js`から**gwcode→ISO3表（235件）を生成**し、`resolveHist`にstep2.4を追加＝`_gw`から現代キャリアを直接解決（境界・名前非依存）。step1（帝国）/`_VANISHED`の後・BEC/PIPの前に配置。多継承帝国（A-H 300/チェコスロバキア315/ユーゴ345）とTibet(711)は意図的に非収載でstep1/`_VANISHED`優先、`_histHidden`ガードで能動的帝国（日帝下の朝鮮）はstep3bへ委譲。**識別子ロード競合にも強い**（IntMapTimeがずれても`_gw`は効く）。
+- **実測**: 1900年、ポズナン(現ポーランド)/アルザス(現フランス)→**ともにDEU**（現代PIPはPOL/FRAを返す）、シャム/バンコク→**THA**。
+
+### ④ 歴史国家の国名/国旗/Wikipedia/統計（継続拡充）
+- **消滅国の国旗**（旗が皆無だった3件）: Tibet（雪山獅子＝簡略サンバースト+雪山+黄縁）/East Turkestan（青地に白い月と星）/Manchukuo（黄地＋左上4色縞）のSVGを追加、`resolveHist` step2b が `out.flag` を渡すよう配線。全てDOMParser検証済（well-formed）。
+- **統計**（pre-1945崩壊の穴）: `STATES` **JEM（大日本帝国）に `popEst:105,000,000`/`gdpEst:230`/`estSrc`** 追加（Maddisonが朝鮮/台湾を欠く年の後継sum崩壊を防ぐ帝国推計override。AUH/OTT/RUE/RAJと同機構）。
+- **Wikipedia**（`_ERA_WIKI` +14件・全て実在確認）: 残りソ連構成共和国9件（ARM/AZE/LVA/LTU/EST/MDA/TKM/KGZ/TJK）＋AFG(首長国/王国)/YEM(ムタワッキル王国)/ERI(伊領)/PSE(委任統治領)。従来これらは現代記事へ飛んでいた。
+- **国名/国旗**（`IntMapHistId`）: KOR（大韓帝国・太極旗継続）/ETH（エチオピア帝国・帝政三色旗F_ETHIMP）の年代identity追加、HUN（ハンガリー王国）に**戴冠紋章旗F_HUNK**を付与（従来は現代旗流用）。全5言語名。
+- **実測**: 全モジュールparse・resolveHistで3消滅国が旗付返却・KOR/ETH/HUN旗がwell-formed SVG。
+
+### 検証の要点（今回の環境活用）
+- **Browserペインは`document.hidden=true`でMapのWebGLは未init**（スクショはタイムアウト）だが、**データ層は完全動作**: `IntMapPopArea.estimate`の実WorldPopサム、`IntMapTimeBorders._go(1900)`によるCShapes実ロード（151 feature・全`_gw`）、`resolveHist`の実解決、SVGのDOMParser検証まで**すべてヘッドレス実測可能**。論理レプリカでなく実挙動で4件とも確定。
+- Edit hookが保存毎に`file://`タブを量産。ローカルは`python -m http.server`+`preview_start`で検証。
+
+---
+
 ## R127 — 再報告6件の根治バッチ（範囲人口・Atlasトグル独立・歴史データ拡充・モバイル分類名・昔年代クリック・ニュースピン分散） (tag `#R127`)
 
 ユーザー再報告6件を全て「実現象＝根本原因特定」で処理。6並列Exploreで現状コードを地図化してから着手し、各項目をヘッドレス実測で検証。全1コミット。
