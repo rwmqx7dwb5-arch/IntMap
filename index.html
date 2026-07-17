@@ -1333,8 +1333,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       /* (#R117) mobile layers round 3 ("スマホ向けにしては小さい／余白が不均一／デスクトップ移植の域を出ない"):
          phone-native list — 15px row text, 46px targets, even 8px side padding, a hairline BETWEEN rows
          (iOS grouped-list feel) instead of ad-hoc gaps. */
-      .m-sheet .layer-dropdown .layer-option{ padding:10px 8px; font-size:15px; font-weight:400; min-height:46px; gap:12px; line-height:1.25; border-bottom:1px solid rgba(128,128,128,0.10); border-radius:0; }
+      /* (#R122) mobile layers round 4 — phone-native grouped list with a clear type HIERARCHY and even rhythm
+         ("大小のメリハリ／余白／洗練"): roomy 50px rows at 15.5px body text, an 18px colour swatch, a hairline
+         between rows, and section headers rendered as distinct small spaced labels (below). */
+      .m-sheet .layer-dropdown .layer-option{ padding:12px 12px; font-size:15.5px; font-weight:400; min-height:50px; gap:13px; line-height:1.3; border-bottom:1px solid rgba(128,128,128,0.12); border-radius:0; }
       .m-sheet .layer-dropdown .layer-option:active{ background:rgba(128,128,128,0.10); }
+      .m-sheet .layer-dropdown .layer-option .lyr-sw{ width:18px !important; height:18px !important; border-radius:5px !important; flex:0 0 auto; box-shadow:0 0 0 1px rgba(128,128,128,0.18); }
       /* (#R118) phone-NATIVE rows ("デスクトップ移植の域を出ていない"): the toggle is an iOS-style SWITCH on the
          RIGHT edge (the row label stays left), and a row that is ON reads slightly stronger. Pure CSS over the
          same checkbox — every existing handler (pointerdown row toggle, reconcile, Atlas sync) is untouched. */
@@ -1360,8 +1364,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       /* (#R117) category names are NOT bold anymore ("レイヤー分類名は太字にしないで") — iOS-style section
          labels: smaller than the rows, muted colour, generous top margin; the row hairlines carry the
          grouping instead of a heavy underline. */
-      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:24px 2px 6px !important; padding:0 8px 4px !important; font-size:13px !important; font-weight:500 !important; color:var(--text-muted) !important; text-transform:none; letter-spacing:0.02em; min-height:0; cursor:default; border-bottom:none; }
-      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:500 !important; font-size:13px !important; color:var(--text-muted) !important; }
+      /* (#R122) section headers = distinct small SPACED labels with a hairline underline — a clear step down from
+         the 15.5px rows (size + letter-spacing + a rule), giving the list obvious grouping without ALL-CAPS or bold. */
+      .m-sheet .layer-dropdown .layer-group-title, .m-sheet .layer-dropdown .lyr-head, .m-sheet .layer-dropdown .premium-group-title{ margin:26px 6px 8px !important; padding:0 6px 7px !important; font-size:11.5px !important; font-weight:600 !important; color:var(--text-muted) !important; text-transform:none; letter-spacing:0.06em; min-height:0; cursor:default; border-bottom:1px solid rgba(128,128,128,0.14) !important; }
+      .m-sheet #layer-active-section .lyr-head, .m-sheet .layer-fav-title{ font-weight:600 !important; font-size:11.5px !important; letter-spacing:0.06em !important; color:var(--text-muted) !important; }
       #mo-mount-layers #layer-tools button, #mo-mount-layers #layer-tools .btn-settings{ font-size:14.5px !important; padding:12px !important; border-radius:12px !important; min-height:44px !important; box-sizing:border-box !important; }
       /* (#R115) "ACTIVE LAYERS" header too — on mobile it lives OUTSIDE .layer-dropdown (moved to the sheet
          scroller's first child), so it needs its own de-uppercase rule (base .lyr-head is uppercase). */
