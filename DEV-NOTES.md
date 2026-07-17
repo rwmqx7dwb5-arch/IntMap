@@ -5,6 +5,48 @@
 
 ---
 
+## R123 — 大量要望バッチ（UI/バグ修正を一括処理: モバイル/サイドバー/レイヤー・地名isolate/move・ニュースピン領域分散・範囲人口Draw対応・Aurora輝度・Compare昔年代クリック/利用可能年・ユーゴ一括ハイライト・Others(beta)+8） (tag `#R123`)
+
+ユーザーが「UI/バグ修正の一括処理」を選択（大型実装指示書3本=ICBM物理/経路10-10/高精度物理シミュ5種はバックログ据置＝将来ラウンド）。各項目を9バッチに分けて実装・都度ヘッドレス実測（`python -m http.server 8124`+`preview_start`+rafshim）＋commit＋push。**11項目完了・4項目は理由付きで次ラウンドへ据置**。
+
+### UI小修正（batch1）
+- **モバイルのレイヤー名を選択時に太字にしない**（`.m-sheet .layer-option:has(input:checked)` を600→400。iOSスイッチが状態を示すので太字不要）。
+- **モバイル分類名の文字サイズ拡大**（11.5→13.5px、上マージン26→22px・letter-spacing 0.06→0.02em。15.5px行に対し小さすぎ＋余白不整合の解消）。
+- **右上コントロールバーの縦間隔をws-modeに一致**（`.map-controls-top` gap 8→4px。R122でpadding/端距離は合わせたが**バー間の縦gapだけ8pxのまま**だった＝最後の差異）。
+- **デスクトップ通常モードのサイドバー見出しを2行固定化**: 1行目=IntMap＋言語トグル、2行目=WS/Log in/Feedback/Settings（`.header-area`をcolumn化＋`.header-actions`行を新設。injectAuthUIは`settingsBtn.parentNode`挿入なので自動でWS→Login→Feedback→Settings順に着地。モバイルは1行に復帰）。
+
+### 地名ラベル isolate/move（batch2）
+- **isolate/moveは領域のある地名のみ**: 山岳(ofm-peak)/河川(ofm-river)/海(geo-sea)/water=`onGeoLabel`が`noAreaTools:true`を渡しボタン非表示。国/都市/地域(onLabel)は従来通り表示。実測: noAreaTools=iso/move無し、通常=両方あり。
+- **Moveのメルカトル面積補正はflatのみ**: `_mercNow()`(=currentProj!=='globe')。**Globeでは面積リスケールせず平行移動**（globeは真の面積を自前で描くため補正は誤り）。ピル文言も投影別に正直化（flat「実面積を保持」/globe「地球儀上で移動」）。実測: globeで「reposition on globe」表示。
+
+### Aurora輝度（batch3）
+- **ズームで輝度低下の根治**: OVATIONは密な~1°グリッド→スクリーン画素間隔が~2^zoomで拡大。旧radiusは線形(10→30)で点が離れ密度崩壊→退色。**radiusをズームで幾何級数的に拡大**(1→10…9→380)＋intensity微増ランプ。全ズームで輝度一定。main(l9-aurora-heat)+compare(cmpx-aurora-heat)両方。実測: MapLibreが式受理。
+
+### ニュースピン領域分散（batch4）
+- **重複ピンを「対象領域内」に分散**（R122の固定スパイラルは密集のみ＝未解決の再報告）: 地名TYPE(ptype)をgazetteer→analysis→ピンpropertiesに伝播。**country型クラスタは実国ポリゴン内にシード付き棄却サンプリングで散布**（US=14/14が米国内・~95×38°展開）、city/flashpoint/region型は型別サイズの黄金角ディスク＋所属国クリップ（London=~15km）。countryGeo/turf未ロード時はディスクにフォールバック。
+
+### 範囲人口 Draw対応＋堅牢化（batch5）
+- **WorldPop集計のポーリング延長**: 24×1.5s=36sは大面積で不足→「読み込み中で止まり結果が出ない」の主因。**~2分・バックオフ・errorステータス即break・単発フェッチ失敗を無視**に変更。
+- **Draw(自由描画)ツールに人口ボタン新設**: 閉領域(loopRings)をMultiPolygonで合算、measure/radiusと同じ進行バー。実測: 東京586km²ループ→**4,960,524人**（WorldPop 2020）。
+
+### Compare 昔年代クリック（batch6）
+- **過去年代の地図クリックが現代国境に落ちる根治**（再報告）: R122は`queryRenderedFeatures(imtb-fill)`＝**描画済みのものしか見ない**→era層未描画だと現代countryGeoにフォールバック。**era FeatureCollection(`TB.currentFC()`)へのpoint-in-polygonを先に**（描画タイミング非依存）。実測: Moscow→SUN・Beijing→CHN・Warsaw→POL（未センタリングでも解決）。データ無しera実体は現代へ落とさず正直に報告。
+
+### Compare 利用可能年のみ（batch7）
+- **時系列の年セレクタを「データのある年」限定**（再報告の追記）: 固定1900→現在の羅列を廃止。選択国×指標のсерマップに**実在する年のみを蓄積(`_tsAvailYears`)**しオプションをin-place再構築、比較変更でリセット。実測: GDP/人口(Maddison)=1900-2025全在、internetのみ=1990-2024へ収束。
+
+### Atlas ユーゴ一括ハイライト（batch8）
+- **「旧ユーゴスラビア諸国」がAI自由描画ポリゴンになる根治**: `REGION_GROUPS`に'former yugoslavia'→8後継国は既存だが、**諸国/countries接尾辞でエイリアス不一致→aiRegionPolyへ**落ちていた。`regionGroup`が**末尾の集合接尾辞(諸国/諸邦/countries/states/nations/republics/страны/países…＋形容詞→名詞)を除去**して照合、ex-/former-エイリアス追加。実測: dispatch highlight「旧ユーゴスラビア諸国」→group of 8・polyCount 0。
+
+### Others(beta) +8新レイヤー（batch9）
+- **WBライブcoropleth 8種追加**: PM2.5大気汚染・クリーン調理燃料・女性労働参加率・高等教育就学率・農村人口%・一人当たりGNI(Atlas)・栄養不足%・ハイテク輸出%。`WB`配列に追加するだけでUI行/塗り/ホバー/凡例/出典/IntMapLayers契約/Atlas点サンプルまで自動配線、未指定bxはOthers(beta)へ自動収容。実測: rows 134→142、PM2.5デリー→54.1µg/m³(India)。
+
+### 次ラウンドへ据置（理由付き）
+- **(#8) Atlasメッセージ別トグルの完全独立化・共存**: 現行はkind毎に共有nlq-*キャンバス1枚＋styledata reassert（highlight=`_hlPolys`→`paintPolys`）で、**複数ハイライトの同時共存が物理的に不可能**（R122の所有権モデルはチップの真偽のみ解決）。真の独立化はメッセージ別オーバーレイ層への**中核アーキ改修**が必要でR122も専用ラウンド送り。設計案: 各返信のスナップショットを一意id(`atlm-<seq>-*`)の専用層へクローン→チップはその層のみ表示、highlight=共存/route=新規で旧を自動非表示（ただし旧チップから再表示可）。reassertとの競合回避が要検証のため独立ラウンド推奨。
+- **(#14) AI近似輪郭の精度**: R122でWiki接地・高頂点プロンプト・`_cleanAiRing`検証・リトライ済。以降はモデル出力依存でヘッドレス検証困難（ローカルプレビューのai-proxyは要認証）。将来案: gazetteerアンカー点で「明後日の場所に描いた」traceを棄却する接地検証。
+- **(#16) 歴史国家データ拡充**: 国名/国旗/Wiki/統計の継続データ入力（open-ended）。
+- **(#17) レイヤー解除残留/表示遅延の自己修復**: R41/R81リコンサイラの深いサブシステム。特定再現が無く触ると回帰リスク（R122も専用ラウンド送り）。
+
 ## R122 — 大量要望バッチ（Atlas堅牢化・モバイルレイヤー再構成・状態永続化・経路無効化・地形移動/isolate拡張・Compare強化ほか多数、FS開発一時停止） (tag `#R122`)
 
 多項目リクエストを13バッチに分けて実装・都度ヘッドレス実測（`python -m http.server`+`preview_start`+rafshim）＋commit。**フライトシミュレーターは開発一時停止**（ユーザー指示。ただしFS開始時のレイヤー退避=下記は実装）。
