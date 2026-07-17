@@ -19709,13 +19709,16 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return {code:resolveCountryId(f)}; }catch(_){} } } }catch(_){} return {code:''}; }
     function _pickClick(e){ if(!_picking) return;
       if(!host||!document.body.contains(host)){ _setPick(false); return; }   /* panel gone → stop picking */
-      if(codes.length>=10){ _setPick(false); try{ imToast(LL('Maximum 10 countries','最大10か国です','Maximal 10 Länder','Максимум 10 стран','Máximo 10 países')); }catch(_){} return; }
       const res=_pickResolve(e.lngLat)||{};
       if(res.eraNoData){ try{ imToast(LL('No comparable data for '+res.eraName+' in this era','「'+res.eraName+'」はこの年代の比較データがありません','Keine Vergleichsdaten für '+res.eraName+' in dieser Epoche','Нет данных для «'+res.eraName+'» в эту эпоху','Sin datos comparables para '+res.eraName+' en esta época')); }catch(_){} return; }
       const cd=res.code;
       if(!cd){ try{ imToast(LL('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
       const nm=cName(_cs(cd))||cd;
-      if(codes.indexOf(cd)>=0){ try{ imToast(LL('Already added','追加済み','Bereits hinzugefügt','Уже добавлено','Ya añadido')+': '+nm); }catch(_){} return; }
+      /* (#R124) re-clicking a country already in the set DESELECTS it — a true toggle ("再クリックで選択解除").
+         The 10-country cap only blocks ADDING, so a deselect always works even when the set is full. */
+      const idx=codes.indexOf(cd);
+      if(idx>=0){ codes.splice(idx,1); try{ render(); }catch(_){} try{ imToast('− '+nm); }catch(_){} return; }
+      if(codes.length>=10){ try{ imToast(LL('Maximum 10 countries','最大10か国です','Maximal 10 Länder','Максимум 10 стран','Máximo 10 países')); }catch(_){} return; }
       codes.push(cd); try{ render(); }catch(_){} try{ imToast('✓ '+nm); }catch(_){} }
     function _setPick(on){ _picking=!!on; window.__scpPick=_picking;
       const b=host&&host.querySelector('#scp-pick'); if(b) b.classList.toggle('on',_picking);
