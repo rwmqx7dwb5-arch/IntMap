@@ -95,6 +95,7 @@ const TASK_MAX_OUTPUT: Record<string, number> = {
   free_text: 1800,
   json_extract: 1200,
   brief: 1800,
+  geo_verify: 500,   // (#R130) web-search-grounded place verification for the Atlas highlight/outline resolver — tiny JSON
 };
 const FALLBACK_MAX_OUTPUT = 1800;
 const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
@@ -110,13 +111,14 @@ const TASK_REASONING: Record<string, string> = {
   free_text: "low",
   json_extract: "low",
   brief: "low",
+  geo_verify: "low",   // (#R130) freshness comes from the forced web search, not reasoning
 };
 
 // (#R113) Which tasks want JSON output (structured-output / responseMimeType json).
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
 // latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
 // client strips any fence). map_report / json_extract keep structured output where it matters most.
-const JSON_TASKS = new Set(["map_report", "json_extract"]);
+const JSON_TASKS = new Set(["map_report", "json_extract", "geo_verify"]);
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,

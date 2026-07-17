@@ -135,7 +135,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
        makes all four exactly 1/4 (was flex:1 1 auto → content-sized, so Information/Community were much wider).
        nowrap + a font/padding that fits the longest label keeps text inside the button with no extra rows. */
     .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:13px; font-weight:500; border-radius:10px; transition:0.3s; white-space:nowrap; text-align:center; overflow:hidden; }   /* (#R122) larger base; JS auto-fits to never overflow/wrap */
-    .mode-btn.active{ background:var(--primary-color); color:#fff; box-shadow:0 4px 12px rgba(0,122,255,0.3); }
+    /* (#R130) News / Information / Countries selected tab = solid WHITE pill, BLACK text (not the accent fill) per
+       request ("News/Information/Countriesはアクセントカラーではなく白背景黒文字に"). Atlas keeps an accent-derived
+       fill via the higher-specificity .mode-btn.mode-atlas.active rule below. */
+    .mode-btn.active{ background:#fff; color:#000; box-shadow:0 2px 8px rgba(0,0,0,0.14); }
     /* (#R114) sidebar Atlas tab — SELECTED = the full Atlas gradient fill (unchanged, as before); UNSELECTED =
        FRAME ONLY: a gradient outline ring (masked ::before so it follows the pill radius) over the normal neutral
        tab fill, with Atlas-indigo text. Was: both states filled identically. Specificity (0,3,0) still wins over the
@@ -144,7 +147,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .mode-btn.mode-atlas:not(.active){ background:var(--input-bg); color:#5e5ce6; box-shadow:none; }
     [data-theme="dark"] .mode-btn.mode-atlas:not(.active){ color:#a5a3ff; }
     .mode-btn.mode-atlas:not(.active)::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
-    .mode-btn.mode-atlas.active{ background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
+    /* (#R130) Selected Atlas tab now tracks the ACCENT colour — same fill as the Atlas user speech bubble
+       (`.atl-b.u`, linear-gradient(135deg,var(--primary-color),#5e5ce6)) — instead of a fixed blue-indigo-purple
+       gradient, per request ("Atlasは、Atlas内のユーザー吹き出しと同じ、アクセントカラーに応じたカラーに"). */
+    .mode-btn.mode-atlas.active{ background:linear-gradient(135deg,var(--primary-color),#5e5ce6); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
     .mode-btn.mode-atlas:hover{ filter:brightness(1.07); }
     /* (#R114) Settings → Accent color picker. Round swatches drive --primary-color; the "default" swatch is a
        hollow ring (= no override → theme blue), the last swatch is a rainbow "pick any colour" with a hidden
@@ -309,6 +315,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .view-btn.atlas-launch:active{ transform:scale(0.96); }
     .view-btn.atlas-launch .atlas-l-txt{ font-size:12.5px; font-weight:500; }
     .view-btn.active{ background:var(--card-bg); box-shadow:0 2px 8px rgba(0,0,0,0.1); color:var(--primary-color); } .view-btn.tool-on{ background:var(--primary-color); color:#fff; }
+    /* (#R130) In-use Measure / Radius (and their menu trigger) read as a solid WHITE pill with BLACK text — NOT the
+       accent fill — per request ("使用中はアクセントカラーではなく白背景黒文字に"). Scoped to those IDs so the shared
+       .view-btn.tool-on rule (Grid / Draw) is untouched. #fff/#111 works in both light and dark themes. */
+    #btn-measure-menu.tool-on, #btn-tool-measure.tool-on, #btn-tool-radius.tool-on{ background:#fff; color:#111; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
     /* (#R122) dark mode: the SELECTED view button reads as a solid white pill with black text (high-contrast, matches the request) */
     :root[data-theme="dark"] .view-btn.active{ background:#fff; color:#111; box-shadow:0 2px 8px rgba(0,0,0,0.35); }
     /* (#R24) zero vertical padding + capped height so the (deliberately large) compass icon doesn't
@@ -2070,6 +2080,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
           </div>
         </div>
         <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
+        <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
+             toolbar, next to Measure/Radius, per request. Shown only when >=1 map object exists (same visibility as
+             the old FAB); wired + counted by IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays. -->
+        <button class="view-btn" id="btn-tool-objects" title="Objects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
         <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
         <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view">🔗</button>
         <!-- (#R114) top-bar Atlas launch button removed (requested). Atlas stays reachable via the left-sidebar
@@ -2518,7 +2532,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"GDP per capita (PPP)", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
+      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objects", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time machine", tlMachine:"Time machine", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
@@ -2551,7 +2565,7 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", objectsBtn:"🗂 オブジェクト", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"タイムマシン", tlMachine:"タイムマシン", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
@@ -2592,7 +2606,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
       aiSecTitle:"KI-Funktionen", aiSecHint:"Integrierte KI — nach der Anmeldung kostenlos nutzbar (bis zu 30×/Tag). Kein API-Schlüssel erforderlich.",
       blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", geoLabels:"Gewässer- & Geländenamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
-      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
+      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
       lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
       filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",
@@ -2639,7 +2653,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
       aiSecTitle:"ИИ-функции", aiSecHint:"Встроенный ИИ — бесплатно после входа (до 30 раз в день). Ключ API не нужен.",
       blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
-      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", mScreenshot:"Снимок", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
+      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
       lblDataSources:"Источники данных", viewDataSources:"Показать источники данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
       lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
       filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
@@ -2687,7 +2701,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",
       aiSecTitle:"Funciones de IA", aiSecHint:"IA integrada — gratis al iniciar sesión (hasta 30 usos al día). No se necesita clave API.",
       blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", geoLabels:"Etiquetas de agua y relieve", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
-      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", radiusBtn:"⭕ Radio", mScreenshot:"Captura", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
+      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
       lblDataSources:"Fuentes de datos", viewDataSources:"Ver fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
       lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
       filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",
@@ -2896,7 +2910,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getSource('ofm')) map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet',attribution:'© OpenFreeMap © OpenMapTiles © OSM'});
       const FONT=['Noto Sans Regular'];
       const before = map.getLayer('grid-lines') ? 'grid-lines' : undefined;
-      if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-transform':'uppercase','text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
+      if(!map.getLayer('ofm-country')) map.addLayer({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}}, before);
       if(!map.getLayer('ofm-city')) map.addLayer({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],4,11,10,15],'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.3}});
       if(!map.getLayer('ofm-other')) map.addLayer({id:'ofm-other',type:'symbol',source:'ofm','source-layer':'place',minzoom:7,filter:['all',['in',['get','class'],['literal',['village','suburb','hamlet','neighborhood']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':['interpolate',['linear'],['zoom'],8,10,13,13],'text-max-width':7},paint:{'text-color':'#d8dde6','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.1}});
       /* (#R40) "河川や湖、その他地形のラベルが欲しい" — rivers/lakes/seas (water_name) + mountain peaks (mountain_peak),
@@ -5301,9 +5315,41 @@ window.addEventListener('DOMContentLoaded', () => {
        NOT drawn on load until you re-toggled them ("デフォルト選択されているのに表示されない"). applyTheme()
        sets its visibility from bordersOn (default true). */
     try{ ensureBordersLayer(); }catch(_){}   /* (#R40) borders-only-line now comes from the OFM boundary layer (accurate, basemap-aligned) — created here too in case Countries(info) initializes first */
-    map.on('mousemove','country-fill',(e)=>{ if(!countryInfoOn||toolMode||!e.features.length)return; const f=e.features[0]; if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; map.setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
+    map.on('mousemove','country-fill',(e)=>{ if(!countryInfoOn||toolMode||!e.features.length)return;
+      /* (#R130) during time-travel do NOT highlight / read out the MODERN country under the cursor — that showed
+         modern Ukraine/Lithuania info while hovering interwar Poland. The era name labels identify countries; the
+         click handler above resolves the era entity on demand. */
+      if(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active()){ if(hoveredCid!==null){ try{ map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); }catch(_){} hoveredCid=null; } return; }
+      const f=e.features[0]; if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=f.id; map.setFeatureState({source:'countries',id:hoveredCid},{hover:true}); showCountryInfo(f); });
     map.on('mouseleave','country-fill',()=>{ if(hoveredCid!==null)map.setFeatureState({source:'countries',id:hoveredCid},{hover:false}); hoveredCid=null; hideCountryInfo(); });
-    map.on('click','country-fill',(e)=>{ if(countryInfoOn&&!toolMode&&!window.__scpPick&&e.features.length){ const f=e.features[0]; const p=f.properties||{}; const id=resolveCountryId(f); showCountryDetail(id, p.NAME_EN||p.ADMIN||p.NAME); } });
+    /* (#R130) ROOT CAUSE of the long-standing "昔の年代でも地図クリック国選択が現代国境になる" re-report (survived
+       R122–R129): every prior round fixed the era-aware CROSSHAIR pickers (#scp-pick / #csearch-pick) + the resolveHist
+       ladder — which were already correct — but the gesture the user actually performs, a PLAIN click on a country
+       during time-travel, was handled by THIS era-UNAWARE country-fill handler. It resolved against the MODERN
+       countryGeo, so clicking interwar Poland's Lwów gave modern Ukraine and Vilnius gave modern Lithuania (Warsaw/
+       Kraków only looked "right" because their modern carrier is still POL — hence the intermittent, 1920s-Poland
+       feel). Now, during travel, the plain click routes through the SAME era PIP → resolveHist path the pickers use
+       and NEVER falls back to the modern polygon. */
+    map.on('click','country-fill',(e)=>{ if(!(countryInfoOn&&!toolMode&&!window.__scpPick&&e.features.length)) return;
+      const TB=window.IntMapTimeBorders;
+      if(TB&&TB.active&&TB.active()){
+        try{
+          /* defer to a specific place label under the click (city / water / peak / river) so a city still opens as a
+             PLACE, exactly like the era name-label handler (_clk) does — only bare country land opens the country. */
+          const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!map.getLayer(id); }catch(_){ return false; } });
+          if(specific.length&&e.point&&map.queryRenderedFeatures(e.point,{layers:specific}).length) return;
+          const ll=e.lngLat; let nm=null, geom=null; const fc=TB.currentFC&&TB.currentFC();
+          if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([ll.lng,ll.lat]); let bA=Infinity;
+            for(const ff of fc.features){ try{ if(ff.geometry&&turf.booleanPointInPolygon(tp,ff)){ const bb=turf.bbox(ff); const a=(bb[2]-bb[0])*(bb[3]-bb[1]); if(a<bA){ bA=a; nm=ff.properties&&(ff.properties.NAME||ff.properties.name); geom=ff.geometry; } } }catch(_){} } }
+          if(nm&&TB.resolveHist){ const R=TB.resolveHist(nm,ll)||{};
+            if(R.code&&countryStats[R.code]){ showCountryDetail(R.code, R.name||nm); return; }
+            /* a real era entity with no comparable stats carrier — open its era place popup (name/wiki/flag), not the
+               modern country that sits there today. */
+            if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(ll,(R.name||nm),true,{geojson:(R.geometry||geom),wiki:(R.wiki||nm),flag:R.flag}); return; } }
+        }catch(_){}
+        return;   /* during travel, NEVER resolve a country click to the modern polygon */
+      }
+      const f=e.features[0]; const p=f.properties||{}; const id=resolveCountryId(f); showCountryDetail(id, p.NAME_EN||p.ADMIN||p.NAME); });
     applyCountryVisibility();
   }
   function applyCountryVisibility(){ if(!map||!map.getLayer('country-fill'))return; const v=countryInfoOn?'visible':'none'; map.setLayoutProperty('country-fill','visibility',v); map.setLayoutProperty('country-line','visibility',v); }
@@ -5949,7 +5995,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const CUR={n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',ne:'nesw-resize',sw:'nesw-resize',nw:'nwse-resize',se:'nwse-resize'};
     const edgeAt=(cx,cy)=>{ const r=panel.getBoundingClientRect(); const x=cx-r.left,y=cy-r.top; if(x<0||y<0||x>r.width||y>r.height) return ''; let h='',v=''; if(x<=M)h='w'; else if(x>=r.width-M)h='e'; if(y<=M)v='n'; else if(y>=r.height-M)v='s'; return v+h; };
     /* (#R79b) inside a workspace window the WINDOW handles resize — skip the panel's own edge-resize */
-    const _inWsWin2=()=>{ try{ return !!(panel.closest&&panel.closest('.ws-win')); }catch(_){ return false; } };
+    /* (#R79b) inside a workspace window the WINDOW handles resize — skip the panel's own edge-resize.
+       (#R130) ALSO skip when the panel is the Atlas SIDEBAR TAB (class `atl-tab`): in tab mode the Atlas panel is
+       pinned to width:100%!important inside #atlas-feed, so the invisible edge-resize border-zone let the user drag
+       (incl. left/right) and fought the forced width — the reported "サイドバー内Atlasに左右方向のリサイズ機構があり、
+       変なことになる". `atl-tab` is present only in tab mode (removed in ws-mode), so the floating Atlas window and the
+       Compare window keep edge-resize. */
+    const _inWsWin2=()=>{ try{ if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.closest&&panel.closest('.ws-win')); }catch(_){ return false; } };
     panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
     panel.addEventListener('pointerdown',(e)=>{ if(_inWsWin2()) return; if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
@@ -16633,6 +16685,27 @@ window.addEventListener('DOMContentLoaded', () => {
            documented empire figure keeps the pre-1945 aggregate honest (same override as AUH/OTT/RUE/RAJ). */
         succ:['JPN','KOR','PRK','TWN'], popEst:105000000, gdpEst:230, estSrc:'Japan Empire c.1940 (~105M incl. Korea/Taiwan) / Maddison GDPpc' }
     ];
+    /* (#R130) era capital / currency / official languages for each historical state — merged onto the S objects so
+       agg() surfaces them on the country card (they were hardcoded blank before). Sourced from each state's Wikipedia
+       infobox. */
+    const _STINFO={
+      SUN:{capital:'Moscow',currency:'Soviet ruble',languages:'Russian'},
+      YUG:{capital:'Belgrade',currency:'Yugoslav dinar',languages:'Serbo-Croatian, Slovene, Macedonian'},
+      YGK:{capital:'Belgrade',currency:'Yugoslav dinar',languages:'Serbo-Croatian'},
+      SCG:{capital:'Belgrade',currency:'Serbian dinar / Euro',languages:'Serbian'},
+      CSK:{capital:'Prague',currency:'Czechoslovak koruna',languages:'Czech, Slovak'},
+      UAR:{capital:'Cairo',currency:'UAR pound',languages:'Arabic'},
+      PKU:{capital:'Karachi / Islamabad',currency:'Pakistani rupee',languages:'Urdu, Bengali, English'},
+      SDU:{capital:'Khartoum',currency:'Sudanese pound',languages:'Arabic, English'},
+      ETU:{capital:'Addis Ababa',currency:'Ethiopian birr',languages:'Amharic'},
+      IDU:{capital:'Jakarta',currency:'Indonesian rupiah',languages:'Indonesian'},
+      AUH:{capital:'Vienna & Budapest',currency:'Austro-Hungarian krone',languages:'German, Hungarian'},
+      OTT:{capital:'Constantinople',currency:'Ottoman lira',languages:'Ottoman Turkish'},
+      RUE:{capital:'St. Petersburg',currency:'Russian ruble',languages:'Russian'},
+      RAJ:{capital:'Calcutta / New Delhi',currency:'Indian rupee',languages:'English, Hindi, Urdu'},
+      JEM:{capital:'Tokyo',currency:'Japanese yen',languages:'Japanese'}
+    };
+    STATES.forEach(S=>{ const i=_STINFO[S.code]; if(i){ S.capital=i.capital; S.currency=i.currency; S.languages=i.languages; } });
     const CODES=STATES.map(S=>S.code);
     function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
       return STATES.filter(S=>{ const a=+new Date(S.from+'T00:00:00Z'), b=+new Date(S.to+'T23:59:59Z'); return t>=a&&t<=b; }); }
@@ -16663,7 +16736,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const nm=S.name;
       return { code:S.code, ccn3:'', nameEn:nm.en, nameJp:nm.jp, name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
         sov:true, _hist:true, _histSucc:S.succ, _histHave:((real||S.popEst)?S.succ.length:have), _histN:S.succ.length, _from:S.from, _to:S.to, _real:real,
-        capital:'', currency:'', languages:'',
+        capital:S.capital||'', currency:S.currency||'', languages:S.languages||'',   /* (#R130) real era capital / currency / languages on the historical card (were always blank) */
         pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
         gdppc:(gdp&&pop)?(gdp*1e9/pop):null, density:(pop&&area)?pop/area:null,
         lifeExp:(lD?lN/lD:null), tfr:(tD?tN/tD:null), internet:(nD?nN/nD:null) };
@@ -16723,14 +16796,24 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R128) Kingdom of Hungary (1920–1946) = red-white-green tricolor + the crowned "middle" coat of arms
        (Árpád bars + patriarchal cross on a green mound, under the Holy Crown) — modern Hungary is a plain tricolor. */
     const F_HUNK=flag('<rect width="30" height="6.667" fill="#CE2939"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#477050"/><g transform="translate(15,10.6)"><path d="M-3.1,-3.3 H3.1 V0.4 C3.1,2.8 1.6,4.2 0,4.9 C-1.6,4.2 -3.1,2.8 -3.1,0.4 Z" fill="#ffffff" stroke="#7a5b00" stroke-width="0.25"/><g><rect x="-3.1" y="-3.3" width="3.1" height="1.03" fill="#CE2939"/><rect x="-3.1" y="-1.24" width="3.1" height="1.03" fill="#CE2939"/><rect x="-3.1" y="0.82" width="3.1" height="1.03" fill="#CE2939"/></g><path d="M0,-3.3 H3.1 V0.4 C3.1,2.6 1.7,3.9 0,4.7 Z" fill="#f2f2f2"/><path d="M0,3.6 C0.9,2.4 2.2,2.2 3.0,2.4 V0.4 C3.1,2.6 1.7,3.6 0,4.4 Z" fill="#2e7d46"/><g stroke="#ffffff" stroke-width="0.5" stroke-linecap="square"><line x1="1.55" y1="-2.6" x2="1.55" y2="1.4"/><line x1="0.75" y1="-1.7" x2="2.35" y2="-1.7"/><line x1="0.55" y1="-0.6" x2="2.55" y2="-0.6"/></g><path d="M-2.4,-4.2 H2.4 L2.0,-3.5 H-2.0 Z" fill="#E8B800" stroke="#7a5b00" stroke-width="0.2"/><path d="M-0.35,-5.5 L0.35,-5.5 L0.35,-4.85 L0.75,-4.85 L0.75,-4.2 H-0.75 L-0.75,-4.85 L-0.35,-4.85 Z" fill="#E8B800"/></g>');
+    /* (#R130) more per-era identities so the country CARD shows the era name/flag instead of the modern one.
+       Imperial State of Iran (Pahlavi) = green-white-red tricolour + the golden Sun (Lion-and-Sun); Francoist Spain
+       = the rojigualda with the eagle of St John (distinct from modern Spain's arms). */
+    const F_IRPAHL=flag('<rect width="30" height="6.667" fill="#239F40"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#DA0000"/><g transform="translate(15,10)" stroke="#B8860B" stroke-width="0.4"><line x1="0" y1="-3.4" x2="0" y2="-2.2"/><line x1="0" y1="3.4" x2="0" y2="2.2"/><line x1="-3.4" y1="0" x2="-2.2" y2="0"/><line x1="3.4" y1="0" x2="2.2" y2="0"/><line x1="-2.4" y1="-2.4" x2="-1.6" y2="-1.6"/><line x1="2.4" y1="-2.4" x2="1.6" y2="-1.6"/><line x1="-2.4" y1="2.4" x2="-1.6" y2="1.6"/><line x1="2.4" y1="2.4" x2="1.6" y2="1.6"/></g><circle cx="15" cy="10" r="2.1" fill="#E8B800"/>');
+    const F_ESPF=flag('<rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/><g transform="translate(11,10)"><path d="M-4.4,-3 Q-1.2,-1.2 0,-3.8 Q1.2,-1.2 4.4,-3 Q2.8,0 3.2,2.4 L-3.2,2.4 Q-2.8,0 -4.4,-3 Z" fill="#1a1a1a"/><rect x="-1.5" y="-1.6" width="3" height="3.9" rx="0.4" fill="#F1BF00" stroke="#AA151B" stroke-width="0.35"/></g>');
     const ID={
       CHN:[{from:1636,to:1912,name:{en:'Qing Empire',jp:'清',de:'Qing-Reich',ru:'Империя Цин',es:'Imperio Qing'},flag:F_QING,wiki:'Qing dynasty'},
            {from:1912,to:1949,name:{en:'Republic of China',jp:'中華民国',de:'Republik China',ru:'Китайская Республика',es:'República de China'},flag:F_ROC,wiki:'Republic of China (1912–1949)'}],
       DEU:[{from:1871,to:1918,name:{en:'German Empire',jp:'ドイツ帝国',de:'Deutsches Kaiserreich',ru:'Германская империя',es:'Imperio alemán'},flag:F_GEMP,wiki:'German Empire'},
            {from:1919,to:1932,name:{en:'Weimar Republic',jp:'ヴァイマル共和政',de:'Weimarer Republik',ru:'Веймарская республика',es:'República de Weimar'},flag:F_WEIMAR,wiki:'Weimar Republic'},
-           {from:1933,to:1945,name:{en:'Nazi Germany',jp:'ナチス・ドイツ',de:'Deutsches Reich (1933–1945)',ru:'Нацистская Германия',es:'Alemania nazi'},flag:F_GEMP,wiki:'Nazi Germany'}],
+           {from:1933,to:1945,name:{en:'Nazi Germany',jp:'ナチス・ドイツ',de:'Deutsches Reich (1933–1945)',ru:'Нацистская Германия',es:'Alemania nazi'},flag:F_GEMP,wiki:'Nazi Germany'},
+           /* (#R130) West Germany 1949–1990 (DEU carrier). East Germany is a separate CShapes polygon resolved via
+              _VANISHED; the flag is the modern black-red-gold, correct for the FRG, so no era flag needed. */
+           {from:1949,to:1990,name:{en:'West Germany',jp:'西ドイツ',de:'Bundesrepublik Deutschland (1949–1990)',ru:'ФРГ',es:'Alemania Occidental'},wiki:'West Germany'}],
       ITA:[{from:1861,to:1946,name:{en:'Kingdom of Italy',jp:'イタリア王国',de:'Königreich Italien',ru:'Королевство Италия',es:'Reino de Italia'},flag:F_ITK,wiki:'Kingdom of Italy'}],
-      IRN:[{from:1800,to:1935,name:{en:'Persia',jp:'ペルシャ',de:'Persien',ru:'Персия',es:'Persia'},flag:F_PERSIA,wiki:'Qajar Iran'}],
+      IRN:[{from:1800,to:1925,name:{en:'Persia',jp:'ペルシャ',de:'Persien',ru:'Персия',es:'Persia'},flag:F_PERSIA,wiki:'Qajar Iran'},
+           /* (#R130) Pahlavi era 1925–1979 — was wrongly showing "Iran" + the modern Islamic-Republic flag. */
+           {from:1925,to:1979,name:{en:'Imperial State of Iran',jp:'パフレヴィー朝イラン',de:'Kaiserreich Iran',ru:'Пехлевийский Иран',es:'Estado Imperial de Irán'},flag:F_IRPAHL,wiki:'Pahlavi Iran'}],
       THA:[{from:1800,to:1939,name:{en:'Siam',jp:'シャム',de:'Siam',ru:'Сиам',es:'Siam'},flag:F_SIAM,wiki:'Rattanakosin Kingdom'}],
       IDN:[{from:1800,to:1945,name:{en:'Dutch East Indies',jp:'オランダ領東インド',de:'Niederländisch-Indien',ru:'Голландская Ост-Индия',es:'Indias Orientales Neerlandesas'},flag:F_NLD,wiki:'Dutch East Indies'}],
       /* (#R117) 歴史国家拡充 — more per-era identities (era name + era flag + era Wikipedia on the country card) */
@@ -16738,7 +16821,9 @@ window.addEventListener('DOMContentLoaded', () => {
       RUS:[{from:1721,to:1917,name:{en:'Russian Empire',jp:'ロシア帝国',de:'Russisches Kaiserreich',ru:'Российская империя',es:'Imperio ruso'},flag:F_RUEH,wiki:'Russian Empire'},
            {from:1918,to:1922,name:{en:'Soviet Russia (RSFSR)',jp:'ソビエト・ロシア（ロシアSFSR）',de:'Sowjetrussland (RSFSR)',ru:'Советская Россия (РСФСР)',es:'Rusia soviética (RSFSR)'},flag:F_RSFSR,wiki:'Russian Soviet Federative Socialist Republic'}],
       GBR:[{from:1801,to:1926,name:{en:'United Kingdom of Great Britain and Ireland',jp:'グレートブリテン・アイルランド連合王国',de:'Vereinigtes Königreich Großbritannien und Irland',ru:'Соединённое Королевство Великобритании и Ирландии',es:'Reino Unido de Gran Bretaña e Irlanda'},wiki:'United Kingdom of Great Britain and Ireland'}],
-      ESP:[{from:1931,to:1939,name:{en:'Spanish Republic',jp:'スペイン第二共和政',de:'Zweite Spanische Republik',ru:'Вторая Испанская Республика',es:'Segunda República Española'},flag:F_ESP2,wiki:'Second Spanish Republic'}],
+      ESP:[{from:1931,to:1939,name:{en:'Spanish Republic',jp:'スペイン第二共和政',de:'Zweite Spanische Republik',ru:'Вторая Испанская Республика',es:'Segunda República Española'},flag:F_ESP2,wiki:'Second Spanish Republic'},
+           /* (#R130) Francoist Spain 1939–1975 — rojigualda with the eagle of St John (modern Spain shows a different coat of arms). */
+           {from:1939,to:1975,name:{en:'Francoist Spain',jp:'フランコ体制期のスペイン',de:'Spanien unter Franco',ru:'Франкистская Испания',es:'España franquista'},flag:F_ESPF,wiki:'Francoist Spain'}],
       PRT:[{from:1800,to:1910,name:{en:'Kingdom of Portugal',jp:'ポルトガル王国',de:'Königreich Portugal',ru:'Королевство Португалия',es:'Reino de Portugal'},flag:F_PTK,wiki:'Kingdom of Portugal'}],
       BRA:[{from:1822,to:1889,name:{en:'Empire of Brazil',jp:'ブラジル帝国',de:'Kaiserreich Brasilien',ru:'Бразильская империя',es:'Imperio del Brasil'},flag:F_BRE,wiki:'Empire of Brazil'}],
       EGY:[{from:1922,to:1952,name:{en:'Kingdom of Egypt',jp:'エジプト王国',de:'Königreich Ägypten',ru:'Королевство Египет',es:'Reino de Egipto'},flag:F_EGYK,wiki:'Kingdom of Egypt'}],
@@ -18770,8 +18855,11 @@ window.addEventListener('DOMContentLoaded', () => {
       return null;
     }
     function wgtLocPrompt(e){ const msg=jp()?'位置情報が必要です':'Location needed';
-      setV(e.u, '<button class="wgt-loc-btn" data-u="'+e.u+'" style="background:var(--primary-color);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;">'+(jp()?'位置情報を許可':'Allow location')+'</button>', msg);
-      setTimeout(()=>{ const b=document.querySelector('.wgt-loc-btn[data-u="'+e.u+'"]'); if(b) b.onclick=()=>{ geoDenied=false; b.textContent=jp()?'取得中…':'Locating…'; reqGeo(()=>{ try{ refreshOne(e); }catch(_){} }); }; },0); }
+      setV(e.u, '<button class="wgt-loc-btn" data-u="'+e.u+'" style="background:var(--primary-color);color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:400;cursor:pointer;">'+(jp()?'位置情報を許可':'Allow location')+'</button>', msg);
+      /* (#R130) One grant now dismisses EVERY location widget's button, not just this one. reqGeo populates the
+         SHARED geoPos cache, so re-rendering all weather/aqi/sun/uv widgets lets them consume the cached coords and
+         overwrite their own prompt buttons — "他のウィジェットのボタンも全部それぞれ押さなくていいように". */
+      setTimeout(()=>{ const b=document.querySelector('.wgt-loc-btn[data-u="'+e.u+'"]'); if(b) b.onclick=()=>{ geoDenied=false; b.textContent=jp()?'取得中…':'Locating…'; reqGeo(()=>{ try{ active.forEach(w=>{ if(['weather','aqi','sun','uv'].includes(w.t)) refreshOne(w); }); }catch(_){ try{ refreshOne(e); }catch(__){} } }); }; },0); }
     async function refreshWeather(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto');
         const j=await r.json(); const cu=j.current||{}, dy=j.daily||{};
@@ -25892,14 +25980,20 @@ window.addEventListener('DOMContentLoaded', () => {
          (The ≥2-chars-before-湾/海 guard keeps 台湾/上海/熱海/東海 out of the water branch.) */
       const _wq=String(nm||'').trim();
       const isWaterQ=/^..+湾$/.test(_wq)||/^..+海$/.test(_wq)||/(灘|水道|海峡)$/.test(_wq)||/\b(bay|gulf|strait|channel|sound|sea|fjord|lagoon)\b/i.test(_wq);
+      /* (#R130) web-verify ambiguous / water / fuzzy targets ONCE (lazy, cached, fail-open). Used as a Nominatim
+         ANCHOR (disambiguate the 8 candidates) and to REJECT wrong-place geometry below. The exact-country and
+         region-group rungs above already returned, so this only runs for the genuinely uncertain long tail. */
+      let _gv=null,_gvTried=false; const _getGV=async()=>{ if(!_gvTried){ _gvTried=true; try{ _gv=await geoVerify(nm); }catch(_){ _gv=null; } } return _gv; };
       for(let _wi=0;_wi<(isWaterQ?2:1);_wi++){
-        try{ const e=await _nomExtent(nm); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'')){
-          if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}};
+        try{ const gv=await _getGV(); const e=await _nomExtent(nm, gv); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'') && _geoAgrees(e.geojson, gv)){
+          if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv)};
           /* (#R116) WATER BODIES & NATURAL FEATURES: 「大阪湾をハイライト」 was rejected here (a bay is not an
              admin polygon), fell through the AI steps and ended at the point→country fallback, which painted
-             CHINA. Nominatim HAS real polygons for bays/straits/seas/peninsulas — accept them for highlight. */
+             CHINA. Nominatim HAS real polygons for bays/straits/seas/peninsulas — accept them for highlight.
+             (#R130) …but only when the polygon AGREES with the web-verified location (the anchor already makes
+             the right candidate win; this rejects a residual homonym rather than painting it). */
           if(/^(natural|water|waterway|place)$/i.test(e.cls||'') && /^(bay|strait|gulf|sea|water|lagoon|channel|sound|fjord|inlet|peninsula|isthmus|cape|archipelago|reef|shoal|wetland)$/i.test(e.typ||''))
-            return {poly:{name:e.name||nm,geo:e.geojson}};
+            return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv)};
           break;   /* got a polygon but of another kind → no point retrying */
         } }catch(_){}
         if(isWaterQ&&_wi===0) await new Promise(r=>setTimeout(r,900));
@@ -25913,14 +26007,20 @@ window.addEventListener('DOMContentLoaded', () => {
          mode:"outline" (basins, ranges, belts…) we go straight to the traced outline instead. */
       const rbKnown=regionBox(nm);
       try{ const aiu=await aiRegionUnits(nm); if(aiu&&!aiu.outline){ const cp2=await composeRegion(aiu,_lnorm(nm)); if(cp2&&cp2.geo&&cp2.n>=Math.max(1,Math.round(cp2.total*0.5))) return {poly:{name:String(nm||'').trim(),geo:cp2.geo},composed:true,partial:cp2.n<cp2.total}; } }catch(_){}
-      const ai=await aiRegionPoly(nm); if(ai) return {poly:{name:nm,geo:ai},approx:true};
+      /* (#R130) AI-TRACED outline — the biggest hallucination source ("見当違いの場所にblob"). Accept it only when it
+         AGREES with the web-verified location; a trace far from the real place is dropped to an honest miss rather
+         than painted. Still flagged approx:true so the reply shows the ⬡ "approximate extent" note. */
+      const ai=await aiRegionPoly(nm); if(ai){ const gv=await _getGV(); if(_geoAgrees(ai, gv)) return {poly:{name:nm,geo:ai},approx:true,verified:_gvStrong(gv)}; }
       if(rbKnown&&rbKnown.box) return {poly:{name:nm,geo:_bboxSoftPoly(rbKnown.box)},soft:true};
       /* (#R116) last-resort country fallback: resolveCountry may derive the country from a GEOCODED POINT
          (codeAtPoint), which for a non-country query with a bad geocode confidently painted the WRONG country
          (大阪湾 → "People's Republic of China"). Only accept it when the country name actually relates to the
-         query; otherwise an honest "nothing found" beats a wrong nation-sized highlight. */
+         query; (#R130) AND, when a strong web verification says which country the place is in, only when that
+         matches — so a bad geocode can no longer confidently paint the wrong nation. */
       const c2=await resolveCountry(nm); if(c2&&c2.code){ const qn=_lnorm(nm), cn=_lnorm(c2.name||'');
-        if(qn&&cn&&(cn.indexOf(qn)>=0||qn.indexOf(cn)>=0)) return {code:c2.code,name:c2.name}; }
+        const gv=await _getGV();
+        const _countryOk=(()=>{ if(!_gvStrong(gv)||!gv.country) return true; const gc=_lnorm(gv.country); return !!(gc&&cn&&(cn.indexOf(gc)>=0||gc.indexOf(cn)>=0)); })();
+        if(_countryOk && qn&&cn&&(cn.indexOf(qn)>=0||qn.indexOf(cn)>=0)) return {code:c2.code,name:c2.name,verified:_gvStrong(gv)}; }
       return null; }
     function unionBox(codes,polys){ let a=180,b=90,c=-180,d=-90,any=false;
       try{ const g=geo(); if(g&&g.features&&codes&&codes.length){ const set=new Set(codes.map(String)); g.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }); } }catch(_){}
@@ -26209,7 +26309,42 @@ window.addEventListener('DOMContentLoaded', () => {
       if(/^(amenity|shop|tourism|leisure|office|building|man_made|highway|railway|historic|craft|healthcare|barrier|power|aeroway)$/.test(c)) return -0.6;
       if(/^(country|state|region|province|county|city|town|district|municipality|island|continent|borough|department)$/.test(at)) return 0.3;
       if(c==='place'||c==='boundary'||c==='natural') return 0.22; return 0; }
-    async function _nomExtent(place){ place=String(place||'').trim(); if(!place) return null;
+    /* (#R130) WEB-SEARCH-GROUNDED location verification for the highlight / outline resolver. The old ladder trusted
+       whatever geometry a Nominatim importance score or a web-BLIND AI trace returned, and reported "✦ highlighted"
+       on any paint — so an ambiguous/homonym name (大阪湾→a bay in China) or a hallucinated blob got painted AND
+       claimed as success ("ハイライトが全く見当違いの場所"). geoVerify web-searches the authoritative coordinates so an
+       untrusted rung can be DISAMBIGUATED (as an anchor for _nomExtent) and VERIFIED (reject clear mismatches).
+       Fail-OPEN: any error / logout / quota / timeout / no-web → null, and the caller keeps its current behaviour, so
+       this can only CATCH wrong-place results, never break a working highlight. Cached per normalized name. */
+    const _geoVerifyCache={};
+    async function geoVerify(name){ const key=_lnorm(name); if(!key) return null; if(key in _geoVerifyCache) return _geoVerifyCache[key];
+      let out=null;
+      try{
+        const sys='You are a geographic verification service WITH web search. For the EXACT place the user names, web-search its single most authoritative CURRENT real-world location and return STRICT JSON ONLY: {"found":true|false,"lat":<number>,"lng":<number>,"kind":"country|admin1|admin2|city|water|region|river|basin|mountain|island|unknown","country":"<English name of the country it is in, or empty>","altNames":["<other names>"],"confidence":<0..1>}. lat/lng = a representative interior point on/inside the feature (for a country or region its centroid; for a bay/strait/river/range a point ON the feature). If the name is ambiguous, choose the most likely and put alternates in altNames. If you cannot verify it from a source, set found=false. Output JSON only, no prose.';
+        const j=await Promise.race([
+          askAIJSON('Place: "'+String(name).slice(0,120)+'"', sys, null, {task:'geo_verify', webMode:'required'}),
+          new Promise(res=>setTimeout(()=>res('__t__'), 9000))
+        ]);
+        if(j!=='__t__' && j && typeof j==='object' && j.found && isFinite(+j.lat) && isFinite(+j.lng) && Math.abs(+j.lat)<=90 && Math.abs(+j.lng)<=180){
+          const meta=window._aiLastMeta||{};
+          out={ found:true, lat:+j.lat, lng:+j.lng, kind:String(j.kind||'unknown').toLowerCase(), country:String(j.country||'').trim(),
+                altNames:(Array.isArray(j.altNames)?j.altNames.map(x=>String(x||'').trim()).filter(Boolean):[]),
+                confidence:(typeof j.confidence==='number'?j.confidence:(meta.webUsed?0.7:0.35)), webUsed:!!meta.webUsed };
+        }
+      }catch(_){}
+      _geoVerifyCache[key]=out; return out; }
+    /* is this verification trustworthy enough to REJECT geometry on? require the web search to have actually run +
+       a real point; otherwise we only USE it as a soft anchor, never to reject. */
+    const _gvStrong=gv=>!!(gv&&gv.found&&gv.webUsed&&(gv.confidence==null||gv.confidence>=0.5));
+    /* km from a geometry's representative point to the verified point (null if uncomputable) + a size-scaled tolerance */
+    function _geoMismatchKm(geo,gv){ try{ if(!geo||!gv||typeof turf==='undefined') return null; let cx,cy;
+      try{ const cen=turf.center({type:'Feature',geometry:geo,properties:{}}); cx=cen.geometry.coordinates[0]; cy=cen.geometry.coordinates[1]; }
+      catch(_){ const bb=turf.bbox({type:'Feature',geometry:geo,properties:{}}); cx=(bb[0]+bb[2])/2; cy=(bb[1]+bb[3])/2; }
+      if(!isFinite(cx)||!isFinite(cy)) return null; const d=turf.distance([cx,cy],[gv.lng,gv.lat],{units:'kilometres'}); return isFinite(d)?d:null; }catch(_){ return null; } }
+    function _geoTolKm(geo){ try{ const bb=turf.bbox({type:'Feature',geometry:geo,properties:{}}); const diag=turf.distance([bb[0],bb[1]],[bb[2],bb[3]],{units:'kilometres'}); return Math.max(200, 0.65*(isFinite(diag)?diag:0)); }catch(_){ return 500; } }
+    /* verified geometry check: true = geometry sits at the verified place (or we can't/ shouldn't judge → fail-open) */
+    function _geoAgrees(geo,gv){ if(!_gvStrong(gv)) return true; const d=_geoMismatchKm(geo,gv); if(d==null) return true; return d<=_geoTolKm(geo); }
+    async function _nomExtent(place, anchor){ place=String(place||'').trim(); if(!place) return null;
       /* (#R64) polygon_threshold 0.02 (~2 km Douglas-Peucker) was the "カクカクポリゴン" root cause — real admin
          boundaries came back as a handful of vertices. 0.0008 (~80 m) keeps full visual fidelity at any zoom the
          region is viewed at while still bounding the payload. Whole COUNTRIES never reach here (resolveCountrySync
@@ -26220,7 +26355,11 @@ window.addEventListener('DOMContentLoaded', () => {
            whose own name equals the query must beat a fuzzy near-miss with slightly higher importance. */
         const _q=String(place).trim().toLowerCase();
         const _nameBonus=x=>{ try{ return (String((x.display_name||'').split(',')[0]).trim().toLowerCase()===_q)?0.5:0; }catch(_){ return 0; } };
-        const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y)+_nameBonus(y))-((+x.importance||0)+_classBonus(x)+_nameBonus(x)))[0];
+        /* (#R130) ANCHOR bonus: when a web-search-verified point is supplied (geoVerify), prefer the candidate NEAREST
+           it — so the RIGHT one of the up-to-8 Nominatim candidates wins instead of a higher-importance homonym
+           (the 大阪湾→坂湾-in-China class). Reuses the already-fetched candidates, no extra request. */
+        const _anchorBonus=x=>{ try{ if(!anchor||!isFinite(+anchor.lat)||!isFinite(+anchor.lng)||typeof turf==='undefined') return 0; const d=turf.distance([+x.lon,+x.lat],[+anchor.lng,+anchor.lat],{units:'kilometres'}); if(!isFinite(d)) return 0; return d<=120?0.9:d<=400?0.5:d<=1200?0:-0.7; }catch(_){ return 0; } };
+        const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y)+_nameBonus(y)+_anchorBonus(y))-((+x.importance||0)+_classBonus(x)+_nameBonus(x)+_anchorBonus(x)))[0];
         let box=robustExtent(best.geojson);
         if(!box && Array.isArray(best.boundingbox)&&best.boundingbox.length===4){ const s=+best.boundingbox[0],n=+best.boundingbox[1],w=+best.boundingbox[2],e=+best.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
         const adminPoly=!!(best.geojson && /Polygon/.test(best.geojson.type||'') && _classBonus(best)>0);
@@ -27663,7 +27802,7 @@ window.addEventListener('DOMContentLoaded', () => {
              (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…).
              (#R65) + RIVERS as their real course (line) and BASINS (tributaries + faint basin fill) — judged
              BEFORE any admin-unit logic. */
-          const found=[],polys=[],lines=[],lineNames=[],miss=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null;
+          const found=[],polys=[],lines=[],lineNames=[],miss=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false;
           for(const nm2 of raw){
             const bi=basinIntent(nm2);
             if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
@@ -27677,6 +27816,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if(riverIntent(nm2)){ let rl=null; try{ rl=await fetchRiverLine(nm2); }catch(_){}
               if(rl){ lines.push({geo:rl.geo,w:3.2,color:pc2||null,name:rl.name}); lineNames.push(rl.name); continue; } }
             let t2=null; try{ t2=await resolveHlTarget(nm2); }catch(_){}
+            if(t2&&t2.verified) anyVerified=true;   /* (#R130) at least one target's location was web-search-verified */
             if(t2&&t2.code){ if(!seen.has(t2.code)){ seen.add(t2.code); found.push(t2); } }
             else if(t2&&t2.codes){ let nAdd=0; t2.codes.forEach(cd=>{ if(!seen.has(cd)){ seen.add(cd); found.push({code:cd,_grp:1}); nAdd++; } }); grpNames.push((t2.name||nm2)+' ('+nAdd+')'); if(t2.basis) grpBases.push(t2.basis); }
             else if(t2&&t2.poly){ if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.soft||t2.approx) anyApprox=true; if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true; }
@@ -27709,6 +27849,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(anyComposed) hh+=note(L('Drawn from the real administrative boundaries of the region\'s member units','構成する行政区画の実際の境界データから描画','Aus den realen Verwaltungsgrenzen der Teilgebiete gezeichnet','Построено из реальных административных границ','Dibujado a partir de los límites administrativos reales'));
           if(anyPartial) hh+=warn('⚠ '+L('Some member boundaries could not be fetched — the shape may be missing pieces','一部の構成区画の境界を取得できませんでした（欠けがある可能性）','Einige Teilgrenzen fehlen','Часть границ получить не удалось','Faltan algunos límites'));
           if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
+          if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
           if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', '))); return R(true,hh+cwarn); }
         case 'value': case 'stat': case 'lookup': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name);
           if(!c||!c.code||!countryStats[c.code]) return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||a.name||'')));
@@ -28480,6 +28621,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-dots i{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:atlDot 1.15s infinite;}'
         +'#atlas-panel .atl-dots i:nth-child(2){animation-delay:.15s;} #atlas-panel .atl-dots i:nth-child(3){animation-delay:.3s;}'
         +'@keyframes atlDot{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-3.5px);opacity:1;}}'
+        +'#atlas-panel .atl-stage{display:inline-flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12.5px;font-weight:500;}'   /* (#R130) stage-aware "thinking" label (Thinking / Searching / Analyzing / Mapping) */
         +'#atlas-panel .atl-ex{display:flex;flex-wrap:wrap;gap:6px;padding:6px 16px 2px;}'
         +'#atlas-panel .atl-rad-cfg{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 4px;padding:7px 9px;background:rgba(120,120,128,0.1);border:1px solid rgba(128,128,128,0.16);border-radius:10px;}'
         +'#atlas-panel .atl-rad-ctl{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);} #atlas-panel .atl-rad-ctl>span:first-child{flex:0 0 auto;} #atlas-panel .atl-rad-ctl b{color:var(--text-main);min-width:34px;text-align:center;}'
@@ -28903,9 +29045,19 @@ window.addEventListener('DOMContentLoaded', () => {
     function mapToggleChip(kinds){ const K=Array.from(new Set((kinds||[]).filter(k=>_OVL[k]||k==='arc'))); if(!K.length) return '';
       return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">'+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
         +'<button class="atl-ctl-toggle atl-map-toggle on" role="switch" aria-checked="true" title="'+L('Show / hide on the map','地図で表示 / 非表示','Auf der Karte ein/aus','Показать/скрыть на карте','Mostrar/ocultar en el mapa')+'"><span class="atl-ctl-knob"></span></button></div>'; }
+    /* (#R130) Stage-aware "thinking" indicator — the placeholder used to show the SAME generic 3-dot bubble for every
+       phase. Now it reads out what Atlas is REALLY doing right now, driven by the actual pipeline (planner wait =
+       Thinking; a web-search/brief action = Searching; a compare/stat = Analyzing; a map action = Mapping). The
+       `.atl-dots` span is kept inside so the animation + the cancel-scan selector (`.atl-b.a .atl-dots`) still work,
+       and setStage is a no-op once real content has replaced the placeholder (so a late call never clobbers a reply). */
+    const _STAGE_TXT={ think:L('Thinking','考え中','Denke nach','Думаю','Pensando'), search:L('Searching','検索中','Suche','Ищу','Buscando'), analyze:L('Analyzing','分析中','Analysiere','Анализирую','Analizando'), map:L('Mapping','地図に描画中','Zeichne Karte','Рисую карту','Dibujando mapa'), write:L('Writing','作成中','Schreibe','Пишу','Escribiendo') };
+    function stageDots(k){ return '<span class="atl-stage">'+esc(_STAGE_TXT[k]||_STAGE_TXT.think)+'<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span></span>'; }
+    function setStage(el,k){ try{ if(el&&el.querySelector&&el.querySelector('.atl-dots')) el.innerHTML=stageDots(k); }catch(_){} }
+    const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker'].indexOf(t)>=0) return 'map'; return 'think'; };
     async function runActions(ai, say, acts, gen){
       let body=''; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
+        try{ setStage(ai, _STAGE_OF(a)); }catch(_){}   /* (#R130) reflect the real current action in the indicator */
         let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a);
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
@@ -29260,7 +29412,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(typeof aiGate==='function') aiGate(); }catch(_){}   /* opens the login modal / shows the daily-limit toast */
         const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof currentUser!=='undefined'&&currentUser)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
       }
-      const ai=bubble('a','<span class="atl-dots" aria-label="'+L('Thinking…','考え中…','Denke nach…','Думаю…','Pensando…')+'"><i></i><i></i><i></i></span>');
+      const ai=bubble('a',stageDots('think'));   /* (#R130) stage-aware placeholder — updates to Searching/Analyzing/Mapping as runActions executes */
       /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
          "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
@@ -30260,7 +30412,18 @@ window.addEventListener('DOMContentLoaded', () => {
     function ensureFab(){ if(fab) return fab; ensurePanel(); fab=document.createElement('button'); fab.id='iol-fab';
       fab.innerHTML='🗂 <span class="iol-fab-n">0</span>'; fab.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos');
       fab.onclick=()=>toggle(); document.body.appendChild(fab); return fab; }
-    function tickFab(){ try{ ensureFab(); const n=count(); const ns=fab.querySelector('.iol-fab-n'); if(ns) ns.textContent=n; fab.style.display=(n>0&&!openState)?'inline-flex':'none'; }catch(_){} }
+    /* (#R130) Drive BOTH the top-right toolbar button (#btn-tool-objects, desktop/normal) and the legacy bottom-left
+       FAB (#iol-fab, now mobile-only since the top-right toolbar is hidden on phones). Both show only when >=1 object
+       exists — a faithful relocation of the FAB's visibility, not a behaviour change. */
+    function tickFab(){ try{ ensureFab(); const n=count();
+      const ns=fab.querySelector('.iol-fab-n'); if(ns) ns.textContent=n;
+      const tb=document.getElementById('btn-tool-objects');
+      if(tb){ if(!tb.__wired){ tb.__wired=1; tb.onclick=()=>toggle(); tb.title=OL('Manage all map objects','地図上のオブジェクトを管理','Objekte verwalten','Управление объектами','Gestionar objetos'); }
+        const tn=document.getElementById('tool-objects-n'); if(tn) tn.textContent=(n>0?n:'');
+        tb.classList.toggle('tool-on', !!(openState&&panel&&panel.style.display!=='none'));
+        tb.style.display=(n>0)?'inline-flex':'none'; }
+      const mob=(typeof isMobile==='function'?isMobile():true);
+      fab.style.display=(n>0&&!openState&&mob)?'inline-flex':'none'; }catch(_){} }
     function open(){ ensurePanel(); renderList(); panel.style.display='flex'; openState=true; tickFab(); }
     function close(){ if(panel) panel.style.display='none'; openState=false; tickFab(); }
     function toggle(){ (openState&&panel&&panel.style.display!=='none')?close():open(); }
@@ -31277,10 +31440,26 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_TIBET=_vflag('<rect width="30" height="20" fill="#1560BD"/><path d="M15.00,11.00 L8.27,-14.11 L21.73,-14.11 Z" fill="#9E1B32"/><path d="M15.00,11.00 L21.73,-14.11 L33.38,-7.38 Z" fill="#1560BD"/><path d="M15.00,11.00 L33.38,-7.38 L40.11,4.27 Z" fill="#9E1B32"/><path d="M15.00,11.00 L40.11,4.27 L40.11,17.73 Z" fill="#1560BD"/><path d="M15.00,11.00 L40.11,17.73 L33.38,29.38 Z" fill="#9E1B32"/><path d="M15.00,11.00 L33.38,29.38 L21.73,36.11 Z" fill="#1560BD"/><path d="M15.00,11.00 L21.73,36.11 L8.27,36.11 Z" fill="#9E1B32"/><path d="M15.00,11.00 L8.27,36.11 L-3.38,29.38 Z" fill="#1560BD"/><path d="M15.00,11.00 L-3.38,29.38 L-10.11,17.73 Z" fill="#9E1B32"/><path d="M15.00,11.00 L-10.11,17.73 L-10.11,4.27 Z" fill="#1560BD"/><path d="M15.00,11.00 L-10.11,4.27 L-3.38,-7.38 Z" fill="#9E1B32"/><path d="M15.00,11.00 L-3.38,-7.38 L8.27,-14.11 Z" fill="#1560BD"/><circle cx="15" cy="11" r="3.1" fill="#FFDE00"/><path d="M4,20 L11,11 L15,15 L19,11 L26,20 Z" fill="#ffffff"/><rect x="0.6" y="0.6" width="28.8" height="18.8" fill="none" stroke="#FFDE00" stroke-width="1.2"/>');
     const F_ETRK=_vflag('<rect width="30" height="20" fill="#0099DC"/><circle cx="12" cy="10" r="4.4" fill="#ffffff"/><circle cx="13.7" cy="10" r="3.5" fill="#0099DC"/><g transform="translate(17.4,10) scale(1.7)"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="#ffffff"/></g>');
     const F_MANK=_vflag('<rect width="30" height="20" fill="#FDD900"/><rect width="12" height="2.5" fill="#D7000F"/><rect y="2.5" width="12" height="2.5" fill="#002D9C"/><rect y="5" width="12" height="2.5" fill="#ffffff"/><rect y="7.5" width="12" height="2.5" fill="#111111"/>');
+    /* (#R130) era flags for newly-distinguished vanished states — CShapes gave each its own polygon (gw265/817/680/291)
+       but _GW2ISO collapsed them into a modern carrier, so a click showed the MODERN country's flag + the WRONG era
+       Wikipedia (East Germany → West_Germany, South Vietnam → North_Vietnam, South Yemen → modern Yemen, Danzig → Poland).
+       Adding them to _VANISHED (which resolves BEFORE the gwcode step) restores each real identity. */
+    const F_DDR=_vflag('<rect width="30" height="6.667" fill="#000000"/><rect y="6.667" width="30" height="6.667" fill="#DD0000"/><rect y="13.333" width="30" height="6.667" fill="#FFCE00"/><g transform="translate(15,10)"><ellipse rx="4.4" ry="4.7" fill="none" stroke="#111" stroke-width="1.3"/><ellipse rx="4.4" ry="4.7" fill="none" stroke="#FFCE00" stroke-width="0.6"/><g fill="none" stroke-linecap="round"><g stroke="#111" stroke-width="1.4"><path d="M0,-3.1 -2,2.5"/><path d="M0,-3.1 2,2.5"/><path d="M-2.5,-0.7 2.5,1.7"/></g><g stroke="#FFCE00" stroke-width="0.7"><path d="M0,-3.1 -2,2.5"/><path d="M0,-3.1 2,2.5"/><path d="M-2.5,-0.7 2.5,1.7"/></g></g></g>');
+    const F_RVN=_vflag('<rect width="30" height="20" fill="#FFF200"/><rect y="7.8" width="30" height="1.4" fill="#DA251D"/><rect y="9.6" width="30" height="1.4" fill="#DA251D"/><rect y="11.4" width="30" height="1.4" fill="#DA251D"/>');
+    const F_PDRY=_vflag('<rect width="30" height="6.667" fill="#CE1126"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#000000"/><path d="M0,0 11,10 0,20Z" fill="#00A9CE"/><g transform="translate(3.9,10) scale(1.7)"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="#CE1126"/></g>');
+    const F_DANZIG=_vflag('<rect width="30" height="20" fill="#DA121A"/><g fill="#ffffff"><rect x="13.1" y="9.1" width="3.8" height="1.2"/><rect x="14.4" y="7.8" width="1.2" height="3.8"/><rect x="13.1" y="12.9" width="3.8" height="1.2"/><rect x="14.4" y="11.6" width="1.2" height="3.8"/></g><path d="M12.2,6.6 13.4,4.9 15,6.1 16.6,4.9 17.8,6.6Z" fill="#FCD116"/>');
     const _VANISHED=[
       {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет',es:'Tíbet'}, wiki:'Tibet_(1912%E2%80%931951)', flag:F_TIBET},
       {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:{en:'East Turkestan',jp:'東トルキスタン',de:'Ostturkestan',ru:'Восточный Туркестан',es:'Turkestán Oriental'}, wiki:'East_Turkestan', flag:F_ETRK},
-      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:{en:'Manchukuo',jp:'満洲国',de:'Mandschukuo',ru:'Маньчжоу-го',es:'Manchukuo'}, wiki:'Manchukuo', flag:F_MANK}
+      {re:/^\s*(manchukuo|manchoukuo|manchuria)\s*$/i, nm:{en:'Manchukuo',jp:'満洲国',de:'Mandschukuo',ru:'Маньчжоу-го',es:'Manchukuo'}, wiki:'Manchukuo', flag:F_MANK},
+      /* (#R130) states CShapes draws as their OWN polygon (gw265/817/680/291) but _GW2ISO folded into a modern carrier,
+         so a click resolved to the modern country + its (wrong) era article/flag. Placed here (step 2b) so they win
+         over the gwcode step. No stats carrier exists (their territory has no separate modern successor), so — like
+         Tibet/Manchukuo — they surface identity/flag/Wikipedia honestly without comparable numbers. */
+      {re:/^\s*(east germany|german democratic republic|d\.?\s?d\.?\s?r\.?|deutsche demokratische republik)\s*$/i, nm:{en:'East Germany',jp:'東ドイツ',de:'Deutsche Demokratische Republik',ru:'ГДР',es:'Alemania Oriental'}, wiki:'East_Germany', flag:F_DDR},
+      {re:/^\s*(south vietnam|republic of vietnam)\s*$/i, nm:{en:'South Vietnam',jp:'南ベトナム',de:'Südvietnam',ru:'Южный Вьетнам',es:'Vietnam del Sur'}, wiki:'South_Vietnam', flag:F_RVN},
+      {re:/^\s*(south yemen|people'?s democratic republic of yemen|p\.?d\.?r\.?y\.?)\s*$/i, nm:{en:'South Yemen',jp:'南イエメン',de:'Südjemen',ru:'Южный Йемен',es:'Yemen del Sur'}, wiki:'South_Yemen', flag:F_PDRY},
+      {re:/^\s*(danzig|free city of danzig)\s*$/i, nm:{en:'Free City of Danzig',jp:'ダンツィヒ自由市',de:'Freie Stadt Danzig',ru:'Вольный город Данциг',es:'Ciudad Libre de Dánzig'}, wiki:'Free_City_of_Danzig', flag:F_DANZIG}
     ];
     /* (#R105) correct a KNOWN anachronism in the aourednik data: it draws "Tibet" (and East Turkestan) as an
        INDEPENDENT country in the 1960 snapshot even though the PRC annexed Tibet in 1951 / East Turkestan by 1949.
@@ -31363,11 +31542,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getLayer('imtb-line')) map.addLayer({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':'rgba(160,160,168,0.95)','line-opacity':0.95,'line-width':['interpolate',['linear'],['zoom'],1,0.6,4,1.1,8,1.8,12,2.5]}}, before);
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire) → the era
          name, era style. Filtered to _same!=1 (see tagSame). */
-      if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
+      if(!map.getLayer('imtb-lbl')) map.addLayer({id:'imtb-lbl',type:'symbol',source:'imtb-src',minzoom:1.4,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.06,'text-size':['interpolate',['linear'],['zoom'],1,9.5,4,13],'text-max-width':7,'text-padding':6},paint:{'text-color':'#eef2ff','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.5}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!map.getLayer('imtb-lbl2')) map.addLayer({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-transform':'uppercase','text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
+      if(!map.getLayer('imtb-lbl2')) map.addLayer({id:'imtb-lbl2',type:'symbol',source:'imtb-src',minzoom:1.4,maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':['literal',['Noto Sans Regular']],'text-letter-spacing':0.08,'text-size':['interpolate',['linear'],['zoom'],1,10,4,15],'text-max-width':8,'text-padding':6},paint:{'text-color':'#e8eefc','text-halo-color':'rgba(0,0,0,0.75)','text-halo-width':1.4}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!map.__imtbClick){ map.__imtbClick=true;
@@ -31509,6 +31688,11 @@ window.addEventListener('DOMContentLoaded', () => {
       [/^\s*saar( protectorate)?\s*$/i,{jp:'ザール保護領',de:'Saarprotektorat',ru:'Саарский протекторат',es:'Protectorado del Sarre'}],
       [/^\s*east germany\s*$/i,{jp:'東ドイツ',de:'Ostdeutschland (DDR)',ru:'Восточная Германия',es:'Alemania Oriental'}],
       [/^\s*west germany\s*$/i,{jp:'西ドイツ',de:'Westdeutschland',ru:'Западная Германия',es:'Alemania Occidental'}],
+      /* (#R130) Cold-War Vietnam / Yemen splits — the era LABELS localized to match the new _VANISHED identities. */
+      [/^\s*south vietnam\s*$/i,{jp:'南ベトナム',de:'Südvietnam',ru:'Южный Вьетнам',es:'Vietnam del Sur'}],
+      [/^\s*north vietnam\s*$/i,{jp:'北ベトナム',de:'Nordvietnam',ru:'Северный Вьетнам',es:'Vietnam del Norte'}],
+      [/^\s*south yemen\s*$/i,{jp:'南イエメン',de:'Südjemen',ru:'Южный Йемен',es:'Yemen del Sur'}],
+      [/^\s*north yemen\s*$/i,{jp:'北イエメン',de:'Nordjemen',ru:'Северный Йемен',es:'Yemen del Norte'}],
       [/^\s*dominion of newfoundland\s*$/i,{jp:'ニューファンドランド自治領',de:'Dominion Neufundland',ru:'Доминион Ньюфаундленд',es:'Dominio de Terranova'}],
       [/^\s*united kingdom of great britain and ireland\s*$/i,{jp:'グレートブリテン・アイルランド連合王国',de:'Vereinigtes Königreich Großbritannien und Irland',ru:'Соединённое Королевство Великобритании и Ирландии',es:'Reino Unido de Gran Bretaña e Irlanda'}],
       [/^\s*sweden[\s–-]+norway\s*$/i,{jp:'スウェーデン・ノルウェー連合',de:'Schweden-Norwegen',ru:'Швеция и Норвегия',es:'Suecia y Noruega'}],
@@ -32011,7 +32195,9 @@ window.addEventListener('DOMContentLoaded', () => {
       BGD:[[1947,1971,'East_Pakistan']],
       MYS:[[1900,1946,'British_Malaya']],
       LAO:[[1900,1953,'French_Indochina'],[1953,1975,'Kingdom_of_Laos']],
-      KHM:[[1863,1953,'French_protectorate_of_Cambodia']],
+      KHM:[[1863,1953,'French_protectorate_of_Cambodia'],[1970,1975,'Khmer_Republic'],[1975,1979,'Democratic_Kampuchea'],[1979,1989,'People%27s_Republic_of_Kampuchea']],
+      OMN:[[1900,1970,'Muscat_and_Oman']],
+      ARE:[[1900,1971,'Trucial_States']],
       MNG:[[1911,1924,'Bogd_Khanate_of_Mongolia'],[1924,1992,'Mongolian_People%27s_Republic']],
       CUB:[[1902,1959,'Republic_of_Cuba_(1902%E2%80%931959)']],
       /* (#R128) further era→article coverage — the remaining Soviet republics (only 5 of 15 were covered before, so a
