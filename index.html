@@ -1182,6 +1182,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
          (b) Logged IN — the AVATAR fills the whole round button. The old rule put a small 26px avatar centred
              inside a 36px pill with its own ring = "アイコンがボタンの中央に来ている" (icon centred in the button).
          :has() distinguishes them: logged-in buttons contain .acct-av, logged-out ones are plain text. */
+      #btn-ws-enter{ display:none !important; }   /* (#R122) Workspace mode is desktop-only — no entry button on mobile */
       #btn-account{ padding:7px 14px; min-height:34px; border-radius:17px; justify-content:center; white-space:nowrap; }
       #btn-account:has(.acct-av){ padding:0; width:34px; height:34px; min-height:34px; border-radius:50%; background:transparent; overflow:hidden; }
       #btn-account:has(.acct-av) .acct-name{ display:none; }
@@ -15127,6 +15128,14 @@ window.addEventListener('DOMContentLoaded', () => {
     acct.onclick=()=>{ currentUser ? openAccountMenu() : openAuthModal(); };
     if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(acct,settingsBtn);
     else document.body.appendChild(acct);
+    /* (#R122) enter Workspace (floating-window) mode from the Log in / Feedback / Settings row — desktop only. */
+    try{ const wsB=document.createElement('button'); wsB.id='btn-ws-enter'; wsB.className='btn-settings'; wsB.style.marginRight='8px';
+      const _wsL=()=>(currentLang==='jp'?'ワークスペース':currentLang==='de'?'Arbeitsbereich':currentLang==='ru'?'Рабочая область':currentLang==='es'?'Espacio':'Workspace');
+      wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL());
+      wsB.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>';
+      window.addEventListener('intmap-lang',()=>{ wsB.title=_wsL(); wsB.setAttribute('aria-label',_wsL()); });
+      wsB.onclick=()=>{ try{ if(window.IntMapWorkspace){ const act=window.IntMapWorkspace.active&&window.IntMapWorkspace.active(); if(act) window.IntMapWorkspace.close(); else window.IntMapWorkspace.open(); } }catch(_){} };
+      if(settingsBtn&&settingsBtn.parentNode) settingsBtn.parentNode.insertBefore(wsB,acct); else document.body.appendChild(wsB); }catch(_){}
     /* (#R21) Header Support button RETIRED per request — support stays reachable from Settings
        (the in-panel button) and from the feedback flow. */
     /* (#R20) Feedback button in the header */
@@ -15796,28 +15805,31 @@ window.addEventListener('DOMContentLoaded', () => {
         const collide = ((mapCX + half + margin) > rightLeft) || ((mapCX - half - margin) < leftRight);
         const bs=document.body.style;
         if(collide){
-          const sideGap = rightLeft - leftRight;   /* clear room on row 2 BESIDE the right controls */
-          let mLeft=leftRight+14, mRight;
-          if(sideGap < 210){ /* not enough room beside the (multi-row) controls → go BELOW the whole stack, map-wide */
-            bs.setProperty('--ms-top', (stackBottom+10)+'px'); mRight=winW - mapR + 14;
-          } else { /* sit on row 2, ending before the right controls' leftmost edge */
-            bs.setProperty('--ms-top','78px'); mRight=winW - rightLeft + 14;
-          }
-          /* (#R65) HARD CLAMP into the visible map area — degenerate geometry (both sidebars open on a narrow
-             window) used to yield left+right anchors that cross, and the pill overflowed at min-content width
-             across the right sidebar. Never let left exceed (map right − 160px of usable pill).
-             (#R66) if the usable map strip is too small for ANY pill, hide it entirely instead of letting
-             min-content overflow across the sidebars. */
-          mRight=Math.max(mRight, winW - mapR + 14);
-          const maxLeft=(winW - mRight) - 160;
-          if(mLeft>maxLeft) mLeft=Math.max(mapL+14, maxLeft);
-          const usable=(winW - mRight) - mLeft;
-          if(usable<120){ document.body.classList.add('ms-hide'); document.body.classList.remove('ms-narrow'); }
-          else{
-            document.body.classList.remove('ms-hide');
-            bs.setProperty('--ms-left', Math.round(mLeft)+'px');
-            bs.setProperty('--ms-right', Math.round(mRight)+'px');
-            document.body.classList.add('ms-narrow');
+          /* (#R122) KEEP the pill at the TOP whenever the horizontal gap between the (expanded) sidebar and the
+             right-hand controls is wide enough for it — centered in that gap at a CAPPED width, so expanding the
+             left panel no longer drops the place-search to a second row and stretches it full-width ("下に下がって
+             きて、不用意に長くなる"). Only when the top gap is genuinely too narrow does it fall BELOW the controls. */
+          const gapL=leftRight+14, gapR=rightLeft-14, gapW=gapR-gapL;
+          if(gapW>=180){
+            const pill=Math.min(380,gapW), cx=(gapL+gapR)/2;
+            bs.setProperty('--ms-top','14px');
+            bs.setProperty('--ms-left', Math.round(cx-pill/2)+'px');
+            bs.setProperty('--ms-right', Math.round(winW-(cx+pill/2))+'px');
+            document.body.classList.remove('ms-hide'); document.body.classList.add('ms-narrow');
+          } else {
+            /* not enough room beside the controls at the top → go BELOW the whole stack, map-wide */
+            let mLeft=leftRight+14, mRight=winW - mapR + 14;
+            bs.setProperty('--ms-top', (stackBottom+10)+'px');
+            const maxLeft=(winW - mRight) - 160;
+            if(mLeft>maxLeft) mLeft=Math.max(mapL+14, maxLeft);
+            const usable=(winW - mRight) - mLeft;
+            if(usable<120){ document.body.classList.add('ms-hide'); document.body.classList.remove('ms-narrow'); }
+            else{
+              document.body.classList.remove('ms-hide');
+              bs.setProperty('--ms-left', Math.round(mLeft)+'px');
+              bs.setProperty('--ms-right', Math.round(mRight)+'px');
+              document.body.classList.add('ms-narrow');
+            }
           }
         } else { document.body.classList.remove('ms-narrow'); document.body.classList.remove('ms-hide'); }
       }catch(_){} };
