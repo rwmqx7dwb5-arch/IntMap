@@ -5,6 +5,47 @@
 
 ---
 
+## R130 — 要望10件バッチ（昔年代クリックの真の根治・Atlas UI群・歴史拡充・ハイライトWeb検証） (tag `#R130`)
+
+ユーザー要望10件を10並列Explore（Workflow）で現状マップ化→Browserペインのデータ層でヘッドレス実測しながら実装。全項目を根本原因ベースで処理。ai-proxyは `geo_verify` タスク追加→デプロイ済み。
+
+### ① 昔の年代でもcompare地図クリック国選択（再々報告「まだ。1920sのポーランドで誤判定」）— **真の根本原因を特定**
+- **決定的発見**: R122〜R129はすべて**クロスヘアpicker**（`#scp-pick`/`#csearch-pick`）と `resolveHist` ラダーを直していたが、**それらは既に正しかった**（実測: 1925 ワルシャワ/クラクフ/**ルヴフ/ヴィリニュス/ポズナン**→全部POL）。ユーザーが実際に行うジェスチャー＝**素のマップクリック**は別の **era非対応ハンドラ**（`map.on('click','country-fill', … resolveCountryId(f)→showCountryDetail`, 5320）が処理しており、**現代countryGeoで判定**していた。だから領土が変わった地（戦間期ポーランドのルヴフ＝現ウクライナ、ヴィリニュス＝現リトアニア）が現代後継国に化けた。ワルシャワ/クラクフは現代キャリアもPOLなので「正しく見える」＝間欠・1920sポーランド特有に見えた正体。
+- **修正(#R130)**: `country-fill` の click ハンドラを **era対応化**＝タイムトラベル中は picker と同一の `TB.currentFC()` 最小面積PIP→`resolveHist` を通し、**現代ポリゴンには絶対フォールバックしない**（都市ラベルが下にあれば場所を優先、コードあれば `showCountryDetail(era)`、コードなし実在エンティティは `_imPlacePopup`）。hover ハンドラ（5318）もトラベル中は現代国のハイライト/情報を出さない。**実測（1925 PIP+resolveHist）**: ルヴフ/ヴィリニュス/ポズナン→**POL**、ヴロツワフ→DEU(Weimar)、ダンツィヒ→**Free City of Danzig**。
+
+### ② 歴史データ拡充（名/旗/Wiki/統計に大量の詰め残り）
+- **Tier1 決定的バグ**: `_GW2ISO`（step2.4）が **East Germany(gw265)→DEU / South Vietnam(817)→VNM / South Yemen(680)→YEM / Danzig(291)→POL** と現代キャリアに畳んでいたため、クリックすると**現代国の旗＋間違ったera記事**（東独→西独記事、南越→北越記事）になっていた。→ `_VANISHED`（step2b, gwcodeより先に発火）に4件追加：**East Germany**（旗F_DDR＝黒赤金＋ハンマー&コンパス）・**South Vietnam**（F_RVN＝黄地三本赤線）・**South Yemen**（F_PDRY＝赤白黒＋水色三角＋赤星）・**Free City of Danzig**（F_DANZIG）。実測: 全て正しい name/wiki/旗に解決。
+- **Tier2 IntMapHistId**: West Germany(1949-90)・**Imperial State of Iran/Pahlavi**(1925-79, F_IRPAHL＝緑白赤＋金の太陽, Persia は to:1925 に短縮)・**Francoist Spain**(1939-75, F_ESPF＝rojigualda＋聖ヨハネの鷲)。実測: 1955→Pahlavi, 1920→Persia, 1950→Franco, 1960→West Germany。
+- **Tier3 統計**: `agg()` が capital/currency/languages を常に空欄ハードコードしていた→`_STINFO` 表（15カ国分）を S にマージし agg で通す。実測: AUH=Vienna & Budapest/krone/German·Hungarian, SUN=Moscow/ruble/Russian 等。
+- **Tier5 `_ERA_WIKI`**: Cambodia(Khmer Republic/Democratic Kampuchea/PRK)・Oman(Muscat and Oman)・Trucial States 追加。**Tier4 `_ERA_LOC`**: South/North Vietnam・South/North Yemen の5言語ラベル追加。全新規旗は DOMParser で well-formed 確認。
+
+### ③ 位置情報許可ボタン: 1回で全ウィジェットに反映＋太字解除
+- 共有キャッシュ `geoPos` は既存だが、grant成功コールバックが `refreshOne(e)`（**押したウィジェットだけ**）を再描画→他は自分のボタンが残っていた。→`active.forEach(w=>['weather','aqi','sun','uv'].includes(w.t)&&refreshOne(w))` で全位置ウィジェット再描画。ボタンの `font-weight:700→400`。
+
+### ④ 通常モード Measure/Radius: 使用中は白背景黒文字
+- `.view-btn.tool-on`（accent地/白字）は Grid/Draw と共有。→ID限定で `#btn-measure-menu.tool-on, #btn-tool-measure.tool-on, #btn-tool-radius.tool-on{ background:#fff; color:#111 }`（Grid/Drawは不変）。実測: ルール存在確認。
+
+### ⑤ 左サイドバータブ: News/Info/Countries=白背景黒文字, Atlas=ユーザー吹き出しと同じアクセント
+- `.mode-btn.active`（138）を `background:#fff; color:#000`。Atlas は `.mode-btn.mode-atlas.active`（147）を固定3色グラデ→`linear-gradient(135deg,var(--primary-color),#5e5ce6)`＝`.atl-b.u`（ユーザー吹き出し）と同一でアクセント追従。実測: 両ルール確認。
+
+### ⑥ 通常モードサイドバーAtlasの左右リサイズ撤去
+- **scoutは#sb-resizer（サイドバー幅）と誤診したが真因は別**＝`addEdgeResize(panel,{min:[300,160]})`（28765）が Atlas panel に**JS辺リサイズ**（ns/ew, ハンドル非表示）を付与し、`_inWsWin2()`（`.ws-win`内のみskip）ではタブモードを除外していなかった→`width:100%!important` のタブ panel と競合して「変なことになる」。`atl-tab` クラスはタブモード専用（ws-modeでは除去）なので、`_inWsWin2` に `atl-tab` skip を追加。実測: パネル両端で pointermove→cursor は `auto` のまま（`ew-resize`にならない）＝抑止確認。Compare窓/ws窓は不変。
+
+### ⑦ Objectsボタンを地図右上へ
+- 実体は左下FAB（`#iol-fab`, position:fixed;left:16px;bottom:104px）＝「サイドバーにある」の正体。→右上ツールバー `#map-tools-group` に `#btn-tool-objects`（`data-i18n=objectsBtn` 5言語追加）を新設、`tickFab` で `IntMapObjects.toggle()` 配線＋カウント同期＋オブジェクト有時のみ表示（FABと同一の可視性を忠実移設）。FABは**モバイル限定**に（右上ツールバーはモバイルで非表示のため）。
+
+### ⑧ Atlas thinking UIを実作業表示に
+- 全8箇所が同一の3ドット。→`stageDots(k)`/`setStage(el,k)`/`_STAGE_OF(a)` を追加し、runActions の各 dispatch 直前で action.type→stage（Thinking/Searching/Analyzing/Mapping/Writing, 5言語）を反映。`.atl-dots` を `.atl-stage` 内に保持しキャンセル走査セレクタと整合、`querySelector('.atl-dots')` ガードで確定応答を上書きしない。実測: `.atl-stage` CSS注入確認。
+
+### ⑨ Atlasハイライト精度＝Web検索で検証してからマッピング
+- **根因**: ラダーは Nominatim importance と **web盲目AIトレース**を無検証で信頼し、**塗れば「✦成功」報告**していた（同名語/幻覚blobでも見当違いの場所を成功と主張）。web検索基盤（webMode/`_aiLastMeta.webUsed`）は既存だがハイライト経路は未配線。
+- **修正(#R130)**: (server) ai-proxy に `geo_verify` タスク（TASK_MAX_OUTPUT/REASONING/JSON_TASKS）追加→**デプロイ済み**。(client) `geoVerify(name)`＝webMode:'required'で権威座標を取得（9sタイムアウト・キャッシュ・**fail-open**）。`_nomExtent(place, anchor)` に近接ボーナス（8候補から検証点に最も近いものを選抜＝大阪湾→坂湾-China級の同名語を撃退）。`resolveHlTarget` の**未信頼ラング**（Nominatim水域/adminポリ・AIトレース・codeAtPoint国フォールバック）で `_geoAgrees` により**明白な位置不一致は棄却**（正直な空振り）、`_gvStrong`（webUsed必須）でなければ棄却しない=既存の正しい挙動を壊さない。報告に「✓ location web-verified」を追加。信頼済み早期ラング（resolveCountrySync/regionGroup）は検証せず高速のまま。
+
+### 検証環境
+- Browserペインは `document.hidden`＝Map WebGL未init（スクショタイムアウト）だが**データ層は完全動作**: `IntMapTime.setYear()`→全subscriber適用→`TB.currentFC()`/`resolveHist`/`IntMapHistStates.agg`/`IntMapHistId.at`/旗DOMParser/CSSルール(cssText)/DOM getBoundingClientRect/`addEdgeResize`の合成pointermove まで全部ヘッドレス実測。ハイライトの実描画とgeoVerifyの実AI呼び出しはログイン＋WebGL必須のため非ヘッドレス（コード正当性＋fail-open設計で担保）。reloadは `?cb=` 必須。Edit hookのfile://タブ量産→tabs_close。
+
+---
+
 ## R129 — 範囲人口Progress根治・戦間期ユーゴ単一化・モバイル分類名整列・Countriesクリック国選択追加・歴史拡充 (tag `#R129`)
 
 ユーザー要望5件を「実現象＝根本原因特定」で処理。5並列Explore（範囲人口Progress UI・歴史クリック解決・モバイル分類名CSS・Countries検索/picker・歴史データ棚卸し）で現状を地図化し、Browserペインのデータ層で全項目をヘッドレス実測。全1コミット。
