@@ -23013,7 +23013,7 @@ window.addEventListener('DOMContentLoaded', () => {
       map.addLayer({id:'imroute-transfer',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['==',['get','k'],'stop']],paint:{'circle-radius':4.6,'circle-color':'#fff','circle-stroke-color':['coalesce',['get','col'],'#1a73e8'],'circle-stroke-width':2.6}});
       map.addLayer({id:'imroute-pt',type:'circle',source:SRC,filter:['all',['==',['geometry-type'],'Point'],['!=',['get','k'],'stop']],paint:{'circle-radius':6.5,'circle-color':['coalesce',['get','color'],'#1a73e8'],'circle-stroke-color':'#fff','circle-stroke-width':2.5}});
       return true; }catch(_){ return false; } }
-    function clear(){ try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clear(){ _lastPaint=null; _abortInflight(); try{ const s=map.getSource(SRC); if(s) s.setData({type:'FeatureCollection',features:[]}); }catch(_){} }
     const PROFILES={ driving:['router.project-osrm.org','driving'], car:['router.project-osrm.org','driving'], drive:['router.project-osrm.org','driving'],
       walking:['routing.openstreetmap.de/routed-foot','foot'], walk:['routing.openstreetmap.de/routed-foot','foot'], foot:['routing.openstreetmap.de/routed-foot','foot'],
       cycling:['routing.openstreetmap.de/routed-bike','bike'], cycle:['routing.openstreetmap.de/routed-bike','bike'], bike:['routing.openstreetmap.de/routed-bike','bike'] };
@@ -23022,177 +23022,71 @@ window.addEventListener('DOMContentLoaded', () => {
        SUBWAY / BUS / FERRY …) each with real geometry — so "電車" actually rides the rails, and the map shows
        exactly where you walk vs ride. No silent fallback to roads: if there is no transit here we say so. */
     function _hav(a,b){ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); }
-    /* (#R85e) INTERCITY RAIL ROUTER — Transitous/MOTIS only has urban open-GTFS (it returns NOTHING for e.g. 名古屋→
-       大阪, one of the world's busiest rail corridors, because JR/Shinkansen isn't open GTFS). Fallback: route on the
-       REAL OSM rail network (Overpass) with Dijkstra so the train follows actual tracks, + walking legs to/from the
-       nearest rail, + a distance-based time estimate. Not a live timetable, but a real geographic rail route. */
-    async function railRoute(from,to){
-      const A=[+from.lng,+from.lat], B=[+to.lng,+to.lat]; const gc=_hav(A,B);
-      if(gc<2.5) return {ok:false,reason:'too-close'}; if(gc>430) return {ok:false,reason:'too-far'};
-      const buf=Math.min(0.32,Math.max(0.2, gc/111*0.26));   /* (#R85f) wide enough to capture corridor detours (e.g. the Tōkaidō Shinkansen bulges north via Maibara) — a tight endpoint box clips the line and disconnects it; capped at the original 0.32 so long-corridor fetches are no heavier than before */
-      const s=Math.min(A[1],B[1])-buf, n=Math.max(A[1],B[1])+buf, w=Math.min(A[0],B[0])-buf, e=Math.max(A[0],B[0])+buf;
-      const bb=s.toFixed(4)+','+w.toFixed(4)+','+n.toFixed(4)+','+e.toFixed(4);
-      /* (#R85f) fetch rail ways WITH tags (line name/ref + class) AND station nodes — so the itinerary can name the
-         REAL lines it rides (e.g. 東海道新幹線) and the REAL stations you board/alight at, instead of a nameless
-         "along the rail line". `out body` = way tags+node refs; `>;out skel` = geometry; station nodes carry names. */
-      const q='[out:json][timeout:90];(way["railway"~"^(rail|light_rail|narrow_gauge)$"][!"service"]('+bb+');node["railway"~"^(station|halt)$"]('+bb+'););out body;>;out skel qt;';
-      const EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
-      /* (#R85f) reject a PARTIAL result — under load Overpass returns truncated `elements` + a `remark` timeout/OOM
-         note; using it silently gives a disconnected graph → a wrong "no route". Skip it so the next mirror is tried.
-         Each fetch is time-boxed (AbortController) so one hung mirror can't stall the whole route indefinitely. */
-      const _partial=j=>/timed out|out of memory|runtime error/i.test((j&&j.remark)||'');
-      const _fetchT=(url,opts)=>{ const ac=new AbortController(), t=setTimeout(()=>{try{ac.abort();}catch(_){}} ,100000); return fetch(url,Object.assign({signal:ac.signal},opts||{})).finally(()=>clearTimeout(t)); };
-      let data=null; for(const ep of EPS){ try{ const r=await _fetchT(ep,{method:'POST',body:q}); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length&&!_partial(j)){ data=j; break; } } }catch(_){} }
-      if(!data){ try{ const r=await _fetchT('https://corsproxy.io/?url='+encodeURIComponent(EPS[0]+'?data='+encodeURIComponent(q))); if(r&&r.ok){ const j=await r.json(); if(j&&j.elements&&j.elements.length&&!_partial(j)) data=j; } }catch(_){} }
-      if(!data||!data.elements||!data.elements.length) return {ok:false,reason:'overpass'};
-      const coord={}, ways=[], stns=[];
-      data.elements.forEach(el=>{ if(el.type==='node'){ coord[el.id]=[el.lon,el.lat];
-          const t=el.tags; if(t&&/^(station|halt)$/.test(t.railway||'')){ const nm=t.name||t['name:ja']||t['name:en']; if(nm) stns.push({ll:[el.lon,el.lat],name:nm,en:t['name:en']||''}); } }
-        else if(el.type==='way'&&el.nodes&&el.nodes.length>1){ ways.push(el); } });
-      const idx={}, xy=[]; for(const id in coord){ idx[id]=xy.length; xy.push(coord[id]); }
-      const N=xy.length; if(N<2) return {ok:false,reason:'no-rail'};
-      const adj=Array.from({length:N},()=>[]); const meta=[]; const hsLines=new Map();
-      ways.forEach(el=>{ const t=el.tags||{}; const name=t.name||t['name:ja']||''; const ref=t.ref||''; const nm=name||ref||t['name:en']||'';
-        const hs=(t.highspeed==='yes')||/新幹線|shinkansen|high[\s-]?speed|tgv|\bice\b/i.test(nm);
-        const cls=hs?'hs':(t.usage==='main'?'main':(t.railway==='light_rail'?'lr':(t.railway==='narrow_gauge'?'ng':'reg')));
-        const wi=meta.length; meta.push({name:name,ref:ref,en:t['name:en']||'',cls:cls});
-        let hg=null; if(hs){ const key=nm||('hs#'+wi); hg=hsLines.get(key); if(!hg){ hg={wi:wi,edges:[],nodes:new Set()}; hsLines.set(key,hg); } }
-        for(let i=0;i<el.nodes.length-1;i++){ const a=idx[el.nodes[i]], b=idx[el.nodes[i+1]]; if(a==null||b==null) continue; const d=_hav(xy[a],xy[b]); adj[a].push([b,d,wi]); adj[b].push([a,d,wi]); if(hg){ hg.edges.push([a,b,d]); hg.nodes.add(a); hg.nodes.add(b); } } });
-      /* (#R85e) BRIDGE near-coincident nodes (OSM rail ways often don't share a node id where two lines meet, which
-         left the graph in disconnected components — e.g. Nagoya's rail island didn't reach Osaka's). A spatial grid
-         welds nodes within a tolerance so through routes connect (weld edges carry way-index -1 = "inherit line"). */
-      const weld=(adjArr,nodeList,tol)=>{ const CELL=Math.max(tol*1.15/111,1e-5), grid=new Map(), arr=nodeList||Array.from({length:N},(_,i)=>i);
-        arr.forEach(i=>{ const k=Math.round(xy[i][0]/CELL)+'_'+Math.round(xy[i][1]/CELL); let a=grid.get(k); if(!a){a=[];grid.set(k,a);} a.push(i); });
-        arr.forEach(i=>{ const cx=Math.round(xy[i][0]/CELL), cy=Math.round(xy[i][1]/CELL);
-          for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){ const cell=grid.get((cx+dx)+'_'+(cy+dy)); if(!cell) continue; for(let m=0;m<cell.length;m++){ const j=cell[m]; if(j<=i) continue; const d=_hav(xy[i],xy[j]); if(d<tol){ (adjArr[i]||(adjArr[i]=[])).push([j,d,-1]); (adjArr[j]||(adjArr[j]=[])).push([i,d,-1]); } } } }); };
-      weld(adj,null,0.03);
-      /* (#R85f) label connected components and snap origin/dest to the nearest node IN THE LARGEST (main JR/Shinkansen)
-         component — the geometrically-nearest track is sometimes an ISOLATED stub/loop that only joins the network
-         outside the bbox, which left sN/tN "disconnected" and killed the whole route (a 0.5 km move in the dest flipped it). */
-      const cpar=new Int32Array(N); for(let i=0;i<N;i++) cpar[i]=i;
-      const cfind=x=>{ while(cpar[x]!==x){ cpar[x]=cpar[cpar[x]]; x=cpar[x]; } return x; };
-      for(let u=0;u<N;u++){ const au=adj[u]; for(let k=0;k<au.length;k++){ const v=au[k][0], ru=cfind(u), rv=cfind(v); if(ru!==rv) cpar[ru]=rv; } }
-      const csz=new Map(); let bigRoot=-1,bigSz=-1; for(let i=0;i<N;i++){ const r=cfind(i); const z=(csz.get(r)||0)+1; csz.set(r,z); if(z>bigSz){bigSz=z;bigRoot=r;} }
-      const nearest=(pt,mainOnly)=>{ let bi=-1,bd=1e18; for(let i=0;i<N;i++){ if(mainOnly&&cfind(i)!==bigRoot) continue; const dx=xy[i][0]-pt[0],dy=xy[i][1]-pt[1],d=dx*dx+dy*dy; if(d<bd){bd=d;bi=i;} } return bi; };
-      /* Dijkstra over any adjacency (full graph or a single-line subgraph); penHs = make bullet-train edges costly so
-         short connectors ride the conventional line instead of doubling back on the Shinkansen. Returns a node path. */
-      const dij=(adjA,src,dst,penHs)=>{ const dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1); dist[src]=0;
-        const heap=[[0,src]]; const up=(i)=>{ while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0])break; const t=heap[p];heap[p]=heap[i];heap[i]=t; i=p; } };
-        const down=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=2*i+2,m=i; if(l<heap.length&&heap[l][0]<heap[m][0])m=l; if(r<heap.length&&heap[r][0]<heap[m][0])m=r; if(m===i)break; const t=heap[m];heap[m]=heap[i];heap[i]=t; i=m; } } return top; };
-        let guard=0; while(heap.length&&guard++<12000000){ const t=down(); const d=t[0],u=t[1]; if(d>dist[u]) continue; if(u===dst) break; const au=adjA[u]; if(!au) continue;
-          for(let k=0;k<au.length;k++){ const v=au[k][0]; let cost=au[k][1]; if(penHs&&au[k][2]>=0&&meta[au[k][2]]&&meta[au[k][2]].cls==='hs') cost*=8; const nd=d+cost; if(nd<dist[v]){ dist[v]=nd; prev[v]=u; heap.push([nd,v]); up(heap.length-1); } } }
-        if(!isFinite(dist[dst])) return null; const p=[]; for(let u=dst;u!==-1;u=prev[u]) p.push(u); p.reverse(); return p; };
-      /* shortest rail path from a node to the FIRST node of a target line that is actually reachable through the network
-         — this locates the real transfer junction (where the conventional network meets the Shinkansen), which the
-         single geometrically-nearest line node often is NOT (its platform may be >30 m from any welded conventional node) */
-      const reachLine=(src,lineSet)=>{ if(lineSet.has(src)) return [src];
-        const dist=new Float64Array(N).fill(Infinity), prev=new Int32Array(N).fill(-1); dist[src]=0;
-        const heap=[[0,src]]; const up=(i)=>{ while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0])break; const t=heap[p];heap[p]=heap[i];heap[i]=t; i=p; } };
-        const down=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ let l=2*i+1,r=2*i+2,m=i; if(l<heap.length&&heap[l][0]<heap[m][0])m=l; if(r<heap.length&&heap[r][0]<heap[m][0])m=r; if(m===i)break; const t=heap[m];heap[m]=heap[i];heap[i]=t; i=m; } } return top; };
-        let guard=0, hit=-1; while(heap.length&&guard++<12000000){ const t=down(); const d=t[0],u=t[1]; if(d>dist[u]) continue; if(lineSet.has(u)){ hit=u; break; } const au=adj[u]; if(!au) continue;
-          for(let k=0;k<au.length;k++){ const v=au[k][0], nd=d+au[k][1]; if(nd<dist[v]){ dist[v]=nd; prev[v]=u; heap.push([nd,v]); up(heap.length-1); } } }
-        if(hit<0) return null; const p=[]; for(let u=hit;u!==-1;u=prev[u]) p.push(u); p.reverse(); return p; };
-      const wayOf=(a,b)=>{ const au=adj[a]; if(!au) return -1; let best=-1; for(let k=0;k<au.length;k++){ if(au[k][0]===b){ if(au[k][2]>=0) return au[k][2]; best=au[k][2]; } } return best; };
-      /* assemble the itinerary from an ordered list of node-index runs (connector + main-line + connector): concat,
-         collapse into named-line legs, drop tiny junction stubs, and snap real stations for board/transfer/alight. */
-      const assemble=(runs)=>{ const nodes=[]; runs.forEach(p=>{ if(!p||!p.length) return; const i0=(nodes.length&&nodes[nodes.length-1]===p[0])?1:0; for(let i=i0;i<p.length;i++) nodes.push(p[i]); });
-        if(nodes.length<2) return {ok:false,reason:'disconnected'};
-        const path=nodes.map(i=>xy[i]); let railKm=0; for(let i=0;i<path.length-1;i++) railKm+=_hav(path[i],path[i+1]);
-        const segs=[]; let carry=null;
-        for(let i=0;i<nodes.length-1;i++){ let wi=wayOf(nodes[i],nodes[i+1]); if(wi<0){ wi=carry; } else carry=wi; const d=_hav(path[i],path[i+1]);
-          const mk=(wi==null||wi<0)?null:meta[wi]; const key=mk?(mk.name||mk.ref||('cls:'+mk.cls)):'_'; const last=segs[segs.length-1];
-          if(last&&last.key===key){ last.km+=d; last.e=i+1; } else segs.push({key:key,km:d,s:i,e:i+1,name:mk?(mk.name||''):'',en:mk?mk.en:'',ref:mk?mk.ref:'',cls:mk?mk.cls:'reg'}); }
-        const MINSEG=2.0; let chg=true;
-        while(chg&&segs.length>1){ chg=false; for(let i=0;i<segs.length;i++){ if(segs[i].km<MINSEG){ const a=segs[i-1],b=segs[i+1]; const tgt=(a&&(!b||a.km>=b.km))?a:b; if(!tgt) break; tgt.km+=segs[i].km; if(tgt===a) tgt.e=segs[i].e; else tgt.s=segs[i].s; segs.splice(i,1); chg=true; break; } } }
-        const stride=Math.max(1,Math.floor(path.length/1600)); const onPath=[];
-        stns.forEach(st=>{ let bd=1e18,bi=-1; for(let i=0;i<path.length;i+=stride){ const d=_hav(path[i],st.ll); if(d<bd){bd=d;bi=i;} } if(bd<0.6) onPath.push({name:st.name,en:st.en,ll:st.ll,idx:bi}); });
-        onPath.sort((a,b)=>a.idx-b.idx);
-        const uniq=[]; onPath.forEach(o=>{ const p=uniq[uniq.length-1]; if(p&&p.name===o.name&&(o.idx-p.idx)<40) return; uniq.push(o); });
-        /* pick the station physically nearest a point, nudging toward the plain JR/mainline stop over a co-located
-           private-railway namesake (名古屋 over 近鉄名古屋) so the boarding station matches the line actually ridden */
-        const PRV=/^(近鉄|京阪|阪急|阪神|名鉄|南海|東武|西武|京王|小田急|京急|相鉄|東急|Kintetsu|Keihan|Hankyu|Hanshin|Meitetsu|Nankai|Tobu|Seibu|Keio|Odakyu|Keikyu|Sotetsu|Tokyu)/i;
-        const stAt=(pt)=>{ let bo=null,bs=1e18; for(const o of onPath){ let sc=_hav(o.ll,pt); if(PRV.test(o.name||'')||PRV.test(o.en||'')) sc+=0.2; if(sc<bs){bs=sc;bo=o;} } return bo; };
-        const segOut=segs.map(sg=>({name:sg.name,en:sg.en,ref:sg.ref,cls:sg.cls,km:sg.km,coords:path.slice(sg.s,sg.e+1),from:stAt(path[sg.s]),to:stAt(path[sg.e])}));
-        return {ok:true, railCoords:path, railKm:railKm, boardLL:xy[nodes[0]], alightLL:xy[nodes[nodes.length-1]], segs:segOut, board:stAt(path[0]), alight:stAt(path[path.length-1]), stops:uniq.length}; };
-      const sN=nearest(A,true), tN=nearest(B,true); if(sN<0||tN<0||sN===tN) return {ok:false,reason:'no-rail'};
-      /* (#R85f) INTERCITY (>50 km): if a single high-speed line runs near BOTH ends, ride it end-to-end (what people
-         mean by "電車で 名古屋→大阪"), stitching a short conventional connector where the bullet-train station sits a few
-         km from the real destination (e.g. Shin-Ōsaka→Ōsaka). Otherwise fall back to the plain shortest rail path. */
-      if(gc>50 && hsLines.size){
-        const cands=[]; hsLines.forEach((hg)=>{ if(hg.nodes.size<2) return; let nbd=1e18,nad=1e18; hg.nodes.forEach(nd=>{ const da=_hav(xy[nd],A); if(da<nbd)nbd=da; const db=_hav(xy[nd],B); if(db<nad)nad=db; }); if(nbd<35&&nad<35) cands.push({hg:hg,score:nbd+nad}); });
-        cands.sort((x,y)=>x.score-y.score);
-        for(const c of cands.slice(0,3)){
-          const lineSet=c.hg.nodes;
-          /* find the REAL transfer junctions: the nearest line node reachable by rail from the origin's / dest's nearest
-             track (sN/tN). The access & egress legs are the rides sN→boardJ and alightJ→tN (conventional), so the only
-             WALK is origin→sN and tN→dest (nearest track) — never a multi-km walk to a far bullet-train station. */
-          const bStart=reachLine(sN,lineSet), eEnd=reachLine(tN,lineSet); if(!bStart||!eEnd) continue;
-          const boardJ=bStart[bStart.length-1], alightJ=eEnd[eEnd.length-1]; if(boardJ===alightJ) continue;
-          const sub={}; c.hg.edges.forEach(ed=>{ (sub[ed[0]]||(sub[ed[0]]=[])).push([ed[1],ed[2],c.hg.wi]); (sub[ed[1]]||(sub[ed[1]]=[])).push([ed[0],ed[2],c.hg.wi]); });
-          weld(sub,Array.from(lineSet),0.08);
-          const hr=dij(sub,boardJ,alightJ,false); if(!hr) continue;
-          const runs=[]; if(bStart.length>1) runs.push(bStart); runs.push(hr); if(eEnd.length>1) runs.push(eEnd.slice().reverse());
-          const rr=assemble(runs); if(rr&&rr.ok) return rr;
-        }
-      }
-      const fr=dij(adj,sN,tN,false); if(!fr) return {ok:false,reason:'disconnected'};
-      return assemble([fr]);
-    }
-    function _renderRail(from,to,rr){ ensureLayers();
-      const railCol='#1558d6', hsCol='#0b8a4a', walkCol='#7a7f87';
-      const clsCol=c=>c==='hs'?hsCol:railCol; const clsSpd=c=>c==='hs'?200:(c==='main'?88:(c==='lr'?38:(c==='ng'?55:64)));   /* km/h effective (incl. stops) per line class */
-      const sNm=st=>st?(currentLang==='jp'?(st.name||st.en):(st.en||st.name)):'';
-      const boardM=_hav([+from.lng,+from.lat],rr.boardLL)*1000, alightM=_hav(rr.alightLL,[+to.lng,+to.lat])*1000;
-      const feats=[{type:'Feature',geometry:{type:'LineString',coordinates:[[+from.lng,+from.lat],rr.boardLL]},properties:{col:walkCol,walk:1,w:4}}];
-      if(rr.segs&&rr.segs.length){ rr.segs.forEach(sg=>{ if(sg.coords&&sg.coords.length>1) feats.push({type:'Feature',geometry:{type:'LineString',coordinates:sg.coords},properties:{col:clsCol(sg.cls),walk:0,w:sg.cls==='hs'?6:5.5}}); }); }
-      else feats.push({type:'Feature',geometry:{type:'LineString',coordinates:rr.railCoords},properties:{col:railCol,walk:0,w:5.5}});
-      feats.push({type:'Feature',geometry:{type:'LineString',coordinates:[rr.alightLL,[+to.lng,+to.lat]]},properties:{col:walkCol,walk:1,w:4}});
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:rr.boardLL},properties:{k:'stop',col:railCol}});
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:rr.alightLL},properties:{k:'stop',col:railCol}});
-      if(rr.segs) for(let i=1;i<rr.segs.length;i++){ const c=rr.segs[i].coords&&rr.segs[i].coords[0]; if(c) feats.push({type:'Feature',geometry:{type:'Point',coordinates:c},properties:{k:'stop',col:railCol}}); }
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}});
-      feats.push({type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}});
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      try{ let a=180,b=90,c=-180,d=-90; rr.railCoords.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); }); if(isFinite(a)) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:900}); }catch(_){}
-      let railS=0; const legs=[];
-      legs.push({mode:'WALK',walk:1,duration:Math.round(boardM/1.33),from:'',to:(rr.board?sNm(rr.board):LL('board the train','乗車','einsteigen','посадка','abordar')),color:walkCol});
-      if(rr.segs&&rr.segs.length){ rr.segs.forEach(sg=>{ const t=sg.km/clsSpd(sg.cls)*3600; railS+=t;
-          const nm=currentLang==='jp'?(sg.name||sg.en||sg.ref):(sg.en||sg.name||sg.ref);
-          legs.push({mode:sg.cls==='hs'?'HIGHSPEED':(sg.cls==='lr'?'LIGHT_RAIL':'RAIL'),walk:0,route:nm||LL('rail line','鉄道','Bahnlinie','ж/д линия','vía'),from:sNm(sg.from),to:sNm(sg.to),headsign:'',duration:Math.round(t),color:clsCol(sg.cls)}); }); }
-      else { railS=rr.railKm/(rr.railKm>90?115:(rr.railKm>25?72:42))*3600;
-        legs.push({mode:'RAIL',walk:0,route:'',headsign:LL('~'+Math.round(rr.railKm)+' km along the rail line','鉄道 約'+Math.round(rr.railKm)+' km','~'+Math.round(rr.railKm)+' km Bahn','~'+Math.round(rr.railKm)+' км по ж/д','~'+Math.round(rr.railKm)+' km por vía'),from:'',to:'',duration:Math.round(railS),color:railCol}); }
-      legs.push({mode:'WALK',walk:1,duration:Math.round(alightM/1.33),from:'',to:LL('to destination','目的地へ','zum Ziel','к цели','al destino'),color:walkCol});
-      const transfers=Math.max(0,(rr.segs?rr.segs.length:1)-1); const transferS=transfers*180, walkS=(boardM+alightM)/1.33;
-      return {ok:true,transit:true,railEstimate:true,duration:Math.round(railS+walkS+transferS),transfers:transfers,legs:legs,railKm:rr.railKm,mode:'transit',
-        lines:(rr.segs||[]).map(sg=>currentLang==='jp'?(sg.name||sg.en):(sg.en||sg.name)).filter(Boolean)};
-    }
+    /* ===== (#R126) request lifecycle — 経路10-10 §3.4/§17.1/§24.12: every route computation gets a requestId; a NEW
+       request aborts all in-flight fetches of the previous one, and a completed request whose id is no longer current
+       returns status 'cancelled' WITHOUT drawing — a stale response can never overwrite a newer route on screen. */
+    let _reqSeq=0, _acPool=[];
+    function _mkAC(ms){ const ac=new AbortController(); ac._t=setTimeout(()=>{ try{ac.abort();}catch(_){}} ,ms||30000); _acPool.push(ac); return ac; }
+    function _rmAC(ac){ try{ clearTimeout(ac._t); }catch(_){} const i=_acPool.indexOf(ac); if(i>=0) _acPool.splice(i,1); }
+    function _abortInflight(){ _acPool.forEach(a=>{ try{ clearTimeout(a._t); a.abort(); }catch(_){} }); _acPool=[]; }
     /* (#R86) transit alternatives — ALL alternatives are drawn at once (like the Google/Apple-Maps screenshot): the
        selected one bright & on top, the others dimmed & thin in their own DISTINCT palette colour; tapping one in the
        reply selects it. (#R86d) The SELECTED route is coloured PER LEG BY MODE on the map (walk grey-dotted, subway
        orange, rail blue, bus purple, tram green, ferry teal) — matching the itinerary detail list — so you can see at
        a glance where you walk vs ride and on what. Unselected alternatives keep their single palette colour. */
     const ALT_PAL=['#1a73e8','#e8710a','#12a150','#a142f4','#e52592'];
-    let _tAlts=[], _ends=null;
-    function _drawAlts(sel){ if(!_tAlts.length) return; sel=Math.max(0,Math.min(_tAlts.length-1,sel|0));
-      const feats=[]; const order=[]; for(let i=0;i<_tAlts.length;i++) if(i!==sel) order.push(i); order.push(sel);   /* selected last = on top within each layer */
-      order.forEach(i=>{ const a=_tAlts[i], on=(i===sel); (a.lines||[]).forEach(ln=>{ const col=on?(ln.col||a.color):a.color; feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.coords},properties:{col:col,walk:ln.walk,w:on?(ln.walk?4.5:6):(ln.walk?3:3.5),op:on?1:0.4}}); }); });   /* (#R86d) selected route → each leg its MODE colour (walk grey-dotted, subway orange, rail blue, bus purple, tram green, ferry teal); other alternatives → their distinct palette colour, dimmed */
-      const sa=_tAlts[sel]; (sa.stops||[]).forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:s},properties:{k:'stop',col:sa.color}}));
-      if(_ends){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:_ends[0]},properties:{color:'#34a853'}}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:_ends[1]},properties:{color:'#ea4335'}}); }
+    /* ===== (#R126) RouteStore — 経路10-10指示書 §4.2/§24.3: alternatives + selection live in a store keyed by
+       routeSetId (one per computed route set), NOT in shared module globals, so a tap on an OLD Atlas message's
+       alternative selects within THAT message's route set instead of whatever was computed last. */
+    let _rsSeq=0; const _rsets=new Map(); let _rsActive=null;
+    function _rsNew(alts,ends){ const id='rs'+(++_rsSeq); _rsets.set(id,{alts,ends,sel:0});
+      if(_rsets.size>12){ const k=_rsets.keys().next().value; if(k!==id) _rsets.delete(k); } _rsActive=id; return id; }
+    /* (#R126) §2.1/§24.2: CALC and DRAW are separate — _paint stashes the last feature set and repaints it once the
+       style is ready (styledata below), so a route computed while the style is loading still SUCCEEDS. */
+    let _lastPaint=null;
+    function _bounds(coords){ if(!coords||!coords.length) return null;
+      /* §3.19/§14.6 dateline-safe: unwrap longitudes onto a continuous axis before min/max */
+      let lo=1e9,hi=-1e9; coords.forEach(p=>{ if(p[0]<lo)lo=p[0]; if(p[0]>hi)hi=p[0]; });
+      const wrap=(hi-lo>180); let a=1e9,b=1e9,c=-1e9,d=-1e9;
+      coords.forEach(p=>{ const x=(wrap&&p[0]<0)?p[0]+360:p[0]; if(x<a)a=x; if(x>c)c=x; if(p[1]<b)b=p[1]; if(p[1]>d)d=p[1]; });
+      return (isFinite(a)&&c>=a)?[[a,b],[c,d]]:null; }
+    function _paint(feats,fitCoords,maxZoom){ _lastPaint={feats:feats,fit:fitCoords||null,mz:maxZoom||14};
+      if(!ensureLayers()) return false;   /* stashed — styledata repaints (and fits, once) when the style is ready */
       try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      try{ let a=180,b=90,c=-180,d=-90; (sa.lines||[]).forEach(ln=>ln.coords.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); })); if(isFinite(a)&&c>a) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:15,duration:900}); }catch(_){} }
-    function selectAlt(i){ if(_tAlts&&_tAlts[i]){ ensureLayers(); _drawAlts(i); return true; } return false; }
+      if(fitCoords){ try{ const bb=_bounds(fitCoords); if(bb) map.fitBounds(bb,{padding:70,maxZoom:maxZoom||14,duration:900}); }catch(_){} }
+      _lastPaint.fit=null;   /* fit only once — a later style-swap repaint must not re-fly the camera */
+      return true; }
+    function _drawAlts(sel,setId){ const rs=_rsets.get(setId||_rsActive); if(!rs||!rs.alts.length) return;
+      const alts=rs.alts; sel=Math.max(0,Math.min(alts.length-1,sel|0)); rs.sel=sel; if(setId) _rsActive=setId;
+      const feats=[]; const order=[]; for(let i=0;i<alts.length;i++) if(i!==sel) order.push(i); order.push(sel);   /* selected last = on top within each layer */
+      order.forEach(i=>{ const a=alts[i], on=(i===sel); (a.lines||[]).forEach(ln=>{ const col=on?(ln.col||a.color):a.color; feats.push({type:'Feature',geometry:{type:'LineString',coordinates:ln.coords},properties:{col:col,walk:ln.walk,w:on?(ln.walk?4.5:6):(ln.walk?3:3.5),op:on?1:0.4}}); }); });   /* (#R86d) selected route → each leg its MODE colour (walk grey-dotted, subway orange, rail blue, bus purple, tram green, ferry teal); other alternatives → their distinct palette colour, dimmed */
+      const sa=alts[sel]; (sa.stops||[]).forEach(s=>feats.push({type:'Feature',geometry:{type:'Point',coordinates:s},properties:{k:'stop',col:sa.color}}));
+      if(rs.ends){ feats.push({type:'Feature',geometry:{type:'Point',coordinates:rs.ends[0]},properties:{color:'#34a853'}}); feats.push({type:'Feature',geometry:{type:'Point',coordinates:rs.ends[1]},properties:{color:'#ea4335'}}); }
+      const fc=[]; (sa.lines||[]).forEach(ln=>ln.coords.forEach(p=>fc.push(p)));
+      _paint(feats,fc.length?fc:null,15); }
+    function selectAlt(i,setId){ const rs=_rsets.get(setId||_rsActive); if(rs&&rs.alts[i]){ _drawAlts(i,setId||_rsActive); return true; } return false; }
     /* (#R125) plan fetch extracted from transit() so the intercity JR bridge can reuse it for ACCESS/EGRESS legs.
-       (#R93c behaviour kept: per-fetch timeout, direct retry, proxy ladder, only accept responses WITH itineraries.) */
+       (#R126) 経路10-10 §3.2/§24.1: public CORS proxies REMOVED from the routing path (api.transitous.org serves CORS
+       headers directly — proxying routed third parties through corsproxy.io/allorigins leaked origin/destination
+       coordinates and mangled polylines). Direct fetch with one backoff retry; requests register in the module abort
+       pool so a newer route request cancels them. _planItins._fail carries WHY it failed (§2.5 error taxonomy). */
     async function _planItins(from,to,opts){ opts=opts||{};
       const when=(opts.time?new Date(opts.time):new Date()); const tISO=isFinite(when.getTime())?when.toISOString():new Date().toISOString();
       const url='https://api.transitous.org/api/v1/plan?fromPlace='+(+from.lat).toFixed(6)+','+(+from.lng).toFixed(6)+'&toPlace='+(+to.lat).toFixed(6)+','+(+to.lng).toFixed(6)+'&time='+encodeURIComponent(tISO)+(opts.arriveBy?'&arriveBy=true':'');
       const tmo=opts.quick?15000:32000;
-      const _fetchPlan=async(u)=>{ const ac=new AbortController(), t=setTimeout(()=>{try{ac.abort();}catch(_){}},tmo);
-        try{ const r=await fetch(u,{signal:ac.signal}); if(r&&r.ok){ const jj=await r.json(); const it=jj&&(jj.itineraries||(jj.plan&&jj.plan.itineraries)); if(it&&it.length) return jj; } }catch(_){}finally{ clearTimeout(t); } return null; };
-      const cx='https://corsproxy.io/?url='+encodeURIComponent(url), al='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
-      const attempts=opts.quick?[url,cx]:[url,url,cx,al];
-      let j=null; for(let i=0;i<attempts.length;i++){ j=await _fetchPlan(attempts[i]); if(j) break; if(!opts.quick&&attempts[i]===url) await new Promise(r=>setTimeout(r,800)); }
+      let fail='provider_unavailable';
+      const _fetchPlan=async(u)=>{ const ac=_mkAC(tmo);
+        try{ const r=await fetch(u,{signal:ac.signal});
+          if(r){ if(r.status===429){ fail='rate_limited'; return null; }
+            if(r.ok){ const jj=await r.json(); const it=jj&&(jj.itineraries||(jj.plan&&jj.plan.itineraries));
+              if(it&&it.length) return jj; fail='no_transit'; return null; }   /* provider answered: genuinely no itineraries */
+            fail='provider_unavailable'; } }
+        catch(e){ fail=(e&&e.name==='AbortError')?'provider_timeout':'provider_unavailable'; }
+        finally{ _rmAC(ac); } return null; };
+      const attempts=opts.quick?[url]:[url,url,url];
+      let j=null; for(let i=0;i<attempts.length;i++){ j=await _fetchPlan(attempts[i]); if(j||fail==='no_transit') break; if(!opts.quick&&i<attempts.length-1) await new Promise(r=>setTimeout(r,800)); }
       const its=j&&(j.itineraries||(j.plan&&j.plan.itineraries));
+      _planItins._fail=(its&&its.length)?null:fail;
       return (its&&its.length)?its:null; }
     const _P=l=>({lng:+(l.lon!=null?l.lon:l.lng),lat:+l.lat});
     /* ===== (#R125) INTERCITY JAPAN RAIL BRIDGE ("瑞穂区役所から新宿まで電車で、というのに対応していない").
@@ -23291,19 +23185,21 @@ window.addEventListener('DOMContentLoaded', () => {
       legs.push.apply(legs,egr.legs); lines.push.apply(lines,egr.lines); stops.push.apply(stops,egr.stops);
       const durSec=acc.sec+egr.sec+(jr.rideMin+waitMin)*60;
       const transfers=Math.max(0,legs.filter(l=>!l.walk).length-1);
-      ensureLayers();
+      if(opts&&opts._rid&&opts._rid!==_reqSeq) return {ok:false,status:'cancelled'};   /* stale — do not draw */
       const itin={lines,stops,legs,duration:durSec,transfers,startTime:null,endTime:null,color:ALT_PAL[0],jrEstimate:true};
-      _tAlts=[itin]; _ends=[[+from.lng,+from.lat],[+to.lng,+to.lat]]; _drawAlts(0);
-      return {ok:true,transit:true,jrEstimate:true,duration:durSec,transfers,legs,startTime:null,endTime:null,mode:'transit',sel:0,
+      const setId=_rsNew([itin],[[+from.lng,+from.lat],[+to.lng,+to.lat]]); _drawAlts(0,setId);
+      return {ok:true,status:'success',transit:true,jrEstimate:true,routeSetId:setId,duration:durSec,transfers,legs,startTime:null,endTime:null,mode:'transit',sel:0,
         alternatives:[{duration:durSec,transfers,legs,startTime:null,endTime:null,color:itin.color}]}; }
     async function transit(from,to,opts){ opts=opts||{};
       const its=await _planItins(from,to,opts);
       if(!its||!its.length){ /* (#R122) OSM rail-corridor fallback stays DISABLED (freight/non-passenger nonsense).
            (#R125) but intercity JAPAN gets the curated Shinkansen bridge above — real stations, published-timetable
            estimates — before we give up with an honest "no transit". */
-        try{ const jr=await _jrPlan(from,to,opts); if(jr) return jr; }catch(_){}
-        return {ok:false,reason:'no-transit'}; }
-      ensureLayers();   /* best-effort — the leg list still returns even if the style isn't ready to paint yet */
+        const fail=_planItins._fail||'no_transit';
+        if(fail==='no_transit'){ try{ const jr=await _jrPlan(from,to,opts); if(jr) return jr; }catch(_){} }
+        /* (#R126) §2.5: provider outage/timeout/429 is NOT the same answer as "no transit here" */
+        return {ok:false,reason:'no-transit',status:fail}; }
+      if(opts._rid&&opts._rid!==_reqSeq) return {ok:false,status:'cancelled'};   /* stale — a newer request superseded us; do not draw */
       return _transitBuild(its,from,to); }
     function _buildItin(it){ const P=_P; const legOut=[], lines=[], stops=[];
         (it.legs||[]).forEach(l=>{ const col=_modeColor(l.mode), walk=/WALK|FOOT/i.test(l.mode)?1:0;
@@ -23315,43 +23211,78 @@ window.addEventListener('DOMContentLoaded', () => {
           if(coords&&coords.length&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to);
             if(isFinite(a.lng)&&isFinite(b.lng)){ const lo=Math.min(a.lng,b.lng)-3,hi=Math.max(a.lng,b.lng)+3,slo=Math.min(a.lat,b.lat)-3,shi=Math.max(a.lat,b.lat)+3;
               if(coords.some(c=>!(isFinite(c[0])&&isFinite(c[1])&&c[0]>=lo&&c[0]<=hi&&c[1]>=slo&&c[1]<=shi))) coords=null; } }
-          if((!coords||coords.length<2)&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){ const a=P(l.from),b=P(l.to); if(isFinite(a.lng)&&isFinite(b.lng)) coords=[[a.lng,a.lat],[b.lng,b.lat]]; }
+          /* (#R126) 経路10-10 §3.8/§22.3/§24.4: a broken/absent TRANSIT leg shape is NEVER replaced by a station-to-
+             station straight line dressed up as the route. Only a WALK leg may fall back to a short straight dashed
+             connector (its two endpoints are real and it is drawn in the walk style). A ride leg with no usable
+             geometry contributes NO line — the leg stays in the itinerary list and the result is flagged shapeGap. */
+          let gap=false;
+          if((!coords||coords.length<2)&&l.from&&l.to&&l.from.lat!=null&&l.to.lat!=null){
+            const a=P(l.from),b=P(l.to);
+            if(isFinite(a.lng)&&isFinite(b.lng)){ if(walk) coords=[[a.lng,a.lat],[b.lng,b.lat]]; else gap=true; } }
           if(coords&&coords.length>1) lines.push({coords:coords,walk:walk,col:col});   /* (#R86d) keep the per-leg MODE colour on the geometry so the map can colour each leg by type (walk/subway/rail/bus/…) — not just one colour per alternative */
+          if(gap) legOut._gap=true;
           if(!walk){ if(l.from&&l.from.lat!=null){ const a=P(l.from); if(isFinite(a.lng)) stops.push([a.lng,a.lat]); }
             if(l.to&&l.to.lat!=null){ const b=P(l.to); if(isFinite(b.lng)) stops.push([b.lng,b.lat]); } }
           legOut.push({mode:l.mode,walk,route:(l.routeShortName||l.tripShortName||l.routeLongName||l.route||''),headsign:(l.headsign||l.tripHeadsign||''),from:(l.from&&l.from.name)||'',to:(l.to&&l.to.name)||'',duration:l.duration||0,dep:l.startTime||l.scheduledStartTime||'',arr:l.endTime||l.scheduledEndTime||'',color:col}); });
-        return {lines:lines,stops:stops,legs:legOut,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; }
+        return {lines:lines,stops:stops,legs:legOut,shapeGap:!!legOut._gap,duration:it.duration||0,transfers:(it.transfers!=null?it.transfers:Math.max(0,legOut.filter(l=>!l.walk).length-1)),startTime:it.startTime,endTime:it.endTime}; }
     function _transitBuild(its,from,to){
       /* rank: itineraries that actually ride something first (a bare all-walk plan is unhelpful), then by duration; keep up to 5 */
       const ranked=its.slice().sort((x,y)=>{ const rx=(x.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1, ry=(y.legs||[]).some(l=>!/WALK|FOOT/i.test(l.mode))?0:1; return (rx-ry)||((x.duration||1e9)-(y.duration||1e9)); });
-      _tAlts=ranked.slice(0,5).map(_buildItin); if(!_tAlts.length) return {ok:false,reason:'no-transit'};
-      _tAlts.forEach((a,i)=>{ a.color=ALT_PAL[i%ALT_PAL.length]; });
-      _ends=[[+from.lng,+from.lat],[+to.lng,+to.lat]];
-      _drawAlts(0);
-      const b0=_tAlts[0];
-      return {ok:true,transit:true,duration:b0.duration,transfers:b0.transfers,legs:b0.legs,startTime:b0.startTime,endTime:b0.endTime,mode:'transit',sel:0,
-        alternatives:_tAlts.map(a=>({duration:a.duration,transfers:a.transfers,legs:a.legs,startTime:a.startTime,endTime:a.endTime,color:a.color}))}; }
-    async function route(from,to,opts){ opts=opts||{}; if(!from||to==null) return {ok:false};
+      const alts=ranked.slice(0,5).map(_buildItin); if(!alts.length) return {ok:false,reason:'no-transit',status:'no_transit'};
+      alts.forEach((a,i)=>{ a.color=ALT_PAL[i%ALT_PAL.length]; });
+      const setId=_rsNew(alts,[[+from.lng,+from.lat],[+to.lng,+to.lat]]);
+      _drawAlts(0,setId);
+      const b0=alts[0];
+      return {ok:true,status:'success',transit:true,routeSetId:setId,duration:b0.duration,transfers:b0.transfers,legs:b0.legs,shapeGap:alts.some(a=>a.shapeGap),startTime:b0.startTime,endTime:b0.endTime,mode:'transit',sel:0,
+        alternatives:alts.map(a=>({duration:a.duration,transfers:a.transfers,legs:a.legs,startTime:a.startTime,endTime:a.endTime,color:a.color}))}; }
+    /* (#R126) 経路10-10 §3.1–§3.5/§17/§24: road routing goes DIRECT to the router (no public CORS proxy — §24.1),
+       carries a requestId so stale responses never draw (§24.12), separates calculation from drawing (§24.2 — a
+       route computed while the style is loading still succeeds; _paint repaints on styledata), and returns a TYPED
+       status (§5.7) instead of one generic failure: success / invalid_request / no_route / provider_timeout /
+       provider_unavailable / rate_limited / cancelled. */
+    async function route(from,to,opts){ opts=opts||{};
+      if(!from||to==null||!isFinite(+from.lng)||!isFinite(+from.lat)||!isFinite(+to.lng)||!isFinite(+to.lat)) return {ok:false,status:'invalid_request'};
+      const rid=++_reqSeq; _abortInflight(); opts._rid=rid;
       const mode=String(opts.mode||'driving').toLowerCase();
       if(_isTransit(mode)) return await transit(from,to,opts);
       const prof=PROFILES[mode]||PROFILES.driving;
       const pts=[from].concat(Array.isArray(opts.via)?opts.via:[]).concat([to]);
       const coordStr=pts.map(p=>(+p.lng).toFixed(6)+','+(+p.lat).toFixed(6)).join(';');
       const url='https://'+prof[0]+'/route/v1/'+prof[1]+'/'+coordStr+'?overview=full&geometries=geojson&steps=true';
-      let j=null; const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-      for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok){ const jj=await r.json(); if(jj&&jj.routes&&jj.routes.length){ j=jj; break; } } }catch(_){} }
-      if(!j||!j.routes||!j.routes.length) return {ok:false};
-      const rt=j.routes[0]; if(!ensureLayers()) return {ok:false};
+      let j=null, errKind='provider_unavailable';
+      for(let att=0;att<2&&!j;att++){
+        if(rid!==_reqSeq) return {ok:false,status:'cancelled'};
+        const ac=_mkAC(20000);
+        try{ const r=await fetch(url,{signal:ac.signal});
+          if(r.status===429){ errKind='rate_limited'; }
+          else if(r.ok){ const jj=await r.json();
+            if(jj&&jj.routes&&jj.routes.length) j=jj;
+            else return {ok:false,status:'no_route'}; }   /* router answered: there IS no route */
+          else if(r.status>=400&&r.status<500){ const jj=await r.json().catch(()=>null);
+            if(jj&&/NoRoute|NoSegment|NoMatch/i.test(String(jj.code||''))) return {ok:false,status:'no_route'};
+            errKind='invalid_request'; }
+          else errKind='provider_unavailable'; }
+        catch(e){ errKind=(e&&e.name==='AbortError')?((rid!==_reqSeq)?'cancelled':'provider_timeout'):'provider_unavailable'; }
+        finally{ _rmAC(ac); }
+        if(!j&&att===0&&errKind!=='rate_limited'&&errKind!=='cancelled') await new Promise(r2=>setTimeout(r2,600)); }
+      if(rid!==_reqSeq) return {ok:false,status:'cancelled'};
+      if(!j) return {ok:false,status:errKind};
+      /* (#R126) 経路10-10 §21.3/§2.2: the demo router SNAPS a point outside its road data to the nearest road it
+         knows — even 5,500 km away across the Atlantic — and answers "Ok" (measured: Lisbon→New York snapped NY to
+         Cascais, Portugal). A snap that far is a FAKE route; report no_route with the snap distance instead. */
+      const _farM=(j.waypoints||[]).reduce((mx,w)=>Math.max(mx,(w&&w.distance)||0),0);
+      if(_farM>30000) return {ok:false,status:'no_route',snapKm:Math.round(_farM/1000)};
+      const rt=j.routes[0];
       const rcol=(mode==='foot'||mode==='walk'||mode==='walking')?'#7a7f87':(mode==='bike'||mode==='cycle'||mode==='cycling')?'#00897b':'#1a73e8';
       const rwalk=(mode==='foot'||mode==='walk'||mode==='walking')?1:0;
       const feats=[{type:'Feature',geometry:rt.geometry,properties:{col:rcol,walk:rwalk,w:5.5}},
         {type:'Feature',geometry:{type:'Point',coordinates:[+from.lng,+from.lat]},properties:{color:'#34a853'}},
         {type:'Feature',geometry:{type:'Point',coordinates:[+to.lng,+to.lat]},properties:{color:'#ea4335'}}];
-      try{ map.getSource(SRC).setData({type:'FeatureCollection',features:feats}); }catch(_){}
-      try{ const cs=rt.geometry.coordinates; let a=180,b=90,c=-180,d=-90; cs.forEach(p=>{ a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]); }); if(isFinite(a)) map.fitBounds([[a,b],[c,d]],{padding:70,maxZoom:14,duration:900}); }catch(_){}
+      _paint(feats,(rt.geometry&&rt.geometry.coordinates)||null,14);
       const steps=[]; (rt.legs||[]).forEach(l=>(l.steps||[]).forEach(s=>steps.push(s)));
-      return {ok:true,distance:rt.distance,duration:rt.duration,steps,mode}; }
-    try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ const s=map.getSource(SRC); if(s&&s._data&&s._data.features&&s._data.features.length){ ensureLayers(); } }catch(_){} },160); }); }catch(_){}
+      return {ok:true,status:'success',distance:rt.distance,duration:rt.duration,steps,mode}; }
+    /* (#R126) §3.7: restore from the module's OWN last-paint store on style swap — not MapLibre's private source._data */
+    try{ map.on('styledata',()=>{ setTimeout(()=>{ try{ if(_lastPaint&&_lastPaint.feats&&_lastPaint.feats.length) _paint(_lastPaint.feats,_lastPaint.fit,_lastPaint.mz); }catch(_){} },160); }); }catch(_){}
     /* ===== (#R84) RICH ROUTING UI ("経路のUIをもっと充実させて。Google MapやApple Mapのように") — a proper
        directions panel: editable start/destination, one-tap mode switch (drive/walk/cycle), swap, live recompute,
        distance + time, and a scrollable turn-by-turn list. ===== */
@@ -23388,7 +23319,12 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.querySelector('.rp-close').onclick=()=>{ panel.style.display='none'; try{ clear(); }catch(_){} _endPick(); };
       panel.querySelectorAll('.rp-mode').forEach(b=>b.onclick=()=>{ pMode=b.getAttribute('data-m'); _syncModes(); recompute(); });
       panel.querySelector('.rp-swap').onclick=()=>{ const f=panel.querySelector('.rp-from'),t=panel.querySelector('.rp-to'); const tmp=f.value; f.value=t.value; t.value=tmp; const tp=pFrom; pFrom=pTo; pTo=tp; recompute(); };
-      const wireIn=(sel,setter)=>{ const el=panel.querySelector(sel); el.addEventListener('keydown',async e=>{ if(e.key!=='Enter') return; e.preventDefault(); const g=await geo1(el.value); if(g){ el.value=g.name; setter(g); recompute(); } }); el.addEventListener('blur',async()=>{ if(!el.value.trim()){ setter(null); return; } }); };
+      const wireIn=(sel,setter)=>{ const el=panel.querySelector(sel);
+        /* (#R126) 経路10-10 §3.12/§24.7: the moment the text is EDITED the previously-selected place is invalid —
+           never compute a route with stale coordinates behind a changed label. (Programmatic value sets — Enter
+           geocode / map pick / openPanel — don't fire 'input', so confirmed selections survive.) */
+        el.addEventListener('input',()=>{ setter(null); });
+        el.addEventListener('keydown',async e=>{ if(e.key!=='Enter') return; e.preventDefault(); const g=await geo1(el.value); if(g){ el.value=g.name; setter(g); recompute(); } }); el.addEventListener('blur',async()=>{ if(!el.value.trim()){ setter(null); return; } }); };
       wireIn('.rp-from',g=>pFrom=g); wireIn('.rp-to',g=>pTo=g);
       panel.querySelector('.rp-pick-from').onclick=()=>_startPick('from'); panel.querySelector('.rp-pick-to').onclick=()=>_startPick('to');
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rp-head')); }catch(_){}
@@ -23404,9 +23340,18 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!pFrom||!pTo){ if(sum) sum.textContent=''; if(st) st.innerHTML='<div style="color:var(--text-muted);font-size:11.5px;padding:8px 0;">'+LL('Enter a start and destination.','出発地と目的地を入力してください。','Start und Ziel eingeben.','Введите начало и цель.','Introduce origen y destino.')+'</div>'; return; }
       if(sum) sum.innerHTML='<span style="color:var(--text-muted);">'+LL('Routing…','経路計算中…','Route…','Прокладка…','Calculando…')+'</span>'; if(st) st.innerHTML='';
       let r=null; try{ r=await route(pFrom,pTo,{mode:pMode}); }catch(_){}
+      if(r&&r.status==='cancelled') return;   /* (#R126) superseded by a newer request — that one updates the UI */
       if(!r||!r.ok){
+        /* (#R126) 経路10-10 §2.5: outage / timeout / rate-limit / no-route are DIFFERENT answers, not one "not found" */
+        const stt=(r&&r.status)||'';
+        if(stt==='provider_timeout'||stt==='provider_unavailable'||stt==='rate_limited'){
+          const msg=stt==='rate_limited'?LL('Too many requests — wait a moment and try again.','リクエストが多すぎます — 少し待って再試行してください。','Zu viele Anfragen — kurz warten und erneut versuchen.','Слишком много запросов — подождите и повторите.','Demasiadas solicitudes — espera y reintenta.')
+            :stt==='provider_timeout'?LL('The routing service timed out — try again.','経路サービスがタイムアウトしました — 再試行してください。','Zeitüberschreitung beim Routingdienst — erneut versuchen.','Тайм-аут сервиса маршрутов — повторите.','El servicio de rutas agotó el tiempo — reintenta.')
+            :LL('The routing service is unreachable right now (outage or network) — try again shortly.','経路サービスに接続できません（障害またはネットワーク）— しばらくして再試行してください。','Routingdienst derzeit nicht erreichbar — später erneut versuchen.','Сервис маршрутов недоступен — повторите позже.','El servicio de rutas no está disponible — reintenta en breve.');
+          if(sum) sum.innerHTML='<span style="color:#ff9f0a;">⚠ '+msg+'</span>'; if(st) st.innerHTML=''; return; }
         if(pMode==='transit'&&r&&r.reason==='no-transit'){ if(sum) sum.innerHTML='<span style="color:#ff9f0a;">🚆 '+LL('No public-transit route found here','この区間の公共交通経路が見つかりませんでした','Keine ÖPNV-Verbindung gefunden','Транзитный маршрут не найден','Sin ruta de transporte')+'</span>'; if(st) st.innerHTML='<div style="color:var(--text-muted);font-size:11px;padding:6px 0;line-height:1.6;">'+LL('Transit data (GTFS) may not cover this area yet. Try 🚗 driving or 🚶 walking, or a route within a covered city/country.','この地域は公共交通データ（GTFS）が未整備の可能性があります。車・徒歩をお試しください。','ÖPNV-Daten (GTFS) decken dieses Gebiet evtl. nicht ab.','Данные GTFS могут не покрывать этот регион.','Los datos GTFS pueden no cubrir esta zona.')+'</div>'; return; }
-        if(sum) sum.innerHTML='<span style="color:#ff9f0a;">⚠ '+LL('No route found (maybe no connection).','経路が見つかりません（接続がない可能性）。','Keine Route gefunden.','Маршрут не найден.','Sin ruta.')+'</span>'; return; }
+        const snapTx=(r&&r.snapKm)?(' '+LL('A point is ~'+r.snapKm+' km from the nearest routable road (outside coverage).','地点が最寄りの経路可能な道路から約'+r.snapKm+' km離れています（対象地域外の可能性）。','Ein Punkt liegt ~'+r.snapKm+' km von der nächsten Straße (außerhalb der Abdeckung).','Точка в ~'+r.snapKm+' км от ближайшей дороги (вне покрытия).','Un punto está a ~'+r.snapKm+' km de la carretera más cercana (fuera de cobertura).')):'';
+        if(sum) sum.innerHTML='<span style="color:#ff9f0a;">⚠ '+LL('No route found (maybe no connection).','経路が見つかりません（接続がない可能性）。','Keine Route gefunden.','Маршрут не найден.','Sin ruta.')+snapTx+'</span>'; return; }
       if(r.transit){   /* (#R85) rich transit itinerary: total time, transfers, and a colour-coded leg list */
         const tot=Math.round(r.duration/60), h=Math.floor(tot/60), rem=tot%60, dur=h?(h+' h '+rem+' min'):(tot+' min');
         const tf=r.transfers||0;
@@ -27169,8 +27114,10 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'directions': case 'roadRoute': case 'navigate': case 'drivingRoute': case 'walkingRoute': case 'transitRoute': {
           /* (#R85d) FULL Google/Apple-Maps-style routing UI INSIDE the Atlas message — NO popup ("よけいなポップアップを
              増設するな。Atlas内のメッセージでUIやれ"). Mode switcher (car/transit/walk/cycle) re-routes in place. */
-          const _rmodes=(cur)=>{ const ms=[['driving','🚗'],['transit','🚆'],['walking','🚶'],['cycling','🚲']];
-            return '<div class="atl-route-modes">'+ms.map(m=>'<button class="atl-route-mode'+(m[0]===cur?' on':'')+'" data-rmode="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'; };
+          /* (#R126) 経路10-10 §16.2/§16.3: each message's mode buttons carry THEIR OWN origin/destination (data-rctx)
+             so re-routing an OLD message never uses another message's shared _lastRouteCtx. */
+          const _rmodes=(cur,ctx)=>{ const ms=[['driving','🚗'],['transit','🚆'],['walking','🚶'],['cycling','🚲']];
+            return '<div class="atl-route-modes" data-rctx="'+esc(JSON.stringify(ctx||null))+'">'+ms.map(m=>'<button class="atl-route-mode'+(m[0]===cur?' on':'')+'" data-rmode="'+m[0]+'">'+m[1]+'</button>').join('')+'</div>'; };
           if(!a.from&&!a.to&&!a.place){ return R(true, note('🧭 '+L('Tell me a start and destination — e.g. "directions from Tokyo to Osaka" or "電車で新宿から横浜".','出発地と目的地を教えてください（例：「東京から大阪への経路」「電車で新宿から横浜」）。','Nenne Start und Ziel.','Укажите начало и цель.','Dime origen y destino.'))); }
           /* (#R125) endpoint resolution hardened for rail asks: an exact Shinkansen-station name resolves to the
              REAL station (geocode fuzzy-matched 仙台駅 to a POI named 仙太鮨…), and a query ending in 駅/station
@@ -27187,7 +27134,7 @@ window.addEventListener('DOMContentLoaded', () => {
           const isTr=/transit|train|rail|public|metro|subway|tram|bus|ferry|電車|鉄道|地下鉄|バス|公共|列車/.test(rawMode);
           const mode=isTr?'transit':(({car:'driving',drive:'driving',driving:'driving',foot:'walking',walk:'walking',walking:'walking',bike:'cycling',cycle:'cycling',cycling:'cycling'})[rawMode]||'driving');
           _lastRouteCtx={from:a.from,to:(a.to||a.place||a.destination),via:a.via};
-          const _hdr='<div style="font-weight:600;">'+(mode==='transit'?'🚆':mode==='walking'?'🚶':mode==='cycling'?'🚲':'🚗')+' '+esc((A&&A.name)||a.from)+' → '+esc((B&&B.name)||a.to||a.place)+'</div>'+_rmodes(mode);
+          const _hdr='<div style="font-weight:600;">'+(mode==='transit'?'🚆':mode==='walking'?'🚶':mode==='cycling'?'🚲':'🚗')+' '+esc((A&&A.name)||a.from)+' → '+esc((B&&B.name)||a.to||a.place)+'</div>'+_rmodes(mode,_lastRouteCtx);
           if(!A||!B) return R(false, _hdr+warn('⚠ '+L('Could not find one of those places','地点を特定できませんでした','Ort nicht gefunden','Место не найдено','Lugar no encontrado')));
           let via=[]; if(Array.isArray(a.via)){ for(const v of a.via.slice(0,6)){ try{ const g=await geocode(String(v)); if(g) via.push({lng:g.lng,lat:g.lat}); }catch(_){} } }
           let r=null; try{ r=await window.IntMapRouting.route({lng:A.lng,lat:A.lat},{lng:B.lng,lat:B.lat},{mode,via,time:a.time||a.datetime||a.depart}); }catch(_){}
@@ -27207,7 +27154,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const alts=(!r.railEstimate&&r.alternatives&&r.alternatives.length>1)?r.alternatives:null;
             let body;
             if(alts){ const selI=r.sel||0;
-              body='<div class="atl-trips">'+alts.map((av,i)=>{ const am=Math.round((av.duration||0)/60), ah2=Math.floor(am/60), arm=am%60, adur=ah2?(ah2+' h '+arm+' min'):(am+' min'); const atf=av.transfers||0;
+              body='<div class="atl-trips" data-rset="'+esc(r.routeSetId||'')+'">'+alts.map((av,i)=>{ const am=Math.round((av.duration||0)/60), ah2=Math.floor(am/60), arm=am%60, adur=ah2?(ah2+' h '+arm+' min'):(am+' min'); const atf=av.transfers||0;
                 const times=av.startTime?(_tm(av.startTime)+'–'+_tm(av.endTime)):('<b>'+adur+'</b>');
                 const aseq=(av.legs||[]).map(l=>_ic(l.mode)+(l.route&&!l.walk?(' '+esc(l.route)):'')).join(' → ');
                 const dot='<span class="atl-trip-dot" style="background:'+(av.color||'#1a73e8')+';"></span>';
@@ -27219,9 +27166,19 @@ window.addEventListener('DOMContentLoaded', () => {
                 : r.railEstimate
                 ? L('Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.','実在の鉄道網（OpenStreetMap）に沿って路線名・駅名まで特定した「列車が走る経路」です（最寄り駅までは徒歩）。JR・新幹線等は公開時刻表（GTFS）が無いため、所要時間は路線種別（新幹線／在来線）の標準速度からの概算で、実際の時刻表ではありません。','Entlang des echten Schienennetzes (OSM), mit echten Linien- und Bahnhofsnamen — Zeit ist aus typischen Geschwindigkeiten geschätzt, kein Fahrplan.','Проложено по реальной ж/д сети (OSM) с реальными названиями линий и станций — время оценено по типовым скоростям, не расписание.','Trazado por la red ferroviaria real (OSM), con nombres reales de líneas y estaciones — tiempo estimado por velocidades típicas, no horario.')
                 : L('Live public-transit routing (Transitous / MOTIS).','公共交通のライブ経路検索（Transitous／MOTIS）。','Live-ÖPNV (Transitous/MOTIS).','Транзит (Transitous/MOTIS).','Transporte en vivo (Transitous/MOTIS).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request */
+            if(r.shapeGap) h+=note(L('Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).','一部の乗車区間の形状を取得できませんでした — 該当区間は行程に表示しますが、地図には描画しません（直線での代用はしません）。','Einige Fahrt-Abschnittsformen fehlen — diese Abschnitte stehen in der Liste, werden aber nicht gezeichnet (kein Geraden-Ersatz).','Форма части участков недоступна — они в списке, но не рисуются на карте (без замены прямыми).','No se pudo obtener la forma de algunos tramos — se listan pero no se dibujan (sin sustitutos en línea recta).'));
             return R(true, h); }
-          if(!r||!r.ok){ if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
-            return R(true, _hdr+warn('⚠ '+L('No route found (no road connection, or the router is busy).','経路が見つかりません（陸路がない/サービス混雑）。','Keine Route gefunden.','Маршрут не найден.','Sin ruta.'))); }
+          if(!r||!r.ok){ const stt=(r&&r.status)||'';
+            /* (#R126) 経路10-10 §2.5/§16.8: typed statuses get their OWN honest message instead of one "not found" */
+            if(stt==='cancelled') return R(true, _hdr+note(L('Superseded by a newer route request.','新しい経路リクエストに置き換えられました。','Durch eine neuere Routenanfrage ersetzt.','Заменено более новым запросом маршрута.','Sustituido por una solicitud de ruta más reciente.')));
+            if(stt==='provider_timeout'||stt==='provider_unavailable'||stt==='rate_limited'){
+              const m2=stt==='rate_limited'?L('Too many requests — wait a moment and try again.','リクエストが多すぎます — 少し待って再試行してください。','Zu viele Anfragen — kurz warten und erneut versuchen.','Слишком много запросов — подождите и повторите.','Demasiadas solicitudes — espera y reintenta.')
+                :stt==='provider_timeout'?L('The routing service timed out — try again.','経路サービスがタイムアウトしました — 再試行してください。','Zeitüberschreitung beim Routingdienst — erneut versuchen.','Тайм-аут сервиса маршрутов — повторите.','El servicio de rutas agotó el tiempo — reintenta.')
+                :L('The routing service is unreachable right now (outage or network) — the route was NOT computed. Try again shortly.','経路サービスに接続できません（障害またはネットワーク）— 経路は計算されていません。しばらくして再試行してください。','Routingdienst nicht erreichbar — Route NICHT berechnet. Später erneut versuchen.','Сервис маршрутов недоступен — маршрут НЕ рассчитан. Повторите позже.','Servicio de rutas no disponible — la ruta NO se calculó. Reintenta en breve.');
+              return R(false, _hdr+warn('⚠ '+m2)); }
+            if(isTr) return R(true, _hdr+warn('🚆 '+L('No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.','この区間の公共交通経路が見つかりません。上のボタンで車・徒歩をお試しください。','Keine ÖPNV-Verbindung — oben 🚗/🚶 versuchen.','Нет транзита — попробуйте 🚗/🚶 выше.','Sin transporte — prueba 🚗/🚶 arriba.')));
+            const snapTx=(r&&r.snapKm)?(' '+L('One point is ~'+r.snapKm+' km from the nearest routable road (outside road-data coverage / across water).','一方の地点が最寄りの経路可能な道路から約'+r.snapKm+' km離れています（道路データ対象外／水域越えの可能性）。','Ein Punkt liegt ~'+r.snapKm+' km von der nächsten routbaren Straße (außerhalb der Abdeckung).','Точка в ~'+r.snapKm+' км от ближайшей дороги (вне покрытия).','Un punto está a ~'+r.snapKm+' km de la carretera más cercana (fuera de cobertura).')):'';
+            return R(true, _hdr+warn('⚠ '+L('No route found (no road connection between these points).','経路が見つかりません（この2地点間に陸路の接続がありません）。','Keine Route gefunden (keine Straßenverbindung).','Маршрут не найден (нет дорожного соединения).','Sin ruta (sin conexión por carretera).')+snapTx)); }
           const km=r.distance/1000, totMin=Math.round(r.duration/60), hrs=Math.floor(totMin/60), rem=totMin%60, dur=hrs?(hrs+' h '+rem+' min'):(totMin+' min');
           const ARW={left:'←','slight left':'↖','sharp left':'⬅',right:'→','slight right':'↗','sharp right':'➡',straight:'↑',uturn:'↩'};
           const stepRows=(r.steps||[]).map(s=>{ const m=s.maneuver||{}; const nm=String(s.name||'').trim(); const dm=s.distance||0;
@@ -28526,10 +28483,15 @@ window.addEventListener('DOMContentLoaded', () => {
         const trp=e.target.closest&&e.target.closest('.atl-trip[data-ai]');
         if(trp){ const ai=+trp.getAttribute('data-ai'); const box=trp.parentElement;   /* (#R86) select a transit alternative → expand it + redraw on the map */
           if(box){ box.querySelectorAll('.atl-trip').forEach(t=>t.classList.remove('on')); } trp.classList.add('on');
-          try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(ai); }catch(_){} return; }
+          /* (#R126) §16.4/§24.3: select within THIS message's routeSetId — never "alternative i of whatever was computed last" */
+          const rset=(box&&box.getAttribute('data-rset'))||undefined;
+          try{ window.IntMapRouting&&window.IntMapRouting.selectAlt&&window.IntMapRouting.selectAlt(ai,rset); }catch(_){} return; }
         const rmb=e.target.closest&&e.target.closest('.atl-route-mode[data-rmode]');
-        if(rmb&&_lastRouteCtx){ const m=rmb.getAttribute('data-rmode');   /* (#R85d) re-route in the message on a different mode */
-          const act={type:'directions',from:_lastRouteCtx.from,to:_lastRouteCtx.to,via:_lastRouteCtx.via,mode:m};
+        if(rmb){ const m=rmb.getAttribute('data-rmode');   /* (#R85d) re-route in the message on a different mode */
+          /* (#R126) §16.2/§16.3: use the ctx embedded in THIS message's mode-button row (data-rctx), not the shared last-route global */
+          let _ctx=null; try{ const host=rmb.closest('.atl-route-modes'); _ctx=host?JSON.parse(host.getAttribute('data-rctx')||'null'):null; }catch(_){ _ctx=null; }
+          _ctx=_ctx||_lastRouteCtx; if(!_ctx) return;
+          const act={type:'directions',from:_ctx.from,to:_ctx.to,via:_ctx.via,mode:m};
           const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); const gen=++_runGen;
           runActions(ai,'',[act],gen).catch(()=>{}); return; }
         const rdb=e.target.closest&&e.target.closest('.atl-traj-btn[data-rad]');
