@@ -17370,7 +17370,16 @@ window.addEventListener('DOMContentLoaded', () => {
              track the grid spacing (keeps points overlapping) AND ramp intensity gently with zoom — together they
              hold the oval's brightness roughly constant across all zoom levels. */
           'heatmap-intensity':['interpolate',['linear'],['zoom'],1,1.1,4,1.35,7,1.9,10,2.6],
-          'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,3,20,4,30,5,52,6,88,7,150,8,250,9,380,10,480],'heatmap-opacity':0.78,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
+          'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,3,20,4,30,5,52,6,88,7,150,8,250,9,380,10,480],
+          /* (#R124) FIX re-report "ズームインすると見えなくなる": a heatmap thins on zoom-in once the ~1° grid points
+             separate past any affordable radius, so we FADE IT OUT as zoom rises and hand off to a soft-circle GLOW
+             (below) that renders regardless of point density — the oval now stays visible at every zoom. */
+          'heatmap-opacity':['interpolate',['linear'],['zoom'],1,0.78,6,0.78,8,0.42,10,0.16],'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
+          map.addLayer({id:'l9-aurora-glow',type:'circle',source:'l9-aurora',layout:{visibility:'none'},paint:{
+            'circle-radius':['interpolate',['exponential',2],['zoom'],3,8,5,26,7,110,9,430,11,1700],   /* ~grid spacing so soft circles keep overlapping */
+            'circle-color':['interpolate',['linear'],['get','a'],8,'#00753b',20,'#00d072',50,'#7dffa6',100,'#d2ffdc'],
+            'circle-blur':0.85,
+            'circle-opacity':['interpolate',['linear'],['zoom'],4,0,6,0.32,8,0.62,10,0.8]}},'l9-aurora-heat');   /* under the heatmap; fades IN as the heatmap fades OUT */
         }
         /* Sea ice (#7) — AMSR2 concentration via NASA GIBS WMS GetMap (the WMTS tiles aren't in 3857, but
            the WMS GetMap IS). Date = today−2 (resolves to a real, processed day in the user's browser). */
@@ -17401,7 +17410,7 @@ window.addEventListener('DOMContentLoaded', () => {
       for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
       if(map.getSource('l9-aurora')) map.getSource('l9-aurora').setData({type:'FeatureCollection',features:feats});
     }catch(e){ try{ imToast(jp()?'オーロラ予測を取得できませんでした':'Aurora forecast unavailable'); }catch(_){} } }
-    const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat'],seaice:['l9-seaice']};
+    const SETS={dams:['l9-dams-pt','l9-dams-lbl'],volcanoes:['l9-volc-pt','l9-volc-lbl'],adiz:['l9-adiz-fill','l9-adiz-line','l9-adiz-lbl'],aurora:['l9-aurora-heat','l9-aurora-glow'],seaice:['l9-seaice']};
     let auroraTimer=null;
     function toggle(which,on){ state[which]=on;
       const apply=()=>{ if(!ensureLayers()){ map.once('idle',apply); return; } setVis(SETS[which],on);
@@ -20933,13 +20942,19 @@ window.addEventListener('DOMContentLoaded', () => {
           done&&done(); }catch(_){} }).catch(()=>{}); }},
       /* (#R36) parity adds — aurora + earthquakes (the main map has them; compare didn't). Same sources/paint
          as the main map so they are byte-identical, not "low quality" clones. */
-      {k:'aurora', n:()=>jp()?'オーロラ予報':'Aurora forecast', ids:['cmpx-aurora-heat'], add(done){
+      {k:'aurora', n:()=>jp()?'オーロラ予報':'Aurora forecast', ids:['cmpx-aurora-heat','cmpx-aurora-glow'], add(done){
         if(cmap.getSource('cmpx-aurora')){ done&&done(); return; }
         cmap.addSource('cmpx-aurora',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         cmap.addLayer({id:'cmpx-aurora-heat',type:'heatmap',source:'cmpx-aurora',layout:{visibility:'none'},paint:{'heatmap-weight':['interpolate',['linear'],['get','a'],0,0,100,1],
-          /* (#R123) same zoom-brightness fix as the main l9-aurora-heat layer (compare-map copy). */
+          /* (#R123/#R124) same zoom fix as the main l9-aurora-heat layer (compare-map copy): heatmap fades out on
+             zoom-in, a soft-circle glow (below) takes over so the oval stays visible at every zoom. */
           'heatmap-intensity':['interpolate',['linear'],['zoom'],1,1.1,4,1.35,7,1.9,10,2.6],
-          'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,3,20,4,30,5,52,6,88,7,150,8,250,9,380,10,480],'heatmap-opacity':0.78,'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
+          'heatmap-radius':['interpolate',['linear'],['zoom'],1,10,3,20,4,30,5,52,6,88,7,150,8,250,9,380,10,480],'heatmap-opacity':['interpolate',['linear'],['zoom'],1,0.78,6,0.78,8,0.42,10,0.16],'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.2,'rgba(0,120,60,0.45)',0.5,'rgba(0,220,120,0.6)',0.8,'rgba(140,255,170,0.85)',1,'rgba(210,255,220,0.95)']}});
+        cmap.addLayer({id:'cmpx-aurora-glow',type:'circle',source:'cmpx-aurora',layout:{visibility:'none'},paint:{
+          'circle-radius':['interpolate',['exponential',2],['zoom'],3,8,5,26,7,110,9,430,11,1700],
+          'circle-color':['interpolate',['linear'],['get','a'],8,'#00753b',20,'#00d072',50,'#7dffa6',100,'#d2ffdc'],
+          'circle-blur':0.85,
+          'circle-opacity':['interpolate',['linear'],['zoom'],4,0,6,0.32,8,0.62,10,0.8]}},'cmpx-aurora-heat');
         fetch('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json').then(r=>r.json()).then(j=>{ try{
           const co=j.coordinates||[], feats=[];
           for(let i=0;i<co.length;i+=2){ const c=co[i]; if(!c) continue; const a=c[2]; if(a<8) continue; let lng=c[0]; if(lng>180) lng-=360; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lng,c[1]]},properties:{a:a}}); }
