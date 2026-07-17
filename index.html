@@ -29342,7 +29342,14 @@ window.addEventListener('DOMContentLoaded', () => {
       {id:'wbrural', code:'SP.RUR.TOTL.ZS', n:{en:'Rural population %',jp:'農村人口比率 %',de:'Landbevölkerung %',ru:'Сельское население %'}, ramp:[10,'#2c7fb8',30,'#7fcdbb',50,'#ffffb2',70,'#fe9929',90,'#cc4c02'], unit:'%'},
       {id:'wbgni', code:'NY.GNP.PCAP.CD', n:{en:'GNI per capita (Atlas, US$)',jp:'一人当たりGNI（アトラス法, US$）',de:'BNE pro Kopf (Atlas, US$)',ru:'ВНД на душу (Атлас, US$)'}, ramp:[1000,'#fff7ec',5000,'#fdd49e',15000,'#fc8d59',40000,'#66bd63',90000,'#006837'], unit:''},
       {id:'wbunder', code:'SN.ITK.DEFC.ZS', n:{en:'Undernourishment %',jp:'栄養不足人口比率 %',de:'Unterernährung %',ru:'Недоедание %'}, ramp:[2.5,'#1a9850',10,'#a6d96a',25,'#fee08b',40,'#f46d43',60,'#a50026'], unit:'%'},
-      {id:'wbhitech', code:'TX.VAL.TECH.MF.ZS', n:{en:'High-tech exports %',jp:'ハイテク製品輸出比率 %',de:'Hightech-Exporte %',ru:'Высокотехнологичный экспорт %'}, ramp:[1,'#fff7ec',5,'#fdd49e',15,'#fc8d59',30,'#66bd63',50,'#006837'], unit:'%'}
+      {id:'wbhitech', code:'TX.VAL.TECH.MF.ZS', n:{en:'High-tech exports %',jp:'ハイテク製品輸出比率 %',de:'Hightech-Exporte %',ru:'Высокотехнологичный экспорт %'}, ramp:[1,'#fff7ec',5,'#fdd49e',15,'#fc8d59',30,'#66bd63',50,'#006837'], unit:'%'},
+      /* (#R124) +6 more beta choropleths (World Bank, latest value per country — auto-wired like the rest). */
+      {id:'wbbbnd', code:'IT.NET.BBND.P2', n:{en:'Fixed broadband /100',jp:'固定ブロードバンド /100人',de:'Festnetz-Breitband /100',ru:'Фикс. широкополосный /100'}, ramp:[1,'#a50026',5,'#f46d43',15,'#fee08b',30,'#a6d96a',45,'#1a9850'], unit:''},
+      {id:'wbaging', code:'SP.POP.65UP.TO.ZS', n:{en:'Population 65+ %',jp:'65歳以上人口比率 %',de:'Bevölkerung 65+ %',ru:'Население 65+ %'}, ramp:[2,'#fff7ec',7,'#fdd49e',14,'#fc8d59',21,'#d7301f',30,'#7f0000'], unit:'%'},
+      {id:'wbadofert', code:'SP.ADO.TFRT', n:{en:'Adolescent fertility /1k',jp:'思春期出生率 /1k',de:'Teenager-Geburtenrate /1k',ru:'Подростковая рождаемость /1k'}, ramp:[2,'#1a9850',15,'#a6d96a',40,'#fee08b',80,'#f46d43',130,'#a50026'], unit:''},
+      {id:'wbbeds', code:'SH.MED.BEDS.ZS', n:{en:'Hospital beds /1k',jp:'病床数 /1k人',de:'Krankenhausbetten /1k',ru:'Больничные койки /1k'}, ramp:[0.5,'#a50026',2,'#f46d43',4,'#fee08b',8,'#a6d96a',13,'#1a9850'], unit:''},
+      {id:'wbresearch', code:'SP.POP.SCIE.RD.P6', n:{en:'Researchers /million',jp:'研究者数 /100万人',de:'Forscher /Mio.',ru:'Исследователи /млн'}, ramp:[50,'#fff7ec',500,'#fdd49e',2000,'#fc8d59',5000,'#66bd63',8000,'#006837'], unit:''},
+      {id:'wboverwt', code:'SH.STA.OWAD.ZS', n:{en:'Overweight adults %',jp:'成人過体重率 %',de:'Übergewichtige Erwachsene %',ru:'Избыточный вес у взрослых %'}, ramp:[10,'#1a9850',25,'#a6d96a',40,'#fee08b',55,'#f46d43',70,'#a50026'], unit:'%'}
     ];
     /* (#R32) Hover tooltip for every beta choropleth ("ホバーして数値が出るように") — reuses the shared map
        tooltip so it matches HDI/pop. Shows the country name, the metric and its value. */
