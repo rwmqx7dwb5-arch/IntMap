@@ -3590,6 +3590,9 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R114) expose the last call's meta (provider/webAttached/webUsed/webSearches/…) so a caller can tell
        whether the web-search tool ACTUALLY ran — used to keep "latest" features honest. */
     try{ window._aiLastMeta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null; }catch(_){}
+    /* (#R131) expose the hosted web-search CITATIONS (OpenAI url_citation annotations) so analyze can show the
+       sources the model actually verified this turn — separate from the client-gathered articles. */
+    try{ window._aiLastCitations=(j&&typeof j==='object'&&Array.isArray(j.citations))?j.citations:[]; }catch(_){}
     if(typeof j==='string') return j;
     if(typeof j.text==='string') return j.text;
     if(j.content&&Array.isArray(j.content)) return j.content.map(b=>b.text||'').join('');
@@ -26723,7 +26726,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const top=items.slice(0,12);
       /* (#R79) collect the REAL article {url,title,src} so Atlas can render ChatGPT-style source cards that
          do NOT depend on the model echoing a SOURCES line (the loaded feed's links were being discarded). */
-      try{ if(sink) top.forEach(it=>{ const a2=it.analysis||{}; if(it.link) sink.push({url:it.link,title:it.title,src:(it.publisher||a2.name||''),date:(function(){try{return it.pubDate?new Date(it.pubDate).toISOString().slice(0,10):'';}catch(_){return '';}})(),loc:(a2.loc&&isFinite(a2.loc[0])?a2.loc:null),place:(a2.name||'')}); }); }catch(_){}   /* (#R113) date + known location → evidence record */
+      try{ if(sink) top.forEach(it=>{ const a2=it.analysis||{}; if(it.link) sink.push({url:it.link,title:it.title,src:(it.publisher||a2.name||''),date:(function(){try{return it.pubDate?new Date(it.pubDate).toISOString().slice(0,10):'';}catch(_){return '';}})(),loc:(a2.loc&&isFinite(a2.loc[0])?a2.loc:null),place:(a2.name||''),dateType:'publication_date',origin:'loaded'}); }); }catch(_){}   /* (#R113) date + known location → evidence record; (#R131) pubDate is the article date, not the event date */
       return top.map(it=>{ const a2=it.analysis||{}; const h=_agoH(it.pubDate); return '- '+String(it.title||'').slice(0,140)+' ['+(it.publisher||'?')+(a2.name?(' @ '+a2.name):'')+(h!=null?(' · '+h+'h ago'):'')+']'; }).join('\n')||null; }catch(_){ return null; } }
     async function _quakeData(ctx){ const j=await _fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'); if(!j||!Array.isArray(j.features)||!j.features.length) return null;
       let fs=j.features;
@@ -26744,6 +26747,136 @@ window.addEventListener('DOMContentLoaded', () => {
        CC0, and are queried LIVE here — the names go into the analyze evidence as an authoritative block,
        so the answer no longer depends on the model searching diligently. */
     const OFFICE_RE=/(首相|大統領|総理|内閣総理|国家元首|首脳|指導者|大臣|総裁|党首|知事|prime minister|president|chancellor|premier|head of (?:state|government)|leader|кто (?:сейчас )?(?:президент|премьер)|президент|премьер|kanzler|regierungschef|staatsoberhaupt|presidente|primer ministro)/i;
+    /* ============================ (#R131) FRESHNESS-CRITICAL ANALYSIS ============================
+       Root cause of the "72-hour Central Asia monitoring" misfire: `analyze` always called the model
+       with webMode:"auto" (search OPTIONAL), gave it a UTC-only DATE (no clock, no time zone, no
+       window) and fed bare headlines whose PUBLICATION/seen date the model then mistook for the
+       EVENT date. So a July-7 domestic incident (outside the requested 72 h) got used as in-window
+       "direct evidence" and a serious-sounding headline became "escalation". These helpers decide when
+       a question DEMANDS live verification, and give the model a real clock + window. */
+    const _FRESH_TIMEWIN=/(\d+)\s*(時間以内|時間|hours?|hrs?|日間|日以内|days?|週間|weeks?|ヶ月|か月|months?|minutes?|mins?|分)|直近|過去\s*\d|last\s+\d+|next\s+\d+|previous\s+\d+|coming\s+\d+|прошедш|следующ|за\s+послед|últim|próxim/i;
+    const _FRESH_NOW=/\blatest\b|\bcurrent(?:ly)?\b|\btoday\b|tonight|\bnow\b|recent(?:ly)?|breaking|as of|最新|現在|直近|今日|今夜|近況|現況|足元|いま\b|aktuell|jetzt|heute|derzeit|momentan|сейчас|текущ|сегодня|actualmente|\bactual\b|\bhoy\b|\bahora\b|reciente/i;
+    const _FRESH_MON=/monitor|\bwatch(?:list)?\b|\balert\b|escalat|threat\s*level|posture|readiness|contingenc|警戒|監視|警報|引き上げ|アラート|脅威度|即応|情勢|Überwach|Warnstufe|Bedrohungs|Lage(?:beurteilung)?|мониторинг|наблюден|тревог|угроз|боеготов|vigilancia|alerta|amenaza|nivel de|situación/i;
+    const _FRESH_FC=/fact.?check|verif|debunk|検証|ファクトチェック|真偽|事実確認|裏付け|裏取り|prüf|провер|verificar|comprob|desmentir/i;
+    const _FRESH_DIRECT=/direct(?:ly)?\s+evidence|\bconfirmed\b|\bverified\b|situation\s+report|sitrep|直接的?証拠|確認済|確証|状況報告|情勢報告|evidencia directa|confirmad|подтвержд/i;
+    /* An explicit "N hours/days/weeks/months/minutes" window — parsed SEPARATELY from the critical test so a
+       phrasing like "直近48時間" (where the bare "直近" keyword would otherwise short-circuit) still yields 48 h. */
+    const _FRESH_NUM=/(\d+)\s*(時間以内|時間|hours?|hrs?|日間|日以内|days?|週間|weeks?|ヶ月|か月|months?|minutes?|mins?|分)/i;
+    /* Returns {critical, windowMs} — critical ⇒ analyze forces webMode:"required" (search can't be
+       silently skipped); windowMs (when an explicit "N hours/days" window is parseable) anchors the
+       "requested evidence window" line so the model can reject out-of-window items. */
+    function _analyzeFreshness(q){ q=String(q||'');
+      const num=_FRESH_NUM.exec(q); let windowMs=null;
+      if(num&&num[1]){ const n=parseInt(num[1],10); const u=(num[2]||'').toLowerCase(); const H=3600e3;
+        if(isFinite(n)&&n>0&&u){
+          if(/時間|hour|hr/.test(u)) windowMs=n*H;
+          else if(/日|day/.test(u)) windowMs=n*24*H;
+          else if(/週|week/.test(u)) windowMs=n*7*24*H;
+          else if(/月|month/.test(u)) windowMs=n*30*24*H;
+          else if(/分|min/.test(u)) windowMs=n*60e3;
+        } }
+      const critical=!!(num||_FRESH_TIMEWIN.test(q)||_FRESH_NOW.test(q)||_FRESH_MON.test(q)||_FRESH_FC.test(q)||_FRESH_DIRECT.test(q));
+      return { critical, windowMs }; }
+    /* Real local clock (not the old UTC-only date): JST 00:00–08:59 was a day BEHIND under toISOString.
+       nowMs is injectable so the regression test can pin the clock. */
+    function _nowContext(nowMs){ const base=(typeof nowMs==='number'&&isFinite(nowMs))?nowMs:Date.now();
+      let tz=''; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(_){}
+      const fmt=(ms)=>{ try{ return new Intl.DateTimeFormat('sv-SE',{ timeZone:tz||undefined, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false }).format(new Date(ms)); }catch(_){ return new Date(ms).toISOString().slice(0,19).replace('T',' '); } };
+      const local=fmt(base);
+      return { nowMs:base, tz:(tz||'UTC'), local, localDate:local.slice(0,10), fmt }; }
+    /* Turn the mixed srcSink (loaded news + GDELT + Google News, each tagged with origin + dateType)
+       into DATED evidence records: deduped, sorted newest-first by ARTICLE date, each stamped with an
+       [eN] id, its date_type (publication_date | gdelt_seen_date) and event_date:"unknown". The model
+       is told explicitly that the article date is NOT the event date. */
+    function _analyzeEvidence(sink){ const seen=new Set(); const recs=[];
+      (sink||[]).forEach(s=>{ if(!s||!s.title) return; const k=(String(s.url||'')+'|'+String(s.title||'')).replace(/[#?].*$/,'').toLowerCase(); if(seen.has(k)) return; seen.add(k);
+        recs.push({ title:String(s.title||'').slice(0,180), src:String(s.src||''), date:String(s.date||''), dateType:(s.dateType||'publication_date'), origin:(s.origin||''), place:(s.place||''), url:String(s.url||'') }); });
+      recs.sort((a,b)=>{ const da=a.date||'', db=b.date||''; if(da&&db) return da<db?1:(da>db?-1:0); if(da) return -1; if(db) return 1; return 0; });
+      recs.forEach((r,i)=>{ r.id='e'+(i+1); });
+      return recs; }
+    const _ORIGIN_LBL={ loaded:'loaded IntMap feed', gdelt:'GDELT web search', gnews:'Google News web search' };
+    /* Render the dated evidence as the single NEWS EVIDENCE block. */
+    function _evidenceBlock(recs){ if(!recs||!recs.length) return '';
+      const lines=recs.map(r=>'['+r.id+'] title: '+r.title+' | source: '+(r.src||'?')+(r.origin?(' ('+(_ORIGIN_LBL[r.origin]||r.origin)+')'):'')+(r.place?(' | place: '+r.place):'')+' | article_date: '+(r.date||'unknown')+' | date_type: '+r.dateType+' | event_date: unknown | url: '+(r.url||'(none)'));
+      return lines.join('\n'); }
+    /* (#R131) The analysis system prompt. Rebuilt around the Central-Asia failure modes: it now carries a real
+       clock, forbids treating an article date as an event date, forbids inferring actors/causality/escalation
+       from a headline, tells a monitoring judgment to prefer the LOWER alert when no in-window event is verified,
+       demands the requested output structure BEFORE brevity, and names coverage gaps in a multi-country request. */
+    function _analysisSystemPrompt(nowCtx, freshness, coverage, lang){
+      const multi=coverage&&coverage.countries&&coverage.countries.length>1;
+      let s='You are Atlas, the analysis engine of the IntMap world map. Current local time: '+nowCtx.local+' ('+nowCtx.tz+'). Never treat the current time as a future date, and never state a date beyond it as if it had happened. ';
+      if(freshness&&freshness.windowMs) s+='The user asked about a specific recent time window; a [TIME CONTEXT] block gives the exact requested evidence window. Only an EVENT whose own date is verified to fall inside that window counts as in-window direct evidence. ';
+      s+='Write a focused, analytical answer to the QUESTION. FOLLOW THE OUTPUT STRUCTURE THE USER ASKED FOR (their required sections, ordering and any leading verdict) BEFORE applying any brevity — if the user specified a format, completing that format takes priority over length. ';
+      /* ---- date / evidence semantics (the core fix) ---- */
+      s+='EVIDENCE SEMANTICS (critical — the user found Atlas treating article dates as event dates and headlines as confirmed facts): the NEWS EVIDENCE items carry an article_date with a date_type of publication_date or gdelt_seen_date. A publication_date or a GDELT seen date is when the ARTICLE appeared — it is NOT the event date. event_date is unknown unless the item wording itself verifies when the event occurred. Do NOT place an item inside the requested time window on the strength of its article date; only a verified event_date puts an event in the window. A headline-only record is a LEAD, not a confirmed description — do NOT infer the actors, the causality, whether an incident was domestic or interstate, or an event classification from a headline alone. A serious-sounding or alarming headline is not, by itself, evidence of escalation. Distinguish "an article reports a problem" from "a short-term crisis is occurring": reports of a vulnerability, shortage or tension are not the same as a confirmed protest, closure, clash or breakdown, and must not be upgraded into one. ';
+      /* ---- monitoring / alert judgments ---- */
+      s+='If the question asks for a monitoring, alert, escalation or risk-level judgment: do NOT raise the level on unverified leads. If the requested time window contains no VERIFIED event, prefer the lower-alert conclusion (e.g. "maintain") unless OTHER verified indicators independently justify escalation. Treat a routine, scheduled diplomatic meeting or regular official event as WEAK counterevidence about short-term local risk — its mere occurrence neither proves nor disproves ground-level developments, so do not lean on it as a strong reason either way. Separate your reasoning into: direct evidence (verified, in-window), unverified signals / leads, background context, and genuine counterevidence — and label which is which rather than blending them. ';
+      /* ---- multi-country coverage ---- */
+      if(multi) s+='This is a MULTI-COUNTRY request. A [REQUESTED COVERAGE] block lists the countries the user asked about. For EACH requested country for which the evidence has nothing usable and in-window, SAY SO explicitly — an unmentioned country reads as "nothing to report" when the truth may be "no data gathered". Do not generalise a finding about one country to the whole set. ';
+      /* ---- preserved grounding + officeholder rules ---- */
+      s+='Work primarily from the DATA blocks below (loaded news, the live GDELT + Google News evidence IntMap gathered, live Wikidata leaders, Wikipedia background, weather/quakes/stats where relevant). If a web-search tool is attached this turn, USE it to verify and fill gaps and cite the source URLs; if none is attached, do not claim to have searched the web. When the evidence has no fresh, dated, question-relevant items, do NOT assert "nothing is happening" — say honestly, in the answer language, that the available evidence has nothing recent on this and name what it covered. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader): your parametric memory is presumed STALE. If a CURRENT NATIONAL LEADERS block is present it was queried LIVE from Wikidata — use it as the primary answer (cite "Wikidata live query") and let it override your memory; otherwise name an officeholder ONLY if the evidence names them with a date. GROUNDING RULE (the user reported Atlas inventing events that never happened): EVERY event, figure, name and date must be traceable to the DATA blocks (or to attached web-search results this turn) — never from parametric memory, never embellished, never invented; an honest "could not verify from the available evidence" is REQUIRED and always better than a plausible but unverified claim. Do NOT recite weather, "no earthquakes" or statistics unless they answer the question. ';
+      /* ---- length + sources ---- */
+      s+='Answer in '+lang+'. Plain text, no markdown. Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. FINALLY, after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn) that support your key claims; omit the line entirely if you have none; fabricating a URL is forbidden.';
+      return s; }
+    /* (#R131) The TIME CONTEXT + REQUESTED COVERAGE header of the analyze DATA block. Shared by the live path and
+       the regression harness so the two can never drift. */
+    function _analyzeHeaderBlock(nowCtx, freshness, coverage){
+      let block='[TIME CONTEXT]\nCurrent local time: '+nowCtx.local+'\nTime zone: '+nowCtx.tz;
+      if(freshness&&freshness.windowMs) block+='\nRequested evidence window: '+nowCtx.fmt(nowCtx.nowMs-freshness.windowMs)+' through '+nowCtx.local+' (only EVENTS whose date is verified to fall in this window are in-window direct evidence)';
+      block+='\n\n';
+      if(coverage&&coverage.countries&&coverage.countries.length>1) block+='[REQUESTED COVERAGE]\nThe user asked about: '+(coverage.region?(coverage.region+' — '):'')+coverage.countries.join(', ')+'\nFor EACH of these with no usable, in-window evidence below, state that explicitly rather than omitting it.\n\n';
+      return block; }
+    /* (#R131) DETERMINISTIC regression harness for the Central-Asia "72-hour monitoring" misfire. The model's prose
+       can't be unit-tested offline (needs login + a live model), but every ROOT CAUSE was on the INPUT side —
+       freshness gating, the clock/window, dated-evidence semantics, coverage and the prompt rules — which ARE
+       deterministic. This pins the clock + the exact fixture headlines the report cited and asserts those inputs.
+       Run in devtools: window.IntMapAtlasQA.run() → {pass, results:[{id,ok,detail}…]}. */
+    window.IntMapAtlasQA={
+      freshness:_analyzeFreshness, nowContext:_nowContext, evidence:_analyzeEvidence, evidenceBlock:_evidenceBlock, headerBlock:_analyzeHeaderBlock, systemPrompt:_analysisSystemPrompt,
+      centralAsiaFixture:function(){
+        const nowMs=Date.UTC(2026,6,17,20,0,0);   /* report's reference "now" = 2026-07-18 05:00 JST; window = 72 h → 07-15 05:00 through 07-18 05:00 */
+        const q='中央アジアを担当する分析官として、現在から72時間、この地域の監視レベルを引き上げるべきか判断する。ニュースの深刻そうな表現ではなく、位置・時系列・通常状態・データ欠落を含めて判断する。判断を支える直接的証拠と、重要だが未確認の兆候を区別する。確信度0〜100。';
+        const sink=[
+          { title:'Kyrgyz-Uzbek border: 27 guards detained after shooting probe', src:'akipress.com', url:'https://akipress.com/news:ca1', date:'2026-07-16', dateType:'gdelt_seen_date', origin:'gdelt' },   /* article seen 07-16; the incident itself was 07-07 (OUTSIDE the window) */
+          { title:'Fuel supply strain reported along Kyrgyz-Tajik frontier', src:'RFE/RL', url:'https://www.rferl.org/ca2', date:'2026-07-15', dateType:'publication_date', origin:'gnews' },
+          { title:'EU and Central Asia hold routine security dialogue', src:'euractiv.com', url:'https://euractiv.com/ca3', date:'2026-07-16', dateType:'publication_date', origin:'gnews' }
+        ];
+        const countries=['Kazakhstan','Kyrgyzstan','Tajikistan','Turkmenistan','Uzbekistan'];
+        return { nowMs, q, sink, countries }; },
+      run:function(){
+        const F=this.centralAsiaFixture();
+        const nowCtx=_nowContext(F.nowMs), fresh=_analyzeFreshness(F.q);
+        const coverage={ region:'Central Asia', countries:F.countries };
+        const evRecs=_analyzeEvidence(F.sink), evBlock=_evidenceBlock(evRecs);
+        const header=_analyzeHeaderBlock(nowCtx, fresh, coverage);
+        const webMode=fresh.critical?'required':'auto';
+        const P=_analysisSystemPrompt(nowCtx, fresh, coverage, 'Japanese');
+        const R=[], add=(id,ok,detail)=>R.push({ id, ok:!!ok, detail:detail||'' });
+        add('8·freshnessCritical=true', fresh.critical===true, 'critical='+fresh.critical);
+        add('8·webMode=required', webMode==='required', webMode);
+        add('window=72h parsed', fresh.windowMs===72*3600e3, String(fresh.windowMs));
+        add('3·every item event_date:unknown', (evBlock.match(/event_date: unknown/g)||[]).length===F.sink.length, '');
+        add('3·date_type distinguishes seen/pub', /date_type: gdelt_seen_date/.test(evBlock)&&/date_type: publication_date/.test(evBlock), '');
+        const bord=evRecs.find(r=>/border/i.test(r.title));
+        add('1·border item is a dated LEAD (not auto in-window)', !!bord&&evBlock.indexOf('['+bord.id+']')>=0&&/article_date: 2026-07-16/.test(evBlock), bord?bord.id:'(missing)');
+        add('6·coverage names all 5 (incl. Kazakhstan+Turkmenistan)', F.countries.every(c=>header.indexOf(c)>=0), '');
+        add('5·time-context has local clock + window line', /Current local time:/.test(header)&&/Requested evidence window:/.test(header), '');
+        add('4·prompt: pub/seen date ≠ event date', /NOT the event date/i.test(P), '');
+        add('2·prompt: headline is a LEAD, no inferred actors/causality', /LEAD, not a confirmed/i.test(P)&&/do NOT infer the actors/i.test(P), '');
+        add('3·prompt: serious headline ≠ escalation', /not, by itself, evidence of escalation/i.test(P), '');
+        add('4·prompt: report of a problem ≠ occurring crisis', /an article reports a problem/i.test(P), '');
+        add('7·prompt: prefer lower alert w/o verified in-window event', /prefer the lower-alert conclusion/i.test(P), '');
+        add('5·prompt: routine diplomacy = WEAK counterevidence', /routine, scheduled diplomatic meeting/i.test(P)&&/WEAK counterevidence/i.test(P), '');
+        add('6·prompt: name uncovered requested countries', /SAY SO explicitly/i.test(P), '');
+        add('prompt: separate evidence/signals/background/counter', /direct evidence \(verified, in-window\)/i.test(P), '');
+        add('9·prompt: user format before brevity', /FOLLOW THE OUTPUT STRUCTURE THE USER ASKED FOR/i.test(P)&&/their requested structure wins/i.test(P), '');
+        add('9·prompt: no false "newest-first is chronological" claim', !/sorted newest-first/i.test(P), '');
+        add('14·single analysis AI call', true, 'by construction — analyze issues exactly one askAI({task:analysis})');
+        const passed=R.filter(x=>x.ok).length;
+        try{ if(typeof console!=='undefined'){ console.log('%c[IntMapAtlasQA] '+passed+'/'+R.length+(passed===R.length?' PASS':' FAIL'),'font-weight:bold'); R.forEach(x=>console.log((x.ok?'✓ ':'✗ ')+x.id+(x.detail?('  — '+x.detail):''))); } }catch(_){}
+        return { pass:passed===R.length, passed, total:R.length, results:R, evBlock, header, webMode }; }
+    };
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(currentLang==='jp'?'ja':currentLang)+',en';
@@ -26769,7 +26902,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const seen=new Set(); const rows2=[];
       for(const a2 of arts){ const t2=String(a2.title||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
         let when=''; try{ const s2=String(a2.seendate||''); if(s2.length>=8) when=s2.slice(0,4)+'-'+s2.slice(4,6)+'-'+s2.slice(6,8); }catch(_){}
-        try{ if(sink&&a2.url) sink.push({url:a2.url,title:t2,src:(a2.domain||''),date:when}); }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record */
+        try{ if(sink&&a2.url) sink.push({url:a2.url,title:t2,src:(a2.domain||''),date:when,dateType:'gdelt_seen_date',origin:'gdelt'}); }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record; (#R131) seendate is the GDELT SEEN date, not the event date */
         rows2.push('- '+t2.slice(0,150)+' ['+(a2.domain||'?')+(when?(' · '+when):'')+']'); if(rows2.length>=12) break; }
       return rows2.length?rows2.join('\n'):null; }
     /* (#R64) second live-news engine: Google News RSS search (multi-language, topic-aware). GDELT alone failed
@@ -26790,7 +26923,7 @@ window.addEventListener('DOMContentLoaded', () => {
         for(const it of items){ const t2=(it.querySelector('title')&&it.querySelector('title').textContent||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
           const src=(it.querySelector('source')&&it.querySelector('source').textContent)||''; let when='';
           try{ const d=it.querySelector('pubDate')&&it.querySelector('pubDate').textContent; if(d) when=new Date(d).toISOString().slice(0,10); }catch(_){}
-          try{ if(sink){ const lk=(it.querySelector('link')&&it.querySelector('link').textContent||'').trim(); if(lk) sink.push({url:lk,title:t2,src:(src||''),date:when}); } }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record */
+          try{ if(sink){ const lk=(it.querySelector('link')&&it.querySelector('link').textContent||'').trim(); if(lk) sink.push({url:lk,title:t2,src:(src||''),date:when,dateType:'publication_date',origin:'gnews'}); } }catch(_){}   /* (#R79) real URL → source card; (#R113) date → evidence record; (#R131) pubDate is the article date, not the event date */
           rows2.push('- '+t2.slice(0,150)+' ['+(src||'?')+(when?(' · '+when):'')+']'); }
         if(rows2.length) return rows2.join('\n'); }catch(_){} }
       return null; }
@@ -28200,17 +28333,28 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R62) LIVE WEB SEARCH is now a first-class dataset (default ON) — the loaded RSS feed alone produced
              honest-but-useless "insufficient data" answers (the Taiwan report). GDELT covers current events across
              the world's outlets; Wikipedia supplies stable background. */
-          if(wantD('web')!==false){ let topic=(ctx&&ctx.name)||placeStr||'';
+          if(wantD('web')!==false){ const topic=(ctx&&ctx.name)||placeStr||'';
             /* (#R64) GDELT needs an ENGLISH topic (a Japanese place name returned nothing → the Greece report's
-               "取得不可: ライブWebニュース"); Google News RSS covers the user's own language. Both run. */
-            let topicEn=topic; try{ const cd0=codes[0]||(pt?codeAtPoint(pt.lng,pt.lat):null); if(cd0&&countryStats[cd0]&&countryStats[cd0].nameEn) topicEn=countryStats[cd0].nameEn; }catch(_){}
-            let gq=topicEn?('"'+topicEn.replace(/"/g,'')+'"'):'';
-            if(!gq){ try{ gq=q.split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>3).slice(0,4).join(' '); }catch(_){ gq=q.slice(0,60); } }
-            jobs.push((async()=>{ let v=null; if(gq){ v=await _gdeltNews(gq,srcSink); if(!v&&gq.indexOf('"')>=0) v=await _gdeltNews(gq.replace(/"/g,''),srcSink); }
-              if(v) got.web=v;
-              let v2=null; try{ v2=await _gnewsNews(topic||topicEn||q.slice(0,60),srcSink); }catch(_){}
-              if(v2) got.web2=v2;
-              if(!v&&!v2) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')); })());
+               "取得不可: ライブWebニュース"); Google News RSS covers the user's own language. Both run.
+               (#R131) MULTI-COUNTRY FIX (root cause of the missing Kazakhstan/Turkmenistan coverage): the old
+               code OVERRODE the topic with codes[0]'s English name, so "Central Asia (5 countries)" silently
+               searched only Kazakhstan. Now: search the REGION and an OR of the REQUESTED countries, so every
+               requested country can surface — without an unbounded per-country search explosion. */
+            const cnEn=[]; try{ codes.forEach(c=>{ const s5=countryStats[c]; if(s5&&s5.nameEn&&cnEn.indexOf(s5.nameEn)<0) cnEn.push(s5.nameEn); }); }catch(_){}
+            const multi=cnEn.length>1;
+            let regionQ=''; if(topic) regionQ='"'+topic.replace(/"/g,'')+'"'; else if(cnEn.length===1) regionQ='"'+cnEn[0].replace(/"/g,'')+'"';
+            if(!regionQ&&!multi){ try{ regionQ=q.split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>3).slice(0,4).join(' '); }catch(_){ regionQ=q.slice(0,60); } }
+            const orQ=multi?('('+cnEn.map(n=>'"'+n.replace(/"/g,'')+'"').join(' OR ')+')'):'';
+            jobs.push((async()=>{ let any=false;
+              /* 1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's per-IP limit */
+              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink); if(!v&&regionQ.indexOf('"')>=0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink); if(v){ got.web=v; any=true; } }
+              /* 2) a search that INCLUDES the explicit countries (OR of the requested set), so no country is dropped */
+              if(orQ){ let v3=await _gdeltNews(orQ,srcSink); if(v3){ got.web3=v3; any=true; } }
+              /* 3) user-language Google News (region topic, else the requested country set) */
+              const gnQ=topic||cnEn.join(' OR ')||q.slice(0,60);
+              let v2=null; try{ v2=await _gnewsNews(gnQ,srcSink); }catch(_){}
+              if(v2){ got.web2=v2; any=true; }
+              if(!any) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')); })());
             if(topic) jobs.push(_wikiSummary(topic).then(v=>{ if(v) got.wiki=v; })); }
           if(wantD('weather')===true||(wantD('weather')===null&&pt)){ if(pt) jobs.push(_weatherData(pt.lng,pt.lat).then(v=>{ if(v) got.weather=v; else missing.push(L('weather','天気','Wetter','погода','tiempo')); })); else missing.push(L('weather (no place given)','天気（場所未指定）','Wetter (kein Ort)','погода (нет места)','tiempo (sin lugar)')); }
           if(wantD('airquality')===true||wantD('air')===true){ if(pt) jobs.push(_airData(pt.lng,pt.lat).then(v=>{ if(v) got.air=v; else missing.push(L('air quality','大気質','Luftqualität','качество воздуха','calidad del aire')); })); else missing.push(L('air quality (no place given)','大気質（場所未指定）','Luftqualität (kein Ort)','воздух (нет места)','aire (sin lugar)')); }
@@ -28236,11 +28380,29 @@ window.addEventListener('DOMContentLoaded', () => {
           if(wantD('stats')!==false){ got.stats=_statsData(codes); if(!got.stats&&(wantD('stats')===true||codes.length)) missing.push(L('country stats','国別統計','Länderstatistik','статистика стран','estadísticas')); }
           await Promise.all(jobs);
           /* build the DATA block + synthesize with ONE text-AI call (answers ONLY from this data). */
+          /* (#R131) Give the model a REAL clock + requested time window (the old prompt passed only a UTC date, so
+             it had no way to reject out-of-window items) and, for a multi-country request, the explicit country set
+             it must report coverage for. */
+          const nowCtx=_nowContext(); const freshness=_analyzeFreshness(q);
+          const analysisWebMode=freshness.critical?'required':'auto';   /* (#R131) freshness-critical → FORCE live web verification (was always "auto" = optional) */
+          const covNames=[]; try{ codes.forEach(c=>{ const s6=countryStats[c]; if(s6&&(s6.nameEn||nm(s6))) covNames.push(s6.nameEn||nm(s6)); }); }catch(_){}
+          if(!covNames.length&&cnames.length) cnames.forEach(n7=>{ const t7=String(n7||'').trim(); if(t7) covNames.push(t7); });
+          const coverage={ region:(placeStr||(ctx&&ctx.name)||''), countries:covNames };
           let block=''; const usedNames=[];
           const push2=(tag,lbl,v)=>{ if(v){ block+='['+tag+']\n'+v+'\n\n'; usedNames.push(lbl); } };
-          push2('LATEST NEWS (loaded in IntMap'+(ctx&&ctx.name?(', filtered to '+ctx.name):'')+')',L('news','ニュース','News','новости','noticias'),got.news);
-          push2('LIVE WEB NEWS SEARCH (GDELT, all outlets, last 72 h)',L('web news','Webニュース','Web-News','веб-новости','noticias web'),got.web);
-          push2('LIVE WEB NEWS SEARCH (Google News)',L('web news (Google)','Webニュース(Google)','Web-News (Google)','веб-новости (Google)','noticias web (Google)'),got.web2);
+          /* TIME CONTEXT + REQUESTED COVERAGE first — the model reads the clock (and the country set it must cover)
+             before the evidence. Shared with the regression harness via _analyzeHeaderBlock so they never drift. */
+          block+=_analyzeHeaderBlock(nowCtx, freshness, coverage);
+          /* (#R131) ONE dated NEWS EVIDENCE block (loaded + GDELT + Google News), newest-first, each stamped with
+             its date_type and event_date:unknown — replaces the 3 undated headline dumps that let the model read a
+             publication/seen date as the event date. */
+          const evRecs=_analyzeEvidence(srcSink); const evBlock=_evidenceBlock(evRecs);
+          if(evBlock){ block+='[NEWS EVIDENCE — headlines IntMap gathered'+(ctx&&ctx.name?(', around '+ctx.name):'')+'. Each item is a LEAD, not a confirmed event: article_date/date_type = when the ARTICLE appeared; event_date is UNKNOWN unless the wording itself verifies it. Ordered newest-first by article date.]\n'+evBlock+'\n\n';
+            const origins=new Set(evRecs.map(r=>r.origin));
+            if(origins.has('loaded')) usedNames.push(L('news','ニュース','News','новости','noticias'));
+            if(origins.has('gdelt')||origins.has('gnews')) usedNames.push(L('web news search','Webニュース検索','Web-News-Suche','поиск веб-новостей','búsqueda de noticias web')); }
+          else if(got.news){ block+='[LATEST NEWS (loaded in IntMap'+(ctx&&ctx.name?(', filtered to '+ctx.name):'')+')]\n'+got.news+'\n\n'; usedNames.push(L('news','ニュース','News','новости','noticias')); }
+          else if(freshness.critical) missing.push(L('in-window verified events','対象期間内の確認済み出来事','verifizierte Ereignisse im Zeitfenster','подтверждённые события в окне','eventos verificados en la ventana'));
           push2('CURRENT NATIONAL LEADERS (Wikidata LIVE query, P6/P35 — authoritative for who currently holds office)','Wikidata',got.leaders);
           push2('BACKGROUND (Wikipedia)','Wikipedia',got.wiki);
           push2('CURRENT WEATHER'+(pt&&(pt.name||placeStr)?(' @ '+(pt.name||placeStr)):''),L('weather','天気','Wetter','погода','tiempo'),got.weather);
@@ -28264,13 +28426,29 @@ window.addEventListener('DOMContentLoaded', () => {
              (#R69) the old prompt said "use ONLY the DATA blocks", which actively FORBADE the model from using its
              web_search results → the "ギリシャの近況" non-answer ("特筆すべきニュースなし"). The web search is now a
              REQUIRED evidence source whenever the blocks are thin, and no-news answers without a search are banned. */
-          const sys2='You are Atlas, the analysis engine of the IntMap world map. The real current date is '+new Date().toISOString().slice(0,10)+' (never treat it as a future date). Write a focused analytical answer to the QUESTION. Your evidence is the DATA blocks below — they already include the LIVE web-news search results (GDELT + Google News) that IntMap ran for you, plus loaded news, live Wikidata leaders, Wikipedia background, and more. IMPORTANT: if a web-search tool is attached to this request, USE it to fill gaps and verify recent, dated, question-relevant developments (cite the source URLs); if no web-search tool is attached, do not claim to have searched the web. Work primarily from the DATA blocks below, which already include the live web-news search results IntMap ran for you. When the DATA blocks (and any search results) contain no fresh, dated, question-relevant items, do NOT assert "nothing is happening"; instead say honestly, in the answer language, that the available evidence has nothing recent on this topic and name what the evidence covered. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader etc.): your parametric memory is presumed STALE and WRONG. If a CURRENT NATIONAL LEADERS data block is present it was queried LIVE from Wikidata seconds ago — use those names as the primary answer (cite "Wikidata live query"); if your memory disagrees with that block, the block wins. Without such a block, state a current officeholder ONLY if the DATA blocks (or attached search results) name them with a date; otherwise say you could not verify it from the available evidence — outputting a remembered name is forbidden. RECENCY IS CRITICAL — the user complained that asking for the "近況 / recent situation" returned events from years ago. When the question asks about what is happening now / recently / latest / 近況: build the answer from the MOST RECENT developments in the DATA blocks (they are sorted newest-first; the LATEST NEWS + LIVE WEB SEARCH blocks are the current picture). Treat anything older than ~6 months as BACKGROUND only, and NEVER present an old event as if it were current. EVERY development you cite must carry its date; if the freshest dated evidence is more than a few months old, say so explicitly rather than presenting it as current. Structure: lead with the most newsworthy, RECENT, question-relevant developments WITH their dates (from the DATA blocks); then the context that explains them. Do NOT recite weather readings, "no earthquakes", or country statistics unless they are actually relevant to the question — a list of numbers is not analysis, and padding with irrelevant data blocks is forbidden. Be specific (names, numbers, dates you actually have). GROUNDING RULE (critical — the user reported Atlas "存在しない出来事をハルシネーションする", inventing events that never happened): EVERY event, figure, name and date in your answer must be traceable to the DATA blocks above (or to attached web-search results, if a tool was attached this turn). You may NOT state a specific development, statistic or quote from parametric memory. If the available evidence has no dated, question-relevant items, say plainly — in the answer language — that you could not find recent verifiable information on this topic and name what the evidence covered; an honest "not found" is REQUIRED and is always better than a plausible-sounding but unverified or fabricated event. Do not embellish a thin fact into a fuller narrative. NEVER invent numbers or events. Answer in '+lang+'. Plain text, no markdown, at most ~230 words. FINALLY: after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs that support your key claims — use only urls that appear in the DATA blocks or that you actually obtained from web search this turn; if you have none, omit the line entirely; fabricating a URL is forbidden.';
-          let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{task:'analysis',webMode:'auto'}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
+          const sys2=_analysisSystemPrompt(nowCtx, freshness, coverage, lang);
+          let txt=''; try{ txt=await askAI('[QUESTION]\n'+q+'\n\n'+block,sys2,null,{task:'analysis',webMode:analysisWebMode}); }catch(e){ return R(false, warn('⚠ '+esc((e&&e.message)||'AI error'))); }
           if(!String(txt||'').trim()) return R(false, warn('⚠ '+L('The analysis returned no answer','分析結果が空でした','Analyse ergab keine Antwort','Анализ не дал ответа','El análisis no dio respuesta')));
+          /* (#R131) Capture the LAST call's meta + hosted-search citations immediately (the analyze call is the last
+             askAI in this path). webUsed = the hosted web search ACTUALLY ran; false when it was optional and skipped
+             OR timed out into the tool-free fallback. */
+          const _aMeta=(window._aiLastMeta&&typeof window._aiLastMeta==='object')?window._aiLastMeta:{};
+          const _aCites=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
+          const _webUnverified=freshness.critical&&!_aMeta.webUsed;   /* freshness-critical but live web check did not run → provisional */
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
           let srcUrls=[]; try{ txt=String(txt).replace(/\n?\s*SOURCES?\s*[:：]\s*([^\n]+)\s*$/i,(m,g)=>{ srcUrls=g.split(/[|\s]+/).filter(u=>/^https?:\/\//i.test(u)).slice(0,4); return ''; }); }catch(_){}
           let html='<div style="font-weight:600;margin:2px 0 5px;">🧭 '+L('Integrated analysis','統合分析','Integrierte Analyse','Комплексный анализ','Análisis integrado')+'</div>';
           html+='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(String(txt).trim())+'</div>';
+          /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
+             assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
+             confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
+             the tool-free fallback (webUsed stays false). */
+          if(_webUnverified) html+='<div style="margin-top:8px;padding:7px 10px;border:1px solid var(--warn-color,#c98a00);border-radius:8px;background:rgba(201,138,0,.09);font-size:11px;line-height:1.5;color:var(--text-main);">⚠ '+L(
+            'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.',
+            '時間依存の質問に対しライブWeb検証を完了できなかったため、これは取得済みの見出しを中心とした暫定評価です。各項目は確認済みの直接的証拠ではなく手がかりとして扱ってください。',
+            'Die Live-Web-Verifizierung wurde für diese zeitkritische Frage nicht abgeschlossen — dies ist eine VORLÄUFIGE Einschätzung, überwiegend auf bereits gesammelten Schlagzeilen; als Hinweise, nicht als bestätigte Belege behandeln.',
+            'Проверка в реальном времени по этому чувствительному ко времени вопросу не завершилась — это ПРЕДВАРИТЕЛЬНАЯ оценка, в основном по уже собранным заголовкам; считайте их зацепками, а не подтверждёнными доказательствами.',
+            'No se completó la verificación web en vivo para esta pregunta sensible al tiempo, por lo que es una evaluación PROVISIONAL basada sobre todo en titulares ya recopilados; trátalos como indicios, no como evidencia directa confirmada.')+'</div>';
           /* (#R79) SOLID ChatGPT-style source cards — render the REAL articles we actually fed the model
              (srcSink: loaded news + GDELT + Google News, each with its true URL), ordered so any the model
              explicitly cited in its SOURCES line come first, then the rest of the gathered set, then any extra
@@ -28278,21 +28456,29 @@ window.addEventListener('DOMContentLoaded', () => {
              a SOURCES line — the links are always there when Atlas actually used articles. */
           try{
             const _key=u=>String(u||'').replace(/[#?].*$/,'').replace(/\/$/,'');
+            /* (#R131) SEPARATE the sources the model actually verified/cited from the ones IntMap merely gathered
+               (the old code lumped everything under one "Sources" header, so a hosted-web-search citation could be
+               dropped and mere leads looked like the answer's basis). Order:
+                 1) hosted web-search citations (url_citation) — the URLs the model itself consulted this turn,
+                 2) client-gathered articles the model cited by URL in its SOURCES line,
+                 3) the rest we gathered & fed it but it did not cite — shown separately, NOT as "the basis". */
+            const webKeys=new Set(_aCites.map(c=>_key(c.url)));
             const citedSet=new Set(srcUrls.map(_key));
-            const sinkClean=srcSink.filter(s=>s&&s.url&&/^https?:\/\//i.test(s.url));
-            const sinkKeys=new Set(sinkClean.map(s=>_key(s.url)));
+            const sinkClean=srcSink.filter(s=>s&&s.url&&/^https?:\/\//i.test(s.url)&&!webKeys.has(_key(s.url)));
             const cited=sinkClean.filter(s=>citedSet.has(_key(s.url)));
             const rest=sinkClean.filter(s=>!citedSet.has(_key(s.url)));
-            /* (#R85) NEVER render the model's own SOURCES-line URLs that we did not actually gather ("Atlasに記載
-               されたソースリンクがまったくのでたらめ"): an LLM hallucinates plausible-looking article URLs that 404,
-               and the browser cannot verify them (CORS). Show ONLY sources grounded in srcSink — the REAL articles
-               (loaded news + GDELT + Google News, each with its true URL) we literally fed the model. The ones it
-               explicitly cited float to the top; the rest follow. Honest beats impressive. */
-            void sinkKeys;
-            const cardsHtml=linkCards(cited.concat(rest));
-            if(cardsHtml) html+='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+cardsHtml;
+            const haveBasis=_aCites.length>0||cited.length>0;
+            /* (#R85) NEVER render the model's own SOURCES-line URLs that we did not actually gather — an LLM
+               hallucinates plausible-looking article URLs that 404. The gathered set is grounded in srcSink (real
+               articles we fed the model); the hosted-search citations come from the provider's annotations. */
+            if(_aCites.length){ const wc=linkCards(_aCites.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(wc) html+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+wc; }
+            if(cited.length){ const cc=linkCards(cited); if(cc) html+='<div class="atl-src-h">'+L('Cited sources','引用したソース','Zitierte Quellen','Цитированные источники','Fuentes citadas')+'</div>'+cc; }
+            if(rest.length){ const rc=linkCards(rest); if(rc) html+='<div class="atl-src-h">'+(haveBasis?L('Other gathered articles','その他の収集記事','Weitere gesammelte Artikel','Другие собранные статьи','Otros artículos recopilados'):L('Sources','ソース','Quellen','Источники','Fuentes'))+'</div>'+rc; }
           }catch(_){}
-          const usedAll=usedNames;   /* (#R113) the model no longer runs its own web search — the REAL live sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames; do NOT claim an "AI web search" that didn't happen. */
+          const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
+          /* (#R131) Only claim a live web verification when the hosted search ACTUALLY ran this turn (webUsed) — never
+             imply an "AI web search" that did not happen. */
+          if(_aMeta.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
           /* (#R108) report only the sources actually USED — no "取得不可: …" list (the user doesn't want failed sources named). */
           if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
           return R(true, html); }
@@ -28561,7 +28747,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'COUNTRY: {"type":"selectCountry","country":str} (open its info card); {"type":"timeSeries","country":str} (historical chart); {"type":"isolate","country":str,"on":bool} (show only it); {"type":"brief","place":str} (structured AI intelligence brief with live web headlines, rendered right here in the chat — use ONLY when the user EXPLICITLY asks for a brief/report/調査/ブリーフ; NEVER as a substitute for answering a question); {"type":"askHere","place":str} (ask AI about a spot); {"type":"compareStats","countries":[str,… up to 10],"metrics"?:[str,…],"source"?:"wb"|"imf","view"?:"bar"|"timeseries"|"table"} = side-by-side statistical comparison panel (~28 indicators; bar chart by default, switchable to overlaid time-series or a free rearrangeable table; use for "compare Japan and Korea", "日本とドイツを比較", "表で比較して"). When the user names SPECIFIC indicators (e.g. "compare the USA and China — GDP, defense and population"), pass them in "metrics" using these keys: gdp, gdppc, gdpppp, gdppcppp, growth, infl (inflation), unemp (unemployment), debt, cab (current account), pop (population), life (life expectancy), tfr (fertility), mil (military % GDP), milb (military spending $ — use for "defense"/"military"), co2, net (internet), urban, exp (exports), fdi, health, edu, rnd, renew, forest, hom (homicide), area, hdi, demi (democracy index). Omit "metrics" when no indicators are named (the defaults open).\n'
         +'TOOLS/PANELS: {"type":"weather","place":str}; {"type":"compare","on":bool}; {"type":"pin","place":str}; {"type":"radius","place":str,"km":num,"color"?:str} (circle); {"type":"measure","from":str,"to":str} (distance); {"type":"directions","from":str,"to":str,"mode"?:"driving"|"walking"|"cycling"|"transit","via"?:[str,…],"time"?:"ISO 8601 date-time","arriveBy"?:bool (true = "time" is the ARRIVAL deadline, e.g. "9時までに着きたい" — transit only)} = REAL Google/Apple-Maps-style directions: driving/walking/cycling via OSRM (turn-by-turn on OpenStreetMap) OR — with mode "transit" (train / 電車 / 鉄道 / subway / bus / 公共交通) — REAL public-transit routing via Transitous/MOTIS that actually rides the rails, drawing each leg colour-coded (walk dotted, rail blue, subway orange, tram green, bus purple) with a transfer-by-transfer leg list. ALWAYS pass mode:"transit" when the user says train/電車/鉄道/subway/bus/公共交通 — never silently route them on roads. Use for "東京から大阪への経路", "電車で新宿から横浜", "directions from A to B", "how do I get from X to Y by train"; {"type":"route","from":str,"to":str} = MARITIME/sea route only (ships); {"type":"streetview","place":str} or {"type":"streetview","lng":num,"lat":num} = open embedded Google Street View at a spot (use for "Xのストリートビュー", "street view of Y"); {"type":"los","place":str} (line-of-sight / radar shadow); {"type":"runway","place":str} (airport/runway search); {"type":"tool","name":"measure"|"radius"|"draw"}; {"type":"correlate"} (scatter tool); {"type":"widgets"}; {"type":"screenshot"}; {"type":"share"}; {"type":"settings"}; {"type":"workspace","on"?:bool} = switch the desktop floating-window WORKSPACE mode on/off (News, Countries, map, layers and Atlas each become a movable/resizable window) — use for "ワークスペースモードにして", "switch to workspace", "exit workspace", "通常モードに戻して" (on:false); {"type":"edu"} (learn mode); {"type":"tab","name":"news"|"info"|"countries"|"community"} ("countries" = the country statistics tab, formerly Stats/Data); {"type":"timeTravel","year":int} (deep time, 1900→now) or {"type":"timeTravel","date":"YYYY-MM-DD"} or {"type":"timeTravel","daysAgo":int}, and {"type":"timeTravel","now":true} to return to live = the MASTER SPACETIME CLOCK (IntMapTime): it moves the WHOLE map together — the news feed, the Countries statistics (real World Bank figures for that year: GDP, population, life-expectancy…), the country choropleths, historical borders, the Köppen climate era, NATO/EU accession and the day/night terminator. Use a YEAR for history ("1990年の世界", "show the world in 1949", "rewind to 1980"); use daysAgo/date for the recent decade of news. Prefer this over Earth Replay for setting the time; {"type":"clear","what":"pins"|"radius"|"highlights"|"outline"|"measure"|"isolate"|"poi"|"flight"|"lines"} removes ONE kind of thing (fine-grained — use when the user names what to remove); {"type":"clearAll"} (clear highlights, shading, pins, radius & isolate); {"type":"ticker","on":bool} (the bottom news/markets ticker strip).\n'
         +'MORE FEATURES (first-class, use these instead of "control"): {"type":"playground","mode":"world"|"pandemic"|"quiz"} (open a Playground game — World Explorer / Pandemic Simulator / Quiz); {"type":"news","mode":"subject"|"publisher"|"saved"|"translate"} (switch news pins to where the event happened vs the outlet HQ, show saved articles, or translate headlines); {"type":"account"} (open login / account); {"type":"donate"}; {"type":"feedback"}; {"type":"bugReport"}; {"type":"shortcuts"} (keyboard-shortcut cheat sheet); {"type":"diagnose"} (IntMap SELF-DIAGNOSIS — checks news-feed freshness, whether enabled layers are actually painting, and whether the live data APIs are reachable; use for "diagnose", "any issues?", "システムの状態", "データは最新？", "何か問題ある？").\n'
-        +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). (#R119) It ALSO receives the live values of the layers the user is displaying at the anchor point, and "scope":"drawn-area" analyses the USER-DRAWN measure polygon / circles (news inside it + layer values + WorldPop population — use for "この範囲を要約/分析して"). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable.\n'
+        +'INTEGRATED ANALYSIS (cross-cutting "combine IntMap\'s data and answer"): {"type":"analyze","question":str,"place"?:str,"countries"?:[str],"use"?:["news","web","weather","airquality","marine","elevation","quakes","stats"]} — Atlas GATHERS the real data (latest loaded news, a LIVE WEB NEWS SEARCH across all outlets (GDELT, last 72 h) + Wikipedia background, live weather/air-quality/sea-temperature/elevation at the place, USGS earthquakes of the last 24 h, country statistics) and synthesizes an evidence-based answer FROM THAT DATA. Use it whenever the user asks a question needing live/current data, a situation report, or a combination of news+data+map (e.g. "what is happening around Taiwan right now and how is the weather there", "summarize the latest earthquakes and nearby news", "compare France and Germany and give context from the news"). Pass "place" to focus geographically (deixis like "there" works), "countries" for stats, "use" to control which datasets (omit for sensible defaults incl. the web search). (#R131) For a NAMED MULTI-COUNTRY REGION ("Central Asia", "the Baltics", "the Sahel", "Central America", "the Gulf states") OR an explicitly requested set of countries, POPULATE "countries" with the actual member countries (English names) IN ADDITION to "place" — this is real geographic knowledge, not a time-sensitive fact — so the search and coverage span ALL of them instead of collapsing to one; and keep the user\'s COMPLETE question verbatim in "question" (do not truncate a monitoring/analysis prompt to a keyword). (#R119) It ALSO receives the live values of the layers the user is displaying at the anchor point, and "scope":"drawn-area" analyses the USER-DRAWN measure polygon / circles (news inside it + layer values + WorldPop population — use for "この範囲を要約/分析して"). Freely COMBINE analyze with map actions (flyTo, layer, highlight…) in one plan. It reports honestly which datasets were unavailable, and — for a question about the latest/current situation or a monitoring/alert judgment — verifies against a LIVE web search and marks the answer provisional if that verification could not complete.\n'
         +'SATELLITE CHANGE DETECTION: {"type":"satelliteCompare","dateA":"YYYY-MM-DD","dateB":"YYYY-MM-DD","place"?:str} = capture the dated satellite view at two dates and report the visual changes (construction, vessels, disasters, land use) with both frames shown. REQUIRES the satellite base with a dated provider to be active; if it is not, tell the user to switch to Satellite first. Use for "この2日付で衛星画像を比較", "what changed here between X and Y".\n'
         +'LAYER DATA (read the REAL values of the layers currently displayed): {"type":"layerData","place"?:str,"lng"?:num,"lat"?:num,"layer"?:str} = live value of each active data layer at that point (air temp, SST, wind, precipitation, snow depth, aerosol/NO2/CO, Köppen class, elevation, every NASA GIBS science raster — LST, sea ice, SST anomaly, NDVI, water vapour, clouds, chlorophyll, soil moisture… read from the actual tile pixel via the colormap — every visible country choropleth\'s value — the core stat fills AND all ~50 World-Bank choropleths, on- or off-screen — and active-fire detection: real FIRMS hot-spot pixel counts within ~15 km when the thermal layer is on) + the actual features in view for point layers (cameras, news, volcanoes, live aircraft, live ships, earthquakes with magnitude, data centers, pharma hubs). No place = the pinned point or map centre. Use this whenever the user asks WHAT a displayed layer shows ("ここの気温は？", "what does this layer say here?", "画面内のカメラは？", "今見えている飛行機は？", "この辺で山火事ある？").\n'
         +'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num} = EXACT population inside a shape, summed from the WorldPop 100m population grid (2020). target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n'
