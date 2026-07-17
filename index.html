@@ -31465,8 +31465,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function apply(fc){ try{ fc=tagSame(fc); }catch(_){}
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
-         borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker. */
-      try{ const s=map.getSource('imtb-src'); if(s){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
+         borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker.
+         (#R126) …but ONLY when the imtb LAYERS also still exist: a mid-swap exception can leave the source added
+         with the layers missing, and this early return then bypassed ensure() forever — the "年代を変えても歴史的
+         国境が表示されない" report (data was being set on a source no layer drew). Layers gone → fall through to
+         ensure(), which idempotently recreates them. */
+      try{ const s=map.getSource('imtb-src'); if(s&&map.getLayer('imtb-line')){ s.setData(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
       if(ensure()){ try{ map.getSource('imtb-src').setData(fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
       else map.once('idle',()=>{ if(active) apply(fc); }); }
     function clear(){ const was=active; active=false; shownY=null; shownCorr=false;
@@ -31489,7 +31493,11 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
       const corr=(year>=1951);
       if(shownY===ny&&shownCorr===corr){ try{ if(ensure()) window._applyBorders(); }catch(_){} return; }
-      const fc=await fetchFC(ny); if(my!==seq||!active) return; if(fc){ shownY=ny; shownCorr=corr; apply(_eraCorrect(fc,year)); } }
+      const fc=await fetchFC(ny); if(my!==seq||!active) return;
+      if(fc){ shownY=ny; shownCorr=corr; apply(_eraCorrect(fc,year)); }
+      /* (#R126) fetch failed (network hiccup on the first, uncached travel) → the map stayed border-less with no
+         retry until the user moved the year again. Retry this same request once conditions allow. */
+      else setTimeout(()=>{ try{ if(active&&my===seq) go(year); }catch(_){} },4000); }
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
