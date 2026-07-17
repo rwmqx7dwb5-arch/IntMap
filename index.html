@@ -19669,16 +19669,27 @@ window.addEventListener('DOMContentLoaded', () => {
          country when there is no era entity with comparable data there. */
       try{ const TB=window.IntMapTimeBorders;
         if(TB&&TB.active&&TB.active()&&typeof map!=='undefined'&&map){
-          const pt=map.project([lngLat.lng,lngLat.lat]);
-          let hit=null; try{ hit=map.queryRenderedFeatures(pt,{layers:['imtb-fill']}); }catch(_){}
-          const nm=hit&&hit.length&&hit[0].properties&&(hit[0].properties.NAME||hit[0].properties.name);
-          if(nm&&TB.resolveHist){ const R=TB.resolveHist(nm,lngLat); if(R&&R.code&&countryStats[R.code]) return R.code; }
+          /* (#R123) resolve the era entity at the click from the ERA polygon FeatureCollection via point-in-polygon
+             FIRST — queryRenderedFeatures on imtb-fill only sees what is CURRENTLY painted, so if the era layer
+             hadn't finished rendering the pick fell through to the modern countryGeo below ("国境線と国家は昔なのに、
+             クリック判定は現在の国境になっている"). The FC is authoritative regardless of render timing. */
+          let nm=null;
+          try{ const fc=TB.currentFC&&TB.currentFC(); if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([lngLat.lng,lngLat.lat]);
+            for(const f of fc.features){ try{ if(f.geometry&&turf.booleanPointInPolygon(tp,f)){ nm=f.properties&&(f.properties.NAME||f.properties.name); break; } }catch(_){} } } }catch(_){}
+          if(!nm){ try{ const pt=map.project([lngLat.lng,lngLat.lat]); const hit=map.queryRenderedFeatures(pt,{layers:['imtb-fill']}); nm=hit&&hit.length&&hit[0].properties&&(hit[0].properties.NAME||hit[0].properties.name); }catch(_){} }
+          if(nm&&TB.resolveHist){ const R=TB.resolveHist(nm,lngLat);
+            if(R&&R.code&&countryStats[R.code]) return {code:R.code};
+            /* the click landed on a REAL era entity that has no comparable time-series data — do NOT silently snap
+               to the modern country that sits there today. Report it honestly instead. */
+            if(R&&R.name) return {code:'', eraNoData:true, eraName:R.name}; }
         } }catch(_){}
-      try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return resolveCountryId(f); }catch(_){} } } }catch(_){} return ''; }
+      try{ const cg=window.countryGeo; if(cg&&cg.features&&typeof turf!=='undefined'){ const pt=turf.point([lngLat.lng,lngLat.lat]); for(const f of cg.features){ try{ if(turf.booleanPointInPolygon(pt,f)) return {code:resolveCountryId(f)}; }catch(_){} } } }catch(_){} return {code:''}; }
     function _pickClick(e){ if(!_picking) return;
       if(!host||!document.body.contains(host)){ _setPick(false); return; }   /* panel gone → stop picking */
       if(codes.length>=10){ _setPick(false); try{ imToast(LL('Maximum 10 countries','最大10か国です','Maximal 10 Länder','Максимум 10 стран','Máximo 10 países')); }catch(_){} return; }
-      const cd=_pickResolve(e.lngLat);
+      const res=_pickResolve(e.lngLat)||{};
+      if(res.eraNoData){ try{ imToast(LL('No comparable data for '+res.eraName+' in this era','「'+res.eraName+'」はこの年代の比較データがありません','Keine Vergleichsdaten für '+res.eraName+' in dieser Epoche','Нет данных для «'+res.eraName+'» в эту эпоху','Sin datos comparables para '+res.eraName+' en esta época')); }catch(_){} return; }
+      const cd=res.code;
       if(!cd){ try{ imToast(LL('Click on a country (land)','国（陸地）をクリックしてください','Auf ein Land klicken','Кликните по суше (страна)','Haz clic en un país')); }catch(_){} return; }
       const nm=cName(_cs(cd))||cd;
       if(codes.indexOf(cd)>=0){ try{ imToast(LL('Already added','追加済み','Bereits hinzugefügt','Уже добавлено','Ya añadido')+': '+nm); }catch(_){} return; }
