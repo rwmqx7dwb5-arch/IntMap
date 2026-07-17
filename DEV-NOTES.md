@@ -5,6 +5,39 @@
 
 ---
 
+## R125 — 再報告根治＋経路優先ラウンド（Globe移動の傾き+右ドラッグ回転／Compare昔年代クリック完全化／Atlasトグル真の独立共存／βレイヤー+6／都市間日本レール・ブリッジ） (tag `#R125`)
+
+ユーザー指示途中で「経路機能を優先して取り組んで」→ ICBM第一段階着手前に経路へピボット。4バッチ、各ヘッドレス実測→commit+push。
+
+### batch1 — 再報告2件の根治
+- **Move on Globeが場所により傾く（再報告）**: R124の裸のRodrigues大円回転は**輸送された局所フレームの北が回る**（大弧・高緯度でツイスト大）。→ 大円回転後に**到着点の鉛直軸まわりで「輸送北→真北」再整列ツイスト**を適用。実測: tilt 1.15°→0.01°、辺長は全目的地（日付変更線・南半球含む）で完全保存。符号の罠: 鉛直軸+回転は接ベクトルをθ→θ−angに写す＝ツイスト打消しは`spin=+twist`（−は倍加し~200°回転に見えた）。
+- **右クリックドラッグで回転（新規）**: move中の右ボタンドラッグは投影重心まわりのスクリーン角で`rotAng`を駆動（globe=鉛直軸Rodriguesスピン、flat=cos(lat)計量フレーム内2D回転→シアーなし・面積保存維持）。dragRotate無効化/復元、contextmenu抑止、ピル文言に「右ドラッグで回転」5言語。テスト用に`_reshape`公開。
+- **Compare昔年代クリック「まだ不完全」（再報告）**: 3根因。①era名の宗主接尾辞（"India (UK)"）がHB_MATCH正規表現に不一致→**接尾辞strip後も照合**（→British Raj）。②PIP catch-allがRAJ等に`_histHidden`されたIND/KOR/TWNをスキップ→null（追加不能）→**hidden国を吸収中の活動旧国家に解決**（Korea/Taiwan 1914→大日本帝国）。③沿岸都市のera-PIPミス（Istanbul 1914はOttomanポリゴン外）→現代国境へフォールスルー＝報告現象そのもの→**最近接eraリング≤0.7°スナップ**。実測: 1914クリックでOttoman/Raj/大日本帝国が追加、1960モスクワ→ソ連、Nowパリ→フランス、海クリック無反応。
+
+### batch2 — Atlasトグル真の独立共存（R123/R124の2回据置を解消）
+- 所有権モデルは維持しつつ、**他メッセージが所有中の種別をONにしたら奪わずメッセージ別クローン層(atlm<n>-<kind>-<layerid>)へ描画**。クローンは元レイヤー定義+スナップショットgeojsonから構築、`__before`で元レイヤーの隣に挿入。
+- **country highlight/choroplethはfeature-state駆動**（serialize非搬送）→ `_ovlSnapshot`がpromoteId+全featureの状態(nlq/choroV)を捕捉、クローンソースへ`setFeatureState`再適用。`_ovlAdopt`も元ソースへ状態復元+モジュール状態(_hl/_choroState)更新（styledata reassertが採用返信を保持）。
+- styledata後600msでクローン再構築、非表示エントリはLRU回収（上限14）。実測: Japan+Frenchハイライト同時表示（クローンJPN nlq:true/共有FRA nlq:true・両チップON）、独立off/on、adopt復元、flat/globeスワップ後もチップ+クローン健在。
+- 検証の罠: Atlas返信のチップ生成は`C.run('highlight Japan')`（英語はlocalPlan直行）。日本語「ハイライト 日本」はAIゲートに落ちてログイン要求で終わる（ヘッドレスは英語コマンドで）。
+
+### batch3 — Others(beta) +6（WBライブ・自動配線）
+- 都市人口%(SP.URB.TOTL.IN.ZS)/外国人観光客(ST.INT.ARVL)/送金%GDP(BX.TRF.PWKR.DT.GD.ZS)/自殺率(SH.STA.SUIC.P5)/飲酒量(SH.ALC.PCAP.LI)/殺人率(VC.IHR.PSRC.P5)。行数131→137、都市人口 日本=92.3%（221/258か国）。
+
+### batch4 — 経路（ユーザー優先指示）: 瑞穂区役所→新宿(電車)対応
+- **根因**: Transitousは東京圏（ODPT公開GTFS、JR東JC等）を収録済みだが**名古屋圏と新幹線はゼロ**（名古屋ローカルも0件を実測）→都市間日本は全滅。R122のrailRoute無効化（貨物線問題）は正しいので復活させない。
+- **新設 `_jrPlan`＝都市間日本レール・ブリッジ**: 新幹線6路線レジストリ（実在駅+座標+公表時刻表由来の速達パターン分数+頻度）をDijkstra（同名駅乗換15分）。アクセス/イグレスは`_planItins`(quick)でTransitous実レグ、なければ「ローカル区間（公開時刻表なし・目安）」明記の距離概算。所要=頻度ベース（head/2待ち・`~`接頭）、**架空時刻ゼロ**。線形は実在停車駅を通る折れ線（駅間は概略、5言語ノート明記）。
+- **駅名ジオコード硬化**: geocodeのファジーが仙台駅→「仙太鮨」→ `IntMapRouting.stationLL`（新幹線駅の完全一致、駅/Station接尾辞許容）を先に照合、〜駅クエリはヒット名に基名を含まなければベース名で再試行。
+- リファクタ: plan取得を`_planItins`へ抽出、`_buildItin`/`_transitBuild`をモジュールレベル化（transit()と_jrPlanで共用）。
+- 実測: 瑞穂区役所→新宿=~2h32m（ローカル24分+新幹線100分+**実JR中央線レグ（実時刻付き）**+徒歩）、大阪駅→仙台駅=~5h04m（新大阪→東京→仙台乗継）、新宿→東京駅=ライブ5候補のまま、Munich→Augsburg=欧州ライブtransit不変。
+- 既知の残課題: 「Potsdam」→米国Potsdam村に誤ジオコード（同名地名の近接優先=経路指示書§6）。
+
+### 据置（理由）
+- **ICBM指示書 第一段階**（アニメ時間進行/ロフテッドeCap/ディプレスト無効域/Mach表示/爆発同期）: 経路優先指示によりピボット。コード調査済み（ballisticSolve/IntMapArc3D.animateのease-in-out問題を確認済み）→次ラウンド最優先候補。
+- 経路10-10指示書の残段階（RouteStore/AbortController/CORSプロキシ除去/GTFS-RT等）・物理シミュ5種指示書: 大型のため段階実装継続。
+- OneDrive/Edit中の部分書込でindex.htmlが一時破損（reshape本体欠落）→ `git checkout -- index.html`で復旧してから再編集。**編集失敗時はまずgit diffで破損確認**。
+
+---
+
 ## R124 — 再報告バッチ（R123の不完全修正の根治＋新規項目: タブ文字揺れ/Objects不透過/モバイル分類名/Globe移動/Aurora輝度/Compare時系列同期/クリック解除/ニュースピン実配線/範囲人口タイル化/βレイヤー追加） (tag `#R124`)
 
 R123リストの再送＋**追記（どの修正が未達か）**。再報告を最優先で根治。各項目ヘッドレス実測＋commit＋push。**10項目完了**。3大型指示書（ICBM/経路10-10/物理シミュ5種）はバックログ据置。
