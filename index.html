@@ -19283,6 +19283,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let host=null, codes=[], sel=null, indOrder=null, mode='bar'; const srcSel={debt:'imf'};
     let tYear=null, tSort=null, tFlip=false;
     let tsFrom=null, tsTo=null;   /* (#R122) user-set time-series year window (null = full available range) */
+    let _tsAvailYears=new Set(), _tsYearsSig='';   /* (#R123) years that actually have data across the current comparison → the year pickers list ONLY these ("利用可能な年代のみ選択肢に") */
     /* (#R69) MEASURED root cause of "No time-series available" + "ソース切替でいちいち全再読み込み": every
        chip/metric/source change re-rendered EVERY block and fired a fresh fetch per (indicator,country) — one
        test session produced 321 parallel WB requests (34 for a single indicator), the browser's 6-per-host limit
@@ -19878,6 +19879,26 @@ window.addEventListener('DOMContentLoaded', () => {
        (#R69) each block additionally remembers WHAT it rendered (countries+source signature): re-renders with an
        unchanged signature are skipped entirely, so toggling a metric or switching one block's source no longer
        touches any other block. */
+    /* (#R123) time-series year pickers list ONLY years that actually have data. `_tsAvailYears` accumulates as the
+       per-indicator series load; the option lists rebuild in place so a range change never re-fetches. */
+    function _tsYearList(){ return [..._tsAvailYears].filter(y=>isFinite(y)).sort((a,b)=>b-a); }   /* newest first */
+    function _yoptsAvail(selV){ const ys=_tsYearList();
+      if(!ys.length){ /* before any series has loaded: fall back to a full 1900→now list so the control isn't empty */
+        let o=''; const nowY=new Date().getFullYear(); for(let y=nowY;y>=1900;y--) o+='<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>'; return o; }
+      return ys.map(y=>'<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>').join(''); }
+    function _tsRangeHtml(){ return '<span class="scp-tsl">'+LL('Years','期間','Zeitraum','Годы','Años')+'</span>'
+        +'<select id="scp-tsfrom"><option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+_yoptsAvail(tsFrom!=null?tsFrom:'')+'</select>'
+        +'<span class="scp-tsdash">–</span>'
+        +'<select id="scp-tsto"><option value="">'+LL('end','終了','Ende','конец','fin')+'</option>'+_yoptsAvail(tsTo!=null?tsTo:'')+'</select>'
+        +((tsFrom!=null||tsTo!=null)?'<button id="scp-tsreset" type="button">'+LL('Reset','リセット','Reset','Сброс','Reiniciar')+'</button>':''); }
+    function _wireTsRange(bar){ if(!bar) return;
+      const f=bar.querySelector('#scp-tsfrom'); if(f) f.onchange=e=>{ tsFrom=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsFrom>tsTo) tsTo=null; render(); };
+      const t2=bar.querySelector('#scp-tsto'); if(t2) t2.onchange=e=>{ tsTo=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsTo<tsFrom) tsFrom=null; render(); };
+      const rb=bar.querySelector('#scp-tsreset'); if(rb) rb.onclick=()=>{ tsFrom=null; tsTo=null; render(); }; }
+    function _refreshTsYearOpts(){ try{ const bar=host&&host.querySelector('#scp-tsrange'); if(!bar) return;
+      const f=bar.querySelector('#scp-tsfrom'), t2=bar.querySelector('#scp-tsto');   /* re-fill options in place — keeps the selects + their onchange handlers */
+      if(f) f.innerHTML='<option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+_yoptsAvail(tsFrom!=null?tsFrom:'');
+      if(t2) t2.innerHTML='<option value="">'+LL('end','終了','Ende','конец','fin')+'</option>'+_yoptsAvail(tsTo!=null?tsTo:''); }catch(_){} }
     async function renderInd(k){ if(!host) return; const el=host.querySelector('.scp-blk[data-k="'+k+'"]'); const ind=IND.find(i2=>i2.k===k); if(!el||!ind) return;
       const sig=codes.join(',')+'|'+(srcSel[k]||'wb')+'|'+mode+'|'+(_ttYear()||'now')+'|'+(tsFrom==null?'':tsFrom)+'-'+(tsTo==null?'':tsTo);   /* (#R94) master-clock year; (#R122) time-series year window so a range change re-renders */
       if(el.dataset.sig===sig&&el.querySelector('.scp-sec')) return;   /* already showing exactly this */
@@ -19886,6 +19907,8 @@ window.addEventListener('DOMContentLoaded', () => {
          view pays for full per-country series */
       const b=(mode==='bar')?await latestData(ind):await blockData(ind);
       if(el.__seq!==my||!el.isConnected) return;
+      /* (#R123) collect the years that actually carry data so the time-series year pickers list only those */
+      if(mode==='ts'&&b&&b.serMap){ let added=false; codes.forEach(cd=>{ (b.serMap[cd]||[]).forEach(p=>{ if(p&&isFinite(p.y)&&!_tsAvailYears.has(+p.y)){ _tsAvailYears.add(+p.y); added=true; } }); }); if(added) _refreshTsYearOpts(); }
       el.dataset.sig=sig;
       el.innerHTML=(mode==='bar')?barBlockHtml(b):blockHtml(b);
       el.querySelectorAll('.scp-srcsw button').forEach(btn=>{ btn.onclick=(e)=>{ e.stopPropagation(); srcSel[k]=btn.getAttribute('data-s'); renderInd(k); }; });
@@ -19947,17 +19970,12 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R122) time-series YEAR-RANGE control (inserted AFTER the possible wipe above, so it survives the first
          render): pick a start & end year and the graphs redraw to that window. */
       if(mode==='ts'){ try{ let bar=body.querySelector('#scp-tsrange');
-        const nowY=new Date().getFullYear(), minY=1900;
+        /* (#R123) reset the collected available-year set when the comparison (countries × indicators) changes, so
+           the pickers rebuild from the new selection's real data years. A tsFrom/tsTo change keeps the same sig. */
+        const csig=codes.join(',')+'|'+inds.map(i2=>i2.k).join(',');
+        if(csig!==_tsYearsSig){ _tsAvailYears=new Set(); _tsYearsSig=csig; }
         if(!bar){ bar=document.createElement('div'); bar.id='scp-tsrange'; bar.className='scp-tsrange'; body.insertBefore(bar,body.firstChild); }
-        const yopts=(selV,lo,hi)=>{ let o=''; for(let y=hi;y>=lo;y--){ o+='<option value="'+y+'"'+(String(selV)===String(y)?' selected':'')+'>'+y+'</option>'; } return o; };
-        bar.innerHTML='<span class="scp-tsl">'+LL('Years','期間','Zeitraum','Годы','Años')+'</span>'
-          +'<select id="scp-tsfrom"><option value="">'+LL('start','開始','Start','начало','inicio')+'</option>'+yopts((tsFrom!=null?tsFrom:''),minY,nowY)+'</select>'
-          +'<span class="scp-tsdash">–</span>'
-          +'<select id="scp-tsto"><option value="">'+LL('end','終了','Ende','конец','fin')+'</option>'+yopts((tsTo!=null?tsTo:''),minY,nowY)+'</select>'
-          +((tsFrom!=null||tsTo!=null)?'<button id="scp-tsreset" type="button">'+LL('Reset','リセット','Reset','Сброс','Reiniciar')+'</button>':'');
-        bar.querySelector('#scp-tsfrom').onchange=e=>{ tsFrom=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsFrom>tsTo) tsTo=null; render(); };
-        bar.querySelector('#scp-tsto').onchange=e=>{ tsTo=e.target.value?+e.target.value:null; if(tsFrom!=null&&tsTo!=null&&tsTo<tsFrom) tsFrom=null; render(); };
-        const rb=bar.querySelector('#scp-tsreset'); if(rb) rb.onclick=()=>{ tsFrom=null; tsTo=null; render(); };
+        bar.innerHTML=_tsRangeHtml(); _wireTsRange(bar);
       }catch(_){} }
       const wantKs=inds.map(i2=>i2.k);
       Array.prototype.slice.call(body.querySelectorAll('.scp-blk')).forEach(el=>{ if(wantKs.indexOf(el.getAttribute('data-k'))<0) el.remove(); });
