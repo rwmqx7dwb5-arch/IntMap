@@ -97,7 +97,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     /* (#R36) Equal-width nav tabs ("News/Information/Stats/Community のボタン幅は同一に"): flex:1 1 0 + min-width:0
        makes all four exactly 1/4 (was flex:1 1 auto → content-sized, so Information/Community were much wider).
        nowrap + a font/padding that fits the longest label keeps text inside the button with no extra rows. */
-    .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:11.5px; font-weight:500; border-radius:10px; transition:0.3s; white-space:nowrap; text-align:center; }
+    .mode-btn{ flex:1 1 0; min-width:0; background:var(--input-bg); border:none; color:var(--text-main); padding:10px 4px; cursor:pointer; font-size:13px; font-weight:500; border-radius:10px; transition:0.3s; white-space:nowrap; text-align:center; overflow:hidden; }   /* (#R122) larger base; JS auto-fits to never overflow/wrap */
     .mode-btn.active{ background:var(--primary-color); color:#fff; box-shadow:0 4px 12px rgba(0,122,255,0.3); }
     /* (#R114) sidebar Atlas tab — SELECTED = the full Atlas gradient fill (unchanged, as before); UNSELECTED =
        FRAME ONLY: a gradient outline ring (masked ::before so it follows the pill radius) over the normal neutral
@@ -1174,9 +1174,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 
       /* mode tabs → iOS segmented control */
       .control-panel{ flex:0 0 auto; flex-wrap:nowrap; gap:0; margin:0 0 10px; padding:3px; background:var(--input-bg); border-radius:11px; }
-      .mode-btn{ flex:1 1 0; min-width:0; min-height:36px; padding:8px 4px; font-size:12px; font-weight:600; border-radius:8px; background:transparent; color:var(--text-muted); box-shadow:none !important; }
+      .mode-btn{ flex:1 1 0; min-width:0; min-height:36px; padding:8px 4px; font-size:13px; font-weight:500; border-radius:8px; background:transparent; color:var(--text-muted); box-shadow:none !important; }   /* (#R122) slightly larger, NOT bold; JS auto-fits so it never wraps/overflows */
       /* (#R33) Selected News/Information/Stats is BLUE on mobile too (was a neutral grey card). */
       .mode-btn.active{ background:var(--primary-color) !important; color:#fff !important; box-shadow:0 2px 8px rgba(0,122,255,0.3) !important; }
+      /* (#R122) mobile: the SELECTED Atlas tab keeps the same gradient fill as normal mode (was overridden to plain blue) */
+      .mode-btn.mode-atlas.active{ background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2) !important; color:#fff !important; box-shadow:0 2px 9px rgba(94,92,230,0.32) !important; }
+      .mode-btn.mode-atlas:not(.active){ color:#5e5ce6 !important; }
 
       .news-filter-toggle, .news-pin-toggle{ flex:0 0 auto; }
       .ios-segment-btn{ padding:8px 12px; font-size:12px; min-height:32px; }
@@ -10241,6 +10244,17 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R98) Community feature removed — this sidebar button is the Atlas tab. (#R112) It now behaves like the other
      tabs (News/Info/Countries): a true kernel tab command that renders Atlas INSIDE the sidebar/bottom-sheet. */
   document.getElementById('btn-community').onclick=()=>IntMapOS.exec('tab.atlas',{source:'ui'});
+  /* (#R122) auto-fit the News/Information/Countries/Atlas tab labels: the largest font (≤14px) that keeps every
+     label on ONE line inside its equal-width button, in every language — so the text is as large as possible
+     yet never wraps or overflows ("ボタンサイズに応じてテキストサイズも変更…はみ出さない…改行されない"). */
+  function _fitTabFont(){ try{ const btns=[...document.querySelectorAll('.control-panel .mode-btn')]; if(!btns.length||!btns[0].clientWidth) return;
+    let fs=14; btns.forEach(b=>b.style.fontSize=fs+'px');
+    const fits=()=>btns.every(b=>b.scrollWidth<=b.clientWidth+0.5);
+    let guard=0; while(fs>10 && !fits() && guard++<20){ fs-=0.5; btns.forEach(b=>b.style.fontSize=fs+'px'); } }catch(_){} }
+  window._fitTabFont=_fitTabFont;
+  try{ _fitTabFont(); setTimeout(_fitTabFont,300); setTimeout(_fitTabFont,1200);
+    window.addEventListener('resize',()=>{ clearTimeout(_fitTabFont._t); _fitTabFont._t=setTimeout(_fitTabFont,120); });
+    window.addEventListener('intmap-lang',()=>setTimeout(_fitTabFont,30)); }catch(_){}
   /* (#R94) TIME is a first-class kernel dimension — the master spacetime clock is registered as OS commands
      so both shells (UI + Atlas) operate it through the one kernel, and it appears in the OS catalog/log. */
   try{
@@ -23926,6 +23940,7 @@ window.addEventListener('DOMContentLoaded', () => {
          IntMap viewport. The browser `requestFullscreen()` (desktop/OS fullscreen) was REMOVED per request ("デスクトップ
          での全画面という意味ではない"). Resize the map after the container changes size. */
       try{ document.body.classList.add('fs-flying'); }catch(_){}
+      try{ _fsStashLayers(); }catch(_){}   /* (#R122) hide every data layer / highlight / outline while flying (place-name labels stay); restored on exit */
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120); setTimeout(()=>{ try{ map.resize(); }catch(_){} },320);
       buildHUD(); addExtraHUD();
       try{ fsAudio.start(); }catch(_){}   /* (#R101) start the synthesized flight audio (this call rides the START-button user gesture) */
@@ -23952,6 +23967,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(hud){ hud.remove(); hud=null; }
       /* (#R85c) leave fullscreen + restore the normal layout */
       try{ document.body.classList.remove('fs-flying'); }catch(_){}
+      try{ _fsRestoreLayers(); }catch(_){}   /* (#R122) re-enable every layer/highlight that was on before the flight */
       try{ if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }catch(_){}
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },140);
       try{ if(map.setRoll) map.setRoll(0); }catch(_){}
@@ -24122,6 +24138,23 @@ window.addEventListener('DOMContentLoaded', () => {
        queryTerrainElevation returns null — the OLD code treated that as 0 m, causing false ground in the
        mountains (sudden height jumps / groundless crashes). Now: null → use the last KNOWN value and report
        ok:false so the collision check is skipped until real data is under the aircraft. */
+    /* (#R122) LAYER STASH — on flight start, turn OFF every data layer / highlight / outline / map-object so the
+       cockpit shows a clean world (place-name labels stay ON); restore the exact set on exit. Idempotent + guarded. */
+    let _fsStash=null;
+    function _fsStashLayers(){ if(_fsStash) return; const stash=[];
+      try{ document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(!cb.checked) return;
+        const id=cb.id||'', dl=(cb.getAttribute&&cb.getAttribute('data-layer'))||'';
+        if(id==='cb-names') return;   /* keep place-name labels */
+        stash.push(id||('dl:'+dl));
+        try{ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }); }catch(_){}
+      /* clear Atlas / place highlights, outlines and drawn objects (they're not checkboxes) */
+      try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){}
+      try{ if(window._imHlPolys&&window._imHlPolys.clear) window._imHlPolys.clear(); }catch(_){}
+      try{ if(typeof clearHl==='function') clearHl(); }catch(_){}
+      _fsStash=stash; }
+    function _fsRestoreLayers(){ const s=_fsStash; _fsStash=null; if(!s) return;
+      try{ s.forEach(tok=>{ let cb=null; if(tok.indexOf('dl:')===0){ cb=document.querySelector('#layer-dropdown [data-layer="'+tok.slice(3)+'"]'); } else { cb=document.getElementById(tok); }
+        if(cb&&!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } }); }catch(_){} }
     function _terrRead(lng,lat){ let v=null; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) v=te; } }catch(_){}
       if(v==null) return { v:(st&&st.lastTerr!=null)?st.lastTerr:0, ok:false };
       if(st) st.lastTerr=v; return { v, ok:true }; }
