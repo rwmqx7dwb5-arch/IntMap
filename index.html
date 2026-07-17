@@ -10291,6 +10291,41 @@ window.addEventListener('DOMContentLoaded', () => {
     if(mode==='stats'){ if(!countryDataLoaded)loadCountryData(); }
     renderUI();
   }
+  /* ===== (#R122) SESSION STATE PERSISTENCE — a browser reload used to reset everything except the map coordinates
+     (those ride the URL hash). Now the ACTIVE LAYERS, the open TAB, the time-machine YEAR, the base map (Map/Satellite)
+     and 3-D terrain are saved to localStorage and restored on load. Map lat/lng/zoom/projection stay in the hash. ===== */
+  (function(){
+    const KEY='intmap_session2'; let _restoring=true, _saveT=null;
+    function _snapshot(){ try{
+      const layers=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ if(cb.checked&&cb.id) layers.push(cb.id); });
+      let year=null; try{ const T=window.IntMapTime; if(T&&T.isLive&&!T.isLive()&&T.year) year=T.year(); }catch(_){}
+      return { v:2, layers, mode:(typeof currentMode!=='undefined'?currentMode:null),
+        base:(typeof currentMapType!=='undefined'?currentMapType:'map'), terr3d:!!(typeof terrain3D!=='undefined'&&terrain3D),
+        year:(year&&year<new Date().getFullYear())?year:null }; }catch(_){ return null; } }
+    function _save(){ if(_restoring) return; clearTimeout(_saveT); _saveT=setTimeout(()=>{ try{ const s=_snapshot(); if(s) localStorage.setItem(KEY,JSON.stringify(s)); }catch(_){} },400); }
+    window._imSaveSession=_save;
+    /* save on the events that change persisted state */
+    try{ document.addEventListener('change',e=>{ try{ if(e.target&&e.target.closest&&e.target.closest('#layer-dropdown')) _save(); }catch(_){} },true); }catch(_){}
+    try{ document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.addEventListener('click',()=>setTimeout(_save,60))); }catch(_){}
+    try{ ['btn-view-map','btn-view-sat','btn-view-3d'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_save,120)); }); }catch(_){}
+    try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>_save()); }catch(_){}
+    function _restore(){ let s=null; try{ s=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(_){} if(!s){ _restoring=false; return; }
+      /* base map + 3-D first (they swap the style) */
+      try{ if(s.base==='sat'&&currentMapType!=='sat'){ const b=document.getElementById('btn-view-sat'); if(b) b.click(); } }catch(_){}
+      try{ if(s.terr3d){ const b=document.getElementById('btn-view-3d'); if(b&&!(typeof terrain3D!=='undefined'&&terrain3D)) setTimeout(()=>b.click(),700); } }catch(_){}
+      /* re-enable each saved layer as soon as its checkbox exists (rows build lazily up to ~1 s + beta modules) */
+      const want=Array.isArray(s.layers)?s.layers.slice():[]; let tries=0;
+      (function poll(){ tries++; const pending=[];
+        want.forEach(id=>{ const cb=document.getElementById(id); if(cb){ if(!cb.checked){ try{ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} } } else pending.push(id); });
+        if(pending.length&&tries<25){ want.length=0; want.push.apply(want,pending); setTimeout(poll,220); } })();
+      /* open the saved tab */
+      try{ if(s.mode){ const map2={news:'tab.news',saved:'tab.news',info:'tab.info',stats:'tab.stats',atlas:'tab.atlas'}[s.mode]; if(map2&&window.IntMapOS) setTimeout(()=>{ try{ if(!currentMode) IntMapOS.exec(map2,{source:'restore'}); }catch(_){} },500); } }catch(_){}
+      /* set the time-machine year */
+      try{ if(s.year&&window.IntMapTime&&window.IntMapTime.setYear){ setTimeout(()=>{ try{ window.IntMapTime.setYear(s.year,{source:'restore'}); }catch(_){} },900); } }catch(_){}
+      setTimeout(()=>{ _restoring=false; },1600);   /* stop suppressing saves once the restore settles */ }
+    /* run the restore once the map + initial layer UI are ready */
+    try{ if(map){ map.on('load',()=>setTimeout(_restore,600)); } else setTimeout(_restore,1400); }catch(_){ setTimeout(()=>{ _restoring=false; },100); }
+  })();
   /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
   IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Information tab', btn:'btn-info', group:'tab'});
