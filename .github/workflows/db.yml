@@ -78,8 +78,11 @@ jobs:
           code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then
             echo "----- pgTAP failure detail (also surfaced as annotations) -----"
-            { grep -iE 'ERROR:|permission denied|does not exist|violates|cannot ' "$RUNNER_TEMP/tap.txt" | head -6
-              grep -vE '^[[:space:]]*$' "$RUNNER_TEMP/tap.txt" | tail -4; } \
+            # One annotation per failing assertion: "not ok … || have: … || want: …",
+            # plus any psql ERROR: and the tail summary. Capped at 10 (GitHub limit).
+            { awk '/^not ok/{n=$0} /have:/{h=$0} /want:/{w=$0; sub(/^#[[:space:]]*/,"",h); sub(/^#[[:space:]]*/,"",w); print n "  ||  " h "  ||  " w}' "$RUNNER_TEMP/tap.txt"
+              grep -iE 'ERROR:|does not exist|violates' "$RUNNER_TEMP/tap.txt"
+              grep -vE '^[[:space:]]*$' "$RUNNER_TEMP/tap.txt" | tail -3; } \
               | head -10 | while IFS= read -r l; do echo "::error::${l}"; done
           fi
           exit "$code"
