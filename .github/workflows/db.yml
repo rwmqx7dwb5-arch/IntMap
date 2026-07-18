@@ -77,9 +77,10 @@ jobs:
           supabase test db 2>&1 | tee "$RUNNER_TEMP/tap.txt"
           code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then
-            echo "----- pgTAP output tail (also surfaced as annotations) -----"
-            grep -vE '^[[:space:]]*$' "$RUNNER_TEMP/tap.txt" | tail -10 \
-              | while IFS= read -r l; do echo "::error::${l}"; done
+            echo "----- pgTAP failure detail (also surfaced as annotations) -----"
+            { grep -iE 'ERROR:|permission denied|does not exist|violates|cannot ' "$RUNNER_TEMP/tap.txt" | head -6
+              grep -vE '^[[:space:]]*$' "$RUNNER_TEMP/tap.txt" | tail -4; } \
+              | head -10 | while IFS= read -r l; do echo "::error::${l}"; done
           fi
           exit "$code"
 

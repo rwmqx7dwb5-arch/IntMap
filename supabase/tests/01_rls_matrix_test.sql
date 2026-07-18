@@ -15,6 +15,11 @@
 begin;
 select no_plan();
 
+-- Ensure the test session can impersonate the platform roles. `set role X` needs
+-- the current role to be a superuser OR a member of X; grant membership so the
+-- helpers' role-switching works on any local setup (no-op if already a member).
+do $$ begin execute format('grant anon, authenticated, service_role to %I', current_user); exception when others then null; end $$;
+
 create temp table _cap (k text primary key, v text);
 
 create function _rolename(subj text) returns text language sql immutable as $$

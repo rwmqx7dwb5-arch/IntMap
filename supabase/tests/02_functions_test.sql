@@ -6,6 +6,9 @@
 begin;
 select no_plan();
 
+-- Ensure the test session can impersonate the platform roles (see 01_rls_matrix).
+do $$ begin execute format('grant anon, authenticated, service_role to %I', current_user); exception when others then null; end $$;
+
 create temp table _cap (k text primary key, v text);
 
 -- SECURITY DEFINER helpers: run the tested statement as service_role (the only
