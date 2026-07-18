@@ -1,0 +1,102 @@
+# External uptime monitor for the production site (§9).
+# A cheap, dependency-free HTTP probe every 6 hours: checks the URL returns 200, that the
+# app shell (the #map container) is actually in the HTML, and that it is NOT a GitHub Pages
+# 404 page. On failure it opens ONE deduplicated incident issue; on recovery it comments
+# and auto-closes it. Low frequency by design so it never floods Actions minutes or the
+# upstream site (§9.2).
+name: Uptime (production)
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'    # 04:23 / 10:23 / 16:23 / 22:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write               # open / comment / close the single incident issue
+
+concurrency:
+  group: uptime
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: HTTP probe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe production URL
+        id: probe
+        env:
+          URL: ${{ vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+        run: |
+          set +e
+          code=$(curl -sS -o body.html -w '%{http_code}' -L --max-time 30 "$URL")
+          ok=1
+          [ "$code" = "200" ] || ok=0
+          grep -q 'id="map"' body.html || ok=0
+          grep -qi "There isn't a GitHub Pages site here" body.html && ok=0
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+          echo "Probe: HTTP $code, ok=$ok, url=$URL"
+
+      - name: Open / close incident issue
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          OK: ${{ steps.probe.outputs.ok }}
+          STATUS: ${{ steps.probe.outputs.status }}
+          URL: ${{ vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+        with:
+          script: |
+            const ok = process.env.OK === '1';
+            const status = process.env.STATUS || '?';
+            const url = process.env.URL;
+            const label = 'status:prod-down';
+            const title = 'Production uptime check failing';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const now = new Date().toISOString();
+
+            async function ensureLabel() {
+              try { await github.rest.issues.getLabel({ ...context.repo, name: label }); }
+              catch (e) {
+                if (e.status === 404) {
+                  await github.rest.issues.createLabel({ ...context.repo, name: label, color: 'b60205',
+                    description: 'Automated: production external monitor is failing' });
+                } else { throw e; }
+              }
+            }
+            const open = (await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: label })).data;
+
+            if (!ok) {
+              // Deduplicate: one open issue per ongoing outage — create only if none exists.
+              if (open.length === 0) {
+                await ensureLabel();
+                await github.rest.issues.create({ ...context.repo, title, labels: [label],
+                  body: [
+                    'The automated uptime check failed.', '',
+                    `- URL: ${url}`,
+                    `- HTTP status: ${status}`,
+                    `- Detected (UTC): ${now}`,
+                    `- Run: ${runUrl}`, '',
+                    'Response was missing the app shell (`id="map"`), returned non-200, or hit a Pages 404.',
+                    'This issue will auto-close on the next successful check. See `docs/INCIDENT-RESPONSE.md`.',
+                  ].join('\n') });
+                core.info('Opened new incident issue.');
+              } else {
+                core.info(`Incident issue #${open[0].number} already open — not duplicating.`);
+              }
+            } else {
+              // Recovered: comment + close any open incident issues.
+              for (const iss of open) {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: iss.number,
+                  body: `Recovered: HTTP 200 with app shell present at ${now}. Auto-closing.` });
+                await github.rest.issues.update({ ...context.repo, issue_number: iss.number, state: 'closed' });
+                core.info(`Closed recovered incident issue #${iss.number}.`);
+              }
+            }
+
+      - name: Fail the run if the probe failed
+        if: steps.probe.outputs.ok != '1'
+        run: |
+          echo "::error::Production probe failed (HTTP ${{ steps.probe.outputs.status }})."
+          exit 1

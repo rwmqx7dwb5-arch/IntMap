@@ -1,0 +1,90 @@
+# Manual rollback: re-publish a previous KNOWN-GOOD commit or tag to production.
+#
+# Safe by design:
+#   • workflow_dispatch only — GitHub restricts this to users with write access.
+#   • The input is a git ref that MUST already exist in this repo's history; the job
+#     refuses anything it cannot resolve. It can therefore only re-deploy code that was
+#     already reviewed and committed — never arbitrary/injected code.
+#   • Gated by the same ENABLE_PAGES_DEPLOY variable as deploy.yml.
+#
+# It does NOT revert database state — see docs/INCIDENT-RESPONSE.md.
+name: Rollback (production, Pages)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Known-good tag or commit SHA to redeploy (e.g. v2026.07.10-R130 or a1b2c3d)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Redeploy ${{ inputs.ref }}
+    if: ${{ vars.ENABLE_PAGES_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # need full history + tags to resolve an old ref
+      - name: Resolve and check out the requested ref
+        run: |
+          set -euo pipefail
+          REF='${{ inputs.ref }}'
+          if ! SHA=$(git rev-parse --verify "${REF}^{commit}" 2>/dev/null); then
+            echo "::error::Ref '${REF}' does not resolve to a commit in this repository. Refusing to deploy."
+            exit 1
+          fi
+          echo "Rolling back to ${REF} → ${SHA}"
+          git checkout --quiet "${SHA}"
+          echo "ROLLBACK_SHA=${SHA}" >> "$GITHUB_ENV"
+      - name: Assemble site (exact tree at the rolled-back commit)
+        run: |
+          set -euo pipefail
+          rm -rf _site && mkdir -p _site
+          git archive "${ROLLBACK_SHA}" | tar -x -C _site
+          printf '{ "sha": "%s", "ref": "%s", "runId": "%s", "builtAt": "%s", "rollback": true }\n' \
+            "${ROLLBACK_SHA}" "${{ inputs.ref }}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
+            > _site/build-info.json
+          cat _site/build-info.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy rollback
+    needs: rollback
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  post-smoke:
+    name: Post-rollback smoke (live URL)
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - env:
+          PROD_URL: ${{ needs.deploy.outputs.page_url || vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+        run: npx playwright test --config playwright.prod.config.js

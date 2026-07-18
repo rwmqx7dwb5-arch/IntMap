@@ -14,3 +14,14 @@ _thumb_*.png
 settings.local.json
 supabase/functions/ai-proxy/supabase/
 
+# ── Ops / test tooling (added R133) ──────────────────────────────────────────
+# Dev/test dependencies and their build artifacts. The IntMap app itself ships
+# NO node_modules — these exist only for CI and local testing.
+node_modules/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+npm-debug.log*
+*.local.env
+.env
+
