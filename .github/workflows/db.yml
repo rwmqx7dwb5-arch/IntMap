@@ -35,14 +35,16 @@ jobs:
         with:
           version: 2.106.0
 
-      # Boots the local stack (Docker is preinstalled on ubuntu runners). The DB
-      # is exposed at the deterministic local URL used below.
-      - name: Start local Supabase
-        run: supabase start
+      # Start ONLY the local Postgres database (Docker is preinstalled on ubuntu
+      # runners). DB tests don't need the full stack (studio / analytics / vector
+      # / edge-runtime), and skipping them avoids their slow pulls + flaky health
+      # checks — the usual cause of a `supabase start` failure in CI.
+      - name: Start local Postgres
+        run: supabase db start
 
       # Rebuild the database purely from migrations + seed. Fails if either breaks.
       - name: Rebuild from migrations + seed
-        run: supabase db reset
+        run: supabase db reset --local
 
       # Reproducibility / drift gate: after a clean rebuild the migrations must
       # FULLY describe the schema, so a public-schema diff is empty. (Run BEFORE
