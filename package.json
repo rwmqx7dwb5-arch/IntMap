@@ -1,0 +1,23 @@
+{
+  "name": "intmap-ops",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Operational quality baseline (CI, static checks, browser smoke tests, internal-QA runner, release/rollback/monitoring tooling) for IntMap. The IntMap product itself stays a static site served from index.html; this package only adds developer/CI tooling and never ships to the browser.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "serve": "node scripts/serve.mjs",
+    "check:static": "node scripts/static-checks.mjs",
+    "test:smoke": "playwright test tests/smoke.spec.js",
+    "test:qa": "playwright test tests/internal-qa.spec.js",
+    "test:e2e": "playwright test",
+    "test": "node scripts/static-checks.mjs && playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "js-yaml": "^4.1.0"
+  }
+}

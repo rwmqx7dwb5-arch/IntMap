@@ -1,0 +1,66 @@
+# IntMap CI — runs on every PR, every push to main, and on demand.
+# Two jobs: cheap static checks (always) and a real-browser smoke + internal-QA run.
+# Least-privilege by default: the whole workflow only needs to read the repo.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Read-only token — no job here writes to the repo, deploys, or needs secrets.
+permissions:
+  contents: read
+
+# A newer commit on the same branch/PR cancels the older in-flight run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets)
+        run: npm run check:static
+
+  browser:
+    name: Browser smoke + internal QA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Cache the Playwright browser binaries between runs (keyed on the lockfile).
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - name: Install Playwright Chromium (+ OS deps)
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright tests (smoke + internal QA)
+        run: npx playwright test
+      # On failure, publish the report + screenshots + traces so the cause is visible in GitHub.
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore

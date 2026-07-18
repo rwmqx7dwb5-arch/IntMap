@@ -27,7 +27,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-06-21-R42';
+  window.INTMAP_BUILD='2026-07-18-R133';
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
      tool can attach them automatically (and so a silent failure is never invisible). Lightweight, no deps. */
   window.__imErrors=window.__imErrors||[];
@@ -35,6 +35,55 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     window.addEventListener('error',function(e){ push('error', e&&e.message, e&&e.filename?((e.filename||'').split('/').pop()+':'+e.lineno):''); });
     window.addEventListener('unhandledrejection',function(e){ var r=e&&e.reason; push('promise', (r&&(r.message||r))||'unhandledrejection'); });
   })();
+  /* (#R133) OPTIONAL error monitoring → Sentry. DORMANT unless a DSN is configured via
+     window.INTMAP_SENTRY_DSN or <meta name="intmap-sentry-dsn" content="…">. Zero weight and
+     zero network when off; IntMap runs identically. See docs/MONITORING.md for setup.
+     Privacy (§8.4): no PII/tokens/cookies/localStorage, no Atlas input or search terms, no
+     precise geolocation, query strings stripped. Benign external/network failures are NOT
+     reported as crashes (§8.5) — only IntMap's own exceptions are. */
+  (function(){ try{
+    var meta=document.querySelector('meta[name="intmap-sentry-dsn"]');
+    var dsn=window.INTMAP_SENTRY_DSN||(meta&&meta.content)||'';
+    if(!dsn) return;   /* dormant — nothing loaded */
+    var BENIGN=/Failed to fetch|NetworkError|Load failed|ERR_[A-Z_]+|Could not load image|supported image type|AbortError|The operation was aborted|blockedbyclient|ResizeObserver loop|Non-Error promise rejection/i;
+    var s=document.createElement('script');
+    s.src=window.INTMAP_SENTRY_SDK||'https://browser.sentry-cdn.com/7.120.3/bundle.min.js';
+    s.crossOrigin='anonymous';
+    s.onload=function(){ try{ if(!window.Sentry||!window.Sentry.init) return;
+      window.Sentry.init({ dsn:dsn, release:window.INTMAP_BUILD, sendDefaultPii:false,
+        autoSessionTracking:false, tracesSampleRate:0, maxBreadcrumbs:20,
+        initialScope:{ tags:{ build:window.INTMAP_BUILD } },
+        beforeBreadcrumb:function(bc){ try{ if(!bc) return bc;
+          if(bc.category==='console'||bc.category==='ui.input') return null;   /* may carry user text */
+          if(bc.data){ if('body' in bc.data) delete bc.data.body; if(bc.data.url) bc.data.url=String(bc.data.url).split('?')[0]; }
+        }catch(e){} return bc; },
+        beforeSend:function(ev){ try{
+          if(ev.request){ delete ev.request.cookies; delete ev.request.headers; delete ev.request.data; delete ev.request.query_string; if(ev.request.url) ev.request.url=String(ev.request.url).split('?')[0].split('#')[0]; }
+          delete ev.user; if(ev.contexts){ delete ev.contexts.geolocation; }
+          var vs=ev.exception&&ev.exception.values&&ev.exception.values[0];
+          var msg=(vs&&vs.value)||ev.message||'';
+          if(BENIGN.test(String(msg))) return null;   /* external/network noise — not a product crash */
+        }catch(e){} return ev; } });
+    }catch(e){} };
+    s.onerror=function(){};   /* SDK CDN unreachable → silently stay dormant, app unaffected */
+    (document.head||document.documentElement).appendChild(s);
+  }catch(e){} })();
+  /* (#R133) STAGING marker (§5.4): a clear "TEST BUILD" ribbon on non-production origins so a
+     preview build can never be mistaken for production. Shown ONLY when explicitly a staging
+     context — a *.pages.dev preview host, ?staging=1, or a meta flag — NEVER on production or
+     during local dev, so the live site is untouched. */
+  window.addEventListener('DOMContentLoaded',function(){ try{
+    var q=/[?&]staging=1\b/.test(location.search);
+    var pv=/\.pages\.dev$/i.test(location.hostname);   /* Cloudflare Pages preview */
+    var mf=!!document.querySelector('meta[name="intmap-staging"]');
+    if(!(q||pv||mf)) return;
+    window.INTMAP_STAGING=true;
+    var r=document.createElement('div');
+    r.setAttribute('data-intmap-staging','1');
+    r.style.cssText='position:fixed;left:0;right:0;top:0;z-index:100000;background:#a15c00;color:#fff;font:700 12px/1.5 system-ui,sans-serif;text-align:center;padding:4px 8px;letter-spacing:.04em;pointer-events:none;box-shadow:0 1px 6px rgba(0,0,0,.3);';
+    r.textContent='STAGING / TEST BUILD — not production';
+    (document.body||document.documentElement).appendChild(r);
+  }catch(e){} });
   (function(){ try{
     var KEY='intmap_build_seen', seen=localStorage.getItem(KEY)||'';
     if(seen && seen>window.INTMAP_BUILD){
