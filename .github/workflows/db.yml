@@ -9,9 +9,9 @@ name: Database checks
 on:
   push:
     branches: [main]
-    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/db-*']
+    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/backup-db.sh', 'scripts/restore-test.sh']
   pull_request:
-    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/db-*']
+    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/backup-db.sh', 'scripts/restore-test.sh']
   workflow_dispatch:
 
 # Read-only token. This job connects to a local database only — no prod secrets.
