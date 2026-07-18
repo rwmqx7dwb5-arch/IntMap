@@ -5,6 +5,41 @@
 
 ---
 
+## R134 — データ保護基盤（Supabase migrations・RLS/権限テスト・バックアップ・復元試験・安全DB変更） (tag `#R134`)
+
+第二段階「データ保護基盤の構築委託書」を実装。**新機能追加・UI大規模変更はせず**、DB構造をコード化し／RLS・権限を自動テストし／バックアップと隔離復元を用意し／本番DB変更を安全化。作業ブランチ `ops/data-protection-baseline` → PR。原則**追加のみ**（唯一のindex.html変更＝`imViewProfile`をPII安全な`profiles_public`ビュー読取へ、フォールバック付き）。**本番DBへは一切接続・変更せず**（ローカル/CIのみ）。
+
+### 調査結果（現状）
+- `supabase/` はEdge Functions（`ai-proxy`/`refresh-news`）のみ。**`config.toml`も`migrations/`も無し**＝DB構造は本番インスタンスにしか存在しなかった（＝今回の中心課題）。`supabase/.temp/linked-project.json`は追跡されていた→**untrack＋.gitignore**（ref/org idは公開情報だがCLIローカル状態）。
+- **コードから逆算した15テーブル**（`.from()`全数＋Edge Functions）: `profiles`/`ai_usage`/`user_prefs`/`favorites`/`donations`/`feedback`/`bug_reports`/`community_posts,comments,votes,comment_votes,reports`/`geo_pins`/`dashboard_cards`/`current_news`。**2 RPC**=`increment_ai_usage(p_user,p_limit)→(used,allowed)`・`refund_ai_usage(p_user)`（SECURITY DEFINER・service_role）。Realtime publication=geo_pins/dashboard_cards/community_*/current_news。pg_cron＝refresh-news ~20分毎。**Storage未使用**（アバターは`profiles.avatar_url`のdata URL）。管理者＝`profiles.is_admin`（admin.htmlが`update profiles set is_admin where email=`で起動）。
+- ローカルに**Docker無し**（Supabaseローカルスタック不可）→ migration適用/RLS pgTAP/db diff/復元試験は**CI（GitHub Linux＝Docker有）で実行**。Supabase CLI 2.106.0はローカル有。`npm test`はPowerShell（scoop node）で緑。
+
+### データ分類（§5）
+- **A 消失重大**: profiles/ai_usage/user_prefs/favorites/donations/feedback/bug_reports/community_*（アカウント/ユーザー生成）。
+- **B 再取得可**: current_news（20分毎再生成）・概ねgeo_pins/dashboard_cards（admin.htmlシード再現可）。
+- **C 保存禁止**: service_role key/DBパスワード/トークン/生JWT/平文本番dump。
+
+### 実装
+- **`supabase/config.toml`**: ローカル/CI用（本番非接続）。`db.major_version=15`（本番一致を要確認とコメント）。api/db/realtime/auth・Google外部認証はローカルoff・functions verify_jwt反映。
+- **`supabase/migrations/20260718090000_baseline.sql`**: 全15テーブル＋PK/FK/UNIQUE/index、`is_admin()`（SECURITY DEFINER/`search_path=''`）、`handle_new_user()`トリガ（signupで`profiles`自動生成）、2 RPC、**RLS全表ON＋方針別ポリシー**、**grants（テーブル/カラム/execute revoke）**、realtime publication。全て`if not exists`/`create or replace`/`drop policy if exists`で**冪等・非破壊**（DROP無し）。**3つのハードニングを内包**（本番が未適用なら`db diff --linked`がdriftとして提示）: ①profiles.email/is_adminは本人+adminのみ（公開表示は`profiles_public`ビュー4列のみ）②本人は`display_name/bio/avatar_url/login_count`のみ更新可＝**is_admin/plan自己昇格不可**③ai_usageはRPC経由のみ書込・RPC executeはservice_roleのみ。
+- **`supabase/seed.sql`**: **100%合成**（`.test`ドメイン・プレースホルダUUID）。test A/B/admin（auth.users挿入→トリガでprofiles生成）＋全表の代表行。
+- **`supabase/tests/*_test.sql`（pgTAP）**: `00_structure`（15表存在・**RLS全表ON**・PK/FK・profiles_publicがemail非露出）／`01_rls_matrix`（§7.3全数＝anon/A/B/admin/service_roleの読み書き分離・自己昇格不可・quota改ざん不可・他人行不可視／不可変・author-or-adminモデレーション・service_role bypass）／`02_functions`（RPCが上限enforce＋refund・全SECURITY DEFINERがsearch_pathピン・execute/カラムgrant正）。**SECURITY INVOKERヘルパ`_sel/_dml`**でなりすまし役として実行→結果を`_r`退避→superuserでassert（DENIED=42501／ROWS:0=RLS USING／0行=読取遮断を明示）。
+- **`.github/workflows/db.yml`（新CI・別ジョブ）**: `supabase/**`変更時のみ（本CIを遅延させない）。supabase start→`db reset`→**drift gate**（`db diff --schema public`空必須・pgTAP前に実行）→pgTAP（CI限定extension）→`supabase test db`→**backup→暗号化→checksum→復号→restore→検証のroundtrip**（合成データ・秘密不要）。`permissions: contents:read`・**本番非接続・秘密不要**・timeout・**fail-closed**（DB構築不能でも成功扱いにしない）。
+- **バックアップ（採用＝Managed + 休眠pg_dump）**: `db-backup.yml`は**DORMANT**（`SUPABASE_DB_URL`＋`BACKUP_GPG_PASSPHRASE`両秘密が揃うまで各run skip＝R133のgated deploy流儀）。`scripts/backup-db.sh`＝`pg_dump -Fc`（public/auth/storage）→**GPG AES-256**→SHA-256→metadata→暗号化artifact（7日保持）・平文はshred・**鍵は暗号文と別保管**・失敗で重複排除Issue。`scripts/restore-test.sh`＝checksum照合→復号→restore→**構造+RLS+ポリシー存続を検証**・**非ローカル対象は拒否**（`ALLOW_NONLOCAL=1`以外）。
+- **`scripts/static-checks.mjs`**: TEXT_EXTに`.sql`/`.toml`追加（migrations/seed/configも秘密スキャン対象）＋**SQL-PIIチェック**（seed/migrationに実開発者メール・非`.test`メール混入をエラー）。
+- **index.html（唯一の変更）**: `imViewProfile`が`profiles_public`（安全4列）読取→エラー時`profiles`フォールバック（migration適用前後どちらでも動作＝bio/avatar表示を維持しつつ他人のemail非取得）。
+- **docs**: `DATABASE.md`（全表/関係/関数/RLS方針/管理者/Storage/Auth/分類）・`MIGRATIONS.md`（作成→ローカル再構築→テスト→PR→**本番手動適用（バックアップ＋承認）**→drift照合/`migration repair`で権威化・破壊的変更・ロールバック3分類）・`RLS-TESTING.md`（主体/対象/ローカル/CI/失敗の読み方/新表追加時）・`BACKUP-RESTORE.md`（Managed優先/休眠pg_dump/暗号化/隔離復元/**やってはいけない操作**）・`DATABASE-INCIDENT.md`（誤DELETE/UPDATE/RLSミス/権限漏洩/migration失敗/接続不能/backup失敗/**service_role漏洩**/不正アクセスの初心者向け番号手順）。
+
+### 検証（§15）
+- **ローカルで実行＝PASS**: `npm test`（静的＋ブラウザ11）緑。static-checks（.sql/.toml/PII含む82ファイル）緑。
+- **CIで実行（Docker必須のためローカルNOT RUN）**: `supabase db reset`／drift gate／pgTAP RLS/権限全数／backup-restore roundtrip＝db.ymlがPR上で実行（本PRは`supabase/**`変更のため発火）。
+- **本番（承認待ち＝NOT RUN）**: `db diff --linked`照合／`migration repair`権威化／本番migration適用／Managedバックアップ有効化／DB接続文字列・GPGパスフレーズのSecret登録は**ユーザーの手動作業**（`docs/BACKUP-RESTORE.md`/`MIGRATIONS.md`に画面手順）。
+
+### 未対応/据置
+- 本番権限が要る全操作（上記）はユーザー手動。Auth provider/redirect URL/email template/pg_cron/API keyはmigration再現不可（dashboard管理・docsに明記）。Managed PITRはProプラン（費用）。週次4世代保持はGH artifactでは限界（Managed/外部ストレージ推奨）。
+
+---
+
 ## R133 — 運用品質基盤（CI・自動テスト・ステージング・安全リリース・ロールバック・エラー/稼働監視） (tag `#R133`)
 
 第一段階「運用品質基盤の構築委託書」を実装。**新機能追加・大規模再設計はせず、現行の単一HTML＋GitHub Pages構成を温存**したまま、破損を本番前に検知し／本番障害を早期発見し／安全に前版へ戻せる設備を追加。作業ブランチ `ops/quality-baseline` → PR。全て**追加のみ**（既存挙動不変）。

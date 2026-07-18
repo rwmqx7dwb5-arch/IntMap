@@ -25,3 +25,15 @@ npm-debug.log*
 *.local.env
 .env
 
+# ── Supabase local dev + DB backups (added R134) ─────────────────────────────
+# CLI local state (link info, downloaded CLI). config.toml/migrations/seed ARE tracked.
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/functions/**/.env
+# DB dumps / encrypted backups must NEVER be committed to this public repo.
+/backups/
+*.dump
+*.dump.gpg
+*.sql.gpg
+

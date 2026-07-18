@@ -1,0 +1,70 @@
+# ============================================================================
+#  IntMap — Supabase CLI config (LOCAL development / CI only).
+# ----------------------------------------------------------------------------
+#  This file drives the LOCAL Supabase stack (`supabase start`, `supabase db
+#  reset`, `supabase test db`). It never contains secrets and never points at
+#  production. The production project (ref vpekfwdpurzejrrmacac) is reached only
+#  by explicit, credential-gated commands the maintainer runs by hand
+#  (see docs/MIGRATIONS.md and docs/BACKUP-RESTORE.md).
+#
+#  IMPORTANT: `major_version` should MATCH the production Postgres version so
+#  that `supabase db diff --linked` produces a faithful drift report. Check it in
+#  Dashboard → Project → Settings → Infrastructure ("Postgres version"). If prod
+#  is 17, change the 15 below to 17. (Local RLS/pgTAP tests pass on either.)
+# ============================================================================
+
+project_id = "intmap"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Match to production (see note above).
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+# Local test mailbox (never a real SMTP server).
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+# Local dev origin. Production redirect URLs live ONLY in the Supabase dashboard
+# (Authentication → URL Configuration) — they are not reproducible via migrations.
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000", "http://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+# Google OAuth is used in production but its client id / secret are secrets held
+# in the dashboard — never in this repo. Left disabled locally on purpose.
+[auth.external.google]
+enabled = false
+
+# Edge Functions already present in this repo. verify_jwt mirrors each function's
+# deploy flag (ai-proxy verifies the user; refresh-news is deployed --no-verify-jwt).
+[functions.ai-proxy]
+verify_jwt = true
+
+[functions.refresh-news]
+verify_jwt = false

@@ -19,7 +19,7 @@ const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
 const SKIP_DIRS = new Set(['.git', 'node_modules', 'playwright-report', 'test-results', '.cache', '.playwright', 'coverage']);
 // Binary / large-asset extensions we do not read as text.
 const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.pdf', '.zip', '.gz', '.tif', '.tiff', '.mp4', '.mov']);
-const TEXT_EXT = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.json', '.yml', '.yaml', '.md', '.css', '.py', '.txt', '.xml', '.svg']);
+const TEXT_EXT = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.json', '.yml', '.yaml', '.md', '.css', '.py', '.txt', '.xml', '.svg', '.sql', '.toml']);
 
 // Values that are PUBLIC on purpose (documented in index.html / README) — never flag these.
 const PUBLIC_ALLOW = [
@@ -94,6 +94,46 @@ for (const f of textFiles) {
   if (jwt) {
     if (jwtIsServiceRole(jwt[0])) err('secret-scan', `${f.rel}: committed Supabase SERVICE_ROLE JWT`);
     else warn('secret-scan', `${f.rel}: contains a JWT-shaped string (verify it is not a secret)`);
+  }
+}
+
+// ── 2b. SQL migrations/seed must be synthetic (no real PII, no dev email) ─────
+// The DB migrations + seed ship in this PUBLIC repo, so they must never contain a
+// real email, a real auth UUID, or production data. Enforce synthetic-only.
+const DEV_EMAIL = /2ppzc4kk6r@privaterelay\.appleid\.com/i;
+const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+for (const f of ALL.filter((x) => x.rel.startsWith('supabase/') && x.ext === '.sql')) {
+  const t = read(f);
+  if (DEV_EMAIL.test(t)) {
+    err('sql-pii', `${f.rel}: contains the real developer email — SQL must use synthetic *.test addresses only`);
+  }
+  for (const m of t.matchAll(EMAIL_RE)) {
+    const email = m[0];
+    // Allowed: reserved test TLD (.test) and documentation domains (example.*).
+    if (!/\.test$/i.test(email) && !/@example\.(?:com|org|net|test)$/i.test(email)) {
+      err('sql-pii', `${f.rel}: non-synthetic email "${email}" — use a *.test address in migrations/seed`);
+    }
+  }
+}
+
+// ── 2c. Destructive-migration detector (§11: never run un-flagged) ───────────
+// Surface data-destructive DDL in migrations so it is never applied unnoticed.
+// WARNING, not error: destructive changes ARE sometimes intended — they just must
+// be seen + reviewed (see docs/MIGRATIONS.md). Safe idempotency guards like
+// `drop policy if exists` / `drop trigger if exists` deliberately don't match.
+const DESTRUCTIVE = [
+  { name: 'DROP TABLE', re: /\bdrop\s+table\b/i },
+  { name: 'DROP COLUMN', re: /\bdrop\s+column\b/i },
+  { name: 'ALTER … TYPE', re: /\balter\s+column\b[\s\S]{0,60}?\btype\b/i },
+  { name: 'DISABLE ROW LEVEL SECURITY', re: /\bdisable\s+row\s+level\s+security\b/i },
+  { name: 'TRUNCATE', re: /\btruncate\b/i },
+  { name: 'DELETE FROM', re: /\bdelete\s+from\b/i },
+];
+const stripSqlComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
+for (const f of ALL.filter((x) => x.rel.startsWith('supabase/migrations/') && x.ext === '.sql')) {
+  const t = stripSqlComments(read(f));   // scan executable DDL only, not comments
+  for (const d of DESTRUCTIVE) {
+    if (d.re.test(t)) warn('migration-destructive', `${f.rel}: contains ${d.name} — destructive; back up + review before applying (docs/MIGRATIONS.md)`);
   }
 }
 

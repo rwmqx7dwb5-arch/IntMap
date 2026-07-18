@@ -15725,7 +15725,14 @@ window.addEventListener('DOMContentLoaded', () => {
     let m=document.getElementById('profile-modal');
     if(!m){ m=document.createElement('div'); m.id='profile-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5200;padding:20px;'; m.onclick=e=>{ if(e.target===m) m.style.display='none'; }; document.body.appendChild(m); }
     let bio='', avatar='', name=author||'';
-    if(uid && DB){ try{ const {data}=await DB.from('profiles').select('display_name,bio,avatar_url').eq('id',uid).maybeSingle(); if(data){ name=data.display_name||name; bio=data.bio||''; avatar=data.avatar_url||''; } }catch(_){} }
+    if(uid && DB){ try{
+      /* (#R134) Read the PUBLIC-safe projection (profiles_public = id/display_name/bio/avatar_url only) so a
+         viewer never receives another user's email/is_admin/plan. Falls back to profiles for a database that
+         has not applied the profiles_public view yet (forward+backward compatible with the DB migration). */
+      let r=await DB.from('profiles_public').select('display_name,bio,avatar_url').eq('id',uid).maybeSingle();
+      if(r.error) r=await DB.from('profiles').select('display_name,bio,avatar_url').eq('id',uid).maybeSingle();
+      const data=r.data; if(data){ name=data.display_name||name; bio=data.bio||''; avatar=data.avatar_url||''; }
+    }catch(_){} }
     let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))|0;
     const ava = avatar?`<div style="width:66px;height:66px;border-radius:50%;background:url('${avatar}') center/cover;margin:0 auto 10px;"></div>`:`<div style="width:66px;height:66px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:700;color:#fff;background:hsl(${Math.abs(h)%360},58%,46%)">${escapeHtml((name[0]||'?').toUpperCase())}</div>`;
     m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:320px;text-align:center;">${ava}<h2 style="margin:0 0 6px;font-size:18px;">${escapeHtml(name||'?')}</h2><p style="color:var(--text-muted);font-size:13px;line-height:1.55;white-space:pre-wrap;margin:0 0 16px;">${bio?escapeHtml(bio):(currentLang==='jp'?'自己紹介はまだありません。':currentLang==='de'?'Noch keine Bio.':currentLang==='ru'?'Пока без описания.':currentLang==='es'?'Aún sin biografía.':'No bio yet.')}</p><button id="pm-close" style="width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;">${currentLang==='jp'?'閉じる':currentLang==='de'?'Schließen':currentLang==='ru'?'Закрыть':currentLang==='es'?'Cerrar':'Close'}</button></div>`;

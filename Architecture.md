@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-18 (R133 — 運用品質基盤 §15 追加)
+> Last reviewed: 2026-07-18 (R134 — データ保護基盤 §16 追加：Supabase migrations・RLS/権限pgTAP・バックアップ/復元)
 >
 > **R41 の要点**：`whenStyleReady()` が永久ハングし得た問題を修正（idle/loadのみ待機→ポーリング＋ハード解決）＋自己修復をハートビート化（「チェックしても出ない／消したのに残る・再読込で治る」の真因）。相関/散布図の残差マップを再実装（先にモーダルを閉じる＋RdBu連続配色＋指標33→51）。ウェブカムを**実装**（検証済みの24時間ライブYouTube配信25件をポップアップ内に埋め込み再生。検索リンクのハリボテを廃止）。**タイムゾーンレイヤー**新設（Natural Earth境界＋各ゾーンの現在時刻を毎分更新）。GIBSラスターに色スケール凡例。鉄道線を濃色＋白枕木で視認性向上。水域/地形ラベルを別チェック（`cb-geolabels`）化＋河川ラベルを `waterway` 由来に修正（位置ズレ解消）。天気ポップアップの華氏完全対応＋移動可能化。ウィジェット36→41。i18n：RUのレイヤーグループ見出し欠落＋国詳細(Stats)のES欠落を修正、非AIニュース地点辞書を多言語強化。
 
@@ -1011,5 +1011,36 @@ npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
 
 ### 15.4 安全リリース（§6・オプトイン）
 現行は「push で branch 自動公開」。CIゲート版へ移行するには **Settings→Pages→Source=GitHub Actions** ＋ **Variables `ENABLE_PAGES_DEPLOY=true`** を設定（それまで deploy/rollback は全 job skip＝現行公開不変）。詳細は `docs/RELEASE.md`。
+
+---
+
+## 16. データ保護基盤 (migrations・RLS/権限テスト・バックアップ・復元) — R134
+
+DB構造を**コード化**（唯一の設計図を本番インスタンスからGitHubのmigrationへ）し、RLS/権限を**自動テスト**し、**バックアップ/隔離復元**を用意し、本番DB変更を**安全化**した設備。§6（テーブル/Edge Functions）を再現・保護する土台。アプリ挙動は不変（唯一の`index.html`変更＝`imViewProfile`のPII安全化）。
+
+### 16.1 Supabase CLI 構成
+- `supabase/config.toml` — ローカル/CI用（**本番非接続**）。`db.major_version` は本番一致を要確認。
+- `supabase/migrations/20260718090000_baseline.sql` — 全15テーブル＋制約/index、`is_admin()`／`handle_new_user()`トリガ／2 RPC、**RLS全表ON＋ポリシー**、grants（テーブル/カラム/execute）、realtime publication。**冪等・非破壊**（`if not exists`/`create or replace`/`drop policy if exists`・DROP TABLE/COLUMN無し）。コードから再構成したベースライン（本番照合は `db diff --linked` → `migration repair` で権威化）。
+- `supabase/seed.sql` — **100%合成**（`.test`ドメイン・プレースホルダUUID・A/B/adminとeach表の代表行）。
+- `supabase/tests/*_test.sql` — pgTAP（構造＋RLS/権限マトリクス＋関数）。
+
+### 16.2 RLS 3大保証（テストで実証）
+1. **PII非公開**: `profiles`のemail/is_admin/plan は本人+adminのみ。公開表示は `profiles_public` ビュー（id/display_name/bio/avatar_url の4列）。feedback/bug_reports/donations/community_reports/ai_usage は他人/anon読取不可。
+2. **昇格不可**: 本人は `display_name/bio/avatar_url/login_count` のみ更新可（カラムgrant）→ is_admin/is_pro/plan 自己設定不可。
+3. **quota改ざん不可**: `ai_usage` 書込はSECURITY DEFINER RPC経由のみ、RPC executeは service_role のみ。
+
+### 16.3 CI・バックアップ
+- `.github/workflows/db.yml` — `supabase/**` 変更時のみ発火（本CIを遅延させない）。ローカルSupabaseで `db reset`→**drift gate**（`db diff` 空必須）→pgTAP→**backup/restore roundtrip**（合成データ）。**本番非接続・秘密不要・fail-closed**。
+- `.github/workflows/db-backup.yml` — **DORMANT**（`SUPABASE_DB_URL`＋`BACKUP_GPG_PASSPHRASE` 両Secret登録まで各run skip）。`scripts/backup-db.sh`＝pg_dump→GPG AES-256→SHA-256→7日暗号化artifact（鍵は別保管・失敗でIssue）。`scripts/restore-test.sh`＝checksum→復号→隔離DBへrestore→構造+RLS検証（非ローカル対象拒否）。
+- 採用方針＝**Managed backups優先**（Pro=Daily+PITR推奨）＋休眠pg_dumpをフリー環境の予備。
+
+### 16.4 実行
+```bash
+supabase start && supabase db reset          # migrations + seed（要Docker）
+psql "$LOCAL_DB_URL" -c 'create extension if not exists pgtap with schema extensions;'
+supabase test db                             # RLS/権限 pgTAP
+supabase db diff --schema public             # driftゼロ確認
+```
+本番適用は `docs/MIGRATIONS.md`（バックアップ→承認→`db push`）。詳細は `docs/{DATABASE,MIGRATIONS,RLS-TESTING,BACKUP-RESTORE,DATABASE-INCIDENT}.md`。
 
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*
