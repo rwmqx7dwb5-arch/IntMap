@@ -25720,7 +25720,7 @@ window.addEventListener('DOMContentLoaded', () => {
        object is what Atlas *knows*: the current focus countries, topic under investigation, metrics in play,
        the exact components of an active custom score (so "家賃を重視して" re-emits the real current recipe),
        and the time-travel period. Updated deterministically from the actions that actually SUCCEEDED. */
-    const _wctx={countries:[],topic:'',metrics:[],scoreComponents:null,period:'',exclusions:[]};
+    const _wctx={countries:[],topic:'',metrics:[],scoreComponents:null,period:'',exclusions:[],year:null};   /* (#R135) year = the last historical year in play (conversation fallback for the REQUEST PROFILE) */
     /* (#R120) non-dispatch creators (e.g. a GeoJSON file upload) report their new object ids here, so
        "さっき読み込んだやつ" resolves via _wctx.lastObjects just like dispatch-created objects. */
     window._imNoteObjects=ids=>{ try{ if(Array.isArray(ids)&&ids.length) _wctx.lastObjects=ids.map(String).concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} };
@@ -25732,7 +25732,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if((a.type==='rank'||a.type==='mapMetric'||a.type==='explore'||a.type==='findRelated')&&a.metric){ const m2=String(a.metric); if(_wctx.metrics.indexOf(m2)<0) _wctx.metrics.unshift(m2); _wctx.metrics=_wctx.metrics.slice(0,4); }
       if((a.type==='scoreMap'||a.type==='customLayer'||a.type==='evaluate')&&Array.isArray(a.components)){ try{ _wctx.scoreComponents=JSON.stringify({name:a.name||'',components:a.components}).slice(0,600); }catch(_){} }
       if(a.type==='reset'||a.type==='clearAll'){ _wctx.scoreComponents=null; }
-      if(a.type==='timeTravel'||a.type==='setTime'||a.type==='timeSet'){ _wctx.period=(a.reset||a.now||a.live)?'now':String(a.year||a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40); }
+      if(a.type==='timeTravel'||a.type==='setTime'||a.type==='timeSet'){ _wctx.period=(a.reset||a.now||a.live)?'now':String(a.year||a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40);
+        if(a.reset||a.now||a.live) _wctx.year=null; else if(a.year!=null&&isFinite(+a.year)) _wctx.year=Math.round(+a.year); else if(a.date){ try{ const y=+String(a.date).slice(0,4); if(y>=1000) _wctx.year=y; }catch(_){} } }   /* (#R135) year for the next turn's REQUEST PROFILE (conversation fallback) */
+      if((a.type==='researchMap'||a.type==='research_map'||a.type==='situationMap')&&a.year!=null&&isFinite(+a.year)) _wctx.year=Math.round(+a.year);   /* (#R135) */
+      if((a.type==='historicalMap'||a.type==='allianceMap'||a.type==='powerMap')&&(a.era||a.date)){ try{ const y=_rpExtractYear(String(a.era||a.date)); if(y!=null) _wctx.year=y; }catch(_){} }   /* (#R135) */
     }); }catch(_){} }
     /* (#R80) vision §3 — REMEMBER exclusion conditions ("除外条件…を保持"). These are stated in natural language
        ("except Europe", "◯◯を除いて", "not counting China", "アメリカ以外"), not encoded in an action, so parse the
@@ -27087,7 +27090,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return bs>=58?best:null; }catch(_){ return null; } }
     async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c; try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats[code]){ const s=countryStats[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
     /* short human label for a step, used in the honest failure summary */
-    function actLabel(a){ if(!a||!a.type) return ''; const x=a.name||a.place||a.country||a.metric||a.query||a.mode||a.lang||a.unit||a.from||a.target||''; return a.type+(x?(' "'+String(x).slice(0,26)+'"'):''); }
+    function actLabel(a){ if(!a||!a.type) return ''; const x=a.name||a.place||a.country||a.metric||a.query||a.topic||a.mode||a.lang||a.unit||a.from||a.target||''; return a.type+(x?(' "'+String(x).slice(0,26)+'"'):''); }
     /* (#R80) vision §17 — IntMap SELF-DIAGNOSIS. Atlas monitors whether IntMap's OWN data pipeline is healthy:
        is the news feed still updating, are the live data APIs Atlas relies on reachable, and are the layers the
        user turned on actually painting? All checks reuse data/endpoints IntMap ALREADY uses (no new external
@@ -27186,7 +27189,8 @@ window.addEventListener('DOMContentLoaded', () => {
         return lines.join('\n'); }catch(_){ return ''; } }
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
-    function buildPrompt(q){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
+    function buildPrompt(q, profile){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
+      try{ const pr=profile||_requestProfile(q); const pb=_profileBlock(pr); if(pb) p+=pb+'\n'; }catch(_){}   /* (#R135) machine-parsed temporal/geo/evidence hints + enforced action-choice rules */
       if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot on the map: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. Words like "here / this spot / this place / この地点 / ここ / hier / здесь / aquí" refer to THIS coordinate. First work out what is at or near it (country, region, city, terrain, sea) and answer about it specifically; if it is ocean or uninhabited say so. You may also pass place:"there" to actions and it resolves to this point.\n\n';
       const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about — resolve "the same/them/それ/同じ条件" against this)\n'+wc+'\n\n';
       if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest; resolve pronouns/follow-ups against this)\n'+_hist.slice(-8).join('\n')+'\n\n';
@@ -27326,6 +27330,7 @@ window.addEventListener('DOMContentLoaded', () => {
        Run in devtools: window.IntMapAtlasQA.run() → {pass, results:[{id,ok,detail}…]}. */
     window.IntMapAtlasQA={
       freshness:_analyzeFreshness, nowContext:_nowContext, evidence:_analyzeEvidence, evidenceBlock:_evidenceBlock, headerBlock:_analyzeHeaderBlock, systemPrompt:_analysisSystemPrompt,
+      requestProfile:_requestProfile, validatePlan:_validatePlan, actionFamily:_actionFamily, researchFamKey:_researchFamKey, semanticRetryKey:_semanticRetryKey, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; }, profileBlock:_profileBlock, isWorldExpansion:_isWorldExpansion, goalValidation:_goalValidation,   /* (#R135) getter avoids the const TDZ at load */
       centralAsiaFixture:function(){
         const nowMs=Date.UTC(2026,6,17,20,0,0);   /* report's reference "now" = 2026-07-18 05:00 JST; window = 72 h → 07-15 05:00 through 07-18 05:00 */
         const q='中央アジアを担当する分析官として、現在から72時間、この地域の監視レベルを引き上げるべきか判断する。ニュースの深刻そうな表現ではなく、位置・時系列・通常状態・データ欠落を含めて判断する。判断を支える直接的証拠と、重要だが未確認の兆候を区別する。確信度0〜100。';
@@ -27365,10 +27370,50 @@ window.addEventListener('DOMContentLoaded', () => {
         add('9·prompt: user format before brevity', /FOLLOW THE OUTPUT STRUCTURE THE USER ASKED FOR/i.test(P)&&/their requested structure wins/i.test(P), '');
         add('9·prompt: no false "newest-first is chronological" claim', !/sorted newest-first/i.test(P), '');
         add('14·single analysis AI call', true, 'by construction — analyze issues exactly one askAI({task:analysis})');
+        /* ===== (#R135) Request Profile + capability validation + semantic retry (the Sea-of-Okhotsk failure class) ===== */
+        const P1=_requestProfile('当時のオホーツク海はどんな状況だった？地図上で教えて。',{live:false,dispYear:1900,convYear:null});
+        add('R135·「当時」+1900 map-state → historical', P1.temporalMode==='historical'&&P1.targetYear===1900&&P1.temporalSource==='map-state', P1.temporalMode+'/'+P1.targetYear+'/'+P1.temporalSource);
+        add('R135·water kind detected', P1.geoKind==='water', P1.geoKind);
+        add('R135·evidence=historical, wants map+explanation', P1.evidenceMode==='historical'&&P1.outputs.map&&P1.outputs.explanation, P1.evidenceMode+' map='+P1.outputs.map+' expl='+P1.outputs.explanation);
+        const P2=_requestProfile('今のオホーツク海のニュースは？',{live:false,dispYear:1900,convYear:null});
+        add('R135·「今」+ニュース overrides map-state → current/live', P2.temporalMode==='current'&&P2.evidenceMode==='live', P2.temporalMode+'/'+P2.evidenceMode);
+        const P3=_requestProfile('1900年と現在のオホーツク海を比較して',{live:true,convYear:null});
+        add('R135·比較+現在 → mixed (keeps 1900)', P3.temporalMode==='mixed'&&P3.outputs.comparison&&P3.targetYear===1900, P3.temporalMode+'/'+P3.targetYear);
+        const P4=_requestProfile('1750年のサヘル交易圏を表示して',{live:true,convYear:null});
+        add('R135·explicit 1750 → historical/explicit', P4.temporalMode==='historical'&&P4.targetYear===1750&&P4.temporalSource==='explicit', P4.targetYear+'/'+P4.temporalSource);
+        add('R135·conversation-year fallback', _requestProfile('その交易圏はどこまで広がっていた？',{live:true,convYear:1750}).targetYear===1750, '');
+        const V1=_validatePlan([{type:'mapReport',topic:'オホーツク海',place:'オホーツク海'}],P1,'当時のオホーツク海');
+        add('R135·mapReport(historical) → researchMap(year kept)', V1.plan.length===1&&V1.plan[0].type==='researchMap'&&V1.plan[0].temporalMode==='historical'&&V1.plan[0].year===1900, V1.plan[0]&&V1.plan[0].type+'/'+V1.plan[0].year);
+        add('R135·rejection recorded', (V1.rejected||[]).some(r=>/live_mapReport/.test(r.reason)), JSON.stringify((V1.rejected||[]).map(r=>r.reason)));
+        const V2=_validatePlan([{type:'historicalMap',era:'1900'}],P1,'x');
+        add('R135·historicalMap on a sea → researchMap', V2.plan[0]&&V2.plan[0].type==='researchMap', V2.plan[0]&&V2.plan[0].type);
+        const Pw=_requestProfile('第一次世界大戦1916年の勢力図を表示して',{live:true,convYear:null});
+        const V3=_validatePlan([{type:'historicalMap',era:'World War I 1916'}],Pw,'x');
+        add('R135·WWI ALLIANCE map preserved', V3.plan[0]&&V3.plan[0].type==='historicalMap', V3.plan[0]&&V3.plan[0].type);
+        const Pc=_requestProfile('今のオホーツク海で何が起きている？地図で教えて',{live:true,convYear:null});
+        const V4=_validatePlan([{type:'mapReport',topic:'Sea of Okhotsk'}],Pc,'x');
+        add('R135·mapReport(current) preserved', V4.plan[0]&&V4.plan[0].type==='mapReport', V4.plan[0]&&V4.plan[0].type);
+        const V5=_validatePlan([{type:'flyTo',place:'オホーツク海'}],P1,'当時のオホーツク海はどんな状況だった？地図上で教えて');
+        add('R135·nav-only historical+map → researchMap appended', V5.plan.some(a=>a.type==='researchMap'), V5.plan.map(a=>a.type).join(','));
+        const k1=_researchFamKey({type:'mapReport',topic:'オホーツク海'}), k2=_researchFamKey({type:'mapReport',topic:'Sea of Okhotsk'}), k3=_researchFamKey({type:'mapReport',topic:'Okhotsk Sea'});
+        add('R135·translations share ONE retry key', !!k1&&k1===k2&&k2===k3, k1);
+        add('R135·researchMap≠mapReport retry key', _researchFamKey({type:'researchMap',temporalMode:'historical'})!==k1, _researchFamKey({type:'researchMap',temporalMode:'historical'}));
+        add('R135·world flyTo blocked when target is specific', _isWorldExpansion({type:'flyTo',place:'world'},P1)===true&&_isWorldExpansion({type:'flyTo',place:'オホーツク海'},P1)===false, '');
+        add('R135·registry: mapReport ∌ historical', ATLAS_ACTION_CAPABILITIES.mapReport.temporalModes.indexOf('historical')<0, '');
+        add('R135·registry: researchMap ∋ historical', ATLAS_ACTION_CAPABILITIES.researchMap.temporalModes.indexOf('historical')>=0, '');
+        add('R135·profile block names researchMap + year', /researchMap/.test(_profileBlock(P1))&&/1900/.test(_profileBlock(P1)), '');
+        const GVok=_goalValidation(P1,[{type:'researchMap',ok:true,produced:['explanation','map'],temporalMode:'historical',semanticTarget:'オホーツク海',userGoalSatisfied:true}]);
+        add('R135·goalValidation: researchMap satisfies', GVok.userGoalSatisfied===true&&GVok.explanationProduced===true&&GVok.mapRendered===true, JSON.stringify(GVok));
+        const GVbad=_goalValidation(P1,[{type:'historicalMap',ok:true,produced:[],temporalMode:'historical'}]);
+        add('R135·goalValidation: world map alone ≠ satisfied', GVbad.userGoalSatisfied===false, JSON.stringify(GVbad));
         const passed=R.filter(x=>x.ok).length;
         try{ if(typeof console!=='undefined'){ console.log('%c[IntMapAtlasQA] '+passed+'/'+R.length+(passed===R.length?' PASS':' FAIL'),'font-weight:bold'); R.forEach(x=>console.log((x.ok?'✓ ':'✗ ')+x.id+(x.detail?('  — '+x.detail):''))); } }catch(_){}
         return { pass:passed===R.length, passed, total:R.length, results:R, evBlock, header, webMode }; }
     };
+    /* (#R135 §17) Developer diagnostics for the LAST Atlas turn — request profile, the model's original plan, the
+       validated plan, rejected/rewritten actions, per-action structured outcomes, semantic-retry blocks, scope
+       changes and the final goal validation. Not shown to normal users. window.IntMapAtlasDebug.lastPlan(). */
+    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; }, requestProfile:function(q){ try{ return _requestProfile(q); }catch(_){ return null; } }, validatePlan:function(acts,q){ try{ return _validatePlan(acts,_requestProfile(q||''),q||''); }catch(_){ return null; } }, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; } }; }catch(_){}
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(currentLang==='jp'?'ja':currentLang)+',en';
@@ -27850,6 +27895,198 @@ window.addEventListener('DOMContentLoaded', () => {
     function histMatch(q){ const s=String(q||'').toLowerCase();
       if(/(ww ?1|wwi|world war (1|i|one)|first world war|第一次世界大戦|第一次大戦|一次大戦|1914|1915|1916|1917|1918|central powers|entente|中央同盟|協商|連合国)/.test(s)) return 'ww1_1916';
       return null; }
+
+    /* ============================ (#R135) TIME-AXIS RESEARCH/MAPPING ============================
+       Root cause of the "Sea of Okhotsk in 1900" failure: mapReport has TWO meanings — the planner reads it as
+       "map research findings", but it is IMPLEMENTED as a LIVE-NEWS incident mapper. A historical question (time
+       machine at 1900) was routed to it, found no live news, and the repair loop then churned translation-only
+       retries (オホーツク海→Sea of Okhotsk→Okhotsk Sea), expanded scope to a WORLD alliance map, and repeated the
+       "no live news" warning without ever answering. This block makes the TEMPORAL AXIS + required EVIDENCE explicit
+       BEFORE the planner runs, validates the plan against each action's REAL capability, adds a general researchMap
+       action (historical/current/mixed) that returns a written answer AND a map INDEPENDENTLY, and controls repair
+       by SEMANTIC key (not JSON-exact) so translation-only retries and world-substitutions can't recur. Pure helpers
+       are covered by IntMapAtlasQA.run(); the researchMap dispatch case is below with the other actions. */
+    let _atlasDbg=null;          /* last-turn diagnostics for window.IntMapAtlasDebug.lastPlan() */
+    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */
+    /* ---- temporal / evidence markers (5 languages) ---- */
+    const _RP_PAST_DEIXIS=/当時|その(?:頃|ころ)|この(?:時代|頃|ころ)|あの(?:頃|ころ|時代)|往時|昔|かつて|当[時代]|back then|at (?:that|the) time|in those days|of the (?:day|time|era|period)|damals|seinerzeit|тогда|в то время|в ту эпоху|entonces|en (?:aquella|esa) época|de la época/i;
+    const _RP_ERA_WORD=/戦間期|中世|近世|古代|近代|冷戦(?:期|時代)?|大戦(?:期|中|前|後)?|江戸(?:時代)?|明治|大正|昭和初期|帝政|王政|植民地(?:時代)?|middle ages|medi(?:a|e)eval|antiquity|\bancient\b|colonial(?: era| period| times)?|interwar|cold[- ]war|imperial era|victorian|belle époque|mittelalter|antike|kolonialzeit|zwischenkriegszeit|средневеков|античн|колониальн|межвоенн|edad media|época colonial|guerra fría/i;
+    const _RP_NOW=/今の|今は|今どう|今なに|今何|今起き|いまの|現在|現時点|最新|直近|足元|きょう|今日|nowadays|\btoday\b|tonight|\bnow\b|\bcurrent(?:ly)?\b|\blatest\b|right now|present[- ]day|как сейчас|\bсейчас\b|\bсегодня\b|актуальн|\bheute\b|\baktuell\b|\bderzeit\b|\bhoy\b|\bahora\b|actualmente|\bactual\b/i;
+    const _RP_CMP=/比較|くらべ|比べ|対比|\bversus\b|\bvs\.?\b|\bcompare\b|compared|contrast|gegenüber|\bvergleich|сравн|\bcompar(?:a|e)|frente a/i;
+    const _RP_WATER=/(?:^|[ 　])?[^ 　、。]*?(?:海(?![外軍運])|湾|海峡|灘|水道)(?:[はがのをへとにで、。\s]|$)|\b(?:sea|gulf|bay|strait|ocean|channel|sound)\b|мор[ея]\b|\bзалив|\bпролив|\bgolfo\b|\bestrecho\b|\bbahía\b/i;
+    /* Extract the last plausible PAST year mentioned (1000..currentYear-1). */
+    function _rpExtractYear(q){ q=String(q||''); let best=null; const yNow=(new Date()).getFullYear();
+      const re=/(?:^|[^0-9.,])((?:1[0-9]|20)[0-9]{2})\s*(?:年|CE|AD|BCE?)?/g; let m;
+      while((m=re.exec(q))){ const y=+m[1]; if(y>=1000&&y<=yNow) best=y; } return best; }
+    /* Coarse geographic-KIND hint from the raw text (the planner still resolves the exact place). */
+    function _rpGeoKind(q){ q=String(q||'');
+      if(_RP_WATER.test(q)) return 'water';
+      if(/山脈|高原|平野|盆地|砂漠|半島|地方|地域|平原|草原|流域|交易圏|文化圏|\bplateau\b|\bbasin\b|\bvalley\b|\bplain\b|\bdesert\b|peninsula|\bcoast\b|\bregion\b|\bsteppe\b|\bdelta\b/i.test(q)) return 'region';
+      if(/帝国|王国|公国|共和国|ソ連|王朝|汗国|\bempire\b|\bkingdom\b|khanate|caliphate|\brepublic of\b|dynasty|\breich\b|царство|ханство/i.test(q)) return 'historical-entity';
+      if(/\bcity\b|\btown\b|市$|区$|町$/i.test(q)) return 'city';
+      return 'unknown'; }
+    /* (#R135 §3) Build the lightweight REQUEST PROFILE. opts lets the regression harness pin the clock/travel state. */
+    function _requestProfile(q, opts){ opts=opts||{}; q=String(q||'');
+      const yNow=(typeof opts.nowYear==='number')?opts.nowYear:(new Date()).getFullYear();
+      let live=true, dispYear=null;
+      try{ if('live' in opts) live=!!opts.live; else if(window.IntMapTime) live=window.IntMapTime.isLive(); }catch(_){}
+      try{ dispYear=('dispYear' in opts)?opts.dispYear:((window.IntMapTime&&!live)?window.IntMapTime.year():null); }catch(_){}
+      const convYear=('convYear' in opts)?opts.convYear:(function(){ try{ const y=+String((_wctx&&_wctx.year!=null)?_wctx.year:'').replace(/[^0-9]/g,''); return (y>=1000&&y<yNow)?y:null; }catch(_){ return null; } })();
+      const explicitYear=_rpExtractYear(q);
+      const deixisPast=_RP_PAST_DEIXIS.test(q)||_RP_ERA_WORD.test(q);
+      const nowMk=_RP_NOW.test(q), cmpMk=_RP_CMP.test(q);
+      const nowRef=nowMk||/現在|現代|今日|nowadays|present|\btoday\b/i.test(q);
+      /* target year + source: explicit(1) → deixis+travelling map-state → conversation(2) → travelling map-state(3) → none */
+      let targetYear=null, tSource='none';
+      if(explicitYear!=null&&explicitYear<yNow){ targetYear=explicitYear; tSource='explicit'; }
+      else if(deixisPast&&!live&&dispYear!=null){ targetYear=dispYear; tSource='map-state'; }
+      else if(convYear!=null){ targetYear=convYear; tSource='conversation'; }
+      else if(!live&&dispYear!=null){ targetYear=dispYear; tSource='map-state'; }
+      /* temporal mode */
+      const histSignal=(explicitYear!=null&&explicitYear<yNow)||deixisPast||(!live&&dispYear!=null&&!nowMk);
+      let temporalMode='unspecified';
+      if(cmpMk&&(histSignal||targetYear!=null)&&nowRef) temporalMode='mixed';
+      else if(nowMk&&!deixisPast&&!(explicitYear!=null&&explicitYear<yNow)) temporalMode='current';
+      else if(histSignal) temporalMode='historical';
+      else if(nowMk) temporalMode='current';
+      if(temporalMode==='current'){ targetYear=null; tSource='none'; }
+      const evidenceMode=temporalMode==='historical'?'historical':temporalMode==='mixed'?'mixed':temporalMode==='current'?'live':'none';
+      const geoKind=_rpGeoKind(q);
+      const wantMap=/地図|マップ|マッピング|地図上|地図に|地図で|on the map|\bmap\b|見せて|表示して|plot|\bpin\b|karte|карт|mapa/i.test(q);
+      const wantCmp=cmpMk;
+      const wantExpl=(/[?？]|どう|どんな|なに|何|なぜ|どうして|状況|情勢|様子|教えて|説明|について|解説|どうなって|\bwhat\b|\bwhy\b|\bhow\b|which|situation|status|tell me|explain|describe|about\b|\bwas\b|\bwer\b|\bqué\b|\bкак\b/i.test(q))||temporalMode!=='unspecified';
+      return { temporalMode, targetYear, temporalSource:tSource, geoQuery:'', geoKind, evidenceMode, outputs:{ explanation:!!wantExpl, map:!!wantMap, comparison:!!wantCmp } }; }
+    /* (#R135 §3) The [REQUEST PROFILE] block the planner reads (machine-parsed hints; the rules are then ENFORCED). */
+    function _profileBlock(p){ if(!p) return ''; const outs=[]; if(p.outputs.explanation) outs.push('explanation'); if(p.outputs.map) outs.push('map'); if(p.outputs.comparison) outs.push('comparison');
+      const yStr=(p.targetYear!=null)?p.targetYear:'null';
+      return '[REQUEST PROFILE] (machine-derived hints; the capability rules below are ENFORCED after you plan — respect them)\n'
+        +'Temporal mode: '+p.temporalMode+'\nTarget year: '+(p.targetYear!=null?p.targetYear:'(none / present)')+'\nTemporal source: '+p.temporalSource+'\nGeographic kind (hint): '+p.geoKind+'\nRequested outputs: '+(outs.join(' + ')||'(unspecified)')+'\nRequired evidence mode: '+p.evidenceMode+'\n'
+        +'ACTION-CHOICE RULES (enforced): mapReport maps ONLY current/recent LIVE-NEWS incidents — NEVER use it for a historical or map-state question, a past-era general situation, historical background / powers / trade / strategic importance, or stable knowledge. For "what was the situation at PLACE in YEAR" or "at that time / この時代 / 当時", and for a place or topic\'s present-day situation that is not a specific live-incident hunt, use {"type":"researchMap","topic":...,"place":...,"temporalMode":"'+p.temporalMode+'","year":'+yStr+',"evidenceMode":"'+p.evidenceMode+'"}. historicalMap is ONLY for an era\'s ALLIANCE / faction / power map — never for a single sea, region or city. Keep the target year above. When an explanation is requested, the plan MUST include an action that produces one (researchMap / analyze / answer) — never only navigation. For a MIXED request cover BOTH the historical and the present side and keep them clearly separate.\n';
+    }
+    /* (#R135 §7) ACTION CAPABILITY REGISTRY — each action's REAL abilities (small reference, not a giant rule set). */
+    const ATLAS_ACTION_CAPABILITIES={
+      mapReport:   { temporalModes:['current','mixed','unspecified'], evidenceModes:['live'], outputs:['explanation','map'], geoKinds:['point','city','country','region','water'] },
+      researchMap: { temporalModes:['historical','current','mixed','unspecified'], evidenceModes:['historical','live','mixed'], outputs:['explanation','map'], geoKinds:['point','city','country','region','water','historical-entity','unknown'] },
+      historicalMap:{ temporalModes:['historical'], evidenceModes:['historical'], outputs:['thematic-map'], topics:['alliance','faction','war','political-bloc'] },
+      analyze:     { temporalModes:['current','mixed','unspecified'], evidenceModes:['live','mixed'], outputs:['explanation'] }
+    };
+    /* Family of an action (groups translations/synonyms so a semantic retry can dedupe them). */
+    function _actionFamily(a){ const t=(a&&a.type)||'';
+      if(t==='mapReport'||t==='newsMap'||t==='reportMap') return 'live-research-map';
+      if(t==='researchMap'||t==='research_map'||t==='situationMap') return 'research-map';
+      if(t==='historicalMap'||t==='historical'||t==='powerMap'||t==='allianceMap') return 'historical-map';
+      if(t==='analyze'||t==='research'||t==='synthesize') return 'analysis';
+      if(t==='brief') return 'brief';
+      if(t==='flyTo'||t==='fly'||t==='zoom'||t==='pan'||t==='bearing'||t==='pitch'||t==='projection'||t==='base'||t==='terrain3d'||t==='resetNorth'||t==='locate'||t==='search') return 'navigate';
+      return t||'other'; }
+    /* Retry KEY for the research-prone families: family + temporal mode (target-INDEPENDENT), so
+       mapReport("オホーツク海") / mapReport("Sea of Okhotsk") / mapReport("Okhotsk Sea") all collapse to ONE key. */
+    function _researchFamKey(a){ const f=_actionFamily(a);
+      if(f==='live-research-map'||f==='research-map'||f==='historical-map'||f==='analysis'){ const m=String((a&&a.temporalMode)||'')||(f==='live-research-map'?'live':''); return f+'|'+m; }
+      return ''; }
+    /* Full semantic descriptor (§10) — kept for the debug record. */
+    function _semanticRetryKey(a, profile){ return { actionFamily:_actionFamily(a), temporalMode:String((a&&a.temporalMode)||(profile&&profile.temporalMode)||''), userGoal:(profile&&profile.temporalMode==='historical')?'historical-situation':((profile&&profile.outputs&&profile.outputs.comparison)?'comparison':'research'), key:_researchFamKey(a) }; }
+    /* Would this action blow the scope up to the whole world when the user asked about a SPECIFIC feature? (§10) */
+    function _isWorldExpansion(a, profile){ try{ const pl=String((a&&(a.place||a.era||a.topic))||'');
+      const world=WORLD_RE.test(pl)||((a&&(a.type==='historicalMap'||a.type==='allianceMap'||a.type==='powerMap'))&&!pl);
+      if(!world) return false; const gk=(profile&&profile.geoKind)||''; return gk!==''&&gk!=='unknown'; }catch(_){ return false; } }
+    /* (#R135 §7) PRE-EXECUTION plan validation: fix incompatible actions BEFORE running them (not repair AFTER). */
+    function _validatePlan(acts, profile, q){ const rejected=[]; if(!Array.isArray(acts)) return {plan:acts,rejected};
+      const mode=(profile&&profile.temporalMode)||'unspecified';
+      const year=(profile&&profile.targetYear!=null)?profile.targetYear:null;
+      const gk=(profile&&profile.geoKind)||'unknown';
+      const wantExpl=!!(profile&&profile.outputs&&profile.outputs.explanation);
+      const _alliance=a=>/alliance|faction|\bpower\b|\bbloc\b|\baxis\b|同盟|陣営|勢力|連合|枢軸|大戦|冷戦|世界大戦|world war|\bww ?(?:1|2|i|ii)\b|cold[- ]war|\bwar\b/i.test(String((a&&(a.era||a.topic||a.question||a.place||a.title))||''));
+      const out=[];
+      for(const a of acts){ if(!a||!a.type){ out.push(a); continue; } const t=a.type;
+        if((t==='mapReport'||t==='newsMap'||t==='reportMap')&&mode==='historical'){
+          const na={type:'researchMap',topic:String(a.topic||a.question||a.query||'').trim(),place:String(a.place||'').trim(),temporalMode:'historical',evidenceMode:'historical'}; if(year!=null) na.year=year; if(a.count!=null) na.count=a.count;
+          rejected.push({from:t,to:'researchMap',reason:'historical_question_routed_to_live_mapReport'}); out.push(na); continue; }
+        if((t==='mapReport'||t==='newsMap'||t==='reportMap')&&mode==='mixed'){
+          const na={type:'researchMap',topic:String(a.topic||'').trim(),place:String(a.place||'').trim(),temporalMode:'mixed',evidenceMode:'mixed'}; if(year!=null) na.year=year;
+          rejected.push({from:t,to:'researchMap',reason:'mixed_request_needs_both_sides'}); out.push(na); continue; }
+        if((t==='historicalMap'||t==='historical'||t==='powerMap'||t==='allianceMap')&&!_alliance(a)&&(gk==='water'||gk==='region'||gk==='point'||gk==='city'||gk==='historical-entity')){
+          const na={type:'researchMap',topic:String(a.topic||a.question||'').trim(),place:String(a.place||a.era||'').trim(),temporalMode:'historical',evidenceMode:'historical'}; if(year!=null) na.year=year;
+          rejected.push({from:t,to:'researchMap',reason:'local_feature_is_not_an_alliance_map'}); out.push(na); continue; }
+        out.push(a); }
+      /* R3: explanation wanted for a historical/mixed question but the plan produces none → add a researchMap */
+      if(wantExpl&&(mode==='historical'||mode==='mixed')&&out.length){
+        const hasProducer=out.some(a=>{ const f=_actionFamily(a); return f==='research-map'||f==='live-research-map'||f==='analysis'||f==='brief'; });
+        const navOnly=out.every(a=>_actionFamily(a)==='navigate');
+        const answerOnly=out.every(a=>a&&a.type==='answer');
+        if(!hasProducer&&(navOnly||((answerOnly||out.every(a=>_actionFamily(a)==='navigate'||a.type==='answer'||a.type==='outline'||a.type==='highlight'||a.type==='layer'))&&profile.outputs.map))){
+          const keep=out.filter(a=>a&&a.type!=='answer'); const nav=keep.find(a=>a&&a.place);
+          const na={type:'researchMap',topic:(answerOnly&&out[0]&&out[0].text)?String(out[0].text).slice(0,120):String(q||'').slice(0,140),place:nav?String(nav.place).trim():'',temporalMode:mode,evidenceMode:(profile.evidenceMode||'historical')}; if(year!=null) na.year=year;
+          rejected.push({from:(navOnly?'(nav-only)':'(answer-only)'),to:'researchMap',reason:'explanation_and_map_need_a_research_producer'});
+          return {plan:keep.concat([na]),rejected}; } }
+      return {plan:out, rejected}; }
+    /* Repair instruction (§10) — the loose "nearby well-known place / coarser target" advice is REMOVED. */
+    function _repairGuidance(){ return 'Do NOT give up, but stay faithful to the request. Propose a GENUINELY different, documented action for the UNMET part only. HARD limits: never re-issue the same call with only a renamed / re-spelt / translated target; never switch a historical question to live news (mapReport) or vice-versa; never change the required evidence mode; never replace a specific place with a whole-world or continental thematic map. If you must widen the target, widen it by ONE step to its immediate surrounding region only (e.g. a sea → its coastline / bordering lands), keeping the original subject. A failure to DRAW on the map is NOT a failure to ANSWER: if the explanation is already given, do not retry the map. Only if it is genuinely impossible with the documented actions, reply with a single "answer" explaining specifically what is impossible.'; }
+    /* (#R135 §12) Post-execution goal validation — "tool succeeded" is separated from "user goal satisfied". */
+    function _goalValidation(profile, outcomes){ outcomes=outcomes||[];
+      const okOut=outcomes.filter(o=>o&&o.ok);
+      const actionSucceeded=okOut.length>0;
+      const producedAll=[].concat.apply([], outcomes.map(o=>(o&&o.produced)||[]));
+      const explanationProduced=producedAll.indexOf('explanation')>=0||okOut.some(o=>['answer','analyze','research','synthesize','brief'].indexOf(o.type)>=0);
+      const mapRendered=producedAll.indexOf('map')>=0||okOut.some(o=>['flyTo','fly','outline','highlight','poi','mapReport','researchMap','mapMetric','historicalMap','radius','pin'].indexOf(o.type)>=0);
+      const modeOut=outcomes.filter(o=>o&&o.temporalMode);
+      const temporalMatch=!profile||!profile.temporalMode||profile.temporalMode==='unspecified'||modeOut.length===0||modeOut.some(o=>o.temporalMode===profile.temporalMode||profile.temporalMode==='mixed');
+      const geographicRelevance=okOut.some(o=>o&&o.semanticTarget)?1:(mapRendered?0.6:0.3);
+      const wantExpl=!!(profile&&profile.outputs&&profile.outputs.explanation);
+      const userGoalSatisfied=actionSucceeded&&(!wantExpl||explanationProduced)&&temporalMatch;
+      return { actionSucceeded, mapRendered, explanationProduced, geographicRelevance, temporalMatch, userGoalSatisfied }; }
+    /* geo_resolve-style structured output for the research_map task (the model returns NO coordinates/URLs). */
+    const RESEARCH_MAP_SCHEMA={ type:'OBJECT', properties:{
+      title:{type:'STRING'}, explanation:{type:'STRING'}, temporalBasis:{type:'STRING'},
+      items:{type:'ARRAY',items:{type:'OBJECT',properties:{ name:{type:'STRING'}, locationName:{type:'STRING'}, country:{type:'STRING'}, kind:{type:'STRING'}, summary:{type:'STRING'}, dateOrPeriod:{type:'STRING'} }}},
+      limitations:{type:'ARRAY',items:{type:'STRING'}} }, required:['title','explanation','items'] };
+    /* (#R135 §5/§6/§11) Build the TEXT answer — evidence switched by mode (historical = established history + Wikipedia,
+       NOT live news; current = live GDELT + Google News + loaded feed; mixed = both, separated). The model classifies
+       the evidence and names related PLACES (locationName+country) but NEVER outputs coordinates or URLs. */
+    async function _buildResearchAnswer(o){ o=o||{}; const topic=String(o.topic||'').trim(), place=String(o.place||'').trim();
+      const mode=o.mode||'historical', year=(o.year!=null&&isFinite(+o.year))?Math.round(+o.year):null, evid=o.evid||(mode==='current'?'live':mode==='mixed'?'mixed':'historical');
+      const langR=_langLine(); const _nowISO=new Date().toISOString().slice(0,10);
+      const evSink=[]; const jobs=[]; let wiki=null;
+      if(evid==='historical'||evid==='mixed'){ const wt=place||topic; if(wt) jobs.push(_wikiSummary(wt).then(v=>{ if(v) wiki=v; }).catch(()=>{})); }
+      if(evid==='live'||evid==='mixed'){ const t2=topic||place; if(t2){ jobs.push(_gdeltNews(t2,evSink).catch(()=>{})); jobs.push(_gnewsNews(t2,evSink).catch(()=>{})); }
+        try{ let cx=null; if(place){ try{ cx=await placeExtent(place); }catch(_){} } _newsData(cx,topic||place,evSink); }catch(_){} }
+      await Promise.all(jobs);
+      const evRecs=[]; for(const r of evSink){ if(!r||!r.title) continue; evRecs.push({id:'e'+(evRecs.length+1),title:String(r.title).slice(0,180),src:String(r.src||''),date:String(r.date||''),place:String(r.place||'')}); if(evRecs.length>=30) break; }
+      let block=''; if(wiki) block+='[BACKGROUND (Wikipedia — stable reference, not news)]\n'+wiki+'\n\n';
+      if(evRecs.length) block+='[LIVE NEWS EVIDENCE (CURRENT — use ONLY for the present-day part; each is a dated LEAD, the article date is NOT the event date)]\n'+evRecs.map(e=>'['+e.id+'] '+e.title+(e.src?(' — '+e.src):'')+(e.date?(' ('+e.date+')'):'')+(e.place?(' — '+e.place):'')).join('\n')+'\n\n';
+      const yearLine=year!=null?('The situation is asked about AS OF the year '+year+'. Anchor every statement to what was true around '+year+' — describe later or present-day conditions ONLY in a clearly separated "later" sentence, never as the '+year+' situation.'):(mode==='current'?('The situation is asked about as of the present ('+_nowISO+').'):'');
+      const modeLine=mode==='mixed'?('This is a MIXED request: give BOTH the historical picture'+(year!=null?(' (around '+year+')'):'')+' AND the present-day picture, in two clearly separated parts of the explanation.'):'';
+      const sys='You are Atlas, the research-mapping engine of the IntMap world map. Produce a grounded, specific answer plus a set of REAL related places to map. '+yearLine+' '+modeLine+' No tool or function calling — the type names elsewhere are plain data. Return STRICT JSON ONLY (no prose, no code fence): {"title":str,"explanation":str,"temporalBasis":str,"items":[{"name":str,"locationName":str,"country":str,"kind":str,"summary":str,"dateOrPeriod":str}],"limitations":[str]}. RULES: "explanation" = 3-6 factual sentences in '+langR+' describing the situation'+(year!=null?(' around '+year):'')+' (who controlled it, why it mattered, the human/economic/strategic picture). "temporalBasis" = a short phrase naming the time the answer describes (e.g. "circa '+(year!=null?year:'present')+'"). "items" = 3-8 REAL, specific, well-known places or entities relevant to the topic (surrounding territories, powers, ports, islands, settlements, features) — for EACH give "locationName" (a real, geocodable city/place/feature name), "country" (the MODERN country it lies in, to help geocoding), "kind" (e.g. territory, port, island, power, settlement, region), "summary" (ONE sentence in '+langR+' on its relevance'+(year!=null?(' around '+year):'')+') and "dateOrPeriod" (e.g. "'+(year!=null?year:'present')+'" or a range). DO NOT output latitude/longitude — the app resolves locationName+country itself. Do NOT invent place names or URLs; use real, verifiable places only. For a historical answer, rely on established historical knowledge'+(wiki?' and the BACKGROUND above':'')+' — do NOT present current news as the historical situation, and do NOT fabricate specific casualty/figure claims. "limitations" = 0-2 short caveats in '+langR+' (approximate borders, uncertain figures). '+(topic?('Topic: '+topic+'. '):'')+(place?('Place: '+place+'. '):'');
+      const webMode=(evid==='live')?'off':'auto';   /* live part already has client evidence; historical/mixed may verify facts on the topic (never auto-injects current news) */
+      let jr=null, err=null;
+      try{ jr=aiParseJSON(await askAI('[RESEARCH REQUEST]\nTopic: '+(topic||'(the situation of the place)')+'\nPlace: '+(place||'(derive from the topic)')+'\n\n'+block, sys, null, {task:'research_map', webMode, schema:RESEARCH_MAP_SCHEMA})); }
+      catch(e){ err=(e&&e.message)||'AI error'; }
+      if(!jr||!jr.explanation){ return { ok:false, error:err||'no_answer', title:'', explanation:'', temporalBasis:'', items:[], limitations:[], evidenceCount:evRecs.length, usedWiki:!!wiki }; }
+      const items=(Array.isArray(jr.items)?jr.items:[]).filter(it=>it&&(it.name||it.locationName)).slice(0,10).map(it=>({ name:String(it.name||it.locationName||'').slice(0,90), locationName:String(it.locationName||it.name||'').slice(0,90), country:String(it.country||'').slice(0,60), kind:String(it.kind||'').slice(0,40), summary:String(it.summary||'').slice(0,300), dateOrPeriod:String(it.dateOrPeriod||'').slice(0,40) }));
+      return { ok:true, title:String(jr.title||topic||place||'').slice(0,140), explanation:String(jr.explanation||'').slice(0,2400), temporalBasis:String(jr.temporalBasis||'').slice(0,80), items, limitations:(Array.isArray(jr.limitations)?jr.limitations:[]).map(x=>String(x||'').slice(0,160)).filter(Boolean).slice(0,3), evidenceCount:evRecs.length, usedWiki:!!wiki }; }
+    /* (#R135 §8/§11) Try to render the research on the map — STAGED fallback, never a success condition for the answer:
+       real extent/bbox → centre → related-place pins. A sea/gulf/strait need not yield a polygon. Returns what happened. */
+    async function _tryMapResearch(place, items, opt){ opt=opt||{}; let ext=null, name=String(place||'').trim();
+      if(name&&!WORLD_RE.test(name)){ try{ ext=await placeExtent(name); }catch(_){} if(!ext){ try{ ext=await geocode(name); }catch(_){} } }
+      if(ext&&ext.name) name=ext.name;
+      const box=(ext&&ext.box)?ext.box:null; const ctr=(ext&&isFinite(ext.lng))?[ext.lng,ext.lat]:null;
+      const pins=[]; const pinIdx=[]; const seen=[];
+      for(let i=0;i<(items||[]).length;i++){ const it=items[i]; pinIdx[i]=-1; if(pins.length>=14) continue;
+        const ln=String((it&&it.locationName)||(it&&it.name)||'').trim(); if(!ln) continue;
+        const qn=[ln,String((it&&it.country)||'').trim()].filter(Boolean).join(', ');
+        let g=null; try{ g=await geocode(qn); }catch(_){} if((!g||!isFinite(+g.lng))&&it&&it.country){ try{ g=await geocode(ln); }catch(_){} }
+        if(!g||!isFinite(+g.lng)) continue; const lng=+g.lng, lat=+g.lat;
+        if(seen.some(p=>Math.abs(p[0]-lng)<0.05&&Math.abs(p[1]-lat)<0.05)) continue; seen.push([lng,lat]);
+        pinIdx[i]=pins.length; pins.push({lng,lat,name:String((it&&it.name)||ln).slice(0,90),kind:String((it&&it.dateOrPeriod)||(it&&it.kind)||'').slice(0,60),sum:String((it&&it.summary)||'')}); }
+      let rendered=false, method='';
+      if(pins.length){ clearPois(); _pois=pins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})); let okP=paintPois(); for(let i=0;i<6&&!okP;i++){ await new Promise(r=>setTimeout(r,600)); okP=paintPois(); } rendered=okP; method='pins'; }
+      try{ let a=180,b=90,c=-180,d=-90,has=false;
+        if(box){ a=Math.min(a,box[0][0]);b=Math.min(b,box[0][1]);c=Math.max(c,box[1][0]);d=Math.max(d,box[1][1]); has=true; }
+        pins.forEach(p=>{ a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat); has=true; });
+        if(has&&isFinite(a)&&(c-a)<340&&(c-a)>0.0001&&(d-b)>0.0001){ map.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); rendered=true; method=method||(box?'bbox':'pins'); }
+        else if(ctr){ map.flyTo({center:ctr,zoom:(opt.zoom||4),duration:1000}); rendered=true; method=method||'center'; } }catch(_){}
+      return { rendered, method, name, pinCount:pins.length, hasExtent:!!(ext&&(ext.box||isFinite(ext.lng))), pinIdx }; }
+
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,'');
       switch(a.type){
@@ -28637,7 +28874,7 @@ window.addEventListener('DOMContentLoaded', () => {
           for(const r of evSink){ if(!r||!r.title) continue; const u=String(r.url||''); if(u&&_seenU.has(u)) continue; if(u) _seenU.add(u);
             const rec={id:'e'+(evidence.length+1),title:String(r.title).slice(0,180),source:String(r.src||'').slice(0,60),url:u,date:String(r.date||''),loc:(r.loc&&isFinite(+r.loc[0])?[+r.loc[0],+r.loc[1]]:null),place:String(r.place||'').slice(0,80)};
             evidence.push(rec); evById[rec.id]=rec; if(evidence.length>=40) break; }
-          if(!evidence.length) return R(false, warn('⚠ '+L('No live news evidence could be gathered for this topic right now — nothing was invented. Try a broader topic or again shortly.','このトピックのライブニュース証拠を取得できませんでした（創作はしていません）。トピックを広げるか、少し後に再試行してください。','Keine Live-Nachrichten-Belege gefunden — nichts erfunden. Breiteres Thema oder später erneut.','Не удалось собрать доказательства из новостей — ничего не выдумано. Расширьте тему или повторите позже.','No se pudieron reunir evidencias de noticias — nada inventado. Prueba un tema más amplio o reintenta.')));
+          if(!evidence.length) return R(false, warn('⚠ '+L('No live news evidence could be gathered for this topic right now — nothing was invented. Try a broader topic or again shortly.','このトピックのライブニュース証拠を取得できませんでした（創作はしていません）。トピックを広げるか、少し後に再試行してください。','Keine Live-Nachrichten-Belege gefunden — nichts erfunden. Breiteres Thema oder später erneut.','Не удалось собрать доказательства из новостей — ничего не выдумано. Расширьте тему или повторите позже.','No se pudieron reunir evidencias de noticias — nada inventado. Prueba un tema más amplio o reintenta.')), {meta:{code:'NO_LIVE_EVIDENCE',category:'evidence',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:[],userGoalSatisfied:false}});
           const evBlock=evidence.map(e=>'['+e.id+'] '+e.title+(e.source?(' — '+e.source):'')+(e.date?(' ('+e.date+')'):'')+(e.place?(' — reported location: '+e.place):'')+(e.url?('\n     url: '+e.url):'')).join('\n');
           /* (#R113 §12.3) separate the REAL current date from the map's time-travel date. */
           const _nowISO=new Date().toISOString().slice(0,10);
@@ -28665,7 +28902,7 @@ window.addEventListener('DOMContentLoaded', () => {
             items.push({ name:String(it.name).slice(0,90), locationName:String(it.locationName||''), country:String(it.country||''),
               summary:String(it.summary||'').slice(0,400), date:(/^\d{4}-\d{2}-\d{2}$/.test(String(it.date||''))?String(it.date):(first&&first.date||'')),
               lng, lat, mappable, url:(first&&/^https?:\/\//i.test(first.url)?first.url.slice(0,300):''), src:(first?String(first.source||'').slice(0,40):'') }); }
-          if(!items.length) return R(false, warn('⚠ '+L('The evidence did not support any concrete mappable items — nothing was invented','証拠から具体的にマッピングできる項目は得られませんでした（創作はしていません）','Die Belege ergaben keine konkreten kartierbaren Einträge — nichts erfunden','Доказательства не дали конкретных объектов для карты — ничего не выдумано','La evidencia no dio elementos mapeables concretos — nada inventado')));
+          if(!items.length) return R(false, warn('⚠ '+L('The evidence did not support any concrete mappable items — nothing was invented','証拠から具体的にマッピングできる項目は得られませんでした（創作はしていません）','Die Belege ergaben keine konkreten kartierbaren Einträge — nichts erfunden','Доказательства не дали конкретных объектов для карты — ничего не выдумано','La evidencia no dio elementos mapeables concretos — nada inventado')), {meta:{code:'NO_MAPPABLE_ITEMS',category:'evidence',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:[],userGoalSatisfied:false}});
           const mappableItems=items.filter(i=>i.mappable); const unmappable=items.length-mappableItems.length;
           clearPois();
           _pois=mappableItems.map(it=>({lng:+it.lng,lat:+it.lat,name:String(it.name).slice(0,90),kind:[it.date,it.src].filter(Boolean).join(' · ').slice(0,60),
@@ -28681,7 +28918,43 @@ window.addEventListener('DOMContentLoaded', () => {
             +(unmappable?('<div style="font-size:10.5px;color:var(--text-muted);margin:1px 0 3px;">'+L(unmappable+' item(s) had no verifiable location and are listed without a pin.',unmappable+'件は位置を確認できず、ピンなしで一覧のみ表示しています。',unmappable+' Eintrag/Einträge ohne bestätigten Ort — nur gelistet.',unmappable+' без подтверждённого места — только в списке.',unmappable+' sin ubicación verificable — solo en la lista.')+'</div>'):'')
             +listHtml2
             +linkCards(items.filter(p=>p.url).map(p=>({url:p.url,title:p.name,src:p.src})))   /* (#R74) article cards (ChatGPT-style) */
-            +note(L('Mapped from IntMap-gathered news evidence (GDELT + Google News + loaded news); positions are city-level — verify important facts.','IntMapが収集したニュース証拠（GDELT＋Google News＋読み込み済みニュース）に基づきます。位置は都市レベルの精度です — 重要な事実は確認してください。','Aus von IntMap gesammelten Nachrichtenbelegen (GDELT + Google News + geladene News); Positionen auf Stadtebene — wichtige Fakten prüfen.','На основе собранных IntMap новостных доказательств (GDELT + Google News + загруженные новости); позиции с точностью до города — проверяйте факты.','A partir de evidencias de noticias reunidas por IntMap (GDELT + Google News + noticias cargadas); posiciones a nivel de ciudad — verifica los datos.'))); }
+            +note(L('Mapped from IntMap-gathered news evidence (GDELT + Google News + loaded news); positions are city-level — verify important facts.','IntMapが収集したニュース証拠（GDELT＋Google News＋読み込み済みニュース）に基づきます。位置は都市レベルの精度です — 重要な事実は確認してください。','Aus von IntMap gesammelten Nachrichtenbelegen (GDELT + Google News + geladene News); Positionen auf Stadtebene — wichtige Fakten prüfen.','На основе собранных IntMap новостных доказательств (GDELT + Google News + загруженные новости); позиции с точностью до города — проверяйте факты.','A partir de evidencias de noticias reunidas por IntMap (GDELT + Google News + noticias cargadas); posiciones a nivel de ciudad — verifica los datos.')), {meta:{code:'OK',category:'ok',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:['explanation','map'],userGoalSatisfied:true}}); }
+        case 'researchMap': case 'research_map': case 'situationMap': {
+          /* (#R135) GENERAL research-onto-the-map action for HISTORICAL / CURRENT / MIXED questions — the text answer
+             and the map are produced INDEPENDENTLY (§11): the explanation is returned even when the map cannot be
+             drawn (a sea/gulf with no polygon still frames its bbox/centre and pins the related places). Evidence is
+             switched by mode (§6): historical = established history + Wikipedia, NOT live news; current = live news;
+             mixed = both, separated. The model never outputs coordinates — locationName+country resolve client-side. */
+          const topic=String(a.topic||a.question||a.query||'').trim();
+          const place=String(a.place||a.region||a.location||'').trim();
+          if(!topic&&!place) return R(false, warn('⚠ '+L('What should I research and map?','何を調べて地図に示しますか？','Was recherchieren & kartieren?','Что исследовать и нанести на карту?','¿Qué investigo y mapeo?')), {meta:{code:'PLACE_NOT_FOUND',category:'input',retryable:false,userGoalSatisfied:false,produced:[]}});
+          let live=true; try{ if(window.IntMapTime) live=window.IntMapTime.isLive(); }catch(_){}
+          let mode=String(a.temporalMode||a.temporal||'').toLowerCase(); if(!/^(historical|current|mixed)$/.test(mode)) mode=(!live?'historical':'current');
+          let year=(a.year!=null&&isFinite(+a.year))?Math.round(+a.year):null;
+          if(year==null&&mode!=='current'){ try{ if(window.IntMapTime&&!live) year=window.IntMapTime.year(); }catch(_){} }
+          if(mode==='current') year=null;
+          let evid=String(a.evidenceMode||'').toLowerCase(); if(!/^(historical|live|mixed)$/.test(evid)) evid=(mode==='historical'?'historical':mode==='mixed'?'mixed':'live');
+          const semTarget=_lnorm(place||topic);
+          /* 1) TEXT (independent of the map) */
+          const research=await _buildResearchAnswer({topic,place,mode,year,evid});
+          /* 2) MAP (independent, non-fatal) */
+          let mapRes={rendered:false,method:'',name:(place||topic),pinCount:0,hasExtent:false,pinIdx:[]};
+          try{ mapRes=await _tryMapResearch(place||topic, research.items, {mode,year}); }catch(_){}
+          /* 3) compose — the explanation ALWAYS wins; the map is reported honestly (§11/§13) */
+          if(!research.ok){
+            if(mapRes.rendered) return R(true, note('🗺 '+esc(mapRes.name)+' — '+L('shown on the map. I could not compile a written summary this time — try rephrasing the question.','を地図に表示しました。今回は文章の要約を作成できませんでした。質問を言い換えてお試しください。','auf der Karte gezeigt. Konnte diesmal keine Textzusammenfassung erstellen.','показано на карте. На этот раз не удалось составить текстовую сводку.','mostrado en el mapa. No pude redactar un resumen esta vez.')), {meta:{code:(evid==='live'?'NO_LIVE_EVIDENCE':'NO_HISTORICAL_EVIDENCE'),category:'evidence',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:['map'],userGoalSatisfied:false}});
+            return R(false, warn('⚠ '+esc(research.error||L('Could not research this right now','今回は調べられませんでした','Konnte das gerade nicht recherchieren','Не удалось исследовать сейчас','No se pudo investigar ahora'))), {meta:{code:(evid==='live'?'NO_LIVE_EVIDENCE':'NO_HISTORICAL_EVIDENCE'),category:'evidence',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:[],userGoalSatisfied:false}});
+          }
+          let h='<div style="font-weight:600;margin:2px 0 4px;">'+esc(research.title||place||topic)+(research.temporalBasis?(' <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;">· '+esc(research.temporalBasis)+'</span>'):'')+'</div>';
+          h+='<div style="font-size:12.5px;line-height:1.62;margin-bottom:6px;">'+mdMini(research.explanation)+'</div>';
+          if(mapRes.rendered){ const ml=mapRes.pinCount?L(mapRes.pinCount+' related place(s) shown on the map',mapRes.pinCount+'件の関連地点を地図に表示しました',mapRes.pinCount+' zugehörige Orte auf der Karte',mapRes.pinCount+' связанных мест на карте',mapRes.pinCount+' lugares relacionados en el mapa'):(mapRes.method==='bbox'?L('Framed the area on the map','対象範囲を地図に表示しました','Gebiet auf der Karte eingerahmt','Область показана на карте','Área enmarcada en el mapa'):L('Centred the map on the location','地図を対象地点に移動しました','Karte auf den Ort zentriert','Карта отцентрирована','Mapa centrado en el lugar'));
+            h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+esc(ml)+((!mapRes.hasExtent&&mapRes.pinCount)?(' · '+L('the region outline was not available, so related places are shown as points','海域・地域の輪郭は取得できなかったため関連地点を表示','Regionsumriss nicht verfügbar — Punkte stattdessen','контур недоступен — показаны точки','sin contorno — se muestran puntos')):'')+'</div>'; }
+          else h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+L('The map view could not be updated for this, but the explanation above stands.','この件では地図表示を更新できませんでしたが、上の説明は有効です。','Kartenansicht nicht aktualisierbar — die Erklärung oben gilt.','Не удалось обновить карту — пояснение выше остаётся в силе.','No se pudo actualizar el mapa, pero la explicación anterior es válida.')+'</div>';
+          if(research.items&&research.items.length){ h+='<div style="font-size:11.5px;color:var(--text-muted);margin:5px 0 2px;font-weight:600;">'+L('Related places','関連地点','Zugehörige Orte','Связанные места','Lugares relacionados')+'</div>';
+            h+=research.items.map((it,i)=>{ const mi=(mapRes.pinIdx&&mapRes.pinIdx[i]!=null)?mapRes.pinIdx[i]:-1; return '<div class="atl-rp-item"'+(mi>=0?(' data-i="'+mi+'"'):'')+' style="display:flex;gap:7px;align-items:baseline;padding:3px 0;border-top:1px solid rgba(128,128,128,0.12);'+(mi>=0?'cursor:pointer;':'')+'"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:'+((mi>=0)?(_poiColor||'#ff453a'):'rgba(128,128,128,0.5)')+';position:relative;top:-1px;"></span><span style="flex:1;min-width:0;"><span style="font-weight:600;font-size:12px;">'+esc(it.name)+'</span>'+(it.dateOrPeriod?' <span style="font-size:10px;color:var(--text-muted);">'+esc(it.dateOrPeriod)+'</span>':'')+(it.summary?'<br><span style="font-size:11px;line-height:1.5;opacity:0.9;">'+esc(it.summary)+'</span>':'')+'</span></div>'; }).join(''); }
+          if(research.limitations&&research.limitations.length) h+=note(L('Note','注記','Hinweis','Примечание','Nota')+': '+esc(research.limitations.join(' · ')));
+          h+=note(mode==='historical'?L('Historical overview from established sources — borders and figures are approximate.','歴史的知見に基づく概説です。国境や数値は概略です。','Historischer Überblick aus etablierten Quellen — Grenzen/Zahlen näherungsweise.','Исторический обзор по установленным источникам — границы и цифры приблизительны.','Panorama histórico de fuentes establecidas — fronteras y cifras aproximadas.'):(mode==='mixed'?L('Combines a historical overview with current live-news evidence.','歴史的概説と現在のライブニュース証拠を組み合わせています。','Kombiniert historischen Überblick mit aktuellen Live-Nachrichten.','Сочетает исторический обзор с текущими новостями.','Combina un panorama histórico con noticias en vivo actuales.'):L('Compiled from current live-news evidence IntMap gathered.','IntMapが収集した現在のライブニュース証拠に基づきます。','Aus aktuellen Live-Nachrichten von IntMap.','На основе собранных IntMap текущих новостей.','A partir de noticias en vivo reunidas por IntMap.')));
+          return R(true, h, {meta:{code:'OK',category:'ok',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:(mapRes.rendered?['explanation','map']:['explanation']),userGoalSatisfied:true,geographicRelevance:(mapRes.rendered?1:0.5),temporalMatch:true}}); }
         case 'missile': case 'ballistic': case 'ballisticMissile': case 'strike': case 'icbm': {
           /* (#R83) proper ballistic-missile simulation (real Keplerian minimum-energy trajectory + Kepler-timed
              flight + to-scale altitude profile + honest physics numbers; optional warhead-effect rings). */
@@ -29271,11 +29544,12 @@ window.addEventListener('DOMContentLoaded', () => {
         +'POPULATION IN AN AREA: {"type":"population","target"?:"drawn"|"radius","place"?:str,"radiusKm"?:num} = EXACT population inside a shape, summed from the WorldPop 100m population grid (2020). target:"drawn" = the user\'s measured polygon; target:"radius" = the placed circle(s); place alone = that place\'s real boundary; place+radiusKm = a circle around it. Use for "この範囲の人口", "population within 30km of X".\n'
         +'MAP OBJECTS: {"type":"object","op":"list"|"remove"|"focus"|"rename","id"?:str,"kind"?:"pin"|"radius"|"annot"|"poly"|"outline"|"upload"|"route"|"iso","index"?:num,"name"?:str} = operate on objects ALREADY drawn on the map (ids are listed in CURRENT MAP STATE; "poly"=Atlas-drawn polygons, "outline"=the active boundary outline). "2番目の円を消して" → {"type":"object","op":"remove","kind":"radius","index":2}.\n'
         +'FACILITY / POI MAPPING: {"type":"poi","kind":str,"place"?:str,"color"?:str} = find REAL facilities from OpenStreetMap AND Wikidata (merged, per-source counts reported) and PIN them on the map with name labels + click popups (use for "show the oil facilities in X", "map the nuclear plants in Y", "軍事基地を表示"). kind understands oil/gas/nuclear/wind/solar/power plants/dams/airports/ports/military/mines/steel/factories/hospitals/universities/stadiums/prisons/lighthouses/embassies/stations/data centers in 5 languages, and falls back to a name search. place omitted = current view. This — not flyTo, not highlight — is the action for "show me the X facilities in Y". {"type":"clear","what":"poi"} removes the pins.\n'
-        +'RESEARCH MAPPED ONTO THE MAP: {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic from LIVE NEWS EVIDENCE that IntMap gathers (GDELT + Google News + loaded IntMap news — the model does NOT web-search; it classifies/summarises the evidence) (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, dated incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. USE THIS (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate something ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X") OR asks to research/look into a topic whose findings have real locations — incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. If the user asks a research question and the answer naturally lives at places on a map, prefer mapReport; combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
+        +'RESEARCH MAPPED ONTO THE MAP (CURRENT / RECENT live-news incidents ONLY): {"type":"mapReport","topic":str,"place"?:str,"count"?:int} = Atlas researches the topic from LIVE NEWS EVIDENCE that IntMap gathers (GDELT + Google News + loaded IntMap news — the model does NOT web-search; it classifies/summarises the evidence) (pass "count" whenever the user asks for a specific number of items, e.g. 「10件表示して」 → count:10) and puts the concrete findings ON THE MAP as pins — each pin is ONE real, DATED, current/recent incident/event/entity with a 1-2 sentence AI summary and, where a real article exists, a link — plus an overview and clickable item list in the chat. mapReport is for CURRENT/RECENT dated incidents backed by LIVE NEWS ONLY. Do NOT use it for: a past-era or historical situation, historical background / powers / trade / strategic importance, a place general situation at a past time, or stable knowledge — for ANY of those use researchMap (below). USE mapReport (not a plain "answer", not "analyze") whenever the user asks to summarize/investigate CURRENT events ON the map ("〇〇の近況について地図上にまとめて", "map the situation in X right now") OR to research a topic of recent incidents that have real locations — recent incidents ("最近のアメリカの銃犯罪を調べて" → each ACTUAL shooting incident pinned in the city it happened, with date and casualties; NEVER a generic "gun crime is common in city X" answer), conflicts, disasters, elections, disease outbreaks, strikes, protests, infrastructure projects. Combine it freely with flyTo/layers. Plain "answer" is for questions with no geographic footprint.\n'
+        +'RESEARCH & SITUATION MAP (HISTORICAL / CURRENT / MIXED — the general research-onto-the-map action): {"type":"researchMap","topic":str,"place":str,"temporalMode":"historical"|"current"|"mixed","year"?:int,"evidenceMode":"historical"|"live"|"mixed"} = researches a place or topic SITUATION and returns BOTH a written explanation AND related REAL places pinned on the map, produced INDEPENDENTLY (the written answer is returned even when the map cannot be drawn). USE THIS — not mapReport, not historicalMap — for: "what was the situation at PLACE in YEAR" or "この時代／当時のPLACEは？" (temporalMode:"historical", year = the asked or currently-displayed year, evidenceMode:"historical"); a place present-day general situation that is not a specific live-incident hunt (temporalMode:"current"); and "compare YEAR vs now / 1900年と現在を比較" (temporalMode:"mixed"). It resolves the place REAL extent (IntMapRegionResolver / placeExtent) and, for a sea / gulf / strait / region with no polygon, still frames the bbox or centre and pins the related places — a failure to draw does NOT fail the answer. Historical mode is grounded in established history + Wikipedia (NOT live news); current/mixed adds live-news evidence for the present part. Do NOT output coordinates (locationName + country resolve client-side). Examples: [map shows 1900] "当時のオホーツク海の状況を地図で教えて" → {"type":"researchMap","topic":"1900年ごろのオホーツク海の状況","place":"オホーツク海","temporalMode":"historical","year":1900,"evidenceMode":"historical"}; "この時代の中央アジアは？" → researchMap historical with the displayed year; "1750年のサヘル交易圏を表示して" → year:1750; "1900年と現在の樺太／サハリンを比較して" → temporalMode:"mixed".\n'
         +'ANIMATED FLIGHT: {"type":"fly","from":str,"to":str,"mode"?:"plane"|"cruise","seconds"?:6-90} = cinematic camera flight along the real great-circle from A to B with a drawn trajectory (plane/cruise stay level; use for "fly me from London to Tokyo"). It reports the real-world flight time honestly. User interaction cancels it. {"type":"clear","what":"flight"} removes the trajectory.\n'
         +'BALLISTIC MISSILE SIMULATION (real physics — use THIS for any ballistic/ICBM/弾道ミサイル request, NOT "fly"): {"type":"missile","from":str,"to":str,"missile"?:str,"loft"?:"minenergy"|"lofted"|"depressed","marv"?:bool,"yield"?:number_kt,"blast"?:bool,"seconds"?:8-55} = solves the Keplerian trajectory for the great-circle range at a SELECTABLE launch angle (loft: minimum-energy default, "lofted"=steep/high-apogee, "depressed"=flat/low), applies Allen–Eggers atmospheric DRAG for the impact velocity, curves the ground track by the Earth\'s rotation (Coriolis), optionally adds a MaRV terminal weave ("marv":true), and draws a WORLD-SCALE 3-D altitude-coloured arc (correct under any zoom). Reports apogee, launch angle, burn-out / re-entry / drag-reduced impact velocity, Coriolis cross-range and flight time. "missile" may name a class ("Minuteman III","DF-41","Sarmat","Trident II"); pass "yield" (kt) or "blast":true for warhead-effect rings. The reply has buttons to re-fly it lofted/depressed/MaRV. Use for "モスクワからワシントンへ弾道ミサイル", "lofted ICBM from X to Y", "depressed trajectory strike on Z". {"type":"clear","what":"missile"} removes it.\n'
         +'ELEVATION HIGHLIGHT (real DEM data): {"type":"elevationBelow","place":str,"threshold"?:meters,"above"?:bool,"km"?:num} = samples the real Copernicus elevation model on a grid over the place/region and shades every cell below (default) or above the threshold, graduated by depth/height. Use for "カスピ海周辺の海抜0m以下地点をハイライトして" → {"type":"elevationBelow","place":"Caspian Sea","threshold":0}, "highlight land below sea level around the Dead Sea", "show areas above 3000 m in the Alps" → add "above":true,"threshold":3000. Omit place to scan the current view. {"type":"clear","what":"elevation"} removes it.\n'
-        +'HISTORICAL / POWER MAP: {"type":"historicalMap","era":str} = colours the country fills by faction for a historical moment (mapped onto modern borders, clearly labelled approximate). Use for "第一次世界大戦1916年3月の勢力図をマッピングして" → {"type":"historicalMap","era":"World War I March 1916"}, "map the Cold War alliances in 1962", "WWII in 1942". A curated, accurate WWI-1916 map is built in; other eras are composed live. {"type":"clear","what":"historical"} removes it.\n'
+        +'HISTORICAL ALLIANCE / POWER MAP (whole-world faction colouring ONLY): {"type":"historicalMap","era":str} = colours the country fills by faction/alliance for a historical moment (mapped onto modern borders, clearly labelled approximate). Use ONLY for an era ALLIANCE / faction / power / bloc map — "第一次世界大戦1916年3月の勢力図をマッピングして" → {"type":"historicalMap","era":"World War I March 1916"}, "map the Cold War alliances in 1962", "WWII in 1942". Do NOT use it for a single sea / region / city situation at a past time — that is researchMap (a water body or a local region is NEVER an alliance map). A curated, accurate WWI-1916 map is built in; other eras are composed live. {"type":"clear","what":"historical"} removes it.\n'
         +'RADIATION DISPERSION & FALLOUT SIMULATION: {"type":"radiation","place":str,"source"?:"chernobyl"|"fukushima"|"dirtybomb"|"research","bq"?:number,"pbq"?:number,"isotope"?:"cs137"|"i131"|"cs134"|"sr90","emitHours"?:num,"hours"?:6-80,"date"?:"YYYY-MM-DDTHH:MM"} = a real Lagrangian particle plume from a release point advected by the LIVE Open-Meteo wind field (or the ERA5 archive for a past "date"), spread by turbulent diffusion, scavenged by precipitation and decayed by the isotope half-life. It animates the plume AND maps the FINAL ground deposition, classified into the real Chernobyl Cs-137 dose zones, and reports the external dose rate (µSv/h) and annual dose (mSv/yr) at the peak with health context. The user can set the source term (preset, or bq/pbq), emission duration, isotope and start date-time. Use for "福島からの放射性物質の拡散", "simulate a Chernobyl-scale release at X on 2011-03-15", "dirty bomb fallout in Y". {"type":"clear","what":"radiation"} removes it.\n'
         +'FLIGHT SIMULATOR: {"type":"flightSim","place"?:str,"alt"?:meters} = starts a real, flyable arcade flight simulator over the actual world map (the camera becomes the cockpit; keyboard W/S throttle, ↑/↓ pitch, ←/→ bank, A/D rudder, Esc to exit; live HUD with airspeed/altitude/heading/artificial-horizon; coordinated-turn physics, stall and ground collision). Use for "フライトシミュレーターを起動して", "let me fly a plane over the Alps" → pass place. {"type":"flightSim","on":false} exits it.\n'
         +'FREE DRAWING (for advanced composite tasks): {"type":"drawLine","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"width"?:num,"label"?:str} draws a line; {"type":"drawPolygon","points":[[lng,lat],...]|"places":[str,...],"color"?:str,"label"?:str} draws a polygon. Use these to sketch fronts, corridors, routes, zones or areas that no dataset provides — you supply the real coordinates from your knowledge/search. Combine freely with pin/highlight/outline/poi/mapReport for multi-step tasks ("ピン立てやライン、ポリゴンのハイライト等のマッピングやネット検索や推論等を自在に組み合わせた高度なタスク").\n'
@@ -29640,7 +29914,7 @@ window.addEventListener('DOMContentLoaded', () => {
       directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:['arc','fly'], ballistic:['arc','fly'], ballisticMissile:['arc','fly'], strike:['arc','fly'], icbm:['arc','fly'],
       fly:'fly', flight:'fly', flyTo:null, flyPath:'fly', greatCircle:'fly', los:'los', lineOfSight:'los', radarShadow:'los', viewshed:'los',
       isolate:'isolate', isolateRegion:'isolate', focus:'isolate', pin:'pin', marker:'pin', locate:'pin', myLocation:'pin', whereAmI:'pin', streetview:'streetview', streetView:'streetview', pano:'streetview',
-      compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', events:'poi', impact:'poi', runway:'poi',
+      compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', reportMap:'poi', researchMap:'poi', research_map:'poi', situationMap:'poi', events:'poi', impact:'poi', runway:'poi',
       isochrone:'isochrone', reach:'isochrone', reachability:'isochrone', reachable:'isochrone', catchment:'isochrone' };
     function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_OVL[kind]||[]; for(const id of ids){ try{ if(map.getLayer(id)&&map.getLayoutProperty(id,'visibility')!=='none') return true; }catch(_){} } return false; }
     /* (#R122) PER-MESSAGE overlay OWNERSHIP — the shared nlq-* canvas can only paint one message's snapshot of a
@@ -29766,12 +30040,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const _STAGE_TXT={ think:L('Thinking','考え中','Denke nach','Думаю','Pensando'), search:L('Searching','検索中','Suche','Ищу','Buscando'), analyze:L('Analyzing','分析中','Analysiere','Анализирую','Analizando'), map:L('Mapping','地図に描画中','Zeichne Karte','Рисую карту','Dibujando mapa'), write:L('Writing','作成中','Schreibe','Пишу','Escribiendo') };
     function stageDots(k){ return '<span class="atl-stage">'+esc(_STAGE_TXT[k]||_STAGE_TXT.think)+'<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span></span>'; }
     function setStage(el,k){ try{ if(el&&el.querySelector&&el.querySelector('.atl-dots')) el.innerHTML=stageDots(k); }catch(_){} }
-    const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker'].indexOf(t)>=0) return 'map'; return 'think'; };
+    const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='researchMap'||t==='research_map'||t==='situationMap'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker'].indexOf(t)>=0) return 'map'; return 'think'; };
     async function runActions(ai, say, acts, gen){
       let body=''; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         try{ setStage(ai, _STAGE_OF(a)); }catch(_){}   /* (#R130) reflect the real current action in the indicator */
         let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a);
+        try{ if(r&&r.meta) a.__meta=r.meta; if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
         if(mapped.length){ body+=mapToggleChip(mapped); try{ ai.__ovlSnap=_ovlSnapshot(mapped); mapped.forEach(k=>{
@@ -30109,6 +30384,13 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ chatEl.querySelectorAll('.atl-b.a .atl-dots').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
       bubble('u',esc(q));
       let lp=null; try{ lp=localPlan(q); }catch(_){}
+      /* (#R135) build the REQUEST PROFILE up-front (temporal axis + required evidence + outputs) and open a fresh
+         diagnostics record; both feed the planner prompt, the pre-execution plan validation, the semantic repair
+         control and window.IntMapAtlasDebug.lastPlan(). */
+      let _profile=null; try{ _profile=_requestProfile(q); }catch(_){}
+      _atlasDbg={ requestProfile:_profile, originalPlan:null, validatedPlan:null, rejectedActions:[], actionOutcomes:[], semanticRetries:[], scopeChanges:[], finalGoalValidation:null };
+      _atlasOutcomes=_atlasDbg.actionOutcomes;
+      try{ if(_profile&&_profile.targetYear!=null&&_profile.temporalMode!=='current') _wctx.year=_profile.targetYear; }catch(_){}   /* carry the year into the conversation for the next turn's profile */
       /* (#R52) a clear single-intent command runs deterministically with NO AI round-trip — it neither needs an
          account nor spends a daily AI credit, so the most common operations ALWAYS work (the core of the user's
          "claims it did X but didn't" report). The AI path below is still gated as before. */
@@ -30129,12 +30411,20 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
          "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
-      try{ let plan=await askAIJSON(buildPrompt(q),SYS(),null,{task:'atlas_plan',effortHint:_cplx?'high':undefined});   /* (#R113) planner → server JSON mode */
+      try{ let plan=await askAIJSON(buildPrompt(q,_profile),SYS(),null,{task:'atlas_plan',effortHint:_cplx?'high':undefined});   /* (#R113) planner → server JSON mode; (#R135) profile block attached */
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
         /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
         if(Array.isArray(plan)) plan={actions:plan}; else if(plan&&plan.type&&!plan.actions) plan={actions:[plan],say:plan.say};
-        const acts=(plan&&Array.isArray(plan.actions))?plan.actions:[];
+        const acts0=(plan&&Array.isArray(plan.actions))?plan.actions:[];
+        /* (#R135 §7) PRE-EXECUTION VALIDATION — rewrite/append incompatible actions against the capability registry
+           (a historical question routed to live-only mapReport → researchMap; a water/region "situation" wrongly sent
+           to a world alliance map → researchMap; explanation requested but plan only navigates → add researchMap)
+           BEFORE anything runs, so the wrong action never executes and the repair storm never starts. */
+        try{ if(_atlasDbg) _atlasDbg.originalPlan=JSON.parse(JSON.stringify(acts0)); }catch(_){}
+        let _vp=null; try{ _vp=_validatePlan(acts0,_profile,q); }catch(_){ _vp={plan:acts0,rejected:[]}; }
+        const acts=(_vp&&Array.isArray(_vp.plan))?_vp.plan:acts0;
+        try{ if(_atlasDbg){ _atlasDbg.validatedPlan=acts; _atlasDbg.rejectedActions=(_vp&&_vp.rejected)||[]; } }catch(_){}
         if(!acts.length){
           /* (#R52) No executable action came back. Priority: (1) if we have a DETERMINISTIC plan for this request,
              DO it — this overrides a model that "said" it acted without emitting an action (the exact bug reported:
@@ -30157,31 +30447,36 @@ window.addEventListener('DOMContentLoaded', () => {
             if(gen===_runGen) recordTurn(q,'(routed to live analysis)',[{type:'analyze',question:q}],fails); msgTools(ai,q); return; } }catch(_){}
         const fails=await runActions(ai, plan.say||'', acts, gen);
         if(gen===_runGen) recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
-        /* (#R117) REPAIR PASS — the top complaint is "実行できませんでした、が多い". When some planned actions
-           FAILED, give the model ONE shot at a different approach: it sees exactly which actions failed (type +
-           params) and must propose alternative actions (different action type / params / place spelling), never
-           repeat the identical call. Results append to the same reply. Bounded to one round, real-action fails
-           only, and only while this turn is still the newest. */
-        try{ let pending=(fails||[]).filter(a=>a&&a.type&&a.type!=='answer'); const _tried=[];
-          /* (#R118/#R122) up to THREE repair rounds ("諦めるな" — the user still sees "実行できなかった" sometimes),
-             each seeing every call already tried so it must find a genuinely different approach; the chain stops
-             early once nothing fails or the model has no new idea. Cap raised to 12 planned actions so multi-step
-             plans still get repaired. */
-          for(let _rp=0; _rp<3 && gen===_runGen && pending.length && acts.length<=12; _rp++){
-            pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); }catch(_){} });
+        /* (#R117/#R135) REPAIR PASS — when planned actions FAILED, give the model a DIFFERENT approach. Now bounded
+           to TWO rounds and controlled by SEMANTIC key (§10): repair actions run through the SAME capability
+           validation (so a historical question is never re-routed to live news, a local place never to a world map),
+           translation-only retries of the same research family+mode are dropped, and world/continental scope-blowups
+           are refused. A map-draw failure is NOT treated as an answer failure. */
+        try{ let pending=(fails||[]).filter(a=>a&&a.type&&a.type!=='answer'); const _tried=[]; const _triedFam=new Set();
+          acts.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
+          for(let _rp=0; _rp<2 && gen===_runGen && pending.length && acts.length<=12; _rp++){
+            pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
             const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            const rp=await askAIJSON(buildPrompt(q)+'\n\n[REPAIR '+(_rp+1)+'/3] These calls FAILED to execute (target not found / no data / unsupported params):\n'+fdesc+'\nDo NOT give up. Propose a DIFFERENT way to satisfy the remaining part of the request using the documented actions only — try other action types, corrected names/spellings, a coarser or alternative target (e.g. the country instead of a missing city, a nearby well-known place), or split one step into two. Do NOT repeat any call listed above. Only if it is GENUINELY impossible with the documented actions, reply with one "answer" action explaining specifically what is impossible and why.',SYS(),null,{task:'atlas_plan',effortHint:'high'});
+            const rp=await askAIJSON(buildPrompt(q,_profile)+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+'\n'+_repairGuidance(),SYS(),null,{task:'atlas_plan',effortHint:'high'});
             let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
-            const racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
+            let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
+            /* sanitize the repair plan through the SAME capability validation as the first plan */
+            try{ const rvp=_validatePlan(racts,_profile,q); racts=rvp.plan; if(_atlasDbg&&rvp.rejected&&rvp.rejected.length) _atlasDbg.rejectedActions=_atlasDbg.rejectedActions.concat(rvp.rejected); }catch(_){}
             const isTried=a2=>{ try{ return _tried.indexOf(JSON.stringify(a2))>=0; }catch(_){ return false; } };
-            const fresh=racts.filter(a2=>!isTried(a2)).slice(0,6);
+            const fresh=racts.filter(a2=>{
+              if(isTried(a2)) return false;
+              const rf=_researchFamKey(a2); if(rf&&_triedFam.has(rf)){ try{ if(_atlasDbg) _atlasDbg.semanticRetries.push({blocked:a2.type,key:rf,reason:'same_research_family_and_mode_already_tried'}); }catch(_){} return false; }
+              if(_isWorldExpansion(a2,_profile)){ try{ if(_atlasDbg) _atlasDbg.scopeChanges.push({blocked:a2.type,place:String(a2.place||a2.era||''),reason:'excessive_scope_expansion_to_world'}); }catch(_){} return false; }
+              return true; }).slice(0,6);
             if(gen!==_runGen||!fresh.length) break;
+            fresh.forEach(a2=>{ const f=_researchFamKey(a2); if(f) _triedFam.add(f); });
             const div=document.createElement('div'); div.style.cssText='margin-top:7px;padding-top:7px;border-top:1px dashed var(--glass-border,rgba(128,128,128,0.25));'; ai.appendChild(div);
             const rf=await runActions(div, rplan.say||'', fresh, gen);
             if(gen===_runGen) recordTurn(q+' (repair '+(_rp+1)+')', rplan.say||'', fresh, rf);
             pending=(rf||[]).filter(a2=>a2&&a2.type&&a2.type!=='answer');
             if(fresh.every(a2=>a2.type==='answer')) break;   /* the model declared it impossible — don't loop on that */
           } }catch(_){}
+        try{ if(_atlasDbg) _atlasDbg.finalGoalValidation=_goalValidation(_profile,_atlasDbg.actionOutcomes); }catch(_){}
         msgTools(ai,q);
       }catch(e){ /* (#R52) network/parse failure → still try the deterministic plan before surfacing the error. */
         if(gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return; }
