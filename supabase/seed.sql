@@ -71,6 +71,11 @@ insert into public.community_comments (id, post_id, user_id, author_name, body) 
   (1, 1, '22222222-2222-2222-2222-222222222222', 'Test User B', 'Comment by B on A''s post')
 on conflict (id) do nothing;
 
+-- Inserting explicit identity ids above does NOT advance the sequence, so a later
+-- auto-insert would reuse id=1 and hit a unique violation. Advance the sequences.
+select setval(pg_get_serial_sequence('public.community_posts','id'),    (select coalesce(max(id),1) from public.community_posts));
+select setval(pg_get_serial_sequence('public.community_comments','id'), (select coalesce(max(id),1) from public.community_comments));
+
 insert into public.community_votes (post_id, user_id) values
   (1, '22222222-2222-2222-2222-222222222222')
 on conflict (post_id, user_id) do nothing;
