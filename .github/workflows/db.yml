@@ -72,7 +72,16 @@ jobs:
       # The RLS + permission matrix. Fails CLOSED: any failing assertion, or a DB
       # that could not be set up, fails the job (never a green skip).
       - name: RLS + permission tests (pgTAP)
-        run: supabase test db
+        run: |
+          set +e
+          supabase test db 2>&1 | tee "$RUNNER_TEMP/tap.txt"
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "----- pgTAP failures (also surfaced as annotations) -----"
+            grep -E '^not ok|have:|want:|got:|expected:|Failed test' "$RUNNER_TEMP/tap.txt" \
+              | head -40 | while IFS= read -r l; do echo "::error::${l}"; done
+          fi
+          exit "$code"
 
       # Prove the backup → encrypt → checksum → decrypt → restore → verify pipeline
       # end to end, on SYNTHETIC seed data only (no secrets, no production access).
