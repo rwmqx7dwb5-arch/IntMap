@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-13 (R85f)
+> Last reviewed: 2026-07-18 (R133 — 運用品質基盤 §15 追加)
 >
 > **R41 の要点**：`whenStyleReady()` が永久ハングし得た問題を修正（idle/loadのみ待機→ポーリング＋ハード解決）＋自己修復をハートビート化（「チェックしても出ない／消したのに残る・再読込で治る」の真因）。相関/散布図の残差マップを再実装（先にモーダルを閉じる＋RdBu連続配色＋指標33→51）。ウェブカムを**実装**（検証済みの24時間ライブYouTube配信25件をポップアップ内に埋め込み再生。検索リンクのハリボテを廃止）。**タイムゾーンレイヤー**新設（Natural Earth境界＋各ゾーンの現在時刻を毎分更新）。GIBSラスターに色スケール凡例。鉄道線を濃色＋白枕木で視認性向上。水域/地形ラベルを別チェック（`cb-geolabels`）化＋河川ラベルを `waterway` 由来に修正（位置ズレ解消）。天気ポップアップの華氏完全対応＋移動可能化。ウィジェット36→41。i18n：RUのレイヤーグループ見出し欠落＋国詳細(Stats)のES欠落を修正、非AIニュース地点辞書を多言語強化。
 
@@ -979,5 +979,37 @@ supabase/
 - **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
 - **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
+---
+
+## 15. 運用品質基盤 (CI・テスト・ステージング・リリース・監視) — R133
+
+アプリ本体（`index.html`）とは分離した**開発/CI用ツール**。ブラウザには一切ロードされない（`package.json` の devDependencies はアプリに同梱されない）。目的＝破損を本番前に検知／本番障害の早期発見／安全なロールバック。現行の単一HTML＋GitHub Pages公開を**温存**し、安全設備を追加したもの。
+
+### 15.1 ファイル
+- `package.json`（private・type:module）: devDeps＝`@playwright/test`＋`js-yaml` のみ。scripts＝`test`（=`check:static` + Playwright）/`check:static`/`test:smoke`/`test:qa`/`serve`/`report`。`.nvmrc=24`。
+- `scripts/serve.mjs` — 依存ゼロ静的サーバ（リポジトリルートを `/` で配信＝GitHub Pages と同一）。
+- `scripts/static-checks.mjs` — 構文（`node --check` 全 js/mjs/cjs/**ts**＝Node24型ストリップ）／JSON parse／YAML(js-yaml)／マージ衝突マーカー／秘密検出（publishable anon はallowlist）／HTML参照ローカルアセット存在。
+- `playwright.config.js` — hermeticスモーク＋内部QA用（webServer=serve.mjs・UTC/en-US・SWブロック・prod-smokeは除外）。`playwright.prod.config.js` — 実URL用（webServer無し・retry3）。
+- `tests/helpers/network.js` — hermeticルーティング（同一オリジン＋boot CDN2つ〔unpkg/jsdelivr〕のみ許可、他外部は全 `abort`）＋console分類（外部/ネット系はbenign、自コードのみ失敗）。
+- `tests/smoke.spec.js`（8） / `tests/internal-qa.spec.js`（3・`IntMapAtlasQA`+`IntMapRegionResolverTest`+`IntMapUIAudit`） / `tests/prod-smoke.spec.js`（実URL・`PROD_URL`）。
+- `.github/workflows/` — `ci.yml`（PR+push main+手動・最小権限）／`deploy.yml`（**DORMANT**：`vars.ENABLE_PAGES_DEPLOY=='true'` かつ Pages source=Actions で発火・CIゲート付き本番公開＋`build-info.json`＋post-deploy smoke）／`rollback.yml`（手動・履歴実在refのみ・任意コード公開不可）／`uptime.yml`（6h毎 curl＋自動Issue重複排除/自動クローズ）。
+- `.github/pull_request_template.md`・`.github/dependabot.yml`。
+- `docs/TESTING.md`・`docs/RELEASE.md`・`docs/MONITORING.md`・`docs/INCIDENT-RESPONSE.md`。
+
+### 15.2 実行
+```bash
+npm ci && npx playwright install --with-deps chromium   # 初回
+npm test           # = 静的検査 + hermeticブラウザ（CIゲート）
+npm run serve      # http://127.0.0.1:4173/（Pagesと同じ配信）
+```
+
+### 15.3 index.html への追加（追加のみ・既存挙動不変）
+- `INTMAP_BUILD`＝現行ビルド識別子（診断/Bug Reportに露出。deployが `build-info.json` で実SHAも刻印）。
+- **DORMANT Sentryフォワーダ**（`window.INTMAP_SENTRY_DSN` / `<meta name="intmap-sentry-dsn">` 未設定なら完全無動作・0コスト）。設定時のみ SDK 遅延ロード＋`beforeSend/beforeBreadcrumb` で PII/トークン/cookie/localStorage/Atlas入力/検索語/精密位置を送らずクエリ除去、外部/ネット系はクラッシュ報告しない。既存 `window.__imErrors`（error/rejection リングバッファ）が常時稼働の土台。
+- **STAGINGリボン**（`*.pages.dev` / `?staging=1` / meta フラグの時だけ表示・本番/ローカルdevは非表示・`window.INTMAP_STAGING`）。
+
+### 15.4 安全リリース（§6・オプトイン）
+現行は「push で branch 自動公開」。CIゲート版へ移行するには **Settings→Pages→Source=GitHub Actions** ＋ **Variables `ENABLE_PAGES_DEPLOY=true`** を設定（それまで deploy/rollback は全 job skip＝現行公開不変）。詳細は `docs/RELEASE.md`。
 
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*
