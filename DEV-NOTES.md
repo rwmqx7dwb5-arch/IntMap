@@ -37,6 +37,16 @@
 ### 6. 歴史Wikipedia拡充（`_ERA_WIKI` 追加・全て新規キー＝安全）
 WWII クロアチア独立国（`HRV [1941,1945] Independent_State_of_Croatia`）＋植民地期の実記事（`SGP` 海峡植民地/シンガポール, `BLZ` 英領ホンジュラス, `GUY` 英領ギアナ, `SUR` オランダ領スリナム, `ZMB` 北ローデシア, `MWI` ニヤサランド, `BWA` ベチュアナランド, `LSO` バストランド, `SWZ` スワジランド, `UGA` ウガンダ保護領）。ポップアップが存在プローブするのでタイトル差異は「ボタン非表示」で安全。**実測: 1943 Zagreb→wiki=`Independent_State_of_Croatia`**。
 
+### 7. 経路機能10/10 指示書コア（続き・別セッションで並行実装／batch1-2=`7020fdb`, batch3=`90d5a47`, batch4=`3dde21b`）
+R126で入れた基盤（RouteStore/requestId+Abort/計算描画分離/エラー型8種/直線代替廃止/CORSプロキシ全廃/偽経路ガード/同名地名近接/時刻UI）の上に、製品品質の中核を追加。全てヘッドレス実測（localhost:8128・`?cb=`）。
+- **道路ALTERNATIVES（§3.3/§7.1/§10）**: OSRM `alternatives=3`（via無し時）→ transit と同じ RouteStore に格納。差別化ラベル（最速/最短距離/+N分/回避付き）、パレット色、`_roadDedup` は**幾何重複>0.92 かつ 所要差<3% の時だけ**畳む（OSRM は既に distinct を保証。当初 0.8 閾値が Munich→Nuremberg 109 vs 119 分を誤結合していた）。パネル・Atlas 双方で候補カード＝タップで再描画＋要約/手順再同期。実測: Munich→Nuremberg=2候補。
+- **リッチ・ターンバイターン（§12）**: `IntMapRouting.maneuver(step)` が OSRM の全 maneuver 語彙（turn/merge/on-ramp/off-ramp/fork/end-of-road/roundabout+出口番号/roundabout-turn/U-turn/到着側）＋道路ref＋方面(destinations)＋出口番号＋**車線案内（▮/▯）**を5言語自然文へ。「矢印+道路名」を置換。実測: 「A 5 に右折」「突き当りを左折 St 2032 へ」「ラウンドアバウトで1番目の出口」。
+- **手順→地図（§12.5）**: 手順タップでその区間を黄色ハイライト＋fly。`selectStep` は RouteStore からステップ形状を導出（MapLibre の `{geojson}` 包み `source._data` でなく自前 `_lastPaint.feats` を使う）。Atlas は `.atl-rstep` を `.atl-trip` カードより**先に**判定（手順はカード内にあるため）。
+- **回避 toll/highway/ferry（§7.3/§4.7）＝Valhalla**: **公開OSRMデモは `exclude=` を拒否**（"Exclude flag combination is not supported"）＝壊れたボタンになる→回避要求のみ **Valhalla /route（keyless・等時線と同じサーバ）** へ振替（`costing_options.use_tolls/use_highways/use_ferry`）。Valhalla の maneuver `type` を `_maneuver` の疑似ステップへ写像＝5言語手順・車線・step-highlight を共用。Valhalla polyline は precision 6（`_decodePoly`）。失敗時は OSRM(回避なし)へフォールバック＋`avoidDropped` を正直表示。実測: 高速回避 Munich→Nuremberg=169km/109分→**218km/252分の一般道**（64手順）。プロバイダ選択は指示書§4.7そのもの。
+- **公共交通の実時刻/時刻表 区別（§2.4/§9.6/§9.12）**: MOTIS は各レグに `realTime:true/false` と `scheduledStartTime` を返す（実測確認）→ レグに `rt`/`delay`（実−予定）を付与、`realtime` を旅程へ集約。返答は `realtime` の時だけ「リアルタイム運行情報を含む」、それ以外は「時刻表ベース」と明示。レグ行に定刻(緑●)/+N分遅れ(橙●)バッジ。**静的時刻表をライブと偽装しない**。
+- **経路エクスポート GPX/GeoJSON（§15.7）**: 選択中の経路（道路/公共交通/JRブリッジ）を GPX（`<trk><trkseg>`）/ GeoJSON（LineString＋distance_m/duration_s）で**ユーザー操作のローカルDLのみ**（位置情報の外部送信なし）。`exportRoute(fmt)`＝DL、`_routeExport(fmt)`＝文字列（テスト可）、`hasRoute()`。パネルは経路がある時だけ GPX/GeoJSON 行を表示。実測: Munich→Nuremberg=GPX 2245 trkpt / GeoJSON 2245座標。
+- **並行編集の教訓**: 同一 index.html を別セッション（地域解決基盤 R132）が同時編集＝OneDrive同期でファイルが 218→422 差分に膨張・行番号±1000変動・「modified on disk」多発。**編集前に毎回 grep で再確認**＋自分のハンク（routing IIFE + directions case のみ）を `git diff`→分類→**`git apply --cached`（作業ツリー不変・OneDrive競合なし）で自分の変更だけ index に staging→commit**（相手の未コミット作業を温存）。batch1-2 はこの方式、batch3 はユーザーが `update`(90d5a47) で一括コミット、batch4 はツリーが clean になり通常コミット。
+
 ### 検証環境の要点
 Browserペインは `document.hidden`（Map WebGL未init・innerWidth 0）＝スクショ/実クリック/実描画は非ヘッドレス。**データ層とプランナー入力側は完全実測**: `python -m http.server`+`preview_start`（`?cb=` 必須）で `IntMapRegionResolverTest.run()`=13/13、resolver logged-out gate=`ran:false`（従来経路温存）、`--atlas-grad` の getComputedStyle、`IntMapTime.setYear`→`TB.currentFC`/`resolveHist`/turf-PIP で昔年代クリック、`_ERA_WIKI` の resolveHist wiki。実 AI 呼び出し（geo_resolve/geoVerify）はログイン必須＝**入力側（task/webMode/schema/envelope/abort配管）を全項目コードで担保**（根本原因が入力側という R131 教訓に一致）。Edit hook の file:// タブ量産→`tabs_close`。
 
