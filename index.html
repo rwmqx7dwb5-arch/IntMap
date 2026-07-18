@@ -26272,8 +26272,20 @@ window.addEventListener('DOMContentLoaded', () => {
          ANCHOR (disambiguate the 8 candidates) and to REJECT wrong-place geometry below. The exact-country and
          region-group rungs above already returned, so this only runs for the genuinely uncertain long tail. */
       let _gv=null,_gvTried=false; const _getGV=async()=>{ if(!_gvTried){ _gvTried=true; try{ _gv=await geoVerify(nm); }catch(_){ _gv=null; } } return _gv; };
+      /* (#R136) if the name is a CURATED macro-region (Patagonia, Siberia, Sahel…), a Nominatim hit that sits OUTSIDE
+         that reviewed extent is a homonym (Patagonia the Arizona town, ~13000 km from the South-American region) —
+         reject it so we fall through to the curated gazetteer box below instead of painting the wrong-place homonym. */
+      const _rbEarly=regionBox(_wq);
+      const _curatedOk=(e)=>{ try{ if(!_rbEarly||!_rbEarly.box||!e) return true;
+        const bx=_rbEarly.box, w=bx[0][0],s=bx[0][1],ee=bx[1][0],nn=bx[1][1], rw=ee-w, rh=nn-s, pad=Math.max(6,rw*0.25,rh*0.25);
+        /* (a) reject a FAR homonym whose point is outside the reviewed extent (Patagonia the Arizona town). */
+        if(isFinite(+e.lng)&&isFinite(+e.lat)&&!(+e.lng>=w-pad&&+e.lng<=ee+pad&&+e.lat>=s-pad&&+e.lat<=nn+pad)) return false;
+        /* (b) reject a tiny named SUB-feature INSIDE the region (the Southern Patagonian Ice Field for "Patagonia", a
+           Sahel admin region for "Sahel") — it covers only a sliver of the macro-region, so prefer the curated box. */
+        try{ if(e.box&&rw>0&&rh>0){ const ew=e.box[1][0]-e.box[0][0], eh=e.box[1][1]-e.box[0][1]; if((ew*eh)/(rw*rh)<0.15) return false; } }catch(_){}
+        return true; }catch(_){ return true; } };
       for(let _wi=0;_wi<(isWaterQ?2:1);_wi++){
-        try{ const gv=await _getGV(); const e=await _nomExtent(nm, gv); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'') && _geoAgrees(e.geojson, gv)){
+        try{ const gv=await _getGV(); const e=await _nomExtent(nm, gv); if(e&&e.geojson&&/Polygon/.test(e.geojson.type||'') && _geoAgrees(e.geojson, gv) && _curatedOk(e)){
           if(e.adminPoly) return {poly:{name:e.name||nm,geo:e.geojson}, verified:_gvStrong(gv)};
           /* (#R116) WATER BODIES & NATURAL FEATURES: 「大阪湾をハイライト」 was rejected here (a bay is not an
              admin polygon), fell through the AI steps and ended at the point→country fallback, which painted
@@ -26571,6 +26583,9 @@ window.addEventListener('DOMContentLoaded', () => {
       'midwest':[-104,36,-80,49],'new england':[-74,41,-66,48],'pacific northwest':[-125,42,-111,49],'great plains':[-105,31,-95,49],'deep south':[-95,29,-75,37],'american south':[-95,29,-75,37],
       'patagonia':[-76,-56,-62,-39],'amazon':[-79,-16,-44,5],'amazonia':[-79,-16,-44,5],'andes':[-79,-56,-62,11],
       'himalayas':[73,26,96,36],'alps':[5,43,17,48],'siberia':[60,50,180,78],'oceania':[110,-50,180,0],'gulf of mexico':[-98,18,-81,31],
+      /* (#R136) famous geographic/historical regions with NO single OSM boundary (Nominatim otherwise returns a
+         same-named village → wrong-place highlight); reviewed extents so they highlight honestly. */
+      'manchuria':[119,39,135,53],'anatolia':[26,36,45,42],'asia minor':[26,36,45,42],'the levant':[34,29,42,38],'indochina peninsula':[92,9,110,29],'scandinavian peninsula':[4,55,32,71],
       /* (#R62) informal / economic regions so they highlight WITHOUT an AI round-trip (the AI-traced polygon
          still takes over for names not listed here) */
       'blue banana':[-1.5,45,12.5,54.5],'rhine-ruhr':[6.2,50.7,7.9,51.9],'ruhr':[6.5,51.2,7.9,51.7],'rust belt':[-93,38,-74,45],
@@ -26584,7 +26599,11 @@ window.addEventListener('DOMContentLoaded', () => {
       'グレートプレーンズ':'great plains','大平原':'great plains','グレート・プレーンズ':'great plains','青いバナナ':'blue banana','ブルーバナナ':'blue banana','ブルー・バナナ':'blue banana','ライン・ルール':'rhine-ruhr','ラインルール':'rhine-ruhr','ライン＝ルール':'rhine-ruhr','ルール地方':'ruhr','ラストベルト':'rust belt','サンベルト':'sun belt','コーンベルト':'corn belt','シリコンバレー':'silicon valley','シリコン・バレー':'silicon valley',
       'blaue banane':'blue banana','rhein-ruhr':'rhine-ruhr','ruhrgebiet':'ruhr','great plains region':'great plains',
       'голубой банан':'blue banana','рейн-рур':'rhine-ruhr','ржавый пояс':'rust belt','великие равнины':'great plains','кремниевая долина':'silicon valley','силиконовая долина':'silicon valley',
-      'banana azul':'blue banana','plátano azul':'blue banana','cinturón del óxido':'rust belt','grandes llanuras':'great plains','valle del silicio':'silicon valley' };
+      'banana azul':'blue banana','plátano azul':'blue banana','cinturón del óxido':'rust belt','grandes llanuras':'great plains','valle del silicio':'silicon valley',
+      /* (#R136) famous regions, 5 languages */
+      '満州':'manchuria','満洲':'manchuria','マンチュリア':'manchuria','mandschurei':'manchuria','маньчжурия':'manchuria',
+      'アナトリア':'anatolia','小アジア':'asia minor','anatolien':'anatolia','kleinasien':'asia minor','анатолия':'anatolia','малая азия':'asia minor','anatolia':'anatolia','asia menor':'asia minor',
+      'パタゴニア':'patagonia','patagonien':'patagonia','патагония':'patagonia' };
     function regionBox(place){ const raw=_lnorm(place); const k=REGION_ALIASES[raw]||REGION_ALIASES[_rnorm(place)]||_rnorm(place); const b=REGION_BBOX[k]; if(!b) return null; return {box:[[b[0],b[1]],[b[2],b[3]]], lng:(b[0]+b[2])/2, lat:(b[1]+b[3])/2, name:place.trim(), region:true}; }
     const DIR_VEC={north:'N',northern:'N',south:'S',southern:'S',east:'E',eastern:'E',west:'W',western:'W',central:'C',northeast:'NE',northeastern:'NE',northwest:'NW',northwestern:'NW',southeast:'SE',southeastern:'SE',southwest:'SW',southwestern:'SW',upper:'N',lower:'S'};
     function parseDirectional(place){ const s=String(place||'').trim(); let m;
@@ -26652,17 +26671,29 @@ window.addEventListener('DOMContentLoaded', () => {
          boundaries came back as a handful of vertices. 0.0008 (~80 m) keeps full visual fidelity at any zoom the
          region is viewed at while still bounding the payload. Whole COUNTRIES never reach here (resolveCountrySync
          short-circuits first), so the worst case is a large oblast/prefecture — fine at this threshold. */
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
-        /* (#R116) EXACT-NAME bonus: for 「大阪湾」 Nominatim ranked 大坂湾 (a HAMLET in Zhejiang, China — 坂≠阪
-           fuzzy CJK match) ABOVE the real Osaka Bay, which is how "highlight Osaka Bay" painted China. A result
-           whose own name equals the query must beat a fuzzy near-miss with slightly higher importance. */
+      try{ /* (#R136) accept-language so Nominatim returns display names IN the UI language (falling back to English):
+              an ENGLISH-exonym query ("Tuscany", "Persia") otherwise never exact-name-matches the region's LOCAL name
+              ("トスカーナ州" / "Toscana"), so the exact-name bonus below fired for an obscure English HOMONYM instead
+              (Tuscany the Calgary suburb) — a reported "見当違いの場所" wrong-place highlight. */
+        const _lang=(typeof currentLang!=='undefined'&&currentLang)?String(currentLang):'en';
+        const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
         const _q=String(place).trim().toLowerCase();
-        const _nameBonus=x=>{ try{ return (String((x.display_name||'').split(',')[0]).trim().toLowerCase()===_q)?0.5:0; }catch(_){ return 0; } };
+        const _imp=x=>(+x.importance||0); const _maxImp=Math.max.apply(null,j.map(_imp).concat([0]));
+        /* (#R116/#R136) EXACT-NAME bonus: a result whose own name equals the query beats a FUZZY near-miss of slightly
+           higher importance (「大阪湾」 must beat 大坂湾, a hamlet in China). BUT it is decisive ONLY among candidates of
+           COMPARABLE importance — a low-importance exact HOMONYM (a township literally named "Persia" in Iowa, imp 0.47)
+           must NOT out-rank the dramatically more important real feature it shares letters with (Iran, imp 0.87). Full
+           bonus within 0.25 of the top importance; near-zero below (still enough to break a genuine near-tie). */
+        const _nameBonus=x=>{ try{ if(String((x.display_name||'').split(',')[0]).trim().toLowerCase()!==_q) return 0; return (_imp(x)>=_maxImp-0.25)?0.5:0.08; }catch(_){ return 0; } };
         /* (#R130) ANCHOR bonus: when a web-search-verified point is supplied (geoVerify), prefer the candidate NEAREST
            it — so the RIGHT one of the up-to-8 Nominatim candidates wins instead of a higher-importance homonym
            (the 大阪湾→坂湾-in-China class). Reuses the already-fetched candidates, no extra request. */
         const _anchorBonus=x=>{ try{ if(!anchor||!isFinite(+anchor.lat)||!isFinite(+anchor.lng)||typeof turf==='undefined') return 0; const d=turf.distance([+x.lon,+x.lat],[+anchor.lng,+anchor.lat],{units:'kilometres'}); if(!isFinite(d)) return 0; return d<=120?0.9:d<=400?0.5:d<=1200?0:-0.7; }catch(_){ return 0; } };
         const best=j.slice().sort((x,y)=>((+y.importance||0)+_classBonus(y)+_nameBonus(y)+_anchorBonus(y))-((+x.importance||0)+_classBonus(x)+_nameBonus(x)+_anchorBonus(x)))[0];
+        /* (#R136) honest-miss guard (only when NO web-verified anchor vouches for the location): a bare minor SETTLEMENT
+           with low importance is almost never what a region/country/place highlight meant — return null so the caller
+           reports an honest miss instead of painting a speck in the wrong country. */
+        if(!anchor){ const _typ=String(best.type||'').toLowerCase(); if(/^(hamlet|neighbourhood|neighborhood|suburb|quarter|locality|isolated_dwelling|farm|allotments|city_block|residential|croft)$/.test(_typ) && _imp(best)<0.35) return null; }
         let box=robustExtent(best.geojson);
         if(!box && Array.isArray(best.boundingbox)&&best.boundingbox.length===4){ const s=+best.boundingbox[0],n=+best.boundingbox[1],w=+best.boundingbox[2],e=+best.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
         const adminPoly=!!(best.geojson && /Polygon/.test(best.geojson.type||'') && _classBonus(best)>0);
@@ -27086,6 +27117,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const q=_lnorm(name); if(!q||typeof countryStats==='undefined'||!countryStats) return null; let best=null,bs=0;
       for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const en=_lnorm(s.nameEn||''), jp=_lnorm(s.nameJp||''); let sc=0;
         if(en===q||jp===q) sc=100; else if((en&&en.indexOf(q)===0)||(jp&&jp.indexOf(q)===0)) sc=82; else if(q.length>3&&((en&&en.indexOf(q)>=0)||(jp&&jp.indexOf(q)>=0))) sc=64; else if(en&&q.length>4&&q.indexOf(en)===0) sc=58;
+        /* (#R136) a NON-sovereign micro-feature (glacier / shoal / no-man's-land: Southern Patagonian Ice Field,
+           Scarborough Shoal, Bir Tawil) must not be grabbed by a LOOSE substring match — "Patagonia" was resolving to
+           the ice field ("patagonia" ⊂ "…Patagonian Ice Field", sc 64) instead of the region ("見当違いの場所"). Require
+           an exact or start-of-name match for these, so a loose query falls through to the region/Nominatim resolver. */
+        if(sc>0&&sc<82&&s.sov===false) sc=0;
         if(sc>bs){ bs=sc; best={code, name:cName(s), ll:(s.latlng?{lng:s.latlng[1],lat:s.latlng[0]}:null)}; } }
       return bs>=58?best:null; }catch(_){ return null; } }
     async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c; try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats[code]){ const s=countryStats[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
@@ -27413,7 +27449,15 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R135 §17) Developer diagnostics for the LAST Atlas turn — request profile, the model's original plan, the
        validated plan, rejected/rewritten actions, per-action structured outcomes, semantic-retry blocks, scope
        changes and the final goal validation. Not shown to normal users. window.IntMapAtlasDebug.lastPlan(). */
-    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; }, requestProfile:function(q){ try{ return _requestProfile(q); }catch(_){ return null; } }, validatePlan:function(acts,q){ try{ return _validatePlan(acts,_requestProfile(q||''),q||''); }catch(_){ return null; } }, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; } }; }catch(_){}
+    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; }, requestProfile:function(q){ try{ return _requestProfile(q); }catch(_){ return null; } }, validatePlan:function(acts,q){ try{ return _validatePlan(acts,_requestProfile(q||''),q||''); }catch(_){ return null; } }, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; },
+      /* (#R136) resolution-only probe for the highlight ladder — returns what resolveHlTarget produces WITHOUT painting
+         (so headless tests, where the map never renders, can measure resolution quality without the paint-retry loop). */
+      resolveHl:async function(nm){ try{ const t=await resolveHlTarget(String(nm==null?'':nm)); if(!t) return {kind:'miss'};
+        if(t.ambiguous) return {kind:'ambiguous',name:t.name,candidates:(t.candidates||[]).map(c=>c&&(c.name||c))};
+        if(t.code) return {kind:'country',code:t.code,name:t.name,verified:!!t.verified};
+        if(t.codes) return {kind:'group',n:t.codes.length,name:t.name};
+        if(t.poly){ let bb=null; try{ bb=fbbox(t.poly.geo); }catch(_){} return {kind:'poly',name:t.poly.name,method:t.rrMethod||(t.composed?'admin_union':(t.soft?'gazetteer':(t.approx?'derived':'osm'))),verified:!!t.verified,bbox:bb}; }
+        return {kind:'other'}; }catch(e){ return {kind:'err',msg:e&&e.message}; } } }; }catch(_){}
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(currentLang==='jp'?'ja':currentLang)+',en';
@@ -32471,6 +32515,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const F_RVN=_vflag('<rect width="30" height="20" fill="#FFF200"/><rect y="7.8" width="30" height="1.4" fill="#DA251D"/><rect y="9.6" width="30" height="1.4" fill="#DA251D"/><rect y="11.4" width="30" height="1.4" fill="#DA251D"/>');
     const F_PDRY=_vflag('<rect width="30" height="6.667" fill="#CE1126"/><rect y="6.667" width="30" height="6.667" fill="#ffffff"/><rect y="13.333" width="30" height="6.667" fill="#000000"/><path d="M0,0 11,10 0,20Z" fill="#00A9CE"/><g transform="translate(3.9,10) scale(1.7)"><path d="M0,-1 0.2245,-0.309 0.951,-0.309 0.363,0.118 0.588,0.809 0,0.382 -0.588,0.809 -0.363,0.118 -0.951,-0.309 -0.2245,-0.309Z" fill="#CE1126"/></g>');
     const F_DANZIG=_vflag('<rect width="30" height="20" fill="#DA121A"/><g fill="#ffffff"><rect x="13.1" y="9.1" width="3.8" height="1.2"/><rect x="14.4" y="7.8" width="1.2" height="3.8"/><rect x="13.1" y="12.9" width="3.8" height="1.2"/><rect x="14.4" y="11.6" width="1.2" height="3.8"/></g><path d="M12.2,6.6 13.4,4.9 15,6.1 16.6,4.9 17.8,6.6Z" fill="#FCD116"/>');
+    /* (#R136) Union Jack — the OFFICIAL flag of the Dominion of Newfoundland (1931–1949) before it joined Canada. */
+    const F_UNIONJACK=_vflag('<rect width="30" height="20" fill="#012169"/><path d="M0,0 30,20 M30,0 0,20" stroke="#fff" stroke-width="4.4"/><path d="M0,0 30,20 M30,0 0,20" stroke="#C8102E" stroke-width="1.8"/><rect x="11.4" width="7.2" height="20" fill="#fff"/><rect y="6.4" width="30" height="7.2" fill="#fff"/><rect x="12.75" width="4.5" height="20" fill="#C8102E"/><rect y="7.75" width="30" height="4.5" fill="#C8102E"/>');
     const _VANISHED=[
       {re:/^\s*(tibet|xizang|thibet)\s*$/i, nm:{en:'Tibet',jp:'チベット',de:'Tibet',ru:'Тибет',es:'Tíbet'}, wiki:'Tibet_(1912%E2%80%931951)', flag:F_TIBET},
       {re:/^\s*(east[ -]?turkest(an|än)|uygh?ur(istan)?|sinkiang|kashgaria|(first|second) east turkestan republic)\s*$/i, nm:{en:'East Turkestan',jp:'東トルキスタン',de:'Ostturkestan',ru:'Восточный Туркестан',es:'Turkestán Oriental'}, wiki:'East_Turkestan', flag:F_ETRK},
@@ -32482,7 +32528,11 @@ window.addEventListener('DOMContentLoaded', () => {
       {re:/^\s*(east germany|german democratic republic|d\.?\s?d\.?\s?r\.?|deutsche demokratische republik)\s*$/i, nm:{en:'East Germany',jp:'東ドイツ',de:'Deutsche Demokratische Republik',ru:'ГДР',es:'Alemania Oriental'}, wiki:'East_Germany', flag:F_DDR},
       {re:/^\s*(south vietnam|republic of vietnam)\s*$/i, nm:{en:'South Vietnam',jp:'南ベトナム',de:'Südvietnam',ru:'Южный Вьетнам',es:'Vietnam del Sur'}, wiki:'South_Vietnam', flag:F_RVN},
       {re:/^\s*(south yemen|people'?s democratic republic of yemen|p\.?d\.?r\.?y\.?)\s*$/i, nm:{en:'South Yemen',jp:'南イエメン',de:'Südjemen',ru:'Южный Йемен',es:'Yemen del Sur'}, wiki:'South_Yemen', flag:F_PDRY},
-      {re:/^\s*(danzig|free city of danzig)\s*$/i, nm:{en:'Free City of Danzig',jp:'ダンツィヒ自由市',de:'Freie Stadt Danzig',ru:'Вольный город Данциг',es:'Ciudad Libre de Dánzig'}, wiki:'Free_City_of_Danzig', flag:F_DANZIG}
+      {re:/^\s*(danzig|free city of danzig)\s*$/i, nm:{en:'Free City of Danzig',jp:'ダンツィヒ自由市',de:'Freie Stadt Danzig',ru:'Вольный город Данциг',es:'Ciudad Libre de Dánzig'}, wiki:'Free_City_of_Danzig', flag:F_DANZIG},
+      /* (#R136) the Dominion of Newfoundland was a self-governing British dominion until it joined Canada in 1949 —
+         _GW2ISO(21) folded it into modern CANADA, so a click showed Canada's flag/article. Restore its own identity
+         (no separate Maddison series → honest name/flag/Wikipedia without comparable numbers, like Danzig). */
+      {re:/^\s*(newfoundland|dominion of newfoundland)\s*$/i, nm:{en:'Dominion of Newfoundland',jp:'ニューファンドランド自治領',de:'Dominion Neufundland',ru:'Доминион Ньюфаундленд',es:'Dominio de Terranova'}, wiki:'Dominion_of_Newfoundland', flag:F_UNIONJACK}
     ];
     /* (#R105) correct a KNOWN anachronism in the aourednik data: it draws "Tibet" (and East Turkestan) as an
        INDEPENDENT country in the 1960 snapshot even though the PRC annexed Tibet in 1951 / East Turkestan by 1949.
@@ -33258,15 +33308,58 @@ window.addEventListener('DOMContentLoaded', () => {
       BWA:[[1885,1966,'Bechuanaland_Protectorate']],
       LSO:[[1884,1966,'Basutoland']],
       SWZ:[[1903,1968,'Swaziland_(protectorate)']],
-      UGA:[[1894,1962,'Uganda_Protectorate']]
+      UGA:[[1894,1962,'Uganda_Protectorate']],
+      /* (#R136) further colonial-era → article coverage for colonies/protectorates that still linked to their MODERN
+         country page ("Wikipedia…まだ詰められる箇所が大量にある"). All titles existence-verified against en.wikipedia
+         (redirects resolved); ranges end at each territory's independence so the modern article returns afterwards. */
+      GMB:[[1900,1965,'Gambia_Colony_and_Protectorate']],
+      SLE:[[1900,1961,'Sierra_Leone_Colony_and_Protectorate']],
+      MUS:[[1900,1968,'British_Mauritius']],
+      MDV:[[1900,1965,'Sultanate_of_the_Maldive_Islands']],
+      FJI:[[1900,1970,'Colony_of_Fiji']],
+      CPV:[[1900,1975,'Portuguese_Cape_Verde']],
+      GNB:[[1900,1974,'Portuguese_Guinea']],
+      GNQ:[[1900,1968,'Spanish_Guinea']],
+      TLS:[[1900,1975,'Portuguese_Timor']],
+      SLB:[[1900,1978,'British_Solomon_Islands']],
+      PNG:[[1949,1975,'Territory_of_Papua_and_New_Guinea']],
+      KWT:[[1900,1961,'Emirate_of_Kuwait']]
     };
-    /* era polygon for a compared country CODE — a former state via its NAME regex, else the era polygon that
-       contains an interior point of the country's modern shape (so a renamed / border-shifted country paints its
-       THAT-YEAR extent, e.g. the German Empire's 1910 borders instead of modern Germany's). */
+    /* (#R136) code → the era feature(s) that RESOLVE to that code, computed by running the SAME resolver the click
+       picker uses (resolveHist: former-state identity → the feature's own CShapes _gw → base-name) over every era
+       polygon, cached per FeatureCollection. This is what makes the Compare highlight paint EXACTLY what a click would
+       detect. The majority-vote-over-the-MODERN-outline fallback below could disagree: 1925 Poland is detected as POL
+       (its era feature's _gw=290), but a vote over MODERN Poland's outline — whose western third was Weimar Germany
+       that year — tallied the German polygon and painted Germany ("1920sのポーランドをクリックしてもポーランド判定な
+       もののドイツハイライトになる"). */
+    function _eraCodeIndex(fc){ if(fc.__imtbCodeIdx) return fc.__imtbCodeIdx; const m=new Map();
+      try{ for(const ff of fc.features){ try{ if(!ff.geometry) continue; const nm=(ff.properties&&(ff.properties.NAME||ff.properties.name))||'';
+        const pts=_interiorPts(ff.geometry,1); const p=pts&&pts[0]; const R=resolveHist(nm, p?{lng:p[0],lat:p[1]}:null); const cd=R&&R.code;
+        if(cd){ if(!m.has(cd)) m.set(cd,[]); m.get(cd).push(ff); } }catch(_){} } }catch(_){}
+      try{ Object.defineProperty(fc,'__imtbCodeIdx',{value:m,enumerable:false,configurable:true}); }catch(_){ fc.__imtbCodeIdx=m; }
+      return m; }
+    /* merge several era features (a code can span more than one CShapes polygon) into one MultiPolygon geometry. */
+    function _unionGeom(feats){ if(!feats||!feats.length) return null; if(feats.length===1) return feats[0].geometry;
+      const polys=[]; for(const f of feats){ const g=f.geometry; if(!g) continue; if(g.type==='Polygon') polys.push(g.coordinates); else if(g.type==='MultiPolygon'){ for(const p of g.coordinates) polys.push(p); } }
+      return polys.length?{type:'MultiPolygon',coordinates:polys}:(feats[0].geometry||null); }
+    /* fraction of bbox B (the modern country) that bbox A (the era feature) covers — used to tell an era feature that
+       IS the country that year (interwar Poland ≈ modern Poland) from a mere fragment sitting inside it. */
+    function _bbCoverFrac(a,b){ try{ if(!a||!b) return 0; const ix=Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0])); const iy=Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1])); const barea=(b[2]-b[0])*(b[3]-b[1]); return barea>0?(ix*iy)/barea:0; }catch(_){ return 0; } }
+    /* era polygon for a compared country CODE — a former state via its NAME regex, else the era feature(s) that RESOLVE
+       to this code (identical to the click picker), else — only as a last resort — the era polygon that contains an
+       interior point of the country's modern shape (so a renamed / border-shifted country paints its THAT-YEAR extent,
+       e.g. the German Empire's 1910 borders instead of modern Germany's). */
     function geomForCode(code){ try{ const fc=cache.get(shownY); if(!fc||!fc.features) return null;
       const HS=window.IntMapHistStates; const re=HS&&HS.hbRe&&HS.hbRe(code); if(re){ const g=geomFor(re); if(g) return g; }
       const g=window.countryGeo; if(!g||!g.features) return null;
       const cf=g.features.find(f=>String(f.id!=null?f.id:(f.properties&&f.properties.__code))===String(code)); if(!cf||!cf.geometry) return null;
+      const cfbb=_bbox(cf.geometry);
+      /* (#R136) authoritative: the era feature(s) whose OWN identity resolves to this code — matches detection exactly.
+         Use it only when it actually COVERS the country; a country that was ABSORBED that year keeps only a fragment
+         feature (e.g. RUS in 1925 → just the Karafuto sliver, since mainland Russia is the Soviet Union), which would
+         paint a misleading speck — those fall through to the modern-shape vote, which paints the enclosing extent. */
+      try{ const cm=_eraCodeIndex(fc); const hit=cm.get(String(code)); if(hit&&hit.length){ const gg=_unionGeom(hit);
+        if(gg){ const gb=_bbox(gg); if(!cfbb||!gb||_bbCoverFrac(gb,cfbb)>=0.3) return gg; } } }catch(_){}
       const samples=_interiorPts(cf.geometry,16); if(!samples.length) return null;
       /* majority vote: the era feature containing the MOST interior samples of this modern country (smallest
          bbox wins ties, so an enclosing empire never out-votes the actual country). bbox pre-filter keeps it cheap. */
