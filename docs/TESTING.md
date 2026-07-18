@@ -1,0 +1,125 @@
+# Testing IntMap
+
+IntMap ships as a static site (`index.html` + assets). This tooling adds automated
+checks around it **without changing how the app is built or served**. Everything here
+lives in `package.json`, `scripts/`, `tests/`, and `playwright.config.js`; none of it is
+loaded by the browser app.
+
+## What runs
+
+| Layer | Command | Needs a browser? | External network? |
+|-------|---------|------------------|-------------------|
+| Static checks | `npm run check:static` | no | no |
+| Browser smoke | `npm run test:smoke` | Chromium | no (hermetic) |
+| Internal QA | `npm run test:qa` | Chromium | no (hermetic) |
+| Everything (the CI gate) | `npm test` | Chromium | no (hermetic) |
+| Production smoke | `PROD_URL=… npx playwright test --config playwright.prod.config.js` | Chromium | **yes** (live site) |
+
+## Requirements
+
+- **Node.js ≥ 20** (CI and the pinned local version use Node 24 — see `.nvmrc`).
+- That is all. The static server is dependency-free (`scripts/serve.mjs`); the only
+  dev-dependencies are `@playwright/test` (browser tests) and `js-yaml` (workflow linting).
+
+## First-time setup
+
+```bash
+npm ci                                   # reproducible install from package-lock.json
+npx playwright install --with-deps chromium   # one-time browser download
+```
+
+`npm ci` (not `npm install`) is what CI uses — it installs the exact locked versions and
+fails if `package.json` and `package-lock.json` disagree.
+
+## Run the tests
+
+```bash
+npm test                 # static checks + hermetic browser suite (the full CI gate)
+npm run check:static     # fast: syntax / JSON / YAML / merge-markers / secrets / assets
+npm run test:smoke       # does the app boot + render its shell?
+npm run test:qa          # IntMap's own in-page QA harnesses
+```
+
+Run a single test by title:
+
+```bash
+npx playwright test -g "map container"
+npx playwright test tests/smoke.spec.js
+```
+
+Serve the app by itself (same as CI serves it — the repo root at `/`):
+
+```bash
+npm run serve            # http://127.0.0.1:4173/
+```
+
+## When a test fails
+
+Playwright captures artefacts on failure:
+
+- **Screenshots** and **traces** under `test-results/`.
+- An **HTML report**: `npm run report` (opens `playwright-report/`).
+- A **JUnit XML** (`test-results/junit.xml`) that GitHub renders in the Actions summary.
+
+Open a trace to step through exactly what the browser did:
+
+```bash
+npx playwright show-trace test-results/<failing-test>/trace.zip
+```
+
+In CI, the same artefacts are uploaded to the run (**Actions → the run → Artifacts →
+`playwright-report`**), and the failing test name + message appear inline in the log.
+
+## Static checks (`scripts/static-checks.mjs`)
+
+Fast, dependency-light gate that catches cheap-to-detect breakage before the browser runs:
+
+- **Syntax** — `node --check` on every `.js` / `.mjs` / `.cjs` / `.ts` file (Node ≥ 22
+  strips TypeScript types, so the Deno Edge Functions in `supabase/functions/` are covered
+  too). `index.html`'s inline scripts are validated at runtime by the smoke test instead.
+- **JSON** — every `.json` is parsed.
+- **YAML** — every workflow is parsed; tabs are rejected; missing `permissions:` warns.
+- **Merge markers** — `<<<<<<<` / `>>>>>>>` anywhere is an error.
+- **Secrets** — private keys, service-role JWTs, and common provider key shapes fail the
+  build. The Supabase **publishable** (anon) key is public on purpose and is allowlisted.
+- **Referenced assets** — a static `src`/`href`/`url(...)` in `index.html` / `admin.html`
+  pointing at a missing local file fails (dynamic `'+x+'` refs are ignored).
+
+It deliberately does **not** reformat or style-lint existing code.
+
+## Internal QA harnesses (classification)
+
+IntMap exposes several self-diagnostic entry points. They are classified by what they
+need, so CI only runs the safe ones:
+
+| Harness | Type | In CI? | Why |
+|---------|------|--------|-----|
+| `IntMapAtlasQA.run()` | pure (fixtures + deterministic text/date math) | ✅ `test:qa` | no network, no AI, no auth |
+| `IntMapRegionResolverTest.run()` | pure (geometry math) | ✅ `test:qa` | no network |
+| `IntMapUIAudit.run()` | local DOM sweep | ✅ `test:qa` (informational) | deterministic after boot; not a strict pass/fail |
+| `IntMapLayerAudit.run()` / `.check()` | needs a rendered map + tiles/feature-state | ❌ | hermetic CI blocks tiles, so paint-state is incomplete — would report false negatives |
+| `IntMapDataHealth.check()` / `.probe()` | probes live external endpoints | ❌ | depends on GDELT / Overpass / Wikidata / GIBS / Open-Meteo being up |
+| `IntMapRegionResolver.resolve()` (live) | needs the AI proxy + a signed-in user | ❌ | consumes AI quota; requires auth |
+
+The last three are **not** run in CI because they need external network, rendered tiles,
+or a signed-in session — running them would make the build flaky and could touch
+production services. They remain available for manual diagnosis in the browser console.
+
+## External-API-dependent tests
+
+The hermetic suite (`npm test`) blocks **all** network except the two boot CDNs (unpkg,
+jsDelivr), so it never calls GDELT / Overpass / Supabase / tile servers. A blocked
+external request is expected and classified benign (`tests/helpers/network.js`); only an
+error from IntMap's **own** code fails the build. This is what lets CI stay green when an
+upstream data API is rate-limited or down.
+
+The only test that talks to the real internet is the **production smoke** (`prod-smoke`),
+which runs against the deployed URL after a deploy and on the uptime schedule. It tolerates
+transient upstream failures via retries and the same benign-error classification.
+
+## Determinism
+
+Tests are order-independent and repeatable: a fresh browser context per file (no leaked
+`localStorage` / `IndexedDB`), a fixed **UTC** timezone and **en-US** locale, Service
+Workers blocked, and a hermetic network. Nothing depends on the developer's clock,
+language, or prior runs.

@@ -5,6 +5,55 @@
 
 ---
 
+## R133 — 運用品質基盤（CI・自動テスト・ステージング・安全リリース・ロールバック・エラー/稼働監視） (tag `#R133`)
+
+第一段階「運用品質基盤の構築委託書」を実装。**新機能追加・大規模再設計はせず、現行の単一HTML＋GitHub Pages構成を温存**したまま、破損を本番前に検知し／本番障害を早期発見し／安全に前版へ戻せる設備を追加。作業ブランチ `ops/quality-baseline` → PR。全て**追加のみ**（既存挙動不変）。
+
+### 調査結果（現状）
+- 公開＝GitHub Pages（`main` ルートから「Deploy from a branch」自動公開・**CI無し**）。repo `rwmqx7dwb5-arch/IntMap`・独自ドメイン無し。
+- 本体＝`index.html`（3.9MB・32,957行・ビルド無し）。外部CDN＝maplibre-gl@5(unpkg)/turf@6・topojson@3・html2canvas・@supabase/supabase-js@2(jsdelivr)/gtag/Clarity/flagcdn。**地図styleはインラインobject**（リモートstyleURL無し＝mapはstyle fetch無しでinit可）。Supabase anon(publishable)キーは公開前提(RLS)。
+- **既存の内部QA/診断**: `IntMapAtlasQA.run()`／`IntMapRegionResolverTest.run()`（両方**純粋・CI安全**）／`IntMapUIAudit.run()`（DOM sweep）／`IntMapLayerAudit`（要描画）／`IntMapDataHealth`（要外部プローブ）。
+- **既存のエラー基盤**: `window.__imErrors` リングバッファ（error/unhandledrejection・25件・Bug Report添付）＝監視の土台。`window.INTMAP_BUILD` はR42のまま放置。
+- ローカルにNode/npm/gh無し→**scoopでNode24 LTS＋gh導入**（ユーザー領域・管理者不要）して実測検証。
+
+### 実装
+- **`package.json`**（private/type:module）: devDeps＝`@playwright/test`＋`js-yaml`のみ（**TS構文はNode24型ストリップで `node --check` 対応＝追加依存ゼロ**）。`.nvmrc=24`（Win↔CI同一メジャー）。scripts＝`test`/`check:static`/`test:smoke`/`test:qa`/`serve`。
+- **`scripts/serve.mjs`**: 依存ゼロ静的サーバ（Pagesと同じくルートを `/` 配信・traversal拒否）。
+- **`scripts/static-checks.mjs`**: `node --check`全js/ts／JSON parse／YAML(js-yaml＋workflow構造/tab禁止/permissions欠落warn)／マージ衝突マーカー／**秘密検出**(private key/service_role JWT/sk_live/AKIA/AIza/gh*_/xox*・**publishable anonはallowlist**)／HTML参照ローカルアセット存在(動的`'+x+'`除外)。既存コードの整形は不干渉。
+- **`tests/helpers/network.js`**: **hermeticルーティング**＝同一オリジン＋boot CDN2(unpkg/jsdelivr)のみ許可、他外部は全て`abort`＝GDELT/Overpass/Supabase/タイルを一切叩かない（**本番非汚染・AIクォータ不消費・高速決定的**）。console分類＝外部/ネット/blocked/maplibre画像ロードはbenign、IntMap自コードのみ失敗。
+- **`tests/smoke.spec.js`（8）**: 200／pageerror無／benign外console.error無／critical `window.IntMap*`定義／`#map`可視＋サイズ／`.lyr-row`≥100(≈130)／非空白／**無限リロード無**（URLハッシュ更新をリロードと誤検知しないよう sessionStorageの実ドキュメントロード数で判定）。`playwright.config.js`＝webServer(serve.mjs)/**timezone UTC・locale en-US・SWブロック**(決定性)/CI時retry2+junit+html。
+- **`tests/internal-qa.spec.js`（3）**: AtlasQA全数pass／RegionResolverTest全数ok／UIAudit total>0。全てhermetic。
+- **`.github/workflows/ci.yml`**: PR＋push main＋手動・`permissions: contents:read`・job=static＋browser(playwright・失敗時report/screenshot/trace upload)・npm/playwrightキャッシュ・concurrency cancel。
+- **`deploy.yml`**: **DORMANT**（`vars.ENABLE_PAGES_DEPLOY=='true'`＋Pages source=Actions時のみ発火。それまで全job skip＝**現行branch公開を壊さない**）。build＝static+smoke再検証→`git archive HEAD`で**コミット済み実ツリー**公開＋`build-info.json`(sha/ref/runId/builtAt)→deploy-pages→**post-deploy smoke(実URL)**。
+- **`rollback.yml`**: 手動のみ(write権限者限定)・入力`ref`は**履歴に実在するcommitに解決不能なら拒否**＝任意コード公開不可・実ツリー再公開＋smoke。
+- **`uptime.yml`**: 6h毎＋手動・curlで200＋shell(`id="map"`)＋非Pages404判定→失敗で**単一重複排除Issue**(`status:prod-down`)作成・**復旧で自動クローズ**・`issues:write`のみ。
+- **エラー監視（index.html・追加）**: `__imErrors`の隣にDORMANT Sentryフォワーダ（`window.INTMAP_SENTRY_DSN`/meta未設定なら**完全無動作・0コスト**）。設定時のみSDK遅延ロード＋`beforeSend/beforeBreadcrumb`で**PII/トークン/cookie/localStorage/Atlas入力/検索語/精密位置を送らずクエリ除去**、外部/ネット/中断はbenignで**クラッシュ報告しない**。fail-open。
+- **ステージング表示（index.html・追加）**: 非本番オリジン（`*.pages.dev`/`?staging=1`/meta）でのみ「STAGING / TEST BUILD」リボン＋`INTMAP_STAGING`。**本番・ローカルdevは非表示**。
+- **バージョン識別**: `INTMAP_BUILD`＝`2026-06-21-R42`→`2026-07-18-R133`（診断露出済）＋deployが`build-info.json`で実SHA刻印。
+- **文書**: `docs/TESTING.md`/`RELEASE.md`/`MONITORING.md`/`INCIDENT-RESPONSE.md`＋`.github/pull_request_template.md`＋`dependabot.yml`(npm+actions・weekly・grouped)＋`.gitignore`更新。
+
+### 検証（実測）
+- `npm ci` OK・`npm test`＝**static(67ファイル/14 JS-TS/5 YAML)PASS＋Playwright 11/11 PASS**(exit0)。
+- **CI異常検知の自己検証**（§4.8・実施後に全復元）: (A)壊れたJS→static-checks exit1 ✓ (B)index.htmlにthrow注入→smoke pageerror失敗 ✓ (C)`#map`除去→smoke失敗 ✓ (正常)11 PASS ✓。
+- **index.html追加の実挙動**（Browserペイン実測）: `?staging=1`→`INTMAP_STAGING=true`＋リボン描画、素URL→リボン非表示/staging=false、Sentry＝DSN無しで未ロード(dormant)、`INTMAP_BUILD=2026-07-18-R133`、`__imErrors`健在。index.html diff＝意図の2箇所のみ（並行セッション混入なし）。
+
+### 決定・根拠
+- **hermetic CI**（外部全block＋2 CDNのみ）＝「外部API一時停止でCI継続失敗」回避＋本番非汚染。unpkg/jsdelivrのみソフト依存（本番と同一・retry緩和）。
+- **TS検証に追加依存不要**＝Node24 `node --check`。
+- **deploy/rollbackはDORMANT**＝現行公開を壊さずCIゲート版へ**オプトイン移行**（§6のCIゲート本番公開はPages＝Actions sourceで初めて可能なため）。
+- **監視はGitHub Actions内製**（curl uptime＋自動Issue）＝新ベンダー0・無料。SentryはJS特化で選定・**オプトイン**（DSNは公開可）。
+
+### ユーザー手動作業（コード側は完成・残るはアカウント/設定）
+1. CIゲート本番公開を有効化（任意）: Settings→Pages→Source=**GitHub Actions**、Variables→`ENABLE_PAGES_DEPLOY=true`（＋必要なら`PROD_URL`）。
+2. ブランチ保護（任意推奨）: main に PR必須＋必須チェック(CI/Static・CI/Browser)＋force push禁止。
+3. Sentry（任意）: sentry.ioでBrowser JS作成→DSNを`index.html`に1行（DSNは秘密でない）。
+4. Cloudflare Pagesステージング（任意）: repo接続・出力`/`＝PR毎プレビューURL（本番非干渉）。
+
+### 据置
+- deploy/rollback/uptime/prod-smoke の**実GitHub上end-to-end**はPages Actions化＋変数設定後に発火（YAML検証済・ロジック自己検証済）。モバイル/複数ブラウザsmoke、`IntMapLayerAudit`(要描画)/`IntMapDataHealth`(要外部)のCI化、分毎粒度の外部監視は将来。
+
+---
+
 ## R132 — 汎用地域解決基盤（IntMapRegionResolver）＋要望バッチ（Atlasタブ色・Objects直下ポップアップ・昔年代クリック根治確認・FS中ハイライト非表示・歴史Wikipedia拡充） (tag `#R132`)
 
 大型指示書＝「曖昧・未登録地域の汎用ジオメトリ解決基盤」を中心に、同梱の要望を一括処理。**指示書の完了条件どおり、AIを境界座標の作者にしない／実データ優先／曖昧は候補確認／低信頼は描画しない（fail-closed）** を実装。既存の国・国グループ・河川・流域・行政区画合成・curated compositionは温存し、**未知のfuzzy地域テールのみ**を新基盤へ段階置換（ログアウト時は従来経路にfail-open）。全1コミット（main）、ai-proxyデプロイ済み。

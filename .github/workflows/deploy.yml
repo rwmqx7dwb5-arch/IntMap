@@ -1,0 +1,97 @@
+# CI-gated production deploy to GitHub Pages.
+#
+# DORMANT BY DEFAULT so it cannot disturb the current "Deploy from branch" setup.
+# It only publishes once BOTH are true (see docs/RELEASE.md):
+#   1. Repo → Settings → Pages → Source = "GitHub Actions"
+#   2. Repo → Settings → Secrets and variables → Actions → Variables:
+#        ENABLE_PAGES_DEPLOY = true
+# Until then every job below is skipped (green, no-op), and Pages keeps deploying from the
+# branch exactly as it does today.
+#
+# When enabled, the flow is: build → static checks → hermetic browser tests → publish the
+# EXACT committed tree → post-deploy smoke test against the live URL.
+name: Deploy (production, Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel an in-flight deploy; serialize them.
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build + verify
+    if: ${{ vars.ENABLE_PAGES_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Static checks
+        run: npm run check:static
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke + internal QA (gate)
+        run: npx playwright test tests/smoke.spec.js tests/internal-qa.spec.js
+      - name: Assemble site (exact committed tree + build stamp)
+        run: |
+          set -euo pipefail
+          rm -rf _site && mkdir -p _site
+          git archive HEAD | tar -x -C _site
+          printf '{ "sha": "%s", "ref": "%s", "runId": "%s", "builtAt": "%s" }\n' \
+            "${GITHUB_SHA}" "${GITHUB_REF_NAME}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
+            > _site/build-info.json
+          echo "Published build-info.json:" && cat _site/build-info.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  post-smoke:
+    name: Post-deploy smoke (live URL)
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Smoke-test the freshly deployed site
+        env:
+          PROD_URL: ${{ needs.deploy.outputs.page_url || vars.PROD_URL || 'https://rwmqx7dwb5-arch.github.io/IntMap/' }}
+        run: npx playwright test --config playwright.prod.config.js
+      - name: Upload post-deploy report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-deploy-report
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
