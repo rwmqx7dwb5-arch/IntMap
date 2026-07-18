@@ -44,14 +44,19 @@ begin;
 --     fully-qualified names close the classic search-path privilege-escalation
 --     hole (a caller cannot shadow `profiles` with an object on their own path).
 -- ─────────────────────────────────────────────────────────────────────────────
+-- NOTE: plpgsql (not sql) so the body is resolved at call-time. This function is
+-- defined before public.profiles is created below; a LANGUAGE sql body would be
+-- validated at CREATE time (check_function_bodies) and fail on the missing table.
 create or replace function public.is_admin()
 returns boolean
-language sql
+language plpgsql
 stable
 security definer
 set search_path = ''
 as $$
-  select coalesce((select p.is_admin from public.profiles p where p.id = (select auth.uid())), false);
+begin
+  return coalesce((select p.is_admin from public.profiles p where p.id = (select auth.uid())), false);
+end;
 $$;
 comment on function public.is_admin() is 'True when the current JWT user has profiles.is_admin. SECURITY DEFINER to avoid RLS recursion; used by admin-only policies.';
 
