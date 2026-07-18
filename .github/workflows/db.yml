@@ -1,0 +1,108 @@
+# IntMap — Database checks (migrations rebuild, RLS/permission pgTAP, drift).
+# ----------------------------------------------------------------------------
+# Runs ONLY against a throwaway LOCAL Supabase stack on the runner (Docker). It
+# never connects to production and needs NO secrets, so it is safe on PRs from
+# forks. Separate from ci.yml so it never slows the main static/browser checks;
+# path-filtered so it runs only when database files change.
+name: Database checks
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/backup-db.sh', 'scripts/restore-test.sh']
+  pull_request:
+    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/backup-db.sh', 'scripts/restore-test.sh']
+  workflow_dispatch:
+
+# Read-only token. This job connects to a local database only — no prod secrets.
+permissions:
+  contents: read
+
+concurrency:
+  group: db-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db:
+    name: Migrations rebuild + RLS/permission tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.106.0
+
+      # Start ONLY the local Postgres database (Docker is preinstalled on ubuntu
+      # runners). DB tests don't need the full stack (studio / analytics / vector
+      # / edge-runtime), and skipping them avoids their slow pulls + flaky health
+      # checks — the usual cause of a `supabase start` failure in CI.
+      - name: Start local Postgres
+        run: supabase db start
+
+      # Rebuild the database purely from migrations + seed. Fails if either breaks.
+      - name: Rebuild from migrations + seed
+        run: supabase db reset --local
+
+      # Reproducibility / drift gate: after a clean rebuild the migrations must
+      # FULLY describe the schema, so a public-schema diff is empty. (Run BEFORE
+      # installing pgTAP, which is a CI-only extension not present in migrations.)
+      - name: Schema drift check (migrations ⇄ rebuilt schema, must be empty)
+        run: |
+          supabase db diff --schema public > /tmp/db_diff.sql || true
+          if [ -s /tmp/db_diff.sql ]; then
+            echo "::error::Schema drift — the live schema is not fully described by migrations:"
+            cat /tmp/db_diff.sql
+            exit 1
+          fi
+          echo "OK: migrations fully describe the public schema (no drift)."
+
+      # pgTAP is a TEST dependency only — installed on the local runner DB, never
+      # shipped to production via a migration.
+      - name: Install pgTAP + client tools (CI only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client gnupg
+          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+            -v ON_ERROR_STOP=1 \
+            -c "create extension if not exists pgtap with schema extensions;"
+
+      # The RLS + permission matrix. Fails CLOSED: any failing assertion, or a DB
+      # that could not be set up, fails the job (never a green skip).
+      - name: RLS + permission tests (pgTAP)
+        run: |
+          set +e
+          supabase test db 2>&1 | tee "$RUNNER_TEMP/tap.txt"
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "----- pgTAP failure detail (also surfaced as annotations) -----"
+            # One annotation per failing assertion: "not ok … || have: … || want: …",
+            # plus any psql ERROR: and the tail summary. Capped at 10 (GitHub limit).
+            { awk '/^not ok/{n=$0} /have:/{h=$0} /want:/{w=$0; sub(/^#[[:space:]]*/,"",h); sub(/^#[[:space:]]*/,"",w); print n "  ||  " h "  ||  " w}' "$RUNNER_TEMP/tap.txt"
+              grep -iE 'ERROR:|does not exist|violates' "$RUNNER_TEMP/tap.txt"
+              grep -vE '^[[:space:]]*$' "$RUNNER_TEMP/tap.txt" | tail -3; } \
+              | head -10 | while IFS= read -r l; do echo "::error::${l}"; done
+          fi
+          exit "$code"
+
+      # Prove the backup → encrypt → checksum → decrypt → restore → verify pipeline
+      # end to end, on SYNTHETIC seed data only (no secrets, no production access).
+      # This is the automatable half of the restore drill (§10).
+      - name: Backup + restore roundtrip (synthetic data)
+        env:
+          GPG_PASSPHRASE: ci-throwaway-passphrase-not-a-secret
+        run: |
+          export DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          export OUT_DIR="$RUNNER_TEMP/backups"
+          export DUMP_SCHEMAS="public auth storage"
+          bash scripts/backup-db.sh
+          ENC="$(ls -1 "$OUT_DIR"/*.dump.gpg | head -1)"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c 'drop database if exists intmap_restore_test;'
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c 'create database intmap_restore_test;'
+          bash scripts/restore-test.sh "$ENC" "postgresql://postgres:postgres@127.0.0.1:54322/intmap_restore_test"
+
+      - name: Stop local Supabase
+        if: ${{ always() }}
+        run: supabase stop || true

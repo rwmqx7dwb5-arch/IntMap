@@ -1,0 +1,8 @@
+# Force Unix (LF) line endings for files that are executed or parsed on Linux
+# (CI runners, Supabase, servers). A CRLF here can break bash / psql / YAML.
+*.sh   text eol=lf
+*.sql  text eol=lf
+*.mjs  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
