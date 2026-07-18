@@ -3,127 +3,120 @@
 --  (§7.3 of the data-protection spec.)
 --
 --  HOW IT WORKS
---    Two SECURITY DEFINER helpers switch to the impersonated role for ONLY the
---    tested statement (so RLS + column/table grants apply to it), then record the
---    outcome as the superuser:
---      _sel(key, subj, q) → the scalar q returned, or 'DENIED' (42501) / 'ERR:<code>'
---      _dml(key, subj, q) → 'ROWS:<n>' affected, or 'DENIED' / 'ERR:<code>'
---    subj ∈ {anon, A, B, admin, service}. A blocked SELECT/READ errors only when a
---    grant is missing (→ DENIED); RLS row-filtering yields 0 rows / ROWS:0. We
---    gather everything into _cap, then assert as superuser.
+--    The role is switched at the TOP LEVEL (Postgres forbids SET ROLE inside a
+--    SECURITY DEFINER function), so each block runs its captures AS the
+--    impersonated role — RLS + column/table grants apply. Two SECURITY INVOKER
+--    helpers record the outcome into _cap (a plain table the impersonated roles
+--    are granted to write):
+--      _sel(key, q) → the scalar q returned, or 'DENIED' (42501) / 'ERR:<code>'
+--      _dml(key, q) → 'ROWS:<n>' affected, or 'DENIED' / 'ERR:<code>'
+--    A blocked read errors only when a grant is missing (→ DENIED); RLS
+--    row-filtering yields 0 rows / ROWS:0. We gather into _cap, then assert as
+--    the superuser at the end.
 -- ============================================================================
 begin;
 select no_plan();
 
--- Ensure the test session can impersonate the platform roles. `set role X` needs
--- the current role to be a superuser OR a member of X; grant membership so the
--- helpers' role-switching works on any local setup (no-op if already a member).
+-- The test session must be able to impersonate the platform roles (superuser can;
+-- otherwise it needs membership). Grant it defensively (no-op if already a member).
 do $$ begin execute format('grant anon, authenticated, service_role to %I', current_user); exception when others then null; end $$;
 
-create temp table _cap (k text primary key, v text);
+-- Plain table (rolled back at end) the impersonated roles may write. Temp tables
+-- live in a per-session schema other roles can't reach, so a regular table is used.
+create table _cap (k text primary key, v text);
+grant insert, select on _cap to anon, authenticated, service_role;
 
-create function _rolename(subj text) returns text language sql immutable as $$
-  select case subj when 'anon' then 'anon' when 'service' then 'service_role' else 'authenticated' end
-$$;
-create function _claims(subj text) returns text language sql immutable as $$
-  select case subj
-    when 'anon'    then '{"role":"anon"}'
-    when 'service' then '{"role":"service_role"}'
-    else json_build_object('sub', case subj
-        when 'A'     then '11111111-1111-1111-1111-111111111111'
-        when 'B'     then '22222222-2222-2222-2222-222222222222'
-        when 'admin' then '33333333-3333-3333-3333-333333333333' end,
-      'role','authenticated')::text end
-$$;
-
-create function _sel(k text, subj text, q text) returns void language plpgsql security definer as $$
+-- SECURITY INVOKER (default): the body runs as the CALLER's role, so `execute q`
+-- and the _cap insert both run as whichever role is currently SET.
+create function _sel(k text, q text) returns void language plpgsql as $$
 declare c text;
 begin
-  perform set_config('request.jwt.claims', _claims(subj), true);
-  execute 'set local role ' || quote_ident(_rolename(subj));
-  begin
-    execute q into c;
-  exception
-    when insufficient_privilege then reset role; insert into _cap values (k, 'DENIED'); return;
-    when others then reset role; insert into _cap values (k, 'ERR:' || sqlstate); return;
-  end;
-  reset role;
+  execute q into c;
   insert into _cap values (k, coalesce(c, '<null>'));
+exception
+  when insufficient_privilege then insert into _cap values (k, 'DENIED');
+  when others then insert into _cap values (k, 'ERR:' || sqlstate);
 end;
 $$;
-
-create function _dml(k text, subj text, q text) returns void language plpgsql security definer as $$
+create function _dml(k text, q text) returns void language plpgsql as $$
 declare n integer;
 begin
-  perform set_config('request.jwt.claims', _claims(subj), true);
-  execute 'set local role ' || quote_ident(_rolename(subj));
-  begin
-    execute q; get diagnostics n = row_count;
-  exception
-    when insufficient_privilege then reset role; insert into _cap values (k, 'DENIED'); return;
-    when others then reset role; insert into _cap values (k, 'ERR:' || sqlstate); return;
-  end;
-  reset role;
+  execute q; get diagnostics n = row_count;
   insert into _cap values (k, 'ROWS:' || n);
+exception
+  when insufficient_privilege then insert into _cap values (k, 'DENIED');
+  when others then insert into _cap values (k, 'ERR:' || sqlstate);
 end;
 $$;
 
 -- ─────────────────────────── ANON (logged out) ─────────────────────────────
-select _sel('anon_profiles',   'anon', 'select count(*) from public.profiles');            -- no grant → DENIED
-select _sel('anon_ppublic',    'anon', 'select count(*) from public.profiles_public');      -- public → 3
-select _sel('anon_feedback',   'anon', 'select count(*) from public.feedback');             -- no grant → DENIED
-select _sel('anon_bugreports', 'anon', 'select count(*) from public.bug_reports');          -- no grant → DENIED
-select _sel('anon_donations',  'anon', 'select count(*) from public.donations');            -- no grant → DENIED
-select _sel('anon_aiusage',    'anon', 'select count(*) from public.ai_usage');             -- no grant → DENIED
-select _sel('anon_reports',    'anon', 'select count(*) from public.community_reports');    -- no grant → DENIED
-select _sel('anon_news',       'anon', 'select count(*) from public.current_news');         -- public → 2
-select _sel('anon_posts',      'anon', 'select count(*) from public.community_posts');       -- public → 2
-select _dml('anon_fb_insert',  'anon', 'insert into public.feedback(rating,comment) values (4,''anon note'')');  -- allowed
-select _dml('anon_post_insert','anon', 'insert into public.community_posts(user_id,title) values (''11111111-1111-1111-1111-111111111111'',''x'')'); -- DENIED
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+select _sel('anon_profiles',  'select count(*) from public.profiles');            -- no grant → DENIED
+select _sel('anon_ppublic',   'select count(*) from public.profiles_public');      -- public → 3
+select _sel('anon_feedback',  'select count(*) from public.feedback');             -- no grant → DENIED
+select _sel('anon_bugreports','select count(*) from public.bug_reports');          -- no grant → DENIED
+select _sel('anon_donations', 'select count(*) from public.donations');            -- no grant → DENIED
+select _sel('anon_aiusage',   'select count(*) from public.ai_usage');             -- no grant → DENIED
+select _sel('anon_reports',   'select count(*) from public.community_reports');    -- no grant → DENIED
+select _sel('anon_news',      'select count(*) from public.current_news');         -- public → 2
+select _sel('anon_posts',     'select count(*) from public.community_posts');       -- public → 2
+select _dml('anon_fb_insert', 'insert into public.feedback(rating,comment) values (4,''anon note'')');  -- allowed
+select _dml('anon_post_insert','insert into public.community_posts(user_id,title) values (''11111111-1111-1111-1111-111111111111'',''x'')'); -- DENIED
+reset role;
 
--- ─────────────────────────── USER A vs B ───────────────────────────────────
-select _sel('a_own_profile',  'A', 'select count(*) from public.profiles where id=''11111111-1111-1111-1111-111111111111''');  -- 1
-select _sel('a_other_profile','A', 'select count(*) from public.profiles where id=''22222222-2222-2222-2222-222222222222''');  -- 0
-select _sel('a_all_profiles', 'A', 'select count(*) from public.profiles');                    -- 1 (only own)
-select _sel('a_ppublic',      'A', 'select count(*) from public.profiles_public');             -- 3
-select _dml('a_escalate',     'A', 'update public.profiles set is_admin=true where id=''11111111-1111-1111-1111-111111111111''');   -- DENIED (column priv)
-select _dml('a_set_plan',     'A', 'update public.profiles set plan=''unlimited'' where id=''11111111-1111-1111-1111-111111111111'''); -- DENIED
-select _dml('a_update_name',  'A', 'update public.profiles set display_name=''A2'' where id=''11111111-1111-1111-1111-111111111111''');-- ROWS:1
-select _dml('a_update_bname', 'A', 'update public.profiles set display_name=''HACK'' where id=''22222222-2222-2222-2222-222222222222'''); -- ROWS:0
-select _sel('a_own_fav',      'A', 'select count(*) from public.favorites where user_id=''11111111-1111-1111-1111-111111111111''');  -- 1
-select _sel('a_see_b_fav',    'A', 'select count(*) from public.favorites where user_id=''22222222-2222-2222-2222-222222222222''');  -- 0
-select _dml('a_update_b_fav', 'A', 'update public.favorites set article_title=''x'' where user_id=''22222222-2222-2222-2222-222222222222'''); -- ROWS:0
-select _dml('a_delete_b_fav', 'A', 'delete from public.favorites where user_id=''22222222-2222-2222-2222-222222222222'''); -- ROWS:0
-select _dml('a_ins_aiusage',  'A', 'insert into public.ai_usage(user_id,usage_date,count) values (''11111111-1111-1111-1111-111111111111'',current_date,0)'); -- DENIED
-select _dml('a_upd_aiusage',  'A', 'update public.ai_usage set count=0 where user_id=''11111111-1111-1111-1111-111111111111'''); -- DENIED
-select _sel('a_own_aiusage',  'A', 'select count(*) from public.ai_usage where user_id=''11111111-1111-1111-1111-111111111111''');  -- 1
-select _sel('a_see_b_aiusage','A', 'select count(*) from public.ai_usage where user_id=''22222222-2222-2222-2222-222222222222''');  -- 0
-select _sel('a_exec_incr',    'A', 'select allowed from public.increment_ai_usage(''11111111-1111-1111-1111-111111111111'',30)');  -- DENIED
-select _sel('a_exec_refund',  'A', 'select public.refund_ai_usage(''11111111-1111-1111-1111-111111111111'')');                     -- DENIED
-select _sel('a_read_feedback','A', 'select count(*) from public.feedback');                     -- 0 (RLS admin-only)
-select _sel('a_read_donations','A','select count(*) from public.donations');                    -- 0
-select _sel('a_read_bugs',    'A', 'select count(*) from public.bug_reports');                   -- 0
-select _sel('a_read_reports', 'A', 'select count(*) from public.community_reports');             -- 0
-select _dml('a_del_feedback', 'A', 'delete from public.feedback');                               -- ROWS:0 (RLS)
-select _dml('a_del_b_post',   'A', 'delete from public.community_posts where id=2');             -- ROWS:0 (RLS)
-select _dml('a_upd_b_post',   'A', 'update public.community_posts set title=''HACK'' where id=2'); -- ROWS:0 (RLS)
-select _dml('a_ins_post_as_b','A', 'insert into public.community_posts(user_id,title) values (''22222222-2222-2222-2222-222222222222'',''spoof'')'); -- DENIED (WITH CHECK)
-select _dml('a_ins_own_post', 'A', 'insert into public.community_posts(user_id,title) values (''11111111-1111-1111-1111-111111111111'',''mine'')');  -- ROWS:1
+-- ─────────────────────────── USER A (authenticated) ────────────────────────
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+select _sel('a_own_profile',  'select count(*) from public.profiles where id=''11111111-1111-1111-1111-111111111111''');  -- 1
+select _sel('a_other_profile','select count(*) from public.profiles where id=''22222222-2222-2222-2222-222222222222''');  -- 0
+select _sel('a_all_profiles', 'select count(*) from public.profiles');                    -- 1 (only own)
+select _sel('a_ppublic',      'select count(*) from public.profiles_public');             -- 3
+select _dml('a_escalate',     'update public.profiles set is_admin=true where id=''11111111-1111-1111-1111-111111111111''');   -- DENIED (column priv)
+select _dml('a_set_plan',     'update public.profiles set plan=''unlimited'' where id=''11111111-1111-1111-1111-111111111111'''); -- DENIED
+select _dml('a_update_name',  'update public.profiles set display_name=''A2'' where id=''11111111-1111-1111-1111-111111111111''');-- ROWS:1
+select _dml('a_update_bname', 'update public.profiles set display_name=''HACK'' where id=''22222222-2222-2222-2222-222222222222'''); -- ROWS:0
+select _sel('a_own_fav',      'select count(*) from public.favorites where user_id=''11111111-1111-1111-1111-111111111111''');  -- 1
+select _sel('a_see_b_fav',    'select count(*) from public.favorites where user_id=''22222222-2222-2222-2222-222222222222''');  -- 0
+select _dml('a_update_b_fav', 'update public.favorites set article_title=''x'' where user_id=''22222222-2222-2222-2222-222222222222'''); -- ROWS:0
+select _dml('a_delete_b_fav', 'delete from public.favorites where user_id=''22222222-2222-2222-2222-222222222222'''); -- ROWS:0
+select _dml('a_ins_aiusage',  'insert into public.ai_usage(user_id,usage_date,count) values (''11111111-1111-1111-1111-111111111111'',current_date,0)'); -- DENIED
+select _dml('a_upd_aiusage',  'update public.ai_usage set count=0 where user_id=''11111111-1111-1111-1111-111111111111'''); -- DENIED
+select _sel('a_own_aiusage',  'select count(*) from public.ai_usage where user_id=''11111111-1111-1111-1111-111111111111''');  -- 1
+select _sel('a_see_b_aiusage','select count(*) from public.ai_usage where user_id=''22222222-2222-2222-2222-222222222222''');  -- 0
+select _sel('a_exec_incr',    'select allowed from public.increment_ai_usage(''11111111-1111-1111-1111-111111111111'',30)');  -- DENIED
+select _sel('a_exec_refund',  'select public.refund_ai_usage(''11111111-1111-1111-1111-111111111111'')');                     -- DENIED
+select _sel('a_read_feedback','select count(*) from public.feedback');                     -- 0 (RLS admin-only)
+select _sel('a_read_donations','select count(*) from public.donations');                   -- 0
+select _sel('a_read_bugs',    'select count(*) from public.bug_reports');                   -- 0
+select _sel('a_read_reports', 'select count(*) from public.community_reports');             -- 0
+select _dml('a_del_feedback', 'delete from public.feedback');                               -- ROWS:0 (RLS)
+select _dml('a_del_b_post',   'delete from public.community_posts where id=2');             -- ROWS:0 (RLS)
+select _dml('a_upd_b_post',   'update public.community_posts set title=''HACK'' where id=2'); -- ROWS:0 (RLS)
+select _dml('a_ins_post_as_b','insert into public.community_posts(user_id,title) values (''22222222-2222-2222-2222-222222222222'',''spoof'')'); -- DENIED (WITH CHECK)
+select _dml('a_ins_own_post', 'insert into public.community_posts(user_id,title) values (''11111111-1111-1111-1111-111111111111'',''mine'')');  -- ROWS:1
+reset role;
 
 -- ─────────────────────────── ADMIN ─────────────────────────────────────────
-select _sel('admin_feedback',  'admin', 'select count(*) from public.feedback');            -- >0
-select _sel('admin_donations', 'admin', 'select count(*) from public.donations');          -- >0
-select _sel('admin_bugs',      'admin', 'select count(*) from public.bug_reports');        -- >0
-select _sel('admin_reports',   'admin', 'select count(*) from public.community_reports');  -- >0
-select _sel('admin_all_prof',  'admin', 'select count(*) from public.profiles');           -- 3
-select _dml('admin_del_fb',    'admin', 'delete from public.feedback where id=1');          -- ROWS:1
-select _dml('admin_upd_b_post','admin', 'update public.community_posts set title=''MOD'' where id=2'); -- ROWS:1
-select _dml('admin_ins_geo',   'admin', 'insert into public.geo_pins(type,name_en,lng,lat) values (''city'',''Z'',0,0)'); -- ROWS:1
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+set local role authenticated;
+select _sel('admin_feedback',  'select count(*) from public.feedback');            -- >0
+select _sel('admin_donations', 'select count(*) from public.donations');          -- >0
+select _sel('admin_bugs',      'select count(*) from public.bug_reports');        -- >0
+select _sel('admin_reports',   'select count(*) from public.community_reports');  -- >0
+select _sel('admin_all_prof',  'select count(*) from public.profiles');           -- 3
+select _dml('admin_del_fb',    'delete from public.feedback where id=1');          -- ROWS:1
+select _dml('admin_upd_b_post','update public.community_posts set title=''MOD'' where id=2'); -- ROWS:1
+select _dml('admin_ins_geo',   'insert into public.geo_pins(type,name_en,lng,lat) values (''city'',''Z'',0,0)'); -- ROWS:1
+reset role;
 
 -- ─────────────────────────── SERVICE ROLE ──────────────────────────────────
-select _sel('svc_profiles',  'service', 'select count(*) from public.profiles');   -- 3 (bypass RLS)
-select _sel('svc_increment', 'service', 'select used::text || ''/'' || allowed::text from public.increment_ai_usage(''22222222-2222-2222-2222-222222222222'',30)'); -- 3/true
-select _dml('svc_ins_news',  'service', 'insert into public.current_news(lang,link,title) values (''en'',''https://example.test/svc'',''svc'')'); -- ROWS:1
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+select _sel('svc_profiles',  'select count(*) from public.profiles');   -- 3 (bypass RLS)
+select _sel('svc_increment', 'select used::text || ''/'' || allowed::text from public.increment_ai_usage(''22222222-2222-2222-2222-222222222222'',30)'); -- 3/true
+select _dml('svc_ins_news',  'insert into public.current_news(lang,link,title) values (''en'',''https://example.test/svc'',''svc'')'); -- ROWS:1
+reset role;
 
 -- ─────────────────────────── ASSERTIONS (as superuser) ─────────────────────
 -- anon

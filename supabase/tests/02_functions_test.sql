@@ -6,40 +6,28 @@
 begin;
 select no_plan();
 
--- Ensure the test session can impersonate the platform roles (see 01_rls_matrix).
+-- Let the test session impersonate service_role (see 01_rls_matrix for why).
 do $$ begin execute format('grant anon, authenticated, service_role to %I', current_user); exception when others then null; end $$;
 
-create temp table _cap (k text primary key, v text);
+create table _cap (k text primary key, v text);
+grant insert, select on _cap to service_role;
 
--- SECURITY DEFINER helpers: run the tested statement as service_role (the only
--- role allowed to call the quota RPCs), record the outcome as superuser.
-create function _sel(k text, q text) returns void language plpgsql security definer as $$
-declare c text;
-begin
-  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
-  set local role service_role;
-  begin execute q into c; exception
-    when others then reset role; insert into _cap values (k, 'ERR:' || sqlstate); return; end;
-  reset role;
-  insert into _cap values (k, coalesce(c, '<null>'));
-end;
-$$;
-create function _run(k text, q text) returns void language plpgsql security definer as $$
-begin
-  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
-  set local role service_role;
-  begin execute q; exception
-    when others then reset role; insert into _cap values (k, 'ERR:' || sqlstate); return; end;
-  reset role;
-  insert into _cap values (k, 'OK');
-end;
-$$;
+-- SECURITY INVOKER helpers: body runs as the currently-SET role.
+create function _sel(k text, q text) returns void language plpgsql as $$
+declare c text; begin execute q into c; insert into _cap values (k, coalesce(c,'<null>'));
+exception when others then insert into _cap values (k,'ERR:'||sqlstate); end; $$;
+create function _run(k text, q text) returns void language plpgsql as $$
+begin execute q; insert into _cap values (k,'OK');
+exception when others then insert into _cap values (k,'ERR:'||sqlstate); end; $$;
 
--- ── RPC behaviour (A starts at 5 uses; limit 6 → 6th allowed, 7th blocked) ──
+-- ── RPC behaviour as service_role (A starts at 5; limit 6 → 6th ok, 7th blocked) ──
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
 select _sel('inc1', 'select used::text || ''/'' || allowed::text from public.increment_ai_usage(''11111111-1111-1111-1111-111111111111'',6)'); -- 6/true
 select _sel('inc2', 'select used::text || ''/'' || allowed::text from public.increment_ai_usage(''11111111-1111-1111-1111-111111111111'',6)'); -- 6/false
-select _run('refund','select public.refund_ai_usage(''11111111-1111-1111-1111-111111111111'')');                                  -- runs
+select _run('refund','select public.refund_ai_usage(''11111111-1111-1111-1111-111111111111'')');                                             -- runs
 select _sel('after','select count::text from public.ai_usage where user_id=''11111111-1111-1111-1111-111111111111'' and usage_date=current_date'); -- 5
+reset role;
 
 select is((select v from _cap where k='inc1'), '6/true',  'increment_ai_usage allows the use at the limit boundary');
 select is((select v from _cap where k='inc2'), '6/false', 'increment_ai_usage BLOCKS the use past the limit (quota enforced)');
