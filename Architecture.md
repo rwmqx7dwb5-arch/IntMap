@@ -596,7 +596,15 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     **出発/到着時刻UI**（今すぐ/出発時刻/到着時刻+datetime-local、transitへarriveBy送信、道路は「時刻指定は公共交通で有効」と正直表示、24.8）・
     地図クリック地点の逆ジオコーディング（6.6）。⑩**同名地名の近接優先**（6.3）: geo1/_geoEPが最大5候補から現在ビュー近傍（≤300km最近）→人口最大の
     順で選択、Atlasはビューから>500kmのヒットを1/3距離未満の同名候補で置換（Potsdam: ベルリンビュー→独、NYビュー→米を実測）。
-    残段階（バックエンドGateway/GTFS-RT/交通情報/ナビ/オフライン等）は大型のため段階実装継続。
+  - **#R132 経路10-10 製品品質の中核（R126基盤の上に）**: ①**道路ALTERNATIVES**（OSRM `alternatives=3`）を transit と同じ RouteStore に格納し、
+    差別化ラベル（最速/最短距離/+N分/回避付き）＋候補カード（パネル・Atlas 双方タップで再描画・再同期）。`_roadDedup` は**幾何重複>0.92 かつ 所要差<3%**の時だけ畳む
+    （§3.3/7.1/10）。②**リッチ・ターンバイターン** `IntMapRouting.maneuver(step)`＝OSRM 全 maneuver 語彙（merge/ramp/fork/end-of-road/roundabout+出口番号/U-turn/到着側）
+    ＋道路ref＋方面＋出口番号＋**車線案内(▮/▯)** を5言語自然文へ（§12）。③**手順→地図** `selectStep`＝タップで区間を黄ハイライト＋fly（自前`_lastPaint`使用）。
+    ④**回避 toll/highway/ferry**（§7.3/§4.7）＝公開OSRMデモは `exclude=` を拒否するため**Valhalla /route（keyless）へ振替**（`use_tolls/use_highways/use_ferry`、
+    maneuver type を `_maneuver` 疑似ステップへ写像、polyline precision 6）。失敗時 OSRM(回避なし)へフォールバック＋`avoidDropped` 正直表示。実測: 高速回避で 169km/109分→218km/252分の一般道。
+    ⑤**公共交通の実時刻/時刻表 区別**（§2.4/9.6）＝MOTIS の `realTime`/`scheduledStartTime` からレグに `rt`/`delay` 付与、`realtime` 時だけ「リアルタイム含む」・他は「時刻表ベース」と明示、
+    レグに定刻/+N分遅れバッジ（静的をライブと偽装しない）。⑥**経路エクスポート GPX/GeoJSON**（§15.7）＝選択中経路をローカルDL（`exportRoute`/`_routeExport`/`hasRoute`、位置の外部送信なし）。
+    残段階（自社バックエンドGateway/Provider Matrix/GTFS-RT/リアルタイム交通/実走行ナビ/オフライン/監視）はサーバ基盤要のため段階継続。
   - **#R94 タイムマシン＝時空カーネル `window.IntMapTime`（形骸化していた時刻スライダーを IntMap 全体の時空OSに）**（詳細は DEV-NOTES R94）:
     従来のタイムスライダーはニュース＋一部の日付ラスタしか動かさず**形骸化**していた。これを**唯一の時刻ソース**（`_when`＝Date、null=ライブ/現在）に格上げし、
     スライダー・日付入力・**深時間の年入力（1900→現在）**・Earth Replay・Atlas はすべて**この1カーネルへ書き込み**、時刻依存の全サブシステムは
