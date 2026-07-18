@@ -23769,6 +23769,10 @@ window.addEventListener('DOMContentLoaded', () => {
             +['toll','motorway','ferry'].map(k=>'<button class="rp-av" data-av="'+k+'" style="height:26px;padding:0 8px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">'+escp({toll:LL('Tolls','有料道路','Maut','Платные','Peajes'),motorway:LL('Highways','高速道路','Autobahn','Магистрали','Autopistas'),ferry:LL('Ferries','フェリー','Fähren','Паромы','Ferris')}[k])+'</button>').join('')+'</div>'
         +'</div>'
         +'<div class="rp-summary" style="flex:0 0 auto;padding:2px 12px;font-size:13px;color:var(--text-main);"></div>'
+        +'<div class="rp-export" style="flex:0 0 auto;display:none;gap:6px;align-items:center;padding:2px 12px 4px;">'
+          +'<span style="font-size:10.5px;color:var(--text-muted);">'+escp(LL('Export:','エクスポート:','Export:','Экспорт:','Exportar:'))+'</span>'
+          +'<button class="rp-exp" data-f="gpx" style="height:26px;padding:0 10px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">GPX</button>'
+          +'<button class="rp-exp" data-f="geojson" style="height:26px;padding:0 10px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:transparent;color:var(--text-muted);border-radius:13px;cursor:pointer;font-size:11px;">GeoJSON</button></div>'
         +'<div class="rp-steps" style="flex:1 1 auto;overflow-y:auto;padding:2px 12px 12px;"></div>';
       document.body.appendChild(panel);
       panel.querySelector('.rp-close').onclick=()=>{ panel.style.display='none'; try{ clear(); }catch(_){} _endPick(); };
@@ -23789,6 +23793,8 @@ window.addEventListener('DOMContentLoaded', () => {
       timeIn.onchange=()=>recompute();
       /* (#R132) §7.3 avoid toggles → pAvoid set, recompute on change */
       panel.querySelectorAll('.rp-av').forEach(b=>b.onclick=()=>{ const k=b.getAttribute('data-av'); if(pAvoid.has(k)) pAvoid.delete(k); else pAvoid.add(k); _syncAvoid(); recompute(); });
+      /* (#R132) §15.7 export the shown route */
+      panel.querySelectorAll('.rp-exp').forEach(b=>b.onclick=()=>{ try{ exportRoute(b.getAttribute('data-f')); }catch(_){} });
       panel.querySelector('.rp-pick-from').onclick=()=>_startPick('from'); panel.querySelector('.rp-pick-to').onclick=()=>_startPick('to');
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.rp-head')); }catch(_){}
       _syncModes(); return panel; }
@@ -23816,6 +23822,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(pMode==='driving'&&pAvoid.size) _opts.avoid=[...pAvoid];   /* (#R132) §7.3 */
       let r=null; try{ r=await route(pFrom,pTo,_opts); }catch(_){}
       if(r&&r.status==='cancelled') return;   /* (#R126) superseded by a newer request — that one updates the UI */
+      { const exp=panel.querySelector('.rp-export'); if(exp) exp.style.display=(r&&r.ok)?'flex':'none'; }   /* (#R132) §15.7 show export only when a route exists */
       if(!r||!r.ok){
         /* (#R126) 経路10-10 §2.5: outage / timeout / rate-limit / no-route are DIFFERENT answers, not one "not found" */
         const stt=(r&&r.status)||'';
@@ -23877,7 +23884,23 @@ window.addEventListener('DOMContentLoaded', () => {
       const ql=q.toLowerCase();
       for(const Ln of _SHINK) for(const s of Ln.st){ if(s[0]===q||s[1].toLowerCase()===ql) return {lng:s[2],lat:s[3],name:(typeof currentLang!=='undefined'&&currentLang==='jp')?(s[0]+'駅'):(s[1]+' Station')}; }
       return null; }
-    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, selectStep, maneuver:_maneuver, stationLL, geoNear:geo1 };
+    /* (#R132) 経路10-10 §15.7: export the CURRENTLY-SELECTED route as GPX or GeoJSON (real coordinates, user-initiated
+       local download — no location is sent anywhere). _routeExport(fmt) builds the string (testable); exportRoute(fmt)
+       downloads it. Uses the active RouteStore alternative's geometry (works for road, transit and the JR bridge). */
+    function _routeCoords(){ const rs=_rsets.get(_rsActive); if(!rs||!rs.alts.length) return null; const a=rs.alts[rs.sel]||rs.alts[0];
+      let coords=[]; (a.lines||[]).forEach(ln=>{ if(ln.coords&&ln.coords.length) coords=coords.length?coords.concat(ln.coords):ln.coords.slice(); });
+      if(!coords.length&&a.coords) coords=a.coords; return {coords, alt:a}; }
+    function _routeExport(fmt){ const rc=_routeCoords(); if(!rc||!rc.coords.length) return null; const {coords,alt}=rc;
+      if(/gpx/i.test(fmt)){ const seg=coords.map(c=>'<trkpt lat="'+(+c[1]).toFixed(6)+'" lon="'+(+c[0]).toFixed(6)+'"/>').join('');
+        return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="IntMap" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>IntMap route</name><trkseg>'+seg+'</trkseg></trk>\n</gpx>'; }
+      const fc={type:'FeatureCollection',features:[{type:'Feature',properties:{source:'IntMap',distance_m:alt.distance||null,duration_s:alt.duration||null},geometry:{type:'LineString',coordinates:coords.map(c=>[+(+c[0]).toFixed(6),+(+c[1]).toFixed(6)])}}]};
+      return JSON.stringify(fc,null,0); }
+    function exportRoute(fmt){ const s=_routeExport(fmt); if(s==null) return false; fmt=/gpx/i.test(fmt)?'gpx':'geojson';
+      try{ const blob=new Blob([s],{type:fmt==='gpx'?'application/gpx+xml':'application/geo+json'}); const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download='intmap-route.'+fmt; document.body.appendChild(a); a.click();
+        setTimeout(()=>{ try{ document.body.removeChild(a); URL.revokeObjectURL(url); }catch(_){} },1200); return true; }catch(_){ return false; } }
+    function hasRoute(){ const rc=_routeCoords(); return !!(rc&&rc.coords&&rc.coords.length); }
+    return { route, clear, ensureLayers, openPanel, _src:SRC, selectAlt, selectStep, maneuver:_maneuver, stationLL, geoNear:geo1, exportRoute, _routeExport, hasRoute };
   })();
   /* ===== (#R86) ISOCHRONE / 到達圏 — "車で30分" "徒歩15分" "自転車1時間" as a real REACHABILITY AREA that follows the
      road network & terrain (not a distance circle). Keyless public Valhalla (FOSSGIS) /isochrone → time-contour GeoJSON
