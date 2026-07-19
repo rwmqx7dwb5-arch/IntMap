@@ -982,6 +982,15 @@ supabase/
 
 ---
 
+## #R136 補足（昔年代クリックの塗り不一致／Atlasハイライト精度／歴史データ拡充）
+
+- **昔年代クリックの Compare ハイライトが誤国**（「1920sポーランドをクリック→ポーランド判定なのにドイツがハイライト」）: 真因は**検出と塗りが別ロジック**だったこと。検出 `resolveHist` は era feature の `_gw`（Gleditsch-Ward, 1925 Poland=290→POL）で正しく解決するが、Compare の塗り `IntMapTimeBorders.geomForCode(code)` は `_gw` を使わず **MODERN 国外形の内部点を多数決**しており、1925 の modern ポーランド西部（当時 Weimar ドイツ）に票が集まって **Germany のポリゴンを返していた**。修正＝`geomForCode` を**検出と同一解決に統一**（新 `_eraCodeIndex`＝各 era feature を `resolveHist` で解決した `code→features` マップ／`_unionGeom` で合成）。ただし**被覆ガード** `_bbCoverFrac`＝index結果が modern 国 bbox の30%未満なら「吸収された国の断片」（1925 RUS=Karafuto 欠片）として従来の多数決へフォールバック（RUS→ソ連全域を維持）。実測: 1925/1914/1938 で POL→ポーランド・DEU→ドイツ・RUS→ソ連 extent、SUN 等の多継承 former state は hbRe 早期パスで不変。
+- **Atlas「○○をハイライト」の見当違い**（ログアウト時の Nominatim 経路＝Web検証なしの欠陥を `IntMapAtlasDebug.resolveHl` プローブで実測特定）: `_nomExtent` に (a)`accept-language`（UI言語+en＝英語exonym「Tuscany/Persia」が地域のローカル名と突き合う） (b)**完全名一致ボーナスを重要度でゲート**（上位重要度から0.25以内でのみ0.5・下は0.08＝低重要度の同名村が Iran/伊トスカーナを食わない・大阪湾の近接タイブレークは温存） (c)**微小集落ガード**（anchor無しで hamlet/suburb 等かつ重要度<0.35 は正直な miss）。`resolveCountrySync` は**非主権ミクロ地物（`sov===false`）をゆるい部分一致で拾わない**（「Patagonia」→氷原コードSPIを解消）。`resolveHlTarget` に **curated macro-region ガード `_curatedOk`**（curated 名は範囲外の同名／範囲15%未満の微小sub-feature を棄却し gazetteer 箱へ＝Patagonia→南米、Sahel→ベルト全体）。`REGION_BBOX`＋Manchuria/Anatolia(Asia Minor)/the Levant 等＋5言語エイリアス。
+- **歴史データ拡充**: 1943 CShapes 全169 feature を `resolveHist` 監査→植民地/自治領の**modern記事フォールバック**を特定し、**en.wikipedia API で実在検証**した上で `_ERA_WIKI` に植民地期記事12件（GMB/SLE/MUS/MDV/FJI/CPV/GNB/GNQ/TLS/SLB/PNG/KWT・各独立年で終端）を追加。**`_VANISHED` に Dominion of Newfoundland**（`_GW2ISO(21)=CAN` に畳まれていた自治領）を独立identity化＝5言語名＋Union Jack 旗（新 `F_UNIONJACK`）＋`Dominion_of_Newfoundland` wiki（統計なし＝code=null の正直表示、Danzig型）。
+- **検証**: ヘッドレスでデータ層を全項目実測（地図描画は `document.hidden`/WebGL未initで不可＝R129〜R132と同様データ層で担保）。`npm test` 緑（静的83＋Playwright 11/11・AtlasQA 40/40・RegionResolver 13/13）。
+
+---
+
 ## #R135 補足（Atlas 時間軸リサーチ・マッピング＝`researchMap`／Request Profile／能力レジストリ／意味的リトライ）
 
 **直接原因**: `mapReport` はプランナー上「調査結果を地図に出す汎用アクション」に見えるが、実装は **GDELT/Google News/読込済みニュースから現在の具体的事件を抽出する“ライブニュース専用”機能**。表示年1900で「当時のオホーツク海はどんな状況？地図で教えて」が `mapReport` に送られ、ライブニュース不在で失敗→repairが**表記だけ変えた再試行**（オホーツク海→Sea of Okhotsk→Okhotsk Sea）→**世界全体の1900年同盟地図へ範囲拡張**→ライブ不足警告の反復、という連鎖を起こした。これを**特定地名のハードコードではなく汎用の仕組み**で防止。

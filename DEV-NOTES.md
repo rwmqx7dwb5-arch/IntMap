@@ -5,6 +5,35 @@
 
 ---
 
+## R136 — 昔年代クリックのハイライト不一致・Atlasハイライト精度・歴史データ拡充 (tag `#R136`)
+
+ユーザー報告3件を根本原因ベースで処理。全て**追加のみ**（`index.html` のみ変更）。作業ブランチ `feat/atlas-hist-highlight-r136`。ヘッドレスでデータ層を全項目実測して検証（地図描画はブラウザペイン `document.hidden` で WebGL 未init のため、R129〜R132 と同じくデータ層で担保）。`npm test` 緑（静的83ファイル＋Playwright 11/11、AtlasQA 40/40・RegionResolver 13/13）。
+
+### ① 昔年代クリックの国選択＝**ポーランド判定なのにドイツハイライト**（再々報告の新変種）
+**真因**＝検出（`resolveHist`）は era feature の権威ある `_gw`（Gleditsch-Ward, 1925ポーランド=290→POL）で正しく POL を返すのに、**塗り（`geomForCode`）は `_gw` を無視して MODERN ポーランド外形の内部点を多数決**していた。1925 の modern ポーランド西部（ヴロツワフ/シュチェチン一帯）は当時 Weimar ドイツ→票が Germany feature に集まり **`geomForCode('POL')` が Germany のポリゴンを返す**（実測: bbox が Germany feature と完全一致）。Compare のハイライトは `_paintCodes`→`geomForCode` なので「POL 選択→ドイツが塗られる」。**検出と塗りが別ロジック**だったのが根本。
+**修正**（`IntMapTimeBorders` 内）: `geomForCode(code)` を**検出と同一の解決**に統一。新 `_eraCodeIndex(fc)`＝FCの各 era feature を**picker と同じ `resolveHist(name, 内部点)`** で解決し `code→[features]` を構築（FCごとにキャッシュ）。`geomForCode` は hbRe 早期パス（SUN/YUG等の多継承former state温存）→**この index の該当featureを `_unionGeom` で合成**して返す。ただし**被覆ガード**（`_bbCoverFrac`）＝index結果の bbox が modern国の bbox の 30%未満なら「吸収された国の断片」（1925 RUS=Karafuto の欠片のみ）とみなし従来の多数決へフォールバック（RUS→ソ連全域を維持）。実測: 1925 POL→Poland・DEU→Germany・RUS→Soviet extent、1914/1938 も一致、SUN 不変。
+
+### ② Atlas「○○をハイライト」の精度（見当違いの場所・やってない）
+`IntMapAtlasDebug.resolveHl(name)` プローブを追加（塗りリトライ無しで解決だけ測る恒久デバッグ）→ヘッドレスで **Persia→アイオワ州Persia村 / Tuscany→カルガリーのTuscany地区 / Patagonia→氷原コード(SPI) / Cordoba等** の実バグを検出。全て**ログアウト時の Nominatim 経路（Web検証なし）**の欠陥。**修正**:
+- **`_nomExtent`**: (a) `accept-language`（UI言語+en）を付与＝英語exonym「Tuscany/Persia」が地域のローカル名「Toscana/Iran」と正しく突き合う。(b) **完全名一致ボーナスを重要度でゲート**＝上位重要度から0.25以内でのみ0.5、下は0.08（低重要度の同名村「Persia,Iowa(0.47)」が Iran(0.87) を食う問題を解消・大阪湾の近接タイブレークは温存）。(c) **微小集落ガード**＝anchor無しで hamlet/suburb等かつ重要度<0.35 は正直な miss。
+- **`resolveCountrySync`**: **非主権のミクロ地物（`sov===false`：南パタゴニア氷原/スカボロー礁/ビル・タウィル）はゆるい部分一致（sc<82）で拾わない**＝「Patagonia」が氷原に化けない。
+- **curated macro-region ガード** `_curatedOk`: 名前が `REGION_BBOX` の curated 地域なら、Nominatim 結果が (a) その範囲外の同名（Patagonia,アリゾナ）か (b) 範囲の 15%未満の微小sub-feature（氷原・Sahelの一行政区）なら棄却→curated gazetteer 箱へ。
+- **gazetteer 追加**: Manchuria/Anatolia(Asia Minor)/the Levant 等＋5言語エイリアス（満州/アナトリア/小アジア/パタゴニア各言語）。
+実測: Persia→Iran・Tuscany→伊トスカーナ・Patagonia→南米・Sahel→ベルト全体・Manchuria/Anatolia→gazetteer。`accept-language` は5言語UIで表示名も現地語化。
+
+### ③ 歴史国家データ拡充（国名・国旗・Wikipedia・統計）
+1943 CShapes（169 feature）を `resolveHist` で全数監査→**modern記事に飛んでいた植民地/自治領**を特定。全 Wikipedia タイトルを **en.wikipedia API で実在検証**（redirect解決）してから追加:
+- **`_ERA_WIKI` +12**（植民地期記事）: GMB `Gambia_Colony_and_Protectorate` / SLE `Sierra_Leone_Colony_and_Protectorate` / MUS `British_Mauritius` / MDV `Sultanate_of_the_Maldive_Islands` / FJI `Colony_of_Fiji` / CPV `Portuguese_Cape_Verde` / GNB `Portuguese_Guinea` / GNQ `Spanish_Guinea` / TLS `Portuguese_Timor` / SLB `British_Solomon_Islands` / PNG `Territory_of_Papua_and_New_Guinea` / KWT `Emirate_of_Kuwait`（各独立年で範囲終端→以降modern）。
+- **`_VANISHED` +1**: **Dominion of Newfoundland**（1949年カナダ編入で `_GW2ISO(21)=CAN` に畳まれていた自治領）を独立identity化＝5言語名＋**Union Jack 国旗**（当時の公式旗、新 `F_UNIONJACK` SVG・DOMParser整形確認）＋`Dominion_of_Newfoundland` wiki（統計は無いので code=null＝Danzig型の正直表示）。step2b で gwcode より先に発火。
+実測（1943）: Newfoundland→「Dominion of Newfoundland」+旗+正Wiki、植民地10件が全て植民地期記事＋旗表示。
+
+### 罠・教訓
+- **「検出を直した≠塗りを直した」**（①）＝R122〜R132 は検出(`resolveHist`)を直し「正しい」と確定したが、Compare の**塗り(`geomForCode`)は別ロジック**で `_gw` を使っておらず不一致が残っていた。同じ対象を扱う2経路は解決を共有させる。
+- ヘッドレスは `map` 未init（`__imap` undefined）で `IntMapConsole.dispatch({type:'highlight'})` は塗りリトライ8回×0.7s で30sタイムアウト→**解決だけ測る `IntMapAtlasDebug.resolveHl` プローブ**を足すと高速に coverage を測れる。
+- CShapes は年でera bucket（1938→cs1925, 1943→cs1943）。`IntMapTime.setYear` 後は `currentFC()` を polling で待つ。Edit hook の file:// タブ量産→`tabs_close`。
+
+---
+
 ## R135 — Atlas 時間軸リサーチ・マッピング基盤（`researchMap`・Request Profile・能力レジストリ・意味的リトライ） (tag `#R135`)
 
 大型指示書「Atlas 時間軸対応リサーチ・マッピング基盤 改修委託書」を実装。**特定地名のハードコードを禁じ、現行Atlas設計（単一HTML・JSONアクション計画・`dispatch`・`IntMapRegionResolver`・歴史国境データ・メッセージ別オーバーレイ）を温存**したまま、歴史・現在・比較／海域・地方・旧国家・自然地域に共通して機能する汎用改修を行った。全て**追加のみ**（既存 `mapReport`/`analyze`/`historicalMap`/repair/多言語/ログアウト決定論を不変）。作業ブランチ `feat/atlas-temporal-research` → PR。
