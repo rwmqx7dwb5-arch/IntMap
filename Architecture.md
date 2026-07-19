@@ -59,7 +59,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
   全消去、テーマ/言語/単位）。`countryStats` 上の**実分析**＝ランキング・比率・**回帰残差relate**（例「GDP per capitaの割にHDIの低い国」）
   に加え、**コロプレス `mapMetric`**（全世界を指標で色分け＋凡例＝「データ×地図」の複合出力）。分析結果は専用 `nlq-src`
   （`window.countryGeo` 由来、Countries(info)レイヤー非依存）で国をハイライト/色分け＋一覧。**複合指示**対応（各アクションを順次await実行、
-  分析+レイヤー+移動を1計画で自由に組合せ）。
+  分析+レイヤー+移動を1計画で自由に組合せ）。**リサーチ地図の二系統（#R135）**＝`mapReport`（現在/直近のライブニュース事件のみ）と **`researchMap`（歴史/現在/混合の状況リサーチ・文章＋地図を独立生成）**。**Request Profile**（時間軸・地理・要求出力を機械判定→`buildPrompt` に注入）＋**能力レジストリによる実行前プラン検証**で、歴史質問がライブ専用 `mapReport` へ／海域の局所質問が世界同盟地図へ流れるのを実行前に防止（詳細は #R135 補足）。
   - **#R43 三大修正**: ①**レイヤー混同の解消** — ライブのレイヤー名一覧をシステムプロンプトに注入し、`resolveLayer()` が
     完全一致/data-layer/前方一致/語一致/トークン被覆でスコアリング（しきい値あり）して**正確な1レイヤー**に解決、トグルした
     **実際のレイヤー名**を返信に明示。②**「実行したと言って未実行」の解消** — 全アクションが構造化 `{ok,html}` を返し、効果を
@@ -979,6 +979,23 @@ supabase/
 - **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
 - **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
+---
+
+## #R135 補足（Atlas 時間軸リサーチ・マッピング＝`researchMap`／Request Profile／能力レジストリ／意味的リトライ）
+
+**直接原因**: `mapReport` はプランナー上「調査結果を地図に出す汎用アクション」に見えるが、実装は **GDELT/Google News/読込済みニュースから現在の具体的事件を抽出する“ライブニュース専用”機能**。表示年1900で「当時のオホーツク海はどんな状況？地図で教えて」が `mapReport` に送られ、ライブニュース不在で失敗→repairが**表記だけ変えた再試行**（オホーツク海→Sea of Okhotsk→Okhotsk Sea）→**世界全体の1900年同盟地図へ範囲拡張**→ライブ不足警告の反復、という連鎖を起こした。これを**特定地名のハードコードではなく汎用の仕組み**で防止。
+
+- **Request Profile（`_requestProfile(q)`・純粋関数）**: プランナー呼出前に軽量な構造を生成＝`{temporalMode:historical|current|mixed|unspecified, targetYear, temporalSource:explicit|map-state|conversation|none, geoKind:water|region|city|historical-entity|unknown, evidenceMode:historical|live|mixed|none, outputs:{explanation,map,comparison}}`。**時間軸の優先順位**＝①入力内の明示年 ②「当時／この時代／そのころ」＋タイムマシン有効なら**表示年（`IntMapTime.year()`）** ③会話年（`_wctx.year`） ④表示年（非明示・非現在語） ⑤なし。**「今／最新／current」等は表示年より優先**して current に落とす（1900表示中でも「今のニュース」はライブへ）。`buildPrompt()` に **`[REQUEST PROFILE]` ブロック**（機械可読ヒント＋強制ルール）を `[CURRENT MAP STATE]` に続けて注入。
+- **`mapReport` の責務明確化**: 実装は不変（後方互換）。SYSでの意味を **「current/recent・dated・ライブニュース裏付けの事件のみ」** に限定し、過去年代・歴史背景・当時の勢力/交易/戦略的重要性・現在ニュースを要求しない安定知識には**使わない**ことを明記。
+- **`researchMap`（新アクション・historical/current/mixed）**: `{type:"researchMap",topic,place,temporalMode,year,evidenceMode}`。**文章と地図を独立生成**（§11）＝地図描画に失敗しても説明は返す。証拠は**モードで切替**（§6）＝historical は確立された歴史知識＋Wikipedia（**ライブニュース不使用**）、current はGDELT/Google News/読込済み、mixed は両方を明確に分離。`ai-proxy` の新タスク **`research_map`**（`JSON_TASKS`・`reasoning:medium`・`max_output:2600`・webMode は Profile 由来＝historical は topic の任意Web検証のみで現在ニュース非注入）が `{title,explanation,temporalBasis,items[],limitations[]}` を返す。**AIに座標を書かせない**＝`locationName+country` をクライアントで geocode。地図フォールバック（§8）＝実extent/bbox→中心→関連地点ピン。海域はポリゴン取得を成功条件にしない（`placeExtent`＋既存 `IntMapRegionResolver` を再利用）。
+- **能力レジストリ `ATLAS_ACTION_CAPABILITIES`（§7）**: 各アクションの本来能力（temporalModes/evidenceModes/outputs/geoKinds/topics）を小さく定義。
+- **実行前プラン検証 `_validatePlan(acts,profile,q)`（§7）**: 実行前に不適合アクションを**書換／追加**（repairで事後修復しない）＝①historical質問がライブ専用 `mapReport` へ→`researchMap`(historical, year保持) ②海域/地域/都市の局所質問が世界同盟地図(`historicalMap`, 非alliance)へ→`researchMap` ③説明要求なのにナビのみ→`researchMap` を追加。同盟/大戦/冷戦などの真の勢力図 `historicalMap` は温存。
+- **意味的リトライ制御（§10・§13）**: repair を **JSON完全一致でなく意味キー**で制御。`_researchFamKey`＝family+temporalMode（target非依存）で **翻訳だけの再試行を1回に畳む**。repair アクションも `_validatePlan` を通す（historical→live や 局所→世界 を禁止）。`_isWorldExpansion` で世界/大陸への範囲拡張を拒否。repair は **最大2巡**（旧3）、「近くの著名地／粗い対象」誘導を撤去し**元対象を保持したまま一段だけ拡張**に限定。地図描画失敗を回答失敗として扱わない。
+- **構造化結果 meta（§9）**: `R(ok,html,{meta})` に `{code(NO_LIVE_EVIDENCE/NO_HISTORICAL_EVIDENCE/PLACE_NOT_FOUND/NO_MAPPABLE_ITEMS…), category, retryable, semanticTarget, temporalMode, produced[], userGoalSatisfied}`。`runActions` が各アクションの結果を `_atlasOutcomes` へ収集。
+- **事後 Goal Validation（§12）**: `_goalValidation(profile,outcomes)`＝`{actionSucceeded,mapRendered,explanationProduced,geographicRelevance,temporalMatch,userGoalSatisfied}`。**「世界同盟地図の描画に成功＝オホーツク海の状況説明に成功」とは判定しない**。
+- **デバッグ（§17）**: `window.IntMapAtlasDebug.lastPlan()`＝`{requestProfile,originalPlan,validatedPlan,rejectedActions,actionOutcomes,semanticRetries,scopeChanges,finalGoalValidation}`（通常UI非表示）。
+- **テスト**: `window.IntMapAtlasQA.run()` に R135 の純関数テスト21件を追加（**実測40/40 PASS**・従来19＋新21）＝時間軸判定（当時/1900、今→current、比較→mixed、明示1750、会話年）・地理kind・プラン検証（mapReport historical→researchMap／海域 historicalMap→researchMap／WWI同盟図温存／current mapReport温存／ナビのみ→researchMap追加）・翻訳リトライキー畳込・世界拡張ブロック・レジストリ・profileブロック・goal validation。実サイト（1900表示）で「当時のオホーツク海…」の Profile＝`historical/1900/map-state/water/explanation+map`、検証で `mapReport→researchMap(year=1900)` を実測確認。
 
 ---
 

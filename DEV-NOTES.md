@@ -5,6 +5,40 @@
 
 ---
 
+## R135 — Atlas 時間軸リサーチ・マッピング基盤（`researchMap`・Request Profile・能力レジストリ・意味的リトライ） (tag `#R135`)
+
+大型指示書「Atlas 時間軸対応リサーチ・マッピング基盤 改修委託書」を実装。**特定地名のハードコードを禁じ、現行Atlas設計（単一HTML・JSONアクション計画・`dispatch`・`IntMapRegionResolver`・歴史国境データ・メッセージ別オーバーレイ）を温存**したまま、歴史・現在・比較／海域・地方・旧国家・自然地域に共通して機能する汎用改修を行った。全て**追加のみ**（既存 `mapReport`/`analyze`/`historicalMap`/repair/多言語/ログアウト決定論を不変）。作業ブランチ `feat/atlas-temporal-research` → PR。
+
+### 直接原因（§2）
+表示年1900で「当時のオホーツク海はどんな状況だった？地図上で教えて。」が失敗した根本＝`mapReport` の**二重の意味**。プランナー上＝「地理的調査結果を地図に表示する汎用アクション」／実装上＝「GDELT・Google News・読込済みニュースから**現在の具体的事件**を抽出しピン表示するライブニュース機能」。歴史質問がこの不一致で `mapReport` に送られ→ライブ不在で失敗→repairが**表記だけ変えた再試行**（オホーツク海→Sea of Okhotsk→Okhotsk Sea）→**世界全体1900同盟地図へ範囲拡張**→ライブ不足警告反復、を招いた。
+
+### 実装（調査：`stateContext/buildPrompt/SYS/localPlan/dispatch/runActions`＋repair・`IntMapTime/IntMapRegionResolver/placeExtent`・`_gdeltNews/_gnewsNews/_wikiSummary` を全て実読してから着手）
+- **Request Profile（§3）** `_requestProfile(q)`＝純粋関数。`{temporalMode, targetYear, temporalSource, geoKind, evidenceMode, outputs:{explanation,map,comparison}}`。時間軸優先順位＝①明示年 ②「当時/この時代/そのころ」＋タイムマシン有効なら**表示年**（`IntMapTime.year()`, source=`map-state`） ③会話年（`_wctx.year`） ④表示年 ⑤なし。**「今/最新/current」は表示年より優先**して current に落とす。`buildPrompt(q,profile)` が `[REQUEST PROFILE]` ブロック（機械可読ヒント＋強制ルール）を注入。
+- **`mapReport` 責務明確化（§4）**: 実装不変。SYSで「current/recent・dated・ライブニュース裏付けの事件のみ」に限定し、過去年代・歴史背景・当時の勢力/交易/戦略・安定知識には使わないと明記。
+- **`researchMap`（§5・§11・新アクション）**: `{type:"researchMap",topic,place,temporalMode,year,evidenceMode}`。**文章（`_buildResearchAnswer`）と地図（`_tryMapResearch`）を独立生成**＝地図失敗でも説明は返す。証拠を**モードで切替（§6）**＝historical は確立された歴史知識＋Wikipedia（**ライブニュース不使用**）、current はGDELT/Google News/読込済み、mixed は両方を分離。**AIに座標を書かせず** `locationName+country` をクライアント geocode。地図フォールバック（§8）＝実extent/bbox→中心→関連地点ピン（`placeExtent`＋既存 `IntMapRegionResolver` を再利用、海域はポリゴンを成功条件にしない）。
+- **能力レジストリ（§7）** `ATLAS_ACTION_CAPABILITIES`＝各アクションの temporalModes/evidenceModes/outputs/geoKinds/topics。
+- **実行前プラン検証（§7）** `_validatePlan(acts,profile,q)`＝実行前に**書換／追加**（repairで事後修復しない）＝①historical質問のライブ専用 `mapReport`→`researchMap`(year保持) ②海域/地域/都市の局所質問が世界同盟地図(`historicalMap`,非alliance)へ→`researchMap` ③説明要求なのにナビのみ→`researchMap`追加。真の勢力図 `historicalMap`（同盟/大戦/冷戦）は温存。
+- **意味的リトライ制御（§10・§13）**: repair を**意味キー**で制御。`_researchFamKey`＝family+temporalMode（target非依存）で**翻訳だけの再試行を1回に畳む**。repairアクションも `_validatePlan` を通し、`_isWorldExpansion` で世界/大陸拡張を拒否。**repair最大2巡**（旧3）、「近くの著名地/粗い対象」誘導を撤去し**元対象を保持し一段だけ拡張**に限定。地図失敗を回答失敗として扱わない。同一エラーの3連続表示を防止。
+- **構造化結果 meta（§9）**: `R(ok,html,{meta})` に `code(NO_LIVE_EVIDENCE/NO_HISTORICAL_EVIDENCE/PLACE_NOT_FOUND/NO_MAPPABLE_ITEMS…)/category/retryable/semanticTarget/temporalMode/produced/userGoalSatisfied`。`runActions` が `_atlasOutcomes` へ収集。
+- **事後 Goal Validation（§12）** `_goalValidation`＝`{actionSucceeded,mapRendered,explanationProduced,geographicRelevance,temporalMatch,userGoalSatisfied}`。**世界同盟地図の成功≠状況説明の成功**。
+- **ai-proxy（§14）**: 新タスク `research_map`（`JSON_TASKS`・`reasoning:medium`・`max_output:2600`・webMode は Profile 由来）。デプロイ済（`Deployed Functions … ai-proxy`）。
+- **デバッグ（§17）** `window.IntMapAtlasDebug.lastPlan()`＝`{requestProfile,originalPlan,validatedPlan,rejectedActions,actionOutcomes,semanticRetries,scopeChanges,finalGoalValidation}`（通常UI非表示）。
+
+### 検証（§15・§16）
+- **`npm test` 緑**＝静的検査（83ファイル）＋Playwright **11/11 PASS**（`node --check` で全インラインscript 7ブロックも0エラー）。
+- **`IntMapAtlasQA.run()` = 実測40/40 PASS**（従来19＋R135新21）＝時間軸判定（当時/1900=historical・map-state／今→current・live／比較+現在→mixed／明示1750→explicit／会話年フォールバック）・水域kind・プラン検証（mapReport historical→researchMap(year=1900)／海域 historicalMap→researchMap／WWI同盟図温存／current mapReport温存／ナビのみ→researchMap追加）・翻訳リトライキー畳込・世界拡張ブロック・レジストリ・profileブロック・goal validation。
+- **実サイト実測（127.0.0.1:8781, 1900表示）**: 「当時のオホーツク海…」→ Profile `{historical,1900,map-state,water,explanation+map,evidence=historical}`／`_validatePlan` が `mapReport`→`researchMap{temporalMode:historical,year:1900,evidenceMode:historical}`（理由 `historical_question_routed_to_live_mapReport`）を実測。REALタイムマシン1900で「今のオホーツク海のニュース」→`current/live/year:null`（現在語が map-state を上書き＝§16回帰防止）。console error 0。
+- **AI実行（researchMapの文章生成）はログイン必須**のためヘッドレス未実行だが、決定論パス（Profile判定・プラン書換・意味的リトライ・meta・goal validation）を全て実データで実測。
+
+### 罠・教訓
+- **const TDZ**: `IntMapAtlasQA` オブジェクトリテラル（ロード時評価）が後方宣言の `const ATLAS_ACTION_CAPABILITIES` を参照すると**ロード時 ReferenceError→白紙化**。`get capabilities(){…}` ゲッタで遅延評価。関数宣言（`_requestProfile` 等）は巻き上げされるため参照可。
+- Bashからnode不可視→PowerShellで `$env:Path` 前置。Edit hook が file:// タブを量産→`tabs_close`。
+
+### 未対応/据置
+- researchMap のAI文章品質は本番ログインでの継続確認が必要（決定論配管は完成）。歴史地図での「当時の周辺勢力」ポリゴン描画は関連地点ピンで代替（`IntMapRegionResolver` による周辺国ポリゴン合成は将来）。
+
+---
+
 ## R134 — データ保護基盤（Supabase migrations・RLS/権限テスト・バックアップ・復元試験・安全DB変更） (tag `#R134`)
 
 第二段階「データ保護基盤の構築委託書」を実装。**新機能追加・UI大規模変更はせず**、DB構造をコード化し／RLS・権限を自動テストし／バックアップと隔離復元を用意し／本番DB変更を安全化。作業ブランチ `ops/data-protection-baseline` → PR。原則**追加のみ**（唯一のindex.html変更＝`imViewProfile`をPII安全な`profiles_public`ビュー読取へ、フォールバック付き）。**本番DBへは一切接続・変更せず**（ローカル/CIのみ）。
