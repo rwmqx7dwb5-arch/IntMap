@@ -982,6 +982,21 @@ supabase/
 
 ---
 
+## #R137 補足（モバイルUI微調整／Countries順位表示／現在地ライブマーカー／タイムマシン時刻タブ／Atlas逐語重複除去）
+
+ユーザー要望10件。全て `index.html` の追加/微修正のみ（既存機能削除なし・単一HTML温存）。詳細は DEV-NOTES R137。
+
+- **モバイル選択タブ = 白/黒**: `@media(max-width:768px) .mode-btn.active` を accent 塗り→`#fff`/`#000`（デスクトップ R130 と統一）。Atlas タブは高特異度ルールで accent グラデ維持。
+- **ニュースカード**: `.btn-read`（記事を読む）＝白背景/黒文字（`.mnp-read` も）、`.loc-chip`（地点ピル）＝`var(--primary-color)`（旧ハードコード青グラデ→accent 追従）。`.unmapped`/`.publisher` の状態色は据置。
+- **Countries カード**: モバイル `.stat-row` 縦 padding 15→8px。左端に順位番号 `.stat-rank`（19px・tabular-nums・行の最左）＝`renderStats` が `window.imShowRank==='on'` 時に `i+1`（現ソート/フィルタ順）を先頭差込。設定 `#setting-showrank`（Layout & panels・既定 off）→`window.imShowRank`（load/save/open/apply・`intmap_settings` 同期）・5言語 i18n。
+- **現在地 FAB＋ライブマーカー**: `#m-fab-locate`（`.m-fab`＝Map/Tools/Compass と同一UI・compass 直下）→ `window.IntMapLocate`。MapLibre レイヤー `imloc-dot`(accent 点+白縁)/`imloc-dot-halo`/`imloc-acc-fill`+`imloc-acc-line`（`turf.circle` 精度円）を `watchPosition` で毎fix更新＝**点も円もユーザー移動に追従**。accent は `getComputedStyle('--primary-color')` を都度読取、style スワップに `styledata` で再アサート。Atlas `locate` も成功時に `IntMapLocate.start({fly:false})` 併発。新 window.*: `IntMapLocate`。
+- **タイムマシン コンパクト（モバイル）**: `@media(max-width:768px)` 拡張＝`.news-timeline .ntl-body` 幅 314→`min(290px,100vw-20)`・gap 5px、`.ntl-bigval` 26→20px、mode/now/inputs/scale/synced/chip 縮小。
+- **タイムマシン 時刻タブ**: `.ntl-modes` に `#ntl-mode-time`（時刻/Time/Zeit/Время/Hora）＋`#ntl-time`。`.ntl-mode.on` を accent→**白/黒**。`applyMode('time')`＝スライダ `0..1439`(分)・時刻ピッカー。書込 `_applyTimeOfDay`＝現在選択日（ライブなら今日）に時刻を載せ `IntMapTime.set(base,{allowFuture:true})`。**時刻依存の利用可能データ＝昼夜ターミネータ**が同期（Earth-Replay `_terminatorFC` 流用の `imtm-night` レイヤーを Time タブ表示中のみ描画）。iso(日)不変でニュース再取得スパム無し。
+- **Atlas 逐語重複除去**: 全AI自然文整形 `mdMini` 冒頭に純関数 `_dedupText`（段落＋文を正規化キー・長さ閾値15で去重・末尾空白保持で再結合＝略語/小数を壊さない）。node で10ケース実測。
+- **検証**: `npm test` 緑（静的83＋Playwright 11/11）。DOM/計算スタイル/純関数をヘッドレス実測（map は `document.hidden`/WebGL未init）。**新教訓: hidden ペインは CSS トランジション未進行 → 既存要素に class 後付け→`getComputedStyle` は遷移開始値を読む。ルール検証は fresh 要素生成で。媒体クエリは特異度を上げない（`.ntl-body` 後方グローバルに負けるので `.news-timeline` 前置で勝たせた）。**
+
+---
+
 ## #R136 補足（昔年代クリックの塗り不一致／Atlasハイライト精度／歴史データ拡充）
 
 - **昔年代クリックの Compare ハイライトが誤国**（「1920sポーランドをクリック→ポーランド判定なのにドイツがハイライト」）: 真因は**検出と塗りが別ロジック**だったこと。検出 `resolveHist` は era feature の `_gw`（Gleditsch-Ward, 1925 Poland=290→POL）で正しく解決するが、Compare の塗り `IntMapTimeBorders.geomForCode(code)` は `_gw` を使わず **MODERN 国外形の内部点を多数決**しており、1925 の modern ポーランド西部（当時 Weimar ドイツ）に票が集まって **Germany のポリゴンを返していた**。修正＝`geomForCode` を**検出と同一解決に統一**（新 `_eraCodeIndex`＝各 era feature を `resolveHist` で解決した `code→features` マップ／`_unionGeom` で合成）。ただし**被覆ガード** `_bbCoverFrac`＝index結果が modern 国 bbox の30%未満なら「吸収された国の断片」（1925 RUS=Karafuto 欠片）として従来の多数決へフォールバック（RUS→ソ連全域を維持）。実測: 1925/1914/1938 で POL→ポーランド・DEU→ドイツ・RUS→ソ連 extent、SUN 等の多継承 former state は hbRe 早期パスで不変。

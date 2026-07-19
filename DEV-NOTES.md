@@ -5,6 +5,47 @@
 
 ---
 
+## R137 — モバイルUI微調整・順位表示・現在地マーカー・タイムマシン時刻タブ・Atlas重複除去 (tag `#R137`)
+
+ユーザー要望10件を実装。全て `index.html` の**追加/微修正のみ**（既存機能の削除なし・単一HTML/ビルド無し温存）。作業ブランチ `feat/mobile-ui-locate-timemachine-r137`（R136 の上に stacked）。`npm test` 緑（静的83ファイル＋Playwright 11/11・AtlasQA/RegionResolver/UIAudit）。地図描画はブラウザペイン `document.hidden` で WebGL 未init のため、DOM/計算スタイル/純関数をヘッドレス実測で検証（R129〜R136 と同じ方針）。**教訓（新）: `document.hidden` のブラウザペインでは CSS トランジションが進まない → 既存要素に `.active` を後付けして `getComputedStyle` すると遷移開始値（transparent）を読む。ルール検証は「その class を最初から持つ新規要素」を生成して読むのが正解**（`.mode-btn.active` の白背景を fresh 要素で確認）。
+
+### ① モバイル: News/Information/Countries 選択タブ = 白背景・黒文字
+`@media(max-width:768px)` の `.mode-btn.active` を accent 塗り（青）→ `background:#fff!important;color:#000!important`（デスクトップ R130 と統一）。Atlas タブは後続の高特異度ルールで accent グラデ維持（不変）。実測: fresh `.mode-btn.active` → `rgb(255,255,255)`/`rgb(0,0,0)`、Atlas active → `linear-gradient` 維持。
+
+### ② ニュースカード「記事を読む」ボタン = 白背景・黒文字
+`.news-item .btn-read`（旧: 透明+accent枠/文字, hover で accent 塗り）→ `background:#fff;color:#000;border:1px solid rgba(0,0,0,.14)`。モバイルポップアップの `.m-news-pop .mnp-read` も同様に白/黒へ統一。実測: `bg rgb(255,255,255)`/`color rgb(0,0,0)`。
+
+### ③ ニュースカードの地点ピル = アクセントカラー
+`.loc-chip`（旧: **ハードコードの青グラデ** `rgba(0,122,255,...)`＝ユーザー accent を無視）→ `background:var(--primary-color)`。`.unmapped`(紫)/`.publisher`(藍) は状態区別のため据置。実測: `bg rgb(10,132,255)`（ダーク時 accent）。
+
+### ④ モバイル Countries カードの上下余白を縮小
+`@media(max-width:768px) .stat-row` の `padding:15px 14px` → `8px 14px`。実測: `8px 14px`。
+
+### ⑤ Countries カード左端に順位番号（設定で表示切替・既定 OFF）
+`.stat-rank`（`min-width:26px;font-size:19px;font-weight:700;tabular-nums`）を **行の最左**に追加。`renderStats` の `arr.forEach((s,i)=>…)` で `window.imShowRank==='on'` 時のみ `<span class="stat-rank">${i+1}</span>` を先頭に差込（順位＝現在のソート/フィルタ順）。設定 `#setting-showrank`（Layout & panels セクション・既定 off）を `window.imShowRank` に配線（loadSettings/saveSettings/open/apply、`intmap_settings` に載るのでアカウント同期も自動）。5言語 i18n（`lblShowRank`/`showRankOff`/`showRankOn`）。実測: ON→240 rank・"1"・19px・最左, OFF→0。
+
+### ⑥ モバイル: 方位磁針の下に「現在地へ移動」FAB（上三つと同じUI）
+`#m-fab-locate`（`.m-fab` = Map/Tools/Compass と同一UI・アウトライン十字ターゲットSVG）を `m-fab-stack` の compass の直後に追加。タップ→ `window.IntMapLocate.toggleOrRecenter()`。実測: `display:flex`・compass の `nextElementSibling`。
+
+### ⑦ 現在地 = アクセント色の丸い点＋精度円（ユーザーが動けば追従）
+新 `window.IntMapLocate`（`index.html`）。MapLibre レイヤーで描画（ドリフト無し）: `imloc-dot`(accent 点+白縁)/`imloc-dot-halo`(薄い accent)/`imloc-acc-fill`+`imloc-acc-line`（`turf.circle([lng,lat], accuracy m/1000)` の精度円）。`navigator.geolocation.watchPosition` で毎fix `paint()` → **点も円もユーザー移動に追従**。accent は `getComputedStyle('--primary-color')` を都度読取（accent 変更に追従）。base-map/style スワップ跨ぎで `styledata` に再アサート。FAB タップ=初回 start+fly、以降は最新fixへ再センター。`.on` で FAB を accent ハイライト。Atlas `locate` アクションも成功時に `IntMapLocate.start({fly:false})` を併発（デスクトップでも同じ点/円）。
+
+### ⑧ モバイル: タイムマシンポップアップをコンパクト化（機能不変）
+`@media(max-width:768px)` を拡張: `.news-timeline .ntl-body`（高特異度で幅 314→`min(290px,100vw-20)`・gap 5px）、`.ntl-bigval` 26→20px、`.ntl-title`/`.ntl-badge`/`.ntl-mode`(5px 11px)/`.ntl-now`(11px)/`.ntl-date`/`.ntl-year`/`.ntl-scale`/`.ntl-synced`/`.ntl-chip` を縮小。body の縦 padding は既存の後方グローバル `.ntl-body{padding:2px 6px}` が既にコンパクト（媒体クエリは特異度を増やさない→`.news-timeline`前置で gap は勝たせた）。実測: width 290・gap 5px・bigval 20px。
+
+### ⑨ Atlas: 同一文の逐語重複を除去
+Atlas が稀に**同じ文/段落を逐語で二度**出す件。全AI自然文の共通整形 `mdMini` の冒頭に `_dedupText` を追加（`esc` の前段）。段落（空行区切り）と文（`[.!?。！？]` 境界）を正規化キー（trim+空白畳み+小文字）で去重、**長さ閾値 MIN=15** で短い繰り返し（箇条書きラベル/「はい。」等）は温存。各文の**末尾空白を保持し `''` で再結合**するので、去重が起きない限り原文完全再構成（略語 `U.S.`/小数 `3.5` を壊さない）。純関数を node で10ケース実測（EN/JP の隣接/非隣接/段落重複を除去、略語/小数/短句/markdown 見出し/箇条書きは不変、冪等）。
+
+### ⑩ タイムマシン: 年・日付に加え「時刻」タブ（利用可能データに同期・選択タブは白/黒）
+`.ntl-modes` に `#ntl-mode-time`（`時刻`/Time/Zeit/Время/Hora）と `#ntl-time`(`<input type=time>`) を追加。`.ntl-mode.on` を accent → **白背景/黒文字**（要望）。JS: `applyMode('time')` = 時刻ピッカー表示・スライダ `0..1439`(分)・スケール `00:00/06:00/12:00/18:00/24:00`。書込 `_applyTimeOfDay(mins)` = **現在選択中の日付（ライブなら今日）に時刻を載せ** `IntMapTime.set(base,{allowFuture:true})`（マスタ時計へ）→ 時刻依存の**利用可能データ＝昼夜ターミネータ**が同期（既存 Earth-Replay の `_terminatorFC` を流用して `imtm-night` レイヤーを Time タブ表示中のみ描画・非表示/モード離脱で消去・style スワップ再アサート）。`refreshUI` の time 分岐で bigval=HH:MM・スライダ=分・ピッカー値を反映。iso(日)不変なのでニュース再取得はスパムしない。実測: Time タブ→mode on・slider 0..1439・時刻 18:30/スライダ360→06:00 でマスタ時計が一致・選択タブ `rgb(255,255,255)`/`rgb(0,0,0)`。
+
+### 罠・教訓
+- **`document.hidden` ペインの CSS トランジション未進行**（①の検証）: 既存要素に class 後付け→`getComputedStyle` は遷移開始値を読む。ルール検証は fresh 要素生成で。
+- **媒体クエリは特異度を上げない**（⑧）: `@media` 内 `.ntl-body` は後続の非媒体 `.ntl-body` に負ける → `.news-timeline .ntl-body` で特異度を上げて勝たせた。
+- Edit フックが file:// タブを量産 → `tabs_close`。ヘッドレスは map 未init なのでスクショ✕（データ層/計算スタイルで担保）。
+
+---
+
 ## R136 — 昔年代クリックのハイライト不一致・Atlasハイライト精度・歴史データ拡充 (tag `#R136`)
 
 ユーザー報告3件を根本原因ベースで処理。全て**追加のみ**（`index.html` のみ変更）。作業ブランチ `feat/atlas-hist-highlight-r136`。ヘッドレスでデータ層を全項目実測して検証（地図描画はブラウザペイン `document.hidden` で WebGL 未init のため、R129〜R132 と同じくデータ層で担保）。`npm test` 緑（静的83ファイル＋Playwright 11/11、AtlasQA 40/40・RegionResolver 13/13）。

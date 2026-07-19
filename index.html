@@ -253,7 +253,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     #countries-feed{ gap:7px; padding-top:0; }   /* (#R105) a little MORE gap BETWEEN cards; the in-card top/bottom padding is tightened on .stat-row instead. No top padding so the sort toolbar hugs the search field. */
     .news-item:hover,.news-item.hovered{ transform:translateY(-2px); box-shadow:0 12px 30px rgba(0,0,0,0.1); border-color:var(--primary-color); z-index:10; }
     /* iOS-style location pill (replaces old loc-chip) */
-    .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
+    /* (#R137) the geolocated location pill = the ACCENT colour ("ニュースカードの地点ピルはアクセントカラーに"). Was a
+       hardcoded blue gradient that ignored the user's chosen accent; the unmapped/publisher states stay distinct below. */
+    .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:var(--primary-color); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
     /* (#R33) No 📍/📡 emoji on news-card location chips per request. */
     .loc-chip.unmapped{ background:linear-gradient(135deg, rgba(155,89,182,0.85), rgba(122,75,150,0.85)); }
     .loc-chip.publisher{ background:linear-gradient(135deg, rgba(94,92,230,0.92), rgba(88,86,214,0.88)); }
@@ -343,6 +345,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     [data-theme="dark"] .stat-row{ background:#2a2a2e; }
     .stat-row:hover{ transform:translateX(4px); border-color:var(--primary-color); }
     .stat-flag{ font-size:30px; line-height:1; } .stat-main{ flex:1; min-width:0; }   /* (#R104) flag a touch larger per request */
+    /* (#R137) optional rank number on the far LEFT of a country card (Settings → default OFF). Fixed width + tabular
+       digits so flags/names stay aligned regardless of 1–3 digit ranks. */
+    .stat-rank{ flex:0 0 auto; min-width:26px; text-align:center; font-size:19px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
     .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:400; white-space:nowrap; }   /* (#R116) metric value NOT bold (requested) */
     .map-container.tool-active .maplibregl-canvas{ cursor:crosshair; }
     #map{ position:absolute; inset:0; width:100%; height:100%; background:var(--bg-color); }
@@ -784,8 +789,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .ntl-x{ margin-left:auto; background:transparent; border:none; color:var(--text-muted); font-size:22px; line-height:1; font-weight:300; cursor:pointer; padding:0 3px; border-radius:8px; }
     .ntl-x:hover{ color:var(--text-main); background:var(--input-bg); }
     .ntl-modes{ display:inline-flex; background:var(--input-bg); border-radius:10px; padding:2px; gap:2px; align-self:flex-start; }
-    .ntl-mode{ border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:600; padding:5px 18px; border-radius:8px; cursor:pointer; }
-    .ntl-mode.on{ background:var(--primary-color); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); }
+    .ntl-mode{ border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:600; padding:5px 15px; border-radius:8px; cursor:pointer; }   /* (#R137) 18→15px so the third (Time) tab fits */
+    /* (#R137) selected Year / Date / Time tab = solid WHITE bg, BLACK text ("選択中のものは白背景黒文字に"). */
+    .ntl-mode.on{ background:#fff; color:#000; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
     /* (#11) bigval fills the left (fixed body width) so the "現在へ戻る" button never shifts as the date text length
        changes ("Dateスライダーを動かすと…激しくUIが動いてしまう"); and the value is NOT bold ("太字にするな"). */
     .ntl-valrow{ display:flex; align-items:center; gap:10px; margin:0; }
@@ -807,8 +813,21 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     @media(max-width:768px){
       .news-timeline{ bottom:auto; top:max(110px,env(safe-area-inset-top)+108px); right:8px; left:auto; max-width:calc(100vw - 16px); }
       .news-timeline.collapsed{ left:auto; right:8px; max-width:none; }
-      .ntl-body{ min-width:0; }
       .ntl-label{ min-width:0; flex:1; font-size:11px; }
+      /* (#R137) COMPACT mobile time-machine — same controls, smaller footprint ("サイズが大きすぎる…コンパクトなUIに").
+         (body padding/gap are already tightened globally by the .ntl-body rule further down; here we cut the WIDTH and
+         the control sizes, which is what made the mobile popup feel oversized.) */
+      .news-timeline .ntl-body{ min-width:0; width:min(290px,calc(100vw - 20px)); gap:5px; }
+      .ntl-title{ font-size:12px; } .ntl-title::before{ font-size:13px; }
+      .ntl-badge{ font-size:10px; padding:2px 8px; }
+      .ntl-mode{ padding:5px 11px; font-size:11.5px; }
+      .ntl-bigval{ font-size:20px; }
+      .ntl-now{ font-size:11px; padding:5px 10px; }
+      .ntl-date,.ntl-year{ font-size:11.5px; padding:5px 7px; }
+      .ntl-slider{ margin:3px 0 0; }
+      .ntl-scale{ font-size:9px; }
+      .ntl-synced{ font-size:9px; gap:3px; }
+      .ntl-synced .ntl-chip{ font-size:8.5px; padding:2px 5px; }
     }
     /* Movable country detail popup (replaces the old modal — does not lock the map) */
     .country-popup{ display:none; position:absolute; z-index:2200; width:380px; max-width:calc(100vw - 32px); max-height:80vh; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:16px; box-shadow:var(--shadow); backdrop-filter:blur(15px); padding:18px 22px 18px; overflow-y:auto; }
@@ -857,8 +876,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .news-item .news-origlang{ font-size:11px; color:var(--text-muted); font-weight:500; margin-top:4px; }
     .news-item .news-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px; }
     .news-item .news-pub{ color:var(--primary-color); font-weight:500; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-    .news-item .btn-read{ flex-shrink:0; background:transparent; border:1px solid rgba(128,128,128,0.22); color:var(--primary-color); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; }
-    .news-item .btn-read:hover{ background:var(--primary-color); color:#fff; border-color:transparent; }
+    /* (#R137) "Read article" button = solid WHITE background, BLACK text ("ニュースカードの記事を読むボタンは、白背景黒文字に"). */
+    .news-item .btn-read{ flex-shrink:0; background:#fff; border:1px solid rgba(0,0,0,0.14); color:#000; font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+    .news-item .btn-read:hover{ background:#f0f0f0; color:#000; border-color:rgba(0,0,0,0.2); }
     /* (#R38) Mobile news pin → popup with a Read button (instead of jumping straight to the article). */
     .m-news-pop-back{ display:none; position:fixed; inset:0; z-index:1190; background:rgba(0,0,0,0.30); }
     .m-news-pop-back.show{ display:block; }
@@ -872,7 +892,8 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .m-news-pop .mnp-title{ font-weight:600; font-size:15px; line-height:1.45; margin:9px 0 6px; }
     .m-news-pop .mnp-pub{ color:var(--text-muted); font-size:12px; margin-bottom:15px; }
     .m-news-pop .mnp-actions{ display:flex; gap:10px; }
-    .m-news-pop .mnp-read{ flex:1 1 auto; background:var(--primary-color); color:#fff; border:none; border-radius:12px; padding:12px; font-size:15px; font-weight:600; cursor:pointer; touch-action:manipulation; }
+    /* (#R137) mobile news-popup read button = white bg / black text, same as the feed card's Read button. */
+    .m-news-pop .mnp-read{ flex:1 1 auto; background:#fff; color:#000; border:1px solid rgba(0,0,0,0.14); border-radius:12px; padding:12px; font-size:15px; font-weight:600; cursor:pointer; touch-action:manipulation; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
     .m-news-pop .mnp-close{ flex:0 0 auto; background:var(--input-bg); color:var(--text-main); border:none; border-radius:12px; padding:12px 18px; font-size:15px; font-weight:600; cursor:pointer; touch-action:manipulation; }
     /* ===== In-sidebar article reader (replaces the broken iframe browser) ===== */
     .news-reader-pane{ flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; margin-right:-10px; padding-right:10px; -webkit-overflow-scrolling:touch; }
@@ -1308,8 +1329,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       /* mode tabs → iOS segmented control */
       .control-panel{ flex:0 0 auto; flex-wrap:nowrap; gap:0; margin:0 0 10px; padding:3px; background:var(--input-bg); border-radius:11px; }
       .mode-btn{ flex:1 1 0; min-width:0; min-height:36px; padding:8px 4px; font-size:13px; font-weight:500; border-radius:8px; background:transparent; color:var(--text-muted); box-shadow:none !important; }   /* (#R122) slightly larger, NOT bold; JS auto-fits so it never wraps/overflows */
-      /* (#R33) Selected News/Information/Stats is BLUE on mobile too (was a neutral grey card). */
-      .mode-btn.active{ background:var(--primary-color) !important; color:#fff !important; box-shadow:0 2px 8px rgba(0,122,255,0.3) !important; }
+      /* (#R137) Mobile: selected News/Information/Countries = solid WHITE pill, BLACK text — match the desktop R130
+         treatment ("モバイル版でも…アクセントカラーではなく白背景黒文字に"). Atlas keeps its accent gradient (rule below). */
+      .mode-btn.active{ background:#fff !important; color:#000 !important; box-shadow:0 2px 8px rgba(0,0,0,0.14) !important; }
       /* (#R122/#R132) mobile: SELECTED Atlas tab keeps the same shared accent gradient as normal mode (was a fixed blue→purple gradient) */
       .mode-btn.mode-atlas.active{ background:var(--atlas-grad) !important; color:#fff !important; box-shadow:0 2px 9px rgba(94,92,230,0.32) !important; }
       .mode-btn.mode-atlas:not(.active){ color:#5e5ce6 !important; }
@@ -1633,7 +1655,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       .country-popup{ position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:100% !important; max-width:100% !important; box-sizing:border-box !important; max-height:84dvh; border-radius:18px 18px 0 0; transform:none !important; padding:26px 18px max(20px,env(safe-area-inset-bottom)); animation:mSheetUp 0.42s var(--sheet-ease); }
 
       /* roomier tap targets across content */
-      .news-item{ padding:11px 15px; } .stat-row{ padding:15px 14px; }
+      .news-item{ padding:11px 15px; } .stat-row{ padding:8px 14px; }   /* (#R137) tighter top/bottom padding inside country cards on mobile ("国カード内部の上下方向の余白を詰めて") */
       .dash-nav-btn{ padding:10px 14px; min-height:38px; }
       .news-item .news-actions button{ padding:11px; font-size:12px; }
       .comm-add-btn{ padding:12px; font-size:13px; } .comm-post-actions button{ min-height:36px; }
@@ -2205,12 +2227,14 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
         <div class="ntl-modes" id="ntl-modes">
           <button class="ntl-mode on" id="ntl-mode-year" type="button" data-mode="year"></button>
           <button class="ntl-mode" id="ntl-mode-date" type="button" data-mode="date"></button>
+          <button class="ntl-mode" id="ntl-mode-time" type="button" data-mode="time"></button><!-- (#R137) time-of-day tab -->
         </div>
         <div class="ntl-valrow">
           <div class="ntl-bigval" id="ntl-bigval">—</div>
           <button class="ntl-now" id="ntl-today" type="button"></button>
         </div>
         <input type="date" id="ntl-date" class="ntl-date" style="display:none;">
+        <input type="time" id="ntl-time" class="ntl-date" style="display:none;"><!-- (#R137) time-of-day picker (shown in Time mode) -->
         <input type="range" id="ntl-slider" class="ntl-slider" min="1900" max="2026" value="2026" step="1">
         <div class="ntl-scale" id="ntl-scale"></div>
         <div class="ntl-synced" id="ntl-synced"></div>
@@ -2261,6 +2285,8 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     <div class="settings-sech" data-i18n="setSecLayout">Layout &amp; panels</div>
     <div class="settings-sec">
     <div class="setting-group"><label data-i18n="lblLayerPanel">Layer panel</label><select id="setting-layerpanel"><option value="classic" data-i18n="layerPanelClassic">Classic dropdown</option><option value="right" data-i18n="layerPanelRight">Right sidebar (visual, with previews)</option></select></div>
+    <!-- (#R137) show/hide the rank number in the Countries list (default OFF) -->
+    <div class="setting-group"><label data-i18n="lblShowRank">Rank numbers (Countries)</label><select id="setting-showrank"><option value="off" data-i18n="showRankOff">Off (default)</option><option value="on" data-i18n="showRankOn">On — show rank in the country list</option></select></div>
     <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
       <div id="ticker-syms" style="margin-top:10px;"></div></div>
     <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
@@ -2455,6 +2481,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
   </button>
   <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" title="Compass">
     <svg class="m-compass-svg" viewBox="0 0 24 24" width="38" height="38"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
+  </button>
+  <!-- (#R137) "Go to my location" FAB — same UI as the three above; sits directly under the compass. Flies to the
+       user's position and shows an accent dot + accuracy circle that follow them (see window.IntMapLocate). -->
+  <button class="m-fab m-fab-locate" id="m-fab-locate" type="button" aria-label="My location" title="My location">
+    <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
   </button>
 </div>
 <div class="m-scrim" id="m-scrim"></div>
@@ -10126,12 +10157,16 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R70) the separate "Compare countries (up to 5)" button is RETIRED per instruction — country-row clicks
        build the selection and the dock's view button opens the unified comparison. */
     if(arr.length===0) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
-    arr.forEach(s=>{
+    /* (#R137) optional rank number on the far left (Settings → "Rank numbers", default OFF). The rank is the row's
+       position in the CURRENT sort+filter, so it tracks whatever indicator/direction is active. */
+    const _showRank=(window.imShowRank==='on');
+    arr.forEach((s,i)=>{
       const active=compareSet.has(s.code)?'compare-on':'';
       /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
       const subline=`${s.region||''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
+      const rankHTML=_showRank?`<span class="stat-rank">${i+1}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
-      html+=`<div class="stat-row ${active}" data-ccn="${s.code}" title="${String(cName(s)||'').replace(/"/g,'&quot;')}"><span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
+      html+=`<div class="stat-row ${active}" data-ccn="${s.code}" title="${String(cName(s)||'').replace(/"/g,'&quot;')}">${rankHTML}<span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
     feed.innerHTML=html;
     feed.querySelectorAll('.stat-row').forEach(row=>{
@@ -14534,10 +14569,29 @@ window.addEventListener('DOMContentLoaded', () => {
     const slider=document.getElementById('ntl-slider'), datePicker=document.getElementById('ntl-date');
     const synced=document.getElementById('ntl-synced'), bigval=document.getElementById('ntl-bigval');
     const badge=document.getElementById('ntl-badge'), btnNow=document.getElementById('ntl-today');
-    const modeYear=document.getElementById('ntl-mode-year'), modeDate=document.getElementById('ntl-mode-date');
+    const modeYear=document.getElementById('ntl-mode-year'), modeDate=document.getElementById('ntl-mode-date'), modeTime=document.getElementById('ntl-mode-time');
+    const timePicker=document.getElementById('ntl-time');
     const scale=document.getElementById('ntl-scale'), closeX=document.getElementById('ntl-x'), title=document.getElementById('ntl-title');
     if(!tl||!slider) return;
-    let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) */
+    let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) | (#R137) Time (time-of-day) */
+    /* (#R137) HH:MM (24h) label used by the Time tab. */
+    const _hm=(w)=>String(w.getHours()).padStart(2,'0')+':'+String(w.getMinutes()).padStart(2,'0');
+    /* (#R137) Time tab writes the chosen time-of-day onto the CURRENTLY-selected date (today when live) and pushes it
+       to the master clock (allowFuture so the whole day is scrubbable). Available data that varies with time-of-day —
+       the day/night terminator (and the sun/shadow sim) — then syncs to it, exactly like Year/Date already sync. */
+    function _applyTimeOfDay(mins){ try{ mins=Math.max(0,Math.min(1439,mins|0));
+      const st=window.IntMapTime.state(); const base=st.isLive?new Date():new Date(st.when);
+      base.setHours(Math.floor(mins/60),mins%60,0,0);
+      window.IntMapTime.set(base,{allowFuture:true,source:'ui'}); }catch(_){} }
+    /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
+       existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
+    function _tmTerminator(show){ try{ const m=window.__imap||(typeof map!=='undefined'?map:null); if(!m||!m.isStyleLoaded||!m.isStyleLoaded()) return;
+      const has=!!(m.getSource&&m.getSource('imtm-night'));
+      if(!show){ if(has){ try{ m.getSource('imtm-night').setData({type:'FeatureCollection',features:[]}); }catch(_){} } return; }
+      if(!has){ try{ m.addSource('imtm-night',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); m.addLayer({id:'imtm-night',type:'fill',source:'imtm-night',paint:{'fill-color':'#04070f','fill-opacity':0.33}}); }catch(_){ return; } }
+      let fc={type:'FeatureCollection',features:[]}; try{ const w=window.IntMapTime.when(); const ER=window.IntMapEarthReplay; const t=(ER&&ER._terminatorFC)?ER._terminatorFC(w):null; if(t) fc={type:'FeatureCollection',features:[t]}; }catch(_){}
+      try{ m.getSource('imtm-night').setData(fc); }catch(_){} }catch(_){} }
+    function _tmSyncTerminator(){ try{ _tmTerminator(mode==='time' && !tl.classList.contains('collapsed')); }catch(_){} }
     const curY=new Date().getFullYear();
     const L5=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
     const on=(id)=>{ try{ const c=document.getElementById(id); return !!(c&&c.checked); }catch(_){ return false; } };
@@ -14556,6 +14610,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(title) title.textContent=L5('Time machine','タイムマシン','Zeitmaschine','Машина времени','Máquina del tiempo');
       if(modeYear) modeYear.textContent=L5('Year','年','Jahr','Год','Año');
       if(modeDate) modeDate.textContent=L5('Date','日付','Datum','Дата','Fecha');
+      if(modeTime) modeTime.textContent=L5('Time','時刻','Zeit','Время','Hora');   /* (#R137) time-of-day tab */
       if(btnNow) btnNow.textContent=L5('Back to now','現在へ戻る','Zurück zu heute','К настоящему','Volver al presente');
       if(badge) badge.textContent=L5('Viewing the past','過去表示中','Vergangenheit','Прошлое','Viendo el pasado');
       /* (#27) the collapsed "See the past world / 1900 to present" button labels */
@@ -14567,13 +14622,19 @@ window.addEventListener('DOMContentLoaded', () => {
     function buildScale(){ if(!scale) return; const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
       scale.innerHTML=(mode==='year')
         ? '<span>1900</span><span>1960</span><span>2000</span><span>'+now+'</span>'
+        : (mode==='time')
+        ? '<span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>'
         : '<span>'+L5('−10y','10年前','−10 J','−10 л','−10 a')+'</span><span>'+L5('−5y','5年前','−5 J','−5 л','−5 a')+'</span><span>'+now+'</span>'; }
     function applyMode(m){ mode=m;
       if(modeYear) modeYear.classList.toggle('on',m==='year');
       if(modeDate) modeDate.classList.toggle('on',m==='date');
+      if(modeTime) modeTime.classList.toggle('on',m==='time');
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
+      if(timePicker) timePicker.style.display=(m==='time')?'':'none';
       if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
+      else if(m==='time'){ slider.min='0'; slider.max='1439'; slider.step='1'; }   /* (#R137) minutes-of-day */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
+      if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
       buildScale();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){}
     }
@@ -14585,6 +14646,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const bY=(y>hbAt(y)&&y>2010)?L5('current','現在','aktuell','текущие','actuales'):hbAt(y);
       /* (#R103) chips live in their own row UNDER the "Applied" label so they stay compact & don't line-break awkwardly. */
       let chips='';
+      /* (#R137) in Time mode, surface the day/night terminator as the applied-at-this-time effect. */
+      if(mode==='time') chips+=chip('ok', L5('Day/night','昼夜','Tag/Nacht','День/ночь','Día/noche')+' <b>'+_hm(e.when)+'</b>');
       /* (#R94i) country data + map borders always follow the clock; GDP/pop are real (Maddison) up to 2018. */
       chips+=chip('ok', L5('Countries','国データ','Länder','Страны','Países')+' <b>'+y+'</b>');
       chips+=chip('ok', L5('Borders','国境','Grenzen','Границы','Fronteras')+' <b>'+bY+'</b>');
@@ -14598,18 +14661,29 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     window._imTimeSyncedRefresh=()=>{ try{ buildSynced(window.IntMapTime.state()); }catch(_){} };
     /* WRITE side: inputs → kernel */
-    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(window.IntMapTime.state()); }catch(_){} } };
-    if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); };
+    tg.onclick=()=>{ tl.classList.toggle('collapsed'); if(!tl.classList.contains('collapsed')){ localizeChrome(); try{ refreshUI(window.IntMapTime.state()); }catch(_){} } _tmSyncTerminator(); };
+    if(closeX) closeX.onclick=()=>{ tl.classList.add('collapsed'); _tmSyncTerminator(); };
     if(modeYear) modeYear.onclick=()=>applyMode('year');
     if(modeDate) modeDate.onclick=()=>applyMode('date');
+    if(modeTime) modeTime.onclick=()=>applyMode('time');   /* (#R137) */
     slider.addEventListener('input',()=>{ if(_self) return;
       if(mode==='year'){ const y=parseInt(slider.value,10); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=1900) window.IntMapTime.setYear(y,{source:'ui'}); }
+      else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
       else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
     if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ window.IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) window.IntMapTime.set(d,{source:'ui'}); } });
+    if(timePicker) timePicker.addEventListener('change',()=>{ if(_self) return; const v=timePicker.value; if(!v) return; const p=String(v).split(':'); _applyTimeOfDay((+p[0]||0)*60+(+p[1]||0)); });   /* (#R137) */
     if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
-      if(e.isLive){ tl.classList.remove('active'); if(datePicker) datePicker.value='';
+      if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live). */
+        const w=e.when; const mins=w.getHours()*60+w.getMinutes();
+        tl.classList.toggle('active',!e.isLive);
+        bigval.textContent=_hm(w);
+        if(timePicker) timePicker.value=_hm(w);
+        if(+slider.value!==mins) slider.value=mins;
+        _tmSyncTerminator();
+      }
+      else if(e.isLive){ tl.classList.remove('active'); if(datePicker) datePicker.value='';
         bigval.textContent=(mode==='year')?yLabel(curY):L5('Today','今日','Heute','Сегодня','Hoy');
         if(mode==='year'){ if(+slider.value!==curY) slider.value=curY; } else { if(+slider.value!==3650) slider.value=3650; } }
       else { tl.classList.add('active');
@@ -14627,7 +14701,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(ot&&os){
           if(e.isLive){ ot.textContent=L5('See the past world','過去の世界を見る','Die Welt der Vergangenheit','Мир прошлого','Ver el mundo del pasado');
             os.textContent=L5('1900 to present','1900年から現在まで','1900 bis heute','с 1900 до наших дней','1900 hasta hoy'); }
-          else { ot.textContent=(mode==='year')?yLabel(e.year):e.when.toLocaleDateString(currentLang==='jp'?'ja-JP':currentLang==='de'?'de-DE':currentLang==='ru'?'ru-RU':currentLang==='es'?'es-ES':'en-US',{year:'numeric',month:'short',day:'numeric'});
+          else { ot.textContent=(mode==='year')?yLabel(e.year):(mode==='time')?_hm(e.when):e.when.toLocaleDateString(currentLang==='jp'?'ja-JP':currentLang==='de'?'de-DE':currentLang==='ru'?'ru-RU':currentLang==='es'?'es-ES':'en-US',{year:'numeric',month:'short',day:'numeric'});
             os.textContent=L5('Viewing the past · tap','過去を表示中 · タップ','Vergangenheit · tippen','Прошлое · нажмите','Viendo el pasado · toca'); }
         }
       }catch(_){}
@@ -14645,14 +14719,62 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ fetchData(); }catch(_){}
         },230); } });
     /* (#R101) close the popup when the user starts operating elsewhere on the map (pan / zoom / click-away). */
-    (function autoClose(){ const closeIf=()=>{ try{ if(!tl.classList.contains('collapsed')) tl.classList.add('collapsed'); }catch(_){} };
-      function wireMap(){ try{ const M=window.__imap||(typeof map!=='undefined'?map:null); if(M&&M.on){ M.on('dragstart',closeIf); M.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); M.on('click',closeIf); return true; } }catch(_){} return false; }
+    (function autoClose(){ const closeIf=()=>{ try{ if(!tl.classList.contains('collapsed')){ tl.classList.add('collapsed'); _tmSyncTerminator(); } }catch(_){} };
+      function wireMap(){ try{ const M=window.__imap||(typeof map!=='undefined'?map:null); if(M&&M.on){ M.on('dragstart',closeIf); M.on('zoomstart',ev=>{ if(ev&&ev.originalEvent) closeIf(); }); M.on('click',closeIf); M.on('styledata',()=>{ try{ _tmSyncTerminator(); }catch(_){} }); return true; } }catch(_){} return false; }
       if(!wireMap()) setTimeout(wireMap,1500);
       document.addEventListener('pointerdown',ev=>{ try{ if(tl.classList.contains('collapsed')) return; if(ev.target&&ev.target.closest&&ev.target.closest('#news-timeline')) return; closeIf(); }catch(_){} },true); })();
     window.addEventListener('intmap-lang',()=>{ try{ localizeChrome(); refreshUI(window.IntMapTime.state()); }catch(_){} });
     /* init */
     if(datePicker){ datePicker.max=ymdISO(new Date()); datePicker.min=ymdISO(new Date(Date.now()-3650*864e5)); }
     tl.classList.add('collapsed'); localizeChrome(); applyMode('year');
+  })();
+
+  /* ===== (#R137) Live "my location" marker — an ACCENT dot + an accuracy circle (居る可能性のある円) that FOLLOW the
+     user via navigator.geolocation.watchPosition. Driven by the mobile locate FAB and the Atlas 'locate' action.
+     Rendered as MapLibre layers (so they can't drift), re-asserted across base-map/style swaps. ===== */
+  window.IntMapLocate=(function(){
+    const SRC_DOT='imloc-dot', SRC_ACC='imloc-acc';
+    let watchId=null, last=null, active=false, wired=false;
+    const M=()=>window.__imap||(typeof map!=='undefined'?map:null);
+    function accent(){ try{ const c=(getComputedStyle(document.documentElement).getPropertyValue('--primary-color')||'').trim(); return c||'#0a84ff'; }catch(_){ return '#0a84ff'; } }
+    function ensure(){ const m=M(); if(!m||!m.isStyleLoaded||!m.isStyleLoaded()) return false;
+      try{
+        if(!m.getSource(SRC_ACC)){ m.addSource(SRC_ACC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          m.addLayer({id:'imloc-acc-fill',type:'fill',source:SRC_ACC,paint:{'fill-color':accent(),'fill-opacity':0.12}});
+          m.addLayer({id:'imloc-acc-line',type:'line',source:SRC_ACC,paint:{'line-color':accent(),'line-width':1.2,'line-opacity':0.5}}); }
+        if(!m.getSource(SRC_DOT)){ m.addSource(SRC_DOT,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+          m.addLayer({id:'imloc-dot-halo',type:'circle',source:SRC_DOT,paint:{'circle-radius':13,'circle-color':accent(),'circle-opacity':0.20}});
+          m.addLayer({id:'imloc-dot',type:'circle',source:SRC_DOT,paint:{'circle-radius':6,'circle-color':accent(),'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}}); }
+        if(!wired){ wired=true; try{ m.on('styledata',()=>{ if(active&&last){ try{ paint(last.lng,last.lat,last.acc); }catch(_){} } }); }catch(_){} }
+        return true;
+      }catch(_){ return false; }
+    }
+    function paint(lng,lat,accM){ const m=M(); if(!m) return; if(!ensure()){ try{ m.once&&m.once('idle',()=>paint(lng,lat,accM)); }catch(_){} return; }
+      try{ const col=accent();
+        try{ m.setPaintProperty('imloc-acc-fill','fill-color',col); m.setPaintProperty('imloc-acc-line','line-color',col); m.setPaintProperty('imloc-dot-halo','circle-color',col); m.setPaintProperty('imloc-dot','circle-color',col); }catch(_){}
+        m.getSource(SRC_DOT).setData({type:'Feature',geometry:{type:'Point',coordinates:[lng,lat]},properties:{}});
+        let poly=null; try{ if(window.turf&&turf.circle&&accM>0) poly=turf.circle([lng,lat],Math.max(0.02,accM/1000),{units:'kilometers',steps:64}); }catch(_){}
+        m.getSource(SRC_ACC).setData(poly||{type:'FeatureCollection',features:[]});
+      }catch(_){}
+    }
+    function clear(){ const m=M(); if(!m) return; try{ if(m.getSource(SRC_DOT)) m.getSource(SRC_DOT).setData({type:'FeatureCollection',features:[]}); if(m.getSource(SRC_ACC)) m.getSource(SRC_ACC).setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function _fabOn(on){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on',!!on); }catch(_){} }
+    function start(opts){ opts=opts||{}; const m=M(); if(!m) return;
+      if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(currentLang==='jp'?'位置情報が使えません':currentLang==='de'?'Standort nicht verfügbar':currentLang==='ru'?'Геолокация недоступна':currentLang==='es'?'Geolocalización no disponible':'Geolocation unavailable')); }catch(_){} return; }
+      active=true; _fabOn(true);
+      let firstFly=(opts.fly!==false);
+      const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
+        paint(lng,lat,ac);
+        if(firstFly){ firstFly=false; try{ m.flyTo({center:[lng,lat],zoom:Math.max(m.getZoom(),14),duration:1100}); }catch(_){} } };
+      const onErr=_=>{ try{ if(typeof imToast==='function') imToast('⚠ '+(currentLang==='jp'?'位置情報を取得できません（許可が必要です）':currentLang==='de'?'Standort nicht verfügbar (Erlaubnis nötig)':currentLang==='ru'?'Нет доступа к геолокации':currentLang==='es'?'Ubicación no disponible (permiso necesario)':'Location unavailable (permission needed)')); }catch(_){}
+        if(!last){ active=false; _fabOn(false); } };
+      try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:9000,maximumAge:5000}); }catch(_){}
+      if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:2000}); }catch(_){} }
+    }
+    function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false; _fabOn(false); clear(); }
+    /* FAB tap: first tap starts + flies; while active it re-centres on the last known fix. */
+    function toggleOrRecenter(){ const m=M(); if(active&&last){ try{ m.flyTo({center:[last.lng,last.lat],zoom:Math.max(m.getZoom(),14),duration:900}); }catch(_){} } else start({fly:true}); }
+    return { start, stop, toggleOrRecenter, _paint:paint, isActive:()=>active, last:()=>last };
   })();
 
   /* =============================================================================
@@ -15177,6 +15299,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateCompass(){ if(!map||!fabCompass) return; let b=0,p=0; try{ b=map.getBearing()||0; p=map.getPitch()||0; }catch(_){}
       fabCompass.classList.toggle('show', Math.abs(b)>1 || p>1); if(compassSvg) compassSvg.style.transform='rotate('+(-b)+'deg)'; }
     if(map){ try{ map.on('rotate',updateCompass); map.on('pitch',updateCompass); map.on('moveend',updateCompass); }catch(_){} }
+
+    /* ---- (#R137) locate FAB: fly to my location + show the accent dot / accuracy circle (they follow me) ---- */
+    { const fabLoc=document.getElementById('m-fab-locate');
+      if(fabLoc) fabLoc.addEventListener('click',()=>{ try{ window.IntMapLocate&&window.IntMapLocate.toggleOrRecenter(); }catch(_){} }); }
 
     /* ---- swipe down on an option-sheet grip to dismiss it ---- */
     function makeDismiss(sheet){ if(!sheet) return; const grip=sheet.querySelector('.m-sheet-grip'); if(!grip) return; let drag=false,sy=0;
@@ -16013,6 +16139,12 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ Object.assign(i18n.de,{ lblAccent:"Akzentfarbe", accentDefault:"Standard", accentCustom:"Eigene Farbe" }); }catch(_){}
   try{ Object.assign(i18n.ru,{ lblAccent:"Акцентный цвет", accentDefault:"По умолчанию", accentCustom:"Свой цвет" }); }catch(_){}
   try{ Object.assign(i18n.es,{ lblAccent:"Color de acento", accentDefault:"Predeterminado", accentCustom:"Color personalizado" }); }catch(_){}
+  /* (#R137) Countries rank-number toggle — 5 languages. */
+  Object.assign(i18n.en,{ lblShowRank:"Rank numbers (Countries)", showRankOff:"Off (default)", showRankOn:"On — show rank in the country list" });
+  Object.assign(i18n.jp,{ lblShowRank:"順位の数字（Countries）", showRankOff:"非表示（デフォルト）", showRankOn:"表示 — 国リストに順位を表示" });
+  try{ Object.assign(i18n.de,{ lblShowRank:"Rangnummern (Länder)", showRankOff:"Aus (Standard)", showRankOn:"An — Rang in der Länderliste zeigen" }); }catch(_){}
+  try{ Object.assign(i18n.ru,{ lblShowRank:"Номера рейтинга (страны)", showRankOff:"Выкл. (по умолчанию)", showRankOn:"Вкл. — показывать ранг в списке стран" }); }catch(_){}
+  try{ Object.assign(i18n.es,{ lblShowRank:"Números de rango (Países)", showRankOff:"Desactivado (predeterminado)", showRankOn:"Activado — mostrar el rango en la lista de países" }); }catch(_){}
   /* (#R42) Share-this-view + Atlas console button tooltips — 5 languages. */
   Object.assign(i18n.en,{ shareView:"Share this view (copy link)", atlasBtn:"Atlas — ask in plain language (beta) · Ctrl/⌘+K" });
   Object.assign(i18n.jp,{ shareView:"この表示を共有（リンクをコピー）", atlasBtn:"Atlas — 自然言語で操作（beta）· Ctrl/⌘+K" });
@@ -16122,6 +16254,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(s.flatPan) window.imFlatPan=s.flatPan;
     if(s.mapColor) window.imMapColor=s.mapColor;
     if(s.layerPanel==='right'||s.layerPanel==='classic') window.imLayerPanel=s.layerPanel;   /* (#R62) */
+    if(s.showRank==='on'||s.showRank==='off') window.imShowRank=s.showRank;   /* (#R137) Countries rank numbers (default off) */
     if(s.ticker==='on'||s.ticker==='off') window.imTicker=s.ticker;   /* (#R63) */
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
     if(Array.isArray(s.layerFavs)) window.imLayerFavs=s.layerFavs;
@@ -16134,7 +16267,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, ticker:window.imTicker,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
@@ -16482,6 +16615,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-flat-pan'))      v('setting-flat-pan').value=window.imFlatPan;
       if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;
       if(v('setting-layerpanel'))    v('setting-layerpanel').value=(window.imLayerPanel||'classic');
+      if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'off');
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
       try{ window._syncAccentPicker&&window._syncAccentPicker(); }catch(_){}   /* (#R114) reflect the committed accent */
@@ -16497,6 +16631,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;
       if(v('setting-layerpanel')){ window.imLayerPanel=v('setting-layerpanel').value; try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} }
+      if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
       if(v('setting-ticker')){ window.imTicker=v('setting-ticker').value; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} }
       const ncWrap=document.getElementById('newscountry-multi');
       let newsCountriesChanged=false;
@@ -26354,9 +26489,30 @@ window.addEventListener('DOMContentLoaded', () => {
     const warn=s=>'<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">'+s+'</div>';
     const R=(ok,html,extra)=>Object.assign({ok:!!ok,html:html||''},extra||null);   /* (#R119) extra e.g. {objectIds:[…]} — creating actions expose what they made */
     /* (#R62) minimal safe markdown for AI text rendered in the chat (briefs / analyses). */
+    /* (#R137) Atlas occasionally emits the SAME sentence/paragraph twice verbatim in one reply ("たまに二度同じことを
+       …同じ文章をそのまま繰り返す"). Strip verbatim-duplicate paragraphs and sentences (normalized, length-gated so short
+       repeats like list labels or "はい。" survive). Spacing is preserved by keeping each sentence's trailing whitespace
+       and rejoining with '' — so nothing is dropped unless a long duplicate key is seen. Fully guarded → original on error. */
+    function _dedupText(s){ s=String(s==null?'':s); if(!s||s.length<24) return s;
+      try{
+        const MIN=15; const norm=x=>String(x).trim().replace(/\s+/g,' ').toLowerCase();
+        const seenSent=new Set();
+        const dedupLine=(line)=>{ const toks=line.match(/[^.!?。！？]*[.!?。！？]+\s*|[^.!?。！？]+$/g); if(!toks) return line;
+          const out=[]; for(const tk of toks){ const k=norm(tk); if(k.length>=MIN){ if(seenSent.has(k)) continue; seenSent.add(k); } out.push(tk); }
+          return out.join(''); };
+        const seenPara=new Set(); const outP=[];
+        for(const p of s.split(/\n{2,}/)){
+          const pp=p.split('\n').map(dedupLine).filter(l=>l!=='').join('\n');
+          if(!pp.trim()) continue;
+          const pk=norm(pp); if(pk.length>=MIN){ if(seenPara.has(pk)) continue; seenPara.add(pk); }
+          outP.push(pp);
+        }
+        const res=outP.join('\n\n'); return res||s;
+      }catch(_){ return s; }
+    }
     /* (#R117) heading HIERARCHY inside Atlas replies ("見出しは大きくするなど" — the reply's own text sizes now vary
        by role: h1 > h2 > h3 ≥ body; the chat body & user-message sizes are untouched). */
-    function mdMini(s){ return esc(String(s||''))
+    function mdMini(s){ return esc(_dedupText(String(s||'')))
       .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:8px 0 3px;font-size:12.5px;">$1</div>')
       .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:10px 0 4px;font-size:13.5px;">$1</div>')
       .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:11px 0 5px;font-size:15px;letter-spacing:.01em;">$1</div>')
@@ -28823,6 +28979,8 @@ window.addEventListener('DOMContentLoaded', () => {
           return await new Promise(res=>{ let fin0=false; const fin=r2=>{ if(!fin0){ fin0=true; res(r2); } };
             try{ navigator.geolocation.getCurrentPosition(p2=>{ const lng=+p2.coords.longitude, lat=+p2.coords.latitude;
                 try{ map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),11),duration:1100}); }catch(_){}
+                /* (#R137) also drop the live accent dot + accuracy circle that follow the user */
+                try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false}); }catch(_){}
                 try{ _lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
                 fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')')));
               }, _=>fin(R(false, warn('⚠ '+L('Location permission denied or unavailable','位置情報を取得できません（許可が必要です）','Standort verweigert oder nicht verfügbar','Нет доступа к геолокации','Ubicación denegada o no disponible')))), {enableHighAccuracy:false,timeout:9000,maximumAge:120000});
