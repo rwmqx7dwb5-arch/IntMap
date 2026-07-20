@@ -5,6 +5,46 @@
 
 ---
 
+## R141 — 地域監視・変化検出・根拠付きレポート機能（Area Monitors） (tag `#R141`)
+
+ユーザーが円/描画/解決済み地域/現在の地図表示から**監視（monitor）**を保存し、**サーバー側（Edge Function + pg_cron）がページを閉じていても定期実行**、対象地域内のニュースを取得→正規化/重複排除→スナップショット→**機械的に**前回/基準期間と比較→**意味のある変化がある時だけAI**で根拠付きレポートを生成、UI（通常/モバイル/Workspace・5言語）とAtlasから作成/一覧/詳細/レポート/根拠/一時停止/再開/削除/手動実行できる。中核原則＝**「変化の有無はコードが判定し、AIは説明だけ」「全主張をevidence IDへ接続」「変化なし/取得失敗ではAIを呼ばない」**。全て加算的（単一index.html・ビルド無し温存）。着手前に**並列サブエージェント4本**で auth/AI・Atlas action・geometry(radius/draw/region)・UI/tabs/i18n を実地調査。`npm test` 緑（静的+node logic 23+security-logic+**Playwright 26/26**）・**pgTAP 180**（新規`04_monitors_test.sql` 38アサーション含む）・ローカルDocker で `db reset`+`test db`+drift 空を実測。
+
+### データモデル（`supabase/migrations/20260721090000_area_monitors.sql`・冪等/非破壊）
+- **`area_monitors`**（owner/name/**geometry(jsonb GeoJSON Polygon/MultiPolygon)**/geometry_kind/center+radius_km(円)/bbox/area_label/**sources[]**(news先行・拡張可)/**comparison**(previous_run|baseline_window)/**sensitivity**(min_new/min_score)/interval_minutes(≥30 CHECK)/enabled/**running_since(claimロック)**/last_run_at/**next_run_at**/last_status/last_change_severity/last_report_id/run_count）。UUID PK（**連番でない**）。geometryサイズ CHECK ≤400KB。
+- **`monitor_runs`**（1実行=1行・status/**snapshot**/**diff**/change_score/report_generated/**ai_used**/ai_skip_reason/ai_provider/model/error_category/retryable/duration_ms/evidence_count）。**service_role のみ書込**＝userは偽造不可。
+- **`monitor_evidence`**（run毎の**ev_key**("ev_1"…)/source_type/name/url(http/https検証)/external_id/title/observed/fetched/lng/lat/**payload**/**dedup_key**/change_kind(new|continuing|gone)）。
+- **`monitor_reports`**（severity/headline/summary/**changes[{claim,evidence_ids}]**/unchanged/data_gaps/limitations/metrics/change_points/ai_provider/model/prompt_version/read）。
+- **RLS＝全表 owner-only**（`user_id=auth.uid()`）。userは**monitorsのみCRUD**、runs/evidence/reportsは**SELECTのみ**（write grant無し＝**実行結果を偽造不可**）。area_monitors の**UPDATEは列単位grant**で run-state列（running_since/last_*/run_count）を除外＝**ロック/実行メタ改竄不可**。**adminにも監視のバックドア無し**（feedback等と違い完全private）。
+- **課金接続点**＝`monitor_limit(uuid)`（free=5/pro・plus=25/admin・unlimited=200）を **BEFORE INSERT トリガ**で強制（上限超過は `check_violation`）。
+- **ロック/claim**＝`monitor_claim_due(limit,stale_min)`＝**`FOR UPDATE SKIP LOCKED`** で due・enabled・未ロックのみ atomically claim＝**二重実行防止**（service_role のみEXECUTE）。`monitor_mark_read(uuid)` で本人のreportをread化（本文はclient不変）。realtime に area_monitors/runs/reports 追加。
+
+### Edge Function `supabase/functions/monitor-run/`（Deno・`--no-verify-jwt`・自前fail-closed認証）
+- **2モード**: ①**CRON**（`x-monitor-secret` ヘッダ＝`MONITOR_SECRET`・定数時間比較・未設定なら全拒否503）→`monitor_claim_due`でN件claim→逐次処理（GLOBAL_DEADLINE 110s で残りは running_since=null に戻し次tickへ）。②**USER「今すぐ実行」**（JWT+`{monitorId}`・所有権照合・手動クールダウン30s）。
+- **パイプライン**（`processMonitor`）＝run行を先にscaffold（内部エラー既定）→**COLLECTORS registry**（`{news:collectNews}`＝拡張seam）で bbox 事前絞り→**`pointInMonitorArea`** 精密判定→正規化/dedup→snapshot→前回run or window の**baselineKeys**→**`diffKeys`(new/gone/continuing)**→新規のみ**クラスタリング+媒体多様性**→**`computeChangeScore`**→**`decideAI`**（初回=insufficient_baseline/新規0=no_change/閾値未満=below_threshold/**取得失敗=source_unavailable でAIを呼ばない**）→呼ぶ時のみ provider直呼び（server-held key・OpenAI Responses API・**web検索無し=evidence only**）→**`validateAndCleanReport`** で**全evidence_idが実在ev_keyか検証**（偽ID主張は落とし、根拠ゼロなら報告棄却→`ai_failed`でsnapshot/diff/evidenceは保持）→run/evidence/report永続化→next_run_at更新→**prune**（run 100件・evidence 12run保持）。
+- **status体系**: success / success_no_change / partial / source_unavailable / ai_failed / timed_out / invalid_geometry / quota_exceeded / disabled / internal_error。**AI失敗でもsnapshot/diff/evidenceは失わない**、一部ソース失敗は取得分保存で**partial**。
+- **純ロジックは `logic.mjs`（runtime非依存ESM）**＝Deno関数と `tests/monitor-logic.test.mjs`(Node)が**同一コードを共有**（point-in-area/正規化/dedup/diff/クラスタ/score/decideAI/evidence検証/URL scheme）。
+
+### フロント（`index.html` 加算）
+- **Monitorsタブ新設**（`#btn-monitors`・`#monitors-feed`・`setMode('monitors')`・`renderUI`分岐・`IntMapOS.register('tab.monitors')`・session restore・モバイルdrag-collapse・**Workspace DEFS**・placeholder）。全5言語（`Object.assign(i18n.*,{tabMonitors})`＋インライン `ML(en,jp,de,ru,es)`）。
+- **`window.IntMapMonitors`**（本体は main scope 内・`IntMapPopArea`直前に挿入＝closureで currentUser/map/radiusItems/i18n/DrawTool/IntMapOutline へアクセス）: `render`(一覧・ログイン必須・realtime自動更新)/`openCreateDialog`(active area or 現在の地図表示・sources/比較/頻度/感度)/`openDetail`(設定+実行履歴+最新report)/`openReport`(結論/主な変化→**evidence chip でスクロール**/数値比較/根拠一覧(出典リンク)/変化地点を地図表示/未確認/取得できなかったデータ/制約/日時/status)/`pause`/`resume`/`remove`/`runNow`(FN直POST+JWT)/`flyTo`/`activeArea`(radius>draw>region の統一アクセサ)/`showOnMap`(area outline+change points レイヤー)。**全描画は `IntMapSafe.html/url`**（XSS-inert をPlaywrightで実証）。CSSは**静的`<style>`**（CSS-in-JS template-literal 回避＝memory教訓）。
+- **DrawTool に `currentGeometry()`** getter 追加（描画中なら finish して Polygon/MultiPolygon 返却）。
+- **Atlas**: `{"type":"monitor","op":"create|list|open|pause|resume|run|delete","which"?,"index"?,...}` を SYS カタログ + dispatch case + localPlan（決定的ショートカット「この範囲を監視」等）に配線。**返信は実DB結果のみ**（未ログイン/範囲未選択/失敗を正直に警告・偽の「作成しました」を出さない＝dispatchで実測確認）。`IntMapMonitors.atlas` bridge。
+
+### デプロイ要件（本番）
+1. `supabase functions deploy monitor-run --no-verify-jwt --project-ref vpekfwdpurzejrrmacac`
+2. `supabase secrets set MONITOR_SECRET=<random> --project-ref vpekfwdpurzejrrmacac`（AIキーは ai-proxy と共有＝設定済）
+3. migration を本番適用（`supabase db push` 要DBパスワード＝メンテナ操作 or Management API）
+4. **pg_cron**: `select cron.schedule('monitor-run-tick','*/10 * * * *', $$ select net.http_post(url:='https://vpekfwdpurzejrrmacac.functions.supabase.co/monitor-run', headers:=jsonb_build_object('Content-Type','application/json','x-monitor-secret','<MONITOR_SECRET>'), body:='{}'::jsonb) $$);`（refresh-news と同型・ヘッダで秘密・詳細 `docs/AREA-MONITORS.md`）。
+
+### 罠・教訓
+- **「変化の有無」をAIに丸投げしない**のが核心＝取得→正規化→dedup→機械diff→scoreまで**コードで確定**し、AIは**検出済み差分の説明**のみ。取得失敗は「変化なし」ではなく専用status。
+- **evidence ID検証は実行後にコードで**＝AIが存在しないev_keyを引いた主張は落とし、根拠ゼロなら報告自体を棄却（`ai_failed`）。R140の「実行前sayを実行結果でゲート」と同じ**正直化は合成側**の思想。
+- **service_role書込＋列単位UPDATE grant**で「実行結果/ロックの偽造不可」をDB層で保証（pgTAPで実証）。RLSだけでなく**grant（列含む）×trigger×RPC権限**の多層。
+- **claim は `FOR UPDATE SKIP LOCKED`** で二重実行を根絶（cron多重tick耐性）。
+- pure ロジックは **`.mjs`（runtime非依存）を Deno と Node で共有**＝本番コードとテストコードが一致。CSS は**静的style**（template-literal CSS 回避）。モジュールは main scope 内に置き closure を利用（page-scoped let は window 非公開のため）。
+
+---
+
 ## R140 — 既知バグ6件バッチ根本修正：ストリートビュー透過＋Coverage無視／タイムマシン国境の間欠不表示／Atlas嘘ハイライト／モバイル・ボトムシート同期 (tag `#R140`)
 
 ユーザー指摘の既知問題**全6件**を根本原因から修正。全て `index.html` の**加算的/微修正**（単一HTML・ビルド無し温存）。着手前に**並列サブエージェント3本**で③④⑤⑥の根本原因を実地調査。`npm test` 緑（静的89＋security-logic 10＋Playwright **18/18**、pageerror 0）。ヘッドレスは `document.hidden` で map 未init のため、②のCoverageエンジンは**実Googleタイルでライブ実測**、⑥のAPIは**maplibre 5.24.0のprototype実ソースで確定**、①は算出スタイルで実測。

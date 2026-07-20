@@ -1,0 +1,155 @@
+// (#R141) Area-monitors UI + Atlas-integration browser tests.
+// Hermetic (all external hosts blocked, incl. Supabase — see helpers/network.js), so these
+// exercise DOM/structure, the login gating, the honest Atlas routing, the geometry accessor,
+// and — critically — that a report renders XSS-inert. The logged-in DB round-trip is proven
+// separately by pgTAP (RLS) + the Node logic tests; here we prove the client never lies about
+// success and never injects untrusted report/monitor text as live HTML.
+import { test, expect } from '@playwright/test';
+import { installHermeticRouting, collectPageDiagnostics, isBenign } from './helpers/network.js';
+
+test.describe.configure({ mode: 'serial' });
+
+let page, diags;
+
+test.beforeAll(async ({ browser }) => {
+  const context = await browser.newContext();
+  await installHermeticRouting(context);
+  page = await context.newPage();
+  diags = collectPageDiagnostics(page);
+  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+  await page.waitForFunction(() => typeof window.IntMapMonitors !== 'undefined', null, { timeout: 45_000 });
+});
+
+test.afterAll(async () => {
+  await page?.context()?.close();
+});
+
+test('Monitors module + tab are present and the module exposes its API', async () => {
+  const info = await page.evaluate(() => ({
+    hasModule: !!window.IntMapMonitors,
+    fns: window.IntMapMonitors ? Object.keys(window.IntMapMonitors).sort() : [],
+    tab: !!document.getElementById('btn-monitors'),
+    feed: !!document.getElementById('monitors-feed'),
+    atlas: window.IntMapMonitors ? typeof window.IntMapMonitors.atlas : null,
+    drawGetter: !!(window.DrawTool && window.DrawTool.currentGeometry),
+  }));
+  expect(info.hasModule).toBe(true);
+  expect(info.tab).toBe(true);
+  expect(info.feed).toBe(true);
+  expect(info.atlas).toBe('object');
+  expect(info.drawGetter).toBe(true);
+  for (const fn of ['render', 'create', 'openCreateDialog', 'openDetail', 'openReport', 'pause', 'resume', 'remove', 'runNow', 'activeArea']) {
+    expect(info.fns, `missing ${fn}`).toContain(fn);
+  }
+});
+
+test('tab label localizes across languages (EN + JP)', async () => {
+  const en = await page.evaluate(() => { document.getElementById('lang-en')?.click(); return document.getElementById('btn-monitors').textContent.trim(); });
+  expect(en).toBe('Monitors');
+  const jp = await page.evaluate(() => { document.getElementById('lang-jp')?.click(); return document.getElementById('btn-monitors').textContent.trim(); });
+  expect(jp).toBe('モニター');
+  await page.evaluate(() => document.getElementById('lang-en')?.click());
+});
+
+test('opening the Monitors tab (logged out) shows the login prompt, not a fake list', async () => {
+  const html = await page.evaluate(async () => {
+    try { window.IntMapOS.exec('tab.monitors', { source: 'test' }); } catch (e) { return 'exec-err:' + e.message; }
+    await new Promise((r) => setTimeout(r, 300));
+    return document.getElementById('monitors-feed').innerHTML;
+  });
+  expect(html).toContain('mon-empty');
+  expect(html.toLowerCase()).toMatch(/log in/);
+  expect(html).toContain('mon-login-btn');
+});
+
+test('Atlas monitor action is HONEST: never claims success when it cannot', async () => {
+  const res = await page.evaluate(async () => {
+    const out = {};
+    // no area selected → must ask for one, not create
+    const create0 = await window.IntMapConsole.dispatch({ type: 'monitor', op: 'create' });
+    out.createNoArea = { ok: create0.ok, txt: (create0.html || '').replace(/<[^>]+>/g, '') };
+    // list (logged out) → must say login required, not open an empty list as success
+    const list0 = await window.IntMapConsole.dispatch({ type: 'monitor', op: 'list' });
+    out.listLoggedOut = { ok: list0.ok, txt: (list0.html || '').replace(/<[^>]+>/g, '') };
+    // with an area but logged out → login required
+    if (window._radiusFromPoint) window._radiusFromPoint(139.7, 35.68);
+    const create1 = await window.IntMapConsole.dispatch({ type: 'monitor', op: 'create' });
+    out.createLoggedOut = { ok: create1.ok, txt: (create1.html || '').replace(/<[^>]+>/g, '') };
+    return out;
+  });
+  expect(res.createNoArea.ok).toBe(false);
+  expect(res.createNoArea.txt.toLowerCase()).toMatch(/radius|area|region|範囲/);
+  expect(res.listLoggedOut.ok).toBe(false);
+  expect(res.listLoggedOut.txt.toLowerCase()).toMatch(/log in|ログイン/);
+  expect(res.createLoggedOut.ok).toBe(false);
+  expect(res.createLoggedOut.txt.toLowerCase()).toMatch(/log in|ログイン/);
+});
+
+test('activeArea() captures a radius circle as a real Polygon geometry', async () => {
+  const a = await page.evaluate(() => {
+    if (window._radiusFromPoint) window._radiusFromPoint(2.35, 48.85);
+    return window.IntMapMonitors.activeArea();
+  });
+  expect(a).toBeTruthy();
+  expect(a.geometry_kind).toBe('circle');
+  expect(a.geometry.type).toBe('Polygon');
+  expect(a.center_lng).toBeCloseTo(2.35, 2);
+  expect(Array.isArray(a.bbox)).toBe(true);
+  expect(a.radius_km).toBeGreaterThan(0);
+});
+
+test('a report renders XSS-INERT (untrusted headline/claim/evidence are escaped, no script runs)', async () => {
+  const result = await page.evaluate(async () => {
+    window.__xss = 0;
+    const evilReport = {
+      id: 'r1', run_id: 'run1', monitor_id: 'mon1', severity: 'high',
+      headline: '<img src=x onerror="window.__xss=1">PWNED',
+      summary: 'A <script>window.__xss=2<\/script> summary',
+      changes: [{ claim: 'Claim with <img src=y onerror="window.__xss=3"> payload', evidence_ids: ['ev_1'] }],
+      unchanged: ['<b>should be text</b>'], data_gaps: [], limitations: ['loc note'],
+      metrics: { articles: { prev: 0, cur: 2, delta: 2 }, new_clusters: 1, publishers: { prev: 0, cur: 2 } },
+      change_points: [], created_at: new Date().toISOString(),
+    };
+    await window.IntMapMonitors.openReport(evilReport);
+    await new Promise((r) => setTimeout(r, 250));
+    const ov = document.querySelector('.mon-ov-report');
+    const headEl = ov ? ov.querySelector('.mon-h3') : null;
+    const res = {
+      overlay: !!ov,
+      xss: window.__xss,
+      // the payload must appear as TEXT, and there must be NO live <img onerror> node injected from it
+      headlineText: headEl ? headEl.textContent : '',
+      injectedImg: ov ? ov.querySelectorAll('img[onerror]').length : -1,
+      injectedScript: ov ? ov.querySelectorAll('script').length : -1,
+      hasChange: ov ? ov.querySelectorAll('.mon-change').length : 0,
+      hasMetrics: ov ? !!ov.querySelector('.mon-metrics') : false,
+    };
+    if (ov) ov.remove();
+    return res;
+  });
+  expect(result.overlay).toBe(true);
+  expect(result.xss, 'no injected handler/script executed').toBe(0);
+  expect(result.injectedImg, 'no live <img onerror> injected').toBe(0);
+  expect(result.injectedScript, 'no <script> injected into the overlay').toBe(0);
+  expect(result.headlineText).toContain('PWNED');           // shown as text
+  expect(result.headlineText).toContain('<img');            // escaped literal, not a node
+  expect(result.hasChange).toBe(1);
+  expect(result.hasMetrics).toBe(true);
+});
+
+test('the create dialog is login-gated (logged out → auth modal, no create dialog)', async () => {
+  const r = await page.evaluate(async () => {
+    window.IntMapMonitors.openCreateDialog();
+    await new Promise((res) => setTimeout(res, 150));
+    return { createDialog: !!document.querySelector('.mon-ov-create'), authModalShown: !!document.getElementById('auth-modal') };
+  });
+  expect(r.createDialog).toBe(false);   // never opens the create form when logged out
+  expect(r.authModalShown).toBe(true);  // it routes to login instead
+});
+
+test('no uncaught page errors and no non-benign console errors', async () => {
+  await page.evaluate(() => new Promise((r) => setTimeout(r, 200)));
+  expect(diags.pageErrors, `page errors:\n${diags.pageErrors.join('\n')}`).toHaveLength(0);
+  const real = diags.consoleErrors.filter((t) => !isBenign(t));
+  expect(real, `console errors:\n${real.join('\n')}`).toHaveLength(0);
+});

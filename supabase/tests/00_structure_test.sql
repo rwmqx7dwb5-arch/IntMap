@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/RLS-TESTING.md).
 -- ============================================================================
 begin;
-select plan(38);
+select plan(52);
 
 -- 1) Every expected table exists in public.
 select has_table('public', t, 'table ' || t || ' exists')
@@ -12,8 +12,10 @@ from unnest(array[
   'profiles','ai_usage','user_prefs','favorites','donations','feedback',
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
-  'current_news'
-]) as t;                                                    -- 15 assertions
+  'current_news',
+  -- (#R141) area-monitoring feature
+  'area_monitors','monitor_runs','monitor_evidence','monitor_reports'
+]) as t;                                                    -- 19 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -24,8 +26,9 @@ from unnest(array[
   'profiles','ai_usage','user_prefs','favorites','donations','feedback',
   'bug_reports','community_posts','community_comments','community_votes',
   'community_comment_votes','community_reports','geo_pins','dashboard_cards',
-  'current_news'
-]) as t;                                                    -- 15 assertions
+  'current_news',
+  'area_monitors','monitor_runs','monitor_evidence','monitor_reports'
+]) as t;                                                    -- 19 assertions
 
 -- 3) Keys / relationships that the app depends on.
 select has_pk('public', 'profiles', 'profiles has a primary key');
@@ -41,6 +44,16 @@ select hasnt_column('public', 'profiles_public', 'is_admin', 'profiles_public do
 -- 5) Core functions exist.
 select has_function('public','is_admin', 'is_admin() exists');
 select has_function('public','increment_ai_usage', array['uuid','integer'], 'increment_ai_usage(uuid,int) exists');
+
+-- 6) (#R141) Area-monitoring keys, relationships and functions.
+select col_is_pk('public','area_monitors', array['id'], 'area_monitors PK is (id)');
+select fk_ok('public','monitor_runs','monitor_id','public','area_monitors','id',
+             'monitor_runs.monitor_id → area_monitors.id');
+select fk_ok('public','monitor_reports','run_id','public','monitor_runs','id',
+             'monitor_reports.run_id → monitor_runs.id');
+select has_function('public','monitor_claim_due', array['integer','integer'], 'monitor_claim_due(int,int) exists');
+select has_function('public','monitor_limit', array['uuid'], 'monitor_limit(uuid) exists');
+select has_function('public','monitor_mark_read', array['uuid'], 'monitor_mark_read(uuid) exists');
 
 reset role;
 select * from finish();
