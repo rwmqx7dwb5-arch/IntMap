@@ -26782,7 +26782,125 @@ window.addEventListener('DOMContentLoaded', () => {
           const line=el.geometry.map(g=>[g.lon,g.lat]); pts+=line.length; coords.push(line); }
         if(!coords.length) return null;
         return {geo:{type:'MultiLineString',coordinates:coords},n:coords.length,truncated:saturated||clientCut}; }catch(_){ return null; } }
-    function _bboxSoftPoly(box){ const cx=(box[0][0]+box[1][0])/2, cy=(box[0][1]+box[1][1])/2, rx=Math.max(0.05,(box[1][0]-box[0][0])/2), ry=Math.max(0.05,(box[1][1]-box[0][1])/2); const ring=[]; for(let i=0;i<=40;i++){ const a=i/40*2*Math.PI, co=Math.cos(a), si=Math.sin(a); ring.push([cx+rx*Math.sign(co)*Math.pow(Math.abs(co),0.62), cy+ry*Math.sign(si)*Math.pow(Math.abs(si),0.62)]); } return {type:'Polygon',coordinates:[ring]}; }
+    function _bboxSoftPoly(box){ const cx=(box[0][0]+box[1][0])/2, cy=(box[0][1]+box[1][1])/2, rx=Math.max(0.05,(box[1][0]-box[0][0])/2), ry=Math.max(0.05,(box[1][1]-box[0][1])/2); const ring=[]; for(let i=0;i<40;i++){ const a=i/40*2*Math.PI, co=Math.cos(a), si=Math.sin(a); ring.push([cx+rx*Math.sign(co)*Math.pow(Math.abs(co),0.62), cy+ry*Math.sign(si)*Math.pow(Math.abs(si),0.62)]); } ring.push([ring[0][0],ring[0][1]]); return {type:'Polygon',coordinates:[ring]}; }   /* (#R143) close the ring EXACTLY (sin(2π)≠0 left a hairline-open ring that failed the validity gate) */
+    /* ===== (#R143) GEOMETRY-VALIDATION GATE + multi-region grouping for the highlight pipeline.
+       The reported "南欧が巨大な三角形 / 西欧が未描画 / 4地域が同色 / 国境データではなく雑な近似図形" all trace to ONE gap:
+       region names that ARE country sets were resolved as bbox/AI approximations, drawn with no per-group colour,
+       no legend, and with no shape-sanity check before painting. These pure helpers (no map/network → run in the
+       CI QA harness) add (a) a pre-draw validity gate that REJECTS unclosed rings, degenerate few-vertex "giant
+       triangles", abnormal long edges, self-intersections, whole-world blobs and tiny slivers; (b) a real-border
+       geometry builder for country-set groups; (c) a categorical palette + legend so multiple regions in one
+       command are individually identifiable. ===== */
+    let _hlGen=0;   /* (#R143) generation token — a slow async resolution can't overwrite a newer highlight (古い処理の遅延上書き対策) */
+    function _ringSignedArea(r){ let a=0; for(let i=0,n=r.length-1;i<n;i++){ a+=(r[i][0]*r[i+1][1]-r[i+1][0]*r[i][1]); } return a/2; }
+    function _ringBbox(r){ let a=180,b=90,c=-180,d=-90; for(const p of r){ if(p[0]<a)a=p[0]; if(p[0]>c)c=p[0]; if(p[1]<b)b=p[1]; if(p[1]>d)d=p[1]; } return [a,b,c,d]; }
+    function _orient3(p,q,r){ return (q[1]-p[1])*(r[0]-q[0])-(q[0]-p[0])*(r[1]-q[1]); }
+    /* proper crossing of two OPEN segments — shared endpoints (adjacent ring edges) do NOT count as a crossing */
+    function _segProperCross(p1,p2,p3,p4){ const d1=_orient3(p3,p4,p1), d2=_orient3(p3,p4,p2), d3=_orient3(p1,p2,p3), d4=_orient3(p1,p2,p4);
+      return (((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0))); }
+    function _ringSelfIntersects(r){ const n=r.length-1; if(n<4) return false;
+      for(let i=0;i<n;i++){ for(let j=i+2;j<n;j++){ if(i===0&&j===n-1) continue;   /* the closing edge is adjacent to edge 0 */
+        if(_segProperCross(r[i],r[i+1],r[j],r[j+1])) return true; } } return false; }
+    /* the gate. opts.trusted = geometry from REAL national/OSM borders → skip the crude-approximation heuristics
+       (a dense real coastline can legitimately look "spiky"); untrusted (AI/derived/soft box) gets the full battery.
+       opts.autoclose closes an open ring in place instead of rejecting it. Returns {ok, reason, area, points}. */
+    function _validGeo(gm,opts){ opts=opts||{}; try{
+      if(!gm||typeof gm!=='object') return {ok:false,reason:'no-geometry'};
+      const t=gm.type; if(t!=='Polygon'&&t!=='MultiPolygon') return {ok:false,reason:'not-polygon'};
+      const polys=(t==='Polygon')?[gm.coordinates]:gm.coordinates; if(!polys||!polys.length) return {ok:false,reason:'empty'};
+      const trusted=!!opts.trusted; let area=0, any=false, maxPts=0;
+      for(const poly of polys){ if(!poly||!poly.length) continue;
+        for(let ri=0; ri<poly.length; ri++){ const ring=poly[ri]; if(!Array.isArray(ring)||!ring.length) return {ok:false,reason:'bad-ring'};
+          if(ring.length<4) return {ok:false,reason:'ring-too-small'};
+          const a=ring[0], z=ring[ring.length-1]; if(!a||!z||a.length<2) return {ok:false,reason:'bad-vertex'};
+          if(a[0]!==z[0]||a[1]!==z[1]){ if(opts.autoclose) ring.push([a[0],a[1]]); else return {ok:false,reason:'unclosed-ring'}; }
+          any=true; maxPts=Math.max(maxPts,ring.length);
+          if(ri===0){ area+=Math.abs(_ringSignedArea(ring));
+            if(!trusted){ const bb=_ringBbox(ring), diag=Math.hypot(bb[2]-bb[0],bb[3]-bb[1]);
+              const distinct=(()=>{ const s=new Set(); for(let i=0;i<ring.length-1;i++) s.add(ring[i][0].toFixed(3)+','+ring[i][1].toFixed(3)); return s.size; })();
+              if(distinct<=4 && diag>3) return {ok:false,reason:'degenerate-triangle'};              /* a 3–4 point shape spanning >~330 km = crude blob */
+              if(ring.length<=12 && diag>2){ let me=0; for(let i=1;i<ring.length;i++){ const e=Math.hypot(ring[i][0]-ring[i-1][0],ring[i][1]-ring[i-1][1]); if(e>me) me=e; } if(me>diag*0.7) return {ok:false,reason:'long-edge'}; }
+              if(ring.length<=80 && _ringSelfIntersects(ring)) return {ok:false,reason:'self-intersecting'}; } } } }
+      if(!any) return {ok:false,reason:'empty'};
+      const bb=fbbox(gm); if(bb && (bb[2]-bb[0])>350 && (bb[3]-bb[1])>150) return {ok:false,reason:'whole-world'};
+      if(!opts.allowTiny && area < (opts.minArea!=null?opts.minArea:1e-4)) return {ok:false,reason:'too-tiny'};
+      return {ok:true, area, points:maxPts}; }catch(e){ return {ok:false,reason:'threw:'+((e&&e.message)||e)}; } }
+    /* MultiPolygon of the REAL national borders for a set of ISO3 codes (from window.countryGeo). Fill renders the
+       whole set; internal member borders are kept faint by the comp:1 flag on the paint layer. */
+    function _codesGeo(codes){ try{ const g=geo(); const list=(codes||[]).map(String);
+      if(!g||!g.features) return {geo:null,hit:[],miss:list.slice()};
+      const want=new Set(list); const hit=[]; const polys=[];
+      g.features.forEach(f=>{ const p=f.properties||{}; const id=String(p.__code!=null?p.__code:(f.id!=null?f.id:'')); if(!want.has(id)) return; const gm=f.geometry; if(!gm) return;
+        if(gm.type==='Polygon') polys.push(gm.coordinates); else if(gm.type==='MultiPolygon') gm.coordinates.forEach(pp=>polys.push(pp)); if(hit.indexOf(id)<0) hit.push(id); });
+      return {geo:polys.length?{type:'MultiPolygon',coordinates:polys}:null, hit, miss:list.filter(c=>hit.indexOf(c)<0)}; }catch(_){ return {geo:null,hit:[],miss:(codes||[]).map(String)}; } }
+    /* categorical palette — distinct, reasonably colour-blind-aware, muted enough to sit on the basemap */
+    const _HL_PALETTE=['#e6550d','#3182bd','#31a354','#756bb1','#d6616b','#17a2b8','#bd9e39','#8c6d31','#e377c2','#637939','#843c39','#5254a3'];
+    function _hlPaletteColor(i){ const n=_HL_PALETTE.length; return _HL_PALETTE[((i%n)+n)%n]; }
+    /* directional-Europe aliases (5 languages) → the UN M49 English sub-region key */
+    const _DIR_EU_ALIAS={ '東欧':'eastern europe','西欧':'western europe','南欧':'southern europe','北欧':'northern europe',
+      '東ヨーロッパ':'eastern europe','西ヨーロッパ':'western europe','南ヨーロッパ':'southern europe','北ヨーロッパ':'northern europe',
+      'eastern europe':'eastern europe','western europe':'western europe','southern europe':'southern europe','northern europe':'northern europe',
+      'east europe':'eastern europe','west europe':'western europe','south europe':'southern europe','north europe':'northern europe',
+      'osteuropa':'eastern europe','westeuropa':'western europe','südeuropa':'southern europe','sudeuropa':'southern europe','nordeuropa':'northern europe',
+      'восточная европа':'eastern europe','западная европа':'western europe','южная европа':'southern europe','северная европа':'northern europe',
+      'europa oriental':'eastern europe','europa occidental':'western europe','europa del sur':'southern europe','europa meridional':'southern europe','europa del norte':'northern europe','europa septentrional':'northern europe' };
+    /* expand compound directional forms ("東西南北欧" → 4 regions, "南北アメリカ" → 2) and, when TWO OR MORE of the
+       four directional-Europe regions are named together, canonicalise them to the M49 partition (so 北欧 — which
+       alone means the Nordic countries — becomes M49 Northern Europe HERE → a gap-free, non-overlapping 4-way split). */
+    function _expandRegionCompound(list){ try{
+      const out=[]; const push=v=>{ v=String(v||'').trim(); if(v) out.push(v); };
+      (list||[]).forEach(tok=>{ const t=String(tok||'').trim();
+        if(/^東西南北(欧|ヨーロッパ)$/.test(t)){ push('western europe'); push('eastern europe'); push('southern europe'); push('northern europe'); return; }
+        if(/^東西(欧|ヨーロッパ)$/.test(t)){ push('western europe'); push('eastern europe'); return; }
+        if(/^南北(欧|ヨーロッパ)$/.test(t)){ push('southern europe'); push('northern europe'); return; }
+        if(/^南北(アメリカ|米)$/.test(t)){ push('north america'); push('south america'); return; }
+        push(t); });
+      const named=out.filter(t=>_DIR_EU_ALIAS[_lnorm(t)]);
+      if(named.length>=2) return out.map(t=>{ const k=_DIR_EU_ALIAS[_lnorm(t)]; return k||t; });
+      return out; }catch(_){ return (list||[]).slice(); } }
+    /* localized display labels for the M49 region keys (the resolver works in lowercase English keys; the reply
+       should read in the user's language — 「西ヨーロッパ」 not "western europe"). Non-M49 names pass through unchanged. */
+    const M49_LABELS={
+      'western europe':['Western Europe','西ヨーロッパ','Westeuropa','Западная Европа','Europa Occidental'],
+      'eastern europe':['Eastern Europe','東ヨーロッパ','Osteuropa','Восточная Европа','Europa Oriental'],
+      'southern europe':['Southern Europe','南ヨーロッパ','Südeuropa','Южная Европа','Europa Meridional'],
+      'northern europe':['Northern Europe','北ヨーロッパ','Nordeuropa','Северная Европа','Europa Septentrional'],
+      'europe':['Europe','ヨーロッパ','Europa','Европа','Europa'],
+      'north america':['Northern America','北アメリカ','Nordamerika','Северная Америка','América del Norte'],
+      'south america':['South America','南アメリカ','Südamerika','Южная Америка','América del Sur'],
+      'caribbean':['Caribbean','カリブ','Karibik','Карибский бассейн','Caribe'],
+      'north africa':['Northern Africa','北アフリカ','Nordafrika','Северная Африка','África del Norte'],
+      'west africa':['Western Africa','西アフリカ','Westafrika','Западная Африка','África Occidental'],
+      'east africa':['Eastern Africa','東アフリカ','Ostafrika','Восточная Африка','África Oriental'],
+      'central africa':['Middle Africa','中部アフリカ','Zentralafrika','Центральная Африка','África Central'],
+      'southern africa':['Southern Africa','南部アフリカ','Südliches Afrika','Южная Африка','África Austral'],
+      'western asia':['Western Asia','西アジア','Vorderasien','Западная Азия','Asia Occidental'],
+      'oceania':['Oceania','オセアニア','Ozeanien','Океания','Oceanía'],
+      'melanesia':['Melanesia','メラネシア','Melanesien','Меланезия','Melanesia'],
+      'micronesia':['Micronesia','ミクロネシア','Mikronesien','Микронезия','Micronesia'],
+      'polynesia':['Polynesia','ポリネシア','Polynesien','Полинезия','Polinesia'],
+      'australia and new zealand':['Australia & New Zealand','オーストラリア・ニュージーランド','Australien & Neuseeland','Австралия и Новая Зеландия','Australia y Nueva Zelanda'] };
+    function _regionLabel(nm){ try{ const e=M49_LABELS[_lnorm(nm)]; return e?L(e[0],e[1],e[2],e[3],e[4]):String(nm||''); }catch(_){ return String(nm||''); } }
+    /* colour-swatch legend for a multi-region highlight (凡例) */
+    function _hlLegendHtml(groups){ try{ if(!groups||!groups.length) return '';
+      const rows=groups.map(g=>{ const sw='<span style="display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:6px;background:'+esc(g.color||_hlColor)+';"></span>';
+        const meta=[]; if(g.nCountries) meta.push(g.nCountries+' '+L('countries','か国','Länder','стран','países')); if(g.basisShort) meta.push(g.basisShort);
+        return '<div style="display:flex;align-items:center;font-size:11.5px;margin:2px 0;line-height:1.5;">'+sw+'<b>'+esc(g.displayName||g.name||'')+'</b>'+(meta.length?('<span style="color:var(--text-muted);margin-left:6px;">— '+esc(meta.join(' · '))+'</span>'):'')+'</div>'; });
+      return '<div style="margin:4px 0 2px;">'+rows.join('')+'</div>'; }catch(_){ return ''; } }
+    /* (#R143) POST-DRAW verification — the pipeline's "実状態検証" step: confirm the source + layer exist and the
+       source actually carries the expected feature count before the reply may claim success. */
+    function _verifyPolyPaint(expected){ try{ if(typeof map==='undefined'||!map) return {ok:false,reason:'no-map',n:0};
+      if(!map.getLayer||!map.getLayer('nlq-poly-fill')) return {ok:false,reason:'no-layer',n:0};
+      const src=map.getSource&&map.getSource('nlq-poly-src'); if(!src) return {ok:false,reason:'no-source',n:0};
+      let n=-1; try{ let d=src._data; if(d&&d.geojson) d=d.geojson; if(d&&Array.isArray(d.features)) n=d.features.length; else if(src.serialize){ const s=src.serialize(); if(s&&s.data&&Array.isArray(s.data.features)) n=s.data.features.length; } }catch(_){}
+      /* n===-1 → couldn't introspect the source (older maplibre) → trust our own _hlPolys bookkeeping instead */
+      const cnt=(n>=0)?n:_hlPolys.length;
+      return {ok:(cnt>=expected), n:cnt, expected, layer:true, source:true}; }catch(e){ return {ok:false,reason:'threw',n:0}; } }
+    /* fit to a set of drawn group features, dropping any single group whose own bbox wraps the antimeridian
+       (e.g. Eastern Europe includes Russia) so the fit still frames the rest instead of silently not moving. */
+    function _fitGroups(feats){ try{ let a=180,b=90,c=-180,d=-90,any=false;
+      (feats||[]).forEach(f=>{ const bb=fbbox(f.geo); if(!bb) return; if((bb[2]-bb[0])>180) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); });
+      if(any&&isFinite(a)&&(c-a)<350){ try{ map.fitBounds([[a,b],[c,d]],{padding:60,maxZoom:6.5,duration:900}); return true; }catch(_){} } }catch(_){} return false; }
     /* ==== (#R64) REAL region composition ("こんなカクカクポリゴンで許されると思うなよ。実際の範囲に忠実に、正確で
        高精細なポリゴンを引け"). A fuzzy/regional name is now resolved to a UNION OF REAL BOUNDARIES instead of a
        hand-waved outline: (a) country GROUPS (旧ソ連諸国, EU, NATO…) → the exact national polygons the map already
@@ -26891,7 +27009,34 @@ window.addEventListener('DOMContentLoaded', () => {
       'south asia':['IND','PAK','BGD','LKA','NPL','BTN','MDV','AFG'],
       'central asia':['KAZ','KGZ','TJK','TKM','UZB'],
       'latin america':['MEX','GTM','BLZ','SLV','HND','NIC','CRI','PAN','CUB','DOM','HTI','JAM','COL','VEN','ECU','PER','BOL','PRY','CHL','ARG','URY','BRA','GUY','SUR'],
-      'scandinavia':['DNK','NOR','SWE'] };
+      'scandinavia':['DNK','NOR','SWE'],
+      /* (#R143) UN M49 geoscheme sub-regions → REAL national boundaries. These are the STANDARD country-set
+         definitions ("東西南北欧", "Western Europe", "Sub-Saharan sub-regions"…): a region that IS a country set
+         must draw from official borders, not a bbox/AI blob. Keys reuse the REGION_BBOX macro-region names so the
+         5-language REGION_ALIASES already defined below bridge the localized names automatically (see regionGroup).
+         M49 Europe is a clean DISJOINT partition (every European country in exactly one) → the four highlight as
+         four distinct, gap-free, non-overlapping colour groups. */
+      'western europe':['AUT','BEL','FRA','DEU','LIE','LUX','MCO','NLD','CHE'],
+      'eastern europe':['BLR','BGR','CZE','HUN','POL','MDA','ROU','RUS','SVK','UKR'],
+      'southern europe':['ALB','AND','BIH','HRV','GIB','GRC','VAT','ITA','MLT','MNE','MKD','PRT','SMR','SRB','SVN','ESP'],
+      'northern europe':['DNK','EST','FIN','ISL','IRL','LVA','LTU','NOR','SWE','GBR','FRO'],
+      'north america':['BMU','CAN','GRL','USA','SPM'],
+      'south america':['ARG','BOL','BRA','CHL','COL','ECU','FLK','GUF','GUY','PRY','PER','SUR','URY','VEN'],
+      'caribbean':['ATG','BHS','BRB','CUB','DMA','DOM','GRD','HTI','JAM','KNA','LCA','VCT','TTO','PRI'],
+      'north africa':['DZA','EGY','LBY','MAR','SDN','TUN','ESH'],
+      'west africa':['BEN','BFA','CPV','CIV','GMB','GHA','GIN','GNB','LBR','MLI','MRT','NER','NGA','SEN','SLE','TGO'],
+      'east africa':['BDI','COM','DJI','ERI','ETH','KEN','MDG','MWI','MUS','MOZ','RWA','SYC','SOM','SSD','TZA','UGA','ZMB','ZWE'],
+      'central africa':['AGO','CMR','CAF','TCD','COG','COD','GNQ','GAB','STP'],
+      'southern africa':['BWA','SWZ','LSO','NAM','ZAF'],
+      'western asia':['ARM','AZE','BHR','CYP','GEO','IRQ','ISR','JOR','KWT','LBN','OMN','QAT','SAU','PSE','SYR','TUR','ARE','YEM'],
+      'australia and new zealand':['AUS','NZL'],
+      'melanesia':['FJI','NCL','PNG','SLB','VUT'],
+      'micronesia':['FSM','GUM','KIR','MHL','NRU','MNP','PLW'],
+      'polynesia':['ASM','COK','PYF','NIU','WSM','TON','TUV','TKL','WLF'] };
+    /* whole-Europe as a country set = the union of the four M49 sub-regions (so "ヨーロッパをハイライト" draws every
+       European country, not a rectangle). Assigned after the literal since an object literal can't self-reference. */
+    try{ REGION_GROUPS['europe']=[].concat(REGION_GROUPS['western europe'],REGION_GROUPS['eastern europe'],REGION_GROUPS['southern europe'],REGION_GROUPS['northern europe']);
+      REGION_GROUPS['oceania']=[].concat(REGION_GROUPS['australia and new zealand'],REGION_GROUPS['melanesia'],REGION_GROUPS['micronesia'],REGION_GROUPS['polynesia']); }catch(_){}
     const GROUP_ALIASES={
       '旧ソ連':'former ussr','旧ソ連諸国':'former ussr','旧ソビエト連邦':'former ussr','ソ連':'ussr','ソビエト連邦':'ussr','旧ソ連構成国':'former ussr',
       'ehemalige sowjetunion':'former ussr','ehemalige udssr':'former ussr','udssr':'ussr','postsowjetische staaten':'former ussr',
@@ -26915,7 +27060,22 @@ window.addEventListener('DOMContentLoaded', () => {
       'レバント':'levant','レヴァント':'levant','levante':'levant','левант':'levant',
       'アフリカの角':'horn of africa','horn von afrika':'horn of africa','африканский рог':'horn of africa','рог африки':'horn of africa','cuerno de áfrica':'horn of africa',
       '中東諸国':'middle east','東アジア諸国':'east asia','東南アジア諸国':'southeast asia','南アジア諸国':'south asia','中央アジア諸国':'central asia','ラテンアメリカ諸国':'latin america','中南米':'latin america',
-      'スカンジナビア諸国':'scandinavia','スカンディナヴィア':'scandinavia' };
+      'スカンジナビア諸国':'scandinavia','スカンディナヴィア':'scandinavia',
+      /* (#R143) 5-language names for the new M49 country-set groups (the European four are already in REGION_ALIASES) */
+      '北アメリカ':'north america','北米諸国':'north america','nordamerika':'north america','северная америка':'north america','américa del norte':'north america','norteamérica':'north america',
+      '南アメリカ':'south america','南米諸国':'south america','südamerika':'south america','sudamerika':'south america','южная америка':'south america','américa del sur':'south america','sudamérica':'south america','suramérica':'south america',
+      'カリブ諸国':'caribbean','karibik':'caribbean','карибский бассейн':'caribbean','карибы':'caribbean','caribe':'caribbean',
+      '西アフリカ':'west africa','westafrika':'west africa','западная африка':'west africa','áfrica occidental':'west africa',
+      '東アフリカ':'east africa','ostafrika':'east africa','восточная африка':'east africa','áfrica oriental':'east africa',
+      '中央アフリカ':'central africa','中部アフリカ':'central africa','zentralafrika':'central africa','центральная африка':'central africa','áfrica central':'central africa',
+      '南部アフリカ':'southern africa','das südliche afrika':'southern africa','южная африка':'southern africa','áfrica austral':'southern africa','áfrica meridional':'southern africa',
+      '西アジア':'western asia','vorderasien':'western asia','westasien':'western asia','западная азия':'western asia','asia occidental':'western asia',
+      'オセアニア':'oceania','ozeanien':'oceania','океания':'oceania','oceanía':'oceania',
+      'メラネシア':'melanesia','melanesien':'melanesia','меланезия':'melanesia',
+      'ミクロネシア':'micronesia','mikronesien':'micronesia','микронезия':'micronesia',
+      'ポリネシア':'polynesia','polynesien':'polynesia','полинезия':'polynesia',
+      'オーストラリアとニュージーランド':'australia and new zealand','australia and nz':'australia and new zealand','anzac':'australia and new zealand',
+      'europa del sur':'southern europe','europa meridional':'southern europe','europa del norte':'northern europe','europa septentrional':'northern europe' };
     /* (#R118) BASIS metadata for groups whose membership is HISTORICAL (dissolved orgs / former states): the reply
        and the working context state explicitly what the highlight means — "members of the 1955–1991 alliance shown
        as today's successor territories" — so a follow-up "それは何年のもの？" has a real answer instead of the
@@ -26929,7 +27089,13 @@ window.addEventListener('DOMContentLoaded', () => {
                'члены объединения '+meta.era+' — показаны как территории нынешних государств-преемников',
                'miembros de la entidad de '+meta.era+', mostrados como territorios sucesores actuales (fronteras de hoy)'); }
     function regionGroup(nm){ const k0=_lnorm(nm);
-      const _look=(k)=>{ if(!k) return null; const key=REGION_GROUPS[k]?k:GROUP_ALIASES[k]; return (key&&REGION_GROUPS[key])?key:null; };
+      /* (#R143) resolve a name to a country-set key via: exact group key → GROUP_ALIASES → the 5-language
+         REGION_ALIASES gazetteer (declared below; consulted at CALL time). The REGION_ALIASES rung means every
+         localized macro-region name already registered there (西欧 / Westeuropa / западная европа / …) resolves to
+         its M49 country-set when that key is a REGION_GROUPS entry — and harmlessly returns null for the natural
+         regions (Sahara / Alps / Patagonia) that are NOT country sets, so they still fall through to the poly path.
+         GROUP_ALIASES is tried BEFORE REGION_ALIASES so a deliberate override (e.g. JP 北欧 → nordics) still wins. */
+      const _look=(k)=>{ if(!k) return null; let key=REGION_GROUPS[k]?k:GROUP_ALIASES[k]; if(!key){ try{ const ra=REGION_ALIASES[k]; if(ra&&REGION_GROUPS[ra]) key=ra; }catch(_){} } return (key&&REGION_GROUPS[key])?key:null; };
       let key=_look(k0);
       if(!key){
         /* (#R123) strip a trailing collective suffix so group PHRASINGS resolve to the member set instead of an
@@ -27760,6 +27926,47 @@ window.addEventListener('DOMContentLoaded', () => {
         ok('refuse antimeridian span', _rrDerive({boundaryAnchors:[{lat:0,lng:-170},{lat:10,lng:-170},{lat:10,lng:170},{lat:0,lng:170}]})===null);
         ok('cache fresh check pos', _rrFresh({algo:_RR_ALGO,ts:_rrNow(),r:{status:'exact'}}));
         ok('cache stale algo rejected', !_rrFresh({algo:_RR_ALGO+9,ts:_rrNow(),r:{status:'exact'}}));
+        /* ===== (#R143) geographic-target resolution + geometry-validation gate + multi-region grouping (pure) ===== */
+        /* UN M49 country-set resolution — region names → REAL national borders (not a bbox/AI blob) */
+        const _rg=n=>{ const r=regionGroup(n); return r&&r.codes?r.codes:null; };
+        const _WE=_rg('western europe'), _EE=_rg('eastern europe'), _SE=_rg('southern europe'), _NE=_rg('northern europe');
+        ok('M49 西欧 → Western Europe set (FRA/DEU/NLD, ~9)', !!_WE&&_WE.indexOf('FRA')>=0&&_WE.indexOf('DEU')>=0&&_WE.indexOf('NLD')>=0&&_WE.length>=8);
+        ok('M49 alias 西欧===western europe', JSON.stringify(_rg('西欧'))===JSON.stringify(_WE));
+        ok('M49 alias Westeuropa (DE)===western europe', JSON.stringify(_rg('Westeuropa'))===JSON.stringify(_WE));
+        ok('M49 alias западная европа (RU)===western europe', JSON.stringify(_rg('западная европа'))===JSON.stringify(_WE));
+        ok('M49 東欧 → Eastern Europe (POL/RUS/UKR)', !!_EE&&_EE.indexOf('POL')>=0&&_EE.indexOf('RUS')>=0&&_EE.indexOf('UKR')>=0);
+        ok('M49 南欧 → Southern Europe (ITA/ESP/GRC)', !!_SE&&_SE.indexOf('ITA')>=0&&_SE.indexOf('ESP')>=0&&_SE.indexOf('GRC')>=0);
+        ok('M49 Europe four are DISJOINT (clean partition)', (()=>{ const all=[].concat(_WE,_EE,_SE,_NE); return all.length===new Set(all).size; })());
+        ok('standalone 北欧 stays the Nordic set (ISL yes, GBR no)', (()=>{ const n=_rg('北欧'); return !!n&&n.indexOf('ISL')>=0&&n.indexOf('GBR')<0&&n.length<=6; })());
+        ok('M49 north america (USA/CAN)', (()=>{ const n=_rg('north america'); return !!n&&n.indexOf('USA')>=0&&n.indexOf('CAN')>=0; })());
+        ok('M49 western asia (SAU/TUR/IRQ)', (()=>{ const n=_rg('western asia'); return !!n&&n.indexOf('SAU')>=0&&n.indexOf('TUR')>=0&&n.indexOf('IRQ')>=0; })());
+        ok('europe union built (>30 countries)', (()=>{ const n=_rg('europe'); return !!n&&n.length>30; })());
+        ok('a natural region (Sahara) is NOT a country set → null', _rg('Sahara')===null&&_rg('サハラ')===null);
+        /* compound expansion — "東西南北欧" → the four M49 sub-regions; the co-occurrence rule canonicalises 北欧→M49 */
+        const _ex1=_expandRegionCompound(['東西南北欧']);
+        ok('expand 東西南北欧 → 4 M49 europe keys', _ex1.length===4&&_ex1.indexOf('western europe')>=0&&_ex1.indexOf('eastern europe')>=0&&_ex1.indexOf('southern europe')>=0&&_ex1.indexOf('northern europe')>=0);
+        const _ex2=_expandRegionCompound(['西欧','東欧','南欧','北欧']);
+        ok('expand [西欧,東欧,南欧,北欧] → M49 (北欧→northern europe in the set)', _ex2.length===4&&_ex2.indexOf('northern europe')>=0&&_ex2.indexOf('western europe')>=0);
+        ok('single 北欧 NOT canonicalised (stays Nordic)', (()=>{ const e=_expandRegionCompound(['北欧']); return e.length===1&&e[0]==='北欧'; })());
+        ok('expand 南北アメリカ → north+south america', (()=>{ const e=_expandRegionCompound(['南北アメリカ']); return e.length===2&&e.indexOf('north america')>=0&&e.indexOf('south america')>=0; })());
+        /* geometry-validation gate — the "巨大な三角形など描画前に拒否" requirement */
+        const _softBox=_bboxSoftPoly([[0,0],[10,8]]);
+        ok('validGeo accepts a real soft outline (41-pt)', _validGeo(_softBox,{}).ok===true);
+        ok('validGeo REJECTS a giant triangle', (()=>{ const r=_validGeo({type:'Polygon',coordinates:[[[0,0],[20,0],[10,20],[0,0]]]},{}); return !r.ok&&r.reason==='degenerate-triangle'; })());
+        ok('validGeo REJECTS an unclosed ring', !_validGeo({type:'Polygon',coordinates:[[[0,0],[0,5],[5,5],[5,0]]]},{}).ok);
+        ok('validGeo autocloses when asked', _validGeo({type:'Polygon',coordinates:[[[0,0],[0,0.5],[0.5,0.5],[0.4,0.2],[0.3,0.1],[0.2,0.05],[0.1,0.02]]]},{autoclose:true,allowTiny:true}).ok===true);
+        ok('validGeo REJECTS a self-intersecting bowtie', (()=>{ const r=_validGeo({type:'Polygon',coordinates:[[[0,0],[1,1],[1,0],[0,1],[0,0]]]},{}); return !r.ok&&r.reason==='self-intersecting'; })());
+        ok('validGeo REJECTS a whole-world blob', !_validGeo({type:'Polygon',coordinates:[[[-179,-85],[-179,85],[179,85],[179,-85],[-179,-85]]]},{}).ok);
+        ok('validGeo REJECTS a tiny sliver', !_validGeo({type:'Polygon',coordinates:[[[0,0],[0,0.0002],[0.0002,0.0002],[0.0002,0],[0,0]]]},{}).ok);
+        ok('validGeo REJECTS an abnormal long edge (crude quad)', (()=>{ const r=_validGeo({type:'Polygon',coordinates:[[[0,0],[10,0.2],[10.1,0.4],[0.1,0.3],[0,0]]]},{}); return !r.ok; })());
+        ok('validGeo TRUSTS real borders (few-vertex heuristics skipped)', _validGeo({type:'Polygon',coordinates:[[[0,0],[20,0],[10,20],[0,0]]]},{trusted:true}).ok===true);
+        ok('validGeo rejects non-polygon', !_validGeo({type:'LineString',coordinates:[[0,0],[1,1]]},{}).ok);
+        /* palette + legend — multiple regions get distinct colours + a legend */
+        ok('palette gives 4 distinct colours', new Set([0,1,2,3].map(_hlPaletteColor)).size===4);
+        ok('legend lists each group with a colour swatch', (()=>{ const h=_hlLegendHtml([{name:'A',color:'#111111',nCountries:3},{name:'B',color:'#222222',nCountries:5}]); return h.indexOf('>A<')>=0&&h.indexOf('>B<')>=0&&h.indexOf('#111111')>=0&&h.indexOf('#222222')>=0; })());
+        /* real-border group geometry (only when countryGeo is loaded in this context) */
+        ok('codesGeo empty input → null geo', (()=>{ const r=_codesGeo([]); return r&&r.geo===null; })());
+        ok('codesGeo builds a MultiPolygon from real borders (if data loaded)', (()=>{ const g=geo(); if(!g||!g.features) return true; const r=_codesGeo(_WE); return !!r.geo&&r.geo.type==='MultiPolygon'&&r.hit.length>=6&&_validGeo(r.geo,{trusted:true}).ok; })());
       }catch(e){ res.push({name:'threw:'+String(e&&e.message||e),pass:false}); }
       const pass=res.filter(r=>r.pass).length; const out={pass,total:res.length,ok:pass===res.length,results:res};
       try{ console.log('[IntMapRegionResolverTest]', out.pass+'/'+out.total, out.ok?'ALL PASS':'FAIL', res.filter(r=>!r.pass).map(r=>r.name)); }catch(_){} return out; }
@@ -28329,7 +28536,17 @@ window.addEventListener('DOMContentLoaded', () => {
         if(t.code) return {kind:'country',code:t.code,name:t.name,verified:!!t.verified};
         if(t.codes) return {kind:'group',n:t.codes.length,name:t.name};
         if(t.poly){ let bb=null; try{ bb=fbbox(t.poly.geo); }catch(_){} return {kind:'poly',name:t.poly.name,method:t.rrMethod||(t.composed?'admin_union':(t.soft?'gazetteer':(t.approx?'derived':'osm'))),verified:!!t.verified,bbox:bb}; }
-        return {kind:'other'}; }catch(e){ return {kind:'err',msg:e&&e.message}; } } }; }catch(_){}
+        return {kind:'other'}; }catch(e){ return {kind:'err',msg:e&&e.message}; } },
+      /* (#R143) PURE (no map/network) building blocks of the highlight pipeline — exposed so the CI QA harness and
+         Playwright specs can assert the geographic-target resolution, geometry validation, palette, compound
+         expansion and real-border group geometry deterministically without a rendered map. */
+      regionGroup:function(nm){ try{ return regionGroup(String(nm==null?'':nm)); }catch(_){ return null; } },
+      validGeo:function(g,o){ try{ return _validGeo(g,o); }catch(e){ return {ok:false,reason:'threw'}; } },
+      codesGeo:function(c){ try{ return _codesGeo(c); }catch(_){ return {geo:null,hit:[],miss:[]}; } },
+      expandCompound:function(l){ try{ return _expandRegionCompound(Array.isArray(l)?l:[l]); }catch(_){ return l; } },
+      paletteColor:function(i){ try{ return _hlPaletteColor(i); }catch(_){ return null; } },
+      legendHtml:function(g){ try{ return _hlLegendHtml(g); }catch(_){ return ''; } },
+      polyState:function(){ try{ return { polys:_hlPolys.map(p=>{ let bb=null,gt=(p.geo&&p.geo.type)||null,vd=false; try{ bb=fbbox(p.geo); }catch(_){} try{ vd=_validGeo(p.geo,{trusted:true}).ok; }catch(_){} return {name:p.name,color:p.color,comp:p.comp,geoType:gt,valid:vd,bbox:bb}; }), n:_hlPolys.length }; }catch(_){ return {polys:[],n:0}; } } }; }catch(_){}
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(currentLang==='jp'?'ja':currentLang)+',en';
@@ -29550,7 +29767,8 @@ window.addEventListener('DOMContentLoaded', () => {
            highlight named countries, look up ONE country's actual figure, all-layers-off, SELECTIVE clear,
            fullscreen and real GPS locate — plus relative opacity ("delta"), compass-direction bearing and
            date-based timeTravel handled in their existing cases above. Every branch runs REAL engine code. */
-        case 'highlight': { if(a.on===false||/^(off|clear|none|解除)$/i.test(String(Array.isArray(a.countries)?'':(a.countries||a.country||'')))){ clearHl(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Highlights cleared','ハイライトを消去しました','Hervorhebungen gelöscht','Выделение снято','Resaltado quitado'))); }
+        case 'highlight': { const _hlMyGen=++_hlGen;   /* (#R143) a newer highlight supersedes this one → stale async paints bail */
+          if(a.on===false||/^(off|clear|none|解除)$/i.test(String(Array.isArray(a.countries)?'':(a.countries||a.country||'')))){ clearHl(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Highlights cleared','ハイライトを消去しました','Hervorhebungen gelöscht','Выделение снято','Resaltado quitado'))); }
           /* (#R61) COLOR is honoured for real ("赤でハイライトしてといっても色が変わらない") — parse it, apply it to
              the live paint, and if we cannot parse it SAY SO instead of silently claiming success. */
           let cwarn=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) setHlColor(pc); else cwarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
@@ -29595,12 +29813,62 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!raw.length){ if(a.color&&!cwarn&&(_hl.size||_hlPolys.length)){ if(pc2&&_hlPolys.length){ _hlPolys.forEach(p=>{ p.color=pc2; }); paintPolys(); } return R(true, note('🎨 '+L('Recolored the current highlights','ハイライトの色を変更しました','Hervorhebungen umgefärbt','Цвет выделения изменён','Resaltado recoloreado'))); }
             if(a.color&&!cwarn) return R(false, warn('⚠ '+L('Nothing is highlighted yet — name the countries or regions','ハイライト中の対象がありません。国名や地域名を指定してください','Noch nichts hervorgehoben — Länder oder Regionen nennen','Ничего не выделено — укажите страны или регионы','Nada resaltado aún — indica países o regiones')));
             return R(false, warn('⚠ '+L('Which countries or regions?','どの国・地域をハイライトしますか？','Welche Länder oder Regionen?','Какие страны или регионы?','¿Qué países o regiones?'))+cwarn); }
+          /* (#R143) MULTI-REGION grouping: expand compound directional forms ("東西南北欧" → the four M49 sub-regions)
+             and, when the command names 2+ distinct targets, NO single explicit colour is given, none is a river/basin,
+             AND at least one target is a country-SET or a REGION, draw each target as its OWN colour group with a
+             legend (凡例). Country sets resolve to REAL national borders (UN M49 where applicable); every shape is
+             VALIDATED before drawing; the reply is composed from what actually painted, with successes and failures
+             kept separate. Anything else falls through to the single-colour path below. */
+          const rawX=_expandRegionCompound(raw);
+          if(rawX.length>=2 && !pc2 && !rawX.some(n=>basinIntent(n)||riverIntent(n))){
+            const G=[], gMiss=[], gAmbig=[], gRej=[]; const gSeen=new Set();
+            for(const nm3 of rawX){ let t3=null; try{ t3=await resolveHlTarget(nm3); }catch(_){}
+              if(t3&&t3.ambiguous&&Array.isArray(t3.candidates)&&t3.candidates.length){ gAmbig.push({name:t3.name||nm3,candidates:t3.candidates}); continue; }
+              let kind='',codes=null,gj=null; const nm4=(t3&&((t3.poly&&t3.poly.name)||t3.name))||nm3; let composed=false,osm=false,derived=false,approx=false,verified=false,basis='';
+              if(t3&&t3.code){ codes=[t3.code]; kind='country'; }
+              else if(t3&&t3.codes){ codes=t3.codes.slice(); kind='set'; basis=t3.basis||''; }
+              else if(t3&&t3.poly&&t3.poly.geo){ gj=t3.poly.geo; kind='region'; composed=!!t3.composed; osm=(t3.rrMethod==='osm_polygon'); derived=(t3.rrMethod==='derived_anchors'); approx=!!(t3.soft||t3.approx); verified=!!t3.verified; }
+              else { gMiss.push(nm3); continue; }
+              let nC=0; if(codes){ const cg=_codesGeo(codes); gj=cg.geo; nC=cg.hit.length; if(!gj){ gMiss.push(nm4); continue; } }
+              const trusted=(kind==='country'||kind==='set'||osm||composed);
+              const vg=_validGeo(gj,{trusted,autoclose:true});
+              if(!vg.ok){ gRej.push({name:nm4,reason:vg.reason}); continue; }
+              const key=(kind==='region')?('poly:'+nm4):('codes:'+codes.join(',')); if(gSeen.has(key)) continue; gSeen.add(key);
+              const basisShort = composed?L('admin borders','行政界','Verwalt.-grenzen','адм. границы','límites adm.')
+                : osm?'OpenStreetMap' : derived?('⬡ '+L('web-derived','Web由来','Web-abgeleitet','из веба','de la web'))
+                : approx?('⬡ '+L('approx.','近似','ca.','прибл.','aprox.'))
+                : (kind==='country'||kind==='set')?L('national borders','国境','Staatsgrenzen','госграницы','fronteras'):'';
+              G.push({name:nm4,displayName:_regionLabel(nm4),kind,geo:gj,codes,nCountries:nC,composed,osm,derived,approx,verified,basis,basisShort}); }
+            if(G.length>=2 && G.some(g=>g.kind==='set'||g.kind==='region')){
+              if(_hlMyGen!==_hlGen) return R(true,'');   /* superseded by a newer highlight → don't overwrite it */
+              clearHl(); clearLineHl(); _hlLines=[]; clearPolyHl();
+              _hlPolys=G.map((g,i)=>{ g.color=_hlPaletteColor(i); return {name:g.name,geo:g.geo,color:g.color,comp:(g.kind!=='region'||g.composed)?1:0,op:0.42}; });
+              let paintedP=paintPolys();
+              for(let i4=0;i4<8&&!paintedP;i4++){ await new Promise(r4=>setTimeout(r4,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
+              if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
+              const ver=_verifyPolyPaint(G.length);
+              if(!_fitGroups(_hlPolys)){ try{ if(map.getZoom()>2.6) map.flyTo({center:[map.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
+              let hh=note('✦ '+G.map(g=>esc(g.displayName||g.name)).join(', '))+_hlLegendHtml(G);
+              if(G.some(g=>g.kind==='set'||g.kind==='country')) hh+=note(L('Country sets drawn from real national borders (UN M49 standard where applicable)','国集合は実際の国境データから描画（該当時はUN M49標準）','Ländergruppen aus realen Staatsgrenzen (ggf. UN-M49-Standard)','Наборы стран построены по реальным госграницам (при наличии — стандарт UN M49)','Conjuntos de países con fronteras reales (estándar UN M49 cuando aplica)'));
+              if(G.some(g=>g.composed)) hh+=note(L('Some regions built from member administrative boundaries','一部の地域は構成行政区画の境界から構築','Einige Regionen aus Verwaltungsgrenzen der Teilgebiete','Некоторые регионы построены из адм. границ','Algunas regiones a partir de límites administrativos'));
+              if(G.some(g=>g.osm)) hh+=note(L('Some regions from real OpenStreetMap boundaries','一部の地域は実際のOpenStreetMap境界','Einige Regionen aus realen OpenStreetMap-Grenzen','Некоторые регионы — реальные границы OSM','Algunas regiones de límites reales de OpenStreetMap'));
+              if(G.some(g=>g.derived||g.approx)) hh+=note(L('⬡ = approximate extent (no official boundary exists)','⬡ = 近似範囲（公式境界が存在しない）','⬡ = ungefähre Ausdehnung (keine offizielle Grenze)','⬡ = приблизительный контур (нет офиц. границы)','⬡ = extensión aproximada (sin límite oficial)'));
+              if(gRej.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(gRej.map(r=>r.name).join(', ')));
+              if(gAmbig.length) hh+=warn('⚠ '+L('Ambiguous (not drawn) — clarify','曖昧なため未描画 — 指定してください','Mehrdeutig (nicht gezeichnet)','Неоднозначно (не нарисовано)','Ambiguo (no dibujado)')+': '+esc(gAmbig.map(a2=>a2.name).join(', ')));
+              if(gMiss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(gMiss.join(', ')));
+              if(ver&&!ver.ok) hh+=warn('⚠ '+L('Could not verify the drawn shapes on the map','描画結果を地図上で確認できませんでした','Gezeichnete Formen nicht verifizierbar','Не удалось проверить фигуры на карте','No se pudieron verificar las formas'));
+              try{ _wctx.highlight={ name:G.map(g=>g.displayName||g.name).join(', ').slice(0,160), n:G.length, basis:(G.map(g=>g.basis).filter(Boolean).join(' / ')||null) }; }catch(_){}
+              const partial=!!(gRej.length||gAmbig.length||gMiss.length||(ver&&!ver.ok));
+              return R(true, hh+cwarn, partial?{meta:{partial:true}}:undefined);
+            }
+            /* not multi-region-eligible (1 shape drew, or a plain country list) → single-colour path below */
+          }
           /* (#R62) countries AND subdivisions AND fuzzy regions, freely mixed.
              (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…).
              (#R65) + RIVERS as their real course (line) and BASINS (tributaries + faint basin fill) — judged
              BEFORE any admin-unit logic. */
-          const found=[],polys=[],lines=[],lineNames=[],miss=[],ambig=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false,anyOsm=false,anyDerived=false;
-          for(const nm2 of raw){
+          const found=[],polys=[],lines=[],lineNames=[],miss=[],ambig=[],rejected=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false,anyOsm=false,anyDerived=false;
+          for(const nm2 of rawX){
             const bi=basinIntent(nm2);
             if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
               if(!B||(!B.river&&!B.basin)){ miss.push(nm2); continue; }
@@ -29616,20 +29884,30 @@ window.addEventListener('DOMContentLoaded', () => {
             if(t2&&t2.verified) anyVerified=true;   /* (#R130) at least one target's location was web-search-verified */
             if(t2&&t2.ambiguous&&Array.isArray(t2.candidates)&&t2.candidates.length){ ambig.push({name:t2.name||nm2, candidates:t2.candidates}); }   /* (#R132) ambiguous → ask instead of guessing */
             else if(t2&&t2.code){ if(!seen.has(t2.code)){ seen.add(t2.code); found.push(t2); } }
-            else if(t2&&t2.codes){ let nAdd=0; t2.codes.forEach(cd=>{ if(!seen.has(cd)){ seen.add(cd); found.push({code:cd,_grp:1}); nAdd++; } }); grpNames.push((t2.name||nm2)+' ('+nAdd+')'); if(t2.basis) grpBases.push(t2.basis); }
-            else if(t2&&t2.poly){ if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
-              /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
-              if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; }
+            else if(t2&&t2.codes){ let nAdd=0; t2.codes.forEach(cd=>{ if(!seen.has(cd)){ seen.add(cd); found.push({code:cd,_grp:1}); nAdd++; } }); grpNames.push(_regionLabel(t2.name||nm2)+' ('+nAdd+')'); if(t2.basis) grpBases.push(t2.basis); }
+            else if(t2&&t2.poly&&t2.poly.geo){
+              /* (#R143) VALIDATE before drawing — reject unclosed rings, degenerate "giant triangles", abnormal long
+                 edges, self-intersections, whole-world blobs, tiny slivers. Real OSM/admin/composed borders are trusted
+                 (skip the crude-approximation heuristics); AI/derived/soft outlines get the full battery. A rejected
+                 shape is reported honestly (never drawn as a "close enough" blob). */
+              const _tr=!(t2.soft||t2.approx||t2.rrMethod==='derived_anchors'); const _vg=_validGeo(t2.poly.geo,{trusted:_tr,autoclose:true});
+              if(!_vg.ok){ rejected.push({name:t2.poly.name||nm2,reason:_vg.reason}); }
+              else { if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
+                /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
+                if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; } }
             else miss.push(nm2); }
           /* (#R132) if the ONLY results were ambiguous, ask which one — never paint a guess */
           const _ambHtml=arr=>arr.map(t=>'<b>'+esc(t.name)+'</b>:<br>• '+(t.candidates||[]).slice(0,4).map(c=>esc(String(c.name||'')+(c.country?(' — '+c.country):'')+(c.note?(' ('+c.note+')'):''))).join('<br>• ')).join('<br>');
           if(!found.length&&!polys.length&&!lines.length&&ambig.length) return R(false, warn('⚠ '+L('That name is ambiguous — which did you mean?','その名称には複数の候補があります。どれを指しますか？','Der Name ist mehrdeutig — welchen meinen Sie?','Название неоднозначно — какой вариант?','Ese nombre es ambiguo — ¿cuál quiere decir?'))+note(_ambHtml(ambig))+cwarn);
-          if(!found.length&&!polys.length&&!lines.length) return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn);
+          if(!found.length&&!polys.length&&!lines.length){
+            if(rejected.length) return R(false, warn('⚠ '+L('The shape resolved for that region was invalid (degenerate/self-intersecting) and was not drawn','その地域の形状が不正（退化・自己交差）なため描画しませんでした','Die aufgelöste Form dieser Region war ungültig (entartet/selbstschneidend)','Форма региона оказалась недействительной (вырожденная/самопересекающаяся)','La forma resuelta para esa región no era válida (degenerada/autointersecante)')+': '+esc(rejected.map(r=>r.name).join(', ')))+cwarn);
+            return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn); }
           /* (#R61) VERIFY the paint really happened (style may still be loading) — bounded retry, then honesty. */
+          if(_hlMyGen!==_hlGen) return R(true,'');   /* (#R143) superseded by a newer highlight */
           clearPolyHl(); _hlPolys=polys; clearLineHl(); _hlLines=lines;
           const codes2=found.map(c=>c.code);
           let painted=(codes2.length?highlight(codes2):(clearHl(),true)); let paintedP=paintPolys(); let paintedL=paintLines();
-          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(codes2.length&&!painted) painted=highlight(codes2); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
+          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(_hlMyGen!==_hlGen) return R(true,''); if(codes2.length&&!painted) painted=highlight(codes2); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
           const ub=unionBox(codes2,polys.concat(lines)); if(ub){ try{ map.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(codes2.length){ const fitOk=fitTo(codes2);
             /* (#R64) antimeridian-spanning sets (旧ソ連諸国: Chukotka wraps the date line) defeat a bbox fit —
                zoom out to the planet so the highlight is actually visible instead of silently not moving. */
@@ -29658,10 +29936,11 @@ window.addEventListener('DOMContentLoaded', () => {
           if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
           if(ambig.length) hh+=warn('⚠ '+L('Ambiguous (not drawn) — clarify','曖昧なため未描画 — 指定してください','Mehrdeutig (nicht gezeichnet)','Неоднозначно (не нарисовано)','Ambiguo (no dibujado)')+':<br>'+_ambHtml(ambig));
           if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', ')));
+          if(rejected.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(rejected.map(r=>r.name).join(', ')));   /* (#R143) */
           /* (#R142) PARTIAL result → the planner's pre-written "…をハイライトしました" over-claims the targets that were NOT
              drawn. Flag partial so runActions suppresses that say (#3) and lets this honest body — which lists exactly what
              WAS drawn plus "Not found: X" / "Ambiguous: Y" — lead. (Total miss already returns ok:false above.) */
-          return R(true,hh+cwarn, (miss.length||ambig.length)?{meta:{partial:true}}:undefined); }
+          return R(true,hh+cwarn, (miss.length||ambig.length||rejected.length)?{meta:{partial:true}}:undefined); }
         case 'value': case 'stat': case 'lookup': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name);
           if(!c||!c.code||!countryStats[c.code]) return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||a.name||'')));
           const s=countryStats[c.code]; const mk=String(a.metric||a.what||'').trim();

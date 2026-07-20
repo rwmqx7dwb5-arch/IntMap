@@ -5,6 +5,31 @@
 
 ---
 
+## R143 — Atlas地理対象解決の汎用基盤：UN M49 国集合＝実国境／多地域＝グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答 (tag `#R143`)
+
+**業務委託**：「東西南北欧をハイライトして」で **西欧未描画・4地域同色・南欧が巨大な三角形・国境でなく雑な近似図形・未完了なのに完了報告・曖昧性の長文説明が地図操作を妨害**。このケース専用でなく **Atlas全体の汎用基盤** として、`解釈→地理対象解決→実行計画→描画→実状態検証→返答` に統一すること。
+
+### 根本原因（コード読解で確定）
+`resolveHlTarget` の解決ラダーは `resolveCountrySync → regionGroup(国集合) → regionCompose → Nominatim admin poly → 方向スライス → IntMapRegionResolver(要ログイン・web) → aiRegionUnits/aiRegionPoly → regionBox(ソフト超楕円) → 国フォールバック`。**西欧/東欧/南欧/北欧 は `REGION_GROUPS` に無く（`REGION_BBOX` の粗い矩形にしか無い）**、`regionGroup` を素通り→ Nominatim(junk)／`_rrResolve`(web由来ハル＝地域ごとに不一致＝**西欧が null で未描画・南欧が少頂点ハル＝巨大三角形**)／AIポリゴン(粗い)／`_bboxSoftPoly`(矩形の超楕円＝重なり合う近似)へ落ちていた。加えて **`paintPolys` は色未指定ポリを全て `_hlColor`（単色）で塗り**＝4地域同色、多地域のグループ管理・凡例・**描画前のジオメトリ検証が皆無**。`_rrResolve` の `ambiguous` 返却が長文clarificationで地図描画を止めていた（標準定義がある地域には不適切）。
+
+### 修正（全て `index.html` 加算・単一HTML温存）
+- **① UN M49 国集合を第一級に**（地理対象解決・「国集合は正式な国境 GeoJSON を使う」「UN M49 標準を自動採用」）: `REGION_GROUPS` に M49 サブ地域を**実 ISO3 リスト**で追加（western/eastern/southern/northern europe＝**互いに素な4分割**、north/south america・caribbean・north/west/east/central/southern africa・western asia・oceania 4サブ地域…）＋ `europe`/`oceania` は和。`regionGroup._look` が **5言語 `REGION_ALIASES` も参照**（`GROUP_ALIASES` の後・故に JP「北欧」は既存の nordics override を維持）→ 西欧/Westeuropa/западная европа 等が国集合へ。自然地域（Sahara/Alps/Patagonia）は `REGION_GROUPS` に無いので null＝従来のポリゴン経路を温存。
+- **② 多地域＝グループ別色＋凡例**（「グループ別に管理し異なる色と凡例で識別可能に」）: highlight dispatch に**多地域分岐**（`rawX.length>=2 && !明示色 && !河川/流域 && G に国集合/地域が1つ以上`）。各対象を `_HL_PALETTE` の別色で `nlq-poly-src` に描画（国集合は `_codesGeo(codes)` で `window.countryGeo` の**実国境**から MultiPolygon 構築・`comp:1` で内部境界を淡く）。返信に `_hlLegendHtml`（色スウォッチ＋地域名＋か国数＋根拠）。単一対象/単色指定/純国リストは従来の**単色 feature-state 経路**（無変更＝回帰なし）。表示名は `M49_LABELS`（5言語）で localize（`_hlPolys` 内部名は正準英語キー＝安定・テスト可）。
+- **③ 描画前ジオメトリ検証**（「未閉鎖リング・自己交差・異常な長辺・巨大な三角形を描画前に拒否」）: `_validGeo(geo,{trusted,autoclose})`。実国境/OSM/構成境界は `trusted`＝粗近似ヒューリスティック免除、AI/派生/ソフト箱は**全検査**（`degenerate-triangle`＝少頂点×大スパン／`long-edge`／`self-intersecting`＝proper crossing／`whole-world`／`too-tiny`／`unclosed-ring`）。多地域・単地域の両経路に適用（拒否は正直表示）。`_bboxSoftPoly` を**厳密閉リング化**（`sin(2π)≠0` の隙間で検証に落ちる潜在バグを是正）。
+- **④ 実状態検証＋正直返答**（「描画後に source/layer/feature数/色/対象数を確認」「Plannerの成功文を無条件表示せず実行結果から返答」「部分失敗は成功/失敗を明確に分ける」）: `_verifyPolyPaint(n)`。返信は実行結果から合成し、描画成功（凡例＋根拠）と失敗（`Not found`／`Rejected — invalid/degenerate`／`Ambiguous`）を分離。部分失敗は `meta.partial`＝プランナーの実行前 `say` を抑止（R140/R142 say-gate 継承）。
+- **⑤ 堅牢性**（「style待機・古い処理の遅延上書き・再描画に耐える」）: 世代トークン `_hlGen`＝新ハイライトが古い非同期解決の上書きを阻止、`8×0.7s` バウンド再試行、`styledata` 再描画は既存 `paintPolys` ハンドラが継続。
+- **⑥ 複合展開**: `_expandRegionCompound`＝「東西南北欧」→4 M49 キー・「南北アメリカ」→2 を決定的展開＋**方向欧2語以上の共起で M49 正準化**（＝四方位欧の集合内では「北欧」＝M49 Northern Europe＝隙間なし4分割／単独「北欧」は北欧5国のまま）。
+
+### テスト・検証
+- **純関数（map/network不要・CI）**: `IntMapRegionResolverTest`（`_rrSelfTest`）に ~30 件追加＝M49解決（5言語別名・4分割の互いに素性・単独北欧=Nordic維持）／`_expandRegionCompound`／`_validGeo` バッテリ（三角形/未閉/自己交差/全世界/極小/長辺 拒否・trusted実国境 受理）／パレット distinct／凡例／`_codesGeo`。公開 `IntMapAtlasDebug.{regionGroup,validGeo,codesGeo,expandCompound,paletteColor,legendHtml,polyState}`。
+- **E2E（実 Chromium・Playwright `tests/r143.spec.js` 10件）**: `dispatch({type:'highlight',countries:'東西南北欧'})` → **4 M49 地域・実 MultiPolygon 国境・4色 distinct・凡例スウォッチ4・西欧実在・全 `valid`・partial なし**。AI分割形・英/独/露 入力・部分失敗（実地域描画＋未知は Not found＋`meta.partial`）・`validGeo` 拒否・連続コマンドで前回残らず・単一地域は単色経路。**実ブラウザ確認**：Playwis で map実在（`__imap`・`countryGeo`）だが WebGL は headless で `isStyleLoaded()=false`＝**ピクセルは非描画**→パイプライン出力（解決グループ・実国境ジオメトリ・別色・凡例・正直な部分失敗）をデータで検証。返信 HTML のスクリーンショット（`test-results/r143-atlas-reply.png`）で凡例UI（Western/Eastern/Southern/Northern Europe＋別色＋か国数9/10/16/11＋national borders）を実視認。
+- `npm test` 緑（静的＋security-logic＋monitor-logic＋**Playwright 44/44**、pageerror 0）。
+
+### 未検証事項
+- 実本番（GitHub Pages）でのログイン状態＋ライブ Nominatim/AI 併用時の非M49地域（河川流域・通称地域）の多地域混在描画は E2E hermetic では未網羅（M49国集合経路は完全網羅）。地図ピクセルの目視は headless 制約で未（プロジェクト従来通りデータ整合＋返信スクショで代替）。西ベルリン級の飛地・M49に無い係争地の帰属は対象外。
+
+---
+
 ## R142 — UX/正直化バッチ17件：SV実Coverageスナップ／Atlas嘘報告根絶・全幅・Stop／モバイルシート同期／Companies順位・時間・比較・拡充／ワークスペース読込・レイヤー復帰／東西独国境／Radius整理／ニュース媒体Wikipedia (tag `#R142`)
 
 ユーザー指摘**17件**を根本原因から修正。全て `index.html`（＋データ `data/cshapes.js`）の**加算的/微修正**（単一HTML・ビルド無し温存）。着手前に**並列サブエージェント6本**で SV/Atlas正直化/Companies/モバイルシート/Atlas UI/ワークスペース+国境+Radius+News を実地調査。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 26/26**、pageerror 0）。ヘッドレスは `document.hidden`（map未描画）だが、DOM/データは**localhostプレビューで実測**：Companies順位（mcap降順=1,2,3／昇順=147,146,145 と実反転）・比較ビュー（6指標×N社バー）・Radius開示・SV `nearestCoverage` 実スナップ（Times Square drift 0.00005°）・東西独 共有頂点60・overlap 0 を確認。

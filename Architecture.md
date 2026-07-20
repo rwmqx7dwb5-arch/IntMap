@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-18 (R134 — データ保護基盤 §16 追加：Supabase migrations・RLS/権限pgTAP・バックアップ/復元)
+> Last reviewed: 2026-07-20 (R143 — Atlas地理対象解決の汎用基盤：UN M49国集合＝実国境／多地域グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答。§R143補足 参照)
 >
 > **R41 の要点**：`whenStyleReady()` が永久ハングし得た問題を修正（idle/loadのみ待機→ポーリング＋ハード解決）＋自己修復をハートビート化（「チェックしても出ない／消したのに残る・再読込で治る」の真因）。相関/散布図の残差マップを再実装（先にモーダルを閉じる＋RdBu連続配色＋指標33→51）。ウェブカムを**実装**（検証済みの24時間ライブYouTube配信25件をポップアップ内に埋め込み再生。検索リンクのハリボテを廃止）。**タイムゾーンレイヤー**新設（Natural Earth境界＋各ゾーンの現在時刻を毎分更新）。GIBSラスターに色スケール凡例。鉄道線を濃色＋白枕木で視認性向上。水域/地形ラベルを別チェック（`cb-geolabels`）化＋河川ラベルを `waterway` 由来に修正（位置ズレ解消）。天気ポップアップの華氏完全対応＋移動可能化。ウィジェット36→41。i18n：RUのレイヤーグループ見出し欠落＋国詳細(Stats)のES欠落を修正、非AIニュース地点辞書を多言語強化。
 
@@ -979,6 +979,20 @@ supabase/
 - **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
 - **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
+---
+
+## #R143 補足（Atlas地理対象解決の汎用基盤：UN M49国集合＝実国境／多地域＝グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答）
+
+「東西南北欧をハイライトして」で **西欧未描画・4地域同色・南欧が巨大な三角形・国境でなく雑な近似図形・未完了なのに完了報告・曖昧性の長文説明が地図操作を妨害** が同時発生。**真因＝ヨーロッパのサブ地域（西欧/東欧/南欧/北欧）が「国集合」なのにコードは `REGION_BBOX` の粗い矩形/AIポリゴンでしか解決できず**、多地域の色分け・凡例・描画前検証も無かったこと。Europe専用ハックではなく**Atlas全体の汎用基盤**として、パイプラインを **解釈→地理対象解決→実行計画→描画→実状態検証→返答** に統一。全て `index.html` 加算（単一HTML温存）。`npm test` 緑（静的＋security/monitor logic＋**Playwright 44/44**、内 `IntMapRegionResolverTest` に純検証~30件・新 `tests/r143.spec.js` 10件）。
+
+- **① UN M49 国集合（地理対象解決）**: `REGION_GROUPS` に **UN M49 のサブ地域を実 ISO3 リストで追加**（western/eastern/southern/northern europe＝**互いに素な4分割**、north/south america・caribbean・north/west/east/central/southern africa・western asia・oceania サブ地域…）＋ `europe`/`oceania` は下位の和。`regionGroup` は既存の `GROUP_ALIASES` に加え **5言語 `REGION_ALIASES` も参照**（西欧/Westeuropa/западная европа… が自動で国集合へ。国集合でない自然地域＝Sahara/Alps 等は null で従来のポリゴン経路へ）。→ `resolveHlTarget` の**グループ段（国コード）で確定**し、Nominatim/AI/矩形の不安定経路を回避＝**正式な国境 GeoJSON で描画**。標準定義があるので**不要な確認をしない**（曖昧性の壁は出ない）。
+- **② 複数地域＝グループ別色＋凡例**: highlight dispatch に**多地域分岐**（2つ以上の対象・明示単色なし・河川/流域でない・かつ少なくとも1つが国集合/地域）。各対象を**カテゴリ配色 `_HL_PALETTE` の別色**で `nlq-poly-src` に描画（国集合は `_codesGeo(codes)` で **`window.countryGeo` の実国境から MultiPolygon** 構築・内部境界は `comp:1` で淡く）、返信に**色スウォッチ凡例**（`_hlLegendHtml`：地域名＋か国数＋根拠）。単一対象/単色指定/純国リストは従来の単色 feature-state 経路（無変更）。表示名は **`M49_LABELS`（5言語）で localize**（`_hlPolys` 内部名は正準英語キー＝安定・テスト可）。
+- **③ 描画前ジオメトリ検証（ハリボテ拒否）**: `_validGeo(geo,{trusted})` が **未閉リング・退化した少頂点「巨大三角形」・異常な長辺・自己交差・全世界blob・極小スライバー・非ポリゴン**を描画前に拒否。実国境/OSM/構成境界は `trusted` で粗近似ヒューリスティックを免除、AI/派生/ソフト箱は全検査。多地域・単地域の**両経路**で適用（拒否は正直に「不正な形状のため未描画」）。`_bboxSoftPoly` も**厳密閉リング化**（`sin(2π)≠0` の隙間を解消）。
+- **④ 実状態検証＋正直返答**: 描画後に `_verifyPolyPaint(n)` で **source/layer/feature数** を確認。返信は**実行結果から合成**＝描画できた対象（凡例＋根拠）と **失敗（見つからず／不正形状で拒否／曖昧）を明確に分離**、部分失敗は `meta.partial` で**プランナーの実行前 `say` を抑止**（R140/R142 の say-gate）。
+- **⑤ 堅牢性（style待機・遅延上書き・再描画）**: 世代トークン `_hlGen`＝**新しいハイライトが古い非同期解決の上書きを阻止**、描画は最大 8×0.7s のバウンド再試行、`styledata` 再描画は既存の `paintPolys` ハンドラが継続。
+- **⑥ 複合展開（頑健化）**: `_expandRegionCompound` が **「東西南北欧」→4 M49 キー**、「南北アメリカ」→2、を決定的に展開。さらに**方向欧の2語以上の共起時は M49 に正準化**（＝「北欧」は単独では北欧5国だが、四方位欧の集合内では M49 Northern Europe＝隙間なし4分割）。
+- **公開/テストAPI**: `IntMapAtlasDebug.{regionGroup,validGeo,codesGeo,expandCompound,paletteColor,legendHtml,polyState}`（純関数＝mapなしでCI検証可）。データソース変更なし（既存 `window.countryGeo` の再利用）。
 
 ---
 
