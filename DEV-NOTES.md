@@ -5,6 +5,51 @@
 
 ---
 
+## R145 — UX/正直化バッチ10件：SVカバレッジ実スナップ根治(ACAOプロキシ)＋水色化／Companies＝Countries同型比較(棒/時系列/表)＋網羅性173社／Atlas全幅・Stopアクセント・オンオフ実トグル／東西独＝西ベルリン飛地／凡例コンパクト／Radius整理 (tag `#R145`)
+
+ユーザー指摘**10件**を根本原因から修正。全て `index.html`（＋新 Edge Function `sv-cov`、データ `data/cshapes.js`）の**加算的/微修正**（単一HTML・ビルド無し温存）。着手前に**並列サブエージェント5本**で SV/Companies/Atlas UI/東西独国境/Radius+凡例 を実地調査（東西独はnodeで実ジオメトリ計測・PNG描画）。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 51/51**、pageerror 0・新 `r145.spec.js` 6件＋`r142.spec.js` #7を新UIへ更新）。ローカルプレビュー(127.0.0.1:8781)で SV実スナップ・Companies比較3モード・Atlasトグル・西ベルリンPIP を**実測**。
+
+### ① ストリートビューが依然クリック地点に置くだけ（R140/R142の残存＝真の根本原因）
+**真因（R140/R142が乗っていた土台の誤り）**＝スナップは Google `mts*.google.com/vt?…lyrs=svv` タイルの**画素を canvas で読む**（`getImageData`）が、これは **CORS-clean（`crossOrigin='anonymous'`＋Access-Control-Allow-Origin）** を要する。Googleのmtsタイルは**ACAOを安定して返さない**（Apple Private Relay/ブロッカー/DNSで剥落・遮断）→匿名`<img>`ロードが弾かれ全タイル失敗→`_nearestCoverage`が`null`→**生クリック座標へフォールバック**。可視オーバーレイはCORS不要で描画されるので「青は見えるがスナップしない」＝R140/R142の2度の"修正"が土台ごと無効だった。**修正**＝新 Edge Function **`sv-cov`**（`supabase/functions/sv-cov/index.ts`・`--no-verify-jwt`）が svv タイルを**サーバ側fetch→ACAO:*付与**で返す厳格allowlist proxy（`mts0-3.google.com/vt?…lyrs=svv`＋整数x/y/z のみ・空タイルは透明PNG）。`_COV_PROX` を **直→sv-cov ACAOプロキシ→corsproxy** ラダー化。**本番検証**：Times Square で `nearestCoverage`＝`{covered:true,…643ms}`（旧nullから復活）・大西洋＝`{covered:false}`（正直な非被覆）。proxyは200 image/png 256×256 ACAO:*。
+
+### ② SVカバレッジの色を青→水色
+**修正**＝可視オーバーレイ raster に paint フィルタ `raster-brightness-min:0.5, raster-saturation:-0.15, raster-hue-rotate:-10, raster-opacity:0.9`（Googleの焼き込み青を明るく淡いシアン寄り＝水色に）。ヒント文言「青い線/blue lines」→「水色/light-blue/hellblau/голубые/celestes」を5言語で更新（サンプラは色非依存＝無関係）。
+
+### ③ Companies を Countries と同型に比較（できるだけ同じUI）
+**修正**＝R142の16行1ビュー `showCoCompare` を**Countries `#scp-view` 完全同型**に再構築（`.scp-*` クラスを `#co-cmp-view` にスコープ複製＝Countries本体は無変更＝回帰なし）：**Bar/Time-series/Table のモードセグメント・指標ピッカー(6指標)・カラーチップ(×削除)・企業追加検索・時間バナー**。Bar＝符号付きゼロ軸バー。Table＝Excel風＋**CSV書き出し**。Time-series＝新 `IntMapCompanies.priceSeries(tk,y0,y1)`（keyless Yahoo v8 月次1回/名・年末終値）で**各社を開始年=100に指数化した株価推移**を多線SVG（米国上場ライブ名のみ・スナップショット名は正直に「履歴なし」）。実測：3社×4指標=12バー・Table 3行5列・時系列3線「Indexed to 100 at 2016」。
+
+### ④ Companies の網羅性・即時性を徹底強化
+**修正**＝147→**173社**（+26）・live 123→**141**。地理的空白を補完（**インド4/ブラジル3/スペイン3/イタリア1/シンガポール1/アルゼンチン1** 新設＋中国/日本/韓国/仏/豪 拡充）。`CO_CC` に IND/BRA/ESP/ITA/SGP/ARG/MEX 追加。**即時性＝ADR比の罠回避**：memoryの警告どおりADR比は不確実（例 INFY $11.49 は 1:1 でない）なので **R142の自己整合法** `sh = 現時価総額 ÷ 実取得価格` を採用＝`sh×price=時価総額`が構成上恒真・価格変動に追随・ADR比免疫（実測：RACE/VALE/PDD/BRK-B/INFY 全て implied=snap 一致）。一次上場のみの外国名(.NS/.MC/.T/.KS/.PA/.AX)は正直なスナップショット据置。
+
+### ⑤ Atlas をサイドバー内で真の全幅に（左右余白過多・R142の残存）
+**真因**＝R142は `.atl-chat` の8px paddingを削ったが、**本当の余白は `#sidebar` 自身の 24px 左右padding**（`#atlas-feed` は392px内箱に居た）。デスクトップは未対応だった。**修正**＝`#atlas-feed` を **`margin:0 -24px`** でサイドボーダーまでブリード（モバイルが既に `-16px` でやっているのと同型・flexストレッチ子の負マージン=幅拡張）。実測：feed 392px(x=24)→**439px(x=0)**＝サイドバー全幅。`.atl-chat` 8→6px・`.atl-sub` 11→8px も微調整。
+
+### ⑥ Atlas 停止ボタンをアクセントカラー＋四角を拡大
+**修正**＝`.atl-go.busy` の `background:#ff453a`（赤ハードコード）→ **`var(--primary-color)`**（アクセント連動）。停止四角SVGを 15×15/rect12×12（描画7.5px）→ **18×18/rect15×15（描画11.25px）** に拡大。送信(上矢印)とは四角アイコンで判別。
+
+### ⑦ Atlas オンオフ要素にはなるべくボタン
+**修正**＝グリッド/3D地形/国情報の on/off dispatch はテキスト注記のみだった→各返信に**インライン実トグルスイッチ** `_featTogHtml(kind)`（`_FEAT_TOG` レジストリ：実UIコントロールを**直接**フリップ＝チャットターン無し・真の状態を読み戻すので嘘表示なし）。クラス衝突回避のため delegated click で `.atl-feat-tog` を `.atl-ctl-toggle` より**先に**処理。実測：注入したグリッドトグルのクリックで実グリッドが ON↔OFF（レイヤー/オーバーレイの既存トグルと併せカバレッジ拡大）。
+
+### ⑧ 歴史的国境の東西ドイツがでたらめ（真因＝西ベルリン欠落）
+**調査（node実測+PNG描画）で確定**＝R142の内独国境**線は幾何学的に完璧**（共有頂点60・overlap 0・ドイツ周辺で最も綺麗な境界）。真の欠陥は**西ベルリンが完全欠落**（東独が穴なしの塊）＝分断ドイツが根本的におかしく見える主因。**修正（`data/cshapes.js` トポロジー的）**＝西ベルリン外周リング（3西側セクター概形・~25頂点・面積449km²≒実480）を新ring1992として追加し、**西独feat#88に飛地ポリゴンとして＋東独feat#91の本土ポリゴンに穴(hole)として同一リングを配線**（1949-1990のみ）。実測：西独=2部MultiPolygon・西ベルリン中心∈西独/∉東独(穴機能)・東ベルリン∈東独/∉西独・Munich∈西独・Leipzig∈東独。ビルドは `scratchpad/build_westberlin.mjs`（PIP検証内蔵・全検査通過後のみ書込・+401byte=リング追加分のみでJSON往復は他をbyte温存）。
+
+### ⑨ Radiusポップアップの項目整理（R142の残存）
+**修正**＝R142はpreset/色をdetailsに畳んだが、**3つの縦積み全幅アクションボタン**（人口/エリアニュース/AI要約 ≒縦114px）が残クラッタ→**3列コンパクト行 `.rad-actions`** に凝縮（ID温存=配線不変）。使い方ヒント `.tp-hint` は円未配置時のみ表示。R108準拠でアクションの装飾絵文字は除去（テキストラベルのみ）。
+
+### ⑩ 全レイヤー凡例がでかすぎる→コンパクト
+**修正**＝`.data-legend`（40+レイヤー共通：全グラデ凡例/GIBS/generic/EEZ/weather）を padding 12/14→8/10・幅204→178・font11→10.5・dl-bar 10→8・h4 12→11 等に圧縮。`.koppen-legend`（**全ビューポート高＝最悪**）を `height:auto` + `max-height:min(56dvh,…)` でスクロール化・幅216→186・kl-sw 14→12。共有ヘッダボタン 24→20px（モバイル32→27px）・opacity行・**インラインGIBSスケールバー**(height11→8,font9.5→9)も圧縮＝全on-map凡例を一括縮小。
+
+### 罠・教訓
+- **"修正した≠土台が正しい"**＝SVスナップはR140/R142が**CORS-blocked canvas読み**という壊れた土台の上に2度再構築されていた。可視オーバーレイ(CORS不要)が描画されるので症状が"環境依存で不可視"に見え、真因(ACAO欠落)を見落としていた。根治は**自前ACAOプロキシ**でクライアント画素読みを可能に。
+- **東西独"でたらめ"の真因は線でなく欠落**＝node実測で線は完璧と確定→残る違和感は**西ベルリン欠落**（歴史的アイコンの不在）。データ調査は「何が無いか」も測る。
+- **ADR比の罠を自己整合で回避**＝`sh=時価総額÷価格` は ADR比が何であれ `sh×price=時価総額` が恒真＝表示は正確で価格追随（R142 TSM法の一般化）。実株数を知らずとも正確な時価総額live化が可能。
+- **Countries同型UIは `.scp-*` をid-スコープ複製**＝950行モジュールをforkせず視覚同一＋Countries無変更（回帰ゼロ）。CSSは文字列連結（template-literal backtick罠回避）。
+- **クラス共有トグルは delegated click の順序が肝**＝`.atl-feat-tog` は `.atl-ctl-toggle` を継承するので先に捕捉しないと `_ctlLayer`(null)で無反応になる。
+- **`.ts` の `node --check` 型ストリップはモジュール判定依存**＝import/export無しの関数だと型注釈で落ちる→Edge Functionは注釈無し素JSで書く（Denoは両方可）。static-checksはprodと同一ファイルを検査。
+- ヘッドレスは map未描画（`document.hidden`）＝SVサンプラ/Companies比較/Atlasトグル/西ベルリンPIP は DOM/データ/純関数で実測、地図ピクセルは非対象。
+
+---
+
 ## R144 — Area Monitors 監査ハードニング：本番default-privilege真因／run-stateガードトリガ／長期seenレジャ／原子claim／根拠付きレポート／DB-error安全／決定的取得 (tag `#R144`)
 
 **業務委託**：R141 Area Monitors の実装監査で判明した問題を、設計報告でなく **実コード・本番・DB・CI上で再現/確認し根本から修正、本番完成まで**。R142/R143維持。
