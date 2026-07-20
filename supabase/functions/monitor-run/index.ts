@@ -112,18 +112,24 @@ const AI_SYS =
 
 async function callAI(cfg: { provider: string; key: string; model: string }, userMsg: string): Promise<string> {
   if (cfg.provider === "openai") {
-    const body = {
+    // GPT-5.6-luna via the Responses API. NOTE: OpenAI's json_object validator requires the word
+    // "json" in the INPUT messages (not `instructions`); the user message carries it. A 400 still
+    // degrades to a tool-free/JSON-mode-free retry (like ai-proxy) — the prompt + client validation
+    // enforce the shape either way, so a request-shape rejection never blanks a report.
+    const build = (jsonMode: boolean) => ({
       model: cfg.model,
       input: [{ role: "user", content: [{ type: "input_text", text: userMsg }] }],
       instructions: AI_SYS,
       max_output_tokens: 3200,
       reasoning: { effort: "low" },
-      text: { format: { type: "json_object" } },
+      ...(jsonMode ? { text: { format: { type: "json_object" } } } : {}),
       store: false,
-    };
-    const r = await fetchWithTimeout("https://api.openai.com/v1/responses", {
-      method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.key }, body: JSON.stringify(body),
     });
+    const post = (b: Record<string, unknown>) => fetchWithTimeout("https://api.openai.com/v1/responses", {
+      method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.key }, body: JSON.stringify(b),
+    });
+    let r = await post(build(true));
+    if (!r.ok && r.status === 400) r = await post(build(false));   // (#R141) degrade: drop JSON mode on a 400
     if (!r.ok) throw new Error("openai " + r.status + " " + (await r.text().catch(() => "")).slice(0, 200));
     const j = await r.json();
     if (typeof j?.output_text === "string" && j.output_text) return j.output_text;
@@ -335,7 +341,9 @@ async function processMonitor(db: DB, monitor: Record<string, unknown>, aiCfg: {
     const userMsg =
       "AREA: " + String(monitor.area_label || monitor.name || "the monitored area") + "\n" +
       "CHANGE SUMMARY (authoritative): " + JSON.stringify(diffOut) + "\n" +
-      "EVIDENCE (new items in the area; cite ids exactly):\n" + JSON.stringify(aiEvidence);
+      "EVIDENCE (new items in the area; cite ids exactly):\n" + JSON.stringify(aiEvidence) + "\n\n" +
+      // OpenAI's json_object mode requires the literal word "json" in the input message.
+      "Respond with ONLY a single JSON object: {severity, headline, summary, changes:[{claim, evidence_ids}], unchanged, data_gaps, limitations}.";
 
     let aiText = "", aiOk = false, aiErr = "";
     try { aiText = await callAI(aiCfg!, userMsg); aiOk = !!aiText; }
