@@ -5,6 +5,36 @@
 
 ---
 
+## R144 — Area Monitors 監査ハードニング：本番default-privilege真因／run-stateガードトリガ／長期seenレジャ／原子claim／根拠付きレポート／DB-error安全／決定的取得 (tag `#R144`)
+
+**業務委託**：R141 Area Monitors の実装監査で判明した問題を、設計報告でなく **実コード・本番・DB・CI上で再現/確認し根本から修正、本番完成まで**。R142/R143維持。
+
+### 最重要・非自明な本番真因（Section 7）
+- 本番 `pg_class.relacl` は `{authenticated=arwdDxtm, anon=arwdDxtm, …}`＝**Supabaseのschema-wide default privilegeで全ロールに全権限**（RLSが唯一の実防御・grantは全開）。よって R141 の **column-level UPDATE grant は本番では無効(no-op)**：`area_monitors` は UPDATE ポリシーを持つため、本人行の **run-state列・`next_run_at` を書けてしまう**。pgTAP は vanilla CI Postgres で通り**検出不能**だった。子表(runs/evidence/reports)は write ポリシー無し→RLS default-denyで本番でも forge 不可。
+- **修正＝BEFORE UPDATE トリガ `tg_monitors_guard_state`**（JWT role≠service_role/空 なら run-state列を OLD に固定・`next_run_at` は enable/interval変更時のみ `greatest(now, last_run+interval)` で server再計算）＝grant非依存の実防御。加えて `revoke update … from authenticated` → column-grant再付与（`next_run_at`/run-state除外）を defense-in-depth。
+
+### 各指摘と修正
+- **§2 baseline_window が実質12run止まり** → 新表 `monitor_seen_items`（monitor×source×dedup_key 一意・first/last_seen_at・45日保持=`RETAIN_SEEN_DAYS`）。**novelty=レジャ未在のdedup_keyのみ「new」**（cap churn/flap耐性・mode非依存・決定的）。UIの「過去30日」=`MAX_SEEN_WINDOW_DAYS`≤保持。
+- **§3 手動claim非原子(TOCTOU)** → `monitor_claim_one(mon,user,cooldown,stale)`＝単一 `UPDATE…WHERE(owner∧enabled∧lock-free|stale∧cooldown)…RETURNING`。二重成功不可・cron claimと非競合・honest reason返却。runner-only。
+- **§4 headline/summary等が非接地** → `buildReport` が **authoritative diff数値＋検証済claimからheadline/summary/unchanged/data_gapsをコード生成**（AI自由文破棄）。AIは `changes[{claim,evidence_ids}]`＋bounded severityのみ、`validateClaims` が evidence_id実在をゲート。
+- **§5 DBエラー握り潰し** → 全 supabase write の `error` 検査。scaffold失敗→続行せずlock解放。evidence失敗→report成功にしない。成功経路は `monitor_commit_report`（report挿入+run更新+monitorメタを単一txn原子化・外部API呼出はtxn外）、no-report経路は `monitor_finalize`。report失敗時 `report_generated=false`。
+- **§6 news取得が非決定的** → `collectNews` に `.order('pub_date',desc).order('id',asc)` を cap前に付与。novelty=レジャ基準＝cap偽goneが変化化しない。
+- **§8 `monitor_limit(uuid)` 属性漏洩** → authenticated/anon から EXECUTE revoke＋`monitor_limit_self()`（`auth.uid()`のみ）。挿入トリガは DEFINER で従来通り。
+- **§9 CodeQL#37-39** = `tests/monitors.spec.js` の `.replace(/<[^>]+>/g,'')` → 不活性 `DOMParser().textContent`（static-checkの `truncate` 誤検知も `revoke … truncate` を除外する statement-only regex に修正）。
+- **§10 Workspace** = R142 の `defRects().monitors` 維持＋回帰テスト（ws-window生成でclampRect throw無し・pageerror 0）。
+
+### 本番反映・検証
+- migration は **`supabase db query --file … --linked`**（Management API・DBパス不要／begin-commit原子）で適用→`migration repair --status applied 20260721120000`（baselineは既知の未記録gap＝`db push`不可のため個別適用）。事前に `commit;→rollback;` 差替でprod schema検証。
+- `monitor-run` を本番deploy（v4）。cron(job 3, `*/10`)は継続succeeded 200。
+- **本番E2E**（合成monitor=Europe→cascade削除）：run#1=baseline確立(`success_no_change`・AIスキップ・60レジャ・report無)、novelty強制でrun#2=`success`+report(score0.8・**claim横断29 evidence参照が全て実在=bad_refs 0**)。owner rolled-back probe＝run-state/`next_run_at` UPDATE=DENIED・`monitor_limit(uuid)`=DENIED/`_self()`=5・`claim_one`=claimed→already_running。ユーザ削除で全cascade=0。
+
+### テスト
+- `monitor-logic.test.mjs`＝30件（validateClaims/buildReport/partitionByNovelty/classifyDisappeared 追加）。`security-logic` 併せ node 40件。
+- `04_monitors_test.sql`＝prod default grantを模擬しトリガ凍結を値検証・claim_one原子性・limit self-only・seen RLS。
+- `monitors.spec.js`＝Workspace回帰＋XSS-inert＋DOMParser化。Playwright 45件緑。
+
+---
+
 ## R143 — Atlas地理対象解決の汎用基盤：UN M49 国集合＝実国境／多地域＝グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答 (tag `#R143`)
 
 **業務委託**：「東西南北欧をハイライトして」で **西欧未描画・4地域同色・南欧が巨大な三角形・国境でなく雑な近似図形・未完了なのに完了報告・曖昧性の長文説明が地図操作を妨害**。このケース専用でなく **Atlas全体の汎用基盤** として、`解釈→地理対象解決→実行計画→描画→実状態検証→返答` に統一すること。

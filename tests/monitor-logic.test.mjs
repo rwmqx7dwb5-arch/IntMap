@@ -12,7 +12,8 @@ import {
   haversineKm, pointInRing, pointInGeometry, bboxOfGeometry, pointInMonitorArea,
   validGeometry, isSafeHttpUrl, normalizeNewsRow, dedupeEvidence, diffKeys,
   clusterPoints, distinctPublishers, buildNewsSnapshot, computeChangeScore,
-  severityFromScore, decideAI, validateAndCleanReport,
+  severityFromScore, decideAI, validateClaims, buildReport, partitionByNovelty,
+  classifyDisappeared,
 } from "../supabase/functions/monitor-run/logic.mjs";
 
 // Square polygon covering [0,0]..[2,2].
@@ -149,41 +150,120 @@ test("decideAI — real change calls AI", () => {
   assert.equal(r.call, true);
 });
 
-test("validateAndCleanReport — drops claims citing a nonexistent evidence id", () => {
+test("validateClaims — drops claims citing a nonexistent evidence id", () => {
   const valid = new Set(["ev_1", "ev_2"]);
   const byKey = new Map([["ev_1", { lng: 1, lat: 1, label: "A" }], ["ev_2", { lng: 2, lat: 2, label: "B" }]]);
   const report = {
-    severity: "medium", headline: "Two developments", summary: "…",
+    severity: "medium",
     changes: [
       { claim: "Real claim.", evidence_ids: ["ev_1", "ev_99"] },   // ev_99 dropped, claim survives on ev_1
       { claim: "Fabricated claim.", evidence_ids: ["ev_77"] },     // no valid id → dropped entirely
     ],
-    unchanged: ["nothing else"], data_gaps: [], limitations: [],
   };
-  const { ok, cleaned, invalidRefs } = validateAndCleanReport(report, valid, byKey);
+  const { ok, claims, invalidRefs, changePoints } = validateClaims(report, valid, byKey);
   assert.equal(ok, true);
-  assert.equal(cleaned.changes.length, 1);
-  assert.deepEqual(cleaned.changes[0].evidence_ids, ["ev_1"]);
+  assert.equal(claims.length, 1);
+  assert.deepEqual(claims[0].evidence_ids, ["ev_1"]);
   assert.ok(invalidRefs.includes("ev_99") && invalidRefs.includes("ev_77"));
   // change_points synthesized from the surviving cited evidence's coords
-  assert.equal(cleaned.change_points.length, 1);
-  assert.deepEqual(cleaned.change_points[0], { lng: 1, lat: 1, label: "A", evidence_id: "ev_1" });
+  assert.equal(changePoints.length, 1);
+  assert.deepEqual(changePoints[0], { lng: 1, lat: 1, label: "A", evidence_id: "ev_1" });
 });
 
-test("validateAndCleanReport — a report with NO grounded claim is rejected", () => {
+test("validateClaims — a report with NO grounded claim is rejected", () => {
   const valid = new Set(["ev_1"]);
   const report = { headline: "All made up", changes: [{ claim: "x", evidence_ids: ["ev_nope"] }] };
-  const { ok } = validateAndCleanReport(report, valid, new Map());
+  const { ok, claims } = validateClaims(report, valid, new Map());
   assert.equal(ok, false);
+  assert.equal(claims.length, 0);
 });
 
-test("validateAndCleanReport — invalid severity is nulled (caller falls back to score)", () => {
+test("validateClaims — invalid severity is nulled (caller falls back to score)", () => {
   const valid = new Set(["ev_1"]);
   const byKey = new Map([["ev_1", { lng: 0, lat: 0, label: "" }]]);
-  const report = { severity: "apocalyptic", headline: "H", changes: [{ claim: "c", evidence_ids: ["ev_1"] }] };
-  const { ok, cleaned } = validateAndCleanReport(report, valid, byKey);
+  const report = { severity: "apocalyptic", changes: [{ claim: "c", evidence_ids: ["ev_1"] }] };
+  const { ok, severity } = validateClaims(report, valid, byKey);
   assert.equal(ok, true);
-  assert.equal(cleaned.severity, null);
+  assert.equal(severity, null);
+});
+
+// ── (#R144) Grounded report: headline/summary/unchanged/data_gaps are built from
+//    the AUTHORITATIVE diff numbers + validated claims — never from AI free text.
+test("buildReport — headline & summary are built ONLY from authoritative numbers", () => {
+  const diffOut = { new: 3, gone: 1, continuing: 2, new_clusters: 2, corroborated_clusters: 1, prev_count: 5, cur_count: 8 };
+  const claims = [{ claim: "Flooding reported near the port.", evidence_ids: ["ev_1"] }];
+  const r = buildReport({ areaLabel: "Rotterdam", diffOut, metrics: { articles: { prev: 5, cur: 8, delta: 3 } }, claims, severity: "high", changePoints: [], failSources: [] });
+  // headline uses the authoritative NEW count and the area
+  assert.match(r.headline, /^3 new reports in Rotterdam$/);
+  // summary uses the authoritative numbers verbatim (5 → 8 (+3))
+  assert.match(r.summary, /3 new items/);
+  assert.match(r.summary, /5 → 8 \(\+3\)/);
+  // continuing count → an "unchanged" line
+  assert.equal(r.unchanged.length, 1);
+  assert.match(r.unchanged[0], /2 previously-seen reports/);
+  // the AI's claims are carried through verbatim as `changes`
+  assert.deepEqual(r.changes, claims);
+  assert.equal(r.severity, "high");
+});
+
+test("buildReport — no fabricated numbers can leak: it ignores any AI-supplied text fields", () => {
+  const diffOut = { new: 1, gone: 0, continuing: 0, new_clusters: 1, corroborated_clusters: 0, prev_count: 0, cur_count: 1 };
+  // Even if a caller tried to smuggle AI headline/summary in, buildReport doesn't read them.
+  const r = buildReport({ areaLabel: "Area", diffOut, metrics: null, claims: [{ claim: "c", evidence_ids: ["ev_1"] }], severity: null, changePoints: [], failSources: [] });
+  assert.match(r.headline, /^1 new report in Area$/);         // singular, from the number
+  assert.equal(r.unchanged.length, 0);                          // continuing=0 → no unchanged line
+  assert.ok(r.severity && r.severity !== "none");              // derived from the diff, not AI
+});
+
+test("buildReport — data_gaps come ONLY from sources that actually failed", () => {
+  const diffOut = { new: 2, gone: 0, continuing: 0, new_clusters: 1, corroborated_clusters: 0, prev_count: 0, cur_count: 2 };
+  const r = buildReport({ areaLabel: "X", diffOut, metrics: null, claims: [{ claim: "c", evidence_ids: ["ev_1"] }], severity: "low", changePoints: [], failSources: ["weather", "earthquake"] });
+  assert.equal(r.data_gaps.length, 2);
+  assert.match(r.data_gaps[0], /weather source was unavailable/);
+  assert.match(r.data_gaps[1], /earthquake source was unavailable/);
+  // limitations are fixed general caveats (not factual assertions), always present
+  assert.ok(r.limitations.length >= 1);
+  assert.match(r.limitations[0], /reported subject/);
+});
+
+// ── (#R144) Ledger-based novelty: cap-proof + deterministic "new".
+test("partitionByNovelty — a re-appearing/cap-displaced item is NOT falsely new", () => {
+  const items = [{ dedup_key: "a" }, { dedup_key: "b" }, { dedup_key: "c" }];
+  const prior = new Set(["b"]);                                  // b was seen before
+  const { newItems, newKeys } = partitionByNovelty(items, prior);
+  assert.deepEqual(newKeys.sort(), ["a", "c"]);                  // only genuinely-new keys
+  assert.equal(newItems.length, 2);
+  // adding a previously-seen key to the ledger makes it non-new next time (flap-proof)
+  const { newKeys: k2 } = partitionByNovelty(items, new Set(["a", "b", "c"]));
+  assert.deepEqual(k2, []);
+});
+
+test("partitionByNovelty — result is independent of item order (deterministic set)", () => {
+  const prior = new Set(["x"]);
+  const a = partitionByNovelty([{ dedup_key: "x" }, { dedup_key: "y" }, { dedup_key: "z" }], prior).newKeys.slice().sort();
+  const b = partitionByNovelty([{ dedup_key: "z" }, { dedup_key: "x" }, { dedup_key: "y" }], prior).newKeys.slice().sort();
+  assert.deepEqual(a, b);
+  assert.deepEqual(a, ["y", "z"]);
+});
+
+test("classifyDisappeared — cap-displaced (in-window) is 'absent', not a real 'gone'; aged-out is 'expired'", () => {
+  const now = Date.parse("2026-07-20T00:00:00Z");
+  const windowStart = now - 72 * 3600 * 1000;                    // 72h news window
+  const observed = new Map([
+    ["old", "2026-07-15T00:00:00Z"],   // 5 days old → outside window → expired
+    ["fresh", "2026-07-19T12:00:00Z"], // 12h old → inside window → absent (cap), NOT meaningful
+  ]);
+  const { expired, absent } = classifyDisappeared(["old", "fresh"], new Set(), observed, windowStart);
+  assert.deepEqual(expired, ["old"]);
+  assert.deepEqual(absent, ["fresh"]);
+});
+
+test("(#R144) cap-induced churn does not create a change: novelty is stable across a shifting cap", () => {
+  // Run N ledger already knows a1..a5. A new item a6 arrives; the cap drops a5.
+  const prior = new Set(["a1", "a2", "a3", "a4", "a5"]);
+  const capped = [{ dedup_key: "a6" }, { dedup_key: "a1" }, { dedup_key: "a2" }, { dedup_key: "a3" }, { dedup_key: "a4" }]; // a5 pushed out
+  const { newKeys } = partitionByNovelty(capped, prior);
+  assert.deepEqual(newKeys, ["a6"]);                             // ONLY the genuinely-new item, not a re-shuffle
 });
 
 test("buildNewsSnapshot / distinctPublishers", () => {

@@ -1179,12 +1179,14 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 - CI＝**CodeQL**（`security.yml`）＋`check:static`に**第三者Action SHA固定**検査＋`tests/security-logic.mjs`
   （Edge Function認証不変条件）＋pgTAP `03_security_test.sql`。`npm test`で全実行。
 
-## 18. 地域監視基盤 (Area Monitors) — R141
+## 18. 地域監視基盤 (Area Monitors) — R141 / R144
 
 ログインユーザーが**監視地域**（円/描画/解決済み地域/現在の地図表示）を保存し、**サーバー側が定期実行**して**意味のある変化がある時だけ根拠付きレポート**を生成する機能。詳細は [`docs/AREA-MONITORS.md`](docs/AREA-MONITORS.md)。
 
+> **R144 監査ハードニング**（migration `20260721120000_area_monitors_hardening.sql`）：本番の Supabase default-privilege（全ロール全権限＝RLSが実防御）で R141 の column-grant が no-op だった真因を **BEFORE UPDATE トリガ `tg_monitors_guard_state`**（run-state列・`next_run_at` を非runnerに対し凍結/server再計算）で根治。長期 `monitor_seen_items` レジャで **「過去N日」比較を実データ化**＋**cap耐性のnovelty**。**原子 `monitor_claim_one`**（手動二重実行防止）。**根拠付きレポート**（headline/summary/gapsをauthoritative diffからコード生成・AIは接地済claimのみ）。**全DB write error検査**＋原子 `monitor_finalize`/`monitor_commit_report`。**決定的**news順序。**`monitor_limit_self()`**（他人plan探索不可）。本番適用・deploy・E2E検証済（bad_refs 0）。
+
 - **中核原則**＝**変化の有無はコードが判定、AIは説明のみ**。処理順＝取得→正規化/重複排除→スナップショット→機械的diff(new/gone/continuing・件数・クラスタ・媒体多様性)→change score→**変化があり閾値超の時だけAI**→**AIが引いたevidence IDを実行後にコードで検証**（偽ID主張は棄却）→run/evidence/report永続化。**取得失敗は「変化なし」ではなく専用status**。
-- **DB**（migration `20260721090000_area_monitors.sql`）＝4表 `area_monitors`/`monitor_runs`/`monitor_evidence`/`monitor_reports`。**RLS全表owner-only**、runs/evidence/reportsは**service_role書込・user読取専用**（実行結果偽造不可）、area_monitors UPDATEは**列単位grant**でrun-state列除外（ロック/メタ改竄不可）。UUID PK。`monitor_limit()`（plan別上限・**課金接続点**）を挿入トリガで強制。`monitor_claim_due()`＝`FOR UPDATE SKIP LOCKED`で二重実行防止。pgTAP `04_monitors_test.sql`。
+- **DB**（migration `20260721090000` + `20260721120000` hardening）＝5表 `area_monitors`/`monitor_runs`/`monitor_evidence`/`monitor_reports`/**`monitor_seen_items`**(#R144 長期レジャ)。**RLS全表owner-only**、runs/evidence/reports/seenは**service_role書込・user読取専用**（実行結果偽造不可）。area_monitors UPDATEは**列単位grant**（run-state列・`next_run_at`除外）＋**#R144 `tg_monitors_guard_state` トリガ**で本番の全開grant下でも run-state/`next_run_at` を凍結（grant非依存の実防御）。UUID PK。`monitor_limit()`（plan別上限・**課金接続点**）を挿入トリガで強制・**#R144 EXECUTE revoke＋`monitor_limit_self()`**（他人plan探索不可）。`monitor_claim_due()`＝cron用`FOR UPDATE SKIP LOCKED`／**#R144 `monitor_claim_one()`**＝手動用原子claim（二重成功不可）／**`monitor_finalize`/`monitor_commit_report`**＝run+report+meta単一txn。pgTAP `04_monitors_test.sql`。
 - **Edge Function** `monitor-run`（`--no-verify-jwt`・自前fail-closed）＝①cron（`x-monitor-secret`）で due monitors をclaim・逐次処理、②user「今すぐ実行」（JWT+monitorId・所有権照合）。純ロジックは `logic.mjs`（runtime非依存ESM）を Deno と Node テストで共有。status体系10種（success/success_no_change/partial/source_unavailable/ai_failed/timed_out/invalid_geometry/quota_exceeded/disabled/internal_error）。**AI失敗でもsnapshot/diff/evidenceは保持**。
 - **定期実行**＝pg_cron（refresh-news 同型・`net.http_post` でヘッダに秘密・`docs/AREA-MONITORS.md` にSQL）。
 - **UI/Atlas**（`index.html` 加算）＝**Monitorsタブ**（通常/モバイル/Workspace・5言語）、`window.IntMapMonitors`（一覧/作成ダイアログ/詳細/レポート＝結論・主な変化→evidence chip・数値比較・根拠一覧(出典リンク)・変化地点を地図表示・取得できなかったデータ・制約・日時/status）。Atlas `{"type":"monitor","op":…}`＝**返信は実DB結果のみ**（偽の成功報告なし）。全描画 `IntMapSafe`（XSS-inert 実証）。

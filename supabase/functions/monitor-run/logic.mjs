@@ -188,6 +188,42 @@ export function diffKeys(currentKeys, baselineKeys) {
   return { new: isNew, gone, continuing: cont };
 }
 
+// Ledger-based novelty (the cap-proof, determinism-preserving definition of
+// "new"). Given the run's items (already deterministically ordered + capped) and
+// the set of dedup_keys this monitor has EVER recorded before this run (from
+// monitor_seen_items), split into genuinely-new vs already-known. Because novelty
+// is decided by the long-lived ledger — not by comparison to one capped snapshot —
+// a re-appearing item or one displaced past the fetch cap is NOT falsely "new",
+// and the same DB state always yields the same partition.
+export function partitionByNovelty(items, priorSeenKeys) {
+  const prior = priorSeenKeys instanceof Set ? priorSeenKeys : new Set(priorSeenKeys || []);
+  const newItems = [], knownItems = [];
+  for (const it of items || []) {
+    if (it && it.dedup_key != null && !prior.has(it.dedup_key)) newItems.push(it);
+    else knownItems.push(it);
+  }
+  return { newItems, knownItems, newKeys: newItems.map((i) => i.dedup_key) };
+}
+
+// Split baseline keys absent from the current snapshot into "expired" (their
+// observed_at fell out of the news window — a natural, non-meaningful ageing-out)
+// vs "absent" (still in-window but not fetched this run — almost always just
+// pushed past the fetch cap). NEITHER is treated as a meaningful disappearance;
+// this exists so a run can RECORD the distinction honestly instead of counting a
+// cap-displaced item as a real "gone".
+export function classifyDisappeared(baselineKeys, currentKeySet, observedAtByKey, windowStartMs) {
+  const cur = currentKeySet instanceof Set ? currentKeySet : new Set(currentKeySet || []);
+  const expired = [], absent = [];
+  for (const k of baselineKeys || []) {
+    if (cur.has(k)) continue;
+    const t = observedAtByKey && observedAtByKey.get ? observedAtByKey.get(k) : null;
+    const ms = t ? Date.parse(t) : NaN;
+    if (isFinite(ms) && isFinite(windowStartMs) && ms < windowStartMs) expired.push(k);
+    else absent.push(k);
+  }
+  return { expired, absent };
+}
+
 // Greedy spatial clustering of points (km radius). Returns clusters of indices.
 export function clusterPoints(points, radiusKm = 60) {
   const clusters = [];
@@ -282,17 +318,18 @@ export function decideAI({ isFirstRun, hasData, newCount, changeScore, sensitivi
 }
 
 // ---------------------------------------------------------------------------
-//  Evidence-id validation — the anti-fabrication gate. EVERY evidence_id an AI
-//  report cites MUST be a real ev_key from THIS run's evidence. Claims that cite
-//  a nonexistent id are dropped; a report with no surviving grounded claim is
-//  rejected entirely (caller then records ai_failed and keeps snapshot+diff).
+//  Evidence-id validation — the anti-fabrication gate. EVERY factual claim the AI
+//  makes MUST cite a real ev_key from THIS run's evidence, or it is dropped. The
+//  AI's free-form headline/summary/unchanged/data_gaps/limitations are IGNORED
+//  entirely (see buildReport): only the per-claim text (each grounded in real
+//  evidence) and a bounded severity survive. A run with no surviving grounded
+//  claim is rejected (caller records ai_failed and keeps snapshot+diff+evidence).
 // ---------------------------------------------------------------------------
-export function validateAndCleanReport(report, validKeySet, changePointsByKey) {
+export function validateClaims(report, validKeySet, changePointsByKey) {
   const invalid = new Set();
   const arr = (v) => (Array.isArray(v) ? v : []);
-  const strArr = (v) => arr(v).map((x) => String(x)).filter(Boolean).slice(0, 40);
 
-  const changes = arr(report && report.changes)
+  const claims = arr(report && report.changes)
     .map((c) => {
       const ids = arr(c && c.evidence_ids).map((x) => String(x));
       const good = ids.filter((id) => {
@@ -300,44 +337,102 @@ export function validateAndCleanReport(report, validKeySet, changePointsByKey) {
         if (!ok) invalid.add(id);
         return ok;
       });
-      return { claim: String((c && c.claim) || "").slice(0, 500), evidence_ids: good, metric: c && c.metric ? String(c.metric).slice(0, 120) : undefined };
+      return { claim: String((c && c.claim) || "").slice(0, 500), evidence_ids: good };
     })
     // A factual claim with NO surviving evidence id is not allowed to stand.
     .filter((c) => c.claim && c.evidence_ids.length > 0);
 
-  // change_points: keep only points whose evidence_id is real.
+  // change_points: keep only points whose evidence_id is a real ev_key.
   const points = arr(report && report.change_points)
     .map((p) => ({ lng: Number(p && p.lng), lat: Number(p && p.lat), label: String((p && p.label) || "").slice(0, 120), evidence_id: p && p.evidence_id ? String(p.evidence_id) : null }))
     .filter((p) => isFinite(p.lng) && isFinite(p.lat) && (!p.evidence_id || validKeySet.has(p.evidence_id)));
 
   // If the AI gave no change_points but cited evidence, synthesize points from the cited keys' coords.
-  let finalPoints = points;
-  if (!finalPoints.length && changePointsByKey) {
+  let changePoints = points;
+  if (!changePoints.length && changePointsByKey) {
     const seen = new Set();
-    finalPoints = [];
-    for (const c of changes) {
+    changePoints = [];
+    for (const c of claims) {
       for (const id of c.evidence_ids) {
         if (seen.has(id)) continue;
         seen.add(id);
         const pt = changePointsByKey.get(id);
-        if (pt && isFinite(pt.lng) && isFinite(pt.lat)) finalPoints.push({ lng: pt.lng, lat: pt.lat, label: pt.label || "", evidence_id: id });
+        if (pt && isFinite(pt.lng) && isFinite(pt.lat)) changePoints.push({ lng: pt.lng, lat: pt.lat, label: pt.label || "", evidence_id: id });
       }
     }
   }
 
   const severity = ["none", "low", "medium", "high", "critical"].includes(report && report.severity) ? report.severity : null;
+  const ok = claims.length > 0;
+  return { ok, claims, severity, changePoints: changePoints.slice(0, 60), invalidRefs: Array.from(invalid) };
+}
 
-  const cleaned = {
-    severity,
-    headline: String((report && report.headline) || "").slice(0, 200),
-    summary: String((report && report.summary) || "").slice(0, 2000),
-    changes,
-    unchanged: strArr(report && report.unchanged).map((s) => s.slice(0, 300)),
-    data_gaps: strArr(report && report.data_gaps).map((s) => s.slice(0, 300)),
-    limitations: strArr(report && report.limitations).map((s) => s.slice(0, 300)),
-    change_points: finalPoints.slice(0, 60),
+const _plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+// ---------------------------------------------------------------------------
+//  Mechanical report assembly — the anti-fabrication rule for the WHOLE report,
+//  not just the claims. headline / summary / unchanged / data_gaps are built HERE
+//  from the AUTHORITATIVE machine-computed diff numbers and the already-validated
+//  (evidence-grounded) claims — never from AI free text. limitations are fixed,
+//  clearly-general caveats (not factual assertions). This closes the "the headline
+//  or summary was fabricated" path: every number traces to `diffOut`, every claim
+//  to real evidence, every gap to a source that actually failed.
+//
+//    diffOut : { new, gone, continuing, new_clusters, corroborated_clusters,
+//                prev_count, cur_count }  (all authoritative, from CODE)
+//    claims  : validated [{claim, evidence_ids}]
+//    metrics : the numeric block stored on the report
+// ---------------------------------------------------------------------------
+export function buildReport({ areaLabel, diffOut, metrics, claims, severity, changePoints, failSources }) {
+  const d = diffOut || {};
+  const area = String(areaLabel || "the monitored area").slice(0, 120);
+  const newCount = Math.max(0, Number(d.new) || 0);
+  const clusters = Math.max(0, Number(d.new_clusters) || 0);
+  const corrob = Math.max(0, Number(d.corroborated_clusters) || 0);
+  const cont = Math.max(0, Number(d.continuing) || 0);
+  const prev = Math.max(0, Number(d.prev_count) || 0);
+  const cur = Math.max(0, Number(d.cur_count) || 0);
+  const delta = cur - prev;
+
+  const headline = `${_plural(newCount, "new report", "new reports")} in ${area}`;
+
+  const summaryBits = [
+    `A mechanical comparison found ${_plural(newCount, "new item", "new items")} across ${_plural(clusters, "location cluster", "location clusters")}` +
+      (corrob > 0 ? `, ${_plural(corrob, "cluster", "clusters")} corroborated by two or more publishers.` : "."),
+    `Reports in the area: ${prev} → ${cur} (${delta >= 0 ? "+" : ""}${delta}).`,
+  ];
+  const summary = summaryBits.join(" ").slice(0, 2000);
+
+  const unchanged = cont > 0
+    ? [`${_plural(cont, "previously-seen report is", "previously-seen reports are")} still present in the area.`]
+    : [];
+
+  const data_gaps = (Array.isArray(failSources) ? failSources : [])
+    .map((s) => `The ${String(s)} source was unavailable this run, so any changes there are not reflected.`);
+
+  const limitations = [
+    "Locations represent the reported subject of each article, not a confirmed on-the-ground position.",
+    "Only the sources you selected, within the monitored area and the most recent news window, are considered.",
+  ];
+
+  return {
+    severity: severity || severityFromScore(computeScoreFromDiff(d)),
+    headline,
+    summary,
+    changes: claims || [],
+    unchanged,
+    data_gaps,
+    limitations,
+    change_points: changePoints || [],
+    metrics: metrics || null,
   };
+}
 
-  const ok = !!cleaned.headline && changes.length > 0;
-  return { ok, cleaned, invalidRefs: Array.from(invalid) };
+// A tiny score fallback from a diff (only used if the AI omitted a valid severity
+// AND the caller didn't pass one) — keeps severity honest without the AI.
+function computeScoreFromDiff(d) {
+  const cNew = clamp01((Number(d.new) || 0) / 8);
+  const cClusters = clamp01((Number(d.new_clusters) || 0) / 3);
+  const cCorro = clamp01((Number(d.corroborated_clusters) || 0) / 2);
+  return clamp01(0.5 * cNew + 0.3 * cClusters + 0.2 * cCorro);
 }
