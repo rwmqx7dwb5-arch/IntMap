@@ -65,16 +65,20 @@ test('opening the Monitors tab (logged out) shows the login prompt, not a fake l
 test('Atlas monitor action is HONEST: never claims success when it cannot', async () => {
   const res = await page.evaluate(async () => {
     const out = {};
+    // Extract plain text via an INERT DOMParser document (never executes scripts /
+    // fires onerror, and — unlike a tag-stripping regex — can't be defeated by
+    // malformed markup; also silences CodeQL js/incomplete-multi-character-sanitization).
+    const asText = (h) => (new DOMParser().parseFromString(String(h || ''), 'text/html').body.textContent || '');
     // no area selected → must ask for one, not create
     const create0 = await window.IntMapConsole.dispatch({ type: 'monitor', op: 'create' });
-    out.createNoArea = { ok: create0.ok, txt: (create0.html || '').replace(/<[^>]+>/g, '') };
+    out.createNoArea = { ok: create0.ok, txt: asText(create0.html) };
     // list (logged out) → must say login required, not open an empty list as success
     const list0 = await window.IntMapConsole.dispatch({ type: 'monitor', op: 'list' });
-    out.listLoggedOut = { ok: list0.ok, txt: (list0.html || '').replace(/<[^>]+>/g, '') };
+    out.listLoggedOut = { ok: list0.ok, txt: asText(list0.html) };
     // with an area but logged out → login required
     if (window._radiusFromPoint) window._radiusFromPoint(139.7, 35.68);
     const create1 = await window.IntMapConsole.dispatch({ type: 'monitor', op: 'create' });
-    out.createLoggedOut = { ok: create1.ok, txt: (create1.html || '').replace(/<[^>]+>/g, '') };
+    out.createLoggedOut = { ok: create1.ok, txt: asText(create1.html) };
     return out;
   });
   expect(res.createNoArea.ok).toBe(false);
@@ -145,6 +149,44 @@ test('the create dialog is login-gated (logged out → auth modal, no create dia
   });
   expect(r.createDialog).toBe(false);   // never opens the create form when logged out
   expect(r.authModalShown).toBe(true);  // it routes to login instead
+});
+
+test('(#R144) Workspace desktop: the Monitors window has a default rect — opening ws-mode does not throw', async () => {
+  // Regression guard for R142: the R141 Monitors window had NO defRects() entry, so
+  // mkWin() got an undefined rect and clampRect(undefined) threw at every desktop
+  // ws-mode boot (silently swallowed). Prove the window is now created cleanly and
+  // that entering/leaving ws-mode raises no page errors.
+  const before = diags.pageErrors.length;
+  await page.setViewportSize({ width: 1440, height: 900 });   // ws-mode is desktop-only
+  const r = await page.evaluate(async () => {
+    const out = { hasWs: !!window.IntMapWorkspace };
+    try {
+      window.IntMapWorkspace.open();                            // enter ws-mode → builds all windows (incl. hidden Monitors)
+      await new Promise((res) => setTimeout(res, 400));
+      out.wsActive = window.IntMapWorkspace.active();
+      out.monitorsWin = !!document.querySelector('.ws-monitors');  // the window wrapper exists = mkWin succeeded (no clampRect throw)
+      out.feedStillPresent = !!document.getElementById('monitors-feed');
+      // unhide + render it in ws-mode (mobile tab code path must not run here)
+      try { window.IntMapOS.exec('tab.monitors', { source: 'test' }); } catch (e) { out.execErr = String(e && e.message || e); }
+      await new Promise((res) => setTimeout(res, 250));
+      out.monitorsRendered = !!document.querySelector('.ws-monitors .mon-wrap, .ws-monitors .mon-empty');
+    } catch (e) {
+      out.threw = String(e && e.message || e);
+    } finally {
+      try { window.IntMapWorkspace.close(); } catch (_) { /* */ }
+    }
+    return out;
+  });
+  await page.setViewportSize({ width: 675, height: 900 });     // restore the mobile-ish default for later assertions
+  const after = diags.pageErrors.length;
+  expect(r.hasWs).toBe(true);
+  expect(r.wsActive).toBe(true);
+  expect(r.monitorsWin, 'the Monitors ws-window must be created (defRects entry present)').toBe(true);
+  expect(r.feedStillPresent).toBe(true);
+  expect(r.threw, `ws-mode threw: ${r.threw}`).toBeUndefined();
+  expect(r.execErr, `tab.monitors exec threw: ${r.execErr}`).toBeUndefined();
+  expect(r.monitorsRendered, 'Monitors content renders inside its ws-window').toBe(true);
+  expect(after - before, 'no new page errors during ws-mode open/close').toBe(0);
 });
 
 test('no uncaught page errors and no non-benign console errors', async () => {

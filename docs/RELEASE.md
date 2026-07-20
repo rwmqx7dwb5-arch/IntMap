@@ -8,10 +8,14 @@ work branch → Pull Request → CI (green) → staging check → merge to main 
                                                                                      rollback
 ```
 
-Today production publishes automatically from the `main` branch (GitHub Pages “Deploy from
-a branch”). The workflows in `.github/workflows/` add a **CI-gated** path on top of that,
-which becomes active only after you opt in (see [Enabling the gated deploy](#enabling-the-gated-deploy)).
-Until then, nothing about publishing changes.
+**Current state (as of R144): production publishes via the CI-gated GitHub Actions workflow**
+(`.github/workflows/deploy.yml`). Pages **Source = “GitHub Actions”** and the repo variable
+**`ENABLE_PAGES_DEPLOY = true`** are both set, so every push to `main` runs build → static
+checks → hermetic browser tests → publish the exact committed tree (`git archive HEAD`) →
+post-deploy smoke against the live URL. Confirm a deploy landed with
+`curl -s https://rwmqx7dwb5-arch.github.io/IntMap/build-info.json` — its `sha` must equal
+`git rev-parse origin/main`. (The older “Deploy from a branch” default is no longer in use; if
+`ENABLE_PAGES_DEPLOY` is ever unset the jobs skip green and Pages would fall back to it.)
 
 ## Normal change flow
 
@@ -58,12 +62,13 @@ never be mistaken for production. Production never shows it.
 
 ## Production deploy
 
-- **Default (today):** merging to `main` publishes via GitHub Pages “Deploy from a branch”.
-- **Gated (after opt-in):** `deploy.yml` runs on push to `main`, re-runs static + browser
-  tests, publishes the **exact committed tree** plus a `build-info.json` stamp, then runs
-  the post-deploy smoke against the live URL.
+- **Active (current):** `deploy.yml` runs on push to `main` (Source = GitHub Actions,
+  `ENABLE_PAGES_DEPLOY = true`), re-runs static + browser tests, publishes the **exact committed
+  tree** plus a `build-info.json` stamp, then runs the post-deploy smoke against the live URL.
+- **Fallback:** if `ENABLE_PAGES_DEPLOY` is unset, `deploy.yml` skips green and Pages reverts to
+  “Deploy from a branch”. The steps below are how the gated path was turned on (kept for reference).
 
-### Enabling the gated deploy
+### Enabling the gated deploy (already done — kept for reference)
 
 This is the one settings change that upgrades you from “auto-publish on push” to
 “publish only after tests pass”. Do it once:

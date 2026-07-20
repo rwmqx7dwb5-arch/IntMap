@@ -77,11 +77,19 @@ flowchart LR
 - **AuthN:** Supabase Auth (email + Google/Apple OAuth). The session JWT is stored by the
   Supabase JS client in `localStorage` (its default; Supabase JS cannot use an httpOnly
   cookie). Consequence: **an XSS = token theft**, which is exactly why §4 is the priority.
-- **AuthZ — data:** Postgres **Row Level Security** on all 15 tables + column-level UPDATE
+- **AuthZ — data:** Postgres **Row Level Security** on every table + column-level UPDATE
   grants so a user can only touch their own rows and **cannot** set `is_admin`/`is_pro`/
   `plan`/`email` on their profile (no privilege escalation). See
   [`DATABASE.md`](DATABASE.md) / [`RLS-TESTING.md`](RLS-TESTING.md); enforced baseline in
   `supabase/migrations/20260718090000_baseline.sql`; attack cases in `supabase/tests/*_test.sql`.
+  - **(#R144) RLS is the real protection — grants are wide open in prod.** Supabase's
+    schema-wide default privileges grant `anon`/`authenticated` **full** table privileges on
+    every `public` table (`relacl = {authenticated=arwdDxtm,…}`), so a *column-level* grant does
+    **not** actually restrict a table that has a permissive RLS policy. Where a column must stay
+    server-owned even though its row is user-editable (the Area-Monitors run-state + `next_run_at`),
+    protection is a **BEFORE UPDATE trigger** (`tg_monitors_guard_state`), not the grant. Tables
+    whose writes are meant to be service-role-only rely on RLS **default-deny** (no write policy) —
+    that holds in prod regardless of grants. pgTAP now simulates the prod grant so tests catch this.
 - **AuthZ — AI quota:** `ai_usage` is writable **only** by the SECURITY DEFINER RPCs
   `increment_ai_usage` / `refund_ai_usage`, whose EXECUTE is granted to `service_role` only.
   A user cannot inflate/deflate their own quota.

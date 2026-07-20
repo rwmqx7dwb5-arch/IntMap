@@ -32791,6 +32791,10 @@ window.addEventListener('DOMContentLoaded', () => {
       quota_exceeded:()=>ML('Quota exceeded','上限超過','Kontingent überschritten','Превышена квота','Cuota excedida'),
       disabled:()=>ML('Paused','停止中','Pausiert','Пауза','Pausado'),
       internal_error:()=>ML('Error','エラー','Fehler','Ошибка','Error'),
+      /* rare partial-persistence outcomes (#R144): shown honestly, retried next run */
+      evidence_failed:()=>ML('Error (data not saved)','エラー（データ未保存）','Fehler (nicht gespeichert)','Ошибка (не сохранено)','Error (no guardado)'),
+      report_failed:()=>ML('Error (report not saved)','エラー（レポート未保存）','Fehler (Bericht nicht gespeichert)','Ошибка (отчёт не сохранён)','Error (informe no guardado)'),
+      scaffold_failed:()=>ML('Error','エラー','Fehler','Ошибка','Error'),
       running:()=>ML('Running…','実行中…','Läuft…','Выполняется…','Ejecutando…')
     };
     const statusLabel=(s)=>{ const f=STATUS_L[s]; return f?f():(s||'—'); };
@@ -32888,21 +32892,32 @@ window.addEventListener('DOMContentLoaded', () => {
         bbox:area.bbox||_bboxOf(area.geometry)||null, area_label:area.label||null,
         sources:(opts.sources&&opts.sources.length?opts.sources:['news']),
         comparison:opts.comparison||{mode:'previous_run',window_days:30}, sensitivity:opts.sensitivity||{},
-        interval_minutes:Math.max(30,parseInt(opts.intervalMin||360,10)||360), enabled:true, next_run_at:new Date().toISOString() };
+        interval_minutes:Math.max(30,parseInt(opts.intervalMin||360,10)||360), enabled:true };  /* next_run_at is server-owned (DB default now()); the client never sets an execution time (#R144) */
       try{ const {data,error}=await DB.from('area_monitors').insert(row).select('*').single(); if(error) return {ok:false,error:_errMsg(error),raw:error}; return {ok:true,monitor:data}; }
       catch(e){ return {ok:false,error:_errMsg(e),raw:e}; } }
     async function setEnabled(id,on){ try{ const {error}=await DB.from('area_monitors').update({enabled:!!on}).eq('id',id); return !error; }catch(_){ return false; } }
     async function remove(id){ try{ const {error}=await DB.from('area_monitors').delete().eq('id',id); return !error; }catch(_){ return false; } }
     async function pause(id){ const ok=await setEnabled(id,false); if(ok) render(); return ok; }
     async function resume(id){ const ok=await setEnabled(id,true); if(ok) render(); return ok; }
-    async function runNow(id){ if(!_loggedIn()){ _promptLogin(); return {ok:false,error:'login'}; }
+    /* Honest, localized reasons for why a manual run couldn't start. The server
+       decides atomically (monitor_claim_one) and returns a distinct code — the UI
+       never claims success and never invents a reason. */
+    function _runReasonMsg(code){ switch(String(code||'')){
+      case 'already_running': return ML('Already running — it’s in progress.','すでに実行中です。','Läuft bereits.','Уже выполняется.','Ya se está ejecutando.');
+      case 'cooldown':        return ML('Please wait a moment before running again.','少し待ってから再実行してください。','Bitte kurz warten, bevor Sie erneut ausführen.','Подождите немного перед повторным запуском.','Espera un momento antes de volver a ejecutar.');
+      case 'disabled':        return ML('This monitor is paused — resume it to run.','この監視は停止中です。再開してください。','Dieser Monitor ist pausiert — fortsetzen zum Ausführen.','Монитор на паузе — возобновите для запуска.','El monitor está en pausa; reanúdalo para ejecutar.');
+      case 'not_found':       return ML('Monitor not found.','監視が見つかりません。','Monitor nicht gefunden.','Монитор не найден.','Monitor no encontrado.');
+      case 'login':           return ML('Log in to run monitors.','ログインすると実行できます。','Zum Ausführen anmelden.','Войдите, чтобы запускать.','Inicia sesión para ejecutar.');
+      default:                return ML('This monitor can’t run right now.','今は実行できません。','Kann derzeit nicht ausgeführt werden.','Сейчас запустить нельзя.','No se puede ejecutar ahora.');
+    } }
+    async function runNow(id){ if(!_loggedIn()){ _promptLogin(); return {ok:false,error:'login',message:_runReasonMsg('login')}; }
       let token=''; try{ const r=await DB.auth.getSession(); token=(r&&r.data&&r.data.session&&r.data.session.access_token)||''; }catch(_){}
-      if(!token) return {ok:false,error:'login'};
+      if(!token) return {ok:false,error:'login',message:_runReasonMsg('login')};
       try{ const resp=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':window.SUPABASE_ANON_KEY||'','Authorization':'Bearer '+token},body:JSON.stringify({monitorId:id})});
         const j=await resp.json().catch(()=>null);
-        if(!resp.ok){ const err=(j&&(j.message||j.error))||('HTTP '+resp.status); return {ok:false,error:err,status:resp.status}; }
+        if(!resp.ok){ const code=(j&&j.error)||('http_'+resp.status); return {ok:false,error:code,message:_runReasonMsg(code),status:resp.status}; }
         return {ok:true,status:(j&&j.status)||'ok'}; }
-      catch(e){ return {ok:false,error:String(e&&e.message||e)}; } }
+      catch(e){ return {ok:false,error:'network',message:ML('Network error — please try again.','ネットワークエラー。再試行してください。','Netzwerkfehler.','Ошибка сети.','Error de red.')}; } }
 
     /* ---- rendering: the list ---- */
     function _statusChip(m){ const run=(m.running_since&&(Date.now()-new Date(m.running_since).getTime())<15*60000); const key=run?'running':(m.enabled===false?'disabled':(m.last_status||'')); const sev=m.last_change_severity;
@@ -32950,7 +32965,7 @@ window.addEventListener('DOMContentLoaded', () => {
           else if(act==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); b.disabled=false; b.textContent='▶';
             if(r.ok){ _toast(ML('Monitor ran: ','実行しました: ','Ausgeführt: ','Запущено: ','Ejecutado: ')+statusLabel(r.status)); render(); }
             else if(r.error==='login'){ _promptLogin(); }
-            else { _toast(ML('Run failed: ','実行失敗: ','Fehlgeschlagen: ','Ошибка: ','Fallo: ')+String(r.error||'')); } }
+            else { _toast(r.message||_runReasonMsg(r.error)); } }
         }; });
       }); }
 
@@ -33023,7 +33038,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<h4 class="mon-h4">'+S(ML('Run history','実行履歴','Verlauf','История','Historial'))+'</h4>'+runsHtml;
       const ov=_overlay(inner,'mon-ov-detail');
       ov.querySelectorAll('.mon-detail-acts .mon-btn').forEach(b=>{ b.onclick=async()=>{ const d=b.getAttribute('data-d');
-        if(d==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); if(r.ok){ _toast(ML('Ran: ','実行: ','Lauf: ','Запуск: ','Ejec.: ')+statusLabel(r.status)); ov.remove(); render(); setTimeout(()=>openDetail(id),400); } else if(r.error==='login'){ _promptLogin(); } else { b.disabled=false; _toast(String(r.error||'')); } }
+        if(d==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); if(r.ok){ _toast(ML('Ran: ','実行: ','Lauf: ','Запуск: ','Ejec.: ')+statusLabel(r.status)); ov.remove(); render(); setTimeout(()=>openDetail(id),400); } else if(r.error==='login'){ _promptLogin(); } else { b.disabled=false; _toast(r.message||_runReasonMsg(r.error)); } }
         else if(d==='map'){ let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts); ov.remove(); _closeSheetIfMobile(); }
         else if(d==='pause'){ await pause(id); ov.remove(); }
         else if(d==='resume'){ await resume(id); ov.remove(); }

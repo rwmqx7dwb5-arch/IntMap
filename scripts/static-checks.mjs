@@ -127,7 +127,10 @@ const DESTRUCTIVE = [
   { name: 'DROP COLUMN', re: /\bdrop\s+column\b/i },
   { name: 'ALTER … TYPE', re: /\balter\s+column\b[\s\S]{0,60}?\btype\b/i },
   { name: 'DISABLE ROW LEVEL SECURITY', re: /\bdisable\s+row\s+level\s+security\b/i },
-  { name: 'TRUNCATE', re: /\btruncate\b/i },
+  // Match TRUNCATE only as a STATEMENT (start of a statement), so that REVOKEing
+  // the TRUNCATE *privilege* — which is hardening, the opposite of destructive —
+  // is not flagged. A real `truncate [table] x` always begins a statement.
+  { name: 'TRUNCATE', re: /(?:^|;)\s*truncate\b/im },
   { name: 'DELETE FROM', re: /\bdelete\s+from\b/i },
 ];
 const stripSqlComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ');
