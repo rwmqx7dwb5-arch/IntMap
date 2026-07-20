@@ -382,7 +382,33 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .stat-flag{ font-size:30px; line-height:1; } .stat-main{ flex:1; min-width:0; }   /* (#R104) flag a touch larger per request */
     /* (#R137) optional rank number on the far LEFT of a country card (Settings → default OFF). Fixed width + tabular
        digits so flags/names stay aligned regardless of 1–3 digit ranks. */
-    .stat-rank{ flex:0 0 auto; min-width:26px; text-align:center; font-size:19px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+    /* (#R139) iOS-style rank numeral: SF Pro Rounded rounded digits, tabular so ranks stay column-aligned, iOS
+       semibold weight. Falls back cleanly to system-ui on non-Apple platforms. */
+    .stat-rank{ flex:0 0 auto; min-width:28px; text-align:center; font-family:ui-rounded,"SF Pro Rounded","SF Pro Display",system-ui,-apple-system,"Segoe UI",sans-serif; font-size:19px; font-weight:600; color:var(--text-muted); font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1; letter-spacing:-0.01em; }
+    /* (#R139) honest population-progress bar: INDETERMINATE animated sweep (no fake %) whenever WorldPop reports no
+       real fraction (a single-request sum). Determinate mode just uses the inline fill width set by _imProgCtl.set. */
+    .tp-prog.indet .tp-prog-fill{ width:100% !important; background:linear-gradient(90deg, rgba(10,132,255,0) 0%, #0a84ff 42%, #5e5ce6 58%, rgba(94,92,230,0) 100%) !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
+    @keyframes imProgSweep{ 0%{ background-position:-45% 0; } 100%{ background-position:145% 0; } }
+    /* (#R139) Companies tab — logo (where the country flag sat in Countries), sector/HQ subline, detail overlay. */
+    .co-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; flex:0 0 auto; }
+    .co-logo{ width:30px; height:30px; border-radius:8px; object-fit:contain; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.14); }
+    .co-mono{ width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; }
+    .co-banner{ opacity:0.85; }
+    .co-row{ cursor:pointer; }
+    .co-detail-ov{ position:fixed; inset:0; z-index:99990; background:rgba(0,0,0,0.42); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; padding:18px; }
+    .co-detail{ position:relative; width:min(420px,94vw); max-height:88vh; overflow:auto; background:var(--sidebar-bg,var(--bg-color)); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.28)); border-radius:18px; box-shadow:0 18px 60px rgba(0,0,0,0.4); padding:20px; }
+    .co-detail-x{ position:absolute; top:12px; right:12px; width:30px; height:30px; border:none; border-radius:50%; background:var(--input-bg); color:var(--text-main); font-size:15px; cursor:pointer; }
+    .co-detail-head{ display:flex; align-items:center; gap:13px; margin-bottom:14px; }
+    .co-logo-lg{ width:52px; height:52px; }
+    .co-logo-lg .co-logo,.co-logo-lg .co-mono{ width:50px; height:50px; border-radius:13px; font-size:24px; }
+    .co-detail-name{ font-size:18px; font-weight:700; letter-spacing:-0.2px; }
+    .co-detail-tk{ font-size:12px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+    .co-detail-rows{ display:flex; flex-direction:column; }
+    .co-drow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 2px; border-bottom:1px solid rgba(128,128,128,0.16); font-size:13.5px; }
+    .co-drow:last-child{ border-bottom:none; }
+    .co-drow span{ color:var(--text-muted); } .co-drow b{ font-variant-numeric:tabular-nums; text-align:right; }
+    .co-detail-link{ display:inline-block; margin-top:12px; font-size:13px; color:var(--primary-color); text-decoration:none; font-weight:600; }
+    .co-detail-link:hover{ text-decoration:underline; }
     .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:400; white-space:nowrap; }   /* (#R116) metric value NOT bold (requested) */
     .map-container.tool-active .maplibregl-canvas{ cursor:crosshair; }
     #map{ position:absolute; inset:0; width:100%; height:100%; background:var(--bg-color); }
@@ -2113,7 +2139,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     </div>
     <div class="control-panel">
       <button class="mode-btn" id="btn-news" data-i18n="tabNews">News</button>
-      <button class="mode-btn" id="btn-info" data-i18n="tabInfo">Information</button>
+      <button class="mode-btn" id="btn-info" data-i18n="tabCompanies">Companies</button><!-- (#R139) Information tab retired → Companies (id kept to avoid churn; mode string stays 'info') -->
       <button class="mode-btn" id="btn-stats" data-i18n="tabStats">Countries</button><!-- (#R73) tab renamed Stats→Data→Countries (user picked from 5 candidates) -->
       <button class="mode-btn mode-atlas" id="btn-community" title="Atlas">Atlas</button><!-- (#R98) Community removed; this sidebar slot now opens the Atlas AI console (id kept to avoid churn). (#R101) no ✨; Atlas-gradient background, News/Countries shape. -->
     </div>
@@ -2321,7 +2347,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     <div class="settings-sec">
     <div class="setting-group"><label data-i18n="lblLayerPanel">Layer panel</label><select id="setting-layerpanel"><option value="classic" data-i18n="layerPanelClassic">Classic dropdown</option><option value="right" data-i18n="layerPanelRight">Right sidebar (visual, with previews)</option></select></div>
     <!-- (#R137) show/hide the rank number in the Countries list (default OFF) -->
-    <div class="setting-group"><label data-i18n="lblShowRank">Rank numbers (Countries)</label><select id="setting-showrank"><option value="off" data-i18n="showRankOff">Off (default)</option><option value="on" data-i18n="showRankOn">On — show rank in the country list</option></select></div>
+    <div class="setting-group"><label data-i18n="lblShowRank">Rank numbers (Countries)</label><select id="setting-showrank"><option value="on" data-i18n="showRankOn">On (default)</option><option value="off" data-i18n="showRankOff">Off</option></select></div>
     <div class="setting-group"><label data-i18n="lblTicker">Bottom ticker (news &amp; markets)</label><select id="setting-ticker"><option value="off" data-i18n="tickerOff">Off (default)</option><option value="on" data-i18n="tickerOn">On — thin strip below the map</option></select>
       <div id="ticker-syms" style="margin-top:10px;"></div></div>
     <div class="setting-group"><label data-i18n="lblWsMode">Window workspace (desktop)</label><button type="button" id="setting-wsmode-btn" style="width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;">Switch to workspace →</button><div class="sat-keys-hint" data-i18n="wsHint">News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.</div></div>
@@ -2639,7 +2665,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ===== i18n ===== */
   const i18n={
-    en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabStats:"Countries",
+    en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabCompanies:"Companies", tabStats:"Countries",
       searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
@@ -2672,7 +2698,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiSumBtn:"Summarize this area with AI", popInArea:"Population in this area", popCalcing:"Calculating population…", popFail:"Population lookup failed — try again.", newsInArea:"News in this area", elevProfile:"Elevation profile", finalizeMeas:"Keep on map", aiSumTitle:"Area briefing", aiSumSub:"{n} news pins in the selected area", aiSumNoArea:"Draw an area or place a circle first.", aiSumNoNews:"No news pins inside this area.",
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
-    jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabStats:"国別統計",
+    jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabCompanies:"企業", tabStats:"国別統計",
       searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
@@ -2707,7 +2733,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiVisHead:"AI変化検出", aiVisBtn:"変化を検出", aiVisTitle:"衛星画像 変化レポート", aiVisSub:"{a} → {b} を比較", aiVisBefore:"過去", aiVisAfter:"新しい", aiVisCapturing:"画像を取得中…", aiVisPickDates:"比較する2つの日付を選択してください。", aiVisNeedsDated:"衛星モードで日付選択可能なプロバイダ（MODIS / VIIRS / Sentinel-2）に切替えてください。", aiVisCapFail:"地図画像を取得できませんでした。" },
     /* (#R22) German + Russian cover the visible static UI; anything not listed falls back to English
        (the long tail of dynamically-built strings is still EN/JP only — see t() fallback). */
-    de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabStats:"Länder", tabCommunity:"Community",
+    de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabCompanies:"Unternehmen", tabStats:"Länder", tabCommunity:"Community",
       searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
       viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
       settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
@@ -2754,7 +2780,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiSumBtn:"Dieses Gebiet mit KI zusammenfassen", popInArea:"Bevölkerung in diesem Gebiet", popCalcing:"Berechne Bevölkerung…", popFail:"Bevölkerungsabfrage fehlgeschlagen — erneut versuchen.", newsInArea:"Nachrichten in diesem Gebiet", elevProfile:"Höhenprofil", finalizeMeas:"Auf Karte behalten", aiSumTitle:"Gebiets-Briefing", aiSumSub:"{n} Nachrichten-Pins im ausgewählten Gebiet", aiSumNoArea:"Zeichnen Sie zuerst ein Gebiet oder platzieren Sie einen Kreis.", aiSumNoNews:"Keine Nachrichten-Pins in diesem Gebiet.", aiViewSumTitle:"Was auf dem Bildschirm passiert",
       aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem datumsfähigen Anbieter (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Kartenbilder konnten nicht erfasst werden.",
       mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
-    ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabStats:"Страны", tabCommunity:"Сообщество",
+    ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabCompanies:"Компании", tabStats:"Страны", tabCommunity:"Сообщество",
       searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
       viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
       settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
@@ -2802,7 +2828,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiVisHead:"ИИ-обнаружение изменений", aiVisBtn:"Обнаружить изменения", aiVisTitle:"Отчёт об изменениях со спутника", aiVisSub:"Сравнение {a} → {b}", aiVisBefore:"До", aiVisAfter:"После", aiVisCapturing:"Захват снимков…", aiVisPickDates:"Выберите две даты для сравнения.", aiVisNeedsDated:"Переключитесь на провайдера с выбором даты (MODIS / VIIRS / Sentinel-2) в режиме спутника.", aiVisCapFail:"Не удалось захватить снимки карты.",
       mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" },
     /* (#R40) Spanish (beta). Covers the visible static UI like DE/RU; anything not listed falls back to English (t() fallback). */
-    es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabStats:"Países", tabCommunity:"Comunidad",
+    es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabCompanies:"Empresas", tabStats:"Países", tabCommunity:"Comunidad",
       searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
       viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
       settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
@@ -6248,41 +6274,34 @@ window.addEventListener('DOMContentLoaded', () => {
     { const pb2=p.querySelector('#tp-pop-btn');
       const showRes=(popv,yr,src,multi)=>{ const row=p.querySelector('#tp-pop-row'), val=p.querySelector('#tp-pop-val');
         if(row&&val){ row.style.display=''; val.innerHTML=Number(popv).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+src+' '+yr+(multi?' · Σ':'')+')</span>'; } };
-      /* (#R122) PROGRESS BAR — the WorldPop summation runs as a server-side task that takes ~10-30 s, so the button
-         used to just sit on "Calculating…" and read as broken ("使えない"). Show a live progress bar (same style as
-         Line-of-sight): a time-based asymptotic ramp toward ~92% (WorldPop gives no true %), snapping to 100% on the
-         real result. For multiple radius circles the bar advances per finished circle. */
+      /* (#R122/#R139) PROGRESS BAR — the WorldPop summation runs as a server-side task (~10-30 s). WorldPop gives NO
+         true % for a single request (its task API only reports created/finished), so the old time-based ease-out that
+         DECELERATED toward 92% and snapped to 100% read as meaningless ("100%に近づくほど遅くなる／グラフの意味を成さない").
+         Now HONEST (see window._imProgCtl): an INDETERMINATE animated sweep while there is no real fraction, switching
+         to a REAL LINEAR fraction the moment one exists — a large area that must be TILED reports tiles-done/total,
+         and multiple radius circles advance per finished circle (each circle's own tiling fills its band). */
       const _progLbl=()=>currentLang==='jp'?'WorldPop人口グリッドを集計中…':currentLang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':currentLang==='ru'?'Суммирование сетки населения WorldPop…':currentLang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
       const _mkProg=()=>{ let box=p.querySelector('.tp-prog'); if(!box){ box=document.createElement('div'); box.className='tp-prog'; box.style.cssText='margin:7px 0 2px;';
           box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0a84ff,#5e5ce6);transition:width .2s;"></div></div>';
           if(pb2&&pb2.parentNode) pb2.parentNode.insertBefore(box,pb2.nextSibling); else p.appendChild(box); }
-        box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.style.display='block'; return box; };
-      const _setProg=(box,frac)=>{ try{ const f=Math.max(0,Math.min(1,frac)); const fill=box.querySelector('.tp-prog-fill'), pct=box.querySelector('.tp-prog-pct'); if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} };
-      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); let t0=Date.now(), base=0, span=1, done=false, realProg=false, shown=0, hand=0;
-        /* (#R129) MONOTONIC progress. The bar has two drivers: a time-based ramp (Driver A, below) and the estimate's
-           real per-tile fraction (Driver B, onProg). For a large tiled area the first tile takes ~5-30 s, during which
-           the ramp climbs to several-tens-of-%, then Driver B took over at 1/tiles (≈3%) and the bar SNAPPED BACKWARDS
-           to ~0 and re-climbed ("数十%までいってから0%から再スタート"). Fix: `_sp` never displays less than the highest
-           fraction already shown, and real progress is remapped into the band ABOVE the ramp's hand-off point so it
-           continues forward from where the ramp left off instead of resetting. */
-        const _sp=(f)=>{ f=Math.max(0,Math.min(1,f)); if(f<shown) f=shown; shown=f; _setProg(box,f); };
-        /* (#R124) once the estimate reports REAL per-tile progress (a large tiled area), the time-based ramp yields
-           to it — otherwise the bar sat at ~92% for the whole minute-long tiled sum ("読み込み中で止まる"). */
-        const tick=()=>{ if(done||realProg) return; const el=(Date.now()-t0)/1000; const ramp=0.92*(1-Math.exp(-el/9)); _sp(base+span*ramp); };
-        const timer=setInterval(tick,200); tick();
-        const onProg=(f)=>{ if(!realProg){ realProg=true; hand=shown; } f=Math.max(0,Math.min(1,f)); _sp(hand+(1-hand)*f); };
+        box.querySelector('.tp-prog-lbl').textContent=_progLbl(); box.classList.remove('indet'); box.style.display='block'; return box; };
+      if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); const P=window._imProgCtl(box); P.busy();
+        const onProg=(f)=>P.set(f);   /* fires only when the area is large enough to be TILED → real tiles-done fraction */
         try{
           pb2.disabled=true; pb2.textContent=t('popCalcing');
           if(toolMode==='area'&&measurePoints.length>=3){
             const geom={type:'Polygon',coordinates:[[...measurePoints,measurePoints[0]]]};
-            const r=await window.IntMapPopArea.estimate(geom, onProg); done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
+            const r=await window.IntMapPopArea.estimate(geom, onProg); P.done(); setTimeout(()=>{ box.style.display='none'; },450);
             showRes(r.pop,r.year,r.src,false); pb2.style.display='none'; return; }
           if(toolMode==='radius'&&radiusItems.length){ let tot=0, yr=2020, src='WorldPop'; const N=radiusItems.length;
-            for(let i=0;i<N;i++){ base=i/N; span=1/N; t0=Date.now(); const c=radiusItems[i]; const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm); const r=await window.IntMapPopArea.estimate(g); tot+=r.pop; yr=r.year; src=r.src; _sp((i+1)/N); }
-            done=true; clearInterval(timer); _setProg(box,1); setTimeout(()=>{ box.style.display='none'; },500);
+            for(let i=0;i<N;i++){ if(N>1) P.set(i/N); else P.busy();
+              const c=radiusItems[i]; const g=window.IntMapPopArea.circleGeom(c.center,c.radiusKm);
+              const r=await window.IntMapPopArea.estimate(g, (N>1)?(f=>P.set((i+Math.max(0,Math.min(1,f)))/N)):onProg); tot+=r.pop; yr=r.year; src=r.src;
+              if(N>1) P.set((i+1)/N); }
+            P.done(); setTimeout(()=>{ box.style.display='none'; },450);
             showRes(tot,yr,src,N>1); pb2.style.display='none'; return; }
-          done=true; clearInterval(timer); box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popInArea');
-        }catch(e){ done=true; clearInterval(timer); box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popFail'); setTimeout(()=>{ try{ pb2.textContent=t('popInArea'); }catch(_){} },2600); } }; }
+          box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popInArea');
+        }catch(e){ box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popFail'); setTimeout(()=>{ try{ pb2.textContent=t('popInArea'); }catch(_){} },2600); } }; }
     const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; if(toolMode==='area'){ toolMode='measure'; try{ _syncToolBtns(); }catch(_){} } hideMeasureTip(); refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
@@ -8094,7 +8113,7 @@ window.addEventListener('DOMContentLoaded', () => {
         onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} },
         onShow:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} },
         onHide:()=>{ try{ window._clearCompare&&window._clearCompare(); }catch(_){} try{ const p=document.getElementById('country-popup'); if(p) p.style.display='none'; }catch(_){} } },
-      {id:'info',     sels:['#info-dashboard'],  t:()=>T('Information','インフォメーション','Information','Информация','Información'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderDashboard==='function') renderDashboard(); }catch(_){} }},
+      {id:'info',     sels:['#info-dashboard'],  t:()=>T('Companies','企業','Unternehmen','Компании','Empresas'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderCompanies==='function') renderCompanies(); }catch(_){} }},
       /* (#R101) Community window removed from workspace mode ("まだコミュニティ機能が残っている") — the community
          feature was already retired from the sidebar (R98); this leftover window/menu entry is gone too. */
       {id:'map',   sels:['#map-container'],   t:()=>T('Map','地図','Karte','Карта','Mapa'), min:[380,300]},
@@ -10117,6 +10136,277 @@ window.addEventListener('DOMContentLoaded', () => {
   window._sfSetKey=(i,k)=>{ if(statsFilters[i]){ statsFilters[i].key=k; _sfRerender(); } };
   window._sfSetOp=(i,op)=>{ if(statsFilters[i]){ statsFilters[i].op=op; _sfRerender(); } };
   window._sfSetVal=(i,raw)=>{ if(statsFilters[i]){ statsFilters[i].raw=raw; statsFilters[i].val=_sfParse(raw); _sfRerender(); } };
+  /* ============================================================================================
+   *  (#R139) COMPANIES — replaces the retired Information tab. A Countries-style, sortable ranking of the world's
+   *  largest public companies across various indicators (market cap by default). Reference figures (revenue / net
+   *  income / employees / founded) are the LATEST REPORTED values in billions USD; MARKET CAP is LIVE for US-listed
+   *  names — shares outstanding × live price via the SAME keyless Yahoo v8 chart endpoint the bottom ticker uses —
+   *  and the latest reported snapshot for the rest (non-US listings, honestly labelled). A company logo loads where
+   *  the country flag sat in Countries. Wired into Atlas via IntMapOS ('tab.companies'). ======================== */
+  const CO_SECTORS={
+    tech:['Technology','テクノロジー','Technologie','Технологии','Tecnología'],
+    semi:['Semiconductors','半導体','Halbleiter','Полупроводники','Semiconductores'],
+    software:['Software','ソフトウェア','Software','ПО','Software'],
+    internet:['Internet & Media','インターネット・メディア','Internet & Medien','Интернет и медиа','Internet y medios'],
+    ecommerce:['E-commerce','Eコマース','E-Commerce','Электронная торговля','Comercio electrónico'],
+    finance:['Financials','金融','Finanzen','Финансы','Finanzas'],
+    bank:['Banking','銀行','Banken','Банки','Banca'],
+    payments:['Payments','決済','Zahlungen','Платежи','Pagos'],
+    health:['Healthcare','ヘルスケア','Gesundheit','Здравоохранение','Salud'],
+    pharma:['Pharmaceuticals','製薬','Pharma','Фармацевтика','Farmacéutica'],
+    energy:['Energy','エネルギー','Energie','Энергетика','Energía'],
+    consumer:['Consumer','消費財','Konsumgüter','Потреб. товары','Consumo'],
+    retail:['Retail','小売','Einzelhandel','Розничная торговля','Minorista'],
+    auto:['Automotive','自動車','Automobil','Автопром','Automoción'],
+    industrial:['Industrials','資本財','Industrie','Промышленность','Industria'],
+    telecom:['Telecom','通信','Telekom','Телеком','Telecom'],
+    media:['Media','メディア','Medien','Медиа','Medios'],
+    aerospace:['Aerospace & Defense','航空宇宙・防衛','Luft- & Raumfahrt','Аэрокосмос','Aeroespacial'],
+    materials:['Materials','素材','Werkstoffe','Материалы','Materiales'],
+    staples:['Consumer Staples','生活必需品','Basiskonsumgüter','Товары первой необходимости','Bienes básicos']
+  };
+  const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'] };
+  window.IntMapCompanies=(function(){
+    /* rows: [ ticker, name, nameJP(''=use EN), countryISO3, sectorKey, domain, founded, employees, revenueB, netIncomeB,
+       sharesOutB (0 = non-US → use snapshot, no live calc), marketCapSnapshotB ]. Money & shares in BILLIONS. */
+    const RAW=[
+      ['AAPL','Apple','アップル','USA','tech','apple.com',1976,164000,391,94,15.1,3400],
+      ['MSFT','Microsoft','マイクロソフト','USA','software','microsoft.com',1975,228000,245,88,7.43,3300],
+      ['NVDA','NVIDIA','エヌビディア','USA','semi','nvidia.com',1993,29600,61,30,24.5,3200],
+      ['GOOGL','Alphabet (Google)','アルファベット','USA','internet','abc.xyz',1998,182000,328,74,12.2,2300],
+      ['AMZN','Amazon','アマゾン','USA','ecommerce','amazon.com',1994,1551000,620,37,10.5,2200],
+      ['META','Meta Platforms','メタ','USA','internet','meta.com',2004,67000,156,62,2.54,1400],
+      ['2222.SR','Saudi Aramco','サウジアラムコ','SAU','energy','aramco.com',1933,73000,480,105,0,1750],
+      ['AVGO','Broadcom','ブロードコム','USA','semi','broadcom.com',1991,20000,51,14,4.68,800],
+      ['TSLA','Tesla','テスラ','USA','auto','tesla.com',2003,140000,97,15,3.19,800],
+      ['TSM','TSMC','TSMC','TWN','semi','tsmc.com',1987,76000,90,36,0,900],
+      ['LLY','Eli Lilly','イーライリリー','USA','pharma','lilly.com',1876,43000,40,10,0.95,780],
+      ['JPM','JPMorgan Chase','JPモルガン','USA','bank','jpmorganchase.com',2000,309000,158,50,2.83,620],
+      ['WMT','Walmart','ウォルマート','USA','retail','walmart.com',1962,2100000,665,16,8.03,600],
+      ['V','Visa','ビザ','USA','payments','visa.com',1958,28800,36,20,1.95,560],
+      ['UNH','UnitedHealth Group','ユナイテッドヘルス','USA','health','unitedhealthgroup.com',1977,440000,372,14,0.92,500],
+      ['XOM','Exxon Mobil','エクソンモービル','USA','energy','exxonmobil.com',1999,61000,340,36,4.42,500],
+      ['MA','Mastercard','マスターカード','USA','payments','mastercard.com',1966,33400,28,12,0.92,450],
+      ['ORCL','Oracle','オラクル','USA','software','oracle.com',1977,159000,53,10,2.77,430],
+      ['COST','Costco','コストコ','USA','retail','costco.com',1983,316000,254,7,0.443,410],
+      ['HD','Home Depot','ホームデポ','USA','retail','homedepot.com',1978,463000,153,15,0.99,400],
+      ['PG','Procter & Gamble','P&G','USA','staples','pg.com',1837,108000,84,15,2.35,390],
+      ['NFLX','Netflix','ネットフリックス','USA','media','netflix.com',1997,13000,39,8,0.43,380],
+      ['JNJ','Johnson & Johnson','J&J','USA','pharma','jnj.com',1886,138000,85,14,2.41,370],
+      ['NVO','Novo Nordisk','ノボ・ノルディスク','DNK','pharma','novonordisk.com',1923,64000,42,14,0,350],
+      ['MC.PA','LVMH','LVMH','FRA','consumer','lvmh.com',1987,213000,90,14,0,330],
+      ['ABBV','AbbVie','アッヴィ','USA','pharma','abbvie.com',2013,50000,54,5,1.77,330],
+      ['BAC','Bank of America','バンク・オブ・アメリカ','USA','bank','bankofamerica.com',1998,213000,100,27,7.6,320],
+      ['ASML','ASML','ASML','NLD','semi','asml.com',1984,42000,30,8,0,320],
+      ['CRM','Salesforce','セールスフォース','USA','software','salesforce.com',1999,72000,38,6,0.96,300],
+      ['KO','Coca-Cola','コカ・コーラ','USA','staples','coca-cola.com',1892,79100,46,10,4.31,280],
+      ['SAP','SAP','SAP','DEU','software','sap.com',1972,108000,34,6,0,280],
+      ['CVX','Chevron','シェブロン','USA','energy','chevron.com',1879,45600,197,21,1.8,270],
+      ['TM','Toyota Motor','トヨタ自動車','JPN','auto','toyota.com',1937,380000,300,32,0,270],
+      ['MRK','Merck','メルク','USA','pharma','merck.com',1891,71000,64,17,2.53,250],
+      ['NSRGY','Nestlé','ネスレ','CHE','staples','nestle.com',1866,275000,100,12,0,250],
+      ['TMUS','T-Mobile US','Tモバイル','USA','telecom','t-mobile.com',1994,71000,81,11,1.16,250],
+      ['WFC','Wells Fargo','ウェルズ・ファーゴ','USA','bank','wellsfargo.com',1852,220000,82,19,3.35,240],
+      ['AMD','AMD','AMD','USA','semi','amd.com',1969,26000,23,2,1.62,240],
+      ['ROG.SW','Roche','ロシュ','CHE','pharma','roche.com',1896,103000,65,12,0,240],
+      ['PEP','PepsiCo','ペプシコ','USA','staples','pepsico.com',1898,318000,92,9,1.37,230],
+      ['AZN','AstraZeneca','アストラゼネカ','GBR','pharma','astrazeneca.com',1999,89900,46,7,0,230],
+      ['OR.PA','L\'Oréal','ロレアル','FRA','consumer','loreal.com',1909,90000,45,7,0,230],
+      ['ADBE','Adobe','アドビ','USA','software','adobe.com',1982,30000,21,5,0.44,220],
+      ['NVS','Novartis','ノバルティス','CHE','pharma','novartis.com',1996,76000,48,12,0,220],
+      ['SHEL','Shell','シェル','GBR','energy','shell.com',1907,96000,290,20,0,220],
+      ['LIN','Linde','リンデ','USA','materials','linde.com',1879,66000,33,6,0.48,210],
+      ['MCD','McDonald\'s','マクドナルド','USA','consumer','mcdonalds.com',1955,150000,26,8,0.716,210],
+      ['CSCO','Cisco','シスコ','USA','tech','cisco.com',1984,84900,54,10,3.97,200],
+      ['ACN','Accenture','アクセンチュア','IRL','tech','accenture.com',1989,733000,65,7,0.626,220],
+      ['IBM','IBM','IBM','USA','tech','ibm.com',1911,282000,62,7,0.92,200],
+      ['ABT','Abbott','アボット','USA','health','abbott.com',1888,114000,40,5,1.74,200],
+      ['GE','GE Aerospace','GEエアロスペース','USA','aerospace','geaerospace.com',1892,52000,35,6,1.07,200],
+      ['AXP','American Express','アメックス','USA','finance','americanexpress.com',1850,74600,60,10,0.71,200],
+      ['TMO','Thermo Fisher','サーモフィッシャー','USA','health','thermofisher.com',1956,125000,43,6,0.383,200],
+      ['DIS','Walt Disney','ディズニー','USA','media','disney.com',1923,225000,89,5,1.81,190],
+      ['QCOM','Qualcomm','クアルコム','USA','semi','qualcomm.com',1985,49000,39,10,1.11,190],
+      ['NOW','ServiceNow','サービスナウ','USA','software','servicenow.com',2004,26000,11,1,0.205,190],
+      ['MS','Morgan Stanley','モルガン・スタンレー','USA','bank','morganstanley.com',1935,80000,54,10,1.61,180],
+      ['TXN','Texas Instruments','テキサス・インスツルメンツ','USA','semi','ti.com',1930,34000,16,6,0.91,180],
+      ['PM','Philip Morris Intl','フィリップモリス','USA','staples','pmi.com',1847,79000,35,7,1.56,180],
+      ['DHR','Danaher','ダナハー','USA','health','danaher.com',1969,63000,24,4,0.72,180],
+      ['9988.HK','Alibaba','アリババ','CHN','ecommerce','alibaba.com',1999,200000,130,10,0,220],
+      ['0700.HK','Tencent','テンセント','CHN','internet','tencent.com',1998,105000,90,22,0,450],
+      ['005930.KS','Samsung Electronics','サムスン電子','KOR','tech','samsung.com',1969,267000,200,15,0,370],
+      ['GS','Goldman Sachs','ゴールドマン・サックス','USA','bank','goldmansachs.com',1869,46000,46,11,0.32,170],
+      ['CAT','Caterpillar','キャタピラー','USA','industrial','caterpillar.com',1925,113000,67,10,0.48,170],
+      ['ISRG','Intuitive Surgical','インテュイティブ','USA','health','intuitive.com',1995,14000,8,2,0.356,180],
+      ['VZ','Verizon','ベライゾン','USA','telecom','verizon.com',1983,105000,134,11,4.21,170],
+      ['INTU','Intuit','インテュイット','USA','software','intuit.com',1983,18800,16,3,0.28,175],
+      ['RY','Royal Bank of Canada','カナダ・ロイヤル銀行','CAN','bank','rbc.com',1864,94000,48,12,0,170],
+      ['T','AT&T','AT&T','USA','telecom','att.com',1983,141000,122,14,7.17,160],
+      ['RTX','RTX','RTX','USA','aerospace','rtx.com',1922,185000,69,5,1.33,160],
+      ['BKNG','Booking Holdings','ブッキング','USA','internet','booking.com',1996,21600,22,6,0.033,160],
+      ['HSBC','HSBC','HSBC','GBR','bank','hsbc.com',1865,220000,66,22,0,160],
+      ['PFE','Pfizer','ファイザー','USA','pharma','pfizer.com',1849,88000,58,8,5.67,160],
+      ['SIE.DE','Siemens','シーメンス','DEU','industrial','siemens.com',1847,320000,82,9,0,160],
+      ['NEE','NextEra Energy','ネクステラ','USA','energy','nexteraenergy.com',1925,15100,25,7,2.06,150],
+      ['SPGI','S&P Global','S&Pグローバル','USA','finance','spglobal.com',1917,40000,14,4,0.31,150],
+      ['AMGN','Amgen','アムジェン','USA','pharma','amgen.com',1980,26000,33,7,0.537,150],
+      ['BLK','BlackRock','ブラックロック','USA','finance','blackrock.com',1988,19800,20,6,0.149,150],
+      ['UBER','Uber','ウーバー','USA','tech','uber.com',2009,31100,40,2,2.09,150],
+      ['TTE','TotalEnergies','トタルエナジーズ','FRA','energy','totalenergies.com',1924,102000,210,18,0,150],
+      ['HON','Honeywell','ハネウェル','USA','industrial','honeywell.com',1906,97000,37,6,0.65,140],
+      ['UNP','Union Pacific','ユニオン・パシフィック','USA','industrial','up.com',1862,32800,24,6,0.606,145],
+      ['LOW','Lowe\'s','ロウズ','USA','retail','lowes.com',1946,285000,83,7,0.57,140],
+      ['SYK','Stryker','ストライカー','USA','health','stryker.com',1941,52000,22,3,0.382,140],
+      ['BHP','BHP Group','BHP','AUS','materials','bhp.com',1885,80000,55,13,0,140],
+      ['SPOT','Spotify','スポティファイ','SWE','media','spotify.com',2006,7000,16,0.6,0.203,120],
+      ['SHOP','Shopify','ショッピファイ','CAN','ecommerce','shopify.com',2006,8300,8,1,1.29,130],
+      ['BX','Blackstone','ブラックストーン','USA','finance','blackstone.com',1985,4700,11,2,0.72,140],
+      ['NKE','Nike','ナイキ','USA','consumer','nike.com',1964,79400,51,6,1.49,120],
+      ['TJX','TJX Companies','TJX','USA','retail','tjx.com',1956,349000,54,4,1.12,135],
+      ['COP','ConocoPhillips','コノコフィリップス','USA','energy','conocophillips.com',1875,10000,58,9,1.2,130],
+      ['C','Citigroup','シティグループ','USA','bank','citigroup.com',1998,229000,80,13,1.9,130],
+      ['SCHW','Charles Schwab','チャールズ・シュワブ','USA','finance','schwab.com',1971,32000,19,5,1.82,130],
+      ['ANET','Arista Networks','アリスタ','USA','tech','arista.com',2004,4400,6,2,1.26,120],
+      ['BSX','Boston Scientific','ボストン・サイエンティフィック','USA','health','bostonscientific.com',1979,48000,15,2,1.47,130],
+      ['UL','Unilever','ユニリーバ','GBR','staples','unilever.com',1929,128000,64,7,0,150],
+      ['SONY','Sony','ソニー','JPN','tech','sony.com',1946,113000,88,8,0,120],
+      ['ADP','ADP','ADP','USA','tech','adp.com',1949,63000,19,4,0.407,120],
+      ['MU','Micron','マイクロン','USA','semi','micron.com',1978,48000,25,1,1.11,120],
+      ['PANW','Palo Alto Networks','パロアルト','USA','software','paloaltonetworks.com',2005,15000,8,2,0.324,120],
+      ['VRTX','Vertex Pharma','バーテックス','USA','pharma','vrtx.com',1989,5000,10,3,0.257,120],
+      ['GILD','Gilead Sciences','ギリアド','USA','pharma','gilead.com',1987,18000,27,5,1.25,110],
+      ['MDT','Medtronic','メドトロニック','USA','health','medtronic.com',1949,95000,32,4,1.28,110],
+      ['LMT','Lockheed Martin','ロッキード・マーティン','USA','aerospace','lockheedmartin.com',1995,122000,71,5,0.235,110],
+      ['SBUX','Starbucks','スターバックス','USA','consumer','starbucks.com',1971,381000,36,4,1.13,110],
+      ['TD','Toronto-Dominion Bank','TD銀行','CAN','bank','td.com',1855,95000,43,8,0,110],
+      ['SNY','Sanofi','サノフィ','FRA','pharma','sanofi.com',1973,91000,45,6,0,130],
+      ['BA','Boeing','ボーイング','USA','aerospace','boeing.com',1916,171000,78,-8,0.75,130],
+      ['LRCX','Lam Research','ラムリサーチ','USA','semi','lamresearch.com',1980,17200,15,4,1.28,100],
+      ['REGN','Regeneron','リジェネロン','USA','pharma','regeneron.com',1988,12000,13,4,0.108,100],
+      ['KLAC','KLA','KLA','USA','semi','kla.com',1975,15000,10,3,0.134,90],
+      ['SNPS','Synopsys','シノプシス','USA','software','synopsys.com',1986,20000,6,1,0.154,90],
+      ['CDNS','Cadence','ケイデンス','USA','software','cadence.com',1988,11000,4,1,0.272,80],
+      ['MRVL','Marvell','マーベル','USA','semi','marvell.com',1995,6500,6,-0.2,0.865,90],
+      ['MDLZ','Mondelez','モンデリーズ','USA','staples','mondelezinternational.com',2012,91000,36,5,1.33,90],
+      ['GEV','GE Vernova','GEバーノバ','USA','energy','gevernova.com',2024,75000,35,1,0.273,90],
+      ['PYPL','PayPal','ペイパル','USA','payments','paypal.com',1998,27200,32,4,1.0,80],
+      ['CVS','CVS Health','CVSヘルス','USA','health','cvshealth.com',1963,300000,373,4,1.26,80]
+    ];
+    const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0}));
+    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
+    async function _fjson(u){ for(const p of PROX){ try{ const r=await fetch(p(u)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
+    function mcap(c){ return (c.sh>0 && c.price>0)?(c.sh*c.price):c.mcapSnap; }
+    function isLive(c){ return c.sh>0 && c.price>0; }
+    let _loading=false, _loaded=0;
+    /* Live market cap for US-listed names: fetch each price via the keyless Yahoo v8 chart endpoint (through the
+       same CORS-proxy ladder the ticker uses), concurrency-limited, cached 5 min. onUpdate fires progressively and
+       once at completion so the ranking re-sorts live. Non-US names keep their reported snapshot. Fully guarded —
+       if the proxies are down the tab still shows real (reported) figures. */
+    async function loadPrices(onUpdate){
+      const now=Date.now(); if(_loading) return; if(_loaded && (now-_loaded)<300000) return;
+      _loading=true; const live=DATA.filter(c=>c.sh>0); let idx=0, upd=0; const CONC=5;
+      async function w(){ for(;;){ const i=idx++; if(i>=live.length) return; const c=live[i];
+        try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?range=1d&interval=1d');
+          const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
+          if(m&&+m.regularMarketPrice>0){ const p=+m.regularMarketPrice, cand=c.sh*p;
+            /* SANITY GUARD: a live market cap that deviates by more than ~5× from the reported snapshot means a bad
+               fetch (wrong symbol / stale proxy response / currency mismatch) or an off share count — reject it and
+               keep the honest reported figure rather than corrupt the ranking. Genuine price movement stays live. */
+            if(cand>=c.mcapSnap*0.2 && cand<=c.mcapSnap*5){ c.price=p; if((++upd%8===0)&&onUpdate){ try{ onUpdate(); }catch(_){} } } } }catch(_){} } }
+      try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
+      _loaded=Date.now(); _loading=false; if(onUpdate){ try{ onUpdate(); }catch(_){} }
+    }
+    return { DATA, mcap, isLive, loadPrices };
+  })();
+  let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
+  const _coL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+  const _coSec=(k)=>{ const s=CO_SECTORS[k]; return s?_coL(s[0],s[1],s[2],s[3],s[4]):k; };
+  const _coCountry=(cc)=>{ const c=CO_CC[cc]; return c?(currentLang==='jp'?c[1]:c[0]):cc; };
+  const _coFlag=(cc)=>{ const c=CO_CC[cc]; return c?c[2]:''; };
+  const _coName=(c)=>(currentLang==='jp'&&c.nJp)?c.nJp:c.n;
+  const CO_IND=()=>[['mcap',_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil')],['rev',_coL('Revenue','売上高','Umsatz','Выручка','Ingresos')],['ni',_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto')],['pe',_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E')],['emp',_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados')],['price',_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')],['fnd',_coL('Founded','設立年','Gegründet','Год основания','Fundada')],['name',_coL('Name','名称','Name','Название','Nombre')]];
+  function _coVal(c,key){ switch(key){ case 'rev':return c.rev; case 'ni':return c.ni; case 'emp':return c.emp; case 'fnd':return c.fnd; case 'price':return c.price>0?c.price:NaN; case 'pe':{ const mc=IntMapCompanies.mcap(c); return (c.ni>0&&mc>0)?(mc/c.ni):NaN; } case 'name':return 0; default:return IntMapCompanies.mcap(c); } }
+  function _coMetric(c,key){ switch(key){ case 'rev':return fmtMoney(c.rev); case 'ni':return (c.ni<0?'-':'')+fmtMoney(Math.abs(c.ni)); case 'emp':return (c.emp?c.emp.toLocaleString():'—'); case 'fnd':return ''+c.fnd; case 'price':return c.price>0?('$'+c.price.toFixed(2)):'—'; case 'pe':{ const v=_coVal(c,'pe'); return (isFinite(v)&&v>0)?v.toFixed(1):'—'; } default:return fmtMoney(IntMapCompanies.mcap(c)); } }
+  window.setCoSort=function(k){ const D={mcap:'desc',rev:'desc',ni:'desc',pe:'asc',emp:'desc',price:'desc',fnd:'desc',name:'asc'}; coSort=k; coSortDir=D[k]||'desc'; renderCompanies(); };
+  window.toggleCoSortDir=function(){ coSortDir=(coSortDir==='asc')?'desc':'asc'; renderCompanies(); };
+  window._coSfToggle=()=>{ coFilterOpen=!coFilterOpen; renderCompanies(); };
+  window._coSfAdd=()=>{ coFilters.push({key:'mcap',op:'gte',raw:'',val:NaN}); coFilterOpen=true; renderCompanies(); };
+  window._coSfRemove=(i)=>{ coFilters.splice(i,1); renderCompanies(); };
+  window._coSfClear=()=>{ coFilters=[]; renderCompanies(); };
+  window._coSfSetKey=(i,k)=>{ if(coFilters[i]){ coFilters[i].key=k; renderCompanies(); } };
+  window._coSfSetOp=(i,op)=>{ if(coFilters[i]){ coFilters[i].op=op; renderCompanies(); } };
+  window._coSfSetVal=(i,raw)=>{ if(coFilters[i]){ coFilters[i].raw=raw; coFilters[i].val=_sfParse(raw); renderCompanies(); } };
+  /* Countries-style ranking of companies, rendered into the (repurposed) #info-dashboard container. */
+  function renderCompanies(q){
+    const feed=document.getElementById('info-dashboard'); if(!feed) return; try{ clearMarkers(); }catch(_){}
+    if(q==null) q=(currentMode==='info')?searchVal():'';
+    let arr=IntMapCompanies.DATA.slice();
+    if(q){ const ql=String(q).toLowerCase(); arr=arr.filter(c=>c.n.toLowerCase().includes(ql)||(c.nJp&&c.nJp.includes(q))||c.tk.toLowerCase().includes(ql)||_coSec(c.sec).toLowerCase().includes(ql)); }
+    const actF=coFilters.filter(f=>f&&f.key&&isFinite(f.val));
+    if(actF.length) arr=arr.filter(c=>actF.every(f=>{ const v=_coVal(c,f.key); if(!isFinite(v)) return false; return f.op==='lte'?(v<=f.val):(v>=f.val); }));
+    const key=coSort, dir=coSortDir;
+    arr.sort((a,b)=>{ if(key==='name'){ const av=_coName(a),bv=_coName(b); const cc=av.localeCompare(bv,currentLang==='jp'?'ja':undefined); return dir==='asc'?cc:-cc; }
+      const av=_coVal(a,key), bv=_coVal(b,key); const aok=isFinite(av), bok=isFinite(bv); if(!aok&&!bok)return 0; if(!aok)return 1; if(!bok)return -1; return dir==='asc'?(av-bv):(bv-av); });
+    const IND=CO_IND();
+    const _arrow=up=>'<svg class="ssd-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+(up?'<path d="M12 19.5V5M6.5 11l5.5-6 5.5 6"/>':'<path d="M12 4.5V19M6.5 13l5.5 6 5.5-6"/>')+'</svg>';
+    const dirLbl=_arrow(dir==='asc')+'<span class="ssd-labels" data-dir="'+(dir==='asc'?'asc':'desc')+'"><span class="ssd-l ssd-l-asc">'+t('sortAsc')+'</span><span class="ssd-l ssd-l-desc">'+t('sortDesc')+'</span></span>';
+    const _FIND=IND.filter(([k])=>k!=='name');
+    const nAct=coFilters.filter(f=>f&&f.key&&isFinite(f.val)).length;
+    const funnel='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>';
+    const filterBtn=`<button type="button" class="stats-filter-btn${coFilterOpen?' on':''}${nAct?' has':''}" onclick="_coSfToggle()">${funnel}${nAct?`<span class="sf-badge">${nAct}</span>`:''}</button>`;
+    const sfPanel=(()=>{ if(!coFilterOpen) return ''; const opts=(sel)=>_FIND.map(([k,l])=>`<option value="${k}"${sel===k?' selected':''}>${l}</option>`).join('');
+      const rows=coFilters.map((f,i)=>`<div class="sf-row"><select onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${_sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button type="button" class="sf-x" onclick="_coSfRemove(${i})">✕</button></div>`).join('');
+      return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${_sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_coSfAdd()">+ ${_sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${coFilters.length?`<button type="button" class="sf-clear" onclick="_coSfClear()">${_sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
+    let html=`<div class="stats-toolbar"><select class="stats-sort-sel" onchange="setCoSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${coSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleCoSortDir()" title="${t('sortDir')}">${dirLbl}</button>${filterBtn}</div>${sfPanel}`;
+    html+=`<div class="stats-timebanner co-banner">${_coL('Market cap live where available · figures: latest reported','時価総額は可能な限りライブ · 指標は最新の報告値','Marktkap. live, wo verfügbar · Angaben: zuletzt berichtet','Капитализация в реальном времени, где возможно · показатели: последние отчётные','Cap. en vivo cuando es posible · cifras: últimas reportadas')}</div>`;
+    if(!arr.length) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
+    arr.forEach((c,i)=>{ const nm=_coName(c);
+      const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
+      const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
+      const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
+      const logo=`<img class="co-logo" alt="" data-dom="${IntMapSafe.html(c.dom)}" data-name="${IntMapSafe.html(nm)}" data-hue="${hue}" data-step="0" src="https://logo.clearbit.com/${encodeURIComponent(c.dom)}">`;
+      html+=`<div class="stat-row co-row" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}"><span class="stat-rank">${i+1}</span><span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}</div></div>`;
+    });
+    const st0=feed.scrollTop;
+    feed.innerHTML=html;
+    try{ feed.scrollTop=st0; }catch(_){}
+    feed.querySelectorAll('.co-logo').forEach(img=>{ img.onerror=function(){ const s=+this.dataset.step||0; const dom=this.dataset.dom||'';
+      if(s===0){ this.dataset.step='1'; this.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(dom)+'&sz=64'; }
+      else { this.onerror=null; const mono=document.createElement('span'); mono.className='co-mono'; mono.textContent=(this.dataset.name||'?').trim().slice(0,1).toUpperCase(); try{ mono.style.background='hsl('+(this.dataset.hue||0)+',55%,45%)'; }catch(_){} this.replaceWith(mono); } }; });
+    feed.querySelectorAll('.co-row').forEach(row=>{ row.onclick=()=>{ try{ showCompanyDetail(row.getAttribute('data-tk')); }catch(_){} }; });
+    feed.style.paddingBottom='24px';
+    try{ IntMapCompanies.loadPrices(()=>{ if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){}
+  }
+  window.renderCompanies=renderCompanies;
+  /* Company detail overlay — every indicator for one company + a link to its site (all figures honestly sourced). */
+  function showCompanyDetail(tk){ const c=IntMapCompanies.DATA.find(x=>x.tk===tk); if(!c) return;
+    let ov=document.getElementById('co-detail-ov'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='co-detail-ov'; ov.className='co-detail-ov';
+    const nm=_coName(c); const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
+    const mc=IntMapCompanies.mcap(c), live=IntMapCompanies.isLive(c);
+    const peV=_coVal(c,'pe');
+    const rows=[ [_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil'), fmtMoney(mc)+' · '+(live?_coL('live','ライブ','live','в реальном времени','en vivo'):_coL('reported','報告値','berichtet','отчёт','reportado'))],
+      [_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción'), c.price>0?('$'+c.price.toFixed(2)):'—'],
+      [_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E'), (isFinite(peV)&&peV>0)?peV.toFixed(1):'—'],
+      [_coL('Revenue','売上高','Umsatz','Выручка','Ingresos'), fmtMoney(c.rev)],
+      [_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto'), (c.ni<0?'-':'')+fmtMoney(Math.abs(c.ni))],
+      [_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados'), c.emp?c.emp.toLocaleString():'—'],
+      [_coL('Founded','設立年','Gegründet','Год основания','Fundada'), ''+c.fnd],
+      [_coL('Sector','セクター','Sektor','Сектор','Sector'), _coSec(c.sec)],
+      [_coL('Headquarters','本社','Hauptsitz','Штаб-квартира','Sede'), (_coFlag(c.cc)?_coFlag(c.cc)+' ':'')+_coCountry(c.cc)] ];
+    const site='https://'+c.dom;
+    ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="Close">✕</button>`+
+      `<div class="co-detail-head"><span class="co-logo-box co-logo-lg"><img class="co-logo" alt="" data-dom="${IntMapSafe.html(c.dom)}" data-name="${IntMapSafe.html(nm)}" data-hue="${hue}" data-step="0" src="https://logo.clearbit.com/${encodeURIComponent(c.dom)}"></span>`+
+      `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
+      `<div class="co-detail-rows">${rows.map(r=>`<div class="co-drow"><span>${IntMapSafe.html(r[0])}</span><b>${IntMapSafe.html(String(r[1]))}</b></div>`).join('')}</div>`+
+      `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
+    document.body.appendChild(ov);
+    const close=()=>{ try{ ov.remove(); }catch(_){} };
+    ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+    const xb=ov.querySelector('.co-detail-x'); if(xb) xb.onclick=close;
+    const img=ov.querySelector('.co-logo'); if(img) img.onerror=function(){ const s=+this.dataset.step||0; const dom=this.dataset.dom||''; if(s===0){ this.dataset.step='1'; this.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(dom)+'&sz=64'; } else { this.onerror=null; const mono=document.createElement('span'); mono.className='co-mono'; mono.textContent=(this.dataset.name||'?').trim().slice(0,1).toUpperCase(); try{ mono.style.background='hsl('+(this.dataset.hue||0)+',55%,45%)'; }catch(_){} this.replaceWith(mono); } };
+  }
+  window.showCompanyDetail=showCompanyDetail;
+
   function renderStats(q){
     const feed=document.getElementById('countries-feed')||document.getElementById('live-news-feed'); clearMarkers();
     /* (#R69) the 5-country comparison view owns the feed while it is open — a deferred renderStats (e.g. the
@@ -10194,7 +10484,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(arr.length===0) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
     /* (#R137) optional rank number on the far left (Settings → "Rank numbers", default OFF). The rank is the row's
        position in the CURRENT sort+filter, so it tracks whatever indicator/direction is active. */
-    const _showRank=(window.imShowRank==='on');
+    const _showRank=(window.imShowRank!=='off');   /* (#R139) rank numbers now default ON (show unless explicitly turned off) */
     arr.forEach((s,i)=>{
       const active=compareSet.has(s.code)?'compare-on':'';
       /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
@@ -10297,6 +10587,11 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   function dashBadgeLabel(b){ if(!b||currentLang==='en') return b||''; const e=_DASH_BADGE[b]; return (e&&e[currentLang])||b; }
   function renderDashboard(){
+    /* (#R139) The Information dashboard was RETIRED — the "info" tab is now COMPANIES. Every renderDashboard() call
+       site (tab render, ws window, search input, Supabase/cache hooks) delegates here, so they all render Companies
+       and can never clobber the Companies view. The original dashboard body below is retained (dead) to avoid
+       touching the many references it holds; it is unreachable. */
+    try{ return renderCompanies(); }catch(_){ }
     const dash=document.getElementById('info-dashboard'); clearMarkers(); const dict=i18n[currentLang];
     const q=(currentMode==='info')?searchVal():'';   /* live text filter (#27) */
     /* (#R20) World Events Archive — the Information tab is split into Places (the original cards)
@@ -10795,7 +11090,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
   /* sidebar tabs — TRUE kernel commands (setMode is the engine primitive the command calls). */
   IntMapOS.register('tab.news', ()=>setMode('news','btn-news'), {label:'News tab', btn:'btn-news', group:'tab'});
-  IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Information tab', btn:'btn-info', group:'tab'});
+  IntMapOS.register('tab.info', ()=>setMode('info','btn-info'), {label:'Companies tab', btn:'btn-info', group:'tab'});   /* (#R139) Information → Companies (command id kept) */
   IntMapOS.register('tab.stats', ()=>setMode('stats','btn-stats'), {label:'Countries tab', btn:'btn-stats', group:'tab'});
   /* (#R112) The 4th sidebar slot is Atlas. In normal + mobile mode it is a REAL tab (setMode → renders into
      #atlas-feed like News/Info/Countries); in workspace mode Atlas keeps its own floating window. */
@@ -11609,7 +11904,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. 取得する情報</b> — アカウント情報（メールアドレス、表示名）、投稿内容（コミュニティ投稿・コメント・投票・通報・任意の画像）、保存した記事、及びホスティング/認証基盤（Supabase）やOAuth利用時に処理される技術情報（IPアドレス、端末・ブラウザ情報）。</p>
     <p><b>2. ローカル保存</b> — 設定、衛星タイルの任意APIキー、ニュースのキャッシュはお使いのブラウザ内にのみ保存され、当方サーバーには送信されません。AIキーをブラウザに保存することはありません（AIはサーバー側で実行）。端末の位置情報は、天気・大気質等のウィジェットや「現在地へ移動」機能の利用時にブラウザの許可を得た上でのみ取得され、端末内での地図表示に使用されます（天気・大気質の取得時のみ座標が気象API（Open-Meteo）に送信されます）。当方サーバーに保存されることはありません。</p>
     <p><b>3. 利用目的</b> — アカウント、コミュニティ、保存機能の提供、及びサービスの運営・保護のために利用します。</p>
-    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo。Open-Meteoが利用できない場合は自動的にMET Norwayへフォールバックし、対象地点の座標、または標高スキャン・放射性物質拡散機能では対象地点周辺のグリッド状の座標が送信されます。放射性物質拡散で過去の日時を指定した場合は、その時点の気象を得るためOpen-MeteoのERA5アーカイブ archive-api.open-meteo.com が使用されます）、道路経路案内（OSRM — router.project-osrm.org・routing.openstreetmap.de。Atlasに車/徒歩/自転車の経路を依頼すると、出発地・目的地・経由地の座標がOpenStreetMapの道路データ上での経路算出のため送信されます）、公共交通経路案内（Transitous／MOTIS — api.transitous.org。Atlasに電車・地下鉄・バス等の公共交通経路を依頼すると、出発地・目的地の座標が世界の公開GTFSデータ上での行程算出のため送信されます）、到達圏の算出（Valhalla／FOSSGIS — valhalla1.openstreetmap.de。Atlasで「車で30分」「徒歩15分」等の到達圏を求めると、起点の座標と指定した分数がOpenStreetMapの道路網上での到達範囲（等時線）算出のため送信されます）、ストリートビューの埋め込み（Google — 「ここのストリートビュー」パネルやAtlasのストリートビュー機能を開くと、選択した座標のGoogle製ストリートビュー埋め込みが読み込まれ、Googleのポリシーが適用されます）、流域界の算出（Global Watersheds／mghydro.com — Atlasで河川流域を描画する際、河川端点の座標が実際の流域ポリゴン算出のため送信されます）、範囲内人口の集計（WorldPop — api.worldpop.org。測定ツールやAtlasで囲んだ範囲・円・地域の人口を算出すると、その範囲のポリゴン座標が人口グリッド集計のため送信されます）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）、Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます。またAtlasが国家指導者等の現職を回答する際のライブ照会では対象の国コードが送信されます）、ファビコン取得（Google — Atlasの回答に出典リンクカードを表示する際、引用元サイトのドメイン名がサイトアイコン取得のため送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コード・指標コード、およびタイムマシンでは年のみが送信されます）、USGS（地震データの取得）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（fxratesapi／ER-API・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェットと下部ティッカーの価格取得のみで、利用者の情報は送信されません）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。対象の国コードのみが送信されます）、ライブカメラ視聴（「ライブカメラ」レイヤーはOpenStreetMap・Transport for London（TfL JamCams）・Caltrans（カリフォルニア州DOT）・Fintraffic／Digitraffic（フィンランド）・複数の米州DOT（コロラド／インディアナ／アラスカ／アリゾナ、OpenTrafficCamMapオープンデータをjsDelivr CDN経由で利用）、及び米国・カナダの各州/準州DOTの「511」交通カメラ網（フロリダ／ジョージア／ニューヨーク／ペンシルベニア／ノースカロライナ／ネバダ／ウィスコンシン／アイダホ／ルイジアナ／ニューイングランド／オンタリオ／アルバータ／ユーコン。各サイトのカメラ一覧はCORS制限のため公開CORSプロキシ経由で1回ずつ取得し、映像は各カメラの提供元から直接読み込みます）の公開カメラを一覧化します。地形解析（傾斜・斜面方向、電波見通し圏、日照・地形の影、洪水・津波）では公開の標高タイル（Mapzen／AWS「terrarium」DEM、AWS Open Data）を解析対象の範囲について取得しブラウザ内で復号します。日照・影と災害シミュレータはOpenStreetMap Overpass APIで建物形状や風も取得します（送信されるのは解析対象の地図座標のみで、個人データは送信しません）。フライトシミュレーターの音（エンジン音・風切り音・失速/GPWS等の警報音）はブラウザ内でWeb Audioにより合成され外部送信はありませんが、GPWSの音声コールアウトはブラウザ内蔵の音声合成（Web Speech API）を使用するため、ブラウザによっては読み上げ用の固定英語句（「pull up」等）が提供元の音声サービスで処理される場合があります。カメラを開くと、その提供元の第三者コンテンツ＝数秒ごとに自動更新される静止画（カメラ/提供元から直接取得）／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／短尺クリップ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。各社のプライバシーポリシーが適用されます。<b>なお、現在有効なAIプロバイダがOpenAIの場合、これらAI機能への入力テキストおよびその出力は、当方が有効化したOpenAIとのコンテンツ共有設定に基づき、OpenAIが独立したデータ管理者としてサービスの開発・改善（モデルの学習・研究・評価・テストを含む）に利用することがあります。この用途は当該入力・出力に対する通常のデータ処理契約（DPA）や監査等の対象外となります。そのため、機微情報・秘密情報・専有情報、HIPAA上の保護対象保健情報、13歳（またはお住まいの地域で定めるデジタル同意年齢）未満の子どもの個人データを、AI機能に入力しないでください。</b></p>
+    <p><b>4. 第三者</b> — Supabase（DB/認証/ホスティング/サーバー処理）、Google/Apple（OAuth利用時）、Google News（RSS。ニュースはサーバー側で取得・地点解析のうえ保存し、ブラウザは解析済み結果を読み込みます。加えてAtlasのライブWeb検索では、対象の地名・トピック名がブラウザから検索語としてGoogle News RSSに送信されます）、地図・衛星タイル（Esri、NASA GIBS、EOX等）、標高・気象API（Open-Meteo。Open-Meteoが利用できない場合は自動的にMET Norwayへフォールバックし、対象地点の座標、または標高スキャン・放射性物質拡散機能では対象地点周辺のグリッド状の座標が送信されます。放射性物質拡散で過去の日時を指定した場合は、その時点の気象を得るためOpen-MeteoのERA5アーカイブ archive-api.open-meteo.com が使用されます）、道路経路案内（OSRM — router.project-osrm.org・routing.openstreetmap.de。Atlasに車/徒歩/自転車の経路を依頼すると、出発地・目的地・経由地の座標がOpenStreetMapの道路データ上での経路算出のため送信されます）、公共交通経路案内（Transitous／MOTIS — api.transitous.org。Atlasに電車・地下鉄・バス等の公共交通経路を依頼すると、出発地・目的地の座標が世界の公開GTFSデータ上での行程算出のため送信されます）、到達圏の算出（Valhalla／FOSSGIS — valhalla1.openstreetmap.de。Atlasで「車で30分」「徒歩15分」等の到達圏を求めると、起点の座標と指定した分数がOpenStreetMapの道路網上での到達範囲（等時線）算出のため送信されます）、ストリートビューの埋め込み（Google — 「ここのストリートビュー」パネルやAtlasのストリートビュー機能を開くと、選択した座標のGoogle製ストリートビュー埋め込みが読み込まれ、Googleのポリシーが適用されます）、流域界の算出（Global Watersheds／mghydro.com — Atlasで河川流域を描画する際、河川端点の座標が実際の流域ポリゴン算出のため送信されます）、範囲内人口の集計（WorldPop — api.worldpop.org。測定ツールやAtlasで囲んだ範囲・円・地域の人口を算出すると、その範囲のポリゴン座標が人口グリッド集計のため送信されます）、jsDelivr CDN（タイムゾーン境界データ等の公開データ配信）、OpenStreetMap Overpass API（表示範囲の公開ウェブカメラ地点のライブ取得に加え、Atlasで指定した種類の施設・POI検索 — 検索範囲と施設種別が送信されます）、Wikidataクエリサービス（Atlasの施設マッピングの第2ソース — 施設種別と対象国コードまたは検索範囲が送信されます。またAtlasが国家指導者等の現職を回答する際のライブ照会では対象の国コードが送信されます）、ファビコン取得（Google — Atlasの回答に出典リンクカードを表示する際、引用元サイトのドメイン名がサイトアイコン取得のため送信されます）、統計データAPI（世界銀行・IMF DataMapper — 国コード・指標コード、およびタイムマシンでは年のみが送信されます）、USGS（地震データの取得）、GDELT（Atlasのブリーフ・統合分析で使う世界ニュース横断検索 — 場所名や質問中のキーワードが検索語として送信されます）、Wikipedia/Wikimedia（記事の有無チェック・要約取得 — 対象の地名やトピック名が送信されます）、市場データAPI（fxratesapi／ER-API・gold-api・CoinGecko・alternative.me・Yahoo Finance — ウィジェット・下部ティッカーの価格取得、およびCompanies（企業）タブで米国上場企業の時価総額をライブ算出するための株価取得に使用します。銘柄コードのみが送信され、利用者の情報は送信されません）、企業ロゴ取得（Clearbit／Google — Companies タブで企業のドメイン名を送信し、そのロゴまたはサイトアイコンを取得します）、地名検索サービス（OpenStreetMap Nominatim・Open-Meteo・Photon/Komoot。検索した地名・テキスト、または地図上でクリックした地名ラベルが、座標や範囲を取得するため送信されます）、行政境界データ（geoBoundaries／GitHub — Atlasの地域ハイライトで構成区画の境界形状を取得します。対象の国コードのみが送信されます）、ライブカメラ視聴（「ライブカメラ」レイヤーはOpenStreetMap・Transport for London（TfL JamCams）・Caltrans（カリフォルニア州DOT）・Fintraffic／Digitraffic（フィンランド）・複数の米州DOT（コロラド／インディアナ／アラスカ／アリゾナ、OpenTrafficCamMapオープンデータをjsDelivr CDN経由で利用）、及び米国・カナダの各州/準州DOTの「511」交通カメラ網（フロリダ／ジョージア／ニューヨーク／ペンシルベニア／ノースカロライナ／ネバダ／ウィスコンシン／アイダホ／ルイジアナ／ニューイングランド／オンタリオ／アルバータ／ユーコン。各サイトのカメラ一覧はCORS制限のため公開CORSプロキシ経由で1回ずつ取得し、映像は各カメラの提供元から直接読み込みます）の公開カメラを一覧化します。地形解析（傾斜・斜面方向、電波見通し圏、日照・地形の影、洪水・津波）では公開の標高タイル（Mapzen／AWS「terrarium」DEM、AWS Open Data）を解析対象の範囲について取得しブラウザ内で復号します。日照・影と災害シミュレータはOpenStreetMap Overpass APIで建物形状や風も取得します（送信されるのは解析対象の地図座標のみで、個人データは送信しません）。フライトシミュレーターの音（エンジン音・風切り音・失速/GPWS等の警報音）はブラウザ内でWeb Audioにより合成され外部送信はありませんが、GPWSの音声コールアウトはブラウザ内蔵の音声合成（Web Speech API）を使用するため、ブラウザによっては読み上げ用の固定英語句（「pull up」等）が提供元の音声サービスで処理される場合があります。カメラを開くと、その提供元の第三者コンテンツ＝数秒ごとに自動更新される静止画（カメラ/提供元から直接取得）／埋め込みプレーヤー（YouTubeの場合はプライバシー強化ドメイン youtube-nocookie.com）／短尺クリップ等が読み込まれ、各提供元・プラットフォームのポリシーが適用されます）、及びAIプロバイダ（Anthropic／OpenAI／Google のいずれか — サーバー側のEdge Functionが当方のキーで呼び出します。AI地点解析のためニュースの見出し等が送信されるほか、AI機能（場所のブリーフ、「AIに質問」、Atlas 自然言語コンソール）に入力したテキストや関連する座標は、応答生成のため送信されます。またAtlasの統合分析では、回答生成のため関連データ（読み込み済みニュースの見出し、気象・大気質・海水温・標高の数値、地震情報、国別統計）が併せて送信されることがあります。さらにAtlasの統合分析・ブリーフでは、AIプロバイダ側のWeb検索機能が実行されることがあり、質問に関連する検索語がプロバイダ経由で検索エンジンに送信されます）。各社のプライバシーポリシーが適用されます。<b>なお、現在有効なAIプロバイダがOpenAIの場合、これらAI機能への入力テキストおよびその出力は、当方が有効化したOpenAIとのコンテンツ共有設定に基づき、OpenAIが独立したデータ管理者としてサービスの開発・改善（モデルの学習・研究・評価・テストを含む）に利用することがあります。この用途は当該入力・出力に対する通常のデータ処理契約（DPA）や監査等の対象外となります。そのため、機微情報・秘密情報・専有情報、HIPAA上の保護対象保健情報、13歳（またはお住まいの地域で定めるデジタル同意年齢）未満の子どもの個人データを、AI機能に入力しないでください。</b></p>
     <p><b>5. Cookie・ローカルストレージ</b> — セッション維持と設定の保存に使用します。</p>
     <p><b>6. 保持期間</b> — アカウントや投稿を削除するまで保持します。</p>
     <p><b>7. あなたの権利</b> — 自己の情報へのアクセス・訂正・削除、投稿の削除が可能です。お問い合わせください。</p>
@@ -11621,7 +11916,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <p><b>1. Data we collect.</b> Account info (email, display name); content you post (community posts, comments, votes, reports, optional images); your saved favorites; and technical data (IP address, device/browser info) processed by our hosting/auth provider (Supabase) and by OAuth providers if you use them.</p>
     <p><b>2. Local storage.</b> Your settings, any optional satellite-tile API key, and the news cache stay in your browser's local storage and are not sent to us. No AI key is ever stored in your browser (AI runs server-side). Your device location is read only when you use the weather/air-quality widgets or the "current location" command, only after the browser asks your permission, and is used on-device to position the map (coordinates are sent only to the weather API, Open-Meteo, to fetch conditions); it is never stored on our servers.</p>
     <p><b>3. How we use data.</b> To provide accounts, community, favorites, and to operate and secure the Service.</p>
-    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result; additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo, and MET Norway as an automatic fallback when Open-Meteo is unavailable — the coordinates of the point, or a grid of points around it for the elevation-scan and radiation-dispersion features, are sent; when a past date is chosen for the radiation-dispersion feature, Open-Meteo's ERA5 archive at archive-api.open-meteo.com is used to obtain the weather for that time); road routing (OSRM — router.project-osrm.org and routing.openstreetmap.de — when you ask Atlas for driving/walking/cycling directions, the origin, destination and any waypoint coordinates are sent to compute the route on OpenStreetMap road data); public-transit routing (Transitous / MOTIS — api.transitous.org — when you ask Atlas for train/subway/bus directions, the origin and destination coordinates are sent to compute the itinerary on worldwide open GTFS feeds); reachable-area / isochrone AND driving directions with avoid options (Valhalla / FOSSGIS — valhalla1.openstreetmap.de — when you ask Atlas or the directions panel for a reachable area such as "30 min by car" or "15 min walk", or for a driving route that avoids tolls / highways / ferries, the origin and destination coordinates — and for isochrones the chosen number of minutes — are sent to compute the route or time-contour area on OpenStreetMap road data); embedded Street View (Google — opening the "Street View here" panel or the Atlas street-view action loads Google's keyless street-view embed for the coordinates you chose, subject to Google's policies); watershed delineation (Global Watersheds / mghydro.com — when Atlas draws a river basin, the coordinates of the river's end points are sent to compute the real watershed polygon); area-population statistics (WorldPop — api.worldpop.org; when you compute the population inside a drawn area, circle or place boundary, the polygon coordinates of that area are sent to sum the population grid); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent; also the live incumbent lookup when Atlas answers who currently holds national office — the target country code is sent); favicon fetching (Google — when Atlas replies show source link cards, the domain names of the cited sites are sent to fetch their site icons); statistics APIs (World Bank, IMF DataMapper — only country, indicator and, for the time-machine, year codes are sent); USGS (earthquake feeds); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (fxratesapi / ER-API, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches only for the widgets and the bottom ticker; nothing about you is sent); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes; only the country code is sent); live-camera viewing — the Live-cameras layer lists public cameras from OpenStreetMap, Transport for London (TfL JamCams), Caltrans (California DOT), Fintraffic/Digitraffic (Finland) several US state DOTs (Colorado/Indiana/Alaska/Arizona, via the OpenTrafficCamMap open dataset on the jsDelivr CDN), and the US-state / Canadian-province DOT "511" camera networks (Florida, Georgia, New York, Pennsylvania, North Carolina, Nevada, Wisconsin, Idaho, Louisiana, New England, Ontario, Alberta and Yukon — each site's camera list is fetched once through a public CORS relay because those endpoints send no CORS header, while the images load directly from each camera's operator); opening one loads that operator's third-party content (a still image auto-refreshed every few seconds directly from the camera/operator, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or a short video clip), subject to that operator's/platform's policies; terrain analysis — the slope/aspect, radio line-of-sight coverage, sun &amp; terrain shadow, and flood/tsunami tools fetch public elevation tiles (Mapzen/AWS "terrarium" DEM, AWS Open Data) for the area you analyse and decode them in your browser, and the sun-shadow &amp; disaster tools also query the OpenStreetMap Overpass API for building footprints / wind (no personal data is sent — only the map coordinates being analysed); the flight simulator (its engine, wind and stall/GPWS warning sounds are synthesized in your browser with Web Audio and not transmitted; its GPWS voice callouts use the browser's built-in speech synthesis (Web Speech API), so depending on the browser the fixed English phrases spoken, such as "pull up", may be processed by the browser vendor's voice service); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). Each has its own privacy policy. <b>When the active AI provider is OpenAI, the text you submit to these AI features and the outputs may be used by OpenAI, as an independent data controller, to develop and improve its services — including training, research, evaluating and testing its models — under a content-sharing arrangement we have enabled; this use falls outside the ordinary data-processing agreement (DPA), auditing and related safeguards for that content. Accordingly, do not enter sensitive, confidential or proprietary information, protected health information (as defined under HIPAA), or the personal data of children under 13 (or the applicable age of digital consent where you live) into the AI features.</b></p>
+    <p><b>4. Third parties.</b> Supabase (database/auth/hosting/server-side processing); Google/Apple (if you use OAuth); Google News (RSS — news is fetched and geolocated server-side and stored, and your browser reads the pre-analysed result; additionally, Atlas live web search sends the place/topic name from your browser to Google News RSS as the search term); map & satellite tiles (Esri, NASA GIBS, EOX and others); elevation/weather APIs (Open-Meteo, and MET Norway as an automatic fallback when Open-Meteo is unavailable — the coordinates of the point, or a grid of points around it for the elevation-scan and radiation-dispersion features, are sent; when a past date is chosen for the radiation-dispersion feature, Open-Meteo's ERA5 archive at archive-api.open-meteo.com is used to obtain the weather for that time); road routing (OSRM — router.project-osrm.org and routing.openstreetmap.de — when you ask Atlas for driving/walking/cycling directions, the origin, destination and any waypoint coordinates are sent to compute the route on OpenStreetMap road data); public-transit routing (Transitous / MOTIS — api.transitous.org — when you ask Atlas for train/subway/bus directions, the origin and destination coordinates are sent to compute the itinerary on worldwide open GTFS feeds); reachable-area / isochrone AND driving directions with avoid options (Valhalla / FOSSGIS — valhalla1.openstreetmap.de — when you ask Atlas or the directions panel for a reachable area such as "30 min by car" or "15 min walk", or for a driving route that avoids tolls / highways / ferries, the origin and destination coordinates — and for isochrones the chosen number of minutes — are sent to compute the route or time-contour area on OpenStreetMap road data); embedded Street View (Google — opening the "Street View here" panel or the Atlas street-view action loads Google's keyless street-view embed for the coordinates you chose, subject to Google's policies); watershed delineation (Global Watersheds / mghydro.com — when Atlas draws a river basin, the coordinates of the river's end points are sent to compute the real watershed polygon); area-population statistics (WorldPop — api.worldpop.org; when you compute the population inside a drawn area, circle or place boundary, the polygon coordinates of that area are sent to sum the population grid); the jsDelivr CDN (delivering open datasets such as the time-zone boundaries); the OpenStreetMap Overpass API (queried live for the public webcam points in view, and for facility/POI searches you request through Atlas — the search area and facility type are sent); the Wikidata Query Service (the second source for Atlas facility mapping — the facility type and the target country code or search area are sent; also the live incumbent lookup when Atlas answers who currently holds national office — the target country code is sent); favicon fetching (Google — when Atlas replies show source link cards, the domain names of the cited sites are sent to fetch their site icons); statistics APIs (World Bank, IMF DataMapper — only country, indicator and, for the time-machine, year codes are sent); USGS (earthquake feeds); GDELT (the worldwide news search behind Atlas briefs and integrated analysis — place names or keywords from your question are sent as the search terms); Wikipedia/Wikimedia (article checks and summaries — the place or topic name is sent); market-data APIs (fxratesapi / ER-API, gold-api, CoinGecko, alternative.me, Yahoo Finance — price fetches for the widgets and the bottom ticker, and live share prices to compute live market caps for US-listed names in the Companies tab; only ticker symbols are sent, nothing about you); company-logo fetching (Clearbit / Google — the company's domain name is sent to fetch its logo or site icon for the Companies tab); geocoding services (OpenStreetMap Nominatim, Open-Meteo and Photon/Komoot) — a place name or text you search, or a place label you click on the map, is sent to look up its coordinates and boundary; administrative-boundary data (geoBoundaries via GitHub — fetched for Atlas region highlights to obtain member-unit boundary shapes; only the country code is sent); live-camera viewing — the Live-cameras layer lists public cameras from OpenStreetMap, Transport for London (TfL JamCams), Caltrans (California DOT), Fintraffic/Digitraffic (Finland) several US state DOTs (Colorado/Indiana/Alaska/Arizona, via the OpenTrafficCamMap open dataset on the jsDelivr CDN), and the US-state / Canadian-province DOT "511" camera networks (Florida, Georgia, New York, Pennsylvania, North Carolina, Nevada, Wisconsin, Idaho, Louisiana, New England, Ontario, Alberta and Yukon — each site's camera list is fetched once through a public CORS relay because those endpoints send no CORS header, while the images load directly from each camera's operator); opening one loads that operator's third-party content (a still image auto-refreshed every few seconds directly from the camera/operator, an embedded player such as YouTube via the privacy-enhanced youtube-nocookie.com domain, or a short video clip), subject to that operator's/platform's policies; terrain analysis — the slope/aspect, radio line-of-sight coverage, sun &amp; terrain shadow, and flood/tsunami tools fetch public elevation tiles (Mapzen/AWS "terrarium" DEM, AWS Open Data) for the area you analyse and decode them in your browser, and the sun-shadow &amp; disaster tools also query the OpenStreetMap Overpass API for building footprints / wind (no personal data is sent — only the map coordinates being analysed); the flight simulator (its engine, wind and stall/GPWS warning sounds are synthesized in your browser with Web Audio and not transmitted; its GPWS voice callouts use the browser's built-in speech synthesis (Web Speech API), so depending on the browser the fixed English phrases spoken, such as "pull up", may be processed by the browser vendor's voice service); and an AI provider (Anthropic, OpenAI or Google — called by our server-side Edge Function with our own key; news headlines are sent for AI geolocation, and any text you submit to the AI features — place briefs, the "Ask AI" box and the Atlas natural-language console — together with the relevant coordinates is sent to generate a response; for Atlas integrated analysis, the relevant gathered data — loaded news headlines, weather/air-quality/sea-temperature/elevation readings, earthquake info and country statistics — may also be sent to generate the answer; Atlas integrated analysis and briefs may additionally run the AI provider's own web-search tool, in which case query terms related to your question are sent to a search engine via the provider). Each has its own privacy policy. <b>When the active AI provider is OpenAI, the text you submit to these AI features and the outputs may be used by OpenAI, as an independent data controller, to develop and improve its services — including training, research, evaluating and testing its models — under a content-sharing arrangement we have enabled; this use falls outside the ordinary data-processing agreement (DPA), auditing and related safeguards for that content. Accordingly, do not enter sensitive, confidential or proprietary information, protected health information (as defined under HIPAA), or the personal data of children under 13 (or the applicable age of digital consent where you live) into the AI features.</b></p>
     <p><b>5. Cookies & local storage.</b> Used for your session and preferences.</p>
     <p><b>6. Retention.</b> Account and content data are kept until you delete your account or content.</p>
     <p><b>7. Your rights.</b> You may access, correct or delete your data and delete your posts. Contact us for help.</p>
@@ -12427,6 +12722,11 @@ window.addEventListener('DOMContentLoaded', () => {
         let name=((sp?sp.textContent:lab.textContent)||'').trim();
         if(!name) return; chips.push({el:cb, name});
       });
+      /* (#R139) publish the active thematic-layer count and, when it changes, re-sync the mobile FABs so the
+         "Map & layers" FAB is accent-coloured ONLY while at least one thematic layer is on (matches this same
+         set — the base name/border/grid/countries toggles above are already excluded via `skip`). */
+      const _prevCnt=window._imActiveLayerCount; window._imActiveLayerCount=chips.length;
+      if(_prevCnt!==chips.length){ try{ window._imSyncMobile&&window._imSyncMobile(); }catch(_){} }
       /* (#R15c) Skip the rebuild entirely when the active set is unchanged (kills needless flicker), and
          compensate the panel's scroll for any height change so toggling a layer doesn't make the whole
          list jump ("いちいち動いて目にうるさい"). */
@@ -14611,13 +14911,18 @@ window.addEventListener('DOMContentLoaded', () => {
     let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (1900→now) | Date (recent days) | (#R137) Time (time-of-day) */
     /* (#R137) HH:MM (24h) label used by the Time tab. */
     const _hm=(w)=>String(w.getHours()).padStart(2,'0')+':'+String(w.getMinutes()).padStart(2,'0');
-    /* (#R137) Time tab writes the chosen time-of-day onto the CURRENTLY-selected date (today when live) and pushes it
-       to the master clock (allowFuture so the whole day is scrubbable). Available data that varies with time-of-day —
-       the day/night terminator (and the sun/shadow sim) — then syncs to it, exactly like Year/Date already sync. */
-    function _applyTimeOfDay(mins){ try{ mins=Math.max(0,Math.min(1439,mins|0));
-      const st=window.IntMapTime.state(); const base=st.isLive?new Date():new Date(st.when);
+    /* (#R137/#R139) Time tab writes the chosen time-of-day onto the date SELECTED BY the Year/Date tabs (today when
+       live) and pushes it to the master clock. (#R139) When that date is TODAY, times AFTER the current moment are NOT
+       selectable (no future) — a PAST date is fully scrubbable 0–24h. Time-of-day data (day/night terminator, sun/shadow)
+       then syncs to it, exactly like Year/Date already sync. */
+    function _timeBase(){ const st=window.IntMapTime.state(); return st.isLive?new Date():new Date(st.when); }
+    function _sameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+    function _timeMaxMins(base){ base=base||_timeBase(); const n=new Date(); return _sameDay(base,n)?(n.getHours()*60+n.getMinutes()):1439; }
+    function _updTimeMax(){ try{ if(!timePicker) return; if(_sameDay(_timeBase(),new Date())) timePicker.max=_hm(new Date()); else timePicker.removeAttribute('max'); }catch(_){} }
+    function _applyTimeOfDay(mins){ try{ const base=_timeBase(); mins=Math.max(0,Math.min(_timeMaxMins(base),mins|0));
       base.setHours(Math.floor(mins/60),mins%60,0,0);
-      window.IntMapTime.set(base,{allowFuture:true,source:'ui'}); }catch(_){} }
+      /* allowFuture:false forbids a future instant — for today it caps at "now"; a past date is always < now anyway. */
+      window.IntMapTime.set(base,{allowFuture:false,source:'ui'}); }catch(_){} }
     /* (#R137) genuine, visible time-of-day effect: the day/night terminator for the selected instant (computed via the
        existing Earth-Replay solar math). Drawn while the Time tab is open; cleared otherwise. Fully guarded. */
     function _tmTerminator(show){ try{ const m=window.__imap||(typeof map!=='undefined'?map:null); if(!m||!m.isStyleLoaded||!m.isStyleLoaded()) return;
@@ -14667,7 +14972,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
       if(m==='year'){ slider.min='1900'; slider.max=String(curY); slider.step='1'; }
-      else if(m==='time'){ slider.min='0'; slider.max='1439'; slider.step='1'; }   /* (#R137) minutes-of-day */
+      else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R139) capped at "now" when the selected date is today */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
       buildScale();
@@ -14710,8 +15015,11 @@ window.addEventListener('DOMContentLoaded', () => {
     if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
-      if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live). */
-        const w=e.when; const mins=w.getHours()*60+w.getMinutes();
+      if(mode==='time'){ /* (#R137) Time tab: show the time-of-day of the current instant (now when live).
+                           (#R139) keep the slider/picker max at "now" while the selected date is today (no future). */
+        const w=e.when; const base=e.isLive?new Date():new Date(e.when); const maxM=_timeMaxMins(base);
+        if(slider.max!==String(maxM)) slider.max=String(maxM); _updTimeMax();
+        let mins=w.getHours()*60+w.getMinutes(); if(mins>maxM) mins=maxM;
         tl.classList.toggle('active',!e.isLive);
         bigval.textContent=_hm(w);
         if(timePicker) timePicker.value=_hm(w);
@@ -14780,7 +15088,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!m.getSource(SRC_DOT)){ m.addSource(SRC_DOT,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           m.addLayer({id:'imloc-dot-halo',type:'circle',source:SRC_DOT,paint:{'circle-radius':13,'circle-color':accent(),'circle-opacity':0.20}});
           m.addLayer({id:'imloc-dot',type:'circle',source:SRC_DOT,paint:{'circle-radius':6,'circle-color':accent(),'circle-stroke-width':2.5,'circle-stroke-color':'#fff'}}); }
-        if(!wired){ wired=true; try{ m.on('styledata',()=>{ if(active&&last){ try{ paint(last.lng,last.lat,last.acc); }catch(_){} } }); }catch(_){} }
+        if(!wired){ wired=true; try{ m.on('styledata',()=>{ if(active&&last){ try{ paint(last.lng,last.lat,last.acc); }catch(_){} } }); }catch(_){}
+          try{ m.on('move',_syncFab); m.on('moveend',_syncFab); }catch(_){} }   /* (#R139) accent the FAB live as the centre nears/leaves the fix */
         return true;
       }catch(_){ return false; }
     }
@@ -14793,20 +15102,27 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(_){}
     }
     function clear(){ const m=M(); if(!m) return; try{ if(m.getSource(SRC_DOT)) m.getSource(SRC_DOT).setData({type:'FeatureCollection',features:[]}); if(m.getSource(SRC_ACC)) m.getSource(SRC_ACC).setData({type:'FeatureCollection',features:[]}); }catch(_){} }
-    function _fabOn(on){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on',!!on); }catch(_){} }
+    /* (#R139) the locate FAB is accent-coloured ONLY when the MAP CENTRE sits on the current-location fix (the
+       location dot is at/near the screen centre) — not merely while tracking. Measured in SCREEN PIXELS so it is
+       zoom-independent ("地図中心が現在地にあればアクセントカラー"). */
+    const _CENTER_PX=44;
+    function _mapCenterAtFix(){ const m=M(); if(!m||!active||!last) return false;
+      try{ const pc=m.project(m.getCenter()), pf=m.project([last.lng,last.lat]); return Math.hypot(pc.x-pf.x,pc.y-pf.y)<=_CENTER_PX; }catch(_){ return false; } }
+    function _syncFab(){ try{ const f=document.getElementById('m-fab-locate'); if(f) f.classList.toggle('on', _mapCenterAtFix()); }catch(_){} }
+    window._imLocSyncFab=_syncFab;
     function start(opts){ opts=opts||{}; const m=M(); if(!m) return;
       if(!navigator.geolocation){ try{ if(typeof imToast==='function') imToast('⚠ '+(currentLang==='jp'?'位置情報が使えません':currentLang==='de'?'Standort nicht verfügbar':currentLang==='ru'?'Геолокация недоступна':currentLang==='es'?'Geolocalización no disponible':'Geolocation unavailable')); }catch(_){} return; }
-      active=true; _fabOn(true);
+      active=true; _syncFab();
       let firstFly=(opts.fly!==false);
       const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
-        paint(lng,lat,ac);
+        paint(lng,lat,ac); _syncFab();
         if(firstFly){ firstFly=false; try{ m.flyTo({center:[lng,lat],zoom:Math.max(m.getZoom(),14),duration:1100}); }catch(_){} } };
       const onErr=_=>{ try{ if(typeof imToast==='function') imToast('⚠ '+(currentLang==='jp'?'位置情報を取得できません（許可が必要です）':currentLang==='de'?'Standort nicht verfügbar (Erlaubnis nötig)':currentLang==='ru'?'Нет доступа к геолокации':currentLang==='es'?'Ubicación no disponible (permiso necesario)':'Location unavailable (permission needed)')); }catch(_){}
-        if(!last){ active=false; _fabOn(false); } };
+        if(!last){ active=false; } _syncFab(); };
       try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:9000,maximumAge:5000}); }catch(_){}
       if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:2000}); }catch(_){} }
     }
-    function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false; _fabOn(false); clear(); }
+    function stop(){ if(watchId!=null){ try{ navigator.geolocation.clearWatch(watchId); }catch(_){} watchId=null; } active=false; _syncFab(); clear(); }
     /* FAB tap: first tap starts + flies; while active it re-centres on the last known fix. */
     function toggleOrRecenter(){ const m=M(); if(active&&last){ try{ m.flyTo({center:[last.lng,last.lat],zoom:Math.max(m.getZoom(),14),duration:900}); }catch(_){} } else start({fly:true}); }
     return { start, stop, toggleOrRecenter, _paint:paint, isActive:()=>active, last:()=>last };
@@ -15317,7 +15633,9 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(b.classList.contains('m-tool-btn')){ const m=(real.textContent||'').trim().match(/^(\S+)\s+([\s\S]+)$/); const lbl=b.querySelector('span:last-child'); if(lbl&&m) lbl.textContent=m[2].trim(); }
         b.classList.toggle('active', real.classList.contains('active')||real.classList.contains('tool-on'));
       });
-      if(fabMap) fabMap.classList.toggle('on', currentMapType==='sat');
+      /* (#R139) the "Map & layers" FAB is accent-coloured ONLY when a thematic layer is selected (was tied to
+         the satellite basemap). `_imActiveLayerCount` is published by _refreshActiveLayers on every change. */
+      if(fabMap) fabMap.classList.toggle('on', (window._imActiveLayerCount||0)>0);
       if(fabTools) fabTools.classList.toggle('on', !!toolMode || isGridOn);
     }
     ['lang-en','lang-jp','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(syncControls,40)); });
@@ -15386,6 +15704,13 @@ window.addEventListener('DOMContentLoaded', () => {
       return { full:0, half:tyHalf, peek:tyPeek, mini:tyMini, H:H, peekH:peek };
     }
     function recompute(){ const d=detents(); if(mapContainer) mapContainer.style.setProperty('--peek-h',d.peekH+'px'); return d; }
+    /* (#R139) exact evaluator for the sheet's CSS timing curve so the map's optical centre re-pads on the SAME
+       curve+duration as the sheet slide (was 300ms / default easing vs the sheet's 460ms cubic-bezier — they
+       settled out of phase, the "同期がまだよわい"). Newton-Raphson invert of the bezier x, then read y. */
+    function _cubicBezier(x1,y1,x2,y2){ const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx, cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+      const fx=t=>((ax*t+bx)*t+cx)*t, dfx=t=>(3*ax*t+2*bx)*t+cx, fy=t=>((ay*t+by)*t+cy)*t;
+      return function(x){ if(x<=0)return 0; if(x>=1)return 1; let t=x; for(let i=0;i<6;i++){ const e=fx(t)-x; if(Math.abs(e)<1e-4)break; const dv=dfx(t); if(Math.abs(dv)<1e-6)break; t-=e/dv; } return fy(t); }; }
+    const _sheetEase=_cubicBezier(0.32,0.72,0,1);   /* === --sheet-ease in CSS */
     function setDetent(name,animate){
       if(animate===undefined) animate=true; const d=recompute(); currentDetent=name;
       const ty=(d[name]!=null)?d[name]:d.half;
@@ -15401,7 +15726,8 @@ window.addEventListener('DOMContentLoaded', () => {
          Summarize, legends) sit just above the sheet's CURRENT top — not the fixed peek line — and
          therefore stay visible at every detent (#32). */
       if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');
-      if(map && map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:covered}, {duration:animate?300:0}); }catch(_){} }
+      /* (#R139) glide the camera in lock-step with the sheet: same 460ms + same easing as the CSS transition. */
+      if(map && map.setPadding){ try{ map.setPadding({top:0,left:0,right:0,bottom:covered}, animate?{duration:460, easing:_sheetEase}:{duration:0}); }catch(_){} }
     }
     window.__setDetent=setDetent;
 
@@ -15410,12 +15736,12 @@ window.addEventListener('DOMContentLoaded', () => {
        so the centerd point never drifts while the sheet is being dragged.
        (#R12) map.setPadding reprojects the whole camera — doing it 60×/s on a WebGL globe is what made
        the live re-center feel janky. The --sheet-cover CSS var still tracks every frame (cheap, so the
-       floating controls glide), but the expensive setPadding is gated to ≥5px movement and one call/rAF. */
+       floating controls glide), but the expensive setPadding is gated to ≥2px movement and one call/rAF. */
     function liveMapPad(ty,d){ d=d||dragD||recompute();
       const covered=mq.matches?Math.min(Math.max(0,d.H-ty), Math.round(window.innerHeight*0.82)):0;
       if(mapContainer) mapContainer.style.setProperty('--sheet-cover', covered+'px');   /* controls follow the sheet live (#32) */
       if(!(map&&map.setPadding)) return;
-      if(Math.abs(covered-_lastPad)<5) return;
+      if(Math.abs(covered-_lastPad)<2) return;   /* (#R139) tighter live tracking (was 5px → the centre stair-stepped/trailed the finger) — still 1 call/rAF for perf */
       if(_padRAF) return; _padRAF=requestAnimationFrame(()=>{ _padRAF=0; _lastPad=covered; try{ map.setPadding({top:0,left:0,right:0,bottom:covered},{duration:0}); }catch(_){} }); }
     function dragStart(y){ dragD=recompute(); maxTy=dragD.peek; dragging=true; startY=y; startTy=curTy(); lastY=y; lastT=performance.now(); vel=0; _lastPad=-1; sidebar.classList.add('sheet-dragging'); }   /* (#R107) PEEK is now the lowest detent — the MINI (logo-hidden) stop is disabled per request */
     function dragMove(y){ if(!dragging) return; let ty=Math.max(0,Math.min(maxTy,startTy+(y-startY))); sidebar.style.setProperty('--sheet-ty',ty+'px'); liveMapPad(ty,dragD); const now=performance.now(),dt=now-lastT; if(dt>0) vel=(y-lastY)/dt; lastY=y; lastT=now; }
@@ -16175,11 +16501,11 @@ window.addEventListener('DOMContentLoaded', () => {
   try{ Object.assign(i18n.ru,{ lblAccent:"Акцентный цвет", accentDefault:"По умолчанию", accentCustom:"Свой цвет" }); }catch(_){}
   try{ Object.assign(i18n.es,{ lblAccent:"Color de acento", accentDefault:"Predeterminado", accentCustom:"Color personalizado" }); }catch(_){}
   /* (#R137) Countries rank-number toggle — 5 languages. */
-  Object.assign(i18n.en,{ lblShowRank:"Rank numbers (Countries)", showRankOff:"Off (default)", showRankOn:"On — show rank in the country list" });
-  Object.assign(i18n.jp,{ lblShowRank:"順位の数字（Countries）", showRankOff:"非表示（デフォルト）", showRankOn:"表示 — 国リストに順位を表示" });
-  try{ Object.assign(i18n.de,{ lblShowRank:"Rangnummern (Länder)", showRankOff:"Aus (Standard)", showRankOn:"An — Rang in der Länderliste zeigen" }); }catch(_){}
-  try{ Object.assign(i18n.ru,{ lblShowRank:"Номера рейтинга (страны)", showRankOff:"Выкл. (по умолчанию)", showRankOn:"Вкл. — показывать ранг в списке стран" }); }catch(_){}
-  try{ Object.assign(i18n.es,{ lblShowRank:"Números de rango (Países)", showRankOff:"Desactivado (predeterminado)", showRankOn:"Activado — mostrar el rango en la lista de países" }); }catch(_){}
+  Object.assign(i18n.en,{ lblShowRank:"Rank numbers (Countries)", showRankOff:"Off", showRankOn:"On (default)" });
+  Object.assign(i18n.jp,{ lblShowRank:"順位の数字（Countries）", showRankOff:"非表示", showRankOn:"表示（デフォルト）" });
+  try{ Object.assign(i18n.de,{ lblShowRank:"Rangnummern (Länder)", showRankOff:"Aus", showRankOn:"An (Standard)" }); }catch(_){}
+  try{ Object.assign(i18n.ru,{ lblShowRank:"Номера рейтинга (страны)", showRankOff:"Выкл.", showRankOn:"Вкл. (по умолчанию)" }); }catch(_){}
+  try{ Object.assign(i18n.es,{ lblShowRank:"Números de rango (Países)", showRankOff:"Desactivado", showRankOn:"Activado (predeterminado)" }); }catch(_){}
   /* (#R42) Share-this-view + Atlas console button tooltips — 5 languages. */
   Object.assign(i18n.en,{ shareView:"Share this view (copy link)", atlasBtn:"Atlas — ask in plain language (beta) · Ctrl/⌘+K" });
   Object.assign(i18n.jp,{ shareView:"この表示を共有（リンクをコピー）", atlasBtn:"Atlas — 自然言語で操作（beta）· Ctrl/⌘+K" });
@@ -16570,7 +16896,8 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'geoBoundaries',u:'https://www.geoboundaries.org/',use:{en:'Administrative boundary shapes (ADM1) for Atlas region compositions — fallback boundary source (CC BY 4.0)',jp:'Atlasの地域ハイライト（構成区画）用の行政境界形状（ADM1）— 予備の境界ソース（CC BY 4.0）'}},
     {n:'GDELT Project',u:'https://www.gdeltproject.org/',use:{en:'Live worldwide news search (last 72 h) powering Atlas briefs & integrated analysis',jp:'Atlasのブリーフ・統合分析で使う世界ニュース横断検索（直近72時間）'}},
     {n:'Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)',u:'https://fxratesapi.com/',use:{en:'FX rates, gold/silver, crypto prices & sentiment — widgets and the bottom ticker',jp:'為替・金銀・暗号資産の価格と指標 — ウィジェット・下部ティッカー'}},
-    {n:'Yahoo Finance',u:'https://finance.yahoo.com/',use:{en:'Stock-index quotes (S&P 500, Dow, Nasdaq, Nikkei 225, DAX) for the bottom ticker',jp:'株価指数（S&P500・ダウ・ナスダック・日経225・DAX）— 下部ティッカー'}},
+    {n:'Yahoo Finance',u:'https://finance.yahoo.com/',use:{en:'Stock-index quotes for the bottom ticker, and live share prices used to compute live market caps in the Companies tab (US-listed names)',jp:'株価指数（下部ティッカー）と、Companies（企業）タブで時価総額をライブ算出するための株価（米国上場銘柄）'}},
+    {n:'Clearbit Logo API / Google favicons',u:'https://logo.clearbit.com/',use:{en:'Company logos in the Companies tab — the company domain name is sent to fetch its logo (falls back to Google favicons, then a monogram)',jp:'Companies（企業）タブの企業ロゴ — 企業のドメイン名を送信してロゴを取得（取得できない場合はGoogleのファビコン、さらにモノグラムへフォールバック）'}},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/',use:{en:'Article checks for place popups + background summaries for Atlas analysis (CC BY-SA)',jp:'地名ポップアップの記事有無チェック・Atlas分析の背景要約（CC BY-SA）'}},
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam',use:{en:'Public webcam points worldwide, queried live from OSM by map view (the contact:webcam / webcam tags, ODbL) and FILTERED to cameras that actually display live imagery in-app — refreshing image / YouTube-live / Roundshot · Panomax 360° / video (link-out-only cams are dropped); the still image auto-refreshes in the popup (no API key)',jp:'世界中の公開ウェブカメラ地点を地図表示範囲に応じてOSMからライブ取得（contact:webcam / webcam タグ、ODbL）し、実際にアプリ内で映像を表示できるもの（更新画像・YouTubeライブ・Roundshot/Panomax 360°・動画）のみに絞り込み（リンクのみのカメラは除外）。静止画はポップアップ内で自動更新（APIキー不要）'}},
     {n:'Transport for London — JamCams',u:'https://api.tfl.gov.uk/',use:{en:'~880 live London traffic cameras (keyless TfL Unified API, "JamCam" places) — each a refreshing JPEG + short clip, shown auto-refreshing in the Live-cameras layer (Powered by TfL Open Data; contains OS data © Crown copyright)',jp:'ロンドンの約880台のライブ交通カメラ（APIキー不要のTfL統合API「JamCam」）— 更新JPEG＋短尺クリップを「ライブカメラ」レイヤーで自動更新表示（Powered by TfL Open Data／OSデータ © Crown copyright を含む）'}},
@@ -16650,7 +16977,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-flat-pan'))      v('setting-flat-pan').value=window.imFlatPan;
       if(v('setting-map-color'))     v('setting-map-color').value=window.imMapColor;
       if(v('setting-layerpanel'))    v('setting-layerpanel').value=(window.imLayerPanel||'classic');
-      if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'off');
+      if(v('setting-showrank'))      v('setting-showrank').value=(window.imShowRank||'on');   /* (#R139) default ON */
       if(v('setting-ticker'))        v('setting-ticker').value=(window.imTicker||'off');
       try{ window._populateTickerSyms&&window._populateTickerSyms(); }catch(_){}   /* (#R102) ticker symbol/item picker */
       try{ window._syncAccentPicker&&window._syncAccentPicker(); }catch(_){}   /* (#R114) reflect the committed accent */
@@ -17579,9 +17906,17 @@ window.addEventListener('DOMContentLoaded', () => {
     function jp(){ return currentLang==='jp'; }
     function ensurePanel(){ if(panel) return panel; panel=document.createElement('div'); panel.className='tool-panel'; panel.id='draw-panel'; panel.style.display='none'; (document.getElementById('map-container')||document.body).appendChild(panel); return panel; }
     function renderPanel(){ const p=ensurePanel(); p.style.display='block';
-      const hint = state==='armed' ? (jp()?'地図をクリック／タップして描画開始':'Click / tap the map to start drawing')
-                 : state==='drawing' ? (jp()?'カーソルを動かして描画 → クリックで確定':'Move the cursor to trace → click to finish')
-                 : (jp()?'完了。「やり直し」で再描画':'Done — use Redraw to start over');
+      /* (#R139) touch devices trace by PRESS-DRAG-RELEASE (not tap) — the hint must say so, or a user taps and
+         nothing draws. Detect coarse pointers and give the right instruction; 5 languages. */
+      const _L5=(en,ja,de,ru,es)=>currentLang==='jp'?ja:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+      const _coarse=(()=>{ try{ return !!(window.matchMedia&&matchMedia('(pointer:coarse)').matches); }catch(_){ return false; } })();
+      const hint = state==='armed'
+                   ? (_coarse ? _L5('Press and drag on the map to trace an area','地図を指でなぞって範囲を描く（押したまま動かす）','Auf der Karte gedrückt ziehen, um eine Fläche zu zeichnen','Проведите пальцем по карте, чтобы обвести область','Mantén y arrastra en el mapa para trazar un área')
+                              : _L5('Click the map to start drawing','地図をクリックして描画開始','Zum Zeichnen auf die Karte klicken','Нажмите на карту, чтобы начать рисовать','Haz clic en el mapa para empezar a dibujar'))
+                 : state==='drawing'
+                   ? (_coarse ? _L5('Lift your finger to finish','指を離すと確定','Finger anheben zum Abschließen','Поднимите палец, чтобы завершить','Levanta el dedo para finalizar')
+                              : _L5('Move the cursor to trace → click to finish','カーソルを動かして描画 → クリックで確定','Cursor bewegen zum Zeichnen → Klick zum Abschließen','Двигайте курсор для обводки → клик для завершения','Mueve el cursor para trazar → clic para finalizar'))
+                 : _L5('Done — use Redraw to start over','完了。「やり直し」で再描画','Fertig — „Neu zeichnen“ zum Neustart','Готово — «Перерисовать», чтобы начать заново','Listo — usa Redibujar para empezar de nuevo');
       p.innerHTML=`<div class="tp-header"><span class="tp-title">✏️ ${jp()?'描画測定':'Draw / trace'}</span><button class="tp-close" title="${t('close')}">✕</button></div>`+
         `<div class="tp-row"><span>${jp()?'距離':'Length'}</span><b>${distHTML(lengthKm)}</b></div>`+
         `<div class="tp-row"><span>${jp()?'面積（閉領域）':'Area (loops)'}</span><b>${lockedArea>0?areaHTML(lockedArea):'—'}</b></div>`+
@@ -17630,19 +17965,17 @@ window.addEventListener('DOMContentLoaded', () => {
         box.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text-muted);margin-bottom:3px;"><span class="tp-prog-lbl" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><b class="tp-prog-pct" style="flex:0 0 auto;">0%</b></div><div style="height:7px;border-radius:4px;background:rgba(128,128,128,0.22);overflow:hidden;"><div class="tp-prog-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0a84ff,#5e5ce6);transition:width .2s;"></div></div>';
         if(btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling); else p.appendChild(box); }
       const lbl=currentLang==='jp'?'WorldPop人口グリッドを集計中…':currentLang==='de'?'WorldPop-Bevölkerungsraster wird summiert…':currentLang==='ru'?'Суммирование сетки населения WorldPop…':currentLang==='es'?'Sumando la cuadrícula de población WorldPop…':'Summing the WorldPop population grid…';
-      box.querySelector('.tp-prog-lbl').textContent=lbl; box.style.display='block';
-      /* (#R129) MONOTONIC progress (same fix as the measure/area panel): `setP` never shows less than the highest
-         fraction already shown, and real per-tile progress is remapped into the band above the ramp hand-off so a
-         large tiled area continues forward instead of snapping from ~40% back to ~3% ("0%から再スタート"). */
-      let shown=0, hand=0;
-      const setP=(f)=>{ try{ let v=Math.max(0,Math.min(1,f)); if(v<shown) v=shown; shown=v; box.querySelector('.tp-prog-fill').style.width=(v*100).toFixed(0)+'%'; box.querySelector('.tp-prog-pct').textContent=(v*100).toFixed(0)+'%'; }catch(_){} };
-      let t0=Date.now(), done=false, realProg=false; const timer=setInterval(()=>{ if(done||realProg)return; const el=(Date.now()-t0)/1000; setP(0.92*(1-Math.exp(-el/9))); },200); setP(0);
-      const onProg=(f)=>{ if(!realProg){ realProg=true; hand=shown; } f=Math.max(0,Math.min(1,f)); setP(hand+(1-hand)*f); };   /* (#R124/#R129) real per-tile progress for a large tiled area, remapped above the ramp hand-off */
+      box.querySelector('.tp-prog-lbl').textContent=lbl; box.classList.remove('indet'); box.style.display='block';
+      /* (#R139) HONEST progress (shared window._imProgCtl): indeterminate animated sweep while WorldPop reports no
+         real fraction, switching to a real linear fraction the moment the area is large enough to be TILED. No more
+         fake decelerating ease-out. */
+      const P=window._imProgCtl(box); P.busy();
+      const onProg=(f)=>P.set(f);
       btn.disabled=true; const orig=btn.textContent; btn.textContent=t('popCalcing');
-      try{ const r=await window.IntMapPopArea.estimate(geom, onProg); done=true; clearInterval(timer); setP(1); setTimeout(()=>{ box.style.display='none'; },500);
+      try{ const r=await window.IntMapPopArea.estimate(geom, onProg); P.done(); setTimeout(()=>{ box.style.display='none'; },450);
         const row=p.querySelector('#draw-pop-row'), val=p.querySelector('#draw-pop-val'); if(row&&val){ row.style.display=''; val.innerHTML=Number(r.pop).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+r.src+' '+r.year+(rings.length>1?' · Σ':'')+')</span>'; }
         btn.style.display='none';
-      }catch(e){ done=true; clearInterval(timer); box.style.display='none'; btn.disabled=false; btn.textContent=t('popFail'); setTimeout(()=>{ try{ btn.textContent=orig; }catch(_){} },2600); }
+      }catch(e){ box.style.display='none'; btn.disabled=false; btn.textContent=t('popFail'); setTimeout(()=>{ try{ btn.textContent=orig; }catch(_){} },2600); }
     }
     /* (#R34) "Keep on map" — the button used to be wired to finish(), which early-returns once the trace is
        done, so it did NOTHING ("keep on map button is not working"). Now it actually PERSISTS the drawing as
@@ -17659,7 +17992,11 @@ window.addEventListener('DOMContentLoaded', () => {
       api.exit();
     }
 
-    function onClick(e){ if(state==='armed') startStroke(e.lngLat); else if(state==='drawing') finish(); }
+    /* (#R139) MapLibre synthesises a `click` from every touch tap; if the finish path also ran on it, a mobile
+       TAP would START and immediately END the stroke (1 point, no area) — the "描画できない" report. Ignore clicks
+       that arrive right after touch activity; on touch, the stroke is owned entirely by the touch handlers below. */
+    let _touchTs=0;
+    function onClick(e){ if(Date.now()-_touchTs<600) return; if(state==='armed') startStroke(e.lngLat); else if(state==='drawing') finish(); }
     function onMove(e){ if(state==='drawing') sample(e.point, e.lngLat); }
     let wired=false;
     function wire(){ if(wired) return; wired=true; map.on('click',onClick); map.on('mousemove',onMove);
@@ -17667,9 +18004,13 @@ window.addEventListener('DOMContentLoaded', () => {
     function unwire(){ if(!wired) return; wired=false; map.off('click',onClick); map.off('mousemove',onMove);
       const cv=map.getCanvas(); cv.removeEventListener('touchstart',onTouchStart); cv.removeEventListener('touchmove',onTouchMove); cv.removeEventListener('touchend',onTouchEnd); }
     function touchLL(tch){ const r=map.getCanvas().getBoundingClientRect(); const pt=[tch.clientX-r.left,tch.clientY-r.top]; return {point:{x:pt[0],y:pt[1]}, lngLat:map.unproject(pt)}; }
-    function onTouchStart(e){ if(state==='off'||e.touches.length!==1) return; e.preventDefault(); hadTouchMove=false; if(state==='armed') startStroke(touchLL(e.touches[0]).lngLat); }
-    function onTouchMove(e){ if(state!=='drawing'||e.touches.length!==1) return; e.preventDefault(); hadTouchMove=true; const o=touchLL(e.touches[0]); sample(o.point,o.lngLat); }
-    function onTouchEnd(e){ if(state!=='drawing') return; if(hadTouchMove && raw.length>=2){ e.preventDefault(); finish(); } }
+    function onTouchStart(e){ if(state==='off'||e.touches.length!==1) return; _touchTs=Date.now(); e.preventDefault(); hadTouchMove=false; if(state==='armed') startStroke(touchLL(e.touches[0]).lngLat); }
+    function onTouchMove(e){ if(state!=='drawing'||e.touches.length!==1) return; _touchTs=Date.now(); e.preventDefault(); hadTouchMove=true; const o=touchLL(e.touches[0]); sample(o.point,o.lngLat); }
+    /* (#R139) press-drag-release is the mobile gesture: a real trace (finger moved) finishes on lift; a bare TAP
+       (no travel) must NOT leave a dead 1-point 'drawing' state — re-arm so the next press-drag works. */
+    function onTouchEnd(e){ _touchTs=Date.now(); if(state!=='drawing') return;
+      if(hadTouchMove && raw.length>=2){ e.preventDefault(); finish(); }
+      else { raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; sampleN=0; state='armed'; try{ map.dragPan.enable(); }catch(_){} setData(); renderPanel(); } }
 
     function setBtn(on){ const b=document.getElementById('btn-tool-draw'); if(b) b.classList.toggle('tool-on',on); document.querySelectorAll('[data-proxy="btn-tool-draw"]').forEach(x=>x.classList.toggle('active',on)); try{ window._syncToolBtns&&window._syncToolBtns(); }catch(_){} }
 
@@ -28446,7 +28787,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'pitch': case 'tilt': { let tp=null; try{ tp=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); map.easeTo({pitch:tp,duration:600}); }catch(_){}
           return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:map.getPitch())+'°')); }
         case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; map.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
-        case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];
+        case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
           const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
           if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
         case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))); } return R(false, warn('⚠')); }
@@ -31698,6 +32039,22 @@ window.addEventListener('DOMContentLoaded', () => {
     function focusObj(id){ const o=get(id); if(o&&o.focus){ try{ o.focus(); return true; }catch(_){} } return false; }
     function renameObj(id,v){ const o=get(id); if(o&&o.rename){ try{ o.rename(String(v||'').slice(0,60)); refresh(); return true; }catch(_){} } return false; }
     return { open, close, toggle, refresh, count, list, get, remove:removeObj, focus:focusObj, rename:renameObj }; })();
+
+  /* (#R139) HONEST population-progress control shared by the measure/radius panel and the Draw tool. WorldPop gives
+     NO real % for a single request (its task API only reports created/finished/error), so any determinate number
+     there is fabricated — the old bar was a time-based ease-out that DECELERATED toward 92% and snapped to 100%
+     ("100%に近づくほど遅くなる／グラフの意味を成さない"). This control is honest: `busy()` shows an INDETERMINATE animated
+     sweep with no % while there is no real fraction; `set(f)` shows a REAL, MONOTONIC linear fraction the moment one
+     exists (a large area that must be TILED reports tiles-done/total; radius reports circles-done/N). */
+  window._imProgCtl=function(box){
+    const fill=box&&box.querySelector('.tp-prog-fill'), pct=box&&box.querySelector('.tp-prog-pct');
+    let shown=0;
+    return {
+      busy(){ try{ box.classList.add('indet'); if(pct) pct.textContent=''; }catch(_){} },
+      set(f){ try{ box.classList.remove('indet'); f=Math.max(0,Math.min(1,+f||0)); if(f<shown) f=shown; shown=f; if(fill) fill.style.width=(f*100).toFixed(0)+'%'; if(pct) pct.textContent=(f*100).toFixed(0)+'%'; }catch(_){} },
+      done(){ try{ box.classList.remove('indet'); shown=1; if(fill) fill.style.width='100%'; if(pct) pct.textContent='100%'; }catch(_){} }
+    };
+  };
 
   /* ===== (#R118) PRECISE POPULATION INSIDE A DRAWN AREA ("囲んだ範囲の人口を超正確に算出") =====
      Real gridded-census data, not a country-share guess: the WorldPop Global Project population raster

@@ -5,6 +5,51 @@
 
 ---
 
+## R139 — Companiesタブ新設（Information廃止）＋モバイル描画/レイヤーFAB/ボトムシート同期＋範囲人口の進行バー正直化＋現在地・時刻タブ精緻化 (tag `#R139`)
+
+ユーザー要望11件バッチ。全て `index.html` の**追加/微修正**（既存機能の削除は明示指示の Information タブのみ・単一HTML/ビルド無し温存）。作業ブランチ `feat/r139-companies-mobile-timemachine`（**R138 の上に stack**＝Companies のロゴ/企業名の安全描画に `IntMapSafe` を使うため）。`npm test` 緑（静的91＋`security-logic`＋Playwright **18/18**）。地図描画はブラウザペイン `document.hidden` で WebGL 未init のため、DOM/計算スタイル/純関数/ライブfetchをヘッドレス実測（R129〜R138 と同方針）。着手前に**並列サブエージェント3本**で範囲人口の進行バー・モバイル描画/レイヤーFAB・ボトムシート同期の**根本原因**を実地調査。
+
+### ⑩⑪ Information タブ廃止 → Companies タブ（実データ＝厳選リスト＋ライブ株価）
+**データ源はユーザー選択＝「厳選リスト＋ライブ株価」**（キー不要が前提。時価総額のライブ per-company ソースがキーレスに存在しないため、Countries の「バンドル基礎＋WBライブ」と同型で実装）。
+- **`window.IntMapCompanies`**＝**厳選120社**（`[ticker,name,nJp,cc,sector,domain,founded,employees,revB,niB,sharesB,mcapSnapB]` の配列・money/株数は10億単位）。米国上場は `sharesB>0`（ライブ算出）、非米は `0`（報告値スナップショット）。
+- **時価総額はライブ**: `loadPrices()`＝米国上場銘柄の株価を**下部ティッカーと同じ keyless Yahoo v8 chart**（`query1.finance.yahoo.com/v8/finance/chart/{tk}`）＋CORSプロキシラダーで取得（並行5・5分キャッシュ・8件ごと＋完了時に再描画）→`mcap=sharesB×price`。非米上場はスナップショット。
+- **サニティガード（肝）**: ライブ mcap が**スナップショットの0.2〜5倍を外れたら誤取得**（銘柄取り違え・通貨不一致・株数誤り）とみなし**採用せずスナップショットへフォールバック**＝ランキングを壊さない。実測で BKNG のプロキシ誤値（$181・実際は約$5000）→ガードがスナップショット$160Bへ、株数タイポ LRCX 12.8B→1.28B を implied-price QA（`mcapSnap/shares` が妥当株価か）で検出・修正。実測でアウトライア0件・最安P/E＝HSBC/TotalEnergies/Toyota/KLA（妥当）。
+- **`renderCompanies`**＝Countries と同形式を `#info-dashboard` に描画: `.stats-toolbar` ソートプルダウン（時価総額/売上/純利益/**P-E＝mcap÷純利益**/従業員/株価/設立/名称）＋`.stat-filter` 数値フィルタ＋`.stat-rank` 順位（時価総額ランキングのため**常時表示**）。初期＝時価総額 desc。
+- **ロゴ（国旗のあった位置）**: `logo.clearbit.com/{domain}`→`onerror`で Google favicon(sz64)→モノグラム（名前ハッシュ色）のカスケード。CSP は img-src 無制限なので任意ドメイン可。
+- **行クリック→`showCompanyDetail`** オーバーレイ（全指標＋「ライブ/報告値」表示＋サイトリンク・`IntMapSafe` でエスケープ）。
+- **配線**: `renderDashboard()` 先頭で `renderCompanies()` に**委譲**（全呼出元＝タブ/ws窓/検索input/runSearch/Supabase realtime/キャッシュが Companies を描画・旧ダッシュボード本体は dead code 化で参照温存）。タブ `#btn-info`（id・mode文字列 `'info'` 温存＝churn回避）を `data-i18n=tabCompanies` へ（5言語）。ws窓 label＋Atlas `IntMapOS 'tab.info'` label を Companies へ改称・NL `companies/company/企業→tab.info`。`CO_SECTORS`（20業種）/`CO_CC`（HQ国＋旗絵文字）は5言語。**出典・プライバシーに Yahoo（企業株価）・Clearbit/Google（ロゴ）を追記**。
+
+### ⑥ 範囲人口の「進行グラフがおかしい・100%手前で減速・意味を成さない」＝根本修正
+**真因**（サブエージェント調査）＝(1) WorldPop **単一リクエストは進捗%を持たない**（task API=created/finished/error のみ）のに UI は**時間ベースの指数イーズアウト `0.92*(1-exp(-el/9))`**＝速度が t=0 最大で減衰し 0.92 に漸近＝**「100%に近づくほど遅くなる」そのもの**、(2) `estimate()` は `onProgress` を **>95,000km² のタイル経路にしか渡さず**、常用（≤95k）の単一リクエストは進捗コールバック皆無で全区間が偽ランプ。
+**修正**＝共有 `window._imProgCtl(box)`＝`busy()`（**不定形アニメsweep・%非表示**＝正直に「作業中・ETA無し」）／`set(f)`（**実線形・単調**＝実分数が判明した瞬間に切替）／`done()`。measure/radius/Draw の**3ドライバの偽ランプ＋`_setProg`/ローカル `setP` を撤去**。タイル分割は tiles-done/total、radius は circles-done/N（各円の内部タイルは `[i/N,(i+1)/N]` 帯へマップ・単一円/単一面積は不定形）。CSS `.tp-prog.indet .tp-prog-fill`（`imProgSweep` キーフレーム・`!important` でインライン上書き）。実測: busy→width100%/pct空、set(.5)→50%、set(.3)→50%維持（単調）、done→100%。
+
+### ④ モバイル描画（開始ボタン押下後に描けない）＝根本修正
+**真因**＝(1) MapLibre がタップから合成する `click` が `onClick` の `drawing→finish()` を叩き、**開始直後のストロークを1点で即終了**（タップが「開始＋終了」に化ける）、(2) ヒントが「タップ」なのに `DrawTool` の touch 実装は **press-drag 必須**（タップは `hadTouchMove=false` で `onTouchEnd` が何もせず 'drawing' に居座る）。
+**修正**＝`_touchTs` で **touch 直後(<600ms)の合成 click を無視**（touch はタッチハンドラが専有）／bare tap（無移動）は `onTouchEnd` で **`armed` に再arm**（死んだ1点stateを残さない・`dragPan` 復帰）／ヒントを `matchMedia('(pointer:coarse)')` 判定で**「地図を指でなぞって範囲を描く（押したまま動かす）／指を離して確定」**に（5言語）。
+
+### ⑤ モバイル「レイヤー選択へ行くボタン」着色＝選択中レイヤーがある時のみ
+`m-fab-map`（Map & layers FAB）の `.on` は**衛星ベースマップ連動**だった→**アクティブな主題レイヤーの有無**へ。`_refreshActiveLayers`（`skip` 集合で names/borders/grid 等の基本トグルを除外＝画面の「Active layers (N)」と同一集合）が `window._imActiveLayerCount` を publish し、**変化時に `window._imSyncMobile()`**。`syncControls` は `(window._imActiveLayerCount||0)>0` で着色。実測: dl-climate ON→count1・FAB accent、OFF→count0・原色。
+
+### ⑦ モバイル現在地ボタン＝地図中心が現在地なら accent
+`IntMapLocate` の `.on` を**「追跡中」→「地図中心が現在地fixに一致」**へ。`_mapCenterAtFix`＝`map.project(center)` と `project(fix)` の**画面ピクセル距離≤44px**（ズーム非依存＝ドットが画面中心付近）。`ensure()` で `move`/`moveend` を1回結線＋各fix・start/onErr/stop で `_syncFab`。`window._imLocSyncFab` 公開。
+
+### ⑧ モバイル ボトムシート↔地図位置の動的同期が弱い＝根本修正
+**真因**（サブエージェント調査）＝スナップ時 `map.setPadding` が **300ms/既定イージング** な一方シートCSSは **460ms/`cubic-bezier(0.32,0.72,0,1)`**＝**位相ズレ**、ドラッグ中ライブ padding は **≥5px＋1/rAF** ゲートで中心が指を階段状に追従。
+**修正**＝スナップ padding を **460ms＋シートと同一 cubic-bezier**（新 `_cubicBezier(x1,y1,x2,y2)` Newton-Raphson 評価器）で**ロックステップ**、ライブゲートを **5px→2px**（perf の 1/rAF は維持）。デスクトップ側は既に easing 一致でロックステップ済＝それに揃えた。
+
+### ③ Countries順位デフォルトON＋iOS風数字
+`_showRank` を `==='on'`→`!=='off'`（**既定表示**・明示OFFのみ非表示）、設定既定 'on'（ラベル「表示（デフォルト）」5言語）、`.stat-rank` を `ui-rounded/"SF Pro Rounded"`＋weight600＋tabular-nums（iOS風丸ゴシック数字）。実測: 240国全行に順位・SF Pro Rounded。
+
+### ①② ニュース白黒ボタン・地点ピルaccent（R137で既済を再確認）
+`.news-item .btn-read`＝`#fff`/`#000`、`.loc-chip`＝`var(--primary-color)`（accent 追従）は R137 で実装済み・当ブランチにも継承。fresh 要素の `getComputedStyle` で `rgb(255,255,255)`/`rgb(0,0,0)`・`rgb(10,132,255)` を実測再確認（ユーザーが未実装に見えたのは R137 未デプロイ/キャッシュ由来＝本 PR マージ・デプロイで解消）。
+
+### 罠・教訓
+- **ライブ per-company 時価総額のキーレス源は無い**（Yahoo v7 quote は crumb 必須・Stooq はプロキシ拒否・v8 chart は price のみ）→**厳選株数×v8 price** が唯一の実解。プロキシ経由の株価は**誤値が混入し得る**（BKNG $181）→**スナップショット比 0.2〜5倍のサニティガード**必須。株数タイポは **implied price=`mcapSnap/shares` が妥当株価か**の QA で機械検出。
+- **「検出を直した≠塗りを直した」の逆版**＝ここでは「進捗を出した≠正直な進捗」。WorldPop に真の%が無い経路は**不定形**が正解（偽の決定的%は減速して無意味に見える）。
+- ヘッドレスは `document.hidden` で map 未init・**hidden タブの `setTimeout` は激しくスロットル**（4s 待ちが 30s タイムアウトを誘発）→await は避け同期evalで実測。スクショはレンダラ停止でハング→DOM/計算スタイルで担保。Edit フックの file:// タブ量産→`tabs_close`。
+
+---
+
 ## R138 — セキュリティ監査・強化（XSS出力エンコード・Edge Function認証・CSP・CI・脅威モデル文書）(tag `#R138`)
 
 「業務委託書（セキュリティ強化）」対応。既存実装を**実調査**してから、現実に悪用可能な問題を優先修正。加算的・単一HTML/ビルド無し温存。作業ブランチ `sec/security-hardening-r138`（`origin/main`=R137 起点）。`npm test` 緑（静的88ファイル＋security-logic 10/10＋Playwright: security.spec 7 + smoke 8 = 全緑）。**方針＝一般論でツールを足すのでなく、コード/データフロー/再現条件を確認して実害ベースで優先**。
