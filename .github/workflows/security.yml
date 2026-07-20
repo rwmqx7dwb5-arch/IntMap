@@ -32,7 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+      security-events: write   # upload the SARIF results to code scanning
+      actions: read            # CodeQL reads the workflow/run context
+      packages: read           # resolve any CodeQL packs
     steps:
       - uses: actions/checkout@v4
       - name: Initialize CodeQL
