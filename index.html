@@ -25115,10 +25115,17 @@ window.addEventListener('DOMContentLoaded', () => {
        function which fetches the tile server-side and re-adds ACAO:* (works everywhere, incl. Private Relay), then a
        public CORS proxy as a last resort. If all fail the caller still degrades HONESTLY (no silent raw marker). */
     const _COV_PROX=(function(){ const b=(window.SUPABASE_URL||'').replace(/\/$/,''); return ['', ...(b?[b+'/functions/v1/sv-cov?u=']:[]), 'https://corsproxy.io/?url=']; })();
-    function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ let tried=0; const im=new Image(); im.crossOrigin='anonymous';
-      const go=()=>{ const pfx=_COV_PROX[tried++]; try{ im.src=pfx?(pfx+encodeURIComponent(url)):url; }catch(_){ res(false); } };
-      im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} res(true); };
-      im.onerror=()=>{ if(tried<_COV_PROX.length) go(); else res(false); };
+    /* (#R145b) per-attempt TIMEOUT: an <img> load that neither loads nor errors (a stalled connection / hung proxy)
+       would otherwise leave this promise — and thus _nearestCoverage's Promise.all — pending FOREVER, so the Street-View
+       marker would never appear (worse than the honest raw-click fallback). Each proxy attempt is capped; on timeout we
+       advance to the next proxy, and when the ladder is exhausted we resolve(false) so the sampler always completes. */
+    function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ let tried=0, done=false, tid=null; const im=new Image(); im.crossOrigin='anonymous';
+      const fin=v=>{ if(done) return; done=true; try{ clearTimeout(tid); }catch(_){} res(v); };
+      const go=()=>{ if(done) return; if(tried>=_COV_PROX.length){ fin(false); return; } const pfx=_COV_PROX[tried++];
+        try{ clearTimeout(tid); }catch(_){} tid=setTimeout(()=>{ if(!done) go(); }, 3500);   /* this attempt hung → try the next proxy */
+        try{ im.src=pfx?(pfx+encodeURIComponent(url)):url; }catch(_){ go(); } };
+      im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} fin(true); };
+      im.onerror=()=>{ if(!done) go(); };
       go(); }); }
     async function _nearestCoverage(lng,lat){ try{
         const z=Math.min(18,Math.max(14,Math.round((map&&map.getZoom&&map.getZoom())||14))), n=Math.pow(2,z), R=_COV_R;   /* (#R142) sample at z≥14 so pixels are fine enough that the widened radius stays a sensible metric distance */
