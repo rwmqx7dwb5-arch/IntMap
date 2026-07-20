@@ -10508,10 +10508,14 @@ window.addEventListener('DOMContentLoaded', () => {
      follow the time-machine year, so both the ranking and the comparison reflect past statistics. */
   let coCompareSet=new Set(), _coTimeWired=false, _coTimeDeb=null;
   function _coWireTime(){ if(_coTimeWired||!(window.IntMapTime&&window.IntMapTime.on)) return; _coTimeWired=true;
+    const _apply=hy=>{ try{ IntMapCompanies.setYear(hy, ()=>{ if(document.getElementById('co-cmp-view')){ try{ showCoCompare([...coCompareSet]); }catch(_){} } else if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){} };
     window.IntMapTime.on(e=>{ clearTimeout(_coTimeDeb); _coTimeDeb=setTimeout(()=>{
-      const cur=new Date().getFullYear(); const y=(e&&e.year!=null)?e.year:null; const hy=((e&&e.isLive)||y==null||y>=cur)?null:y;
-      try{ IntMapCompanies.setYear(hy, ()=>{ if(document.getElementById('co-cmp-view')){ try{ showCoCompare([...coCompareSet]); }catch(_){} } else if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){}
-    }, 320); }); }
+      const cur=new Date().getFullYear(); const y=(e&&e.year!=null)?e.year:null; _apply(((e&&e.isLive)||y==null||y>=cur)?null:y);
+    }, 320); });
+    /* (#R142) initial sync: if the map was ALREADY time-travelled before Companies was first opened, the subscription
+       above would miss that past event — reflect the current clock now so the ranking opens on the historical year. */
+    try{ const cur=new Date().getFullYear(); const y=window.IntMapTime.year(); if(!window.IntMapTime.isLive()&&y!=null&&y<cur) _apply(y); }catch(_){}
+  }
   window._coToggleCompare=function(tk){ if(coCompareSet.has(tk)) coCompareSet.delete(tk); else if(coCompareSet.size<8) coCompareSet.add(tk); else { const f=coCompareSet.values().next().value; coCompareSet.delete(f); coCompareSet.add(tk); }
     document.querySelectorAll('#info-dashboard .co-row').forEach(r=>r.classList.toggle('compare-on',coCompareSet.has(r.getAttribute('data-tk'))));
     try{ const c=IntMapCompanies.DATA.find(x=>x.tk===tk); if(c) imToast((coCompareSet.has(tk)?'✓ ':'− ')+_coName(c)); }catch(_){}
