@@ -259,13 +259,15 @@
       $('fb-count').textContent=(data||[]).length;
       if(!data||!data.length){ tb.innerHTML='<tr><td colspan="7" class="muted">No feedback yet.</td></tr>'; return; }
       tb.innerHTML=data.map(r=>'<tr><td style="white-space:nowrap;">'+esc(new Date(r.created_at).toLocaleString())+'</td>'+
-        '<td style="white-space:nowrap;color:#ffcc00;">'+'★'.repeat(r.rating)+'<span style="opacity:0.3;">'+'★'.repeat(5-r.rating)+'</span></td>'+
+        /* (#R138 SEC) clamp rating 0..5 — feedback.rating is anon-insertable with no CHECK; an out-of-range value (e.g. 6, negative) made String.repeat throw a RangeError that aborted the WHOLE feedback render (admin-tab DoS). */
+        '<td style="white-space:nowrap;color:#ffcc00;">'+(rt=>'★'.repeat(rt)+'<span style="opacity:0.3;">'+'★'.repeat(5-rt)+'</span>')(Math.max(0,Math.min(5,r.rating|0)))+'</td>'+
         '<td style="max-width:420px;">'+esc(r.comment||'')+'</td>'+
         '<td>'+esc(r.lang||'')+'</td><td>'+esc(r.email||'')+'</td>'+
-        '<td style="font-family:monospace;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:'+(r.user_id?'copy':'default')+';" title="'+esc(r.user_id||'(not logged in)')+'"'+(r.user_id?' onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+esc(r.user_id)+'\')"':'')+'>'+esc(r.user_id||'—')+'</td>'+
+        '<td style="font-family:monospace;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:'+(r.user_id?'copy':'default')+';" title="'+esc(r.user_id||'(not logged in)')+'"'+(r.user_id?' class="uid-copy" data-uid="'+esc(r.user_id)+'" onclick="window._copyUid(this)"':'')+'>'+esc(r.user_id||'—')+'</td>'+   /* (#R138 SEC) uid via data-attr + static onclick (no user data in an inline JS string) */
         '<td><button class="btn sec sm" onclick="window._fbDel('+r.id+')">Delete</button></td></tr>').join('');
     }catch(e){ tb.innerHTML='<tr><td colspan="7" class="muted">'+esc(e.message||String(e))+'</td></tr>'; }
   }
+  window._copyUid=function(el){ try{ const u=el&&el.getAttribute('data-uid'); if(u&&navigator.clipboard) navigator.clipboard.writeText(u); }catch(_){} };   /* (#R138 SEC) copies the uid from the data-attr; no user-controlled value is ever placed in an inline handler string */
   window._fbDel=async function(id){ if(!confirm('Delete this feedback row?')) return;
     try{ await sb.from('feedback').delete().eq('id',id); }catch(_){}
     loadFb(); };

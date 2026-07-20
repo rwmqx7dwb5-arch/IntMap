@@ -1,0 +1,47 @@
+# IntMap security CI (#R138). Static application security testing (CodeQL) for the
+# inline app JS, the Edge Functions (Deno/TS) and the tooling. Findings surface in the
+# repo's Security → Code scanning tab and as PR annotations; they are advisory (they do
+# not block the merge unless the maintainer makes the check required in branch protection).
+#
+# The cheap regex/secret/action-pinning checks + Edge-Function auth-logic tests run in
+# ci.yml (every PR) — they are NOT duplicated here, to avoid double notifications.
+#
+# CodeQL is free for PUBLIC repositories (IntMap is public). On a private repo it needs
+# GitHub Advanced Security; see docs/SECURITY-TESTING.md.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 3 * * 1'   # weekly, Monday 03:17 UTC — catches newly-published CodeQL queries
+  workflow_dispatch:
+
+# Least privilege. CodeQL needs security-events: write to upload its SARIF results.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL (JavaScript / TypeScript)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          # Covers index.html/admin.html inline scripts, supabase/functions/**/*.ts (Deno),
+          # and scripts/*.mjs. node_modules is auto-excluded.
+          languages: javascript-typescript
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

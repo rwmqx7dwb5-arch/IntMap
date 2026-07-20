@@ -1084,4 +1084,40 @@ supabase db diff --schema public             # driftゼロ確認
 ```
 本番適用は `docs/MIGRATIONS.md`（バックアップ→承認→`db push`）。詳細は `docs/{DATABASE,MIGRATIONS,RLS-TESTING,BACKUP-RESTORE,DATABASE-INCIDENT}.md`。
 
+## 17. セキュリティ基盤 (脅威モデル・XSS防御・Edge Function認証・CI) — R138
+
+セキュリティ監査＋修正の成果。**信頼境界＝サーバー（Supabase）**、ブラウザJSは非信頼。外部から来る値
+（コミュニティ投稿、ニュースRSS見出し、OSM/Nominatimの地名、OSM編集可能なウェブカメラURL、AI出力、URL
+hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCHITECTURE.md`**（脅威モデル・データフロー図・
+認証認可・公開値と秘密値の区別・残存リスク・本番手動設定）、報告方法は **`SECURITY.md`**、検査手順は
+**`docs/SECURITY-TESTING.md`**。
+
+### 17.1 XSS出力エンコード（第一防御）
+- 全アプリJSがインライン＋トークンが`localStorage`＝**XSS＝トークン窃取**なので、**各シンクでの正しい出力
+  エンコードが最優先の防御**。非信頼テキストは唯一の正規ヘルパー `window.IntMapSafe`（`<head>`最初の
+  scriptでグローバル定義）を通す。`.html(s)`＝`& < > " '` エスケープ（テキスト/属性両対応）、
+  `.url(s,{allowData})`＝http(s)/mailto/tel（＋rasterのdata:image・svg不可）のみ許可し
+  `javascript:`/`data:text/html`等は`''`。href/src/styleは`html(url(s))`。
+- 修正シンク＝コミュニティ（post.img・title/body・avatar_url）／ニュース6経路（title/publisher/name・
+  window.open scheme）／ウェブカメラpopup（OSM編集可能url→iframe/video/img/href）／地名検索カード
+  （Nominatim display_name/type/country）／USGS/POI。**AtlasのAI返答経路は監査の結果すでに安全**（エスケープ→
+  markdown整形の順・リンクは`https?:`強制）＝無変更。URL hash復元・GeoJSONインポート・エラー表示は監査の
+  結果安全。回帰＝`tests/security.spec.js`（実ブラウザで無害化確認）＋CodeQL。
+
+### 17.2 Edge Function認証
+- **ai-proxy**＝`verify_jwt`＋明示的ユーザー検証（未ログイン401）・プラン別1日上限を`increment_ai_usage`で
+  原子的消費・入力上限（prompt24000字/画像4枚）・鍵/prompt/JWTは非ログ。
+- **refresh-news**（R138で是正）＝**fail-closed**。`REFRESH_SECRET`未設定なら全リクエスト拒否（503・公開実行
+  しない）。秘密は`x-refresh-secret`**ヘッダのみ**（クエリ文字列不可＝ログ流出防止）・**定数時間比較**・POST
+  のみ。cronはヘッダで秘密送信（本番手動設定は`docs/SECURITY-ARCHITECTURE.md §9`）。
+
+### 17.3 CSP・ブラウザ・供給網
+- GitHub Pagesは応答ヘッダ設定不可＋インライン多用＋外部60+ホスト接続のため、nonce/connect-src許可リストは
+  非現実的。採用＝`<meta>` CSP（`object-src 'none'`/`base-uri 'self'`/`frame-src 'self' https: blob:`/
+  `worker-src 'self' blob:`/script-src許可リスト＋インライン許可）でアプリを壊さず注入`<script src=evil>`を
+  遮断。frame-ancestors/XFO/HSTS/Permissions-Policyはヘッダ専用＝不可→文書化（`§6`）。全`target=_blank`に
+  `rel=noopener`。DB側＝`feedback.rating` CHECK（管理画面DoS対策・migration `20260720120000`）。
+- CI＝**CodeQL**（`security.yml`）＋`check:static`に**第三者Action SHA固定**検査＋`tests/security-logic.mjs`
+  （Edge Function認証不変条件）＋pgTAP `03_security_test.sql`。`npm test`で全実行。
+
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*
