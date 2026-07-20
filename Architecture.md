@@ -812,7 +812,7 @@ supabase/
 
 ## 8. UI/UX の構造
 
-- **サイドバー**（左）：タブ（News / Information / Stats / Community）、検索、ニュースフィード／ダッシュボード／コミュニティ。
+- **サイドバー**（左）：タブ（News / Companies / Countries / Atlas ※旧 Information タブは R139 で Companies に置換）、検索、ニュースフィード／企業ランキング／Atlas。
 - **マップ上コントロール**（右上）：Map/Sat、Flat/Globe/3D/コンパス、Grid、Measure、Radius、Layers。
 - **ポップアップ類**：国情報カード(`country-info`)、国詳細(`country-popup`)、ピン/地名ポップアップ、凡例(ドラッグ可)。
 - **設定モーダル**：言語・タイムゾーン・単位・テーマ・ニュース言語・衛星鍵(任意)・AI利用状況・出典・規約/プライバシー。
@@ -979,6 +979,23 @@ supabase/
 - **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
 - **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
+---
+
+## #R139 補足（Companiesタブ新設＝Information廃止／モバイル描画・レイヤーFAB・ボトムシート同期／範囲人口の進行バー正直化／現在地ボタン・時刻タブ精緻化）
+
+ユーザー要望11件。全て `index.html` の追加/微修正（既存機能削除は明示指示の Information タブのみ・単一HTML温存）。`npm test` 緑（静的91＋security-logic＋Playwright 18/18）。詳細は DEV-NOTES R139。R138（IntMapSafe 等）の上に stack。
+
+- **Companies タブ（Information 廃止→置換）**: `window.IntMapCompanies`＝**厳選120社**（`ticker,name,nJp,cc,sector,domain,founded,employees,revB,niB,sharesB,mcapSnapB` の配列）。**時価総額はライブ**＝米国上場銘柄は `shares×live price`（下部ティッカーと同じ keyless Yahoo v8 chart＋CORSプロキシラダー・並行5・5分キャッシュ・進捗で再描画）、非米上場は報告値スナップショット。**サニティガード**＝ライブ mcap がスナップショットの0.2〜5倍を外れたら誤取得（銘柄取り違え/通貨/株数誤り）とみなしスナップショットへフォールバック（ランキングを壊さない）。`renderCompanies` は Countries と同形式（`.stats-toolbar` ソートプルダウン＝時価総額/売上/純利益/P-E/従業員/株価/設立/名称＋数値フィルタ＋`.stat-rank` 順位）を `#info-dashboard` に描画。**国旗のあった位置にロゴ**＝`logo.clearbit.com`→Google favicon→モノグラムの `onerror` カスケード。行クリックで `showCompanyDetail` オーバーレイ（全指標＋サイトリンク）。`renderDashboard()` は先頭で `renderCompanies()` に委譲（全呼出元＝タブ/ws窓/検索/Supabase/キャッシュが Companies を描画・旧ダッシュボードは dead code 化）。タブ `#btn-info`（id温存・mode文字列 `'info'` 温存）を `tabCompanies` へ改称（5言語）。Atlas＝`IntMapOS 'tab.info'` ラベル改称＋NL `companies/company/企業→tab.info`。CO_SECTORS/CO_CC は5言語。出典・プライバシーに Yahoo（企業株価）・Clearbit/Google（ロゴ）を追記。
+- **範囲人口の進行バー正直化（`window._imProgCtl`）**: 真因＝WorldPop 単一リクエストは進捗%が無い（task=created/finished のみ）のに、UIは**指数イーズアウト `0.92*(1-exp(-el/9))`＝100%手前で減速し無意味**だった。修正＝共有 `_imProgCtl(box)`＝`busy()` で**不定形アニメsweep（%非表示）**、実分数が判明した瞬間 `set(f)` で**実線形（単調）**（大面積のタイル分割は tiles-done/total、radius は circles-done/N・各円の内部タイルは帯へマップ）。measure/radius/Draw の3ドライバの偽ランプ＋`_setProg` を撤去。CSS `.tp-prog.indet .tp-prog-fill`（`imProgSweep` キーフレーム）。
+- **モバイル描画（`DrawTool`）**: 真因＝(1) MapLibre がタップから合成する `click` が開始直後のストロークを `finish()` して1点で終了、(2) ヒントが「タップ」なのに実装は press-drag 必須。修正＝`_touchTs` で touch 直後の合成 click を無視、bare tap は `armed` に**再arm**（死んだ1点stateを残さない）、ヒントを coarse pointer 判定で「押したままなぞる／指を離して確定」に（5言語）。
+- **モバイル レイヤーFAB着色（task5）**: `m-fab-map` の `.on` を**衛星ベースマップ→アクティブ層有無**へ。`_refreshActiveLayers` が `window._imActiveLayerCount` を publish し変化時に `window._imSyncMobile()`。`syncControls` は `(window._imActiveLayerCount||0)>0` で着色。
+- **現在地ボタン着色（task7）**: `IntMapLocate` の `.on` を**「追跡中」→「地図中心が現在地に一致」**へ。`_mapCenterAtFix`＝`map.project` の**画面ピクセル距離≤44px**（ズーム非依存）。`move`/`moveend` と各fix・start/stop で `_syncFab`。
+- **ボトムシート↔地図同期（task8）**: スナップ時の `map.setPadding` を **300ms/既定イージング → 460ms＋シートCSSと同一 cubic-bezier(0.32,0.72,0,1)**（新 `_cubicBezier` Newton-Raphson評価器）でロックステップ。ドラッグ中のライブ padding ゲートを **5px→2px**（中心が指を追従）。
+- **タイムマシン時刻タブ精緻化（task9）**: `_applyTimeOfDay` は **Year/Date で選んだ日付**に時刻を載せ、**今日は現在時刻以降を選べない**（`allowFuture:false`＋`_timeMaxMins`＝今日は now分・過去日は1439）。スライダ max と `#ntl-time` の max を `applyMode('time')`/`refreshUI` で追従（実測: 今日=727分キャップ、1990年=1439）。
+- **Countries順位デフォルトON＋iOS風数字（task3）**: `_showRank` を `!=='off'`（既定表示）、設定既定 'on'、`.stat-rank` を `ui-rounded/SF Pro Rounded`・weight600・tabular-nums。**Companies は順位を常時表示**（時価総額ランキングのため）。
+- **ニュース白黒ボタン・地点ピルaccent（task1/2）**: R137で既済を実測再確認（`.btn-read` `#fff`/`#000`、`.loc-chip` accent）。
+- 新 window.*: `IntMapCompanies`, `renderCompanies`, `showCompanyDetail`, `setCoSort`, `toggleCoSortDir`, `_coSf*`, `_imProgCtl`, `_imActiveLayerCount`, `_imLocSyncFab`。
 
 ---
 
