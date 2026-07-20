@@ -29,8 +29,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets)
+      - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets, action-pinning)
         run: npm run check:static
+      - name: Security-logic tests (Edge Function auth invariants + constant-time compare)
+        run: node --test tests/security-logic.mjs
 
   browser:
     name: Browser smoke + internal QA

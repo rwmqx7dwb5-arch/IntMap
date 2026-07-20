@@ -37,9 +37,10 @@ jobs:
         with:
           fetch-depth: 0          # need full history + tags to resolve an old ref
       - name: Resolve and check out the requested ref
+        env:
+          REF: ${{ inputs.ref }}          # (#R138 SEC) pass via env — NEVER interpolate ${{ inputs.* }} into the shell body (command injection)
         run: |
           set -euo pipefail
-          REF='${{ inputs.ref }}'
           if ! SHA=$(git rev-parse --verify "${REF}^{commit}" 2>/dev/null); then
             echo "::error::Ref '${REF}' does not resolve to a commit in this repository. Refusing to deploy."
             exit 1
@@ -48,12 +49,14 @@ jobs:
           git checkout --quiet "${SHA}"
           echo "ROLLBACK_SHA=${SHA}" >> "$GITHUB_ENV"
       - name: Assemble site (exact tree at the rolled-back commit)
+        env:
+          REF: ${{ inputs.ref }}          # (#R138 SEC) env, not inline interpolation
         run: |
           set -euo pipefail
           rm -rf _site && mkdir -p _site
           git archive "${ROLLBACK_SHA}" | tar -x -C _site
           printf '{ "sha": "%s", "ref": "%s", "runId": "%s", "builtAt": "%s", "rollback": true }\n' \
-            "${ROLLBACK_SHA}" "${{ inputs.ref }}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
+            "${ROLLBACK_SHA}" "${REF}" "${GITHUB_RUN_ID}" "$(date -u +%FT%TZ)" \
             > _site/build-info.json
           cat _site/build-info.json
       - uses: actions/upload-pages-artifact@v3

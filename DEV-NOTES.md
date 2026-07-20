@@ -5,6 +5,40 @@
 
 ---
 
+## R138 — セキュリティ監査・強化（XSS出力エンコード・Edge Function認証・CSP・CI・脅威モデル文書）(tag `#R138`)
+
+「業務委託書（セキュリティ強化）」対応。既存実装を**実調査**してから、現実に悪用可能な問題を優先修正。加算的・単一HTML/ビルド無し温存。作業ブランチ `sec/security-hardening-r138`（`origin/main`=R137 起点）。`npm test` 緑（静的88ファイル＋security-logic 10/10＋Playwright: security.spec 7 + smoke 8 = 全緑）。**方針＝一般論でツールを足すのでなく、コード/データフロー/再現条件を確認して実害ベースで優先**。
+
+**調査（並列サブエージェント5本で全攻撃面を実地監査）**: フロントXSS（`index.html` innerHTML 357箇所・esc ヘルパー約15種で強度バラバラ＝`[&<>"']`/`[&<>"]`/`[&<>]`混在）／Edge Functions（ai-proxy・refresh-news）／RLS baseline／admin.html／CI workflows／sw.js。**確定した実脆弱性**（すべて実データ経路で再現）:
+
+### P0/P1 — フロントエンド DOM/格納型 XSS（真因＝属性/テキスト文脈で出力エンコード漏れ）
+1. **コミュニティ `post.img` → `<img src>`**（無エスケープ・**フィード描画で自動発火**）。攻撃者は自分のJWTでSupabase RESTに任意`img`を直接insert可能→全閲覧者で `img="x" onerror=..."` 実行。
+2. コミュニティ投稿 `title`/`body` → ピンhoverツールチップ（無エスケープ）。
+3. 他ユーザー `profiles.avatar_url` → プロフィールカード `background:url('…')`（列grantで本人が任意設定可）。
+4. **ニュース6経路**（RSS `title`/`publisher`/`name`）＝カード・翻訳再描画・desktop 2ツールチップ・mobileポップアップ。RSS `<title>` は `.textContent` で実体参照デコード→`&lt;img&gt;`が生HTML化。#1/#2/#4 は無操作/hoverで発火。
+5. **ウェブカメラpopup**＝OSM編集可能な `url` が iframe(pano)/video/img/href に無エスケープ（誰でもOSMに `webcam=javascript:…` や `x"onload=…` を書ける）→自オリジンで実行。
+6. 地名検索カード＝Nominatim `display_name`/`type`/`country` 無エスケープ。
+- **修正＝唯一の正規サニタイザ `window.IntMapSafe`**（`<head>`最初のscriptでグローバル定義。`.html`＝`[&<>"']`／`.url`＝http(s)/mailto/tel＋rasterのdata:image のみ・`javascript:`等は`''`・tab難読化 `java\tscript:` も除去）を全該当シンクに適用。href/src/styleは`html(url(s))`。**AtlasのAI返答経路は監査で既に安全**（esc→markdown整形の順＝生`<`が先にエスケープ済・リンク`https?:`強制）＝無変更。**URL hash復元・GeoJSONインポート・エラー表示・bundled GeoJSON popupは監査で安全**。`window.open`4箇所＋POI1箇所にscheme guard・`target=_blank`1箇所に`rel=noopener`追加・`escForReader`に引用符エスケープ追加（未配線readerの属性文脈保険）。
+
+### P0 — refresh-news が **fail-open**（真因＝秘密未設定時に認証をスキップ）
+- 旧: `if(secret){…}` ＝ `REFRESH_SECRET` 未設定なら**誰でも**起動可（有料AI＋service_role DB書込を無制限に誘発）。加えて `got!==secret`（非定数時間）＋ `?secret=` クエリ（ログ流出）。
+- 修正: **fail-closed**（秘密未設定=全503・公開実行しない）＋**定数時間比較** `timingSafeEqual`＋**`x-refresh-secret` ヘッダのみ**（クエリ廃止）＋**POSTのみ**。フロントは呼ばない（cron専用）ので運用維持。**本番手動設定必須**（`REFRESH_SECRET`設定＋cronヘッダ送信＋再deploy）＝`docs/SECURITY-ARCHITECTURE.md §9`。
+
+### P2 — admin/CI（実害ベースで低〜中）
+- **admin.html feedback rating DoS**（未認証で悪用可）: `'★'.repeat(r.rating)` が `rating` 無制約（anon insert可）で `repeat(6→-1)` RangeError→**Feedbackタブ全体が描画不能**。修正＝クライアントclamp（0..5）＋**DB CHECK制約**（migration `20260720120000_security_hardening.sql`・`NOT VALID`＝既存不正行でも失敗しない）。`:265` の user_id を inline JS文字列→`data-uid`+委譲listenerへ（uuid型で非悪用だがDiD）。
+- **rollback.yml script injection**: `${{ inputs.ref }}` を shell本体へ直接展開→`env:`経由に変更。
+- **第三者Action `supabase/setup-cli@v1` を full SHA固定**（`ab05898…`・Dependabotが更新）。
+
+**追加した自動テスト**: `tests/security.spec.js`（実ブラウザで委託書の全XSSペイロードを`IntMapSafe`経由でDOM挿入→スクリプト非実行・活性要素0を検証・属性/テキスト両文脈・scheme遮断・**i18n（日/独/露/西/絵文字/キリル/アクセント/長地名）保持**・CSP存在）／`tests/security-logic.mjs`（`node:test`・定数時間比較のunit＋Edge Functionソースの不変条件回帰ガード＝refresh-news fail-closed/ヘッダのみ/POST・ai-proxy JWT必須/入力上限/秘密非ログ）／`supabase/tests/03_security_test.sql`（pgTAP・rating CHECK が6/0/-1拒否・1/5/null許可・`profiles_public`はPII非露出・public-readテーブルはanon書込不可・ai_usageはRPC専用）。
+
+**CI**: `.github/workflows/security.yml`（**CodeQL** JS/TS SAST・週次＋PR・public repoで無料）／`ci.yml`静的jobに `node --test tests/security-logic.mjs` 追加／`scripts/static-checks.mjs` に**第三者Action SHA固定検査**＋Anthropic鍵パターン追加。重複通知回避（CodeQLは`security.yml`のみ・regex系は`ci.yml`のみ）。
+
+**罠/教訓**: (1) `static-checks` の CSS `url()` 資産検査regexが JS `IntMapSafe.url(link)` を誤検知→`(?<![\w.$])`で識別子前置を除外（**セキュリティ検査の弱体化でなく偽陽性除去**・CSS `url()`は必ず非識別子前置）。加えて自分のコメント内 `url(s)`/`url('...')` も誤検知→コメント文言変更。(2) **Editツールで `  ﻿` を打つと実体文字が挿入される**（`\x00-\x20\xa0`は生ASCIIで通る）→正規表現の不可視文字はxxdでバイト確認必須。scheme難読化対策は TAB/LF/CR（=`\x00-\x20`内）で十分。(3) **公開anon key（`sb_publishable_…`）は秘密でない**＝RLS/権限/Edge認証で守る（削除禁止・委託書§2遵守）。(4) service_role/DBパスワード/秘密は一切表示せず・本番Edge Functionは**未deploy**（承認ゲート）・GitHub/Supabase設定は**未変更**（手動手順を最終報告に明記）。
+
+**文書**: `SECURITY.md`（脆弱性報告・公開値の区別）／`docs/SECURITY-ARCHITECTURE.md`（脅威モデル・信頼境界・データフロー図・認証認可・Edge Function一覧・service_role使用箇所・外部API・残存リスク・**本番手動設定**）／`docs/SECURITY-TESTING.md`／`docs/INCIDENT-RESPONSE.md`（セキュリティインシデント初動＝contain優先）／`Architecture.md §17`／本ノート。
+
+---
+
 ## R137 — モバイルUI微調整・順位表示・現在地マーカー・タイムマシン時刻タブ・Atlas重複除去 (tag `#R137`)
 
 ユーザー要望10件を実装。全て `index.html` の**追加/微修正のみ**（既存機能の削除なし・単一HTML/ビルド無し温存）。作業ブランチ `feat/mobile-ui-locate-timemachine-r137`（R136 の上に stacked）。`npm test` 緑（静的83ファイル＋Playwright 11/11・AtlasQA/RegionResolver/UIAudit）。地図描画はブラウザペイン `document.hidden` で WebGL 未init のため、DOM/計算スタイル/純関数をヘッドレス実測で検証（R129〜R136 と同じ方針）。**教訓（新）: `document.hidden` のブラウザペインでは CSS トランジションが進まない → 既存要素に `.active` を後付けして `getComputedStyle` すると遷移開始値（transparent）を読む。ルール検証は「その class を最初から持つ新規要素」を生成して読むのが正解**（`.mode-btn.active` の白背景を fresh 要素で確認）。

@@ -13,7 +13,8 @@
     "test:smoke": "playwright test tests/smoke.spec.js",
     "test:qa": "playwright test tests/internal-qa.spec.js",
     "test:e2e": "playwright test",
-    "test": "node scripts/static-checks.mjs && playwright test",
+    "test:security": "node --test tests/security-logic.mjs",
+    "test": "node scripts/static-checks.mjs && node --test tests/security-logic.mjs && playwright test",
     "report": "playwright show-report"
   },
   "devDependencies": {

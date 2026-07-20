@@ -73,6 +73,7 @@ const SECRET_PATTERNS = [
   { name: 'GitHub token', re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/ },
   { name: 'Slack token', re: /\bxox[baprs]-[A-Za-z0-9-]{10,}/ },
   { name: 'OpenAI key', re: /\bsk-(?:proj-)?[A-Za-z0-9]{32,}/ },
+  { name: 'Anthropic key', re: /\bsk-ant-[A-Za-z0-9_-]{20,}/ },   // (#R138) ai-proxy provider key
 ];
 function jwtIsServiceRole(tok) {
   try {
@@ -175,6 +176,19 @@ for (const f of yamlFiles) {
     if (/pull_request_target/.test(t) && /actions\/checkout/.test(t)) {
       warn('workflow-security', `${f.rel}: uses pull_request_target with checkout — never build/run untrusted PR code with repo secrets`);
     }
+    // (#R138) Supply-chain: a THIRD-PARTY action pinned to a moveable tag can be repointed to
+    // malicious code. First-party actions/* and github/* are GitHub-owned (tags acceptable);
+    // everything else should be pinned to a full 40-hex commit SHA (Dependabot bumps them).
+    for (const m of t.matchAll(/(?:^|\s)uses:\s*([A-Za-z0-9._-]+)\/([A-Za-z0-9._\/-]+)@(\S+)/g)) {
+      const owner = m[1], ref = (m[3] || '').replace(/["']/g, '');
+      if (owner === 'actions' || owner === 'github') continue;         // GitHub-owned first-party
+      if (!/^[0-9a-f]{40}$/.test(ref)) {
+        warn('action-pinning', `${f.rel}: third-party action ${m[1]}/${m[2]}@${ref} is not SHA-pinned (supply-chain: pin to a full commit SHA)`);
+      }
+    }
+    // NOTE: expression-injection into run: blocks (${{ inputs.* }} → shell) is checked by CodeQL's
+    // dedicated Actions query (.github/workflows/security.yml) — a regex can't tell a run: body from a
+    // later step's env: block on this YAML, so it is not re-implemented here (avoids false positives).
   }
 }
 
@@ -185,7 +199,10 @@ for (const htmlName of ['index.html', 'admin.html']) {
   const t = read(f);
   const refs = new Set();
   for (const m of t.matchAll(/(?:src|href)\s*=\s*"([^"]+)"/g)) refs.add(m[1]);
-  for (const m of t.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) refs.add(m[1]);
+  // CSS url(...) asset refs ONLY. The negative lookbehind excludes JS method calls like
+  // `IntMapSafe.url(link)` / `foo.url(x)` — a CSS url() is always preceded by ':', ',', space
+  // or '(', never by an identifier char or '.', so no real CSS asset ref is missed. (#R138)
+  for (const m of t.matchAll(/(?<![\w.$])url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) refs.add(m[1]);
   for (let r0 of refs) {
     r0 = r0.trim();
     if (!r0 || /^(https?:|data:|blob:|mailto:|tel:|#|\/\/|javascript:)/i.test(r0)) continue;
