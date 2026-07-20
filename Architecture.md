@@ -982,6 +982,18 @@ supabase/
 
 ---
 
+## #R140 補足（既知バグ6件バッチ根本修正：SV透過＋実Coverage／タイムマシン国境の間欠不表示／Atlas嘘ハイライト／モバイル・ボトムシート同期）
+
+ユーザー指摘の既知問題**全6件**を根本原因から修正。全て `index.html` の加算的/微修正（単一HTML・ビルド無し温存）。`npm test` 緑（静的89＋security-logic 10＋Playwright 18/18・pageerror 0）。詳細は DEV-NOTES R140。
+
+- **① SVポップアップを無条件で不透明化**: `#streetview-panel` の base を `var(--popup-bg)`（rgba 0.72/0.74・backdrop-filter無し＝地図が透ける）→完全不透明 `var(--card-bg)` へ。head/nav の半透明はこの不透明ベースに合成される。
+- **② SV Coverage を実データで考慮**（前身の「⑤SVカバレッジ＝ベースマップ道路を水色化」を置換）: `open()` が素のクリック点に置くだけでGoogleの実パノラマ位置を偽っていた真因を修正。Googleの**実SVカバレッジ・タイル** `mts{0-3}.google.com/vt?…lyrs=svv&style=40,18`（ACAO:*・キー/UA/Referer不要・空域=68B）を(a)Coverageモードの**実オーバーレイ**に、(b)新 `IntMapStreetView.nearestCoverage()`＝現在ズームで3×3タイルを画素サンプリング（canvas getImageData・プロキシ不要）し**最寄coverage画素へスナップ**、無ければ正直に「ここにSV無し」（`imToast`5言語）、読取不能は素点フォールバック、(c)マーカーのドラッグ終了も同スナップ。実測: Times Sq 27m・Westminster 15m吸着、Pacific/Sahara=covered:false。出典・プライバシー（JP/EN）にカバレッジ・タイル追記。
+- **③④ タイムマシン国境の間欠不表示/不更新**: `IntMapTimeBorders.apply(fc)` の style未ロード時フォールバックがワンショット `map.once('idle')`（busyマップで永久未発火＝R41で潰した同型バグの残存）→ **`whenStyleReady()`（poll＋~6s hard-resolve）＋seqガード**へ。年変更ショートサーキット2箇所にも ensure()失敗時の一回リトライ。
+- **⑤ Atlas嘘ハイライト**: 返信が**実行前プランナの `say`**（過去形「ハイライトしました」）を無条件先頭表示していた→**全滅時 or 視覚アクション（highlight/outline/draw）失敗時は `say` 抑止**し既存の正直な警告を先頭化（`runActions`）。
+- **⑥ モバイル・ボトムシート同期＝R139修正がno-op**: maplibre 5.24.0 で `setPadding(e,t)=jumpTo({padding:e},t)`＝**瞬時**（第2引数はeventData）→R139の `{duration,easing}` は黙殺され padding が跳んでいた。**`map.easeTo({padding,460ms,同cubic-bezier})`** でロックステップ化、ライブは最新値rAF＋`dragStart`で `map.stop()`。デスクトップ・サイドバーの同型no-opも `easeTo` 化。実ソースで `setPadding=jumpTo`／`easeTo`のpadding対応を確認。
+
+---
+
 ## #R139 補足（Companiesタブ新設＝Information廃止／モバイル描画・レイヤーFAB・ボトムシート同期／範囲人口の進行バー正直化／現在地ボタン・時刻タブ精緻化）
 
 ユーザー要望11件。全て `index.html` の追加/微修正（既存機能削除は明示指示の Information タブのみ・単一HTML温存）。`npm test` 緑（静的91＋security-logic＋Playwright 18/18）。詳細は DEV-NOTES R139。R138（IntMapSafe 等）の上に stack。
