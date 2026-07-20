@@ -170,3 +170,13 @@ update public.area_monitors
 update public.monitor_runs
    set report_id = '10000000-0000-0000-0000-0000000000a3'
  where id = '10000000-0000-0000-0000-0000000000a2';
+
+-- (#R144) Long-lived per-item ledger row for A's monitor (the "past N days"
+-- baseline + cap-proof novelty source). Owner-only RLS; used by 04_monitors_test.
+insert into public.monitor_seen_items
+  (monitor_id, user_id, source_type, dedup_key, title, source_name, source_url, observed_at, lng, lat, first_seen_at, last_seen_at)
+values
+  ('10000000-0000-0000-0000-0000000000a1', '11111111-1111-1111-1111-111111111111',
+   'news', 'news:example.test/news-en-1', 'Synthetic headline EN', 'Test Wire',
+   'https://example.test/news-en-1', now() - interval '1 hour', 139.69, 35.68, now() - interval '1 hour', now())
+on conflict (monitor_id, source_type, dedup_key) do nothing;

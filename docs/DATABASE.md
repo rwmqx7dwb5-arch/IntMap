@@ -54,6 +54,15 @@ is the human explanation.
 | `dashboard_cards` | Curated strategic-location cards. | Everyone. | Admin (+ service_role). |
 | `current_news` | Server-refreshed, pre-geolocated news. | Everyone. | **service_role only** (`refresh-news`). |
 
+### Area monitors (#R141 / #R144)
+| Table | Purpose | Read | Write |
+|---|---|---|---|
+| `area_monitors` | A saved area watch (geometry + sources + comparison/sensitivity + schedule + denormalized run-state). | Owner. | Owner insert/delete; UPDATE is a **column grant** (config columns only — **not** `next_run_at` or the run-state columns) reinforced by the `tg_monitors_guard_state` trigger. |
+| `monitor_runs` | One execution attempt (status, snapshot, mechanical diff, AI meta). | Owner. | **service_role only** — results cannot be forged. |
+| `monitor_evidence` | Structured evidence gathered by a run (`ev_key`, source, url, coords, `dedup_key`). | Owner. | **service_role only.** |
+| `monitor_reports` | The report a run generated (severity, headline, summary, grounded `changes`, metrics, change_points). | Owner. | **service_role only**; `read` flips via `monitor_mark_read`. |
+| `monitor_seen_items` *(#R144)* | Long-lived per-item ledger (one row per `dedup_key`) → "past N days" baseline + cap-proof novelty. | Owner. | **service_role only.** |
+
 ## Relationships
 
 - `profiles.id`, `ai_usage.user_id`, `user_prefs.user_id`, `favorites.user_id`,
@@ -72,6 +81,10 @@ is the human explanation.
 | `public.handle_new_user()` + `on_auth_user_created` trigger on `auth.users` | SECURITY DEFINER | Creates the `profiles` row on signup (copies id/email/display_name). |
 | `public.increment_ai_usage(uuid, integer)` | SECURITY DEFINER, `search_path=''` | Atomically consumes one AI use if under the limit. Returns `(used, allowed)`. EXECUTE = service_role only. |
 | `public.refund_ai_usage(uuid)` | SECURITY DEFINER, `search_path=''` | Refunds one use after a failed provider call. EXECUTE = service_role only. |
+| `public.monitor_limit(uuid)` / `monitor_limit_self()` *(#R144)* | SECURITY DEFINER, `search_path=''` | Per-plan monitor cap. `(uuid)` is **service_role-only** (users can't probe another user's plan); the UI reads its own via `monitor_limit_self()`. Enforced by a BEFORE INSERT trigger. |
+| `public.monitor_claim_due(int,int)` / `monitor_claim_one(uuid,uuid,int,int)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Atomic claims (cron `FOR UPDATE SKIP LOCKED`; manual `UPDATE…WHERE…RETURNING`). service_role only. |
+| `public.monitor_finalize(...)` / `monitor_commit_report(...)` *(#R144)* | SECURITY DEFINER, `search_path=''` | Finalize a run + (optionally) insert its report + update the monitor meta in one transaction. service_role only. |
+| `public.tg_monitors_guard_state()` + `trg_monitors_guard` *(#R144)* | SECURITY DEFINER, `search_path=''` | BEFORE UPDATE on `area_monitors`: freezes run-state columns and server-owns `next_run_at` for any non-runner caller (grant-independent). |
 
 Every SECURITY DEFINER function pins an empty `search_path` and schema-qualifies its objects,
 so a caller cannot hijack it via their own search path.
@@ -87,8 +100,16 @@ so a caller cannot hijack it via their own search path.
    SQL (below) or `service_role`.
 3. **AI quota is tamper-proof.** `ai_usage` is written only by the SECURITY DEFINER RPCs, and
    those RPCs are executable only by `service_role`.
+4. **(#R144) Server-owned run-state.** Monitor run results (`monitor_runs`/`_evidence`/`_reports`/
+   `_seen_items`) have no write policy → only `service_role` writes them, so they cannot be forged.
+   On `area_monitors`, the run-state columns and `next_run_at` are protected by **both** a column
+   grant **and** the `tg_monitors_guard_state` trigger — the trigger matters because in production
+   Supabase's default privileges grant users full table UPDATE (RLS is the real protection), which
+   would otherwise let a user forge run metadata or hand-pick their execution time. `monitor_limit`
+   is service-role-only so plans can't be enumerated.
 
-All three are proven by the pgTAP tests — see [`RLS-TESTING.md`](RLS-TESTING.md).
+Guarantees 1–3 (and the R144 monitor matrix) are proven by the pgTAP tests
+(`04_monitors_test.sql` simulates the prod default grant) — see [`RLS-TESTING.md`](RLS-TESTING.md).
 
 ## Admin privileges
 
