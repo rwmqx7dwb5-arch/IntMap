@@ -5,6 +5,37 @@
 
 ---
 
+## R140 — 既知バグ6件バッチ根本修正：ストリートビュー透過＋Coverage無視／タイムマシン国境の間欠不表示／Atlas嘘ハイライト／モバイル・ボトムシート同期 (tag `#R140`)
+
+ユーザー指摘の既知問題**全6件**を根本原因から修正。全て `index.html` の**加算的/微修正**（単一HTML・ビルド無し温存）。着手前に**並列サブエージェント3本**で③④⑤⑥の根本原因を実地調査。`npm test` 緑（静的89＋security-logic 10＋Playwright **18/18**、pageerror 0）。ヘッドレスは `document.hidden` で map 未init のため、②のCoverageエンジンは**実Googleタイルでライブ実測**、⑥のAPIは**maplibre 5.24.0のprototype実ソースで確定**、①は算出スタイルで実測。
+
+### ① ストリートビューのポップアップを無条件で不透明化
+**真因**＝`#streetview-panel` の base が `background:var(--popup-bg)`＝`rgba(…,0.72/0.74)` かつ **backdrop-filter 無し**→head/nav の `--input-bg`（5〜10%不透明）越しに生の地図が透けていた。**修正**＝base を完全不透明の `var(--card-bg)`（#fff / #1c1c1e）へ。head/nav の半透明はこの不透明ベース上に合成されるので地図は一切透けない（算出値 `#1c1c1e` opaque を実測確認・R122 の place-label popup と同型の「透過するな」対応）。
+
+### ② ストリートビューが Coverage を全く考慮しない＝キーレス実Coverageで根本修正
+**真因**＝`open()` は**素のクリック座標**にマーカーを置き Google 埋め込みをそこで読むだけ→Google は最寄パノラマへスナップするので**地図マーカーが実際の映写位置を偽る**。かつ Coverage 無しの地点でも遠方スナップ＋偽マーカーを出す。Coverage 表示も**ベースマップ自身の道路を青着色**するだけで実SVカバレッジではなかった。
+**修正（キーレス・実データ）**＝Google の**実SVカバレッジ・タイル** `https://mts{0-3}.google.com/vt?…&lyrs=svv&style=40,18`（HTTP200・`image/png`・**ACAO:***・UA/Referer非依存・未撮影域は68B空タイル）を採用。(a) Coverage モードはこのラスタを**実オーバーレイ**（青線＝実パノラマ）に置換。(b) 新 `_nearestCoverage(lng,lat)`＝現在ズーム（12〜18にクランプ）で3×3タイルを `new Image(crossOrigin)` 取得→canvas合成→`getImageData`（ACAO:*でtaint無し・**プロキシ/キー不要**）→半径40pxで最寄の不透明（=coverage）画素を探索し**実座標へ逆変換**。`{covered:true,lng,lat}`／半径内に無ければ `{covered:false}`／タイル読取不能は `null`。(c) `open()` は snap 成功→実カバレッジ点で描画、`covered:false`→**正直に「ここにはストリートビューがありません」**（`imToast` 5言語）＋マーカー出さず、`null`→素のクリック点でグレースフル。(d) マーカーの**ドラッグ終了**も同スナップ。**ライブ実測**: Times Square drift 27m・Westminster 15m（実道路へ吸着）、mid-Pacific/Sahara は `covered:false`。CSP は `img-src/connect-src/default-src` 無し＝`mts.google.com` 許容。出典・プライバシー（JP/EN）に Google カバレッジ・タイルを追記。
+
+### ③④ タイムマシンで国境が更新されない／歴史的国境が出ない（間欠・再読込で治る）＝根本修正
+**真因**（サブエージェント調査）＝`IntMapTimeBorders` の `apply(fc)` が style 未ロード時に **`map.once('idle',…)` のワンショット**へフォールバック。busy/背面タブでは map が**クリーンな idle に到達せず**このワンショットが**永久に発火しない**→era レイヤーが作られず「歴史的国境が出ない・再読込で治る」（R41 が `whenStyleReady` で潰したのと**同一アンチパターン**の残存）。加えて遅延 apply が**seq 非ガード**で、古い年の遅延 apply が新しい年を上書き→「年を変えても更新されない」。年変更ショートサーキット（`shownY===key` / `shownY===ny&&…`）も ensure() 失敗時に**黙って諦め**、絶えた国境を latch。
+**修正**＝(1) `apply(fc)` 冒頭で `const mySeq=seq` を捕捉し、フォールバックを **`whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); })`** へ（poll＋~6s hard-resolve＝idle 非依存・seq ガードで stale 上書き防止・派生fcを渡す aourednik 経路でも動くよう**オブジェクト同一性でなく seq** で判定）。(2) 両ショートサーキットに `else whenStyleReady().then(…ensure()&&_applyBorders())` の一回リトライ。検証フック=`IntMapTimeBorders.currentFC()` vs `querySourceFeatures('imtb-src')`、`getLayer('imtb-line')`。
+
+### ⑤ Atlas がハイライトしていないのに「しました」と嘘報告
+**真因**（サブエージェント調査）＝返信は**実行前にプランナが書いた `say`**（過去形「〜をハイライトしました」）を `runActions`（L30643付近）で**無条件に先頭表示**。fail-closed リゾルバ（R116/R130/R132）が湾/同名/誤字で `null`→アクションは `ok:false` を返すのに、`say` はそのまま先頭に居座り、`⚠` 警告は下に小さく付くだけ。
+**修正**＝`const _allFailed=acts.length>0&&fails.length>=acts.length; const _visFailed=fails.some(a=>a&&(a.type==='highlight'||a.type==='outline'||a.type==='draw'));` を作り、**全滅時 or 視覚アサーション（highlight/outline/draw）が失敗した時は `say` 先頭を抑止**→既存の「Nothing found for X／N step(s) could not be completed」（5言語）が正直に先頭化。複合要求の非視覚 partial は温存（`_visFailed` で狙い撃ち）。**残存**（別軸）: 一部成功でも視覚アクション成功時の `say` 過大主張は対象外。
+
+### ⑥ モバイル・ボトムシート↔地図位置の同期が弱い＝R139修正が**no-op**だった
+**真因**（サブエージェント調査＋実ソース確定）＝**maplibre 5.24.0 で `setPadding(e,t){return this.jumpTo({padding:e},t)}`＝瞬時**。第2引数 `t` は**eventData でありアニメ設定ではない**→R139 の `{duration:460,easing}` は**黙殺され padding が1フレームで跳ぶ**一方シートは 460ms CSS 遷移＝位相ズレ。ライブドラッグの rAF も**スケジュール時の最古値**を適用しフリック中に遅れる。
+**修正**＝スナップを**実アニメAPI `map.easeTo({padding,duration:460,easing:_sheetEase})`**（シートと同一 cubic-bezier＋460ms でロックステップ）へ。非アニメは瞬時 `setPadding`。ライブは `_padPending` に**最新値**を保持し rAF 内で読む（2px ゲート撤去・最新反映）。`dragStart` 冒頭に `map.stop()`（再グラブでスナップ ease を即キャンセル）。デスクトップ・サイドバーの同型 no-op（L16655 付近・コメントは「lock-step」と誤称）も `easeTo` 化。実ソースで `setPadding=jumpTo`（瞬時）と `easeTo` の padding 対応を確認。
+
+### 罠・教訓
+- **キーレスで Coverage を「実データ」判定する正解は SVカバレッジ・タイルの画素サンプリング**。Google の `SingleImageSearch`（pb protobuf）は UA/Referer 必須＋CORS無し＋pb が壊れやすく**再現不能な脆さ**＝不採用。svv タイルは **ACAO:*** で canvas taint 無し→プロキシもキーも不要で最寄パノラマへスナップできる。空タイル=68B が Coverage 無しの明確なシグナル。
+- **「直したつもりが no-op」**＝R139 のシート同期は `setPadding` の第2引数を誤解してアニメ指定を渡していた（実際は eventData）。**実ソース（`.toString()`）で API 契約を確認**すれば一撃で判る。animated padding は `easeTo/flyTo({padding})` のみ。
+- **ワンショット `map.once('idle')` は busy マップで永久に発火しない**（R41 の教訓の再来）。style 待ちは必ず `whenStyleReady`（poll＋hard-resolve）。遅延再適用は必ず**世代（seq）ガード**。
+- **嘘報告の根治は「実行前の say を実行結果でゲートする」**。プランナは実行前に成否を知り得ないので、正直化は返信合成側でしか出来ない。
+
+---
+
 ## R139 — Companiesタブ新設（Information廃止）＋モバイル描画/レイヤーFAB/ボトムシート同期＋範囲人口の進行バー正直化＋現在地・時刻タブ精緻化 (tag `#R139`)
 
 ユーザー要望11件バッチ。全て `index.html` の**追加/微修正**（既存機能の削除は明示指示の Information タブのみ・単一HTML/ビルド無し温存）。作業ブランチ `feat/r139-companies-mobile-timemachine`（**R138 の上に stack**＝Companies のロゴ/企業名の安全描画に `IntMapSafe` を使うため）。`npm test` 緑（静的91＋`security-logic`＋Playwright **18/18**）。地図描画はブラウザペイン `document.hidden` で WebGL 未init のため、DOM/計算スタイル/純関数/ライブfetchをヘッドレス実測（R129〜R138 と同方針）。着手前に**並列サブエージェント3本**で範囲人口の進行バー・モバイル描画/レイヤーFAB・ボトムシート同期の**根本原因**を実地調査。
