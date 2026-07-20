@@ -605,6 +605,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .radius-list-item .rl-main{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .radius-list-item .rl-del{ background:transparent; border:none; color:var(--text-muted); font-size:14px; padding:0 2px; cursor:pointer; }
     .radius-list-item .rl-del:hover{ color:var(--info-mil); }
+    /* (#R145) declutter the radius popup ("項目数が増え煩雑…UIを整理"): the 3 area actions were stacked full-width
+       (~114px of vertical) — pack them into a compact single-row grid so the popup stays short. */
+    .rad-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px; }
+    .rad-act{ display:flex; align-items:center; justify-content:center; padding:8px 6px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); border-radius:9px; color:var(--text-main); cursor:pointer; font-size:11px; font-weight:600; line-height:1.15; text-align:center; min-width:0; }
+    .rad-act:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+    .rad-act .ra-l{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     /* === MARKERS: dot is the pinned position. Labels hidden by default, shown only on hover. === */
     .intel-marker{ position:relative; width:14px; height:14px; cursor:pointer; }
     .intel-dot{ width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.4); position:relative; box-sizing:border-box; transition:transform 0.18s; }
@@ -2021,11 +2027,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     }
 
     /* --- Opacity moved into the legend / layer-control popup (#17) --- */
-    .dl-op-row{ display:flex; align-items:center; gap:8px; margin:8px 0 2px; font-size:10.5px; color:var(--text-muted); }
+    .dl-op-row{ display:flex; align-items:center; gap:8px; margin:5px 0 2px; font-size:10px; color:var(--text-muted); }
     .dl-op-row input[type=range]{ flex:1; min-width:0; accent-color:var(--primary-color); height:4px; }
-    .dl-op-row .dl-op-val{ min-width:30px; text-align:right; font-variant-numeric:tabular-nums; }
-    .dl-op-extra{ margin-top:8px; }
-    .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+    .dl-op-row .dl-op-val{ min-width:28px; text-align:right; font-variant-numeric:tabular-nums; }
+    .dl-op-extra{ margin-top:5px; }
+    .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-muted); }
     .dl-op-extra input[type=date], .dl-op-extra select{ flex:1; min-width:0; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px; }
     /* (#R16) ABSOLUTE RULE — NO sliders / date-pickers / filters anywhere in the Layers panel. Every such
        control lives in that layer's LEGEND only (opacity via ensureLegendOpacity, dates/filters via
@@ -10296,7 +10302,7 @@ window.addEventListener('DOMContentLoaded', () => {
     materials:['Materials','素材','Werkstoffe','Материалы','Materiales'],
     staples:['Consumer Staples','生活必需品','Basiskonsumgüter','Товары первой необходимости','Bienes básicos']
   };
-  const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'] };
+  const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'], IND:['India','インド','🇮🇳'], BRA:['Brazil','ブラジル','🇧🇷'], ESP:['Spain','スペイン','🇪🇸'], ITA:['Italy','イタリア','🇮🇹'], SGP:['Singapore','シンガポール','🇸🇬'], ARG:['Argentina','アルゼンチン','🇦🇷'], MEX:['Mexico','メキシコ','🇲🇽'] };
   window.IntMapCompanies=(function(){
     /* rows: [ ticker, name, nameJP(''=use EN), countryISO3, sectorKey, domain, founded, employees, revenueB, netIncomeB,
        sharesOutB (0 = non-US → use snapshot, no live calc), marketCapSnapshotB ]. Money & shares in BILLIONS. */
@@ -10450,7 +10456,37 @@ window.addEventListener('DOMContentLoaded', () => {
       ['ABNB','Airbnb','エアビーアンドビー','USA','tech','airbnb.com',2008,7300,11,4.7,0.63,92],
       ['SNOW','Snowflake','スノーフレイク','USA','software','snowflake.com',2012,7000,4,-1.3,0.335,90],
       ['WDAY','Workday','ワークデイ','USA','software','workday.com',2005,19000,8,1,0.265,38],
-      ['KHC','Kraft Heinz','クラフト・ハインツ','USA','staples','kraftheinzcompany.com',2015,36000,26,2.7,1.20,31]
+      ['KHC','Kraft Heinz','クラフト・ハインツ','USA','staples','kraftheinzcompany.com',2015,36000,26,2.7,1.20,31],
+      /* (#R145) breadth + immediacy ("網羅性、即時性を徹底的に高めて") — more global names across India/Brazil/Spain/Italy/
+         China/LatAm/Korea/Japan/Australia. US-listed names are LIVE: shares = snapshot cap ÷ the fetched live price
+         (self-consistent per the R142 method → mcap stays correct & tracks price, immune to ADR ratios); primary
+         foreign listings (.NS/.MC/.T/.KS/.PA/.AX) stay honest reported snapshots. */
+      ['BRK-B','Berkshire Hathaway','バークシャー・ハサウェイ','USA','finance','berkshirehathaway.com',1839,396000,371,89,2.078,1020],
+      ['CMCSA','Comcast','コムキャスト','USA','media','comcast.com',1963,186000,122,15,3.867,92],
+      ['PGR','Progressive','プログレッシブ','USA','finance','progressive.com',1937,61000,62,6,0.5867,122],
+      ['RACE','Ferrari','フェラーリ','ITA','auto','ferrari.com',1947,5000,7.2,1.5,0.1804,68],
+      ['VALE','Vale','ヴァーレ','BRA','materials','vale.com',1942,66000,38,6,3.665,52],
+      ['NU','Nu Holdings (Nubank)','ヌーバンク','BRA','bank','nubank.com.br',2013,8000,11,2,4.562,62],
+      ['ABEV','Ambev','アンベブ','BRA','staples','ambev.com.br',1999,51000,16,3,15.51,47],
+      ['SAN','Banco Santander','サンタンデール銀行','ESP','bank','santander.com',1857,212000,68,12,6.642,90],
+      ['BBVA','BBVA','BBVA','ESP','bank','bbva.com',1857,121000,35,10,3.103,78],
+      ['ITX.MC','Inditex (Zara)','インディテックス','ESP','retail','inditex.com',1985,165000,40,5.9,0,160],
+      ['RELIANCE.NS','Reliance Industries','リライアンス','IND','energy','ril.com',1966,236000,119,8.4,0,210],
+      ['TCS.NS','Tata Consultancy Services','タタ・コンサルタンシー','IND','software','tcs.com',1968,607000,29,5.8,0,170],
+      ['INFY','Infosys','インフォシス','IND','software','infosys.com',1981,343000,19,3.2,6.527,75],
+      ['IBN','ICICI Bank','ICICI銀行','IND','bank','icicibank.com',1994,130000,27,6,3.192,95],
+      ['PDD','PDD Holdings (Temu)','PDDホールディングス','CHN','ecommerce','pddholdings.com',2015,17000,55,16,1.961,165],
+      ['JD','JD.com','京東','CHN','ecommerce','jd.com',1998,517000,160,4,1.621,48],
+      ['BIDU','Baidu','百度','CHN','internet','baidu.com',2000,40000,19,3,0.2984,32],
+      ['MELI','MercadoLibre','メルカドリブレ','ARG','ecommerce','mercadolibre.com',1999,58000,20,1.9,0.05072,92],
+      ['SE','Sea Limited','シー','SGP','internet','sea.com',2009,67000,16,0.4,0.5766,60],
+      ['CPNG','Coupang','クーパン','KOR','ecommerce','coupang.com',2010,65000,30,0.6,1.805,30],
+      ['MUFG','Mitsubishi UFJ Financial','三菱UFJ','JPN','bank','mufg.jp',2005,120000,60,10,7.036,150],
+      ['6861.T','Keyence','キーエンス','JPN','industrial','keyence.com',1974,11000,6.5,2.4,0,130],
+      ['7974.T','Nintendo','任天堂','JPN','media','nintendo.com',1889,7700,12,3,0,75],
+      ['000660.KS','SK Hynix','SKハイニックス','KOR','semi','skhynix.com',1983,32000,40,8,0,90],
+      ['AIR.PA','Airbus','エアバス','FRA','aerospace','airbus.com',1970,148000,75,4,0,140],
+      ['CBA.AX','Commonwealth Bank','コモンウェルス銀行','AUS','bank','commbank.com.au',1911,49000,27,10,0,150]
     ];
     const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0}));
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
@@ -10499,7 +10535,19 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
       if(my===_hSeq){ _hyLoaded=year; if(onUpdate){ try{ onUpdate(); }catch(_){} } }
     }
-    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, histYear:()=>_hy };
+    /* (#R145) Share-price HISTORY for the compare Time-series mode — one keyless Yahoo v8 call per name over a year
+       range (monthly), reduced to the last close of each calendar year. Cached per name+range. Live (sh>0/US-listed)
+       names only; snapshot-only names have no path and return {} (charted honestly as "no history"). */
+    const _histCache={};
+    async function priceSeries(tk, y0, y1){ const key=tk+'|'+y0+'|'+y1; if(_histCache[key]) return _histCache[key];
+      const p1=Math.floor(Date.UTC(y0,0,1)/1000), p2=Math.floor(Date.UTC(y1,11,31)/1000);
+      const byYear={};
+      try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
+        const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const ts=rt&&rt.timestamp; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
+        if(Array.isArray(ts)&&Array.isArray(q)){ for(let i=0;i<ts.length;i++){ if(q[i]>0){ const y=new Date(ts[i]*1000).getUTCFullYear(); byYear[y]=+q[i]; } } }   /* later month overwrites → year-end close */
+      }catch(_){}
+      _histCache[key]=byYear; return byYear; }
+    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, priceSeries, histYear:()=>_hy };
   })();
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
   const _coL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
@@ -10507,6 +10555,11 @@ window.addEventListener('DOMContentLoaded', () => {
      detail; a sticky tray shows the selection and opens a side-by-side bar view. Everything reads mcap()/_coVal, which
      follow the time-machine year, so both the ranking and the comparison reflect past statistics. */
   let coCompareSet=new Set(), _coTimeWired=false, _coTimeDeb=null;
+  /* (#R145) Companies compare view state — mirrors the Countries #scp-view (Bar / Time-series / Table, metric picker). */
+  let _coCmpMode='bar', _coCmpMetOpen=false, _coCmpMet=new Set(['mcap','rev','ni','emp']), _coCmpTsFrom=null, _coCmpTsTo=null, _coCmpCss=0;
+  const _CO_CMP_METS=['mcap','rev','ni','emp','pe','price'];
+  const _coCmpMetLbl=k=>{ const m={mcap:_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil'),rev:_coL('Revenue','売上高','Umsatz','Выручка','Ingresos'),ni:_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto'),emp:_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados'),pe:_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E'),price:_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')}; return m[k]||k; };
+  const _CO_CMP_PAL=['#0a84ff','#ff9f0a','#30d158','#ff375f','#bf5af2','#64d2ff','#ffd60a','#ac8e68'];
   function _coWireTime(){ if(_coTimeWired||!(window.IntMapTime&&window.IntMapTime.on)) return; _coTimeWired=true;
     const _apply=hy=>{ try{ IntMapCompanies.setYear(hy, ()=>{ if(document.getElementById('co-cmp-view')){ try{ showCoCompare([...coCompareSet]); }catch(_){} } else if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){} };
     window.IntMapTime.on(e=>{ clearTimeout(_coTimeDeb); _coTimeDeb=setTimeout(()=>{
@@ -10532,22 +10585,144 @@ window.addEventListener('DOMContentLoaded', () => {
     tray.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>window._coToggleCompare(b.getAttribute('data-cx')));
     const cv=tray.querySelector('[data-cv]'); if(cv) cv.onclick=()=>window._coShowCompare();
     const cc=tray.querySelector('[data-cc]'); if(cc) cc.onclick=()=>window._coClearCompare(); }
+  /* (#R145) Companies compare rebuilt to MIRROR the Countries #scp-view ("CompaniesもCountriesと同様に比較…できるだけ同じUIに"):
+     sticky header + Back, a Bar-chart / Time-series / Table mode segment, a metric picker, palette chips with remove,
+     an add-a-company search, a signed zero-axis bar view, an Excel-like table with CSV, and a price-history time-series.
+     Reuses the .scp-* visual language (scoped to #co-cmp-view via _coCmpEnsureCss) so Countries stays untouched. */
+  let _coCmpTsGen=0;
+  function _coCmpEnsureCss(){ if(_coCmpCss) return; _coCmpCss=1; const st=document.createElement('style');
+    st.textContent='#co-cmp-view{container-type:inline-size;}'
+      +'#co-cmp-view .scp-stickhead{position:sticky;top:0;z-index:8;background:var(--panel-bg,var(--glass-fill));display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px 0 6px;}'
+      +'#co-cmp-view .scp-back{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(0,0,0,0.12);border-radius:10px;background:#fff;color:#111;padding:3px 12px 3px 9px;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;}'
+      +'#co-cmp-view .scp-back:hover{background:#f2f2f4;}'
+      +'#co-cmp-view .scp-cmptitle{font-weight:700;font-size:13px;line-height:1.15;}'
+      +'#co-cmp-view .scp-cmpsub{font-weight:500;font-size:10.5px;color:var(--text-muted);}'
+      +'#co-cmp-view .scp-ctrlrow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}'
+      +'#co-cmp-view .scp-modes{display:inline-flex;border:1px solid rgba(128,128,128,0.3);border-radius:10px;overflow:hidden;align-self:center;}'
+      +'#co-cmp-view .scp-modes button{border:none;background:transparent;color:var(--text-muted);font-size:13.5px;font-weight:600;padding:5px 9px;cursor:pointer;}'
+      +'#co-cmp-view .scp-modes button + button{border-left:1px solid rgba(128,128,128,0.35);}'
+      +'[data-theme="dark"] #co-cmp-view .scp-modes button + button{border-left-color:rgba(255,255,255,0.6);}'
+      +'#co-cmp-view .scp-modes button.on{background:var(--primary-color);color:#fff;}'
+      +'[data-theme="dark"] #co-cmp-view .scp-modes,[data-theme="dark"] #co-cmp-view .scp-mtog:not(.open){border-color:rgba(255,255,255,0.85);}'
+      +'#co-cmp-view .scp-mtog{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:10px;font-size:13.5px;font-weight:600;padding:5px 9px;cursor:pointer;align-self:center;white-space:nowrap;}'
+      +'#co-cmp-view .scp-mtog .scp-mcount{font-weight:500;color:var(--text-muted);font-variant-numeric:tabular-nums;}'
+      +'#co-cmp-view .scp-mtog.open{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}'
+      +'#co-cmp-view .scp-mtog.open .scp-mcount{color:rgba(255,255,255,0.85);}'
+      +'#co-cmp-view .scp-metrics{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0;}'
+      +'#co-cmp-view .scp-m{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid rgba(128,128,128,0.28);background:transparent;color:var(--text-muted);cursor:pointer;}'
+      +'#co-cmp-view .scp-m.on{background:var(--primary-color);border-color:var(--primary-color);color:#fff;font-weight:600;}'
+      +'[data-theme="dark"] #co-cmp-view .scp-m{border-color:rgba(255,255,255,0.85);}'
+      +'#co-cmp-view .scp-add{height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(128,128,128,0.3);background:var(--card-bg);color:var(--text-main);font-size:12.5px;outline:none;width:100%;box-sizing:border-box;}'
+      +'#co-cmp-view #co-cmp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:230px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:40;padding:4px;}'
+      +'#co-cmp-view #co-cmp-list .scp-cr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text-main);}'
+      +'#co-cmp-view #co-cmp-list .scp-cr:hover{background:var(--input-bg);}'
+      +'#co-cmp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);}'
+      +'#co-cmp-view .scp-chip .scp-x{cursor:pointer;color:var(--text-muted);font-weight:700;padding:0 2px;} #co-cmp-view .scp-chip .scp-x:hover{color:#ff453a;}'
+      +'#co-cmp-view .scp-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}'
+      +'#co-cmp-view .scp-sec{margin:12px 0 4px;font-weight:700;font-size:13px;color:var(--text-main);}'
+      +'#co-cmp-view .scp-bars{display:flex;flex-direction:column;gap:5px;margin:4px 0 10px;}'
+      +'#co-cmp-view .scp-brow{display:flex;align-items:center;gap:8px;font-size:12px;}'
+      +'#co-cmp-view .scp-bnm{flex:0 0 116px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-main);}'
+      +'#co-cmp-view .scp-btrack{flex:1;height:14px;border-radius:7px;background:var(--input-bg);overflow:hidden;position:relative;}'
+      +'#co-cmp-view .scp-bfill{position:absolute;top:0;bottom:0;border-radius:4px;}'
+      +'#co-cmp-view .scp-zline{position:absolute;top:-1px;bottom:-1px;width:1.5px;background:var(--text-muted);opacity:0.6;z-index:1;}'
+      +'#co-cmp-view .scp-bval{flex:0 0 104px;font-size:11.5px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;}'
+      +'#co-cmp-view .scp-tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}'
+      +'#co-cmp-view .scp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin:4px 0 6px;}'
+      +'#co-cmp-view .scp-tbl td,#co-cmp-view .scp-tbl th{padding:4px 7px;text-align:right;border-bottom:1px solid rgba(128,128,128,0.12);white-space:nowrap;}'
+      +'#co-cmp-view .scp-tbl th{color:var(--text-muted);font-weight:600;}'
+      +'#co-cmp-view .scp-tbl td:first-child,#co-cmp-view .scp-tbl th:first-child{text-align:left;}'
+      +'#co-cmp-view .scp-ttools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:2px 0 8px;}'
+      +'#co-cmp-view .scp-ttools button{height:28px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;padding:0 10px;cursor:pointer;}'
+      +'#co-cmp-view .scp-ttools button:hover{border-color:var(--primary-color);color:var(--primary-color);}'
+      +'#co-cmp-view .scp-tsrange{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;padding:6px 8px;background:var(--input-bg);border:1px solid rgba(128,128,128,0.2);border-radius:9px;font-size:12px;}'
+      +'#co-cmp-view .scp-tsrange select{background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;font-size:12px;padding:4px 6px;cursor:pointer;outline:none;}'
+      +'#co-cmp-view .scp-tsrange .scp-tsl{color:var(--text-muted);font-weight:600;}'
+      +'#co-cmp-view .co-ts-note{font-size:10.5px;color:var(--text-muted);margin:2px 0 8px;line-height:1.4;}'
+      +'#co-cmp-view .co-ts-wrap svg{width:100%;height:150px;display:block;}';
+    document.head.appendChild(st); }
   function showCoCompare(tks){ const feed=document.getElementById('info-dashboard'); if(!feed) return;
-    const cos=tks.map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean); if(cos.length<2){ try{ renderCompanies(); }catch(_){} return; }
+    const cos=(tks||[...coCompareSet]).map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
+    if(cos.length<2){ try{ renderCompanies(); }catch(_){} return; }
+    _coCmpEnsureCss();
     const tray=document.getElementById('co-compare-fixed'); if(tray) tray.remove();
-    const METS=[['mcap',_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil')],['rev',_coL('Revenue','売上高','Umsatz','Выручка','Ingresos')],['ni',_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto')],['emp',_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados')],['pe',_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E')],['price',_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')]];
-    const PAL=['#0a84ff','#ff9f0a','#30d158','#ff375f','#bf5af2','#64d2ff','#ffd60a','#ac8e68'];
+    if(!document.getElementById('co-cmp-view')){ feed.innerHTML='<div id="co-cmp-view"></div>'; feed.style.paddingBottom='24px'; }
+    _coCmpRender(cos); }
+  function _coCmpRender(cos){ const root=document.getElementById('co-cmp-view'); if(!root) return;
     const hy=IntMapCompanies.histYear&&IntMapCompanies.histYear();
-    let h=`<div id="co-cmp-view"><div class="co-cmp-head"><button class="co-cmp-back">‹ ${t('back')}</button><div class="co-cmp-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')}</div></div>`;
-    h+=`<div class="co-cmp-legend">`+cos.map((c,i)=>`<span class="co-cmp-lg"><i style="background:${PAL[i%PAL.length]}"></i>${IntMapSafe.html(_coName(c))}</span>`).join('')+`</div>`;
-    if(hy) h+=`<div class="stats-timebanner co-banner"><b>${hy}${currentLang==='jp'?'年':''}</b> · ${_coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')}</div>`;
-    METS.forEach(([k,lbl])=>{ const fin=cos.map(c=>_coVal(c,k)).filter(v=>isFinite(v)); if(!fin.length) return;
-      const max=Math.max.apply(null,fin.map(v=>Math.abs(v)))||1;
-      h+=`<div class="co-cmp-metric"><div class="co-cmp-mlbl">${IntMapSafe.html(lbl)}</div>`+cos.map((c,i)=>{ const v=_coVal(c,k); const w=isFinite(v)?Math.max(2,Math.round(Math.abs(v)/max*100)):0;
-        return `<div class="co-cmp-bar-row"><div class="co-cmp-bar" style="width:${w}%;background:${PAL[i%PAL.length]}"></div><span class="co-cmp-bval">${isFinite(v)?IntMapSafe.html(_coMetric(c,k)):'—'}</span></div>`; }).join('')+`</div>`; });
-    h+=`</div>`;
-    feed.innerHTML=h; feed.style.paddingBottom='24px';
-    const bk=feed.querySelector('.co-cmp-back'); if(bk) bk.onclick=()=>{ const v=document.getElementById('co-cmp-view'); if(v) v.remove(); try{ renderCompanies(); }catch(_){} }; }   /* (#R142) remove the view first so renderCompanies' own "compare view owns the feed" guard doesn't block the return */
+    const modes=[['bar',_coL('Bar chart','棒グラフ','Balken','Столбцы','Barras')],['ts',_coL('Time-series','時系列','Zeitreihe','Динамика','Series')],['table',_coL('Table','表','Tabelle','Таблица','Tabla')]];
+    let h='<div class="scp-stickhead"><div style="display:flex;align-items:center;gap:8px;">'
+      +'<button class="scp-back" data-cmpback="1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>'+_coL('Back','戻る','Zurück','Назад','Atrás')+'</button>'
+      +'<div><div class="scp-cmptitle">'+_coL('Compare companies','企業を比較','Unternehmen vergleichen','Сравнение компаний','Comparar empresas')+'</div><div class="scp-cmpsub">'+cos.length+'/8</div></div></div>';
+    h+='<div class="scp-ctrlrow"><div class="scp-modes">'+modes.map(m=>'<button data-cmpmode="'+m[0]+'" class="'+(_coCmpMode===m[0]?'on':'')+'">'+m[1]+'</button>').join('')+'</div>';
+    h+='<button class="scp-mtog'+(_coCmpMetOpen?' open':'')+'" data-cmpmtog="1">'+_coL('Metrics','指標','Kennzahlen','Показатели','Métricas')+' <span class="scp-mcount">'+_coCmpMet.size+'/'+_CO_CMP_METS.length+'</span></button></div>';
+    if(_coCmpMetOpen) h+='<div class="scp-metrics">'+_CO_CMP_METS.map(k=>'<button class="scp-m'+(_coCmpMet.has(k)?' on':'')+'" data-cmpmet="'+k+'">'+IntMapSafe.html(_coCmpMetLbl(k))+'</button>').join('')+'</div>';
+    h+='<div style="position:relative;margin:6px 0 2px;"><input class="scp-add" id="co-cmp-add" placeholder="'+_coL('Add a company…','企業を追加…','Firma hinzufügen…','Добавить компанию…','Añadir empresa…')+'" autocomplete="off"><div id="co-cmp-list"></div></div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px;">'+cos.map((c,i)=>'<span class="scp-chip"><span class="scp-dot" style="background:'+_CO_CMP_PAL[i%_CO_CMP_PAL.length]+'"></span>'+IntMapSafe.html(_coName(c))+' <span class="scp-x" data-cmpx="'+IntMapSafe.html(c.tk)+'">×</span></span>').join('')+'</div>';
+    if(hy) h+='<div class="stats-timebanner co-banner" style="margin:4px 0 0;"><b>'+hy+(currentLang==='jp'?'年':'')+'</b> · '+_coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')+'</div>';
+    h+='</div><div id="co-cmp-body"></div>';
+    root.innerHTML=h; _coCmpBody(cos); _coCmpWire(cos); }
+  function _coCmpBody(cos){ const body=document.getElementById('co-cmp-body'); if(!body) return;
+    const met=_CO_CMP_METS.filter(k=>_coCmpMet.has(k));
+    if(_coCmpMode==='table'){ body.innerHTML=_coCmpTable(cos,met.length?met:_CO_CMP_METS); const b=body.querySelector('[data-cmpcsv]'); if(b) b.onclick=()=>_coCmpCsv(cos,met.length?met:_CO_CMP_METS); }
+    else if(_coCmpMode==='ts'){ _coCmpTs(cos,body); }
+    else body.innerHTML=_coCmpBar(cos,met); }
+  function _coCmpBar(cos,met){ if(!met.length) return '<div class="co-ts-note">'+_coL('Pick at least one metric above.','上で指標を1つ以上選択してください。','Mindestens eine Kennzahl wählen.','Выберите хотя бы один показатель.','Elige al menos una métrica.')+'</div>';
+    let h='';
+    met.forEach(k=>{ const fin=cos.map(c=>_coVal(c,k)).filter(v=>isFinite(v)); if(!fin.length) return;
+      const hi=Math.max(0,Math.max.apply(null,fin)), lo=Math.min(0,Math.min.apply(null,fin)); const span=(hi-lo)||1; const zero=(0-lo)/span*100;
+      h+='<div class="scp-sec">'+IntMapSafe.html(_coCmpMetLbl(k))+'</div><div class="scp-bars">';
+      cos.forEach((c,i)=>{ const v=_coVal(c,k); const col=_CO_CMP_PAL[i%_CO_CMP_PAL.length]; let fill='';
+        if(isFinite(v)){ const pv=(v-lo)/span*100; const l=Math.min(zero,pv), w=Math.max(1,Math.abs(pv-zero)); fill='<span class="scp-bfill" style="left:'+l.toFixed(2)+'%;width:'+w.toFixed(2)+'%;background:'+col+'"></span>'; }
+        const zl=(lo<0)?'<span class="scp-zline" style="left:'+zero.toFixed(2)+'%"></span>':'';
+        h+='<div class="scp-brow"><span class="scp-bnm">'+IntMapSafe.html(_coName(c))+'</span><span class="scp-btrack">'+zl+fill+'</span><span class="scp-bval">'+(isFinite(v)?IntMapSafe.html(_coMetric(c,k)):'—')+'</span></div>'; });
+      h+='</div>'; });
+    return h||'<div class="co-ts-note">'+_coL('No data for the selected metrics.','選択した指標のデータがありません。','Keine Daten.','Нет данных.','Sin datos.')+'</div>'; }
+  function _coCmpTable(cos,met){ let h='<div class="scp-ttools"><button data-cmpcsv="1">'+_coL('Export CSV','CSV書き出し','CSV-Export','Экспорт CSV','Exportar CSV')+'</button></div><div class="scp-tblwrap"><table class="scp-tbl"><thead><tr><th>'+_coL('Company','企業','Firma','Компания','Empresa')+'</th>'+met.map(k=>'<th>'+IntMapSafe.html(_coCmpMetLbl(k))+'</th>').join('')+'</tr></thead><tbody>';
+    cos.forEach(c=>{ h+='<tr><td>'+IntMapSafe.html(_coName(c))+'</td>'+met.map(k=>'<td>'+IntMapSafe.html(_coMetric(c,k))+'</td>').join('')+'</tr>'; });
+    return h+'</tbody></table></div>'; }
+  function _coCmpCsv(cos,met){ const esc=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+    const rows=[[_coL('Company','企業','Firma','Компания','Empresa')].concat(met.map(k=>_coCmpMetLbl(k)))];
+    cos.forEach(c=>rows.push([_coName(c)].concat(met.map(k=>{ const v=_coVal(c,k); return isFinite(v)?v:''; }))));
+    const csv='﻿'+rows.map(r=>r.map(esc).join(',')).join('\r\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='companies-compare.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ try{ a.remove(); URL.revokeObjectURL(url); }catch(_){} },200); }
+  async function _coCmpTs(cos,body){ const cur=new Date().getFullYear(); if(_coCmpTsTo==null) _coCmpTsTo=cur; if(_coCmpTsFrom==null) _coCmpTsFrom=cur-10;
+    if(_coCmpTsFrom>_coCmpTsTo) _coCmpTsFrom=_coCmpTsTo; const from=_coCmpTsFrom, to=_coCmpTsTo, gen=++_coCmpTsGen;
+    const yrs=[]; for(let y=cur;y>=1990;y--) yrs.push(y); const opt=sel=>yrs.map(y=>'<option value="'+y+'"'+(y===sel?' selected':'')+'>'+y+'</option>').join('');
+    body.innerHTML='<div class="scp-tsrange"><span class="scp-tsl">'+_coL('Years','期間','Jahre','Годы','Años')+'</span><select data-cmptsfrom="1">'+opt(from)+'</select><span>–</span><select data-cmptsto="1">'+opt(to)+'</select></div>'
+      +'<div class="co-ts-wrap" id="co-ts-wrap"><div class="co-ts-note">'+_coL('Loading price history…','株価履歴を読み込み中…','Kursverlauf wird geladen…','Загрузка истории цен…','Cargando histórico…')+'</div></div>';
+    const wf=body.querySelector('[data-cmptsfrom]'), wt=body.querySelector('[data-cmptsto]');
+    if(wf) wf.onchange=()=>{ _coCmpTsFrom=+wf.value; _coCmpTs(cos,body); }; if(wt) wt.onchange=()=>{ _coCmpTsTo=+wt.value; _coCmpTs(cos,body); };
+    const series=await Promise.all(cos.map(async c=>{ if(c.sh<=0) return {c,data:null}; try{ return {c,data:await IntMapCompanies.priceSeries(c.tk,from,to)}; }catch(_){ return {c,data:null}; } }));
+    if(gen!==_coCmpTsGen) return; const wrap=document.getElementById('co-ts-wrap'); if(!wrap) return;
+    const W=600,H=150,padL=6,padR=6,padT=10,padB=6, innerW=W-padL-padR, innerH=H-padT-padB;
+    const years=[]; for(let y=from;y<=to;y++) years.push(y); const lines=[]; let vmin=Infinity,vmax=-Infinity;
+    series.forEach(s=>{ if(!s.data) return; let base=0; for(const y of years){ if(s.data[y]>0){ base=s.data[y]; break; } } if(!base) return;
+      const pts=years.map(y=>s.data[y]>0?{y,v:s.data[y]/base*100}:null).filter(Boolean); if(pts.length<2) return;
+      pts.forEach(p=>{ if(p.v<vmin)vmin=p.v; if(p.v>vmax)vmax=p.v; }); lines.push({c:s.c,col:_CO_CMP_PAL[cos.indexOf(s.c)%_CO_CMP_PAL.length],pts}); });
+    if(!lines.length){ wrap.innerHTML='<div class="co-ts-note">'+_coL('No price history for these companies (US-listed live names only).','これらの企業の株価履歴がありません（米国上場のライブ銘柄のみ）。','Kein Kursverlauf (nur live gelistete US-Namen).','Нет истории цен (только листингованные в США).','Sin histórico (solo cotizadas en EE. UU.).')+'</div>'; return; }
+    const vspan=(vmax-vmin)||1; const X=y=>padL+((to>from)?(y-from)/(to-from):0.5)*innerW; const Y=v=>padT+(1-(v-vmin)/vspan)*innerH;
+    let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">';
+    if(vmin<=100&&vmax>=100){ const y1=Y(100).toFixed(1); svg+='<line x1="'+padL+'" y1="'+y1+'" x2="'+(W-padR)+'" y2="'+y1+'" stroke="var(--text-muted)" stroke-opacity="0.3" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>'; }
+    lines.forEach(ln=>{ svg+='<path d="'+ln.pts.map((p,j)=>(j?'L':'M')+X(p.y).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+ln.col+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; });
+    svg+='</svg>';
+    const missing=cos.filter(c=>!lines.find(l=>l.c===c));
+    let note=_coL('Indexed to 100 at '+from+' · US-listed live names only','各社を'+from+'年＝100に指数化 · 米国上場のライブ銘柄のみ','Indexiert auf 100 ('+from+') · nur live gelistete US-Namen','Индекс 100 в '+from+' · только листингованные в США','Base 100 en '+from+' · solo cotizadas en EE. UU.');
+    if(missing.length) note+=' · '+_coL('no history','履歴なし','kein Verlauf','нет истории','sin histórico')+': '+missing.map(c=>IntMapSafe.html(_coName(c))).join(', ');
+    wrap.innerHTML=svg+'<div class="co-ts-note">'+note+'</div>'; }
+  function _coCmpWire(cos){ const root=document.getElementById('co-cmp-view'); if(!root) return;
+    const bk=root.querySelector('[data-cmpback]'); if(bk) bk.onclick=()=>{ root.remove(); try{ renderCompanies(); }catch(_){} };
+    root.querySelectorAll('[data-cmpmode]').forEach(b=>b.onclick=()=>{ _coCmpMode=b.getAttribute('data-cmpmode'); _coCmpRender(cos); });
+    const mt=root.querySelector('[data-cmpmtog]'); if(mt) mt.onclick=()=>{ _coCmpMetOpen=!_coCmpMetOpen; _coCmpRender(cos); };
+    root.querySelectorAll('[data-cmpmet]').forEach(b=>b.onclick=()=>{ const k=b.getAttribute('data-cmpmet'); if(_coCmpMet.has(k)){ if(_coCmpMet.size>1) _coCmpMet.delete(k); } else _coCmpMet.add(k); _coCmpRender(cos); });
+    root.querySelectorAll('[data-cmpx]').forEach(b=>b.onclick=()=>{ coCompareSet.delete(b.getAttribute('data-cmpx')); const left=[...coCompareSet]; if(left.length<2){ root.remove(); try{ renderCompanies(); }catch(_){} } else showCoCompare(left); });
+    const inp=root.querySelector('#co-cmp-add'), list=root.querySelector('#co-cmp-list'); if(inp&&list){ const have=new Set(cos.map(c=>c.tk));
+      const upd=()=>{ const q=inp.value.trim().toLowerCase(); if(!q){ list.style.display='none'; return; }
+        const hits=IntMapCompanies.DATA.filter(c=>!have.has(c.tk)&&(((_coName(c)||'').toLowerCase().includes(q))||c.tk.toLowerCase().includes(q)||(c.n||'').toLowerCase().includes(q))).slice(0,30);
+        if(!hits.length){ list.style.display='none'; return; }
+        list.innerHTML=hits.map(c=>'<div class="scp-cr" data-cmpadd="'+IntMapSafe.html(c.tk)+'">'+IntMapSafe.html(_coName(c))+' <span style="color:var(--text-muted);font-size:11px;">'+IntMapSafe.html(c.tk)+'</span></div>').join(''); list.style.display='block';
+        list.querySelectorAll('[data-cmpadd]').forEach(r=>r.onmousedown=e=>{ e.preventDefault(); const tk=r.getAttribute('data-cmpadd'); if(coCompareSet.size<8){ coCompareSet.add(tk); showCoCompare([...coCompareSet]); } }); };
+      inp.oninput=upd; inp.onfocus=upd; inp.onblur=()=>setTimeout(()=>{ try{ list.style.display='none'; }catch(_){} },180); } }
   const _coSec=(k)=>{ const s=CO_SECTORS[k]; return s?_coL(s[0],s[1],s[2],s[3],s[4]):k; };
   const _coCountry=(cc)=>{ const c=CO_CC[cc]; return c?(currentLang==='jp'?c[1]:c[0]):cc; };
   const _coFlag=(cc)=>{ const c=CO_CC[cc]; return c?c[2]:''; };
@@ -12380,36 +12555,37 @@ window.addEventListener('DOMContentLoaded', () => {
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
       /* (#R13c) Width is LOCKED (min=max=216) so the native resize grabber can only change HEIGHT — the
          user reported the legend "stretching left-right"; vertical-only resize is the requested behavior. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; min-width:216px; max-width:216px; font-size:11px; }
+      /* (#R145) COMPACT legends ("全レイヤーの凡例がでかすぎる。コンパクトに"): tighter padding/width/font + the Köppen list no longer spans the whole viewport (height:auto capped at 56dvh, then scrolls) */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:min(56dvh, calc(100dvh - 92px)); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
          shows a small diagonal grip at the bottom-right, matching the resize:vertical affordance. */
       .koppen-legend::-webkit-resizer{ background:linear-gradient(135deg, transparent 0 44%, var(--text-muted) 44% 52%, transparent 52% 68%, var(--text-muted) 68% 76%, transparent 76%); }
       .koppen-legend.legend-collapsed{ resize:none !important; }
-      .koppen-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:6px; }
+      .koppen-legend h4{ margin:0 0 6px; font-size:11px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:4px; }
       .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 7px; }
       .kl-period label{ font-size:11px; color:var(--text-muted); }
       .kl-period select{ flex:1; background:var(--input-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:6px; padding:3px 6px; font-size:11.5px; cursor:pointer; }
       .legend-collapsed .kl-period{ display:none !important; }
-      .kl-item{ display:flex; align-items:center; gap:7px; padding:3px 4px; cursor:pointer; border-radius:5px; }
+      .kl-item{ display:flex; align-items:center; gap:6px; padding:2px 4px; cursor:pointer; border-radius:5px; }
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); }
-      .kl-sw{ width:14px; height:14px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
-      .kl-clear{ width:100%; margin-top:8px; padding:6px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:11px; font-weight:600; }
+      .kl-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
+      .kl-clear{ width:100%; margin-top:6px; padding:5px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:10.5px; font-weight:600; }
       .kl-clear:hover{ background:var(--primary-color); color:#fff; }
       .layer-popup-x{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:4px 6px; border-radius:6px; line-height:1; }
       .layer-popup-x:hover{ background:var(--input-bg); color:var(--info-mil); }
       /* Generic color-scale legend (HDI/Dem/Pop/NATO) */
-      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
-      .data-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; }
-      .data-legend .dl-bar{ height:10px; border-radius:5px; margin:6px 0 4px; border:1px solid rgba(0,0,0,0.1); }
-      .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; }
-      .data-legend .dl-hint{ color:var(--text-muted); margin-top:8px; font-size:10px; }
+      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:178px; font-size:10.5px; }
+      .data-legend h4{ margin:0 0 5px; font-size:11px; padding-right:18px; }
+      .data-legend .dl-bar{ height:8px; border-radius:4px; margin:4px 0 3px; border:1px solid rgba(0,0,0,0.1); }
+      .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:9.5px; }
+      .data-legend .dl-hint{ color:var(--text-muted); margin-top:5px; font-size:9.5px; }
       /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
-      .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:7px; font-size:10px; line-height:1.5; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:6px; }
+      .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:5px; font-size:9.5px; line-height:1.45; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; }
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
-      .koppen-legend h4, .data-legend h4{ padding:0 56px 0 22px !important; min-height:18px; display:flex; align-items:center; }
+      .koppen-legend h4, .data-legend h4{ padding:0 44px 0 18px !important; min-height:16px; display:flex; align-items:center; }
       /* (#R8b) Minimize/close icons are DRAWN as CSS shapes at EVERY width (desktop · tablet · phone) —
          NOT font glyphs. ▢ / – / ✕ have different ink positions, so as glyphs they never quite line up;
          as identical centerd bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
@@ -12420,12 +12596,12 @@ window.addEventListener('DOMContentLoaded', () => {
          minimise (–) and collapsed (▢) share one pixel-exact center at any box size / DPR. This removes
          the last sub-pixel vertical drift between □ and × (the negative-margin centring rounded the 1.8px
          bar and the 12px square differently). Larger sizes below change ONLY width/height. */
-      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:7px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; line-height:0; box-sizing:border-box; }
-      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:7px; }
-      .legend-min{ right:35px; }
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:6px; width:20px; height:20px; padding:0; font-size:0; border-radius:6px; line-height:0; box-sizing:border-box; }
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:6px; }
+      .legend-min{ right:30px; }
       .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
       .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
-      .legend-min::before{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); }
+      .legend-min::before{ content:''; position:absolute; top:50%; left:50%; width:11px; height:1.8px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); }
       .data-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::before{ transform:translate(-50%,-50%) rotate(45deg); }
       .data-legend .layer-popup-x::after,  .koppen-legend .layer-popup-x::after{ transform:translate(-50%,-50%) rotate(-45deg); }
       .legend-collapsed .legend-min::before{ width:12px; height:12px; background:none; border:1.8px solid currentColor; border-radius:3px; transform:translate(-50%,-50%); }
@@ -12443,9 +12619,9 @@ window.addEventListener('DOMContentLoaded', () => {
            while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimised
            legend. 32px is still a comfortable tap target and identical across legends, popups and panels. */
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
-        .data-legend .legend-min, .koppen-legend .legend-min{ top:6px !important; width:32px !important; height:32px !important; border-radius:9px; background:rgba(128,128,128,0.16); }
+        .data-legend .legend-min, .koppen-legend .legend-min{ top:6px !important; width:27px !important; height:27px !important; border-radius:8px; background:rgba(128,128,128,0.16); }
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:6px !important; }
-        .data-legend .legend-min, .koppen-legend .legend-min{ right:42px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ right:37px !important; }
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
         .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centerd at any size */
@@ -24918,22 +25094,27 @@ window.addEventListener('DOMContentLoaded', () => {
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
         if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:256,minzoom:0,maxzoom:19,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.85}});
+        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-brightness-min':0.5,'raster-saturation':-0.15,'raster-hue-rotate':-10}});   /* (#R145) recolour Google's baked blue → 水色 (light blue): lighten + slight desaturate + small cyan shift ("coverageは青ではなく水色に") */
         return true; }catch(_){ return false; } }
     function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
        COVERED lng/lat — {covered:true,lng,lat}, or {covered:false} when none is within the search radius, or null when
-       the tiles couldn't be read (network). The svv tiles send Access-Control-Allow-Origin:* so the canvas is not
-       tainted and getImageData works with NO proxy/key. Sampled at the CURRENT map zoom (clamped) so the ~R-pixel
-       radius matches the user's on-screen click precision at any scale. */
+       the tiles couldn't be read at all. (#R145) Google's svv tiles do NOT reliably send Access-Control-Allow-Origin, so
+       the canvas read is loaded through the _COV_PROX ladder below (direct → our sv-cov ACAO proxy → CORS proxy) to keep
+       getImageData un-tainted. Sampled at the CURRENT map zoom (clamped) so the ~R-pixel radius matches the user's
+       on-screen click precision at any scale. */
     const _COV_TS=256, _COV_R=115;   /* (#R142) widened search radius so "nearest coverage" actually reaches a nearby road instead of giving up (was 40px → off-road clicks returned no-coverage) */
     function _llToPx(lng,lat,z){ const s=_COV_TS*Math.pow(2,z); const sn=Math.max(-0.9999,Math.min(0.9999,Math.sin(lat*Math.PI/180))); return { x:(lng+180)/360*s, y:(0.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s }; }
     function _pxToLl(x,y,z){ const s=_COV_TS*Math.pow(2,z); const n=Math.PI-2*Math.PI*y/s; return { lng:x/s*360-180, lat:180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))) }; }
-    /* (#R142) direct first, then a CORS proxy that re-adds Access-Control-Allow-Origin:* — many privacy-hardened setups
-       (ad/tracker blockers, Apple Private Relay, DNS blocklists, corporate proxies) silently drop mts.google.com, which
-       zeroed out coverage sampling → the pre-R140 "ignores coverage, just drops at the click" symptom. The proxy lets the
-       sampler succeed anyway; if it also fails, the caller now degrades HONESTLY (no silent raw marker). */
-    const _COV_PROX=['','https://corsproxy.io/?url='];
+    /* (#R145) SNAP ROOT-CAUSE FIX: the pixel sampler reads svv tile PIXELS on a <canvas>, which needs the tile to be
+       CORS-clean (crossOrigin='anonymous' + Access-Control-Allow-Origin). Google's mts.google.com tiles do NOT reliably
+       send ACAO (and Apple Private Relay / ad-blockers / DNS blocklists strip or drop them), so the anonymous <img> load
+       is blocked → every tile fails → sampler returns null → caller falls back to the RAW CLICK. The visible raster
+       overlay still renders (no CORS needed) so coverage looked present but never snapped — the re-reported bug that
+       R140/R142 both built on top of. Ladder: direct first (fast where ACAO IS present), then OUR OWN sv-cov edge
+       function which fetches the tile server-side and re-adds ACAO:* (works everywhere, incl. Private Relay), then a
+       public CORS proxy as a last resort. If all fail the caller still degrades HONESTLY (no silent raw marker). */
+    const _COV_PROX=(function(){ const b=(window.SUPABASE_URL||'').replace(/\/$/,''); return ['', ...(b?[b+'/functions/v1/sv-cov?u=']:[]), 'https://corsproxy.io/?url=']; })();
     function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ let tried=0; const im=new Image(); im.crossOrigin='anonymous';
       const go=()=>{ const pfx=_COV_PROX[tried++]; try{ im.src=pfx?(pfx+encodeURIComponent(url)):url; }catch(_){ res(false); } };
       im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} res(true); };
@@ -24964,7 +25145,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ map.on('click',_covClick); map.getCanvas().style.cursor='crosshair'; }catch(_){}
         _covHint=document.createElement('div'); _covHint.id='sv-cov-hint';
         _covHint.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:1350;background:rgba(18,28,44,0.92);color:#dbeaff;border:1px solid rgba(57,179,255,0.55);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
-        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 青い線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die blauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — синие линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas azules son la cobertura real de Google; haz clic para abrir')+'</span><button id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">✕</button>';
+        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">✕</button>';
         document.body.appendChild(_covHint); const off=_covHint.querySelector('#sv-cov-off'); if(off) off.onclick=()=>coverage(false);
         if(!_covStyled){ _covStyled=true; try{ map.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addCoverageTiles(); },250); }); }catch(_){} }   /* re-add over a basemap/theme switch */
       } else {
@@ -29335,8 +29516,8 @@ window.addEventListener('DOMContentLoaded', () => {
           try{ window.imAccent=val; if(typeof applyAccent==='function') applyAccent(); if(typeof window._syncAccentPicker==='function') window._syncAccentPicker(); if(typeof saveSettings==='function') saveSettings(); }catch(_){}
           return R(true, note(L('Accent colour','アクセントカラー','Akzentfarbe','Акцентный цвет','Color de acento')+': '+(val==='default'?L('default','デフォルト','Standard','по умолчанию','predeterminado'):val))); }
         case 'language': { const lg=({en:'en',english:'en',jp:'jp',ja:'jp',japanese:'jp','日本語':'jp',de:'de',german:'de',deutsch:'de',ru:'ru',russian:'ru',es:'es',spanish:'es','español':'es'})[String(a.lang||'').toLowerCase()]; if(lg){ let ok=false; try{ setLang(lg); ok=true; }catch(_){ ok=clickId('lang-'+lg); } return R(ok, note('✓ '+L('Language','言語','Sprache','Язык','Idioma')+': '+lg)); } return R(false, warn('⚠ '+L('Unsupported language','非対応の言語','Sprache nicht unterstützt','Язык не поддерживается','Idioma no admitido')+': '+esc(a.lang||''))); }
-        case 'terrain3d': { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on')):warn('⚠')); }
-        case 'grid': { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on')):warn('⚠')); }
+        case 'terrain3d': { const ok=(a.on===false)?clickId('btn-view-globe'):clickId('btn-view-3d'); return R(ok, ok?note('✓ 3D '+(a.on===false?'off':'on'))+_featTogHtml('terrain3d'):warn('⚠')); }
+        case 'grid': { let ok=false; try{ if(typeof setGrid==='function'){ setGrid(a.on!==false); ok=true; } else ok=clickId('btn-tool-grid'); }catch(_){ ok=clickId('btn-tool-grid'); } return R(ok, ok?note('✓ '+L('Grid','グリッド','Gitter','Сетка','Cuadrícula')+': '+(a.on===false?'off':'on'))+_featTogHtml('grid'):warn('⚠')); }
         case 'resetNorth': case 'resetView': { const ok=clickId('btn-compass'); return R(ok, ok?note('✓ '+L('Reset north','北を上に','Norden zurücksetzen','Сброс на север','Restablecer norte')):warn('⚠')); }
         case 'zoom': { let tz=null; try{ if(a.to!=null){ tz=+a.to; map.zoomTo(tz,{duration:600}); } else if(a.delta!=null){ tz=map.getZoom()+(+a.delta); map.zoomTo(tz,{duration:400}); } else if(String(a.dir||'')==='out'){ tz=map.getZoom()-1; map.zoomOut(); } else { tz=map.getZoom()+1; map.zoomIn(); } }catch(_){}
           /* (#R61) report the TARGET, not the pre-animation zoom (the old note read the camera mid-flight and
@@ -29350,7 +29531,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
           const bid={'tab.news':'btn-news','tab.info':'btn-info','tab.stats':'btn-stats','tab.atlas':'btn-community','tab.community':'btn-community'}[cmd];
           if(cmd){ const ok=kexec(cmd,bid); return R(ok, ok?note('✓ '+esc(a.name||'')):warn('⚠')); } return doControl({target:a.name}); }
-        case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))); } return R(false, warn('⚠')); }
+        case 'countryInfo': { const cb=document.getElementById('cb-countries'); if(cb){ const want=a.on!==false; if(cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } return R(cb.checked===want, note('✓ '+L('Country info','国情報','Länderinfo','Инфо о странах','Info de países')+': '+(a.on===false?'off':'on'))+_featTogHtml('countryInfo')); } return R(false, warn('⚠')); }
         case 'selectCountry': case 'country': { await ensureData(); const c=await resolveCountry(a.country||a.name||a.place); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),3.5),duration:1000}); }catch(_){} } return R(true, note('🏳 '+esc(c.name))); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.name||a.place||''))); }
         case 'timeSeries': case 'timeseries': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name); if(c&&c.code&&typeof showCountryDetail==='function'){ try{ showCountryDetail(c.code,c.name); }catch(_){} let ok=false; try{ if(window.IntMapTimeSeries&&window.IntMapTimeSeries.open){ window.IntMapTimeSeries.open(); ok=true; } }catch(_){} return R(ok, ok?note('📈 '+L('Time-series','時系列','Zeitreihe','Динамика','Series temporales')+': '+esc(c.name)):warn('⚠')); } return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||''))); }
         case 'isolate': { if(a.on===false||/^(off|exit|clear)$/i.test(String(a.country||''))){ try{ window.IntMapIsolate&&window.IntMapIsolate.exit(); }catch(_){} return R(true, note('✓ '+L('Isolate off','分離解除','Isolierung aus','Изоляция выкл','Aislar: off'))); } const c=await resolveCountry(a.country||a.place); if(c){ if(c.ll){ try{ map.flyTo({center:[c.ll.lng,c.ll.lat],zoom:Math.max(map.getZoom(),4)}); }catch(_){} } let ok=false; try{ if(c.code&&window.IntMapIsolate&&window.IntMapIsolate.enter){ window.IntMapIsolate.enter(c.code); ok=true; } else if(c.ll&&window.IntMapIsolate&&window.IntMapIsolate.enterAt){ window.IntMapIsolate.enterAt(c.ll.lng,c.ll.lat,c.name); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+L('Isolate','分離','Isolieren','Изолировать','Aislar')+': '+esc(c.name||'')):warn('⚠')); } return R(false, warn('⚠ '+esc(a.country||a.place||''))); }
@@ -29568,7 +29749,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
           if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))); }
           const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(_herePoint&&isFinite(_herePoint.lng)));
-          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 青い線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die blauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — синие линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas azules son la cobertura real de Google; haz clic para abrir')):warn('⚠')); }
+          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir')):warn('⚠')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
           if(!ll) return R(false, warn('⚠ '+L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar')));
           try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),15),duration:900}); }catch(_){}
@@ -30825,8 +31006,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-beta{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#ff9500,#ff6482);border-radius:5px;padding:1.5px 5.5px;}'
         +'#atlas-panel .atl-x{background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:8px;}'
         +'#atlas-panel .atl-x:hover{background:var(--input-bg);color:var(--text-main);}'
-        +'#atlas-panel .atl-sub{padding:9px 11px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142) full-width in the sidebar — trim the left/right gutter ("Atlasはサイドバー内の全幅に") */
-        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 8px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
+        +'#atlas-panel .atl-sub{padding:9px 8px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142/#R145) full-width in the sidebar — the feed now bleeds past #sidebar\'s 24px pad, so only a small inner gutter remains */
+        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 6px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
         +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
         +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
         /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
@@ -30874,7 +31055,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-go svg{display:block;}'
         +'#atlas-panel .atl-go:hover{filter:brightness(1.08);} #atlas-panel .atl-go:active{transform:scale(0.9);}'
         +'#atlas-panel .atl-go.idle{background:rgba(120,120,128,0.30);box-shadow:none;color:var(--text-muted);}'
-        +'#atlas-panel .atl-go.busy{background:#ff453a;box-shadow:0 2px 8px rgba(255,69,58,0.32);color:#fff;}'   /* (#R142) Stop-answering state */
+        +'#atlas-panel .atl-go.busy{background:var(--primary-color);box-shadow:0 2px 8px rgba(10,132,255,0.35);color:#fff;}'   /* (#R145) Stop-answering button uses the ACCENT colour ("停止ボタンはアクセントカラーに"); the enlarged square icon distinguishes it from Send */
         +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.06);}'
         /* (#R72) per-message tools (copy / retry) under every Atlas reply — ChatGPT-style, user bubbles get none */
         +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:4px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
@@ -30910,7 +31091,7 @@ window.addEventListener('DOMContentLoaded', () => {
            sidebar" hack is gone). #atlas-feed provides the positioning context + fill; .atl-tab strips every floating
            popup style off the panel and hides its popup header (the sidebar tab bar is the chrome). Workspace mode is
            excluded via :not(.ws-mode) — there Atlas keeps its own floating WINDOW. */
-        +'body:not(.ws-mode) #atlas-feed{position:relative;flex:1 1 auto;min-height:0;flex-direction:column;margin:0;padding:0;overflow:hidden;}'
+        +'body:not(.ws-mode) #atlas-feed{position:relative;flex:1 1 auto;min-height:0;flex-direction:column;margin:0 -24px;padding:0;overflow:hidden;}'   /* (#R145) TRUE full-width in the sidebar ("左右に余白がありすぎ"): the real gutter is #sidebar\'s own 24px L/R padding — bleed the Atlas feed out past it (as mobile already does with -16px) so replies use the whole sidebar, not the 392px inner box */
         +'body:not(.ws-mode) #atlas-panel.atl-tab{position:relative !important;left:auto !important;top:auto !important;right:auto !important;bottom:auto !important;inset:auto !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;z-index:auto !important;resize:none !important;display:flex !important;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-head{display:none !important;}'
         /* (#R115) MOBILE Atlas ≈ the ChatGPT app ("Atlas UI in sidebar bigger… like ChatGPT app"): bigger message
@@ -31058,6 +31239,8 @@ window.addEventListener('DOMContentLoaded', () => {
               if(_ovlOwn[k]===bEl){ overlayToggle(k,false); _ovlOwn[k]=null; }
             } }catch(_){} });
           _refreshMapChips(); return; }
+        const ftg=e.target.closest&&e.target.closest('.atl-feat-tog');   /* (#R145) on/off view-feature switch — flips the real control directly */
+        if(ftg){ const f=_FEAT_TOG[ftg.getAttribute('data-feat')]; if(f){ try{ f.set(!f.on()); }catch(_){} let now=false; try{ now=!!f.on(); }catch(_){} ftg.classList.toggle('on',now); ftg.setAttribute('aria-checked',now?'true':'false'); } return; }
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
         /* (#R132) 経路10-10 §12.5: tap a turn-by-turn step in a road reply → highlight that segment on the map + fly to it.
@@ -31144,7 +31327,7 @@ window.addEventListener('DOMContentLoaded', () => {
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
     function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; }
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
-    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="15" height="15"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>';
+    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="18" height="18"><rect x="4.5" y="4.5" width="15" height="15" rx="3.5" fill="currentColor"/></svg>';   /* (#R145) bigger stop square ("ボタン内の四角はもっと大きく"): 7.5px→11.25px rendered */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
     function _setGoBusy(busy){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
       if(busy){ go.classList.add('busy'); go.classList.remove('idle'); go.innerHTML=_GO_STOP_SVG; go.onclick=_stopRun; go.title=L('Stop answering','応答を停止','Antwort stoppen','Остановить ответ','Detener respuesta'); go.setAttribute('aria-label',go.title); }
@@ -31281,6 +31464,16 @@ window.addEventListener('DOMContentLoaded', () => {
         for(const csid in ent.srcs){ try{ if(!map.getSource(csid)){ const o={type:'geojson',data:ent.srcs[csid]}; if(ent.promote&&ent.promote[csid]) o.promoteId=ent.promote[csid]; map.addSource(csid,o); }
           const st=ent.states&&ent.states[csid]; if(st){ for(const fid in st){ try{ map.setFeatureState({source:csid,id:fid},st[fid]); }catch(_){} } } }catch(_){} }
         ent.defs.forEach(nd=>{ try{ if(!map.getLayer(nd.id)){ const d2=JSON.parse(JSON.stringify(nd)); delete d2.__before; map.addLayer(d2, map.getLayer(nd.__before)?nd.__before:undefined); } }catch(_){} }); } }); }catch(_){} },600); }); }catch(_){}
+    /* (#R145) on/off VIEW features (grid / 3D terrain / country-info) previously returned a text note only — give each
+       an inline toggle SWITCH so the user can flip it straight from the reply ("オンオフ要素のある時はなるべくボタンを設置").
+       Flips the REAL UI control directly (no chat turn) and reads the true state back, so the switch never lies. */
+    const _FEAT_TOG={
+      grid:{ lbl:()=>L('Grid','グリッド','Gitter','Сетка','Cuadrícula'), on:()=>{ const b=document.getElementById('btn-tool-grid'); const c=document.getElementById('cb-grid'); return !!((b&&b.classList.contains('tool-on'))||(c&&c.checked)); }, set:v=>{ try{ if(typeof setGrid==='function') setGrid(v); else clickId('btn-tool-grid'); }catch(_){ clickId('btn-tool-grid'); } } },
+      terrain3d:{ lbl:()=>L('3D terrain','3D地形','3D-Gelände','3D-рельеф','Terreno 3D'), on:()=>{ const b=document.getElementById('btn-view-3d'); return !!(b&&(b.classList.contains('active')||b.classList.contains('view-on')||b.classList.contains('on')||b.getAttribute('aria-pressed')==='true')); }, set:v=>{ clickId(v?'btn-view-3d':'btn-view-globe'); } },
+      countryInfo:{ lbl:()=>L('Country info','国情報','Länderinfo','Инфо о странах','Info de países'), on:()=>{ const cb=document.getElementById('cb-countries'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } }
+    };
+    function _featTogHtml(kind){ const f=_FEAT_TOG[kind]; if(!f) return ''; let on=false; try{ on=!!f.on(); }catch(_){}
+      return '<div class="atl-ctl-row" style="margin-top:6px;"><span class="atl-ctl-lbl">'+esc(f.lbl())+'</span><button class="atl-ctl-toggle atl-feat-tog'+(on?' on':'')+'" data-feat="'+esc(kind)+'" role="switch" aria-checked="'+(on?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }
     function mapToggleChip(kinds){ const K=Array.from(new Set((kinds||[]).filter(k=>_OVL[k]||k==='arc'))); if(!K.length) return '';
       return '<div class="atl-mapctl atl-ctl-row" data-ovls="'+esc(K.join(','))+'" style="margin:7px 0 1px;"><span class="atl-ctl-lbl">'+L('Shown on the map','地図に表示中','Auf der Karte','Показано на карте','En el mapa')+'</span>'
         +'<button class="atl-ctl-toggle atl-map-toggle on" role="switch" aria-checked="true" title="'+L('Show / hide on the map','地図で表示 / 非表示','Auf der Karte ein/aus','Показать/скрыть на карте','Mostrar/ocultar en el mapa')+'"><span class="atl-ctl-knob"></span></button></div>'; }
@@ -33904,13 +34097,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(el){
         /* (#R41) color-scale bar (above the note) for the rasters that encode a measurable quantity */
         const sc=SCALES[L.id];
-        if(sc){ let bar=el.querySelector('.gx-scale'); if(!bar){ bar=document.createElement('div'); bar.className='gx-scale'; bar.style.cssText='margin-top:7px;'; el.appendChild(bar); }
+        if(sc){ let bar=el.querySelector('.gx-scale'); if(!bar){ bar=document.createElement('div'); bar.className='gx-scale'; bar.style.cssText='margin-top:5px;'; el.appendChild(bar); }
           const lo=sc.temp?_tEnd(sc.temp[0]):sc.anom?_aEnd(sc.anom[0]):sc.loK?_lx(sc.loK):sc.lo;
           const hi=sc.temp?_tEnd(sc.temp[1]):sc.anom?_aEnd(sc.anom[1]):sc.hiK?_lx(sc.hiK):sc.hi;
           const mid=sc.anom?'<span>0</span>':'';
-          bar.innerHTML='<div style="height:11px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
-            +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
-        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
+          bar.innerHTML='<div style="height:8px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:1px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
+        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.35;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
     function toggle(L,on){ state[L.id]=on;
       const apply=()=>{ if(!ensure(L)){ map.once('idle',apply); return; }
         try{ map.setLayoutProperty(layId(L),'visibility',on?'visible':'none'); }catch(_){}
