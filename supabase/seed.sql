@@ -115,3 +115,58 @@ values
   ('en', 'world', 'Synthetic headline EN', 'Test Wire', 'https://example.test/news-en-1', now(), 139.69, 35.68, 'Tokyo', '東京', true, 'dict'),
   ('jp', 'world', '合成見出し JP',        'Test Wire', 'https://example.test/news-jp-1', now(), 2.35, 48.85, 'Paris', 'パリ', true, 'dict')
 on conflict (lang, link) do nothing;
+
+-- 9) AREA MONITORS (#R141) — A owns a monitor with a run + evidence + report; B owns
+--    one monitor. Used by the cross-user isolation tests (04_monitors_test.sql) to
+--    prove A cannot read/forge B's monitor, run, evidence or report and vice versa.
+insert into public.area_monitors
+  (id, user_id, name, geometry, geometry_kind, center_lng, center_lat, radius_km, bbox, area_label, sources, next_run_at)
+values
+  ('10000000-0000-0000-0000-0000000000a1', '11111111-1111-1111-1111-111111111111',
+   'Tokyo watch (A)', '{"type":"Polygon","coordinates":[[[139,35],[140,35],[140,36],[139,36],[139,35]]]}'::jsonb,
+   'circle', 139.69, 35.68, 60, '[139,35,140,36]'::jsonb, '60 km around Tokyo', array['news'], now() + interval '1 hour'),
+  ('20000000-0000-0000-0000-0000000000b1', '22222222-2222-2222-2222-222222222222',
+   'Paris watch (B)', '{"type":"Polygon","coordinates":[[[2,48],[3,48],[3,49],[2,49],[2,48]]]}'::jsonb,
+   'circle', 2.35, 48.85, 60, '[2,48,3,49]'::jsonb, '60 km around Paris', array['news'], now() + interval '1 hour')
+on conflict (id) do nothing;
+
+insert into public.monitor_runs
+  (id, monitor_id, user_id, started_at, finished_at, status, trigger, sources_attempted, sources_ok,
+   snapshot, diff, change_score, report_generated, ai_used, evidence_count)
+values
+  ('10000000-0000-0000-0000-0000000000a2', '10000000-0000-0000-0000-0000000000a1',
+   '11111111-1111-1111-1111-111111111111', now(), now(), 'success', 'initial',
+   array['news'], array['news'], '{"news":{"count":2}}'::jsonb, '{"news":{"new":2}}'::jsonb, 0.5, true, true, 2)
+on conflict (id) do nothing;
+
+insert into public.monitor_evidence
+  (run_id, monitor_id, user_id, ev_key, source_type, source_name, source_url, title, observed_at, lng, lat, payload, dedup_key, change_kind)
+values
+  ('10000000-0000-0000-0000-0000000000a2', '10000000-0000-0000-0000-0000000000a1',
+   '11111111-1111-1111-1111-111111111111', 'ev_1', 'news', 'Test Wire', 'https://example.test/news-en-1',
+   'Synthetic headline EN', now(), 139.69, 35.68, '{"topic":"world"}'::jsonb, 'news:example.test/news-en-1', 'new'),
+  ('10000000-0000-0000-0000-0000000000a2', '10000000-0000-0000-0000-0000000000a1',
+   '11111111-1111-1111-1111-111111111111', 'ev_2', 'news', 'Test Wire', 'https://example.test/news-en-2',
+   'Second synthetic headline', now(), 139.70, 35.69, '{"topic":"world"}'::jsonb, 'news:example.test/news-en-2', 'new')
+on conflict (run_id, ev_key) do nothing;
+
+insert into public.monitor_reports
+  (id, monitor_id, run_id, user_id, severity, headline, summary, changes, unchanged, data_gaps, limitations, metrics)
+values
+  ('10000000-0000-0000-0000-0000000000a3', '10000000-0000-0000-0000-0000000000a1',
+   '10000000-0000-0000-0000-0000000000a2', '11111111-1111-1111-1111-111111111111', 'medium',
+   'Two new reports around Tokyo', 'Two new articles were detected in the monitored area.',
+   '[{"claim":"Two new reports were detected.","evidence_ids":["ev_1","ev_2"]}]'::jsonb,
+   '["No second independent cluster confirmed."]'::jsonb, '[]'::jsonb,
+   '["Locations reflect the reported subject of each article."]'::jsonb,
+   '{"articles":{"prev":0,"cur":2,"delta":2}}'::jsonb)
+on conflict (id) do nothing;
+
+-- Link the monitor's denormalized latest-report pointers (as the runner would).
+update public.area_monitors
+   set last_report_id = '10000000-0000-0000-0000-0000000000a3', last_status = 'success',
+       last_change_severity = 'medium', last_run_at = now(), run_count = 1
+ where id = '10000000-0000-0000-0000-0000000000a1';
+update public.monitor_runs
+   set report_id = '10000000-0000-0000-0000-0000000000a3'
+ where id = '10000000-0000-0000-0000-0000000000a2';

@@ -1149,4 +1149,15 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
 - CI＝**CodeQL**（`security.yml`）＋`check:static`に**第三者Action SHA固定**検査＋`tests/security-logic.mjs`
   （Edge Function認証不変条件）＋pgTAP `03_security_test.sql`。`npm test`で全実行。
 
+## 18. 地域監視基盤 (Area Monitors) — R141
+
+ログインユーザーが**監視地域**（円/描画/解決済み地域/現在の地図表示）を保存し、**サーバー側が定期実行**して**意味のある変化がある時だけ根拠付きレポート**を生成する機能。詳細は [`docs/AREA-MONITORS.md`](docs/AREA-MONITORS.md)。
+
+- **中核原則**＝**変化の有無はコードが判定、AIは説明のみ**。処理順＝取得→正規化/重複排除→スナップショット→機械的diff(new/gone/continuing・件数・クラスタ・媒体多様性)→change score→**変化があり閾値超の時だけAI**→**AIが引いたevidence IDを実行後にコードで検証**（偽ID主張は棄却）→run/evidence/report永続化。**取得失敗は「変化なし」ではなく専用status**。
+- **DB**（migration `20260721090000_area_monitors.sql`）＝4表 `area_monitors`/`monitor_runs`/`monitor_evidence`/`monitor_reports`。**RLS全表owner-only**、runs/evidence/reportsは**service_role書込・user読取専用**（実行結果偽造不可）、area_monitors UPDATEは**列単位grant**でrun-state列除外（ロック/メタ改竄不可）。UUID PK。`monitor_limit()`（plan別上限・**課金接続点**）を挿入トリガで強制。`monitor_claim_due()`＝`FOR UPDATE SKIP LOCKED`で二重実行防止。pgTAP `04_monitors_test.sql`。
+- **Edge Function** `monitor-run`（`--no-verify-jwt`・自前fail-closed）＝①cron（`x-monitor-secret`）で due monitors をclaim・逐次処理、②user「今すぐ実行」（JWT+monitorId・所有権照合）。純ロジックは `logic.mjs`（runtime非依存ESM）を Deno と Node テストで共有。status体系10種（success/success_no_change/partial/source_unavailable/ai_failed/timed_out/invalid_geometry/quota_exceeded/disabled/internal_error）。**AI失敗でもsnapshot/diff/evidenceは保持**。
+- **定期実行**＝pg_cron（refresh-news 同型・`net.http_post` でヘッダに秘密・`docs/AREA-MONITORS.md` にSQL）。
+- **UI/Atlas**（`index.html` 加算）＝**Monitorsタブ**（通常/モバイル/Workspace・5言語）、`window.IntMapMonitors`（一覧/作成ダイアログ/詳細/レポート＝結論・主な変化→evidence chip・数値比較・根拠一覧(出典リンク)・変化地点を地図表示・取得できなかったデータ・制約・日時/status）。Atlas `{"type":"monitor","op":…}`＝**返信は実DB結果のみ**（偽の成功報告なし）。全描画 `IntMapSafe`（XSS-inert 実証）。
+- **コスト制御**＝変化なしはAI非呼出／新規のみAIへ送信（履歴dedup）／run毎cap（evidence60・AI入力40・110s wall-clock・55s AI timeout）／plan別monitor上限・最短間隔30分・手動クールダウン30s／保持（run 100・evidence 12run）。
+
 *変更履歴の詳細は `DEV-NOTES.md`、守るべき原則は `CONSTITUTION.md` を参照。*

@@ -68,3 +68,9 @@ verify_jwt = true
 
 [functions.refresh-news]
 verify_jwt = false
+
+# monitor-run (#R141) is deployed --no-verify-jwt: pg_cron calls it with a shared
+# secret (x-monitor-secret) and the "Run now" UI calls it with a user JWT; the
+# function does its OWN auth for both paths (fail-closed on the secret).
+[functions.monitor-run]
+verify_jwt = false

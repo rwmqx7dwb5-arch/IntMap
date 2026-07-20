@@ -31,8 +31,8 @@ jobs:
       - run: npm ci
       - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets, action-pinning)
         run: npm run check:static
-      - name: Security-logic tests (Edge Function auth invariants + constant-time compare)
-        run: node --test tests/security-logic.mjs
+      - name: Security-logic + monitor-logic tests (Edge Function invariants; area-monitor comparison engine)
+        run: node --test tests/security-logic.mjs tests/monitor-logic.test.mjs
 
   browser:
     name: Browser smoke + internal QA
