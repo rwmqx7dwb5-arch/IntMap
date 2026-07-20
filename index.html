@@ -605,6 +605,12 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .radius-list-item .rl-main{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .radius-list-item .rl-del{ background:transparent; border:none; color:var(--text-muted); font-size:14px; padding:0 2px; cursor:pointer; }
     .radius-list-item .rl-del:hover{ color:var(--info-mil); }
+    /* (#R145) declutter the radius popup ("項目数が増え煩雑…UIを整理"): the 3 area actions were stacked full-width
+       (~114px of vertical) — pack them into a compact single-row grid so the popup stays short. */
+    .rad-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px; }
+    .rad-act{ display:flex; align-items:center; justify-content:center; padding:8px 6px; background:var(--input-bg); border:1px solid rgba(128,128,128,0.18); border-radius:9px; color:var(--text-main); cursor:pointer; font-size:11px; font-weight:600; line-height:1.15; text-align:center; min-width:0; }
+    .rad-act:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+    .rad-act .ra-l{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     /* === MARKERS: dot is the pinned position. Labels hidden by default, shown only on hover. === */
     .intel-marker{ position:relative; width:14px; height:14px; cursor:pointer; }
     .intel-dot{ width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.4); position:relative; box-sizing:border-box; transition:transform 0.18s; }
@@ -2021,11 +2027,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     }
 
     /* --- Opacity moved into the legend / layer-control popup (#17) --- */
-    .dl-op-row{ display:flex; align-items:center; gap:8px; margin:8px 0 2px; font-size:10.5px; color:var(--text-muted); }
+    .dl-op-row{ display:flex; align-items:center; gap:8px; margin:5px 0 2px; font-size:10px; color:var(--text-muted); }
     .dl-op-row input[type=range]{ flex:1; min-width:0; accent-color:var(--primary-color); height:4px; }
-    .dl-op-row .dl-op-val{ min-width:30px; text-align:right; font-variant-numeric:tabular-nums; }
-    .dl-op-extra{ margin-top:8px; }
-    .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-muted); }
+    .dl-op-row .dl-op-val{ min-width:28px; text-align:right; font-variant-numeric:tabular-nums; }
+    .dl-op-extra{ margin-top:5px; }
+    .dl-op-extra label{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-muted); }
     .dl-op-extra input[type=date], .dl-op-extra select{ flex:1; min-width:0; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); color:var(--text-main); font-size:11px; }
     /* (#R16) ABSOLUTE RULE — NO sliders / date-pickers / filters anywhere in the Layers panel. Every such
        control lives in that layer's LEGEND only (opacity via ensureLegendOpacity, dates/filters via
@@ -12380,36 +12386,37 @@ window.addEventListener('DOMContentLoaded', () => {
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
       /* (#R13c) Width is LOCKED (min=max=216) so the native resize grabber can only change HEIGHT — the
          user reported the legend "stretching left-right"; vertical-only resize is the requested behavior. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:calc(100dvh - 150px); min-height:200px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:216px; min-width:216px; max-width:216px; font-size:11px; }
+      /* (#R145) COMPACT legends ("全レイヤーの凡例がでかすぎる。コンパクトに"): tighter padding/width/font + the Köppen list no longer spans the whole viewport (height:auto capped at 56dvh, then scrolls) */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:min(56dvh, calc(100dvh - 92px)); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
          shows a small diagonal grip at the bottom-right, matching the resize:vertical affordance. */
       .koppen-legend::-webkit-resizer{ background:linear-gradient(135deg, transparent 0 44%, var(--text-muted) 44% 52%, transparent 52% 68%, var(--text-muted) 68% 76%, transparent 76%); }
       .koppen-legend.legend-collapsed{ resize:none !important; }
-      .koppen-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:6px; }
+      .koppen-legend h4{ margin:0 0 6px; font-size:11px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:4px; }
       .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 7px; }
       .kl-period label{ font-size:11px; color:var(--text-muted); }
       .kl-period select{ flex:1; background:var(--input-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:6px; padding:3px 6px; font-size:11.5px; cursor:pointer; }
       .legend-collapsed .kl-period{ display:none !important; }
-      .kl-item{ display:flex; align-items:center; gap:7px; padding:3px 4px; cursor:pointer; border-radius:5px; }
+      .kl-item{ display:flex; align-items:center; gap:6px; padding:2px 4px; cursor:pointer; border-radius:5px; }
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); }
-      .kl-sw{ width:14px; height:14px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
-      .kl-clear{ width:100%; margin-top:8px; padding:6px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:11px; font-weight:600; }
+      .kl-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
+      .kl-clear{ width:100%; margin-top:6px; padding:5px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:10.5px; font-weight:600; }
       .kl-clear:hover{ background:var(--primary-color); color:#fff; }
       .layer-popup-x{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:4px 6px; border-radius:6px; line-height:1; }
       .layer-popup-x:hover{ background:var(--input-bg); color:var(--info-mil); }
       /* Generic color-scale legend (HDI/Dem/Pop/NATO) */
-      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:204px; font-size:11px; }
-      .data-legend h4{ margin:0 0 8px; font-size:12px; padding-right:18px; }
-      .data-legend .dl-bar{ height:10px; border-radius:5px; margin:6px 0 4px; border:1px solid rgba(0,0,0,0.1); }
-      .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:10px; }
-      .data-legend .dl-hint{ color:var(--text-muted); margin-top:8px; font-size:10px; }
+      .data-legend{ display:none; position:absolute; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); width:178px; font-size:10.5px; }
+      .data-legend h4{ margin:0 0 5px; font-size:11px; padding-right:18px; }
+      .data-legend .dl-bar{ height:8px; border-radius:4px; margin:4px 0 3px; border:1px solid rgba(0,0,0,0.1); }
+      .data-legend .dl-scale{ display:flex; justify-content:space-between; color:var(--text-muted); font-size:9.5px; }
+      .data-legend .dl-hint{ color:var(--text-muted); margin-top:5px; font-size:9.5px; }
       /* (#R39) Short "what is this data" explanation for the non-obvious metrics. */
-      .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:7px; font-size:10px; line-height:1.5; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:6px; }
+      .data-legend .dl-desc{ color:var(--text-main); opacity:0.82; margin-top:5px; font-size:9.5px; line-height:1.45; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); padding-top:5px; }
       /* #30 — balanced legend header controls: drag handle (top-left), minimize + close (top-right,
          same size, evenly spaced), and the title padded so it never collides with either side. */
-      .koppen-legend h4, .data-legend h4{ padding:0 56px 0 22px !important; min-height:18px; display:flex; align-items:center; }
+      .koppen-legend h4, .data-legend h4{ padding:0 44px 0 18px !important; min-height:16px; display:flex; align-items:center; }
       /* (#R8b) Minimize/close icons are DRAWN as CSS shapes at EVERY width (desktop · tablet · phone) —
          NOT font glyphs. ▢ / – / ✕ have different ink positions, so as glyphs they never quite line up;
          as identical centerd bars they are pixel-aligned at any DPR. (The earlier fix only covered ≤768px,
@@ -12420,12 +12427,12 @@ window.addEventListener('DOMContentLoaded', () => {
          minimise (–) and collapsed (▢) share one pixel-exact center at any box size / DPR. This removes
          the last sub-pixel vertical drift between □ and × (the negative-margin centring rounded the 1.8px
          bar and the 12px square differently). Larger sizes below change ONLY width/height. */
-      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:7px; width:24px; height:24px; padding:0; font-size:0; border-radius:7px; line-height:0; box-sizing:border-box; }
-      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:7px; }
-      .legend-min{ right:35px; }
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x, .legend-min{ position:absolute; top:6px; width:20px; height:20px; padding:0; font-size:0; border-radius:6px; line-height:0; box-sizing:border-box; }
+      .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:6px; }
+      .legend-min{ right:30px; }
       .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
       .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
-      .legend-min::before{ content:''; position:absolute; top:50%; left:50%; width:13px; height:1.8px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); }
+      .legend-min::before{ content:''; position:absolute; top:50%; left:50%; width:11px; height:1.8px; border-radius:2px; background:currentColor; transform:translate(-50%,-50%); }
       .data-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::before{ transform:translate(-50%,-50%) rotate(45deg); }
       .data-legend .layer-popup-x::after,  .koppen-legend .layer-popup-x::after{ transform:translate(-50%,-50%) rotate(-45deg); }
       .legend-collapsed .legend-min::before{ width:12px; height:12px; background:none; border:1.8px solid currentColor; border-radius:3px; transform:translate(-50%,-50%); }
@@ -12443,9 +12450,9 @@ window.addEventListener('DOMContentLoaded', () => {
            while the rest stayed small ("×の大きさがバラバラ。凡例はデカすぎる") and bloated the minimised
            legend. 32px is still a comfortable tap target and identical across legends, popups and panels. */
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x,
-        .data-legend .legend-min, .koppen-legend .legend-min{ top:6px !important; width:32px !important; height:32px !important; border-radius:9px; background:rgba(128,128,128,0.16); }
+        .data-legend .legend-min, .koppen-legend .legend-min{ top:6px !important; width:27px !important; height:27px !important; border-radius:8px; background:rgba(128,128,128,0.16); }
         .data-legend .layer-popup-x, .koppen-legend .layer-popup-x{ right:6px !important; }
-        .data-legend .legend-min, .koppen-legend .legend-min{ right:42px !important; }
+        .data-legend .legend-min, .koppen-legend .legend-min{ right:37px !important; }
         .data-legend .layer-popup-x::before, .data-legend .layer-popup-x::after,
         .koppen-legend .layer-popup-x::before, .koppen-legend .layer-popup-x::after,
         .legend-min::before{ width:15px; height:2.1px; }   /* transform:translate(-50%,-50%) keeps them centerd at any size */
@@ -24918,22 +24925,27 @@ window.addEventListener('DOMContentLoaded', () => {
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
         if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:256,minzoom:0,maxzoom:19,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.85}});
+        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-brightness-min':0.5,'raster-saturation':-0.15,'raster-hue-rotate':-10}});   /* (#R145) recolour Google's baked blue → 水色 (light blue): lighten + slight desaturate + small cyan shift ("coverageは青ではなく水色に") */
         return true; }catch(_){ return false; } }
     function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
        COVERED lng/lat — {covered:true,lng,lat}, or {covered:false} when none is within the search radius, or null when
-       the tiles couldn't be read (network). The svv tiles send Access-Control-Allow-Origin:* so the canvas is not
-       tainted and getImageData works with NO proxy/key. Sampled at the CURRENT map zoom (clamped) so the ~R-pixel
-       radius matches the user's on-screen click precision at any scale. */
+       the tiles couldn't be read at all. (#R145) Google's svv tiles do NOT reliably send Access-Control-Allow-Origin, so
+       the canvas read is loaded through the _COV_PROX ladder below (direct → our sv-cov ACAO proxy → CORS proxy) to keep
+       getImageData un-tainted. Sampled at the CURRENT map zoom (clamped) so the ~R-pixel radius matches the user's
+       on-screen click precision at any scale. */
     const _COV_TS=256, _COV_R=115;   /* (#R142) widened search radius so "nearest coverage" actually reaches a nearby road instead of giving up (was 40px → off-road clicks returned no-coverage) */
     function _llToPx(lng,lat,z){ const s=_COV_TS*Math.pow(2,z); const sn=Math.max(-0.9999,Math.min(0.9999,Math.sin(lat*Math.PI/180))); return { x:(lng+180)/360*s, y:(0.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s }; }
     function _pxToLl(x,y,z){ const s=_COV_TS*Math.pow(2,z); const n=Math.PI-2*Math.PI*y/s; return { lng:x/s*360-180, lat:180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))) }; }
-    /* (#R142) direct first, then a CORS proxy that re-adds Access-Control-Allow-Origin:* — many privacy-hardened setups
-       (ad/tracker blockers, Apple Private Relay, DNS blocklists, corporate proxies) silently drop mts.google.com, which
-       zeroed out coverage sampling → the pre-R140 "ignores coverage, just drops at the click" symptom. The proxy lets the
-       sampler succeed anyway; if it also fails, the caller now degrades HONESTLY (no silent raw marker). */
-    const _COV_PROX=['','https://corsproxy.io/?url='];
+    /* (#R145) SNAP ROOT-CAUSE FIX: the pixel sampler reads svv tile PIXELS on a <canvas>, which needs the tile to be
+       CORS-clean (crossOrigin='anonymous' + Access-Control-Allow-Origin). Google's mts.google.com tiles do NOT reliably
+       send ACAO (and Apple Private Relay / ad-blockers / DNS blocklists strip or drop them), so the anonymous <img> load
+       is blocked → every tile fails → sampler returns null → caller falls back to the RAW CLICK. The visible raster
+       overlay still renders (no CORS needed) so coverage looked present but never snapped — the re-reported bug that
+       R140/R142 both built on top of. Ladder: direct first (fast where ACAO IS present), then OUR OWN sv-cov edge
+       function which fetches the tile server-side and re-adds ACAO:* (works everywhere, incl. Private Relay), then a
+       public CORS proxy as a last resort. If all fail the caller still degrades HONESTLY (no silent raw marker). */
+    const _COV_PROX=(function(){ const b=(window.SUPABASE_URL||'').replace(/\/$/,''); return ['', ...(b?[b+'/functions/v1/sv-cov?u=']:[]), 'https://corsproxy.io/?url=']; })();
     function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ let tried=0; const im=new Image(); im.crossOrigin='anonymous';
       const go=()=>{ const pfx=_COV_PROX[tried++]; try{ im.src=pfx?(pfx+encodeURIComponent(url)):url; }catch(_){ res(false); } };
       im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} res(true); };
@@ -24964,7 +24976,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ map.on('click',_covClick); map.getCanvas().style.cursor='crosshair'; }catch(_){}
         _covHint=document.createElement('div'); _covHint.id='sv-cov-hint';
         _covHint.style.cssText='position:fixed;left:50%;top:58px;transform:translateX(-50%);z-index:1350;background:rgba(18,28,44,0.92);color:#dbeaff;border:1px solid rgba(57,179,255,0.55);border-radius:20px;padding:6px 14px;font-size:12px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
-        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 青い線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die blauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — синие линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas azules son la cobertura real de Google; haz clic para abrir')+'</span><button id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">✕</button>';
+        _covHint.innerHTML='<span>🧍 '+LL('Street View mode — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モード — 水色の線がGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View — las líneas celestes son la cobertura real de Google; haz clic para abrir')+'</span><button id="sv-cov-off" style="border:none;background:rgba(57,179,255,0.28);color:#dbeaff;border-radius:12px;padding:3px 10px;cursor:pointer;font-size:11px;">✕</button>';
         document.body.appendChild(_covHint); const off=_covHint.querySelector('#sv-cov-off'); if(off) off.onclick=()=>coverage(false);
         if(!_covStyled){ _covStyled=true; try{ map.on('styledata',()=>{ if(_cov) setTimeout(()=>{ if(_cov) addCoverageTiles(); },250); }); }catch(_){} }   /* re-add over a basemap/theme switch */
       } else {
@@ -29568,7 +29580,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
           if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))); }
           const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(_herePoint&&isFinite(_herePoint.lng)));
-          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 青い線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die blauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — синие линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas azules son la cobertura real de Google; haz clic para abrir')):warn('⚠')); }
+          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir')):warn('⚠')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
           if(!ll) return R(false, warn('⚠ '+L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar')));
           try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),15),duration:900}); }catch(_){}
@@ -30825,8 +30837,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-beta{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#ff9500,#ff6482);border-radius:5px;padding:1.5px 5.5px;}'
         +'#atlas-panel .atl-x{background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:8px;}'
         +'#atlas-panel .atl-x:hover{background:var(--input-bg);color:var(--text-main);}'
-        +'#atlas-panel .atl-sub{padding:9px 11px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142) full-width in the sidebar — trim the left/right gutter ("Atlasはサイドバー内の全幅に") */
-        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 8px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
+        +'#atlas-panel .atl-sub{padding:9px 8px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142/#R145) full-width in the sidebar — the feed now bleeds past #sidebar\'s 24px pad, so only a small inner gutter remains */
+        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 6px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
         +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
         +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
         /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
@@ -30874,7 +30886,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-go svg{display:block;}'
         +'#atlas-panel .atl-go:hover{filter:brightness(1.08);} #atlas-panel .atl-go:active{transform:scale(0.9);}'
         +'#atlas-panel .atl-go.idle{background:rgba(120,120,128,0.30);box-shadow:none;color:var(--text-muted);}'
-        +'#atlas-panel .atl-go.busy{background:#ff453a;box-shadow:0 2px 8px rgba(255,69,58,0.32);color:#fff;}'   /* (#R142) Stop-answering state */
+        +'#atlas-panel .atl-go.busy{background:var(--primary-color);box-shadow:0 2px 8px rgba(10,132,255,0.35);color:#fff;}'   /* (#R145) Stop-answering button uses the ACCENT colour ("停止ボタンはアクセントカラーに"); the enlarged square icon distinguishes it from Send */
         +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.06);}'
         /* (#R72) per-message tools (copy / retry) under every Atlas reply — ChatGPT-style, user bubbles get none */
         +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:4px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
@@ -30910,7 +30922,7 @@ window.addEventListener('DOMContentLoaded', () => {
            sidebar" hack is gone). #atlas-feed provides the positioning context + fill; .atl-tab strips every floating
            popup style off the panel and hides its popup header (the sidebar tab bar is the chrome). Workspace mode is
            excluded via :not(.ws-mode) — there Atlas keeps its own floating WINDOW. */
-        +'body:not(.ws-mode) #atlas-feed{position:relative;flex:1 1 auto;min-height:0;flex-direction:column;margin:0;padding:0;overflow:hidden;}'
+        +'body:not(.ws-mode) #atlas-feed{position:relative;flex:1 1 auto;min-height:0;flex-direction:column;margin:0 -24px;padding:0;overflow:hidden;}'   /* (#R145) TRUE full-width in the sidebar ("左右に余白がありすぎ"): the real gutter is #sidebar\'s own 24px L/R padding — bleed the Atlas feed out past it (as mobile already does with -16px) so replies use the whole sidebar, not the 392px inner box */
         +'body:not(.ws-mode) #atlas-panel.atl-tab{position:relative !important;left:auto !important;top:auto !important;right:auto !important;bottom:auto !important;inset:auto !important;width:100% !important;height:100% !important;max-width:none !important;max-height:none !important;min-width:0 !important;min-height:0 !important;transform:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;z-index:auto !important;resize:none !important;display:flex !important;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-head{display:none !important;}'
         /* (#R115) MOBILE Atlas ≈ the ChatGPT app ("Atlas UI in sidebar bigger… like ChatGPT app"): bigger message
@@ -31144,7 +31156,7 @@ window.addEventListener('DOMContentLoaded', () => {
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
     function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; }
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
-    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="15" height="15"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>';
+    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="18" height="18"><rect x="4.5" y="4.5" width="15" height="15" rx="3.5" fill="currentColor"/></svg>';   /* (#R145) bigger stop square ("ボタン内の四角はもっと大きく"): 7.5px→11.25px rendered */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
     function _setGoBusy(busy){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
       if(busy){ go.classList.add('busy'); go.classList.remove('idle'); go.innerHTML=_GO_STOP_SVG; go.onclick=_stopRun; go.title=L('Stop answering','応答を停止','Antwort stoppen','Остановить ответ','Detener respuesta'); go.setAttribute('aria-label',go.title); }
@@ -33904,13 +33916,13 @@ window.addEventListener('DOMContentLoaded', () => {
       if(el){
         /* (#R41) color-scale bar (above the note) for the rasters that encode a measurable quantity */
         const sc=SCALES[L.id];
-        if(sc){ let bar=el.querySelector('.gx-scale'); if(!bar){ bar=document.createElement('div'); bar.className='gx-scale'; bar.style.cssText='margin-top:7px;'; el.appendChild(bar); }
+        if(sc){ let bar=el.querySelector('.gx-scale'); if(!bar){ bar=document.createElement('div'); bar.className='gx-scale'; bar.style.cssText='margin-top:5px;'; el.appendChild(bar); }
           const lo=sc.temp?_tEnd(sc.temp[0]):sc.anom?_aEnd(sc.anom[0]):sc.loK?_lx(sc.loK):sc.lo;
           const hi=sc.temp?_tEnd(sc.temp[1]):sc.anom?_aEnd(sc.anom[1]):sc.hiK?_lx(sc.hiK):sc.hi;
           const mid=sc.anom?'<span>0</span>':'';
-          bar.innerHTML='<div style="height:11px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
-            +'<div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--text-muted);margin-top:2px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
-        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
+          bar.innerHTML='<div style="height:8px;border-radius:3px;background:linear-gradient(to right,'+sc.grad+');border:1px solid rgba(128,128,128,0.28);"></div>'
+            +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:1px;"><span>'+lo+'</span>'+mid+'<span>'+hi+'</span></div>'; }
+        let h=el.querySelector('.gx-note'); if(!h){ h=document.createElement('div'); h.className='gx-note'; h.style.cssText='font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.35;'; el.appendChild(h);} h.textContent=gxNote(L); } }catch(_){} }
     function toggle(L,on){ state[L.id]=on;
       const apply=()=>{ if(!ensure(L)){ map.once('idle',apply); return; }
         try{ map.setLayoutProperty(layId(L),'visibility',on?'visible':'none'); }catch(_){}
