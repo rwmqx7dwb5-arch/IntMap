@@ -5,6 +5,71 @@
 
 ---
 
+## R142 — UX/正直化バッチ17件：SV実Coverageスナップ／Atlas嘘報告根絶・全幅・Stop／モバイルシート同期／Companies順位・時間・比較・拡充／ワークスペース読込・レイヤー復帰／東西独国境／Radius整理／ニュース媒体Wikipedia (tag `#R142`)
+
+ユーザー指摘**17件**を根本原因から修正。全て `index.html`（＋データ `data/cshapes.js`）の**加算的/微修正**（単一HTML・ビルド無し温存）。着手前に**並列サブエージェント6本**で SV/Atlas正直化/Companies/モバイルシート/Atlas UI/ワークスペース+国境+Radius+News を実地調査。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 26/26**、pageerror 0）。ヘッドレスは `document.hidden`（map未描画）だが、DOM/データは**localhostプレビューで実測**：Companies順位（mcap降順=1,2,3／昇順=147,146,145 と実反転）・比較ビュー（6指標×N社バー）・Radius開示・SV `nearestCoverage` 実スナップ（Times Square drift 0.00005°）・東西独 共有頂点60・overlap 0 を確認。
+
+### ① ストリートビューが依然Coverageを無視（R140の残存）
+**真因**＝`open()` は `_nearestCoverage` が **`null`（タイル読取不能）** を返すと**素のクリック座標**に無言でマーカー配置→Google埋め込みが自前スナップするため「クリック地点に移動、Coverage無視」に見える＝R140前と同症状が**環境依存で不可視再現**（プライバシー堅牢環境＝Apple Private Relay/拡張/DNSブロックで `mts.google.com` 遮断→9タイル全滅→null）。**修正**＝(a) `_loadTile` に **CORSプロキシ・フォールバック**（直→`corsproxy.io`・ACAO再付与でtaint無しのまま）、(b) 探索半径 40→**115px**・サンプルzを14以上に、(c) nullは**1回リトライ→なお不能なら正直**（最寄パノラマは開くが「正確なCoverageを確認できません」トースト・偽マーカー無し／dragendも同様）。localhostで実スナップ確認。
+
+### ② Atlasが「○○をオン/オフにしました」の嘘（未実行なのに）
+**真因**＝プランナーの**実行前 `say`**（過去形）が、`layer` dispatch が**自己検証で無描画でも `R(true)` を返す**ため fails に入らず、say-gate（R140）の `_visFailed` も `'layer'` を含まないので通過。**修正**＝layer dispatch は無描画（`!changed`）時 `meta:{unverified:true}` 付与（インライン操作は残す）。say-gate を **`_visTypes`（highlight/outline/draw/layer/opacity/controls/mapMetric/choropleth）の失敗 or `meta.partial/unverified`** で抑止＝各dispatchの正直な本文がリード。
+
+### ③ Atlasが「ハイライトしました」の嘘（実際は未描画）
+**真因**＝`highlight()` が **`valid.size===0`（国feature未ロード）で無条件に feature-state を set し `any=true`** を返す＝描画前に成功主張／かつ highlight dispatch が**部分ミス（miss/ambig）でも `R(true)`**。**修正**＝`highlight()` は `valid.size===0` で **`false`** を返し呼び手のリトライを待たせる（R61）。highlight dispatch は `miss.length||ambig.length` 時 `meta:{partial:true}`＝say抑止、本文（描画済み＋"Not found: X"）がリード。
+
+### ④ モバイル・ボトムシートと地図中心の同期が弱い（動かすとずれ、再度で戻る）
+**真因**＝`dragEnd`→`setDetent` の settle `easeTo({padding})` を、**ドラッグ最終フレームの `_padRAF`（liveMapPad の setPadding）** がキャンセルされず次フレームで発火→MapLibre v5 `setPadding`＝`jumpTo`（`stop()`起点）で settle を中断し padding をドラッグ解放値で凍結→光学中心がシートとずれ、次操作で解消（＝間欠再現）。**修正**＝`setDetent` の描画直前で **`cancelAnimationFrame(_padRAF)` ＋ `_lastPad=_padPending=covered`**（tab-tap 等のプログラム的 setDetent も網羅）。
+
+### ⑤ Companies/Countries：順序を変えても順位数字が変わらない
+**真因**＝順位＝`i+1`（行位置）＝どの並び/方向でも 1,2,3…（昇順で最小に「1」＝嘘）。**修正**＝順位＝**現在指標のVALUE順位（最大=1・方向非依存）**、名前ソートは正準指標（mcap/gdp）順位にフォールバック。両レンダラで `_rankOf` マップを構築（時間モードでは s[key] が歴史値＝歴史順位）。実測：降順1..4／**昇順147,146,145**。
+
+### ⑥ Companies をタイムマシン（過去統計）対応
+**実装**＝`IntMapCompanies.setYear(year)`＝各live名の**その年の株価**（keyless Yahoo v8 chart `period1/period2` 月次・年末終値）を取得し `c.hp` へ、`mcap()`＝`_hy` 時は `founded>年→NaN`／`sh>0&&hp>0→sh×hp`／それ以外NaN。`priceOf(c)` で `_coVal/_coMetric` の price も歴史化。`_coWireTime()` が `IntMapTime.on`（debounce+seq）で購読→再描画。正直バナー「その年の年末時点・株数は現在値・他は最新報告値」。設立前は—。
+
+### ⑦ Companies を Countries 同様に比較可能に
+**実装**＝`coCompareSet`＋**行シングルクリックで比較選択・ダブルクリックで詳細**（Countries準拠）、`#info-dashboard` 内 sticky トレイ（`.scf-*`再利用）、`showCoCompare` で**6指標×N社の横バー比較ビュー**（`_coVal/_coMetric`＝時間対応・戻るボタン）。`renderCompanies` 冒頭で `#co-cmp-view` ガード。**罠**＝戻るは view除去→再描画（renderのガードを迂回）。
+
+### ⑧ Atlas をサイドバー内で全幅に（左右余白過多）
+**修正**＝`.atl-chat` 14→**8px**（モバイル14→11）、`.atl-sub/.atl-ex` 16→11、`.atl-inbar` 12→9、`.atl-b.u` max-width 88→92%。
+
+### ⑨ Atlas がボタンを置くべき時に置かない
+**修正**＝(a) `OVL_OF.missile/ballistic/strike/icbm` に **`'blast'`** 追加（爆風リングの地図トグル欠落を補完）、(b) `layer` dispatch の**インライン再トグルをOFF分岐でも出力**（オフにしたレイヤーにも再トグルスイッチ）。
+
+### ⑩ ワークスペースモード起動のラグに読み込み画面
+**修正**＝`enable()` を `on=true`同期確保→**フルビューポート・ローディングオーバーレイ**（スピナー・5言語）→**2×rAFで描画確定後に重い同期ビルド**→`finally` で必ず消灯。`_wsLoadingOn/Off`。**副次で真因バグ発見・修正**＝R141 Monitors ウィンドウが `defRects()` 未登録→`clampRect(undefined)` が毎デスクトップ起動で throw（呼出側 try/catch が握り潰し・**デスクトップ既定ws-modeが部分破損**）→`defRects` に `monitors:flo(3)` 追加＋`clampRect` に `r=r||[]` ガード。
+
+### ⑪ ワークスペース→通常でレイヤー選択欄が通常モードに戻らない
+**真因**＝`disable()` が DOM復元・`ws-mode`除去はするが**レイヤーパネルを未調整**（`open`/`lsr-open`・ws窓のインライン寸法・Activeバー誤ホームが残存）。**修正**＝ws-mode除去後に `#layer-sidebar-r` のインライン幾何クリア＋`open`除去＋`body.lsr-open`除去＋`IntMapLayerSidebar.apply()`（`imLayerPanel`設定へ調整）＋`_placeActiveSection()`。
+
+### ⑫ 歴史的国境の東西ドイツ国境がでたらめ
+**真因（データ）**＝`data/cshapes.js`（簡略化CShapes 2.0・ring-pool）で**内独国境が両側で独立簡略化**（西独 ring786＝425点／東独 ring789＝183点）→**座標が一致せず重なり合い**＝もつれた二重線＋斜線スライバー。**修正（トポロジー的）**＝統一独 mainland(788)＝西∪東 の内部に内独国境は無い→**西独＝difference(788, 789)**（`polygon-clipping`・**offline再生成**）＝西独の東縁が東独の西縁と**完全一致**（実測 overlap 0・共有頂点60・新ring1991・423点）。西独era（idx87/88）を新ringへ再ポイント。ビルドツールは `npm i --no-save polygon-clipping`（node_modules・非コミット）。西ベルリン飛地は未対応（別途）。
+
+### ⑬ Companies の網羅性・即時性を徹底強化
+**修正**＝(a) **US上場27社追加**（Intel/Palantir/Coinbase/Arm/Dell/3M/Altria/Deere/ADI/Chubb/ICE/Moody's/Sherwin/GD/Northrop/WM/FedEx/UPS/Target/Marriott/Ford/GM/Colgate/Airbnb/Snowflake/Workday/Kraft Heinz）＝全てUSD上場で**live**（→147社・**123社live**）。(b) **TSMC(TSM)をlive化**＝25.93B普通株÷5(ADR比)=5.186B ADS→ADS価格×ADS数=実USD時価総額。**手法**＝**株数（安定）**を鍵に `snapshot=sh×取得時価` で自己整合（±5×サニティガード通過・価格変動に追随）。市場CAP/株数はcrumb-gate（v7/v10不可）・**v8 chartの価格のみkeyless**なので株数は既知安定値を採用。
+
+### ⑭ Radiusポップアップの項目整理
+**修正**＝スライダー＋3統計タイルを常時表示のまま、**プリセット＋色/透明度を `<details class="tp-more">`「Style & presets」開示（既定折畳）** に格納（全ID温存＝配線不変）。5言語summary。
+
+### ⑮ Atlas送信ボタンを応答中は「Stop」に
+**実装**＝`_setGoBusy(true/false)`＝生成中は上矢印→**赤い停止スクエア**（onclick→`_stopRun`）、`run()` を try/finally で包み**全終了経路で復帰**（最新ターンのみ・gen===_runGen）。`_stopRun`＝`_runGen++`（既存ソフトキャンセル）＋**AbortController.abort()**（planner/repair の `askAIJSON` に `signal` 配線）＋停止ノート。`_cancelledNote` を中立「Stopped」化（新旧メッセージ両対応・再描画競合を無害化）。入力リスナは busy 中 idle を触らない。
+
+### ⑯ ニュースカードの媒体名クリックで媒体のWikipediaへ
+**実装**＝`.news-pub` を `role="link"`（cursor pointer・hover下線）化、`stopPropagation`＋**`<lang>.wikipedia.org/w/index.php?title=Special:Search&search=<媒体>&go=Go`**（正確一致なら記事直行・近似は検索結果＝404回避）。UI言語→サブドメイン（jp→ja）。`IntMapSafe.url` でラップ。
+
+### ⑰ Atlas内ボタンのオンオフ既定が実情と逆（表示中なのにOFF既定）
+**真因**＝(a) map-overlayトグルはハードコード `on`＋`_refreshMapChips` 依存だが `_ovlVisible` の id ドリフトで偽OFF、(b) **layer-mirrorトグルが `resolveLayer(a.name)` を再解決**＝toggleLayer が操作した checkbox と別を引く。**修正**＝`toggleLayer` が **`cb`（実操作したcheckbox）を返却**、layer dispatch のインライン操作/リトライは **`r.cb` を再利用**（曖昧再解決を廃止）＝既定状態は実checkboxの live 値。
+
+### 罠・教訓
+- **正直化は合成側**（R140/R141と同思想）＝プランナーの実行前 `say` は視覚/状態アクション（highlight/layer/…）が**部分/未検証**なら抑止し、各dispatchの実結果本文がリード。dispatchは `R(true, html, {meta:{partial|unverified:true}})` で機械diff可能な旗を返す。
+- **私の `console.error` が既存の握り潰しバグを可視化**＝ラッパのcatchを `console.warn` に（元の握り潰し挙動と一致・overlayは必ず消灯）＋真因（Monitors未登録defRect）を根本修正。教訓＝**try/catchで握り潰された例外は"存在しない"のではなく"見えない"だけ**。
+- **国境もつれ＝両側独立簡略化のトポロジー非共有**。正しい修正は**共有アークの再構築**＝統一領域−片側=他片側（境界完全一致）。`polygon-clipping` の difference で overlap 0 を実測。将来的には source から topology-preserving 簡略化で全共有境界を一括是正。
+- **非US名のlive化は株数が鍵**（mcap/株数はcrumb-gate＝keyless不可・v8価格のみ）＝**安定な株数 × 取得価格 = snapshot** で自己整合。ADR比/通貨の不確実な名は snapshot 据置（±5×ガードは1.5-2×誤差を捕捉しない＝確信ある名のみlive化）。
+- **maplibre v5 `setPadding`＝`jumpTo`（`stop()`起点）**＝settle中の残存rAFが中断要因（R140の教訓の続き）。
+- ヘッドレスは `document.hidden`＝map未描画。DOM/データ/純関数はlocalhostプレビューで実測、map視覚はデータ整合（overlap/共有頂点）で代替検証。
+
+---
+
 ## R141 — 地域監視・変化検出・根拠付きレポート機能（Area Monitors） (tag `#R141`)
 
 ユーザーが円/描画/解決済み地域/現在の地図表示から**監視（monitor）**を保存し、**サーバー側（Edge Function + pg_cron）がページを閉じていても定期実行**、対象地域内のニュースを取得→正規化/重複排除→スナップショット→**機械的に**前回/基準期間と比較→**意味のある変化がある時だけAI**で根拠付きレポートを生成、UI（通常/モバイル/Workspace・5言語）とAtlasから作成/一覧/詳細/レポート/根拠/一時停止/再開/削除/手動実行できる。中核原則＝**「変化の有無はコードが判定し、AIは説明だけ」「全主張をevidence IDへ接続」「変化なし/取得失敗ではAIを呼ばない」**。全て加算的（単一index.html・ビルド無し温存）。着手前に**並列サブエージェント4本**で auth/AI・Atlas action・geometry(radius/draw/region)・UI/tabs/i18n を実地調査。`npm test` 緑（静的+node logic 23+security-logic+**Playwright 26/26**）・**pgTAP 180**（新規`04_monitors_test.sql` 38アサーション含む）・ローカルDocker で `db reset`+`test db`+drift 空を実測。

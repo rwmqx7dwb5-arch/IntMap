@@ -982,6 +982,22 @@ supabase/
 
 ---
 
+## #R142 補足（UX/正直化バッチ17件：SV実Coverage再修正／Atlas正直化・全幅・Stop／シート同期／Companies順位・時間・比較・拡充／WS読込・レイヤー復帰／東西独国境／Radius整理／News媒体Wikipedia）
+
+ユーザー指摘**17件**を根本原因から修正（`index.html`＋データ `data/cshapes.js`・加算的/微修正・単一HTML温存）。着手前に並列サブエージェント6本で実地調査。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 26/26**・pageerror 0）。DOM/データ/純関数は localhost プレビューで実測。詳細は DEV-NOTES R142。
+
+- **SV実Coverage再修正（#1）**: `_nearestCoverage` の `null`（タイル遮断＝プライバシー堅牢環境）で無言のクリック点配置＝R140前と同症状→`_loadTile` に **CORSプロキシ・フォールバック**、探索半径 40→115px・z≥14、null は正直トースト（偽マーカー無し）。実測 Times Square 実スナップ。
+- **Atlas正直化（#2/#3/#9/#17）**: プランナー実行前 `say` を **視覚/状態アクション失敗 or `meta.partial/unverified` で抑止**（say-gate 拡張）。`highlight()` は feature 未ロード時 `false` 返却、highlight dispatch は部分ミスで `meta.partial`、layer dispatch は無描画で `meta.unverified`。`OVL_OF.missile` に `'blast'`、layer インライン再トグルを OFF 分岐でも出力。`toggleLayer` が **`cb` 返却**→インライン操作は `r.cb` 再利用（曖昧再解決廃止＝既定状態が実 checkbox 値）。
+- **Atlas UI（#8/#15）**: `.atl-chat` 側 padding 14→8px 等で**サイドバー全幅**。送信ボタンは応答中**赤 Stop スクエア**＝`_setGoBusy`/`_stopRun`（`_runGen++`＋`AbortController`・planner/repair の `askAIJSON` に `signal`）、`run()` を try/finally で全終了経路復帰。
+- **モバイルシート同期（#4）**: `setDetent` の settle `easeTo({padding})` 直前で **残存 `_padRAF` を cancel**（v5 `setPadding`=`jumpTo`→`stop()` が settle を中断していた）。
+- **Companies（#5/#6/#7/#13）**: 順位＝**現在指標のVALUE順位（方向非依存・最大=1）**（両レンダラ・名前ソートは正準指標フォールバック）。**タイムマシン対応**＝`IntMapCompanies.setYear(year)`（keyless v8 chart 月次年末終値→`c.hp`・`mcap()`/`priceOf()` 歴史化・`_coWireTime` 購読・正直バナー・設立前—）。**比較**＝`coCompareSet`＋行シングルクリック選択/ダブルで詳細＋sticky トレイ＋`showCoCompare`（6指標×N社横バー・時間対応）。**拡充**＝US上場27社追加（→147社・123 live）＋**TSMC(TSM) live 化**（25.93B÷5=5.186B ADS）。手法＝安定な**株数×取得価格=snapshot** 自己整合（±5×ガード通過）。新 window.*: `_coToggleCompare/_coClearCompare/_coShowCompare`。新 API: `IntMapCompanies.{setYear,priceOf,histYear}`。
+- **ワークスペース（#10/#11）**: `enable()` に**ローディングオーバーレイ**（`_wsLoadingOn/Off`・2×rAF後に重いビルド・finally 消灯）。`disable()` で**レイヤーパネルを通常復帰**（インライン幾何クリア＋`apply()`＋`_placeActiveSection`）。**副次真因修正**＝R141 Monitors 窓が `defRects()` 未登録→`clampRect(undefined)` throw（毎デスクトップ ws 起動で握り潰し破損）→`monitors:flo(3)` 追加＋`clampRect` に `r=r||[]` ガード。
+- **東西独国境（#12）**: `data/cshapes.js` の内独国境が両側独立簡略化で重なり→**西独=difference(統一 788, 東独 789)**（`polygon-clipping` で offline 再生成・overlap 0・共有頂点60・新 ring1991）。西独era を再ポイント。ビルドツール `polygon-clipping`（非コミット）。
+- **Radius整理（#14）**: プリセット＋色/透明度を `<details>`「Style & presets」開示（既定折畳・全ID温存）、スライダー＋統計は常時表示。
+- **News媒体Wikipedia（#16）**: `.news-pub` を `role="link"` 化→`<lang>.wikipedia.org/.../Special:Search&go=Go`（jp→ja・404回避・`IntMapSafe.url`）。
+
+---
+
 ## #R140 補足（既知バグ6件バッチ根本修正：SV透過＋実Coverage／タイムマシン国境の間欠不表示／Atlas嘘ハイライト／モバイル・ボトムシート同期）
 
 ユーザー指摘の既知問題**全6件**を根本原因から修正。全て `index.html` の加算的/微修正（単一HTML・ビルド無し温存）。`npm test` 緑（静的89＋security-logic 10＋Playwright 18/18・pageerror 0）。詳細は DEV-NOTES R140。
