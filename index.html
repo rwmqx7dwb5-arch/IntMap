@@ -572,6 +572,13 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .rad-stat{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:1px; background:var(--input-bg); border-radius:8px; padding:5px 7px; }
     .rad-stat label{ font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; }
     .rad-stat b{ font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* (#R142) fold the preset + colour/opacity controls into a collapsible "Style & presets" disclosure so the Radius
+       panel isn't a tall stack of always-visible rows ("項目数が増え、煩雑になっているからUIを整理して"). */
+    .tool-panel .tp-more{ margin:7px 0 2px; border-top:1px solid rgba(128,128,128,0.14); padding-top:5px; }
+    .tool-panel .tp-more > summary{ cursor:pointer; font-size:11px; color:var(--text-muted); font-weight:600; list-style:none; display:flex; align-items:center; gap:6px; user-select:none; padding:2px 0; }
+    .tool-panel .tp-more > summary::-webkit-details-marker{ display:none; }
+    .tool-panel .tp-more > summary::before{ content:'▸'; font-size:9px; transition:transform .15s ease; }
+    .tool-panel .tp-more[open] > summary::before{ transform:rotate(90deg); }
     /* (#R27) Radius card containment at ALL widths (R26 only contained it under 768px, so tablets and
        landscape phones >768px still spilled long values/coords out of the card — "一部テキストがUIから
        はみ出して不格好"). Nothing may exceed the card width; rows wrap, values ellipsize/break inside. */
@@ -937,6 +944,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .news-item .news-origlang{ font-size:11px; color:var(--text-muted); font-weight:500; margin-top:4px; }
     .news-item .news-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:6px; }
     .news-item .news-pub{ color:var(--primary-color); font-weight:500; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+    /* (#R142) outlet name → its Wikipedia page (clickable). */
+    .news-item .news-pub[role="link"]{ cursor:pointer; }
+    .news-item .news-pub[role="link"]:hover{ text-decoration:underline; }
     /* (#R137) "Read article" button = solid WHITE background, BLACK text ("ニュースカードの記事を読むボタンは、白背景黒文字に"). */
     .news-item .btn-read{ flex-shrink:0; background:#fff; border:1px solid rgba(0,0,0,0.14); color:#000; font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 11px; border-radius:999px; white-space:nowrap; transition:0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
     .news-item .btn-read:hover{ background:#f0f0f0; color:#000; border-color:rgba(0,0,0,0.2); }
@@ -2046,6 +2056,19 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     /* (#R108) the "Show comparison" button is white bg / black text (both themes) so it reads as the primary action. */
     .scf-head button.scf-view{ background:#ffffff; color:#111111; border:1px solid rgba(0,0,0,0.12); }
     .scf-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+    /* (#R142) Companies compare — sticky selection tray inside the feed + the side-by-side bar view. */
+    .co-compare-fixed{ position:sticky; bottom:0; z-index:5; margin:10px -2px 0; padding:10px 12px max(12px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 20px rgba(0,0,0,0.10); border-radius:12px 12px 0 0; }
+    .co-cmp-head{ display:flex; align-items:center; gap:10px; margin:2px 0 10px; }
+    .co-cmp-back{ background:var(--input-bg); border:none; color:var(--text-main); font-size:12px; font-weight:600; padding:5px 11px; border-radius:8px; cursor:pointer; }
+    .co-cmp-title{ font-size:14px; font-weight:700; }
+    .co-cmp-legend{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-bottom:12px; }
+    .co-cmp-lg{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-main); }
+    .co-cmp-lg i{ width:11px; height:11px; border-radius:3px; flex:0 0 auto; }
+    .co-cmp-metric{ margin-bottom:14px; }
+    .co-cmp-mlbl{ font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:5px; }
+    .co-cmp-bar-row{ display:flex; align-items:center; gap:8px; margin:3px 0; min-height:16px; }
+    .co-cmp-bar{ height:14px; border-radius:4px; min-width:2px; transition:width .3s ease; }
+    .co-cmp-bval{ font-size:11px; color:var(--text-main); white-space:nowrap; }
 
     /* --- Account avatar (#28) --- */
     .acct-avatar-wrap{ display:flex; align-items:center; gap:12px; margin:6px 0 16px; }
@@ -6313,11 +6336,12 @@ window.addEventListener('DOMContentLoaded', () => {
       if(radiusItems.length){
         list=`<div class="tp-sub">${radiusItems.length} ${t('radius')}</div><div class="radius-list">`+radiusItems.map((c,i)=>`<div class="radius-list-item"><span class="rl-sw" style="background:${c.color}"></span><span class="rl-main">${c.radiusKm} km · ${c.center[1].toFixed(2)}°,${c.center[0].toFixed(2)}°</span><button class="rl-del" onclick="removeRadiusItem('${c.id}')">✕</button></div>`).join('')+`</div><button class="tp-clear" onclick="clearAllRadius()" style="margin-top:6px;">${t('removeAll')}</button>`;
       }
-      body=`<div class="tp-sub">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
-        <div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><button type="button" id="radius-dec" class="rad-step" title="${currentLang==='jp'?'小さく':currentLang==='de'?'Kleiner':currentLang==='ru'?'Мельче':currentLang==='es'?'Reducir':'Decrease'}">−</button><input type="number" id="radius-num" min="1" value="${radiusKm}"><button type="button" id="radius-inc" class="rad-step" title="${currentLang==='jp'?'大きく':currentLang==='de'?'Größer':currentLang==='ru'?'Крупнее':currentLang==='es'?'Aumentar':'Increase'}">＋</button><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
-        <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':currentLang==='de'?'Eigene Farbe':currentLang==='ru'?'Свой цвет':currentLang==='es'?'Color personalizado':'Custom color'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div>
+      body=`<div class="tp-row radius-control"><input type="range" id="radius-range" min="1" max="20000" step="10" value="${Math.min(20000,radiusKm)}"><div class="radius-row"><button type="button" id="radius-dec" class="rad-step" title="${currentLang==='jp'?'小さく':currentLang==='de'?'Kleiner':currentLang==='ru'?'Мельче':currentLang==='es'?'Reducir':'Decrease'}">−</button><input type="number" id="radius-num" min="1" value="${radiusKm}"><button type="button" id="radius-inc" class="rad-step" title="${currentLang==='jp'?'大きく':currentLang==='de'?'Größer':currentLang==='ru'?'Крупнее':currentLang==='es'?'Aumentar':'Increase'}">＋</button><select id="radius-unit" style="background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:6px;padding:2px 4px;font-size:11.5px;"><option value="km">km</option><option value="mi">mi</option></select></div></div>
         <div class="rad-stats"><div class="rad-stat"><label>${t('radius')}</label><b id="rad-r">${distHTML(radiusKm)}</b></div><div class="rad-stat"><label>${t('circumference')}</label><b id="rad-c">${distHTML(2*Math.PI*radiusKm)}</b></div><div class="rad-stat"><label>${t('area')}</label><b id="rad-a">${areaHTML(Math.PI*radiusKm*radiusKm)}</b></div></div>
-        <div class="tp-hint">${t('radiusHint')}</div><div class="tp-row" id="tp-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="tp-pop-val">—</b></div>${list}${radiusItems.length?`<button class="ai-action-btn" id="tp-pop-btn">${t('popInArea')}</button><button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;   /* (#R40) Radius no longer shows the "Keep on map" button (per request); the circles already persist on the map. */
+        <details class="tp-more"><summary>${currentLang==='jp'?'スタイル・プリセット':currentLang==='de'?'Stil und Vorlagen':currentLang==='ru'?'Стиль и пресеты':currentLang==='es'?'Estilo y ajustes':'Style &amp; presets'}</summary>
+        <div class="tp-sub" style="margin-top:4px;">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
+        <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':currentLang==='de'?'Eigene Farbe':currentLang==='ru'?'Свой цвет':currentLang==='es'?'Color personalizado':'Custom color'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div></details>
+        <div class="tp-hint">${t('radiusHint')}</div><div class="tp-row" id="tp-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="tp-pop-val">—</b></div>${list}${radiusItems.length?`<button class="ai-action-btn" id="tp-pop-btn">${t('popInArea')}</button><button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;   /* (#R40/#R142) circles persist on the map; preset + colour/opacity folded into the "Style" disclosure to declutter */
     }
     const footBtns = (toolMode!=='radius')
       ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
@@ -8512,8 +8536,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const flo=(i)=>[Math.round(W*0.30)+i*28,top+40+i*32,Math.round(W*0.32),Math.round(B*0.62)];   /* hidden windows' fallback when opened from the menu */
       return { countries:[0,top,sideW,B], map:[sideW,top,rightX-sideW,B],
         layers:[rightX,top,rightW,layersH], atlas:[rightX,top+layersH,rightW,B-layersH],
-        news:flo(0), info:flo(1), community:flo(2) }; }
-    function clampRect(r,min){ const b=wsBounds();
+        news:flo(0), info:flo(1), community:flo(2), monitors:flo(3) }; }   /* (#R142) the R141 Monitors window had NO default rect → mkWin got undefined → clampRect threw at every desktop ws-mode boot (silently swallowed) */
+    function clampRect(r,min){ const b=wsBounds(); r=r||[];   /* (#R142) never throw on a missing default rect — fall back to a sensible box instead */
       /* (#R79d) clamp to the usable rect — full width, from the menu bottom down to the TICKER TOP (so a window
          can fill the real area edge-to-edge but never overlaps the menu bar or hides behind the ticker). */
       const maxW=b.right-b.left, maxH=b.bottom-b.top;
@@ -8732,8 +8756,21 @@ window.addEventListener('DOMContentLoaded', () => {
         else { const el=w.querySelector('.ws-body')&&w.querySelector('.ws-body').firstElementChild;
           if(!el||!el.isConnected){ try{ w.remove(); }catch(_){} delete wraps[def.id]; delete holders[def.id]; changed=true; } } });
       if(changed){ rebuildDock(); retile(); } }
+    /* (#R142) full-viewport loading overlay for the manual ws-mode toggle. The pre-boot #ws-boot-style only covers
+       AUTO-enter on page load; a mid-session toggle froze on a blank frame while enable() reparented ~130 layer rows and
+       re-rendered every window ("ワークスペースモードを起動時にラグがあるため、読み込み画面を用意するように"). */
+    function _wsLoadingOn(){ try{ if(!document.getElementById('ws-load-style')){ const s=document.createElement('style'); s.id='ws-load-style'; s.textContent='@keyframes wsSpin{to{transform:rotate(360deg)}}'; (document.head||document.documentElement).appendChild(s); }
+      let o=document.getElementById('ws-loading'); if(!o){ o=document.createElement('div'); o.id='ws-loading';
+        o.style.cssText='position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;background:var(--bg-color,#0d1117);color:var(--text-main,#e6edf3);font-size:14px;font-weight:500;';
+        o.innerHTML='<div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(128,128,128,0.3);border-top-color:var(--primary-color,#0a84ff);animation:wsSpin .8s linear infinite;"></div><div>'+T('Entering workspace…','ワークスペースを準備中…','Arbeitsbereich wird geöffnet…','Открываю рабочую область…','Abriendo el espacio de trabajo…')+'</div>';
+        document.body.appendChild(o); }
+      o.style.display='flex'; o.style.opacity='1'; }catch(_){} }
+    function _wsLoadingOff(){ try{ const o=document.getElementById('ws-loading'); if(o){ o.style.transition='opacity .25s ease'; o.style.opacity='0'; setTimeout(()=>{ try{ o.style.display='none'; }catch(_){} },300); } }catch(_){} }
     function enable(){ if(on) return true;
       if(isMob()){ try{ imToast(T('Workspace mode is desktop-only','ワークスペースモードはデスクトップ専用です','Workspace nur am Desktop','Оконный режим — только для десктопа','Solo escritorio')); }catch(_){} return false; }
+      on=true;   /* (#R142) claim synchronously so a rapid re-toggle can't re-enter while the heavy build is deferred a frame */
+      _wsLoadingOn();
+      const _core=()=>{ try{
       css();
       /* build + open the layer panel so its window has content, and clear any leftover close() inline styles */
       try{ if(window.IntMapLayerSidebar&&window.IntMapLayerSidebar.open) window.IntMapLayerSidebar.open(); }catch(_){}
@@ -8777,6 +8814,9 @@ window.addEventListener('DOMContentLoaded', () => {
       fitMap(); setTimeout(fitMap,350); save({on:1});
       try{ syncModeBtn(); }catch(_){}
       try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) re-dock open legends to the map's bottom-left */
+      }catch(_e){ try{ console.warn('ws enable',_e); }catch(_){} } finally{ try{ _wsLoadingOff(); }catch(_){} } };   /* warn (not error) — matches the original swallow behaviour while still hiding the overlay on any failure */
+      /* (#R142) two rAFs so the overlay actually PAINTS before the synchronous build freezes the frame, then hide it. */
+      try{ requestAnimationFrame(()=>requestAnimationFrame(_core)); }catch(_){ _core(); }
       return true; }
     function disable(){ if(!on) return; on=false;
       try{ ro&&ro.disconnect(); }catch(_){} ro=null;
@@ -8789,6 +8829,16 @@ window.addEventListener('DOMContentLoaded', () => {
       wraps={}; holders={};
       if(dock){ dock.remove(); dock=null; }
       document.body.classList.remove('ws-mode');
+      /* (#R142) restore the RIGHT LAYER PANEL to its normal-mode state. Leaving ws-mode moved #layer-sidebar-r back to its
+         DOM slot but left it stuck in the workspace window's full-bleed inline sizing, still carrying the ws open/lsr-open
+         classes, with the Active-layers bar mis-homed ("レイヤー選択欄が通常モードにならない"). Clear the window's inline
+         geometry, drop the ws classes, then let apply() reconcile to the imLayerPanel setting (close() is safe now that
+         ws-mode is off) and re-home the Active bar. Runs BEFORE setMode below. */
+      try{ const lsr=document.getElementById('layer-sidebar-r');
+        if(lsr){ ['width','height','transform','left','top','right','bottom','position','inset','max-width','max-height','min-width','min-height','flex','margin','z-index'].forEach(pp=>{ try{ lsr.style.removeProperty(pp); }catch(_){} }); lsr.classList.remove('open'); } }catch(_){}
+      try{ document.body.classList.remove('lsr-open'); }catch(_){}
+      try{ if(window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply) window.IntMapLayerSidebar.apply(); }catch(_){}
+      try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       /* Information / Community were force-shown in ws-mode; restore the normal tab behaviour by handing control
          back to the sidebar's own tab logic (they hide unless their tab is active). */
       try{ ['info-dashboard','community-feed'].forEach(idc=>{ const e=document.getElementById(idc); if(e) e.style.display='none'; }); }catch(_){}
@@ -9903,13 +9953,20 @@ window.addEventListener('DOMContentLoaded', () => {
       card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}">★</button>
         <div class="news-head"><span class="${chipCls}">${IntMapSafe.html(item.analysis.name)||(currentLang==='jp'?'場所不明':currentLang==='de'?'Ort unbekannt':currentLang==='ru'?'Место неизвестно':currentLang==='es'?'Ubicación desconocida':'Location unknown')}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${newsTitleHTML(item)}</div>
-        <div class="news-foot"><small class="news-pub">${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */
+        <div class="news-foot"><small class="news-pub"${item.publisher?' role="link" tabindex="0" title="'+IntMapSafe.html(item.publisher+' — Wikipedia ↗')+'"':''}>${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */
       card.querySelector('.btn-bookmark').onclick=async(e)=>{ e.stopPropagation();
         if(currentUser){ const on=await toggleFavorite(item.link,item.title); if(currentMode==='saved')startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active',on); }
         else { /* guest: keep a local list until they log in */ if(bookmarks.includes(item.link))bookmarks=bookmarks.filter(b=>b!==item.link); else bookmarks.push(item.link); saveBookmarks(); if(currentMode==='saved')startNews(); else card.querySelector('.btn-bookmark').classList.toggle('active'); }
       };
       /* (#R11) Read article → open directly in the device's browser (reverted per request). */
       card.querySelector('.btn-read').onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(_u) window.open(_u,'_blank','noopener'); };   /* (#R138 SEC) http(s)-only */
+      /* (#R142) Clicking the OUTLET NAME opens that outlet's Wikipedia page in the UI language (jp→ja subdomain). Uses
+         Special:Search&go=Go so an exact title jumps straight to the article and a near-miss lands on search results
+         instead of a 404 (publisher strings from RSS don't always match a Wikipedia title exactly). stopPropagation so
+         it doesn't also fly the card. */
+      { const pub=card.querySelector('.news-pub');
+        if(pub&&item.publisher){ const openWiki=(e)=>{ e.stopPropagation(); const wl=(currentLang==='jp')?'ja':currentLang; const _u=IntMapSafe.url('https://'+wl+'.wikipedia.org/w/index.php?title=Special:Search&search='+encodeURIComponent(item.publisher)+'&go=Go'); if(_u) window.open(_u,'_blank','noopener'); };
+          pub.onclick=openWiki; pub.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWiki(e); } }); } }
       /* Whole card → fly to the map location (replaces the old "Show on map" button) */
       card.onclick=()=>{ if(map&&item.analysis.loc) map.flyTo({center:item.analysis.loc,zoom:4,speed:1.0}); };
       item._cardEl=card; /* lets the translation pass update this title in place */
@@ -10253,7 +10310,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ['2222.SR','Saudi Aramco','サウジアラムコ','SAU','energy','aramco.com',1933,73000,480,105,0,1750],
       ['AVGO','Broadcom','ブロードコム','USA','semi','broadcom.com',1991,20000,51,14,4.68,800],
       ['TSLA','Tesla','テスラ','USA','auto','tesla.com',2003,140000,97,15,3.19,800],
-      ['TSM','TSMC','TSMC','TWN','semi','tsmc.com',1987,76000,90,36,0,900],
+      ['TSM','TSMC','TSMC','TWN','semi','tsmc.com',1987,76000,90,36,5.186,2066],   /* (#R142) live via US ADR: 25.93B ordinary ÷ 5 (ADR ratio) = 5.186B ADS → ADS price × ADS count = real USD market cap */
       ['LLY','Eli Lilly','イーライリリー','USA','pharma','lilly.com',1876,43000,40,10,0.95,780],
       ['JPM','JPMorgan Chase','JPモルガン','USA','bank','jpmorganchase.com',2000,309000,158,50,2.83,620],
       ['WMT','Walmart','ウォルマート','USA','retail','walmart.com',1962,2100000,665,16,8.03,600],
@@ -10363,13 +10420,47 @@ window.addEventListener('DOMContentLoaded', () => {
       ['MDLZ','Mondelez','モンデリーズ','USA','staples','mondelezinternational.com',2012,91000,36,5,1.33,90],
       ['GEV','GE Vernova','GEバーノバ','USA','energy','gevernova.com',2024,75000,35,1,0.273,90],
       ['PYPL','PayPal','ペイパル','USA','payments','paypal.com',1998,27200,32,4,1.0,80],
-      ['CVS','CVS Health','CVSヘルス','USA','health','cvshealth.com',1963,300000,373,4,1.26,80]
+      ['CVS','CVS Health','CVSヘルス','USA','health','cvshealth.com',1963,300000,373,4,1.26,80],
+      /* (#R142) breadth + immediacy: more large public names, all US-listed so market cap is LIVE (shares × keyless price).
+         Share counts are the stable, well-known figures; the snapshot = shares × the price at the time this list was built,
+         so the ±5× sanity guard passes and the value then tracks the live price. */
+      ['INTC','Intel','インテル','USA','semi','intel.com',1968,108000,53,-19,4.33,412],
+      ['PLTR','Palantir','パランティア','USA','software','palantir.com',2003,3900,3,0.5,2.35,311],
+      ['COIN','Coinbase','コインベース','USA','finance','coinbase.com',2012,3400,6,2.5,0.26,41],
+      ['ARM','Arm Holdings','Arm','GBR','semi','arm.com',1990,7000,4,0.8,1.05,281],
+      ['DELL','Dell Technologies','デル','USA','tech','dell.com',1984,108000,96,4.6,0.70,277],
+      ['MMM','3M','スリーエム','USA','industrial','3m.com',1902,61000,25,4,0.54,86],
+      ['MO','Altria','アルトリア','USA','staples','altria.com',1985,6300,20,11,1.69,125],
+      ['DE','Deere','ディア','USA','industrial','deere.com',1837,75000,51,7,0.272,162],
+      ['ADI','Analog Devices','アナログ・デバイセズ','USA','semi','analog.com',1965,24000,9,1.6,0.497,187],
+      ['CB','Chubb','チャブ','USA','finance','chubb.com',1985,40000,57,9,0.402,142],
+      ['ICE','Intercontinental Exchange','ICE','USA','finance','ice.com',2000,13000,9,2.7,0.573,80],
+      ['MCO','Moody\'s','ムーディーズ','USA','finance','moodys.com',1909,15000,7,2.1,0.181,92],
+      ['SHW','Sherwin-Williams','シャーウィン・ウィリアムズ','USA','materials','sherwin-williams.com',1866,64000,23,2.7,0.251,83],
+      ['GD','General Dynamics','ゼネラル・ダイナミクス','USA','aerospace','gd.com',1952,111000,47,3.8,0.270,100],
+      ['NOC','Northrop Grumman','ノースロップ・グラマン','USA','aerospace','northropgrumman.com',1939,97000,41,4,0.146,76],
+      ['WM','Waste Management','ウェイスト・マネジメント','USA','industrial','wm.com',1968,62000,21,2.7,0.401,96],
+      ['FDX','FedEx','フェデックス','USA','industrial','fedex.com',1971,500000,88,4.3,0.240,75],
+      ['UPS','UPS','UPS','USA','industrial','ups.com',1907,490000,91,5.8,0.85,100],
+      ['TGT','Target','ターゲット','USA','retail','target.com',1902,440000,107,4.1,0.457,64],
+      ['MAR','Marriott','マリオット','USA','consumer','marriott.com',1927,411000,25,2.4,0.281,103],
+      ['F','Ford','フォード','USA','auto','ford.com',1903,177000,185,5.9,3.97,56],
+      ['GM','General Motors','ゼネラルモーターズ','USA','auto','gm.com',1908,163000,187,10,0.98,75],
+      ['CL','Colgate-Palmolive','コルゲート・パーモリーブ','USA','staples','colgatepalmolive.com',1806,34000,20,2.7,0.812,75],
+      ['ABNB','Airbnb','エアビーアンドビー','USA','tech','airbnb.com',2008,7300,11,4.7,0.63,92],
+      ['SNOW','Snowflake','スノーフレイク','USA','software','snowflake.com',2012,7000,4,-1.3,0.335,90],
+      ['WDAY','Workday','ワークデイ','USA','software','workday.com',2005,19000,8,1,0.265,38],
+      ['KHC','Kraft Heinz','クラフト・ハインツ','USA','staples','kraftheinzcompany.com',2015,36000,26,2.7,1.20,31]
     ];
     const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0}));
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     async function _fjson(u){ for(const p of PROX){ try{ const r=await fetch(p(u)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
-    function mcap(c){ return (c.sh>0 && c.price>0)?(c.sh*c.price):c.mcapSnap; }
-    function isLive(c){ return c.sh>0 && c.price>0; }
+    /* (#R142) _hy = the time-machine year (null = present/live). In a past year market cap = today's shares × the share
+       price AT that year (c.hp); a company founded AFTER the year, or a non-live name with no price path, has no cap. */
+    let _hy=null, _hSeq=0, _hyLoaded=null;
+    function priceOf(c){ return (_hy!=null)?(c.hp||0):(c.price||0); }
+    function mcap(c){ if(_hy!=null){ if(c.fnd>_hy) return NaN; return (c.sh>0&&c.hp>0)?(c.sh*c.hp):NaN; } return (c.sh>0 && c.price>0)?(c.sh*c.price):c.mcapSnap; }
+    function isLive(c){ return _hy==null && c.sh>0 && c.price>0; }
     let _loading=false, _loaded=0;
     /* Live market cap for US-listed names: fetch each price via the keyless Yahoo v8 chart endpoint (through the
        same CORS-proxy ladder the ticker uses), concurrency-limited, cached 5 min. onUpdate fires progressively and
@@ -10389,17 +10480,77 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
       _loaded=Date.now(); _loading=false; if(onUpdate){ try{ onUpdate(); }catch(_){} }
     }
-    return { DATA, mcap, isLive, loadPrices };
+    /* (#R142) TIME MACHINE — set the historical year and fetch each live name's share price AT that year (keyless Yahoo v8
+       chart, monthly, year-end close). period1/period2 = that calendar year. onUpdate fires progressively + at completion so
+       the ranking re-sorts to the historical market caps. Guarded by _hSeq so a rapid year change supersedes stale fetches.
+       Non-live names (no ADR/US listing) and not-yet-founded names have no historical cap → mcap()=NaN (shown as —). */
+    async function setYear(year, onUpdate){
+      const cur=new Date().getFullYear();
+      if(year==null || year>=cur){ const ch=(_hy!=null); _hy=null; if(ch){ _hyLoaded=null; if(onUpdate){ try{ onUpdate(); }catch(_){} } } return; }
+      _hy=year; const my=++_hSeq;
+      if(_hyLoaded===year){ if(onUpdate){ try{ onUpdate(); }catch(_){} } return; }
+      DATA.forEach(c=>{ c.hp=0; }); if(onUpdate){ try{ onUpdate(); }catch(_){} }   /* show the loading (—) state at once */
+      const p1=Math.floor(Date.UTC(year,0,1)/1000), p2=Math.floor(Date.UTC(year,11,31)/1000);
+      const live=DATA.filter(c=>c.sh>0 && c.fnd<=year); let idx=0, upd=0; const CONC=5;
+      async function w(){ for(;;){ if(my!==_hSeq) return; const i=idx++; if(i>=live.length) return; const c=live[i];
+        try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
+          const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
+          if(Array.isArray(q)){ for(let k=q.length-1;k>=0;k--){ if(q[k]>0){ c.hp=+q[k]; break; } } if(c.hp>0 && (++upd%8===0) && onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }
+      try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
+      if(my===_hSeq){ _hyLoaded=year; if(onUpdate){ try{ onUpdate(); }catch(_){} } }
+    }
+    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, histYear:()=>_hy };
   })();
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
   const _coL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
+  /* (#R142) Companies COMPARE + TIME MACHINE. Compare mirrors Countries: single-click a row selects it, double-click opens
+     detail; a sticky tray shows the selection and opens a side-by-side bar view. Everything reads mcap()/_coVal, which
+     follow the time-machine year, so both the ranking and the comparison reflect past statistics. */
+  let coCompareSet=new Set(), _coTimeWired=false, _coTimeDeb=null;
+  function _coWireTime(){ if(_coTimeWired||!(window.IntMapTime&&window.IntMapTime.on)) return; _coTimeWired=true;
+    window.IntMapTime.on(e=>{ clearTimeout(_coTimeDeb); _coTimeDeb=setTimeout(()=>{
+      const cur=new Date().getFullYear(); const y=(e&&e.year!=null)?e.year:null; const hy=((e&&e.isLive)||y==null||y>=cur)?null:y;
+      try{ IntMapCompanies.setYear(hy, ()=>{ if(document.getElementById('co-cmp-view')){ try{ showCoCompare([...coCompareSet]); }catch(_){} } else if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){}
+    }, 320); }); }
+  window._coToggleCompare=function(tk){ if(coCompareSet.has(tk)) coCompareSet.delete(tk); else if(coCompareSet.size<8) coCompareSet.add(tk); else { const f=coCompareSet.values().next().value; coCompareSet.delete(f); coCompareSet.add(tk); }
+    document.querySelectorAll('#info-dashboard .co-row').forEach(r=>r.classList.toggle('compare-on',coCompareSet.has(r.getAttribute('data-tk'))));
+    try{ const c=IntMapCompanies.DATA.find(x=>x.tk===tk); if(c) imToast((coCompareSet.has(tk)?'✓ ':'− ')+_coName(c)); }catch(_){}
+    renderCoCompareFixed(); };
+  window._coClearCompare=function(){ coCompareSet.clear(); document.querySelectorAll('#info-dashboard .co-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCoCompareFixed(); };
+  window._coShowCompare=function(){ if(coCompareSet.size<2) return; try{ showCoCompare([...coCompareSet]); }catch(_){} };
+  function renderCoCompareFixed(){ const feed=document.getElementById('info-dashboard'); if(!feed) return;
+    let tray=document.getElementById('co-compare-fixed');
+    if(!coCompareSet.size || document.getElementById('co-cmp-view')){ if(tray) tray.remove(); return; }
+    if(!tray){ tray=document.createElement('div'); tray.id='co-compare-fixed'; tray.className='co-compare-fixed'; feed.appendChild(tray); }
+    const items=[...coCompareSet].map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
+    const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
+    tray.innerHTML=`<div class="scf-head"><span class="scf-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')} (${coCompareSet.size}/8)</span><div style="display:flex;gap:6px;">`+(coCompareSet.size>=2?`<button class="scf-view" data-cv="1">${t('compareView')}</button>`:'')+`<button data-cc="1">${t('compareClear')}</button></div></div><div class="scf-chips">${chips}</div>`;
+    tray.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>window._coToggleCompare(b.getAttribute('data-cx')));
+    const cv=tray.querySelector('[data-cv]'); if(cv) cv.onclick=()=>window._coShowCompare();
+    const cc=tray.querySelector('[data-cc]'); if(cc) cc.onclick=()=>window._coClearCompare(); }
+  function showCoCompare(tks){ const feed=document.getElementById('info-dashboard'); if(!feed) return;
+    const cos=tks.map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean); if(cos.length<2){ try{ renderCompanies(); }catch(_){} return; }
+    const tray=document.getElementById('co-compare-fixed'); if(tray) tray.remove();
+    const METS=[['mcap',_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil')],['rev',_coL('Revenue','売上高','Umsatz','Выручка','Ingresos')],['ni',_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto')],['emp',_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados')],['pe',_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E')],['price',_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')]];
+    const PAL=['#0a84ff','#ff9f0a','#30d158','#ff375f','#bf5af2','#64d2ff','#ffd60a','#ac8e68'];
+    const hy=IntMapCompanies.histYear&&IntMapCompanies.histYear();
+    let h=`<div id="co-cmp-view"><div class="co-cmp-head"><button class="co-cmp-back">‹ ${t('back')}</button><div class="co-cmp-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')}</div></div>`;
+    h+=`<div class="co-cmp-legend">`+cos.map((c,i)=>`<span class="co-cmp-lg"><i style="background:${PAL[i%PAL.length]}"></i>${IntMapSafe.html(_coName(c))}</span>`).join('')+`</div>`;
+    if(hy) h+=`<div class="stats-timebanner co-banner"><b>${hy}${currentLang==='jp'?'年':''}</b> · ${_coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')}</div>`;
+    METS.forEach(([k,lbl])=>{ const fin=cos.map(c=>_coVal(c,k)).filter(v=>isFinite(v)); if(!fin.length) return;
+      const max=Math.max.apply(null,fin.map(v=>Math.abs(v)))||1;
+      h+=`<div class="co-cmp-metric"><div class="co-cmp-mlbl">${IntMapSafe.html(lbl)}</div>`+cos.map((c,i)=>{ const v=_coVal(c,k); const w=isFinite(v)?Math.max(2,Math.round(Math.abs(v)/max*100)):0;
+        return `<div class="co-cmp-bar-row"><div class="co-cmp-bar" style="width:${w}%;background:${PAL[i%PAL.length]}"></div><span class="co-cmp-bval">${isFinite(v)?IntMapSafe.html(_coMetric(c,k)):'—'}</span></div>`; }).join('')+`</div>`; });
+    h+=`</div>`;
+    feed.innerHTML=h; feed.style.paddingBottom='24px';
+    const bk=feed.querySelector('.co-cmp-back'); if(bk) bk.onclick=()=>{ const v=document.getElementById('co-cmp-view'); if(v) v.remove(); try{ renderCompanies(); }catch(_){} }; }   /* (#R142) remove the view first so renderCompanies' own "compare view owns the feed" guard doesn't block the return */
   const _coSec=(k)=>{ const s=CO_SECTORS[k]; return s?_coL(s[0],s[1],s[2],s[3],s[4]):k; };
   const _coCountry=(cc)=>{ const c=CO_CC[cc]; return c?(currentLang==='jp'?c[1]:c[0]):cc; };
   const _coFlag=(cc)=>{ const c=CO_CC[cc]; return c?c[2]:''; };
   const _coName=(c)=>(currentLang==='jp'&&c.nJp)?c.nJp:c.n;
   const CO_IND=()=>[['mcap',_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil')],['rev',_coL('Revenue','売上高','Umsatz','Выручка','Ingresos')],['ni',_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto')],['pe',_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E')],['emp',_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados')],['price',_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')],['fnd',_coL('Founded','設立年','Gegründet','Год основания','Fundada')],['name',_coL('Name','名称','Name','Название','Nombre')]];
-  function _coVal(c,key){ switch(key){ case 'rev':return c.rev; case 'ni':return c.ni; case 'emp':return c.emp; case 'fnd':return c.fnd; case 'price':return c.price>0?c.price:NaN; case 'pe':{ const mc=IntMapCompanies.mcap(c); return (c.ni>0&&mc>0)?(mc/c.ni):NaN; } case 'name':return 0; default:return IntMapCompanies.mcap(c); } }
-  function _coMetric(c,key){ switch(key){ case 'rev':return fmtMoney(c.rev); case 'ni':return (c.ni<0?'-':'')+fmtMoney(Math.abs(c.ni)); case 'emp':return (c.emp?c.emp.toLocaleString():'—'); case 'fnd':return ''+c.fnd; case 'price':return c.price>0?('$'+c.price.toFixed(2)):'—'; case 'pe':{ const v=_coVal(c,'pe'); return (isFinite(v)&&v>0)?v.toFixed(1):'—'; } default:return fmtMoney(IntMapCompanies.mcap(c)); } }
+  function _coVal(c,key){ const _pr=IntMapCompanies.priceOf(c); switch(key){ case 'rev':return c.rev; case 'ni':return c.ni; case 'emp':return c.emp; case 'fnd':return c.fnd; case 'price':return _pr>0?_pr:NaN; case 'pe':{ const mc=IntMapCompanies.mcap(c); return (c.ni>0&&mc>0)?(mc/c.ni):NaN; } case 'name':return 0; default:return IntMapCompanies.mcap(c); } }
+  function _coMetric(c,key){ const _pr=IntMapCompanies.priceOf(c); switch(key){ case 'rev':return fmtMoney(c.rev); case 'ni':return (c.ni<0?'-':'')+fmtMoney(Math.abs(c.ni)); case 'emp':return (c.emp?c.emp.toLocaleString():'—'); case 'fnd':return ''+c.fnd; case 'price':return _pr>0?('$'+_pr.toFixed(2)):'—'; case 'pe':{ const v=_coVal(c,'pe'); return (isFinite(v)&&v>0)?v.toFixed(1):'—'; } case 'mcap':{ const m=IntMapCompanies.mcap(c); return isFinite(m)?fmtMoney(m):'—'; } default:{ const m=IntMapCompanies.mcap(c); return isFinite(m)?fmtMoney(m):'—'; } } }
   window.setCoSort=function(k){ const D={mcap:'desc',rev:'desc',ni:'desc',pe:'asc',emp:'desc',price:'desc',fnd:'desc',name:'asc'}; coSort=k; coSortDir=D[k]||'desc'; renderCompanies(); };
   window.toggleCoSortDir=function(){ coSortDir=(coSortDir==='asc')?'desc':'asc'; renderCompanies(); };
   window._coSfToggle=()=>{ coFilterOpen=!coFilterOpen; renderCompanies(); };
@@ -10411,7 +10562,10 @@ window.addEventListener('DOMContentLoaded', () => {
   window._coSfSetVal=(i,raw)=>{ if(coFilters[i]){ coFilters[i].raw=raw; coFilters[i].val=_sfParse(raw); renderCompanies(); } };
   /* Countries-style ranking of companies, rendered into the (repurposed) #info-dashboard container. */
   function renderCompanies(q){
-    const feed=document.getElementById('info-dashboard'); if(!feed) return; try{ clearMarkers(); }catch(_){}
+    const feed=document.getElementById('info-dashboard'); if(!feed) return;
+    if(document.getElementById('co-cmp-view')) return;   /* (#R142) the compare view owns the feed — don't clobber it */
+    try{ _coWireTime(); }catch(_){}   /* (#R142) subscribe to the time machine once */
+    try{ clearMarkers(); }catch(_){}
     if(q==null) q=(currentMode==='info')?searchVal():'';
     let arr=IntMapCompanies.DATA.slice();
     if(q){ const ql=String(q).toLowerCase(); arr=arr.filter(c=>c.n.toLowerCase().includes(ql)||(c.nJp&&c.nJp.includes(q))||c.tk.toLowerCase().includes(ql)||_coSec(c.sec).toLowerCase().includes(ql)); }
@@ -10420,6 +10574,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const key=coSort, dir=coSortDir;
     arr.sort((a,b)=>{ if(key==='name'){ const av=_coName(a),bv=_coName(b); const cc=av.localeCompare(bv,currentLang==='jp'?'ja':undefined); return dir==='asc'?cc:-cc; }
       const av=_coVal(a,key), bv=_coVal(b,key); const aok=isFinite(av), bok=isFinite(bv); if(!aok&&!bok)return 0; if(!aok)return 1; if(!bok)return -1; return dir==='asc'?(av-bv):(bv-av); });
+    /* (#R142) rank = the company's standing in the CURRENTLY-SORTED metric by VALUE (largest = 1), independent of
+       sort DIRECTION — so toggling asc/desc actually moves "#1" and the number means something (the old code printed
+       the row position i+1, which stayed 1,2,3… for every sort → "順序を変えても順位が変わらない"). Name/text sort
+       falls back to the canonical market-cap rank so the badge stays meaningful. Rank is over the displayed set. */
+    const _rankKey=(key==='name'||key==='fnd')?'mcap':key;
+    const _rankOf=new Map(); arr.slice().filter(c=>isFinite(_coVal(c,_rankKey))).sort((a,b)=>_coVal(b,_rankKey)-_coVal(a,_rankKey)).forEach((c,ri)=>_rankOf.set(c.tk,ri+1));
     const IND=CO_IND();
     const _arrow=up=>'<svg class="ssd-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">'+(up?'<path d="M12 19.5V5M6.5 11l5.5-6 5.5 6"/>':'<path d="M12 4.5V19M6.5 13l5.5 6 5.5-6"/>')+'</svg>';
     const dirLbl=_arrow(dir==='asc')+'<span class="ssd-labels" data-dir="'+(dir==='asc'?'asc':'desc')+'"><span class="ssd-l ssd-l-asc">'+t('sortAsc')+'</span><span class="ssd-l ssd-l-desc">'+t('sortDesc')+'</span></span>';
@@ -10431,14 +10591,15 @@ window.addEventListener('DOMContentLoaded', () => {
       const rows=coFilters.map((f,i)=>`<div class="sf-row"><select onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${_sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button type="button" class="sf-x" onclick="_coSfRemove(${i})">✕</button></div>`).join('');
       return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${_sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_coSfAdd()">+ ${_sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${coFilters.length?`<button type="button" class="sf-clear" onclick="_coSfClear()">${_sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
     let html=`<div class="stats-toolbar"><select class="stats-sort-sel" onchange="setCoSort(this.value)">${IND.map(([k,l])=>`<option value="${k}"${coSort===k?' selected':''}>${l}</option>`).join('')}</select><button type="button" class="stats-sort-dir" onclick="toggleCoSortDir()" title="${t('sortDir')}">${dirLbl}</button>${filterBtn}</div>${sfPanel}`;
-    html+=`<div class="stats-timebanner co-banner">${_coL('Market cap live where available · figures: latest reported','時価総額は可能な限りライブ · 指標は最新の報告値','Marktkap. live, wo verfügbar · Angaben: zuletzt berichtet','Капитализация в реальном времени, где возможно · показатели: последние отчётные','Cap. en vivo cuando es posible · cifras: últimas reportadas')}</div>`;
+    const _hy=(IntMapCompanies.histYear&&IntMapCompanies.histYear())||null;   /* (#R142) time-machine year (null = present) */
+    html+=_hy?`<div class="stats-timebanner co-banner"><b>${_hy}${currentLang==='jp'?'年':''}</b> · ${_coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')}</div>`:`<div class="stats-timebanner co-banner">${_coL('Market cap live where available · figures: latest reported','時価総額は可能な限りライブ · 指標は最新の報告値','Marktkap. live, wo verfügbar · Angaben: zuletzt berichtet','Капитализация в реальном времени, где возможно · показатели: последние отчётные','Cap. en vivo cuando es posible · cifras: últimas reportadas')}</div>`;
     if(!arr.length) html+=`<div class="empty-msg">${t('noMatch')}</div>`;
     arr.forEach((c,i)=>{ const nm=_coName(c);
       const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
       const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
       const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
       const logo=`<img class="co-logo" alt="" data-dom="${IntMapSafe.html(c.dom)}" data-name="${IntMapSafe.html(nm)}" data-hue="${hue}" data-step="0" src="https://logo.clearbit.com/${encodeURIComponent(c.dom)}">`;
-      html+=`<div class="stat-row co-row" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}"><span class="stat-rank">${i+1}</span><span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}</div></div>`;
+      html+=`<div class="stat-row co-row${coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}"><span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span><span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}</div></div>`;
     });
     const st0=feed.scrollTop;
     feed.innerHTML=html;
@@ -10446,9 +10607,13 @@ window.addEventListener('DOMContentLoaded', () => {
     feed.querySelectorAll('.co-logo').forEach(img=>{ img.onerror=function(){ const s=+this.dataset.step||0; const dom=this.dataset.dom||'';
       if(s===0){ this.dataset.step='1'; this.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(dom)+'&sz=64'; }
       else { this.onerror=null; const mono=document.createElement('span'); mono.className='co-mono'; mono.textContent=(this.dataset.name||'?').trim().slice(0,1).toUpperCase(); try{ mono.style.background='hsl('+(this.dataset.hue||0)+',55%,45%)'; }catch(_){} this.replaceWith(mono); } }; });
-    feed.querySelectorAll('.co-row').forEach(row=>{ row.onclick=()=>{ try{ showCompanyDetail(row.getAttribute('data-tk')); }catch(_){} }; });
+    /* (#R142) single-click selects the row for comparison, double-click opens the detail overlay — mirrors Countries. */
+    feed.querySelectorAll('.co-row').forEach(row=>{ let ct=null; row.onclick=()=>{ const tk=row.getAttribute('data-tk');
+      if(ct){ clearTimeout(ct); ct=null; try{ showCompanyDetail(tk); }catch(_){} return; }
+      ct=setTimeout(()=>{ ct=null; try{ window._coToggleCompare(tk); }catch(_){} },250); }; });
     feed.style.paddingBottom='24px';
-    try{ IntMapCompanies.loadPrices(()=>{ if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){}
+    try{ renderCoCompareFixed(); }catch(_){}   /* (#R142) re-attach the compare selection tray after the rebuild */
+    if(!(IntMapCompanies.histYear&&IntMapCompanies.histYear())){ try{ IntMapCompanies.loadPrices(()=>{ if(currentMode==='info'||document.body.classList.contains('ws-mode')){ try{ renderCompanies(); }catch(_){} } }); }catch(_){} }   /* (#R142) live prices only in the present; historical prices come from setYear */
   }
   window.renderCompanies=renderCompanies;
   /* Company detail overlay — every indicator for one company + a link to its site (all figures honestly sourced). */
@@ -10559,11 +10724,17 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R137) optional rank number on the far left (Settings → "Rank numbers", default OFF). The rank is the row's
        position in the CURRENT sort+filter, so it tracks whatever indicator/direction is active. */
     const _showRank=(window.imShowRank!=='off');   /* (#R139) rank numbers now default ON (show unless explicitly turned off) */
+    /* (#R142) rank = the country's standing in the CURRENTLY-SORTED indicator by VALUE (largest = 1), NOT the row
+       position — so toggling ascending/descending actually moves "#1" (the old i+1 kept showing 1,2,3… top-to-bottom
+       for every sort/direction → "順序を変えても順位が変わらない"). In time-machine mode s[key] already holds the
+       historical value, so the rank is the historical rank. Name sort falls back to the GDP rank. Rank over the shown set. */
+    const _rankKey=(key==='name')?'gdp':key;
+    const _rankOf=new Map(); arr.slice().filter(s=>isFinite(s[_rankKey])&&s[_rankKey]>0).sort((a,b)=>b[_rankKey]-a[_rankKey]).forEach((s,ri)=>_rankOf.set(s.code,ri+1));
     arr.forEach((s,i)=>{
       const active=compareSet.has(s.code)?'compare-on':'';
       /* (#R102) region / capital separated by a SLASH (was a middot); the value column shows the number only. */
       const subline=`${s.region||''}${(s.region&&s.capital)?' / ':''}${s.capital||''}`;
-      const rankHTML=_showRank?`<span class="stat-rank">${i+1}</span>`:'';
+      const rankHTML=_showRank?`<span class="stat-rank">${_rankOf.get(s.code)||'—'}</span>`:'';
       /* (#R115) native hover tooltip = the FULL country name (the .stat-name is ellipsized on narrow cards). */
       html+=`<div class="stat-row ${active}" data-ccn="${s.code}" title="${String(cName(s)||'').replace(/"/g,'&quot;')}">${rankHTML}<span class="stat-flag">${s.flag||'🏳️'}</span><div class="stat-main"><div class="stat-name">${cName(s)}</div><div class="stat-sub">${subline}</div></div><div class="stat-val">${metricVal(s)}</div></div>`;
     });
@@ -15808,6 +15979,12 @@ window.addEventListener('DOMContentLoaded', () => {
          ("同期がまだよわい"). The real animated-padding API is easeTo({padding,…}); feed it the SAME 460ms + the sheet's
          own cubic-bezier so the optical centre and the sheet ride the identical curve. Non-animated → instant setPadding. */
       const _pad={top:0,left:0,right:0,bottom:covered};
+      /* (#R142) A live-drag setPadding can still be queued for the NEXT animation frame at this moment (liveMapPad's
+         rAF). MapLibre GL JS v5 setPadding IS jumpTo(), and jumpTo() begins with stop() — so that one stale frame would
+         ABORT this settle easeTo and freeze the camera padding at the drag-RELEASE value, leaving the map's optical
+         centre offset from the settled sheet until the next drag ("ボトムシートを移動した際に地図中心がずれる・再び動かすと
+         直る"). Cancel the pending rAF and sync the live-pad bookkeeping so nothing can interrupt the settle. */
+      if(_padRAF){ try{ cancelAnimationFrame(_padRAF); }catch(_){} _padRAF=0; } _lastPad=_padPending=covered;
       if(map){ try{ if(animate&&map.easeTo) map.easeTo({padding:_pad, duration:460, easing:_sheetEase}); else if(map.setPadding) map.setPadding(_pad); }catch(_){} }
     }
     window.__setDetent=setDetent;
@@ -24680,7 +24857,7 @@ window.addEventListener('DOMContentLoaded', () => {
           _hereMarker.on('dragend',()=>{ _svDragging=false; try{ _hereMarker.getElement().style.cursor='grab'; }catch(_){} let dp; try{ dp=_hereMarker.getLngLat(); }catch(_){} if(!dp) return;
             /* (#R140) snap the dropped viewpoint onto Google's REAL coverage too, so dragging never strands the marker
                off-pano; if the drop has no coverage nearby, keep it where dropped but say so honestly. */
-            _nearestCoverage(dp.lng,dp.lat).then(res=>{ if(res&&res.covered){ _hereLL={lng:res.lng,lat:res.lat}; try{ if(_hereMarker) _hereMarker.setLngLat([res.lng,res.lat]); }catch(_){} } else{ _hereLL={lng:dp.lng,lat:dp.lat}; if(res&&res.covered===false) _noCoverageToast(); } _reloadEmbed(); }).catch(()=>{ _hereLL={lng:dp.lng,lat:dp.lat}; _reloadEmbed(); }); }); }
+            _nearestCoverage(dp.lng,dp.lat).then(res=>{ if(res&&res.covered){ _hereLL={lng:res.lng,lat:res.lat}; try{ if(_hereMarker) _hereMarker.setLngLat([res.lng,res.lat]); }catch(_){} } else{ _hereLL={lng:dp.lng,lat:dp.lat}; if(res&&res.covered===false) _noCoverageToast(); else _coverageUnverifiedToast(); } _reloadEmbed(); }).catch(()=>{ _hereLL={lng:dp.lng,lat:dp.lat}; _coverageUnverifiedToast(); _reloadEmbed(); }); }); }
         if(!_svDragging) _hereMarker.setLngLat([+lng,+lat]); _hereMarker.setRotation(_hereHdg);
         if(!_hereMarker._map){ _hereMarker.addTo(map); } }catch(_){}
       try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
@@ -24714,11 +24891,17 @@ window.addEventListener('DOMContentLoaded', () => {
       const lng=+ll.lng, lat=+ll.lat, hdg0=(ll.heading!=null&&isFinite(+ll.heading))?((+ll.heading%360)+360)%360:0;
       if(ll.noSnap){ return _openAt(lng,lat,label,hdg0); }        /* internal raw path (caller already has a coverage point) */
       try{ _setHere(lng,lat,hdg0); }catch(_){}                    /* instant marker feedback while coverage resolves */
-      _nearestCoverage(lng,lat).then(res=>{
-        if(res&&res.covered){ _openAt(res.lng,res.lat,label,hdg0); }               /* snap onto the real coverage line */
-        else if(res&&res.covered===false){ _clearHere(); _noCoverageToast(); }     /* KNOWN no coverage → honest, no bogus marker/panel */
-        else{ _openAt(lng,lat,label,hdg0); }                                        /* undetermined (tiles failed to read) → graceful raw open */
-      }).catch(()=>{ _openAt(lng,lat,label,hdg0); });
+      /* covered → snap onto the real pano; known-uncovered → honest toast, no bogus marker. */
+      const _resolve=res=>{ if(res&&res.covered){ _openAt(res.lng,res.lat,label,hdg0); return true; } if(res&&res.covered===false){ _clearHere(); _noCoverageToast(); return true; } return false; };
+      /* (#R142) undetermined (null) = the coverage tiles couldn't be read even through the proxy. The OLD code silently
+         dropped a marker at the RAW click here; because the Google embed self-snaps to the nearest pano, that looked like
+         "it ignores coverage and just moves to where I clicked" — the exact re-reported bug. Now: retry once, and if still
+         undetermined, open the nearest available panorama but SAY the exact coverage point is unverified (honest), never a
+         silent lie that the marker is on coverage. */
+      const _fallbackHonest=()=>{ _openAt(lng,lat,label,hdg0); _coverageUnverifiedToast(); };
+      _nearestCoverage(lng,lat).then(res=>{ if(_resolve(res)) return;
+        _nearestCoverage(lng,lat).then(res2=>{ if(!_resolve(res2)) _fallbackHonest(); }).catch(_fallbackHonest);
+      }).catch(()=>{ _nearestCoverage(lng,lat).then(res2=>{ if(!_resolve(res2)) _fallbackHonest(); }).catch(_fallbackHonest); });
       return true; }
     function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } _clearHere(); }
     /* (#R84/#R140) COVERAGE MODE ("地図上の水色の線、ポイントから選択できるように") — show Google's REAL Street-View
@@ -24739,12 +24922,21 @@ window.addEventListener('DOMContentLoaded', () => {
        the tiles couldn't be read (network). The svv tiles send Access-Control-Allow-Origin:* so the canvas is not
        tainted and getImageData works with NO proxy/key. Sampled at the CURRENT map zoom (clamped) so the ~R-pixel
        radius matches the user's on-screen click precision at any scale. */
-    const _COV_TS=256, _COV_R=40;
+    const _COV_TS=256, _COV_R=115;   /* (#R142) widened search radius so "nearest coverage" actually reaches a nearby road instead of giving up (was 40px → off-road clicks returned no-coverage) */
     function _llToPx(lng,lat,z){ const s=_COV_TS*Math.pow(2,z); const sn=Math.max(-0.9999,Math.min(0.9999,Math.sin(lat*Math.PI/180))); return { x:(lng+180)/360*s, y:(0.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s }; }
     function _pxToLl(x,y,z){ const s=_COV_TS*Math.pow(2,z); const n=Math.PI-2*Math.PI*y/s; return { lng:x/s*360-180, lat:180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))) }; }
-    function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ const im=new Image(); im.crossOrigin='anonymous'; im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} res(true); }; im.onerror=()=>res(false); im.src=url; }); }
+    /* (#R142) direct first, then a CORS proxy that re-adds Access-Control-Allow-Origin:* — many privacy-hardened setups
+       (ad/tracker blockers, Apple Private Relay, DNS blocklists, corporate proxies) silently drop mts.google.com, which
+       zeroed out coverage sampling → the pre-R140 "ignores coverage, just drops at the click" symptom. The proxy lets the
+       sampler succeed anyway; if it also fails, the caller now degrades HONESTLY (no silent raw marker). */
+    const _COV_PROX=['','https://corsproxy.io/?url='];
+    function _loadTile(url,ctx,dx,dy){ return new Promise(res=>{ let tried=0; const im=new Image(); im.crossOrigin='anonymous';
+      const go=()=>{ const pfx=_COV_PROX[tried++]; try{ im.src=pfx?(pfx+encodeURIComponent(url)):url; }catch(_){ res(false); } };
+      im.onload=()=>{ try{ ctx.drawImage(im,dx,dy); }catch(_){} res(true); };
+      im.onerror=()=>{ if(tried<_COV_PROX.length) go(); else res(false); };
+      go(); }); }
     async function _nearestCoverage(lng,lat){ try{
-        const z=Math.min(18,Math.max(12,Math.round((map&&map.getZoom&&map.getZoom())||14))), n=Math.pow(2,z), R=_COV_R;
+        const z=Math.min(18,Math.max(14,Math.round((map&&map.getZoom&&map.getZoom())||14))), n=Math.pow(2,z), R=_COV_R;   /* (#R142) sample at z≥14 so pixels are fine enough that the widened radius stays a sensible metric distance */
         const wp=_llToPx(lng,lat,z), cxp=Math.floor(wp.x), cyp=Math.floor(wp.y); const tx=Math.floor(cxp/_COV_TS), ty=Math.floor(cyp/_COV_TS);
         if(ty<0||ty>=n) return {covered:false};
         const cv=document.createElement('canvas'); cv.width=768; cv.height=768; const ctx=cv.getContext('2d',{willReadFrequently:true});
@@ -24759,6 +24951,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const gl=_pxToLl(ox+best.x, oy+best.y, z); return {covered:true, lng:gl.lng, lat:gl.lat};
       }catch(_){ return null; } }
     function _noCoverageToast(){ try{ imToast('🧍 '+LL('No Street View coverage here','ここにはストリートビューがありません','Hier ist kein Street View verfügbar','Здесь нет панорам Street View','No hay Street View aquí')); }catch(_){} }
+    /* (#R142) shown when the coverage tiles couldn't be read (even via proxy): the panorama still opens (the embed self-snaps
+       to the nearest real pano) but we admit the exact coverage point is unverified — never a silent "moved to your click". */
+    function _coverageUnverifiedToast(){ try{ imToast('🧍 '+LL('Showing the nearest available panorama — exact Street View coverage couldn\'t be verified (a network filter or browser extension may be blocking Google\'s tiles)','最寄りのパノラマを表示中 — 正確なカバレッジを確認できませんでした（拡張機能やネットワークがGoogleのタイルを遮断している可能性）','Zeige das nächste verfügbare Panorama — die genaue Abdeckung ließ sich nicht prüfen (evtl. blockiert eine Erweiterung/das Netzwerk Googles Kacheln)','Показан ближайший доступный панорамный снимок — точное покрытие проверить не удалось (возможно, расширение или сеть блокируют тайлы Google)','Mostrando el panorama más cercano — no se pudo verificar la cobertura exacta (una extensión o red podría bloquear las teselas de Google)')); }catch(_){} }
     function coverage(on){ if(on===undefined) on=!_cov; on=!!on; if(on===_cov) return _cov; _cov=on;
       if(on){ addCoverageTiles();
         _covClick=e=>{ try{ open({lng:e.lngLat.lng,lat:e.lngLat.lat}); }catch(_){} };
@@ -26467,7 +26662,12 @@ window.addEventListener('DOMContentLoaded', () => {
        that never happened. */
     function highlight(codes){ if(!ensureHlLayers()) return false; clearHl();
       const g=geo(); const valid=new Set(); try{ (g&&g.features||[]).forEach(f=>{ const p=f.properties||{}; if(p.__code!=null) valid.add(String(p.__code)); if(f.id!=null) valid.add(String(f.id)); }); }catch(_){}
-      let any=false; codes.forEach(c=>{ const cs=String(c); if(valid.size&&!valid.has(cs)) return;   /* no matching feature → skip; don't claim an impossible paint */
+      /* (#R142) HONESTY ROOT-CAUSE for "ハイライトしていないのにハイライトしましたと嘘報告": if the country features aren't
+         loaded yet (valid.size===0) we cannot know any code matches a RENDERED feature — setting feature-state now paints
+         nothing visible yet would return any=true and let the reply claim a highlight that isn't on screen. Return false so
+         the dispatch's bounded retry (R61) waits for the data, then reports honestly if it never paints. */
+      if(!valid.size) return false;
+      let any=false; codes.forEach(c=>{ const cs=String(c); if(!valid.has(cs)) return;   /* no matching feature → skip; don't claim an impossible paint */
         try{ map.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} });
       return any; }
     map.on('styledata',()=>{ if(_hl.size||(_choroState&&Object.keys(_choroState).length)){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ map.setFeatureState({source:'nlq-src',id:c},{nlq:true}); _hl.add(c); }catch(_){} });
@@ -27166,7 +27366,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return (best&&bs>=40)?{cb:best.cb,label:best.label,score:bs}:null; }
     function toggleLayer(name,on){ const r=resolveLayer(name); if(!r) return {ok:false}; const want=on!==false; const already=(r.cb.checked===want);
       if(!already){ try{ r.cb.checked=want; r.cb.dispatchEvent(new Event('change',{bubbles:true})); }catch(_){} }
-      return {ok:(r.cb.checked===want), label:r.label, already, want}; }
+      return {ok:(r.cb.checked===want), label:r.label, already, want, cb:r.cb}; }   /* (#R142) expose the exact checkbox so reply toggles read THIS one's live state, not a fuzzy re-resolve (#17) */
     function layerOpacityControl(cb){ try{ const row=cb.closest('.lyr-row')||cb.closest('label'); if(!row) return null;
       let sl=row.querySelector&&row.querySelector('input[type=range]'); if(sl) return sl;
       let n=row.nextElementSibling; let k=0; while(n&&k++<2){ if(n.matches&&n.matches('input[type=range]')) return n; if(n.querySelector){ const s=n.querySelector('input[type=range]'); if(s) return s; } n=n.nextElementSibling; }
@@ -28810,24 +29010,27 @@ window.addEventListener('DOMContentLoaded', () => {
              instead of reporting success. */
           const preSnap=_visSnapshot();
           const r=toggleLayer(a.name,a.on!==false); if(!r.ok){ const c=doControl({target:a.name,on:a.on}); if(c.ok) return c; return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); }
-          let verifyNote='';
+          let verifyNote='', unverified=false;
           if(!r.already){ let changed=false;
             for(let i2=0;i2<6&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); }
-            if(!changed&&r.want){ /* one honest retry: re-fire the row's change handler */
-              try{ const rl2=resolveLayer(a.name); if(rl2&&rl2.cb.checked){ rl2.cb.checked=false; rl2.cb.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r2=>setTimeout(r2,250)); rl2.cb.checked=true; rl2.cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
+            if(!changed&&r.want){ /* one honest retry: re-fire THIS checkbox's change handler (r.cb — never a re-resolved guess) */
+              try{ if(r.cb&&r.cb.checked){ r.cb.checked=false; r.cb.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(r2=>setTimeout(r2,250)); r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){}
               for(let i2=0;i2<4&&!changed;i2++){ await new Promise(r2=>setTimeout(r2,700)); changed=_visDelta(preSnap,_visSnapshot()); } }
-            if(!changed) verifyNote=warn('⚠ '+L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa'));
+            /* (#R142) a turn-ON that never changed the map is UNVERIFIED — flag it so runActions suppresses the planner's
+               optimistic "…をオンにしました" say (#2); the honest ⚠ note below leads instead. */
+            if(!changed){ if(r.want) unverified=true; verifyNote=warn('⚠ '+L('Could not confirm the layer actually painted on the map (its data may still be loading or its source may be down) — check the map; toggling it again may help','地図上で実際に描画されたことを確認できませんでした（データ読込中またはソース障害の可能性）。地図をご確認ください。もう一度切り替えると直る場合があります','Konnte nicht bestätigen, dass die Ebene wirklich gezeichnet wurde','Не удалось подтвердить отрисовку слоя на карте','No se pudo confirmar que la capa se dibujó en el mapa')); }
             else if(r.want) verifyNote=note('☑ '+L('verified on the map','地図上での描画を確認','auf der Karte bestätigt','отрисовка подтверждена','verificado en el mapa')); }
           const onTxt=r.want?L('on','オン','an','вкл','activado'):L('off','オフ','aus','выкл','desactivado');
-          /* (#R72) a WORKING inline toggle + opacity slider appears right in the reply when a layer was turned on */
-          let ctl=''; if(r.want){ try{ const rl=resolveLayer(a.name);
-            if(rl){ const cbRef=' data-cb="'+esc(rl.cb.id||'')+'"';   /* (#R74) stable ref — the control acts on THIS checkbox, never a re-resolved guess */
-              ctl='<div style="display:flex;flex-direction:column;gap:6px;margin:5px 0 2px;">'
-              +'<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(rl.label)+'</span><button class="atl-ctl-toggle'+(rl.cb.checked?' on':'')+'" data-layer="'+esc(rl.label)+'"'+cbRef+' role="switch" aria-checked="'+(rl.cb.checked?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>';
-              const sl=layerOpacityControl(rl.cb);
-              if(sl) ctl+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+L('Opacity','透明度','Deckkraft','Прозрачность','Opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(rl.label)+'"'+cbRef+' min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>';
-              ctl+='</div>'; } }catch(_){} }
-          return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl); }
+          /* (#R72/#R142) a WORKING inline toggle appears right in the reply — for BOTH on AND off (turning a layer off still
+             leaves a re-toggle switch, #9) — reading THIS exact checkbox r.cb so the switch's default state is the real one
+             (#17), never a fuzzy re-resolve. The opacity slider is only meaningful while the layer is on. */
+          let ctl=''; try{ if(r.cb){ const cbRef=' data-cb="'+esc(r.cb.id||'')+'"';
+            ctl='<div style="display:flex;flex-direction:column;gap:6px;margin:5px 0 2px;">'
+            +'<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+esc(r.label)+'</span><button class="atl-ctl-toggle'+(r.cb.checked?' on':'')+'" data-layer="'+esc(r.label)+'"'+cbRef+' role="switch" aria-checked="'+(r.cb.checked?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>';
+            if(r.want){ const sl=layerOpacityControl(r.cb);
+              if(sl) ctl+='<div class="atl-ctl-row"><span class="atl-ctl-lbl">'+L('Opacity','透明度','Deckkraft','Прозрачность','Opacidad')+'</span><input type="range" class="atl-ctl-op" data-layer="'+esc(r.label)+'"'+cbRef+' min="0" max="1" step="0.05" value="'+esc(sl.value)+'"></div>'; }
+            ctl+='</div>'; } }catch(_){}
+          return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl, unverified?{meta:{unverified:true}}:undefined); }
         case 'opacity': { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','透明度調整なし: ','Keine Deckkraft: ','Нет прозрачности: ','Sin opacidad: ')+esc(r.label))); }
         case 'projection': { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo'))):warn('⚠')); }
         case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa'))):warn('⚠')); }
@@ -29450,7 +29653,11 @@ window.addEventListener('DOMContentLoaded', () => {
           if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
           if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
           if(ambig.length) hh+=warn('⚠ '+L('Ambiguous (not drawn) — clarify','曖昧なため未描画 — 指定してください','Mehrdeutig (nicht gezeichnet)','Неоднозначно (не нарисовано)','Ambiguo (no dibujado)')+':<br>'+_ambHtml(ambig));
-          if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', '))); return R(true,hh+cwarn); }
+          if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', ')));
+          /* (#R142) PARTIAL result → the planner's pre-written "…をハイライトしました" over-claims the targets that were NOT
+             drawn. Flag partial so runActions suppresses that say (#3) and lets this honest body — which lists exactly what
+             WAS drawn plus "Not found: X" / "Ambiguous: Y" — lead. (Total miss already returns ok:false above.) */
+          return R(true,hh+cwarn, (miss.length||ambig.length)?{meta:{partial:true}}:undefined); }
         case 'value': case 'stat': case 'lookup': { await ensureData(); const c=await resolveCountry(a.country||a.place||a.name);
           if(!c||!c.code||!countryStats[c.code]) return R(false, warn('⚠ '+L('Country not found','国が見つかりません','Land nicht gefunden','Страна не найдена','País no encontrado')+': '+esc(a.country||a.place||a.name||'')));
           const s=countryStats[c.code]; const mk=String(a.metric||a.what||'').trim();
@@ -30335,19 +30542,19 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-beta{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,#ff9500,#ff6482);border-radius:5px;padding:1.5px 5.5px;}'
         +'#atlas-panel .atl-x{background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:8px;}'
         +'#atlas-panel .atl-x:hover{background:var(--input-bg);color:var(--text-main);}'
-        +'#atlas-panel .atl-sub{padding:9px 16px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'
-        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 14px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
+        +'#atlas-panel .atl-sub{padding:9px 11px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142) full-width in the sidebar — trim the left/right gutter ("Atlasはサイドバー内の全幅に") */
+        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 8px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
         +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
         +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
         /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
-        +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:88%;padding:6px 12px;background:var(--atlas-grad);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble; (#R132) shared --atlas-grad so bubble+tab stay identical & accent-responsive without the flat default fill */
+        +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-grad);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble; (#R132) shared --atlas-grad so bubble+tab stay identical & accent-responsive without the flat default fill */
         +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
         +'#atlas-panel .atl-dots{display:inline-flex;gap:4px;align-items:center;padding:3px 0;}'
         +'#atlas-panel .atl-dots i{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:atlDot 1.15s infinite;}'
         +'#atlas-panel .atl-dots i:nth-child(2){animation-delay:.15s;} #atlas-panel .atl-dots i:nth-child(3){animation-delay:.3s;}'
         +'@keyframes atlDot{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-3.5px);opacity:1;}}'
         +'#atlas-panel .atl-stage{display:inline-flex;align-items:center;gap:8px;color:var(--text-muted);font-size:12.5px;font-weight:500;}'   /* (#R130) stage-aware "thinking" label (Thinking / Searching / Analyzing / Mapping) */
-        +'#atlas-panel .atl-ex{display:flex;flex-wrap:wrap;gap:6px;padding:6px 16px 2px;}'
+        +'#atlas-panel .atl-ex{display:flex;flex-wrap:wrap;gap:6px;padding:6px 11px 2px;}'
         +'#atlas-panel .atl-rad-cfg{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 4px;padding:7px 9px;background:rgba(120,120,128,0.1);border:1px solid rgba(128,128,128,0.16);border-radius:10px;}'
         +'#atlas-panel .atl-rad-ctl{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);} #atlas-panel .atl-rad-ctl>span:first-child{flex:0 0 auto;} #atlas-panel .atl-rad-ctl b{color:var(--text-main);min-width:34px;text-align:center;}'
         +'#atlas-panel .atl-rad-sel{flex:1;min-width:0;background:var(--input-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:7px;font-size:11px;padding:3px 4px;}'
@@ -30373,7 +30580,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-traj-btn.on{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}'
         +'#atlas-panel .atl-chip{font-size:11px;color:var(--text-main);background:rgba(120,120,128,0.10);border:1px solid rgba(128,128,128,0.16);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:left;transition:background .15s ease,border-color .15s ease;}'
         +'#atlas-panel .atl-chip:hover{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
-        +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 12px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
+        +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 9px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
         /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */
         +'#atlas-panel .atl-ainote{font-size:9.5px;color:var(--text-muted);text-align:center;padding:0 12px 7px;line-height:1.4;opacity:0.8;}'
         +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;min-height:42px;max-height:132px;padding:11px 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;line-height:1.45;outline:none;box-sizing:border-box;transition:border-color .15s ease,box-shadow .15s ease;resize:none;overflow-y:auto;font-family:inherit;display:block;}'   /* (#R118) textarea: Shift+Enter improves to multi-line, auto-grows to ~5 lines */
@@ -30384,6 +30591,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-go svg{display:block;}'
         +'#atlas-panel .atl-go:hover{filter:brightness(1.08);} #atlas-panel .atl-go:active{transform:scale(0.9);}'
         +'#atlas-panel .atl-go.idle{background:rgba(120,120,128,0.30);box-shadow:none;color:var(--text-muted);}'
+        +'#atlas-panel .atl-go.busy{background:#ff453a;box-shadow:0 2px 8px rgba(255,69,58,0.32);color:#fff;}'   /* (#R142) Stop-answering state */
+        +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.06);}'
         /* (#R72) per-message tools (copy / retry) under every Atlas reply — ChatGPT-style, user bubbles get none */
         +'#atlas-panel .atl-msgt{display:flex;gap:2px;margin:4px 0 0;align-self:flex-start;opacity:0.55;transition:opacity .15s ease;}'
         +'#atlas-panel .atl-b.a:hover + .atl-msgt,#atlas-panel .atl-msgt:hover{opacity:1;}'
@@ -30431,7 +30640,7 @@ window.addEventListener('DOMContentLoaded', () => {
            overflow so the chat can never wiggle sideways ("左右に動いてしまう"). */
         +'body:not(.ws-mode) #atlas-feed{margin:0 -16px !important;overflow-x:hidden !important;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab{max-width:100%;overflow-x:hidden;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chat{padding:10px 14px 8px;gap:12px;overflow-x:hidden;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chat{padding:10px 11px 8px;gap:12px;overflow-x:hidden;}'   /* (#R142) fuller width on mobile too */
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b{font-size:15px;line-height:1.62;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.u{max-width:86%;padding:8px 14px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a{padding:2px 1px;}'
@@ -30442,9 +30651,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.8px"],'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:13px"]{font-size:15px !important;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 14px 2px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 11px 2px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 14px 6px;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-inbar{gap:8px;padding:8px 11px 6px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-in{height:48px;min-height:48px;border-radius:24px;padding:12px 16px;font-size:16px;}'   /* (#R118) textarea paddings (16px font kills iOS zoom, unchanged) */
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-go{width:44px;height:44px;}'
         /* (#R116) input LOWERED a bit from R115 (16px+safe-area was too high — "少し位置を下げて"). */
@@ -30528,7 +30737,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R118) Enter=send, Shift+Enter=NEWLINE (the input is a textarea now); the box auto-grows to 4-5 lines */
       const go=panel.querySelector('.atl-go'); go.onclick=fire; inEl.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); fire(); } });
       const _autoGrow=()=>{ try{ inEl.style.height='auto'; inEl.style.height=Math.min(inEl.scrollHeight,132)+'px'; }catch(_){} };
-      inEl.addEventListener('input',()=>{ try{ go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); });
+      inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); });   /* (#R142) don't fight the Stop button's busy state */
       inEl.__autoGrow=_autoGrow;
       /* (#R72) scroll-to-bottom jump ("上部にスクロールしたら、最下部まで行くボタンがでるように") */
       const jump=panel.querySelector('.atl-jump');
@@ -30647,8 +30856,21 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R73) TURN CANCELLATION ("thinking時に新たなメッセージを送った場合、そちらをやり、thinkingしていたものは
        中止するように"): every run gets a generation number; a newer message bumps it, older turns stop executing
        their remaining actions and their late results are discarded instead of overwriting the chat. */
-    let _runGen=0;
-    function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Cancelled — a newer message took over','新しいメッセージを受けて中止しました','Abgebrochen — eine neuere Nachricht übernahm','Отменено — поступило новое сообщение','Cancelado — llegó un mensaje nuevo'))+'</span>'; }
+    let _runGen=0, _abortCtl=null;
+    /* (#R142) Neutral "Stopped" — covers BOTH a newer message superseding this turn AND the user pressing the Stop button;
+       _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
+    function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; }
+    const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
+    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="15" height="15"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>';
+    /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
+    function _setGoBusy(busy){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
+      if(busy){ go.classList.add('busy'); go.classList.remove('idle'); go.innerHTML=_GO_STOP_SVG; go.onclick=_stopRun; go.title=L('Stop answering','応答を停止','Antwort stoppen','Остановить ответ','Detener respuesta'); go.setAttribute('aria-label',go.title); }
+      else { go.classList.remove('busy'); go.innerHTML=_GO_SEND_SVG; go.onclick=fire; try{ go.classList.toggle('idle',!(inEl&&inEl.value.trim())); }catch(_){} go.title=L('Send','送信','Senden','Отправить','Enviar'); go.setAttribute('aria-label',go.title); } }catch(_){} }
+    /* (#R142) STOP: supersede the running turn (bump _runGen so its late results are discarded — the existing soft-cancel)
+       AND abort the in-flight request (real fetch AbortController), then paint the neutral Stopped note immediately. */
+    function _stopRun(){ try{ _runGen++; }catch(_){} try{ if(_abortCtl&&_abortCtl.abort) _abortCtl.abort(); }catch(_){} _abortCtl=null;
+      try{ if(chatEl) chatEl.querySelectorAll('.atl-b.a .atl-dots').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
+      try{ _setGoBusy(false); }catch(_){} }
     /* (#R84) MAP-OVERLAY TOGGLE ("Atlasによって地図上にマッピングされた類のものは、Atlasのメッセージ内から
        オンオフできるように"): a reply that painted something on the map gets a live on/off switch. */
     const _OVL={ highlight:['nlq-fill','nlq-line','nlq-poly-fill','nlq-poly-line'], choropleth:['nlq-choro'], compare:['imcmp-fill','imcmp-line'],
@@ -30658,7 +30880,7 @@ window.addEventListener('DOMContentLoaded', () => {
       fly:['nlq-fly-line','nlq-fly-head'], los:['los-cover','los-shadow','los-cover-line','los-site'], isolate:['iso-mask'], pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'], isochrone:['im-iso-fill','im-iso-line','im-iso-ctr'] };
     const OVL_OF={ highlight:'highlight', mapMetric:'choropleth', choropleth:'choropleth', poi:'poi', elevationBelow:'elevation', belowSeaLevel:'elevation', elevationHighlight:'elevation', elevationScan:'elevation',
       historicalMap:'historical', historical:'historical', powerMap:'historical', allianceMap:'historical', radiation:'radiation', fallout:'radiation', dispersion:'radiation', plume:'radiation', radiationSim:'radiation',
-      directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:['arc','fly'], ballistic:['arc','fly'], ballisticMissile:['arc','fly'], strike:['arc','fly'], icbm:['arc','fly'],
+      directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:['arc','fly','blast'], ballistic:['arc','fly','blast'], ballisticMissile:['arc','fly','blast'], strike:['arc','fly','blast'], icbm:['arc','fly','blast'],   /* (#R142) include the blast ring so a strike's blast overlay also gets a map on/off chip (#9) */
       fly:'fly', flight:'fly', flyTo:null, flyPath:'fly', greatCircle:'fly', los:'los', lineOfSight:'los', radarShadow:'los', viewshed:'los',
       isolate:'isolate', isolateRegion:'isolate', focus:'isolate', pin:'pin', marker:'pin', locate:'pin', myLocation:'pin', whereAmI:'pin', streetview:'streetview', streetView:'streetview', pano:'streetview',
       compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', reportMap:'poi', researchMap:'poi', research_map:'poi', situationMap:'poi', events:'poi', impact:'poi', runway:'poi',
@@ -30816,7 +31038,13 @@ window.addEventListener('DOMContentLoaded', () => {
          visual assertion (highlight/outline/draw) — those are exactly the "I drew/highlighted X" claims the user saw lie.
          The ⚠ "nothing found for X" / "N step(s) could not be completed" warning below then leads honestly. */
       const _allFailed=acts.length>0&&fails.length>=acts.length;
-      const _visFailed=fails.some(a=>a&&(a.type==='highlight'||a.type==='outline'||a.type==='draw'));
+      /* (#R142) The planner writes `say` (a past-tense "…をオンにしました／ハイライトしました") BEFORE anything runs, so it must be
+         suppressed whenever execution can contradict it: any VISUAL/STATE action that FAILED (highlight/outline/draw/layer/opacity/
+         controls/mapMetric/choropleth), OR any action that only PARTIALLY succeeded or could NOT be verified on the map
+         (meta.partial / meta.unverified — set by the highlight & layer dispatches above). The per-action honest body then leads
+         ("✦ Kansai ⚠ Not found: Ruritania", "✓ Fires — on ⚠ could not confirm…"). Kills the "嘘のオン/オフ・嘘ハイライト報告". */
+      const _visTypes={highlight:1,outline:1,draw:1,layer:1,opacity:1,controls:1,mapMetric:1,choropleth:1};
+      const _visFailed=fails.some(a=>a&&_visTypes[a.type]) || acts.some(a=>a&&a.__meta&&(a.__meta.partial||a.__meta.unverified));
       let head=(say&&!_allFailed&&!_visFailed)?('<div style="margin-bottom:6px;">'+esc(say)+'</div>'):'';
       if(fails.length){ const fl=fails.map(actLabel).filter(Boolean).join(', ');
         head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(fails.length+' step(s) could not be completed','実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')+'</div>'; }
@@ -31141,6 +31369,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const gen=++_runGen;
       try{ chatEl.querySelectorAll('.atl-b.a .atl-dots').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
       bubble('u',esc(q));
+      /* (#R142) generating state → the send button becomes a Stop button; a fresh AbortController lets Stop kill the
+         in-flight request. The whole turn is wrapped so EVERY exit path (return / throw / early-out) restores the button. */
+      try{ _abortCtl=(typeof AbortController!=='undefined')?new AbortController():null; }catch(_){ _abortCtl=null; }
+      _setGoBusy(true);
+      try{
       let lp=null; try{ lp=localPlan(q); }catch(_){}
       /* (#R135) build the REQUEST PROFILE up-front (temporal axis + required evidence + outputs) and open a fresh
          diagnostics record; both feed the planner prompt, the pre-execution plan validation, the semantic repair
@@ -31169,7 +31402,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
          "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
-      try{ let plan=await askAIJSON(buildPrompt(q,_profile),SYS(),null,{task:'atlas_plan',effortHint:_cplx?'high':undefined});   /* (#R113) planner → server JSON mode; (#R135) profile block attached */
+      try{ let plan=await askAIJSON(buildPrompt(q,_profile),SYS(),null,{task:'atlas_plan',effortHint:_cplx?'high':undefined,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal */
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
         /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
@@ -31215,7 +31448,7 @@ window.addEventListener('DOMContentLoaded', () => {
           for(let _rp=0; _rp<2 && gen===_runGen && pending.length && acts.length<=12; _rp++){
             pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
             const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            const rp=await askAIJSON(buildPrompt(q,_profile)+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+'\n'+_repairGuidance(),SYS(),null,{task:'atlas_plan',effortHint:'high'});
+            const rp=await askAIJSON(buildPrompt(q,_profile)+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+'\n'+_repairGuidance(),SYS(),null,{task:'atlas_plan',effortHint:'high',signal:(_abortCtl?_abortCtl.signal:undefined)});
             let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
             let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
             /* sanitize the repair plan through the SAME capability validation as the first plan */
@@ -31240,6 +31473,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return; }
         if(lp&&lp.actions&&lp.actions.length){ try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); msgTools(ai,q); return; }catch(_){} }
         ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); }
+      }finally{ try{ if(gen===_runGen){ _setGoBusy(false); _abortCtl=null; } }catch(_){} }   /* (#R142) only the LATEST turn clears the busy button — a superseding turn keeps its own Stop shown */
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */
     function recordTurn(q, say, acts, fails){ try{ updateWctx(acts,fails); }catch(_){} try{ _parseExclusions(q); }catch(_){}
