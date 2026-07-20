@@ -20,7 +20,8 @@
 //    5. Prune anything older than 72 h (by pub_date) from the table.
 //
 //  Deploy:   supabase functions deploy refresh-news --no-verify-jwt
-//  Secrets:  supabase secrets set REFRESH_SECRET=<random>   (optional but recommended)
+//  Secrets:  supabase secrets set REFRESH_SECRET=<random>   (#R138 REQUIRED — fail-closed: with the secret
+//            unset the function refuses every request. The caller must send the x-refresh-secret header.)
 //            # AI geocoding reuses the SAME server-held key/provider as ai-proxy:
 //            supabase secrets set AI_PROVIDER=anthropic        (anthropic | openai | gemini)
 //            supabase secrets set ANTHROPIC_API_KEY=sk-ant-... (or OPENAI_API_KEY / GEMINI_API_KEY)
@@ -36,7 +37,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-refresh-secret",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 // ---- Editions: the two primary UI languages. (Multi-language auto-translate
@@ -480,14 +481,40 @@ async function fetchEdition(topic: string, q: string): Promise<RawItem[]> {
   } catch { return []; }
 }
 
+// (#R138 SECURITY) Constant-time string comparison — avoids a timing side-channel that could let an
+// attacker recover REFRESH_SECRET byte-by-byte. Length difference is folded in without an early return.
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a), bb = enc.encode(b);
+  let diff = ab.length ^ bb.length;
+  const n = Math.max(ab.length, bb.length);
+  for (let i = 0; i < n; i++) diff |= (ab[i] ?? 0) ^ (bb[i] ?? 0);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  // (#R138 SECURITY) Only POST triggers a run. A GET could carry the secret in the URL (→ access logs)
+  // and makes this expensive job (Google-News fetch + paid AI geocoding + service-role DB writes) trivially
+  // triggerable by a link prefetch / crawler.
+  if (req.method !== "POST") return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers: { ...cors, "Content-Type": "application/json" } });
 
-  // Optional shared-secret guard (set REFRESH_SECRET to lock the endpoint down).
-  const secret = Deno.env.get("REFRESH_SECRET");
-  if (secret) {
-    const got = req.headers.get("x-refresh-secret") || new URL(req.url).searchParams.get("secret");
-    if (got !== secret) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...cors, "Content-Type": "application/json" } });
+  // (#R138 SECURITY) FAIL-CLOSED shared-secret auth. This function is deployed --no-verify-jwt so cron /
+  // GitHub Actions can call it without a user session; the shared secret is therefore the ONLY gate.
+  //   • REFRESH_SECRET MUST be set. If it is NOT, EVERY request is refused (503) — it never runs publicly.
+  //     (The old guard fail-OPEN: with the secret unset, ANYONE could trigger unlimited AI-cost + DB writes.)
+  //   • The secret is read ONLY from the `x-refresh-secret` HEADER — never a URL query string — so it can
+  //     never leak into an access log.
+  //   • Compared in CONSTANT TIME (no early-exit timing oracle).
+  // The caller (pg_cron via pg_net, or a GitHub Action) MUST send header `x-refresh-secret: <secret>`.
+  // Setup + the exact cron SQL are in docs/SECURITY-ARCHITECTURE.md.
+  const secret = Deno.env.get("REFRESH_SECRET") || "";
+  if (!secret) {
+    return new Response(JSON.stringify({ error: "not_configured", message: "refresh-news is disabled: REFRESH_SECRET is not set. Set it and have the caller send the x-refresh-secret header." }), { status: 503, headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const got = req.headers.get("x-refresh-secret") || "";
+  if (!got || !timingSafeEqual(got, secret)) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...cors, "Content-Type": "application/json" } });
   }
 
   const url = Deno.env.get("SUPABASE_URL")!;

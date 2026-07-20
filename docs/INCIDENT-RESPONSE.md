@@ -1,7 +1,58 @@
 # Incident response (production)
 
 A short runbook for when production is broken. Optimised for a solo maintainer: **restore
-service first, investigate second.**
+service first, investigate second.** For a **security** incident (below), the order flips:
+**contain first.**
+
+---
+
+## Security incident (suspected compromise / vulnerability exploited) — #R138
+
+Use this when the problem is a **security** one, not an outage: a secret may have leaked, an
+XSS is firing in the wild, a user is reading/writing another user's data, `refresh-news` is
+being abused, or an Edge Function is being hit maliciously. See the model in
+[`SECURITY-ARCHITECTURE.md`](SECURITY-ARCHITECTURE.md).
+
+**S0 — Classify (what kind?)**
+- **Secret leak** — a `service_role` key, a provider API key, `REFRESH_SECRET`, or DB password
+  appeared somewhere public/logged. *(The Supabase publishable/anon key `sb_publishable_…` is
+  **public by design** — do NOT emergency-rotate it; it changes nothing and breaks clients.)*
+- **XSS / data exposure in the app.**
+- **Auth / RLS bypass** — someone accessed data they shouldn't.
+- **Edge-Function abuse** — cost spike / DB churn from `ai-proxy` or `refresh-news`.
+
+**S1 — Contain (minutes, before investigating)**
+- **Leaked `service_role` / DB password** → **rotate immediately** in Supabase (Settings →
+  API / Database); this invalidates the old key. Re-set Edge-Function secrets. Assume anything
+  it could reach was reachable.
+- **Leaked provider AI key** → revoke/rotate it in the provider console; `supabase secrets set`
+  the new one.
+- **Leaked `REFRESH_SECRET`** → `supabase secrets set REFRESH_SECRET=<new>` and update the cron
+  header. (To take news refresh **fully offline** right now: **unset** `REFRESH_SECRET` — the
+  function is fail-closed and will refuse every request.)
+- **ai-proxy abused** → it already requires a JWT + per-user daily quota; to hard-stop, unset
+  the provider key (returns 502) or lower `PLAN_LIMITS`/redeploy; consider revoking the abusing
+  user's sessions (Supabase → Auth → Users).
+- **XSS confirmed live** → treat session tokens as compromised for anyone who viewed the
+  payload; ship the output-encoding fix (§4 of the architecture doc) and, if data was exposed,
+  consider forcing re-auth (rotate the JWT secret / sign out users).
+- **RLS bypass** → tighten the policy in a migration + add a pgTAP attack case; if a specific
+  grant is the hole, revoke it.
+
+**S2 — Eradicate** — land the real fix on a branch → `npm test` green (add the regression test:
+XSS payload, auth assertion, or pgTAP case that reproduces it) → PR → CI → merge → deploy.
+
+**S3 — Recover & disclose** — verify the fix in production; if user data was exposed, notify
+affected users; coordinate disclosure per [`SECURITY.md`](../SECURITY.md). **Never** post a
+secret value in the issue/PR/notes.
+
+**S4 — Record** — append to `DEV-NOTES.md`: what was exploited, root cause, blast radius, the
+fix, and the **test/check added** so it cannot recur silently.
+
+> A committed-secret leak also has a DB-specific runbook in
+> [`DATABASE-INCIDENT.md`](DATABASE-INCIDENT.md).
+
+---
 
 ## 0. Triage (30 seconds)
 
