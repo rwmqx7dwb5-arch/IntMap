@@ -671,6 +671,8 @@ _rail_convert.py                鉄道データ変換スクリプト（同上）
 supabase/
   functions/ai-proxy/index.ts       アカウント制AIプロキシ（鍵はサーバー側、1日上限）
   functions/refresh-news/index.ts   ニュース取得＋AI地点解析＋current_news 書き込み（cron）
+  functions/monitor-run/index.ts    Area Monitors 定期実行（cron＋ユーザー今すぐ実行）
+  functions/sv-cov/index.ts         (#R145) Street Viewカバレッジ svv タイルの ACAO 付与プロキシ（キーレス・公開・厳格allowlist）
   supabase_news_setup.sql           current_news スキーマ＋index＋RLS＋cron例（一度だけ実行）
   supabase_bug_reports.sql          bug_reports スキーマ＋RLS（一度だけ実行）
   .temp/linked-project.json         supabase CLI のリンク先（project ref）
@@ -781,6 +783,8 @@ supabase/
 ### 6.2 Edge Functions
 - `ai-proxy` … アカウント制AI（要 `verify_jwt` 可、内部でも検証）。
 - `refresh-news` … ニュース取得＋AI地点解析＋書き込み（`--no-verify-jwt` で公開、`REFRESH_SECRET` で保護推奨）。
+- `monitor-run` … Area Monitors 定期実行（`--no-verify-jwt`＋自前fail-closed認証、`MONITOR_SECRET`）。
+- `sv-cov` … (#R145) Street Viewカバレッジ svv タイルの**ACAO付与プロキシ**（`--no-verify-jwt`・秘密なし）。Googleのmtsタイルは Access-Control-Allow-Origin を安定して返さず、クライアントの canvas 画素サンプリング（最寄カバレッジへのスナップ）が CORS で失敗する→本関数がサーバ側 fetch して `ACAO:*` を付与。**厳格allowlist**（`mts0-3.google.com/vt?…lyrs=svv`＋整数 x/y/z のみ・空タイルは透明PNG）＝オープンプロキシではない。フロントの `_COV_PROX` ラダー（直→sv-cov→corsproxy）で使用。
 
 ### 6.3 SQL
 - `supabase/supabase_news_setup.sql` … `current_news` 作成/拡張（`analyzed_by` 追加マイグレーション含む）＋index＋RLS＋cron例。
@@ -909,6 +913,8 @@ supabase/
 4. **Edge Functions デプロイ**:
    - `supabase functions deploy ai-proxy`
    - `supabase functions deploy refresh-news --no-verify-jwt`
+   - `supabase functions deploy monitor-run --no-verify-jwt`
+   - `supabase functions deploy sv-cov --no-verify-jwt`（(#R145) Street Viewカバレッジプロキシ・秘密なし）
 5. **Secrets 設定**:
    - `supabase secrets set AI_PROVIDER=anthropic`（または openai / gemini）
    - `supabase secrets set ANTHROPIC_API_KEY=...`（または OPENAI_API_KEY / GEMINI_API_KEY）

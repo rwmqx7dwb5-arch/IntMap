@@ -64,6 +64,7 @@ test('#6 Companies time machine: founded-gate + honest API (no crash offline)', 
 
 // #7 — Companies compare: select → view (6 metrics × N bars) → Back returns to the list.
 test('#7 Companies compare view opens and Back returns', async () => {
+  // (#R145) rebuilt to mirror the Countries #scp-view — Bar/Time-series/Table modes, metric picker, chips.
   const r = await page.evaluate(() => {
     window.renderCompanies('');
     window._coToggleCompare('AAPL');
@@ -71,17 +72,20 @@ test('#7 Companies compare view opens and Back returns', async () => {
     const trayTitle = document.querySelector('#co-compare-fixed .scf-title')?.textContent || '';
     window._coShowCompare();
     const view = document.getElementById('co-cmp-view');
-    const metrics = view ? view.querySelectorAll('.co-cmp-mlbl').length : 0;
-    const bars = view ? view.querySelectorAll('.co-cmp-bar').length : 0;
-    document.querySelector('.co-cmp-back')?.click();
+    const modes = view ? view.querySelectorAll('.scp-modes button').length : 0;
+    const chips = view ? view.querySelectorAll('.scp-chip').length : 0;
+    const sections = view ? view.querySelectorAll('.scp-sec').length : 0;   // one per active metric (default 4)
+    const bars = view ? view.querySelectorAll('.scp-brow').length : 0;      // sections × 2 companies
+    document.querySelector('#co-cmp-view [data-cmpback]')?.click();
     const backOk = !document.getElementById('co-cmp-view') && !!document.querySelector('#info-dashboard .co-row');
     window._coClearCompare();
-    return { trayTitle, metrics, bars, backOk };
+    return { trayTitle, modes, chips, sections, bars, backOk };
   });
   expect(r.trayTitle).toContain('2');
-  // 6 metrics when live prices load; offline the "Share price" row is correctly skipped (0 → no data) → 5.
-  expect(r.metrics).toBeGreaterThanOrEqual(5);
-  expect(r.bars).toBe(r.metrics * 2);          // metrics × 2 companies
+  expect(r.modes).toBe(3);                      // Bar chart / Time-series / Table
+  expect(r.chips).toBe(2);
+  expect(r.sections).toBeGreaterThanOrEqual(3); // default metrics with data (mcap/rev/ni/emp)
+  expect(r.bars).toBe(r.sections * 2);          // sections × 2 companies
   expect(r.backOk).toBe(true);
 });
 
