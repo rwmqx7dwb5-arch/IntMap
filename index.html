@@ -12887,7 +12887,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:210px; min-width:172px; max-width:340px; font-size:10.4px; }   /* (#R154) width now HUGS the content per language (_fitKoppenLegend measures the widest row and sets an exact px width, clamped 176–324). The old fixed 264px was ~80px WIDER than the Japanese text ("テキスト以上に横幅伸ばして…行の幅変わってない" = dead space) yet still clipped the longest German ("行の幅が狭すぎる"). min/max-width are just safety clamps; the 210px here is a pre-JS fallback. */
+      .koppen-legend{ box-sizing:border-box; display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:220px; min-width:180px; max-width:460px; font-size:10.4px; }   /* (#R155) box-sizing:border-box is load-bearing — the width _fitKoppenLegend sets now INCLUDES the 20px padding + 2px border, so the panel really hugs the text (the old content-box math under-counted them → "テキスト以上に横幅伸ばして…行の幅変わってない" dead space). max-width raised 340→460 so the longest German/Russian names are no longer clipped ("行の幅が狭すぎる"). width:220 is the pre-JS fallback. */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
@@ -14563,9 +14563,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if(nm){ m.style.fontWeight='400'; m.textContent=nm.textContent; w+=m.offsetWidth; }
             if(w>mx) mx=w; });
           document.body.removeChild(m);
-          if(mx>0){ const contentW=Math.round(mx + 11 + 12 + 8 + 15 + 2);   /* swatch(11) + 2 flex gaps(12) + item padding(8) + scrollbar gutter(15) + slack(2) */
+          if(mx>0){ const contentW=Math.round(mx + 11 + 12 + 8 + 15 + 22 + 6);   /* (#R155) border-box: swatch(11)+2 flex gaps(12)+item padding(8)+scrollbar gutter(15)+CONTAINER padding+border(22)+slack(6). Under box-sizing:border-box the width we set includes the 20px padding+2px border, so it must be added here — the old content-box formula omitted them, so the visible panel ran ~22px wider than the text it was sized for. */
             const room=Math.round((window.innerWidth - lg.getBoundingClientRect().left) - 16);
-            const w=Math.max(176, Math.min(324, room>200?room:324, contentW));
+            const w=Math.max(190, Math.min(460, room>200?room:460, contentW));   /* (#R155) max 324→460 so the longest German/Russian names fit without clipping */
             lg.style.width=w+'px'; } }
       }catch(_){}
       const top=lg.getBoundingClientRect().top;                 /* rendered top edge (top-anchored: stable as it grows) */
