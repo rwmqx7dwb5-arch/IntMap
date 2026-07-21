@@ -5,6 +5,41 @@
 
 ---
 
+## R153 — UX/機能バッチ8件（再報告の根本原因）：**ケッペン幅264px＋行圧縮(最後の区分到達)＋RU/ES気候名**／**Measure/Share は外観設定に従う(無条件不透過を撤回)**／**Atlasタイポ＝全散文を決定論的に再構造化(見出し・余白)**／**SV線overzoom(tileSize128)で実細線**／**Companies TS指標ピッカーが実際にチャートを駆動(mcap絶対/株価指数)＋十字ツールチップ**／**Atlas出典＝単一 `_atlCleanUrl` を全経路＋インラインリンクに・関連度はhost-clean後(空にならない)・`answer`経路も出典表示**／**Companies深い履歴＝TS既定20年**／**ワークスペース地図内ポップアップが再びドラッグ可** (tag `#R153`)
+
+ユーザー指摘**8件**を根本原因から。`index.html` のみ（Edge Function 変更なし＝deploy不要）＋新規 `tests/r153-checks.test.mjs`(node 9)。`npm test` 緑（static＋node **99**＝既存＋新r153-checks 9・自変更で壊れた r149/r150/r151/r152 の exact-string assert を更新＋Playwright **80**、pageerror 0）。全修正はハーネス実測（`@playwright/test` chromium）で検証：ケッペン clippedNames 11→**0**・自然高 519→**489px**、Atlasタイポは flat/labelled × EN/JP で見出し1・3個＋余白、出典フィルタは Reuters/AP 残しX/YouTube/bit.ly落とし・全SNS時のみ空・異script保持、ws地図ポップアップ guard=false（ドラッグ可）、7 critical globals＋#map 健全。
+
+### ① ケッペン「最後の気候区分まで伸ばせない」＋「行の幅が狭すぎる」（**6回目**・R152の副作用）
+R152 は折返し撲滅で `white-space:nowrap`＋ellipsis＋200px にしたが、**実測で EN 30区分中14名が幅216px 必要→11行が省略クリップ**（＝「狭すぎる」）＋自然高 **519px** は 1366×768 ノートの可用 ~514px を**5px 超過**→最後の区分 EF が折り目の下でストレッチ不能（＝「伸ばせない」）。修正: (a) 幅 **200→264px**（実測: EN216/JP141/RU216/ES216/DE257px、264で clippedNames **0**、独語最長2-3のみ hover 補完）。(b) 行 `padding:0.5px→0`＋`line-height:1.25→1.2` で30行ブロックを **~35px 圧縮→自然高489px**（768ノートに25px余裕で収まり全区分が既定表示・EF到達）。(c) **RU/ES 気候名を KNAME に追加**（従来は en フォールバック＝5言語規則違反）。`_fitKoppenLegend` は無変更（min(内容高,vp)ロジックは正しく、内容高を下げるのが真因）。
+
+### ② Measure/Share ポップアップ「無条件で透過するな／無条件で不透過するな」（**矛盾＝条件付き要求**）
+真因: R152 が `background:var(--card-bg)`(常時不透過) にしたが、アプリは **Solid/Frosted-Glass/透過** の外観設定(#R33「全UIはこの設定に従う」)を持ち、`:root{--glass-fill:var(--card-bg)}`＋glassモードで translucent へ切替。measure/share だけこの共通マテリアルに参加していなかった。修正: `background:var(--glass-fill)`＋標準blur へ＝**Solidで不透過(--card-bg)・glassで frost**＝「無条件透過でも無条件不透過でもない」を同時に満たす（他30+ポップアップと同型）。
+
+### ③ Atlasタイポ「まだほぼ単調。クソ」（**3回目**・描画側の真の穴）
+真因: `_atlStanza` が **`\n が2つ以上→return raw`**（27966旧）で**最頻ケース＝複数段落フラット散文を素通り**＋単一ブロック時も先頭文1個を太字化するだけ。→R150-R152のプロンプト強化/em拡大は「モデルが##/空行を出す時だけ」効く。修正: **`_atlStanza` を全面再構造化**＝「>1改行 bail」撤廃・段落を `\n` 単位で分割・**文単位で `Label:`/`背景：`(≤24字prefix)→`## 見出し`**（インライン・段落頭 両対応）・**先頭文→太字リード**・段落は空行 join（→余白）・長い連続文は~2文stanza・番号/ダッシュ→箇条書き。**CJK加重**（`plainAll.length+cjk`>150）で密な日本語も再構造化。既に `##` 構造化済は不介入。太字リード 1.22→**1.3em**、段落余白 1.05→**1.2em**。決定論的＝IntMapAtlasDebug でテスト（labelled=見出し3＋余白5、flat=リード1＋余白）。
+
+### ④ SV Coverage 線が太すぎる（**3回目**・実 overzoom）
+実測: Google svv は**各ネイティブzoomで一定~3-4screen px**でストローク描画→z19超で拡大され肥大。R152は輝度/コントラストの滲みを除いたが**ネイティブ幅そのもの**が太い。修正: **`tileSize:256→128`**（MapLibreが次zoomの256pxタイルを128px枠に描く＝**全zoomで~2×ダウンスケール→ネイティブ幅未満の細線**）＋**`maxzoom:19→21`**（z20/z21 svvタイルが実在＝curl+pixel実測: Manhattanで blue 1440/1674px＝空でない、を確認）で street-level まで overzoom 維持。
+
+### ⑤ Companies「もっと昔も見れる」（**Yahoo 1962床は実測済・誠実な上積み**）
+実測: Yahoo `spark/chart` の keyless 床は**銘柄依存で1962(GE/IBM)〜1985(KO/XOM/PG)**＝R152が到達済の限界。Stooqは**JS proof-of-work化**で keyless 不可。捏造せず＝curated 財務値は入れない。上積み: **比較 Time-series 既定を 10→20年**（利用可能な深い履歴を即表示）＋mcap絶対ビュー（下記⑥）で成長軌跡を可視化。年ピッカーは 1962 床を維持（データのある銘柄のみ表示・無い銘柄は正直に "no history"）。
+
+### ⑥ Atlas出典「無関係リンク・SNS／出展が全くない」（**両面の再報告**）
+監査で二真因: (a) **mapReport/events のインライン `記事 ↗` が生URL**（`news.google.com/rss/…`アグリゲータ・SNS）＝linkCardsのhost/decodeフィルタを迂回。(b) **planner `answer` 経路が出典を一切描画しない**（＝「全くない」の主因）＋関連度ゲートが linkCards の前で走り、偶然一致のSNSカードを残し実カードを落とすと linkCards が空を返す競合。修正: **単一 `_atlCleanUrl(u)`**（GNews復号＋アグリゲータ/SNS/短縮/動画 host拒否→{url,host}|null）を抽出し **linkCards＋両インラインリンクが共通使用**。**linkCards はhost-clean→(refText時)関連度**の順（＝実カードを空にしない）。**`answer` 経路に web-verified 出典を追加**。関連度は**異script保持**（日本語返信×英語記事も同一トピックなら残す）。medium/substackは正当報道あり得るので**除外しない**（R152踏襲）。
+
+### ⑦ Companies「見かけだけ寄せた手抜き」（**Countries真パリティ**）
+監査で最大の「手抜き」＝**TS指標ピッカーが常に株価指数のみ・rev/ni/emp/peを表示するが無効**。修正: (a) **TS指標トグル {Market cap 絶対$ / Share price 指数100} がチャートを実駆動**（mcap=現在株数×当時株価＝time-machineと同一近似・実$軸ラベル）＋**十字ツールチップ**（各社の当該年値＝Countries同等）。generic複数指標ピッカーはTSで**非表示**（Bar/Table専用）。(b) `/8`→**`/10`**（実cap一致・2箇所）。(c) **ws Companies窓に検索欄**（`#info-search-bar`＋`_companiesSearchVal`＋`#co-compare-fixed` バンドル＝Countries同型・5言語 `filterCompaniesPh`）＝従来ws-modeで絞込不能だった穴。(d) **詳細オーバーレイに実株価スパークライン**（`priceSeriesFine` 15年・±%）＝静的行のみのstub是正。※HQ地図描画/指標Focusドリルダウンは「企業は地理エンティティでない」ため意図的に非採用（正直な差異）。
+
+### ⑧ ワークスペース地図内ポップアップが動かせない（新規）
+真因: `makeDraggable` の `_inWsWin()` が **`panel.closest('.ws-win')`** で判定＝ws-modeで `#map-container` 全体が地図窓 `.ws-win` へ移設されるため、内部の全ポップアップ(tool-panel/legend等)も `.ws-win` 子孫と判定→ドラッグ silently kill(#R79b の過剰発火)。修正: **`panel.parentElement.classList.contains('ws-body')`**（＝窓の直接コンテンツ＝移設されたソース要素のみ）に変更→Atlas/News/Countries本体は保護、地図内ポップアップは offset-parent相対のドラッグ数学がそのまま復活（`.ws-win{overflow:hidden}`で地図窓内にクランプ＝妥当）。`_inWsWin2`(resize)も同修正。実測: ws-mode で country-info の guard=false・#map-container の guard=true を確認。
+
+### 罠・教訓
+- **「まだ狭い/伸ばせない」は必ず実測**＝EN名は幅216px要・自然高519pxは768ノートに5px超過。R152のnowrap+200pxは**折返しは直したが幅と高さの二次被害**を生んだ。
+- **矛盾する2つの指摘＝条件付き要求**＝「無条件透過するな」+「無条件不透過するな」＝外観設定(`--glass-fill`)に従わせる。
+- **タイポの真因は常に描画側の bail**＝`>1改行 return raw` が最頻ケースを素通り。プロンプトでなく `_atlStanza` で全散文を再構造化。
+- **出典フィルタは全経路で統一**＝インライン `記事↗` も含め単一 `_atlCleanUrl` を通す。関連度は**host-clean後**（順序が空バグの真因）。
+- **自変更で r149-r152 の exact-string assert が壊れる→更新必須**（幅200→264・1.05→1.2em・linkCards署名・_inWsWin・_atlBadSourceHost return null）。**PORT=4188 npx playwright**。
+
 ## R152 — UX/機能バッチ13件：**ケッペン単一行化(折返し撲滅)**／Companies完全Countries化(静的ドック)／Atlasタイポ(先頭文リード＋見出し拡大)／Atlas出典(ブロックリスト拡張＋関連度ゲート)／Atlasトグル(全画面＋汎用control)／**衛星は実測でz19が上限**／SV線細く／Measure/Share不透過／**方位磁針右クリック数値入力**／**フライトシム海面フロア＋水面**／**等高線密度スライダー**／**IntMapGeoEngine抽象層(第1段階)**／Companies月次高精度＋深い歴史 (tag `#R152`)
 
 ユーザー指摘**13件**を根本原因から。`index.html` のみ（Edge Function 変更なし）＋新規 `tests/r152-checks.test.mjs`(node 12)。`npm test` 緑（static＋node **90**＝既存＋新r152-checks 12・r147/r149/r150/r151 の自変更 exact-assert を更新＋Playwright）。**教訓①（重大ニアミス）: static-checks は同一スコープの重複 `const` を検出できない**——`_ATL_STOP` を二重宣言し、パースエラーで **アプリ全体がブートせず全 Playwright が boot timeout**。`@playwright/test` の chromium で `pageerror`＋critical globals を直読みして即特定（`_ATL_RELV_STOP` にリネーム）。**commit前に必ず実ブラウザで7 critical globals＋#map を確認する**こと（[[template-literal-css-backtick]] と同種の「パースは通るが動かない」）。

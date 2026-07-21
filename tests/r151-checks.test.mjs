@@ -63,7 +63,7 @@ test('R151 #4 toolbar: Radius under Measure menu, Screenshot + link under one Sh
 
 test('R151 #5 Atlas typography: a standalone bold line becomes a real sub-heading', () => {
   assert.match(html, /\.replace\(\/\^\\\*\\\*\(\[\^\*\\n\]\{2,90\}\)\\\*\\\*\[ \\t\]\*:\?\[ \\t\]\*\$\/gm/, 'standalone **bold line** → heading rule');
-  assert.match(html, /<div style="height:1\.05em"><\/div>/, 'generous explicit-paragraph gap (R152 1.05em)');
+  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'generous explicit-paragraph gap (R153 1.2em)');
 });
 
 test('R151 #6 monitor highlight is cleared when the monitor is deleted', () => {
@@ -103,7 +103,7 @@ test('R151 #11 Atlas source cards drop SNS / UGC / shorteners / video hosts', ()
   assert.match(html, /function _atlBadSourceHost\(h\)\{/, 'bad-source-host predicate exists');
   assert.match(html, /twitter\\\.com\|x\\\.com/, 'X/Twitter in the drop list');
   assert.match(html, /youtube\\\.com\|youtu\\\.be/, 'YouTube in the drop list');
-  assert.match(html, /if\(_atlBadSourceHost\(host\)\) return;/, 'linkCards drops bad hosts');
+  assert.match(html, /if\(_atlBadSourceHost\(host\)\) return null;/, 'R153: _atlCleanUrl (used by linkCards AND the inline evidence links) drops bad hosts');
   // prompt reinforcement
   assert.match(html, /NEVER cite social media, user-generated forums, link shorteners or video platforms/, 'analysis prompt forbids SNS sources');
   // exposed for hermetic tests

@@ -42,7 +42,10 @@ test('R150 #5 stop-answering square trimmed 17.5 → 15.5', () => {
 
 test('R150 #4 typography: flat prose gets code-side rhythm (stanza + sentence-end gap)', () => {
   assert.match(html, /function _atlStanza\(raw\)\{/, 'stanza grouping helper exists');
-  assert.match(html, /if\(\(raw\.match\(\/\\n\/g\)\|\|\[\]\)\.length>1\) return raw;/, 'respects the model\'s own line breaks');
+  // (R153) the ">1 newline → return raw" bail was the reason multi-paragraph flat prose stayed monotone; it is REMOVED.
+  // _atlStanza now restructures multi-paragraph prose too — respecting only replies that already have real ## headings.
+  assert.ok(!/if\(\(raw\.match\(\/\\n\/g\)\|\|\[\]\)\.length>1\) return raw;/.test(html), 'R153: the >1-newline bail is gone (was why multi-paragraph prose stayed flat)');
+  assert.match(html, /if\(\/\^\\s\*#\{1,6\}\\s\/m\.test\(raw\)\) return raw;/, 'R153: only ALREADY-##-structured replies are left untouched');
   assert.match(html, /esc\(_dedupText\(_atlStanza\(String\(s\|\|''\)\)\)\)/, 'mdMini runs the stanza pass first');
   assert.match(html, /\.replace\(\/\(\[\.!\?。！？…”"』）\)\]\)\\n\(\?=\\S\)\/g,'\$1<div style="height:\.72em"><\/div>'\)/, 'a sentence-end + single newline becomes a soft paragraph gap (R152 .72em)');
 });
