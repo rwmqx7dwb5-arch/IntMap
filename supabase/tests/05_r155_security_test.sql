@@ -66,7 +66,11 @@ select is((select is_admin from public.profiles where id='22222222-2222-2222-222
           'R155: service_role CAN still set is_admin (server-side promotion works)');
 
 -- Restore the migration's least-privilege state for the privilege assertions below.
+-- NOTE: `REVOKE UPDATE ON <table>` also drops the column-level UPDATE grants in this Postgres,
+-- so after undoing the simulated blanket grant we must re-issue the migration's exact column
+-- grant (the four safe columns) — otherwise display_name/bio would read as not-updatable.
 revoke update on public.profiles from authenticated;
+grant update (display_name, bio, avatar_url, login_count) on public.profiles to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  2. LEAST-PRIVILEGE column/table grants (the migration's converged state).
