@@ -1,0 +1,111 @@
+// R152 source-level regression checks (deterministic, no browser).
+// Guards the R152 UX/feature batch:
+//   #1  Köppen legend — single-line rows (nowrap + ellipsis, code always visible) so all 30 zones fit the screen
+//   #2  Companies UI — TRUE Countries parity: static absolute-overlay dock + rank gating + filter tooltip
+//   #3  Atlas typography — flat prose gets a bold LEAD line + bigger headings + more spacing
+//   #4  Atlas sources — broadened bad-host blocklist + relevance gate on gathered links + honest relabel
+//   #5  Atlas toggles — fullscreen switch + generic on/off control switch (catch-all)
+//   #6  Satellite — (documented) Esri z19 is the keyless native ceiling; no risky change
+//   #7  Street View coverage line thinner (glow paint dropped)  [asserted in r147-checks]
+//   #9  Measure/Share popups fully opaque (var(--card-bg), no backdrop blur)
+//   #10 Compass — desktop right-click numeric bearing/pitch/zoom popup
+//   #11 Flight sim — open-ocean sea-surface floor + below-sea land exempt + blue water fill
+//   #12 Contour lines — density slider (rebuilds contour-src with scaled thresholds), in the legend
+//   #13 IntMapGeoEngine — renderer abstraction + MapLibre adapter + Cesium contract; Atlas camera routed through it
+//   #8  Companies — monthly high-precision time-series + fresher prices + history floor 1962
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const root = new URL('../', import.meta.url);
+const html = readFileSync(new URL('index.html', root), 'utf8');
+
+test('R152 #1 Köppen rows are single-line (nowrap) with an always-visible code + ellipsised name', () => {
+  assert.match(html, /\.kl-item\{[^}]*white-space:nowrap;/, 'kl-item nowrap (kills the 2-line wrap)');
+  assert.match(html, /\.kl-item \.kl-code\{ flex-shrink:0;/, 'code never shrinks / stays visible');
+  assert.match(html, /\.kl-item \.kl-nm\{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;/, 'name ellipsises on one line');
+  assert.match(html, /\.koppen-legend\{[^}]*width:200px;/, 'legend widened to 200px for legibility');
+  // the build template splits code + name and adds a full-text title tooltip
+  assert.match(html, /<span class="kl-code">\$\{code\}<\/span>/, 'row template emits .kl-code');
+  assert.match(html, /title="\$\{code\}\$\{_knm\?' · '\+_knm:''\}"/, 'row has full-text title tooltip');
+});
+
+test('R152 #2 Companies compare dock is the static absolute-overlay (Countries parity)', () => {
+  assert.match(html, /<div class="co-compare-fixed" id="co-compare-fixed"><\/div>/, 'static dock element exists');
+  assert.match(html, /\.stats-compare-fixed, \.co-compare-fixed\{ display:none; position:absolute;/, 'shares the Countries dock styling');
+  assert.match(html, /\.stats-compare-fixed\.show, \.co-compare-fixed\.show\{ display:block; \}/, 'shown via .show');
+  assert.match(html, /function _companiesActive\(\)\{/, 'active-tab test mirrors _countriesActive');
+  assert.match(html, /currentMode!=='info'\)\{ const cof=document\.getElementById\('co-compare-fixed'\)/, 'hidden on tab-switch like Countries');
+  assert.match(html, /\(window\.imShowRank!=='off'\)\?`<span class="stat-rank">/, 'Companies honours the rank setting');
+});
+
+test('R152 #3 Atlas typography — bold lead line for flat prose + bigger headings + more spacing', () => {
+  assert.match(html, /lead='\*\*'\+first\.replace/, 'flat prose opening promoted to a bold lead line');
+  assert.match(html, /font-size:1\.66em;letter-spacing:\.01em/, 'h1 bigger (1.66em)');
+  assert.match(html, /font-size:1\.4em;line-height:1\.3;letter-spacing:\.005em/, 'h2 bigger (1.4em)');
+  assert.match(html, /<div style="height:1\.05em"><\/div>/, 'generous paragraph gap (1.05em)');
+});
+
+test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relevance gate, honest relabel', () => {
+  assert.match(html, /const _SNS_RE=\/[^\n]*blogspot\\\.\[a-z\.\]\+/, 'blog platforms added to the bad-host blocklist');
+  assert.match(html, /note\\\.com\|fc2\\\.com/, 'note.com / fc2 added');
+  assert.ok(!/medium\\\.com/.test(html.slice(html.indexOf('const _SNS_RE='), html.indexOf('const _SNS_RE=') + 900)), 'medium NOT banned (can be legit journalism)');
+  assert.match(html, /function _atlRelevantCards\(cards, refText\)\{/, 'relevance gate exists');
+  assert.match(html, /linkCards\(_atlRelevantCards\(rest,txt\)\.slice\(0,4\)\)/, 'analyze rest bucket filtered + capped');
+  assert.match(html, /L\('Related articles','関連記事'/, 'no-basis links honestly labelled "Related articles" (not "Sources")');
+});
+
+test('R152 #5 Atlas toggles — fullscreen switch + generic on/off control switch', () => {
+  assert.match(html, /fullscreen:\{ lbl:\(\)=>L\('Fullscreen'/, 'fullscreen has a _FEAT_TOG entry');
+  assert.match(html, /_featTogHtml\('fullscreen'\)/, 'fullscreen case renders the switch');
+  assert.match(html, /function _ctlTogHtml\(target, el\)\{/, 'generic control toggle exists');
+  assert.match(html, /note\('✓ '\+nm\+': '\+\(want\?'on':'off'\)\)\+_ctlTogHtml\(a\.target\|\|el\.id,el\)/, 'checkbox controls get a switch');
+  assert.match(html, /closest\('\.atl-ctl-gen'\)/, 'generic-toggle click handler (before the layer-toggle branch)');
+});
+
+test('R152 #9 Measure/Share popups are fully opaque', () => {
+  assert.match(html, /\.measure-dropdown, \.share-dropdown\{[^}]*background:var\(--card-bg\);/, 'opaque card background');
+  assert.ok(!/\.measure-dropdown, \.share-dropdown\{[^}]*backdrop-filter:blur\(15px\)/.test(html), 'backdrop blur dropped');
+});
+
+test('R152 #10 Compass right-click numeric popup (desktop)', () => {
+  assert.match(html, /\.compass-num-pop\{ position:fixed;/, 'popup CSS present');
+  assert.match(html, /btn\.addEventListener\('contextmenu',\(e\)=>\{ e\.preventDefault\(\); if\(!map\) return;/, 'right-click handler on the compass');
+  assert.match(html, /id="cnp-bear"[\s\S]{0,300}id="cnp-pitch"/, 'bearing + pitch inputs');
+  assert.match(html, /if\(typeof _imTouchPrimary==='function' && _imTouchPrimary\(\)\) return;/, 'desktop-only guard');
+});
+
+test('R152 #11 Flight sim — open-ocean sea-surface floor, below-sea land exempt, blue water fill', () => {
+  assert.match(html, /function _isOpenOcean\(lng,lat\)\{/, 'ocean discriminator via countryGeo');
+  assert.match(html, /if\(st\._overOcean && terr<0\)\{ terr=0;/, 'sea-surface floor over open ocean');
+  assert.match(html, /st\._overOcean=_isOpenOcean\(st\.lng,st\.lat\)/, 'ocean flag refreshed once per frame');
+  assert.match(html, /function _fsOceanFC\(\)\{[\s\S]*const outer=\[\[-180,-85\.051\]/, 'inverse-mask ocean polygon (world rect + country holes)');
+  assert.match(html, /addLayer\(\{id:'fs-ocean-water',type:'fill'/, 'blue water fill layer');
+  assert.match(html, /map\.off\('styledata',_fsOceanStyleGuard\); \}catch\(_\)\{\} _fsRemoveOcean\(\)/, 'water removed on exit');
+});
+
+test('R152 #12 Contour density slider rebuilds the source with scaled thresholds, in the legend', () => {
+  assert.match(html, /function _contourThresholds\(\)\{ const d=Math\.max\(0\.25,Math\.min\(4,\+window\._contourDensity/, 'thresholds scaled by density');
+  assert.match(html, /window\._setContourDensity=function\(d\)\{[^}]*_rebuildContours\(\)/, 'setter rebuilds contour-src');
+  assert.match(html, /thresholds:_contourThresholds\(\)/, 'addContours uses the scaled thresholds');
+  assert.match(html, /function ensureContourDensity\(el\)\{/, 'density slider lives in the legend (R16 rule)');
+  assert.match(html, /ensureContourDensity\(el\);/, 'density row wired into legend refresh');
+});
+
+test('R152 #13 IntMapGeoEngine renderer abstraction + MapLibre adapter + Cesium contract', () => {
+  assert.match(html, /window\.IntMapGeoEngine=\(function\(\)\{/, 'engine defined');
+  assert.match(html, /const MapLibreAdapter=\{ id:'maplibre', capabilities:MAPLIBRE_CAPS,/, 'MapLibre adapter');
+  assert.match(html, /const CESIUM_CONTRACT=\{ id:'cesium', implemented:false,/, 'Cesium contract (no SDK)');
+  assert.match(html, /camera:\{ flyTo:o=>_adapter\.flyTo\(o\)/, 'camera facade delegates to the adapter');
+  assert.match(html, /use\(a\)\{ if\(a&&a\.id\) _adapter=a;/, 'a future renderer can be swapped in');
+  // Atlas camera execution now routes through the engine
+  assert.match(html, /IntMapGeoEngine\.camera\.easeTo\(\{pitch:tp,duration:600\}\)/, 'Atlas pitch routes through the engine');
+  assert.match(html, /IntMapGeoEngine\.camera\.easeTo\(\{bearing:tb/, 'Atlas bearing routes through the engine');
+});
+
+test('R152 #8 Companies — monthly time-series, fresher prices, deeper history floor', () => {
+  assert.match(html, /priceSeriesFine, histYear/, 'priceSeriesFine exported');
+  assert.match(html, /data:await IntMapCompanies\.priceSeriesFine\(c\.tk,from,to\)/, 'time-series chart uses monthly data');
+  assert.match(html, /now-_loaded\)<120000\) return;/, 'live-price cache 5min→2min (低遅延)');
+  assert.match(html, /for\(let y=cur;y>=1962;y--\)/, 'history floor extended 1990→1962 (もっと昔)');
+});

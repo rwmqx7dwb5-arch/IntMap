@@ -40,16 +40,17 @@ test('R149/R150 #3 Köppen legend stretches to the screen bottom (viewport-based
   // resize grip can be dragged all the way down; the old content-height cap made "一番下まで伸ばせない".
   assert.match(html, /const renderedMax=Math\.round\(window\.innerHeight - top - 12\)/, 'JS fit is viewport-based (R150)');
   assert.ok(!/const cap=Math\.round\(window\.innerHeight - 84\)/.test(html), 'old content-clamp cap removed');
-  assert.match(html, /\.kl-item\{ display:flex; align-items:center; gap:6px; padding:1px 4px;/, 'compact rows (1px)');
+  assert.match(html, /\.kl-item\{ display:flex; align-items:center; gap:6px; padding:0\.5px 4px; cursor:pointer; border-radius:5px; white-space:nowrap;/, 'R152: single-line compact rows (nowrap kills the 2-line wrap that doubled the legend height)');
+  assert.match(html, /\.kl-item \.kl-nm\{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;/, 'R152: climate name ellipsises on one line');
   assert.match(html, /\.kl-sw\{ width:11px; height:11px;/, 'smaller swatch');
 });
 
 test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   // the em heading sizes are unique to mdMini's heading replacements
-  assert.match(html, /font-size:1\.55em;letter-spacing:\.01em/, 'h1 ~1.55em');
-  assert.match(html, /font-size:1\.32em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.32em');
-  assert.match(html, /font-size:1\.14em;line-height:1\.32/, 'h3 ~1.14em');
-  assert.match(html, /'<div style="height:\.85em"><\/div>'/, 'paragraph gap ~0.85em (R151, was .72 in R150)');
+  assert.match(html, /font-size:1\.66em;letter-spacing:\.01em/, 'h1 ~1.66em (R152 bigger)');
+  assert.match(html, /font-size:1\.4em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.4em (R152 bigger)');
+  assert.match(html, /font-size:1\.18em;line-height:1\.32/, 'h3 ~1.18em (R152 bigger)');
+  assert.match(html, /'<div style="height:1\.05em"><\/div>'/, 'paragraph gap ~1.05em (R152, was .85 in R151)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');
 });

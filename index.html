@@ -450,10 +450,18 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     /* (#R24) zero vertical padding + capped height so the (deliberately large) compass icon doesn't
        inflate the Flat/Globe/3D row — that extra height read as "無駄に上下に余白" around the text buttons. */
     .compass-btn{ width:40px; padding:0 6px !important; height:33px; display:flex; align-items:center; justify-content:center; overflow:visible; } .compass-svg{ transition:transform 0.2s; display:block; }
+    /* (#R152) desktop right-click-the-compass numeric view entry (bearing / pitch / zoom) — opaque, like Measure/Share */
+    .compass-num-pop{ position:fixed; z-index:4000; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); width:194px; font-size:12px; display:flex; flex-direction:column; gap:8px; }
+    .compass-num-pop .cnp-t{ font-weight:700; font-size:12.5px; color:var(--text-main); margin-bottom:2px; }
+    .compass-num-pop label{ display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--text-muted); }
+    .compass-num-pop input[type=number]{ width:78px; padding:4px 7px; border-radius:7px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main); font-size:12px; }
+    .compass-num-pop .cnp-btns{ display:flex; gap:6px; margin-top:4px; }
+    .compass-num-pop .cnp-btns button{ flex:1; padding:6px 8px; border:none; border-radius:8px; background:var(--primary-color); color:#fff; font-weight:600; font-size:11.5px; cursor:pointer; }
+    .compass-num-pop .cnp-btns button.cnp-sec{ background:var(--input-bg); color:var(--text-main); }
     .layer-menu-container{ position:relative; }
     /* (#R9) Measurement tools collapsed under one "Measure ▾" trigger (Radius stays standalone). */
     .measure-menu-container, .share-menu-container{ position:relative; display:inline-block; }   /* (#R151) share menu mirrors the measure menu */
-    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; padding:6px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:182px; flex-direction:column; gap:4px; }
+    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--card-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; padding:6px; box-shadow:var(--shadow); min-width:182px; flex-direction:column; gap:4px; }   /* (#R152) FULLY OPAQUE Measure/Share popups ("無条件で透過しないように") — was var(--popup-bg) (rgba α<1) + backdrop-filter:blur, which let the map bleed through; --card-bg is the solid theme card colour (#fff / #1c1c1e) and the blur is dropped */
     .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
     .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
     .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
@@ -2051,9 +2059,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .layer-ctrl h4{ margin:0 0 4px; font-size:12px; padding-right:18px; }
 
     /* --- Stats compare: fixed bottom panel that ignores list scroll (#26) --- */
-    .stats-compare-fixed{ display:none; position:absolute; left:0; right:0; bottom:0; z-index:30; padding:12px 14px max(14px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 24px rgba(0,0,0,0.12); }
-    body.sidebar-translucent .stats-compare-fixed{ background:var(--sidebar-bg); }
-    .stats-compare-fixed.show{ display:block; }
+    .stats-compare-fixed, .co-compare-fixed{ display:none; position:absolute; left:0; right:0; bottom:0; z-index:30; padding:12px 14px max(14px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 24px rgba(0,0,0,0.12); }   /* (#R152) Companies compare dock shares the Countries dock's EXACT styling (was a sticky in-feed tray with rounded corners = the "half-baked imitation") */
+    body.sidebar-translucent .stats-compare-fixed, body.sidebar-translucent .co-compare-fixed{ background:var(--sidebar-bg); }
+    .stats-compare-fixed.show, .co-compare-fixed.show{ display:block; }
     /* (#R103) the "you can compare countries" hint made clearly visible again (icon-led, main-text colour) — the muted
        one-liner read as "missing" ("比較できますという案内が消えている"). */
     /* (#R104) compare hint: NO chart illustration, kept to a SINGLE line ("グラフのイラストはいらない／１行に"). */
@@ -2068,8 +2076,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     /* (#R108) the "Show comparison" button is white bg / black text (both themes) so it reads as the primary action. */
     .scf-head button.scf-view{ background:#ffffff; color:#111111; border:1px solid rgba(0,0,0,0.12); }
     .scf-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-    /* (#R142) Companies compare — sticky selection tray inside the feed + the side-by-side bar view. */
-    .co-compare-fixed{ position:sticky; bottom:0; z-index:5; margin:10px -2px 0; padding:10px 12px max(12px,env(safe-area-inset-bottom)); background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border-top:1px solid rgba(128,128,128,0.18); box-shadow:0 -6px 20px rgba(0,0,0,0.10); border-radius:12px 12px 0 0; }
+    /* (#R152) Companies compare — the selection dock now shares .stats-compare-fixed above (absolute bottom overlay, Countries-identical). Only the side-by-side compare VIEW keeps its own chrome below. */
     .co-cmp-head{ display:flex; align-items:center; gap:10px; margin:2px 0 10px; }
     .co-cmp-back{ background:var(--input-bg); border:none; color:var(--text-main); font-size:12px; font-weight:600; padding:5px 11px; border-radius:8px; cursor:pointer; }
     .co-cmp-title{ font-size:14px; font-weight:700; }
@@ -2286,6 +2293,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     <div id="atlas-feed" style="display:none;"></div>
     <div class="news-reader-pane" id="news-reader-pane" style="display:none;"></div>
     <div class="stats-compare-fixed" id="stats-compare-fixed"></div>
+    <div class="co-compare-fixed" id="co-compare-fixed"></div>
   </div>
 
   <div class="map-container" id="map-container">
@@ -6957,6 +6965,49 @@ window.addEventListener('DOMContentLoaded', () => {
     map.on('load',()=>{
       try{ if(!/[?&]flat\b/.test(location.search)) map.setProjection({type:'globe'}); }catch(e){}
       try{ window.__imap=map; }catch(_){}
+      /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
+         A THIN facade over a swappable renderer adapter, so a future Google-Earth-class "Earth Mode" can be dropped in
+         later without touching every call site. Phase 1 ships the MapLibre adapter ONLY and moves just the SAFE common
+         operations behind it — camera, coordinate transforms, source/layer add-remove-visibility-opacity, GeoJSON data,
+         events — each delegating 1:1 to the current `map`, so behaviour / performance / mobile are byte-identical. It is
+         PURELY ADDITIVE: existing MapLibre calls keep working; new common code should call IntMapGeoEngine instead of
+         `map` directly. A Cesium CONTRACT (capabilities only, NO SDK, NO keys) is declared for the next phase. The raw()
+         escape hatch returns the live MapLibre map for the many features not yet generalised (deliberately not forced). ===== */
+      window.IntMapGeoEngine=(function(){
+        function _m(){ return window.__imap||(typeof map!=='undefined'?map:null); }
+        const MAPLIBRE_CAPS={ engine:'maplibre', globe:true, flat:true, terrain3d:true, freeCamera:true, pitchBeyond90:true,
+          rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true };
+        /* The MapLibre adapter — the ONLY implemented renderer in Phase 1. Every method is a 1:1 pass-through. */
+        const MapLibreAdapter={ id:'maplibre', capabilities:MAPLIBRE_CAPS,
+          flyTo(o){ const m=_m(); if(m) m.flyTo(o); }, easeTo(o){ const m=_m(); if(m) m.easeTo(o); }, jumpTo(o){ const m=_m(); if(m) m.jumpTo(o); },
+          fitBounds(b,o){ const m=_m(); if(m) m.fitBounds(b,o); }, setPadding(p){ const m=_m(); if(m) m.setPadding(p); },
+          getCamera(){ const m=_m(); if(!m) return null; try{ return { center:m.getCenter(), zoom:m.getZoom(), bearing:m.getBearing(), pitch:m.getPitch() }; }catch(_){ return null; } },
+          setProjection(mode){ const m=_m(); if(m&&m.setProjection) m.setProjection(mode==='globe'?{type:'globe'}:{type:'mercator'}); },
+          project(ll){ const m=_m(); return m?m.project(ll):null; }, unproject(pt){ const m=_m(); return m?m.unproject(pt):null; },
+          terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
+          queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
+          hasSource(id){ const m=_m(); return !!(m&&m.getSource(id)); }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)) m.addSource(id,d); },
+          setSourceData(id,data){ const m=_m(); const s=m&&m.getSource(id); if(s&&s.setData) s.setData(data); }, removeSource(id){ const m=_m(); try{ if(m&&m.getSource(id)) m.removeSource(id); }catch(_){} },
+          hasLayer(id){ const m=_m(); return !!(m&&m.getLayer(id)); }, addLayer(d,b){ const m=_m(); if(m&&!m.getLayer(d.id)) m.addLayer(d,b); }, removeLayer(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} },
+          setVisible(id,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,'visibility',v?'visible':'none'); }, isVisible(id){ const m=_m(); if(!(m&&m.getLayer(id))) return false; try{ return m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){ return true; } },
+          setPaint(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setPaintProperty(id,p,v); }, setLayout(id,p,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,p,v); },
+          setOpacity(id,v){ const m=_m(); if(!(m&&m.getLayer(id))) return; let t=''; try{ t=m.getLayer(id).type; }catch(_){} const p={raster:'raster-opacity',fill:'fill-opacity',line:'line-opacity',circle:'circle-opacity',symbol:'icon-opacity','fill-extrusion':'fill-extrusion-opacity',heatmap:'heatmap-opacity'}[t]; if(p) m.setPaintProperty(id,p,v); },
+          on(e,c){ const m=_m(); if(m) m.on(e,c); }, off(e,c){ const m=_m(); if(m) m.off(e,c); }, once(e,c){ const m=_m(); if(m) m.once(e,c); },
+          raw(){ return _m(); } };
+        /* Cesium CONTRACT — declared capabilities only; no adapter/SDK/keys yet. Registering a real adapter later
+           (IntMapGeoEngine.use(cesiumAdapter)) is all that Phase 2+ needs; nothing here loads Cesium. */
+        const CESIUM_CONTRACT={ id:'cesium', implemented:false, capabilities:{ engine:'cesium', globe:true, flat:false, terrain3d:true, freeCamera:true, pitchBeyond90:true, rasterLayers:true, vectorLayers:true, geojson:true, terrainElevation:true, markers:true, opacity:true, projection:true } };
+        let _adapter=MapLibreAdapter;
+        return {
+          id(){ return _adapter&&_adapter.id; }, capabilities(){ return _adapter&&_adapter.capabilities; }, can(f){ const c=_adapter&&_adapter.capabilities; return !!(c&&c[f]); },
+          adapter(){ return _adapter; }, use(a){ if(a&&a.id) _adapter=a; return _adapter; }, contracts(){ return { maplibre:MAPLIBRE_CAPS, cesium:CESIUM_CONTRACT }; },
+          camera:{ flyTo:o=>_adapter.flyTo(o), easeTo:o=>_adapter.easeTo(o), jumpTo:o=>_adapter.jumpTo(o), fitBounds:(b,o)=>_adapter.fitBounds(b,o), setPadding:p=>_adapter.setPadding(p), get:()=>_adapter.getCamera(), setProjection:mo=>_adapter.setProjection(mo) },
+          coords:{ project:ll=>_adapter.project(ll), unproject:pt=>_adapter.unproject(pt), terrainElevation:(ll,o)=>_adapter.terrainElevation(ll,o), queryRenderedFeatures:(g,o)=>_adapter.queryRenderedFeatures(g,o) },
+          layers:{ hasSource:id=>_adapter.hasSource(id), addSource:(id,d)=>_adapter.addSource(id,d), setSourceData:(id,d)=>_adapter.setSourceData(id,d), removeSource:id=>_adapter.removeSource(id), has:id=>_adapter.hasLayer(id), add:(d,b)=>_adapter.addLayer(d,b), remove:id=>_adapter.removeLayer(id), setVisible:(id,v)=>_adapter.setVisible(id,v), isVisible:id=>_adapter.isVisible(id), setPaint:(id,p,v)=>_adapter.setPaint(id,p,v), setLayout:(id,p,v)=>_adapter.setLayout(id,p,v), setOpacity:(id,v)=>_adapter.setOpacity(id,v) },
+          events:{ on:(e,c)=>_adapter.on(e,c), off:(e,c)=>_adapter.off(e,c), once:(e,c)=>_adapter.once(e,c) },
+          raw(){ return _adapter.raw(); }
+        };
+      })();
       ensureGeoLayers(); setupIntelLayers(); setupPinLayers(); applyTheme(); try{ satSetup(); }catch(_){} if(countryGeo)addCountryLayers(); renderUI();
       /* Belt-and-suspenders: re-ensure geopolitical layers once the map settles (covers slow CDN / projection timing). */
       map.once('idle',()=>{ try{ ensureGeoLayers(); }catch(_){} try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){} });
@@ -7036,6 +7087,34 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
   function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&map)s.style.transform=`rotate(${-map.getBearing()}deg)`; }
   document.getElementById('btn-compass').onclick=()=>map&&map.easeTo({bearing:0,pitch:0,duration:500});
+  /* (#R152) DESKTOP: right-click the compass → a popup to type an EXACT bearing / pitch (elevation) / zoom, applied to
+     the current view ("方位磁針ボタンを右クリックしたら、方角、視点の仰角等を数値で打ち込めるポップアップ"). Left-click still resets north. */
+  (function(){ const btn=document.getElementById('btn-compass'); if(!btn) return; let pop=null;
+    const CL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    function closePop(){ if(pop){ try{ pop.remove(); }catch(_){} pop=null; document.removeEventListener('mousedown',onDoc,true); document.removeEventListener('keydown',onKey,true); } }
+    function onDoc(e){ if(pop && !pop.contains(e.target) && e.target!==btn) closePop(); }
+    function onKey(e){ if(e.key==='Escape') closePop(); }
+    btn.addEventListener('contextmenu',(e)=>{ e.preventDefault(); if(!map) return;
+      try{ if(typeof _imTouchPrimary==='function' && _imTouchPrimary()) return; }catch(_){}   /* desktop only, per the request */
+      if(pop){ closePop(); return; }
+      const b=Math.round(((map.getBearing()%360)+360)%360), p=Math.round(map.getPitch()||0), z=Math.round((map.getZoom()||0)*10)/10;
+      const maxP=Math.round((map.getMaxPitch&&map.getMaxPitch())||85);
+      pop=document.createElement('div'); pop.className='compass-num-pop';
+      pop.innerHTML='<div class="cnp-t">'+CL('Set view','視点を設定','Ansicht einstellen','Задать вид','Definir vista')+'</div>'
+        +'<label>'+CL('Bearing','方位','Richtung','Азимут','Rumbo')+' (°)<input type="number" id="cnp-bear" min="0" max="360" step="1" value="'+b+'"></label>'
+        +'<label>'+CL('Pitch','仰角','Neigung','Наклон','Inclinación')+' (°)<input type="number" id="cnp-pitch" min="0" max="'+maxP+'" step="1" value="'+p+'"></label>'
+        +'<label>'+CL('Zoom','ズーム','Zoom','Масштаб','Zoom')+'<input type="number" id="cnp-zoom" min="0" max="22" step="0.1" value="'+z+'"></label>'
+        +'<div class="cnp-btns"><button id="cnp-apply">'+CL('Apply','適用','Übernehmen','Применить','Aplicar')+'</button><button id="cnp-reset" class="cnp-sec">'+CL('North','北','Norden','Север','Norte')+'</button></div>';
+      document.body.appendChild(pop);
+      const r=btn.getBoundingClientRect(); pop.style.top=Math.round(r.bottom+6)+'px'; pop.style.left=Math.round(Math.max(8,Math.min(r.left, window.innerWidth-pop.offsetWidth-10)))+'px';
+      const apply=()=>{ const bb=parseFloat(pop.querySelector('#cnp-bear').value), pp=parseFloat(pop.querySelector('#cnp-pitch').value), zz=parseFloat(pop.querySelector('#cnp-zoom').value);
+        const opt={duration:500}; if(isFinite(bb)) opt.bearing=((bb%360)+360)%360; if(isFinite(pp)) opt.pitch=Math.max(0,Math.min(maxP,pp)); if(isFinite(zz)) opt.zoom=Math.max(0,Math.min(22,zz)); try{ map.easeTo(opt); }catch(_){} closePop(); };
+      pop.querySelector('#cnp-apply').onclick=apply;
+      pop.querySelector('#cnp-reset').onclick=()=>{ try{ map.easeTo({bearing:0,pitch:0,duration:500}); }catch(_){} closePop(); };
+      pop.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); apply(); } });
+      setTimeout(()=>{ document.addEventListener('mousedown',onDoc,true); document.addEventListener('keydown',onKey,true); const f=pop.querySelector('#cnp-bear'); if(f){ f.focus(); f.select(); } },0);
+    });
+  })();
 
   /* ===== Map-side global place search (Nominatim) + abstract / natural-language pre-processing =====
    * Handles patterns like:
@@ -9731,6 +9810,7 @@ window.addEventListener('DOMContentLoaded', () => {
     { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display='none'; }
     /* Stats compare panel only belongs on the Stats tab (#26) */
     if(currentMode!=='stats'){ const scf=document.getElementById('stats-compare-fixed'); if(scf){ scf.classList.remove('show'); scf.innerHTML=''; } feed.style.paddingBottom=''; }
+    if(currentMode!=='info'){ const cof=document.getElementById('co-compare-fixed'); if(cof){ cof.classList.remove('show'); cof.innerHTML=''; } }   /* (#R152) Companies compare dock only belongs on the Companies tab — mirror the Countries dock hide above so the absolute overlay never lingers over another tab */
     /* Search-bar UI per tab (#27): News keeps a Search button (matching is slow);
        Info & Stats filter live as you type, so their button is hidden.
        Summarize-this-view button shows only on the News tab (#20). */
@@ -10565,13 +10645,24 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R151) FULL monthly price history for every live name, fetched ONCE (batched spark, range=max) and cached as
        {tk:{year:yearEndClose}} — the time-machine then reads any past year from this INSTANTLY (もっと昔も見れる) with no
        per-year network. Built lazily on the first time-travel / time-series request; guarded so a failure just falls back. */
-    let _HALL=null, _HALLp=null;
+    let _HALL=null, _HALLp=null, _HMON=null;
     function _histAll(){ if(_HALL) return Promise.resolve(_HALL); if(_HALLp) return _HALLp;
       const syms=DATA.filter(c=>c.sh>0).map(c=>c.tk);
-      _HALLp=(async()=>{ const map={}; try{ const sp=await _spark(syms,'max','1mo');
-          sp.forEach((v,tk)=>{ const by={}, ts=v.ts||[], cl=v.close||[]; for(let i=0;i<ts.length;i++){ const cv=+cl[i]; if(cv>0) by[new Date(ts[i]*1000).getUTCFullYear()]=cv; } map[tk]=by; }); }catch(_){}
-        _HALL=map; return _HALL; })();
+      _HALLp=(async()=>{ const map={}, mon={}; try{ const sp=await _spark(syms,'max','1mo');
+          sp.forEach((v,tk)=>{ const by={}, series=[], ts=v.ts||[], cl=v.close||[]; for(let i=0;i<ts.length;i++){ const cv=+cl[i]; if(cv>0){ const d=new Date(ts[i]*1000); by[d.getUTCFullYear()]=cv; series.push([d.getUTCFullYear()+d.getUTCMonth()/12, cv]); } } map[tk]=by; mon[tk]=series; }); }catch(_){}   /* (#R152) ALSO keep the raw MONTHLY series (fractional-year, close) for the higher-precision time-series chart */
+        _HALL=map; _HMON=mon; return _HALL; })();
       return _HALLp; }
+    /* (#R152) MONTHLY price path for the compare time-series ("株価も高精度で") — every month, not just year-end, for a
+       smooth high-fidelity curve reaching as far back as Yahoo has (spark max). Served from the one-time full-history
+       cache; per-symbol monthly chart fallback for any name spark didn't cover. Returns [[fractionalYear, close], …]. */
+    const _fineCache={};
+    async function priceSeriesFine(tk, y0, y1){ const key=tk+'|'+y0+'|'+y1+'|f'; if(_fineCache[key]) return _fineCache[key];
+      let series=null; try{ await _histAll(); if(_HMON&&_HMON[tk]&&_HMON[tk].length) series=_HMON[tk]; }catch(_){}
+      if(!series){ const p1=Math.floor(Date.UTC(y0,0,1)/1000), p2=Math.floor(Date.UTC(y1,11,31)/1000); series=[];
+        try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
+          const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const ts=rt&&rt.timestamp; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
+          if(Array.isArray(ts)&&Array.isArray(q)){ for(let i=0;i<ts.length;i++){ if(q[i]>0){ const d=new Date(ts[i]*1000); series.push([d.getUTCFullYear()+d.getUTCMonth()/12, +q[i]]); } } } }catch(_){} }
+      const out=(series||[]).filter(p=>p[0]>=y0 && p[0]<y1+1); _fineCache[key]=out; return out; }
     /* (#R142) _hy = the time-machine year (null = present/live). In a past year market cap = today's shares × the share
        price AT that year (c.hp); a company founded AFTER the year, or a non-live name with no price path, has no cap. */
     let _hy=null, _hSeq=0, _hyLoaded=null;
@@ -10588,7 +10679,7 @@ window.addEventListener('DOMContentLoaded', () => {
        reported figure rather than corrupt the ranking. Genuine price movement stays live. */
     function _applyPrice(c,p){ if(!(p>0)) return false; const cand=c.sh*p; if(cand>=c.mcapSnap*0.2 && cand<=c.mcapSnap*5){ c.price=p; return true; } return false; }
     async function loadPrices(onUpdate){
-      const now=Date.now(); if(_loading) return; if(_loaded && (now-_loaded)<300000) return;
+      const now=Date.now(); if(_loading) return; if(_loaded && (now-_loaded)<120000) return;   /* (#R152) 5min→2min: fresher live prices (低遅延) — a batched spark refresh is cheap */
       _loading=true; const live=DATA.filter(c=>c.sh>0); const byTk={}; live.forEach(c=>byTk[c.tk]=c);
       /* (#R151) FAST PATH: one batched spark request per ~40 names → the whole board prices in a few round-trips (低遅延). */
       let missing=live;
@@ -10643,7 +10734,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(Array.isArray(ts)&&Array.isArray(q)){ for(let i=0;i<ts.length;i++){ if(q[i]>0){ const y=new Date(ts[i]*1000).getUTCFullYear(); byYear[y]=+q[i]; } } }   /* later month overwrites → year-end close */
       }catch(_){}
       _histCache[key]=byYear; return byYear; }
-    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, priceSeries, histYear:()=>_hy };
+    return { DATA, mcap, isLive, loadPrices, setYear, priceOf, priceSeries, priceSeriesFine, histYear:()=>_hy };
   })();
   let coSort='mcap', coSortDir='desc', coFilters=[], coFilterOpen=false;
   const _coL=(en,jp,de,ru,es)=>currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?(es||en):en;
@@ -10671,19 +10762,25 @@ window.addEventListener('DOMContentLoaded', () => {
     renderCoCompareFixed(); };
   window._coClearCompare=function(){ coCompareSet.clear(); document.querySelectorAll('#info-dashboard .co-row.compare-on').forEach(r=>r.classList.remove('compare-on')); renderCoCompareFixed(); };
   window._coShowCompare=function(){ if(coCompareSet.size<2) return; try{ showCoCompare([...coCompareSet]); }catch(_){} };
-  function renderCoCompareFixed(){ const feed=document.getElementById('info-dashboard'); if(!feed) return;
-    let tray=document.getElementById('co-compare-fixed');
-    if(document.getElementById('co-cmp-view')){ if(tray) tray.remove(); return; }   /* the compare VIEW owns the feed → hide the dock */
-    if(!tray){ tray=document.createElement('div'); tray.id='co-compare-fixed'; tray.className='co-compare-fixed'; feed.appendChild(tray); }
-    /* (#R151) Countries-parity empty hint ("Tap company rows to select and compare.") — Countries shows this in its
-       #stats-compare-fixed dock; Companies previously removed the tray entirely when nothing was selected. */
-    if(!coCompareSet.size){ tray.innerHTML=`<div class="scf-empty">${t('coCompareEmpty')}</div>`; return; }
+  /* (#R152) Companies-active test — mirrors _countriesActive() (currentMode==='info', or the ws-mode Companies window visible). */
+  function _companiesActive(){ try{ if(currentMode==='info') return true; if(document.body.classList.contains('ws-mode')){ const w=document.querySelector('.ws-win.ws-info'); return !!(w&&w.style.display!=='none'); } }catch(_){} return false; }
+  window._companiesActive=_companiesActive;
+  /* (#R152) TRUE Countries parity — the compare dock is now the static absolute-overlay #co-compare-fixed (sibling of
+     #stats-compare-fixed), shown via .show, with the SAME empty-hint / head / chips markup and the SAME visibility
+     logic as renderCompareFixed(): show only when Companies is active and the compare VIEW (#co-cmp-view) isn't open. */
+  function renderCoCompareFixed(){
+    const panel=document.getElementById('co-compare-fixed'); if(!panel) return;
+    const cmpOpen=!!document.getElementById('co-cmp-view');   /* the compare VIEW owns the feed → hide the dock */
+    const active=_companiesActive();
+    panel.classList.toggle('show', active && !cmpOpen);   /* VISIBILITY is gated on the active tab; CONTENT is always kept fresh so the count never goes stale (renderUI clears it on tab-leave) */
+    if(cmpOpen){ panel.innerHTML=''; return; }
+    if(!coCompareSet.size){ panel.innerHTML=`<div class="scf-empty">${t('coCompareEmpty')}</div>`; return; }
     const items=[...coCompareSet].map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
     const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
-    tray.innerHTML=`<div class="scf-head"><span class="scf-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')} (${coCompareSet.size}/10)</span><div style="display:flex;gap:6px;">`+(coCompareSet.size>=2?`<button class="scf-view" data-cv="1">${t('compareView')}</button>`:'')+`<button data-cc="1">${t('compareClear')}</button></div></div><div class="scf-chips">${chips}</div>`;
-    tray.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>window._coToggleCompare(b.getAttribute('data-cx')));
-    const cv=tray.querySelector('[data-cv]'); if(cv) cv.onclick=()=>window._coShowCompare();
-    const cc=tray.querySelector('[data-cc]'); if(cc) cc.onclick=()=>window._coClearCompare(); }
+    panel.innerHTML=`<div class="scf-head"><span class="scf-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')} (${coCompareSet.size}/10)</span><div style="display:flex;gap:6px;">`+(coCompareSet.size>=2?`<button class="scf-view" data-cv="1">${t('compareView')}</button>`:'')+`<button data-cc="1">${t('compareClear')}</button></div></div><div class="scf-chips">${chips}</div>`;
+    panel.querySelectorAll('[data-cx]').forEach(b=>b.onclick=()=>window._coToggleCompare(b.getAttribute('data-cx')));
+    const cv=panel.querySelector('[data-cv]'); if(cv) cv.onclick=()=>window._coShowCompare();
+    const cc=panel.querySelector('[data-cc]'); if(cc) cc.onclick=()=>window._coClearCompare(); }
   /* (#R145) Companies compare rebuilt to MIRROR the Countries #scp-view ("CompaniesもCountriesと同様に比較…できるだけ同じUIに"):
      sticky header + Back, a Bar-chart / Time-series / Table mode segment, a metric picker, palette chips with remove,
      an add-a-company search, a signed zero-axis bar view, an Excel-like table with CSV, and a price-history time-series.
@@ -10715,7 +10812,7 @@ window.addEventListener('DOMContentLoaded', () => {
       +'#co-cmp-view #co-cmp-list{display:none;position:absolute;left:0;right:0;top:38px;max-height:230px;overflow-y:auto;background:var(--popup-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.3));border-radius:12px;box-shadow:var(--shadow);z-index:40;padding:4px;}'
       +'#co-cmp-view #co-cmp-list .scp-cr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text-main);}'
       +'#co-cmp-view #co-cmp-list .scp-cr:hover{background:var(--input-bg);}'
-      +'#co-cmp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);}'
+      +'#co-cmp-view .scp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--input-bg);color:var(--text-main);border:1.5px solid transparent;}'   /* (#R152) match the canonical Countries .scp-chip (was missing the transparent border) */
       +'#co-cmp-view .scp-chip .scp-x{cursor:pointer;color:var(--text-muted);font-weight:700;padding:0 2px;} #co-cmp-view .scp-chip .scp-x:hover{color:#ff453a;}'
       +'#co-cmp-view .scp-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}'
       +'#co-cmp-view .scp-sec{margin:12px 0 4px;font-weight:700;font-size:13px;color:var(--text-main);}'
@@ -10744,7 +10841,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const cos=(tks||[...coCompareSet]).map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
     if(cos.length<2){ try{ renderCompanies(); }catch(_){} return; }
     _coCmpEnsureCss();
-    const tray=document.getElementById('co-compare-fixed'); if(tray) tray.remove();
+    const tray=document.getElementById('co-compare-fixed'); if(tray){ tray.classList.remove('show'); tray.innerHTML=''; }   /* (#R152) dock is now a STATIC overlay — hide it (don't remove the node) while the compare view owns the feed */
     if(!document.getElementById('co-cmp-view')){ feed.innerHTML='<div id="co-cmp-view"></div>'; feed.style.paddingBottom='24px'; }
     _coCmpRender(cos); }
   function _coCmpRender(cos){ const root=document.getElementById('co-cmp-view'); if(!root) return;
@@ -10790,23 +10887,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const a=document.createElement('a'); a.href=url; a.download='companies-compare.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ try{ a.remove(); URL.revokeObjectURL(url); }catch(_){} },200); }
   async function _coCmpTs(cos,body){ const cur=new Date().getFullYear(); if(_coCmpTsTo==null) _coCmpTsTo=cur; if(_coCmpTsFrom==null) _coCmpTsFrom=cur-10;
     if(_coCmpTsFrom>_coCmpTsTo) _coCmpTsFrom=_coCmpTsTo; const from=_coCmpTsFrom, to=_coCmpTsTo, gen=++_coCmpTsGen;
-    const yrs=[]; for(let y=cur;y>=1990;y--) yrs.push(y); const opt=sel=>yrs.map(y=>'<option value="'+y+'"'+(y===sel?' selected':'')+'>'+y+'</option>').join('');
+    const yrs=[]; for(let y=cur;y>=1962;y--) yrs.push(y); const opt=sel=>yrs.map(y=>'<option value="'+y+'"'+(y===sel?' selected':'')+'>'+y+'</option>').join('');   /* (#R152) 1990→1962: reach back as far as Yahoo has data ("もっと昔も見れる"); names without data that far show "no history" honestly */
     body.innerHTML='<div class="scp-tsrange"><span class="scp-tsl">'+_coL('Years','期間','Jahre','Годы','Años')+'</span><select data-cmptsfrom="1">'+opt(from)+'</select><span>–</span><select data-cmptsto="1">'+opt(to)+'</select></div>'
       +'<div class="co-ts-wrap" id="co-ts-wrap"><div class="co-ts-note">'+_coL('Loading price history…','株価履歴を読み込み中…','Kursverlauf wird geladen…','Загрузка истории цен…','Cargando histórico…')+'</div></div>';
     const wf=body.querySelector('[data-cmptsfrom]'), wt=body.querySelector('[data-cmptsto]');
     if(wf) wf.onchange=()=>{ _coCmpTsFrom=+wf.value; _coCmpTs(cos,body); }; if(wt) wt.onchange=()=>{ _coCmpTsTo=+wt.value; _coCmpTs(cos,body); };
-    const series=await Promise.all(cos.map(async c=>{ if(c.sh<=0) return {c,data:null}; try{ return {c,data:await IntMapCompanies.priceSeries(c.tk,from,to)}; }catch(_){ return {c,data:null}; } }));
+    const series=await Promise.all(cos.map(async c=>{ if(c.sh<=0) return {c,data:null}; try{ return {c,data:await IntMapCompanies.priceSeriesFine(c.tk,from,to)}; }catch(_){ return {c,data:null}; } }));   /* (#R152) MONTHLY series for a high-precision curve */
     if(gen!==_coCmpTsGen) return; const wrap=document.getElementById('co-ts-wrap'); if(!wrap) return;
     const W=600,H=150,padL=6,padR=6,padT=10,padB=6, innerW=W-padL-padR, innerH=H-padT-padB;
-    const years=[]; for(let y=from;y<=to;y++) years.push(y); const lines=[]; let vmin=Infinity,vmax=-Infinity;
-    series.forEach(s=>{ if(!s.data) return; let base=0; for(const y of years){ if(s.data[y]>0){ base=s.data[y]; break; } } if(!base) return;
-      const pts=years.map(y=>s.data[y]>0?{y,v:s.data[y]/base*100}:null).filter(Boolean); if(pts.length<2) return;
+    const lines=[]; let vmin=Infinity,vmax=-Infinity;
+    series.forEach(s=>{ const arr=s.data; if(!arr||arr.length<2) return; const base=arr[0][1]; if(!(base>0)) return;   /* (#R152) index to 100 at the first monthly point (≈ the "from" year) */
+      const pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]/base*100})); if(pts.length<2) return;
       pts.forEach(p=>{ if(p.v<vmin)vmin=p.v; if(p.v>vmax)vmax=p.v; }); lines.push({c:s.c,col:_CO_CMP_PAL[cos.indexOf(s.c)%_CO_CMP_PAL.length],pts}); });
     if(!lines.length){ wrap.innerHTML='<div class="co-ts-note">'+_coL('No price history for these companies (US-listed live names only).','これらの企業の株価履歴がありません（米国上場のライブ銘柄のみ）。','Kein Kursverlauf (nur live gelistete US-Namen).','Нет истории цен (только листингованные в США).','Sin histórico (solo cotizadas en EE. UU.).')+'</div>'; return; }
-    const vspan=(vmax-vmin)||1; const X=y=>padL+((to>from)?(y-from)/(to-from):0.5)*innerW; const Y=v=>padT+(1-(v-vmin)/vspan)*innerH;
+    const vspan=(vmax-vmin)||1; const _sp=((to+1)>from)?((to+1)-from):1; const X=fy=>padL+((to>from)?(fy-from)/_sp:0.5)*innerW; const Y=v=>padT+(1-(v-vmin)/vspan)*innerH;   /* (#R152) X by fractional year over [from, to+1) */
     let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">';
     if(vmin<=100&&vmax>=100){ const y1=Y(100).toFixed(1); svg+='<line x1="'+padL+'" y1="'+y1+'" x2="'+(W-padR)+'" y2="'+y1+'" stroke="var(--text-muted)" stroke-opacity="0.3" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>'; }
-    lines.forEach(ln=>{ svg+='<path d="'+ln.pts.map((p,j)=>(j?'L':'M')+X(p.y).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+ln.col+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; });
+    lines.forEach(ln=>{ svg+='<path d="'+ln.pts.map((p,j)=>(j?'L':'M')+X(p.fy).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+ln.col+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; });
     svg+='</svg>';
     const missing=cos.filter(c=>!lines.find(l=>l.c===c));
     let note=_coL('Indexed to 100 at '+from+' · US-listed live names only','各社を'+from+'年＝100に指数化 · 米国上場のライブ銘柄のみ','Indexiert auf 100 ('+from+') · nur live gelistete US-Namen','Индекс 100 в '+from+' · только листингованные в США','Base 100 en '+from+' · solo cotizadas en EE. UU.');
@@ -10888,7 +10985,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _FIND=IND.filter(([k])=>k!=='name');
     const nAct=coFilters.filter(f=>f&&f.key&&isFinite(f.val)).length;
     const funnel='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>';
-    const filterBtn=`<button type="button" class="stats-filter-btn${coFilterOpen?' on':''}${nAct?' has':''}" onclick="_coSfToggle()">${funnel}${nAct?`<span class="sf-badge">${nAct}</span>`:''}</button>`;
+    const filterBtn=`<button type="button" class="stats-filter-btn${coFilterOpen?' on':''}${nAct?' has':''}" onclick="_coSfToggle()" title="${_sfL('Filter by value','値でフィルター','Nach Wert filtern','Фильтр по значению','Filtrar por valor')}">${funnel}${nAct?`<span class="sf-badge">${nAct}</span>`:''}</button>`;   /* (#R152) Countries-parity: filter button now has the same tooltip Countries has */
     const sfPanel=(()=>{ if(!coFilterOpen) return ''; const opts=(sel)=>_FIND.map(([k,l])=>`<option value="${k}"${sel===k?' selected':''}>${l}</option>`).join('');
       const rows=coFilters.map((f,i)=>`<div class="sf-row"><select onchange="_coSfSetKey(${i},this.value)">${opts(f.key)}</select><select class="sf-op" onchange="_coSfSetOp(${i},this.value)"><option value="gte"${f.op!=='lte'?' selected':''}>≥</option><option value="lte"${f.op==='lte'?' selected':''}>≤</option></select><input type="text" class="sf-val" value="${(f.raw||'').replace(/"/g,'&quot;')}" placeholder="${_sfL('value (5B, 100000…)','値（5B, 100000…）','Wert','значение','valor')}" onchange="_coSfSetVal(${i},this.value)"><button type="button" class="sf-x" onclick="_coSfRemove(${i})">✕</button></div>`).join('');
       return `<div class="stats-filter-panel">${rows||`<div class="sf-empty">${_sfL('No conditions yet.','条件がありません。','Keine Bedingungen.','Нет условий.','Sin condiciones.')}</div>`}<div class="sf-actions"><button type="button" class="sf-add" onclick="_coSfAdd()">+ ${_sfL('Add condition','条件を追加','Bedingung','Условие','Añadir')}</button>${coFilters.length?`<button type="button" class="sf-clear" onclick="_coSfClear()">${_sfL('Clear','クリア','Löschen','Очистить','Limpiar')}</button>`:''}</div></div>`; })();
@@ -10901,7 +10998,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
       const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
       const logo=_coLogoInner(c.dom,nm,hue);   /* (#R147) cached-logo builder — no flicker */
-      html+=`<div class="stat-row co-row${coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}"><span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span><span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}</div></div>`;
+      html+=`<div class="stat-row co-row${coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}</div></div>`;
     });
     const st0=feed.scrollTop;
     feed.innerHTML=html;
@@ -10911,7 +11008,7 @@ window.addEventListener('DOMContentLoaded', () => {
     feed.querySelectorAll('.co-row').forEach(row=>{ let ct=null; row.onclick=()=>{ const tk=row.getAttribute('data-tk');
       if(ct){ clearTimeout(ct); ct=null; try{ showCompanyDetail(tk); }catch(_){} return; }
       ct=setTimeout(()=>{ ct=null; try{ window._coToggleCompare(tk); }catch(_){} },250); }; });
-    feed.style.paddingBottom='24px';
+    feed.style.paddingBottom='92px';   /* (#R152) reserve room for the absolute-overlay compare dock, matching Countries (was 24px for the old in-feed sticky tray) */
     try{ renderCoCompareFixed(); }catch(_){}   /* (#R142) re-attach the compare selection tray after the rebuild */
     if(!(IntMapCompanies.histYear&&IntMapCompanies.histYear())){ try{ IntMapCompanies.loadPrices(_coRerenderSoon); }catch(_){} }   /* (#R142) live prices only in the present; historical prices come from setYear; (#R147) debounced re-render kills repaint churn */
   }
@@ -12685,20 +12782,22 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }   /* (#R149) trimmed padding + reserved margin 92→84 so more of the 30 Köppen zones fit; see compacted rows/chrome below — the legend can finally stretch to the last class ("さいごまで伸ばせない") */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:200px; min-width:200px; max-width:200px; font-size:10.4px; }   /* (#R152) SINGLE-LINE rows (see .kl-item below) — the 30 zone rows no longer wrap to 2 lines, so the natural content height dropped ~777px→~515px and now fits a maximised 768p laptop: the legend can finally be stretched to reveal the LAST zone ("最後の気候区分まで伸ばせない"). 186→200px so names stay legible on one line. */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
          shows a small diagonal grip at the bottom-right, matching the resize:vertical affordance. */
       .koppen-legend::-webkit-resizer{ background:linear-gradient(135deg, transparent 0 44%, var(--text-muted) 44% 52%, transparent 52% 68%, var(--text-muted) 68% 76%, transparent 76%); }
       .koppen-legend.legend-collapsed{ resize:none !important; }
-      .koppen-legend h4{ margin:0 0 4px; font-size:11px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:3px; font-size:9px; line-height:1.35; }   /* (#R149) compact chrome so all 30 zones fit */
-      .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 5px; }
+      .koppen-legend h4{ margin:0 0 2px; font-size:11px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:2px; font-size:9px; line-height:1.35; }   /* (#R149/#R152) compact chrome so all 30 zones fit */
+      .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 3px; }
       .kl-period label{ font-size:11px; color:var(--text-muted); }
       .kl-period select{ flex:1; background:var(--input-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:6px; padding:3px 6px; font-size:11.5px; cursor:pointer; }
       .legend-collapsed .kl-period{ display:none !important; }
-      .kl-item{ display:flex; align-items:center; gap:6px; padding:1px 4px; cursor:pointer; border-radius:5px; }   /* (#R149) 2px→1px so 30 rows fit the viewport and the legend stretches to the last class */
-      .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); }
+      .kl-item{ display:flex; align-items:center; gap:6px; padding:0.5px 4px; cursor:pointer; border-radius:5px; white-space:nowrap; line-height:1.25; }   /* (#R152) white-space:nowrap = ONE line per zone (was wrapping to 2 for the 14 long names → doubled the legend height); the code stays fixed, only the name ellipsises */
+      .kl-item .kl-code{ flex-shrink:0; font-weight:600; }   /* (#R152) climate code always fully visible — it is the canonical identifier, so ellipsising the name never loses which zone a row is */
+      .kl-item .kl-nm{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted); }   /* (#R152) name ellipsises on one line (full text on hover via title=) so rows stay 14px and 30 zones fit the screen */
+      .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); } .kl-item.sel .kl-nm{ color:var(--text-main); }
       .kl-sw{ width:11px; height:11px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
       .kl-clear{ width:100%; margin-top:6px; padding:5px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:10.5px; font-weight:600; }
       .kl-clear:hover{ background:var(--primary-color); color:#fff; }
@@ -14310,7 +14409,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const periodSel=`<div class="kl-period"><label>${perLabel}</label><select id="kl-period">`+window.KOPPEN_PERIODS.map(([p])=>`<option value="${p}"${p===window._koppenPeriod?' selected':''}>${p}</option>`).join('')+`</select></div>`;
       /* (#R23) Click a class = highlight just that climate on the map (RESTORED). Selected rows get the
          .sel outline + a Clear button; long-press (mobile) / right-click (desktop) shows the criteria. */
-      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>`<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>${code}${KNAME[code]?' · '+(KNAME[code][currentLang]||KNAME[code].en):''}</div>`).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':currentLang==='de'?'Tippen: Klima hervorheben • lange drücken: Kriterien':currentLang==='ru'?'Касание — выделить климат • долгое нажатие — критерии':currentLang==='es'?'Toca para resaltar el clima • mantén pulsado para criterios':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':currentLang==='de'?'Klick: Klima hervorheben • Rechtsklick: Kriterien':currentLang==='ru'?'Клик — выделить климат • правый клик — критерии':currentLang==='es'?'Clic: resaltar clima • clic derecho: criterios':'Click to highlight • right-click for criteria')}</div>`;
+      lg.innerHTML=`<span class="kl-drag" title="${dragTitle}">⋮⋮</span><button class="layer-popup-x" id="kl-close" title="${t('close')}">✕</button><h4>${t('lgdTitle')}</h4>`+periodSel+`<div class="kl-scroll">`+KCOL.map(([code,c])=>{ const _knm=KNAME[code]?(KNAME[code][currentLang]||KNAME[code].en):''; return `<div class="kl-item${kSelected.has(code)?' sel':''}" data-c="${code}" title="${code}${_knm?' · '+_knm:''}"><span class="kl-sw" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span><span class="kl-code">${code}</span>${_knm?`<span class="kl-nm"> · ${_knm}</span>`:''}</div>`; }).join('')+`</div>`+clearBtn+`<div class="kl-hint">${_imTouchPrimary()?(currentLang==='jp'?'タップでその気候だけ強調 / 長押しで定義':currentLang==='de'?'Tippen: Klima hervorheben • lange drücken: Kriterien':currentLang==='ru'?'Касание — выделить климат • долгое нажатие — критерии':currentLang==='es'?'Toca para resaltar el clima • mantén pulsado para criterios':'Tap to highlight • long-press for criteria'):(currentLang==='jp'?'クリックでその気候だけ強調 / 右クリックで定義':currentLang==='de'?'Klick: Klima hervorheben • Rechtsklick: Kriterien':currentLang==='ru'?'Клик — выделить климат • правый клик — критерии':currentLang==='es'?'Clic: resaltar clima • clic derecho: criterios':'Click to highlight • right-click for criteria')}</div>`;
       const psel=lg.querySelector('#kl-period'); if(psel) psel.onchange=(e)=>{ window.setKoppenPeriod(e.target.value); };
       const clr=lg.querySelector('#kl-clear'); if(clr) clr.onclick=()=>{ kSelected.clear(); buildLegend(); if(window._refreshKoppenImage) window._refreshKoppenImage(); };
       lg.querySelectorAll('.kl-item').forEach(it=>{
@@ -14411,6 +14510,22 @@ window.addEventListener('DOMContentLoaded', () => {
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
     }
     window._ensureLegendOpacity=ensureLegendOpacity;
+    /* (#R152) contour DENSITY slider — added to the contour legend right under its opacity row (layer controls live
+       in the legend, R16 rule). Dragging rebuilds contour-src with a finer/coarser interval table (on release). */
+    function ensureContourDensity(el){ try{
+      if(!el || legendIdOf(el)!=='contours') return;
+      if(el.querySelector('.dl-cd-row')) return;
+      const d=Math.max(0.25,Math.min(4,+window._contourDensity||1));
+      const row=document.createElement('div'); row.className='dl-op-row dl-cd-row';
+      row.innerHTML=`${currentLang==='jp'?'細かさ':currentLang==='de'?'Dichte':currentLang==='ru'?'Детализация':currentLang==='es'?'Detalle':'Detail'}<input type="range" min="0.5" max="3" step="0.25" value="${d}"><span class="dl-op-val">${d}×</span>`;
+      const op=el.querySelector('.dl-op-row:not(.dl-cd-row)');
+      if(op && op.parentNode===el) el.insertBefore(row, op.nextSibling);
+      else { const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row); }
+      const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
+      r.addEventListener('input',()=>{ if(val) val.textContent=parseFloat(r.value)+'×'; });
+      r.addEventListener('change',()=>{ if(window._setContourDensity) window._setContourDensity(parseFloat(r.value)); });
+    }catch(_){} }
+    window._ensureContourDensity=ensureContourDensity;
     /* (#R15c) Generic legend for layers that previously had ONLY an inline opacity slider in the Layers
        panel and no legend of their own (precip, clouds, ships, planes, hillshade, contours, day/night).
        Now every opacity lives in a legend, so the Layers panel can drop its inline sliders. The opacity row
@@ -14483,7 +14598,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function tileLegends(){
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdTemp,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
-      all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureLegendMinimize(el); }catch(_){} });
+      all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
          over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
       const ws=document.body.classList.contains('ws-mode');
@@ -14919,6 +15034,21 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* === Contour lines — generated on the fly from the terrarium DEM by maplibre-contour === */
     let _mlcDem=null;
+    /* (#R152) contour GRANULARITY slider — the [minor, major] metre intervals per zoom are BAKED into the vector
+       tiles at source creation, so changing them means rebuilding the source. `_contourDensity` scales the base
+       table (1 = default, >1 = finer/more lines by dividing the interval, <1 = coarser). The slider lives in the
+       contour legend (per the R16 rule that layer controls live in the legend, never the Layers panel). */
+    const _CONTOUR_BASE={ 5:[1000,4000], 6:[500,2000], 7:[500,2000], 8:[250,1000], 9:[200,1000], 10:[100,500], 11:[100,500], 12:[50,250], 13:[25,100], 14:[10,50], 15:[10,50] };
+    window._contourDensity=window._contourDensity||1;
+    function _contourThresholds(){ const d=Math.max(0.25,Math.min(4,+window._contourDensity||1)); const out={}; for(const z in _CONTOUR_BASE){ const b=_CONTOUR_BASE[z]; out[z]=[Math.max(1,Math.round(b[0]/d)), Math.max(2,Math.round(b[1]/d))]; } return out; }
+    function _rebuildContours(){ try{ if(!map) return;
+      const wasOn=map.getLayer('contour-lines') && map.getLayoutProperty('contour-lines','visibility')!=='none';
+      ['contour-labels','contour-lines'].forEach(id=>{ try{ if(map.getLayer(id)) map.removeLayer(id); }catch(_){} });
+      try{ if(map.getSource('contour-src')) map.removeSource('contour-src'); }catch(_){}
+      addContours();
+      if(wasOn){ try{ map.setLayoutProperty('contour-lines','visibility','visible'); }catch(_){} try{ map.setLayoutProperty('contour-labels','visibility','visible'); }catch(_){} }
+    }catch(e){ console.warn('rebuildContours',e); } }
+    window._setContourDensity=function(d){ window._contourDensity=Math.max(0.25,Math.min(4,+d||1)); _rebuildContours(); };
     function addContours(){
       if(map.getLayer('contour-lines')) return true;
       const MLC=window.mlcontour||window.maplibreContour; if(!MLC||!MLC.DemSource) return false;
@@ -14926,8 +15056,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(!_mlcDem){ _mlcDem=new MLC.DemSource({ url:'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png', encoding:'terrarium', maxzoom:13, worker:true }); _mlcDem.setupMaplibre(maplibregl); }
         if(!map.getSource('contour-src')){
           map.addSource('contour-src',{ type:'vector', maxzoom:15, tiles:[ _mlcDem.contourProtocolUrl({
-            /* Finer intervals (#6): added low zooms + halved most steps. [minor, major]. */
-            thresholds:{ 5:[1000,4000], 6:[500,2000], 7:[500,2000], 8:[250,1000], 9:[200,1000], 10:[100,500], 11:[100,500], 12:[50,250], 13:[25,100], 14:[10,50], 15:[10,50] },
+            /* (#R152) [minor, major] metre intervals, scaled by the user's density slider (_contourThresholds). */
+            thresholds:_contourThresholds(),
             elevationKey:'ele', levelKey:'level', contourLayer:'contours' }) ] });
         }
         const dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -15264,7 +15394,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R74) feed the layer-state audit: remember which REAL style layers belong to this checkbox */
       try{ if(cbId&&layerIds&&layerIds.length){ (window._imAuditReg=window._imAuditReg||{})[cbId]=layerIds.slice(); } }catch(_){}
       const el=ensureGenericLegend(id,namesEnJp,cbId);
-      if(el){ el.style.display='block'; try{ ensureLegendOpacity(el); }catch(_){} try{ ensureLegendMinimize(el); }catch(_){} try{ tileLegends(); }catch(_){} }
+      if(el){ el.style.display='block'; try{ ensureLegendOpacity(el); }catch(_){} try{ ensureContourDensity(el); }catch(_){} try{ ensureLegendMinimize(el); }catch(_){} try{ tileLegends(); }catch(_){} }
       /* apply the registered default immediately so the layer paints at it (was: slider showed the
          default but the layer kept its hard-coded paint until first slider move) */
       try{ setTimeout(()=>{ try{ setLayerOpacity(id,opacities[id]); }catch(_){} },120); }catch(_){}
@@ -25286,7 +25416,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
         if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:256,minzoom:0,maxzoom:19,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':1,'raster-saturation':0.95,'raster-hue-rotate':-42,'raster-brightness-min':0.5,'raster-contrast':0.15}});   /* (#R147) 蛍光水色 = a MORE prominent, FLUORESCENT light-blue ("もっと目立つ蛍光水色に"): near-max saturation + a stronger cyan hue-rotate + a brightness-min lift makes Google's coverage glow like neon aqua (the high positive saturation avoids the R145 wash-out). */
+        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) THINNER coverage line ("線が太すぎる"): R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased line edges outward, making the blue strokes look fat. Dropping both (and easing opacity 1→0.9) crisps them back to a fine line while keeping the cyan tint (saturation + hue-rotate). raster-resampling:linear keeps the thin edges smooth. */
         return true; }catch(_){ return false; } }
     function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
@@ -26305,6 +26435,10 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ _fsStashLayers(); }catch(_){}   /* (#R122) hide every data layer / highlight / outline while flying (place-name labels stay); restored on exit */
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120); setTimeout(()=>{ try{ map.resize(); }catch(_){} },320);
       buildHUD(); addExtraHUD();
+      /* (#R152) fill the sea with blue water + keep it across the satellite style-swap; removed on exit. Deferred so the
+         satellite style has settled before the fill is inserted, and re-added on styledata (basemap/theme changes). */
+      try{ map.on('styledata',_fsOceanStyleGuard); }catch(_){}
+      try{ map.once('idle',_fsAddOcean); }catch(_){} setTimeout(()=>{ try{ if(on) _fsAddOcean(); }catch(_){} },500);
       try{ fsAudio.start(); }catch(_){}   /* (#R101) start the synthesized flight audio (this call rides the START-button user gesture) */
       mmOn=true; try{ createMinimap(); }catch(_){}   /* (#R96) moving-map on by default each flight */
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
@@ -26320,6 +26454,7 @@ window.addEventListener('DOMContentLoaded', () => {
       window.removeEventListener('pointercancel',onLoseFocus,true); window.removeEventListener('touchcancel',onLoseFocus,true);
       window.__fsCamActive=false;
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
+      try{ map.off('styledata',_fsOceanStyleGuard); }catch(_){} _fsRemoveOcean();   /* (#R152) remove the flight water fill */
       for(const k in keys) keys[k]=false;
       try{ _FSBLOCK.forEach(ev=>window.removeEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) restore normal map interactivity exactly as before the flight */
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
@@ -26535,6 +26670,35 @@ window.addEventListener('DOMContentLoaded', () => {
     function _terrRead(lng,lat){ let v=null; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) v=te; } }catch(_){}
       if(v==null) return { v:(st&&st.lastTerr!=null)?st.lastTerr:0, ok:false };
       if(st) st.lastTerr=v; return { v, ok:true }; }
+    /* (#R152) OCEAN detection for flight physics + water fill. window.countryGeo = LAND polygons, so a point INSIDE any
+       country = land (Dead Sea / Death Valley / Netherlands polders stay flyable below 0 m), OUTSIDE = open ocean
+       (floor the collision ground at the sea SURFACE, 0 m, so you can't dive to the bathymetric floor). Cached per
+       ~0.25° cell + a per-feature bbox pre-filter so the 200-country point-in-polygon runs rarely — never stuttering
+       the 200 Hz physics. Unknown (turf/countryGeo missing) → treated as LAND, so below-sea land is never wrongly clamped. */
+    let _fsOceanCache=Object.create(null), _fsBBox=null, _fsOceanGeo=null;
+    function _fsBBoxes(){ if(_fsBBox) return _fsBBox; const cg=window.countryGeo; if(!cg||!cg.features||!window.turf) return null;
+      try{ _fsBBox=cg.features.map(f=>{ try{ return turf.bbox(f); }catch(_){ return null; } }); }catch(_){ _fsBBox=null; } return _fsBBox; }
+    function _isOpenOcean(lng,lat){ try{
+      const cg=window.countryGeo; if(!cg||!cg.features||!window.turf||!turf.booleanPointInPolygon) return false;
+      const key=Math.round(lng*4)+','+Math.round(lat*4); const c=_fsOceanCache[key]; if(c!==undefined) return c;
+      const bb=_fsBBoxes(); const pt=turf.point([lng,lat]); let land=false;
+      for(let i=0;i<cg.features.length;i++){ const b=bb&&bb[i]; if(b&&(lng<b[0]||lng>b[2]||lat<b[1]||lat>b[3])) continue;
+        try{ if(turf.booleanPointInPolygon(pt,cg.features[i])){ land=true; break; } }catch(_){} }
+      return (_fsOceanCache[key]=!land);
+    }catch(_){ return false; } }
+    /* (#R152) blue WATER surface during flight ("海を水で満たして"): an inverse-mask ocean polygon (world rectangle with
+       every country's outer ring as a HOLE) drawn as a semi-transparent blue fill over the satellite, so the sea reads
+       as water instead of dark satellite bathymetry. Built once from countryGeo; added on start, removed on exit. */
+    function _fsOceanFC(){ if(_fsOceanGeo) return _fsOceanGeo; const cg=window.countryGeo; if(!cg||!cg.features) return null;
+      const holes=[]; try{ cg.features.forEach(f=>{ const g=f&&f.geometry; if(!g) return; if(g.type==='Polygon'){ if(g.coordinates&&g.coordinates[0]) holes.push(g.coordinates[0]); } else if(g.type==='MultiPolygon'){ (g.coordinates||[]).forEach(poly=>{ if(poly&&poly[0]) holes.push(poly[0]); }); } }); }catch(_){ return null; }
+      const outer=[[-180,-85.051],[180,-85.051],[180,85.051],[-180,85.051],[-180,-85.051]];
+      _fsOceanGeo={type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[outer].concat(holes)}}; return _fsOceanGeo; }
+    function _fsAddOcean(){ try{ if(!map) return; const fc=_fsOceanFC(); if(!fc) return;
+      if(!map.getSource('fs-ocean')) map.addSource('fs-ocean',{type:'geojson',data:fc});
+      if(!map.getLayer('fs-ocean-water')) map.addLayer({id:'fs-ocean-water',type:'fill',source:'fs-ocean',paint:{'fill-color':'#1b628f','fill-opacity':0.5}});
+    }catch(e){ console.warn('fsAddOcean',e); } }
+    function _fsRemoveOcean(){ try{ if(map&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); }catch(_){} try{ if(map&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){} }
+    function _fsOceanStyleGuard(){ try{ if(on) _fsAddOcean(); }catch(_){} }
     /* ===== (#R94q) ONE fixed-timestep 6-DOF rigid-body step (h seconds) in the BODY frame. Body velocity (u,v,w),
        body angular rates (p,q,r) and a quaternion attitude are integrated from the forces & moments produced by
        AoA + SIDESLIP through the aircraft's stability & control derivatives — so it gives coordinated & skidding
@@ -26681,6 +26845,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(st._fieldElev!=null&&st._fLL){ const _cf=Math.cos(st.lat*Math.PI/180);
         const _dx=(st.lng-st._fLL[0])*111.32*_cf, _dy=(st.lat-st._fLL[1])*111.32;
         if((_dx*_dx+_dy*_dy)<16 && terr<st._fieldElev-3){ terr=st._fieldElev-3; if(st._terrF!=null&&st._terrF<terr) st._terrF=terr; } }   /* clamp the follower too — no phantom sunken ground waiting just outside the 4 km ring */
+      /* (#R152) OPEN-OCEAN floor — over the sea the physics ground is the SURFACE (0 m), so you crash at sea level and
+         can't fly down to the bathymetric floor; below-sea-level LAND (inside a country polygon → st._overOcean false)
+         keeps its real negative elevation and stays flyable. st._overOcean is refreshed once per frame in loop(). */
+      if(st._overOcean && terr<0){ terr=0; if(st._terrF!=null&&st._terrF<0) st._terrF=0; }
       /* (#R95) ONE-TIME SPAWN SETTLE: at start/respawn the 3-D DEM has not loaded yet (queryTerrainElevation → null),
          so we cannot know the ground height. Rather than reading 0 m (which spawns inside Himalaya-class terrain and
          "crashes on load"), we wait: the FIRST confirmed ground read lifts the aircraft to a safe clearance if it is
@@ -26768,6 +26936,7 @@ window.addEventListener('DOMContentLoaded', () => {
       return flags; }
     function loop(){ if(!on||resultShown) return; const now=performance.now(); let dt=(now-st.t)/1000; st.t=now; dt=Math.max(0.0005,Math.min(0.1,dt));
       if(paused){ try{ if(hud){ const w=hud.querySelector('.fs-warn'); if(w&&w.textContent.indexOf('CRAS')<0&&w.textContent.indexOf('墜')<0){ w.style.display='block'; w.style.color='#8fb8e0'; w.textContent=LL('PAUSED','一時停止','PAUSE','ПАУЗА','PAUSA'); } } }catch(_){} raf=requestAnimationFrame(loop); return; }
+      try{ st._overOcean=_isOpenOcean(st.lng,st.lat); }catch(_){ st._overOcean=false; }   /* (#R152) refresh open-ocean flag ONCE per frame (cached per cell) — read by stepFixed's sea-surface floor */
       const f=physics(dt), R2D=180/Math.PI, D2R=Math.PI/180, agl=f.agl;
       if(resultShown) return;   /* (#R98) a crash inside physics() opened the result screen → stop the loop */
       /* ---- CAMERA (#R95): a TRUE eye-point view driven by the attitude, NOT a ground look-at. The old code called
@@ -27795,19 +27964,25 @@ window.addEventListener('DOMContentLoaded', () => {
       const plain=raw.replace(/\s+/g,' ').trim(); if(plain.length<=280) return raw;   /* short enough to read as one block */
       const parts=plain.match(/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g);
       if(!parts||parts.length<4) return raw;                                 /* too few sentences to bother grouping */
-      const out=[]; for(let i=0;i<parts.length;i+=2) out.push(parts.slice(i,i+2).join(' ').trim());
-      return out.join('\n\n'); }
+      /* (#R152) SIZE hierarchy even when the model returns flat prose (the persistent "同一サイズのテキストが単調に並ぶ"
+         complaint — the prompt already asks for ## headings, but a flat wall gets none): promote the opening sentence to a
+         standalone **bold** line, which mdMini renders as a real 1.2em accent lead. Then group the rest into ~2-sentence
+         stanzas. Guarded: only a short, single, star-free opening becomes the lead. */
+      let lead='', rest=parts; const first=(parts[0]||'').trim();
+      if(first.length>=12 && first.length<=90 && first.indexOf('*')<0){ lead='**'+first.replace(/[.。！!]\s*$/,'')+'**\n\n'; rest=parts.slice(1); }
+      const out=[]; for(let i=0;i<rest.length;i+=2) out.push(rest.slice(i,i+2).join(' ').trim());
+      return lead+out.join('\n\n'); }
     function mdMini(s){ return esc(_dedupText(_atlStanza(String(s||''))))
       /* (#R149) STRONGER visual hierarchy — bigger, accent-coloured headings with clear top spacing so any structure
          the model emits (## sections / # title / ### sub) is unmistakable. Sizes are em, so they scale off the bubble
          font on both desktop (12.5px) and the mobile 15px override. */
-      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1em 0 .3em;font-size:1.14em;line-height:1.32;">$1</div>')
-      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.2em 0 .4em;font-size:1.32em;line-height:1.3;letter-spacing:.005em;">$1</div>')
-      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.15em 0 .45em;font-size:1.55em;letter-spacing:.01em;line-height:1.26;">$1</div>')
+      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.15em 0 .34em;font-size:1.18em;line-height:1.32;">$1</div>')
+      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.45em 0 .5em;font-size:1.4em;line-height:1.3;letter-spacing:.005em;">$1</div>')
+      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.35em 0 .55em;font-size:1.66em;letter-spacing:.01em;line-height:1.26;">$1</div>')   /* (#R152) bigger, more-spaced headings so the size hierarchy is unmistakable */
       /* (#R151) MODEL-INDEPENDENT hierarchy — a line that is ENTIRELY a **bold run** is a section lead the model DID emit
          (models reach for standalone bold far more readily than "## "); render it at real heading size + spacing so the
          reply stops reading as one flat block even when no "## " markers appear. Inline bold stays <b> (below). */
-      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.05em 0 .32em;font-size:1.18em;line-height:1.3;">$1</div>')
+      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.15em 0 .38em;font-size:1.22em;line-height:1.3;">$1</div>')
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
@@ -27815,8 +27990,8 @@ window.addEventListener('DOMContentLoaded', () => {
          — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
       .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
       .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.15em;text-indent:-0.9em;margin:.24em 0;">• $1</div>')
-      .replace(/\n{2,}/g,'<div style="height:.85em"></div>')                                       /* (#R151) explicit paragraph → generous gap (more "余白" between groups) */
-      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.6em"></div>')                  /* (#R150/#R151) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
+      .replace(/\n{2,}/g,'<div style="height:1.05em"></div>')                                       /* (#R151/#R152) explicit paragraph → generous gap (more "余白" between groups) */
+      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.72em"></div>')                  /* (#R150/#R151/#R152) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
       .replace(/\n/g,'<br>'); }
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
@@ -27836,8 +28011,21 @@ window.addEventListener('DOMContentLoaded', () => {
        links). Social & UGC platforms, URL shorteners and video hosts are NOT reliable primary sources for factual claims,
        so DROP them from the source cards (kept end-to-end for every reply that shows sources). Reputable news, official
        (.gov/.mil/.int/.edu/.go.jp…) and encyclopedic domains pass through unchanged. */
-    const _SNS_RE=/(^|\.)(twitter\.com|x\.com|t\.co|facebook\.com|fb\.com|fb\.watch|m\.facebook\.com|instagram\.com|threads\.net|tiktok\.com|reddit\.com|redd\.it|pinterest\.[a-z.]+|tumblr\.com|mastodon\.[a-z.]+|bsky\.app|weibo\.com|vk\.com|ok\.ru|linkedin\.com|lnkd\.in|quora\.com|snapchat\.com|discord\.(?:com|gg)|t\.me|telegram\.me|youtube\.com|youtu\.be|m\.youtube\.com|bit\.ly|tinyurl\.com|goo\.gl|ift\.tt|buff\.ly|dlvr\.it|ow\.ly)$/i;
+    const _SNS_RE=/(^|\.)(twitter\.com|x\.com|t\.co|facebook\.com|fb\.com|fb\.watch|m\.facebook\.com|instagram\.com|threads\.net|tiktok\.com|reddit\.com|redd\.it|pinterest\.[a-z.]+|tumblr\.com|mastodon\.[a-z.]+|bsky\.app|weibo\.com|vk\.com|ok\.ru|linkedin\.com|lnkd\.in|quora\.com|snapchat\.com|discord\.(?:com|gg)|t\.me|telegram\.me|youtube\.com|youtu\.be|m\.youtube\.com|bit\.ly|tinyurl\.com|goo\.gl|ift\.tt|buff\.ly|dlvr\.it|ow\.ly|truthsocial\.com|gettr\.com|gab\.com|mixi\.jp|line\.me|ameblo\.jp|hatenablog\.(?:com|jp)|hateblo\.jp|blogspot\.[a-z.]+|livejournal\.com|note\.com|fc2\.com|seesaa\.net|5ch\.net|2ch\.sc|4chan\.org|4channel\.org|nicovideo\.jp|nico\.ms|vimeo\.com|dailymotion\.com|rumble\.com|is\.gd|cutt\.ly|rb\.gy|rebrand\.ly|shorturl\.at|amzn\.to|j\.mp)$/i;   /* (#R152) broadened: + blog platforms / forums / more video & shorteners / more SNS — still NOT medium/substack (those can be legitimate primary journalism) */
     function _atlBadSourceHost(h){ try{ return _SNS_RE.test(String(h||'').toLowerCase().replace(/^www\./,'')); }catch(_){ return false; } }
+    /* (#R152) RELEVANCE gate for source cards ("まったく関係ないリンクを張る" — Atlas attached gathered-but-unrelated articles):
+       tokenise the reply text and a card's title/url; keep a card only if it shares ≥1 meaningful token (Latin words ≥4
+       chars OR CJK bigrams, minus stop-words). Conservative — if the reply is too short to judge, keep everything, and
+       WEB-VERIFIED / model-CITED sources bypass this entirely (they are anchored to a claim). Applies to the merely
+       "gathered" buckets that were surfacing off-topic links. */
+    const _ATL_RELV_STOP=new Set(['this','that','with','from','have','were','been','their','which','about','there','these','those','other','more','most','also','into','over','than','then','they','will','would','could','should','after','before','while','because','between','among','such','some','many','much','said','says','report','reported','according','news','article','latest','update','world','country','region']);
+    function _atlTokens(s){ s=String(s||'').toLowerCase(); const out=new Set();
+      (s.match(/[a-z0-9À-ɏ]{4,}/g)||[]).forEach(w=>{ if(!_ATL_RELV_STOP.has(w)) out.add(w); });
+      (s.match(/[぀-ヿ㐀-鿿가-힯]{2,}/g)||[]).forEach(run=>{ for(let i=0;i<run.length-1;i++) out.add(run.slice(i,i+2)); });
+      return out; }
+    function _atlRelevantCards(cards, refText){ try{ const ref=_atlTokens(refText); if(ref.size<4) return cards;
+      const kept=(cards||[]).filter(c=>{ const t=_atlTokens(((c&&(c.title||c.name||c.src))||'')+' '+((c&&c.url)||'')); for(const w of t){ if(ref.has(w)) return true; } return false; });
+      return kept.length?kept:cards; }catch(_){ return cards; } }   /* never blank the section entirely — if nothing overlaps, fall back to the original set */
     function linkCards(list){ try{
       const seen=new Set(); const cards=[];
       /* (#R107) show ONLY links that point at the ACTUAL article ("記事へのリンクではなく情報源の一般的なリンクに
@@ -28439,7 +28627,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const tag=el.tagName.toLowerCase(), nm=esc(a.target||el.id||(el.textContent||'').trim().slice(0,24));
       try{
         if(tag==='select'){ if(a.value!=null){ const v=String(a.value).toLowerCase(); const opts=[].slice.call(el.options); const o=opts.find(o=>String(o.value).toLowerCase()===v)||opts.find(o=>(o.textContent||'').toLowerCase().indexOf(v)>=0); if(!o) return R(false, warn('⚠ '+nm+': '+L('option not found','選択肢なし','Option fehlt','нет варианта','sin opción')+' "'+esc(a.value)+'"')); el.value=o.value; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
-        if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(el.checked===want, note('✓ '+nm+': '+(want?'on':'off'))); }
+        if(el.type==='checkbox'||el.type==='radio'){ const want=(a.on!=null)?(a.on!==false):!el.checked; if(el.checked!==want){ el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); } return R(el.checked===want, note('✓ '+nm+': '+(want?'on':'off'))+_ctlTogHtml(a.target||el.id,el)); }   /* (#R152) attach an on/off switch for any checkbox control */
         if(el.type==='range'||el.type==='number'){ if(a.value!=null){ el.value=a.value; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } return R(true, note('✓ '+nm+(a.value!=null?(' = '+esc(a.value)):''))); }
         /* (#R77) dated-layer date/month inputs (「気温レイヤーの日付を2023-06-01に」) were unreachable — click() did nothing useful */
         if(el.type==='date'||el.type==='month'){ if(a.value!=null){ let v=String(a.value).trim(); if(el.type==='month') v=v.slice(0,7); else v=v.slice(0,10);
@@ -28975,6 +29163,7 @@ window.addEventListener('DOMContentLoaded', () => {
       extractPlaces:function(t){ try{ return _atlExtractPlaces(t); }catch(_){ return []; } },
       regDomain:function(u){ try{ return _atlRegDomain(u); }catch(_){ return ''; } },
       badSourceHost:function(h){ try{ return _atlBadSourceHost(h); }catch(_){ return false; } },
+      relevantCards:function(cards,ref){ try{ return _atlRelevantCards(cards,ref); }catch(_){ return cards; } },   /* (#R152) relevance gate for source cards */
       linkCards:function(l){ try{ return linkCards(l); }catch(_){ return ''; } },
       auditSources:function(c){ try{ return _atlAuditSources(c); }catch(_){ return null; } },
       mappingVerdict:function(s){ try{ return _atlMappingVerdict(s); }catch(_){ return null; } },
@@ -29849,7 +30038,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
              "AI briefってワードをわざわざAtlasで出すな"). */
-          let srcCardsB=''; try{ srcCardsB=linkCards(srcSink); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards */
+          let srcCardsB=''; try{ srcCardsB=linkCards(_atlRelevantCards(srcSink,txtB)); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards; (#R152) drop gathered articles unrelated to the brief text */
           /* (#R103) the per-message "AI-generated — verify" note is dropped — the single static note under the input bar
              now carries that disclaimer (毎メッセージに書くな). */
           /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
@@ -29892,9 +30081,9 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R61) report the TARGET, not the pre-animation zoom (the old note read the camera mid-flight and
              printed a stale value — a false "done" report). */
           return R(true, note('✓ '+L('Zoom','ズーム','Zoom','Зум','Zoom')+' → '+(tz!=null&&isFinite(tz)?(+tz).toFixed(1):map.getZoom().toFixed(1)))); }
-        case 'bearing': case 'rotate': { let tb=null; try{ const DIRB={north:0,n:0,northeast:45,ne:45,east:90,e:90,southeast:135,se:135,south:180,s:180,southwest:225,sw:225,west:270,w:270,northwest:315,nw:315,'北':0,'北東':45,'東':90,'南東':135,'南':180,'南西':225,'西':270,'北西':315}; const dd=DIRB[String(a.dir||a.toward||'').toLowerCase().trim()]; tb=(a.deg!=null)?+a.deg:(dd!=null?dd:(a.delta!=null?(map.getBearing()+(+a.delta)):0)); map.easeTo({bearing:tb,pitch:a.pitch!=null?+a.pitch:map.getPitch(),duration:600}); }catch(_){}
+        case 'bearing': case 'rotate': { let tb=null; try{ const DIRB={north:0,n:0,northeast:45,ne:45,east:90,e:90,southeast:135,se:135,south:180,s:180,southwest:225,sw:225,west:270,w:270,northwest:315,nw:315,'北':0,'北東':45,'東':90,'南東':135,'南':180,'南西':225,'西':270,'北西':315}; const dd=DIRB[String(a.dir||a.toward||'').toLowerCase().trim()]; tb=(a.deg!=null)?+a.deg:(dd!=null?dd:(a.delta!=null?(map.getBearing()+(+a.delta)):0)); IntMapGeoEngine.camera.easeTo({bearing:tb,pitch:a.pitch!=null?+a.pitch:map.getPitch(),duration:600}); }catch(_){}   /* (#R152) camera execution via IntMapGeoEngine (renderer abstraction) */
           return R(true, note('✓ '+L('Bearing','方位','Ausrichtung','Азимут','Rumbo')+' → '+Math.round(tb!=null&&isFinite(tb)?tb:map.getBearing())+'°')); }
-        case 'pitch': case 'tilt': { let tp=null; try{ tp=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); map.easeTo({pitch:tp,duration:600}); }catch(_){}
+        case 'pitch': case 'tilt': { let tp=null; try{ tp=(a.deg!=null)?+a.deg:(a.delta!=null?(map.getPitch()+(+a.delta)):(a.on===false?0:60)); tp=Math.max(0,Math.min(85,tp)); IntMapGeoEngine.camera.easeTo({pitch:tp,duration:600}); }catch(_){}   /* (#R152) camera execution via IntMapGeoEngine */
           return R(true, note('✓ '+L('Tilt','傾き','Neigung','Наклон','Inclinación')+' → '+Math.round(tp!=null&&isFinite(tp)?tp:map.getPitch())+'°')); }
         case 'pan': case 'move': { try{ const dir=String(a.dir||a.direction||'').toLowerCase().trim(); const f=(a.fraction!=null?+a.fraction:0.45); const D={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0],northeast:[1,-1],northwest:[-1,-1],southeast:[1,1],southwest:[-1,1],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0],'北':[0,-1],'南':[0,1],'東':[1,0],'西':[-1,0]}; const v=D[dir]||[0,0]; const el=map.getContainer&&map.getContainer(); const W=(el&&el.clientWidth)||800,H=(el&&el.clientHeight)||600; map.panBy([v[0]*W*f, v[1]*H*f],{duration:700}); }catch(_){} return R(true, note('✓ '+L('Pan','移動','Verschieben','Сдвиг','Desplazar')+(a.dir?(' '+esc(a.dir)):''))); }
         case 'tab': { const cmd={news:'tab.news',information:'tab.info',info:'tab.info',companies:'tab.info',company:'tab.info','企業':'tab.info',stats:'tab.stats',statistics:'tab.stats',data:'tab.stats',countries:'tab.stats',nations:'tab.stats',atlas:'tab.atlas',community:'tab.atlas'}[String(a.name||'').toLowerCase()];   /* (#R139) 'companies' → the repurposed info tab */
@@ -30553,7 +30742,7 @@ window.addEventListener('DOMContentLoaded', () => {
         case 'fullscreen': { const want=!(a.on===false||/^(off|exit)$/i.test(String(a.mode||'')));
           try{ if(want){ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }
             else if(document.fullscreenElement&&document.exitFullscreen) await document.exitFullscreen();
-            return R(true, note('✓ '+L('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')+': '+(want?'on':'off'))); }
+            return R(true, note('✓ '+L('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')+': '+(want?'on':'off'))+_featTogHtml('fullscreen')); }   /* (#R152) offer the fullscreen on/off switch */
           catch(_){ return R(false, warn('⚠ '+L('Fullscreen unavailable here','全画面にできませんでした','Vollbild nicht möglich','Полный экран недоступен','Pantalla completa no disponible'))); } }
         case 'locate': case 'myLocation': case 'whereAmI': { if(!navigator.geolocation) return R(false, warn('⚠ '+L('Geolocation unavailable','この環境では位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible')));
           return await new Promise(res=>{ let fin0=false; const fin=r2=>{ if(!fin0){ fin0=true; res(r2); } };
@@ -31055,7 +31244,7 @@ window.addEventListener('DOMContentLoaded', () => {
                articles we fed the model); the hosted-search citations come from the provider's annotations. */
             if(_aCites.length){ const wc=linkCards(_aCites.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(wc) html+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+wc; }
             if(cited.length){ const cc=linkCards(cited); if(cc) html+='<div class="atl-src-h">'+L('Cited sources','引用したソース','Zitierte Quellen','Цитированные источники','Fuentes citadas')+'</div>'+cc; }
-            if(rest.length){ const rc=linkCards(rest); if(rc) html+='<div class="atl-src-h">'+(haveBasis?L('Other gathered articles','その他の収集記事','Weitere gesammelte Artikel','Другие собранные статьи','Otros artículos recopilados'):L('Sources','ソース','Quellen','Источники','Fuentes'))+'</div>'+rc; }
+            if(rest.length){ const rc=linkCards(_atlRelevantCards(rest,txt).slice(0,4)); if(rc) html+='<div class="atl-src-h">'+(haveBasis?L('Other gathered articles','その他の収集記事','Weitere gesammelte Artikel','Другие собранные статьи','Otros artículos recopilados'):L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados'))+'</div>'+rc; }   /* (#R152) filter unrelated gathered links + relabel: when nothing was cited/web-verified these were shown as "Sources" (misleading) → "Related articles" */
           }catch(_){}
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
           /* (#R131) Only claim a live web verification when the hosted search ACTUALLY ran this turn (webUsed) — never
@@ -31675,6 +31864,8 @@ window.addEventListener('DOMContentLoaded', () => {
           _refreshMapChips(); return; }
         const ftg=e.target.closest&&e.target.closest('.atl-feat-tog');   /* (#R145) on/off view-feature switch — flips the real control directly */
         if(ftg){ const f=_FEAT_TOG[ftg.getAttribute('data-feat')]; if(f){ try{ f.set(!f.on()); }catch(_){} let now=false; try{ now=!!f.on(); }catch(_){} ftg.classList.toggle('on',now); ftg.setAttribute('aria-checked',now?'true':'false'); const s=ftg.querySelector('.afb-s'); if(s) s.textContent=now?'ON':'OFF'; } return; }   /* (#R147) also update the ON/OFF badge on the button variant */
+        const cgn=e.target.closest&&e.target.closest('.atl-ctl-gen');   /* (#R152) generic on/off control switch (shares .atl-ctl-toggle styling, so MUST be handled before the layer-toggle branch below) */
+        if(cgn){ const el=findControl(cgn.getAttribute('data-ctl')); if(el&&(el.type==='checkbox'||el.type==='radio')){ const want=!el.checked; el.checked=want; el.dispatchEvent(new Event('change',{bubbles:true})); const now=!!el.checked; cgn.classList.toggle('on',now); cgn.setAttribute('aria-checked',now?'true':'false'); } return; }
         const tg2=e.target.closest&&e.target.closest('.atl-ctl-toggle');
         if(tg2){ const rl=_ctlLayer(tg2); if(rl){ const want=!rl.cb.checked; rl.cb.checked=want; rl.cb.dispatchEvent(new Event('change',{bubbles:true})); tg2.classList.toggle('on',rl.cb.checked); tg2.setAttribute('aria-checked',rl.cb.checked?'true':'false'); } return; }
         /* (#R132) 経路10-10 §12.5: tap a turn-by-turn step in a road reply → highlight that segment on the map + fly to it.
@@ -31926,8 +32117,15 @@ window.addEventListener('DOMContentLoaded', () => {
       ticker:{ lbl:()=>L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior'), on:()=>{ try{ return String(window.imTicker||'')!=='off'; }catch(_){ return true; } }, set:v=>{ try{ if(window.IntMapTicker){ window.imTicker=v?'on':'off'; window.IntMapTicker.apply(); if(typeof saveSettings==='function') saveSettings(); } }catch(_){} } },   /* (#R149) more on/off features get an inline toggle */
       /* (#R151) even more on/off surfaces get a switch ("オンオフ要素のある時はなるべくトグルボタンを設置") */
       globe:{ lbl:()=>L('3D globe','地球儀','Globus','Глобус','Globo'), on:()=>{ const b=document.getElementById('btn-view-globe'); return !!(b&&(b.classList.contains('active')||b.classList.contains('view-on')||b.classList.contains('on')||b.getAttribute('aria-pressed')==='true')); }, set:v=>{ clickId(v?'btn-view-globe':'btn-view-flat'); } },
-      compare:{ lbl:()=>L('Compare panel','比較パネル','Vergleich','Панель сравнения','Comparar'), on:()=>{ try{ return document.body.classList.contains('cmp-open'); }catch(_){ return false; } }, set:v=>{ try{ if(v){ if(window.IntMapCompare&&window.IntMapCompare.open) window.IntMapCompare.open(); else clickId('btn-compare'); } else { const x=document.querySelector('#compare-window .cmp-close'); if(x) x.click(); } }catch(_){} } }
+      compare:{ lbl:()=>L('Compare panel','比較パネル','Vergleich','Панель сравнения','Comparar'), on:()=>{ try{ return document.body.classList.contains('cmp-open'); }catch(_){ return false; } }, set:v=>{ try{ if(v){ if(window.IntMapCompare&&window.IntMapCompare.open) window.IntMapCompare.open(); else clickId('btn-compare'); } else { const x=document.querySelector('#compare-window .cmp-close'); if(x) x.click(); } }catch(_){} } },
+      /* (#R152) fullscreen is a plain on/off → give it a switch too */
+      fullscreen:{ lbl:()=>L('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa'), on:()=>!!document.fullscreenElement, set:v=>{ try{ if(v){ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); } else if(document.fullscreenElement&&document.exitFullscreen) document.exitFullscreen(); }catch(_){} } }
     };
+    /* (#R152) GENERIC on/off toggle for ANY checkbox reached through the universal "control" action — so
+       "オンオフ要素のある時はなるべくトグルボタンを設置" also covers controls with no dedicated _FEAT_TOG entry. It binds to the
+       control's target string; the delegated handler re-resolves it, flips it and reads the true state back. */
+    function _ctlTogHtml(target, el){ try{ if(!el||el.type!=='checkbox') return ''; const on=!!el.checked; const lbl=esc(String(target||el.id||'').slice(0,40));
+      return '<div class="atl-ctl-row" style="margin-top:6px;"><span class="atl-ctl-lbl">'+lbl+'</span><button class="atl-ctl-toggle atl-ctl-gen'+(on?' on':'')+'" data-ctl="'+esc(String(target||el.id||''))+'" role="switch" aria-checked="'+(on?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }catch(_){ return ''; } }
     function _featTogHtml(kind){ const f=_FEAT_TOG[kind]; if(!f) return ''; let on=false; try{ on=!!f.on(); }catch(_){}
       /* (#R148) removed R147's bespoke .atl-featbtn ("独自ボタン") — restore the standard iOS toggle switch that shipped before R147. */
       return '<div class="atl-ctl-row" style="margin-top:6px;"><span class="atl-ctl-lbl">'+esc(f.lbl())+'</span><button class="atl-ctl-toggle atl-feat-tog'+(on?' on':'')+'" data-feat="'+esc(kind)+'" role="switch" aria-checked="'+(on?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }
