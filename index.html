@@ -12609,21 +12609,21 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }   /* (#R149) trimmed padding + reserved margin 92→84 so more of the 30 Köppen zones fit; see compacted rows/chrome below — the legend can finally stretch to the last class ("さいごまで伸ばせない") */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
          shows a small diagonal grip at the bottom-right, matching the resize:vertical affordance. */
       .koppen-legend::-webkit-resizer{ background:linear-gradient(135deg, transparent 0 44%, var(--text-muted) 44% 52%, transparent 52% 68%, var(--text-muted) 68% 76%, transparent 76%); }
       .koppen-legend.legend-collapsed{ resize:none !important; }
-      .koppen-legend h4{ margin:0 0 6px; font-size:11px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:4px; }
-      .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 7px; }
+      .koppen-legend h4{ margin:0 0 4px; font-size:11px; padding-right:18px; } .koppen-legend .kl-hint{ color:var(--text-muted); margin-top:3px; font-size:9px; line-height:1.35; }   /* (#R149) compact chrome so all 30 zones fit */
+      .kl-period{ display:flex; align-items:center; gap:6px; margin:0 0 5px; }
       .kl-period label{ font-size:11px; color:var(--text-muted); }
       .kl-period select{ flex:1; background:var(--input-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:6px; padding:3px 6px; font-size:11.5px; cursor:pointer; }
       .legend-collapsed .kl-period{ display:none !important; }
-      .kl-item{ display:flex; align-items:center; gap:6px; padding:2px 4px; cursor:pointer; border-radius:5px; }
+      .kl-item{ display:flex; align-items:center; gap:6px; padding:1px 4px; cursor:pointer; border-radius:5px; }   /* (#R149) 2px→1px so 30 rows fit the viewport and the legend stretches to the last class */
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); }
-      .kl-sw{ width:12px; height:12px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
+      .kl-sw{ width:11px; height:11px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,0.2); }
       .kl-clear{ width:100%; margin-top:6px; padding:5px; background:var(--input-bg); color:var(--text-main); border:none; border-radius:7px; cursor:pointer; font-size:10.5px; font-weight:600; }
       .kl-clear:hover{ background:var(--primary-color); color:#fff; }
       .layer-popup-x{ position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:4px 6px; border-radius:6px; line-height:1; }
@@ -14264,7 +14264,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const sc=lg.querySelector('.kl-scroll'); if(!sc) return;
       const chrome=Math.max(0, lg.getBoundingClientRect().height - sc.getBoundingClientRect().height);
       const full=Math.round(chrome + sc.scrollHeight + 2);   /* border-box height that reveals every class with no inner scroll */
-      const cap=Math.round(window.innerHeight - 92);          /* same viewport ceiling as the CSS max-height */
+      const cap=Math.round(window.innerHeight - 84);          /* (#R149) match the trimmed CSS ceiling (was 92) so the fit uses the same, larger budget */
       const target=Math.max(150, Math.min(full, cap));        /* the RENDERED (border-box) height we want the resize grip to stop at */
       /* (#R148) `full`/`target` are BORDER-BOX heights (getBoundingClientRect), but the legend is box-sizing:content-box,
          so setting them straight as a max-height rendered ~18px (padding+border) TALLER → the grip dragged a row PAST the
@@ -18511,7 +18511,7 @@ window.addEventListener('DOMContentLoaded', () => {
         (loopRings||[]).forEach(r=>{ if(r&&r.length>=4){ try{ window.IntMapAnnotations.add({type:'Polygon',coordinates:[r]},{color:'#ffcc00',op:0.22,name:(jp()?'描画範囲':'Drawn area'),value:(lockedArea>0?areaHTML(lockedArea):'')}); }catch(_){} } });
         const ln=(simplified&&simplified.length>=2)?simplified:((raw&&raw.length>=2)?raw:null);
         if(ln){ try{ window.IntMapAnnotations.add({type:'LineString',coordinates:ln},{color:'#ff9500',name:(jp()?'描画':'Drawing'),value:(lengthKm>0?distHTML(lengthKm):'')}); }catch(_){} }
-        try{ if(window.imToast) imToast(jp()?'地図に残しました':'Kept on the map'); }catch(_){}
+        try{ if(typeof imToast==='function') imToast(jp()?'地図に残しました':'Kept on the map'); }catch(_){}   /* (#R149) imToast is closure-scoped, not on window */
       }catch(_){}
       api.exit();
     }
@@ -27689,17 +27689,21 @@ window.addEventListener('DOMContentLoaded', () => {
        that force-lifts literal 12–13px spans to 15px, which used to FLATTEN the headings. Paragraph breaks (\n\n)
        now insert real vertical space, so replies read as titled, spaced sections instead of one monotone block. */
     function mdMini(s){ return esc(_dedupText(String(s||'')))
-      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:.85em 0 .28em;font-size:1.06em;">$1</div>')
-      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1em 0 .32em;font-size:1.2em;">$1</div>')
-      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.05em 0 .4em;font-size:1.38em;letter-spacing:.01em;line-height:1.3;">$1</div>')
+      /* (#R149) STRONGER visual hierarchy — the user keeps reporting Atlas replies read as a monotonous wall of
+         same-size text. Bigger, accent-coloured headings with clear top spacing so any structure the model emits
+         (## sections / # title / ### sub) is unmistakable, plus more room between blocks. Sizes are em, so they
+         scale off the bubble font on both desktop (12.5px) and the mobile 15px override. */
+      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1em 0 .3em;font-size:1.14em;line-height:1.32;">$1</div>')
+      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.2em 0 .4em;font-size:1.32em;line-height:1.3;letter-spacing:.005em;">$1</div>')
+      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.15em 0 .45em;font-size:1.55em;letter-spacing:.01em;line-height:1.26;">$1</div>')
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
       /* (#R79g) ALSO linkify BARE urls the model prints without markdown syntax ("Atlas内からリンクを踏めるように")
          — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
       .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
-      .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.1em;text-indent:-0.85em;margin:.16em 0;">• $1</div>')
-      .replace(/\n{2,}/g,'<div style="height:.5em"></div>').replace(/\n/g,'<br>'); }
+      .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.15em;text-indent:-0.9em;margin:.24em 0;">• $1</div>')
+      .replace(/\n{2,}/g,'<div style="height:.7em"></div>').replace(/\n/g,'<br>'); }   /* (#R149) more breathing room between blocks + bullets */
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
        mapReport and any reply that carries real article URLs. Only http(s) URLs that came from evidence or
@@ -28724,7 +28728,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* ---- (#R147) scope: analyse sensitive-but-legitimate questions instead of over-refusing ---- */
       s+='SCOPE: analyse sensitive but legitimate questions (defence, disasters, disease, hazards, crime statistics, cyber, critical infrastructure) from PUBLIC information at an appropriate level of generality — judge by purpose, target, precision and output, never by a sensitive-sounding word. State the uncertainty and cite public sources; decline ONLY genuinely operational harm (real-time targeting, a precise strike or kill plan, or weapon/agent synthesis instructions) and, even then, still give the safe public-information analysis you can. ';
       /* ---- length + sources ---- */
-      s+='Answer in '+lang+'.'+(String(lang).indexOf('Japanese')>=0?' When answering in Japanese, use polite form (です・ます／敬語) unless the user is clearly casual or explicitly requests plain/casual speech.':'')+' FORMAT FOR READABILITY (the user complained Atlas answers are a monotonous wall of same-size text with no headings or spacing): structure a multi-part answer with a short **bold** lead sentence, "## " sub-headings that name each distinct section, "- " bullets for lists, and a blank line between sections — these render with real, larger heading sizes and clear spacing. Keep a short, single-idea answer as plain sentences (do NOT over-structure a one-paragraph reply). Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. FINALLY, after the answer, on its own last line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn) that support your key claims; omit the line entirely if you have none; fabricating a URL is forbidden.';
+      s+='Answer in '+lang+'.'+(String(lang).indexOf('Japanese')>=0?' When answering in Japanese, use polite form (です・ます／敬語) unless the user is clearly casual or explicitly requests plain/casual speech.':'')+' FORMAT FOR READABILITY (the user complained Atlas answers are a monotonous wall of same-size text with no headings or spacing): structure a multi-part answer with a short **bold** lead sentence, "## " sub-headings that name each distinct section, "- " bullets for lists, and a blank line between sections — these render with real, larger heading sizes and clear spacing. Keep a short, single-idea answer as plain sentences (do NOT over-structure a one-paragraph reply). Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. Then, after the answer, on its own line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn) that support your key claims; omit the line entirely if you have none; fabricating a URL is forbidden. MAP VALUE (IntMap is a MAP product, not a chatbot — every location-rich answer must put its spots ON the map): if the answer names specific, real, mappable places (cities, towns, districts, landmarks, buildings, stations, airports, ports, parks, gardens, museums, squares/plazas, stadiums, named facilities, or named natural features such as rivers/mountains/islands/straits), then on the VERY LAST line — AFTER any SOURCES line — output "PLACES: " followed by a ONE-LINE compact JSON array naming EVERY such place: [{"n":"exact place name","c":"the modern country it lies in","k":"kind"}]. IntMap resolves the coordinates from n+c and pins them — NEVER output latitude/longitude, never invent a place, exclude whole countries and vague/relative terms ("the region","the coast","downtown"), and list a place only if you actually named it in the answer. The places you name in the prose and the places in PLACES must MATCH. Omit the PLACES line only when the answer truly names no mappable place.';
       return s; }
     /* (#R131) The TIME CONTEXT + REQUESTED COVERAGE header of the analyze DATA block. Shared by the live path and
        the regression harness so the two can never drift. */
@@ -29515,6 +29519,32 @@ window.addEventListener('DOMContentLoaded', () => {
         if(has&&isFinite(a)&&(c-a)<340&&(c-a)>0.0001&&(d-b)>0.0001){ map.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); rendered=true; method=method||(box?'bbox':'pins'); }
         else if(ctr){ map.flyTo({center:ctr,zoom:(opt.zoom||4),duration:1000}); rendered=true; method=method||'center'; } }catch(_){}
       return { rendered, method, name, pinCount:pins.length, hasExtent:!!(ext&&(ext.box||isFinite(ext.lng))), pinIdx }; }
+
+    /* (#R149 · Atlas mapping-quality commission) A location-rich Atlas answer must deliver MAP value, not just prose:
+       the specific real places it names get pinned, and the reply honestly reports which spots were placed and which
+       could not be. `places` is a list the model emits INLINE with its answer (no extra AI call / no extra quota):
+       [{n:name, c:modern country, k:kind, s:one-line why}] — coordinates are NEVER from the model; the shared
+       geocode ladder (_tryMapResearch → placeExtent/geocode) resolves them, and anything it can't uniquely place is
+       reported as "not placed", never guessed. Returns the self-audit note HTML (or '' when nothing was mappable). */
+    async function _pinReplyPlaces(places, ctx){ ctx=ctx||{};
+      const items=(Array.isArray(places)?places:[]).slice(0,16).map(p=>({
+        name:String((p&&(p.n||p.name))||'').slice(0,90), locationName:String((p&&(p.n||p.locationName||p.name))||'').slice(0,90),
+        country:String((p&&(p.c||p.country))||'').slice(0,60), kind:String((p&&(p.k||p.kind))||'').slice(0,40),
+        summary:String((p&&(p.s||p.summary))||'').slice(0,240) })).filter(it=>it.locationName && it.locationName.length>1);
+      if(!items.length) return '';
+      let res=null; try{ res=await _tryMapResearch(ctx.place||'', items, {mode:'current', zoom:ctx.zoom||5}); }catch(_){ return ''; }
+      const idx=(res&&res.pinIdx)||[]; const mapped=[], failed=[];
+      items.forEach((it,i)=>{ (idx[i]!=null&&idx[i]>=0)?mapped.push(it.name):failed.push(it.name); });
+      const n=(res&&res.pinCount)||mapped.length; if(!n && !failed.length) return '';
+      let h='';
+      if(n) h+='<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">📍 '+L(
+        n+' place'+(n===1?'':'s')+' from this answer mapped — tap a pin for details',
+        '本文の主要スポット '+n+' 件を地図にマッピングしました（ピンをタップで詳細）',
+        n+' Ort'+(n===1?'':'e')+' aus dieser Antwort auf der Karte — Pin antippen',
+        'На карте '+n+' объект(ов) из этого ответа — нажмите метку',
+        n+' lugar'+(n===1?'':'es')+' de esta respuesta en el mapa — toca un pin')+'</div>';
+      if(failed.length) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Not placed (couldn’t locate precisely): ','未配置（正確に特定できませんでした）: ','Nicht verortet: ','Не размещены: ','Sin ubicar: ')+esc(failed.slice(0,6).join(', '))+(failed.length>6?'…':'')+'</div>';
+      return h; }
 
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,'');
@@ -30595,7 +30625,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let hh='<div style="font-size:12.5px;line-height:1.6;margin-bottom:7px;">'+esc(q||L('Which one?','どれにしますか？','Welche?','Какой вариант?','¿Cuál?'))+'</div>';
           if(opts.length){ hh+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:'+(allowText?'8px':'2px')+';">'
             +opts.map(o=>'<button class="atl-choice" data-choice="'+esc(encodeURIComponent(o))+'" style="text-align:left;border:1px solid var(--glass-border,rgba(128,128,128,0.32));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:8px 12px;font-size:12px;cursor:pointer;">'+esc(o)+'</button>').join('')+'</div>'; }
-          if(allowText){ hh+='<div class="atl-choice-txt" style="display:flex;gap:6px;"><input type="text" class="atl-choice-in" placeholder="'+esc(L('or type your own answer…','または自由に入力…','oder eigene Antwort…','или введите свой ответ…','o escribe tu respuesta…'))+'" style="flex:1;min-width:0;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;box-sizing:border-box;"><button class="atl-choice-go" title="'+L('Send','送信','Senden','Отправить','Enviar')+'" style="flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:none;background:var(--primary-color);color:#fff;cursor:pointer;font-size:16px;">→</button></div>'; }
+          if(allowText){ hh+='<div class="atl-choice-txt" style="display:flex;gap:6px;"><input type="text" class="atl-choice-in" placeholder="'+esc(L('or type your own answer…','または自由に入力…','oder eigene Antwort…','или введите свой ответ…','o escribe tu respuesta…'))+'" style="flex:1;min-width:0;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:12px;outline:none;box-sizing:border-box;"><button class="atl-choice-go" title="'+L('Send','送信','Senden','Отправить','Enviar')+'" style="flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,0.08);background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 4px rgba(0,0,0,0.14);"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'; }   /* (#R149) white bg + BLACK icon + a real up-arrow SVG (was accent bg + plain-text "→") — "白背景黒文字に。plain textの→はやめて" */
           return R(true, hh); }
         case 'analyze': case 'research': case 'synthesize': { const q=String(a.question||a.query||a.text||'').trim();
           if(!q) return R(false, warn('⚠ '+L('What should I analyze?','何を分析しますか？','Was soll analysiert werden?','Что проанализировать?','¿Qué analizo?')));
@@ -30726,10 +30756,16 @@ window.addEventListener('DOMContentLoaded', () => {
           const _aMeta=(window._aiLastMeta&&typeof window._aiLastMeta==='object')?window._aiLastMeta:{};
           const _aCites=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
           const _webUnverified=freshness.critical&&!_aMeta.webUsed;   /* freshness-critical but live web check did not run → provisional */
+          /* (#R149) peel the PLACES trailer (mappable spots the answer named) off FIRST — it is the very last line,
+             after SOURCES — so the SOURCES strip below still matches at end-of-string. No extra AI call. */
+          let replyPlaces=[]; try{ txt=String(txt).replace(/\n?\s*PLACES\s*[:：]\s*(\[[\s\S]*?\])\s*$/i,(m,g)=>{ try{ const arr=JSON.parse(g); if(Array.isArray(arr)) replyPlaces=arr; }catch(_){} return ''; }); }catch(_){}
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
           let srcUrls=[]; try{ txt=String(txt).replace(/\n?\s*SOURCES?\s*[:：]\s*([^\n]+)\s*$/i,(m,g)=>{ srcUrls=g.split(/[|\s]+/).filter(u=>/^https?:\/\//i.test(u)).slice(0,4); return ''; }); }catch(_){}
           let html='<div style="font-weight:600;margin:2px 0 5px;">🧭 '+L('Integrated analysis','統合分析','Integrierte Analyse','Комплексный анализ','Análisis integrado')+'</div>';
           html+='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(String(txt).trim())+'</div>';
+          /* (#R149 · mapping commission) pin the specific real places the analysis named (unless the plan already
+             pinned) so an integrated analysis delivers MAP value, not just prose — with an honest placed/not-placed note. */
+          if(replyPlaces.length && !(_pois&&_pois.length)){ try{ html+=await _pinReplyPlaces(replyPlaces,{}); }catch(_){} }
           /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
              assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
              confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
@@ -30775,7 +30811,7 @@ window.addEventListener('DOMContentLoaded', () => {
           return R(true, html); }
         case 'ticker': { const onT=!(a.on===false||/^(off|hide)$/i.test(String(a.mode||''))); let okT=false;
           try{ if(window.IntMapTicker){ window.imTicker=onT?'on':'off'; window.IntMapTicker.apply(); okT=true; try{ if(typeof saveSettings==='function') saveSettings(); }catch(_){} } }catch(_){}
-          return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off')):warn('⚠')); }
+          return R(okT, okT?note('✓ '+L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior')+': '+(onT?'on':'off'))+_featTogHtml('ticker'):warn('⚠')); }   /* (#R149) offer the ticker on/off toggle */
         case 'compareStats': case 'compareCountries': case 'statsCompare': { await ensureData();
           const rawC=Array.isArray(a.countries)?a.countries:String(a.countries||a.country||'').split(/,|、|;| and | und | y | и |と| vs\.? |対/i).map(x=>x.trim()).filter(Boolean);
           const cds=[],missC=[]; for(const nm2 of rawC){ const c=await resolveCountry(nm2); if(c&&c.code){ if(cds.indexOf(c.code)<0) cds.push(c.code); } else missC.push(nm2); }
@@ -31034,7 +31070,9 @@ window.addEventListener('DOMContentLoaded', () => {
           return R(false, warn('⚠ '+L('Unknown monitor operation.','不明な監視操作です。','Unbekannte Monitor-Operation.','Неизвестная операция монитора.','Operación de monitor desconocida.')));
         }
         case 'control': return doControl(a);
-        case 'answer': return R(true, '<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>');
+        case 'answer': { let _ah='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
+          if(Array.isArray(a.places)&&a.places.length&&!(_pois&&_pois.length)){ try{ _ah+=await _pinReplyPlaces(a.places,{}); }catch(_){} }
+          return R(true, _ah); }
         default: { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn('⚠ '+L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
       } }
     /* (#R64) "別の言語で話しかけても、言語設定の言語でしか返答しないのはやめろ" — Atlas answers in the language
@@ -31060,6 +31098,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _langLine=()=>{ const l2=_replyLang(); return 'the language the user\'s message is written in (it appears to be '+l2+' — ALWAYS mirror the user\'s language, never the UI language'+(l2==='Japanese'?'; when replying in Japanese, use polite form (です・ます／敬語) by default unless the user is clearly casual or explicitly asks for plain/casual speech':'')+')'; };   /* (#R147) Japanese default = keigo unless the user opts out */
     function SYS(){ const lang=_langLine();
       return 'You are Atlas, the natural-language command layer for IntMap, an interactive world map. You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. The action "type" names below (flyTo, mapReport, analyze, layer, highlight, time, …) are PLAIN STRING VALUES inside the JSON — they are NOT callable tools or functions. Do NOT emit a functionCall, do NOT call any tool, and do NOT try to execute an action yourself; the IntMap application executes the returned JSON. No web-search or function-calling tool is attached to this planning request. "say" = one short sentence in '+lang+' stating what you did. Decompose a compound request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyse a metric, shade the map, enable a layer AND fly somewhere).\n'
+        +'MAPPING MANDATE (IntMap is a MAP product — a research answer must produce map value only IntMap can give, not a generic chatbot reply): whenever the request concerns real places or its answer will name locatable spots (cities, districts, landmarks, stations, airports, ports, parks, museums, squares, named facilities or natural features), you MUST put those spots ON the map — prefer the pin-producing actions ("poi" for facilities in a place, "mapReport" for current/recent live-news incidents, "researchMap" for a place/topic situation), and when you answer with plain "answer"/"analyze" list the named spots so IntMap pins them. The spots named in your prose and the spots mapped MUST match; NEVER finish a location-rich answer having mapped nothing. Verify with MULTIPLE independent source types (official bodies, primary reporting, specialist institutions) — never lean on one site/domain — and choose the best primary source per claim, not just top-ranked pages. Do NOT guess a coordinate: IntMap resolves positions from name+country and, for anything it cannot uniquely place, it honestly reports the spot as not-placed rather than putting it in the wrong location. Self-audit before finishing: are the main spots mapped, no same-name/coordinate mix-ups, sources not all one domain.\n'
         +'PRECISION vs AMBIGUITY (the user explicitly complained about both forcing a guess on vague input AND mis-reading clear input): (a) when the request is CLEAR, do EXACTLY what it says — do not substitute a different action, drop a step, or add anything not asked; match places/metrics/layers literally. (b) when it is GENUINELY ambiguous or MISSING information you need (which of several places, which metric, from/to for a route, which country, etc.), do NOT force a wrong guess — emit a SINGLE {"type":"ask","question":<one short question in '+lang+'>,"options":[2-4 concrete choices],"allowText":true}. This renders the question with clickable option chips AND a free-text box, and the user\'s pick comes back to you as the next message — ALWAYS prefer this selection form over a plain guess when key info is missing. Only fall back to {"type":"answer"} for a purely conversational clarification with no sensible options. Otherwise never refuse. Never claim success for something you did not emit an action for.\n'
         +'HONESTY: NEVER use "answer" (or the "say" text) to claim you did something you did not emit a real action for — that is a lie the user explicitly complained about. To DO anything you MUST emit its action. "say" must describe ONLY what the actions in this plan actually do. If a request is impossible or unclear, emit a single honest {"type":"answer"} explaining it, and emit NO action you cannot fulfil. Decompose multi-part requests fully (5+ actions is fine) and keep them in the order the user implied.\n'
         +'SCOPE & SAFETY (do NOT over-refuse — the user complained that a request was blocked wholesale just because it contained a sensitive-sounding word): NEVER judge by keyword. Assess every request on FOUR axes — (1) PURPOSE: analysis / defence / preparedness / education / journalism vs genuine operational harm; (2) TARGET: a broad area or public installation vs a precise strike point or a named private individual; (3) PRECISION: approximate / public-information / illustrative vs real-time or targeting-grade; (4) OUTPUT: an explanation or a map visualisation vs step-by-step instructions to cause harm. DEFAULT TO DOING A SAFE VERSION; full refusal is the LAST resort. When a request is sensitive but has a legitimate reading, TRANSFORM it and EXECUTE: turn a precise point into a BROAD public zone, keep only PUBLIC already-reported information, recast "how to attack / optimise a strike" as threat-assessment / reach / defence / preparedness, ALWAYS state the uncertainty and that it uses public information, and actually RUN the safe map actions (drawPolygon for a broad zone, radius for reach/range rings, missile for a representative arc, radiation or impact for an affected area, highlight, flyTo). Apply this SAME purpose/target/precision/output test generally across sensitive domains — military and weapons, disasters, disease and epidemics, hazardous chemicals / CBRN, crime and policing statistics, cyber, and critical infrastructure — never a keyword blocklist. REFUSE only the specific harmful slice (real-time targeting for an actual attack, a precise strike or kill plan against a specific person or an undefended civilian site, or genuinely operational instructions for building a weapon or synthesising a dangerous agent) and even then do NOT dead-end: in "say"/"answer" name the safe public-information analysis you CAN give and still emit the safe actions. Example — "using public information, show the approximate area a missile could be launched from country A toward country B": DO IT — emit a broad drawPolygon launch-region zone plus radius reach rings (optionally a representative missile arc), and in "say" note it is an approximate estimate from public information for situational / defensive analysis, not targeting data. Do NOT reply with a bare refusal.\n'
@@ -31092,7 +31131,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
-        +'ANSWER: {"type":"answer","text":str} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). FORMAT FOR READABILITY (the user complained Atlas replies are a monotonous wall of same-size text): for a multi-part answer, open with a short **bold** lead, use "## " sub-headings for the distinct sections, "- " bullets for lists, and a blank line between sections — these render with real heading sizes and spacing; keep a one-idea reply as plain sentences (do not over-structure). CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
+        +'ANSWER: {"type":"answer","text":str,"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger accent headings with clear spacing. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "タイムマシンの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the time-machine button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
         +'AREA MONITORS (saved SERVER-SIDE watches — they re-check an area on a schedule even when the page is closed, and generate an EVIDENCE-BACKED report ONLY when a real change is detected, never on every run): {"type":"monitor","op":"create"|"list"|"open"|"pause"|"resume"|"run"|"delete","name"?:str,"which"?:str,"index"?:int,"intervalMin"?:int,"sources"?:[str]}. op:"create" saves a monitor over the CURRENTLY SELECTED AREA — a radius circle, a drawn area, OR a resolved region outline (the user must have ONE active; if none is active, the action tells them to set one first — do NOT invent an area). Pass "name" and optionally "intervalMin" (minutes, ≥30, default 360) and "sources" (["news"] is the only source for now). op:"list" opens the Monitors tab. op:"open"/"pause"/"resume"/"run"/"delete" act on an EXISTING monitor identified by "which" (its name/area, fuzzy-matched) or "index" (1-based). Use for "この範囲を監視して"/"monitor this area" (create), "監視一覧"/"my monitors" (list), "東京の監視を今すぐ実行/一時停止/削除". Login is required. NEVER claim a monitor was created/paused/run/deleted unless the action actually succeeded (the reply reflects the real result).\n'
@@ -31105,6 +31144,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
+    let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
       /* (#R62) refined AI-app look ("ChatGPTのような洗練された生成AI App風のUI") + the DEFAULT desktop layout is a
          tall LEFT column ("初回起動時に、画面左側にサイドバーのように縦長の形で展開"). Dragging/resizing still
@@ -31161,6 +31201,15 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-chip{font-size:11px;color:var(--text-main);background:rgba(120,120,128,0.10);border:1px solid rgba(128,128,128,0.16);border-radius:12px;padding:6px 10px;cursor:pointer;text-align:left;transition:background .15s ease,border-color .15s ease;}'
         +'#atlas-panel .atl-chip:hover{background:rgba(120,120,128,0.2);border-color:var(--primary-color);}'
         +'#atlas-panel .atl-inbar{display:flex;gap:8px;align-items:center;padding:6px 9px 4px;border-top:1px solid rgba(128,128,128,0.12);}'   /* (#R103) tighter top/bottom margin around the input+send */
+        /* (#R149) image attach button + pasted/attached image thumbnails ("入力欄にペーストすれば画像も送れるように") */
+        +'#atlas-panel .atl-attach{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s ease,background .15s ease;}'
+        +'#atlas-panel .atl-attach:hover{color:var(--primary-color);background:var(--input-bg);}'
+        +'#atlas-panel .atl-imgrow{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 0;}'
+        +'#atlas-panel .atl-thumb{position:relative;width:54px;height:54px;border-radius:9px;overflow:hidden;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);}'
+        +'#atlas-panel .atl-thumb img{width:100%;height:100%;object-fit:cover;display:block;}'
+        +'#atlas-panel .atl-thumb-x{position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,0.62);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}'
+        +'#atlas-panel .atl-thumb-x:hover{background:rgba(220,50,50,0.9);}'
+        +'#atlas-panel.atl-drag .atl-chat{outline:2px dashed var(--primary-color);outline-offset:-6px;border-radius:10px;}'
         /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */
         +'#atlas-panel .atl-ainote{font-size:9.5px;color:var(--text-muted);text-align:center;padding:0 12px 7px;line-height:1.4;opacity:0.8;}'
         +'#atlas-panel .atl-in{flex:1;min-width:0;height:42px;min-height:42px;max-height:132px;padding:11px 15px;border-radius:21px;border:1px solid rgba(128,128,128,0.25);background:var(--card-bg);color:var(--text-main);font-size:13px;line-height:1.45;outline:none;box-sizing:border-box;transition:border-color .15s ease,box-shadow .15s ease;resize:none;overflow-y:auto;font-family:inherit;display:block;}'   /* (#R118) textarea: Shift+Enter improves to multi-line, auto-grows to ~5 lines */
@@ -31170,7 +31219,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-go{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(0,0,0,0.08);background:#fff;color:#111;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:transform .08s ease,opacity .15s ease,background .15s ease;}'   /* (#R148) send + stop buttons = WHITE background + BLACK icon ("白背景黒文字に") — R147 tinted the icon with the accent colour; the user wants it black. Icon is currentColor. */
         +'#atlas-panel .atl-go svg{display:block;}'
         +'#atlas-panel .atl-go:hover{background:#f0f0f4;} #atlas-panel .atl-go:active{transform:scale(0.9);}'
-        +'#atlas-panel .atl-go.idle{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);color:rgba(120,120,128,0.75);}'   /* empty input: still white, muted icon */
+        +'#atlas-panel .atl-go.idle{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.12);color:#111;}'   /* (#R149) empty input: keep the ↑ arrow SOLID BLACK ("↑の黒色が薄くて透けている→黒に") — R147/R148 used a muted rgba(120,120,128,.75) which read as faded/see-through; only the lighter shadow now marks the idle state */
         +'#atlas-panel .atl-go.busy{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#111;}'   /* (#R148) Stop-answering button = WHITE background + BLACK square icon (matches Send; the enlarged square distinguishes it) */
         +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.06);}'
         /* (#R72) per-message tools (copy / retry) under every Atlas reply — ChatGPT-style, user bubbles get none */
@@ -31283,7 +31332,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
         +'<div class="atl-ex"></div>'
         +'<div class="atl-chat"></div>'
-        +'<div class="atl-inbar"><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
+        +'<div class="atl-imgrow" style="display:none;"></div>'   /* (#R149) pasted/attached image thumbnails appear here */
+        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'" aria-label="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
         +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
@@ -31319,6 +31369,16 @@ window.addEventListener('DOMContentLoaded', () => {
       const _autoGrow=()=>{ try{ inEl.style.height='auto'; inEl.style.height=Math.min(inEl.scrollHeight,132)+'px'; }catch(_){} };
       inEl.addEventListener('input',()=>{ try{ if(!go.classList.contains('busy')) go.classList.toggle('idle',!inEl.value.trim()); }catch(_){} _autoGrow(); });   /* (#R142) don't fight the Stop button's busy state */
       inEl.__autoGrow=_autoGrow;
+      /* (#R149) VISION — paste / drag-drop / attach an image into the Atlas input, then send it with your message.
+         Uses the SAME client→ai-proxy image path the satellite-compare feature already uses (compressImage → JPEG
+         data-URL → images[] the Edge Function forwards as OpenAI input_image). */
+      try{
+        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'&&/^image\//.test(it.type||'')){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });
+        const atk=panel.querySelector('.atl-attach'); if(atk) atk.onclick=()=>{ try{ const fi=document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.multiple=true; fi.style.display='none'; fi.onchange=()=>{ try{ _atlAddFiles([...(fi.files||[])]); }catch(_){} try{ fi.remove(); }catch(_){} }; document.body.appendChild(fi); fi.click(); }catch(_){} };
+        panel.addEventListener('dragover',(e)=>{ try{ if(e.dataTransfer&&[...(e.dataTransfer.types||[])].indexOf('Files')>=0){ e.preventDefault(); panel.classList.add('atl-drag'); } }catch(_){} });
+        panel.addEventListener('dragleave',(e)=>{ try{ if(!panel.contains(e.relatedTarget)) panel.classList.remove('atl-drag'); }catch(_){} });
+        panel.addEventListener('drop',(e)=>{ try{ const dt=e.dataTransfer; panel.classList.remove('atl-drag'); if(!dt) return; const files=[...(dt.files||[])].filter(f=>/^image\//.test(f.type||'')); if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });
+      }catch(_){}
       /* (#R72) scroll-to-bottom jump ("上部にスクロールしたら、最下部まで行くボタンがでるように") */
       const jump=panel.querySelector('.atl-jump');
       if(jump){ jump.onclick=()=>{ try{ chatEl.scrollTo({top:chatEl.scrollHeight,behavior:'smooth'}); }catch(_){ chatEl.scrollTop=chatEl.scrollHeight; } };
@@ -31431,7 +31491,19 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(typeof makeDraggable==='function') makeDraggable(panel,panel.querySelector('.atl-head')); }catch(_){}
       try{ if(typeof addEdgeResize==='function') addEdgeResize(panel,{min:[300,160]}); }catch(_){}   /* (#R47) resize from ANY edge, no handle mark */
       return panel; }
-    function fire(){ const v=inEl.value.trim(); if(v){ inEl.value=''; try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v); } }
+    /* (#R149) VISION helpers — pending pasted/attached image thumbnails in the input bar (cap 4 = ai-proxy MAX_IMAGES). */
+    function _atlRenderImgs(){ try{ if(!panel) return; const row=panel.querySelector('.atl-imgrow'); if(!row) return;
+      if(!_atlImgs.length){ row.style.display='none'; row.innerHTML=''; return; }
+      row.style.display='flex'; row.innerHTML=_atlImgs.map((u,i)=>'<div class="atl-thumb"><img src="'+esc(u)+'" alt=""><button class="atl-thumb-x" data-i="'+i+'" title="'+L('Remove','削除','Entfernen','Удалить','Quitar')+'">✕</button></div>').join('');
+      row.querySelectorAll('.atl-thumb-x').forEach(b=>{ b.onclick=()=>{ const i=+b.getAttribute('data-i'); if(i>=0&&i<_atlImgs.length){ _atlImgs.splice(i,1); _atlRenderImgs(); _atlSyncGo(); } }; });
+    }catch(_){} }
+    function _atlSyncGo(){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go||go.classList.contains('busy')) return; go.classList.toggle('idle', !((inEl&&inEl.value.trim())||_atlImgs.length)); }catch(_){} }
+    async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(f=>f&&/^image\//.test(f.type||'')); if(!files.length) return;
+      for(const f of files){ if(_atlImgs.length>=4){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} break; }
+        try{ const u=await compressImage(f,1100,0.72); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){} }
+      _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
+    }catch(_){} }
+    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); if(v||imgs.length){ inEl.value=''; _atlImgs=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs); } }   /* (#R149) send text + any pasted/attached images */
     /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
        fast-path/rescue share it): run every action, collect REAL per-step results, surface failures prominently
        instead of trusting the model's optimistic "say". Returns the list of failed actions. */
@@ -31443,7 +31515,7 @@ window.addEventListener('DOMContentLoaded', () => {
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
     function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; }
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
-    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="18" height="18"><rect x="4.5" y="4.5" width="15" height="15" rx="3.5" fill="currentColor"/></svg>';   /* (#R145) bigger stop square ("ボタン内の四角はもっと大きく"): 7.5px→11.25px rendered */
+    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="3.25" y="3.25" width="17.5" height="17.5" rx="3.5" fill="currentColor"/></svg>';   /* (#R149) bigger stop square again ("四角はもう少し大きく"): rect 15→17.5 in a 24 viewBox rendered 18→20px ≈ 11.25px→14.6px */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
     function _setGoBusy(busy){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
       if(busy){ go.classList.add('busy'); go.classList.remove('idle'); go.innerHTML=_GO_STOP_SVG; go.onclick=_stopRun; go.title=L('Stop answering','応答を停止','Antwort stoppen','Остановить ответ','Detener respuesta'); go.setAttribute('aria-label',go.title); }
@@ -31592,7 +31664,8 @@ window.addEventListener('DOMContentLoaded', () => {
       satellite:{ lbl:()=>L('Satellite','衛星写真','Satellit','Спутник','Satélite'), on:()=>{ const b=document.getElementById('btn-view-sat'); return !!(b&&(b.classList.contains('active')||b.classList.contains('view-on')||b.classList.contains('on')||b.getAttribute('aria-pressed')==='true')); }, set:v=>{ clickId(v?'btn-view-sat':'btn-view-map'); } },
       borders:{ lbl:()=>L('Borders','国境','Grenzen','Границы','Fronteras'), on:()=>{ const cb=document.getElementById('cb-borders'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-borders'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
       labels:{ lbl:()=>L('Place labels','地名ラベル','Beschriftungen','Подписи','Etiquetas'), on:()=>{ const cb=document.getElementById('cb-geolabels')||document.getElementById('cb-names'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-geolabels')||document.getElementById('cb-names'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
-      roads:{ lbl:()=>L('Roads','道路','Straßen','Дороги','Carreteras'), on:()=>{ const cb=document.getElementById('cb-roads'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-roads'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } }
+      roads:{ lbl:()=>L('Roads','道路','Straßen','Дороги','Carreteras'), on:()=>{ const cb=document.getElementById('cb-roads'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-roads'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
+      ticker:{ lbl:()=>L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior'), on:()=>{ try{ return String(window.imTicker||'')!=='off'; }catch(_){ return true; } }, set:v=>{ try{ if(window.IntMapTicker){ window.imTicker=v?'on':'off'; window.IntMapTicker.apply(); if(typeof saveSettings==='function') saveSettings(); } }catch(_){} } }   /* (#R149) more on/off features get an inline toggle */
     };
     function _featTogHtml(kind){ const f=_FEAT_TOG[kind]; if(!f) return ''; let on=false; try{ on=!!f.on(); }catch(_){}
       /* (#R148) removed R147's bespoke .atl-featbtn ("独自ボタン") — restore the standard iOS toggle switch that shipped before R147. */
@@ -31961,13 +32034,16 @@ window.addEventListener('DOMContentLoaded', () => {
       let jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:表示|オン|つけて|有効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:true}],confident:false};
       jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:非表示|オフ|消して|無効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:false}],confident:false};
       return null; }
-    async function run(q){ q=String(q||'').trim(); if(!q) return; const p=ensure(); p.style.display='flex';
+    async function run(q,imgs){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
+      if(!q&&!imgs.length) return;
+      if(!q&&imgs.length) q=L('Describe and analyze this image, and map any real places it shows or implies.','この画像を説明・分析し、写っている／示唆される実在の場所があれば地図にマッピングしてください。','Beschreibe und analysiere dieses Bild und kartiere reale Orte, die es zeigt oder andeutet.','Опишите и проанализируйте это изображение и нанесите на карту реальные места, которые оно показывает.','Describe y analiza esta imagen y mapea los lugares reales que muestre o implique.');
+      const p=ensure(); p.style.display='flex';
       const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
       _lastUserMsg=q;   /* (#R64) replies mirror the language of THIS message, not the UI setting */
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
       try{ chatEl.querySelectorAll('.atl-b.a .atl-dots').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
-      bubble('u',esc(q));
+      bubble('u',(imgs.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">'+imgs.map(u=>'<img src="'+esc(u)+'" alt="" style="width:74px;height:74px;object-fit:cover;border-radius:8px;">').join('')+'</div>':'')+esc(q));   /* (#R149) show attached image thumbnails in the user bubble */
       /* (#R142) generating state → the send button becomes a Stop button; a fresh AbortController lets Stop kill the
          in-flight request. The whole turn is wrapped so EVERY exit path (return / throw / early-out) restores the button. */
       try{ _abortCtl=(typeof AbortController!=='undefined')?new AbortController():null; }catch(_){ _abortCtl=null; }
@@ -31984,7 +32060,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R52) a clear single-intent command runs deterministically with NO AI round-trip — it neither needs an
          account nor spends a daily AI credit, so the most common operations ALWAYS work (the core of the user's
          "claims it did X but didn't" report). The AI path below is still gated as before. */
-      if(lp&&lp.confident&&lp.actions&&lp.actions.length){ const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai,q); return; }
+      if(lp&&lp.confident&&lp.actions&&lp.actions.length&&!imgs.length){ const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai,q); return; }   /* (#R149) an attached image always goes to the AI (skip the no-AI local shortcut) */
       /* (#R106) AI FALLBACK & AVAILABILITY — "LocalPlanで無理ならAIにフォールバック / できる限りAIを使用 / エラーが多い".
          Prefer AI for anything localPlan can't confidently handle. But when AI is unavailable (logged out or the daily
          quota is spent) we must NOT dead-end into a silent return + login modal (the frequent "何もせずエラー" case):
@@ -32001,7 +32077,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
          "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
-      try{ let plan=await askAIJSON(buildPrompt(q,_profile),SYS(),null,{task:'atlas_plan',effortHint:_cplx?'high':undefined,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal */
+      try{ let plan=await askAIJSON(buildPrompt(q,_profile)+(imgs.length?'\n\n[NOTE: '+imgs.length+' image'+(imgs.length>1?'s are':' is')+' attached to this message — analyze '+(imgs.length>1?'them':'it')+' and answer about '+(imgs.length>1?'them':'it')+' in your "answer" text; if '+(imgs.length>1?'they show':'it shows')+' or imply real places, include them in the answer\'s "places" so IntMap maps them.]':''),SYS(),imgs,{task:'atlas_plan',effortHint:_cplx?'high':undefined,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal; (#R149) attached images (vision) */
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
         /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
@@ -32047,7 +32123,7 @@ window.addEventListener('DOMContentLoaded', () => {
           for(let _rp=0; _rp<2 && gen===_runGen && pending.length && acts.length<=12; _rp++){
             pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
             const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            const rp=await askAIJSON(buildPrompt(q,_profile)+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+'\n'+_repairGuidance(),SYS(),null,{task:'atlas_plan',effortHint:'high',signal:(_abortCtl?_abortCtl.signal:undefined)});
+            const rp=await askAIJSON(buildPrompt(q,_profile)+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+'\n'+_repairGuidance(),SYS(),imgs,{task:'atlas_plan',effortHint:'high',signal:(_abortCtl?_abortCtl.signal:undefined)});
             let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
             let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
             /* sanitize the repair plan through the SAME capability validation as the first plan */
@@ -33310,6 +33386,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<label class="mon-lbl">'+S(ML('Sensitivity','感度','Empfindlichkeit','Чувствительность','Sensibilidad'))+'</label>'
         +'<select class="mon-inp" id="mon-sens">'+sens.map(([v,l])=>'<option value="'+v+'"'+(v==='medium'?' selected':'')+'>'+S(l)+'</option>').join('')+'</select>'
         +'<div class="mon-note">'+S(ML('The monitor runs on our servers even when this page is closed. A report is generated only when a meaningful change is detected — every claim links to its source.','このページを閉じてもサーバー側で実行されます。意味のある変化が検出された時だけレポートが生成され、各主張は出典にリンクします。','Läuft serverseitig, auch wenn die Seite geschlossen ist. Ein Bericht entsteht nur bei einer bedeutsamen Änderung.','Работает на сервере, даже если страница закрыта. Отчёт создаётся только при значимом изменении.','Se ejecuta en el servidor aunque cierres la página. El informe solo se genera ante un cambio significativo.'))+'</div>'
+        +'<div class="mon-create-err" id="mon-create-err" style="display:none;color:#ff453a;font-size:12px;margin:8px 0 0;line-height:1.45;"></div>'   /* (#R149) inline, unmissable failure feedback right where the user is looking — toast infra is not guaranteed */
         +'<div class="mon-dlg-acts"><button class="mon-cancel">'+S(ML('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button><button class="mon-save" id="mon-create-btn">'+S(ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'))+'</button></div>';   /* (#R148) NEVER render disabled — a disabled button clicks to nothing ("押しても何も起こらない"); the click handler below falls back to the map view or shows a clear toast, so pressing it always does something */
       const ov=_overlay(inner,'mon-ov-create');
       const upd=()=>{ const box=ov.querySelector('.mon-area-box'); const btn=ov.querySelector('#mon-create-btn'); const nm=ov.querySelector('#mon-name');
@@ -33317,7 +33394,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if(nm&&!nm.value&&area) nm.value=area.label; };   /* (#R148) button stays enabled — see the create handler's area fallback + toast */
       const uv=ov.querySelector('#mon-usemapview'); if(uv) uv.onclick=()=>{ area=mapViewArea(); usingView=true; uv.style.display='none'; upd(); };
       ov.querySelector('.mon-cancel').onclick=()=>ov.remove();
-      ov.querySelector('#mon-create-btn').onclick=async(e)=>{ const btn=e.target; if(!area){ const mv=mapViewArea(); if(mv){ area=mv; usingView=true; } } if(!area){ _toast(ML('Please set an area to monitor first (radius, drawn area, region, or the current map view).','監視する範囲を先に指定してください（半径・描画・地域、または現在の地図表示）。','Bitte zuerst einen Bereich festlegen (Radius, Zeichnung, Region oder Kartenansicht).','Сначала укажите область для мониторинга (радиус, область, регион или вид карты).','Primero define un área a vigilar (radio, área, región o vista del mapa).')); return; } btn.disabled=true; btn.textContent='…';   /* (#R147) never a silent no-op */
+      ov.querySelector('#mon-create-btn').onclick=async(e)=>{ const btn=e.target; const em=ov.querySelector('#mon-create-err'); const showErr=(m)=>{ try{ if(em){ em.textContent=String(m||''); em.style.display=m?'block':'none'; } }catch(_){} _toast(m); }; if(em) em.style.display='none';
+        if(!area){ const mv=mapViewArea(); if(mv){ area=mv; usingView=true; } } if(!area){ showErr(ML('Please set an area to monitor first (radius, drawn area, region, or the current map view).','監視する範囲を先に指定してください（半径・描画・地域、または現在の地図表示）。','Bitte zuerst einen Bereich festlegen (Radius, Zeichnung, Region oder Kartenansicht).','Сначала укажите область для мониторинга (радиус, область, регион или вид карты).','Primero define un área a vigilar (radio, área, región o vista del mapa).')); return; } btn.disabled=true; btn.textContent='…';   /* (#R147/#R149) never a silent no-op — inline error + toast */
         const sources=[...ov.querySelectorAll('.mon-src input:checked')].map(c=>c.value); if(!sources.length) sources.push('news');
         const cmp=ov.querySelector('#mon-cmp').value; const intv=parseInt(ov.querySelector('#mon-int').value,10)||360;
         const sensV=ov.querySelector('#mon-sens').value; const sensMap={low:{min_score:0.45,min_new:3},medium:{min_score:0.3,min_new:1},high:{min_score:0.18,min_new:1}};
@@ -33325,7 +33403,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(res.ok){ ov.remove(); _toast(ML('Monitor created.','監視を作成しました。','Monitor erstellt.','Монитор создан.','Monitor creado.')); render();
           try{ if(map){ showOnMap({geometry:res.monitor.geometry,bbox:res.monitor.bbox},[]); } }catch(_){} }
         else if(res.error==='login'){ _promptLogin(); }
-        else { btn.disabled=false; btn.textContent=ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'); _toast(String(res.error||'')); } };
+        else { btn.disabled=false; btn.textContent=ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'); showErr(String(res.error||ML('Could not create the monitor.','監視を作成できませんでした。','Monitor konnte nicht erstellt werden.','Не удалось создать монитор.','No se pudo crear el monitor.'))); } };
     }
 
     /* ---- monitor detail overlay (config + run history + latest report) ---- */
@@ -33397,7 +33475,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     async function flyTo(id){ try{ const m=(typeof id==='object')?id:await _get(id); if(!m) return false; let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts); return true; }catch(_){ return false; } }
 
-    function _toast(msg){ try{ if(window.imToast) return imToast(msg); if(window.aiToast) return aiToast(msg); }catch(_){} }
+    /* (#R149) ROOT-CAUSE of "監視を作成を押しても何も起こらない": imToast/aiToast are closure-scoped functions
+       (the app is NOT an ES module, so top-level fns are NOT on window). This guarded on `window.imToast` /
+       `window.aiToast` — BOTH undefined — so EVERY monitor toast silently no-op'd, including the error feedback
+       when create() failed (e.g. plan limit reached, geometry too big). The button just reverted and nothing
+       appeared. Call the in-scope fns directly (typeof-guarded), with alert() as a guaranteed last resort. */
+    function _toast(msg){ if(msg==null||msg==='') return; try{ if(typeof imToast==='function') return imToast(msg); }catch(_){} try{ if(typeof aiToast==='function') return aiToast(msg); }catch(_){} try{ if(typeof satToast==='function') return satToast(msg); }catch(_){} try{ alert(String(msg)); }catch(_){} }
     function _closeSheetIfMobile(){ try{ if(window.__setDetent && window.matchMedia('(max-width:768px)').matches) window.__setDetent('peek'); }catch(_){} }
 
     /* ---- realtime: refresh the list when a run finishes / a report lands (if the tab is open) ---- */
