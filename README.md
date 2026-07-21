@@ -190,7 +190,7 @@ The interface currently supports:
 * Русский — beta
 * Español — beta
 
-Place-name labels support the same languages. Some recent or deeply nested content may still fall back to English or Japanese.
+Place-name labels support the same languages. Some recent or deeply nested content may still fall back to English.
 
 Atlas normally responds in the language used in the request.
 
