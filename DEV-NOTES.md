@@ -5,6 +5,61 @@
 
 ---
 
+## R147 — UX/設定バッチ14件：Atlasモデル Luna→Terra／無料枠10回／Atlas過剰拒否防止(scope/safety判定層)／敬語／送信・停止ボタン白／返信タイポグラフィ／オンオフ=ボタン／SV蛍光水色／ケッペン凡例=内容で停止／衛星タイル即時/Companies点滅解消・比較parity／Radius整理／モニター作成 (tag `#R147`)
+
+ユーザー指摘**14件**を根本原因から修正。`index.html`＋Edge Function `ai-proxy`/`monitor-run` の**加算的/微修正**（単一HTML・ビルド無し温存）。`npm test` 緑（static＋node 47＝security/monitor/**新r147-checks 7**＋**Playwright 63**＝新 `r147.spec.js` 6・r142の`#rad-r`参照を`#rad-c`へ更新、pageerror 0）。ローカル(127.0.0.1:8781)でAtlas白ボタン・Companies点滅解消(190社・再描画後clearbit step0=**0**)・Radius整理・各`window`関数ロードを実測。
+
+### ① Atlas使用モデル GPT‑5.6 Luna→**Terra**（#12）
+モデルidは**コードにハードコードされておらず** `AI_MODEL` Supabase secret（＝真の切替点）。secretを `gpt-5.6-terra` に変更＋`ai-proxy` のopenaiフォールバック `gpt-4o-mini`→`gpt-5.6-terra`・Luna言及コメントを全てTerraへ（ai-proxy/monitor-run/index.html）。**Gemini 3.1 Flash‑Liteは今後不使用**（そもそも未参照＝ドキュメント明記のみ）。Gemini経路はdormant温存。deploy: `supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac`。
+
+### ② 無料AI枠 30→**10回/日**（#13）
+`ai-proxy` `PLAN_LIMITS.free 30→10`＋`index.html` `AI_FREE_DAILY 30→10`＋表示文言5言語（`aiSecHint` EN/JP/DE/RU/ES「10 uses/1日10回/…」）＋stale コメント（5/day→10/day）。サーバが真の権威・クライアントは表示/事前チェック。
+
+### ③ Atlas過剰拒否の防止＝汎用 scope/safety 判定層（#10・業務委託）
+**真因**＝IntMapに独自拒否層は無く、拒否は上流モデルの安全フィルタ由来。`SYS()` プランナープロンプトは「never refuse」と言うのみで**機微な依頼の安全な変換方針が無かった**。**修正＝`SYS()` に「SCOPE & SAFETY」節を追加**：単語一致でなく **目的/対象/精度/出力の4軸で分解**→**既定で安全版を実行・全面拒否は最終手段**→機微だが正当な依頼は**変換して実行**（精密点→広域公開ゾーン、公開情報限定、攻撃最適化→脅威評価/到達圏/防災、不確実性・出典明示、`drawPolygon`/`radius`/`missile`/`radiation`/`impact` 等で実描画）。**軍事だけでなく災害/感染症/化学(CBRN)/犯罪統計/サイバー/重要インフラに汎用適用**。**全面拒否は真に有害なスライスのみ**（実時間標的、特定人物/無防備地点の精密打撃計画、兵器/危険物の作成手順）で、それでも「できる安全な分析」を提示。`_analysisSystemPrompt()` にも並行の SCOPE 節。`provider_blocked` の文言も**建設的**（広域・公開情報での言い換えを提案）に5言語で改訂。**完了条件**＝ミサイル例で広域発射想定ゾーン＋到達圏＋不確実性を描画し、単なる拒否で終わらない（本番検証で確認）。テスト＝`r147-checks` が4軸/変換方針/ドメイン網羅/keigoをソース保証。
+
+### ④ Atlas日本語=敬語（#2）
+`_langLine()`/`_aiLangLine()`/`_analysisSystemPrompt()` に「日本語では既定で丁寧語（です・ます／敬語）、ユーザーがくだけた/タメ口を明示した場合のみ例外」を追加（返信言語がJapaneseのときだけ付加）。
+
+### ⑤ Atlas送信・停止ボタン=白（#11）
+`.atl-go`（送信）/`.atl-go.busy`（停止）を **背景`#fff`＋アイコン`var(--primary-color)`**（`currentColor`）に。ライト/ダーク両テーマで視認できるよう薄border＋shadow。idle（空入力）も白＋muted。実測 `getComputedStyle(.atl-go).backgroundColor === rgb(255,255,255)`。
+
+### ⑥ Atlas返信タイポグラフィ（#8）
+**真因**＝主返信 `say` が `esc()` のみ（**markdown/改行すら描画されず単調な塊**）＋`mdMini` の見出しが固定px小＋サイドバーの`!important`が見出しを15pxへ潰す。**修正**＝`say` を `mdMini` 経由に（2箇所）・`mdMini` の見出し/箇条書きを**em単位**化（バブルfont-sizeに比例＝通常12.8/サイドバー15の両方で階層が効く・`[style*="font-size:12px"]`潰しを回避）・段落`\n\n`に実余白（spacer div）。見出し h1=1.38em/h2=1.2em/h3=1.06em。
+
+### ⑦ Atlasオンオフ=ボタン拡充（#6）
+`_featTogHtml` を iOSスイッチ→**ラベル＋ON/OFFバッジの明示ボタン**（`.atl-featbtn`）に。delegated `.atl-feat-tog` ハンドラは実コントロールをフリップ＋バッジ更新。`base`(衛星) ディスパッチにも `_featTogHtml('satellite')` を配線（既存 grid/3D/国情報/SVに加え）。クラス名 `atl-feat-tog` 温存で既存r145/r146テスト不変。
+
+### ⑧ SVカバレッジ=蛍光水色（#5）
+`sv-cov-lyr` raster paint を `saturation:0.28→0.95・hue-rotate:-34→-42・brightness-min:0.5追加・contrast:0.15・opacity:1`＝ネオン水色に発光（高彩度でR145型の退色を回避）。
+
+### ⑨ ケッペン凡例=内容末尾で停止（#7）
+**真因**＝`max-height:calc(100dvh-92px)` でグラバーが**内容より下＝空白まで**伸ばせた。**修正**＝新 `window._fitKoppenLegend()` が凡例の**自然な内容高さ（chrome＋`.kl-scroll` scrollHeight）をビューポート上限でクランプ**して `maxHeight` に設定。buildLegend末尾/表示時(rAF)/resize(debounce)で再計算。デスクトップのみ（モバイルCSSが `resize:none`）。「最後までいったらとまる」。
+
+### ⑩ 衛星画像タイル=即時（#9）
+**真因**＝`layer-sat` に paint 無し＝`raster-fade-duration` が既定300msでズーム/パン時にちらつく（他の全rasterは0）。**修正**＝`layer-sat`/`layer-sat-labels` に `raster-fade-duration:0`＋`satellite` source に `maxzoom:19`（過剰ズームの404防止）。高速ズーム/パン、特にモバイルが快適。
+
+### ⑪ Companiesロゴ点滅解消（#3）
+**真因**＝価格更新毎に `feed.innerHTML=html` で全ロゴ再生成→各再描画で **Clearbit→favicon→monogram ラダーを最初からやり直し**（空白→404→favicon→差替のちらつき）。resolved結果を**キャッシュしていなかった**。**修正**＝module級 `_coLogoCache`（dom→解決済url or 'mono'）＋`_coLogoInner`/`_coWireLogo`（onload/onerrorで登録）＝再描画は解決済srcを直接emit。価格更新の再描画も `_coRerenderSoon`（350msデバウンス）で凝縮。実測：解決後の再描画で **clearbit step0 = 0**（旧＝毎回やり直し）。
+
+### ⑫ Companies比較=Countries parity（#1）
+既に `#co-cmp-view` 同型（Bar/時系列/表・指標ピッカー・追加検索・CSV＝R145/R146）。今回**表に列ソート**（`data-cmpsort` ヘッダ・`_coCmpSort`・空欄末尾）＋**上限 8→10**（Countries一致）。
+
+### ⑬ Radiusポップアップ整理（#4）
+**真因**＝半径がスライダー＋数値入力＋statタイルの**3重表示**。**修正**＝冗長な `#rad-r`（半径）タイルを削除＝2タイル（円周・面積）に（`refresh()` の #rad-r 更新も除去・既存CSS再利用でモバイル不変）。Style/プリセットは折り畳み（既存）。
+
+### ⑭ モニター「監視を作成」が無反応（#14）
+**真因**＝範囲未選択時に作成ボタンが `disabled` レンダリング＝押しても無反応・無フィードバック。**修正**＝`openCreateDialog` で範囲未設定なら **`mapViewArea()`（現在の地図表示）を既定**に（作成が常に実行可能）＋「現在の地図表示を使用中・狭い範囲は半径/描画/地域で」ヒント（5言語）。クリックハンドラも `!area` 時は map-view フォールバック→無ければ明示トースト（**決して無音の no-op にしない**）。ログイン必須は不変。
+
+### 罠・教訓
+- **モデルidはsecret＝コードgrepでは出ない**（Luna参照は全てコメント）。真の切替は `AI_MODEL` secret＋openaiフォールバック。
+- **過剰拒否の真因は上流モデル**＝独自拒否層は無い→レバーは `SYS()` プロンプト。単語ブロックでなく4軸分解＋安全変換を明文化するのが正道（ユーザー要件）。
+- **タイポグラフィのflat化の真因は`say`が`esc()`のみ**（mdMini未経由）＋固定px見出しがサイドバー`!important`で潰れる→**em単位**で両モード比例＆潰し回避。
+- **ロゴ点滅=innerHTML全再生成×未キャッシュ・ラダー再実行**。resolved結果のmodule級キャッシュで根治（headless hermeticはfavicon不達→monoに落ちるので**同期dispatchで決定化してテスト**）。
+- **ヘッドレスBrowserペインは`isStyleLoaded`未完＝map層をqueryできない**→style/paintはソース＋Playwright実Chromium（`getStyle()`）で検証。
+
+---
+
 ## R146 — UX/正直化バッチ10件：SVスナップ根治(SingleImageSearch JSONP＋CSP)／東西独国境を実データ(Bundesländer)で作り直し／Companies比較ボタン＋網羅190社/live167・即時性(ADR15社live化)／Atlasサイドバー左右余白／Radius 3列グリッド／ケッペン凡例伸長／UVI日時／Atlasオンオフ・ボタン拡充／SV水色を鮮やかに (tag `#R146`)
 
 ユーザー指摘**10件**を根本原因から修正。全て `index.html`（＋データ `data/cshapes.js` を東西独ジオメトリで更新）の**加算的/微修正**。`npm test` 緑（静的+security+monitor+Playwright、pageerror 0）。ローカル(127.0.0.1:4173)でSVスナップ・Companies・東西独FC・Atlasトグルを実測。
