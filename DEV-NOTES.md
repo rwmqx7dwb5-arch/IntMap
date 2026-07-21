@@ -5,6 +5,37 @@
 
 ---
 
+## R149 — UX/機能バッチ10件：モニター作成の真因(**window.imToastがundefined→トースト全滅**)／ケッペン凡例の余白削減で30区分が収まる／Atlasタイポ強化／送信↑=黒・停止四角拡大・選択欄送信=白+SVG／**画像ペースト(ビジョン)**／**調査回答の地点マッピング(業務委託)** (tag `#R149`)
+
+ユーザー指摘**10件**を根本原因から修正。全て `index.html`（＋新規テスト2本）の**加算的/微修正**（単一HTML・ビルド無し温存）。`npm test` 緑（static＋node **56**＝security/monitor/r147/**新r149-checks 9**＋Playwright **67**＝新 `r149.spec.js` 4、pageerror 0）。Edge Function変更なし＝deploy不要。ローカル(Browserペイン 127.0.0.1:4173)で送信ボタン色・画像ドロップ→サムネ・ケッペン30区分実測・タイポ階層を実測確認。
+
+### ⑦ モニター「監視を作成」無反応の**真因**＝トーストが全滅していた（3回目の再報告）
+R147/R148は「ボタンをdisabledにしない/範囲フォールバック」を入れたが**まだ直っていなかった**。**真因**＝`index.html`は**ESモジュールではない**ので `imToast`/`aiToast` は**クロージャ関数でwindowに載らない**（実測 `typeof window.imToast==='undefined'`）。モニターの `_toast` は `if(window.imToast) return imToast(...)` と**window.付きでガード**していた→**常にfalse→全トーストが無音のno-op**。作成失敗（プラン上限5件・ジオメトリ過大等）のエラーも**全て握り潰され「押しても何も起こらない」**。修正＝`_toast`を**クロージャ関数直呼び**（`typeof imToast==='function'`）＋`alert()`最終手段に。加えて作成ダイアログに**インラインのエラー行 `#mon-create-err`**（トースト非依存の確実なフィードバック）。教訓：**window.付き参照は非モジュールのトップレベル関数には効かない**（84箇所のbare呼び出しは正しく動いていた）。
+
+### ③ ケッペン凡例「さいごまで伸ばせない」＝**余白過多で30区分が画面に収まらない**（再報告・激怒）
+`_fitKoppenLegend`の計算は**数学的に正しい**（12/18/22区分は内容ちょうどで停止と実測）。真因＝**chrome(見出し+期間+ヒント2行+余白)=138px＋予約マージン92px=計230pxのオーバーヘッド**で、30区分の自然高さ=**708px**がビューポート(720px時 cap628px)を超過→常に4区分が内部スクロールに隠れ、グリップを引いても届かない＝物理的に伸ばせない。修正＝**行圧縮**(kl-item padding 2→1px・swatch 12→11px＝19→17px/行)＋**chrome圧縮**(ヒント9px・余白詰め＝138→95px)＋**予約マージン92→84px**→自然高さ**708→605px**で720pxビューポートに完全収容（実測 innerHidden=0・最終区分まで表示）。短いビューポートは内部スクロールが安全網。
+
+### ④ Atlas返信タイポグラフィ（再報告）
+描画(`mdMini`)も両プロンプト(`_analysisSystemPrompt`/answer)も既に構造化指示はあったが階層が弱かった。**mdMini見出しをem単位で拡大**（h1 1.38→1.55em・h2 1.2→1.32em・h3 1.06→1.14em＝実測 12.5→14.3→16.5→19.4pxの明確なランプ＋アクセント色）＋段落/箇条書き余白拡大（.5→.7em）。プロンプトは**2文超で構造化を必須化**（太字リード＋`## `節見出し＋箇条書き＋節間空行）。残：実モデルの遵守は認証Atlas呼が要る（dev user不在）。
+
+### ⑤⑥⑧ 送信/停止/選択欄ボタン
+⑤送信の↑が薄い＝`.atl-go.idle`が`rgba(120,120,128,.75)`（空欄時の淡色）→**`#111`実黒**（実測 idle時 icon=rgb(17,17,17)）。⑥停止の四角＝24 viewBox内 rect 15→17.5・render 18→20px。⑧「または自由に入力」欄の送信＝アクセント背景+plain text「→」→**白背景・黒・上矢印SVG**（送信ボタンと統一）。
+
+### ⑨ Atlas入力欄に画像ペースト（新機能・ビジョン）
+**サーバ/転送は既に画像対応**（衛星比較 `_imSatAnalyze` が同経路で実証済＝ai-proxyは `input_image`・MAX_IMAGES=4）→**クライアントUIのみ**追加：`inEl`にpaste/drop/添付ボタン→既存 `compressImage(1100,0.72)` でJPEG data-URL化→`_atlImgs`(最大4)＋サムネ(×削除)→`fire()`が`run(q,imgs)`へ→プランナ呼出の第3引数を`null`→`imgs`に。画像のみ送信可（既定プロンプトで「説明＋地点マッピング」）。実測：ドロップ→JPEGサムネ表示・送信ボタン有効化。ai-proxy変更なし。
+
+### ⑩ 調査回答の地点マッピング（業務委託書）
+**真因**＝`answer`/`analyze` は地名豊富でも**ピン0**（`_pois`不使用）で、本文の地点と地図の照合も無かった。修正＝**追加AI呼び無し**の設計：`analyze`は返信末尾に`PLACES: [{n,c,k}]`トレーラ（SOURCES同様に剥がして解析）、`answer`アクションは`places`配列を同梱→共有 `_pinReplyPlaces` が既存 `_tryMapResearch`(geocode/placeExtent ladder)でピン化＋**配置済/未配置の自己監査ノート**（`pinIdx`で判定・未特定は正直に「未配置」表示・座標推測せず）。プロンプトは**MAPPING MANDATE**（地点は地図へ・本文と地図を一致・複数系統の一次情報で検証・自己監査）を planner/answer/analyze に配線。残：実モデルの遵守は認証Atlas呼が要る。
+
+### ①② 既に達成
+①Companies=Countries：`stat-row`/`stat-rank`/`stat-flag`/ソート・フィルタ・比較(`.scp-*`/`#co-cmp-view`)を実測で同型確認＝**変更不要**。②Atlasトグル：`layer`はon/off両方で実トグル、6ビュー機能に`_featTogHtml`。**ticker on/offトグルを追加**（`_FEAT_TOG`＋ticker返信に配線）。
+
+### 罠・教訓
+- **非モジュールの `window.imToast` ガードは常にfalse**＝トースト全滅の真因（3ラウンド見逃し）。bare呼び出し or `typeof`ガード＋`alert`フォールバック。
+- **凡例が伸ばせない＝計算バグでなくオーバーヘッド超過**（内容<ビューポートなら既存fitは完璧）。ground-truthは**Browserペインで30区分を実測**（headlessはケッペンタイルCORS不達でビルドされない→合成30行で計測）。
+- **タイポ/マッピングの実効性は実モデル遵守に依存**＝プロンプト強化＋描画強化が打てる手、実検証は認証Atlas（ユーザー側）。
+- **Playwrightは4173を私の常駐サーバと競合し全boot timeout**→`PORT=4188`で67/67緑（memoryの教訓通り）。
+
 ## R148 — 再報告バッチ：**Atlas全滅の根治(Terra→Luna)**／独自ボタン撤去→標準スイッチ／送信停止=黒文字／ケッペン凡例=内容で確実に停止／モニター作成の無反応解消／Atlas返信タイポ (tag `#R148`)
 
 R147の再報告8件に対応。**最重要=Atlasの「AIサービス利用不可」**の根治：R147で`AI_MODEL` secretを`gpt-5.6-terra`にしたが、**このOpenAIプロジェクトはTerraにアクセス権が無い**（api.openai.com→403 `model_not_found` "Project ... does not have access to model gpt-5.6-terra"）→全AI呼が失敗しAtlas全滅。`gpt-5.6-luna`はアクセス可（/v1/responses で200確認）→**secretをLunaへ戻し**、ai-proxyの既定も`OPENAI_DEFAULT_MODEL=luna`＋**モデル不在フォールバック**（403/404 model_not_found→`FALLBACK_MODEL=luna`で1回リトライ）で「不正なAI_MODELが二度とAtlasを全滅させない」ように。**refresh-newsも壊れていた**（Chat Completionsに`max_tokens`/`temperature`を送るがgpt-5.6は`max_completion_tokens`要求→毎回400→ニュース測位が常時dict fallback）→**/v1/responses(reasoning低)へ移行**。monitor-runも既定Luna。
