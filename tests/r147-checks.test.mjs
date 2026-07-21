@@ -18,15 +18,18 @@ test('R147 #13 free AI quota is 10/day on the client and server', () => {
   assert.ok(!/1日30回/.test(html), 'no stale JP "1日30回"');
 });
 
-test('R147 #12 Atlas model is GPT-5.6 Terra; Gemini 3.1 Flash-Lite is never used', () => {
-  assert.match(aiproxy, /provider === "openai" \? "gpt-5\.6-terra"/, 'openai default = terra');
+test('R148 #12 Atlas model reverted to GPT-5.6 Luna (Terra had no project access); Gemini Flash-Lite unused', () => {
+  // (#R148) R147 set Terra, but this OpenAI project returns 403 model_not_found for Terra → Atlas died.
+  // Luna IS accessible (verified 200 on /v1/responses) so it is the working default; Terra must NOT
+  // be the default any more.
+  assert.match(aiproxy, /provider === "openai" \? OPENAI_DEFAULT_MODEL/, 'openai default = OPENAI_DEFAULT_MODEL');
+  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "gpt-5\.6-luna"/, 'default model = Luna');
+  assert.match(aiproxy, /const FALLBACK_MODEL = "gpt-5\.6-luna"/, 'fallback model = Luna');
+  assert.ok(!/provider === "openai" \? "gpt-5\.6-terra"/.test(aiproxy), 'Terra is no longer the default');
   assert.match(aiproxy, /Flash-Lite is never used/, 'documents that Gemini Flash-Lite is never used');
-  // flash-lite is allowed ONLY in that "never used" note — nowhere else (esp. not as a model id).
   const aiproxyNoNote = aiproxy.replace(/Gemini 3\.1 Flash-Lite is never used\./g, '');
   assert.ok(!/flash-lite/i.test(aiproxyNoNote), 'flash-lite appears only in the "never used" note');
   assert.ok(!/flash-lite/i.test(html), 'no flash-lite in index.html');
-  // The active model id in comments/docs is Terra, not Luna.
-  assert.ok(!/gpt-5\.6-luna/.test(aiproxy), 'no lingering gpt-5.6-luna in ai-proxy');
 });
 
 test('R147 #10 Atlas planner prompt carries the scope/safety judgment layer', () => {

@@ -27,7 +27,7 @@
 //  Deploy:   supabase functions deploy monitor-run --no-verify-jwt --project-ref vpekfwdpurzejrrmacac
 //  Secrets:  supabase secrets set MONITOR_SECRET=<random>          (REQUIRED — fail-closed)
 //            # AI reuses the SAME server-held key/provider as ai-proxy:
-//            supabase secrets set AI_PROVIDER=openai   AI_MODEL=gpt-5.6-terra   OPENAI_API_KEY=sk-...
+//            supabase secrets set AI_PROVIDER=openai   AI_MODEL=gpt-5.6-luna   OPENAI_API_KEY=sk-...
 //            supabase secrets set MONITOR_AI=off        (optional kill-switch → mechanical only)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 // ============================================================================
@@ -78,7 +78,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 // ---------------------------------------------------------------------------
 //  AI provider (server-held key; same env convention as ai-proxy / refresh-news).
-//  OpenAI goes through the Responses API (works with gpt-5.6-terra, JSON mode, no
+//  OpenAI goes through the Responses API (works with gpt-5.6-luna, JSON mode, no
 //  web tools — the report is grounded ONLY in the evidence we pass). Anthropic &
 //  Gemini kept as selectable fallbacks.
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
   const model = Deno.env.get("MONITOR_AI_MODEL") || Deno.env.get("AI_MODEL") || "";
-  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: model || "gpt-4o-mini" }; }
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: model || "gpt-5.6-luna" }; }   /* (#R148) default Luna (Terra 403 / 4o-mini no-access on this project) */
   else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: model || "claude-3-5-haiku-latest" }; }
   else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: model || "gemini-2.0-flash" }; }
   return null;
