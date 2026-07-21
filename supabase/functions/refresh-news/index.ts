@@ -406,7 +406,7 @@ function aiProviderConfig(): { provider: string; key: string; model: string } | 
     else if (Deno.env.get("OPENAI_API_KEY")) provider = "openai";
     else if (Deno.env.get("GEMINI_API_KEY")) provider = "gemini";
   }
-  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini" }; }
+  if (provider === "openai") { const key = Deno.env.get("OPENAI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || Deno.env.get("OPENAI_MODEL") || "gpt-5.6-luna" }; }   /* (#R148) default Luna (Terra/4o-mini have no access on this project) */
   else if (provider === "gemini") { const key = Deno.env.get("GEMINI_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || "gemini-2.0-flash" }; }
   else if (provider === "anthropic") { const key = Deno.env.get("ANTHROPIC_API_KEY"); if (key) return { provider, key, model: Deno.env.get("AI_MODEL") || "claude-3-5-haiku-latest" }; }
   return null;
@@ -423,12 +423,23 @@ const AI_SYS =
 
 async function callProvider(cfg: { provider: string; key: string; model: string }, sys: string, user: string): Promise<string> {
   if (cfg.provider === "openai") {
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    // (#R148) GPT-5.6 (Luna) is a reasoning model on the Responses API — the old Chat-Completions call
+    // sent `temperature` + `max_tokens`, both REJECTED by gpt-5.6-* ("Unsupported parameter: 'max_tokens'
+    // … use 'max_completion_tokens'") → every geocode 400'd → news fell back to the dictionary (ai:0).
+    // Use /v1/responses with reasoning.effort:"low" (cheap) + a budget that leaves room for reasoning
+    // tokens, exactly like ai-proxy. Verified 200 + valid JSON for this project's key.
+    const r = await fetch("https://api.openai.com/v1/responses", {
       method: "POST", headers: { "Authorization": `Bearer ${cfg.key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: cfg.model, temperature: 0, max_tokens: 1500, messages: [{ role: "system", content: sys }, { role: "user", content: user }] }),
+      body: JSON.stringify({ model: cfg.model, instructions: sys, input: [{ role: "user", content: [{ type: "input_text", text: user }] }], max_output_tokens: 3000, reasoning: { effort: "low" }, store: false }),
     });
     if (!r.ok) throw new Error("openai " + r.status);
-    const j = await r.json(); return j?.choices?.[0]?.message?.content || "";
+    const j = await r.json();
+    if (typeof j?.output_text === "string" && j.output_text) return j.output_text;
+    const arr: unknown[] = Array.isArray(j?.output) ? j.output : [];
+    return arr.filter((it: { type?: string }) => it?.type === "message")
+      .flatMap((it: { content?: unknown[] }) => Array.isArray(it.content) ? it.content : [])
+      .filter((p: { type?: string }) => p?.type === "output_text")
+      .map((p: { text?: string }) => p.text || "").join("");
   }
   if (cfg.provider === "gemini") {
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(cfg.model) + ":generateContent?key=" + encodeURIComponent(cfg.key), {

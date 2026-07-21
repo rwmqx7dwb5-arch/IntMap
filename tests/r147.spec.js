@@ -42,14 +42,14 @@ test('#4 Radius popup drops the redundant radius tile (circumference+area remain
   expect(r.collapsed).toBe(true);
 });
 
-// ---- #11 Atlas white button + #6 feature buttons -------------------------
-test('#11/#6 Atlas go button is white and feature on/off renders a button that flips the real control', async () => {
+// ---- #11 Atlas white button + #6 feature on/off (R148: standard switch) ---
+test('#11/#6 Atlas go button is white and feature on/off renders the standard switch that flips the real control', async () => {
   const r = await page.evaluate(async () => {
     try { window.IntMapConsole?.open?.(); } catch { /* ignore */ }
     const go = document.querySelector('#atlas-panel .atl-go');
     const goBg = go ? getComputedStyle(go).backgroundColor : null;   // empty input → idle, still white
     const off = await window.IntMapConsole.dispatch({ type: 'grid', on: false });
-    const hasBtn = /atl-featbtn/.test(off.html) && /afb-s/.test(off.html);   // real button + ON/OFF badge
+    const hasBtn = /atl-ctl-toggle/.test(off.html) && /atl-feat-tog/.test(off.html);   // (#R148) reverted to the STANDARD toggle switch — the R147 bespoke .atl-featbtn "独自ボタン" was removed
     const chat = document.querySelector('#atlas-panel .atl-chat');
     const d = document.createElement('div'); d.className = 'atl-b a'; d.innerHTML = off.html; chat.appendChild(d);
     const tog = d.querySelector('.atl-feat-tog');
