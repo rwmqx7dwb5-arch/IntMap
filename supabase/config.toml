@@ -52,6 +52,16 @@ additional_redirect_urls = ["http://127.0.0.1:3000", "http://localhost:3000"]
 jwt_expiry = 3600
 enable_signup = true
 
+# (#R155) Password policy. minimum_password_length + password_requirements are the
+# SERVER-side floor (enforced on every signup / password change, both here locally and
+# — set identically — in the dashboard for prod). The client (index.html) mirrors this
+# and additionally runs a Have-I-Been-Pwned k-anonymity check so a KNOWN-BREACHED
+# password is rejected before the request is even sent. NOTE: the dashboard's
+# "Leaked password protection" toggle (HIBP, server-side) is NOT reproducible in this
+# file — enable it in Authentication → Providers/Passwords (see docs/SECURITY-TESTING.md).
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits"
+
 [auth.email]
 enable_signup = true
 enable_confirmations = false
@@ -74,3 +84,13 @@ verify_jwt = false
 # function does its OWN auth for both paths (fail-closed on the secret).
 [functions.monitor-run]
 verify_jwt = false
+
+# sv-cov (#R145) is a keyless, tightly-allowlisted relay of Google's public Street
+# View coverage tiles (no user data) — deployed --no-verify-jwt.
+[functions.sv-cov]
+verify_jwt = false
+
+# delete-account (#R155) hard-deletes the caller's OWN account + data. verify_jwt ON;
+# it ALSO verifies the user explicitly and requires { confirm: "DELETE" }.
+[functions.delete-account]
+verify_jwt = true

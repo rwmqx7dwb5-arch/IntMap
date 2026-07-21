@@ -19,7 +19,18 @@ window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 
-gtag('config', 'G-57X5MX0ZPW');
+/* (#R155 SEC) Auth tokens must never reach analytics. OAuth / magic-link returns carry
+   code / access_token / refresh_token / token_hash in the URL query or hash for a moment
+   before supabase-js consumes and clears them; GA's default page_location would capture
+   them. Report a SANITIZED location (and referrer) with those params stripped. */
+(function(){ try{
+  var _scrub=function(href){ try{ var u=new URL(href);
+    ['code','access_token','refresh_token','token_hash','type','provider_token','provider_refresh_token','error','error_code','error_description'].forEach(function(k){ u.searchParams.delete(k); });
+    if(/(access_token|refresh_token|provider_token|token_hash)=/.test(u.hash||'')) u.hash='';
+    return u.origin+u.pathname+(u.search||'')+(u.hash||''); }catch(e){ try{ return location.origin+location.pathname; }catch(_){ return href; } } };
+  window.__imScrubAuthUrl=_scrub;
+  gtag('config', 'G-57X5MX0ZPW', { page_location:_scrub(location.href), page_referrer:_scrub(document.referrer||'') });
+}catch(e){ gtag('config', 'G-57X5MX0ZPW'); } })();
 /* (#R73) DEV-ONLY headless-test shim: `?rafshim=1` replaces requestAnimationFrame with a timer so MapLibre
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
@@ -2719,8 +2730,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 <script>
   window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
   window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
+  /* (#R155) experimental.passkey enables the supabase-js passkey namespace (registerPasskey /
+     signInWithPasskey / passkey.list / passkey.delete). It is inert on older SDKs and until the
+     dashboard's WebAuthn relying-party is configured, so it never breaks password auth. */
   window.sb=(window.supabase&&window.supabase.createClient)
-    ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
+    ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,experimental:{passkey:true}}})
     : (console.error('[IntMap] Supabase SDK failed to load (local file and CDN both unavailable).'),null);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
@@ -12873,7 +12887,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:210px; min-width:172px; max-width:340px; font-size:10.4px; }   /* (#R154) width now HUGS the content per language (_fitKoppenLegend measures the widest row and sets an exact px width, clamped 176–324). The old fixed 264px was ~80px WIDER than the Japanese text ("テキスト以上に横幅伸ばして…行の幅変わってない" = dead space) yet still clipped the longest German ("行の幅が狭すぎる"). min/max-width are just safety clamps; the 210px here is a pre-JS fallback. */
+      .koppen-legend{ box-sizing:border-box; display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:220px; min-width:180px; max-width:460px; font-size:10.4px; }   /* (#R155) box-sizing:border-box is load-bearing — the width _fitKoppenLegend sets now INCLUDES the 20px padding + 2px border, so the panel really hugs the text (the old content-box math under-counted them → "テキスト以上に横幅伸ばして…行の幅変わってない" dead space). max-width raised 340→460 so the longest German/Russian names are no longer clipped ("行の幅が狭すぎる"). width:220 is the pre-JS fallback. */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
@@ -14549,9 +14563,9 @@ window.addEventListener('DOMContentLoaded', () => {
             if(nm){ m.style.fontWeight='400'; m.textContent=nm.textContent; w+=m.offsetWidth; }
             if(w>mx) mx=w; });
           document.body.removeChild(m);
-          if(mx>0){ const contentW=Math.round(mx + 11 + 12 + 8 + 15 + 2);   /* swatch(11) + 2 flex gaps(12) + item padding(8) + scrollbar gutter(15) + slack(2) */
+          if(mx>0){ const contentW=Math.round(mx + 11 + 12 + 8 + 15 + 22 + 6);   /* (#R155) border-box: swatch(11)+2 flex gaps(12)+item padding(8)+scrollbar gutter(15)+CONTAINER padding+border(22)+slack(6). Under box-sizing:border-box the width we set includes the 20px padding+2px border, so it must be added here — the old content-box formula omitted them, so the visible panel ran ~22px wider than the text it was sized for. */
             const room=Math.round((window.innerWidth - lg.getBoundingClientRect().left) - 16);
-            const w=Math.max(176, Math.min(324, room>200?room:324, contentW));
+            const w=Math.max(190, Math.min(460, room>200?room:460, contentW));   /* (#R155) max 324→460 so the longest German/Russian names fit without clipping */
             lg.style.width=w+'px'; } }
       }catch(_){}
       const top=lg.getBoundingClientRect().top;                 /* rendered top edge (top-anchored: stable as it grows) */
@@ -15968,7 +15982,10 @@ window.addEventListener('DOMContentLoaded', () => {
       const onPos=p=>{ const lng=+p.coords.longitude, lat=+p.coords.latitude, ac=+p.coords.accuracy||0; last={lng,lat,acc:ac};
         paint(lng,lat,ac); _syncFab();
         if(firstFly){ firstFly=false; try{ m.flyTo({center:[lng,lat],zoom:Math.max(m.getZoom(),14),duration:1100}); }catch(_){} } };
-      const onErr=_=>{ try{ if(typeof imToast==='function') imToast('⚠ '+(currentLang==='jp'?'位置情報を取得できません（許可が必要です）':currentLang==='de'?'Standort nicht verfügbar (Erlaubnis nötig)':currentLang==='ru'?'Нет доступа к геолокации':currentLang==='es'?'Ubicación no disponible (permiso necesario)':'Location unavailable (permission needed)')); }catch(_){}
+      const onErr=e=>{ try{ if(typeof imToast==='function'){ const denied=e&&e.code===1;   /* (#R155) distinguish a hard denial (actionable) from a transient failure */
+        imToast('⚠ '+(denied
+          ? (currentLang==='jp'?'位置情報がブロックされています。ブラウザ設定で許可してください。':currentLang==='de'?'Standort blockiert — im Browser erlauben.':currentLang==='ru'?'Геолокация заблокирована — разрешите в браузере.':currentLang==='es'?'Ubicación bloqueada — actívala en el navegador.':'Location blocked — enable it in your browser settings.')
+          : (currentLang==='jp'?'位置情報を取得できませんでした':currentLang==='de'?'Standort nicht verfügbar':currentLang==='ru'?'Не удалось получить геолокацию':currentLang==='es'?'No se pudo obtener la ubicación':'Couldn\'t get your location'))); } }catch(_){}
         if(!last){ active=false; } _syncFab(); };
       try{ navigator.geolocation.getCurrentPosition(onPos,onErr,{enableHighAccuracy:true,timeout:9000,maximumAge:5000}); }catch(_){}
       if(watchId==null){ try{ watchId=navigator.geolocation.watchPosition(onPos,()=>{},{enableHighAccuracy:true,timeout:15000,maximumAge:2000}); }catch(_){} }
@@ -16863,6 +16880,88 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ---------- AUTH ---------- */
+  /* (#R155) 5-language helper for the auth/account modals (they predate the i18n dict). */
+  function _authL(en,jp,de,ru,es){ return currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en; }
+  /* (#R155) Password strength — mirrors the SERVER floor (supabase/config.toml [auth]:
+     minimum_password_length=8, password_requirements="lower_upper_letters_digits"). Returns {ok,msg}. */
+  function _pwStrength(pw){ pw=String(pw||'');
+    if(pw.length<8) return {ok:false,msg:_authL('Password must be at least 8 characters.','パスワードは8文字以上にしてください。','Das Passwort muss mindestens 8 Zeichen lang sein.','Пароль должен содержать не менее 8 символов.','La contraseña debe tener al menos 8 caracteres.')};
+    if(!/[a-z]/.test(pw)||!/[A-Z]/.test(pw)||!/[0-9]/.test(pw)) return {ok:false,msg:_authL('Include lower- and upper-case letters and a number.','小文字・大文字・数字を含めてください。','Verwende Groß- und Kleinbuchstaben sowie eine Ziffer.','Используйте строчные и прописные буквы и цифру.','Incluye mayúsculas, minúsculas y un número.')};
+    return {ok:true,msg:''};
+  }
+  /* (#R155) Have-I-Been-Pwned k-ANONYMITY breach check. Only the first 5 hex chars of the SHA-1
+     are ever sent — the password/full hash never leaves the device. Returns the breach count
+     (0 = not found). FAIL-OPEN on any error: the dashboard's server-side leaked-password
+     protection is the backstop, so a HIBP outage never blocks a legitimate signup. */
+  async function _pwBreachCount(pw){ try{
+    if(!(window.crypto&&crypto.subtle&&crypto.subtle.digest)) return 0;
+    const buf=await crypto.subtle.digest('SHA-1', new TextEncoder().encode(String(pw||'')));
+    const hex=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+    const r=await fetch('https://api.pwnedpasswords.com/range/'+hex.slice(0,5));
+    if(!r.ok) return 0;
+    const suffix=hex.slice(5), txt=await r.text();
+    for(const line of txt.split('\n')){ const p=line.trim().split(':'); if(p[0]===suffix) return parseInt(p[1],10)||1; }
+    return 0;
+  }catch(_){ return 0; } }
+  /* (#R155) Full new-password gate: strength THEN breach. Returns {ok,msg}. */
+  async function _pwValidateNew(pw){ const s=_pwStrength(pw); if(!s.ok) return s;
+    if(await _pwBreachCount(pw)>0) return {ok:false,msg:_authL('This password appears in a known data breach — please choose a different one.','このパスワードは既知の漏えいに含まれています。別のものを選んでください。','Dieses Passwort taucht in einem bekannten Datenleck auf — bitte wähle ein anderes.','Этот пароль встречался в известной утечке — выберите другой.','Esta contraseña apareció en una filtración conocida: elige otra.')};
+    return {ok:true,msg:''};
+  }
+  /* (#R155) Passkey capability: the SDK method exists AND the browser supports WebAuthn. */
+  function _passkeysAvailable(){ try{ return !!(DB&&DB.auth&&typeof DB.auth.signInWithPasskey==='function'&&window.PublicKeyCredential); }catch(_){ return false; } }
+  /* (#R155) Render the signed-in user's passkeys into #acct-passkeys (management list).
+     Defensive about the exact SDK return/param shape (Beta API) so a shape change degrades
+     gracefully instead of throwing. */
+  async function _renderPasskeys(){ const box=document.getElementById('acct-passkeys'); if(!box) return;
+    const addBtn=document.getElementById('acct-add-passkey');
+    if(!_passkeysAvailable()||!(DB.auth.passkey&&typeof DB.auth.passkey.list==='function')){ box.innerHTML=''; if(addBtn) addBtn.style.display='none'; return; }
+    if(addBtn) addBtn.style.display='block';
+    box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+escapeHtml(_authL('Loading passkeys…','パスキーを読み込み中…','Passkeys werden geladen…','Загрузка паскеев…','Cargando passkeys…'))+'</div>';
+    let list=[];
+    try{ const r=await DB.auth.passkey.list(); const d=(r&&r.data)||r; list=Array.isArray(d)?d:(d&&(d.passkeys||d.all||d.factors))||[]; }
+    catch(_){ box.innerHTML=''; return; }
+    if(!list.length){ box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+escapeHtml(_authL('No passkeys yet.','パスキーはまだありません。','Noch keine Passkeys.','Паскеев пока нет.','Aún no hay passkeys.'))+'</div>'; return; }
+    box.innerHTML=list.map(pk=>{ const nm=escapeHtml(pk.friendly_name||pk.friendlyName||pk.name||'Passkey'), id=escapeHtml(String(pk.id||''));
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--input-bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;"><span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nm+'</span><button data-pkdel="'+id+'" style="background:transparent;border:none;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;">'+escapeHtml(_authL('Remove','削除','Entfernen','Удалить','Quitar'))+'</button></div>'; }).join('');
+    box.querySelectorAll('[data-pkdel]').forEach(b=>b.onclick=async()=>{ const id=b.getAttribute('data-pkdel');
+      if(!window.confirm(_authL('Remove this passkey?','このパスキーを削除しますか？','Diesen Passkey entfernen?','Удалить этот паскей?','¿Quitar este passkey?'))) return;
+      try{ await DB.auth.passkey.delete({id}); }catch(_){ try{ await DB.auth.passkey.delete({passkeyId:id}); }catch(__){} }
+      _renderPasskeys();
+    });
+  }
+  /* (#R155) Shared "set a new password" modal — used by the reset-link recovery flow AND the
+     account menu's Change-password button. Enforces the same strength + breach gate as signup. */
+  function _openSetPassword(isRecovery){
+    let d=document.getElementById('setpw-modal');
+    if(!d){ d=document.createElement('div'); d.id='setpw-modal';
+      d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:5300;padding:20px;';
+      d.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:340px;box-sizing:border-box;">'
+        +'<h2 style="margin:0 0 12px;font-size:18px;">'+escapeHtml(_authL('Set a new password','新しいパスワードを設定','Neues Passwort festlegen','Задать новый пароль','Establecer nueva contraseña'))+'</h2>'
+        +'<input id="setpw-input" type="password" autocomplete="new-password" placeholder="'+escapeHtml(_authL('New password (min. 8, incl. a number)','新しいパスワード（8文字以上・数字を含む）','Neues Passwort (min. 8, mit Ziffer)','Новый пароль (мин. 8, с цифрой)','Nueva contraseña (mín. 8, con número)'))+'" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:12px;">'
+        +'<button id="setpw-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;cursor:pointer;">'+escapeHtml(_authL('Save','保存','Speichern','Сохранить','Guardar'))+'</button>'
+        +'<p id="setpw-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>'
+        +'<button id="setpw-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">'+escapeHtml(_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button></div>';
+      document.body.appendChild(d);
+      d.onclick=e=>{ if(e.target===d) d.style.display='none'; };
+      document.getElementById('setpw-close').onclick=()=>{ d.style.display='none'; };
+      document.getElementById('setpw-save').onclick=async()=>{
+        const pw=document.getElementById('setpw-input').value, msg=document.getElementById('setpw-msg'), btn=document.getElementById('setpw-save');
+        btn.disabled=true; msg.textContent=_authL('Checking password…','パスワードを確認中…','Passwort wird geprüft…','Проверка пароля…','Comprobando contraseña…');
+        const chk=await _pwValidateNew(pw); if(!chk.ok){ msg.textContent=chk.msg; btn.disabled=false; return; }
+        msg.textContent=_authL('Saving…','保存中…','Speichere…','Сохранение…','Guardando…');
+        try{ const {error}=await DB.auth.updateUser({password:pw}); if(error) throw error;
+          msg.textContent=_authL('Password updated.','パスワードを更新しました。','Passwort aktualisiert.','Пароль обновлён.','Contraseña actualizada.');
+          setTimeout(()=>{ d.style.display='none'; }, 900);
+        }catch(e){ msg.textContent=_authL('Could not update the password.','パスワードを更新できませんでした。','Passwort konnte nicht aktualisiert werden.','Не удалось обновить пароль.','No se pudo actualizar la contraseña.'); }
+        finally{ btn.disabled=false; }
+      };
+    }
+    document.getElementById('setpw-input').value='';
+    document.getElementById('setpw-msg').textContent=isRecovery?_authL('Enter a new password to finish resetting your account.','アカウント再設定を完了するには新しいパスワードを入力してください。','Gib ein neues Passwort ein, um das Zurücksetzen abzuschließen.','Введите новый пароль, чтобы завершить сброс.','Introduce una nueva contraseña para terminar el restablecimiento.'):'';
+    d.style.display='flex';
+  }
+  window._imOpenSetPassword=_openSetPassword;
   function injectAuthUI(){
     const settingsBtn=document.getElementById('btn-open-settings');
     const acct=document.createElement('button');
@@ -16904,8 +17003,10 @@ window.addEventListener('DOMContentLoaded', () => {
       <div style="display:flex;align-items:center;gap:10px;margin:12px 0 14px;color:var(--text-muted);font-size:12px;"><div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div>or<div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div></div>
       <input id="am-name" type="text" placeholder="Display name" autocomplete="nickname" maxlength="40" style="${inStyle}display:none;">
       <input id="am-email" type="email" placeholder="you@example.com" autocomplete="username" style="${inStyle}">
-      <input id="am-pass" type="password" placeholder="Password (min. 6 characters)" autocomplete="current-password" style="${inStyle}margin-bottom:14px;">
+      <input id="am-pass" type="password" placeholder="Password" autocomplete="current-password" style="${inStyle}margin-bottom:8px;">
+      <div id="am-forgot-row" style="text-align:right;margin:-2px 0 12px;"><a id="am-forgot" href="#" style="color:var(--text-muted);font-size:12px;text-decoration:none;">${_authL('Forgot password?','パスワードをお忘れですか？','Passwort vergessen?','Забыли пароль?','¿Olvidaste tu contraseña?')}</a></div>
       <button id="am-submit" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
+      <button id="am-passkey" style="width:100%;background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);padding:10px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;margin-top:8px;display:none;">${_authL('Sign in with a passkey','パスキーでログイン','Mit Passkey anmelden','Войти по паскею','Iniciar sesión con passkey')}</button>
       <p id="am-msg" style="margin:12px 0 0;color:var(--text-muted);font-size:12.5px;line-height:1.5;"></p>
       <button id="am-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">Close</button>
     </div>`;
@@ -16922,6 +17023,10 @@ window.addEventListener('DOMContentLoaded', () => {
       $am('am-name').style.display = mode==='signup'?'block':'none';
       $am('am-pass').setAttribute('autocomplete', mode==='signup'?'new-password':'current-password');
       $am('am-submit').textContent = mode==='login'?'Log In':'Create account';
+      $am('am-pass').placeholder = mode==='signup'?_authL('Password (min. 8 chars, incl. a number)','パスワード（8文字以上・数字を含む）','Passwort (min. 8 Zeichen, mit Ziffer)','Пароль (мин. 8 символов, с цифрой)','Contraseña (mín. 8, con un número)'):_authL('Password','パスワード','Passwort','Пароль','Contraseña');
+      /* (#R155) passkey sign-in + forgot-password only make sense on the LOGIN tab. */
+      try{ $am('am-passkey').style.display=(mode==='login'&&_passkeysAvailable())?'block':'none'; }catch(_){}
+      try{ $am('am-forgot-row').style.display=mode==='login'?'block':'none'; }catch(_){}
       $am('am-msg').textContent='';
     }
     function $am(id){ return document.getElementById(id); }
@@ -16932,24 +17037,49 @@ window.addEventListener('DOMContentLoaded', () => {
     m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
     $am('am-submit').onclick=async()=>{
       const email=$am('am-email').value.trim(), password=$am('am-pass').value, name=$am('am-name').value.trim(), msg=$am('am-msg');
-      if(!email||!password){ msg.textContent='Enter email and password.'; return; }
-      if(amMode==='signup'){
-        if(!name){ msg.textContent='Choose a display name (shown on your community posts).'; return; }
-        if(password.length<6){ msg.textContent='Password must be at least 6 characters.'; return; }
-      }
-      $am('am-submit').disabled=true; msg.textContent='Working…';
+      if(!email||!password){ msg.textContent=_authL('Enter email and password.','メールアドレスとパスワードを入力してください。','Gib E-Mail und Passwort ein.','Введите e-mail и пароль.','Introduce el correo y la contraseña.'); return; }
+      $am('am-submit').disabled=true;
       try{
         if(amMode==='signup'){
+          if(!name){ msg.textContent=_authL('Choose a display name (shown on your community posts).','表示名を入力してください（コミュニティ投稿に表示されます）。','Wähle einen Anzeigenamen (in Community-Beiträgen sichtbar).','Выберите отображаемое имя (видно в постах сообщества).','Elige un nombre visible (aparece en tus publicaciones).'); return; }
+          /* (#R155) strength (mirrors the server floor) THEN a HIBP breach check before we submit. */
+          msg.textContent=_authL('Checking password…','パスワードを確認中…','Passwort wird geprüft…','Проверка пароля…','Comprobando contraseña…');
+          const chk=await _pwValidateNew(password); if(!chk.ok){ msg.textContent=chk.msg; return; }
+          msg.textContent=_authL('Working…','処理中…','Wird verarbeitet…','Обработка…','Procesando…');
           /* display_name is stored in user metadata; the profile row picks it up on first login */
-          const {error}=await DB.auth.signUp({email,password,options:{data:{display_name:name}}}); if(error) throw error;
-          msg.textContent='Account created. If email confirmation is required, confirm via the link we emailed you, then log in.'; setTab('login');
+          const {error}=await DB.auth.signUp({email,password,options:{data:{display_name:name}}});
+          /* (#R155) ENUMERATION-SAFE: whether the email is new OR already registered, show the SAME
+             neutral message so signup can't be used to probe which emails have accounts. */
+          if(error && !/already|exist|registered/i.test(error.message||'')) throw error;
+          msg.textContent=_authL('Check your email — if this address is new, we sent a confirmation link. Then log in.','メールをご確認ください。新規の場合は確認リンクを送信しました。その後ログインしてください。','Prüfe deine E-Mail — falls neu, haben wir einen Bestätigungslink gesendet. Dann anmelden.','Проверьте почту — если адрес новый, мы отправили ссылку для подтверждения. Затем войдите.','Revisa tu correo: si es nuevo, enviamos un enlace de confirmación. Luego inicia sesión.'); setTab('login');
         } else {
-          const {data,error}=await DB.auth.signInWithPassword({email,password}); if(error) throw error;
+          const {data,error}=await DB.auth.signInWithPassword({email,password});
+          /* (#R155) ENUMERATION-SAFE: Supabase already returns a generic "Invalid login credentials";
+             surface a single localized generic message and never reveal whether the email exists. */
+          if(error){ msg.textContent=_authL('Invalid email or password.','メールアドレスまたはパスワードが正しくありません。','E-Mail oder Passwort ist falsch.','Неверный e-mail или пароль.','Correo o contraseña incorrectos.'); return; }
           m.style.display='none';
           try{ recordLogin(data&&data.user&&data.user.id); }catch(_){}   /* (#R27) genuine login → count for the 3rd-login feedback nudge */
         }
-      }catch(e){ msg.textContent='Error: '+((e&&e.message)||e); }
+      }catch(e){ msg.textContent=_authL('Something went wrong. Please try again.','エラーが発生しました。もう一度お試しください。','Etwas ist schiefgelaufen. Bitte erneut versuchen.','Что-то пошло не так. Повторите попытку.','Algo salió mal. Inténtalo de nuevo.'); }
       finally{ $am('am-submit').disabled=false; }
+    };
+    /* (#R155) Passkey sign-in (WebAuthn, discoverable credential — no email needed). */
+    $am('am-passkey').onclick=async()=>{
+      const msg=$am('am-msg');
+      if(!_passkeysAvailable()){ msg.textContent=_authL('Passkeys aren\'t available on this device.','この端末ではパスキーを利用できません。','Passkeys sind auf diesem Gerät nicht verfügbar.','Паскеи недоступны на этом устройстве.','Los passkeys no están disponibles en este dispositivo.'); return; }
+      $am('am-passkey').disabled=true; msg.textContent=_authL('Waiting for your passkey…','パスキーを待機中…','Warte auf deinen Passkey…','Ожидание паскея…','Esperando tu passkey…');
+      try{ const {data,error}=await DB.auth.signInWithPasskey(); if(error) throw error;
+        m.style.display='none'; try{ recordLogin(data&&data.user&&data.user.id); }catch(_){}
+      }catch(e){ msg.textContent=_authL('Passkey sign-in failed or was cancelled.','パスキーのログインに失敗またはキャンセルされました。','Passkey-Anmeldung fehlgeschlagen oder abgebrochen.','Вход по паскею не удался или отменён.','El inicio con passkey falló o se canceló.'); }
+      finally{ $am('am-passkey').disabled=false; }
+    };
+    /* (#R155) Forgot password → email a reset link. Enumeration-safe: identical message regardless. */
+    $am('am-forgot').onclick=async(e)=>{ e.preventDefault(); const msg=$am('am-msg');
+      const email=$am('am-email').value.trim();
+      if(!email){ msg.textContent=_authL('Enter your email above, then tap “Forgot password?”.','上のメール欄を入力してから「パスワードをお忘れですか？」を押してください。','Gib oben deine E-Mail ein und tippe dann auf „Passwort vergessen?“.','Введите e-mail выше, затем нажмите «Забыли пароль?».','Introduce tu correo arriba y pulsa «¿Olvidaste tu contraseña?».'); return; }
+      const redirectTo=(location.protocol==='file:')?location.href:(location.origin+location.pathname);
+      try{ await DB.auth.resetPasswordForEmail(email,{redirectTo}); }catch(_){}
+      msg.textContent=_authL('If an account exists for that email, we\'ve sent a password-reset link.','そのメールアドレスのアカウントが存在する場合、再設定リンクを送信しました。','Falls ein Konto zu dieser E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.','Если аккаунт с этим адресом существует, мы отправили ссылку для сброса пароля.','Si existe una cuenta con ese correo, enviamos un enlace para restablecer la contraseña.');
     };
     /* OAuth (Google / Apple). NOTE: each provider must be ENABLED in the Supabase dashboard
        (Authentication → Providers) with this site added as a redirect URL, or it errors. */
@@ -16976,6 +17106,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!m){
       m=document.createElement('div'); m.id='acct-modal';
       m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
+      const secBtn='width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:8px;text-align:left;';   /* (#R155) security-section buttons */
       m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:90vh;overflow-y:auto;">
         <h2 style="margin:0 0 4px;font-size:19px;">${currentLang==='jp'?'プロフィール':currentLang==='de'?'Dein Profil':currentLang==='ru'?'Ваш профиль':currentLang==='es'?'Tu perfil':'Your profile'}</h2>
         <p id="acct-email" style="margin:0 0 10px;color:var(--text-muted);font-size:13px;"></p>
@@ -16991,7 +17122,16 @@ window.addEventListener('DOMContentLoaded', () => {
         <textarea id="acct-bio" maxlength="280" rows="3" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin:6px 0 14px;resize:vertical;font-family:inherit;font-size:13px;"></textarea>
         <button id="acct-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">${currentLang==='jp'?'保存':currentLang==='de'?'Profil speichern':currentLang==='ru'?'Сохранить профиль':currentLang==='es'?'Guardar perfil':'Save profile'}</button>
         <p id="acct-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>
+        <div style="margin-top:16px;border-top:1px solid rgba(128,128,128,0.18);padding-top:14px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px;">${_authL('Security','セキュリティ','Sicherheit','Безопасность','Seguridad')}</div>
+          <div id="acct-passkeys" style="margin-bottom:8px;"></div>
+          <button id="acct-add-passkey" style="${secBtn}display:none;">${_authL('Add a passkey','パスキーを追加','Passkey hinzufügen','Добавить паскей','Añadir passkey')}</button>
+          <button id="acct-change-email" style="${secBtn}">${_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo')}</button>
+          <button id="acct-change-pw" style="${secBtn}">${_authL('Change password','パスワードを変更','Passwort ändern','Изменить пароль','Cambiar contraseña')}</button>
+          <button id="acct-logout-all" style="${secBtn}margin-bottom:0;">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
+        </div>
         <button id="acct-logout" style="width:100%;background:var(--input-bg);color:var(--info-mil);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-top:12px;">${currentLang==='jp'?'ログアウト':currentLang==='de'?'Abmelden':currentLang==='ru'?'Выйти':currentLang==='es'?'Cerrar sesión':'Log out'}</button>
+        <button id="acct-delete" style="width:100%;background:transparent;color:#ff3b30;border:1px solid rgba(255,59,48,0.4);padding:9px;border-radius:9px;font-weight:600;font-size:12.5px;cursor:pointer;margin-top:8px;">${_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta')}</button>
         <button id="acct-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:6px;padding:6px;cursor:pointer;font-size:13px;">${currentLang==='jp'?'閉じる':currentLang==='de'?'Schließen':currentLang==='ru'?'Закрыть':currentLang==='es'?'Cerrar':'Close'}</button>
       </div>`;
       document.body.appendChild(m);
@@ -17040,8 +17180,53 @@ window.addEventListener('DOMContentLoaded', () => {
         }catch(e){ msg.textContent='Error: '+((e&&e.message)||e); }
         finally{ btn.disabled=false; }
       };
+      /* ---- (#R155) Security section: passkeys / change email / change password / logout-all / delete ---- */
+      const _addPk=document.getElementById('acct-add-passkey');
+      if(_addPk) _addPk.onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        if(!_passkeysAvailable()||typeof DB.auth.registerPasskey!=='function'){ msg.textContent=_authL('Passkeys aren\'t available on this device.','この端末ではパスキーを利用できません。','Passkeys sind auf diesem Gerät nicht verfügbar.','Паскеи недоступны на этом устройстве.','Los passkeys no están disponibles en este dispositivo.'); return; }
+        msg.textContent=_authL('Follow your device prompt to create a passkey…','端末の指示に従ってパスキーを作成してください…','Folge der Geräteaufforderung, um einen Passkey zu erstellen…','Следуйте подсказке устройства, чтобы создать паскей…','Sigue la indicación de tu dispositivo para crear un passkey…');
+        try{ const {error}=await DB.auth.registerPasskey(); if(error) throw error; msg.textContent=_authL('Passkey added.','パスキーを追加しました。','Passkey hinzugefügt.','Паскей добавлен.','Passkey añadido.'); _renderPasskeys(); }
+        catch(e){ msg.textContent=_authL('Could not add a passkey (or it was cancelled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
+      };
+      document.getElementById('acct-change-email').onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        const ne=window.prompt(_authL('New email address:','新しいメールアドレス：','Neue E-Mail-Adresse:','Новый e-mail:','Nuevo correo:')); if(ne==null) return;
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne.trim())){ msg.textContent=_authL('That doesn\'t look like an email.','メールアドレスの形式ではありません。','Das sieht nicht wie eine E-Mail aus.','Это не похоже на e-mail.','Eso no parece un correo.'); return; }
+        msg.textContent=_authL('Sending confirmation…','確認メールを送信中…','Bestätigung wird gesendet…','Отправка подтверждения…','Enviando confirmación…');
+        try{ const {error}=await DB.auth.updateUser({email:ne.trim()}); if(error) throw error;
+          msg.textContent=_authL('Confirm the change from the link sent to your new email (and, if asked, your current one).','新しいメールに届いたリンクから変更を確認してください（求められた場合は現在のメールも）。','Bestätige die Änderung über den Link an deine neue E-Mail (und ggf. deine aktuelle).','Подтвердите изменение по ссылке на новый e-mail (и, если попросят, на текущий).','Confirma el cambio desde el enlace enviado a tu nuevo correo (y al actual si se solicita).');
+        }catch(e){ msg.textContent=_authL('Could not change the email.','メールアドレスを変更できませんでした。','E-Mail konnte nicht geändert werden.','Не удалось изменить e-mail.','No se pudo cambiar el correo.'); }
+      };
+      document.getElementById('acct-change-pw').onclick=()=>_openSetPassword(false);
+      document.getElementById('acct-logout-all').onclick=async()=>{
+        if(!window.confirm(_authL('Log out on ALL devices? You\'ll need to sign in again everywhere.','すべての端末からログアウトしますか？各端末で再度ログインが必要になります。','Auf ALLEN Geräten abmelden? Du musst dich überall neu anmelden.','Выйти на ВСЕХ устройствах? Потребуется войти заново везде.','¿Cerrar sesión en TODOS los dispositivos? Tendrás que volver a iniciar sesión.'))) return;
+        m.style.display='none'; currentUser=null; bookmarks=[];
+        try{ updateAccountButton(); }catch(_){}
+        try{ if(typeof renderUI==='function') renderUI(); }catch(_){}
+        try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
+        try{ await DB.auth.signOut({scope:'global'}); }catch(_){ try{ await DB.auth.signOut(); }catch(__){} }
+        try{ imToast(_authL('Logged out on all devices','すべての端末からログアウトしました','Auf allen Geräten abgemeldet','Выход выполнен на всех устройствах','Sesión cerrada en todos los dispositivos')); }catch(_){}
+      };
+      document.getElementById('acct-delete').onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        const typed=window.prompt(_authL('This PERMANENTLY deletes your account and all your data — it cannot be undone. Type your email to confirm:','これはアカウントと全データを完全に削除します（取り消せません）。確認のためメールアドレスを入力：','Dies löscht dein Konto und alle Daten DAUERHAFT — nicht umkehrbar. Gib zur Bestätigung deine E-Mail ein:','Это НАВСЕГДА удалит аккаунт и все данные — отменить нельзя. Введите e-mail для подтверждения:','Esto elimina PERMANENTEMENTE tu cuenta y todos tus datos, sin vuelta atrás. Escribe tu correo para confirmar:'));
+        if(typed==null) return;
+        if((typed||'').trim().toLowerCase()!==String(currentUser.email||'').toLowerCase()){ msg.textContent=_authL('That didn\'t match your email — cancelled.','メールアドレスが一致しません。キャンセルしました。','Stimmt nicht mit deiner E-Mail überein — abgebrochen.','Не совпадает с вашим e-mail — отменено.','No coincide con tu correo — cancelado.'); return; }
+        msg.textContent=_authL('Deleting your account…','アカウントを削除中…','Konto wird gelöscht…','Удаление аккаунта…','Eliminando tu cuenta…');
+        try{
+          const sres=await DB.auth.getSession(); const session=sres&&sres.data&&sres.data.session;
+          const r=await fetch(window.SUPABASE_URL+'/functions/v1/delete-account',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||''),'apikey':window.SUPABASE_ANON_KEY},body:JSON.stringify({confirm:'DELETE'})});
+          const j=await r.json().catch(()=>({}));
+          if(!r.ok||!j.ok) throw new Error(j.message||'delete failed');
+          try{ await DB.auth.signOut(); }catch(_){}
+          currentUser=null; bookmarks=[];
+          try{ Object.keys(localStorage).forEach(k=>{ if(/^(intmap_|sb-)/.test(k)) localStorage.removeItem(k); }); }catch(_){}
+          try{ updateAccountButton(); if(typeof renderUI==='function') renderUI(); }catch(_){}
+          m.style.display='none';
+          try{ imToast(_authL('Your account has been deleted.','アカウントを削除しました。','Dein Konto wurde gelöscht.','Ваш аккаунт удалён.','Tu cuenta ha sido eliminada.')); }catch(_){}
+        }catch(e){ msg.textContent=_authL('Could not delete the account. Please try again or contact support.','アカウントを削除できませんでした。もう一度試すかサポートへご連絡ください。','Konto konnte nicht gelöscht werden. Bitte erneut versuchen oder Support kontaktieren.','Не удалось удалить аккаунт. Повторите попытку или обратитесь в поддержку.','No se pudo eliminar la cuenta. Inténtalo de nuevo o contacta soporte.'); }
+      };
     }
     document.getElementById('acct-email').textContent=currentUser.email;
+    try{ _renderPasskeys(); }catch(_){}
     document.getElementById('acct-name').value=currentUser.name||'';
     document.getElementById('acct-msg').textContent='';
     /* avatar preview + current selection */
@@ -17280,6 +17465,8 @@ window.addEventListener('DOMContentLoaded', () => {
          from the event's own session (no Supabase calls — those would re-enter the held auth lock and
          deadlock, #14), so the UI shows "logged in" without waiting for the profile fetch or a reload. */
       try{
+        /* (#R155) The user followed a "reset password" email link → prompt for a new password. */
+        if(event==='PASSWORD_RECOVERY'){ try{ const am=document.getElementById('auth-modal'); if(am) am.style.display='none'; }catch(_){} try{ _openSetPassword(true); }catch(_){} }
         if(session&&session.user){
           if(!currentUser||currentUser.id!==session.user.id){
             const m=session.user.user_metadata||{};
@@ -17481,7 +17668,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if(s.labelLang) window.imLabelLang=s.labelLang;
     if(s.flatPan) window.imFlatPan=s.flatPan;
     if(s.mapColor) window.imMapColor=s.mapColor;
-    if(s.layerPanel==='right'||s.layerPanel==='classic') window.imLayerPanel=s.layerPanel;   /* (#R62) */
+    /* (#R155) Right sidebar is the default (#R154). Only a saved value the user EXPLICITLY chose
+       (layerPanelSet) may override it — a stale 'classic' left over from before the default flipped is
+       ignored, so returning users actually get the right sidebar they asked for (re-reported request). */
+    if(s.layerPanelSet===true && (s.layerPanel==='right'||s.layerPanel==='classic')){ window.imLayerPanel=s.layerPanel; window.imLayerPanelSet=true; }
     if(s.showRank==='on'||s.showRank==='off') window.imShowRank=s.showRank;   /* (#R137) Countries rank numbers (default off) */
     if(s.ticker==='on'||s.ticker==='off') window.imTicker=s.ticker;   /* (#R63) */
     if(Array.isArray(s.newsCountries)) window.imNewsCountries=s.newsCountries;
@@ -17495,7 +17685,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
-      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, ticker:window.imTicker, showRank:window.imShowRank,
+      sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, flatPan:window.imFlatPan, mapColor:window.imMapColor, layerPanel:window.imLayerPanel, layerPanelSet:window.imLayerPanelSet===true, ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
     })); }catch(_){}
@@ -17862,7 +18052,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(v('setting-label-lang'))    window.imLabelLang=v('setting-label-lang').value;
       if(v('setting-flat-pan'))      window.imFlatPan=v('setting-flat-pan').value;
       if(v('setting-map-color'))     window.imMapColor=v('setting-map-color').value;
-      if(v('setting-layerpanel')){ window.imLayerPanel=v('setting-layerpanel').value; try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} }
+      if(v('setting-layerpanel')){ window.imLayerPanel=v('setting-layerpanel').value; window.imLayerPanelSet=true; /* (#R155) explicit choice → now it persists across the right-default */ try{ window.IntMapLayerSidebar&&window.IntMapLayerSidebar.apply(); }catch(_){} }
       if(v('setting-showrank')){ window.imShowRank=v('setting-showrank').value; try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof _countriesSearchVal==='function')?_countriesSearchVal():searchVal()); }catch(_){} }   /* (#R137) re-render Countries so the rank column appears/disappears immediately */
       if(v('setting-ticker')){ window.imTicker=v('setting-ticker').value; try{ window.IntMapTicker&&window.IntMapTicker.apply(); }catch(_){} }
       const ncWrap=document.getElementById('newscountry-multi');
@@ -28175,22 +28365,26 @@ window.addEventListener('DOMContentLoaded', () => {
          のはやめる。テキストサイズや配置のみで勝負する" (stop colouring headings; compete on size and placement only), so
          every heading level is now var(--text-main) with a clear size step + generous top margin (the "配置") instead of
          the accent colour. The hierarchy is # > ## > ### > whole-line **bold**, each a distinct size above the body. */
-      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.15em 0 .3em;font-size:1.12em;line-height:1.32;">$1</div>')
-      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.55em 0 .5em;font-size:1.34em;line-height:1.3;letter-spacing:.005em;">$1</div>')
-      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.4em 0 .55em;font-size:1.6em;letter-spacing:.01em;line-height:1.26;">$1</div>')
+      /* (#R155) STRONGER hierarchy so a structured reply is unmistakably NOT monotonous. Still SIZE + PLACEMENT
+         only (no colour-coding): headings are var(--text-main); a "## " section additionally gets a subtle NEUTRAL
+         top hairline (the same rgba(128,128,128,.18) used for dividers elsewhere) = pure "配置"/placement, which reads
+         as sectioning far more strongly than spacing alone. */
+      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.25em 0 .32em;font-size:1.18em;line-height:1.32;">$1</div>')
+      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.7em 0 .55em;padding-top:.62em;border-top:1px solid rgba(128,128,128,.18);font-size:1.44em;line-height:1.28;letter-spacing:.005em;">$1</div>')
+      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.45em 0 .6em;font-size:1.68em;letter-spacing:.01em;line-height:1.24;">$1</div>')
       /* (#R151/#R154) a line that is ENTIRELY a **bold run** is a section lead the model authored (models reach for
          standalone bold far more readily than "## ") — render it as a modest heading (size + spacing, no colour), a clear
          step above body but below a real "## " section. Inline mid-sentence bold stays <b> (below). */
-      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.25em 0 .4em;font-size:1.16em;line-height:1.3;">$1</div>')
+      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.3em 0 .42em;font-size:1.2em;line-height:1.3;">$1</div>')
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
       /* (#R79g) ALSO linkify BARE urls the model prints without markdown syntax ("Atlas内からリンクを踏めるように")
          — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
       .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
-      .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.15em;text-indent:-0.9em;margin:.24em 0;">• $1</div>')
-      .replace(/\n{2,}/g,'<div style="height:1.2em"></div>')                                         /* (#R151/#R152/#R153) explicit paragraph → generous gap (more "余白" between groups) — 1.05→1.2em since _atlStanza now joins every paragraph/section with a blank line */
-      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.72em"></div>')                  /* (#R150/#R151/#R152) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
+      .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.3em;text-indent:-1.05em;margin:.32em 0;line-height:1.5;">•&nbsp; $1</div>')   /* (#R155) clearer bullets (more indent + row spacing) */
+      .replace(/\n{2,}/g,'<div style="height:1.3em"></div>')                                         /* (#R155) 1.2→1.3em paragraph gap (more "余白" between groups) */
+      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.78em"></div>')                  /* (#R150/#R151/#R152/#R155) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
       .replace(/\n/g,'<br>'); }
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
@@ -29254,7 +29448,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* ---- (#R147) scope: analyse sensitive-but-legitimate questions instead of over-refusing ---- */
       s+='SCOPE: analyse sensitive but legitimate questions (defence, disasters, disease, hazards, crime statistics, cyber, critical infrastructure) from PUBLIC information at an appropriate level of generality — judge by purpose, target, precision and output, never by a sensitive-sounding word. State the uncertainty and cite public sources; decline ONLY genuinely operational harm (real-time targeting, a precise strike or kill plan, or weapon/agent synthesis instructions) and, even then, still give the safe public-information analysis you can. ';
       /* ---- length + sources ---- */
-      s+='Answer in '+lang+'.'+(String(lang).indexOf('Japanese')>=0?' When answering in Japanese, use polite form (です・ます／敬語) unless the user is clearly casual or explicitly requests plain/casual speech.':'')+' FORMAT FOR READABILITY (the user complained Atlas answers are a monotonous wall of same-size text with no headings or spacing): structure a multi-part answer with a short **bold** lead sentence, "## " sub-headings that name each distinct section, "- " bullets for lists, and a blank line between sections — these render with real, larger heading sizes and clear spacing. Keep a short, single-idea answer as plain sentences (do NOT over-structure a one-paragraph reply). Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. NEVER cite social media, user-generated forums, link shorteners or video platforms (X/Twitter, Facebook, Instagram, Reddit, YouTube, TikTok, Telegram, etc.) as a source — they are not reliable factual sources and will be discarded. Then, after the answer, on its own line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn); EACH url must be a specific page that DIRECTLY supports a claim you made — never a generic homepage, a search page, or an unrelated link. Omit the line entirely if you have none; fabricating a URL is forbidden. MAP VALUE (IntMap is a MAP product, not a chatbot — every location-rich answer must put its spots ON the map): if the answer names specific, real, mappable places (cities, towns, districts, landmarks, buildings, stations, airports, ports, parks, gardens, museums, squares/plazas, stadiums, named facilities, or named natural features such as rivers/mountains/islands/straits), then on the VERY LAST line — AFTER any SOURCES line — output "PLACES: " followed by a ONE-LINE compact JSON array naming EVERY such place: [{"n":"exact place name","c":"the modern country it lies in","k":"kind"}]. IntMap resolves the coordinates from n+c and pins them — NEVER output latitude/longitude, never invent a place, exclude whole countries and vague/relative terms ("the region","the coast","downtown"), and list a place only if you actually named it in the answer. The places you name in the prose and the places in PLACES must MATCH. Omit the PLACES line only when the answer truly names no mappable place.';
+      s+='Answer in '+lang+'.'+(String(lang).indexOf('Japanese')>=0?' When answering in Japanese, use polite form (です・ます／敬語) unless the user is clearly casual or explicitly requests plain/casual speech.':'')+' FORMAT FOR READABILITY — MANDATORY for any answer longer than ~2 sentences (users repeatedly report Atlas replies are a monotonous wall of same-size text; an unstructured block is unacceptable): (1) open with ONE direct plain-language sentence that answers the question; (2) break the body into sections, EACH started by a "## " heading of 2–5 words on its OWN line with a blank line before it; (3) use "- " bullets for ANY list of two or more items; (4) put the pivotal term or figure of a point in **bold**; (5) NEVER write more than ~3 sentences in a row without a "## " heading or a bullet, and never return one undivided block. IntMap renders this Markdown as real, larger headings with clear spacing between sections. A genuinely one-idea reply stays 1–3 plain sentences — do not over-structure that. Use headings that describe THIS answer\'s content; never invent a section the answer does not cover. Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. NEVER cite social media, user-generated forums, link shorteners or video platforms (X/Twitter, Facebook, Instagram, Reddit, YouTube, TikTok, Telegram, etc.) as a source — they are not reliable factual sources and will be discarded. Then, after the answer, on its own line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn); EACH url must be a specific page that DIRECTLY supports a claim you made — never a generic homepage, a search page, or an unrelated link. Omit the line entirely if you have none; fabricating a URL is forbidden. MAP VALUE (IntMap is a MAP product, not a chatbot — every location-rich answer must put its spots ON the map): if the answer names specific, real, mappable places (cities, towns, districts, landmarks, buildings, stations, airports, ports, parks, gardens, museums, squares/plazas, stadiums, named facilities, or named natural features such as rivers/mountains/islands/straits), then on the VERY LAST line — AFTER any SOURCES line — output "PLACES: " followed by a ONE-LINE compact JSON array naming EVERY such place: [{"n":"exact place name","c":"the modern country it lies in","k":"kind"}]. IntMap resolves the coordinates from n+c and pins them — NEVER output latitude/longitude, never invent a place, exclude whole countries and vague/relative terms ("the region","the coast","downtown"), and list a place only if you actually named it in the answer. The places you name in the prose and the places in PLACES must MATCH. Omit the PLACES line only when the answer truly names no mappable place.';
       return s; }
     /* (#R131) The TIME CONTEXT + REQUESTED COVERAGE header of the analyze DATA block. Shared by the live path and
        the regression harness so the two can never drift. */
@@ -30962,6 +31156,11 @@ window.addEventListener('DOMContentLoaded', () => {
             return R(true, note('✓ '+L('Fullscreen','全画面','Vollbild','Полный экран','Pantalla completa')+': '+(want?'on':'off'))+_featTogHtml('fullscreen')); }   /* (#R152) offer the fullscreen on/off switch */
           catch(_){ return R(false, warn('⚠ '+L('Fullscreen unavailable here','全画面にできませんでした','Vollbild nicht möglich','Полный экран недоступен','Pantalla completa no disponible'))); } }
         case 'locate': case 'myLocation': case 'whereAmI': { if(!navigator.geolocation) return R(false, warn('⚠ '+L('Geolocation unavailable','この環境では位置情報が使えません','Standort nicht verfügbar','Геолокация недоступна','Geolocalización no disponible')));
+          /* (#R155) "求めればいいだけ": on a fresh session getCurrentPosition ASKS (the browser prompt). It
+             is a browser rule that a HARD-DENIED site is never re-prompted — so rather than a dead-end,
+             detect that state up front and tell the user exactly how to re-enable it. */
+          let _pstate='prompt'; try{ if(navigator.permissions&&navigator.permissions.query){ const st=await navigator.permissions.query({name:'geolocation'}); _pstate=st.state; } }catch(_){}
+          if(_pstate==='denied') return R(false, warn('⚠ '+L('Location is blocked for this site. Turn it on in your browser (tap the lock/permissions icon in the address bar), then ask me again.','この端末で位置情報がブロックされています。ブラウザで許可（アドレスバーの鍵アイコン→権限）してから、もう一度お尋ねください。','Der Standort ist für diese Seite blockiert. Erlaube ihn im Browser (Schloss-Symbol in der Adressleiste → Berechtigungen) und frag mich erneut.','Геолокация заблокирована для сайта. Включите её в браузере (значок замка в адресной строке → разрешения) и спросите снова.','La ubicación está bloqueada para este sitio. Actívala en el navegador (icono de candado en la barra → permisos) y vuelve a preguntar.')));
           return await new Promise(res=>{ let fin0=false; const fin=r2=>{ if(!fin0){ fin0=true; res(r2); } };
             try{ navigator.geolocation.getCurrentPosition(p2=>{ const lng=+p2.coords.longitude, lat=+p2.coords.latitude;
                 try{ map.flyTo({center:[lng,lat],zoom:Math.max(map.getZoom(),11),duration:1100}); }catch(_){}
@@ -30969,9 +31168,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 try{ window.IntMapLocate&&window.IntMapLocate.start({fly:false}); }catch(_){}
                 try{ _lastPlace={lng,lat,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; }catch(_){}
                 fin(R(true, note(L('Current location','現在地','Aktueller Standort','Текущее местоположение','Ubicación actual')+' ('+lat.toFixed(3)+', '+lng.toFixed(3)+')')));
-              }, _=>fin(R(false, warn('⚠ '+L('Location permission denied or unavailable','位置情報を取得できません（許可が必要です）','Standort verweigert oder nicht verfügbar','Нет доступа к геолокации','Ubicación denegada o no disponible')))), {enableHighAccuracy:false,timeout:9000,maximumAge:120000});
+              }, err=>{ const denied=err&&err.code===1;   /* 1=PERMISSION_DENIED, 2=UNAVAILABLE, 3=TIMEOUT */
+                fin(R(false, warn('⚠ '+(denied
+                  ? L('Location permission was denied. Re-enable it in your browser settings, then ask again.','位置情報の許可が拒否されました。ブラウザ設定で再度許可してから、もう一度お尋ねください。','Standortzugriff wurde verweigert. Aktiviere ihn in den Browsereinstellungen und frag erneut.','Доступ к геолокации отклонён. Включите его в настройках браузера и спросите снова.','Se denegó el permiso de ubicación. Vuelve a activarlo en el navegador y pregunta de nuevo.')
+                  : L('Couldn\'t get your location — please try again.','位置情報を取得できませんでした。もう一度お試しください。','Standort konnte nicht ermittelt werden — bitte erneut versuchen.','Не удалось определить местоположение — повторите попытку.','No se pudo obtener tu ubicación: inténtalo de nuevo.')))));
+              }, {enableHighAccuracy:false,timeout:15000,maximumAge:120000});   /* (#R155) 9s→15s so the permission prompt has time to be answered */
             }catch(_){ fin(R(false, warn('⚠'))); }
-            setTimeout(()=>fin(R(false, warn('⚠ '+L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')))),10000); }); }
+            setTimeout(()=>fin(R(false, warn('⚠ '+L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')))),20000); }); }
         case 'poi': case 'mapPois': case 'facilities': { /* (#R62) "○○にある石油施設を表示して" → REAL facilities mapped from OpenStreetMap */
           const kindStr=String(a.kind||a.query||a.what||a.name||'').trim();
           if(!kindStr) return R(false, warn('⚠ '+L('What kind of facilities?','どんな施設を表示しますか？','Welche Einrichtungen?','Какие объекты?','¿Qué instalaciones?')));
@@ -31764,7 +31967,13 @@ window.addEventListener('DOMContentLoaded', () => {
          write Japanese in kanji ("漢字で入力したら中国語で返答される" bug). Mirror the user's chosen UI language. */
       if(/[一-鿿㐀-䶿]/.test(s)) return ({jp:'Japanese',de:'German',ru:'Russian',es:'Spanish',en:'English'}[currentLang])||'Japanese';
       return (typeof _aiLangName==='function')?_aiLangName():'English'; }
-    const _langLine=()=>{ const l2=_replyLang(); return 'the language the user\'s message is written in (it appears to be '+l2+' — ALWAYS mirror the user\'s language, never the UI language'+(l2==='Japanese'?'; when replying in Japanese, use polite form (です・ます／敬語) by default unless the user is clearly casual or explicitly asks for plain/casual speech':'')+')'; };   /* (#R147) Japanese default = keigo unless the user opts out */
+    /* (#R155) Reply-language LOCK. _replyLang() already resolves the right language (kana→Japanese,
+       Cyrillic→Russian, …, and — crucially — Han-characters-WITHOUT-kana → the user's UI language, since
+       IntMap never replies in Chinese and its users write Japanese in kanji). The old wording ("ALWAYS
+       mirror the user's language, never the UI language") made the model IGNORE that and reply in Chinese
+       whenever a Chinese place name appeared ("山東省 → 中国語で返答" bug). Now we state the target language
+       firmly and explicitly rule out place/person/org names changing it. */
+    const _langLine=()=>{ const l2=_replyLang(); return l2+' (write EVERYTHING in '+l2+', every sentence — a place, person or organisation name in the request, even one written in Han/Chinese or Korean characters, NEVER changes the reply language)'+(l2==='Japanese'?'; use polite Japanese (です・ます／敬語) by default unless the user is clearly casual or explicitly asks for plain/casual speech':''); };   /* (#R147) Japanese default = keigo unless the user opts out */
     function SYS(){ const lang=_langLine();
       return 'You are Atlas, the natural-language command layer for IntMap, an interactive world map. You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. The action "type" names below (flyTo, mapReport, analyze, layer, highlight, time, …) are PLAIN STRING VALUES inside the JSON — they are NOT callable tools or functions. Do NOT emit a functionCall, do NOT call any tool, and do NOT try to execute an action yourself; the IntMap application executes the returned JSON. No web-search or function-calling tool is attached to this planning request. "say" = one short sentence in '+lang+' stating what you did. Decompose a compound request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyse a metric, shade the map, enable a layer AND fly somewhere).\n'
         +'MAPPING MANDATE (IntMap is a MAP product — a research answer must produce map value only IntMap can give, not a generic chatbot reply): whenever the request concerns real places or its answer will name locatable spots (cities, districts, landmarks, stations, airports, ports, parks, museums, squares, named facilities or natural features), you MUST put those spots ON the map — prefer the pin-producing actions ("poi" for facilities in a place, "mapReport" for current/recent live-news incidents, "researchMap" for a place/topic situation), and when you answer with plain "answer"/"analyze" list the named spots so IntMap pins them. The spots named in your prose and the spots mapped MUST match; NEVER finish a location-rich answer having mapped nothing. Verify with MULTIPLE independent source types (official bodies, primary reporting, specialist institutions) — never lean on one site/domain — and choose the best primary source per claim, not just top-ranked pages. Do NOT guess a coordinate: IntMap resolves positions from name+country and, for anything it cannot uniquely place, it honestly reports the spot as not-placed rather than putting it in the wrong location. Self-audit before finishing: are the main spots mapped, no same-name/coordinate mix-ups, sources not all one domain.\n'
@@ -31800,7 +32009,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
-        +'ANSWER: {"type":"answer","text":str,"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger headings (differentiated by SIZE and SPACING) with clear separation. Use a heading ONLY for a genuine section title, never to enlarge an ordinary sentence. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
+        +'ANSWER: {"type":"answer","text":str,"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE, TIMELESS knowledge or conceptual explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). SOURCING ROUTING (the user is angry that answers arrive with NO sources): if the answer will make SPECIFIC, CHECKABLE factual claims a reader might want to verify — statistics, dated events, attributions, quotes, "who/when/how many", recent or contested facts — prefer {"type":"analyze"} INSTEAD, because analyze GATHERS and CITES real source links, whereas a bare "answer" cannot attach sources and reads as untrustworthy. Reserve "answer" for genuinely timeless conceptual explanations and IntMap how-to, where there is nothing to cite. FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger headings (differentiated by SIZE and SPACING) with clear separation. Use a heading ONLY for a genuine section title, never to enlarge an ordinary sentence. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "タイムマシンの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the time-machine button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
         +'AREA MONITORS (saved SERVER-SIDE watches — they re-check an area on a schedule even when the page is closed, and generate an EVIDENCE-BACKED report ONLY when a real change is detected, never on every run): {"type":"monitor","op":"create"|"list"|"open"|"pause"|"resume"|"run"|"delete","name"?:str,"which"?:str,"index"?:int,"intervalMin"?:int,"sources"?:[str]}. op:"create" saves a monitor over the CURRENTLY SELECTED AREA — a radius circle, a drawn area, OR a resolved region outline (the user must have ONE active; if none is active, the action tells them to set one first — do NOT invent an area). Pass "name" and optionally "intervalMin" (minutes, ≥30, default 360) and "sources" (["news"] is the only source for now). op:"list" opens the Monitors tab. op:"open"/"pause"/"resume"/"run"/"delete" act on an EXISTING monitor identified by "which" (its name/area, fuzzy-matched) or "index" (1-based). Use for "この範囲を監視して"/"monitor this area" (create), "監視一覧"/"my monitors" (list), "東京の監視を今すぐ実行/一時停止/削除". Login is required. NEVER claim a monitor was created/paused/run/deleted unless the action actually succeeded (the reply reflects the real result).\n'

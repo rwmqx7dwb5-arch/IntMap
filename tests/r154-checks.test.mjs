@@ -20,10 +20,10 @@ const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 
 test('R154 #1 Köppen legend width hugs the content per language', () => {
-  assert.match(html, /\.koppen-legend\{[^}]*width:210px; min-width:172px; max-width:340px;/, 'fixed 264px lock replaced by a dynamic width (172–340 clamp)');
+  assert.match(html, /\.koppen-legend\{[^}]*width:220px; min-width:180px; max-width:460px;/, 'fixed 264px lock replaced by a dynamic width (172–340 clamp)');
   assert.match(html, /WIDTH HUGS THE CONTENT \(per language\)/, 'fit-to-content width logic present in _fitKoppenLegend');
   assert.match(html, /m\.style\.fontWeight='600'; m\.textContent=cd\?cd\.textContent:'';/, 'measures each row (code weight 600 + name) with an off-screen span');
-  assert.match(html, /const w=Math\.max\(176, Math\.min\(324, room>200\?room:324, contentW\)\);/, 'width clamped 176–324 and to the room right of the panel');
+  assert.match(html, /const w=Math\.max\(190, Math\.min\(460, room>200\?room:460, contentW\)\);/, 'R155: width clamped 190–460 (raised from 324 so DE/RU names fit) and to the room right of the panel');
   assert.match(html, /lg\.style\.width=w\+'px';/, 'the measured width is applied');
 });
 
@@ -82,7 +82,7 @@ test('R154 #7 Atlas voice input', () => {
 
 test('R154 #8 Layer panel defaults to the right sidebar (normal mode)', () => {
   assert.match(html, /window\.imLayerPanel='right';/, "default is 'right'");
-  assert.match(html, /if\(s\.layerPanel==='right'\|\|s\.layerPanel==='classic'\) window\.imLayerPanel=s\.layerPanel;/, 'a saved classic setting still wins');
+  assert.match(html, /if\(s\.layerPanelSet===true && \(s\.layerPanel==='right'\|\|s\.layerPanel==='classic'\)\)\{ window\.imLayerPanel=s\.layerPanel;/, 'R155: only an EXPLICITLY-chosen saved value overrides the right default (stale classic no longer wins)');
 });
 
 test('R154 #9 Right sidebar resizable + smaller default', () => {

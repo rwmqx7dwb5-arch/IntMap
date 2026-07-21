@@ -788,6 +788,7 @@ supabase/
 - `refresh-news` … ニュース取得＋AI地点解析＋書き込み（`--no-verify-jwt` で公開、`REFRESH_SECRET` で保護推奨）。
 - `monitor-run` … Area Monitors 定期実行（`--no-verify-jwt`＋自前fail-closed認証、`MONITOR_SECRET`）。
 - `sv-cov` … (#R145) Street Viewカバレッジ svv タイルの**ACAO付与プロキシ**（`--no-verify-jwt`・秘密なし）。Googleのmtsタイルは Access-Control-Allow-Origin を安定して返さず、クライアントの canvas 画素サンプリング（最寄カバレッジへのスナップ）が CORS で失敗する→本関数がサーバ側 fetch して `ACAO:*` を付与。**厳格allowlist**（`mts0-3.google.com/vt?…lyrs=svv`＋整数 x/y/z のみ・空タイルは透明PNG）＝オープンプロキシではない。フロントの `_COV_PROX` ラダー（直→sv-cov→corsproxy）で使用。
+- `delete-account` … (#R155) 呼出ユーザ自身のアカウント＋全データを**ハード削除**（`verify_jwt` on＋内部でも検証・`confirm:"DELETE"` 必須）。全所有行を明示purge後に `auth.admin.deleteUser`（FKカスケード設定に非依存）。秘密なし（注入される service_role のみ）。
 
 ### 6.3 SQL
 - `supabase/supabase_news_setup.sql` … `current_news` 作成/拡張（`analyzed_by` 追加マイグレーション含む）＋index＋RLS＋cron例。
@@ -1266,6 +1267,13 @@ hash）はすべて敵性入力として扱う。詳細は **`docs/SECURITY-ARCH
   `rel=noopener`。DB側＝`feedback.rating` CHECK（管理画面DoS対策・migration `20260720120000`）。
 - CI＝**CodeQL**（`security.yml`）＋`check:static`に**第三者Action SHA固定**検査＋`tests/security-logic.mjs`
   （Edge Function認証不変条件）＋pgTAP `03_security_test.sql`。`npm test`で全実行。
+
+### 17.4 R155 — 統合セキュリティ大改修（本番監査で発見した2重大脆弱性の修正・本番反映済）
+- **本番はマイグレーションファイルと乖離しうる**という前提で `supabase db query --linked` により**本番実状**（`pg_policies`/`role_table_grants`/`pg_proc`）を監査。**profiles上に2件のライブ重大脆弱性**を発見・同日修正・本番検証：(1) `SELECT … USING(true)` ポリシ2本で全ユーザの `email`/`is_admin`/`plan` が**世界公開**→DROP＋`profiles_public` ビュー化、(2) table-level UPDATE grant＋列無制限UPDATEポリシで `is_pro`/`plan` **自己昇格**（既存 `guard_admin_flag` は `is_admin` のみ防御）→grant REVOKE＋**`tg_profiles_guard_privcols`**（grant非依存BEFORE UPDATEトリガ）。
+- **最小権限化** `20260722100000_security_r155.sql`：anon/authenticated から全publicテーブルの既定`ALL`をREVOKE→最小再付与（R144が漏らした monitor子テーブルも）。anon/user投稿テキストに `NOT VALID` 長さ上限。pgTAP `05_r155_security_test.sql` が本番条件（authenticatedへ blanket UPDATE）をCIで再現しトリガの昇格阻止を証明。
+- **認証ライフサイクル**（`docs/SECURITY-ARCHITECTURE.md §11`）：`delete-account` Edge Function（真の削除）、パスキー(WebAuthn `experimental.passkey`)、パスワード再設定/変更・メール変更・全端末ログアウト、弱い/漏えいPW拒否（強度＋HIBP k-匿名）、列挙防止、トークンのGA流出防止。
+- **admin.html隔離**：公開Sign Up撤去・厳格CSP（`connect-src` self＋`*.supabase.co`）・esc()強化＋`safeUrl()`・破壊操作前の再認証。回帰＝`tests/r155-checks.test.mjs`（実挙動XSS含む）。
+- **手動作業（ダッシュボード）**：パスキーRP設定・leaked-password protection・Redirect URL・SMTP/CAPTCHA(任意) は `docs/SECURITY-ARCHITECTURE.md §9`。
 
 ## 18. 地域監視基盤 (Area Monitors) — R141 / R144
 
