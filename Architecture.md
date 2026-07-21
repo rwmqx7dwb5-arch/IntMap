@@ -514,7 +514,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     `_herePoint`＋buildPromptの`[PINNED POINT]`、右クリック/ dispatch）。⑤**Compareの色を地図に**（`IntMapStatsCompare.paintOnMap`＝
     PAL[i]でチップと厳密一致のカテゴリfill、Show comparison時／選択変更で同期、`_clearCompare`で消去）。⑥**Atlas経路案内**
     （`IntMapRouting`＝公開OSRMで車/徒歩/自転車のターンバイターン、dispatch `directions`。`route`は海路のまま）。⑦**ストリートビュー**
-    （`IntMapStreetView`＝キー不要の maps.google.com svembed 埋め込みパネル、右クリック/ dispatch `streetview`）。⑧**海抜以下ハイライト**
+    （`IntMapStreetView`＝キー不要の maps.google.com svembed 埋め込みパネル、右クリック/ dispatch `streetview`。(#R146) クリック/ドラッグ/前後移動は Google `GeoPhotoService.SingleImageSearch`（JSONP＝CORS不要・プロキシ不要・Private Relay免疫）で**実在の最寄パノラマ座標＋歩行可能な隣接パノラマ**へスナップ。CSP `script-src` に `maps.googleapis.com` 追加。カバレッジ水色オーバーレイと svv 画素/`sv-cov` フォールバックは温存）。⑧**海抜以下ハイライト**
     （`elevationBelow`＝Copernicus DEMグリッド標本→閾値以下/以上を深度段階fill）＋**歴史勢力図**（`historicalMap`＝curated WWI1916＋他年代AI生成）。
     ⑨**弾道ミサイルSim刷新**（`missile`＝最小エネルギーのケプラー軌道: 実アポジー/速度/飛翔時間＋高度断面SVG＋任意の弾頭効果環。
     検証: 1万km→1319km/7.2km・s/32分）。⑩**放射性物質拡散Sim**（`radiation`＝ラグランジュ粒子: Open-Meteoの時空間風で移流＋安定度依存の

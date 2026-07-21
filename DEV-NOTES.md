@@ -5,6 +5,48 @@
 
 ---
 
+## R146 — UX/正直化バッチ10件：SVスナップ根治(SingleImageSearch JSONP＋CSP)／東西独国境を実データ(Bundesländer)で作り直し／Companies比較ボタン＋網羅190社/live167・即時性(ADR15社live化)／Atlasサイドバー左右余白／Radius 3列グリッド／ケッペン凡例伸長／UVI日時／Atlasオンオフ・ボタン拡充／SV水色を鮮やかに (tag `#R146`)
+
+ユーザー指摘**10件**を根本原因から修正。全て `index.html`（＋データ `data/cshapes.js` を東西独ジオメトリで更新）の**加算的/微修正**。`npm test` 緑（静的+security+monitor+Playwright、pageerror 0）。ローカル(127.0.0.1:4173)でSVスナップ・Companies・東西独FC・Atlasトグルを実測。
+
+### ① ストリートビューが依然クリック地点に置くだけ（R140/R142/R145の残存＝真の根本原因）
+**真因**＝R145の svv タイル**画素サンプリング**（＋自前 `sv-cov` ACAOプロキシ）は依然として脆く、Apple Private Relay 環境ではタイルが剥落し `_nearestCoverage`→null→生クリック。**根治＝Google `GeoPhotoService.SingleImageSearch`（JSONP）**。これは `<script>` ロード（fetch でない）なので **CORS不要・プロキシ不要・Private Relay免疫**で、クリック点の**厳密な最寄パノラマ緯度経度＋pano id＋歩行可能な隣接パノラマ(links)** を返す（R140メモの「再現不能で不採用」は誤り＝実測でTimes Sq/Tokyo/London全て正確・海=`[[5,"generic"...]]`で正直non-coverage）。`_nearestPano`＋`_snapPano`（JSONP→画素サンプラ→null のラダー）。**`open()`/ドラッグ/前後移動が実パノラマへスナップ**。**②ボタン移動が単なる移動**＝`_moveHere` を「見出し方向に最も合う link へ移動、無ければ16m進めて再スナップ」に（18m直線補間を廃止）。**罠＝CSP**：R138の `script-src` 許可リストに `maps.googleapis.com` が無く JSONP がブロックされ null 返却→許可リストに追加（Google Maps埋め込みと同一信頼レベル）。SV coverage(水色)オーバーレイと sv-cov フォールバックは温存。
+
+### ② SVカバレッジ色が薄すぎる（R145の水色化が退色）
+**真因**＝R145の `raster-brightness-min:0.5`＋`raster-saturation:-0.15`＝明るく脱色＝「薄い」。**修正**＝brightness洗浄を撤去し `raster-saturation:+0.28, raster-hue-rotate:-34, raster-opacity:0.95`＝Googleの青をシアン寄りに回し**彩度を上げて鮮やかな水色**に（「最初の色から勝手に変えるな」＝退色させず明快な水色へ）。
+
+### ③ Atlasサイドバー左右余白（左だけ狭い）
+**真因**＝`.atl-chat`（唯一のスクロール容器）で Windows の**場所を取るwebkitスクロールバー(10px)が右側だけ**に予約され左が狭く見えた。**修正**＝`scrollbar-gutter:stable both-edges` で**両端に等幅のガター**を予約（スクロール有無に非依存・値ハードコード無し）。
+
+### ④ 歴史的国境の東西ドイツ国境がでたらめ（R145の西ベルリン追加は誤診＝真因は「実際とズレ」）
+**ユーザー回答で確定**＝「**単純に国境が実際からはずれとる**」。R145まで「都市の帰属が正しい＝OK」と検証していたが、**都市が正しい側にあっても国境線は平均8km・最大31km（西側リングは最大55km）ズレ得る**（内部整合だけ見て**実地理精度を測っていなかった**のが検証の欠陥）。CShapesもaourednikも同程度に不正確。**根治＝現代の権威ある州境(Bundesländer, deutschlandGeoJSON)で作り直し**：旧東独5州(＋Berlin)を union→西ベルリンを差分で穴に、旧西独10州を union＋西ベルリン飛地、統一独=全16州。`polygon-clipping` で union/difference、Douglas–Peucker(tol 0.01°≈1km)で簡略化、面積閾値で小島/スリバー穴を除去。**新境界の実地理誤差 平均0.00km/最大0.01km**（旧8.1/31.2）・東西の内独国境一致 平均0.08km。`data/cshapes.js` に新リング12本追加、feat#87-91(1945-2019の西独/東独/統一)を差し替え。build/検証は `scratchpad/{build_germany,integrate_germany}.mjs`。**教訓：内部整合(overlap 0・PIP正) ≠ 実地理精度。ユーザーが「実際とズレ」と言うなら ground-truth と距離を測れ。**
+
+### ⑤ Companies を Countries と同様に比較（できるだけ同じUIに）
+**現状**＝比較ビュー(棒/時系列/表・指標ピッカー)と行シングルクリック→トレイ→表示 は既に実装済(R145)。**欠けていた導線**＝会社詳細オーバーレイに Countries と同じ「比較」ボタンが無かった。**修正**＝`showCompanyDetail` にヘッダ直下の比較ボタンを追加（`.co-detail-btns/.co-detail-btn`、`_coToggleCompare`→2社以上で `showCoCompare` を開く・比較中は`on`表示）。
+
+### ⑥ Companiesの網羅性・即時性を徹底強化
+**網羅性**＝173→**190社**（重複6件除去後の実加算17）：中国メガキャップ(ICBC/PetroChina/China Mobile/貴州茅台/BYD/Alibaba)・欧州(Hermès/AB InBev)・米(AMAT/NXPI/MCHP/Eaton/Elevance/Cigna/Zoetis/USB/PNC)等。中国5→11社、ベルギー(BEL)新設。**即時性**＝米国上場ADRのスナップショット**15社をライブ化**(NVO/SAP/TM/NSRGY/AZN/NVS/SHEL/RY/HSBC/TTE/BHP/UL/SONY/TD/SNY)＝`sh=時価総額÷現ADR価格`(memoryのADR比免疫の自己整合法)。新規米国名は**実発行株数(安定fundamental)×ライブ価格**で真の時価総額。live 141→**167社**。**罠＝既存銘柄との重複**：UBER/SHOP/ARM/SPOT/IBN/NU は既にliveで存在→追加前にticker重複検査必須（今回は追加後にブラウザで検出→除去）。
+
+### ⑦ Radiusポップアップの項目整理（R145のCSSが未配線）
+**真因**＝R145は `.rad-actions` 3列グリッドCSS(L610-613)を足したが**JSに配線せず**＝3アクションは依然縦積み`.ai-action-btn`(~144px)。**修正**＝L6350で**3列グリッド**(`.rad-act`＋`.ra-l`)に配線、円未配置時のみ使い方ヒント表示、人口結果を下へ。`#tp-pop-btn` の実行時テキスト差替は `.ra-l` span を更新する `pbL()` に付替え(グリッド省略記号温存)。
+
+### ⑧ Atlasのオンオフ要素にボタンを拡充
+R145の `_FEAT_TOG`(grid/3D/国情報)に **streetview(SV範囲)/satellite/borders/labels/roads** を追加＝各返信にインライン実トグル。streetview coverage-on 返信に `_featTogHtml('streetview')` を付与。
+
+### ⑨ ケッペン気候区分レイヤーが長く伸ばせられない
+**真因**＝R145の凡例コンパクト化で `.koppen-legend{max-height:min(56dvh,…)}` に制限＝`resize:vertical` グラバーが56dvhで止まり30気候区の下部が隠れる。**修正**＝上限を `calc(100dvh - 92px)`(R145前値)へ戻し**全高まで伸長可**に。幅186pxは維持(コンパクトのまま)。
+
+### ⑩ UVI Widgetに数値の日時を明記
+`refreshUv` の sub-line に `asOf(j.current.time)`(現地ローカル時刻・Open-Meteo `current` 応答に既存)を追加＝「取得時点 7月20日 14:00」（Kp/ISS/FX/crypto と同じ `asOf` 書式）。
+
+### 罠・教訓
+- **JSONP は CSP `script-src` を通る必要がある**＝R138の許可リストに Google ドメインを追加しないと `<script>` ロードが黙って弾かれ null。fetch でなく script なので CORS は無関係だが CSP は関係する。
+- **「実際とズレ」型のバグは内部整合検証では捕まらない**＝PIP/overlap でなく **権威データとの距離**を測る。都市の帰属が正しくても線は数十km ズレ得る。
+- **Companies追加は既存tickerとの重複検査を先に**。
+- ヘッドレスは `map` が page-scoped(window非公開)＋screenshotがタイムアウトしがち＝JSONP/データ/純関数で実測、地図ピクセルはASCIIサンプリングで代替。
+
+---
+
 ## R145 — UX/正直化バッチ10件：SVカバレッジ実スナップ根治(ACAOプロキシ)＋水色化／Companies＝Countries同型比較(棒/時系列/表)＋網羅性173社／Atlas全幅・Stopアクセント・オンオフ実トグル／東西独＝西ベルリン飛地／凡例コンパクト／Radius整理 (tag `#R145`)
 
 ユーザー指摘**10件**を根本原因から修正。全て `index.html`（＋新 Edge Function `sv-cov`、データ `data/cshapes.js`）の**加算的/微修正**（単一HTML・ビルド無し温存）。着手前に**並列サブエージェント5本**で SV/Companies/Atlas UI/東西独国境/Radius+凡例 を実地調査（東西独はnodeで実ジオメトリ計測・PNG描画）。`npm test` 緑（静的+security-logic+monitor-logic+**Playwright 51/51**、pageerror 0・新 `r145.spec.js` 6件＋`r142.spec.js` #7を新UIへ更新）。ローカルプレビュー(127.0.0.1:8781)で SV実スナップ・Companies比較3モード・Atlasトグル・西ベルリンPIP を**実測**。
