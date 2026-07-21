@@ -50,10 +50,12 @@ test('R147 #2 Atlas defaults to polite Japanese (keigo) unless the user opts out
   assert.match(html, /polite form/, 'polite-form instruction present');
 });
 
-test('R147 #5 Street View coverage is a vivid fluorescent light-blue', () => {
-  assert.match(html, /'raster-saturation':0\.95/, 'boosted saturation');
+test('R147/R152 Street View coverage is a cyan light-blue, THINNER line (R152 dropped the glow)', () => {
+  assert.match(html, /'raster-saturation':0\.9/, 'kept saturated cyan');
   assert.match(html, /'raster-hue-rotate':-42/, 'stronger cyan hue');
-  assert.match(html, /'raster-brightness-min':0\.5/, 'brightness lift (glow)');
+  // (#R152) the R147 brightness-min:0.5 + contrast:0.15 glow bloated the line — dropped for a thinner stroke
+  assert.match(html, /'raster-hue-rotate':-42,'raster-resampling':'linear'/, 'R152: glow paint dropped, linear resampling for thin smooth edges');
+  assert.ok(!/'raster-brightness-min':0\.5,'raster-contrast':0\.15/.test(html), 'R152: the brightness-min+contrast glow pair is gone');
 });
 
 test('R147 #9 satellite base layer has instant tile fade (no 300ms cross-fade)', () => {
