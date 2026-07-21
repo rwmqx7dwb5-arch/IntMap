@@ -991,6 +991,23 @@ supabase/
 
 ---
 
+## #R154 補足（UX/機能バッチ10件）
+
+`index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r154-checks.test.mjs`(node 10)＋自変更で壊れた r149/r150/r152/r153 assert 更新。`npm test` 緑（static＋node **109**＋Playwright **80**・pageerror 0）。主要修正をハーネス実測で検証（クリーンポートで Playwright 80/80、汚染ポートの11失敗は同時実行セッションとの資源競合と確認）。
+
+- **① ケッペン幅（7回目・真因＝固定幅）**: 264px 固定は日本語（最長行~137px）で **~80px 死に幅**（「テキスト以上に横幅伸ばして…行の幅変わってない」）、独語で数語クリップ（「狭すぎる」）。→**内容ハグ**: `_fitKoppenLegend` がオフスクリーンspanで最長行を実測し、行クローム＋予約gutter を加えた px 幅を直接セット（clamp 176–324・右余白内）。CSS 固定ロックを `width:210px(fallback);min-width:172px;max-width:340px` に。実測 border-box: JP 207/EN 276/DE 317/RU 307/ES 303px・**全言語クリップ0**。幅は build/表示/リサイズ時のみ決定論再計算＝縦ドラッグで不変。下端マージン 12→8px。モバイルは既存 `!important` 幅で保護。
+- **② Atlasタイポ（色分け廃止＋捏造停止）**: (a) mdMini 全見出しの `color:var(--primary-color)` を撤廃＝**`--text-main`＋サイズ(# 1.6/## 1.34/### 1.12/行全体太字 1.16em)＋余白のみ**で階層化（「目次を色分けするのはやめる／サイズと配置で勝負」）。(b) `_atlStanza` の**見出し捏造を全廃**（先頭文→太字リード・文頭 `Label:`→`##` を削除＝「大きくする箇所がおかしい／判定がおかしい」の真因）。拡大は**モデルが書いた `##`／行全体太字のみ**。整形は安全なもの（長 run-on の~2文stanza分割・list正規化・段落余白）のみ。プロンプトに「見出しは真の節タイトルのみ・普通の文を拡大するな」。
+- **③ SV Coverage 線（4回目）**: 画面ストローク≈nativeStroke×(tileSize/256)なので **`tileSize:128→64`**（z+3 fetch・~4×縮小＝**~0.9px ヘアライン**・native/overzoom いずれでも単調に細い）＋ `raster-opacity 0.9→0.62`。maxzoom は据置。
+- **④ Atls出典（「全くない」の真因）**: `_atlCleanUrl` が**復号不能 Google News リダイレクトを丸ごと drop**（近年の不透明RSS→ニュース1バッチ全滅→出典ゼロ）。→ **リンク保持**（クリックで実記事へ）し `linkCards` は**発行元名（`src`）でドメイン表示**（"news.google.com" 表記回避）。SNS/短縮/動画 drop・関連度・異script保持は不変。
+- **⑤ Draw で Elevation profile**: `_elevationProfile`（measure/area＋`measurePoints` 固定）から**再利用コア `_profileFromCoords([lng,lat][])`** を抽出（measure/area は委譲＝挙動不変）。DrawTool `renderPanel()` に `📈` ボタン（`simplified.length>=2`）→ 描いた線を同一 DEM パイプラインで断面化。5言語 `elevProfile` 既存。
+- **⑥ AQI/UVI iOS再構築**: カード全体をカテゴリ色グラデで塗り（`_wgtColor` が inline `!important` でガラス上書き制圧）、**輝度で文字色分岐**（淡色→暗文字/濃色→白）＝全段コントラスト確保。数値36px。**AQI 6段階**（4→6・Very unhealthy/Hazardous 追加）。カテゴリ名5言語（`_WL`）。データ源不変。
+- **⑦ Atls音声入力**: `.atl-inbar` に `.atl-mic`＋Web Speech API。認識言語=UI言語、結果は入力欄に挿入（確認後送信）、録音中赤パルス、非対応で非表示。5言語タイトル。
+- **⑧ Layerパネル既定=右**: `window.imLayerPanel 'classic'→'right'`（保存済み classic は優先）。
+- **⑨ 右サイドバー左右調整＋既定縮小**: 左 `#sb-resizer` 鏡写しの**左端ハンドル `.lsr-resizer`**（左移動で拡大）＋`localStorage 'intmap_lsr_w'` 永続。`open()` は**保存幅優先**（従来は毎回上書き＝ドラッグ無効化）。既定幅 **430→380px**。地図 ≥320px。
+- **⑩ オフレイヤー残存表示**: 真因＝**OFF→hide 自己修復が自動学習レイヤーに欠落**（`.setStyle` 皆無・reconcile は ON 再発火のみ）。`_auditLearned` を**両方向対応**（`!cb.checked` 早期return撤廃）＝OFF かつ painted なら hide（`_ownedByCheckedOther` で他 checked が正当に描くidは除外）。二次＝ECMWF ロード失敗で `state[id].on=false` も戻す（styledata 再attach 復活を防止）。
+
+---
+
 ## #R153 補足（UX/機能バッチ8件・再報告の根本原因）
 
 `index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r153-checks.test.mjs`(node 9)＋自変更で壊れた r149/r150/r151/r152 assert 更新。`npm test` 緑（static＋node 99＋Playwright 80・pageerror 0）。全修正をハーネス実測で検証。
