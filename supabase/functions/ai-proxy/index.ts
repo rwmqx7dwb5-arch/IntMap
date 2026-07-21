@@ -596,7 +596,7 @@ Deno.serve(async (req) => {
     : (wantJson && payload.schema && typeof payload.schema === "object" ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   const model = Deno.env.get("AI_MODEL") ||
-    (provider === "openai" ? OPENAI_DEFAULT_MODEL : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R148) OpenAI default = GPT-5.6 Luna (Terra has no project access → 403) */
+    (provider === "openai" ? OPENAI_DEFAULT_MODEL : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R151) OpenAI default = GPT-5.6 Terra (AI_MODEL secret = gpt-5.6-terra; re-verified reachable R150/R151). Luna stays the FALLBACK_MODEL only on 403/404 model_not_found so a model outage can never blanket-kill Atlas. */
 
   try {
     let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[] };
