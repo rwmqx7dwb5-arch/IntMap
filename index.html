@@ -19,7 +19,18 @@ window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 
-gtag('config', 'G-57X5MX0ZPW');
+/* (#R155 SEC) Auth tokens must never reach analytics. OAuth / magic-link returns carry
+   code / access_token / refresh_token / token_hash in the URL query or hash for a moment
+   before supabase-js consumes and clears them; GA's default page_location would capture
+   them. Report a SANITIZED location (and referrer) with those params stripped. */
+(function(){ try{
+  var _scrub=function(href){ try{ var u=new URL(href);
+    ['code','access_token','refresh_token','token_hash','type','provider_token','provider_refresh_token','error','error_code','error_description'].forEach(function(k){ u.searchParams.delete(k); });
+    if(/(access_token|refresh_token|provider_token|token_hash)=/.test(u.hash||'')) u.hash='';
+    return u.origin+u.pathname+(u.search||'')+(u.hash||''); }catch(e){ try{ return location.origin+location.pathname; }catch(_){ return href; } } };
+  window.__imScrubAuthUrl=_scrub;
+  gtag('config', 'G-57X5MX0ZPW', { page_location:_scrub(location.href), page_referrer:_scrub(document.referrer||'') });
+}catch(e){ gtag('config', 'G-57X5MX0ZPW'); } })();
 /* (#R73) DEV-ONLY headless-test shim: `?rafshim=1` replaces requestAnimationFrame with a timer so MapLibre
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
@@ -2719,8 +2730,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 <script>
   window.SUPABASE_URL='https://vpekfwdpurzejrrmacac.supabase.co';
   window.SUPABASE_ANON_KEY='sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
+  /* (#R155) experimental.passkey enables the supabase-js passkey namespace (registerPasskey /
+     signInWithPasskey / passkey.list / passkey.delete). It is inert on older SDKs and until the
+     dashboard's WebAuthn relying-party is configured, so it never breaks password auth. */
   window.sb=(window.supabase&&window.supabase.createClient)
-    ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})
+    ? window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,experimental:{passkey:true}}})
     : (console.error('[IntMap] Supabase SDK failed to load (local file and CDN both unavailable).'),null);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
@@ -16863,6 +16877,88 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ---------- AUTH ---------- */
+  /* (#R155) 5-language helper for the auth/account modals (they predate the i18n dict). */
+  function _authL(en,jp,de,ru,es){ return currentLang==='jp'?jp:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en; }
+  /* (#R155) Password strength — mirrors the SERVER floor (supabase/config.toml [auth]:
+     minimum_password_length=8, password_requirements="lower_upper_letters_digits"). Returns {ok,msg}. */
+  function _pwStrength(pw){ pw=String(pw||'');
+    if(pw.length<8) return {ok:false,msg:_authL('Password must be at least 8 characters.','パスワードは8文字以上にしてください。','Das Passwort muss mindestens 8 Zeichen lang sein.','Пароль должен содержать не менее 8 символов.','La contraseña debe tener al menos 8 caracteres.')};
+    if(!/[a-z]/.test(pw)||!/[A-Z]/.test(pw)||!/[0-9]/.test(pw)) return {ok:false,msg:_authL('Include lower- and upper-case letters and a number.','小文字・大文字・数字を含めてください。','Verwende Groß- und Kleinbuchstaben sowie eine Ziffer.','Используйте строчные и прописные буквы и цифру.','Incluye mayúsculas, minúsculas y un número.')};
+    return {ok:true,msg:''};
+  }
+  /* (#R155) Have-I-Been-Pwned k-ANONYMITY breach check. Only the first 5 hex chars of the SHA-1
+     are ever sent — the password/full hash never leaves the device. Returns the breach count
+     (0 = not found). FAIL-OPEN on any error: the dashboard's server-side leaked-password
+     protection is the backstop, so a HIBP outage never blocks a legitimate signup. */
+  async function _pwBreachCount(pw){ try{
+    if(!(window.crypto&&crypto.subtle&&crypto.subtle.digest)) return 0;
+    const buf=await crypto.subtle.digest('SHA-1', new TextEncoder().encode(String(pw||'')));
+    const hex=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+    const r=await fetch('https://api.pwnedpasswords.com/range/'+hex.slice(0,5));
+    if(!r.ok) return 0;
+    const suffix=hex.slice(5), txt=await r.text();
+    for(const line of txt.split('\n')){ const p=line.trim().split(':'); if(p[0]===suffix) return parseInt(p[1],10)||1; }
+    return 0;
+  }catch(_){ return 0; } }
+  /* (#R155) Full new-password gate: strength THEN breach. Returns {ok,msg}. */
+  async function _pwValidateNew(pw){ const s=_pwStrength(pw); if(!s.ok) return s;
+    if(await _pwBreachCount(pw)>0) return {ok:false,msg:_authL('This password appears in a known data breach — please choose a different one.','このパスワードは既知の漏えいに含まれています。別のものを選んでください。','Dieses Passwort taucht in einem bekannten Datenleck auf — bitte wähle ein anderes.','Этот пароль встречался в известной утечке — выберите другой.','Esta contraseña apareció en una filtración conocida: elige otra.')};
+    return {ok:true,msg:''};
+  }
+  /* (#R155) Passkey capability: the SDK method exists AND the browser supports WebAuthn. */
+  function _passkeysAvailable(){ try{ return !!(DB&&DB.auth&&typeof DB.auth.signInWithPasskey==='function'&&window.PublicKeyCredential); }catch(_){ return false; } }
+  /* (#R155) Render the signed-in user's passkeys into #acct-passkeys (management list).
+     Defensive about the exact SDK return/param shape (Beta API) so a shape change degrades
+     gracefully instead of throwing. */
+  async function _renderPasskeys(){ const box=document.getElementById('acct-passkeys'); if(!box) return;
+    const addBtn=document.getElementById('acct-add-passkey');
+    if(!_passkeysAvailable()||!(DB.auth.passkey&&typeof DB.auth.passkey.list==='function')){ box.innerHTML=''; if(addBtn) addBtn.style.display='none'; return; }
+    if(addBtn) addBtn.style.display='block';
+    box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+escapeHtml(_authL('Loading passkeys…','パスキーを読み込み中…','Passkeys werden geladen…','Загрузка паскеев…','Cargando passkeys…'))+'</div>';
+    let list=[];
+    try{ const r=await DB.auth.passkey.list(); const d=(r&&r.data)||r; list=Array.isArray(d)?d:(d&&(d.passkeys||d.all||d.factors))||[]; }
+    catch(_){ box.innerHTML=''; return; }
+    if(!list.length){ box.innerHTML='<div style="font-size:12px;color:var(--text-muted);">'+escapeHtml(_authL('No passkeys yet.','パスキーはまだありません。','Noch keine Passkeys.','Паскеев пока нет.','Aún no hay passkeys.'))+'</div>'; return; }
+    box.innerHTML=list.map(pk=>{ const nm=escapeHtml(pk.friendly_name||pk.friendlyName||pk.name||'Passkey'), id=escapeHtml(String(pk.id||''));
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--input-bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;"><span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nm+'</span><button data-pkdel="'+id+'" style="background:transparent;border:none;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;">'+escapeHtml(_authL('Remove','削除','Entfernen','Удалить','Quitar'))+'</button></div>'; }).join('');
+    box.querySelectorAll('[data-pkdel]').forEach(b=>b.onclick=async()=>{ const id=b.getAttribute('data-pkdel');
+      if(!window.confirm(_authL('Remove this passkey?','このパスキーを削除しますか？','Diesen Passkey entfernen?','Удалить этот паскей?','¿Quitar este passkey?'))) return;
+      try{ await DB.auth.passkey.delete({id}); }catch(_){ try{ await DB.auth.passkey.delete({passkeyId:id}); }catch(__){} }
+      _renderPasskeys();
+    });
+  }
+  /* (#R155) Shared "set a new password" modal — used by the reset-link recovery flow AND the
+     account menu's Change-password button. Enforces the same strength + breach gate as signup. */
+  function _openSetPassword(isRecovery){
+    let d=document.getElementById('setpw-modal');
+    if(!d){ d=document.createElement('div'); d.id='setpw-modal';
+      d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:5300;padding:20px;';
+      d.innerHTML='<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:340px;box-sizing:border-box;">'
+        +'<h2 style="margin:0 0 12px;font-size:18px;">'+escapeHtml(_authL('Set a new password','新しいパスワードを設定','Neues Passwort festlegen','Задать новый пароль','Establecer nueva contraseña'))+'</h2>'
+        +'<input id="setpw-input" type="password" autocomplete="new-password" placeholder="'+escapeHtml(_authL('New password (min. 8, incl. a number)','新しいパスワード（8文字以上・数字を含む）','Neues Passwort (min. 8, mit Ziffer)','Новый пароль (мин. 8, с цифрой)','Nueva contraseña (mín. 8, con número)'))+'" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin-bottom:12px;">'
+        +'<button id="setpw-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;cursor:pointer;">'+escapeHtml(_authL('Save','保存','Speichern','Сохранить','Guardar'))+'</button>'
+        +'<p id="setpw-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>'
+        +'<button id="setpw-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">'+escapeHtml(_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar'))+'</button></div>';
+      document.body.appendChild(d);
+      d.onclick=e=>{ if(e.target===d) d.style.display='none'; };
+      document.getElementById('setpw-close').onclick=()=>{ d.style.display='none'; };
+      document.getElementById('setpw-save').onclick=async()=>{
+        const pw=document.getElementById('setpw-input').value, msg=document.getElementById('setpw-msg'), btn=document.getElementById('setpw-save');
+        btn.disabled=true; msg.textContent=_authL('Checking password…','パスワードを確認中…','Passwort wird geprüft…','Проверка пароля…','Comprobando contraseña…');
+        const chk=await _pwValidateNew(pw); if(!chk.ok){ msg.textContent=chk.msg; btn.disabled=false; return; }
+        msg.textContent=_authL('Saving…','保存中…','Speichere…','Сохранение…','Guardando…');
+        try{ const {error}=await DB.auth.updateUser({password:pw}); if(error) throw error;
+          msg.textContent=_authL('Password updated.','パスワードを更新しました。','Passwort aktualisiert.','Пароль обновлён.','Contraseña actualizada.');
+          setTimeout(()=>{ d.style.display='none'; }, 900);
+        }catch(e){ msg.textContent=_authL('Could not update the password.','パスワードを更新できませんでした。','Passwort konnte nicht aktualisiert werden.','Не удалось обновить пароль.','No se pudo actualizar la contraseña.'); }
+        finally{ btn.disabled=false; }
+      };
+    }
+    document.getElementById('setpw-input').value='';
+    document.getElementById('setpw-msg').textContent=isRecovery?_authL('Enter a new password to finish resetting your account.','アカウント再設定を完了するには新しいパスワードを入力してください。','Gib ein neues Passwort ein, um das Zurücksetzen abzuschließen.','Введите новый пароль, чтобы завершить сброс.','Introduce una nueva contraseña para terminar el restablecimiento.'):'';
+    d.style.display='flex';
+  }
+  window._imOpenSetPassword=_openSetPassword;
   function injectAuthUI(){
     const settingsBtn=document.getElementById('btn-open-settings');
     const acct=document.createElement('button');
@@ -16904,8 +17000,10 @@ window.addEventListener('DOMContentLoaded', () => {
       <div style="display:flex;align-items:center;gap:10px;margin:12px 0 14px;color:var(--text-muted);font-size:12px;"><div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div>or<div style="flex:1;height:1px;background:rgba(128,128,128,0.2);"></div></div>
       <input id="am-name" type="text" placeholder="Display name" autocomplete="nickname" maxlength="40" style="${inStyle}display:none;">
       <input id="am-email" type="email" placeholder="you@example.com" autocomplete="username" style="${inStyle}">
-      <input id="am-pass" type="password" placeholder="Password (min. 6 characters)" autocomplete="current-password" style="${inStyle}margin-bottom:14px;">
+      <input id="am-pass" type="password" placeholder="Password" autocomplete="current-password" style="${inStyle}margin-bottom:8px;">
+      <div id="am-forgot-row" style="text-align:right;margin:-2px 0 12px;"><a id="am-forgot" href="#" style="color:var(--text-muted);font-size:12px;text-decoration:none;">${_authL('Forgot password?','パスワードをお忘れですか？','Passwort vergessen?','Забыли пароль?','¿Olvidaste tu contraseña?')}</a></div>
       <button id="am-submit" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">Log In</button>
+      <button id="am-passkey" style="width:100%;background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);padding:10px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer;margin-top:8px;display:none;">${_authL('Sign in with a passkey','パスキーでログイン','Mit Passkey anmelden','Войти по паскею','Iniciar sesión con passkey')}</button>
       <p id="am-msg" style="margin:12px 0 0;color:var(--text-muted);font-size:12.5px;line-height:1.5;"></p>
       <button id="am-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:8px;padding:6px;cursor:pointer;font-size:13px;">Close</button>
     </div>`;
@@ -16922,6 +17020,10 @@ window.addEventListener('DOMContentLoaded', () => {
       $am('am-name').style.display = mode==='signup'?'block':'none';
       $am('am-pass').setAttribute('autocomplete', mode==='signup'?'new-password':'current-password');
       $am('am-submit').textContent = mode==='login'?'Log In':'Create account';
+      $am('am-pass').placeholder = mode==='signup'?_authL('Password (min. 8 chars, incl. a number)','パスワード（8文字以上・数字を含む）','Passwort (min. 8 Zeichen, mit Ziffer)','Пароль (мин. 8 символов, с цифрой)','Contraseña (mín. 8, con un número)'):_authL('Password','パスワード','Passwort','Пароль','Contraseña');
+      /* (#R155) passkey sign-in + forgot-password only make sense on the LOGIN tab. */
+      try{ $am('am-passkey').style.display=(mode==='login'&&_passkeysAvailable())?'block':'none'; }catch(_){}
+      try{ $am('am-forgot-row').style.display=mode==='login'?'block':'none'; }catch(_){}
       $am('am-msg').textContent='';
     }
     function $am(id){ return document.getElementById(id); }
@@ -16932,24 +17034,49 @@ window.addEventListener('DOMContentLoaded', () => {
     m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
     $am('am-submit').onclick=async()=>{
       const email=$am('am-email').value.trim(), password=$am('am-pass').value, name=$am('am-name').value.trim(), msg=$am('am-msg');
-      if(!email||!password){ msg.textContent='Enter email and password.'; return; }
-      if(amMode==='signup'){
-        if(!name){ msg.textContent='Choose a display name (shown on your community posts).'; return; }
-        if(password.length<6){ msg.textContent='Password must be at least 6 characters.'; return; }
-      }
-      $am('am-submit').disabled=true; msg.textContent='Working…';
+      if(!email||!password){ msg.textContent=_authL('Enter email and password.','メールアドレスとパスワードを入力してください。','Gib E-Mail und Passwort ein.','Введите e-mail и пароль.','Introduce el correo y la contraseña.'); return; }
+      $am('am-submit').disabled=true;
       try{
         if(amMode==='signup'){
+          if(!name){ msg.textContent=_authL('Choose a display name (shown on your community posts).','表示名を入力してください（コミュニティ投稿に表示されます）。','Wähle einen Anzeigenamen (in Community-Beiträgen sichtbar).','Выберите отображаемое имя (видно в постах сообщества).','Elige un nombre visible (aparece en tus publicaciones).'); return; }
+          /* (#R155) strength (mirrors the server floor) THEN a HIBP breach check before we submit. */
+          msg.textContent=_authL('Checking password…','パスワードを確認中…','Passwort wird geprüft…','Проверка пароля…','Comprobando contraseña…');
+          const chk=await _pwValidateNew(password); if(!chk.ok){ msg.textContent=chk.msg; return; }
+          msg.textContent=_authL('Working…','処理中…','Wird verarbeitet…','Обработка…','Procesando…');
           /* display_name is stored in user metadata; the profile row picks it up on first login */
-          const {error}=await DB.auth.signUp({email,password,options:{data:{display_name:name}}}); if(error) throw error;
-          msg.textContent='Account created. If email confirmation is required, confirm via the link we emailed you, then log in.'; setTab('login');
+          const {error}=await DB.auth.signUp({email,password,options:{data:{display_name:name}}});
+          /* (#R155) ENUMERATION-SAFE: whether the email is new OR already registered, show the SAME
+             neutral message so signup can't be used to probe which emails have accounts. */
+          if(error && !/already|exist|registered/i.test(error.message||'')) throw error;
+          msg.textContent=_authL('Check your email — if this address is new, we sent a confirmation link. Then log in.','メールをご確認ください。新規の場合は確認リンクを送信しました。その後ログインしてください。','Prüfe deine E-Mail — falls neu, haben wir einen Bestätigungslink gesendet. Dann anmelden.','Проверьте почту — если адрес новый, мы отправили ссылку для подтверждения. Затем войдите.','Revisa tu correo: si es nuevo, enviamos un enlace de confirmación. Luego inicia sesión.'); setTab('login');
         } else {
-          const {data,error}=await DB.auth.signInWithPassword({email,password}); if(error) throw error;
+          const {data,error}=await DB.auth.signInWithPassword({email,password});
+          /* (#R155) ENUMERATION-SAFE: Supabase already returns a generic "Invalid login credentials";
+             surface a single localized generic message and never reveal whether the email exists. */
+          if(error){ msg.textContent=_authL('Invalid email or password.','メールアドレスまたはパスワードが正しくありません。','E-Mail oder Passwort ist falsch.','Неверный e-mail или пароль.','Correo o contraseña incorrectos.'); return; }
           m.style.display='none';
           try{ recordLogin(data&&data.user&&data.user.id); }catch(_){}   /* (#R27) genuine login → count for the 3rd-login feedback nudge */
         }
-      }catch(e){ msg.textContent='Error: '+((e&&e.message)||e); }
+      }catch(e){ msg.textContent=_authL('Something went wrong. Please try again.','エラーが発生しました。もう一度お試しください。','Etwas ist schiefgelaufen. Bitte erneut versuchen.','Что-то пошло не так. Повторите попытку.','Algo salió mal. Inténtalo de nuevo.'); }
       finally{ $am('am-submit').disabled=false; }
+    };
+    /* (#R155) Passkey sign-in (WebAuthn, discoverable credential — no email needed). */
+    $am('am-passkey').onclick=async()=>{
+      const msg=$am('am-msg');
+      if(!_passkeysAvailable()){ msg.textContent=_authL('Passkeys aren\'t available on this device.','この端末ではパスキーを利用できません。','Passkeys sind auf diesem Gerät nicht verfügbar.','Паскеи недоступны на этом устройстве.','Los passkeys no están disponibles en este dispositivo.'); return; }
+      $am('am-passkey').disabled=true; msg.textContent=_authL('Waiting for your passkey…','パスキーを待機中…','Warte auf deinen Passkey…','Ожидание паскея…','Esperando tu passkey…');
+      try{ const {data,error}=await DB.auth.signInWithPasskey(); if(error) throw error;
+        m.style.display='none'; try{ recordLogin(data&&data.user&&data.user.id); }catch(_){}
+      }catch(e){ msg.textContent=_authL('Passkey sign-in failed or was cancelled.','パスキーのログインに失敗またはキャンセルされました。','Passkey-Anmeldung fehlgeschlagen oder abgebrochen.','Вход по паскею не удался или отменён.','El inicio con passkey falló o se canceló.'); }
+      finally{ $am('am-passkey').disabled=false; }
+    };
+    /* (#R155) Forgot password → email a reset link. Enumeration-safe: identical message regardless. */
+    $am('am-forgot').onclick=async(e)=>{ e.preventDefault(); const msg=$am('am-msg');
+      const email=$am('am-email').value.trim();
+      if(!email){ msg.textContent=_authL('Enter your email above, then tap “Forgot password?”.','上のメール欄を入力してから「パスワードをお忘れですか？」を押してください。','Gib oben deine E-Mail ein und tippe dann auf „Passwort vergessen?“.','Введите e-mail выше, затем нажмите «Забыли пароль?».','Introduce tu correo arriba y pulsa «¿Olvidaste tu contraseña?».'); return; }
+      const redirectTo=(location.protocol==='file:')?location.href:(location.origin+location.pathname);
+      try{ await DB.auth.resetPasswordForEmail(email,{redirectTo}); }catch(_){}
+      msg.textContent=_authL('If an account exists for that email, we\'ve sent a password-reset link.','そのメールアドレスのアカウントが存在する場合、再設定リンクを送信しました。','Falls ein Konto zu dieser E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.','Если аккаунт с этим адресом существует, мы отправили ссылку для сброса пароля.','Si existe una cuenta con ese correo, enviamos un enlace para restablecer la contraseña.');
     };
     /* OAuth (Google / Apple). NOTE: each provider must be ENABLED in the Supabase dashboard
        (Authentication → Providers) with this site added as a redirect URL, or it errors. */
@@ -16976,6 +17103,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(!m){
       m=document.createElement('div'); m.id='acct-modal';
       m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;';
+      const secBtn='width:100%;background:var(--input-bg);color:var(--text-main);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-bottom:8px;text-align:left;';   /* (#R155) security-section buttons */
       m.innerHTML=`<div style="background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:var(--shadow);padding:24px;width:100%;max-width:360px;box-sizing:border-box;max-height:90vh;overflow-y:auto;">
         <h2 style="margin:0 0 4px;font-size:19px;">${currentLang==='jp'?'プロフィール':currentLang==='de'?'Dein Profil':currentLang==='ru'?'Ваш профиль':currentLang==='es'?'Tu perfil':'Your profile'}</h2>
         <p id="acct-email" style="margin:0 0 10px;color:var(--text-muted);font-size:13px;"></p>
@@ -16991,7 +17119,16 @@ window.addEventListener('DOMContentLoaded', () => {
         <textarea id="acct-bio" maxlength="280" rows="3" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid transparent;background:var(--input-bg);color:var(--text-main);margin:6px 0 14px;resize:vertical;font-family:inherit;font-size:13px;"></textarea>
         <button id="acct-save" style="width:100%;background:var(--primary-color);color:#fff;border:none;padding:11px;border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;">${currentLang==='jp'?'保存':currentLang==='de'?'Profil speichern':currentLang==='ru'?'Сохранить профиль':currentLang==='es'?'Guardar perfil':'Save profile'}</button>
         <p id="acct-msg" style="margin:10px 0 0;color:var(--text-muted);font-size:12.5px;"></p>
+        <div style="margin-top:16px;border-top:1px solid rgba(128,128,128,0.18);padding-top:14px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px;">${_authL('Security','セキュリティ','Sicherheit','Безопасность','Seguridad')}</div>
+          <div id="acct-passkeys" style="margin-bottom:8px;"></div>
+          <button id="acct-add-passkey" style="${secBtn}display:none;">${_authL('Add a passkey','パスキーを追加','Passkey hinzufügen','Добавить паскей','Añadir passkey')}</button>
+          <button id="acct-change-email" style="${secBtn}">${_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo')}</button>
+          <button id="acct-change-pw" style="${secBtn}">${_authL('Change password','パスワードを変更','Passwort ändern','Изменить пароль','Cambiar contraseña')}</button>
+          <button id="acct-logout-all" style="${secBtn}margin-bottom:0;">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
+        </div>
         <button id="acct-logout" style="width:100%;background:var(--input-bg);color:var(--info-mil);border:none;padding:10px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;margin-top:12px;">${currentLang==='jp'?'ログアウト':currentLang==='de'?'Abmelden':currentLang==='ru'?'Выйти':currentLang==='es'?'Cerrar sesión':'Log out'}</button>
+        <button id="acct-delete" style="width:100%;background:transparent;color:#ff3b30;border:1px solid rgba(255,59,48,0.4);padding:9px;border-radius:9px;font-weight:600;font-size:12.5px;cursor:pointer;margin-top:8px;">${_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta')}</button>
         <button id="acct-close" style="width:100%;background:transparent;border:none;color:var(--text-muted);margin-top:6px;padding:6px;cursor:pointer;font-size:13px;">${currentLang==='jp'?'閉じる':currentLang==='de'?'Schließen':currentLang==='ru'?'Закрыть':currentLang==='es'?'Cerrar':'Close'}</button>
       </div>`;
       document.body.appendChild(m);
@@ -17040,8 +17177,53 @@ window.addEventListener('DOMContentLoaded', () => {
         }catch(e){ msg.textContent='Error: '+((e&&e.message)||e); }
         finally{ btn.disabled=false; }
       };
+      /* ---- (#R155) Security section: passkeys / change email / change password / logout-all / delete ---- */
+      const _addPk=document.getElementById('acct-add-passkey');
+      if(_addPk) _addPk.onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        if(!_passkeysAvailable()||typeof DB.auth.registerPasskey!=='function'){ msg.textContent=_authL('Passkeys aren\'t available on this device.','この端末ではパスキーを利用できません。','Passkeys sind auf diesem Gerät nicht verfügbar.','Паскеи недоступны на этом устройстве.','Los passkeys no están disponibles en este dispositivo.'); return; }
+        msg.textContent=_authL('Follow your device prompt to create a passkey…','端末の指示に従ってパスキーを作成してください…','Folge der Geräteaufforderung, um einen Passkey zu erstellen…','Следуйте подсказке устройства, чтобы создать паскей…','Sigue la indicación de tu dispositivo para crear un passkey…');
+        try{ const {error}=await DB.auth.registerPasskey(); if(error) throw error; msg.textContent=_authL('Passkey added.','パスキーを追加しました。','Passkey hinzugefügt.','Паскей добавлен.','Passkey añadido.'); _renderPasskeys(); }
+        catch(e){ msg.textContent=_authL('Could not add a passkey (or it was cancelled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
+      };
+      document.getElementById('acct-change-email').onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        const ne=window.prompt(_authL('New email address:','新しいメールアドレス：','Neue E-Mail-Adresse:','Новый e-mail:','Nuevo correo:')); if(ne==null) return;
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne.trim())){ msg.textContent=_authL('That doesn\'t look like an email.','メールアドレスの形式ではありません。','Das sieht nicht wie eine E-Mail aus.','Это не похоже на e-mail.','Eso no parece un correo.'); return; }
+        msg.textContent=_authL('Sending confirmation…','確認メールを送信中…','Bestätigung wird gesendet…','Отправка подтверждения…','Enviando confirmación…');
+        try{ const {error}=await DB.auth.updateUser({email:ne.trim()}); if(error) throw error;
+          msg.textContent=_authL('Confirm the change from the link sent to your new email (and, if asked, your current one).','新しいメールに届いたリンクから変更を確認してください（求められた場合は現在のメールも）。','Bestätige die Änderung über den Link an deine neue E-Mail (und ggf. deine aktuelle).','Подтвердите изменение по ссылке на новый e-mail (и, если попросят, на текущий).','Confirma el cambio desde el enlace enviado a tu nuevo correo (y al actual si se solicita).');
+        }catch(e){ msg.textContent=_authL('Could not change the email.','メールアドレスを変更できませんでした。','E-Mail konnte nicht geändert werden.','Не удалось изменить e-mail.','No se pudo cambiar el correo.'); }
+      };
+      document.getElementById('acct-change-pw').onclick=()=>_openSetPassword(false);
+      document.getElementById('acct-logout-all').onclick=async()=>{
+        if(!window.confirm(_authL('Log out on ALL devices? You\'ll need to sign in again everywhere.','すべての端末からログアウトしますか？各端末で再度ログインが必要になります。','Auf ALLEN Geräten abmelden? Du musst dich überall neu anmelden.','Выйти на ВСЕХ устройствах? Потребуется войти заново везде.','¿Cerrar sesión en TODOS los dispositivos? Tendrás que volver a iniciar sesión.'))) return;
+        m.style.display='none'; currentUser=null; bookmarks=[];
+        try{ updateAccountButton(); }catch(_){}
+        try{ if(typeof renderUI==='function') renderUI(); }catch(_){}
+        try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
+        try{ await DB.auth.signOut({scope:'global'}); }catch(_){ try{ await DB.auth.signOut(); }catch(__){} }
+        try{ imToast(_authL('Logged out on all devices','すべての端末からログアウトしました','Auf allen Geräten abgemeldet','Выход выполнен на всех устройствах','Sesión cerrada en todos los dispositivos')); }catch(_){}
+      };
+      document.getElementById('acct-delete').onclick=async()=>{ const msg=document.getElementById('acct-msg');
+        const typed=window.prompt(_authL('This PERMANENTLY deletes your account and all your data — it cannot be undone. Type your email to confirm:','これはアカウントと全データを完全に削除します（取り消せません）。確認のためメールアドレスを入力：','Dies löscht dein Konto und alle Daten DAUERHAFT — nicht umkehrbar. Gib zur Bestätigung deine E-Mail ein:','Это НАВСЕГДА удалит аккаунт и все данные — отменить нельзя. Введите e-mail для подтверждения:','Esto elimina PERMANENTEMENTE tu cuenta y todos tus datos, sin vuelta atrás. Escribe tu correo para confirmar:'));
+        if(typed==null) return;
+        if((typed||'').trim().toLowerCase()!==String(currentUser.email||'').toLowerCase()){ msg.textContent=_authL('That didn\'t match your email — cancelled.','メールアドレスが一致しません。キャンセルしました。','Stimmt nicht mit deiner E-Mail überein — abgebrochen.','Не совпадает с вашим e-mail — отменено.','No coincide con tu correo — cancelado.'); return; }
+        msg.textContent=_authL('Deleting your account…','アカウントを削除中…','Konto wird gelöscht…','Удаление аккаунта…','Eliminando tu cuenta…');
+        try{
+          const sres=await DB.auth.getSession(); const session=sres&&sres.data&&sres.data.session;
+          const r=await fetch(window.SUPABASE_URL+'/functions/v1/delete-account',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+((session&&session.access_token)||''),'apikey':window.SUPABASE_ANON_KEY},body:JSON.stringify({confirm:'DELETE'})});
+          const j=await r.json().catch(()=>({}));
+          if(!r.ok||!j.ok) throw new Error(j.message||'delete failed');
+          try{ await DB.auth.signOut(); }catch(_){}
+          currentUser=null; bookmarks=[];
+          try{ Object.keys(localStorage).forEach(k=>{ if(/^(intmap_|sb-)/.test(k)) localStorage.removeItem(k); }); }catch(_){}
+          try{ updateAccountButton(); if(typeof renderUI==='function') renderUI(); }catch(_){}
+          m.style.display='none';
+          try{ imToast(_authL('Your account has been deleted.','アカウントを削除しました。','Dein Konto wurde gelöscht.','Ваш аккаунт удалён.','Tu cuenta ha sido eliminada.')); }catch(_){}
+        }catch(e){ msg.textContent=_authL('Could not delete the account. Please try again or contact support.','アカウントを削除できませんでした。もう一度試すかサポートへご連絡ください。','Konto konnte nicht gelöscht werden. Bitte erneut versuchen oder Support kontaktieren.','Не удалось удалить аккаунт. Повторите попытку или обратитесь в поддержку.','No se pudo eliminar la cuenta. Inténtalo de nuevo o contacta soporte.'); }
+      };
     }
     document.getElementById('acct-email').textContent=currentUser.email;
+    try{ _renderPasskeys(); }catch(_){}
     document.getElementById('acct-name').value=currentUser.name||'';
     document.getElementById('acct-msg').textContent='';
     /* avatar preview + current selection */
@@ -17280,6 +17462,8 @@ window.addEventListener('DOMContentLoaded', () => {
          from the event's own session (no Supabase calls — those would re-enter the held auth lock and
          deadlock, #14), so the UI shows "logged in" without waiting for the profile fetch or a reload. */
       try{
+        /* (#R155) The user followed a "reset password" email link → prompt for a new password. */
+        if(event==='PASSWORD_RECOVERY'){ try{ const am=document.getElementById('auth-modal'); if(am) am.style.display='none'; }catch(_){} try{ _openSetPassword(true); }catch(_){} }
         if(session&&session.user){
           if(!currentUser||currentUser.id!==session.user.id){
             const m=session.user.user_metadata||{};
