@@ -47,11 +47,11 @@ test('R149/R150 #3 Köppen legend stretches to the screen bottom (viewport-based
 
 test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   // (#R154) headings differentiate by SIZE + SPACING only — NO colour ("目次を色分けするのはやめる")
-  assert.match(html, /font-size:1\.6em;letter-spacing:\.01em/, 'h1 ~1.6em (R154)');
-  assert.match(html, /font-size:1\.34em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.34em (R154)');
-  assert.match(html, /font-size:1\.12em;line-height:1\.32/, 'h3 ~1.12em (R154)');
+  assert.match(html, /font-size:1\.68em;letter-spacing:\.01em/, 'h1 ~1.68em (R155)');
+  assert.match(html, /font-size:1\.44em;line-height:1\.28;letter-spacing:\.005em/, 'h2 ~1.44em (R155)');
+  assert.match(html, /font-size:1\.18em;line-height:1\.32/, 'h3 ~1.18em (R155)');
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em/.test(html), 'R154: heading rules no longer use --primary-color (size/spacing only)');
-  assert.match(html, /'<div style="height:1\.2em"><\/div>'/, 'paragraph gap ~1.2em (R153, was 1.05em in R152)');
+  assert.match(html, /'<div style="height:1\.3em"><\/div>'/, 'paragraph gap ~1.3em (R155)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');
 });

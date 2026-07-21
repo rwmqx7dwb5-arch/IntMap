@@ -71,6 +71,33 @@ test('admin esc() neutralizes XSS payloads (incl. the single quote)', () => {
   assert.equal(esc(`a'b"c&d<e>f`), 'a&#39;b&quot;c&amp;d&lt;e&gt;f', 'all five chars escaped incl. apostrophe');
 });
 
+// ── index.html: UX batch ────────────────────────────────────────────────────
+test('Köppen legend: border-box + correct chrome + higher clamp', () => {
+  assert.match(index, /\.koppen-legend\{ box-sizing:border-box;/, 'legend is border-box');
+  assert.match(index, /mx \+ 11 \+ 12 \+ 8 \+ 15 \+ 22 \+ 6/, 'width formula folds in padding+border (22)');
+  assert.match(index, /Math\.min\(460, room>200\?room:460, contentW\)/, 'max-width clamp raised to 460');
+});
+
+test('Atlas reply-language lock (no "mirror the message, never UI")', () => {
+  assert.ok(!/ALWAYS mirror the user's language, never the UI language/.test(index), 'the message-mirror wording is gone');
+  assert.match(index, /NEVER changes the reply language/, 'place names do not change the reply language');
+});
+
+test('Atlas geolocation asks / gives actionable denial (not a dead-end)', () => {
+  assert.match(index, /navigator\.permissions&&navigator\.permissions\.query/, 'permission state pre-check');
+  assert.match(index, /err&&err\.code===1/, 'distinguishes PERMISSION_DENIED');
+});
+
+test('Layer panel: right default only overridden by an explicit choice', () => {
+  assert.match(index, /s\.layerPanelSet===true && \(s\.layerPanel==='right'\|\|s\.layerPanel==='classic'\)/, 'explicit-choice gate');
+  assert.match(index, /window\.imLayerPanelSet=true/, 'explicit choice records the flag');
+});
+
+test('Atlas typography: forceful format mandate + sharper heading render', () => {
+  assert.match(index, /NEVER write more than ~3 sentences in a row without a "## " heading or a bullet/, 'mandate present');
+  assert.match(index, /border-top:1px solid rgba\(128,128,128,\.18\)/, '## section hairline (placement, not colour)');
+});
+
 test('admin safeUrl() rejects dangerous schemes', () => {
   const m = admin.match(/const safeUrl=\(u\)=>[^\n]+/);
   assert.ok(m, 'safeUrl() found');
