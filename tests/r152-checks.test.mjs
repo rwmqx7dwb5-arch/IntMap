@@ -24,7 +24,7 @@ test('R152 #1 Köppen rows are single-line (nowrap) with an always-visible code 
   assert.match(html, /\.kl-item\{[^}]*white-space:nowrap;/, 'kl-item nowrap (kills the 2-line wrap)');
   assert.match(html, /\.kl-item \.kl-code\{ flex-shrink:0;/, 'code never shrinks / stays visible');
   assert.match(html, /\.kl-item \.kl-nm\{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;/, 'name ellipsises on one line');
-  assert.match(html, /\.koppen-legend\{[^}]*width:264px;/, 'legend widened to 264px (R153: full names read, no ellipsis clip)');
+  assert.match(html, /\.koppen-legend\{[^}]*width:210px; min-width:172px; max-width:340px;/, 'legend width is now dynamic per-language (R154: hugs content, clamped 172–340; _fitKoppenLegend sets the exact px)');
   // the build template splits code + name and adds a full-text title tooltip
   assert.match(html, /<span class="kl-code">\$\{code\}<\/span>/, 'row template emits .kl-code');
   assert.match(html, /title="\$\{code\}\$\{_knm\?' · '\+_knm:''\}"/, 'row has full-text title tooltip');
@@ -39,12 +39,12 @@ test('R152 #2 Companies compare dock is the static absolute-overlay (Countries p
   assert.match(html, /\(window\.imShowRank!=='off'\)\?`<span class="stat-rank">/, 'Companies honours the rank setting');
 });
 
-test('R152 #3 Atlas typography — bold lead line for flat prose + bigger headings + more spacing', () => {
-  // (R153) generalised: the lead sentence of any unstructured reply is promoted to a bold heading line
-  assert.match(html, /out\.push\('\*\*'\+first\+'\*\*'\)/, 'flat prose opening promoted to a bold lead line');
-  assert.match(html, /font-size:1\.66em;letter-spacing:\.01em/, 'h1 bigger (1.66em)');
-  assert.match(html, /font-size:1\.4em;line-height:1\.3;letter-spacing:\.005em/, 'h2 bigger (1.4em)');
-  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'generous paragraph gap (R153: 1.2em)');
+test('R152 #3 Atlas typography — size + spacing hierarchy, NO fabricated headings', () => {
+  // (#R154) the opening-sentence→bold-lead fabrication was the "テキストを大きくする箇所がおかしい／判定がおかしい" cause — REMOVED
+  assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: opening sentence is NOT promoted to a bold lead (no wrong enlargement)');
+  assert.match(html, /font-size:1\.6em;letter-spacing:\.01em/, 'h1 (1.6em)');
+  assert.match(html, /font-size:1\.34em;line-height:1\.3;letter-spacing:\.005em/, 'h2 (1.34em)');
+  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'generous paragraph gap (1.2em)');
 });
 
 test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relevance gate, honest relabel', () => {

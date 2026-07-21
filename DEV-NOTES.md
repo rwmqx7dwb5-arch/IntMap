@@ -5,6 +5,42 @@
 
 ---
 
+## R154 — UX/機能バッチ10件：**ケッペン幅＝言語ごとに内容へフィット(内容ハグ)**／**Atlasタイポ＝サイズと配置のみ・色分け廃止・見出し捏造停止(判定修正)**／**SV線 tileSize64で真のヘアライン**／**Atlas出典＝復号不能Google Newsリダイレクトを"ゼロ"にせず発行元名で保持**／**DrawでElevation profile**／**AQI/UVIをiOS風に再構築(数値の色を背景・6段階/輝度で文字色)**／**Atlas音声入力(Web Speech)**／**通常モードLayerパネル既定=右サイドバー**／**右サイドバーを左右ドラッグ可＋既定幅縮小(430→380)**／**オフにしたレイヤーの残存表示を修正** (tag `#R154`)
+
+ユーザー指摘**10件**を根本原因から。`index.html` のみ（Edge Function 変更なし＝deploy不要）＋新規 `tests/r154-checks.test.mjs`(node 10)。`npm test` 緑（static＋node **109**＝既存99＋新r154-checks10・自変更で壊れた r149/r150/r152/r153 の exact-string assert を更新＋Playwright、pageerror 0）。主要修正はハーネス実測（`@playwright/test` chromium）で検証：ケッペン幅は5言語で内容ハグ（JP 286→**207px**＝死に幅~80px消滅、DE 264→**317px**＝クリップ0）、AtlasタイポはmdMiniに`--primary-color`不使用＋`_atlStanza`が"Background:"を`##`化しない（実測 false×false）、7 critical globals＋#map 健全、AQI/UVI 淡色→暗文字/濃色→白文字の輝度分岐、`.atl-mic`＋SpeechRecognition present、`imLayerPanel='right'`。
+
+### ① ケッペン「行の幅が狭すぎる」→「テキスト以上に横幅伸ばして…行の幅まったく変わってない」（**7回目**・幅の真因）
+真因＝**固定幅**。R153 は 264px 固定にしたが、ユーザーは日本語表示で、日本語の最長行は実測 **~137px（コード＋名前）**しか要らない → 264px は **~80px の死に幅**（＝「テキスト以上に横幅伸ばして…行の幅変わってない」＝パネルは広がったが行のテキストは同じ）。逆にドイツ語最長は 264px で数語がクリップ（＝「狭すぎる」）。R150→R153 は毎回**固定値**を上下させて振動していた。修正＝**内容ハグ**: `_fitKoppenLegend` がオフスクリーンspanで各行（`.kl-code` 600 weight ＋ `.kl-nm`）を実測し、最長行＋行クローム＋予約スクロールバーgutter を**そのままの px 幅**にセット（`clamp 176–324` かつパネル右側の余白に収まる範囲）。CSS の `width:264px; min-width/max-width:264px` 固定ロックを `width:210px(preJS fallback); min-width:172px; max-width:340px` に。実測（1366×768・border-box）: **JP 207 / EN 276 / DE 317 / RU 307 / ES 303px、全言語 clippedNames 0**。幅はビルド/表示/ウィンドウリサイズ時のみ決定論的に再計算（縦ドラッグでは不変）＝「行幅が勝手に動かない」も同時充足。高さは `renderedMax` の下端マージンを 12→8px にして短vpでの EF 到達性を微増（自然高468px は 768vp の可用682pxに収まる＝全区分表示）。モバイルは既存 `!important` 幅ルールで保護。
+
+### ② Atlasタイポ「まだほぼ単調。クソ」→「目次を色分けするのはやめる。テキストサイズや配置のみで勝負。テキストを大きくする箇所がおかしい。判定がおかしい」
+2つの真因を分離。(a) **色分け**＝mdMini の全見出しレベルが `color:var(--primary-color)`（＝ユーザーの言う「目次の色分け」）。→ 全見出しを `var(--text-main)` に、**サイズ（# 1.6em > ## 1.34em > ### 1.12em > 行全体太字 1.16em）＋余白（top-margin 大）のみ**で階層化。(b) **判定がおかしい**＝`_atlStanza` が**散文から見出しを捏造**していた（先頭文→大きな太字リード＋文頭 "Label:"→`## 見出し`）。ありふれた文が巨大化し、文中コロンが見出しになる誤爆＝まさに「大きくする箇所がおかしい」。→ **捏造を全廃**。以後、拡大されるのは**モデルが実際に書いた構造のみ**（自前の `## ` と 行全体 `**bold**`）。`_atlStanza` は安全な整形だけ（長い run-on を~2文スタンザに分割＝余白のみ・番号/ダッシュ→bullet・段落間空行）。プロンプトも「見出しは真の節タイトルのみ・普通の文を拡大するな」を明記（`##` 指示は既に強い）。
+
+### ③ ストリートビュー Coverage 線「太すぎる」（**4回目**）
+R153 の tileSize:128（native から z+2 で ~2×縮小）でも太い。svv の画面上ストローク ≈ nativeStroke × (tileSize/256) なので **tileSize:64**（z+3 fetch → 256px を 64px スロットに ~4×縮小 ≈ **0.9px の真のヘアライン**、Google が深いタイルを native 供給でも overzoom でも単調に細い）。加えて `raster-opacity 0.9→0.62`（幾何は不変・体感の重さのみ軽減）。maxzoom は上げない（street level 用の overzoom は維持）。
+
+### ④ Atlas「出典を正確かつ漏れなく」→「出展が全くないとかクソ」
+真因の一つを特定＝`_atlCleanUrl` が **復号できない Google News アグリゲータ URL を丸ごと drop**（`else return null`）。近年の Google News RSS リンクは不透明で `_decGNewsUrl` が復号できず、ニュース1バッチが**全滅→出典ゼロ**。→ 復号不能でも**リンクを保持**（クリックで実記事へリダイレクトする）し、`linkCards` で**ドメイン行を "news.google.com" ではなく発行元名（`src`）で表示**（R106 の「全カードが news.google.com」問題も回避）。SNS/短縮/動画は従来通り drop・関連度ゲート・cross-script 保持は不変。
+
+### ⑤ 「DrawでもElevation profileを使えるように」
+`_elevationProfile`（`toolMode`＝measure/area＋グローバル `measurePoints` にハードコード）から**再利用コア `_profileFromCoords(pts)`**（任意の `[lng,lat][]`）を抽出（measure/area は挙動不変で委譲）。DrawTool の `renderPanel()` に `📈 標高断面` ボタンを追加（WorldPop 人口ボタンと同型・`simplified.length>=2` 表示）→ 描いた線（`simplified`、fallback `raw`）を同一 DEM パイプラインで断面化。5言語 `elevProfile` キーは既存。
+
+### ⑥ 「AQI, UVIウィジェットはUIを一から作り直して。現在の数字の色を背景に。iOS風に」
+両ウィジェットを iOS 風カラーカードに再構築。カード全体を**カテゴリ色のグラデ**で塗り（`_wgtColor` が inline `!important` で `body.sidebar-*` のガラス上書きを制圧）、**輝度で文字色分岐**（淡色=緑/黄/橙→暗文字 `#1c1c1e`、濃色=赤/紫/えんじ→白）＝全段でコントラスト確保。数値 36px。**AQI は正しい 6 段階**（Good/Moderate/USG/Unhealthy/Very unhealthy/Hazardous＝従来4段階→6）。カテゴリ名は**5言語**（`_WL`）。データ源（Open-Meteo air-quality / forecast）不変。`render()` の board 再構築後も `refreshAqi/refreshUv` が背景を再適用。
+
+### ⑦ 「Atlasを音声入力対応に」
+Atlas 入力バー（`.atl-inbar`）に `.atl-mic` ボタン追加（`.atl-attach` と同型）＋ Web Speech API（`SpeechRecognition||webkitSpeechRecognition`）ディクテーション。認識言語は UI 言語に追従（jp→ja-JP 等）、結果は入力欄に挿入（ユーザーが確認して送信＝誤認識の即送信を防止）、録音中は赤パルス。非対応ブラウザではボタン非表示。タイトルは5言語。
+
+### ⑧ 「通常モードのLayer panelはright sidebarをデフォルトに」
+既定 `window.imLayerPanel='classic'→'right'`（保存済み 'classic' 設定は従来通り優先）。右サイドバー（`IntMapLayerSidebar`、タイルプレビュー付き）が通常モードの既定レイヤーパネルに。
+
+### ⑨ 「Right sidebarも左サイドバーと同様に左右に調整できるように。デフォルト幅をもう少し小さく」
+左サイドバー `#sb-resizer` を鏡写しにした**左端ドラッグハンドル `.lsr-resizer`**（右サイドバーはカーソルを左へ動かすと拡大＝`w=startW-(clientX-startX)`）を `build()` で追加、`localStorage 'intmap_lsr_w'` に永続化。`open()` は毎回の自動幅算出を**保存幅があればそれを優先**（従来は毎 open で上書き＝ドラッグが無効化されていた）。既定幅 **430→380px**（CSS `--lsr-w`＋desktop clamp）。地図は常に ≥320px 確保。モバイルはハンドル非表示。
+
+### ⑩ 「オンにしていない、もうすでにオフにしたレイヤーが表示されてしまうことがある」
+真因＝**OFF→hide の自己修復が一部レイヤーに欠落**（`.setStyle` 皆無＝スタイル再読込は無し、reconcile は ON 再発火のみで OFF hide せず）。**自動学習レイヤー**（`_imLayerOwn` にあるが STATIC/BASE/`_imAuditReg` に無く、標準 `dl-*` 命名でもない）は `toggleLayer(id,false)` が layer id を知らず消せず、かつどの hide リコンサイラもカバーしない → OFF なのに描画され続けても誰も直さない。修正＝`_auditLearned` を**両方向対応**（`!cb.checked` 早期 return を撤廃）＝OFF かつ owned layer が painted なら hide（`_ownedByCheckedOther` で他の checked レイヤーが正当に描くidは除外＝排他所有でも誤 hide しない・`userTouched`/cooldown ガードは維持）。二次修正＝ECMWF ロード失敗の `.catch` が checkbox のみ戻し `state[id].on` を戻さず → styledata 再attach で復活していたので `state[id].on=false` も。
+
+---
+
 ## R153 — UX/機能バッチ8件（再報告の根本原因）：**ケッペン幅264px＋行圧縮(最後の区分到達)＋RU/ES気候名**／**Measure/Share は外観設定に従う(無条件不透過を撤回)**／**Atlasタイポ＝全散文を決定論的に再構造化(見出し・余白)**／**SV線overzoom(tileSize128)で実細線**／**Companies TS指標ピッカーが実際にチャートを駆動(mcap絶対/株価指数)＋十字ツールチップ**／**Atlas出典＝単一 `_atlCleanUrl` を全経路＋インラインリンクに・関連度はhost-clean後(空にならない)・`answer`経路も出典表示**／**Companies深い履歴＝TS既定20年**／**ワークスペース地図内ポップアップが再びドラッグ可** (tag `#R153`)
 
 ユーザー指摘**8件**を根本原因から。`index.html` のみ（Edge Function 変更なし＝deploy不要）＋新規 `tests/r153-checks.test.mjs`(node 9)。`npm test` 緑（static＋node **99**＝既存＋新r153-checks 9・自変更で壊れた r149/r150/r151/r152 の exact-string assert を更新＋Playwright **80**、pageerror 0）。全修正はハーネス実測（`@playwright/test` chromium）で検証：ケッペン clippedNames 11→**0**・自然高 519→**489px**、Atlasタイポは flat/labelled × EN/JP で見出し1・3個＋余白、出典フィルタは Reuters/AP 残しX/YouTube/bit.ly落とし・全SNS時のみ空・異script保持、ws地図ポップアップ guard=false（ドラッグ可）、7 critical globals＋#map 健全。
