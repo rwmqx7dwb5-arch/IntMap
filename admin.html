@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- (#R155 SEC) CSP for the admin console. Stricter than the main app's: connect-src is
+     locked to same-origin + Supabase (admin only ever talks to those). 'unsafe-inline'/'unsafe-eval'
+     are unavoidable for this inline, no-build page (the eval is the admin-only starter-dataset
+     import of an admin-chosen file). object-src/base-uri/form-action are locked down. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>IntMap · Admin Console</title>
 <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
 <style>
@@ -60,11 +66,7 @@
   <div class="wrap">
     <div class="card auth-box">
       <h1 style="margin:0 0 4px;font-size:20px;">IntMap · Admin</h1>
-      <p class="muted" style="margin:0 0 18px;">Restricted console. Sign in with an administrator account.</p>
-      <div class="seg">
-        <button id="seg-login" class="active">Log In</button>
-        <button id="seg-signup">Sign Up</button>
-      </div>
+      <p class="muted" style="margin:0 0 18px;">Restricted console. Sign in with an existing administrator account. There is no self-service sign-up here — admins are provisioned in the database.</p>
       <div class="field"><label>Email</label><input id="auth-email" type="email" autocomplete="username" placeholder="you@example.com"></div>
       <div class="field"><label>Password</label><input id="auth-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
       <button id="auth-submit" class="btn" style="width:100%;">Log In</button>
@@ -179,41 +181,36 @@
 <script>
 (function(){
   const $=(id)=>document.getElementById(id);
-  const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  /* (#R155 SEC) hardened HTML escaper — now also escapes the single quote (the old one missed it),
+     matching the main app's window.IntMapSafe.html. Every user-supplied string in this console is
+     rendered through esc(). */
+  const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  /* (#R155 SEC) URL scheme allow-list (http/https/mailto or a relative/anchor path only) — rejects
+     javascript:/data:/vbscript: so any future href/src built from admin-editable data stays safe. */
+  const safeUrl=(u)=>{ try{ const s=String(u==null?'':u).trim(); if(!s) return ''; if(/^(https?:|mailto:)/i.test(s)) return s; if(/^[\/.#?]/.test(s)) return s; return ''; }catch(_){ return ''; } };
+  window._admSafeUrl=safeUrl;
   let toastT;
   function toast(msg,kind){ const el=$('toast'); el.textContent=msg; el.className='toast show'+(kind?(' '+kind):''); clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast',3200); }
 
   if(!window.sb){ $('auth-msg').textContent='Supabase SDK failed to load.'; return; }
 
-  /* ---------------- AUTH ---------------- */
-  let mode='login';
-  $('seg-login').onclick=()=>setMode('login');
-  $('seg-signup').onclick=()=>setMode('signup');
-  function setMode(m){ mode=m;
-    $('seg-login').classList.toggle('active',m==='login');
-    $('seg-signup').classList.toggle('active',m==='signup');
-    $('auth-submit').textContent = m==='login'?'Log In':'Sign Up';
-    $('auth-pass').autocomplete = m==='login'?'current-password':'new-password';
-    $('auth-msg').textContent='';
-  }
+  /* ---------------- AUTH (login only; #R155 — no self-service sign-up in the admin console) ----------------
+     Admins are provisioned in the DB (update public.profiles set is_admin=true …). The real boundary is
+     RLS/RPC + the profiles guard trigger (a user cannot self-promote), so this console is a pure
+     administrator surface — a non-admin who signs in is bounced right back out by gate(). */
   $('auth-submit').onclick=async()=>{
     const email=$('auth-email').value.trim(), password=$('auth-pass').value;
     if(!email||!password){ $('auth-msg').textContent='Enter email and password.'; return; }
     $('auth-submit').disabled=true; $('auth-msg').textContent='Working…';
     try{
-      if(mode==='signup'){
-        const {error}=await sb.auth.signUp({email,password});
-        if(error) throw error;
-        $('auth-msg').textContent='Account created. If email confirmation is on, confirm then log in. Then promote yourself to admin via the SQL Editor.';
-        setMode('login');
-      } else {
-        const {error}=await sb.auth.signInWithPassword({email,password});
-        if(error) throw error;
-        await gate();
-      }
-    }catch(e){ $('auth-msg').textContent='Error: '+(e.message||e); }
+      const {error}=await sb.auth.signInWithPassword({email,password});
+      /* (#R155) enumeration-safe: never reveal whether the email exists or is an admin. */
+      if(error){ $('auth-msg').textContent='Invalid email or password.'; return; }
+      await gate();
+    }catch(_){ $('auth-msg').textContent='Invalid email or password.'; }
     finally{ $('auth-submit').disabled=false; }
   };
+  $('auth-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('auth-submit').click(); });
   $('btn-signout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
 
   /* ---------------- GATE: admin check ---------------- */
@@ -497,6 +494,14 @@
       toast('That file does not contain the IntMap dataset.','err'); return;
     }
     if(!confirm('This DELETES all current Geo Pins and Dashboard Cards, then loads the original defaults from intmap.html. Continue?')) return;
+    /* (#R155 SEC) Re-authenticate before this destructive, irreversible bulk operation (a "sudo" gate for
+       critical admin actions). Proves the person at the keyboard — not just an open session — is the admin. */
+    { const {data:{session}}=await sb.auth.getSession(); const email=session&&session.user&&session.user.email;
+      if(!email){ toast('Session expired — please sign in again.','err'); return; }
+      const pw=window.prompt('Confirm your admin password to replace ALL geo pins + dashboard cards:');
+      if(pw==null){ return; }
+      const {error:raErr}=await sb.auth.signInWithPassword({email,password:pw});
+      if(raErr){ toast('Re-authentication failed — import cancelled.','err'); return; } }
     $('btn-import').disabled=true; toast('Importing…');
     try{
       const geoRaw=eval('('+sliceBalanced(txt,txt.indexOf('{',txt.indexOf('const geoRaw=')),'{','}')+')');
