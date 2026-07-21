@@ -35,11 +35,11 @@ test('#5/#6 Atlas send button ↑ is solid black when idle; stop square is enlar
   expect(r.bg).toBe('rgb(255, 255, 255)');     // white button
 });
 
-test('#3 Köppen legend ceiling is viewport-based — it stretches to the screen bottom (R150), last class reachable', async () => {
-  // (#R150) the fit no longer clamps to content height (that made "一番下まで伸ばせない"); it clamps to the viewport,
-  // so the resize grip can be dragged to ~12px above the screen bottom. When content exceeds the box, the inner
-  // .kl-scroll is the safety net — every class stays reachable by scrolling.
-  await page.setViewportSize({ width: 1280, height: 800 });
+test('#3 Köppen legend: short viewport clamps to the screen bottom, inner scroll reveals the rest (R151)', async () => {
+  // (#R151) the fit clamps to min(content, viewport). When the classes DON'T fit (short viewport) the box reaches
+  // ~12px above the screen bottom and the inner .kl-scroll is the safety net — every class stays reachable by
+  // scrolling. (The complementary tall-viewport "stop exactly at the content" case is covered in r150.spec.js #3.)
+  await page.setViewportSize({ width: 1280, height: 520 });
   const r = await page.evaluate(() => {
     const lg = document.getElementById('koppen-legend');
     if (!lg || typeof window._fitKoppenLegend !== 'function') return { err: 'no legend/fit' };
@@ -52,15 +52,18 @@ test('#3 Köppen legend ceiling is viewport-based — it stretches to the screen
     window._fitKoppenLegend(lg);
     lg.style.height = '4000px';   // simulate dragging the resize grip all the way down
     const rect = lg.getBoundingClientRect();
-    const sc = lg.querySelector('.kl-scroll'); sc.scrollTop = sc.scrollHeight;   // scroll the inner area to the end
+    const sc = lg.querySelector('.kl-scroll');
+    const innerHidden = sc.scrollHeight - sc.clientHeight;   // > 0 → content exceeds the box, inner scroll is needed
+    sc.scrollTop = sc.scrollHeight;   // scroll the inner area to the end
     const last = [...lg.querySelectorAll('.kl-item')].pop();
     const lr = last.getBoundingClientRect(), sr = sc.getBoundingClientRect();
-    return { bottomGap: Math.round(window.innerHeight - rect.bottom), lastReachable: lr.bottom <= sr.bottom + 2 };
+    return { bottomGap: Math.round(window.innerHeight - rect.bottom), innerHidden, lastReachable: lr.bottom <= sr.bottom + 2 };
   });
   expect(r.err).toBeUndefined();
   expect(r.bottomGap).toBeGreaterThanOrEqual(0);
-  expect(r.bottomGap).toBeLessThanOrEqual(26);   // reaches the screen bottom (was clamped ~200px short of it)
-  expect(r.lastReachable).toBe(true);            // the last climate class is reachable via the inner scroll
+  expect(r.bottomGap).toBeLessThanOrEqual(26);   // content exceeds the short viewport → the box reaches the screen bottom
+  expect(r.innerHidden).toBeGreaterThan(0);      // and the inner scroll is genuinely needed
+  expect(r.lastReachable).toBe(true);            // every climate class is still reachable via the inner scroll
 });
 
 test('#9 dropping an image into Atlas shows a thumbnail and enables Send', async () => {

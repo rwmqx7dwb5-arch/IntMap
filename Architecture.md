@@ -5,7 +5,7 @@
 > 時系列の経緯・根本原因の記録は `DEV-NOTES.md`、標準指示（やってはいけないこと等）は `CONSTITUTION.md` を参照。
 > 実装を変えたら、この仕様書も更新すること。
 >
-> Last reviewed: 2026-07-21 (R149 — 画像ペースト入力（ビジョン）／調査回答の地点マッピング＋自己監査／モニタートースト真因／ケッペン凡例圧縮／Atlasタイポ・ボタン。DEV-NOTES R149 参照)
+> Last reviewed: 2026-07-21 (R151 — Companies空比較ヒント＋株価バッチ化(spark)＋全史キャッシュ／Atlasトグル拡充(globe・compare)／**ケッペンは全区分表示で停止＋行幅固定(scrollbar-gutter)**／通常モードMeasure・Share集約／Atlasタイポ(独立太字→見出し)／**モニター削除でハイライト消去**／衛星3D飛行プリフェッチ強化＋3D手動move先読み／**SVオンでcoverage自動**／**Atlas出典からSNS/短縮/動画除去**／Terra本番検証(analyzed_by=ai 354)。DEV-NOTES R151 参照)
 >
 > **R41 の要点**：`whenStyleReady()` が永久ハングし得た問題を修正（idle/loadのみ待機→ポーリング＋ハード解決）＋自己修復をハートビート化（「チェックしても出ない／消したのに残る・再読込で治る」の真因）。相関/散布図の残差マップを再実装（先にモーダルを閉じる＋RdBu連続配色＋指標33→51）。ウェブカムを**実装**（検証済みの24時間ライブYouTube配信25件をポップアップ内に埋め込み再生。検索リンクのハリボテを廃止）。**タイムゾーンレイヤー**新設（Natural Earth境界＋各ゾーンの現在時刻を毎分更新）。GIBSラスターに色スケール凡例。鉄道線を濃色＋白枕木で視認性向上。水域/地形ラベルを別チェック（`cb-geolabels`）化＋河川ラベルを `waterway` 由来に修正（位置ズレ解消）。天気ポップアップの華氏完全対応＋移動可能化。ウィジェット36→41。i18n：RUのレイヤーグループ見出し欠落＋国詳細(Stats)のES欠落を修正、非AIニュース地点辞書を多言語強化。
 
@@ -990,6 +990,21 @@ supabase/
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
 
 ---
+
+## #R151 補足（UX/機能バッチ11件：ケッペン全区分停止＋行幅固定／Measure・Share集約／SV coverage自動／モニター削除でハイライト消去／Companies株価バッチ＋全史キャッシュ／Atlas出典SNS除去／Atlasトグル拡充／Terra本番検証）
+
+- **ケッペン凡例（#3・R150を上書き）**: `_fitKoppenLegend` を **`min(自然内容高, ビューポート上限)`** に（内容高は inline `height`/`max-height` を一時中和して `getBoundingClientRect` で実測→復元）。**内容<画面＝最終区分で停止**（空白ゼロ＝「すべて表示されたら止まる」）、**内容>画面＝画面下端で停止＋内側 `.kl-scroll`**。行幅固定＝`.kl-scroll{ scrollbar-gutter:stable }`（スクロールバー出没で~15px 揺れ→行 reflow が真因）。R150 の「ビューポート基準で必ず下端」は空白を生む＝要求転換で上書き。r149/r150 の #3 テストを二挙動（短vp下端／高vp内容停止）へ更新。
+- **通常モード Measure/Share 集約（#4）**: Radius を `#measure-dropdown` 内へ（Distance/area・Draw・Radius）。Screenshot＋リンクを新 `.share-menu-container`（🔗 Share ▾＝Screenshot・共有/リンク・`right:0`）へ。**ID温存**（`btn-tool-radius`/`btn-screenshot`/`btn-share`）で既存ハンドラ・モバイル `data-proxy` 不変。`shareMenuBtn`/`shareLinkBtn`/`coCompareEmpty` を5言語追加。
+- **SV coverage 自動（#8）**: `IntMapStreetView.open()` が coverage OFF 時に `coverage(true)`＋`_covAuto`（手動状態温存）、`close()`（✕も集約）で自動分のみ OFF。パノラマを開くと水色の実カバレッジ線が即表示。
+- **モニター削除でハイライト消去（#6）**: `showOnMap(area,points,monId)` に `_shownMonId` 記録（全呼出元に id）、`remove()` 成功時 `_shownMonId===id`（or 未追跡）で `clearMap()`。UI/Atlas 両経路が同一 `remove` を通る。
+- **Companies 深い歴史＋低遅延（#10）**: `_spark(syms,range,interval)` で Yahoo `v8/finance/spark` を~40銘柄バッチ（旧＝1銘柄1req）→ `loadPrices` 即着色＋未解決のみ従来チャートfallback。`_histAll()` が `spark range=max 1mo` を一度取得し `{tk:{year:年末終値}}` キャッシュ→ `setYear` 年スクラブをネット無し即時（未網羅のみ per-year fallback）・`priceSeries` も同キャッシュ。両response shape対応。
+- **Atlas出典の信頼性（#11）**: `_atlBadSourceHost`（`_SNS_RE`＝X/Twitter/FB/IG/Threads/TikTok/Reddit/YouTube/t.me/bit.ly…）で全出典カード経路（`linkCards`＝analyze/answer/mapReport）から SNS/UGC/短縮/動画を除外。`_analysisSystemPrompt` に「SNS等は出典にしない・各URLは主張を直接支持する具体ページのみ」明記。`IntMapAtlasDebug.badSourceHost/linkCards` 公開。
+- **Atlasトグル拡充（#2）**: 既存(layer/base/grid/3D/国情報/SV/borders/labels/roads/ticker)に **globe（地球儀 on/off）・compare** を `_FEAT_TOG` 追加＋projection/compare dispatch に `_featTogHtml`。
+- **タイポ（#5）**: mdMini で**行全体が `**太字**` の行を実見出し**へ（モデルは `##` より太字を多用＝モデル非依存の階層）＋段落余白 .72→.85em。answer/analysis プロンプトの FORMAT指示は既存。
+- **衛星（#7）**: `predictivePrefetch(aggressive)`＝飛行で RING 3→7・斜め角先読み・傾斜時は横一段浅も warm、飛行ループ 380→300ms＋aggressive。**3D手動 pan/rotate（pitch>25）でも `move` ごとにスロットル先読み**（従来 moveend のみ＝連続移動で先読み皆無）。既存最適化(2/5ホスト分散・native-max DEM z15・fade0・8192キャッシュ・pixelRatio上限)温存。
+- **Companies 空比較ヒント（#1）**: Countries同型は既存＋**空状態ヒント**「Tap company rows to select and compare.」（`coCompareEmpty` 5言語・`renderCoCompareFixed` が `scf-empty`）。
+- **Terra（#9）**: `AI_MODEL` secret＋`OPENAI_DEFAULT_MODEL=gpt-5.6-terra`（コメント整合・再deploy）・Luna は model_not_found のみ。**本番検証＝`current_news.analyzed_by='ai'` が 354 件**（refresh-news cron は fallback無でTerra直呼び＝ai>0 が到達の実証）。
+- テスト: `tests/r151-checks.test.mjs`(node 11) ＋ `tests/r151.spec.js`(Playwright 6)。r149/r150 のケッペン#3を R151 仕様へ、r149/r150-checks の exact-string を .85em/prefetch cadence へ更新。`npm test` 緑（node 79・Playwright 80・pageerror 0）。
 
 ## #R150 補足（UX/機能バッチ10件：モニター保存の真因user_id欠落／ケッペン下端伸縮／Atlas曖昧性ゲート統一／調査回答マッピングのコード側検証／Terra採用／衛星飛行プリフェッチ）
 

@@ -452,10 +452,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .compass-btn{ width:40px; padding:0 6px !important; height:33px; display:flex; align-items:center; justify-content:center; overflow:visible; } .compass-svg{ transition:transform 0.2s; display:block; }
     .layer-menu-container{ position:relative; }
     /* (#R9) Measurement tools collapsed under one "Measure ▾" trigger (Radius stays standalone). */
-    .measure-menu-container{ position:relative; display:inline-block; }
-    .measure-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; padding:6px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:182px; flex-direction:column; gap:4px; }
-    .measure-menu-container.open .measure-dropdown{ display:flex; }
-    .measure-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
+    .measure-menu-container, .share-menu-container{ position:relative; display:inline-block; }   /* (#R151) share menu mirrors the measure menu */
+    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; padding:6px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:182px; flex-direction:column; gap:4px; }
+    .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
+    .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
+    .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
     .caret-sm{ font-size:9px; opacity:0.7; }
     /* (#R15d) Use the shared glass border so the Layers dropdown matches every other frosted surface. */
     /* (#R34) padding-bottom is 0 so the sticky Active-layers bar sits FLUSH with the dropdown's bottom edge.
@@ -2317,15 +2318,21 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
           <div class="measure-dropdown" id="measure-dropdown">
             <button class="view-btn" id="btn-tool-measure" data-i18n="measureDistBtn" title="Measure distance / area">📏 Distance / area</button>
             <button class="view-btn" id="btn-tool-draw" data-i18n="drawBtn" title="Freehand draw & trace">✏️ Draw</button>
+            <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button><!-- (#R151) Radius folded INTO the Measure menu (Distance/area · Draw · Radius) per request -->
           </div>
         </div>
-        <button class="view-btn" id="btn-tool-radius" data-i18n="radiusBtn" title="Radius">⭕ Radius</button>
         <!-- (#R130) Objects manager moved OFF the bottom-left FAB (which read as "in the sidebar") INTO the top-right
              toolbar, next to Measure/Radius, per request. Shown only when >=1 map object exists (same visibility as
              the old FAB); wired + counted by IntMapObjects.tickFab. On mobile the toolbar is hidden, so the FAB stays. -->
         <button class="view-btn" id="btn-tool-objects" title="Objects" style="display:none;"><span data-i18n="objectsBtn">🗂 Objects</span><span id="tool-objects-n" style="margin-left:5px;font-weight:700;opacity:0.85;"></span></button>
-        <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷</button>
-        <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view">🔗</button>
+        <!-- (#R151) Screenshot + link folded INTO one Share menu per request -->
+        <div class="share-menu-container">
+          <button class="view-btn" id="btn-share-menu" title="Share"><span aria-hidden="true">🔗</span> <span data-i18n="shareMenuBtn">Share</span> <span class="caret-sm">▾</span></button>
+          <div class="share-dropdown" id="share-dropdown">
+            <button class="view-btn" id="btn-screenshot" data-i18n-title="screenshotBtn" title="Screenshot">📷 <span data-i18n="mScreenshot">Screenshot</span></button>
+            <button class="view-btn" id="btn-share" data-i18n-title="shareView" title="Share this view">🔗 <span data-i18n="shareLinkBtn">Share / copy link</span></button>
+          </div>
+        </div>
         <!-- (#R114) top-bar Atlas launch button removed (requested). Atlas stays reachable via the left-sidebar
              Atlas tab (normal/mobile) and the Window menu (workspace mode); the #btn-atlas wiring below is guarded. -->
         <div class="layer-menu-container">
@@ -2781,12 +2788,12 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"Population", statGdp:"GDP (nominal)", statGdpPc:"GDP per capita", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"GDP per capita (PPP)", statArea:"Area", statDensity:"Pop. density", statRegion:"Region", statSub:"Subregion", statCapital:"Capital", statCurrency:"Currency", statLang:"Languages", statHDI:"HDI", statDem:"Democracy Idx", statMil:"Mil. spending", statLife:"Life expectancy", statInet:"Internet users",
       details:"Details ↗", loadingData:"Loading country data...", dataNA:"N/A", noData:"Country data unavailable.", sortGdp:"GDP", sortPop:"Pop", sortArea:"Area", sortName:"A–Z", sortHDI:"HDI", sortMil:"Mil$", elev:"Elev", bearing:"Bearing", presetNone:"— select —", presetLbl:"Range presets", opacity:"Opacity", circumference:"Circumference", lblUnits:"Measurement units", unitBoth:"Metric + Imperial", unitMetric:"Metric only", unitImperial:"Imperial only", msPh:"Search any place on Earth...",
       spRunway:"Runway", spGarrison:"Garrison", spOperator:"Operator", spEstd:"Established", spAircraft:"Aircraft", spType:"Type", spCapacity:"Capacity", spDepth:"Depth", spOutput:"Output", spReserves:"Reserves",
-      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objects", mScreenshot:"Screenshot", layersBtn:"Layers ▾",
+      flat:"Flat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grid", gridLayer:"🌐 Grid & labels", widgetsBtn:"Widgets", lblTempUnit:"Temperature", tempBoth:"°C + °F", tempC:"°C only", tempF:"°F only", measureBtn:"📏 Measure", measureMenuBtn:"Measure", measureDistBtn:"📏 Distance / area", areaBtn:"📐 Area", drawBtn:"✏️ Draw", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objects", mScreenshot:"Screenshot", shareMenuBtn:"Share", shareLinkBtn:"Share / copy link", layersBtn:"Layers ▾",
       ctxDropPin:"Drop pin here", ctxMeasureFrom:"Start measure from here", ctxPostHere:"Post here (community)", ctxDistFrom:"Distance from previous pin", ctxCopy:"Copy coordinates", ctxClearPins:"Remove all pins", ctxThisPoint:"This point", coords:"Coordinates", depth:"Depth", climate:"Climate", tlToday:"Today", tlTitle:"Time machine", tlMachine:"Time machine", tl10y:"−10y", tl5y:"−5y", tlNow:"Now",
       lblPinMode:"News pin position", pinModeLoc:"Subject location", pinModePub:"Publisher location",
       lyrEEZ:"Maritime EEZ / 12nm", lyrShips:"Live ship traffic", lyrPlanes:"Live aircraft traffic", lyrThermal:"Thermal anomalies (fires)", planesZoomHint:"🔍 Zoom in to load live aircraft", shipsZoomHint:"🔍 Zoom in to load live ships", aisNoKey:"Live ships need a free AISstream.io API key — add it in Settings.", aisKeyLabel:"Live ship traffic (AISstream key)", aisKeyHint:"Get a free key at aisstream.io and paste it here to see live ship traffic. Stored only in this browser.",
       filtCiv:"Civilian", filtMil:"Military", filtAll:"All", trafficFilter:"Filter", lyrTime:"Layer date", thermWin24:"Last 24 h", thermWin48:"Last 48 h", thermWin72:"Last 72 h",
-      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap country rows to select and compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
+      tabCommunity:"Community", commAdd:"+ New post", commAddArmed:"Click on map to place pin", commTitle:"Title", commBody:"Share an observation, question, or theory...", commPost:"Post", commCancel:"Cancel", commEmpty:"No posts yet. Click \"+ New post\" to start the discussion.", commComment:"Comment", commLocate:"Show on map", commDelete:"Delete", commReply:"Reply", commWrite:"Write a comment...", commPostNew:"New post", commPlacedAt:"Placed at", commSortHot:"Hot", commSortNew:"New", commSortTop:"Top", commSearchPh:"Search posts…", commInView:"In view", commCat:"Category", commCatAll:"All", commEdit:"Edit", commEdited:"edited", commEditPost:"Edit post", commSaveEdit:"Save changes", commNoMatch:"No posts match your filters.", borders:"Country borders", compare:"Compare", compareEmpty:"Tap country rows to select and compare.", coCompareEmpty:"Tap company rows to select and compare.", compareView:"Show comparison", compareClear:"Clear", back:"Back", deletePin:"Delete",
       satCtrlTitle:"Satellite imagery", satProvider:"Provider", satDate:"Capture date", satLatest:"Latest available", satMosaicSuffix:"cloudless mosaic", satLocked:"add API key", satPrevDay:"Previous day", satNextDay:"Next day", satKeysTitle:"Satellite imagery (BYOK)", satKeyHint:"Enter an API key to unlock these providers in the Satellite panel. Keys are stored only in this browser.", satKeyConnected:"Connected", satKeyNone:"No key", satErrAuth:"{provider}: authentication failed — check the API key", satErrTiles:"{provider}: imagery unavailable — switched to fallback",
       aiSecTitle:"AI features", aiSecHint:"Built-in AI — free for logged-in users (up to 10 uses per day). No API key needed.",
       aiProvider:"AI provider", aiModel:"Model", aiApiKey:"API key", aiKeyConnected:"Connected", aiKeyNone:"No key", aiGetKey:"Get a key ↗", aiOnDevice:"Runs on-device in Chrome — no API key needed.",
@@ -2814,12 +2821,12 @@ window.addEventListener('DOMContentLoaded', () => {
       statPop:"人口", statGdp:"GDP(名目)", statGdpPc:"一人当たりGDP", statGdpPPP:"GDP(購買力平価)", statGdpPcPPP:"一人当たりGDP(PPP)", statArea:"面積", statDensity:"人口密度", statRegion:"地域", statSub:"小地域", statCapital:"首都", statCurrency:"通貨", statLang:"言語", statHDI:"HDI", statDem:"民主主義指数", statMil:"軍事費", statLife:"平均寿命", statInet:"ネット利用率",
       details:"詳細 ↗", loadingData:"国データを読み込み中...", dataNA:"データなし", noData:"国データを取得できませんでした。", sortGdp:"GDP", sortPop:"人口", sortArea:"面積", sortName:"50音", sortHDI:"HDI", sortMil:"軍事費", elev:"標高", bearing:"方位角", presetNone:"— 選択 —", presetLbl:"射程プリセット", opacity:"透明度", circumference:"円周", lblUnits:"計測単位", unitBoth:"メートル＋ヤードポンド", unitMetric:"メートルのみ", unitImperial:"ヤードポンドのみ", msPh:"世界中の地名を検索...",
       spRunway:"滑走路長", spGarrison:"駐留兵力", spOperator:"運用", spEstd:"開設", spAircraft:"主要機種", spType:"分類", spCapacity:"容量", spDepth:"水深", spOutput:"出力", spReserves:"埋蔵量",
-      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", objectsBtn:"🗂 オブジェクト", mScreenshot:"スクショ", layersBtn:"レイヤー ▾",
+      flat:"平面", globe:"地球儀", threeD:"⛰️ 3D", gridBtn:"🌐 グリッド", gridLayer:"🌐 グリッド・地名", widgetsBtn:"ウィジェット", lblTempUnit:"気温の単位", tempBoth:"°C + °F", tempC:"°Cのみ", tempF:"°Fのみ", measureBtn:"📏 計測", measureMenuBtn:"計測", measureDistBtn:"📏 距離・面積", areaBtn:"📐 面積", drawBtn:"✏️ 描画", radiusBtn:"⭕ 半径", objectsBtn:"🗂 オブジェクト", mScreenshot:"スクショ", shareMenuBtn:"共有", shareLinkBtn:"共有・リンク", layersBtn:"レイヤー ▾",
       ctxDropPin:"ここにピンを刺す", ctxMeasureFrom:"ここから計測を開始", ctxPostHere:"ここに投稿（コミュニティ）", ctxDistFrom:"直前ピンからの距離", ctxCopy:"座標をコピー", ctxClearPins:"全ピンを削除", ctxThisPoint:"この地点", coords:"座標", depth:"水深", climate:"気候区分", tlToday:"今日", tlTitle:"タイムマシン", tlMachine:"タイムマシン", tl10y:"10年前", tl5y:"5年前", tlNow:"現在",
       lblPinMode:"ニュースピン位置", pinModeLoc:"記事の場所", pinModePub:"発信地(報道機関本社)",
       lyrEEZ:"領海・EEZ", lyrShips:"船舶トラフィック(リアルタイム)", lyrPlanes:"航空トラフィック(リアルタイム)", lyrThermal:"熱異常(火災)", planesZoomHint:"🔍 ズームインで航空機を表示", shipsZoomHint:"🔍 ズームインで船舶を表示", aisNoKey:"船舶のリアルタイム表示には AISstream.io の無料APIキーが必要です。設定から登録してください。", aisKeyLabel:"船舶トラフィック (AISstreamキー)", aisKeyHint:"aisstream.io で無料キーを取得し貼り付けると船舶のリアルタイム表示が有効になります。キーはこのブラウザにのみ保存されます。",
       filtCiv:"民間", filtMil:"軍用", filtAll:"全て", trafficFilter:"絞り込み", lyrTime:"レイヤー日付", thermWin24:"過去24時間", thermWin48:"過去48時間", thermWin72:"過去72時間",
-      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして国を選び比較", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
+      tabCommunity:"コミュニティ", commAdd:"+ 新規投稿", commAddArmed:"地図をクリックしてピンを刺してください", commTitle:"タイトル", commBody:"考察・発見・疑問を投稿してください...", commPost:"投稿", commCancel:"キャンセル", commEmpty:"投稿はまだありません。「+ 新規投稿」をタップして議論を始めましょう。", commComment:"コメント", commLocate:"地図で見る", commDelete:"削除", commReply:"返信", commWrite:"コメントを書く...", commPostNew:"新規投稿", commPlacedAt:"投稿位置", commSortHot:"話題", commSortNew:"新着", commSortTop:"人気", commSearchPh:"投稿を検索…", commInView:"表示範囲", commCat:"カテゴリ", commCatAll:"すべて", commEdit:"編集", commEdited:"編集済み", commEditPost:"投稿を編集", commSaveEdit:"変更を保存", commNoMatch:"条件に一致する投稿がありません。", borders:"国境線", compare:"比較", compareEmpty:"行をタップして国を選び比較", coCompareEmpty:"行をタップして会社を選び比較", compareView:"比較を表示", compareClear:"クリア", back:"戻る", deletePin:"削除",
       satCtrlTitle:"衛星画像", satProvider:"プロバイダ", satDate:"撮影日", satLatest:"最新（自動取得）", satMosaicSuffix:"雲なしモザイク", satLocked:"APIキーを登録", satPrevDay:"前日", satNextDay:"翌日", satKeysTitle:"衛星画像プロバイダ (BYOK)", satKeyHint:"APIキーを入力すると、Satelliteパネルで各プロバイダを選択できます。キーはこのブラウザにのみ保存されます。", satKeyConnected:"接続済み", satKeyNone:"未登録", satErrAuth:"{provider}: 認証に失敗しました — APIキーを確認してください", satErrTiles:"{provider}: 画像を取得できません — フォールバックに切替えました",
       aiSecTitle:"AI機能", aiSecHint:"内蔵AI — ログインすると無料でご利用いただけます（1日10回まで）。APIキーは不要です。",
       aiProvider:"AIプロバイダ", aiModel:"モデル", aiApiKey:"APIキー", aiKeyConnected:"接続済み", aiKeyNone:"未登録", aiGetKey:"キーを取得 ↗", aiOnDevice:"Chrome内で端末内実行されます（APIキー不要）。",
@@ -2855,7 +2862,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aisKeyLabel:"Live-Schiffsverkehr (AISstream-Schlüssel)", aisKeyHint:"Holen Sie sich einen kostenlosen Schlüssel bei aisstream.io und fügen Sie ihn hier ein. Wird nur in diesem Browser gespeichert.",
       aiSecTitle:"KI-Funktionen", aiSecHint:"Integrierte KI — nach der Anmeldung kostenlos nutzbar (bis zu 10×/Tag). Kein API-Schlüssel erforderlich.",
       blueberryBtn:"Unterstützen", borders:"Ländergrenzen", countries:"Länder (Info)", placeNames:"Ortsnamen", geoLabels:"Gewässer- & Geländenamen", adminBounds:"Bundesland-/Provinzgrenzen", roadsLayer:"Straßen", railLayer:"Eisenbahnen", favLayers:"★ Favoriten",
-      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Screenshot", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
+      measureMenuBtn:"Messen", measureDistBtn:"📏 Distanz / Fläche", drawBtn:"✏️ Zeichnen", radiusBtn:"⭕ Radius", objectsBtn:"🗂 Objekte", mScreenshot:"Screenshot", shareMenuBtn:"Teilen", shareLinkBtn:"Teilen / Link", screenshotBtn:"📷 Screenshot", layersBtn:"Ebenen ▾", uploadGeoJSON:"GeoJSON hochladen",
       lblDataSources:"Datenquellen", viewDataSources:"Datenquellen ansehen ↗", lblNewsCountries:"Nachrichten-Länder", newsCountriesHint:"Lassen Sie das Feld leer für weltweite Nachrichten.",
       lyrGrpGeo:"Strategische Geografie", lyrGrpStrat:"Strategische Netze", lyrGrpOthers:"Weitere (Beta)",
       filtCiv:"Zivil", filtMil:"Militär", filtAll:"Alle", thermWin24:"Letzte 24 Std", thermWin48:"Letzte 48 Std", thermWin72:"Letzte 72 Std",
@@ -2875,7 +2882,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"Pin hier setzen", ctxMeasureFrom:"Messung hier beginnen", ctxPostHere:"Hier posten (Community)", ctxDistFrom:"Entfernung vom vorherigen Pin", ctxCopy:"Koordinaten kopieren", ctxClearPins:"Alle Pins entfernen", ctxThisPoint:"Dieser Punkt", coords:"Koordinaten", depth:"Tiefe", climate:"Klima",
       lyrEEZ:"Meeres-AWZ / 12 sm", lyrShips:"Live-Schiffsverkehr", lyrPlanes:"Live-Flugverkehr", lyrThermal:"Wärmeanomalien (Brände)", planesZoomHint:"🔍 Hineinzoomen, um Live-Flugzeuge zu laden", shipsZoomHint:"🔍 Hineinzoomen, um Live-Schiffe zu laden", aisNoKey:"Live-Schiffe benötigen einen kostenlosen AISstream.io-API-Schlüssel — in den Einstellungen hinzufügen.", trafficFilter:"Filter", lyrTime:"Ebenen-Datum",
       commAdd:"+ Neuer Beitrag", commAddArmed:"Auf die Karte klicken, um einen Pin zu setzen", commTitle:"Titel", commBody:"Teilen Sie eine Beobachtung, Frage oder Theorie...", commPost:"Posten", commCancel:"Abbrechen", commEmpty:"Noch keine Beiträge. Klicken Sie auf \"+ Neuer Beitrag\", um die Diskussion zu starten.", commComment:"Kommentar", commLocate:"Auf Karte zeigen", commDelete:"Löschen", commReply:"Antworten", commWrite:"Kommentar schreiben...", commPostNew:"Neuer Beitrag", commPlacedAt:"Platziert bei", commSortHot:"Angesagt", commSortNew:"Neu", commSortTop:"Top", commSearchPh:"Beiträge suchen…", commInView:"Im Sichtfeld", commCat:"Kategorie", commCatAll:"Alle", commEdit:"Bearbeiten", commEdited:"bearbeitet", commEditPost:"Beitrag bearbeiten", commSaveEdit:"Änderungen speichern", commNoMatch:"Keine Beiträge entsprechen Ihren Filtern.",
-      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
+      compare:"Vergleichen", compareEmpty:"Länderzeilen antippen zum Auswählen und Vergleichen.", coCompareEmpty:"Unternehmenszeilen antippen zum Auswählen und Vergleichen.", compareView:"Vergleich anzeigen", compareClear:"Löschen", back:"Zurück", deletePin:"Löschen",
       satCtrlTitle:"Satellitenbilder", satProvider:"Anbieter", satDate:"Aufnahmedatum", satLatest:"Neueste verfügbar", satMosaicSuffix:"wolkenloses Mosaik", satLocked:"API-Schlüssel hinzufügen", satPrevDay:"Vorheriger Tag", satNextDay:"Nächster Tag", satKeyConnected:"Verbunden", satKeyNone:"Kein Schlüssel", satErrAuth:"{provider}: Authentifizierung fehlgeschlagen — API-Schlüssel prüfen", satErrTiles:"{provider}: Bilder nicht verfügbar — auf Ersatz umgeschaltet",
       aiProvider:"KI-Anbieter", aiModel:"Modell", aiApiKey:"API-Schlüssel", aiKeyConnected:"Verbunden", aiKeyNone:"Kein Schlüssel", aiGetKey:"Schlüssel erhalten ↗", aiOnDevice:"Läuft lokal in Chrome — kein API-Schlüssel nötig.", aiTest:"Verbindung testen", aiTesting:"Test läuft…", aiTestOk:"Verbindung OK ✓", aiNoKey:"Fügen Sie zuerst einen KI-API-Schlüssel unter Einstellungen → KI-Funktionen hinzu.", aiNoVision:"Dieses Modell kann keine Bilder lesen. Wählen Sie GPT-4o, Claude 3.5 Sonnet oder Gemini 1.5 Pro.", aiChromeUnavail:"Die in Chrome integrierte KI ist hier nicht verfügbar. Verwenden Sie Chrome 127+ mit aktivierter On-Device-KI oder einen anderen Anbieter.", aiThinking:"KI analysiert…", aiError:"KI-Anfrage fehlgeschlagen", aiCopy:"Kopieren", aiCopied:"Kopiert ✓", aiClose:"Schließen", aiRetry:"Wiederholen",
       aiGeoBtn:"✨ Alle Nachrichten per KI verorten", aiGeoBtnSub:"✨ Thema per KI verorten", aiGeoBtnPub:"✨ Herausgeber per KI verorten", aiGeoBusy:"Verorten…", aiGeoNone:"Nichts zu verorten.", aiGeoDone:"{n} Meldungen verortet", aiGeoErr:"Geokodierung fehlgeschlagen", aiTransBusy:"Übersetzen…", aiTransDone:"{n} Titel übersetzt", aiTransNone:"Titel bereits in Ihrer Sprache.", aiTranslate:"Übersetzen", aiShowOriginal:"Original", aiTransNoText:"Kein Artikeltext zum Übersetzen — versuchen Sie die Web-Ansicht.",
@@ -2902,7 +2909,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aisKeyLabel:"Морской трафик (ключ AISstream)", aisKeyHint:"Получите бесплатный ключ на aisstream.io и вставьте его сюда. Хранится только в этом браузере.",
       aiSecTitle:"ИИ-функции", aiSecHint:"Встроенный ИИ — бесплатно после входа (до 10 раз в день). Ключ API не нужен.",
       blueberryBtn:"Поддержать", borders:"Границы стран", countries:"Страны (инфо)", placeNames:"Названия мест", geoLabels:"Названия вод и рельефа", adminBounds:"Границы регионов", roadsLayer:"Дороги", railLayer:"Железные дороги", favLayers:"★ Избранное",
-      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
+      measureMenuBtn:"Измерить", measureDistBtn:"📏 Расстояние / площадь", drawBtn:"✏️ Рисовать", radiusBtn:"⭕ Радиус", objectsBtn:"🗂 Объекты", mScreenshot:"Снимок", shareMenuBtn:"Поделиться", shareLinkBtn:"Поделиться / ссылка", screenshotBtn:"📷 Снимок экрана", layersBtn:"Слои ▾", uploadGeoJSON:"Загрузить GeoJSON",
       lblDataSources:"Источники данных", viewDataSources:"Показать источники данных ↗", lblNewsCountries:"Страны новостей", newsCountriesHint:"Оставьте пустым для новостей со всего мира.",
       lyrGrpGeo:"Стратегическая география", lyrGrpStrat:"Стратегические сети", lyrGrpOthers:"Прочее (бета)",
       filtCiv:"Гражданские", filtMil:"Военные", filtAll:"Все", thermWin24:"Последние 24 ч", thermWin48:"Последние 48 ч", thermWin72:"Последние 72 ч",
@@ -2922,7 +2929,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"Поставить метку здесь", ctxMeasureFrom:"Начать измерение отсюда", ctxPostHere:"Опубликовать здесь (сообщество)", ctxDistFrom:"Расстояние от предыдущей метки", ctxCopy:"Скопировать координаты", ctxClearPins:"Удалить все метки", ctxThisPoint:"Эта точка", coords:"Координаты", depth:"Глубина", climate:"Климат",
       lyrEEZ:"Морская ИЭЗ / 12 миль", lyrShips:"Суда в реальном времени", lyrPlanes:"Самолёты в реальном времени", lyrThermal:"Тепловые аномалии (пожары)", planesZoomHint:"🔍 Приблизьте, чтобы загрузить самолёты", shipsZoomHint:"🔍 Приблизьте, чтобы загрузить суда", aisNoKey:"Для судов нужен бесплатный ключ API AISstream.io — добавьте его в Настройках.", trafficFilter:"Фильтр", lyrTime:"Дата слоя",
       commAdd:"+ Новый пост", commAddArmed:"Нажмите на карту, чтобы поставить метку", commTitle:"Заголовок", commBody:"Поделитесь наблюдением, вопросом или теорией...", commPost:"Опубликовать", commCancel:"Отмена", commEmpty:"Пока нет постов. Нажмите \"+ Новый пост\", чтобы начать обсуждение.", commComment:"Комментировать", commLocate:"Показать на карте", commDelete:"Удалить", commReply:"Ответить", commWrite:"Написать комментарий...", commPostNew:"Новый пост", commPlacedAt:"Размещено в", commSortHot:"Популярное", commSortNew:"Новое", commSortTop:"Лучшее", commSearchPh:"Поиск постов…", commInView:"В поле зрения", commCat:"Категория", commCatAll:"Все", commEdit:"Изменить", commEdited:"изменено", commEditPost:"Редактировать пост", commSaveEdit:"Сохранить изменения", commNoMatch:"Нет постов по вашим фильтрам.",
-      compare:"Сравнить", compareEmpty:"Нажимайте на строки стран, чтобы выбрать и сравнить.", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
+      compare:"Сравнить", compareEmpty:"Нажимайте на строки стран, чтобы выбрать и сравнить.", coCompareEmpty:"Нажимайте на строки компаний, чтобы выбрать и сравнить.", compareView:"Показать сравнение", compareClear:"Очистить", back:"Назад", deletePin:"Удалить",
       satCtrlTitle:"Спутниковые снимки", satProvider:"Провайдер", satDate:"Дата съёмки", satLatest:"Самые свежие", satMosaicSuffix:"безоблачная мозаика", satLocked:"добавьте ключ API", satPrevDay:"Предыдущий день", satNextDay:"Следующий день", satKeyConnected:"Подключено", satKeyNone:"Нет ключа", satErrAuth:"{provider}: ошибка аутентификации — проверьте ключ API", satErrTiles:"{provider}: снимки недоступны — переключено на резерв",
       aiProvider:"Провайдер ИИ", aiModel:"Модель", aiApiKey:"Ключ API", aiKeyConnected:"Подключено", aiKeyNone:"Нет ключа", aiGetKey:"Получить ключ ↗", aiOnDevice:"Работает локально в Chrome — ключ API не нужен.", aiTest:"Проверить подключение", aiTesting:"Проверка…", aiTestOk:"Подключение в порядке ✓", aiNoKey:"Сначала добавьте ключ API ИИ в Настройки → Функции ИИ.", aiNoVision:"Эта модель не читает изображения. Выберите GPT-4o, Claude 3.5 Sonnet или Gemini 1.5 Pro.", aiChromeUnavail:"Встроенный ИИ Chrome здесь недоступен. Используйте Chrome 127+ с включённым ИИ на устройстве или выберите другого провайдера.", aiThinking:"ИИ анализирует…", aiError:"Сбой запроса к ИИ", aiCopy:"Копировать", aiCopied:"Скопировано ✓", aiClose:"Закрыть", aiRetry:"Повторить",
       aiGeoBtn:"✨ Определить места всех новостей (ИИ)", aiGeoBtnSub:"✨ Определить место события (ИИ)", aiGeoBtnPub:"✨ Определить место издателя (ИИ)", aiGeoBusy:"Определение…", aiGeoNone:"Нечего определять.", aiGeoDone:"Определено новостей: {n}", aiGeoErr:"Ошибка геокодирования", aiTransBusy:"Перевод…", aiTransDone:"Переведено заголовков: {n}", aiTransNone:"Заголовки уже на вашем языке.", aiTranslate:"Перевести", aiShowOriginal:"Оригинал", aiTransNoText:"Нет текста статьи для перевода — попробуйте веб-вид.",
@@ -2950,7 +2957,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aisKeyLabel:"Tráfico marítimo en vivo (clave AISstream)", aisKeyHint:"Obtén una clave gratuita en aisstream.io y pégala aquí. Se guarda solo en este navegador.",
       aiSecTitle:"Funciones de IA", aiSecHint:"IA integrada — gratis al iniciar sesión (hasta 10 usos al día). No se necesita clave API.",
       blueberryBtn:"Apoyar", borders:"Fronteras de países", countries:"Países (info)", placeNames:"Nombres de lugares", geoLabels:"Etiquetas de agua y relieve", adminBounds:"Fronteras de estados/provincias", roadsLayer:"Carreteras", railLayer:"Ferrocarriles", favLayers:"★ Favoritos",
-      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
+      measureMenuBtn:"Medir", measureDistBtn:"📏 Distancia / área", drawBtn:"✏️ Dibujar", radiusBtn:"⭕ Radio", objectsBtn:"🗂 Objetos", mScreenshot:"Captura", shareMenuBtn:"Compartir", shareLinkBtn:"Compartir / enlace", screenshotBtn:"📷 Captura de pantalla", layersBtn:"Capas ▾", uploadGeoJSON:"Subir GeoJSON",
       lblDataSources:"Fuentes de datos", viewDataSources:"Ver fuentes de datos ↗", lblNewsCountries:"Países de noticias", newsCountriesHint:"Déjalo vacío para noticias de todo el mundo.",
       lyrGrpGeo:"Geografía estratégica", lyrGrpStrat:"Redes estratégicas", lyrGrpOthers:"Otras (beta)",
       filtCiv:"Civil", filtMil:"Militar", filtAll:"Todos", thermWin24:"Últimas 24 h", thermWin48:"Últimas 48 h", thermWin72:"Últimas 72 h",
@@ -2969,7 +2976,7 @@ window.addEventListener('DOMContentLoaded', () => {
       ctxDropPin:"Poner marcador aquí", ctxMeasureFrom:"Empezar a medir desde aquí", ctxPostHere:"Publicar aquí (comunidad)", ctxDistFrom:"Distancia desde el marcador anterior", ctxCopy:"Copiar coordenadas", ctxClearPins:"Quitar todos los marcadores", ctxThisPoint:"Este punto", coords:"Coordenadas", depth:"Profundidad", climate:"Clima",
       lyrEEZ:"ZEE marítima / 12 mn", lyrShips:"Tráfico marítimo en vivo", lyrPlanes:"Tráfico aéreo en vivo", lyrThermal:"Anomalías térmicas (incendios)", planesZoomHint:"🔍 Acerca para cargar aviones en vivo", shipsZoomHint:"🔍 Acerca para cargar barcos en vivo", aisNoKey:"Los barcos en vivo necesitan una clave API gratuita de AISstream.io — añádela en Ajustes.", trafficFilter:"Filtro", lyrTime:"Fecha de la capa",
       commAdd:"+ Nueva publicación", commAddArmed:"Haz clic en el mapa para poner un marcador", commTitle:"Título", commBody:"Comparte una observación, pregunta o teoría...", commPost:"Publicar", commCancel:"Cancelar", commEmpty:"Aún no hay publicaciones. Haz clic en \"+ Nueva publicación\" para empezar.", commComment:"Comentar", commLocate:"Mostrar en el mapa", commDelete:"Eliminar", commReply:"Responder", commWrite:"Escribe un comentario...", commPostNew:"Nueva publicación", commPlacedAt:"Colocado en", commSortHot:"Popular", commSortNew:"Nuevo", commSortTop:"Top", commSearchPh:"Buscar publicaciones…", commInView:"En vista", commCat:"Categoría", commCatAll:"Todas", commEdit:"Editar", commEdited:"editado", commEditPost:"Editar publicación", commSaveEdit:"Guardar cambios", commNoMatch:"Ninguna publicación coincide con tus filtros.",
-      compare:"Comparar", compareEmpty:"Toca filas de países para elegir y comparar.", compareView:"Mostrar comparación", compareClear:"Borrar", back:"Atrás", deletePin:"Eliminar",
+      compare:"Comparar", compareEmpty:"Toca filas de países para elegir y comparar.", coCompareEmpty:"Toca filas de empresas para elegir y comparar.", compareView:"Mostrar comparación", compareClear:"Borrar", back:"Atrás", deletePin:"Eliminar",
       satCtrlTitle:"Imágenes de satélite", satProvider:"Proveedor", satDate:"Fecha de captura", satLatest:"Más reciente disponible", satMosaicSuffix:"mosaico sin nubes", satLocked:"añadir clave API", satPrevDay:"Día anterior", satNextDay:"Día siguiente", satKeyConnected:"Conectado", satKeyNone:"Sin clave", satErrAuth:"{provider}: fallo de autenticación — comprueba la clave API", satErrTiles:"{provider}: imágenes no disponibles — se cambió a reserva",
       aiProvider:"Proveedor de IA", aiModel:"Modelo", aiApiKey:"Clave API", aiKeyConnected:"Conectado", aiKeyNone:"Sin clave", aiGetKey:"Obtener una clave ↗", aiOnDevice:"Se ejecuta localmente en Chrome — sin clave API.", aiTest:"Probar conexión", aiTesting:"Probando…", aiTestOk:"Conexión correcta ✓", aiNoKey:"Primero añade una clave API de IA en Ajustes → Funciones de IA.", aiNoVision:"Este modelo no puede leer imágenes. Elige GPT-4o, Claude 3.5 Sonnet o Gemini 1.5 Pro.", aiChromeUnavail:"La IA integrada de Chrome no está disponible aquí. Usa Chrome 127+ con la IA en el dispositivo activada, o elige otro proveedor.", aiThinking:"La IA está analizando…", aiError:"Falló la solicitud de IA", aiCopy:"Copiar", aiCopied:"Copiado ✓", aiClose:"Cerrar", aiRetry:"Reintentar",
       aiGeoBtn:"✨ Localizar todas las noticias (IA)", aiGeoBtnSub:"✨ Localizar el tema (IA)", aiGeoBtnPub:"✨ Localizar el medio (IA)", aiGeoBusy:"Localizando…", aiGeoNone:"Nada que localizar.", aiGeoDone:"{n} noticias localizadas", aiGeoErr:"Falló la geocodificación", aiTransBusy:"Traduciendo…", aiTransDone:"{n} títulos traducidos", aiTransNone:"Los títulos ya están en tu idioma.", aiTranslate:"Traducir", aiShowOriginal:"Original", aiTransNoText:"No hay texto de artículo para traducir — prueba la vista web.",
@@ -4424,7 +4431,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const _lat2y=(lat,z)=>{ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); };
   const _tileUrl=(tpl,z,x,y)=>tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y);
   let _prevCenter=null, _prefetchT=null;
-  function predictivePrefetch(){
+  function predictivePrefetch(aggressive){
     if(!map || currentMapType!=='sat') return;                          /* satellite = the heavy high-res case the user asked about */
     const p=satProviderById(satState.providerId); if(!p) return;
     let tiles; try{ tiles=satBuildTiles(p); }catch(_){ return; }
@@ -4435,21 +4442,34 @@ window.addEventListener('DOMContentLoaded', () => {
     if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
     let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
     _prevCenter={lng:c.lng,lat:c.lat};
-    const urls=[], RING=3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
-    if(dx>0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x1+k,y);
-    else if(dx<0) for(let k=1;k<=RING;k++) for(let y=y0;y<=y1;y++) push(x0-k,y);
-    if(dy>0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y1+k);
-    else if(dy<0) for(let k=1;k<=RING;k++) for(let x=x0;x<=x1;x++) push(x,y0-k);
+    /* (#R151) FLIGHT LEAD: in the sim the camera moves continuously and fast, so a 3-tile lead can't keep the imagery
+       ahead of the aircraft ("3D衛星画像の生成が飛行に追い付いていない"). When called aggressively (flight loop), warm a
+       DEEPER ring in the direction of travel AND, if the map is tilted (3D/oblique), one zoom level SHALLOWER too so the
+       far horizon tiles the oblique view pulls in are resident before they scroll into frame. */
+    const RING=aggressive?7:3, push=(x,y)=>{ if(x>=0&&y>=0&&x<n&&y<n) urls.push(_tileUrl(tpl,z,x,y)); };
+    const urls=[];
+    const _side=(k)=>{ if(dx>0) for(let y=y0-1;y<=y1+1;y++) push(x1+k,y); else if(dx<0) for(let y=y0-1;y<=y1+1;y++) push(x0-k,y);
+      if(dy>0) for(let x=x0-1;x<=x1+1;x++) push(x,y1+k); else if(dy<0) for(let x=x0-1;x<=x1+1;x++) push(x,y0-k); };
+    for(let k=1;k<=RING;k++) _side(k);
+    if(aggressive && dx&&dy){ for(let k=1;k<=RING;k++){ push((dx>0?x1:x0)+dx*k,(dy>0?y1:y0)+ (dy>0?1:-1)*k); } }   /* diagonal corner ahead for a banking turn */
     /* (#R8) Anticipate a zoom-IN: warm the center tiles one AND two levels deeper so the next pinch is
        already resident (the user asked for "Unthinkable Speed" satellite). */
     for(let dz=1;dz<=2;dz++){ const z2=z+dz; if(z2>(p.maxzoom||19)) break; const n2=Math.pow(2,z2),cx=_lng2x(c.lng,z2),cy=_lat2y(c.lat,z2),rr=dz===1?1:0; for(let ix=-rr;ix<=rr;ix++) for(let iy=-rr;iy<=rr;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<n2&&y<n2) urls.push(_tileUrl(tpl,z2,x,y)); } }
+    /* (#R151) tilted view → the horizon draws from a shallower zoom; warm a small block one level up in the travel dir. */
+    if(aggressive){ try{ if((map.getPitch()||0)>25){ const zc=Math.max(0,z-1), nc=Math.pow(2,zc), cx=_lng2x(c.lng,zc)+ (dx||0)*2, cy=_lat2y(c.lat,zc)+ ( -(dy||0))*2; for(let ix=-2;ix<=2;ix++) for(let iy=-2;iy<=2;iy++){ const x=cx+ix,y=cy+iy; if(x>=0&&y>=0&&x<nc&&y<nc) urls.push(_tileUrl(tpl,zc,x,y)); } } }catch(_){} }
     if(!urls.length) return;
-    const uniq=[...new Set(urls)].slice(0,(typeof isMobile==='function'&&isMobile())?60:150);   /* (#R21) spend more of the measured idle bandwidth on desktop */
+    const _mob=(typeof isMobile==='function'&&isMobile());
+    const uniq=[...new Set(urls)].slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
     if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
     uniq.forEach(u=>{ try{ fetch(u,{mode:'cors',cache:'force-cache'}).catch(()=>{}); }catch(_){} });
   }
   registerTileSW();
   if(map) map.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
+  /* (#R151) 3D is "dramatically heavier the moment you enable it" because a tilted/oblique view pulls in far more
+     tiles AND `moveend` never fires during a continuous drag-rotate/pitch — so satellite imagery streamed in behind
+     the gesture. Warm tiles ahead on every `move` while tilted (pitch>25°) in satellite mode, throttled to ~3×/s. */
+  let _movePfT=0;
+  if(map) map.on('move',()=>{ try{ if(currentMapType!=='sat') return; const now=Date.now(); if((map.getPitch()||0)>25 && now-_movePfT>320){ _movePfT=now; predictivePrefetch(true); } }catch(_){} });
   /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
      every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
      couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
@@ -6206,7 +6226,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function _syncToolBtns(){
     ['measure','radius'].forEach(m=>{ const b=document.getElementById('btn-tool-'+m); if(b) b.classList.toggle('tool-on', toolMode===m); });
     const trig=document.getElementById('btn-measure-menu');
-    if(trig) trig.classList.toggle('tool-on', toolMode==='measure'||toolMode==='area'||!!(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()));
+    if(trig) trig.classList.toggle('tool-on', toolMode==='measure'||toolMode==='area'||toolMode==='radius'||!!(window.DrawTool&&window.DrawTool.active&&window.DrawTool.active()));   /* (#R151) Radius now lives in the Measure menu → its trigger reflects an active radius too */
     try{ window._mAddPointUpdate&&window._mAddPointUpdate(); }catch(_){}   /* show/hide the mobile "+Add point" button with the tool state (#R13) */
   }
   window._syncToolBtns=_syncToolBtns;
@@ -6996,7 +7016,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-tool-grid').onclick=toggleGrid;
   { const _gcb=document.getElementById('cb-grid'); if(_gcb) _gcb.onchange=(e)=>setGrid(e.target.checked); }   /* (#R10/#R38) Grid in Layers — drive state FROM the box (idempotent) so a re-asserted change can't re-enable it */
   document.getElementById('btn-tool-measure').onclick=()=>{ setTool('measure'); if(window._closeMeasureMenu)window._closeMeasureMenu(); };
-  document.getElementById('btn-tool-radius').onclick=()=>setTool('radius');
+  document.getElementById('btn-tool-radius').onclick=()=>{ setTool('radius'); if(window._closeMeasureMenu) window._closeMeasureMenu(); };   /* (#R151) Radius is a Measure-menu item → close the menu after picking it */
   /* (#R9) "Measure ▾" groups Measure + Draw under one trigger; click-away closes it. */
   (function(){
     const c=document.querySelector('.measure-menu-container'), trig=document.getElementById('btn-measure-menu');
@@ -7004,6 +7024,15 @@ window.addEventListener('DOMContentLoaded', () => {
     if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); if(c) c.classList.toggle('open'); }; }
     document.addEventListener('click',(e)=>{ if(c && !c.contains(e.target)) c.classList.remove('open'); });
     const dr=document.getElementById('btn-tool-draw'); if(dr) dr.addEventListener('click',()=>window._closeMeasureMenu&&window._closeMeasureMenu());
+  })();
+  /* (#R151) "Share ▾" groups Screenshot + link/share under one trigger (mirrors the Measure menu); click-away + item-click close it.
+     The item buttons keep their original ids (#btn-screenshot / #btn-share) so their existing handlers are unchanged. */
+  (function(){
+    const c=document.querySelector('.share-menu-container'), trig=document.getElementById('btn-share-menu');
+    window._closeShareMenu=()=>{ if(c) c.classList.remove('open'); };
+    if(trig){ trig.onclick=(e)=>{ e.stopPropagation(); if(c) c.classList.toggle('open'); }; }
+    document.addEventListener('click',(e)=>{ if(c && !c.contains(e.target)) c.classList.remove('open'); });
+    ['btn-screenshot','btn-share'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>window._closeShareMenu&&window._closeShareMenu()); });
   })();
   function updateCompass(){ const s=document.querySelector('.compass-svg'); if(s&&map)s.style.transform=`rotate(${-map.getBearing()}deg)`; }
   document.getElementById('btn-compass').onclick=()=>map&&map.easeTo({bearing:0,pitch:0,duration:500});
@@ -10518,6 +10547,31 @@ window.addEventListener('DOMContentLoaded', () => {
     const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0}));
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     async function _fjson(u){ for(const p of PROX){ try{ const r=await fetch(p(u)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
+    /* (#R151) BATCHED multi-symbol quote via Yahoo's keyless "spark" endpoint — ONE request for up to ~40 tickers instead
+       of one-per-name, so live prices paint far faster (低遅延) and time-machine year-scrubbing no longer refetches ~150
+       symbols per year. Robust to both spark response shapes (nested spark.result[].response[] and the older flat
+       {TK:{timestamp,close,...}} form). Returns Map<tk,{ts:number[],close:number[],price:number}>. */
+    async function _spark(syms, range, interval){ const out=new Map(); const B=40;
+      for(let i=0;i<syms.length;i+=B){ const batch=syms.slice(i,i+B);
+        const u='https://query1.finance.yahoo.com/v8/finance/spark?symbols='+batch.map(encodeURIComponent).join(',')+'&range='+range+'&interval='+interval;
+        let j=null; try{ j=await _fjson(u); }catch(_){} if(!j) continue;
+        const res=(j.spark&&Array.isArray(j.spark.result))?j.spark.result:null;
+        if(res){ res.forEach(r=>{ try{ const tk=r.symbol, rp=r.response&&r.response[0]; if(!tk||!rp) return;
+              const ts=rp.timestamp||[], cl=(rp.indicators&&rp.indicators.quote&&rp.indicators.quote[0]&&rp.indicators.quote[0].close)||[];
+              out.set(tk,{ts,close:cl,price:(rp.meta&&+rp.meta.regularMarketPrice)||0}); }catch(_){} }); }
+        else { batch.forEach(tk=>{ try{ const r=j[tk]; if(!r) return; out.set(tk,{ts:r.timestamp||[],close:r.close||[],price:+(r.regularMarketPrice||r.chartPreviousClose||r.previousClose||0)||0}); }catch(_){} }); }
+      }
+      return out; }
+    /* (#R151) FULL monthly price history for every live name, fetched ONCE (batched spark, range=max) and cached as
+       {tk:{year:yearEndClose}} — the time-machine then reads any past year from this INSTANTLY (もっと昔も見れる) with no
+       per-year network. Built lazily on the first time-travel / time-series request; guarded so a failure just falls back. */
+    let _HALL=null, _HALLp=null;
+    function _histAll(){ if(_HALL) return Promise.resolve(_HALL); if(_HALLp) return _HALLp;
+      const syms=DATA.filter(c=>c.sh>0).map(c=>c.tk);
+      _HALLp=(async()=>{ const map={}; try{ const sp=await _spark(syms,'max','1mo');
+          sp.forEach((v,tk)=>{ const by={}, ts=v.ts||[], cl=v.close||[]; for(let i=0;i<ts.length;i++){ const cv=+cl[i]; if(cv>0) by[new Date(ts[i]*1000).getUTCFullYear()]=cv; } map[tk]=by; }); }catch(_){}
+        _HALL=map; return _HALL; })();
+      return _HALLp; }
     /* (#R142) _hy = the time-machine year (null = present/live). In a past year market cap = today's shares × the share
        price AT that year (c.hp); a company founded AFTER the year, or a non-live name with no price path, has no cap. */
     let _hy=null, _hSeq=0, _hyLoaded=null;
@@ -10529,17 +10583,24 @@ window.addEventListener('DOMContentLoaded', () => {
        same CORS-proxy ladder the ticker uses), concurrency-limited, cached 5 min. onUpdate fires progressively and
        once at completion so the ranking re-sorts live. Non-US names keep their reported snapshot. Fully guarded —
        if the proxies are down the tab still shows real (reported) figures. */
+    /* SANITY GUARD: a live market cap that deviates by more than ~5× from the reported snapshot means a bad fetch
+       (wrong symbol / stale proxy response / currency mismatch) or an off share count — reject it and keep the honest
+       reported figure rather than corrupt the ranking. Genuine price movement stays live. */
+    function _applyPrice(c,p){ if(!(p>0)) return false; const cand=c.sh*p; if(cand>=c.mcapSnap*0.2 && cand<=c.mcapSnap*5){ c.price=p; return true; } return false; }
     async function loadPrices(onUpdate){
       const now=Date.now(); if(_loading) return; if(_loaded && (now-_loaded)<300000) return;
-      _loading=true; const live=DATA.filter(c=>c.sh>0); let idx=0, upd=0; const CONC=5;
-      async function w(){ for(;;){ const i=idx++; if(i>=live.length) return; const c=live[i];
+      _loading=true; const live=DATA.filter(c=>c.sh>0); const byTk={}; live.forEach(c=>byTk[c.tk]=c);
+      /* (#R151) FAST PATH: one batched spark request per ~40 names → the whole board prices in a few round-trips (低遅延). */
+      let missing=live;
+      try{ const sp=await _spark(live.map(c=>c.tk),'1d','1d'); const done=new Set();
+        sp.forEach((v,tk)=>{ const c=byTk[tk]; if(!c) return; let p=+v.price; if(!(p>0)&&Array.isArray(v.close)){ for(let k=v.close.length-1;k>=0;k--){ if(+v.close[k]>0){ p=+v.close[k]; break; } } } if(_applyPrice(c,p)) done.add(tk); });
+        missing=live.filter(c=>!done.has(c.tk)); if(onUpdate){ try{ onUpdate(); }catch(_){} } }catch(_){}
+      /* FALLBACK: per-symbol chart for any the batch didn't resolve (proxy hiccup / symbol quirk). */
+      let idx=0, upd=0; const CONC=6;
+      async function w(){ for(;;){ const i=idx++; if(i>=missing.length) return; const c=missing[i];
         try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?range=1d&interval=1d');
           const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
-          if(m&&+m.regularMarketPrice>0){ const p=+m.regularMarketPrice, cand=c.sh*p;
-            /* SANITY GUARD: a live market cap that deviates by more than ~5× from the reported snapshot means a bad
-               fetch (wrong symbol / stale proxy response / currency mismatch) or an off share count — reject it and
-               keep the honest reported figure rather than corrupt the ranking. Genuine price movement stays live. */
-            if(cand>=c.mcapSnap*0.2 && cand<=c.mcapSnap*5){ c.price=p; if((++upd%8===0)&&onUpdate){ try{ onUpdate(); }catch(_){} } } } }catch(_){} } }
+          if(m&&_applyPrice(c,+m.regularMarketPrice)){ if((++upd%8===0)&&onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }
       try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
       _loaded=Date.now(); _loading=false; if(onUpdate){ try{ onUpdate(); }catch(_){} }
     }
@@ -10553,13 +10614,19 @@ window.addEventListener('DOMContentLoaded', () => {
       _hy=year; const my=++_hSeq;
       if(_hyLoaded===year){ if(onUpdate){ try{ onUpdate(); }catch(_){} } return; }
       DATA.forEach(c=>{ c.hp=0; }); if(onUpdate){ try{ onUpdate(); }catch(_){} }   /* show the loading (—) state at once */
-      const p1=Math.floor(Date.UTC(year,0,1)/1000), p2=Math.floor(Date.UTC(year,11,31)/1000);
-      const live=DATA.filter(c=>c.sh>0 && c.fnd<=year); let idx=0, upd=0; const CONC=5;
-      async function w(){ for(;;){ if(my!==_hSeq) return; const i=idx++; if(i>=live.length) return; const c=live[i];
-        try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
-          const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
-          if(Array.isArray(q)){ for(let k=q.length-1;k>=0;k--){ if(q[k]>0){ c.hp=+q[k]; break; } } if(c.hp>0 && (++upd%8===0) && onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }
-      try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){}
+      const live=DATA.filter(c=>c.sh>0 && c.fnd<=year);
+      /* (#R151) read each name's year-end close from the ONE-TIME full-history cache → instant, and reaches as far back
+         as Yahoo has data. A name whose data starts later simply has no entry for this year (mcap()=NaN, honest —). */
+      let all=null; try{ all=await _histAll(); }catch(_){} if(my!==_hSeq) return;
+      if(all){ live.forEach(c=>{ const by=all[c.tk]; const v=by&&by[year]; if(v>0) c.hp=v; }); if(onUpdate){ try{ onUpdate(); }catch(_){} } }
+      /* FALLBACK: any live name the cache didn't cover (spark failed / gap) → the proven per-year chart fetch. */
+      const miss=live.filter(c=>!(c.hp>0));
+      if(miss.length){ const p1=Math.floor(Date.UTC(year,0,1)/1000), p2=Math.floor(Date.UTC(year,11,31)/1000); let idx=0, upd=0; const CONC=6;
+        async function w(){ for(;;){ if(my!==_hSeq) return; const i=idx++; if(i>=miss.length) return; const c=miss[i];
+          try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(c.tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
+            const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
+            if(Array.isArray(q)){ for(let k=q.length-1;k>=0;k--){ if(q[k]>0){ c.hp=+q[k]; break; } } if(c.hp>0 && (++upd%8===0) && onUpdate){ try{ onUpdate(); }catch(_){} } } }catch(_){} } }
+        try{ await Promise.all(Array.from({length:CONC},()=>w())); }catch(_){} }
       if(my===_hSeq){ _hyLoaded=year; if(onUpdate){ try{ onUpdate(); }catch(_){} } }
     }
     /* (#R145) Share-price HISTORY for the compare Time-series mode — one keyless Yahoo v8 call per name over a year
@@ -10567,6 +10634,8 @@ window.addEventListener('DOMContentLoaded', () => {
        names only; snapshot-only names have no path and return {} (charted honestly as "no history"). */
     const _histCache={};
     async function priceSeries(tk, y0, y1){ const key=tk+'|'+y0+'|'+y1; if(_histCache[key]) return _histCache[key];
+      /* (#R151) serve from the full-history cache when present (no extra network); else the per-symbol chart below. */
+      try{ const all=await _histAll(); if(all&&all[tk]){ const by={}; for(let y=y0;y<=y1;y++){ if(all[tk][y]>0) by[y]=all[tk][y]; } if(Object.keys(by).length){ _histCache[key]=by; return by; } } }catch(_){}
       const p1=Math.floor(Date.UTC(y0,0,1)/1000), p2=Math.floor(Date.UTC(y1,11,31)/1000);
       const byYear={};
       try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
@@ -10604,8 +10673,11 @@ window.addEventListener('DOMContentLoaded', () => {
   window._coShowCompare=function(){ if(coCompareSet.size<2) return; try{ showCoCompare([...coCompareSet]); }catch(_){} };
   function renderCoCompareFixed(){ const feed=document.getElementById('info-dashboard'); if(!feed) return;
     let tray=document.getElementById('co-compare-fixed');
-    if(!coCompareSet.size || document.getElementById('co-cmp-view')){ if(tray) tray.remove(); return; }
+    if(document.getElementById('co-cmp-view')){ if(tray) tray.remove(); return; }   /* the compare VIEW owns the feed → hide the dock */
     if(!tray){ tray=document.createElement('div'); tray.id='co-compare-fixed'; tray.className='co-compare-fixed'; feed.appendChild(tray); }
+    /* (#R151) Countries-parity empty hint ("Tap company rows to select and compare.") — Countries shows this in its
+       #stats-compare-fixed dock; Companies previously removed the tray entirely when nothing was selected. */
+    if(!coCompareSet.size){ tray.innerHTML=`<div class="scf-empty">${t('coCompareEmpty')}</div>`; return; }
     const items=[...coCompareSet].map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
     const chips=items.map(c=>`<span class="scb-chip">${IntMapSafe.html(_coName(c))}<button data-cx="${IntMapSafe.html(c.tk)}">×</button></span>`).join('');
     tray.innerHTML=`<div class="scf-head"><span class="scf-title">${_coL('Compare','比較','Vergleich','Сравнение','Comparar')} (${coCompareSet.size}/10)</span><div style="display:flex;gap:6px;">`+(coCompareSet.size>=2?`<button class="scf-view" data-cv="1">${t('compareView')}</button>`:'')+`<button data-cc="1">${t('compareClear')}</button></div></div><div class="scf-chips">${chips}</div>`;
@@ -12614,7 +12686,7 @@ window.addEventListener('DOMContentLoaded', () => {
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
       .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }   /* (#R149) trimmed padding + reserved margin 92→84 so more of the 30 Köppen zones fit; see compacted rows/chrome below — the legend can finally stretch to the last class ("さいごまで伸ばせない") */
-      .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
+      .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
          shows a small diagonal grip at the bottom-right, matching the resize:vertical affordance. */
@@ -14271,10 +14343,20 @@ window.addEventListener('DOMContentLoaded', () => {
       if(window.innerWidth<=768) return;
       const top=lg.getBoundingClientRect().top;                 /* rendered top edge (top-anchored: stable as it grows) */
       const renderedMax=Math.round(window.innerHeight - top - 12);   /* how tall the border-box may be before it hits the screen bottom */
-      /* max-height on a content-box element sizes the CONTENT box; the rendered border-box is that + padding + border.
-         Subtract the chrome so the RENDERED bottom edge lands ~12px above the screen bottom (not 18px past it). */
-      let mh=renderedMax;
-      if(cs.boxSizing!=='border-box'){ const pb=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0); mh=Math.max(0, renderedMax-pb); }
+      /* (#R151) STOP WHEN ALL CLASSES ARE SHOWN ("すべての気候区分が表示されたら止まる"). R150 set max-height = the
+         viewport ceiling with NO content clamp, so the resize grabber kept stretching into EMPTY space past the last
+         class. Measure the natural height that shows every class (temporarily neutralise any dragged inline height +
+         max-height so the box shrink-wraps), then cap at min(content, viewport): a short list stops exactly at its
+         last row (no blank space), a list taller than the screen stops at the screen bottom with the inner .kl-scroll
+         revealing the rest. Measured set→read→restore in one synchronous task → no paint, no flicker. */
+      const prevH=lg.style.height, prevMH=lg.style.maxHeight;
+      lg.style.maxHeight='none'; lg.style.height='auto';
+      const naturalBorderBox=lg.getBoundingClientRect().height;   /* full height that shows every climate class */
+      lg.style.height=prevH; lg.style.maxHeight=prevMH;
+      const ceil=Math.min(renderedMax, Math.ceil(naturalBorderBox));   /* border-box: content OR viewport, whichever is smaller */
+      /* max-height on a content-box element sizes the CONTENT box; the rendered border-box is that + padding + border. */
+      let mh=ceil;
+      if(cs.boxSizing!=='border-box'){ const pb=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0); mh=Math.max(0, ceil-pb); }
       lg.style.maxHeight=Math.max(150, mh)+'px';
     }catch(_){} }
     window._fitKoppenLegend=_fitKoppenLegend;
@@ -25085,7 +25167,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="sv-body" style="flex:1 1 auto;position:relative;background:#000;min-height:0;"><iframe class="sv-if" style="width:100%;height:100%;border:0;display:block;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
         +'<div class="sv-hint" style="position:absolute;left:0;right:0;bottom:0;font-size:10px;color:#ddd;background:rgba(0,0,0,0.5);padding:3px 8px;pointer-events:none;">'+LL('Drag to look; use ◀ ▶ to turn (the map shows your facing).','ドラッグで見回し／◀ ▶ で向きを変更（地図に向きを表示）。','Ziehen zum Umsehen; ◀ ▶ zum Drehen.','Тяните; ◀ ▶ — поворот (направление на карте).','Arrastra; ◀ ▶ para girar (dirección en el mapa).')+'</div></div>';
       document.body.appendChild(panel); iframe=panel.querySelector('.sv-if');
-      panel.querySelector('.sv-close').onclick=()=>{ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} _clearHere(); };
+      panel.querySelector('.sv-close').onclick=()=>close();   /* (#R151) route through close() so auto-shown coverage is turned off too */
       panel.querySelector('.sv-turn-l').onclick=()=>_rotateHere(-30);
       panel.querySelector('.sv-turn-r').onclick=()=>_rotateHere(30);
       panel.querySelector('.sv-fwd').onclick=()=>_moveHere(1);
@@ -25180,6 +25262,10 @@ window.addEventListener('DOMContentLoaded', () => {
       return true; }
     function open(ll,label){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return false;
       const lng=+ll.lng, lat=+ll.lat, hdg0=(ll.heading!=null&&isFinite(+ll.heading))?((+ll.heading%360)+360)%360:0;
+      /* (#R151) "ストリートビューをオンにしている際は、coverageも表示するように" — whenever a panorama is opened,
+         auto-show Google's real coverage (the light-blue lines) so the surrounding walkable network is visible.
+         Only auto-enable when it was OFF (preserve a user's manual coverage state); close() turns it back off. */
+      if(!_cov){ try{ coverage(true); _covAuto=true; }catch(_){} }
       if(ll.noSnap){ return _openAt(lng,lat,label,hdg0); }        /* internal raw path (caller already has a coverage point) */
       try{ _setHere(lng,lat,hdg0); }catch(_){}                    /* instant marker feedback while the pano resolves */
       /* covered → snap the marker AND embed onto the REAL nearest pano (+ store walkable links for forward/back);
@@ -25188,13 +25274,14 @@ window.addEventListener('DOMContentLoaded', () => {
       const _fallbackHonest=()=>{ _svLinks=[]; _openAt(lng,lat,label,hdg0); _coverageUnverifiedToast(); };   /* (#R142) never a silent "moved to your click" — say coverage is unverified */
       _snapPano(lng,lat).then(res=>{ if(!_resolve(res)) _fallbackHonest(); }).catch(_fallbackHonest);
       return true; }
-    function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } _clearHere(); }
+    function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } _clearHere();
+      if(_covAuto){ _covAuto=false; try{ coverage(false); }catch(_){} } }   /* (#R151) turn off auto-shown coverage when SV closes (manual coverage stays) */
     /* (#R84/#R140) COVERAGE MODE ("地図上の水色の線、ポイントから選択できるように") — show Google's REAL Street-View
        coverage and let the user click it. R84–R85 approximated coverage by tinting the BASEMAP's own road lines blue,
        but that is NOT where panoramas actually exist ("Coverageを全く考慮していない"): a road with no SV lit up, and a
        covered alley that the basemap lacked stayed dark. We now overlay Google's genuine keyless SV coverage tiles
        (the svv layer) so the blue lines ARE the real panoramas, and clicks snap to them via _nearestCoverage. */
-    let _cov=false, _covClick=null, _covHint=null, _covStyled=false;
+    let _cov=false, _covClick=null, _covHint=null, _covStyled=false, _covAuto=false;   /* (#R151) _covAuto = coverage was auto-enabled by opening SV (restored on close) */
     const _COV_SRC='sv-cov-src', _COV_LYR='sv-cov-lyr';
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
@@ -26732,7 +26819,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R150) warm satellite tiles AHEAD of the aircraft (~2.6×/s). `moveend` never fires while the camera moves
          continuously in flight, so without this the imagery streamed in BEHIND the aircraft; predictivePrefetch
          self-gates to satellite mode + uses the center delta (flight direction) to prefetch the tiles just ahead. */
-      if(now-(st._pfT||0)>380){ st._pfT=now; try{ window._imPredictivePrefetch&&window._imPredictivePrefetch(); }catch(_){} }
+      if(now-(st._pfT||0)>300){ st._pfT=now; try{ window._imPredictivePrefetch&&window._imPredictivePrefetch(true); }catch(_){} }   /* (#R151) aggressive lead + slightly faster cadence (~3.3×/s) so 3D imagery stays ahead of the aircraft */
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
     function selectAircraft(k){ if(!AIRCRAFT[k]) return; acKey=k; if(st){ st.V=AIRCRAFT[k].Vcruise; st.om=[0,0,0]; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; computeTrim(); } try{ syncHUDChrome(); }catch(_){} }
@@ -27717,6 +27804,10 @@ window.addEventListener('DOMContentLoaded', () => {
       .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1em 0 .3em;font-size:1.14em;line-height:1.32;">$1</div>')
       .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.2em 0 .4em;font-size:1.32em;line-height:1.3;letter-spacing:.005em;">$1</div>')
       .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.15em 0 .45em;font-size:1.55em;letter-spacing:.01em;line-height:1.26;">$1</div>')
+      /* (#R151) MODEL-INDEPENDENT hierarchy — a line that is ENTIRELY a **bold run** is a section lead the model DID emit
+         (models reach for standalone bold far more readily than "## "); render it at real heading size + spacing so the
+         reply stops reading as one flat block even when no "## " markers appear. Inline bold stays <b> (below). */
+      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.05em 0 .32em;font-size:1.18em;line-height:1.3;">$1</div>')
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
@@ -27724,8 +27815,8 @@ window.addEventListener('DOMContentLoaded', () => {
          — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
       .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
       .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.15em;text-indent:-0.9em;margin:.24em 0;">• $1</div>')
-      .replace(/\n{2,}/g,'<div style="height:.72em"></div>')                                       /* explicit paragraph → generous gap */
-      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.5em"></div>')                  /* (#R150) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
+      .replace(/\n{2,}/g,'<div style="height:.85em"></div>')                                       /* (#R151) explicit paragraph → generous gap (more "余白" between groups) */
+      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.6em"></div>')                  /* (#R150/#R151) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
       .replace(/\n/g,'<br>'); }
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
@@ -27741,6 +27832,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const um=bin.match(/https?:\/\/[A-Za-z0-9._~:\/?#\[\]@!$&'()*+,;=%-]{6,}/); if(!um) return null;
       let real=um[0].replace(/[\x00-\x1f].*$/,''); try{ const h=new URL(real).hostname; if(!h||/news\.google\.com/i.test(h)||h.indexOf('.')<0) return null; }catch(_){ return null; }
       return real; }catch(_){ return null; } }
+    /* (#R151) SOURCE RELIABILITY — the user reported Atlas citing "まったく関係ないリンクや、SNSのリンク" (unrelated / social
+       links). Social & UGC platforms, URL shorteners and video hosts are NOT reliable primary sources for factual claims,
+       so DROP them from the source cards (kept end-to-end for every reply that shows sources). Reputable news, official
+       (.gov/.mil/.int/.edu/.go.jp…) and encyclopedic domains pass through unchanged. */
+    const _SNS_RE=/(^|\.)(twitter\.com|x\.com|t\.co|facebook\.com|fb\.com|fb\.watch|m\.facebook\.com|instagram\.com|threads\.net|tiktok\.com|reddit\.com|redd\.it|pinterest\.[a-z.]+|tumblr\.com|mastodon\.[a-z.]+|bsky\.app|weibo\.com|vk\.com|ok\.ru|linkedin\.com|lnkd\.in|quora\.com|snapchat\.com|discord\.(?:com|gg)|t\.me|telegram\.me|youtube\.com|youtu\.be|m\.youtube\.com|bit\.ly|tinyurl\.com|goo\.gl|ift\.tt|buff\.ly|dlvr\.it|ow\.ly)$/i;
+    function _atlBadSourceHost(h){ try{ return _SNS_RE.test(String(h||'').toLowerCase().replace(/^www\./,'')); }catch(_){ return false; } }
     function linkCards(list){ try{
       const seen=new Set(); const cards=[];
       /* (#R107) show ONLY links that point at the ACTUAL article ("記事へのリンクではなく情報源の一般的なリンクに
@@ -27752,6 +27849,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; else return; }   /* un-decodable aggregator → drop */
         let host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(_){ return; }
         if(/(^|\.)news\.google\.com$/i.test(host)||/^news\.google$/i.test(host)) return;   /* still an aggregator → drop */
+        if(_atlBadSourceHost(host)) return;   /* (#R151) drop SNS / UGC / shorteners / video hosts — not reliable factual sources */
         const k=u.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
         const title=String(it.title||it.src||host).slice(0,90);
         cards.push('<a class="atl-lc" href="'+esc(u)+'" target="_blank" rel="noopener">'
@@ -28751,7 +28849,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* ---- (#R147) scope: analyse sensitive-but-legitimate questions instead of over-refusing ---- */
       s+='SCOPE: analyse sensitive but legitimate questions (defence, disasters, disease, hazards, crime statistics, cyber, critical infrastructure) from PUBLIC information at an appropriate level of generality — judge by purpose, target, precision and output, never by a sensitive-sounding word. State the uncertainty and cite public sources; decline ONLY genuinely operational harm (real-time targeting, a precise strike or kill plan, or weapon/agent synthesis instructions) and, even then, still give the safe public-information analysis you can. ';
       /* ---- length + sources ---- */
-      s+='Answer in '+lang+'.'+(String(lang).indexOf('Japanese')>=0?' When answering in Japanese, use polite form (です・ます／敬語) unless the user is clearly casual or explicitly requests plain/casual speech.':'')+' FORMAT FOR READABILITY (the user complained Atlas answers are a monotonous wall of same-size text with no headings or spacing): structure a multi-part answer with a short **bold** lead sentence, "## " sub-headings that name each distinct section, "- " bullets for lists, and a blank line between sections — these render with real, larger heading sizes and clear spacing. Keep a short, single-idea answer as plain sentences (do NOT over-structure a one-paragraph reply). Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. Then, after the answer, on its own line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn) that support your key claims; omit the line entirely if you have none; fabricating a URL is forbidden. MAP VALUE (IntMap is a MAP product, not a chatbot — every location-rich answer must put its spots ON the map): if the answer names specific, real, mappable places (cities, towns, districts, landmarks, buildings, stations, airports, ports, parks, gardens, museums, squares/plazas, stadiums, named facilities, or named natural features such as rivers/mountains/islands/straits), then on the VERY LAST line — AFTER any SOURCES line — output "PLACES: " followed by a ONE-LINE compact JSON array naming EVERY such place: [{"n":"exact place name","c":"the modern country it lies in","k":"kind"}]. IntMap resolves the coordinates from n+c and pins them — NEVER output latitude/longitude, never invent a place, exclude whole countries and vague/relative terms ("the region","the coast","downtown"), and list a place only if you actually named it in the answer. The places you name in the prose and the places in PLACES must MATCH. Omit the PLACES line only when the answer truly names no mappable place.';
+      s+='Answer in '+lang+'.'+(String(lang).indexOf('Japanese')>=0?' When answering in Japanese, use polite form (です・ます／敬語) unless the user is clearly casual or explicitly requests plain/casual speech.':'')+' FORMAT FOR READABILITY (the user complained Atlas answers are a monotonous wall of same-size text with no headings or spacing): structure a multi-part answer with a short **bold** lead sentence, "## " sub-headings that name each distinct section, "- " bullets for lists, and a blank line between sections — these render with real, larger heading sizes and clear spacing. Keep a short, single-idea answer as plain sentences (do NOT over-structure a one-paragraph reply). Aim for concision (~230 words is a good target for an open-ended question) BUT never drop the user\'s required sections or a required verdict to hit a word count — their requested structure wins. SOURCE QUALITY: prefer the single most authoritative PRIMARY source per claim (official body, government, the institution itself, primary reporting) over merely-highly-ranked pages; do NOT lean the whole answer on one site or domain — corroborate across independent source types. NEVER cite social media, user-generated forums, link shorteners or video platforms (X/Twitter, Facebook, Instagram, Reddit, YouTube, TikTok, Telegram, etc.) as a source — they are not reliable factual sources and will be discarded. Then, after the answer, on its own line, output "SOURCES: <url1> | <url2> | …" with up to 4 REAL article/page URLs (from the NEWS EVIDENCE urls or from your web search this turn); EACH url must be a specific page that DIRECTLY supports a claim you made — never a generic homepage, a search page, or an unrelated link. Omit the line entirely if you have none; fabricating a URL is forbidden. MAP VALUE (IntMap is a MAP product, not a chatbot — every location-rich answer must put its spots ON the map): if the answer names specific, real, mappable places (cities, towns, districts, landmarks, buildings, stations, airports, ports, parks, gardens, museums, squares/plazas, stadiums, named facilities, or named natural features such as rivers/mountains/islands/straits), then on the VERY LAST line — AFTER any SOURCES line — output "PLACES: " followed by a ONE-LINE compact JSON array naming EVERY such place: [{"n":"exact place name","c":"the modern country it lies in","k":"kind"}]. IntMap resolves the coordinates from n+c and pins them — NEVER output latitude/longitude, never invent a place, exclude whole countries and vague/relative terms ("the region","the coast","downtown"), and list a place only if you actually named it in the answer. The places you name in the prose and the places in PLACES must MATCH. Omit the PLACES line only when the answer truly names no mappable place.';
       return s; }
     /* (#R131) The TIME CONTEXT + REQUESTED COVERAGE header of the analyze DATA block. Shared by the live path and
        the regression harness so the two can never drift. */
@@ -28876,6 +28974,8 @@ window.addEventListener('DOMContentLoaded', () => {
       nameOk:function(a,b){ try{ return _atlNameOk(a,b); }catch(_){ return false; } },
       extractPlaces:function(t){ try{ return _atlExtractPlaces(t); }catch(_){ return []; } },
       regDomain:function(u){ try{ return _atlRegDomain(u); }catch(_){ return ''; } },
+      badSourceHost:function(h){ try{ return _atlBadSourceHost(h); }catch(_){ return false; } },
+      linkCards:function(l){ try{ return linkCards(l); }catch(_){ return ''; } },
       auditSources:function(c){ try{ return _atlAuditSources(c); }catch(_){ return null; } },
       mappingVerdict:function(s){ try{ return _atlMappingVerdict(s); }catch(_){ return null; } },
       mappingNote:function(v,s,m){ try{ return _atlMappingNoteHtml(v,s,m); }catch(_){ return ''; } },
@@ -29703,9 +29803,9 @@ window.addEventListener('DOMContentLoaded', () => {
             ctl+='</div>'; } }catch(_){}
           return R(true, note('✓ '+esc(r.label)+' — '+onTxt+(r.already?(' ('+L('already','既に','bereits','уже','ya')+')'):''))+verifyNote+ctl, unverified?{meta:{unverified:true}}:undefined); }
         case 'opacity': { const r=resolveLayer(a.name); if(!r) return R(false, warn('⚠ '+L('Layer not found','レイヤーが見つかりません','Ebene nicht gefunden','Слой не найден','Capa no encontrada')+': '+esc(a.name||''))); const sl=layerOpacityControl(r.cb); let v=(a.value!=null?+a.value:(a.percent!=null?+a.percent:null)); if(v!=null&&v>1) v=v/100; if(v==null&&a.delta!=null&&sl){ let d=+a.delta; if(!isNaN(d)){ if(Math.abs(d)>1) d/=100; v=Math.max(0,Math.min(1,(parseFloat(sl.value)||0)+d)); } } if(sl&&v!=null&&!isNaN(v)){ if(!r.cb.checked){ r.cb.checked=true; r.cb.dispatchEvent(new Event('change',{bubbles:true})); } sl.value=v; sl.dispatchEvent(new Event('input',{bubbles:true})); sl.dispatchEvent(new Event('change',{bubbles:true})); return R(true, note('🎚 '+esc(r.label)+' '+Math.round(v*100)+'%')); } return R(false, warn('⚠ '+L('No opacity control: ','透明度調整なし: ','Keine Deckkraft: ','Нет прозрачности: ','Sin opacidad: ')+esc(r.label))); }
-        case 'projection': { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo'))):warn('⚠')); }
+        case 'projection': { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo')))+_featTogHtml('globe'):warn('⚠')); }   /* (#R151) offer the 3D-globe on/off switch */
         case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa')))+_featTogHtml('satellite'):warn('⚠')); }   /* (#R147) offer the Satellite on/off button */
-        case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))); }
+        case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))+_featTogHtml('compare')); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); }   /* (#R151) offer the Compare on/off switch */
         case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim();
           /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
           if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ map.flyTo({center:[map.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ map.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
@@ -31823,7 +31923,10 @@ window.addEventListener('DOMContentLoaded', () => {
       borders:{ lbl:()=>L('Borders','国境','Grenzen','Границы','Fronteras'), on:()=>{ const cb=document.getElementById('cb-borders'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-borders'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
       labels:{ lbl:()=>L('Place labels','地名ラベル','Beschriftungen','Подписи','Etiquetas'), on:()=>{ const cb=document.getElementById('cb-geolabels')||document.getElementById('cb-names'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-geolabels')||document.getElementById('cb-names'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
       roads:{ lbl:()=>L('Roads','道路','Straßen','Дороги','Carreteras'), on:()=>{ const cb=document.getElementById('cb-roads'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-roads'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
-      ticker:{ lbl:()=>L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior'), on:()=>{ try{ return String(window.imTicker||'')!=='off'; }catch(_){ return true; } }, set:v=>{ try{ if(window.IntMapTicker){ window.imTicker=v?'on':'off'; window.IntMapTicker.apply(); if(typeof saveSettings==='function') saveSettings(); } }catch(_){} } }   /* (#R149) more on/off features get an inline toggle */
+      ticker:{ lbl:()=>L('Bottom ticker','下部ティッカー','Ticker','Бегущая строка','Cinta inferior'), on:()=>{ try{ return String(window.imTicker||'')!=='off'; }catch(_){ return true; } }, set:v=>{ try{ if(window.IntMapTicker){ window.imTicker=v?'on':'off'; window.IntMapTicker.apply(); if(typeof saveSettings==='function') saveSettings(); } }catch(_){} } },   /* (#R149) more on/off features get an inline toggle */
+      /* (#R151) even more on/off surfaces get a switch ("オンオフ要素のある時はなるべくトグルボタンを設置") */
+      globe:{ lbl:()=>L('3D globe','地球儀','Globus','Глобус','Globo'), on:()=>{ const b=document.getElementById('btn-view-globe'); return !!(b&&(b.classList.contains('active')||b.classList.contains('view-on')||b.classList.contains('on')||b.getAttribute('aria-pressed')==='true')); }, set:v=>{ clickId(v?'btn-view-globe':'btn-view-flat'); } },
+      compare:{ lbl:()=>L('Compare panel','比較パネル','Vergleich','Панель сравнения','Comparar'), on:()=>{ try{ return document.body.classList.contains('cmp-open'); }catch(_){ return false; } }, set:v=>{ try{ if(v){ if(window.IntMapCompare&&window.IntMapCompare.open) window.IntMapCompare.open(); else clickId('btn-compare'); } else { const x=document.querySelector('#compare-window .cmp-close'); if(x) x.click(); } }catch(_){} } }
     };
     function _featTogHtml(kind){ const f=_FEAT_TOG[kind]; if(!f) return ''; let on=false; try{ on=!!f.on(); }catch(_){}
       /* (#R148) removed R147's bespoke .atl-featbtn ("独自ボタン") — restore the standard iOS toggle switch that shipped before R147. */
@@ -33414,13 +33517,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!map.getSource('im-mon-pts')){ map.addSource('im-mon-pts',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
         map.addLayer({id:'im-mon-pts-c',type:'circle',source:'im-mon-pts',paint:{'circle-radius':7,'circle-color':'#ff375f','circle-stroke-color':'#fff','circle-stroke-width':2,'circle-opacity':0.9}}); }
       return true; }catch(_){ return false; } }
-    function showOnMap(area,points){ try{ if(!_ensureLayers()) return; const af=[]; if(area&&area.geometry) af.push({type:'Feature',geometry:area.geometry,properties:{}});
+    /* (#R151) track WHICH monitor's area is currently painted so deleting it can clear the highlight
+       ("モニターで監視を作成した際のハイライトが、モニター削除後も残ってしまった"). */
+    let _shownMonId=null;
+    function showOnMap(area,points,monId){ try{ if(!_ensureLayers()) return; _shownMonId=(monId!=null?monId:null); const af=[]; if(area&&area.geometry) af.push({type:'Feature',geometry:area.geometry,properties:{}});
       map.getSource('im-mon-area').setData({type:'FeatureCollection',features:af});
       const pf=(points||[]).filter(p=>isFinite(p.lng)&&isFinite(p.lat)).map(p=>({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{label:p.label||''}}));
       map.getSource('im-mon-pts').setData({type:'FeatureCollection',features:pf});
       if(area&&area.bbox){ try{ map.fitBounds([[area.bbox[0],area.bbox[1]],[area.bbox[2],area.bbox[3]]],{padding:80,maxZoom:9,duration:800}); }catch(_){} }
     }catch(_){} }
-    function clearMap(){ try{ if(map.getSource('im-mon-area')) map.getSource('im-mon-area').setData({type:'FeatureCollection',features:[]}); if(map.getSource('im-mon-pts')) map.getSource('im-mon-pts').setData({type:'FeatureCollection',features:[]}); }catch(_){} }
+    function clearMap(){ _shownMonId=null; try{ if(map.getSource('im-mon-area')) map.getSource('im-mon-area').setData({type:'FeatureCollection',features:[]}); if(map.getSource('im-mon-pts')) map.getSource('im-mon-pts').setData({type:'FeatureCollection',features:[]}); }catch(_){} }
 
     /* ---- data access (RLS scopes to the owner) ---- */
     async function _list(){ const {data,error}=await DB.from('area_monitors').select('*').order('created_at',{ascending:false}); if(error) throw error; return data||[]; }
@@ -33454,7 +33560,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ const {data,error}=await DB.from('area_monitors').insert(row).select('*').single(); if(error) return {ok:false,error:_errMsg(error),raw:error}; return {ok:true,monitor:data}; }
       catch(e){ return {ok:false,error:_errMsg(e),raw:e}; } }
     async function setEnabled(id,on){ try{ const {error}=await DB.from('area_monitors').update({enabled:!!on}).eq('id',id); return !error; }catch(_){ return false; } }
-    async function remove(id){ try{ const {error}=await DB.from('area_monitors').delete().eq('id',id); return !error; }catch(_){ return false; } }
+    async function remove(id){ try{ const {error}=await DB.from('area_monitors').delete().eq('id',id);
+      if(!error && (_shownMonId===id || _shownMonId==null)) clearMap();   /* (#R151) delete must remove the leftover area highlight for the monitor being shown */
+      return !error; }catch(_){ return false; } }
     async function pause(id){ const ok=await setEnabled(id,false); if(ok) render(); return ok; }
     async function resume(id){ const ok=await setEnabled(id,true); if(ok) render(); return ok; }
     /* Honest, localized reasons for why a manual run couldn't start. The server
@@ -33519,7 +33627,7 @@ window.addEventListener('DOMContentLoaded', () => {
         row.querySelectorAll('.mon-ic').forEach(b=>{ b.onclick=async(e)=>{ e.stopPropagation(); const act=b.getAttribute('data-act');
           if(act==='pause'){ await pause(id); }
           else if(act==='resume'){ await resume(id); }
-          else if(act==='map'){ const m=byId[id]||await _get(id); if(m){ let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts); _closeSheetIfMobile(); } }
+          else if(act==='map'){ const m=byId[id]||await _get(id); if(m){ let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts,m.id); _closeSheetIfMobile(); } }
           else if(act==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); b.disabled=false; b.textContent='▶';
             if(r.ok){ _toast(ML('Monitor ran: ','実行しました: ','Ausgeführt: ','Запущено: ','Ejecutado: ')+statusLabel(r.status)); render(); }
             else if(r.error==='login'){ _promptLogin(); }
@@ -33567,7 +33675,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const sensV=ov.querySelector('#mon-sens').value; const sensMap={low:{min_score:0.45,min_new:3},medium:{min_score:0.3,min_new:1},high:{min_score:0.18,min_new:1}};
         const res=await create({ name:ov.querySelector('#mon-name').value, area, sources, comparison:{mode:cmp,window_days:30}, intervalMin:intv, sensitivity:sensMap[sensV]||{} });
         if(res.ok){ ov.remove(); _toast(ML('Monitor created.','監視を作成しました。','Monitor erstellt.','Монитор создан.','Monitor creado.')); render();
-          try{ if(map){ showOnMap({geometry:res.monitor.geometry,bbox:res.monitor.bbox},[]); } }catch(_){} }
+          try{ if(map){ showOnMap({geometry:res.monitor.geometry,bbox:res.monitor.bbox},[],res.monitor.id); } }catch(_){} }
         else if(res.error==='login'){ _promptLogin(); }
         else { btn.disabled=false; btn.textContent=ML('Create monitor','監視を作成','Monitor erstellen','Создать','Crear monitor'); showErr(String(res.error||ML('Could not create the monitor.','監視を作成できませんでした。','Monitor konnte nicht erstellt werden.','Не удалось создать монитор.','No se pudo crear el monitor.'))); } };
     }
@@ -33599,7 +33707,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const ov=_overlay(inner,'mon-ov-detail');
       ov.querySelectorAll('.mon-detail-acts .mon-btn').forEach(b=>{ b.onclick=async()=>{ const d=b.getAttribute('data-d');
         if(d==='run'){ b.disabled=true; b.textContent='…'; const r=await runNow(id); if(r.ok){ _toast(ML('Ran: ','実行: ','Lauf: ','Запуск: ','Ejec.: ')+statusLabel(r.status)); ov.remove(); render(); setTimeout(()=>openDetail(id),400); } else if(r.error==='login'){ _promptLogin(); } else { b.disabled=false; _toast(r.message||_runReasonMsg(r.error)); } }
-        else if(d==='map'){ let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts); ov.remove(); _closeSheetIfMobile(); }
+        else if(d==='map'){ let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts,m.id); ov.remove(); _closeSheetIfMobile(); }
         else if(d==='pause'){ await pause(id); ov.remove(); }
         else if(d==='resume'){ await resume(id); ov.remove(); }
         else if(d==='del'){ if(confirm(ML('Delete this monitor and its history?','この監視と履歴を削除しますか？','Diesen Monitor löschen?','Удалить этот монитор?','¿Eliminar este monitor?'))){ await remove(id); ov.remove(); render(); } }
@@ -33637,9 +33745,9 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="mon-repfoot">'+S(ML('Generated','生成','Erstellt','Создано','Generado'))+': '+S(_fmtWhen(rep.created_at))+(rep.ai_model?' · '+S(rep.ai_model):'')+'</div>';
       const ov=_overlay(inner,'mon-ov-report');
       ov.querySelectorAll('.mon-evchip').forEach(ch=>{ ch.onclick=()=>{ const k=ch.getAttribute('data-ev'); const t=ov.querySelector('#mon-ev-'+CSS.escape(k)); if(t){ t.scrollIntoView({behavior:'smooth',block:'center'}); t.classList.add('mon-ev-hl'); setTimeout(()=>t.classList.remove('mon-ev-hl'),1500); } }; });
-      const rm=ov.querySelector('#mon-rep-map'); if(rm) rm.onclick=async()=>{ let area=null; try{ const m=await _get(rep.monitor_id); if(m) area={geometry:m.geometry,bbox:m.bbox}; }catch(_){} showOnMap(area,rep.change_points||[]); ov.remove(); _closeSheetIfMobile(); }; }
+      const rm=ov.querySelector('#mon-rep-map'); if(rm) rm.onclick=async()=>{ let area=null; try{ const m=await _get(rep.monitor_id); if(m) area={geometry:m.geometry,bbox:m.bbox}; }catch(_){} showOnMap(area,rep.change_points||[],rep.monitor_id); ov.remove(); _closeSheetIfMobile(); }; }
 
-    async function flyTo(id){ try{ const m=(typeof id==='object')?id:await _get(id); if(!m) return false; let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts); return true; }catch(_){ return false; } }
+    async function flyTo(id){ try{ const m=(typeof id==='object')?id:await _get(id); if(!m) return false; let pts=[]; try{ if(m.last_report_id){ const rep=await _report(m.last_report_id); if(rep&&rep.change_points) pts=rep.change_points; } }catch(_){} showOnMap({geometry:m.geometry,bbox:m.bbox},pts,m.id); return true; }catch(_){ return false; } }
 
     /* (#R149) ROOT-CAUSE of "監視を作成を押しても何も起こらない": imToast/aiToast are closure-scoped functions
        (the app is NOT an ES module, so top-level fns are NOT on window). This guarded on `window.imToast` /

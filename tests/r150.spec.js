@@ -94,7 +94,10 @@ test('#4 typography: a flat run-on wall is grouped into stanzas; structured text
   expect(r.mdHasGap).toBe(true);                    // rendered HTML has paragraph gaps
 });
 
-test('#3 Köppen legend can be dragged to the screen bottom (viewport-based ceiling)', async () => {
+test('#3 Köppen legend STOPS when all classes are shown (R151: clamp to content, no empty space)', async () => {
+  // (#R151) supersedes R150. The user asked that the legend "stop once every climate class is displayed" — it must
+  // NOT keep stretching into empty space past the last class. On a tall viewport the 30 zones fit, so the box stops at
+  // the content height (all shown, small gap below), rather than being dragged all the way to the screen bottom.
   await page.setViewportSize({ width: 1280, height: 900 });
   const r = await page.evaluate(() => {
     let lg = document.getElementById('koppen-legend');
@@ -104,15 +107,20 @@ test('#3 Köppen legend can be dragged to the screen bottom (viewport-based ceil
     const sc = lg.querySelector('.kl-scroll');
     for (let i = 0; i < 30; i++) { const d = document.createElement('div'); d.className = 'kl-item'; d.innerHTML = '<span class="kl-sw"></span>Zone ' + i; sc.appendChild(d); }
     window._fitKoppenLegend(lg);
-    lg.style.height = '4000px';   // simulate dragging the resize grip all the way down
+    lg.style.height = '4000px';   // try to drag the grip all the way down — it must NOT go past the content
+    // natural content height (every class), measured with the caps neutralised
+    const sh = lg.style.height, smh = lg.style.maxHeight;
+    lg.style.maxHeight = 'none'; lg.style.height = 'auto';
+    const natural = lg.getBoundingClientRect().height;
+    lg.style.height = sh; lg.style.maxHeight = smh;
     const rect = lg.getBoundingClientRect();
-    const bottomGap = window.innerHeight - rect.bottom;
+    const info = { boxH: Math.round(rect.height), natural: Math.round(natural), bottom: Math.round(rect.bottom), vh: window.innerHeight, innerHidden: sc.scrollHeight - sc.clientHeight };
     lg.remove();
-    return { bottomGap: Math.round(bottomGap) };
+    return info;
   });
-  // the box now stops ~12px above the screen bottom — it reaches the bottom instead of clamping short (~595px content)
-  expect(r.bottomGap).toBeGreaterThanOrEqual(0);
-  expect(r.bottomGap).toBeLessThanOrEqual(26);
+  expect(r.innerHidden).toBeLessThanOrEqual(2);                    // all 30 classes visible (nothing hidden by the inner scroll)
+  expect(r.bottom).toBeLessThanOrEqual(r.vh);                      // never past the screen bottom
+  expect(Math.abs(r.boxH - r.natural)).toBeLessThanOrEqual(12);    // box == content height → it stopped exactly at the last class
 });
 
 test('no uncaught page errors during R150 interactions', () => {
