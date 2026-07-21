@@ -5,6 +5,42 @@
 
 ---
 
+## R150 — UX/機能バッチ10件：モニター保存の真因(**client insertがuser_id欠落**)／ケッペン凡例を画面下端まで伸縮／Atlasタイポ(コード側で階層生成)／停止四角を微縮小／**GPT-5.6 Terra再検証→採用**／**Atlas地理対象の曖昧性ゲート統一**／**調査回答マッピングのコード側検証(業務委託)**／衛星3D飛行プリフェッチ／Companiesアイコン枠一致／SVオフにもトグル (tag `#R150`)
+
+ユーザー指摘**10件**を根本原因から修正。`index.html`＋Edge Function `ai-proxy`＋新規migration＋新規テスト2本。`npm test` 緑（static＋node **68**＝security/monitor/r147/r149/**新r150-checks 12**＋Playwright＝**新 r150.spec.js 7**、pageerror 0）。ローカル(Browserペイン 8781)で純関数・ケッペン下端伸縮・監査挙動を実測。Edge Fn(ai-proxy/refresh-news)本番deploy済み・prod migration適用済み。
+
+### ⑥ モニター「監視を作成」→ Could not save the monitor. の**真因**＝client insertが`user_id`を渡していない
+R147〜R149はトースト/ボタンdisabledを直したが、**保存そのものが失敗**していた。真因＝`area_monitors.user_id`は`not null`＋insert RLS `with check (user_id = auth.uid())`なのに、`IntMapMonitors.create()`の挿入行が**user_idを含めていなかった**（`feedback`/`bug_reports`/`donations`は全て`row.user_id=currentUser.id`を設定済み＝この機能だけ抜けていた）。この機能はservice_role経由(R141/R144)でしか検証されず、**ログインclientの挿入経路は一度も成功していなかった**。修正＝`create()`で`row.user_id=currentUser.id`を設定＋belt-and-suspendersで**migration `20260721140000` が`alter column user_id set default auth.uid()`**（prod適用済み）。両層でRLS WITH CHECKを満たす。
+
+### ③ ケッペン凡例「一番下まで伸ばせない」＝**content高クランプが伸縮を阻害**（4回目・激怒）
+R147〜R149は`_fitKoppenLegend`の`maxHeight`を**内容高**にクランプしていた→`resize:vertical`が内容高を超えられず、**背の高い画面や区分が少ない時にグリップを画面下端まで引けない**＝まさに「一番下まで伸ばせない」。修正＝ceilingを**ビューポート基準**に（`renderedMax=innerHeight - top - 12`、content-box分を減算）。グリップは画面下端の約12px上まで伸び、そこで停止（CSS max-height）。内側`.kl-scroll`が30区分を担保。実測：900px画面で height=4000px にしても bottom=888/900。
+
+### ⑦ Atlas地理対象解決の**曖昧性ゲート統一**（業務委託）
+**真因**＝候補確認が**成功描画と同時表示**されていた（multi-region L30325旧・single L30407旧で `gAmbig`/`ambig` を**塗った成功の隣に警告**として追記）→「候補確認・部分実行・成功報告・失敗警告」が同時表示。修正＝共有`_hlAmbigConfirm`で**単一の確認メッセージ**を作り、**両経路が描画前にゲート**（曖昧が1つでもあれば`R(false,…,{meta:{partial:true}})`で停止・何も塗らない・plannerのsayも抑止）。曖昧が無い時のみ描画（成功＋正直な未発見注記）。個別地名ハードコード無し＝`resolveHlTarget`の`ambiguous`判定に駆動され行政/歴史/自然/同名に汎用適用。
+
+### ⑩ 調査回答マッピングの**コード側検証**（業務委託）
+R149はプロンプト＋構造化`places`頼みで、モデルが省略すると0ピン・既存ピン1件で全処理スキップ・空catchで握り潰し。修正＝**PURE検証基盤**（`IntMapAtlasDebug`公開でhermeticテスト可）：`_atlExtractPlaces`(本文から実在固有名詞抽出=省略時の安全網)／`_atlAuditSources`(ドメイン正規化`_atlRegDomain`＋単一集中検出＋官公庁/一次`_atlIsOfficial`)／`_atlMappingVerdict`(mapped/unplaced/ambiguous)／`_atlGeocodeStrict`(同名≥2でambiguous・place型＋名称一致のみ・**座標推測しない**)。orchestrator `_pinReplyPlaces`は**既存ピンとMERGE**(clearしない)・スキップ廃止・**空catch廃止**(console.warn＋正直な注記)。出典は集中時に正直な警告。テスト＝業務委託の全ケース(省略/部分/同名/単一ドメイン/text↔pins不一致)をruntime検証。
+
+### ⑨ Atlas使用モデル GPT-5.6 **Terra**（再検証で採用）
+R148はTerra 403 no-accessでLunaへ戻していた。**2026-07-21再検証**＝`refresh-news`プロキシ(同キー・同AI_MODEL・モデルfallback無)で `AI_MODEL=gpt-5.6-terra` → ai 61/63(en)・104/116(jp) **成功**＝Terra到達可に。`AI_MODEL` secret=terra・ai-proxy `OPENAI_DEFAULT_MODEL=terra`＋`FALLBACK_MODEL=luna`(耐障害)。ai-proxy/refresh-news本番deploy済み。
+
+### ④ Atlas返信タイポ＝**コード側で階層生成**（再報告）
+R147〜R149はmdMini見出しem拡大＋プロンプト強化だが**モデルが`##`/空行を出さないと無反応**。修正＝`_atlStanza`(改行の無い長い塊を~2文ずつのstanzaへ・EN/CJK・内容保存)＋mdMiniで**文末＋単一改行→ソフト段落余白**。構造化済み(見出し/箇条書き/空行)は不介入。
+
+### ⑧ 衛星2D/3D画質・速度（特に3D飛行）
+**飛行中の追いつかない真因**＝`predictivePrefetch`が`moveend`のみ発火だが飛行中はカメラ連続移動で`moveend`が出ず**先読み皆無**。修正＝`window._imPredictivePrefetch`公開＋飛行ループで~2.6回/秒スロットル呼出(進行方向の衛星タイルを先読み)。加えて`sat-labels`参照ソースをEsri2ホストでラウンドロビン。既存の広範な最適化(2/5ホスト分散・native-max DEM z15・fade0・8192タイルキャッシュ)は温存。
+
+### ⑤①② 停止四角/Companies/トグル
+⑤停止四角 rect 17.5→**15.5**(24 viewBox・ほんの少し小)。①Companies=Countries は既に同型(`stat-row`/`stats-toolbar`/sort/filter/compare)＝実測確認、唯一の差`.co-logo-box`を32→**30px**で国旗枠と画素一致。②SV**オフ**返信にも`_featTogHtml('streetview')`(既存トグル網羅の穴埋め)。
+
+### 罠・教訓
+- **「保存できない」は保存経路の実挙動を疑え**＝ボタン/トーストでなく**RLS+NOT NULL違反**(user_id欠落)。service_role検証だけでは**clientパスの成功を保証しない**。
+- **「伸ばせない」＝maxHeightを内容にクランプすると伸縮不能**。ビューポート基準にすれば画面下端まで伸びる。
+- **曖昧性は"ブロッキングゲート"**＝描画前に判定し確認だけ返す。成功と混在させない。
+- **プロンプト頼みでなくコードで検証**＝PURE関数化→`IntMapAtlasDebug`公開→hermeticテスト(業務委託の要件)。
+- **Terra到達性は`refresh-news`(fallback無)で判定**＝ai count 0=失敗/>0=成功。ai-proxyのfallbackがある間はsecret一時変更も安全。
+- **PORT=4188 npx playwright**(4173/8781常駐と競合回避)。
+
 ## R149 — UX/機能バッチ10件：モニター作成の真因(**window.imToastがundefined→トースト全滅**)／ケッペン凡例の余白削減で30区分が収まる／Atlasタイポ強化／送信↑=黒・停止四角拡大・選択欄送信=白+SVG／**画像ペースト(ビジョン)**／**調査回答の地点マッピング(業務委託)** (tag `#R149`)
 
 ユーザー指摘**10件**を根本原因から修正。全て `index.html`（＋新規テスト2本）の**加算的/微修正**（単一HTML・ビルド無し温存）。`npm test` 緑（static＋node **56**＝security/monitor/r147/**新r149-checks 9**＋Playwright **67**＝新 `r149.spec.js` 4、pageerror 0）。Edge Function変更なし＝deploy不要。ローカル(Browserペイン 127.0.0.1:4173)で送信ボタン色・画像ドロップ→サムネ・ケッペン30区分実測・タイポ階層を実測確認。
