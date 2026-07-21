@@ -11,7 +11,7 @@
        are unavoidable for an inline no-build app. connect-src/img-src/style-src are intentionally left
        unrestricted so the 60+ data/tile/API hosts keep working. Header-only controls GitHub Pages cannot set
        (frame-ancestors, X-Frame-Options, HSTS, Permissions-Policy) are documented in docs/SECURITY-ARCHITECTURE.md. -->
-  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; frame-src 'self' https: blob:; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://browser.sentry-cdn.com https://www.clarity.ms https://*.clarity.ms">
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; frame-src 'self' https: blob:; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://cdn.jsdelivr.net https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://browser.sentry-cdn.com https://www.clarity.ms https://*.clarity.ms">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-57X5MX0ZPW"></script>
 <script>
@@ -409,6 +409,11 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .co-drow span{ color:var(--text-muted); } .co-drow b{ font-variant-numeric:tabular-nums; text-align:right; }
     .co-detail-link{ display:inline-block; margin-top:12px; font-size:13px; color:var(--primary-color); text-decoration:none; font-weight:600; }
     .co-detail-link:hover{ text-decoration:underline; }
+    /* (#R146) Compare entry point in the company detail (parity with the country detail's Compare button) */
+    .co-detail-btns{ display:flex; gap:8px; margin:0 0 14px; }
+    .co-detail-btn{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 12px; border-radius:11px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:600; cursor:pointer; }
+    .co-detail-btn:hover{ border-color:var(--primary-color); color:var(--primary-color); }
+    .co-detail-btn.on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; }
     .stat-name{ font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-sub{ font-size:10px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .stat-val{ text-align:right; font-size:14px; font-weight:400; white-space:nowrap; }   /* (#R116) metric value NOT bold (requested) */
     .map-container.tool-active .maplibregl-canvas{ cursor:crosshair; }
     #map{ position:absolute; inset:0; width:100%; height:100%; background:var(--bg-color); }
@@ -6347,7 +6352,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <details class="tp-more"><summary>${currentLang==='jp'?'スタイル・プリセット':currentLang==='de'?'Stil und Vorlagen':currentLang==='ru'?'Стиль и пресеты':currentLang==='es'?'Estilo y ajustes':'Style &amp; presets'}</summary>
         <div class="tp-sub" style="margin-top:4px;">${t('presetLbl')}</div><select class="tp-select" id="radius-preset">${opts}</select>
         <div class="radius-color-row"><span>${t('color')}</span><div class="rad-presets">${RADIUS_COLOR_PRESETS.map(c=>`<button type="button" class="rad-preset${radiusColor.toLowerCase()===c.col?' on':''}" data-col="${c.col}" title="${c.lbl}" style="background:${c.col}"></button>`).join('')}</div><input type="color" id="radius-color" value="${radiusColor}" title="${currentLang==='jp'?'カスタム色':currentLang==='de'?'Eigene Farbe':currentLang==='ru'?'Свой цвет':currentLang==='es'?'Color personalizado':'Custom color'}"><span class="tp-sub" style="margin:0;">${t('opacity')}</span><input type="range" id="radius-op" min="0" max="0.6" step="0.02" value="${radiusOpacity}" style="flex:1; accent-color:var(--primary-color);"></div></details>
-        <div class="tp-hint">${t('radiusHint')}</div><div class="tp-row" id="tp-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="tp-pop-val">—</b></div>${list}${radiusItems.length?`<button class="ai-action-btn" id="tp-pop-btn">${t('popInArea')}</button><button class="ai-action-btn" id="news-area-btn">📍 ${t('newsInArea')}</button><button class="ai-action-btn" id="ai-summarize-btn">📰 ${t('aiSumBtn')}</button>`:''}`;   /* (#R40/#R142) circles persist on the map; preset + colour/opacity folded into the "Style" disclosure to declutter */
+        ${radiusItems.length?'':`<div class="tp-hint">${t('radiusHint')}</div>`}${list}${radiusItems.length?`<div class="rad-actions"><button class="rad-act" id="tp-pop-btn"><span class="ra-l">${t('popInArea')}</span></button><button class="rad-act" id="news-area-btn"><span class="ra-l">📍 ${t('newsInArea')}</span></button><button class="rad-act" id="ai-summarize-btn"><span class="ra-l">📰 ${t('aiSumBtn')}</span></button></div>`:''}<div class="tp-row" id="tp-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="tp-pop-val">—</b></div>`;   /* (#R40/#R142/#R146) circles persist; style/colour/opacity in the "Style" disclosure; 3 area actions in a compact grid (not stacked); usage hint hidden once a circle exists */
     }
     const footBtns = (toolMode!=='radius')
       ? `<div class="tp-foot-btns">${measurePoints.length?`<button class="tp-clear" id="tp-undo">↶ ${t('undoPt')}</button>`:''}<button class="tp-clear" id="tp-clear">${t('clear')}</button></div>`
@@ -6370,6 +6375,7 @@ window.addEventListener('DOMContentLoaded', () => {
     { const fb=p.querySelector('#tp-finalize'); if(fb) fb.onclick=()=>{ try{ window._finalizeMeasurement(); }catch(_){} }; const pb=p.querySelector('#tp-profile'); if(pb) pb.onclick=()=>{ try{ window._elevationProfile(); }catch(_){} }; }
     /* (#R118) population inside the drawn polygon / placed circle(s) — WorldPop 100m grid (see IntMapPopArea) */
     { const pb2=p.querySelector('#tp-pop-btn');
+      const pbL=(txt)=>{ if(!pb2) return; const l=pb2.querySelector('.ra-l'); if(l) l.textContent=txt; else pb2.textContent=txt; };   /* (#R146) label lives in a .ra-l span (grid ellipsis) — update the span, not the button */
       const showRes=(popv,yr,src,multi)=>{ const row=p.querySelector('#tp-pop-row'), val=p.querySelector('#tp-pop-val');
         if(row&&val){ row.style.display=''; val.innerHTML=Number(popv).toLocaleString()+' <span style="font-size:10px;color:var(--text-muted);">('+src+' '+yr+(multi?' · Σ':'')+')</span>'; } };
       /* (#R122/#R139) PROGRESS BAR — the WorldPop summation runs as a server-side task (~10-30 s). WorldPop gives NO
@@ -6386,7 +6392,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(pb2) pb2.onclick=async()=>{ const box=_mkProg(); const P=window._imProgCtl(box); P.busy();
         const onProg=(f)=>P.set(f);   /* fires only when the area is large enough to be TILED → real tiles-done fraction */
         try{
-          pb2.disabled=true; pb2.textContent=t('popCalcing');
+          pb2.disabled=true; pbL(t('popCalcing'));
           if(toolMode==='area'&&measurePoints.length>=3){
             const geom={type:'Polygon',coordinates:[[...measurePoints,measurePoints[0]]]};
             const r=await window.IntMapPopArea.estimate(geom, onProg); P.done(); setTimeout(()=>{ box.style.display='none'; },450);
@@ -6398,8 +6404,8 @@ window.addEventListener('DOMContentLoaded', () => {
               if(N>1) P.set((i+1)/N); }
             P.done(); setTimeout(()=>{ box.style.display='none'; },450);
             showRes(tot,yr,src,N>1); pb2.style.display='none'; return; }
-          box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popInArea');
-        }catch(e){ box.style.display='none'; pb2.disabled=false; pb2.textContent=t('popFail'); setTimeout(()=>{ try{ pb2.textContent=t('popInArea'); }catch(_){} },2600); } }; }
+          box.style.display='none'; pb2.disabled=false; pbL(t('popInArea'));
+        }catch(e){ box.style.display='none'; pb2.disabled=false; pbL(t('popFail')); setTimeout(()=>{ try{ pbL(t('popInArea')); }catch(_){} },2600); } }; }
     const cl=p.querySelector('#tp-clear'); if(cl) cl.onclick=()=>{ measurePoints=[]; if(toolMode==='area'){ toolMode='measure'; try{ _syncToolBtns(); }catch(_){} } hideMeasureTip(); refreshTool(); updateToolPanel(); };
     const un=p.querySelector('#tp-undo'); if(un) un.onclick=()=>window._measureUndo();
     if(toolMode==='radius'){
@@ -10302,7 +10308,7 @@ window.addEventListener('DOMContentLoaded', () => {
     materials:['Materials','素材','Werkstoffe','Материалы','Materiales'],
     staples:['Consumer Staples','生活必需品','Basiskonsumgüter','Товары первой необходимости','Bienes básicos']
   };
-  const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'], IND:['India','インド','🇮🇳'], BRA:['Brazil','ブラジル','🇧🇷'], ESP:['Spain','スペイン','🇪🇸'], ITA:['Italy','イタリア','🇮🇹'], SGP:['Singapore','シンガポール','🇸🇬'], ARG:['Argentina','アルゼンチン','🇦🇷'], MEX:['Mexico','メキシコ','🇲🇽'] };
+  const CO_CC={ USA:['United States','アメリカ','🇺🇸'], CHN:['China','中国','🇨🇳'], TWN:['Taiwan','台湾','🇹🇼'], KOR:['South Korea','韓国','🇰🇷'], JPN:['Japan','日本','🇯🇵'], DEU:['Germany','ドイツ','🇩🇪'], FRA:['France','フランス','🇫🇷'], GBR:['United Kingdom','イギリス','🇬🇧'], CHE:['Switzerland','スイス','🇨🇭'], NLD:['Netherlands','オランダ','🇳🇱'], DNK:['Denmark','デンマーク','🇩🇰'], SWE:['Sweden','スウェーデン','🇸🇪'], CAN:['Canada','カナダ','🇨🇦'], AUS:['Australia','オーストラリア','🇦🇺'], SAU:['Saudi Arabia','サウジアラビア','🇸🇦'], IRL:['Ireland','アイルランド','🇮🇪'], IND:['India','インド','🇮🇳'], BRA:['Brazil','ブラジル','🇧🇷'], ESP:['Spain','スペイン','🇪🇸'], ITA:['Italy','イタリア','🇮🇹'], SGP:['Singapore','シンガポール','🇸🇬'], ARG:['Argentina','アルゼンチン','🇦🇷'], MEX:['Mexico','メキシコ','🇲🇽'], BEL:['Belgium','ベルギー','🇧🇪'] };
   window.IntMapCompanies=(function(){
     /* rows: [ ticker, name, nameJP(''=use EN), countryISO3, sectorKey, domain, founded, employees, revenueB, netIncomeB,
        sharesOutB (0 = non-US → use snapshot, no live calc), marketCapSnapshotB ]. Money & shares in BILLIONS. */
@@ -10330,28 +10336,28 @@ window.addEventListener('DOMContentLoaded', () => {
       ['PG','Procter & Gamble','P&G','USA','staples','pg.com',1837,108000,84,15,2.35,390],
       ['NFLX','Netflix','ネットフリックス','USA','media','netflix.com',1997,13000,39,8,0.43,380],
       ['JNJ','Johnson & Johnson','J&J','USA','pharma','jnj.com',1886,138000,85,14,2.41,370],
-      ['NVO','Novo Nordisk','ノボ・ノルディスク','DNK','pharma','novonordisk.com',1923,64000,42,14,0,350],
+      ['NVO','Novo Nordisk','ノボ・ノルディスク','DNK','pharma','novonordisk.com',1923,64000,42,14,4.4346,220],
       ['MC.PA','LVMH','LVMH','FRA','consumer','lvmh.com',1987,213000,90,14,0,330],
       ['ABBV','AbbVie','アッヴィ','USA','pharma','abbvie.com',2013,50000,54,5,1.77,330],
       ['BAC','Bank of America','バンク・オブ・アメリカ','USA','bank','bankofamerica.com',1998,213000,100,27,7.6,320],
       ['ASML','ASML','ASML','NLD','semi','asml.com',1984,42000,30,8,0,320],
       ['CRM','Salesforce','セールスフォース','USA','software','salesforce.com',1999,72000,38,6,0.96,300],
       ['KO','Coca-Cola','コカ・コーラ','USA','staples','coca-cola.com',1892,79100,46,10,4.31,280],
-      ['SAP','SAP','SAP','DEU','software','sap.com',1972,108000,34,6,0,280],
+      ['SAP','SAP','SAP','DEU','software','sap.com',1972,108000,34,6,1.7682,280],
       ['CVX','Chevron','シェブロン','USA','energy','chevron.com',1879,45600,197,21,1.8,270],
-      ['TM','Toyota Motor','トヨタ自動車','JPN','auto','toyota.com',1937,380000,300,32,0,270],
+      ['TM','Toyota Motor','トヨタ自動車','JPN','auto','toyota.com',1937,380000,300,32,1.5124,270],
       ['MRK','Merck','メルク','USA','pharma','merck.com',1891,71000,64,17,2.53,250],
-      ['NSRGY','Nestlé','ネスレ','CHE','staples','nestle.com',1866,275000,100,12,0,250],
+      ['NSRGY','Nestlé','ネスレ','CHE','staples','nestle.com',1866,275000,100,12,2.3735,250],
       ['TMUS','T-Mobile US','Tモバイル','USA','telecom','t-mobile.com',1994,71000,81,11,1.16,250],
       ['WFC','Wells Fargo','ウェルズ・ファーゴ','USA','bank','wellsfargo.com',1852,220000,82,19,3.35,240],
       ['AMD','AMD','AMD','USA','semi','amd.com',1969,26000,23,2,1.62,240],
       ['ROG.SW','Roche','ロシュ','CHE','pharma','roche.com',1896,103000,65,12,0,240],
       ['PEP','PepsiCo','ペプシコ','USA','staples','pepsico.com',1898,318000,92,9,1.37,230],
-      ['AZN','AstraZeneca','アストラゼネカ','GBR','pharma','astrazeneca.com',1999,89900,46,7,0,230],
+      ['AZN','AstraZeneca','アストラゼネカ','GBR','pharma','astrazeneca.com',1999,89900,46,7,1.398,230],
       ['OR.PA','L\'Oréal','ロレアル','FRA','consumer','loreal.com',1909,90000,45,7,0,230],
       ['ADBE','Adobe','アドビ','USA','software','adobe.com',1982,30000,21,5,0.44,220],
-      ['NVS','Novartis','ノバルティス','CHE','pharma','novartis.com',1996,76000,48,12,0,220],
-      ['SHEL','Shell','シェル','GBR','energy','shell.com',1907,96000,290,20,0,220],
+      ['NVS','Novartis','ノバルティス','CHE','pharma','novartis.com',1996,76000,48,12,1.471,220],
+      ['SHEL','Shell','シェル','GBR','energy','shell.com',1907,96000,290,20,2.5522,220],
       ['LIN','Linde','リンデ','USA','materials','linde.com',1879,66000,33,6,0.48,210],
       ['MCD','McDonald\'s','マクドナルド','USA','consumer','mcdonalds.com',1955,150000,26,8,0.716,210],
       ['CSCO','Cisco','シスコ','USA','tech','cisco.com',1984,84900,54,10,3.97,200],
@@ -10376,11 +10382,11 @@ window.addEventListener('DOMContentLoaded', () => {
       ['ISRG','Intuitive Surgical','インテュイティブ','USA','health','intuitive.com',1995,14000,8,2,0.356,180],
       ['VZ','Verizon','ベライゾン','USA','telecom','verizon.com',1983,105000,134,11,4.21,170],
       ['INTU','Intuit','インテュイット','USA','software','intuit.com',1983,18800,16,3,0.28,175],
-      ['RY','Royal Bank of Canada','カナダ・ロイヤル銀行','CAN','bank','rbc.com',1864,94000,48,12,0,170],
+      ['RY','Royal Bank of Canada','カナダ・ロイヤル銀行','CAN','bank','rbc.com',1864,94000,48,12,0.8081,170],
       ['T','AT&T','AT&T','USA','telecom','att.com',1983,141000,122,14,7.17,160],
       ['RTX','RTX','RTX','USA','aerospace','rtx.com',1922,185000,69,5,1.33,160],
       ['BKNG','Booking Holdings','ブッキング','USA','internet','booking.com',1996,21600,22,6,0.033,160],
-      ['HSBC','HSBC','HSBC','GBR','bank','hsbc.com',1865,220000,66,22,0,160],
+      ['HSBC','HSBC','HSBC','GBR','bank','hsbc.com',1865,220000,66,22,1.616,160],
       ['PFE','Pfizer','ファイザー','USA','pharma','pfizer.com',1849,88000,58,8,5.67,160],
       ['SIE.DE','Siemens','シーメンス','DEU','industrial','siemens.com',1847,320000,82,9,0,160],
       ['NEE','NextEra Energy','ネクステラ','USA','energy','nexteraenergy.com',1925,15100,25,7,2.06,150],
@@ -10388,12 +10394,12 @@ window.addEventListener('DOMContentLoaded', () => {
       ['AMGN','Amgen','アムジェン','USA','pharma','amgen.com',1980,26000,33,7,0.537,150],
       ['BLK','BlackRock','ブラックロック','USA','finance','blackrock.com',1988,19800,20,6,0.149,150],
       ['UBER','Uber','ウーバー','USA','tech','uber.com',2009,31100,40,2,2.09,150],
-      ['TTE','TotalEnergies','トタルエナジーズ','FRA','energy','totalenergies.com',1924,102000,210,18,0,150],
+      ['TTE','TotalEnergies','トタルエナジーズ','FRA','energy','totalenergies.com',1924,102000,210,18,1.8564,150],
       ['HON','Honeywell','ハネウェル','USA','industrial','honeywell.com',1906,97000,37,6,0.65,140],
       ['UNP','Union Pacific','ユニオン・パシフィック','USA','industrial','up.com',1862,32800,24,6,0.606,145],
       ['LOW','Lowe\'s','ロウズ','USA','retail','lowes.com',1946,285000,83,7,0.57,140],
       ['SYK','Stryker','ストライカー','USA','health','stryker.com',1941,52000,22,3,0.382,140],
-      ['BHP','BHP Group','BHP','AUS','materials','bhp.com',1885,80000,55,13,0,140],
+      ['BHP','BHP Group','BHP','AUS','materials','bhp.com',1885,80000,55,13,1.7393,140],
       ['SPOT','Spotify','スポティファイ','SWE','media','spotify.com',2006,7000,16,0.6,0.203,120],
       ['SHOP','Shopify','ショッピファイ','CAN','ecommerce','shopify.com',2006,8300,8,1,1.29,130],
       ['BX','Blackstone','ブラックストーン','USA','finance','blackstone.com',1985,4700,11,2,0.72,140],
@@ -10404,8 +10410,8 @@ window.addEventListener('DOMContentLoaded', () => {
       ['SCHW','Charles Schwab','チャールズ・シュワブ','USA','finance','schwab.com',1971,32000,19,5,1.82,130],
       ['ANET','Arista Networks','アリスタ','USA','tech','arista.com',2004,4400,6,2,1.26,120],
       ['BSX','Boston Scientific','ボストン・サイエンティフィック','USA','health','bostonscientific.com',1979,48000,15,2,1.47,130],
-      ['UL','Unilever','ユニリーバ','GBR','staples','unilever.com',1929,128000,64,7,0,150],
-      ['SONY','Sony','ソニー','JPN','tech','sony.com',1946,113000,88,8,0,120],
+      ['UL','Unilever','ユニリーバ','GBR','staples','unilever.com',1929,128000,64,7,2.4194,150],
+      ['SONY','Sony','ソニー','JPN','tech','sony.com',1946,113000,88,8,5.6738,120],
       ['ADP','ADP','ADP','USA','tech','adp.com',1949,63000,19,4,0.407,120],
       ['MU','Micron','マイクロン','USA','semi','micron.com',1978,48000,25,1,1.11,120],
       ['PANW','Palo Alto Networks','パロアルト','USA','software','paloaltonetworks.com',2005,15000,8,2,0.324,120],
@@ -10414,8 +10420,8 @@ window.addEventListener('DOMContentLoaded', () => {
       ['MDT','Medtronic','メドトロニック','USA','health','medtronic.com',1949,95000,32,4,1.28,110],
       ['LMT','Lockheed Martin','ロッキード・マーティン','USA','aerospace','lockheedmartin.com',1995,122000,71,5,0.235,110],
       ['SBUX','Starbucks','スターバックス','USA','consumer','starbucks.com',1971,381000,36,4,1.13,110],
-      ['TD','Toronto-Dominion Bank','TD銀行','CAN','bank','td.com',1855,95000,43,8,0,110],
-      ['SNY','Sanofi','サノフィ','FRA','pharma','sanofi.com',1973,91000,45,6,0,130],
+      ['TD','Toronto-Dominion Bank','TD銀行','CAN','bank','td.com',1855,95000,43,8,0.9129,110],
+      ['SNY','Sanofi','サノフィ','FRA','pharma','sanofi.com',1973,91000,45,6,2.9559,130],
       ['BA','Boeing','ボーイング','USA','aerospace','boeing.com',1916,171000,78,-8,0.75,130],
       ['LRCX','Lam Research','ラムリサーチ','USA','semi','lamresearch.com',1980,17200,15,4,1.28,100],
       ['REGN','Regeneron','リジェネロン','USA','pharma','regeneron.com',1988,12000,13,4,0.108,100],
@@ -10486,7 +10492,24 @@ window.addEventListener('DOMContentLoaded', () => {
       ['7974.T','Nintendo','任天堂','JPN','media','nintendo.com',1889,7700,12,3,0,75],
       ['000660.KS','SK Hynix','SKハイニックス','KOR','semi','skhynix.com',1983,32000,40,8,0,90],
       ['AIR.PA','Airbus','エアバス','FRA','aerospace','airbus.com',1970,148000,75,4,0,140],
-      ['CBA.AX','Commonwealth Bank','コモンウェルス銀行','AUS','bank','commbank.com.au',1911,49000,27,10,0,150]
+      ['CBA.AX','Commonwealth Bank','コモンウェルス銀行','AUS','bank','commbank.com.au',1911,49000,27,10,0,150],
+      ['BABA','Alibaba','アリババ','CHN','ecommerce','alibaba.com',1999,204000,130,15,2.38,286],
+      ['BUD','AB InBev','アンハイザー・ブッシュ','BEL','staples','ab-inbev.com',2008,144000,59,6,2.0,162],
+      ['AMAT','Applied Materials','アプライドマテリアルズ','USA','semi','appliedmaterials.com',1967,35700,27,7,0.81,426],
+      ['NXPI','NXP Semiconductors','NXPセミコンダクターズ','NLD','semi','nxp.com',2006,34500,13,2.5,0.253,68],
+      ['MCHP','Microchip Technology','マイクロチップ','USA','semi','microchip.com',1989,22300,7,1,0.537,43],
+      ['ETN','Eaton','イートン','IRL','industrial','eaton.com',1911,92000,25,4,0.393,158],
+      ['ELV','Elevance Health','エレバンス・ヘルス','USA','health','elevancehealth.com',2004,104000,175,6,0.226,86],
+      ['CI','Cigna','シグナ','USA','health','cigna.com',1982,72000,247,5,0.271,77],
+      ['ZTS','Zoetis','ゾエティス','USA','pharma','zoetis.com',1952,14100,9,2.5,0.448,34],
+      ['USB','U.S. Bancorp','USバンコープ','USA','bank','usbank.com',1968,70000,28,6,1.56,98],
+      ['PNC','PNC Financial','PNCフィナンシャル','USA','bank','pnc.com',1845,55000,22,6,0.396,99],
+      ['1398.HK','ICBC','中国工商銀行','CHN','bank','icbc.com.cn',1984,420000,180,50,0,290],
+      ['0857.HK','PetroChina','中国石油','CHN','energy','petrochina.com.cn',1999,390000,430,25,0,210],
+      ['0941.HK','China Mobile','中国移動','CHN','telecom','chinamobile.com',1997,450000,140,20,0,180],
+      ['600519.SS','Kweichow Moutai','貴州茅台','CHN','staples','moutaichina.com',1999,42000,24,12,0,280],
+      ['1211.HK','BYD','BYD','CHN','auto','byd.com',1995,900000,107,5,0,110],
+      ['RMS.PA','Hermès','エルメス','FRA','consumer','hermes.com',1837,22000,15,4,0,250]
     ];
     const DATA=RAW.map(r=>({tk:r[0],n:r[1],nJp:r[2]||'',cc:r[3],sec:r[4],dom:r[5],fnd:r[6],emp:r[7],rev:r[8],ni:r[9],sh:r[10]||0,mcapSnap:r[11],price:0}));
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
@@ -10815,12 +10838,18 @@ window.addEventListener('DOMContentLoaded', () => {
     ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="Close">✕</button>`+
       `<div class="co-detail-head"><span class="co-logo-box co-logo-lg"><img class="co-logo" alt="" data-dom="${IntMapSafe.html(c.dom)}" data-name="${IntMapSafe.html(nm)}" data-hue="${hue}" data-step="0" src="https://logo.clearbit.com/${encodeURIComponent(c.dom)}"></span>`+
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
+      `<div class="co-detail-btns"><button class="co-detail-btn${coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${coCompareSet.has(c.tk)?_coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):_coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${coCompareSet.size?` (${coCompareSet.size}/8)`:''}</button></div>`+
       `<div class="co-detail-rows">${rows.map(r=>`<div class="co-drow"><span>${IntMapSafe.html(r[0])}</span><b>${IntMapSafe.html(String(r[1]))}</b></div>`).join('')}</div>`+
       `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
     document.body.appendChild(ov);
     const close=()=>{ try{ ov.remove(); }catch(_){} };
     ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
     const xb=ov.querySelector('.co-detail-x'); if(xb) xb.onclick=close;
+    /* (#R146) Compare from the detail (Countries parity): add this company; open the compare view once ≥2 are selected */
+    const cmpB=ov.querySelector('[data-cmp]'); if(cmpB) cmpB.onclick=()=>{ const wasIn=coCompareSet.has(c.tk);
+      try{ window._coToggleCompare(c.tk); }catch(_){} try{ renderCoCompareFixed(); }catch(_){}
+      if(!wasIn && coCompareSet.size>=2){ close(); try{ window._coShowCompare(); }catch(_){} }
+      else { close(); } };
     const img=ov.querySelector('.co-logo'); if(img) img.onerror=function(){ const s=+this.dataset.step||0; const dom=this.dataset.dom||''; if(s===0){ this.dataset.step='1'; this.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(dom)+'&sz=64'; } else { this.onerror=null; const mono=document.createElement('span'); mono.className='co-mono'; mono.textContent=(this.dataset.name||'?').trim().slice(0,1).toUpperCase(); try{ mono.style.background='hsl('+(this.dataset.hue||0)+',55%,45%)'; }catch(_){} this.replaceWith(mono); } };
   }
   window.showCompanyDetail=showCompanyDetail;
@@ -12555,8 +12584,10 @@ window.addEventListener('DOMContentLoaded', () => {
          are never clipped (the old overflow-hidden + max-height combo clipped them). */
       /* (#R13c) Width is LOCKED (min=max=216) so the native resize grabber can only change HEIGHT — the
          user reported the legend "stretching left-right"; vertical-only resize is the requested behavior. */
-      /* (#R145) COMPACT legends ("全レイヤーの凡例がでかすぎる。コンパクトに"): tighter padding/width/font + the Köppen list no longer spans the whole viewport (height:auto capped at 56dvh, then scrolls) */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:min(56dvh, calc(100dvh - 92px)); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }
+      /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
+         couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
+         ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:8px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 92px); overflow:hidden; resize:vertical; width:186px; min-width:186px; max-width:186px; font-size:10.5px; }
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; }
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
@@ -17372,7 +17403,7 @@ window.addEventListener('DOMContentLoaded', () => {
     {n:'Smithsonian GVP',u:'https://volcano.si.edu/',use:{en:'Holocene volcanoes',jp:'火山（完新世）'}},
     {n:'DeepStateMap',u:'https://deepstatemap.live/',use:{en:'Ukraine frontline (beta layer)',jp:'ウクライナ前線（ベータ）'}},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps',use:{en:'Historical borders — the beta overlay layer, and the automatic fallback for the map’s own past-year borders (nearest snapshot)',jp:'過去の国境 — ベータのオーバーレイと、タイムマシン用年次国境が読めない場合の自動フォールバック（最寄りのスナップショット）'}},
-    {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/',use:{en:'Yearly international borders 1886–2019 for the time machine (each border change dated to the year; self-hosted simplified copy)',jp:'タイムマシンの年次国境（1886–2019年、国境変更を年単位で反映。簡略化した複製を自己ホスト）'}},
+    {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/',use:{en:'Yearly international borders 1886–2019 for the time machine (each border change dated to the year; self-hosted simplified copy). The 1945–2019 East/West/unified Germany borders were rebuilt from the authoritative modern Bundesländer (deutschlandGeoJSON, © GeoBasis-DE / BKG) so the inner-German border matches reality.',jp:'タイムマシンの年次国境（1886–2019年、国境変更を年単位で反映。簡略化した複製を自己ホスト）。1945–2019年の東西/統一ドイツ国境は、現代の権威ある州境（deutschlandGeoJSON、© GeoBasis-DE / BKG）から作り直し、内独国境が実際と一致するようにした。'}},
     {n:'Maddison Project Database 2020 (Bolt & van Zanden)',u:'https://www.rug.nl/ggdc/historicaldevelopment/maddison/',use:{en:'Authoritative HISTORICAL real GDP (constant 2011 international $) & population back to 1900 for the Time-machine — the Countries tab, choropleths & country comparison when travelling before the World Bank’s 1960 floor and for dissolved states (Former USSR/Yugoslavia/Czechoslovakia are first-class Maddison entities)',jp:'歴史的な実質GDP（2011年国際ドル）・人口（1900年以降）の権威あるデータ。タイムマシンで世界銀行の下限（1960年）より前へ移動した場合や旧国家（ソ連・ユーゴ・チェコスロバキア等はマディソンの独立項目）の国タブ・コロプレス・国比較に使用'}},
     {n:'World Bank Open Data',u:'https://data.worldbank.org/',use:{en:'Per-country time-series indicators (time-series charts, the 5-country comparison, and the Time-machine — the whole Countries tab, the hover read-outs and the country choropleths show the real figures for the year the master clock is set to)',jp:'国別の時系列指標（時系列グラフ・最大5か国比較、そしてタイムマシン——マスター時計で選んだ年の実データを国タブ・ホバー・コロプレスに反映）'}},
     {n:'IMF World Economic Outlook',u:'https://www.imf.org/en/Publications/WEO',use:{en:'Govt-debt layer gap-fill + the alternative economic source in the country comparison (DataMapper API)',jp:'政府債務レイヤーの欠損補完＋国比較の経済指標の切替ソース（DataMapper API）'}},
@@ -20083,7 +20114,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const j=await r.json(); const uv=j.current&&j.current.uv_index, mx=j.daily&&j.daily.uv_index_max&&j.daily.uv_index_max[0];
         const lvl=(v)=>v==null?'':v<3?(jp()?'低い':'Low'):v<6?(jp()?'中程度':'Moderate'):v<8?(jp()?'高い':'High'):v<11?(jp()?'非常に高い':'Very high'):(jp()?'極端':'Extreme');
         const col=(v)=>v==null?'var(--text-main)':v<3?'#34c759':v<6?'#ffcc00':v<8?'#ff9500':v<11?'#ff3b30':'#af52de';
-        setV(e.u,'<span style="color:'+col(uv)+';">'+(uv!=null?(+uv).toFixed(1):'—')+'</span> <span style="font-size:13px;">UV</span>', lvl(uv)+(mx!=null?' · '+(jp()?'本日最大 ':'max ')+(+mx).toFixed(1):'')+' · '+c.lbl);
+        setV(e.u,'<span style="color:'+col(uv)+';">'+(uv!=null?(+uv).toFixed(1):'—')+'</span> <span style="font-size:13px;">UV</span>', lvl(uv)+(mx!=null?' · '+(jp()?'本日最大 ':'max ')+(+mx).toFixed(1):'')+((j.current&&j.current.time)?' · '+asOf(j.current.time):'')+' · '+c.lbl);   /* (#R146) state the reading date/time the value is for ("数値の日時を明記") — location-local j.current.time via the shared asOf() */
       }catch(_){ setV(e.u,'—', una()); } }
     async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
         /* (#R33) NOAA changed this feed from array-rows to an array of OBJECTS ({time_tag,Kp,…}) — the old
@@ -25037,7 +25068,7 @@ window.addEventListener('DOMContentLoaded', () => {
           _hereMarker.on('dragend',()=>{ _svDragging=false; try{ _hereMarker.getElement().style.cursor='grab'; }catch(_){} let dp; try{ dp=_hereMarker.getLngLat(); }catch(_){} if(!dp) return;
             /* (#R140) snap the dropped viewpoint onto Google's REAL coverage too, so dragging never strands the marker
                off-pano; if the drop has no coverage nearby, keep it where dropped but say so honestly. */
-            _nearestCoverage(dp.lng,dp.lat).then(res=>{ if(res&&res.covered){ _hereLL={lng:res.lng,lat:res.lat}; try{ if(_hereMarker) _hereMarker.setLngLat([res.lng,res.lat]); }catch(_){} } else{ _hereLL={lng:dp.lng,lat:dp.lat}; if(res&&res.covered===false) _noCoverageToast(); else _coverageUnverifiedToast(); } _reloadEmbed(); }).catch(()=>{ _hereLL={lng:dp.lng,lat:dp.lat}; _coverageUnverifiedToast(); _reloadEmbed(); }); }); }
+            _snapPano(dp.lng,dp.lat).then(res=>{ if(res&&res.covered){ _svLinks=res.links||[]; _hereLL={lng:res.lng,lat:res.lat}; try{ if(_hereMarker) _hereMarker.setLngLat([res.lng,res.lat]); }catch(_){} } else{ _svLinks=[]; _hereLL={lng:dp.lng,lat:dp.lat}; if(res&&res.covered===false) _noCoverageToast(); else _coverageUnverifiedToast(); } _reloadEmbed(); }).catch(()=>{ _hereLL={lng:dp.lng,lat:dp.lat}; _coverageUnverifiedToast(); _reloadEmbed(); }); }); }
         if(!_svDragging) _hereMarker.setLngLat([+lng,+lat]); _hereMarker.setRotation(_hereHdg);
         if(!_hereMarker._map){ _hereMarker.addTo(map); } }catch(_){}
       try{ const b=map.getBounds(); if(b&&!b.contains([+lng,+lat])) map.easeTo({center:[+lng,+lat],duration:600}); }catch(_){}
@@ -25047,12 +25078,42 @@ window.addEventListener('DOMContentLoaded', () => {
     function _rotateHere(delta){ if(!_hereLL) return; _hereHdg=((_hereHdg+delta)%360+360)%360;
       try{ if(_hereMarker) _hereMarker.setRotation(_hereHdg); }catch(_){}
       _reloadEmbed(); _updHeadingLabel(); }
-    /* (#R85b) step the viewpoint forward/back along the current heading so the panorama AND the map marker move
-       together — the Google embed is cross-origin so we can't read its own "walk", so we drive the movement here. */
-    function _moveHere(sign){ if(!_hereLL) return; const stepM=18*sign, R=6378137, tr=Math.PI/180;
-      const nlat=_hereLL.lat+((stepM*Math.cos(_hereHdg*tr))/R)/tr;
-      const nlng=_hereLL.lng+((stepM*Math.sin(_hereHdg*tr))/(R*Math.max(0.15,Math.cos(_hereLL.lat*tr))))/tr;
-      _setHere(nlng,nlat,_hereHdg); _reloadEmbed(); }
+    /* (#R146) AUTHORITATIVE keyless pano snap — Google's GeoPhotoService.SingleImageSearch returns the EXACT nearest
+       Street-View panorama (lat/lng + pano id + walkable neighbours) for a point. It is JSONP (a <script> load, NOT a
+       fetch) so it needs NO CORS/proxy and is immune to the Apple-Private-Relay / ad-blocker tile-stripping that made
+       the svv-pixel sampler return null → raw-click fallback. THE real fix for "クリック地点に置くだけ・Coverageを考慮してない". */
+    let _svLinks=[], _jsonpN=0;
+    function _bearing(la1,lo1,la2,lo2){ const tr=Math.PI/180, y=Math.sin((lo2-lo1)*tr)*Math.cos(la2*tr), x=Math.cos(la1*tr)*Math.sin(la2*tr)-Math.sin(la1*tr)*Math.cos(la2*tr)*Math.cos((lo2-lo1)*tr); return (Math.atan2(y,x)/tr+360)%360; }
+    function _nearestPano(lng,lat){ lng=+lng; lat=+lat; if(!isFinite(lng)||!isFinite(lat)) return Promise.resolve(null);   /* only finite numbers reach the JSONP src — no injection */
+      return new Promise(resolve=>{
+      const cb='_svp'+(++_jsonpN); let done=false,s=null,tid=null;
+      const fin=v=>{ if(done)return; done=true; try{clearTimeout(tid);}catch(_){} try{delete window[cb];}catch(_){ try{window[cb]=undefined;}catch(__){}} try{ if(s&&s.parentNode)s.parentNode.removeChild(s);}catch(_){} resolve(v); };
+      window[cb]=res=>{ try{
+        if(!res||!res[0]||res[0][0]===5||!res[1]||!res[1][5]||!res[1][5][0]){ fin({covered:false}); return; }   /* [[5,"generic","Search returned no images."]] = no coverage */
+        const loc=res[1][5][0][1]&&res[1][5][0][1][0];   /* [null,null,lat,lng] of the nearest pano */
+        const plat=loc&&loc[2], plng=loc&&loc[3], pid=(res[1][1]&&res[1][1][1])||null;
+        const links=[]; try{ for(const nb of res[1][5][0][3][0]){ const c=nb&&nb[2]&&nb[2][0]; if(c&&isFinite(c[2])&&isFinite(c[3])) links.push({panoId:nb[0]&&nb[0][1], lat:c[2], lng:c[3]}); } }catch(_){}   /* walkable neighbours */
+        if(isFinite(plat)&&isFinite(plng)) fin({covered:true,lat:plat,lng:plng,panoId:pid,links}); else fin({covered:false});
+      }catch(_){ fin(null); } };
+      try{ const pb='!1m5!1sapiv3!5sUS!11m2!1m1!1b0!2m4!1m2!3d'+lat+'!4d'+lng+'!2d50!3m10!2m2!1sen!2sUS!9m1!1e2!11m4!1m3!1e2!2b1!3e2!4m10!1e1!1e2!1e3!1e4!1e8!1e6!5m1!1e2!6m1!1e2';
+        s=document.createElement('script'); s.async=true; s.onerror=()=>fin(null);
+        s.src='https://maps.googleapis.com/maps/api/js/GeoPhotoService.SingleImageSearch?pb='+pb+'&callback='+cb;
+        (document.head||document.documentElement).appendChild(s); tid=setTimeout(()=>fin(null),6000);
+      }catch(_){ fin(null); } }); }
+    /* snap ladder: authoritative JSONP first, keyless svv-pixel sampler second, undetermined (null) last */
+    function _snapPano(lng,lat){ return _nearestPano(lng,lat).then(r=>{ if(r&&(r.covered===true||r.covered===false)) return r; return _nearestCoverage(lng,lat); }).catch(()=>{ try{ return _nearestCoverage(lng,lat); }catch(_){ return null; } }); }
+    function _refreshLinks(lng,lat){ try{ _nearestPano(lng,lat).then(r=>{ if(r&&r.covered&&r.links) _svLinks=r.links; }).catch(()=>{}); }catch(_){} }
+    /* (#R85b/#R146) step forward/back to the REAL adjacent panorama, not a blind 18 m interpolation ("ボタン押したときの
+       移動が単なる移動でクソ"): prefer a walkable neighbour (SingleImageSearch links) whose bearing matches the heading,
+       else step a little and SNAP to the nearest real pano so the marker always lands on actual coverage. */
+    function _moveHere(sign){ if(!_hereLL) return; const hdg=sign>0?_hereHdg:((_hereHdg+180)%360);
+      if(_svLinks&&_svLinks.length){ let best=null,bd=1e9;
+        for(const nb of _svLinks){ const b=_bearing(_hereLL.lat,_hereLL.lng,nb.lat,nb.lng); const df=Math.abs(((b-hdg+540)%360)-180); if(df<bd){bd=df;best=nb;} }
+        if(best&&bd<70){ _setHere(best.lng,best.lat,_hereHdg); _refreshLinks(best.lng,best.lat); _reloadEmbed(); return; } }
+      const stepM=16, R=6378137, tr=Math.PI/180;
+      const nlat=_hereLL.lat+((stepM*Math.cos(hdg*tr))/R)/tr;
+      const nlng=_hereLL.lng+((stepM*Math.sin(hdg*tr))/(R*Math.max(0.15,Math.cos(_hereLL.lat*tr))))/tr;
+      _snapPano(nlng,nlat).then(res=>{ if(res&&res.covered){ if(res.links)_svLinks=res.links; _setHere(res.lng,res.lat,_hereHdg); } else { _svLinks=[]; _setHere(nlng,nlat,_hereHdg); } _reloadEmbed(); }).catch(()=>{ _setHere(nlng,nlat,_hereHdg); _reloadEmbed(); }); }
     function _clearHere(){ _hereLL=null; try{ if(_hereMarker){ _hereMarker.remove(); _hereMarker=null; } }catch(_){} }
     /* (#R140) COVERAGE-AWARE OPEN ("単にユーザーがクリックした地点に置くだけになっており、Coverageを全く考慮していない"):
        a raw click rarely lands exactly on a pano, so the on-map viewpoint marker used to LIE about where the panorama
@@ -25070,18 +25131,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function open(ll,label){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return false;
       const lng=+ll.lng, lat=+ll.lat, hdg0=(ll.heading!=null&&isFinite(+ll.heading))?((+ll.heading%360)+360)%360:0;
       if(ll.noSnap){ return _openAt(lng,lat,label,hdg0); }        /* internal raw path (caller already has a coverage point) */
-      try{ _setHere(lng,lat,hdg0); }catch(_){}                    /* instant marker feedback while coverage resolves */
-      /* covered → snap onto the real pano; known-uncovered → honest toast, no bogus marker. */
-      const _resolve=res=>{ if(res&&res.covered){ _openAt(res.lng,res.lat,label,hdg0); return true; } if(res&&res.covered===false){ _clearHere(); _noCoverageToast(); return true; } return false; };
-      /* (#R142) undetermined (null) = the coverage tiles couldn't be read even through the proxy. The OLD code silently
-         dropped a marker at the RAW click here; because the Google embed self-snaps to the nearest pano, that looked like
-         "it ignores coverage and just moves to where I clicked" — the exact re-reported bug. Now: retry once, and if still
-         undetermined, open the nearest available panorama but SAY the exact coverage point is unverified (honest), never a
-         silent lie that the marker is on coverage. */
-      const _fallbackHonest=()=>{ _openAt(lng,lat,label,hdg0); _coverageUnverifiedToast(); };
-      _nearestCoverage(lng,lat).then(res=>{ if(_resolve(res)) return;
-        _nearestCoverage(lng,lat).then(res2=>{ if(!_resolve(res2)) _fallbackHonest(); }).catch(_fallbackHonest);
-      }).catch(()=>{ _nearestCoverage(lng,lat).then(res2=>{ if(!_resolve(res2)) _fallbackHonest(); }).catch(_fallbackHonest); });
+      try{ _setHere(lng,lat,hdg0); }catch(_){}                    /* instant marker feedback while the pano resolves */
+      /* covered → snap the marker AND embed onto the REAL nearest pano (+ store walkable links for forward/back);
+         known-uncovered → honest toast, no bogus marker; undetermined (null) → open nearest available but say so. */
+      const _resolve=res=>{ if(res&&res.covered){ _svLinks=res.links||[]; _openAt(res.lng,res.lat,label,hdg0); return true; } if(res&&res.covered===false){ _clearHere(); _noCoverageToast(); return true; } return false; };
+      const _fallbackHonest=()=>{ _svLinks=[]; _openAt(lng,lat,label,hdg0); _coverageUnverifiedToast(); };   /* (#R142) never a silent "moved to your click" — say coverage is unverified */
+      _snapPano(lng,lat).then(res=>{ if(!_resolve(res)) _fallbackHonest(); }).catch(_fallbackHonest);
       return true; }
     function close(){ if(panel){ panel.style.display='none'; try{ iframe.src='about:blank'; }catch(_){} } _clearHere(); }
     /* (#R84/#R140) COVERAGE MODE ("地図上の水色の線、ポイントから選択できるように") — show Google's REAL Street-View
@@ -25094,7 +25149,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
         if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:256,minzoom:0,maxzoom:19,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-brightness-min':0.5,'raster-saturation':-0.15,'raster-hue-rotate':-10}});   /* (#R145) recolour Google's baked blue → 水色 (light blue): lighten + slight desaturate + small cyan shift ("coverageは青ではなく水色に") */
+        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.95,'raster-saturation':0.28,'raster-hue-rotate':-34}});   /* (#R146) 水色 = a VIVID light-blue. R145 washed it out (brightness-min:0.5 + negative saturation = "薄すぎる"); drop the brightness wash and instead shift Google's blue toward cyan and BOOST saturation so it reads as a clear, saturated light-blue ("最初の色から勝手に変えるな") */
         return true; }catch(_){ return false; } }
     function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
@@ -25161,7 +25216,7 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ map.getCanvas().style.cursor=''; }catch(_){}
         if(_covHint){ _covHint.remove(); _covHint=null; } }
       return _cov; }
-    return { open, close, coverage, coverageOn:()=>_cov, nearestCoverage:_nearestCoverage };
+    return { open, close, coverage, coverageOn:()=>_cov, nearestCoverage:_nearestCoverage, nearestPano:_nearestPano };
   })();
   /* ===== (#R83) RADIATION DISPERSION — a real Lagrangian particle model ("流体力学にのっとった粒子飛散モデルで、
      風向きや気温、降水も考慮"). Particles are released from a source and advected by a LIVE, space+time-varying
@@ -29756,7 +29811,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
           if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))); }
           const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(_herePoint&&isFinite(_herePoint.lng)));
-          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir')):warn('⚠')); }
+          if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir'))+_featTogHtml('streetview'):warn('⚠')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
           if(!ll) return R(false, warn('⚠ '+L('Where? Name a place or right-click a point','場所を指定するか地点を右クリックしてください','Wo? Ort nennen oder Punkt rechtsklicken','Где? Назовите место или ПКМ по точке','¿Dónde? Nombra un lugar')));
           try{ map.flyTo({center:[+ll.lng,+ll.lat],zoom:Math.max(map.getZoom(),15),duration:900}); }catch(_){}
@@ -31014,7 +31069,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-x{background:none;border:none;color:var(--text-muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:8px;}'
         +'#atlas-panel .atl-x:hover{background:var(--input-bg);color:var(--text-main);}'
         +'#atlas-panel .atl-sub{padding:9px 8px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142/#R145) full-width in the sidebar — the feed now bleeds past #sidebar\'s 24px pad, so only a small inner gutter remains */
-        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;padding:8px 6px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'
+        +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;scrollbar-gutter:stable both-edges;padding:8px 6px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'   /* (#R146) L/R gutters equal — the space-reserving webkit scrollbar (Win) only sat on the RIGHT, so the left looked narrower ("左だけ狭い"); reserve an equal gutter on BOTH edges */
         +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
         +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
         /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
@@ -31477,7 +31532,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const _FEAT_TOG={
       grid:{ lbl:()=>L('Grid','グリッド','Gitter','Сетка','Cuadrícula'), on:()=>{ const b=document.getElementById('btn-tool-grid'); const c=document.getElementById('cb-grid'); return !!((b&&b.classList.contains('tool-on'))||(c&&c.checked)); }, set:v=>{ try{ if(typeof setGrid==='function') setGrid(v); else clickId('btn-tool-grid'); }catch(_){ clickId('btn-tool-grid'); } } },
       terrain3d:{ lbl:()=>L('3D terrain','3D地形','3D-Gelände','3D-рельеф','Terreno 3D'), on:()=>{ const b=document.getElementById('btn-view-3d'); return !!(b&&(b.classList.contains('active')||b.classList.contains('view-on')||b.classList.contains('on')||b.getAttribute('aria-pressed')==='true')); }, set:v=>{ clickId(v?'btn-view-3d':'btn-view-globe'); } },
-      countryInfo:{ lbl:()=>L('Country info','国情報','Länderinfo','Инфо о странах','Info de países'), on:()=>{ const cb=document.getElementById('cb-countries'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } }
+      countryInfo:{ lbl:()=>L('Country info','国情報','Länderinfo','Инфо о странах','Info de países'), on:()=>{ const cb=document.getElementById('cb-countries'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
+      /* (#R146) more on/off view features get an inline switch ("なるべくボタンを設置") */
+      streetview:{ lbl:()=>L('Street View coverage','ストリートビュー範囲','Street-View-Abdeckung','Покрытие Street View','Cobertura Street View'), on:()=>{ try{ return !!(window.IntMapStreetView&&window.IntMapStreetView.coverageOn&&window.IntMapStreetView.coverageOn()); }catch(_){ return false; } }, set:v=>{ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(!!v); }catch(_){} } },
+      satellite:{ lbl:()=>L('Satellite','衛星写真','Satellit','Спутник','Satélite'), on:()=>{ const b=document.getElementById('btn-view-sat'); return !!(b&&(b.classList.contains('active')||b.classList.contains('view-on')||b.classList.contains('on')||b.getAttribute('aria-pressed')==='true')); }, set:v=>{ clickId(v?'btn-view-sat':'btn-view-map'); } },
+      borders:{ lbl:()=>L('Borders','国境','Grenzen','Границы','Fronteras'), on:()=>{ const cb=document.getElementById('cb-borders'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-borders'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
+      labels:{ lbl:()=>L('Place labels','地名ラベル','Beschriftungen','Подписи','Etiquetas'), on:()=>{ const cb=document.getElementById('cb-geolabels')||document.getElementById('cb-names'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-geolabels')||document.getElementById('cb-names'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } },
+      roads:{ lbl:()=>L('Roads','道路','Straßen','Дороги','Carreteras'), on:()=>{ const cb=document.getElementById('cb-roads'); return !!(cb&&cb.checked); }, set:v=>{ const cb=document.getElementById('cb-roads'); if(cb&&cb.checked!==v){ cb.checked=v; cb.dispatchEvent(new Event('change',{bubbles:true})); } } }
     };
     function _featTogHtml(kind){ const f=_FEAT_TOG[kind]; if(!f) return ''; let on=false; try{ on=!!f.on(); }catch(_){}
       return '<div class="atl-ctl-row" style="margin-top:6px;"><span class="atl-ctl-lbl">'+esc(f.lbl())+'</span><button class="atl-ctl-toggle atl-feat-tog'+(on?' on':'')+'" data-feat="'+esc(kind)+'" role="switch" aria-checked="'+(on?'true':'false')+'"><span class="atl-ctl-knob"></span></button></div>'; }

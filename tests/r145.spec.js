@@ -47,7 +47,7 @@ test('divided Germany 1949–1990 includes West Berlin as a WG exclave + GDR hol
       munichInWG: inFeat([11.58, 48.14], gWG), leipzigInGDR: inFeat([12.37, 51.34], gGDR),
     };
   });
-  expect(r.wgParts).toBe(2);            // mainland + West Berlin exclave
+  expect(r.wgParts).toBeGreaterThanOrEqual(2);   // (#R146) mainland + West Berlin exclave + real coastal islands (Sylt/Föhr/Fehmarn) after the Bundesländer-accurate rebuild
   expect(r.wbInWG).toBe(true);          // West Berlin belongs to West Germany
   expect(r.wbInGDR).toBe(false);        // and is carved OUT of East Germany (hole)
   expect(r.eastBerlinInGDR).toBe(true);
