@@ -28,7 +28,7 @@ test('R151 #1 Companies compare shows the Countries-parity empty hint', () => {
   }
   assert.match(html, /coCompareEmpty:/, 'coCompareEmpty key defined');
   // renderCoCompareFixed now renders the empty hint instead of removing the tray
-  assert.match(html, /if\(!coCompareSet\.size\)\{ tray\.innerHTML=`<div class="scf-empty">\$\{t\('coCompareEmpty'\)\}<\/div>`; return; \}/, 'empty hint rendered');
+  assert.match(html, /if\(!coCompareSet\.size\)\{ panel\.innerHTML=`<div class="scf-empty">\$\{t\('coCompareEmpty'\)\}<\/div>`; return; \}/, 'empty hint rendered (R152: static #co-compare-fixed panel, Countries parity)');
 });
 
 test('R151 #2 Atlas on/off toggles gain globe + compare switches', () => {
@@ -63,7 +63,7 @@ test('R151 #4 toolbar: Radius under Measure menu, Screenshot + link under one Sh
 
 test('R151 #5 Atlas typography: a standalone bold line becomes a real sub-heading', () => {
   assert.match(html, /\.replace\(\/\^\\\*\\\*\(\[\^\*\\n\]\{2,90\}\)\\\*\\\*\[ \\t\]\*:\?\[ \\t\]\*\$\/gm/, 'standalone **bold line** → heading rule');
-  assert.match(html, /<div style="height:\.85em"><\/div>/, 'generous explicit-paragraph gap');
+  assert.match(html, /<div style="height:1\.05em"><\/div>/, 'generous explicit-paragraph gap (R152 1.05em)');
 });
 
 test('R151 #6 monitor highlight is cleared when the monitor is deleted', () => {

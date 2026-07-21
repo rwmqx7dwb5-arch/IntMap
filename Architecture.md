@@ -17,7 +17,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 **単一HTMLファイルのWebアプリ**（フロントエンド全部入り）です。
 
 - **本体は `index.html`（公開用、約15,000行・約1.4MB）一枚。** ビルド工程なし。ブラウザでそのまま動く。
-- 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。Cesium は**廃止済み**。
+- 地図エンジンは **MapLibre GL JS**（Mercator 平面 + Globe 投影）。**#R152 で薄い抽象層 `IntMapGeoEngine`（第1段階）を導入**——将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を段階的に隔離。現時点の実装アダプタは MapLibre のみ・挙動は完全同一。Cesium は**過去の全面移行は廃止**だが、**capabilities/contract のみ宣言**（SDK・キーは未導入）。詳細は §7.1 と末尾 #R152 補足。
 - バックエンドは **Supabase**（DB・認証・ホスティング・Edge Functions）。
 - 配信は OneDrive 上の静的ファイルを直接ホスト（`index.html` / `admin.html`）。
 - 対応UI言語は **英語 (en) / 日本語 (jp) / ドイツ語 (de) / ロシア語 (ru) / スペイン語 (es, ベータ)** の5つ（R40でDE/RU復活＋ES追加。`i18n.es` は静的UIを網羅、深層の動的文字列はEN/JPフォールバック）。地名ラベルも全言語対応（`applyLabelLang` の `name:<lang>`）。
@@ -988,6 +988,26 @@ supabase/
 - **昔年代クリック（再々報告）**: `IntMapTime.setYear()`実ロードで 1919〜1938 全年 Poznań→Poland（Warsaw/Kraków/上シレジア/回廊も POL）を turf-PIP+`resolveHist` で**実測＝正答**。Wrocław/Szczecin→Germany・Danzig→Free City は**史実どおり正しい**（1920年代独領）。残る理論的穴＝era解決失敗時の現代 `countryGeo` フォールバックを封鎖し、**旅行中はフォールバックせず** `{eraLoading}`/`{code:''}`＋「読込中—もう一度」トースト（`resolveAt`・`_pickResolve` 両ピッカー）。
 - **FS中ハイライト非表示**: `_fsStashLayers` の `typeof clearHl==='function'` は別クロージャの関数で恒久 no-op だった。`_fsHideHl`/`_fsShowHl` で overlay 群（`place-hl-*/nlq-fill/nlq-line/nlq-poly-*/nlq-choro/pl-outline-*`）を `visibility:none` 退避→着陸で復元（start/stop の stash/restore へ結線）。
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
+
+---
+
+## #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
+
+### §7.1 `IntMapGeoEngine` — レンダラー抽象層（業務委託・第1段階）
+`window.__imap=map` の直後（`map.on('load')` 内）に定義する**薄い facade**。目的＝将来 Google-Earth 級 Earth Mode を差し込めるよう MapLibre 依存を隔離すること。**純粋 additive・挙動/性能/モバイル完全同一**。
+
+- **構造**: `IntMapGeoEngine`（facade）→ `_adapter`（現状 `MapLibreAdapter` のみ）。`MapLibreAdapter` は全メソッドが現行 `map` への 1:1 委譲。`use(adapter)` で将来別レンダラーに差替。`capabilities()`／`contracts()`／`can(feat)`。`raw()`＝MapLibre 実体を返すエスケープハッチ（未一般化コード用）。
+- **抽象済み（安全に共通化した処理のみ）**: `camera`（flyTo/easeTo/jumpTo/fitBounds/setPadding/get/setProjection）・`coords`（project/unproject/terrainElevation/queryRenderedFeatures）・`layers`（addSource/setSourceData/removeSource/add/remove/setVisible/isVisible/setPaint/setLayout/**setOpacity**＝レイヤ型からopacity paint名を解決）・`events`（on/off/once）。
+- **Cesium**: `CESIUM_CONTRACT`＝capabilities 宣言のみ（`implemented:false`）。**SDK・API キーは未導入**。将来は Cesium 版 Adapter を実装し `use()` するだけ。
+- **Atlas 配線**: アクション形式は不変。実行部のみ抽象層経由の実証として **`pitch`/`bearing` の `easeTo` を `IntMapGeoEngine.camera.easeTo` へ**通す。
+- **未対応（次段階の移行対象）**: `addSource`≈343・`addLayer`≈426・`setPaint/LayoutProperty`≈120 の**大量呼出は段階移行**（一括書換えは禁止）。`queryTerrainElevation`／`setSky`／`setTerrain`／`setMaxPitch`／3D地形など **MapLibre 固有機能は当面 `raw()` 経由**（無理に一般化しない）。副次地図（gmap/cmap/minimap）も現状は直接。
+- **次にやること**: ①新規の共通機能は必ず `IntMapGeoEngine` 経由にする（`map` 直呼び禁止の徐々な徹底）、②pin/marker と GeoJSON ヘルパ（addChoro/addRaster）を engine へ、③別レンダラーの capabilities で分岐する UI（Earth Mode トグル）、④Cesium Adapter の骨子。
+- **検証**: 契約テスト＝`tests/r152-checks.test.mjs`（facade/adapter/contract/camera 配線の存在）＋既存スモーク（`smoke.spec` の 7 critical globals＋#map で全体ブートを担保）。
+
+### その他12件（要点）
+①ケッペン**行折返し撲滅で単一行化**（真因は自然高777px・14行折返し／`_fitKoppenLegend`無変更）。②Companies を静的下端オーバーレイ ドックで**Countries完全同一化**。③Atlasタイポ＝フラット文の先頭文をリード太字へ昇格＋見出し拡大。④出典＝ブロックリスト拡張＋`_atlRelevantCards` 関連度ゲート＋未引用を「関連記事」表記。⑤トグル＝全画面＋汎用control。⑥衛星＝**実測(curl)で Esri z19 が keyless 上限**（z20は東京すら灰色2521B）→画質のコード変更なし。⑦SV線細く（glow paint撤去）。⑨Measure/Share 不透過（card-bg）。⑩方位磁針 右クリック数値入力。⑪フライトシム 海面フロア(countryGeo判別)＋水面 fill。⑫等高線 密度スライダー（凡例内）。⑧Companies 月次高精度＋歴史floor 1962。
+
+**重大教訓**: static-checks は**同一スコープ重複 `const` を検出不能**（`_ATL_STOP` 二重宣言でアプリ全体ブート不能＝全Playwright timeout）。**commit前に実 chromium で critical globals を必ず確認**。
 
 ---
 

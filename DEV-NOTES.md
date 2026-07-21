@@ -5,6 +5,48 @@
 
 ---
 
+## R152 — UX/機能バッチ13件：**ケッペン単一行化(折返し撲滅)**／Companies完全Countries化(静的ドック)／Atlasタイポ(先頭文リード＋見出し拡大)／Atlas出典(ブロックリスト拡張＋関連度ゲート)／Atlasトグル(全画面＋汎用control)／**衛星は実測でz19が上限**／SV線細く／Measure/Share不透過／**方位磁針右クリック数値入力**／**フライトシム海面フロア＋水面**／**等高線密度スライダー**／**IntMapGeoEngine抽象層(第1段階)**／Companies月次高精度＋深い歴史 (tag `#R152`)
+
+ユーザー指摘**13件**を根本原因から。`index.html` のみ（Edge Function 変更なし）＋新規 `tests/r152-checks.test.mjs`(node 12)。`npm test` 緑（static＋node **90**＝既存＋新r152-checks 12・r147/r149/r150/r151 の自変更 exact-assert を更新＋Playwright）。**教訓①（重大ニアミス）: static-checks は同一スコープの重複 `const` を検出できない**——`_ATL_STOP` を二重宣言し、パースエラーで **アプリ全体がブートせず全 Playwright が boot timeout**。`@playwright/test` の chromium で `pageerror`＋critical globals を直読みして即特定（`_ATL_RELV_STOP` にリネーム）。**commit前に必ず実ブラウザで7 critical globals＋#map を確認する**こと（[[template-literal-css-backtick]] と同種の「パースは通るが動かない」）。
+
+### ① ケッペン「最後の気候区分まで伸ばせない」の**真因＝行の折返し**（5回目の再報告）
+過去4回（R147/R150/R151）は `_fitKoppenLegend` の天井ロジックばかり触っていたが、**一度も自然内容高を実測していなかった**。ハーネス実測: 186px幅で30区分中**14行が2行に折返し→自然高 777px**（rowMax=30px）。768pxウィンドウの renderedMax=682px すら超える→最後の区分(ET/EF)は内側スクロール固定で**ストレッチでは絶対に到達不能**。修正＝`.kl-item{white-space:nowrap}`＋`.kl-code`(flex-shrink:0で常時表示)＋`.kl-nm`(ellipsis・full-text は `title=`)で**単一行化→自然高 514px**（全行14px・折返し0）→600px以上のビューポートで全区分が収まる（実測: fits630=true）。幅186→200px（一行での可読性）。`_fitKoppenLegend` は無変更。**教訓＝「伸ばせない」は天井でなく内容高を実測せよ**。
+
+### ② Companies＝Countries 完全同一化（「見かけだけ寄せた手抜き」の是正）
+比較選択ドックの真の乖離＝**Companiesはフィード内 `position:sticky` の実行時生成トレイ／Countriesは静的 `position:absolute` 下端オーバーレイ＋`.show`＋`body`同期**。修正＝静的 `#co-compare-fixed` を `#stats-compare-fixed` の隣に追加、CSS を `.stats-compare-fixed, .co-compare-fixed{…}` に統合、`renderCoCompareFixed` を `renderCompareFixed` と同一ロジックへ（`_companiesActive()`＝`currentMode==='info'`、`.show` トグル、`renderUI` でタブ離脱時に隠す＝Countries同型）。他: 順位を `imShowRank` でゲート、フィルタボタンに title、比較ビューの `.scp-chip` に境界線、`showCoCompare` は node を remove せず hide。
+
+### ③ Atlasタイポ（3回目・プロンプトは既に最強なので**描画側を決定論化**）
+`_analysisSystemPrompt`／`answer` の FORMAT指示は R150/R151 で既に「見出し・空行」を強制済み＝プロンプトは限界。モデルがフラット文を返す時に効かないのが真因。**決定論的修正**＝`_atlStanza` がフラット長文の**先頭文を standalone `**太字**` 行に昇格**（mdMini の「行全体が太字→1.22em accent 見出し」規則を再利用）→サイズ階層が必ず付く。見出し 1.55→1.66em／1.32→1.4em／段落余白 .85→1.05em。
+
+### ④ Atls出典（「無関係リンク・SNS」の再報告）
+真の欠陥＝**関連度チェックが皆無**で、収集しただけの未引用記事を「Sources」として全部出していた（特に brief は srcSink 全出し）。修正: (a) `_SNS_RE` にブログ基盤/フォーラム/動画/短縮を追加（medium/substack は正当な報道もあり得るので**除外しない**）。(b) `_atlRelevantCards`＝返信本文とカードのタイトル/URLをトークン化(4字語＋CJK bigram−stopword)し**共通トークン0のカードを落とす**（保守的＝短すぎ/全滅時は原集合温存、web検証・引用済は素通り）。(c) 未引用の `rest` を関連度で絞り4件上限＋基盤無し時のラベルを「Sources」→「関連記事」に是正。brief も本文で `_atlRelevantCards`。
+
+### ⑤ Atlasトグル拡充（「オンオフ要素はなるべくトグル」）
+`_FEAT_TOG` に `fullscreen` 追加＋fullscreen case で描画。**汎用catch-all**＝`doControl` がチェックボックスを反転した時 `_ctlTogHtml(target,el)` で `data-ctl` 付きスイッチを描画→デリゲートハンドラ(`.atl-ctl-gen`、`.atl-ctl-toggle` の**前**に処理)が `findControl` で再解決して反転。dedicated 無い任意の on/off control もトグル化。
+
+### ⑥ 衛星画質——**実測で Esri z19 が keyless 上限**（メモリの「z20は田舎で灰色」を curl で再確認）
+`curl` で z19/z20 タイルを都市/僻地でプローブ: **2521バイト＝Esri の "no data" 灰色プレースホルダ**。z20 は Manhattan(16KB実像)だが**東京すら 2521(灰色)**・砂漠/シベリア/海洋も灰色。→ maxzoom を上げると主要都市含め広域が灰色化（フライトシム視界も直撃）＝**再報告確実の退行**なので上げない。パイプラインは既に最適（2ホスト・z+1高DPI・fade0・8192キャッシュ・積極prefetch）。**画質改善のコード変更なし**が誠実な結論（真の上積みは BYOK Mapbox/Maxar か、SW での z20→z19灰色フォールバック＝将来課題）。
+
+### ⑦ SV coverage 線細く / ⑨ Measure/Share 不透過
+SV: R147 の `raster-brightness-min:0.5`＋`raster-contrast:0.15` が縁を滲ませ太く見せていた→両方 drop＋`raster-resampling:linear`＋opacity 0.9（水色は saturation/hue-rotate で維持）。Measure/Share: `background:var(--popup-bg)`(α<1)＋`backdrop-filter:blur` を **`var(--card-bg)`(不透過)＋blur撤去**（`.measure-dropdown, .share-dropdown` 限定＝他30+ポップアップは不変）。
+
+### ⑩ 方位磁針 右クリック 数値入力（デスクトップ）
+`#btn-compass` に `contextmenu`（`_imTouchPrimary()` でデスクトップ限定）→ `.compass-num-pop`（方位/仰角/ズームの number入力・不透過 card-bg）→ `map.easeTo({bearing,pitch,zoom})`。左クリックは従来通り北リセット。5言語。
+
+### ⑪ フライトシム：海底ダイブbug＋水面＋海抜下陸地
+**判別＝`window.countryGeo`**（国ポリゴン内＝陸＝海抜下でも飛行可、外＝外洋）。`_isOpenOcean(lng,lat)`＝bbox事前フィルタ＋`turf.booleanPointInPolygon`、**0.25°セルでキャッシュ**（200Hz物理を詰まらせない）、`loop()` で毎フレーム1回 `st._overOcean` 更新。`stepFixed` の空港アンカー直後で `if(st._overOcean&&terr<0) terr=0`＝外洋は海面(0m)フロア（海底へ潜れない）／死海・干拓地は温存。**水面**＝countryGeo の逆マスク（世界矩形＋各国外環を穴）を半透明青 fill でstart時に追加/exit時に除去（3D地形にドレープするので完全な平面ではない＝正直な限界、高度からは海として読める）。
+
+### ⑫ 等高線 密度スライダー
+`thresholds` はソース生成時にタイル化＝slider は**ソース再構築**要。`_contourThresholds()`＝`_CONTOUR_BASE` を `_contourDensity` で除算（>1=細かい）、`_setContourDensity`→`_rebuildContours`（レイヤ/ソース削除→addContours再実行→可視性復元）。スライダーは**凡例内**（`ensureContourDensity`・R16「操作は凡例に」規則）＝レイヤーパネルには置かない（`.lyr-extras` は `display:none !important`）。
+
+### ⑬ IntMapGeoEngine——地図エンジン交換可能化・第1段階（業務委託）
+`window.__imap=map` 直後に薄い facade `window.IntMapGeoEngine`＋`MapLibreAdapter`（camera/coords/layers/events を map へ1:1委譲＝挙動byte-identical）。`capabilities()`＋`CESIUM_CONTRACT`（宣言のみ・SDK/キーなし）＋`use(adapter)` で将来交換。**純粋additive**＝既存 map 呼出は温存、`raw()` エスケープハッチあり。Atlas の `pitch`/`bearing` 実行を `IntMapGeoEngine.camera.easeTo` へ通し「Atlas共通操作が MapLibre を直接叩かない」を実証（アクション形式は不変）。**抽象済＝camera/coord/source-layer/visibility/opacity/geojson/events**、**未対応＝343 addSource/426 addLayer 等の大量呼出は段階移行、queryTerrainElevation等 MapLibre固有は raw()**、**次段＝新規共通機能を engine 経由に統一・Adapter単位でCesium実装**。
+
+### ⑧ Companies 月次高精度＋深い歴史
+比較タイムシリーズを**年末のみ→月次**（`priceSeriesFine`＝`_HMON` 月次キャッシュ、fracYear で滑らかな高精度曲線）。ライブ価格キャッシュ 5→2分（低遅延）。年ピッカー 1990→**1962**（Yahoo最古まで、データ無い銘柄は "no history" と正直表示）。R151 の spark-max/バッチが土台。
+
+---
+
 ## R151 — UX/機能バッチ11件：Companies空比較ヒント／Atlasトグル拡充(globe/compare)／**ケッペンは全区分表示で停止＋行幅固定**／通常モードのMeasure/Share集約／Atlasタイポ(独立太字行→見出し)／**モニター削除でハイライト消去**／衛星3D飛行プリフェッチ強化／**SVオンでcoverage自動表示**／Terra本番検証(analyzed_by=ai 354)／**Companies株価バッチ化(spark)＋全史キャッシュ**／**Atlas出典からSNS/短縮/動画を除去** (tag `#R151`)
 
 ユーザー指摘**11件**を根本原因から修正。`index.html`＋Edge Function `ai-proxy`（コメントのみ→再deploy）＋新規テスト2本。`npm test` 緑（static＋node **79**＝security/monitor/r147/r149/r150/**新r151-checks 11**＋Playwright **80**＝新 `r151.spec.js` 6・r149/r150のケッペン#3をR151仕様へ更新、pageerror 0）。ローカル(Browserペイン 4188)で全区分停止・行幅固定・SV coverage自動・トグル・出典フィルタを実測。**Terra本番検証＝`current_news.analyzed_by='ai'` が 354 件**（cron refresh-newsはfallback無でTerra直呼び→ai>0＝Terra到達可を実証）。

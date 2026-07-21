@@ -44,7 +44,7 @@ test('R150 #4 typography: flat prose gets code-side rhythm (stanza + sentence-en
   assert.match(html, /function _atlStanza\(raw\)\{/, 'stanza grouping helper exists');
   assert.match(html, /if\(\(raw\.match\(\/\\n\/g\)\|\|\[\]\)\.length>1\) return raw;/, 'respects the model\'s own line breaks');
   assert.match(html, /esc\(_dedupText\(_atlStanza\(String\(s\|\|''\)\)\)\)/, 'mdMini runs the stanza pass first');
-  assert.match(html, /\.replace\(\/\(\[\.!\?。！？…”"』）\)\]\)\\n\(\?=\\S\)\/g,'\$1<div style="height:\.6em"><\/div>'\)/, 'a sentence-end + single newline becomes a soft paragraph gap');
+  assert.match(html, /\.replace\(\/\(\[\.!\?。！？…”"』）\)\]\)\\n\(\?=\\S\)\/g,'\$1<div style="height:\.72em"><\/div>'\)/, 'a sentence-end + single newline becomes a soft paragraph gap (R152 .72em)');
 });
 
 test('R150 #10 research-mapping: PURE audit helpers exist and are exposed for tests', () => {
