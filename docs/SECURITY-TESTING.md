@@ -45,6 +45,19 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
 - **`supabase/tests/03_security_test.sql`** (pgTAP) — the `feedback.rating` CHECK rejects the
   out-of-range DoS payload, `profiles_public` exposes no PII, public-read tables aren't
   anon-writable, `ai_usage` is RPC-only. (00/01/02 cover structure / the RLS matrix / the RPCs.)
+- **`supabase/tests/05_r155_security_test.sql`** (pgTAP, #R155) — proves the profiles
+  privilege-escalation is closed **grant-independently**: it RE-CREATES the production condition on
+  CI (grants `authenticated` the blanket table-level `UPDATE` on `profiles`) and then asserts the
+  `tg_profiles_guard_privcols` trigger still freezes `is_admin`/`is_pro`/`plan`/`email` while
+  `display_name` stays editable; also asserts the least-privilege column/table grants, the no
+  world-readable-profiles invariant, that monitor results are unforgeable at the grant layer, and
+  the public-write length caps. (This is the case vanilla CI could not otherwise reproduce.)
+- **`tests/r155-checks.test.mjs`** (`node --test`, #R155) — source regression guards over
+  `index.html` + `admin.html`: passkeys wired, `delete-account` called with `confirm`, reset/
+  change/logout-all present, HIBP k-anonymity sends only a 5-char prefix, GA `page_location`
+  sanitized, admin CSP present + **no** public sign-up + re-auth gate, and **behavioural** XSS
+  tests that `eval` the shipped `esc()`/`safeUrl()` and assert they neutralise payloads / reject
+  `javascript:`+`data:` schemes. Plus UX guards (Köppen border-box, Atlas reply-language lock).
 
 ---
 
