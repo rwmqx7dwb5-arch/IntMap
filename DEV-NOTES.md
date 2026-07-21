@@ -5,6 +5,22 @@
 
 ---
 
+## R148 — 再報告バッチ：**Atlas全滅の根治(Terra→Luna)**／独自ボタン撤去→標準スイッチ／送信停止=黒文字／ケッペン凡例=内容で確実に停止／モニター作成の無反応解消／Atlas返信タイポ (tag `#R148`)
+
+R147の再報告8件に対応。**最重要=Atlasの「AIサービス利用不可」**の根治：R147で`AI_MODEL` secretを`gpt-5.6-terra`にしたが、**このOpenAIプロジェクトはTerraにアクセス権が無い**（api.openai.com→403 `model_not_found` "Project ... does not have access to model gpt-5.6-terra"）→全AI呼が失敗しAtlas全滅。`gpt-5.6-luna`はアクセス可（/v1/responses で200確認）→**secretをLunaへ戻し**、ai-proxyの既定も`OPENAI_DEFAULT_MODEL=luna`＋**モデル不在フォールバック**（403/404 model_not_found→`FALLBACK_MODEL=luna`で1回リトライ）で「不正なAI_MODELが二度とAtlasを全滅させない」ように。**refresh-newsも壊れていた**（Chat Completionsに`max_tokens`/`temperature`を送るがgpt-5.6は`max_completion_tokens`要求→毎回400→ニュース測位が常時dict fallback）→**/v1/responses(reasoning低)へ移行**。monitor-runも既定Luna。
+
+**検証（本番・認証済み）**：`refresh-news`は同じキー・同じ`AI_MODEL`を使うので実プロキシになる。Terra時=`ai:0/47・0/119`（AI測位ゼロ）→Luna＋修正後=`ai:42/46・95/113`に回復。加えて一時診断関数`ai-diag`（REFRESH_SECRETゲート・使用後削除）でTerra=403・Luna=200・4o系=403を確定。**Atlas UI自体の認証呼は開発ユーザー不在のため未検証**（refresh-news実プロキシ＋ai-diag＋R146まで動作していた事実で高信頼）。
+
+**独自ボタン撤去（#2）**：R147が`_featTogHtml`をiOSスイッチ→独自ボタン`.atl-featbtn`（ラベル＋色付きON/OFFバッジ）に変更していた＝ユーザーが「独自UI・勝手に変えるな」と強く拒否。**R146の標準トグルスイッチ(`.atl-ctl-toggle atl-feat-tog`)に差し戻し**、`.atl-featbtn`のCSSも削除。**教訓：UIデザインは勝手に判断せず、明示指示か元の標準へ戻すこと**（今回、確認後に自前デザインを重ねて激怒された）。Task 3「オンオフ=ボタン」は"制御を返信内に置く"意（機能）＝標準スイッチで満たす、と解釈。
+
+**ケッペン凡例=内容で確実に停止（#4）**：R147の`_fitKoppenLegend`は`getBoundingClientRect`（border-box）で`full`を計算し**content-boxの`max-height`にそのまま設定**→padding+border(18px)分だけ描画が高くなり、リサイズグリップが最後の区分を**約1行分オーバー**して空白へ。→content-box時は`padding+border`を引いて設定（border-box免除）。実測でドラッグしても内容ちょうどで停止・空白ゼロを確認。show経路もdouble-rAF+timeoutで確実化。
+
+**モニター作成の無反応（#7）**：R147で`mapViewArea()`既定を足したが、**作成ボタンは`area`未確定時に`disabled`描画**のまま→`mapViewArea`がnull（workspace/地図未準備）だと無効化→クリックが**無反応(silent)**＝「押しても何も起こらない」。→**ボタンを二度とdisabledにしない**（ハンドラが範囲未選択時に地図ビューへフォールバック＋明確なトースト＝押せば必ず反応）。
+
+**送信/停止=黒文字（#6）**：R147は白背景＋アクセント色アイコンにしたが要求は**黒**→`.atl-go`/`.atl-go.busy`のアイコン色を`#111`へ（背景は白のまま）。**Atlasタイポ（#5）**：`_analysisSystemPrompt`が**"Plain text, no markdown"**で構造を禁止＝単調の主因→軽量Markdown（`**lead**`／`## 見出し`／`- 箇条書き`／段落間空行）を許可・推奨に。`SYS()`の`answer`指示も同様に強化。描画は既存`mdMini`（emで見出し拡大＋spacer）任せ＝視覚デザインは変えない。**Companies比較（#1）は既に動作**（単一クリック選択→Bar/時系列/表＝Countries完全同一）を本番相当で実測確認、変更不要。
+
+`npm test`緑（static＋node 47＋Playwright 63、pageerror 0）。r147.spec #6を独自ボタン→標準スイッチ判定へ、r147-checks #12をLuna判定へ更新。Edge Fn 3本を本番deploy済み。
+
 ## R147 — UX/設定バッチ14件：Atlasモデル Luna→Terra／無料枠10回／Atlas過剰拒否防止(scope/safety判定層)／敬語／送信・停止ボタン白／返信タイポグラフィ／オンオフ=ボタン／SV蛍光水色／ケッペン凡例=内容で停止／衛星タイル即時/Companies点滅解消・比較parity／Radius整理／モニター作成 (tag `#R147`)
 
 ユーザー指摘**14件**を根本原因から修正。`index.html`＋Edge Function `ai-proxy`/`monitor-run` の**加算的/微修正**（単一HTML・ビルド無し温存）。`npm test` 緑（static＋node 47＝security/monitor/**新r147-checks 7**＋**Playwright 63**＝新 `r147.spec.js` 6・r142の`#rad-r`参照を`#rad-c`へ更新、pageerror 0）。ローカル(127.0.0.1:8781)でAtlas白ボタン・Companies点滅解消(190社・再描画後clearbit step0=**0**)・Radius整理・各`window`関数ロードを実測。

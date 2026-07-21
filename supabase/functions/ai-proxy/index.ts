@@ -17,8 +17,8 @@
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
 //  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-terra              (#R147 Luna→Terra; model fixed here; users never pick it)
-//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Terra via /v1/responses)
+//            supabase secrets set AI_MODEL=gpt-5.6-luna              (#R148 Terra→Luna; Terra 403 no-access on this project; model fixed here — users never pick it)
+//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Luna via /v1/responses)
 //            # other providers stay wired but dormant:
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
 //            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
@@ -51,8 +51,10 @@
 //  Secrets, JWTs and full prompts are never logged.
 // ----------------------------------------------------------------------------
 //  (#R114) OpenAI GPT-5.6 migration (from Gemini) — Responses API path.
-//  (#R147) Model is GPT-5.6 Terra (was Luna). Set via the AI_MODEL secret; the
-//  Gemini path stays wired but dormant — Gemini 3.1 Flash-Lite is never used.
+//  (#R148) Model is GPT-5.6 Luna. R147 switched it to Terra, but this OpenAI project has NO access
+//  to Terra (403 model_not_found) → Atlas went fully down; reverted to Luna (accessible, verified)
+//  and added a model-not-found FALLBACK_MODEL retry. Set via the AI_MODEL secret; the Gemini path
+//  stays wired but dormant — Gemini 3.1 Flash-Lite is never used.
 //    • OpenAI calls go through /v1/responses (reasoning.effort:"low", store:false),
 //      text + image input, JSON mode for the JSON tasks (map_report / json_extract).
 //    • Web search is a HOSTED tool attached only when the client asks (webMode
@@ -87,6 +89,15 @@ const json = (body: unknown, status = 200) =>
 // ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
 const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
+
+// (#R148) OpenAI model. GPT-5.6 Terra was set in R147 but this OpenAI PROJECT has NO access to it
+// (api.openai.com → 403 model_not_found "Project ... does not have access to model gpt-5.6-terra"),
+// which took Atlas AI down entirely ("The AI service is temporarily unavailable"). GPT-5.6 Luna IS
+// accessible on the project (verified 200 on /v1/responses) so it is the working default + the
+// fallback. FALLBACK_MODEL is retried once when the configured AI_MODEL is rejected as
+// not-found / no-access, so a bad AI_MODEL secret can never again blanket-kill the AI.
+const OPENAI_DEFAULT_MODEL = "gpt-5.6-luna";
+const FALLBACK_MODEL = "gpt-5.6-luna";
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
 const MAX_IMAGES = 4;
@@ -284,8 +295,8 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
-  // GPT-5.6 models (gpt-5.6-terra) work best through the Responses API. `max_output_tokens`
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, _isFallback = false): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+  // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
   const content: unknown[] = [{ type: "input_text", text: prompt }];
@@ -349,6 +360,16 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   }
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
+    // (#R148) The configured model is unknown / not enabled on this OpenAI project (403/404
+    // model_not_found · "does not have access to model"). This is exactly what broke Atlas when
+    // AI_MODEL was set to a model the project can't reach — so instead of failing the whole call,
+    // retry ONCE with the known-good FALLBACK_MODEL. Bounded by _isFallback (no recursion loop) and
+    // skipped when we are already on the fallback model.
+    if (!_isFallback && (r.status === 403 || r.status === 404) && model !== FALLBACK_MODEL &&
+        /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
+      try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: FALLBACK_MODEL, status: r.status })); } catch (_) { /* ignore */ }
+      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, true);
+    }
     const pe = classifyGemini(r.status, t, "", "");
     pe.meta.bodySnippet = t.slice(0, 160);   // (#R116) surfaced in the server log for diagnosis (no secrets in an error body)
     throw pe;
@@ -575,7 +596,7 @@ Deno.serve(async (req) => {
     : (wantJson && payload.schema && typeof payload.schema === "object" ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   const model = Deno.env.get("AI_MODEL") ||
-    (provider === "openai" ? "gpt-5.6-terra" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R147) OpenAI default = GPT-5.6 Terra */
+    (provider === "openai" ? OPENAI_DEFAULT_MODEL : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R148) OpenAI default = GPT-5.6 Luna (Terra has no project access → 403) */
 
   try {
     let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[] };
