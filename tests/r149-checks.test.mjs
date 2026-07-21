@@ -38,7 +38,7 @@ test('R149/R150 #3 Köppen legend stretches to the screen bottom (viewport-based
   assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'CSS ceiling near full viewport');
   // (#R150) fit is now VIEWPORT-based (down to ~12px above the screen bottom), NOT clamped to content — so the
   // resize grip can be dragged all the way down; the old content-height cap made "一番下まで伸ばせない".
-  assert.match(html, /const renderedMax=Math\.round\(window\.innerHeight - top - 12\)/, 'JS fit is viewport-based (R150)');
+  assert.match(html, /const renderedMax=Math\.round\(window\.innerHeight - top - 8\)/, 'JS fit is viewport-based (R154: 12→8 for more reach)');
   assert.ok(!/const cap=Math\.round\(window\.innerHeight - 84\)/.test(html), 'old content-clamp cap removed');
   assert.match(html, /\.kl-item\{ display:flex; align-items:center; gap:6px; padding:0 4px; cursor:pointer; border-radius:5px; white-space:nowrap;/, 'R152/R153: single-line compact rows (nowrap kills the 2-line wrap; R153 padding 0 for a shorter 30-row block)');
   assert.match(html, /\.kl-item \.kl-nm\{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;/, 'R152: climate name ellipsises on one line');
@@ -46,10 +46,11 @@ test('R149/R150 #3 Köppen legend stretches to the screen bottom (viewport-based
 });
 
 test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
-  // the em heading sizes are unique to mdMini's heading replacements
-  assert.match(html, /font-size:1\.66em;letter-spacing:\.01em/, 'h1 ~1.66em (R152 bigger)');
-  assert.match(html, /font-size:1\.4em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.4em (R152 bigger)');
-  assert.match(html, /font-size:1\.18em;line-height:1\.32/, 'h3 ~1.18em (R152 bigger)');
+  // (#R154) headings differentiate by SIZE + SPACING only — NO colour ("目次を色分けするのはやめる")
+  assert.match(html, /font-size:1\.6em;letter-spacing:\.01em/, 'h1 ~1.6em (R154)');
+  assert.match(html, /font-size:1\.34em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.34em (R154)');
+  assert.match(html, /font-size:1\.12em;line-height:1\.32/, 'h3 ~1.12em (R154)');
+  assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em/.test(html), 'R154: heading rules no longer use --primary-color (size/spacing only)');
   assert.match(html, /'<div style="height:1\.2em"><\/div>'/, 'paragraph gap ~1.2em (R153, was 1.05em in R152)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');

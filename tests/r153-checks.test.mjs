@@ -19,8 +19,9 @@ import { readFileSync } from 'node:fs';
 const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 
-test('R153 #1 Köppen legend widened to 264px + shorter rows + RU/ES names', () => {
-  assert.match(html, /\.koppen-legend\{[^}]*width:264px; min-width:264px; max-width:264px;/, 'legend 200→264px (full names read)');
+test('R153 #1 Köppen legend dynamic per-language width + shorter rows + RU/ES names', () => {
+  assert.match(html, /\.koppen-legend\{[^}]*width:210px; min-width:172px; max-width:340px;/, 'R154: dynamic per-language width (clamped 172–340), replacing the fixed 264px lock');
+  assert.match(html, /lg\.style\.width=w\+'px';/, 'R154: _fitKoppenLegend measures the widest row and sets the exact width');
   assert.match(html, /\.kl-item\{[^}]*padding:0 4px;[^}]*line-height:1\.2;/, 'row block shortened (padding 0, line-height 1.2) so the last zone is reachable');
   assert.match(html, /window\.KNAME\[k\]\.ru=_kru\[k\]/, 'Russian climate names applied to KNAME');
   assert.match(html, /window\.KNAME\[k\]\.es=_kes\[k\]/, 'Spanish climate names applied to KNAME');
@@ -34,18 +35,21 @@ test('R153 #2 Measure/Share popups follow the shared glass material', () => {
   assert.ok(!/\.measure-dropdown, \.share-dropdown\{[^}]*background:var\(--card-bg\);/.test(html), 'the R152 forced-opaque --card-bg is gone');
 });
 
-test('R153 #3 Atlas typography — deterministic structure synthesis (multi-paragraph + CJK + labels)', () => {
-  assert.match(html, /function _atlStanza\(raw\)\{/, 'stanza restructurer exists');
-  assert.ok(!/\(raw\.match\(\/\\n\/g\)\|\|\[\]\)\.length>1\) return raw;/.test(html), 'the >1-newline bail (why multi-paragraph prose stayed flat) is removed');
-  assert.match(html, /const cjk=\(plainAll\.match/, 'CJK-weighted so dense Japanese replies still restructure');
-  assert.match(html, /out\.push\('## '\+label\)/, 'a model "Label:" lead becomes a ## heading');
-  assert.match(html, /out\.push\('\*\*'\+first\+'\*\*'\)/, 'the opening sentence becomes a bold lead');
-  assert.match(html, /font-size:1\.3em;line-height:1\.28/, 'bold-lead heading is 1.3em (clearer step above body)');
-  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'paragraph gap widened to 1.2em');
+test('R153/R154 #3 Atlas typography — safe reflow only, NO fabricated headings', () => {
+  assert.match(html, /function _atlStanza\(raw\)\{/, 'stanza reflow exists');
+  // (#R154) "判定がおかしい" fix: stop guessing headings from prose — only the MODEL's own ## / whole-line **bold** enlarge
+  assert.ok(!/out\.push\('## '\+label\)/.test(html), 'R154: a sentence-initial "Label:" is NOT turned into a ## heading');
+  assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: the opening sentence is NOT promoted to a bold lead');
+  assert.match(html, /model emitted real headings already → respect verbatim/, 'model-authored ## structure is respected as-is');
+  assert.match(html, /long run-on → ~2-sentence stanzas \(spacing only, no enlargement\)/, 'the only reflow is stanza-splitting (spacing, not enlargement)');
+  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'paragraph gap 1.2em');
+  // headings are colourless now
+  assert.match(html, /HEADINGS DIFFERENTIATE BY SIZE \+ SPACING ONLY — NO COLOUR/, 'headings size/spacing only, no colour');
 });
 
-test('R153 #4 Street View coverage line thinner via overzoom', () => {
-  assert.match(html, /type:'raster',tileSize:128,minzoom:0,maxzoom:21/, 'svv source overzooms (tileSize 128) up to z21 for a ~2x thinner stroke');
+test('R153/R154 #4 Street View coverage line thinner via overzoom', () => {
+  assert.match(html, /type:'raster',tileSize:64,minzoom:0,maxzoom:21/, 'R154: svv source tileSize 128→64 (fetch z+3, ~4× downscale → ~0.9px hairline)');
+  assert.match(html, /'raster-opacity':0\.62/, 'R154: coverage opacity 0.9→0.62 (lighter perceived weight)');
 });
 
 test('R153 #5 Companies Time-series defaults to a deeper 20-year window; picker still reaches 1962', () => {

@@ -30,7 +30,7 @@ test('R150 #6 monitor save root cause — client sets user_id AND the DB default
 });
 
 test('R150 #3 Köppen legend ceiling is viewport-based so the grip reaches the screen bottom', () => {
-  assert.match(html, /const renderedMax=Math\.round\(window\.innerHeight - top - 12\)/, 'ceiling = viewport bottom, not content height');
+  assert.match(html, /const renderedMax=Math\.round\(window\.innerHeight - top - 8\)/, 'ceiling = viewport bottom (R154: 12→8), not content height');
   assert.ok(!/const cap=Math\.round\(window\.innerHeight - 84\)/.test(html), 'old content-clamp removed');
   assert.match(html, /一番下まで伸ばせない/, 'comment records the exact re-report it fixes');
 });

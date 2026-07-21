@@ -8060,8 +8060,13 @@ window.addEventListener('DOMContentLoaded', () => {
          `.map-container{margin-right:var(--lsr-w)}` (also set INLINE by open()) — and the sidebar merely fills
          the vacated strip as an absolute panel. The map's width never depends on the sidebar's flex/transition
          state, so no failure mode of the panel can ever leave it covering the map: worst case is an empty strip. */
-      st.textContent=':root{--lsr-w:min(430px,92vw);}'
+      st.textContent=':root{--lsr-w:min(380px,92vw);}'   /* (#R154) smaller default width ("デフォルト幅をもう少し小さく") — 430→380 */
         +'body.lsr-avail .operation-room{position:relative;}'
+        /* (#R154) LEFT-EDGE drag-resizer — mirror of the left sidebar's #sb-resizer so the right sidebar is
+           left-right adjustable too ("左サイドバーと同様に左右に調整"). Grows as the cursor moves LEFT. Desktop only. */
+        +'#layer-sidebar-r .lsr-resizer{position:absolute;top:0;left:-3px;width:8px;height:100%;cursor:col-resize;z-index:1200;touch-action:none;}'
+        +'#layer-sidebar-r .lsr-resizer:hover{background:linear-gradient(to left,transparent,rgba(0,122,255,0.35),transparent);}'
+        +'@media(max-width:768px){#layer-sidebar-r .lsr-resizer{display:none;}}'
         +'body.lsr-avail .map-container{transition:margin-right .38s cubic-bezier(0.25,1,0.5,1);}'
         +'body.lsr-open .map-container{margin-right:var(--lsr-w);}'
         /* (#R107) MOBILE: the right sidebar OVERLAYS the map (never shrinks it), rides above the bottom sheet, and the
@@ -8126,6 +8131,20 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="lsr-body"></div>';
       /* (#R64) live INSIDE the app shell flex row (last child) so opening pushes the map like the left sidebar */
       (document.querySelector('.operation-room')||document.body).appendChild(sb);
+      /* (#R154) drag-to-resize handle on the LEFT edge (the right sidebar grows as the cursor moves left).
+         Persists to intmap_lsr_w; open() honours the saved width instead of the auto-formula. Desktop only. */
+      (function(){ const rh=document.createElement('div'); rh.className='lsr-resizer'; rh.title='Drag to resize'; sb.appendChild(rh);
+        let rdrag=false, rsx=0, rsw=0;
+        rh.addEventListener('pointerdown',e=>{ if(isMob()) return; rdrag=true; rsx=e.clientX; rsw=sb.offsetWidth; try{ rh.setPointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect='none'; sb.style.transition='none'; e.preventDefault(); e.stopPropagation(); });
+        rh.addEventListener('pointermove',e=>{ if(!rdrag) return; const ls=document.getElementById('sidebar'); const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
+          let w=rsw-(e.clientX-rsx); w=Math.max(260,Math.min(Math.max(300,window.innerWidth-lw-320),w));   /* keep ≥320px of map, ≥260px panel */
+          document.documentElement.style.setProperty('--lsr-w', w+'px');
+          try{ const mc=document.querySelector('.map-container'); if(mc&&document.body.classList.contains('lsr-open')) mc.style.marginRight='var(--lsr-w)'; }catch(_){}
+          try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} });
+        const end=e=>{ if(!rdrag) return; rdrag=false; try{ rh.releasePointerCapture(e.pointerId); }catch(_){} document.body.style.userSelect=''; sb.style.transition='';
+          try{ localStorage.setItem('intmap_lsr_w', String(sb.offsetWidth)); }catch(_){} try{ if(typeof map!=='undefined'&&map) map.resize(); }catch(_){} };
+        rh.addEventListener('pointerup',end); rh.addEventListener('pointercancel',end);
+      })();
       sb.querySelector('.lsr-x').onclick=close;
       sb.querySelector('#lsr-q').addEventListener('input',filterTiles);
       sb.addEventListener('click',e=>e.stopPropagation());
@@ -8233,7 +8252,9 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ if(isMob()){ document.documentElement.style.setProperty('--lsr-w','min(430px,92vw)'); }   /* (#R107) mobile: near-full-width overlay */
         else { const ls=document.getElementById('sidebar');
         const lw=(ls&&!ls.classList.contains('collapsed')&&getComputedStyle(ls).position!=='absolute')?ls.getBoundingClientRect().width:0;
-        const w=Math.max(280,Math.min(430, Math.round(window.innerWidth-lw-320)));
+        const cap=Math.max(300, Math.round(window.innerWidth-lw-320));   /* keep ≥320px of map */
+        let saved=parseInt(localStorage.getItem('intmap_lsr_w')||'',10);   /* (#R154) honour a user-dragged width instead of clobbering it every open */
+        const w=(saved>=260)?Math.min(saved,cap):Math.max(280,Math.min(380, Math.round(window.innerWidth-lw-320)));   /* (#R154) default cap 430→380 (smaller) */
         document.documentElement.style.setProperty('--lsr-w', w+'px'); } }catch(_){}
       sb.classList.add('open'); document.body.classList.add('lsr-open');
       /* (#R73) fire any lazy previews that IO missed while the panel was prebuilt off-screen */
@@ -12852,7 +12873,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:264px; min-width:264px; max-width:264px; font-size:10.4px; }   /* (#R153) WIDER (200→264px) so full climate names READ on one line ("行の幅が狭すぎる" — R152's 200px ellipsised 11 of 30 EN names; 264px fits EN/JP/RU/ES fully, only the 2-3 longest German compounds truncate w/ hover). SINGLE-LINE rows (see .kl-item) keep the 30-zone natural height ~460px so the whole legend fits a laptop viewport and can be stretched to the LAST zone (ET/EF) — "最後の気候区分まで伸ばせない". */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:210px; min-width:172px; max-width:340px; font-size:10.4px; }   /* (#R154) width now HUGS the content per language (_fitKoppenLegend measures the widest row and sets an exact px width, clamped 176–324). The old fixed 264px was ~80px WIDER than the Japanese text ("テキスト以上に横幅伸ばして…行の幅変わってない" = dead space) yet still clipped the longest German ("行の幅が狭すぎる"). min/max-width are just safety clamps; the 210px here is a pre-JS fallback. */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
@@ -14513,8 +14534,28 @@ window.addEventListener('DOMContentLoaded', () => {
       const cs=getComputedStyle(lg);
       if(cs.display==='none' || lg.classList.contains('legend-collapsed')) return;
       if(window.innerWidth<=768) return;
+      /* (#R154) WIDTH HUGS THE CONTENT (per language). Measure the widest zone row (code + " · name") with an off-screen
+         span in the legend's own font, then size the panel to exactly that + row chrome + the reserved scrollbar gutter,
+         clamped 176–324px and to what fits right of the panel. Ends BOTH width complaints at once: no dead space when the
+         text is short (Japanese ≈ 205px border-box, was 286 = ~80px empty) and no clipping when it is long (German fits).
+         Set ONLY here (build / show / window-resize), never during the vertical drag → the row width never shifts on its
+         own ("気候名の行幅が勝手に動かない"). Rows are single-line (nowrap), so width does not change the measured height. */
+      try{ const items=lg.querySelectorAll('.kl-item');
+        if(items.length){ const m=document.createElement('span');
+          m.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;white-space:nowrap;font-size:'+cs.fontSize+';font-family:'+cs.fontFamily+';';
+          document.body.appendChild(m); let mx=0;
+          items.forEach(it=>{ const cd=it.querySelector('.kl-code'), nm=it.querySelector('.kl-nm');
+            m.style.fontWeight='600'; m.textContent=cd?cd.textContent:''; let w=m.offsetWidth;
+            if(nm){ m.style.fontWeight='400'; m.textContent=nm.textContent; w+=m.offsetWidth; }
+            if(w>mx) mx=w; });
+          document.body.removeChild(m);
+          if(mx>0){ const contentW=Math.round(mx + 11 + 12 + 8 + 15 + 2);   /* swatch(11) + 2 flex gaps(12) + item padding(8) + scrollbar gutter(15) + slack(2) */
+            const room=Math.round((window.innerWidth - lg.getBoundingClientRect().left) - 16);
+            const w=Math.max(176, Math.min(324, room>200?room:324, contentW));
+            lg.style.width=w+'px'; } }
+      }catch(_){}
       const top=lg.getBoundingClientRect().top;                 /* rendered top edge (top-anchored: stable as it grows) */
-      const renderedMax=Math.round(window.innerHeight - top - 12);   /* how tall the border-box may be before it hits the screen bottom */
+      const renderedMax=Math.round(window.innerHeight - top - 8);   /* (#R154) 12→8: a few more px of reach toward the bottom so the LAST zone clears on a slightly shorter viewport too */
       /* (#R151) STOP WHEN ALL CLASSES ARE SHOWN ("すべての気候区分が表示されたら止まる"). R150 set max-height = the
          viewport ceiling with NO content clamp, so the resize grabber kept stretching into EMPTY space past the last
          class. Measure the natural height that shows every class (temporarily neutralise any dragged inline height +
@@ -15579,9 +15620,26 @@ window.addEventListener('DOMContentLoaded', () => {
          canvas) or whose handler is stateful (grid — see #R38) must NOT be re-fired by the learned-heal. Base
          vector toggles never reach here (they are in the BASE id-table). */
       const _LEARN_SKIP=/^(dl-ships|dl-planes|dl-wind|cb-grid)$/;
-      function _auditLearned(cb){ try{ if(!cb.checked||_LEARN_SKIP.test(cb.id)||userTouched(cb)) { sus[cb.id]=0; return; }
+      /* (#R154) a layer id is owned by exactly ONE checkbox (learn code above never steals), but guard anyway: don't hide
+         a learned-owned layer that a DIFFERENT *checked* layer also paints/owns — so an OFF-hide can never mis-hide. */
+      function _ownedByCheckedOther(cbId,lid){ try{
+          for(const k in window._imLayerOwn){ if(k!==cbId&&window._imLayerOwn[k]&&window._imLayerOwn[k].has(lid)){ const o=document.getElementById(k); if(o&&o.checked) return true; } }
+          const boxes=document.querySelectorAll('#layer-dropdown input[type=checkbox]');
+          for(let i=0;i<boxes.length;i++){ const o=boxes[i]; if(o.id===cbId||!o.checked) continue; const ids=idsFor(o.id); if(ids&&ids.indexOf(lid)>=0) return true; }
+        }catch(_){} return false; }
+      /* (#R154) the `!cb.checked` bail here was the "オフにしたレイヤーが表示されてしまう" root cause: for an AUTO-LEARNED
+         layer (no id-table entry) toggleLayer(id,false) can't know its layer ids, so it stays painted, and NO reconciler
+         hid it (the id-table hide branch never sees it; _sweepOrphanLayers only covers dl-* standard names). Now both
+         directions are handled: OFF + still-painted owned layers → hide them (minus any a checked sibling legitimately owns). */
+      function _auditLearned(cb){ try{ if(_LEARN_SKIP.test(cb.id)||userTouched(cb)) { sus[cb.id]=0; return; }
         const own=window._imLayerOwn&&window._imLayerOwn[cb.id]; if(!own||!own.size) return;
-        if(painted(Array.from(own))){ sus[cb.id]=0; return; }
+        const ownArr=Array.from(own);
+        if(!cb.checked){
+          if(painted(ownArr)){ const safe=ownArr.filter(lid=>!_ownedByCheckedOther(cb.id,lid));
+            if(safe.length){ log.push({id:cb.id,t:Date.now(),fix:'hide-learned'}); if(log.length>60) log.shift();
+              safe.forEach(lid=>{ try{ if(map.getLayer(lid)) map.setLayoutProperty(lid,'visibility','none'); }catch(_){} }); } }
+          sus[cb.id]=0; return; }
+        if(painted(ownArr)){ sus[cb.id]=0; return; }
         sus[cb.id]=(sus[cb.id]||0)+1;
         if(sus[cb.id]>=2&&(!healed[cb.id]||Date.now()-healed[cb.id]>240000)){ healed[cb.id]=Date.now(); sus[cb.id]=0;
           log.push({id:cb.id,t:Date.now(),fix:'rearm-learned'}); if(log.length>60) log.shift();
@@ -17365,7 +17423,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }catch(_){} };
 
   /* ---------- Settings persistence (#48) ---------- */
-  window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='classic';
+  window.imLabelLang='ui'; window.imFlatPan='fixed'; window.imSidebarStyle='opaque'; window.imMapColor='auto'; window.imLayerPanel='right';   /* (#R154) normal-mode layer panel now defaults to the RIGHT sidebar ("通常モードのLayer panelはright sidebarをデフォルトに"); a saved 'classic' setting still wins (line ~17447) */
   /* (#R101) desktop default: ticker ON. Mobile hides the bar via CSS regardless; a saved 'off' still wins (see loadSettings). */
   window.imTicker=(window.matchMedia&&window.matchMedia('(max-width:768px)').matches)?'off':'on';
   window.imNewsCountries=[]; window.imLayerFavs=[];
@@ -18739,6 +18797,9 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R123) POPULATION inside the drawn loop(s) — same WorldPop 100m grid as the measure/radius tools, now
            available for the freehand Draw tool too ("Drawでも使えるように"). Shown once the trace encloses an area. */
         ((lockedArea>0 && loopRings.length) ? `<div class="tp-row" id="draw-pop-row" style="display:none;"><span>${t('popInArea')}</span><b id="draw-pop-val">—</b></div><button class="ai-action-btn" id="draw-pop-btn" style="margin-top:6px;">${t('popInArea')}</button>` : '')+
+        /* (#R154) Elevation profile for the freehand line too — same DEM pipeline as the measure tool ("Drawでも
+           Elevation profileを使えるように"). Profiles the traced path (simplified, raw fallback). */
+        ((simplified.length>=2) ? `<button class="ai-action-btn" id="draw-profile" style="margin-top:6px;">📈 ${t('elevProfile')}</button>` : '')+
         `<div style="display:flex;gap:6px;margin-top:8px;">`+
           `<button class="tp-clear" id="draw-finish" style="flex:1;">${jp()?'地図に残す':'Keep on map'}</button>`+
           `<button class="tp-clear" id="draw-redo" style="flex:1;">${jp()?'やり直し':'Redraw'}</button>`+
@@ -18749,6 +18810,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=keepOnMap;
       const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; state='armed'; setData(); renderPanel(); };
       const popBtn=p.querySelector('#draw-pop-btn'); if(popBtn) popBtn.onclick=()=>_estimateDrawPop(p,popBtn);
+      const profBtn=p.querySelector('#draw-profile'); if(profBtn) profBtn.onclick=()=>{ const c=(simplified&&simplified.length>=2)?simplified:((raw&&raw.length>=2)?raw:null); if(c&&window._profileFromCoords) window._profileFromCoords(c); };   /* (#R154) elevation profile of the drawn line */
     }
     function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=simplified.length+'/'+raw.length; }
 
@@ -20013,6 +20075,18 @@ window.addEventListener('DOMContentLoaded', () => {
       '.wgt-card .wgt-v{font-size:25px;font-weight:400;color:var(--text-main);line-height:1.16;letter-spacing:-0.4px;font-variant-numeric:tabular-nums;margin-top:8px;word-break:break-word;}'+
       '.wgt-card .wgt-v b{font-weight:500;}'+
       '.wgt-card .wgt-s{font-size:10.5px;font-weight:400;color:var(--text-muted);margin-top:5px;line-height:1.5;letter-spacing:0.05px;}'+
+      /* (#R154) AQI / UV rebuilt iOS-style — the WHOLE card takes the category colour as its background ("現在の数字の
+         色を背景にして。iOS風に。"). _wgtColor() sets the gradient inline!important (beats the glass override) and adds
+         .wgt-colored (+ .wgt-on-light for pale colours → dark text, else white) so contrast holds on every tier. */
+      '.wgt-card.wgt-colored{color:#fff;min-height:122px;border-color:rgba(255,255,255,0.14);box-shadow:0 1px 0 rgba(255,255,255,0.18) inset,0 10px 26px rgba(0,0,0,0.20);}'+
+      '.wgt-card.wgt-colored.wgt-on-light{color:#1c1c1e;border-color:rgba(0,0,0,0.08);}'+
+      '.wgt-card.wgt-colored::before{background:linear-gradient(158deg,rgba(255,255,255,0.22),rgba(255,255,255,0) 58%);}'+
+      '.wgt-card.wgt-colored.wgt-on-light::before{background:linear-gradient(158deg,rgba(255,255,255,0.32),rgba(255,255,255,0) 58%);}'+
+      '.wgt-card.wgt-colored .wgt-h{color:currentColor;opacity:0.82;font-weight:600;}'+
+      '.wgt-card.wgt-colored .wgt-v{color:currentColor;font-size:36px;font-weight:600;letter-spacing:-1px;margin-top:6px;line-height:1.02;}'+
+      '.wgt-card.wgt-colored .wgt-v .wgt-unit{font-size:14px;font-weight:600;opacity:0.72;margin-left:4px;letter-spacing:0;}'+
+      '.wgt-card.wgt-colored .wgt-v .wgt-cat{display:block;font-size:14.5px;font-weight:600;opacity:0.95;margin-top:3px;letter-spacing:-0.1px;}'+
+      '.wgt-card.wgt-colored .wgt-s{color:currentColor;opacity:0.8;font-weight:500;margin-top:6px;}'+
       '.wgt-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:13px;background:rgba(128,128,128,0.22);color:var(--text-main);font-size:13px;line-height:1;cursor:pointer;opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;}'+
       '.wgt-card:hover .wgt-x{opacity:1;}'+
       '@media(max-width:768px){ .wgt-x{opacity:0.85;width:30px;height:30px;border-radius:15px;} }'+
@@ -20143,6 +20217,30 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function entry(u){ return active.find(e=>e.u===u); }
     function setV(u,v,s){ const ev=document.getElementById('wgtv-'+u); if(ev) ev.innerHTML=v; const es=document.getElementById('wgts-'+u); if(es) es.innerHTML=s||''; }
+    /* (#R154) iOS-style colour-fill helpers for AQI / UV. _wgtColor paints the whole card the category colour (gradient,
+       inline!important so it beats the sidebar-glass override) and picks dark/light text by luminance so every tier reads. */
+    const _WL=(en,ja,de,ru,es)=>currentLang==='jp'?ja:currentLang==='de'?de:currentLang==='ru'?ru:currentLang==='es'?es:en;
+    function _shade(hex,amt){ try{ let h=String(hex).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); const f=amt/100; const mix=c=>Math.max(0,Math.min(255,Math.round(amt>0?c+(255-c)*f:c*(1+f)))); return 'rgb('+mix((n>>16)&255)+','+mix((n>>8)&255)+','+mix(n&255)+')'; }catch(_){ return hex; } }
+    function _lum(hex){ try{ let h=String(hex).replace('#',''); if(h.length===3) h=h.split('').map(x=>x+x).join(''); const n=parseInt(h,16); return (0.2126*((n>>16)&255)+0.7152*((n>>8)&255)+0.0722*(n&255))/255; }catch(_){ return 0; } }
+    function _wgtColor(u,col){ try{ const card=document.querySelector('.wgt-card[data-u="'+u+'"]'); if(!card) return;
+        if(col){ card.classList.add('wgt-colored'); card.classList.toggle('wgt-on-light',_lum(col)>0.5);
+          card.style.setProperty('background','linear-gradient(158deg,'+_shade(col,16)+','+_shade(col,-14)+')','important'); }
+        else{ card.classList.remove('wgt-colored','wgt-on-light'); card.style.removeProperty('background'); } }catch(_){} }
+    function _wgtBig(num,unit,cat){ return String(num)+(unit?'<span class="wgt-unit">'+unit+'</span>':'')+(cat?'<span class="wgt-cat">'+cat+'</span>':''); }
+    /* full US-AQI 6-tier scale (was 4 stops) — 5 languages */
+    function _aqiCat(v){ if(v==null) return {col:null,label:''};
+      if(v<=50)  return {col:'#34c759',label:_WL('Good','良好','Gut','Хорошо','Buena')};
+      if(v<=100) return {col:'#ffcc00',label:_WL('Moderate','普通','Mäßig','Умеренно','Moderada')};
+      if(v<=150) return {col:'#ff9500',label:_WL('Unhealthy (sensitive)','敏感な人に注意','Ungesund (empfindl.)','Вредно (чувствит.)','Insalubre (sensibles)')};
+      if(v<=200) return {col:'#ff3b30',label:_WL('Unhealthy','不健康','Ungesund','Вредно','Insalubre')};
+      if(v<=300) return {col:'#af52de',label:_WL('Very unhealthy','非常に不健康','Sehr ungesund','Очень вредно','Muy insalubre')};
+      return {col:'#8b2635',label:_WL('Hazardous','危険','Gefährlich','Опасно','Peligrosa')}; }
+    function _uvCat(v){ if(v==null) return {col:null,label:''};
+      if(v<3)  return {col:'#34c759',label:_WL('Low','低い','Niedrig','Низкий','Bajo')};
+      if(v<6)  return {col:'#ffcc00',label:_WL('Moderate','中程度','Mäßig','Умеренный','Moderado')};
+      if(v<8)  return {col:'#ff9500',label:_WL('High','高い','Hoch','Высокий','Alto')};
+      if(v<11) return {col:'#ff3b30',label:_WL('Very high','非常に高い','Sehr hoch','Очень высокий','Muy alto')};
+      return {col:'#af52de',label:_WL('Extreme','極端','Extrem','Экстремальный','Extremo')}; }
     /* "as of" stamp — every financial/data widget states WHEN its numbers are from (#R20). */
     function asOf(ts){ try{ const d=(ts instanceof Date)?ts:new Date(ts); if(isNaN(d.getTime())) return '';
       return (jp()?'取得時点 ':'as of ')+d.toLocaleString(jp()?'ja-JP':'en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(_){ return ''; } }
@@ -20322,12 +20420,11 @@ window.addEventListener('DOMContentLoaded', () => {
       }catch(_){ setV(e.u,'—',''); } }
     async function refreshAqi(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=us_aqi,pm2_5');
-        const j=await r.json(); const cu=j.current||{}; const v=cu.us_aqi;
-        const col=v==null?'var(--text-main)':v<=50?'#34c759':v<=100?'#ffcc00':v<=150?'#ff9500':'#ff3b30';
-        const cls=v==null?'':v<=50?(jp()?'良好':'Good'):v<=100?(jp()?'普通':'Moderate'):v<=150?(jp()?'敏感な人は注意':'Unhealthy (sensitive)'):(jp()?'不健康':'Unhealthy');
-        setV(e.u,'<span style="color:'+col+';">'+(v!=null?Math.round(v):'—')+'</span> <span style="font-size:13px;">US AQI</span>',
-          cls+' · PM2.5 '+(cu.pm2_5!=null?(+cu.pm2_5).toFixed(1):'—')+' µg/m³ · '+c.lbl);
-      }catch(_){ setV(e.u,'—', una()); } }
+        const j=await r.json(); const cu=j.current||{}; const v=cu.us_aqi; const cat=_aqiCat(v);   /* (#R154) 6-tier scale + colour-fill */
+        _wgtColor(e.u, cat.col);
+        setV(e.u, _wgtBig(v!=null?Math.round(v):'—','US AQI', cat.label),
+          (cu.pm2_5!=null?('PM2.5 '+(+cu.pm2_5).toFixed(1)+' µg/m³ · '):'')+c.lbl);
+      }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshIss(e){ try{ const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544'); const j=await r.json();
         setV(e.u,'🛰 '+(+j.latitude).toFixed(1)+'°, '+(+j.longitude).toFixed(1)+'°',
           '<span class="iss-fly" style="color:var(--primary-color);cursor:pointer;font-weight:600;">'+(jp()?'地図で見る →':'Fly there →')+'</span> · '+Math.round(j.altitude)+' km · '+asOf((j.timestamp||0)*1000));
@@ -20446,11 +20543,11 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R22) New live widgets — all keyless + CORS-verified. */
     async function refreshUv(e){ try{ const c=await widgetLoc(); if(!c){ wgtLocPrompt(e); return; }
         const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat.toFixed(2)+'&longitude='+c.lng.toFixed(2)+'&current=uv_index&daily=uv_index_max&forecast_days=1&timezone=auto');
-        const j=await r.json(); const uv=j.current&&j.current.uv_index, mx=j.daily&&j.daily.uv_index_max&&j.daily.uv_index_max[0];
-        const lvl=(v)=>v==null?'':v<3?(jp()?'低い':'Low'):v<6?(jp()?'中程度':'Moderate'):v<8?(jp()?'高い':'High'):v<11?(jp()?'非常に高い':'Very high'):(jp()?'極端':'Extreme');
-        const col=(v)=>v==null?'var(--text-main)':v<3?'#34c759':v<6?'#ffcc00':v<8?'#ff9500':v<11?'#ff3b30':'#af52de';
-        setV(e.u,'<span style="color:'+col(uv)+';">'+(uv!=null?(+uv).toFixed(1):'—')+'</span> <span style="font-size:13px;">UV</span>', lvl(uv)+(mx!=null?' · '+(jp()?'本日最大 ':'max ')+(+mx).toFixed(1):'')+((j.current&&j.current.time)?' · '+asOf(j.current.time):'')+' · '+c.lbl);   /* (#R146) state the reading date/time the value is for ("数値の日時を明記") — location-local j.current.time via the shared asOf() */
-      }catch(_){ setV(e.u,'—', una()); } }
+        const j=await r.json(); const uv=j.current&&j.current.uv_index, mx=j.daily&&j.daily.uv_index_max&&j.daily.uv_index_max[0]; const cat=_uvCat(uv);   /* (#R154) colour-fill */
+        _wgtColor(e.u, cat.col);
+        setV(e.u, _wgtBig(uv!=null?(+uv).toFixed(1):'—','UV', cat.label),
+          ((mx!=null?(_WL('max ','本日最大 ','max ','макс. ','máx ')+(+mx).toFixed(1)+' · '):''))+((j.current&&j.current.time)?asOf(j.current.time)+' · ':'')+c.lbl);   /* (#R146) reading date/time via asOf() */
+      }catch(_){ _wgtColor(e.u,null); setV(e.u,'—', una()); } }
     async function refreshKp(e){ try{ const r=await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json');
         /* (#R33) NOAA changed this feed from array-rows to an array of OBJECTS ({time_tag,Kp,…}) — the old
            last[1] read undefined → the widget showed "—" ("Aurora widget is not working"). Handle both. */
@@ -20622,10 +20719,10 @@ window.addEventListener('DOMContentLoaded', () => {
   /* (#R11) Map cursor that mirrors the hovered point on the elevation chart. */
   function _elevCursor(coord){ try{ if(!map.getSource('elev-cursor')){ map.addSource('elev-cursor',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); map.addLayer({id:'elev-cursor-pt',type:'circle',source:'elev-cursor',paint:{'circle-radius':7,'circle-color':'#ff3b30','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}}); }
     map.getSource('elev-cursor').setData({type:'FeatureCollection',features:coord?[{type:'Feature',geometry:{type:'Point',coordinates:coord},properties:{}}]:[]}); }catch(_){} }
-  window._elevationProfile=function(){
-    if(!hasTurf() || (toolMode!=='measure' && toolMode!=='area')) return;
-    const pts = (toolMode==='area')?[...measurePoints,measurePoints[0]]:measurePoints;
-    if(pts.length<2) return;
+  /* (#R154) reusable core — profile ANY [lng,lat][] path (≥2 pts). Extracted from _elevationProfile so the freehand
+     Draw tool can reach it too ("DrawでもElevation profileを使えるように"). Same densify → sample → DEM → chart pipeline. */
+  window._profileFromCoords=function(pts){
+    if(!hasTurf() || !pts || pts.length<2) return;
     let line; try{ line=turf.lineString(_gcDensify(pts)); }catch(_){ return; }
     let len; try{ len=turf.length(line,{units:'kilometers'}); }catch(_){ len=0; }
     if(!(len>0)) return;
@@ -20635,6 +20732,11 @@ window.addEventListener('DOMContentLoaded', () => {
     for(let i=0;i<N;i++){ const d=len*i/(N-1); let pt=null; try{ pt=turf.along(line,d,{units:'kilometers'}).geometry.coordinates; }catch(_){} if(pt){ samples.push(pt); dist.push(d); } }
     if(samples.length<2) return;
     _openProfilePanel(samples,dist);
+  };
+  window._elevationProfile=function(){
+    if(toolMode!=='measure' && toolMode!=='area') return;
+    const pts = (toolMode==='area')?[...measurePoints,measurePoints[0]]:measurePoints;
+    window._profileFromCoords(pts);
   };
   function _openProfilePanel(samples,dist){
     let p=document.getElementById('elev-profile-panel');
@@ -22269,7 +22371,7 @@ window.addEventListener('DOMContentLoaded', () => {
       loadSDK().then(()=>{ if(!registerProto()) return;
         const go=()=>{ if(!map.isStyleLoaded()){ map.once('idle',go); return; } if(on){ if(!fetched){ fetchMeta().then(()=>{ fetched=true; if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } updateTimeLabel(); }); } else { if(addLayer(cfg)){ setVis(cfg,true); setOp(cfg,state[id].op); } } } else { setVis(cfg,false); } };
         go();
-      }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
+      }).catch(()=>{ try{ satToast(jp()?'ECMWFデータを読み込めませんでした':'Could not load ECMWF weather'); }catch(_){} try{ state[id].on=false; }catch(_){}   /* (#R154) also clear the STATE, not just the checkbox — otherwise the on('styledata') re-attach + applyTime re-show a layer whose box is OFF after a load failure */ const cb=document.getElementById('dl-'+id); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } });
     }
     window.toggleWeatherLayer=toggle;
     let fetched=false;
@@ -25488,8 +25590,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const _COV_SRC='sv-cov-src', _COV_LYR='sv-cov-lyr';
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
-        if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:128,minzoom:0,maxzoom:21,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});   /* (#R153) GENUINELY THINNER coverage line ("線が太すぎる" — re-report). Google renders the svv stroke at a ~constant ~3-4 screen-px width at every native zoom, and ABOVE z19 it was upscaled → fat. tileSize:128 (was 256) makes MapLibre fetch the NEXT zoom level's 256px tiles and draw them into a 128px slot → the stroke is DOWNSCALED ~2× at every zoom (≈1.5-2px, below Google's native width). maxzoom:19→21 supplies real z20/z21 tiles (verified non-empty: 1440/1674 blue px on Manhattan) so the overzoom keeps working down to street level instead of upscaling z19. */
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased edges → fat; dropped both. raster-resampling:linear keeps the downscaled edges smooth (crisp, not blurry). cyan tint via saturation + hue-rotate. */
+        if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:64,minzoom:0,maxzoom:21,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});   /* (#R154) STILL "太すぎる" after R153's tileSize:128. The svv stroke on screen ≈ nativeStroke × (tileSize/256), so tileSize:64 makes MapLibre fetch the tile THREE zooms deeper and draw its 256px image into a 64px slot → the line is downscaled ~4× (was ~2× at 128) ≈ 0.9px — a true hairline, monotonically thinner than 128 regardless of whether Google serves the deep tile natively or upscaled. */
+        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.62,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased edges → fat; dropped both. raster-resampling:linear keeps the downscaled edges smooth (crisp, not blurry). cyan tint via saturation + hue-rotate. (#R154) raster-opacity 0.9→0.62 so the hairline reads even lighter (geometry unchanged, perceived weight down). */
         return true; }catch(_){ return false; } }
     function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
@@ -28043,47 +28145,43 @@ window.addEventListener('DOMContentLoaded', () => {
        Replies the model ALREADY structured with ## headings are returned untouched. CJK is weighted (dense) so short
        Japanese replies still restructure. Labels are capped at a short prefix so mid-sentence colons never misfire.
        Pure/deterministic → unit-tested via IntMapAtlasDebug. */
+    /* (#R154) NO MORE HEADING FABRICATION. R150–R153 promoted a reply's opening sentence to a big bold lead AND turned any
+       sentence-initial "Label:" into a "## " heading — that guesswork is exactly the "テキストを大きくする箇所がおかしい／
+       判定がおかしい" the user reported (a plain first sentence blown up, a mid-thought colon becoming a heading). Enlargement
+       now happens ONLY for structure the MODEL actually authored (its own "## " / a whole-line "**bold**"), rendered by mdMini
+       with SIZE + SPACING and NO colour. This function only does SAFE, non-enlarging reflow so prose still breathes:
+       split an over-long run-on paragraph into ~2-sentence stanzas, normalise numbered/dashed lines to bullets, and keep a
+       blank line between paragraphs ("配置・余白"). It never invents a heading. */
     function _atlStanza(raw){ raw=String(raw||'');
-      if(/^\s*#{1,6}\s/m.test(raw)) return raw;                               /* model emitted real headings already → respect */
+      if(/^\s*#{1,6}\s/m.test(raw)) return raw;                               /* model emitted real headings already → respect verbatim */
       const plainAll=raw.replace(/\s+/g,' ').trim();
       const cjk=(plainAll.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;               /* CJK carries ~2× the text of a Latin char */
       const paras=raw.split(/\n\s*\n|\n/).map(s=>s.trim()).filter(Boolean);
       if(!paras.length) return raw;
-      if((plainAll.length+cjk)<=150 && paras.length<2) return raw;            /* a one-line answer doesn't need restructuring */
-      const LABEL=/^([^\s:：][^:：]{0,23}?)[:：][ \t　]+(?=\S)/;                  /* short "Label: body" prefix (≤24 chars → no mid-sentence colon) */
+      if((plainAll.length+cjk)<=150 && paras.length<2) return raw;            /* a one-line answer doesn't need reflow */
       const isList=p=>/^\s*(?:[-・*•]|\d+[.)、]|[①-⑳])\s/.test(p);
       const SENT=/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g;
-      const out=[]; let buf=[]; let leadDone=false;
-      const flush=()=>{ if(!buf.length) return; const arr=buf; buf=[]; const joined=arr.join(' ').trim(); if(!joined) return;
-        const jc=(joined.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;
-        if((joined.length+jc)>230 && arr.length>=3){ for(let i=0;i<arr.length;i+=2) out.push(arr.slice(i,i+2).join(' ').trim()); }
-        else out.push(joined); };
+      const out=[];
       for(const p of paras){
-        if(isList(p)){ flush(); out.push(p.replace(/^\s*(?:\d+[.)、]|[①-⑳])[ \t　]+/,'- ').replace(/^\s*[•・*][ \t　]+/,'- ')); leadDone=true; continue; }
-        const sents=p.match(SENT)||[p];
-        for(let si=0; si<sents.length; si++){ const s=(sents[si]||'').trim(); if(!s) continue;
-          const lm=s.match(LABEL); const label=lm?lm[1].trim():'';
-          if(label && label.length>=2 && label.split(/\s+/).length<=5){       /* sentence-initial section label → heading */
-            flush(); out.push('## '+label); leadDone=true; const body=s.slice(lm[0].length).trim(); if(body) buf.push(body); continue; }
-          if(!leadDone){ const first=s.replace(/[.。！!？?]+["”』）)]*\s*$/,'').trim();   /* opening sentence → bold lead */
-            if(first.length>=12 && first.length<=110 && first.indexOf('*')<0){ out.push('**'+first+'**'); leadDone=true; continue; } }
-          buf.push(s);
-        }
-        flush();                                                             /* paragraph boundary ends the current stanza group */
+        if(isList(p)){ out.push(p.replace(/^\s*(?:\d+[.)、]|[①-⑳])[ \t　]+/,'- ').replace(/^\s*[•・*][ \t　]+/,'- ')); continue; }
+        const pc=(p.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;
+        if((p.length+pc)>230){ const sents=p.match(SENT)||[p];                /* long run-on → ~2-sentence stanzas (spacing only, no enlargement) */
+          if(sents.length>=3){ for(let i=0;i<sents.length;i+=2) out.push(sents.slice(i,i+2).join(' ').trim()); continue; } }
+        out.push(p);
       }
-      flush();
       return out.join('\n\n'); }
     function mdMini(s){ return esc(_dedupText(_atlStanza(String(s||''))))
-      /* (#R149) STRONGER visual hierarchy — bigger, accent-coloured headings with clear top spacing so any structure
-         the model emits (## sections / # title / ### sub) is unmistakable. Sizes are em, so they scale off the bubble
-         font on both desktop (12.5px) and the mobile 15px override. */
-      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.15em 0 .34em;font-size:1.18em;line-height:1.32;">$1</div>')
-      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.45em 0 .5em;font-size:1.4em;line-height:1.3;letter-spacing:.005em;">$1</div>')
-      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.35em 0 .55em;font-size:1.66em;letter-spacing:.01em;line-height:1.26;">$1</div>')   /* (#R152) bigger, more-spaced headings so the size hierarchy is unmistakable */
-      /* (#R151) MODEL-INDEPENDENT hierarchy — a line that is ENTIRELY a **bold run** is a section lead the model DID emit
-         (models reach for standalone bold far more readily than "## "); render it at real heading size + spacing so the
-         reply stops reading as one flat block even when no "## " markers appear. Inline bold stays <b> (below). */
-      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.2em 0 .4em;font-size:1.3em;line-height:1.28;">$1</div>')   /* (#R153) 1.22→1.3em — a clearer step above body so the lead/sections read as headings, not slightly-bold text */
+      /* (#R154) HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. The user explicitly said "目次を色分けする
+         のはやめる。テキストサイズや配置のみで勝負する" (stop colouring headings; compete on size and placement only), so
+         every heading level is now var(--text-main) with a clear size step + generous top margin (the "配置") instead of
+         the accent colour. The hierarchy is # > ## > ### > whole-line **bold**, each a distinct size above the body. */
+      .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.15em 0 .3em;font-size:1.12em;line-height:1.32;">$1</div>')
+      .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.55em 0 .5em;font-size:1.34em;line-height:1.3;letter-spacing:.005em;">$1</div>')
+      .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.4em 0 .55em;font-size:1.6em;letter-spacing:.01em;line-height:1.26;">$1</div>')
+      /* (#R151/#R154) a line that is ENTIRELY a **bold run** is a section lead the model authored (models reach for
+         standalone bold far more readily than "## ") — render it as a modest heading (size + spacing, no colour), a clear
+         step above body but below a real "## " section. Inline mid-sentence bold stays <b> (below). */
+      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.25em 0 .4em;font-size:1.16em;line-height:1.3;">$1</div>')
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
@@ -28139,8 +28237,10 @@ window.addEventListener('DOMContentLoaded', () => {
        "article ↗" evidence links (mapReport / events) so EVERY rendered source goes through the same filter — the R152
        audit found the inline links bypassed it and leaked bare news.google.com / social URLs ("まったく関係ないリンク"). */
     function _atlCleanUrl(u){ try{ u=String(u||'').trim(); if(!/^https?:\/\//i.test(u)||u.length>700) return null;
-      if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; else return null; }
+      let agg=false;
+      if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; else agg=true; }   /* (#R154) undecodable Google-News redirect: KEEP it (clicking still redirects to the real article) rather than dropping to null — a whole batch of the newer opaque RSS links was being zeroed out = "出展が全くない". linkCards labels it by publisher, not "news.google.com". */
       let host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(_){ return null; }
+      if(agg) return {url:u, host:'news.google.com', agg:true};
       if(/(^|\.)news\.google\.com$/i.test(host)||/^news\.google$/i.test(host)) return null;
       if(_atlBadSourceHost(host)) return null;   /* drop SNS / UGC / shorteners / video hosts — not reliable factual sources */
       return {url:u, host}; }catch(_){ return null; } }
@@ -28154,12 +28254,13 @@ window.addEventListener('DOMContentLoaded', () => {
       const seen=new Set(); let clean=[];
       (list||[]).forEach(it=>{ if(!it||!it.url) return; const cu=_atlCleanUrl(it.url); if(!cu) return;
         const k=cu.url.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
-        clean.push({url:cu.url, host:cu.host, title:String((it.title||it.src||cu.host)).slice(0,90)}); });
+        clean.push({url:cu.url, host:cu.host, agg:!!cu.agg, src:String(it.src||'').slice(0,60), title:String((it.title||it.src||cu.host)).slice(0,90)}); });
       if(refText) clean=_atlRelevantCards(clean, refText);
       if(!clean.length) return '';
-      const cards=clean.slice(0,6).map(c=>'<a class="atl-lc" href="'+esc(c.url)+'" target="_blank" rel="noopener">'
+      const cards=clean.slice(0,6).map(c=>{ const dom=(c.agg&&c.src)?c.src:c.host;   /* (#R154) aggregator card shows the PUBLISHER name (from src), not the ugly "news.google.com" */
+        return '<a class="atl-lc" href="'+esc(c.url)+'" target="_blank" rel="noopener">'
         +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(c.host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
-        +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(c.title)+'</span><span class="atl-lc-d">'+esc(c.host)+'</span></span></a>');
+        +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(c.title)+'</span><span class="atl-lc-d">'+esc(dom)+'</span></span></a>'; });
       return '<div class="atl-lc-row">'+cards.join('')+'</div>'; }catch(_){ return ''; } }
     function listHtml(title,list,metric){ if(!list||!list.length) return note('⚠ '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
       const painted=highlight(list.map(r=>r.code)); fitTo(list.map(r=>r.code));
@@ -31699,7 +31800,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'GEOGRAPHIC IMPACT ANALYSIS: {"type":"impact","place"?:str,"event"?:"quake","km"?:num,"focus"?:["nuclear"|"dam"|"port"|"airport"|"hospital"|"military"|"power", …]} — analyses WHERE an event\'s impact spreads: real critical facilities (OpenStreetMap), nearby cities with real population tags, week\'s earthquakes in radius, loaded news, country density; draws the radius circle + clickable pins and fits the view (use for "この地震に最も近い原発と人口集中地を表示して" → {"type":"impact","event":"quake","focus":["nuclear"]}, "チェルノブイリ周辺300kmの影響分析"). event:"quake" targets the most relevant recent earthquake (nearest to the last referenced place, else the day\'s largest). Default focus = nuclear + dams; km default 300.\n'
         +'INLINE CONTROLS: {"type":"controls","items":[{"kind":"layerToggle","layer":EXACT_LAYER_NAME}|{"kind":"opacity","layer":EXACT_LAYER_NAME}|{"kind":"button","label":str,"run":str}]} renders WORKING switches/sliders/buttons inside your chat reply ("run" = the Atlas command the button fires). Append it when the user would plausibly want to adjust what you just did (e.g. after enabling layers, offer their toggles + opacity sliders; after a comparison, offer "add Korea" buttons). Max 8 items.\n'
         +'SETTINGS: {"type":"theme","mode":"light"|"dark"|"auto"}; {"type":"accent","color":"blue"|"green"|"purple"|"red"|"orange"|"teal"|"#rrggbb"|"default"} (recolours the UI accent); {"type":"language","lang":"en"|"jp"|"de"|"ru"|"es"}; {"type":"tempUnit","unit":"c"|"f"|"both"}; {"type":"units","mode":"metric"|"imperial"|"both"}.\n'
-        +'ANSWER: {"type":"answer","text":str,"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger accent headings with clear spacing. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
+        +'ANSWER: {"type":"answer","text":str,"places"?:[{"n":str,"c":str,"k":str}]} — for STABLE knowledge or explanation questions ("ギリシャの文化を教えて", "why is the Sahel dry?"), LISTEN to what was actually asked and give the FULL substantive answer HERE, in "text", in '+lang+' (up to ~250 words). FORMAT FOR READABILITY — REQUIRED for any answer longer than ~2 sentences (the user has repeatedly, angrily reported that Atlas replies are a monotonous wall of same-size text with no headings or spacing): OPEN with a short **bold** lead line, use "## " sub-headings to name each distinct section, "- " bullets for lists, and ALWAYS put a blank line between sections — these render as real, larger headings (differentiated by SIZE and SPACING) with clear separation. Use a heading ONLY for a genuine section title, never to enlarge an ordinary sentence. Only a genuinely one-idea reply stays plain sentences. MAP VALUE (IntMap is a map product): if the answer names specific mappable places (cities, towns, districts, landmarks, stations, airports, ports, parks, museums, squares, named natural features), you MUST list EVERY one in "places" as [{"n":"exact place name","c":"modern country it lies in","k":"kind"}] so IntMap pins them — NEVER output coordinates, exclude whole countries and vague/relative terms, and the spots you name in the prose MUST match "places". If the request is PRIMARILY about mapping locations, prefer a mapping action instead — "poi" for facilities, "researchMap" for a place/topic situation. CITE sources by NAME only (e.g. "according to the World Bank", "Reuters reported") — do NOT put article/source URLs or markdown links in the prose: the user reported that Atlas\'s attached links frequently 404, and fabricated or guessed URLs are the cause. The ONLY urls you may output are ones that literally appear in the evidence block or your web_search results, and only inside "analyze"/"mapReport" items — never invent a URL for an "answer". Do NOT deflect such questions to "brief" or any panel — the user asked a question, so answer it (you may ADD a relevant map action like flyTo alongside). Also use "answer" to honestly explain anything you could NOT do. Answer text must NOT pretend an un-emitted action happened.\n'
         +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "タイムマシンの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the time-machine button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
         +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
         +'AREA MONITORS (saved SERVER-SIDE watches — they re-check an area on a schedule even when the page is closed, and generate an EVIDENCE-BACKED report ONLY when a real change is detected, never on every run): {"type":"monitor","op":"create"|"list"|"open"|"pause"|"resume"|"run"|"delete","name"?:str,"which"?:str,"index"?:int,"intervalMin"?:int,"sources"?:[str]}. op:"create" saves a monitor over the CURRENTLY SELECTED AREA — a radius circle, a drawn area, OR a resolved region outline (the user must have ONE active; if none is active, the action tells them to set one first — do NOT invent an area). Pass "name" and optionally "intervalMin" (minutes, ≥30, default 360) and "sources" (["news"] is the only source for now). op:"list" opens the Monitors tab. op:"open"/"pause"/"resume"/"run"/"delete" act on an EXISTING monitor identified by "which" (its name/area, fuzzy-matched) or "index" (1-based). Use for "この範囲を監視して"/"monitor this area" (create), "監視一覧"/"my monitors" (list), "東京の監視を今すぐ実行/一時停止/削除". Login is required. NEVER claim a monitor was created/paused/run/deleted unless the action actually succeeded (the reply reflects the real result).\n'
@@ -31772,6 +31873,11 @@ window.addEventListener('DOMContentLoaded', () => {
         /* (#R149) image attach button + pasted/attached image thumbnails ("入力欄にペーストすれば画像も送れるように") */
         +'#atlas-panel .atl-attach{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s ease,background .15s ease;}'
         +'#atlas-panel .atl-attach:hover{color:var(--primary-color);background:var(--input-bg);}'
+        /* (#R154) voice-dictation mic button ("Atlasを音声入力対応に") — mirrors .atl-attach; .rec = live recording (red pulse) */
+        +'#atlas-panel .atl-mic{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s ease,background .15s ease;}'
+        +'#atlas-panel .atl-mic:hover{color:var(--primary-color);background:var(--input-bg);}'
+        +'#atlas-panel .atl-mic.rec{color:#fff;background:#ff3b30;animation:atlMicPulse 1.3s ease-in-out infinite;}'
+        +'@keyframes atlMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,0.55);}50%{box-shadow:0 0 0 5px rgba(255,59,48,0);}}'
         +'#atlas-panel .atl-imgrow{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 0;}'
         +'#atlas-panel .atl-thumb{position:relative;width:54px;height:54px;border-radius:9px;overflow:hidden;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);}'
         +'#atlas-panel .atl-thumb img{width:100%;height:100%;object-fit:cover;display:block;}'
@@ -31901,7 +32007,7 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="atl-ex"></div>'
         +'<div class="atl-chat"></div>'
         +'<div class="atl-imgrow" style="display:none;"></div>'   /* (#R149) pasted/attached image thumbnails appear here */
-        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'" aria-label="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
+        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'" aria-label="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-mic" title="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'" aria-label="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
         +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
@@ -31943,6 +32049,20 @@ window.addEventListener('DOMContentLoaded', () => {
       try{
         inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'&&/^image\//.test(it.type||'')){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });
         const atk=panel.querySelector('.atl-attach'); if(atk) atk.onclick=()=>{ try{ const fi=document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.multiple=true; fi.style.display='none'; fi.onchange=()=>{ try{ _atlAddFiles([...(fi.files||[])]); }catch(_){} try{ fi.remove(); }catch(_){} }; document.body.appendChild(fi); fi.click(); }catch(_){} };
+        /* (#R154) VOICE INPUT — Web Speech API dictation. Inserts recognised text into the box (user reviews then sends);
+           recognition language follows the UI language. Hidden if the browser has no SpeechRecognition. */
+        try{ const mic=panel.querySelector('.atl-mic'); const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+          if(mic&&!SR){ mic.style.display='none'; }
+          else if(mic){ let rec=null, recng=false; const langMap={jp:'ja-JP',de:'de-DE',ru:'ru-RU',es:'es-ES',en:'en-US'};
+            mic.onclick=()=>{ if(recng){ try{ rec&&rec.stop(); }catch(_){} return; }
+              try{ rec=new SR(); }catch(_){ return; }
+              rec.lang=langMap[currentLang]||'en-US'; rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
+              const base=(inEl&&inEl.value)?inEl.value.replace(/\s+$/,'')+' ':'';
+              rec.onstart=()=>{ recng=true; mic.classList.add('rec'); };
+              rec.onresult=(ev)=>{ let txt=''; for(let i=ev.resultIndex;i<ev.results.length;i++){ txt+=ev.results[i][0].transcript; } if(inEl){ inEl.value=base+txt; try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} } try{ _atlSyncGo(); }catch(_){} };
+              rec.onerror=()=>{ recng=false; mic.classList.remove('rec'); };
+              rec.onend=()=>{ recng=false; mic.classList.remove('rec'); try{ _atlSyncGo(); }catch(_){} try{ inEl&&inEl.focus(); }catch(_){} };
+              try{ rec.start(); }catch(_){ recng=false; mic.classList.remove('rec'); } }; } }catch(_){}
         panel.addEventListener('dragover',(e)=>{ try{ if(e.dataTransfer&&[...(e.dataTransfer.types||[])].indexOf('Files')>=0){ e.preventDefault(); panel.classList.add('atl-drag'); } }catch(_){} });
         panel.addEventListener('dragleave',(e)=>{ try{ if(!panel.contains(e.relatedTarget)) panel.classList.remove('atl-drag'); }catch(_){} });
         panel.addEventListener('drop',(e)=>{ try{ const dt=e.dataTransfer; panel.classList.remove('atl-drag'); if(!dt) return; const files=[...(dt.files||[])].filter(f=>/^image\//.test(f.type||'')); if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });
