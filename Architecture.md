@@ -720,7 +720,7 @@ supabase/
   - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（free=**10/日** `PLAN_LIMITS`。#R40=10→#R101=30→**#R147=10へ戻す**）→
     (3)`increment_ai_usage` RPC で当日分を原子的に消費（超過は 429）→ (4)**サーバー保持の鍵**でプロバイダ呼び出し →
     (5)失敗時は `refund_ai_usage` で消費分を返金。
-  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、**現行=`openai` / `gpt-5.6-luna`（Responses API `/v1/responses`）**。#R147でTerraへ切替えたが**このOpenAIプロジェクトはTerraにアクセス権が無く（403 model_not_found）Atlasが全滅→#R148でLunaへ戻し**、ai-proxyに`FALLBACK_MODEL`（不在モデルは403/404で1回Lunaへリトライ）を追加。Gemini/Anthropic経路は温存・切替可だが**Gemini 3.1 Flash‑Liteは不使用**）。
+  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、**現行=`openai` / `gpt-5.6-terra`（Responses API `/v1/responses`）**。#R147でTerraへ切替→#R148で403 no-accessのためLunaへ差戻し→**#R150で`refresh-news`プロキシ再検証(ai 61/104成功)によりTerra到達可を確認しTerraを採用**。ai-proxy `OPENAI_DEFAULT_MODEL=terra`＋`FALLBACK_MODEL=luna`（不在モデルは403/404で1回Lunaへリトライ＝耐障害）。Gemini/Anthropic経路は温存・切替可だが**Gemini 3.1 Flash‑Liteは不使用**）。
   - **#R147 Atlas scope/safety 判定層**：`SYS()` プランナー（＋`_analysisSystemPrompt()`）に「SCOPE & SAFETY」節。機微語の単語一致で全面拒否せず、**目的/対象/精度/出力の4軸**で分解→既定で**安全版を実行**（精密点→広域公開ゾーン、公開情報限定、攻撃最適化→脅威評価/到達圏/防災、不確実性・出典明示、`drawPolygon`/`radius`/`missile`/`radiation`/`impact` 等で実描画）。**全面拒否は真に有害なスライスのみ**の最終手段で、それでも「できる安全な分析」を提示。軍事/災害/感染症/化学(CBRN)/犯罪統計/サイバー/重要インフラに汎用適用。`provider_blocked` 文言も建設的（言い換え提案）に5言語。**日本語は既定で敬語**（ユーザーがくだけた口調を明示した時のみ例外）。
   - 用途：ニュースタイトル翻訳、ビューの要約、画像解析など**ユーザー操作のAI機能**。
   - **#R113 Gemini 3.5 Flash / `thinkingLevel:"low"` 移行 — 責任分離。** クライアントは**タスク種別**
@@ -990,6 +990,18 @@ supabase/
 - **歴史Wiki拡充**: `_ERA_WIKI` に HRV(独立国1941-45)・SGP/BLZ/GUY/SUR/ZMB/MWI/BWA/LSO/SWZ/UGA の植民地期実記事（全て新規キー・ポップアップが存在プローブ）。実測: 1943 Zagreb→`Independent_State_of_Croatia`。
 
 ---
+
+## #R150 補足（UX/機能バッチ10件：モニター保存の真因user_id欠落／ケッペン下端伸縮／Atlas曖昧性ゲート統一／調査回答マッピングのコード側検証／Terra採用／衛星飛行プリフェッチ）
+
+- **モニター保存（#6）**: `IntMapMonitors.create()` の挿入行が `user_id` を欠落（`area_monitors.user_id` は `not null`＋insert RLS `user_id=auth.uid()`）→ UIからの作成は毎回失敗し「Could not save the monitor.」。修正＝client が `row.user_id=currentUser.id`（他の user-owned insert と同型）＋ migration `20260721140000` で `alter column user_id set default auth.uid()`（本番適用済み・冪等）。**この機能は service_role 経由でしか検証されておらず、ログインclientの挿入経路は未検証だった**のが盲点。
+- **ケッペン凡例（#3）**: `_fitKoppenLegend` の `maxHeight` を**ビューポート基準**(`innerHeight - top - 12`、content-box分減算)に。従来の**内容高クランプは伸縮を阻害**（背の高い画面/区分少で画面下端まで引けない＝「一番下まで伸ばせない」）。CSS `max-height:calc(100dvh - 84px)` は温存、内側 `.kl-scroll` が全区分を担保。
+- **Atlas地理対象の曖昧性ゲート（#7）**: 共有 `_hlAmbigConfirm` で**単一の確認**を生成し、multi-region/single 両経路が**描画前にゲート**（曖昧が1つでもあれば `R(false,…,{meta:{partial:true}})` で停止＝何も塗らない・planner say 抑止）。従来は塗った成功の隣に `gAmbig`/`ambig` を警告として追記＝「候補確認・部分実行・成功報告・失敗警告」の同時表示が真因。個別地名ハードコード無し＝`resolveHlTarget` の `ambiguous` 判定に駆動。
+- **調査回答マッピングのコード側検証（#10）**: PURE基盤（`IntMapAtlasDebug` 公開でhermeticテスト可）＝`_atlExtractPlaces`(本文抽出=省略時安全網)／`_atlAuditSources`＋`_atlRegDomain`＋`_atlIsOfficial`(出典正規化・単一集中検出・官公庁/一次優先)／`_atlMappingVerdict`(mapped/unplaced/ambiguous)／`_atlGeocodeStrict`(同名≥2でambiguous・place型＋名称一致のみ・座標推測なし)。orchestrator `_pinReplyPlaces` は**既存ピンとMERGE**(clearしない・スキップ廃止・空catch廃止→console.warn＋正直な注記)。
+- **Atlas使用モデル（#9）**: `refresh-news`（同キー・同AI_MODEL・**モデルfallback無**）で `AI_MODEL=gpt-5.6-terra` → ai 61/63(en)・104/116(jp)成功＝**Terra再検証で到達可**。`AI_MODEL` secret=terra・ai-proxy default=terra・`FALLBACK_MODEL=luna`。
+- **タイポ（#4）**: `_atlStanza`(改行無し長塊を~2文stanzaへ)＋mdMiniで文末＋単一改行→ソフト段落余白。構造化済みは不介入。
+- **衛星3D飛行（#8）**: `predictivePrefetch` が `moveend` のみ発火→**飛行中(連続移動)は先読み皆無**が真因。`window._imPredictivePrefetch` 公開＋飛行ループで~2.6回/秒スロットル呼出。`sat-labels` を Esri 2ホストでラウンドロビン。既存最適化(2/5ホスト分散・native-max DEM・fade0・8192キャッシュ)温存。
+- **停止四角(#5)** rect 17.5→15.5。**Companies(#1)** は既に Countries 同型・`.co-logo-box` 32→30px で国旗枠と画素一致。**SVオフ(#2)** にも `_featTogHtml('streetview')`。
+- テスト: `tests/r150-checks.test.mjs`(node 12・ソース保証) ＋ `tests/r150.spec.js`(Playwright 7・業務委託の全ケースを純関数でruntime検証)。r147/r149-checksをR150差分へ更新。PR #23。
 
 ## #R143 補足（Atlas地理対象解決の汎用基盤：UN M49国集合＝実国境／多地域＝グループ別色＋凡例／描画前ジオメトリ検証／実状態検証／正直返答）
 

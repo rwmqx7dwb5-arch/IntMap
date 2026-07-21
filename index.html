@@ -390,7 +390,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .tp-prog.indet .tp-prog-fill{ width:100% !important; background:linear-gradient(90deg, rgba(10,132,255,0) 0%, #0a84ff 42%, #5e5ce6 58%, rgba(94,92,230,0) 100%) !important; background-size:42% 100% !important; background-repeat:no-repeat !important; animation:imProgSweep 1.05s linear infinite; transition:none !important; }
     @keyframes imProgSweep{ 0%{ background-position:-45% 0; } 100%{ background-position:145% 0; } }
     /* (#R139) Companies tab — logo (where the country flag sat in Countries), sector/HQ subline, detail overlay. */
-    .co-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; flex:0 0 auto; }
+    .co-logo-box{ display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; flex:0 0 auto; }   /* (#R150) exact-match the Countries flag slot (30×30) so the icon column is pixel-identical between the two tabs */
     .co-logo{ width:30px; height:30px; border-radius:8px; object-fit:contain; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.14); }
     .co-mono{ width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; }
     .co-banner{ opacity:0.85; }
@@ -4224,7 +4224,7 @@ window.addEventListener('DOMContentLoaded', () => {
          at 18 — the extra tile set is pure GPU/RAM cost there ("ブラウザが落ちることがないように"). */
       center:[10,20], zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
+        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},   /* (#R147) instant satellite tiles (no 300ms cross-fade) so fast zoom/pan is comfortable, esp. on mobile ("衛星画像の読み込みが…快適に") — matches every other raster overlay */
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95,'raster-fade-duration':0}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
@@ -4450,6 +4450,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   registerTileSW();
   if(map) map.on('moveend',()=>{ clearTimeout(_prefetchT); _prefetchT=setTimeout(predictivePrefetch,90); });
+  /* (#R150) expose the directional prefetch so the flight simulator can warm satellite tiles AHEAD of the aircraft
+     every few hundred ms — during flight the camera moves CONTINUOUSLY so `moveend` never fires and the imagery
+     couldn't keep up ("3D衛星画像の生成が飛行に追い付いていない"). The flight loop throttles the calls. */
+  try{ window._imPredictivePrefetch=predictivePrefetch; }catch(_){}
 
   function angDist(lo1,la1,lo2,la2){ const r=Math.PI/180; const a=Math.sin(la1*r)*Math.sin(la2*r)+Math.cos(la1*r)*Math.cos(la2*r)*Math.cos((lo2-lo1)*r); return Math.acos(Math.max(-1,Math.min(1,a)))/r; }
   let _occAllVis=false;
@@ -12349,7 +12353,7 @@ window.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ===== Terms of Service & Privacy Policy ===== */
-  const LEGAL_DATE='2026-07-17';   /* (#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. (#R114) Terms §6 + sources: AI provider is OpenAI (gpt-5.6-luna; #R148 reverted from Terra — Terra had no project access) and AI features may run web searches. (#R101) Privacy §4: flight-simulator audio note. */
+  const LEGAL_DATE='2026-07-17';   /* (#R122) Privacy §4: OpenAI content-sharing (Designated Content may be used to develop/train OpenAI models) + do-not-submit-sensitive-data caution. (#R114) Terms §6 + sources: AI provider is OpenAI (gpt-5.6-terra; #R150 Terra re-verified reachable, Luna is the fallback) and AI features may run web searches. (#R101) Privacy §4: flight-simulator audio note. */
   function legalTermsHTML(){ return currentLang==='jp'? `
     <h3 style="margin:0 0 4px;font-size:17px;">利用規約</h3><p style="color:var(--text-muted);font-size:11.5px;margin:0 0 12px;">最終更新日: ${LEGAL_DATE}</p>
     <p><b>1. 同意</b> — IntMap（以下「本サービス」）を利用することで、本規約に同意したものとみなされます。同意されない場合は利用しないでください。</p>
@@ -14252,27 +14256,26 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ window._wireLegendDrag&&window._wireLegendDrag(lg); }catch(_){}
       try{ _fitKoppenLegend(lg); }catch(_){}
     }
-    /* (#R147) "上下に伸ばして最後までいったらとまる" — clamp the resizable legend's max-height to its natural content
-       height (capped at the viewport) so dragging the resize grip stops exactly at the last climate class instead
-       of continuing into empty space. Recomputed on every rebuild, on show, and on window resize. Desktop only —
-       the mobile CSS owns legend sizing (resize:none). */
+    /* (#R150) "上下に伸ばして…一番下まで伸ばせない" — the user wants to DRAG the legend all the way down to the
+       BOTTOM OF THE SCREEN and have it stop there. R147–R149 clamped max-height to the CONTENT height, so
+       resize:vertical could never exceed the content: on a tall display (or with only a few classes selected)
+       the grip stopped short of the bottom and the box refused to grow — exactly "一番下まで伸ばせない". The fix
+       is to base the ceiling on the VIEWPORT, not the content: from the legend's own top edge down to ~12px
+       above the screen bottom. Now the grip stretches to the very bottom and STOPS at the screen edge (the CSS
+       max-height cap), while the inner .kl-scroll keeps every one of the ~30 classes reachable when the box is
+       shorter than the content. Recomputed on rebuild / show / window-resize. Desktop only (mobile CSS owns it). */
     function _fitKoppenLegend(lg){ try{
       lg=lg||document.getElementById('koppen-legend'); if(!lg) return;
       const cs=getComputedStyle(lg);
       if(cs.display==='none' || lg.classList.contains('legend-collapsed')) return;
       if(window.innerWidth<=768) return;
-      const sc=lg.querySelector('.kl-scroll'); if(!sc) return;
-      const chrome=Math.max(0, lg.getBoundingClientRect().height - sc.getBoundingClientRect().height);
-      const full=Math.round(chrome + sc.scrollHeight + 2);   /* border-box height that reveals every class with no inner scroll */
-      const cap=Math.round(window.innerHeight - 84);          /* (#R149) match the trimmed CSS ceiling (was 92) so the fit uses the same, larger budget */
-      const target=Math.max(150, Math.min(full, cap));        /* the RENDERED (border-box) height we want the resize grip to stop at */
-      /* (#R148) `full`/`target` are BORDER-BOX heights (getBoundingClientRect), but the legend is box-sizing:content-box,
-         so setting them straight as a max-height rendered ~18px (padding+border) TALLER → the grip dragged a row PAST the
-         last class into empty space and "最後までいったらとまる" still failed (R147). Subtract padding+border for content-box
-         so the RENDERED box stops EXACTLY at the last class. Border-box (future-proof) uses the value directly. */
-      let mh=target;
-      if(cs.boxSizing!=='border-box'){ const pb=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0); mh=Math.max(0, target-pb); }
-      lg.style.maxHeight=mh+'px';
+      const top=lg.getBoundingClientRect().top;                 /* rendered top edge (top-anchored: stable as it grows) */
+      const renderedMax=Math.round(window.innerHeight - top - 12);   /* how tall the border-box may be before it hits the screen bottom */
+      /* max-height on a content-box element sizes the CONTENT box; the rendered border-box is that + padding + border.
+         Subtract the chrome so the RENDERED bottom edge lands ~12px above the screen bottom (not 18px past it). */
+      let mh=renderedMax;
+      if(cs.boxSizing!=='border-box'){ const pb=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0)+(parseFloat(cs.borderTopWidth)||0)+(parseFloat(cs.borderBottomWidth)||0); mh=Math.max(0, renderedMax-pb); }
+      lg.style.maxHeight=Math.max(150, mh)+'px';
     }catch(_){} }
     window._fitKoppenLegend=_fitKoppenLegend;
     (function(){ let _klRz=null; window.addEventListener('resize',()=>{ if(_klRz) return; _klRz=setTimeout(()=>{ _klRz=null; try{ const lg=document.getElementById('koppen-legend'); if(!lg||getComputedStyle(lg).display==='none') return; if(window.innerWidth<=768) lg.style.maxHeight=''; else _fitKoppenLegend(lg); }catch(_){} },200); }); })();
@@ -26726,6 +26729,10 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!st._pathT || now-st._pathT>(st._pathIntv||350)){ st._pathT=now; if(st._path){ st._path.push([st.lng,st.lat,st.alt]);
         if(st._path.length>1600){ st._path=st._path.filter((_,i)=>i%2===0); st._pathIntv=(st._pathIntv||350)*2; } } }   /* (#R99) DECIMATE (keep the whole route coarser) instead of dropping the oldest — a long flight kept losing its start & under-counting distance */
       if(f.landed){ showResult('landed'); return; }   /* completed landing → result screen */
+      /* (#R150) warm satellite tiles AHEAD of the aircraft (~2.6×/s). `moveend` never fires while the camera moves
+         continuously in flight, so without this the imagery streamed in BEHIND the aircraft; predictivePrefetch
+         self-gates to satellite mode + uses the center delta (flight direction) to prefetch the tiles just ahead. */
+      if(now-(st._pfT||0)>380){ st._pfT=now; try{ window._imPredictivePrefetch&&window._imPredictivePrefetch(); }catch(_){} }
       raf=requestAnimationFrame(loop); }
     /* switch aircraft mid-flight — keep position/attitude, reset speed to the new type's cruise + clear rates */
     function selectAircraft(k){ if(!AIRCRAFT[k]) return; acKey=k; if(st){ st.V=AIRCRAFT[k].Vcruise; st.om=[0,0,0]; st.elev=0; st.ail=0; st.rud=0; st.flaps=0; st.gear=0; computeTrim(); } try{ syncHUDChrome(); }catch(_){} }
@@ -27688,11 +27695,25 @@ window.addEventListener('DOMContentLoaded', () => {
        font-size in BOTH normal (12.8px) and sidebar (15px) modes — and, being em, they escape the sidebar rule
        that force-lifts literal 12–13px spans to 15px, which used to FLATTEN the headings. Paragraph breaks (\n\n)
        now insert real vertical space, so replies read as titled, spaced sections instead of one monotone block. */
-    function mdMini(s){ return esc(_dedupText(String(s||'')))
-      /* (#R149) STRONGER visual hierarchy — the user keeps reporting Atlas replies read as a monotonous wall of
-         same-size text. Bigger, accent-coloured headings with clear top spacing so any structure the model emits
-         (## sections / # title / ### sub) is unmistakable, plus more room between blocks. Sizes are em, so they
-         scale off the bubble font on both desktop (12.5px) and the mobile 15px override. */
+    /* (#R150) CODE-SIDE typographic rhythm — the user keeps reporting Atlas replies read as a monotonous wall of
+       same-size text with no spacing between groups, even after R147–R149 strengthened the prompt + heading em
+       sizes. The gap: those only help when the MODEL emits ## headings / blank lines. When it returns flat prose
+       they do nothing. So we structure it in code: (a) _atlStanza groups a long single-block run-on into ~2-sentence
+       stanzas (content-preserving, sentence-aware, EN + CJK); (b) a single newline after a sentence end becomes a
+       soft paragraph gap. Structured replies (headings/bullets/blank-line paragraphs) are left exactly as the model
+       wrote them. Pure/deterministic → unit-tested via IntMapAtlasDebug.mdMini / _atlStanza. */
+    function _atlStanza(raw){ raw=String(raw||'');
+      if(/^\s*#{1,6}\s|^\s*[-・*]\s|\n\s*\n/m.test(raw)) return raw;          /* already structured (heading / bullet / paragraph) */
+      if((raw.match(/\n/g)||[]).length>1) return raw;                        /* model already used line breaks — respect them */
+      const plain=raw.replace(/\s+/g,' ').trim(); if(plain.length<=280) return raw;   /* short enough to read as one block */
+      const parts=plain.match(/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g);
+      if(!parts||parts.length<4) return raw;                                 /* too few sentences to bother grouping */
+      const out=[]; for(let i=0;i<parts.length;i+=2) out.push(parts.slice(i,i+2).join(' ').trim());
+      return out.join('\n\n'); }
+    function mdMini(s){ return esc(_dedupText(_atlStanza(String(s||''))))
+      /* (#R149) STRONGER visual hierarchy — bigger, accent-coloured headings with clear top spacing so any structure
+         the model emits (## sections / # title / ### sub) is unmistakable. Sizes are em, so they scale off the bubble
+         font on both desktop (12.5px) and the mobile 15px override. */
       .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1em 0 .3em;font-size:1.14em;line-height:1.32;">$1</div>')
       .replace(/^##\s*(.+)$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.2em 0 .4em;font-size:1.32em;line-height:1.3;letter-spacing:.005em;">$1</div>')
       .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--primary-color);margin:1.15em 0 .45em;font-size:1.55em;letter-spacing:.01em;line-height:1.26;">$1</div>')
@@ -27703,7 +27724,9 @@ window.addEventListener('DOMContentLoaded', () => {
          — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
       .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
       .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.15em;text-indent:-0.9em;margin:.24em 0;">• $1</div>')
-      .replace(/\n{2,}/g,'<div style="height:.7em"></div>').replace(/\n/g,'<br>'); }   /* (#R149) more breathing room between blocks + bullets */
+      .replace(/\n{2,}/g,'<div style="height:.72em"></div>')                                       /* explicit paragraph → generous gap */
+      .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.5em"></div>')                  /* (#R150) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
+      .replace(/\n/g,'<br>'); }
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
        mapReport and any reply that carries real article URLs. Only http(s) URLs that came from evidence or
@@ -28846,7 +28869,18 @@ window.addEventListener('DOMContentLoaded', () => {
       expandCompound:function(l){ try{ return _expandRegionCompound(Array.isArray(l)?l:[l]); }catch(_){ return l; } },
       paletteColor:function(i){ try{ return _hlPaletteColor(i); }catch(_){ return null; } },
       legendHtml:function(g){ try{ return _hlLegendHtml(g); }catch(_){ return ''; } },
-      polyState:function(){ try{ return { polys:_hlPolys.map(p=>{ let bb=null,gt=(p.geo&&p.geo.type)||null,vd=false; try{ bb=fbbox(p.geo); }catch(_){} try{ vd=_validGeo(p.geo,{trusted:true}).ok; }catch(_){} return {name:p.name,color:p.color,comp:p.comp,geoType:gt,valid:vd,bbox:bb}; }), n:_hlPolys.length }; }catch(_){ return {polys:[],n:0}; } } }; }catch(_){}
+      polyState:function(){ try{ return { polys:_hlPolys.map(p=>{ let bb=null,gt=(p.geo&&p.geo.type)||null,vd=false; try{ bb=fbbox(p.geo); }catch(_){} try{ vd=_validGeo(p.geo,{trusted:true}).ok; }catch(_){} return {name:p.name,color:p.color,comp:p.comp,geoType:gt,valid:vd,bbox:bb}; }), n:_hlPolys.length }; }catch(_){ return {polys:[],n:0}; } },
+      /* (#R150) research-mapping audit — PURE building blocks, exposed for the hermetic node tests (model-omitted
+         list, partial placement, same-name ambiguity, one-domain sources, text↔pins mismatch) + typography stanza. */
+      norm:function(s){ try{ return _atlNorm(s); }catch(_){ return ''; } },
+      nameOk:function(a,b){ try{ return _atlNameOk(a,b); }catch(_){ return false; } },
+      extractPlaces:function(t){ try{ return _atlExtractPlaces(t); }catch(_){ return []; } },
+      regDomain:function(u){ try{ return _atlRegDomain(u); }catch(_){ return ''; } },
+      auditSources:function(c){ try{ return _atlAuditSources(c); }catch(_){ return null; } },
+      mappingVerdict:function(s){ try{ return _atlMappingVerdict(s); }catch(_){ return null; } },
+      mappingNote:function(v,s,m){ try{ return _atlMappingNoteHtml(v,s,m); }catch(_){ return ''; } },
+      stanza:function(t){ try{ return _atlStanza(t); }catch(_){ return t; } },
+      mdMini:function(t){ try{ return mdMini(t); }catch(_){ return ''; } } }; }catch(_){}
     async function _leaderData(codes){ try{
       const iso=(codes||[]).filter(Boolean).slice(0,4); if(!iso.length) return null;
       const langQ=(currentLang==='jp'?'ja':currentLang)+',en';
@@ -29520,31 +29554,121 @@ window.addEventListener('DOMContentLoaded', () => {
         else if(ctr){ map.flyTo({center:ctr,zoom:(opt.zoom||4),duration:1000}); rendered=true; method=method||'center'; } }catch(_){}
       return { rendered, method, name, pinCount:pins.length, hasExtent:!!(ext&&(ext.box||isFinite(ext.lng))), pinIdx }; }
 
-    /* (#R149 · Atlas mapping-quality commission) A location-rich Atlas answer must deliver MAP value, not just prose:
-       the specific real places it names get pinned, and the reply honestly reports which spots were placed and which
-       could not be. `places` is a list the model emits INLINE with its answer (no extra AI call / no extra quota):
-       [{n:name, c:modern country, k:kind, s:one-line why}] — coordinates are NEVER from the model; the shared
-       geocode ladder (_tryMapResearch → placeExtent/geocode) resolves them, and anything it can't uniquely place is
-       reported as "not placed", never guessed. Returns the self-audit note HTML (or '' when nothing was mappable). */
-    async function _pinReplyPlaces(places, ctx){ ctx=ctx||{};
-      const items=(Array.isArray(places)?places:[]).slice(0,16).map(p=>({
-        name:String((p&&(p.n||p.name))||'').slice(0,90), locationName:String((p&&(p.n||p.locationName||p.name))||'').slice(0,90),
-        country:String((p&&(p.c||p.country))||'').slice(0,60), kind:String((p&&(p.k||p.kind))||'').slice(0,40),
-        summary:String((p&&(p.s||p.summary))||'').slice(0,240) })).filter(it=>it.locationName && it.locationName.length>1);
-      if(!items.length) return '';
-      let res=null; try{ res=await _tryMapResearch(ctx.place||'', items, {mode:'current', zoom:ctx.zoom||5}); }catch(_){ return ''; }
-      const idx=(res&&res.pinIdx)||[]; const mapped=[], failed=[];
-      items.forEach((it,i)=>{ (idx[i]!=null&&idx[i]>=0)?mapped.push(it.name):failed.push(it.name); });
-      const n=(res&&res.pinCount)||mapped.length; if(!n && !failed.length) return '';
-      let h='';
+    /* ═══════════ (#R150 · Atlas research-mapping commission) CODE-SIDE VERIFICATION ═══════════
+       A location-rich answer must deliver MAP value AND honestly reconcile its prose with the map — NOT rely on
+       the model to emit a perfect structured list. The prior design (R149) pinned only the model's inline `places`
+       list AND skipped entirely when any pin already existed, so: (a) if the model omitted the list → 0 pins;
+       (b) an existing plan pin suppressed the whole audit; (c) a failure was swallowed by an empty catch. The
+       redesign below is PURE + testable at its core and NEVER guesses a coordinate:
+         · _atlNorm / _atlNameOk   — name normalization + confident-match gate (blocks "Roman"→"Roman, Romania").
+         · _atlExtractPlaces       — pull the major real proper-noun spots out of the FINAL TEXT (safety net when
+                                       the model under-supplies the list). Heuristic; only CONFIDENT geocodes pin.
+         · _atlRegDomain / _atlAuditSources — normalize citation domains, detect single-domain concentration, flag
+                                       official/primary (gov/mil/edu/int/go.jp/gob.*), so sources aren't one site.
+         · _atlMappingVerdict      — pure: turn per-spot resolution outcomes into mapped / unplaced / ambiguous.
+       Everything is exposed on IntMapAtlasDebug for the hermetic node tests (model-omitted list, partial placement,
+       same-name ambiguity, one-domain sources, text/pins mismatch). No per-place hardcoding anywhere. */
+    function _atlNorm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/^(the|a|an|la|le|el|los|las|les|der|die|das|il|lo)\s+/,'').replace(/[^\p{L}\p{N} ]+/gu,' ').replace(/\s+/g,' ').trim(); }
+    function _atlNameOk(query, got){ const a=_atlNorm(query), b=_atlNorm(got); if(!a||!b) return false;
+      if(a===b) return true; if(b.indexOf(a)===0||a.indexOf(b)===0) return true;
+      const ta=a.split(' '), tb=new Set(b.split(' ')); return ta.length>=2 && ta.every(w=>tb.has(w)); }
+    /* Extract candidate place names from prose. Over-captures (sentence-initial words, some person names) — precision
+       is enforced downstream by the confident-geocode gate, so a non-place simply resolves to nothing and is dropped,
+       never mis-pinned. Latin scripts only (CJK relies on the structured list + already-placed pins). */
+    const _ATL_STOP=new Set('the this that these those it he she they we you i a an in on at by for from to as but and or however meanwhile today yesterday now here there its their his her our your my one two three first then also while when where what which who why how according reuters ap afp bbc cnn'.split(' '));
+    /* Leading words that are sentence-initial verbs/adverbs, NEVER part of a place name — safe to strip from a
+       multi-word candidate. Deliberately EXCLUDES directional/qualifier words (North/South/New/Old/Upper/Central…)
+       because those ARE real place components ("North Korea", "New York", "Western Sahara") — stripping them corrupts. */
+    const _ATL_LEAD=new Set('visit see explore discover today yesterday meanwhile however then also both either neither near around throughout during despite'.split(' '));
+    function _atlExtractPlaces(text){ let t=String(text||'').replace(/`[^`]*`/g,' ').replace(/https?:\/\/\S+/g,' ').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1');
+      const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:\s+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)\s+[A-ZÀ-Þ][\p{L}'’\-]*|\s+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;   /* no '.' in the class → a phrase never bridges a sentence boundary ("Italy. The Colosseum") */
+      const seen=new Set(), out=[]; let m;
+      while((m=re.exec(t))){ let s=m[0].replace(/[.,;:''’]+$/,'').trim(); if(s.length<3) continue;
+        let toks=s.split(/\s+/); while(toks.length>1 && _ATL_LEAD.has(toks[0].toLowerCase())) toks=toks.slice(1); s=toks.join(' ');   /* drop a sentence-initial verb/adverb prefix */
+        if(toks.length===1 && _ATL_STOP.has(s.toLowerCase())) continue;
+        const key=_atlNorm(s); if(!key||key.length<3||seen.has(key)) continue; seen.add(key); out.push(s); if(out.length>=24) break; }
+      return out; }
+    function _atlRegDomain(url){ let h=''; try{ h=new URL(String(url)).hostname.toLowerCase(); }catch(_){ h=String(url||'').toLowerCase().replace(/^.*\/\//,'').split('/')[0]; }
+      h=h.replace(/^www\d?\./,''); const p=h.split('.').filter(Boolean); if(p.length<=2) return h;
+      const two=new Set(['co','com','org','net','gov','gob','gouv','go','ac','edu','or','ne','mil']);
+      return (two.has(p[p.length-2])) ? p.slice(-3).join('.') : p.slice(-2).join('.'); }
+    function _atlIsOfficial(dom){ return /(^|\.)(gov|mil|int)(\.[a-z]{2,3})?$/.test(dom)||/\.(gov|gob|gouv|go|gc|edu|ac)\.[a-z]{2,3}$/.test(dom)||/\.(edu|int)$/.test(dom); }
+    function _atlAuditSources(cites){ const urls=(Array.isArray(cites)?cites:[]).map(c=>String((c&&(c.url||c))||'')).filter(u=>/^https?:\/\//i.test(u));
+      const by={}; urls.forEach(u=>{ const d=_atlRegDomain(u); if(d) by[d]=(by[d]||0)+1; });
+      const domains=Object.keys(by); const total=urls.length; let dominant='',dmax=0; domains.forEach(d=>{ if(by[d]>dmax){ dmax=by[d]; dominant=d; } });
+      const official=domains.filter(_atlIsOfficial);
+      const concentrated = total>=2 && (domains.length===1 || (dmax/total)>=0.75 && domains.length<=2);
+      return { total, distinct:domains.length, byDomain:by, dominant, dominantShare:total?dmax/total:0, official, concentrated }; }
+    /* PURE: fold per-spot resolution outcomes into the three honest buckets. `spots`=[{name,src,verdict}] where
+       verdict ∈ mapped|unplaced|ambiguous. Text-source unplaced items are only surfaced when multi-word (a lone
+       failed capitalized token is far more likely a non-place than a spot we failed to map — don't cry wolf). */
+    function _atlMappingVerdict(spots){ const mapped=[],unplaced=[],ambiguous=[]; (Array.isArray(spots)?spots:[]).forEach(s=>{ if(!s||!s.name) return;
+      if(s.verdict==='mapped') mapped.push(s.name);
+      else if(s.verdict==='ambiguous') ambiguous.push(s.name);
+      else if(s.verdict==='unplaced'){ if(s.src==='structured' || /\s/.test(s.name)) unplaced.push(s.name); } });   /* text-source: only multi-word failures are surfaced (a lone capitalized word is likely not a place — don't cry wolf) */
+      return { mapped, unplaced, ambiguous }; }
+    function _atlMappingNoteHtml(v, src, meta){ meta=meta||{}; let h='';
+      const n=v.mapped.length;
       if(n) h+='<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">📍 '+L(
         n+' place'+(n===1?'':'s')+' from this answer mapped — tap a pin for details',
         '本文の主要スポット '+n+' 件を地図にマッピングしました（ピンをタップで詳細）',
         n+' Ort'+(n===1?'':'e')+' aus dieser Antwort auf der Karte — Pin antippen',
         'На карте '+n+' объект(ов) из этого ответа — нажмите метку',
         n+' lugar'+(n===1?'':'es')+' de esta respuesta en el mapa — toca un pin')+'</div>';
-      if(failed.length) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Not placed (couldn’t locate precisely): ','未配置（正確に特定できませんでした）: ','Nicht verortet: ','Не размещены: ','Sin ubicar: ')+esc(failed.slice(0,6).join(', '))+(failed.length>6?'…':'')+'</div>';
+      if(v.ambiguous.length) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Ambiguous (several places share this name — not placed): ','曖昧（同名地が複数あり未配置）: ','Mehrdeutig (nicht verortet): ','Неоднозначно (не размещены): ','Ambiguo (sin ubicar): ')+esc(v.ambiguous.slice(0,6).join(', '))+(v.ambiguous.length>6?'…':'')+'</div>';
+      if(v.unplaced.length) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Named in the answer but not placed (couldn’t locate precisely): ','本文に登場したが未配置（正確に特定できませんでした）: ','Genannt, aber nicht verortet: ','Упомянуты, но не размещены: ','Mencionados pero sin ubicar: ')+esc(v.unplaced.slice(0,6).join(', '))+(v.unplaced.length>6?'…':'')+'</div>';
+      if(meta.infraFail && !n) h+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;opacity:.85;">'+L('Map lookup was unavailable — places could not be verified on the map right now.','地図検索が利用できず、地点を地図上で検証できませんでした。','Kartensuche nicht verfügbar.','Поиск по карте недоступен.','La búsqueda en el mapa no está disponible.')+'</div>';
+      if(src && src.concentrated && !src.official.length) h+='<div style="font-size:10.5px;color:var(--warn-color,#c98a00);margin-top:4px;opacity:.95;">⚠ '+L(
+        'Sources here concentrate on one site ('+esc(src.dominant)+') — treat with caution and seek an independent or official source.',
+        '出典が1サイト（'+esc(src.dominant)+'）に集中しています。独立した情報源や公的情報での裏取りを推奨します。',
+        'Quellen konzentrieren sich auf eine Seite ('+esc(src.dominant)+') — mit Vorsicht behandeln.',
+        'Источники сосредоточены на одном сайте ('+esc(src.dominant)+') — проверьте по независимому источнику.',
+        'Las fuentes se concentran en un sitio ('+esc(src.dominant)+') — verifica con una fuente independiente.')+'</div>';
       return h; }
+    /* Strict geocode with ambiguity detection (limit=5). Returns {ok,lng,lat,name} | {ok:false,reason,ambiguous?}.
+       Only place-type, name-matching results count; ≥2 distinct locations with no country hint = ambiguous (not placed). */
+    async function _atlGeocodeStrict(name, country){ name=String(name||'').trim(); if(name.length<2) return {ok:false,reason:'empty'};
+      const q=[name,String(country||'').trim()].filter(Boolean).join(', '); let arr=null;
+      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}); arr=await r.json(); }
+      catch(e){ return {ok:false,reason:'network'}; }
+      if(!Array.isArray(arr)||!arr.length) return {ok:false,reason:'not_found'};
+      const matches=arr.filter(j=>{ const okType=/^(place|boundary|natural|waterway|landuse|tourism|historic|leisure|amenity)$/.test(String(j.class||''))||!!j.addresstype; return okType && _atlNameOk(name,(j.display_name||'').split(',')[0]); });
+      if(!matches.length) return {ok:false,reason:'no_name_match'};
+      const cells=new Set(); matches.forEach(j=>cells.add(Math.round(+j.lat*10)+','+Math.round(+j.lon*10)));
+      if(!country && cells.size>=2) return {ok:false,reason:'ambiguous',ambiguous:true};
+      const b=matches[0]; return { ok:true, lng:+b.lon, lat:+b.lat, name:(b.display_name||'').split(',')[0] }; }
+    /* Orchestrator: resolve the answer's places (structured list + text safety-net), MERGE with any existing plan
+       pins (never wipes them), pin only confident/unique hits, and return an honest self-audit note. */
+    async function _pinReplyPlaces(places, ctx){ ctx=ctx||{}; const text=String(ctx.text||'');
+      try{
+        const struct=(Array.isArray(places)?places:[]).slice(0,16).map(p=>({
+          name:String((p&&(p.n||p.name||p.locationName))||'').slice(0,90), country:String((p&&(p.c||p.country))||'').slice(0,60),
+          kind:String((p&&(p.k||p.kind))||'').slice(0,40), summary:String((p&&(p.s||p.summary))||'').slice(0,240), src:'structured' })).filter(it=>it.name&&it.name.length>1);
+        const structKeys=new Set(struct.map(it=>_atlNorm(it.name)));
+        const textBudget=struct.length?4:8;   /* text extraction is the SAFETY NET — used hard only when the model under-supplied the list */
+        const textCands=_atlExtractPlaces(text).filter(s=>!structKeys.has(_atlNorm(s))).slice(0,textBudget).map(s=>({name:s,country:'',kind:'',summary:'',src:'text'}));
+        if(!struct.length && textCands.length<2 && !(Array.isArray(_pois)&&_pois.length)) return '';   /* not a place-rich answer — don't geocode incidental capitalized words */
+        const pre=(Array.isArray(_pois)?_pois:[]).map(p=>({lng:+p.lng,lat:+p.lat,name:String(p.name||''),kind:String(p.kind||''),sum:String(p.sum||''),url:String(p.url||''),src:String(p.src||'')})).filter(p=>isFinite(p.lng));
+        const preKeys=new Set(pre.map(p=>_atlNorm(p.name)).filter(Boolean));
+        const seenCell=new Set(pre.map(p=>Math.round(p.lng*20)+','+Math.round(p.lat*20)));
+        const spots=[]; const newPins=[]; let infraFail=0;
+        for(const it of struct.concat(textCands)){ const key=_atlNorm(it.name);
+          if(preKeys.has(key)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; }   /* already on the map from the plan — counts as mapped, not re-pinned */
+          if(newPins.length>=14){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
+          let g=null;
+          if(it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; }
+            if(!g){ const s=await _atlGeocodeStrict(it.name,it.country); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; } }
+          else { const s=await _atlGeocodeStrict(it.name,''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; }
+          if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
+            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); spots.push({name:it.name,verdict:'mapped',src:it.src}); }
+          else spots.push({name:it.name,verdict:'unplaced',src:it.src}); }
+        if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
+          try{ _pois=merged; let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}
+          if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) map.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else map.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
+        return _atlMappingNoteHtml(_atlMappingVerdict(spots), _atlAuditSources(ctx.citations||[]), {infraFail, hadNew:newPins.length>0});
+      }catch(e){ try{ console.warn('reply-mapping audit failed',e); }catch(_){}   /* (#R150) NEVER an empty catch — record the cause + surface an honest note */
+        return '<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;opacity:.85;">'+L('Could not run the map self-check for this answer.','この回答の地図セルフチェックを実行できませんでした。','Karten-Selbstprüfung nicht möglich.','Не удалось выполнить самопроверку карты.','No se pudo verificar el mapa.')+'</div>'; } }
 
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,'');
@@ -29892,7 +30016,7 @@ window.addEventListener('DOMContentLoaded', () => {
           return R(true, h); }
         case 'streetview': case 'streetView': case 'pano': {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
-          if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))); }
+          if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))+_featTogHtml('streetview')); }   /* (#R150) offer the toggle to flip it back on */
           const wantCov=/^(coverage|layer|mode|map|roads?)$/i.test(String(a.mode||''))||a.coverage===true||(!a.place&&a.lng==null&&!(_herePoint&&isFinite(_herePoint.lng)));
           if(wantCov){ let on=false; try{ if(window.IntMapStreetView&&window.IntMapStreetView.coverage) on=window.IntMapStreetView.coverage(true); }catch(_){} return R(!!on, on?note('🧍 '+L('Street View mode on — the light-blue lines are Google\'s real coverage; click one to open its panorama','ストリートビュー・モードをオン — 水色の線はGoogleの実際のカバレッジです。クリックでパノラマを表示','Street-View-Modus an — die hellblauen Linien sind Googles echte Abdeckung; zum Öffnen anklicken','Режим панорам включён — голубые линии это реальное покрытие Google; кликните для просмотра','Modo Street View activado — las líneas celestes son la cobertura real de Google; haz clic para abrir'))+_featTogHtml('streetview'):warn('⚠')); }
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place); else if(_herePoint&&isFinite(_herePoint.lng)) ll={lng:_herePoint.lng,lat:_herePoint.lat,name:_herePoint.name||''};
@@ -30099,6 +30223,28 @@ window.addEventListener('DOMContentLoaded', () => {
              the live paint, and if we cannot parse it SAY SO instead of silently claiming success. */
           let cwarn=''; if(a.color!=null&&String(a.color).trim()!==''){ const pc=parseColor(a.color); if(pc) setHlColor(pc); else cwarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(a.color)); }
           await ensureData();
+          /* (#R150 · geo-target unification) SINGLE ambiguity decision shared by BOTH the multi-region and the
+             single-colour paths below. ROOT CAUSE the user reported: candidate-confirmation ("did you mean the
+             country or the US state?") was appended as a mere WARNING *alongside* the painted success + not-found
+             failures — so confirmation, partial execution, success and failure all showed at once. The spec:
+             "意味が排他的なら確認質問を出して実行を停止" — an exclusive/ambiguous name must produce ONE coherent
+             confirmation that STOPS execution (paints nothing), never mixed with a success/partial. This helper
+             renders that single confirmation; both paths gate on it BEFORE painting. No per-name hardcoding — it is
+             driven entirely by resolveHlTarget's ambiguous verdict, so it applies uniformly to admin regions,
+             historical regions, natural regions and same-name places. */
+          const _hlAmbigConfirm=(ambigArr, clearNames)=>{
+            const body=(ambigArr||[]).map(t=>'<b>'+esc(t.name)+'</b>:<br>• '+((t.candidates||[]).slice(0,4).map(c=>esc(String((c&&c.name)||c||'')+((c&&c.country)?(' — '+c.country):'')+((c&&c.note)?(' ('+c.note+')'):''))).join('<br>• ')||esc(String(t.name)))).join('<br>');
+            const head=(ambigArr&&ambigArr.length>1)
+              ? L('These names are ambiguous — which did you mean for each?','これらの名称には複数の候補があります。それぞれどれを指しますか？','Diese Namen sind mehrdeutig — welchen jeweils?','Названия неоднозначны — какой в каждом случае?','Estos nombres son ambiguos — ¿cuál en cada caso?')
+              : L('That name is ambiguous — which did you mean?','その名称には複数の候補があります。どれを指しますか？','Der Name ist mehrdeutig — welchen meinen Sie?','Название неоднозначно — какой вариант?','Ese nombre es ambiguo — ¿cuál quiere decir?');
+            let extra=''; const cn=(clearNames||[]).filter(Boolean);
+            if(cn.length) extra='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L(
+              'Nothing was drawn on a guess — clarify the above and I\'ll highlight everything (incl. '+esc(cn.slice(0,4).join(', '))+') together.',
+              '推測では描画していません。上記を確定いただければ '+esc(cn.slice(0,4).join(', '))+' などまとめてハイライトします。',
+              'Nichts wurde geraten — nach der Klärung hebe ich alles (auch '+esc(cn.slice(0,4).join(', '))+') zusammen hervor.',
+              'Ничего не нарисовано наугад — уточните, и я выделю всё (включая '+esc(cn.slice(0,4).join(', '))+') сразу.',
+              'No se dibujó nada por conjetura — aclara y resaltaré todo (incl. '+esc(cn.slice(0,4).join(', '))+') junto.')+'</div>';
+            return warn('⚠ '+head)+note(body)+extra; };
           /* (#R104) RANK + FILTER → highlight ("人口5M未満は除外したGDP per capita上位10ヵ国をハイライトして"): when a
              ranking metric is given instead of explicit country names, compute the ranked, optionally
              population-filtered top/bottom-N DETERMINISTICALLY from the real country data and highlight exactly
@@ -30165,6 +30311,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 : approx?('⬡ '+L('approx.','近似','ca.','прибл.','aprox.'))
                 : (kind==='country'||kind==='set')?L('national borders','国境','Staatsgrenzen','госграницы','fronteras'):'';
               G.push({name:nm4,displayName:_regionLabel(nm4),kind,geo:gj,codes,nCountries:nC,composed,osm,derived,approx,verified,basis,basisShort}); }
+            /* (#R150) AMBIGUITY GATE — an exclusive/ambiguous target STOPS the whole request: ask ONE confirmation,
+               paint nothing (no partial + confirmation co-display). Gate before the paint so it applies whether or
+               not the multi-region branch would have drawn. */
+            if(gAmbig.length){ if(_hlMyGen!==_hlGen) return R(true,''); return R(false, _hlAmbigConfirm(gAmbig, G.map(g=>g.displayName||g.name).concat(gMiss)), {meta:{partial:true}}); }
             if(G.length>=2 && G.some(g=>g.kind==='set'||g.kind==='region')){
               if(_hlMyGen!==_hlGen) return R(true,'');   /* superseded by a newer highlight → don't overwrite it */
               clearHl(); clearLineHl(); _hlLines=[]; clearPolyHl();
@@ -30179,12 +30329,13 @@ window.addEventListener('DOMContentLoaded', () => {
               if(G.some(g=>g.composed)) hh+=note(L('Some regions built from member administrative boundaries','一部の地域は構成行政区画の境界から構築','Einige Regionen aus Verwaltungsgrenzen der Teilgebiete','Некоторые регионы построены из адм. границ','Algunas regiones a partir de límites administrativos'));
               if(G.some(g=>g.osm)) hh+=note(L('Some regions from real OpenStreetMap boundaries','一部の地域は実際のOpenStreetMap境界','Einige Regionen aus realen OpenStreetMap-Grenzen','Некоторые регионы — реальные границы OSM','Algunas regiones de límites reales de OpenStreetMap'));
               if(G.some(g=>g.derived||g.approx)) hh+=note(L('⬡ = approximate extent (no official boundary exists)','⬡ = 近似範囲（公式境界が存在しない）','⬡ = ungefähre Ausdehnung (keine offizielle Grenze)','⬡ = приблизительный контур (нет офиц. границы)','⬡ = extensión aproximada (sin límite oficial)'));
+              /* (#R150) gAmbig is now impossible here — the ambiguity gate above returned before painting. Only
+                 honest "drawn, but these couldn't be located/were invalid" disclosure remains (no pending question). */
               if(gRej.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(gRej.map(r=>r.name).join(', ')));
-              if(gAmbig.length) hh+=warn('⚠ '+L('Ambiguous (not drawn) — clarify','曖昧なため未描画 — 指定してください','Mehrdeutig (nicht gezeichnet)','Неоднозначно (не нарисовано)','Ambiguo (no dibujado)')+': '+esc(gAmbig.map(a2=>a2.name).join(', ')));
               if(gMiss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(gMiss.join(', ')));
               if(ver&&!ver.ok) hh+=warn('⚠ '+L('Could not verify the drawn shapes on the map','描画結果を地図上で確認できませんでした','Gezeichnete Formen nicht verifizierbar','Не удалось проверить фигуры на карте','No se pudieron verificar las formas'));
               try{ _wctx.highlight={ name:G.map(g=>g.displayName||g.name).join(', ').slice(0,160), n:G.length, basis:(G.map(g=>g.basis).filter(Boolean).join(' / ')||null) }; }catch(_){}
-              const partial=!!(gRej.length||gAmbig.length||gMiss.length||(ver&&!ver.ok));
+              const partial=!!(gRej.length||gMiss.length||(ver&&!ver.ok));
               return R(true, hh+cwarn, partial?{meta:{partial:true}}:undefined);
             }
             /* not multi-region-eligible (1 shape drew, or a plain country list) → single-colour path below */
@@ -30222,9 +30373,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
                 if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; } }
             else miss.push(nm2); }
-          /* (#R132) if the ONLY results were ambiguous, ask which one — never paint a guess */
-          const _ambHtml=arr=>arr.map(t=>'<b>'+esc(t.name)+'</b>:<br>• '+(t.candidates||[]).slice(0,4).map(c=>esc(String(c.name||'')+(c.country?(' — '+c.country):'')+(c.note?(' ('+c.note+')'):''))).join('<br>• ')).join('<br>');
-          if(!found.length&&!polys.length&&!lines.length&&ambig.length) return R(false, warn('⚠ '+L('That name is ambiguous — which did you mean?','その名称には複数の候補があります。どれを指しますか？','Der Name ist mehrdeutig — welchen meinen Sie?','Название неоднозначно — какой вариант?','Ese nombre es ambiguo — ¿cuál quiere decir?'))+note(_ambHtml(ambig))+cwarn);
+          /* (#R150) AMBIGUITY GATE (shared decision with the multi-region path via _hlAmbigConfirm): ANY ambiguous
+             target STOPS the request with ONE confirmation and paints nothing — never "highlighted A" + "did you
+             mean B or C?" + "not found: D" at once. What WOULD be drawn is listed so the user sees nothing was guessed. */
+          if(ambig.length){ if(_hlMyGen!==_hlGen) return R(true,''); const clear=found.filter(c=>!c._grp).map(c=>c.name).concat(grpNames).concat(polys.map(p=>p.name)).concat(lineNames).concat(miss); return R(false, _hlAmbigConfirm(ambig, clear)+cwarn, {meta:{partial:true}}); }
           if(!found.length&&!polys.length&&!lines.length){
             if(rejected.length) return R(false, warn('⚠ '+L('The shape resolved for that region was invalid (degenerate/self-intersecting) and was not drawn','その地域の形状が不正（退化・自己交差）なため描画しませんでした','Die aufgelöste Form dieser Region war ungültig (entartet/selbstschneidend)','Форма региона оказалась недействительной (вырожденная/самопересекающаяся)','La forma resuelta para esa región no era válida (degenerada/autointersecante)')+': '+esc(rejected.map(r=>r.name).join(', ')))+cwarn);
             return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn); }
@@ -30260,7 +30412,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(anyPartial) hh+=warn('⚠ '+L('Some member boundaries could not be fetched — the shape may be missing pieces','一部の構成区画の境界を取得できませんでした（欠けがある可能性）','Einige Teilgrenzen fehlen','Часть границ получить не удалось','Faltan algunos límites'));
           if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
           if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
-          if(ambig.length) hh+=warn('⚠ '+L('Ambiguous (not drawn) — clarify','曖昧なため未描画 — 指定してください','Mehrdeutig (nicht gezeichnet)','Неоднозначно (не нарисовано)','Ambiguo (no dibujado)')+':<br>'+_ambHtml(ambig));
+          /* (#R150) ambig is impossible here — the ambiguity gate above stopped and asked before any painting. */
           if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', ')));
           if(rejected.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(rejected.map(r=>r.name).join(', ')));   /* (#R143) */
           /* (#R142) PARTIAL result → the planner's pre-written "…をハイライトしました" over-claims the targets that were NOT
@@ -30765,7 +30917,10 @@ window.addEventListener('DOMContentLoaded', () => {
           html+='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(String(txt).trim())+'</div>';
           /* (#R149 · mapping commission) pin the specific real places the analysis named (unless the plan already
              pinned) so an integrated analysis delivers MAP value, not just prose — with an honest placed/not-placed note. */
-          if(replyPlaces.length && !(_pois&&_pois.length)){ try{ html+=await _pinReplyPlaces(replyPlaces,{}); }catch(_){} }
+          /* (#R150) ALWAYS reconcile prose↔map — pass the final text (so places the model omitted from the list are
+             still checked) + the real citations (source-concentration audit); the audit MERGES with any plan pins
+             instead of being suppressed by them. Non-empty catch surfaces an honest note (never silent). */
+          try{ html+=await _pinReplyPlaces(replyPlaces,{text:String(txt).trim(),citations:_aCites}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
           /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
              assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
              confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
@@ -31071,7 +31226,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         case 'control': return doControl(a);
         case 'answer': { let _ah='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
-          if(Array.isArray(a.places)&&a.places.length&&!(_pois&&_pois.length)){ try{ _ah+=await _pinReplyPlaces(a.places,{}); }catch(_){} }
+          /* (#R150) same code-side reconciliation for the planner's direct `answer`: audit the answer text (safety net
+             for an omitted places list), merge with existing pins, honest self-audit + source-concentration note. */
+          { const _acit=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
+            try{ _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} } }
           return R(true, _ah); }
         default: { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn('⚠ '+L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
       } }
@@ -31515,7 +31673,7 @@ window.addEventListener('DOMContentLoaded', () => {
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
     function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; }
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
-    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="3.25" y="3.25" width="17.5" height="17.5" rx="3.5" fill="currentColor"/></svg>';   /* (#R149) bigger stop square again ("四角はもう少し大きく"): rect 15→17.5 in a 24 viewBox rendered 18→20px ≈ 11.25px→14.6px */
+    const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4.25" y="4.25" width="15.5" height="15.5" rx="3.4" fill="currentColor"/></svg>';   /* (#R150) "四角はほんの少し小さく": rect 17.5→15.5 in a 24 viewBox (rendered ≈14.6px→12.9px) — a gentle trim, still clearly a Stop square */
     /* (#R142) send ⇄ stop: while Atlas is generating a reply, the up-arrow SEND button becomes a red STOP square. */
     function _setGoBusy(busy){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go) return;
       if(busy){ go.classList.add('busy'); go.classList.remove('idle'); go.innerHTML=_GO_STOP_SVG; go.onclick=_stopRun; go.title=L('Stop answering','応答を停止','Antwort stoppen','Остановить ответ','Detener respuesta'); go.setAttribute('aria-label',go.title); }
@@ -33278,7 +33436,15 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- CRUD ---- */
     async function create(opts){ opts=opts||{}; if(!_loggedIn()){ _promptLogin(); return {ok:false,error:'login'}; }
       const area=opts.area||activeArea(); if(!area||!area.geometry) return {ok:false,error:'no_area'};
-      const row={ name:String(opts.name||area.label||ML('Area monitor','エリア監視','Gebietsmonitor','Монитор области','Monitor de área')).slice(0,120),
+      /* (#R150) THE "Could not save the monitor" ROOT CAUSE: area_monitors.user_id is `not null` and the
+         insert RLS policy is `with check (user_id = auth.uid())`, but this row previously OMITTED user_id —
+         so every UI insert violated NOT NULL / RLS and failed. The feature was only ever verified server-side
+         (service_role sets user_id explicitly), never through the logged-in client. Set it here exactly like
+         every other user-owned insert (feedback / bug_reports / donations). A belt-and-suspenders DB
+         `default auth.uid()` is added in migration 20260721140000 too. */
+      const _uid=(typeof currentUser!=='undefined'&&currentUser&&currentUser.id)||null;
+      if(!_uid){ _promptLogin(); return {ok:false,error:'login'}; }
+      const row={ user_id:_uid, name:String(opts.name||area.label||ML('Area monitor','エリア監視','Gebietsmonitor','Монитор области','Monitor de área')).slice(0,120),
         geometry:area.geometry, geometry_kind:area.geometry_kind||'polygon',
         center_lng:(area.center_lng!=null?area.center_lng:null), center_lat:(area.center_lat!=null?area.center_lat:null), radius_km:(area.radius_km!=null?area.radius_km:null),
         bbox:area.bbox||_bboxOf(area.geometry)||null, area_label:area.label||null,

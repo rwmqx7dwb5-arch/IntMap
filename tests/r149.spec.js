@@ -35,31 +35,32 @@ test('#5/#6 Atlas send button ↑ is solid black when idle; stop square is enlar
   expect(r.bg).toBe('rgb(255, 255, 255)');     // white button
 });
 
-test('#3 Köppen legend: all 30 zones fit the viewport and the last class is reachable after fit', async () => {
-  await page.setViewportSize({ width: 1280, height: 720 });
+test('#3 Köppen legend ceiling is viewport-based — it stretches to the screen bottom (R150), last class reachable', async () => {
+  // (#R150) the fit no longer clamps to content height (that made "一番下まで伸ばせない"); it clamps to the viewport,
+  // so the resize grip can be dragged to ~12px above the screen bottom. When content exceeds the box, the inner
+  // .kl-scroll is the safety net — every class stays reachable by scrolling.
+  await page.setViewportSize({ width: 1280, height: 800 });
   const r = await page.evaluate(() => {
     const lg = document.getElementById('koppen-legend');
     if (!lg || typeof window._fitKoppenLegend !== 'function') return { err: 'no legend/fit' };
     let items = '';
     for (let i = 0; i < 30; i++) items += '<div class="kl-item" data-c="X' + i + '"><span class="kl-sw"></span>Cfa · 温暖湿潤気候</div>';
     lg.innerHTML = '<span class="kl-drag">⋮⋮</span><button class="layer-popup-x">✕</button><h4>ケッペン気候区分</h4>'
-      + '<div class="kl-period"><label>期間</label><select><option>1991–2020</option></select></div>'
       + '<div class="kl-scroll">' + items + '</div>'
       + '<div class="kl-hint">クリックでその気候だけ強調 / 右クリックで定義</div>';
-    lg.style.display = 'flex'; lg.style.height = ''; lg.style.maxHeight = 'none';
-    const natural = lg.getBoundingClientRect().height;
-    lg.style.maxHeight = '';
+    lg.style.display = 'flex'; lg.style.top = '74px'; lg.style.height = ''; lg.style.maxHeight = '';
     window._fitKoppenLegend(lg);
-    const sc = lg.querySelector('.kl-scroll');
+    lg.style.height = '4000px';   // simulate dragging the resize grip all the way down
+    const rect = lg.getBoundingClientRect();
+    const sc = lg.querySelector('.kl-scroll'); sc.scrollTop = sc.scrollHeight;   // scroll the inner area to the end
     const last = [...lg.querySelectorAll('.kl-item')].pop();
     const lr = last.getBoundingClientRect(), sr = sc.getBoundingClientRect();
-    return { natural: Math.round(natural), cap: window.innerHeight - 84,
-      innerHidden: sc.scrollHeight - sc.clientHeight, lastVisible: lr.bottom <= sr.bottom + 1.5 };
+    return { bottomGap: Math.round(window.innerHeight - rect.bottom), lastReachable: lr.bottom <= sr.bottom + 2 };
   });
   expect(r.err).toBeUndefined();
-  expect(r.natural).toBeLessThanOrEqual(r.cap);   // the whole 30-zone legend fits the viewport budget
-  expect(r.innerHidden).toBeLessThanOrEqual(1);   // nothing hidden behind an inner scroll
-  expect(r.lastVisible).toBe(true);               // the last climate class is fully visible (stretch-to-end)
+  expect(r.bottomGap).toBeGreaterThanOrEqual(0);
+  expect(r.bottomGap).toBeLessThanOrEqual(26);   // reaches the screen bottom (was clamped ~200px short of it)
+  expect(r.lastReachable).toBe(true);            // the last climate class is reachable via the inner scroll
 });
 
 test('#9 dropping an image into Atlas shows a thumbnail and enables Send', async () => {
