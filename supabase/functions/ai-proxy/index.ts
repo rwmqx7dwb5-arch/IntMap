@@ -17,8 +17,8 @@
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
 //  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-luna              (#R148 Terra→Luna; Terra 403 no-access on this project; model fixed here — users never pick it)
-//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Luna via /v1/responses)
+//            supabase secrets set AI_MODEL=gpt-5.6-terra             (#R150 Terra re-verified reachable on this project; model fixed here — users never pick it. Luna is the FALLBACK_MODEL.)
+//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Terra via /v1/responses)
 //            # other providers stay wired but dormant:
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
 //            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
@@ -90,13 +90,13 @@ const json = (body: unknown, status = 200) =>
 const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
-// (#R148) OpenAI model. GPT-5.6 Terra was set in R147 but this OpenAI PROJECT has NO access to it
-// (api.openai.com → 403 model_not_found "Project ... does not have access to model gpt-5.6-terra"),
-// which took Atlas AI down entirely ("The AI service is temporarily unavailable"). GPT-5.6 Luna IS
-// accessible on the project (verified 200 on /v1/responses) so it is the working default + the
-// fallback. FALLBACK_MODEL is retried once when the configured AI_MODEL is rejected as
-// not-found / no-access, so a bad AI_MODEL secret can never again blanket-kill the AI.
-const OPENAI_DEFAULT_MODEL = "gpt-5.6-luna";
+// (#R150) OpenAI model = GPT-5.6 TERRA. In R148 this project had NO access to gpt-5.6-terra (403
+// model_not_found), so we ran Luna. Re-verified on 2026-07-21 via the refresh-news proxy (same key +
+// AI_MODEL secret, NO model fallback): AI_MODEL=gpt-5.6-terra geocoded 61/63 EN + 104/116 JP articles →
+// Terra is now reachable on the project. Per the user's standing request, Terra is now the model
+// (AI_MODEL secret = gpt-5.6-terra). Luna stays the FALLBACK_MODEL: if Terra ever loses access again, a
+// 403/404 model_not_found retries once with Luna so a model outage can never blanket-kill Atlas.
+const OPENAI_DEFAULT_MODEL = "gpt-5.6-terra";
 const FALLBACK_MODEL = "gpt-5.6-luna";
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused

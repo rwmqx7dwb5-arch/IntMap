@@ -18,14 +18,13 @@ test('R147 #13 free AI quota is 10/day on the client and server', () => {
   assert.ok(!/1日30回/.test(html), 'no stale JP "1日30回"');
 });
 
-test('R148 #12 Atlas model reverted to GPT-5.6 Luna (Terra had no project access); Gemini Flash-Lite unused', () => {
-  // (#R148) R147 set Terra, but this OpenAI project returns 403 model_not_found for Terra → Atlas died.
-  // Luna IS accessible (verified 200 on /v1/responses) so it is the working default; Terra must NOT
-  // be the default any more.
+test('R150 #9 Atlas model = GPT-5.6 Terra (re-verified reachable); Luna is the fallback; Gemini Flash-Lite unused', () => {
+  // (#R150) R148 ran Luna because this project 403'd Terra. Re-verified 2026-07-21 via the refresh-news proxy
+  // (same key + AI_MODEL, no model fallback): AI_MODEL=gpt-5.6-terra geocoded 61/63 EN + 104/116 JP → Terra is
+  // now reachable, so it is the default per the user's standing request. Luna stays the resilient FALLBACK_MODEL.
   assert.match(aiproxy, /provider === "openai" \? OPENAI_DEFAULT_MODEL/, 'openai default = OPENAI_DEFAULT_MODEL');
-  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "gpt-5\.6-luna"/, 'default model = Luna');
-  assert.match(aiproxy, /const FALLBACK_MODEL = "gpt-5\.6-luna"/, 'fallback model = Luna');
-  assert.ok(!/provider === "openai" \? "gpt-5\.6-terra"/.test(aiproxy), 'Terra is no longer the default');
+  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "gpt-5\.6-terra"/, 'default model = Terra');
+  assert.match(aiproxy, /const FALLBACK_MODEL = "gpt-5\.6-luna"/, 'fallback model = Luna (resilience)');
   assert.match(aiproxy, /Flash-Lite is never used/, 'documents that Gemini Flash-Lite is never used');
   const aiproxyNoNote = aiproxy.replace(/Gemini 3\.1 Flash-Lite is never used\./g, '');
   assert.ok(!/flash-lite/i.test(aiproxyNoNote), 'flash-lite appears only in the "never used" note');

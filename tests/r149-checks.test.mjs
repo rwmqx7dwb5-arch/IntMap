@@ -34,9 +34,12 @@ test('R149 #7 monitor create dialog shows guaranteed INLINE failure feedback', (
   assert.ok((html.match(/showErr\(/g) || []).length >= 2, 'showErr used for no-area AND create failure');
 });
 
-test('R149 #3 Köppen legend compacted so 30 zones fit and can stretch to the last class', () => {
-  assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'CSS ceiling reduced 92→84');
-  assert.match(html, /const cap=Math\.round\(window\.innerHeight - 84\)/, 'JS fit cap matches 84');
+test('R149/R150 #3 Köppen legend stretches to the screen bottom (viewport-based ceiling)', () => {
+  assert.match(html, /max-height:calc\(100dvh - 84px\)/, 'CSS ceiling near full viewport');
+  // (#R150) fit is now VIEWPORT-based (down to ~12px above the screen bottom), NOT clamped to content — so the
+  // resize grip can be dragged all the way down; the old content-height cap made "一番下まで伸ばせない".
+  assert.match(html, /const renderedMax=Math\.round\(window\.innerHeight - top - 12\)/, 'JS fit is viewport-based (R150)');
+  assert.ok(!/const cap=Math\.round\(window\.innerHeight - 84\)/.test(html), 'old content-clamp cap removed');
   assert.match(html, /\.kl-item\{ display:flex; align-items:center; gap:6px; padding:1px 4px;/, 'compact rows (1px)');
   assert.match(html, /\.kl-sw\{ width:11px; height:11px;/, 'smaller swatch');
 });
@@ -46,7 +49,7 @@ test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   assert.match(html, /font-size:1\.55em;letter-spacing:\.01em/, 'h1 ~1.55em');
   assert.match(html, /font-size:1\.32em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.32em');
   assert.match(html, /font-size:1\.14em;line-height:1\.32/, 'h3 ~1.14em');
-  assert.match(html, /'<div style="height:\.7em"><\/div>'/, 'paragraph gap ~0.7em');
+  assert.match(html, /'<div style="height:\.72em"><\/div>'/, 'paragraph gap ~0.72em (R150)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');
 });
@@ -54,7 +57,7 @@ test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
 test('R149 #5/#6 send button arrow solid black when idle; bigger stop square', () => {
   assert.match(html, /\.atl-go\.idle\{background:#fff;box-shadow:0 1px 4px rgba\(0,0,0,0\.12\);color:#111;\}/, 'idle icon is #111 (not muted rgba)');
   assert.ok(!/\.atl-go\.idle\{[^}]*rgba\(120,120,128,0\.75\)/.test(html), 'old faded idle colour removed');
-  assert.match(html, /_GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="3\.25" y="3\.25" width="17\.5" height="17\.5"/, 'stop square enlarged');
+  assert.match(html, /_GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4\.25" y="4\.25" width="15\.5" height="15\.5"/, 'stop square slightly smaller (R150 17.5→15.5)');
 });
 
 test('R149 #8 choice free-input send button = white bg + SVG (no plain-text →)', () => {
@@ -80,8 +83,9 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
 
 test('R149 #10 mapping-quality commission: reply places get pinned + honest self-audit', () => {
   assert.match(html, /async function _pinReplyPlaces\(places, ctx\)/, 'reply-place pinning helper');
-  assert.match(html, /_tryMapResearch\(ctx\.place\|\|''/, 'reuses the geocode+pin ladder');
-  assert.match(html, /Not placed \(couldn/, 'honest not-placed note');
+  // (#R150) the orchestrator now audits via the pure verdict (mapped/unplaced/ambiguous) + merges pins; see r150-checks.
+  assert.match(html, /_atlMappingNoteHtml\(_atlMappingVerdict\(spots\)/, 'reply mapping folds into the pure verdict');
+  assert.match(html, /but not placed \(couldn/, 'honest not-placed note (R150 wording)');
   // analyze parses a PLACES: trailer (no extra AI call), answer carries a places array
   assert.match(html, /PLACES\\s\*\[:：\]/, 'analyze strips a PLACES: trailer');
   assert.match(html, /"type":"answer","text":str,"places"\?:\[\{"n":str,"c":str,"k":str\}\]/, 'answer action schema has places');
