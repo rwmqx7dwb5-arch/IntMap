@@ -5,6 +5,41 @@
 
 ---
 
+## R155 — 統合セキュリティ大改修＋UX/認証バッチ：**本番で発見した2件の重大脆弱性を修正・本番反映済**（profiles PII世界公開／is_pro・plan自己昇格）／**最小権限化＋profilesガードトリガ**／**アカウント削除（真の削除）**／**パスキー(WebAuthn)**／**弱い/漏えいパスワード拒否・列挙防止・トークン流出防止**／**admin.html隔離**／**Atlas返答言語ロック(山東省→中国語バグ)**／**Atlas位置情報を要求(行き止まり廃止)**／**右サイドバー既定の真の反映**／**Atlasタイポ強化＋出典ゼロ回避**／**ケッペン幅7回目=border-box** (tag `#R155`)
+
+**背景**: 本番DBが移行ファイルから乖離しており、再構築ベースラインは本番のロックダウン状況を過大評価していた。`supabase db query --linked`(Management API・DBパス不要)による**本番ライブ監査**(2026-07-22)で、`profiles`上に**2件のライブ重大脆弱性**を発見・**同日修正・本番反映・検証**。
+
+### ① 本番の2重大脆弱性（発見→修正→本番検証、すべて同日）
+- **PII世界公開(critical・未緩和で実在)**: `profiles` に `public` ロール宛の冗長な `SELECT … USING (true)` ポリシが**2本**。RLSはポリシをORするため意図した own+admin ポリシを上書きし、**anon/authenticated の誰もが全ユーザの `email`/`is_admin`/`is_pro`/`plan` を公開anonキーで読取可能**だった。→両ポリシをDROP＋`profiles_public` ビュー(id/display_name/bio/avatar_url のみ・クライアントは `imViewProfile` で既に優先読取#R134)を作成。
+- **課金/権限昇格(high・is_pro/plan は実在の悪用可能)**: Supabaseのスキーマ既定権限は全ロールに全publicテーブルの table-level `UPDATE` を付与し、profilesのUPDATEポリシは行のみ(列フィルタ無)。既存の `guard_admin_flag` トリガが `is_admin` **だけ**を凍結していたため admin昇格は事実上防御済だったが、**`is_pro`/`plan` は無防備**→ユーザは `update profiles set plan='unlimited'` で有料AIクォータ/監視上限を自己付与可能だった。→table-level UPDATE をREVOKE(列grantのみ)＋**`tg_profiles_guard_privcols`**(grant非依存のBEFORE UPDATEトリガ・`is_admin/is_pro/plan/email` を非service_role呼出で凍結・R144パターンをprofilesへ適用)を追加し、狭い `guard_admin_flag` を廃止・置換。**pgTAP 05 が本番条件(authenticatedへ blanket UPDATE付与)をCI上で再現**し、トリガが昇格を阻止することを証明(vanilla CIでは再現不能だった唯一の穴)。
+
+### ② 最小権限化（`20260722100000_security_r155.sql`・本番反映済）
+anon/authenticated から全publicテーブルの既定`ALL`をREVOKEしベースライン意図の最小集合のみ再付与。**R144が漏らした monitor子テーブル**(`monitor_runs/_evidence/_reports`)も含め「run結果は偽造不能」を grant層でも成立。anon/user投稿テキスト(`feedback/bug_reports/community_*`)に `NOT VALID` 長さ上限(濫用/DoSガード)。本番固有の `rls_auto_enable` イベントトリガ(新規publicテーブルのRLS自動有効化=良いfail-closed既定)は温存。**教訓: 本番は移行ファイルと乖離しうる。監査は移行ファイルでなく本番実状(`pg_policies`/`role_table_grants`)を見よ。**
+
+### ③ アカウントライフサイクル＋認証強化（クライアント＋Edge Function）
+- **アカウント削除(真の削除)**: `delete-account` Edge Function(JWT必須・`confirm:"DELETE"`必須・全所有行を明示purge後 `auth.admin.deleteUser`・カスケード設定非依存)。本番デプロイ済＋スモーク検証(401 no-user / 405 method / 401 no-auth)。アカウントメニューにメール入力確認付き削除。
+- **パスキー(WebAuthn)**: `supabase-js` `experimental.passkey`(CDN最新2.110で `signInWithPasskey`/`registerPasskey`/`passkey.list`/`.delete` 実在をcurl確認)。ログインモーダルにサインイン＋アカウントのセキュリティ節に登録/一覧/削除。`browserSupportsWebAuthn`＋メソッド存在で機能検出しパスワードへ安全フォールバック。RP設定はダッシュボード作業(§9)。
+- **再設定/変更/全端末ログアウト**: `resetPasswordForEmail`＋`PASSWORD_RECOVERY`→強度/漏えいゲート付き set-password モーダル、`updateUser({password})`/`updateUser({email})`、`signOut({scope:'global'})`。
+- **弱い/漏えいパスワード拒否**: クライアント強度ゲート(8字以上・大小英字＋数字=config.tomlサーバ床のミラー)＋**HIBP k-匿名**(SHA-1先頭5hexのみ送出・fail-open=HIBP障害でも正規サインアップを阻害しない)。ダッシュボードのサーバ側 leaked-password protection が正規の最終防壁(§9)。
+- **列挙防止**: サインアップは既存/新規で同一メッセージ、ログインは汎用「メール/パスワードが不正」、再設定も列挙安全文言。admin.htmlも同様。
+- **トークン流出防止**: GA `page_location`/`page_referrer` から `code`/`access_token`/`refresh_token`/`token_hash` を除去、OAuth/再設定 `redirectTo` は origin+path のみ、`referrer` meta は `strict-origin-when-cross-origin`。
+
+### ④ admin.html 隔離
+公開Sign Up撤去(管理者はDB付与・実境界はRLS/RPC＋profilesガードトリガ→非管理者は `gate()` で即サインアウト)。**厳格CSP**(`connect-src` を self＋`*.supabase.co` に限定・`object-src 'none'`・`base-uri`/`form-action 'self'`・CSP違反0で起動確認)、esc()にシングルクォートエスケープ追加、`safeUrl()` スキーム許可制、破壊的インポート前の**再認証(sudo)ゲート**。`esc()`/`safeUrl()` の実挙動XSSテストは `tests/r155-checks.test.mjs`。
+
+### ⑤ UX 6件（実chromiumで検証）
+- **Atlas返答言語ロック(山東省→中国語)**: 真因は `_langLine()` の「メッセージ言語を常にミラー・UI言語に従うな」文言→モデルがHan文字から中国語を選択。`_replyLang()`は既にkanji-without-kana→UI言語を返すので、文言を「解決言語で全文記述・地名/人名/組織名は返答言語を変えない」に変更。
+- **Atlas位置情報の行き止まり**: `navigator.permissions.query` で事前判定→hard-denied は「ブラウザで再有効化」の実行可能な案内(ブラウザ仕様上、拒否後は再プロンプト不可)。errorコードで denied/unavailable 区別、getCurrentPosition timeout 9s→15s(プロンプト応答時間確保)。FABも同様。
+- **右サイドバー既定の真の反映**: R154の`right`既定を、旧`classic`の保存値が上書きしていた真因→**明示選択(`layerPanelSet`フラグ)時のみ**保存値が既定を上書き。古いclassicは無視され、再報告した右サイドバーが実際に出る。
+- **Atlasタイポ強化**: analyze系プロンプトに強制的で具体的なフォーマット指示(見出し/箇条書き無しで3文超禁止)、mdMini描画を鋭利化(## 1.44em＋中立ヘアライン=配置であり色分けでない・#/###拡大・節間余白増・箇条書き明瞭化)。捏造見出しは引き続き禁止(R154の「判定がおかしい」根本)＝拡大はモデルの実構造のみ。
+- **Atls出典ゼロ回避**: プランナが引用価値ある事実質問を、実出典を収集/引用する `analyze` へ誘導(bare answerは出典添付不能)。
+- **ケッペン幅7回目=border-box**: 真因は**content-box**で `_fitKoppenLegend` が設定した幅の外に20px padding+2px borderが乗り、パネルがテキストより~22px広い(「テキスト以上に横幅伸ばして…行の幅変わってない」の死に幅)＋max-width clamp 324px が長い独/露名をクリップ(「行の幅が狭すぎる」)。→`box-sizing:border-box`＋式に+22折込＋clamp 324→460。**実測で5言語すべて0クリップ・言語ごと内容ハグ**(JP 211/EN 280/ES 307/RU 311/DE 321px・460は未到達)。高さは min(内容,ビューポート) で全30区分表示・短VPはスクロールでEF到達。
+
+### テスト/CI/デプロイ
+`npm test` 緑（static＋node **124**＝既存＋新r155-checks 15・自変更で壊れた r149/r150/r151/r152/r153/r154 の exact-string assertを新値へ更新＋Playwright smoke 8/8）。pgTAP `05_r155_security_test.sql` 新規（CIで実行）。実chromium boot検証: pageerror 0・passkey API present・全モーダル描画・ケッペン全言語適合。Edge Function `delete-account` 本番デプロイ済。DB migration `20260722100000_security_r155.sql` は**本番反映済・検証済**。**手動作業(ダッシュボード)**: パスキーRP設定・leaked-password protection・Redirect URL追加・SMTP/CAPTCHA(任意) — `docs/SECURITY-ARCHITECTURE.md §9`。
+
+---
+
 ## R154 — UX/機能バッチ10件：**ケッペン幅＝言語ごとに内容へフィット(内容ハグ)**／**Atlasタイポ＝サイズと配置のみ・色分け廃止・見出し捏造停止(判定修正)**／**SV線 tileSize64で真のヘアライン**／**Atlas出典＝復号不能Google Newsリダイレクトを"ゼロ"にせず発行元名で保持**／**DrawでElevation profile**／**AQI/UVIをiOS風に再構築(数値の色を背景・6段階/輝度で文字色)**／**Atlas音声入力(Web Speech)**／**通常モードLayerパネル既定=右サイドバー**／**右サイドバーを左右ドラッグ可＋既定幅縮小(430→380)**／**オフにしたレイヤーの残存表示を修正** (tag `#R154`)
 
 ユーザー指摘**10件**を根本原因から。`index.html` のみ（Edge Function 変更なし＝deploy不要）＋新規 `tests/r154-checks.test.mjs`(node 10)。`npm test` 緑（static＋node **109**＝既存99＋新r154-checks10・自変更で壊れた r149/r150/r152/r153 の exact-string assert を更新＋Playwright、pageerror 0）。主要修正はハーネス実測（`@playwright/test` chromium）で検証：ケッペン幅は5言語で内容ハグ（JP 286→**207px**＝死に幅~80px消滅、DE 264→**317px**＝クリップ0）、AtlasタイポはmdMiniに`--primary-color`不使用＋`_atlStanza`が"Background:"を`##`化しない（実測 false×false）、7 critical globals＋#map 健全、AQI/UVI 淡色→暗文字/濃色→白文字の輝度分岐、`.atl-mic`＋SpeechRecognition present、`imLayerPanel='right'`。

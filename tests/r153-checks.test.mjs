@@ -20,7 +20,7 @@ const root = new URL('../', import.meta.url);
 const html = readFileSync(new URL('index.html', root), 'utf8');
 
 test('R153 #1 Köppen legend dynamic per-language width + shorter rows + RU/ES names', () => {
-  assert.match(html, /\.koppen-legend\{[^}]*width:210px; min-width:172px; max-width:340px;/, 'R154: dynamic per-language width (clamped 172–340), replacing the fixed 264px lock');
+  assert.match(html, /\.koppen-legend\{[^}]*width:220px; min-width:180px; max-width:460px;/, 'R154: dynamic per-language width (clamped 172–340), replacing the fixed 264px lock');
   assert.match(html, /lg\.style\.width=w\+'px';/, 'R154: _fitKoppenLegend measures the widest row and sets the exact width');
   assert.match(html, /\.kl-item\{[^}]*padding:0 4px;[^}]*line-height:1\.2;/, 'row block shortened (padding 0, line-height 1.2) so the last zone is reachable');
   assert.match(html, /window\.KNAME\[k\]\.ru=_kru\[k\]/, 'Russian climate names applied to KNAME');
@@ -42,7 +42,7 @@ test('R153/R154 #3 Atlas typography — safe reflow only, NO fabricated headings
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: the opening sentence is NOT promoted to a bold lead');
   assert.match(html, /model emitted real headings already → respect verbatim/, 'model-authored ## structure is respected as-is');
   assert.match(html, /long run-on → ~2-sentence stanzas \(spacing only, no enlargement\)/, 'the only reflow is stanza-splitting (spacing, not enlargement)');
-  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'paragraph gap 1.2em');
+  assert.match(html, /<div style="height:1\.3em"><\/div>/, 'paragraph gap 1.3em (R155)');
   // headings are colourless now
   assert.match(html, /HEADINGS DIFFERENTIATE BY SIZE \+ SPACING ONLY — NO COLOUR/, 'headings size/spacing only, no colour');
 });

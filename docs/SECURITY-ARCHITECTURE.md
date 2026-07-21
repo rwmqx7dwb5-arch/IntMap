@@ -14,7 +14,7 @@ the data flow, an Edge Function, or the auth model changes.
 |---|---|---|
 | User account identity / session (JWT) | Supabase Auth; JWT in browser `localStorage` | Supabase Auth; **correct output-encoding** so XSS can't steal the token |
 | Per-user private data (`favorites`, `user_prefs`, `donations`/`feedback`/`bug_reports` PII, `ai_usage`) | Postgres | **RLS** + column grants + SECURITY DEFINER RPCs |
-| Admin capability (`profiles.is_admin`) | Postgres | RLS (`is_admin()`), no self-escalation (column grant) |
+| Admin capability + billing (`profiles.is_admin`/`is_pro`/`plan`/`email`) | Postgres | RLS (`is_admin()`) + column grant + **`tg_profiles_guard_privcols` BEFORE-UPDATE trigger** (grant-independent freeze, #R155) — no self-escalation of admin or billing plan |
 | Provider API keys (AI, etc.) | Edge Function env (server only) | Never sent to the browser; never logged |
 | AI spend / quota | `ai_usage` + `ai-proxy` | JWT-gated proxy + atomic RPC; refresh-news fail-closed secret |
 | Integrity of what every visitor sees | `index.html` render paths | **XSS output-encoding** (`window.IntMapSafe`) + CSP |
@@ -245,14 +245,101 @@ put a real secret value in the repo, a PR, or a log.**
      Until the secret is set + cron updated, news refresh is intentionally **off** (fail-safe).
 - **Auth → URL Configuration**: confirm the production **Site URL** and **Redirect URLs** are
   the real production origins only (no wildcard, no stray localhost) to prevent open-redirect
-  on OAuth.
+  on OAuth. The R155 **password-reset** and **email-change** flows email a link back to
+  `location.origin + location.pathname`, so that exact URL (`https://rwmqx7dwb5-arch.github.io/IntMap/`)
+  MUST be in the Redirect URLs list or those links will bounce.
+- **Auth → Passwords (#R155) — REQUIRED for the breached-password guarantee:** enable
+  **"Leaked password protection"** (HIBP, server-side) and set **Minimum password length = 8**
+  with the character requirement matching `supabase/config.toml` (`lower_upper_letters_digits`).
+  The client mirrors this + runs its own HIBP k-anonymity check, but the dashboard toggle is the
+  authoritative server-side guard and is NOT reproducible from the repo.
+- **Auth → Passkeys / WebAuthn (#R155) — REQUIRED for passkeys to work:** configure the
+  **Relying Party ID = `rwmqx7dwb5-arch.github.io`** (the bare host; `github.io` is on the public
+  suffix list so the full host must be used) and add the **Relying Party Origin
+  `https://rwmqx7dwb5-arch.github.io`**, then enable passkeys. Until this is set, the client's
+  passkey buttons degrade gracefully to password auth (feature-detected). supabase-js ≥ 2.105 is
+  required (the app loads the latest `@supabase/supabase-js@2` from the CDN, which satisfies it).
+- **Auth → SMTP**: for reliable delivery of confirmation / reset / email-change mails at volume,
+  configure a custom SMTP sender (the default Supabase mailer is rate-limited). Optional but
+  recommended once real users exist.
+- **Auth → Bot protection (CAPTCHA)**: optionally enable hCaptcha/Turnstile on signup + password
+  reset to blunt automated abuse of those public endpoints (the client already sends no data that
+  would leak, and the flows are enumeration-safe).
 - **Postgres version**: confirm `supabase/config.toml` `db.major_version` matches production
   (for faithful `db diff`).
-- **Migrations**: apply `20260720120000_security_hardening.sql` via the gated flow in
-  [`MIGRATIONS.md`](MIGRATIONS.md) (it is `NOT VALID` — safe against a pre-existing bad row;
-  `VALIDATE CONSTRAINT` after confirming clean).
+- **Migrations**: apply `20260720120000_security_hardening.sql` **and `20260722100000_security_r155.sql`**
+  via the gated flow in [`MIGRATIONS.md`](MIGRATIONS.md) (both are additive/idempotent; the R155
+  length caps are `NOT VALID`, safe against a pre-existing oversized row). **R155 was already
+  applied to production on 2026-07-22 via the Management API** and verified (profiles PII leak +
+  is_pro/plan escalation closed) — re-applying is a no-op.
+- **`delete-account` Edge Function (#R155)**: deployed with `verify_jwt` on
+  (`supabase functions deploy delete-account`). No secrets beyond the injected service-role key.
 - **Backups**: register the backup secrets so `db-backup.yml` can run (see
   [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md)).
+
+---
+
+## 11. R155 — auth hardening, DB reconciliation & account lifecycle
+
+Prod had **drifted** from the migration files; a live audit (`supabase db query --linked`,
+2026-07-22) found the reconstructed baseline overstated how locked-down production was. Two
+**live criticals**, both on `profiles`, plus a full auth-lifecycle build-out:
+
+### 11.1 The two production criticals (found + fixed + verified same day)
+- **PII leak (critical).** `profiles` carried **two** redundant `SELECT … USING (true)` RLS
+  policies granted to the `public` role. RLS ORs policies, so these overrode the intended
+  own-or-admin policy: **any anon/authenticated caller could read every user's `email`,
+  `is_admin`, `is_pro`, `plan`** via the public anon key. Fixed by dropping both permissive
+  policies and adding the `profiles_public` view (id/display_name/bio/avatar_url only) — which
+  the client already reads first (`imViewProfile`, #R134).
+- **Privilege / billing escalation (high).** Supabase's schema-wide DEFAULT PRIVILEGES grant
+  every role a blanket table-level `UPDATE` on every public table, and profiles' UPDATE policy
+  is row-only (no column filter). A pre-existing `guard_admin_flag` trigger froze `is_admin`
+  specifically, so admin self-promotion was defended-in-fact — **but it left `is_pro`/`plan`
+  unguarded**, so a user could `update profiles set plan='unlimited'` to grant themselves the
+  paid AI quota / raised monitor cap. Fixed by revoking the table-level UPDATE (column grant
+  only) **and** adding `tg_profiles_guard_privcols` — a grant-independent BEFORE UPDATE trigger
+  that freezes `is_admin`/`is_pro`/`plan`/`email` for any non-`service_role` caller (the R144
+  pattern applied to profiles), which supersedes and replaces the narrow `guard_admin_flag`.
+
+### 11.2 Least-privilege reconciliation (`20260722100000_security_r155.sql`)
+Revoked the default `ALL` from `anon`/`authenticated` on **every** public table and re-granted
+only the baseline's intended minimal set — including the monitor child tables (`monitor_runs`/
+`_evidence`/`_reports`), which R144 had missed, so "run results cannot be forged" now holds at
+the grant layer too, not just via RLS. Added `NOT VALID` length caps on the anon/user-insertable
+text (`feedback`/`bug_reports`/`community_*`) as an abuse/DoS guard. The prod-only `rls_auto_enable`
+event trigger (auto-enables RLS on any new public table — a good fail-closed default) was kept.
+Proven by **pgTAP `05_r155_security_test.sql`**, which reproduces the prod condition on CI (grants
+`authenticated` the blanket UPDATE) and asserts the guard trigger still blocks escalation — the
+one thing vanilla CI could not otherwise reproduce.
+
+### 11.3 Account lifecycle & auth hardening (client + Edge Function)
+- **Account deletion (real, not logout):** `delete-account` Edge Function — JWT-gated,
+  `confirm:"DELETE"` required, explicit owned-row purge across every user-owned table, then
+  `auth.admin.deleteUser`. The account menu has a type-your-email confirmation.
+- **Passkeys (WebAuthn):** `supabase-js` `experimental.passkey` — sign-in on the login modal,
+  enroll/list/remove in the account Security section. Feature-detected (`browserSupportsWebAuthn`
+  + method presence) with graceful password fallback.
+- **Password reset / change, email change, log-out-all-devices:** `resetPasswordForEmail` +
+  `PASSWORD_RECOVERY` → a strength-and-breach-gated set-password modal; `updateUser({password})`
+  / `updateUser({email})`; `signOut({scope:'global'})`.
+- **Weak/breached password rejection:** client strength gate (8+, lower/upper/digit — mirrors the
+  `config.toml` server floor) **and** a Have-I-Been-Pwned k-anonymity check (only the first 5 hex
+  of the SHA-1 leaves the device; fail-open so an HIBP outage never blocks a real signup). The
+  dashboard's server-side leaked-password protection (§9) is the authoritative backstop.
+- **Account-enumeration safety:** identical signup message whether or not the email exists; a
+  single generic "invalid email or password"; enumeration-safe reset wording. Same in `admin.html`.
+- **Token-leak prevention:** GA `page_location`/`page_referrer` are sanitized to strip
+  `code`/`access_token`/`refresh_token`/`token_hash`; OAuth + reset `redirectTo` are origin+path
+  only; `referrer` meta is `strict-origin-when-cross-origin`.
+
+### 11.4 Admin console isolation (`admin.html`)
+Removed the public **Sign Up** (admins are DB-provisioned; the real boundary is RLS/RPC + the
+profiles guard trigger, so a non-admin who signs in is bounced by `gate()`). Added a **strict CSP**
+(`connect-src` locked to self + `*.supabase.co`; `object-src 'none'`; `base-uri`/`form-action 'self'`),
+hardened the local escaper to also escape the single quote, added a `safeUrl()` scheme allow-list,
+and a **re-authentication ("sudo") gate** before the destructive starter-dataset import. Behavioural
+XSS tests for `esc()`/`safeUrl()` live in `tests/r155-checks.test.mjs`.
 
 ---
 
