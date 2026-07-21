@@ -49,7 +49,7 @@ test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   assert.match(html, /font-size:1\.55em;letter-spacing:\.01em/, 'h1 ~1.55em');
   assert.match(html, /font-size:1\.32em;line-height:1\.3;letter-spacing:\.005em/, 'h2 ~1.32em');
   assert.match(html, /font-size:1\.14em;line-height:1\.32/, 'h3 ~1.14em');
-  assert.match(html, /'<div style="height:\.72em"><\/div>'/, 'paragraph gap ~0.72em (R150)');
+  assert.match(html, /'<div style="height:\.85em"><\/div>'/, 'paragraph gap ~0.85em (R151, was .72 in R150)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');
 });

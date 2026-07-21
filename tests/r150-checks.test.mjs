@@ -44,7 +44,7 @@ test('R150 #4 typography: flat prose gets code-side rhythm (stanza + sentence-en
   assert.match(html, /function _atlStanza\(raw\)\{/, 'stanza grouping helper exists');
   assert.match(html, /if\(\(raw\.match\(\/\\n\/g\)\|\|\[\]\)\.length>1\) return raw;/, 'respects the model\'s own line breaks');
   assert.match(html, /esc\(_dedupText\(_atlStanza\(String\(s\|\|''\)\)\)\)/, 'mdMini runs the stanza pass first');
-  assert.match(html, /\.replace\(\/\(\[\.!\?。！？…”"』）\)\]\)\\n\(\?=\\S\)\/g,'\$1<div style="height:\.5em"><\/div>'\)/, 'a sentence-end + single newline becomes a soft paragraph gap');
+  assert.match(html, /\.replace\(\/\(\[\.!\?。！？…”"』）\)\]\)\\n\(\?=\\S\)\/g,'\$1<div style="height:\.6em"><\/div>'\)/, 'a sentence-end + single newline becomes a soft paragraph gap');
 });
 
 test('R150 #10 research-mapping: PURE audit helpers exist and are exposed for tests', () => {
@@ -90,7 +90,7 @@ test('R150 #7 geo-target: ONE ambiguity gate; confirmation never co-displays wit
 
 test('R150 #8 satellite: flight-sim prefetches ahead of the aircraft + sat-labels host round-robin', () => {
   assert.match(html, /window\._imPredictivePrefetch=predictivePrefetch/, 'directional prefetch exposed for the flight loop');
-  assert.match(html, /if\(now-\(st\._pfT\|\|0\)>380\)\{ st\._pfT=now; try\{ window\._imPredictivePrefetch/, 'flight loop warms tiles ~2.6x/s (moveend never fires mid-flight)');
+  assert.match(html, /if\(now-\(st\._pfT\|\|0\)>300\)\{ st\._pfT=now; try\{ window\._imPredictivePrefetch&&window\._imPredictivePrefetch\(true\)/, 'flight loop warms tiles ~3.3x/s aggressively (moveend never fires mid-flight)');
   // sat-labels reference source now round-robins BOTH Esri hosts (was one)
   assert.match(html, /'sat-labels':\{type:'raster',tiles:\['https:\/\/server\.arcgisonline\.com[^']*','https:\/\/services\.arcgisonline\.com/, 'sat-labels uses two hosts');
 });

@@ -5,6 +5,38 @@
 
 ---
 
+## R151 — UX/機能バッチ11件：Companies空比較ヒント／Atlasトグル拡充(globe/compare)／**ケッペンは全区分表示で停止＋行幅固定**／通常モードのMeasure/Share集約／Atlasタイポ(独立太字行→見出し)／**モニター削除でハイライト消去**／衛星3D飛行プリフェッチ強化／**SVオンでcoverage自動表示**／Terra本番検証(analyzed_by=ai 354)／**Companies株価バッチ化(spark)＋全史キャッシュ**／**Atlas出典からSNS/短縮/動画を除去** (tag `#R151`)
+
+ユーザー指摘**11件**を根本原因から修正。`index.html`＋Edge Function `ai-proxy`（コメントのみ→再deploy）＋新規テスト2本。`npm test` 緑（static＋node **79**＝security/monitor/r147/r149/r150/**新r151-checks 11**＋Playwright **80**＝新 `r151.spec.js` 6・r149/r150のケッペン#3をR151仕様へ更新、pageerror 0）。ローカル(Browserペイン 4188)で全区分停止・行幅固定・SV coverage自動・トグル・出典フィルタを実測。**Terra本番検証＝`current_news.analyzed_by='ai'` が 354 件**（cron refresh-newsはfallback無でTerra直呼び→ai>0＝Terra到達可を実証）。
+
+### ⑧ SVオン→coverage自動表示（新）
+`IntMapStreetView.open()` が coverage OFF 時に `coverage(true)`＋`_covAuto=true`（手動状態は温存）、`close()`（✕もここへ集約）で `_covAuto` 時のみ OFF に戻す。パノラマを開くと周辺の実カバレッジ（水色線）が即表示。
+
+### ⑥ モニター削除でハイライト残存（新バグ）
+真因＝`remove(id)` は DB delete のみで `im-mon-area` ソースを消していなかった。修正＝`showOnMap(area,points,monId)` に `_shownMonId` を記録（全呼出元に id 付与）、`remove()` 成功時 `_shownMonId===id`（or 未追跡）なら `clearMap()`。作成→削除で確実に消える。UI/Atlas 両経路が同一 `remove` を通る。
+
+### ③ ケッペン「全区分表示で停止」＋「行幅が動かない」（再報告・仕様転換）
+R150は**ビューポート基準**（内容が短くても画面下端まで伸びて空白）→今回ユーザーは「**すべて表示されたら止まる**」を要求＝R150を上書き。`_fitKoppenLegend` を **`min(自然内容高, ビューポート上限)`** に（内容高は inline height/max-height を一時中和して実測）。内容<画面＝最終区分で停止（空白ゼロ）、内容>画面＝画面下端で停止＋内側スクロール。**行幅固定**＝`.kl-scroll` に `scrollbar-gutter:stable`（スクロールバー出没で~15px 揺れて行が reflow していた）。r149/r150 の #3 テストは旧「必ず下端」仕様→**短vp=下端到達＋内側スクロール / 高vp=内容で停止**の二挙動へ更新。
+
+### ④ 通常モード Measure/Share 集約（新）
+Radius を Measure ドロップダウン内へ（Distance/area・Draw・Radius）。Screenshot＋リンクを新 `share-menu-container`（🔗 Share ▾ ＝ Screenshot・共有/リンク）へ。ID温存（`btn-tool-radius`/`btn-screenshot`/`btn-share`）で既存ハンドラ・モバイルproxy不変。CSS は measure ルールに share を相乗り（share は右寄せ `right:0`）。`shareMenuBtn`/`shareLinkBtn`/`coCompareEmpty` を5言語追加。
+
+### ⑩ Companies「もっと昔」＋「高精度・低遅延」（拡張）
+**低遅延**＝`_spark(syms,range,interval)` で Yahoo `v8/finance/spark` を~40銘柄バッチ（旧＝1銘柄1リクエスト）→ `loadPrices` は1バッチで即着色、未解決のみ従来チャートへフォールバック。**深い歴史**＝`_histAll()` が `spark range=max interval=1mo` を一度だけ取得し `{tk:{year:年末終値}}` にキャッシュ→ `setYear` は年スクラブを**ネット無しで即時**（未網羅のみ従来 per-year フォールバック）・`priceSeries` も同キャッシュ。両shape（`spark.result[].response[]`／旧 flat）に対応。全域 YMIN=1900 は既存。
+
+### ⑪ Atlas出典の信頼性（再報告）
+真因＝`linkCards` は Google News アグリゲータのみ除去で、SNS/UGC/短縮/動画は素通り。修正＝`_atlBadSourceHost`（X/Twitter/FB/IG/Threads/TikTok/Reddit/YouTube/t.me/bit.ly 等の `_SNS_RE`）で全出典カード経路（analyze/answer/mapReport）から除外。`_analysisSystemPrompt` に「SNS/フォーラム/短縮/動画は出典にしない・各URLは主張を直接支持する具体ページのみ」を明記。`IntMapAtlasDebug.badSourceHost/linkCards` 公開でhermetic検証。
+
+### ①②⑤⑦⑨ その他
+①Companies＝Countries同型は既存、**空状態ヒント**「Tap company rows to select and compare.」（`coCompareEmpty` 5言語・`renderCoCompareFixed` が `scf-empty` 表示）を追加。②Atlasトグルは layer/base/grid/3D/国情報/SV/borders/labels/roads/ticker に加え **globe（地球儀 on/off）・compare** を追加（projection/compare dispatch に `_featTogHtml`）。⑤タイポ＝mdMini で**行全体が `**太字**` の行を実見出し**へ（モデルは `##` より太字を多用＝モデル非依存の階層）＋段落余白 .72→.85em。⑦衛星＝`predictivePrefetch(aggressive)`（RING 3→7・斜め角先読み・傾斜時は横一段浅も warm）、飛行ループ 380→300ms＋aggressive、**3D手動 pan/rotate（pitch>25）でも `move` ごとにスロットル先読み**（従来 moveend のみ＝連続移動で先読み皆無）。⑨Terraは AI_MODEL secret＋`OPENAI_DEFAULT_MODEL=gpt-5.6-terra`（コメント整合）・Luna は model_not_found 時のみ。
+
+### 罠・教訓
+- **仕様が転換したら旧テストは更新する**＝ケッペンは R150「必ず下端」→ R151「全区分で停止」。テストは新仕様の二挙動（高vp/短vp）を両方assert。
+- **行幅の揺れ＝スクロールバー出没**＝`scrollbar-gutter:stable` で常時gutter予約。
+- **Terra本番検証は `current_news.analyzed_by='ai'` の実数**（refresh-news cron は fallback無＝ai>0 が Terra 到達の証拠）。secret値は読めない・REFRESH_SECRET は回さない（cron破壊）。
+- **外部API latencyはバッチ化**（Yahoo spark 多銘柄）＋**全史一括キャッシュ**で年スクラブをネット無し化。両方フォールバック温存。
+- r147/r149/r150-checks の exact-string assert は自変更で壊れる→**更新必須**（.72→.85em、prefetch cadence）。**PORT=4188 npx playwright**（常駐4173/8781回避）。
+
 ## R150 — UX/機能バッチ10件：モニター保存の真因(**client insertがuser_id欠落**)／ケッペン凡例を画面下端まで伸縮／Atlasタイポ(コード側で階層生成)／停止四角を微縮小／**GPT-5.6 Terra再検証→採用**／**Atlas地理対象の曖昧性ゲート統一**／**調査回答マッピングのコード側検証(業務委託)**／衛星3D飛行プリフェッチ／Companiesアイコン枠一致／SVオフにもトグル (tag `#R150`)
 
 ユーザー指摘**10件**を根本原因から修正。`index.html`＋Edge Function `ai-proxy`＋新規migration＋新規テスト2本。`npm test` 緑（static＋node **68**＝security/monitor/r147/r149/**新r150-checks 12**＋Playwright＝**新 r150.spec.js 7**、pageerror 0）。ローカル(Browserペイン 8781)で純関数・ケッペン下端伸縮・監査挙動を実測。Edge Fn(ai-proxy/refresh-news)本番deploy済み・prod migration適用済み。
