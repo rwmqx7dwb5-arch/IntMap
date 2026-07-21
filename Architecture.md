@@ -991,6 +991,21 @@ supabase/
 
 ---
 
+## #R153 補足（UX/機能バッチ8件・再報告の根本原因）
+
+`index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r153-checks.test.mjs`(node 9)＋自変更で壊れた r149/r150/r151/r152 assert 更新。`npm test` 緑（static＋node 99＋Playwright 80・pageerror 0）。全修正をハーネス実測で検証。
+
+- **① ケッペン凡例（6回目）**: R152 の `nowrap`+200px+ellipsis が **EN30区分中11名をクリップ**（実測: EN名は幅216px要）＋自然高519pxが768ノート可用~514pxを5px超過＝EF到達不能。修正: 幅 **200→264px**（EN/JP/RU/ES全収・独語最長2-3のみ hover）／行 `padding:0.5px→0`＋`line-height:1.2` で**自然高489px**（全区分既定表示・EF到達）／**RU/ES 気候名を KNAME に追加**（従来 en フォールバック）。`_fitKoppenLegend`(min(内容高,vp)) は無変更＝内容高を下げるのが真因。
+- **② Measure/Share ポップアップ**: 「無条件透過するな」+「無条件不透過するな」＝**条件付き要求**。`background:var(--card-bg)`(常時不透過) → **`var(--glass-fill)`＋標準blur**＝外観設定(#R33)に従い Solid で不透過(--card-bg)・glass で frost。他ポップアップと同型。
+- **③ Atlasタイポ（3回目・描画側の真因）**: `_atlStanza` の **`>1改行→return raw`** が最頻ケース(複数段落フラット散文)を素通り。→**全面再構造化**: 段落分割・文単位 `Label:`/`背景：`→`## 見出し`・先頭文→太字リード・段落は空行 join(余白)・長連続文は~2文stanza・**CJK加重**。既 `##` 構造化済は不介入。リード 1.22→1.3em、余白 1.05→1.2em。決定論的＝IntMapAtlasDebug。
+- **④ SV Coverage 線（3回目）**: Google svv は各ネイティブzoomで一定幅描画→z19超で拡大肥大。**`tileSize:256→128`**（全zoomで~2×ダウンスケール→細線）＋**`maxzoom:19→21`**（z20/z21タイル実在をpixel実測で確認）。
+- **⑤ Companies 深い履歴**: Yahoo keyless 床は銘柄依存 1962-1985（R152到達済）・Stooqは PoW化で不可＝捏造せず。上積み＝比較 Time-series 既定 **10→20年**（深い履歴を即表示）。ピッカーは1962床維持。
+- **⑥ Atlas出典（両面再報告）**: (a) mapReport/events の**インライン `記事↗` が生URL**（アグリゲータ/SNS）＝フィルタ迂回。(b) **planner `answer` が出典を一切描画しない**（「全くない」主因）。修正: **単一 `_atlCleanUrl`** を linkCards＋両インラインリンクで共通使用／linkCards は **host-clean→関連度** の順（空バグ解消）／`answer` に web-verified 出典追加／関連度は**異script保持**。
+- **⑦ Companies 真パリティ**: 最大の手抜き＝**TS指標ピッカーが無効**（常に株価指数）。→**{Market cap 絶対$ / Share price 指数} トグルがチャート駆動**＋十字ツールチップ、generic ピッカーはTSで非表示。`/8`→`/10`（2箇所）。**ws窓に検索欄**（`#info-search-bar`＋`_companiesSearchVal`＋`#co-compare-fixed`バンドル・5言語 `filterCompaniesPh`）。**詳細に実株価スパークライン**（`priceSeriesFine`）。HQ地図/Focusは企業＝非地理のため意図的非採用。
+- **⑧ ワークスペース地図ポップアップ**: `_inWsWin()` の `panel.closest('.ws-win')` が、ws-modeで地図窓へ移設された `#map-container` 内の全ポップアップを誤判定→ドラッグkill。**`panel.parentElement` が `.ws-body`（窓の直接コンテンツ）か**に変更＝本体パネルは保護・地図ポップアップは復活。`_inWsWin2`(resize)も同修正。
+
+---
+
 ## #R152 補足（UX/機能バッチ13件＋**地図エンジン抽象層 第1段階**）
 
 ### §7.1 `IntMapGeoEngine` — レンダラー抽象層（業務委託・第1段階）

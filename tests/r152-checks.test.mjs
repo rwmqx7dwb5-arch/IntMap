@@ -24,7 +24,7 @@ test('R152 #1 Köppen rows are single-line (nowrap) with an always-visible code 
   assert.match(html, /\.kl-item\{[^}]*white-space:nowrap;/, 'kl-item nowrap (kills the 2-line wrap)');
   assert.match(html, /\.kl-item \.kl-code\{ flex-shrink:0;/, 'code never shrinks / stays visible');
   assert.match(html, /\.kl-item \.kl-nm\{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;/, 'name ellipsises on one line');
-  assert.match(html, /\.koppen-legend\{[^}]*width:200px;/, 'legend widened to 200px for legibility');
+  assert.match(html, /\.koppen-legend\{[^}]*width:264px;/, 'legend widened to 264px (R153: full names read, no ellipsis clip)');
   // the build template splits code + name and adds a full-text title tooltip
   assert.match(html, /<span class="kl-code">\$\{code\}<\/span>/, 'row template emits .kl-code');
   assert.match(html, /title="\$\{code\}\$\{_knm\?' · '\+_knm:''\}"/, 'row has full-text title tooltip');
@@ -40,10 +40,11 @@ test('R152 #2 Companies compare dock is the static absolute-overlay (Countries p
 });
 
 test('R152 #3 Atlas typography — bold lead line for flat prose + bigger headings + more spacing', () => {
-  assert.match(html, /lead='\*\*'\+first\.replace/, 'flat prose opening promoted to a bold lead line');
+  // (R153) generalised: the lead sentence of any unstructured reply is promoted to a bold heading line
+  assert.match(html, /out\.push\('\*\*'\+first\+'\*\*'\)/, 'flat prose opening promoted to a bold lead line');
   assert.match(html, /font-size:1\.66em;letter-spacing:\.01em/, 'h1 bigger (1.66em)');
   assert.match(html, /font-size:1\.4em;line-height:1\.3;letter-spacing:\.005em/, 'h2 bigger (1.4em)');
-  assert.match(html, /<div style="height:1\.05em"><\/div>/, 'generous paragraph gap (1.05em)');
+  assert.match(html, /<div style="height:1\.2em"><\/div>/, 'generous paragraph gap (R153: 1.2em)');
 });
 
 test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relevance gate, honest relabel', () => {
@@ -51,7 +52,7 @@ test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relev
   assert.match(html, /note\\\.com\|fc2\\\.com/, 'note.com / fc2 added');
   assert.ok(!/medium\\\.com/.test(html.slice(html.indexOf('const _SNS_RE='), html.indexOf('const _SNS_RE=') + 900)), 'medium NOT banned (can be legit journalism)');
   assert.match(html, /function _atlRelevantCards\(cards, refText\)\{/, 'relevance gate exists');
-  assert.match(html, /linkCards\(_atlRelevantCards\(rest,txt\)\.slice\(0,4\)\)/, 'analyze rest bucket filtered + capped');
+  assert.match(html, /linkCards\(rest,txt\)/, 'analyze rest bucket relevance-filtered (R153: relevance runs inside linkCards after host-clean)');
   assert.match(html, /L\('Related articles','関連記事'/, 'no-basis links honestly labelled "Related articles" (not "Sources")');
 });
 
@@ -63,9 +64,11 @@ test('R152 #5 Atlas toggles — fullscreen switch + generic on/off control switc
   assert.match(html, /closest\('\.atl-ctl-gen'\)/, 'generic-toggle click handler (before the layer-toggle branch)');
 });
 
-test('R152 #9 Measure/Share popups are fully opaque', () => {
-  assert.match(html, /\.measure-dropdown, \.share-dropdown\{[^}]*background:var\(--card-bg\);/, 'opaque card background');
-  assert.ok(!/\.measure-dropdown, \.share-dropdown\{[^}]*backdrop-filter:blur\(15px\)/.test(html), 'backdrop blur dropped');
+test('R152 #9 → R153 Measure/Share popups follow the Solid/Glass appearance setting (not unconditionally opaque)', () => {
+  // (R153) --glass-fill resolves to the opaque --card-bg in Solid mode and to a translucent rgba in the two glass modes,
+  // so the popups are NOT unconditionally transparent NOR unconditionally opaque — they follow the one shared material.
+  assert.match(html, /\.measure-dropdown, \.share-dropdown\{[^}]*background:var\(--glass-fill\);/, 'shared glass material (opaque in Solid, frosted in glass modes)');
+  assert.match(html, /\.measure-dropdown, \.share-dropdown\{[^}]*backdrop-filter:saturate\(var\(--glass-sat\)\) blur\(var\(--glass-blur\)\)/, 'blur reads the shared glass vars');
 });
 
 test('R152 #10 Compass right-click numeric popup (desktop)', () => {

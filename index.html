@@ -263,7 +263,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .search-bar{ display:flex; align-items:center; gap:6px; background:var(--card-bg); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; margin-bottom:10px; transition:border-color .15s ease, box-shadow .15s ease; }   /* (#R105) tighter gap below the search field (to the sort toolbar / content) */
     /* (#R79e) the Countries window's own search bar is ONLY for workspace mode; keep it out of the normal sidebar
        no matter what (the ws-mode rule below has higher specificity + !important, so it still shows in-window). */
-    #countries-search-bar{ display:none !important; }
+    #countries-search-bar, #info-search-bar{ display:none !important; }   /* (#R153) Companies filter box hidden in normal mode (shown only inside the ws Companies window), same as Countries */
     .search-bar:focus-within{ background:var(--card-bg); border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(10,132,255,0.18); }
     .search-icon{ font-size:14px; color:var(--text-muted); flex-shrink:0; }
     .search-input{ flex:1; min-width:0; background:transparent; border:none; color:var(--text-main); padding:8px 4px; font-size:14px; outline:none; }
@@ -409,6 +409,10 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .co-drow span{ color:var(--text-muted); } .co-drow b{ font-variant-numeric:tabular-nums; text-align:right; }
     .co-detail-link{ display:inline-block; margin-top:12px; font-size:13px; color:var(--primary-color); text-decoration:none; font-weight:600; }
     .co-detail-link:hover{ text-decoration:underline; }
+    .co-detail-spark{ margin-top:12px; padding-top:10px; border-top:1px solid rgba(128,128,128,0.16); }   /* (#R153) real price sparkline in the company detail */
+    .co-spark-head{ display:flex; justify-content:space-between; align-items:baseline; font-size:12px; color:var(--text-muted); margin-bottom:4px; }
+    .co-spark-svg{ width:100%; height:52px; display:block; }
+    .co-spark-note{ font-size:10.5px; color:var(--text-muted); margin-top:4px; font-variant-numeric:tabular-nums; }
     /* (#R146) Compare entry point in the company detail (parity with the country detail's Compare button) */
     .co-detail-btns{ display:flex; gap:8px; margin:0 0 14px; }
     .co-detail-btn{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 12px; border-radius:11px; border:1px solid var(--glass-border,rgba(128,128,128,0.28)); background:var(--input-bg); color:var(--text-main); font-size:13px; font-weight:600; cursor:pointer; }
@@ -461,7 +465,7 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
     .layer-menu-container{ position:relative; }
     /* (#R9) Measurement tools collapsed under one "Measure ▾" trigger (Radius stays standalone). */
     .measure-menu-container, .share-menu-container{ position:relative; display:inline-block; }   /* (#R151) share menu mirrors the measure menu */
-    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--card-bg); border:1px solid rgba(128,128,128,0.18); border-radius:12px; padding:6px; box-shadow:var(--shadow); min-width:182px; flex-direction:column; gap:4px; }   /* (#R152) FULLY OPAQUE Measure/Share popups ("無条件で透過しないように") — was var(--popup-bg) (rgba α<1) + backdrop-filter:blur, which let the map bleed through; --card-bg is the solid theme card colour (#fff / #1c1c1e) and the blur is dropped */
+    .measure-dropdown, .share-dropdown{ display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:1300; background:var(--glass-fill); border:1px solid var(--glass-border,rgba(128,128,128,0.18)); border-radius:12px; padding:6px; box-shadow:var(--shadow); min-width:182px; flex-direction:column; gap:4px; backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); }   /* (#R153) FOLLOW the Solid/Frosted-Glass appearance setting like every other popup (#R33 "全てのUIはこの設定に従うように"): --glass-fill is the ONE shared material — it resolves to the OPAQUE --card-bg in Solid mode (so NOT transparent — the original "無条件で透過しないように") and to a translucent rgba in the two glass modes (so NOT unconditionally opaque either — the "無条件で不透過するな" addendum). R152 hardcoded --card-bg which ignored the glass modes. */
     .share-dropdown{ left:auto; right:0; }   /* (#R151) share sits near the right edge → anchor the dropdown right so it never overflows the viewport */
     .measure-menu-container.open .measure-dropdown, .share-menu-container.open .share-dropdown{ display:flex; }
     .measure-dropdown .view-btn, .share-dropdown .view-btn{ width:100%; text-align:left; justify-content:flex-start; margin:0; }
@@ -2284,6 +2288,9 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
       <button class="csearch-pickbtn on-tab" id="csearch-pick-ws" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
     </div>
     <div class="content-area" id="countries-feed" style="display:none;"></div><!-- (#R78e) Countries gets its OWN feed so News & Countries can be separate workspace windows -->
+    <div class="search-bar" id="info-search-bar" style="display:none;"><!-- (#R153) Companies own filter box → workspace-mode Companies window can filter, mirroring #countries-search-bar (Countries parity) -->
+      <input type="text" id="companies-search-input" class="search-input" placeholder="Filter companies…" data-i18n-ph="filterCompaniesPh">
+    </div>
     <div class="content-area" id="info-dashboard" style="display:none;"></div>
     <div class="content-area" id="monitors-feed" style="display:none;"></div><!-- (#R141) Monitors tab feed (list + report/evidence detail overlays render here) -->
     <div class="content-area" id="community-feed" style="display:none;"></div>
@@ -2783,7 +2790,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* ===== i18n ===== */
   const i18n={
     en:{ tabNews:"News", tabSaved:"★ Saved", tabInfo:"Information", tabCompanies:"Companies", tabStats:"Countries",
-      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
+      searchPh:"Search news / places...", filterCountriesPh:"Filter countries...", filterCompaniesPh:"Filter companies...", pickCountryMap:"Pick a country on the map", searchBtn:"Search", searchLoadBtn:"Search / Load", loading:"Loading articles...",
       noMatch:"No results found.", networkError:"Couldn't load the news. Retrying…",
       emptyHint:"No tab selected — the map is clear.<br>Pick a tab above to show content.",
       viewMap:"Map", viewSat:"Satellite", settings:"Settings", modalTitle:"Settings", close:"Close",
@@ -2816,7 +2823,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiViewSumBtn:"Summarize this view", aiViewSumTitle:"What's happening on screen",
       aiVisHead:"AI change detection", aiVisBtn:"Detect changes", aiVisTitle:"Satellite change report", aiVisSub:"Comparing {a} → {b}", aiVisBefore:"Before", aiVisAfter:"After", aiVisCapturing:"Capturing imagery…", aiVisPickDates:"Pick two dates to compare.", aiVisNeedsDated:"Switch to a date-selectable provider (MODIS / VIIRS / Sentinel-2) in Satellite mode.", aiVisCapFail:"Couldn't capture the map imagery." },
     jp:{ tabNews:"ニュース", tabSaved:"★ 保存済", tabInfo:"情報", tabCompanies:"企業", tabStats:"国別統計",
-      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
+      searchPh:"ニュース・地域を検索...", filterCountriesPh:"国を絞り込み...", filterCompaniesPh:"企業を絞り込み...", pickCountryMap:"地図で国をクリックして追加", searchBtn:"検索", searchLoadBtn:"検索 / 再読込", loading:"記事を読み込み中...",
       noMatch:"該当する情報がありません", networkError:"ニュースを読み込めませんでした。再試行します…",
       emptyHint:"未選択です。地図には何も表示されていません。<br>上のタブを選ぶと情報が表示されます。",
       viewMap:"標準マップ", viewSat:"衛星写真", settings:"設定", modalTitle:"設定", close:"閉じる",
@@ -2851,7 +2858,7 @@ window.addEventListener('DOMContentLoaded', () => {
     /* (#R22) German + Russian cover the visible static UI; anything not listed falls back to English
        (the long tail of dynamically-built strings is still EN/JP only — see t() fallback). */
     de:{ tabNews:"Nachrichten", tabSaved:"★ Gespeichert", tabInfo:"Informationen", tabCompanies:"Unternehmen", tabStats:"Länder", tabCommunity:"Community",
-      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
+      searchPh:"Nachrichten / Orte suchen...", filterCountriesPh:"Länder filtern...", filterCompaniesPh:"Unternehmen filtern...", pickCountryMap:"Land auf der Karte wählen", searchBtn:"Suchen", searchLoadBtn:"Suchen / Laden", msPh:"Beliebigen Ort auf der Erde suchen...",
       viewMap:"Karte", viewSat:"Satellit", flat:"Flach", globe:"Globus", threeD:"⛰️ 3D", gridBtn:"🌐 Gitter", gridLayer:"🌐 Gitter & Beschriftung",
       settings:"Einstellungen", modalTitle:"Einstellungen", close:"Schließen", btnApply:"Übernehmen", lblLang:"Sprache",
       setSecAppearance:"Aussehen", setSecLayout:"Layout & Panels", setSecMap:"Kartenverhalten", setSecUnits:"Einheiten & Zeit", setSecNews:"Nachrichten & Ticker", setSecAI:"KI", setSecKeys:"Integrationen & Schlüssel", setSecAbout:"Info & Support",
@@ -2898,7 +2905,7 @@ window.addEventListener('DOMContentLoaded', () => {
       aiVisHead:"KI-Änderungserkennung", aiVisBtn:"Änderungen erkennen", aiVisTitle:"Satelliten-Änderungsbericht", aiVisSub:"Vergleich {a} → {b}", aiVisBefore:"Vorher", aiVisAfter:"Nachher", aiVisCapturing:"Bilder werden erfasst…", aiVisPickDates:"Wählen Sie zwei Daten zum Vergleich.", aiVisNeedsDated:"Wechseln Sie im Satellitenmodus zu einem datumsfähigen Anbieter (MODIS / VIIRS / Sentinel-2).", aiVisCapFail:"Kartenbilder konnten nicht erfasst werden.",
       mTitleMap:"Karte", mTitleTools:"Werkzeuge", mDone:"Fertig" },
     ru:{ tabNews:"Новости", tabSaved:"★ Сохранённое", tabInfo:"Информация", tabCompanies:"Компании", tabStats:"Страны", tabCommunity:"Сообщество",
-      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
+      searchPh:"Поиск новостей / мест...", filterCountriesPh:"Фильтр стран...", filterCompaniesPh:"Фильтр компаний...", pickCountryMap:"Выбрать страну на карте", searchBtn:"Поиск", searchLoadBtn:"Поиск / Загрузить", msPh:"Искать любое место на Земле...",
       viewMap:"Карта", viewSat:"Спутник", flat:"Плоская", globe:"Глобус", threeD:"⛰️ 3D", gridBtn:"🌐 Сетка", gridLayer:"🌐 Сетка и подписи",
       settings:"Настройки", modalTitle:"Настройки", close:"Закрыть", btnApply:"Применить", lblLang:"Язык",
       setSecAppearance:"Внешний вид", setSecLayout:"Макет и панели", setSecMap:"Поведение карты", setSecUnits:"Единицы и время", setSecNews:"Новости и лента", setSecAI:"ИИ", setSecKeys:"Интеграции и ключи", setSecAbout:"О приложении и поддержка",
@@ -2946,7 +2953,7 @@ window.addEventListener('DOMContentLoaded', () => {
       mTitleMap:"Карта", mTitleTools:"Инструменты", mDone:"Готово" },
     /* (#R40) Spanish (beta). Covers the visible static UI like DE/RU; anything not listed falls back to English (t() fallback). */
     es:{ tabNews:"Noticias", tabSaved:"★ Guardado", tabInfo:"Información", tabCompanies:"Empresas", tabStats:"Países", tabCommunity:"Comunidad",
-      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
+      searchPh:"Buscar noticias / lugares...", filterCountriesPh:"Filtrar países...", filterCompaniesPh:"Filtrar empresas...", pickCountryMap:"Elegir país en el mapa", searchBtn:"Buscar", searchLoadBtn:"Buscar / Cargar", msPh:"Buscar cualquier lugar de la Tierra...",
       viewMap:"Mapa", viewSat:"Satélite", flat:"Plano", globe:"Globo", threeD:"⛰️ 3D", gridBtn:"🌐 Cuadrícula", gridLayer:"🌐 Cuadrícula y etiquetas",
       settings:"Ajustes", modalTitle:"Ajustes", close:"Cerrar", btnApply:"Aplicar", lblLang:"Idioma",
       setSecAppearance:"Apariencia", setSecLayout:"Diseño y paneles", setSecMap:"Comportamiento del mapa", setSecUnits:"Unidades y hora", setSecNews:"Noticias y cinta", setSecAI:"IA", setSecKeys:"Integraciones y claves", setSecAbout:"Información y soporte",
@@ -6276,7 +6283,13 @@ window.addEventListener('DOMContentLoaded', () => {
       panel.setAttribute('data-dragged','1'); };
     /* (#R79b) when this panel is wrapped inside a workspace window, the WINDOW owns drag/resize — the panel's
        own handlers would fight it (the Atlas input field "moved freely" while resizing). Bail out cleanly. */
-    const _inWsWin=()=>{ try{ return !!(panel.closest&&panel.closest('.ws-win')); }catch(_){ return false; } };
+    /* (#R79b/#R153) Disable a panel's OWN drag ONLY when it IS a workspace window's content — i.e. a DIRECT child of
+       .ws-body (the moved source elements: Atlas panel, News/Countries feed, #map-container). In workspace mode the whole
+       #map-container is relocated INTO the map window, so every in-map popup (tool-panel, legends, etc.) became a DEEP
+       descendant of a .ws-win and the old `closest('.ws-win')` test wrongly killed their drag ("ワークスペースモード内の
+       地図内のポップアップは自由に動かせない"). A direct-child-of-.ws-body test protects the window content while letting
+       genuinely-floating in-map popups drag again (their offset-parent-relative math already clamps them inside the map). */
+    const _inWsWin=()=>{ try{ return !!(panel.parentElement&&panel.parentElement.classList&&panel.parentElement.classList.contains('ws-body')); }catch(_){ return false; } };
     handle.onmousedown=(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()) return; panelDrag={x:e.clientX,y:e.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault(); document.onmousemove=(ev)=>move(ev.clientX,ev.clientY); document.onmouseup=()=>{ panelDrag=null; document.onmousemove=null; document.onmouseup=null; }; };
     handle.addEventListener('touchstart',(e)=>{ if(onCtl(e)||panel.dataset.resizing||_inWsWin()) return; const tc=e.touches[0]; if(!tc)return; panelDrag={x:tc.clientX,y:tc.clientY,l:panel.offsetLeft,t:panel.offsetTop}; e.preventDefault();
       const mv=(ev)=>{ const t2=ev.touches[0]; if(t2) move(t2.clientX,t2.clientY); };
@@ -6304,7 +6317,7 @@ window.addEventListener('DOMContentLoaded', () => {
        (incl. left/right) and fought the forced width — the reported "サイドバー内Atlasに左右方向のリサイズ機構があり、
        変なことになる". `atl-tab` is present only in tab mode (removed in ws-mode), so the floating Atlas window and the
        Compare window keep edge-resize. */
-    const _inWsWin2=()=>{ try{ if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.closest&&panel.closest('.ws-win')); }catch(_){ return false; } };
+    const _inWsWin2=()=>{ try{ if(panel.classList&&panel.classList.contains('atl-tab')) return true; return !!(panel.parentElement&&panel.parentElement.classList&&panel.parentElement.classList.contains('ws-body')); }catch(_){ return false; } };   /* (#R153) same fix as _inWsWin: only the window's own content (direct .ws-body child) is exempt from edge-resize — in-map popups nested in the relocated #map-container resize normally */
     panel.addEventListener('pointermove',(e)=>{ if(panel.dataset.resizing||_inWsWin2()) return; const d=edgeAt(e.clientX,e.clientY); panel.style.cursor=d?CUR[d]:''; });
     panel.addEventListener('pointerleave',()=>{ if(!panel.dataset.resizing) panel.style.cursor=''; });
     panel.addEventListener('pointerdown',(e)=>{ if(_inWsWin2()) return; if(e.target.closest&&e.target.closest('button,input,select,textarea,a,[role="button"],.atl-go,.atl-in')) return; const d=edgeAt(e.clientX,e.clientY); if(!d) return; e.preventDefault(); e.stopPropagation(); panel.dataset.resizing=d; bringToFront(panel);
@@ -8329,7 +8342,7 @@ window.addEventListener('DOMContentLoaded', () => {
         onWrap:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} },
         onShow:()=>{ try{ window._wsRenderCountries&&window._wsRenderCountries(); }catch(_){} },
         onHide:()=>{ try{ window._clearCompare&&window._clearCompare(); }catch(_){} try{ const p=document.getElementById('country-popup'); if(p) p.style.display='none'; }catch(_){} } },
-      {id:'info',     sels:['#info-dashboard'],  t:()=>T('Companies','企業','Unternehmen','Компании','Empresas'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderCompanies==='function') renderCompanies(); }catch(_){} }},
+      {id:'info',     sels:['#info-search-bar','#info-dashboard','#co-compare-fixed'],  t:()=>T('Companies','企業','Unternehmen','Компании','Empresas'), min:[280,260], defHidden:true, onWrap:()=>{ try{ if(typeof renderCompanies==='function') renderCompanies(); }catch(_){} }, onShow:()=>{ try{ if(typeof renderCompanies==='function') renderCompanies(); }catch(_){} }},   /* (#R153) Companies window now carries its OWN search bar + compare dock (Countries parity) so filtering & comparison work in workspace mode */
       /* (#R141) Monitors window — area watches + evidence-backed reports. Adopts the #monitors-feed content area. */
       {id:'monitors', sels:['#monitors-feed'],   t:()=>T('Monitors','モニター','Monitore','Мониторы','Monitores'), min:[300,300], defHidden:true, onWrap:()=>{ try{ if(window.IntMapMonitors&&IntMapMonitors.render) IntMapMonitors.render(); }catch(_){} }, onShow:()=>{ try{ if(window.IntMapMonitors&&IntMapMonitors.render) IntMapMonitors.render(); }catch(_){} }},
       /* (#R101) Community window removed from workspace mode ("まだコミュニティ機能が残っている") — the community
@@ -8569,6 +8582,11 @@ window.addEventListener('DOMContentLoaded', () => {
            In a window, paint them with the window's own background so they blend (no distinct bar), light or dark. */
         +'body.ws-mode .ws-countries #countries-feed .stats-toolbar,body.ws-mode #scp-view .scp-stickhead{background:var(--bg-color) !important;}'
         +'body.ws-mode .ws-countries #countries-search-bar input{width:100% !important;box-sizing:border-box !important;}'
+        /* (#R153) Companies window mirrors Countries — its own filter box (top) stacked in the body, toolbar blended into the window bg */
+        +'body.ws-mode .ws-info .ws-body{flex-direction:column;}'
+        +'body.ws-mode .ws-info #info-search-bar{display:flex !important;flex:0 0 auto !important;box-sizing:border-box !important;width:auto !important;margin:8px 12px 0 !important;padding:0 !important;}'
+        +'body.ws-mode .ws-info #info-search-bar input{width:100% !important;box-sizing:border-box !important;}'
+        +'body.ws-mode .ws-info #info-dashboard .stats-toolbar{background:var(--bg-color) !important;}'
         /* (#R102) hide the "Filter countries…" box while the compare view owns the feed — a higher-specificity override
            of the show-rule above (which, with its !important, previously beat the inline display:none → "変化なし"). */
         +'body.ws-mode.scp-open .ws-countries #countries-search-bar{display:none !important;}'
@@ -10320,6 +10338,11 @@ window.addEventListener('DOMContentLoaded', () => {
      so closing the window clears the "countries selected" state visible on the map. Mirrors _setCountriesInfo. */
   window._wsCountryInfo=function(on){ try{ const cb=document.getElementById('cb-countries'); if(cb&&cb.checked!==!!on){ cb.checked=!!on; cb.dispatchEvent(new Event('change',{bubbles:true})); } }catch(_){} };
   (function(){ const ci=document.getElementById('countries-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderStats(ci.value.trim().toLowerCase()); }catch(_){} }); })();
+  /* (#R153) Companies filter box (workspace-mode Companies window) — mirrors _countriesSearchVal + its input wiring so
+     companies can be filtered by name/ticker/sector in ws-mode (previously renderCompanies got '' and nothing filtered). */
+  function _companiesSearchVal(){ try{ const ci=document.getElementById('companies-search-input'); if(document.body.classList.contains('ws-mode')&&ci) return ci.value.trim().toLowerCase(); }catch(_){} return (currentMode==='info')?searchVal():''; }
+  window._companiesSearchVal=_companiesSearchVal;
+  (function(){ const ci=document.getElementById('companies-search-input'); if(ci) ci.addEventListener('input',()=>{ try{ renderCompanies(ci.value.trim().toLowerCase()); }catch(_){} }); })();
   /* (#R129) COUNTRIES-screen "pick a country on the map" (search-bar crosshair #csearch-pick / #csearch-pick-ws).
      The compare pick control used to live ONLY inside the opened compare window; the INITIAL Countries screen had no
      map-pick, and a plain map click there ran showCountryDetail on the MODERN polygon — so while time-travelling it
@@ -10744,6 +10767,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let coCompareSet=new Set(), _coTimeWired=false, _coTimeDeb=null;
   /* (#R145) Companies compare view state — mirrors the Countries #scp-view (Bar / Time-series / Table, metric picker). */
   let _coCmpMode='bar', _coCmpMetOpen=false, _coCmpMet=new Set(['mcap','rev','ni','emp']), _coCmpTsFrom=null, _coCmpTsTo=null, _coCmpCss=0, _coCmpSort={key:null,dir:-1};   /* (#R147) table column sort — Countries-parity */
+  let _coCmpTsMetric='mcap';   /* (#R153) which metric the Time-series plots — only mcap/price have real history; the shared metric picker (rev/ni/emp/pe = snapshot-only) used to be shown in TS mode yet IGNORED (the "手抜き" fake control). */
   const _CO_CMP_METS=['mcap','rev','ni','emp','pe','price'];
   const _coCmpMetLbl=k=>{ const m={mcap:_coL('Market cap','時価総額','Marktkap.','Капитализация','Cap. bursátil'),rev:_coL('Revenue','売上高','Umsatz','Выручка','Ingresos'),ni:_coL('Net income','純利益','Nettogewinn','Чистая прибыль','Beneficio neto'),emp:_coL('Employees','従業員数','Mitarbeiter','Сотрудники','Empleados'),pe:_coL('P/E ratio','株価収益率 (P/E)','KGV','P/E','P/E'),price:_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')}; return m[k]||k; };
   const _CO_CMP_PAL=['#0a84ff','#ff9f0a','#30d158','#ff375f','#bf5af2','#64d2ff','#ffd60a','#ac8e68'];
@@ -10835,7 +10859,18 @@ window.addEventListener('DOMContentLoaded', () => {
       +'#co-cmp-view .scp-tsrange select{background:var(--card-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:7px;font-size:12px;padding:4px 6px;cursor:pointer;outline:none;}'
       +'#co-cmp-view .scp-tsrange .scp-tsl{color:var(--text-muted);font-weight:600;}'
       +'#co-cmp-view .co-ts-note{font-size:10.5px;color:var(--text-muted);margin:2px 0 8px;line-height:1.4;}'
-      +'#co-cmp-view .co-ts-wrap svg{width:100%;height:150px;display:block;}';
+      +'#co-cmp-view .co-ts-wrap svg{width:100%;height:150px;display:block;}'
+      +'#co-cmp-view .scp-tsmsel{display:inline-flex;gap:4px;margin-left:auto;}'   /* (#R153) TS metric toggle pushed to the right of the year range */
+      +'#co-cmp-view .scp-tsm{background:var(--card-bg);color:var(--text-muted);border:1px solid rgba(128,128,128,0.25);border-radius:7px;font-size:11.5px;font-weight:600;padding:4px 9px;cursor:pointer;}'
+      +'#co-cmp-view .scp-tsm.on{background:var(--primary-color);color:#fff;border-color:var(--primary-color);}'
+      +'#co-cmp-view .co-ts-chart{position:relative;}'
+      +'#co-cmp-view .co-ts-ax{position:absolute;left:4px;font-size:9.5px;color:var(--text-muted);pointer-events:none;font-variant-numeric:tabular-nums;}'
+      +'#co-cmp-view .co-ts-axhi{top:2px;} #co-cmp-view .co-ts-axlo{bottom:2px;}'
+      +'#co-cmp-view .co-ts-cursor{position:absolute;top:0;bottom:0;width:1px;background:var(--text-muted);opacity:0.5;display:none;pointer-events:none;}'
+      +'#co-cmp-view .co-ts-tip{position:absolute;top:2px;display:none;pointer-events:none;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:8px;box-shadow:var(--shadow);padding:5px 8px;font-size:11px;z-index:5;min-width:120px;}'
+      +'#co-cmp-view .co-ts-tth{font-weight:700;margin-bottom:2px;}'
+      +'#co-cmp-view .co-ts-ttr{display:flex;align-items:center;gap:5px;line-height:1.5;white-space:nowrap;} #co-cmp-view .co-ts-ttr b{margin-left:auto;font-variant-numeric:tabular-nums;}'
+      +'#co-cmp-view .co-ts-ttd{width:8px;height:8px;border-radius:50%;flex:0 0 auto;} #co-cmp-view .co-ts-ttn{overflow:hidden;text-overflow:ellipsis;max-width:120px;}';
     document.head.appendChild(st); }
   function showCoCompare(tks){ const feed=document.getElementById('info-dashboard'); if(!feed) return;
     const cos=(tks||[...coCompareSet]).map(tk=>IntMapCompanies.DATA.find(x=>x.tk===tk)).filter(Boolean);
@@ -10849,10 +10884,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const modes=[['bar',_coL('Bar chart','棒グラフ','Balken','Столбцы','Barras')],['ts',_coL('Time-series','時系列','Zeitreihe','Динамика','Series')],['table',_coL('Table','表','Tabelle','Таблица','Tabla')]];
     let h='<div class="scp-stickhead"><div style="display:flex;align-items:center;gap:8px;">'
       +'<button class="scp-back" data-cmpback="1"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>'+_coL('Back','戻る','Zurück','Назад','Atrás')+'</button>'
-      +'<div><div class="scp-cmptitle">'+_coL('Compare companies','企業を比較','Unternehmen vergleichen','Сравнение компаний','Comparar empresas')+'</div><div class="scp-cmpsub">'+cos.length+'/8</div></div></div>';
+      +'<div><div class="scp-cmptitle">'+_coL('Compare companies','企業を比較','Unternehmen vergleichen','Сравнение компаний','Comparar empresas')+'</div><div class="scp-cmpsub">'+cos.length+'/10</div></div></div>';   /* (#R153) /8→/10: the cap is 10 (matches _coToggleCompare + the dock) */
     h+='<div class="scp-ctrlrow"><div class="scp-modes">'+modes.map(m=>'<button data-cmpmode="'+m[0]+'" class="'+(_coCmpMode===m[0]?'on':'')+'">'+m[1]+'</button>').join('')+'</div>';
-    h+='<button class="scp-mtog'+(_coCmpMetOpen?' open':'')+'" data-cmpmtog="1">'+_coL('Metrics','指標','Kennzahlen','Показатели','Métricas')+' <span class="scp-mcount">'+_coCmpMet.size+'/'+_CO_CMP_METS.length+'</span></button></div>';
-    if(_coCmpMetOpen) h+='<div class="scp-metrics">'+_CO_CMP_METS.map(k=>'<button class="scp-m'+(_coCmpMet.has(k)?' on':'')+'" data-cmpmet="'+k+'">'+IntMapSafe.html(_coCmpMetLbl(k))+'</button>').join('')+'</div>';
+    if(_coCmpMode!=='ts') h+='<button class="scp-mtog'+(_coCmpMetOpen?' open':'')+'" data-cmpmtog="1">'+_coL('Metrics','指標','Kennzahlen','Показатели','Métricas')+' <span class="scp-mcount">'+_coCmpMet.size+'/'+_CO_CMP_METS.length+'</span></button>';   /* (#R153) the generic multi-metric picker only applies to Bar/Table — HIDE it in Time-series mode where it did nothing (rev/ni/emp/pe have no history); TS has its own metric toggle inside the chart */
+    h+='</div>';
+    if(_coCmpMetOpen&&_coCmpMode!=='ts') h+='<div class="scp-metrics">'+_CO_CMP_METS.map(k=>'<button class="scp-m'+(_coCmpMet.has(k)?' on':'')+'" data-cmpmet="'+k+'">'+IntMapSafe.html(_coCmpMetLbl(k))+'</button>').join('')+'</div>';
     h+='<div style="position:relative;margin:6px 0 2px;"><input class="scp-add" id="co-cmp-add" placeholder="'+_coL('Add a company…','企業を追加…','Firma hinzufügen…','Добавить компанию…','Añadir empresa…')+'" autocomplete="off"><div id="co-cmp-list"></div></div>';
     h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 2px;">'+cos.map((c,i)=>'<span class="scp-chip"><span class="scp-dot" style="background:'+_CO_CMP_PAL[i%_CO_CMP_PAL.length]+'"></span>'+IntMapSafe.html(_coName(c))+' <span class="scp-x" data-cmpx="'+IntMapSafe.html(c.tk)+'">×</span></span>').join('')+'</div>';
     if(hy) h+='<div class="stats-timebanner co-banner" style="margin:4px 0 0;"><b>'+hy+(currentLang==='jp'?'年':'')+'</b> · '+_coL('market cap at year-end · today\'s share counts · other figures latest reported','その年の年末時点の時価総額 · 株数は現在値 · 他の指標は最新報告値','Marktkap. zum Jahresende · heutige Aktienzahl · übrige Angaben aktuell','капитализация на конец года · число акций текущее · прочие показатели последние','cap. a fin de año · acciones actuales · demás cifras recientes')+'</div>';
@@ -10885,30 +10921,48 @@ window.addEventListener('DOMContentLoaded', () => {
     cos.forEach(c=>rows.push([_coName(c)].concat(met.map(k=>{ const v=_coVal(c,k); return isFinite(v)?v:''; }))));
     const csv='﻿'+rows.map(r=>r.map(esc).join(',')).join('\r\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
     const a=document.createElement('a'); a.href=url; a.download='companies-compare.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ try{ a.remove(); URL.revokeObjectURL(url); }catch(_){} },200); }
-  async function _coCmpTs(cos,body){ const cur=new Date().getFullYear(); if(_coCmpTsTo==null) _coCmpTsTo=cur; if(_coCmpTsFrom==null) _coCmpTsFrom=cur-10;
+  async function _coCmpTs(cos,body){ const cur=new Date().getFullYear(); if(_coCmpTsTo==null) _coCmpTsTo=cur; if(_coCmpTsFrom==null) _coCmpTsFrom=cur-20;   /* (#R153) default the Time-series to a DEEPER 20-year window (was 10) so the available deep history is visible immediately ("もっと昔も見れる"); the picker still reaches Yahoo's keyless floor of 1962 for the oldest names */
     if(_coCmpTsFrom>_coCmpTsTo) _coCmpTsFrom=_coCmpTsTo; const from=_coCmpTsFrom, to=_coCmpTsTo, gen=++_coCmpTsGen;
+    const metric=(_coCmpTsMetric==='price')?'price':'mcap';   /* (#R153) the TS metric picker now DRIVES the chart (was ignored) */
     const yrs=[]; for(let y=cur;y>=1962;y--) yrs.push(y); const opt=sel=>yrs.map(y=>'<option value="'+y+'"'+(y===sel?' selected':'')+'>'+y+'</option>').join('');   /* (#R152) 1990→1962: reach back as far as Yahoo has data ("もっと昔も見れる"); names without data that far show "no history" honestly */
-    body.innerHTML='<div class="scp-tsrange"><span class="scp-tsl">'+_coL('Years','期間','Jahre','Годы','Años')+'</span><select data-cmptsfrom="1">'+opt(from)+'</select><span>–</span><select data-cmptsto="1">'+opt(to)+'</select></div>'
+    const mBtn=(k)=>'<button class="scp-tsm'+(metric===k?' on':'')+'" data-cmptsm="'+k+'" type="button">'+IntMapSafe.html(_coCmpMetLbl(k))+'</button>';   /* (#R153) TS metric toggle — only mcap/price have real history */
+    body.innerHTML='<div class="scp-tsrange"><span class="scp-tsl">'+_coL('Years','期間','Jahre','Годы','Años')+'</span><select data-cmptsfrom="1">'+opt(from)+'</select><span>–</span><select data-cmptsto="1">'+opt(to)+'</select><span class="scp-tsmsel">'+mBtn('mcap')+mBtn('price')+'</span></div>'
       +'<div class="co-ts-wrap" id="co-ts-wrap"><div class="co-ts-note">'+_coL('Loading price history…','株価履歴を読み込み中…','Kursverlauf wird geladen…','Загрузка истории цен…','Cargando histórico…')+'</div></div>';
     const wf=body.querySelector('[data-cmptsfrom]'), wt=body.querySelector('[data-cmptsto]');
     if(wf) wf.onchange=()=>{ _coCmpTsFrom=+wf.value; _coCmpTs(cos,body); }; if(wt) wt.onchange=()=>{ _coCmpTsTo=+wt.value; _coCmpTs(cos,body); };
+    body.querySelectorAll('[data-cmptsm]').forEach(b=>b.onclick=()=>{ _coCmpTsMetric=b.getAttribute('data-cmptsm'); _coCmpTs(cos,body); });
     const series=await Promise.all(cos.map(async c=>{ if(c.sh<=0) return {c,data:null}; try{ return {c,data:await IntMapCompanies.priceSeriesFine(c.tk,from,to)}; }catch(_){ return {c,data:null}; } }));   /* (#R152) MONTHLY series for a high-precision curve */
     if(gen!==_coCmpTsGen) return; const wrap=document.getElementById('co-ts-wrap'); if(!wrap) return;
     const W=600,H=150,padL=6,padR=6,padT=10,padB=6, innerW=W-padL-padR, innerH=H-padT-padB;
     const lines=[]; let vmin=Infinity,vmax=-Infinity;
-    series.forEach(s=>{ const arr=s.data; if(!arr||arr.length<2) return; const base=arr[0][1]; if(!(base>0)) return;   /* (#R152) index to 100 at the first monthly point (≈ the "from" year) */
-      const pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]/base*100})); if(pts.length<2) return;
+    series.forEach(s=>{ const arr=s.data; if(!arr||arr.length<2) return;
+      let pts;
+      if(metric==='mcap'){ const sh=s.c.sh; if(!(sh>0)) return; pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]*sh})); }   /* (#R153) ABSOLUTE market cap = today's share count × historical price (same approximation the time-machine already uses) */
+      else { const base=arr[0][1]; if(!(base>0)) return; pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]/base*100})); }   /* share price indexed to 100 at the first point */
+      if(pts.length<2) return;
       pts.forEach(p=>{ if(p.v<vmin)vmin=p.v; if(p.v>vmax)vmax=p.v; }); lines.push({c:s.c,col:_CO_CMP_PAL[cos.indexOf(s.c)%_CO_CMP_PAL.length],pts}); });
     if(!lines.length){ wrap.innerHTML='<div class="co-ts-note">'+_coL('No price history for these companies (US-listed live names only).','これらの企業の株価履歴がありません（米国上場のライブ銘柄のみ）。','Kein Kursverlauf (nur live gelistete US-Namen).','Нет истории цен (только листингованные в США).','Sin histórico (solo cotizadas en EE. UU.).')+'</div>'; return; }
-    const vspan=(vmax-vmin)||1; const _sp=((to+1)>from)?((to+1)-from):1; const X=fy=>padL+((to>from)?(fy-from)/_sp:0.5)*innerW; const Y=v=>padT+(1-(v-vmin)/vspan)*innerH;   /* (#R152) X by fractional year over [from, to+1) */
+    const lo=(metric==='mcap')?0:vmin, hi=(metric==='mcap')?(vmax||1):vmax; const vspan=(hi-lo)||1;   /* (#R153) mcap on a real $ axis from 0; indexed price on [min,max] */
+    const _sp=((to+1)>from)?((to+1)-from):1; const X=fy=>padL+((to>from)?(fy-from)/_sp:0.5)*innerW; const Y=v=>padT+(1-(v-lo)/vspan)*innerH;   /* (#R152) X by fractional year over [from, to+1) */
     let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">';
-    if(vmin<=100&&vmax>=100){ const y1=Y(100).toFixed(1); svg+='<line x1="'+padL+'" y1="'+y1+'" x2="'+(W-padR)+'" y2="'+y1+'" stroke="var(--text-muted)" stroke-opacity="0.3" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>'; }
+    if(metric==='price'&&vmin<=100&&vmax>=100){ const y1=Y(100).toFixed(1); svg+='<line x1="'+padL+'" y1="'+y1+'" x2="'+(W-padR)+'" y2="'+y1+'" stroke="var(--text-muted)" stroke-opacity="0.3" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>'; }
     lines.forEach(ln=>{ svg+='<path d="'+ln.pts.map((p,j)=>(j?'L':'M')+X(p.fy).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+ln.col+'" stroke-width="2" vector-effect="non-scaling-stroke"/>'; });
     svg+='</svg>';
+    const axHi=(metric==='mcap')?('<span class="co-ts-ax co-ts-axhi">'+IntMapSafe.html(fmtMoney(hi))+'</span><span class="co-ts-ax co-ts-axlo">$0</span>'):'';   /* (#R153) real $ axis labels for the mcap view */
     const missing=cos.filter(c=>!lines.find(l=>l.c===c));
-    let note=_coL('Indexed to 100 at '+from+' · US-listed live names only','各社を'+from+'年＝100に指数化 · 米国上場のライブ銘柄のみ','Indexiert auf 100 ('+from+') · nur live gelistete US-Namen','Индекс 100 в '+from+' · только листингованные в США','Base 100 en '+from+' · solo cotizadas en EE. UU.');
+    let note=(metric==='mcap')
+      ? _coL('Market cap: today\'s share count × historical price · US-listed live names only','時価総額：現在の株数×当時の株価 · 米国上場のライブ銘柄のみ','Marktkap.: heutige Aktienzahl × historischer Kurs · nur live gelistete US-Namen','Капитализация: текущее число акций × историческая цена · только листингованные в США','Cap. bursátil: acciones actuales × precio histórico · solo cotizadas en EE. UU.')
+      : _coL('Share price indexed to 100 at '+from+' · US-listed live names only','株価を'+from+'年＝100に指数化 · 米国上場のライブ銘柄のみ','Aktienkurs indexiert auf 100 ('+from+') · nur live gelistete US-Namen','Цена акции: индекс 100 в '+from+' · только листингованные в США','Precio de acción base 100 en '+from+' · solo cotizadas en EE. UU.');
     if(missing.length) note+=' · '+_coL('no history','履歴なし','kein Verlauf','нет истории','sin histórico')+': '+missing.map(c=>IntMapSafe.html(_coName(c))).join(', ');
-    wrap.innerHTML=svg+'<div class="co-ts-note">'+note+'</div>'; }
+    wrap.innerHTML='<div class="co-ts-chart" style="position:relative;">'+svg+axHi+'<div class="co-ts-cursor"></div><div class="co-ts-tip"></div></div><div class="co-ts-note">'+note+'</div>';
+    /* (#R153) crosshair tooltip (Countries-parity) — hover shows the year + each company's value at that year. */
+    const chart=wrap.querySelector('.co-ts-chart'), cursor=wrap.querySelector('.co-ts-cursor'), tip=wrap.querySelector('.co-ts-tip');
+    if(chart&&cursor&&tip){ const onMove=(e)=>{ const rc=chart.getBoundingClientRect(); if(!rc.width) return; const fx=Math.min(1,Math.max(0,(e.clientX-rc.left)/rc.width)); const fyr=from+fx*_sp;
+        cursor.style.left=(fx*100).toFixed(2)+'%'; cursor.style.display='block';
+        const rows=lines.map(ln=>{ let best=ln.pts[0],bd=Infinity; ln.pts.forEach(p=>{ const d=Math.abs(p.fy-fyr); if(d<bd){bd=d;best=p;} }); return {c:ln.c,col:ln.col,p:best}; });
+        tip.innerHTML='<div class="co-ts-tth">'+Math.round(Math.min(to,Math.max(from,fyr)))+'</div>'+rows.map(r=>'<div class="co-ts-ttr"><span class="co-ts-ttd" style="background:'+r.col+'"></span><span class="co-ts-ttn">'+IntMapSafe.html(_coName(r.c))+'</span><b>'+(metric==='mcap'?IntMapSafe.html(fmtMoney(r.p.v)):(Math.round(r.p.v)+''))+'</b></div>').join('');
+        tip.style.display='block'; tip.style.left=Math.min(Math.max(4,e.clientX-rc.left+12), Math.max(4,rc.width-150))+'px'; };
+      chart.addEventListener('mousemove',onMove); chart.addEventListener('mouseleave',()=>{ cursor.style.display='none'; tip.style.display='none'; }); } }
   function _coCmpWire(cos){ const root=document.getElementById('co-cmp-view'); if(!root) return;
     const bk=root.querySelector('[data-cmpback]'); if(bk) bk.onclick=()=>{ root.remove(); try{ renderCompanies(); }catch(_){} };
     root.querySelectorAll('[data-cmpmode]').forEach(b=>b.onclick=()=>{ _coCmpMode=b.getAttribute('data-cmpmode'); _coCmpRender(cos); });
@@ -10965,7 +11019,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('co-cmp-view')) return;   /* (#R142) the compare view owns the feed — don't clobber it */
     try{ _coWireTime(); }catch(_){}   /* (#R142) subscribe to the time machine once */
     try{ clearMarkers(); }catch(_){}
-    if(q==null) q=(currentMode==='info')?searchVal():'';
+    if(q==null) q=_companiesSearchVal();   /* (#R153) reads the ws-mode Companies filter box too (Countries parity) — was '' in ws-mode → un-filterable */
     let arr=IntMapCompanies.DATA.slice();
     if(q){ const ql=String(q).toLowerCase(); arr=arr.filter(c=>c.n.toLowerCase().includes(ql)||(c.nJp&&c.nJp.includes(q))||c.tk.toLowerCase().includes(ql)||_coSec(c.sec).toLowerCase().includes(ql)); }
     const actF=coFilters.filter(f=>f&&f.key&&isFinite(f.val));
@@ -11035,6 +11089,7 @@ window.addEventListener('DOMContentLoaded', () => {
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
       `<div class="co-detail-btns"><button class="co-detail-btn${coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${coCompareSet.has(c.tk)?_coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):_coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${coCompareSet.size?` (${coCompareSet.size}/8)`:''}</button></div>`+
       `<div class="co-detail-rows">${rows.map(r=>`<div class="co-drow"><span>${IntMapSafe.html(r[0])}</span><b>${IntMapSafe.html(String(r[1]))}</b></div>`).join('')}</div>`+
+      (c.sh>0?`<div class="co-detail-spark" id="co-detail-spark"><div class="co-spark-note">${_coL('Loading share-price history…','株価履歴を読み込み中…','Kursverlauf wird geladen…','Загрузка истории цен…','Cargando histórico…')}</div></div>`:'')+
       `<a class="co-detail-link" href="${IntMapSafe.html(IntMapSafe.url(site)||'#')}" target="_blank" rel="noopener">${IntMapSafe.html(c.dom)} ↗</a></div>`;
     document.body.appendChild(ov);
     const close=()=>{ try{ ov.remove(); }catch(_){} };
@@ -11046,6 +11101,21 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!wasIn && coCompareSet.size>=2){ close(); try{ window._coShowCompare(); }catch(_){} }
       else { close(); } };
     const img=ov.querySelector('.co-logo'); if(img) _coWireLogo(img);   /* (#R147) shared cached-logo wiring */
+    /* (#R153) real share-price SPARKLINE in the detail (Countries-parity enrichment — the detail was a static rows-only
+       stub). Uses the same monthly full-history data as the compare Time-series; snapshot-only names show an honest note. */
+    if(c.sh>0){ (async()=>{ try{ const cur=new Date().getFullYear(), from=cur-15, to=cur;
+        const data=await IntMapCompanies.priceSeriesFine(c.tk, from, to); const el=document.getElementById('co-detail-spark'); if(!el) return;
+        const pts=(data||[]).filter(p=>p&&p[1]>0);
+        if(pts.length<2){ el.innerHTML='<div class="co-spark-note">'+_coL('No share-price history (snapshot figure only).','株価履歴なし（スナップショットのみ）。','Kein Kursverlauf (nur Momentaufnahme).','Нет истории цен (только снимок).','Sin histórico (solo instantánea).')+'</div>'; return; }
+        const W=280,H=52,pad=3; let vmin=Infinity,vmax=-Infinity; const fmin=pts[0][0], fmax=pts[pts.length-1][0];
+        pts.forEach(p=>{ if(p[1]<vmin)vmin=p[1]; if(p[1]>vmax)vmax=p[1]; });
+        const span=(vmax-vmin)||1, fsp=(fmax-fmin)||1; const X=f=>pad+(f-fmin)/fsp*(W-2*pad), Y=v=>pad+(1-(v-vmin)/span)*(H-2*pad);
+        const d=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+        const first=pts[0][1], last=pts[pts.length-1][1], chg=first>0?(last-first)/first*100:0, up=chg>=0, col=up?'#30d158':'#ff453a';
+        el.innerHTML='<div class="co-spark-head"><span>'+_coL('Share price','株価','Aktienkurs','Цена акции','Precio acción')+' · '+Math.round(fmin)+'–'+Math.round(fmax)+'</span><span style="color:'+col+';font-weight:700;">'+(up?'+':'')+chg.toFixed(0)+'%</span></div>'
+          +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="co-spark-svg"><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>'
+          +'<div class="co-spark-note">$'+first.toFixed(2)+' → $'+last.toFixed(2)+' · '+_coL('monthly close, split-adjusted (Yahoo)','月次終値・分割調整済（Yahoo）','Monatsschluss, splitbereinigt (Yahoo)','мес. закрытие, скорр. (Yahoo)','cierre mensual, ajustado (Yahoo)')+'</div>';
+      }catch(_){ const el=document.getElementById('co-detail-spark'); if(el) el.innerHTML=''; } })(); }
   }
   window.showCompanyDetail=showCompanyDetail;
 
@@ -12782,7 +12852,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R145) COMPACT legends: tighter padding/width/font. (#R146) but the 56dvh cap meant the vertical-resize grabber
          couldn't be dragged tall enough to reveal all 30 Köppen classes ("長く伸ばせられない") — restore the near-full-viewport
          ceiling so the legend can be stretched long again; height stays auto (fits content) with a comfortable default. */
-      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:200px; min-width:200px; max-width:200px; font-size:10.4px; }   /* (#R152) SINGLE-LINE rows (see .kl-item below) — the 30 zone rows no longer wrap to 2 lines, so the natural content height dropped ~777px→~515px and now fits a maximised 768p laptop: the legend can finally be stretched to reveal the LAST zone ("最後の気候区分まで伸ばせない"). 186→200px so names stay legible on one line. */
+      .koppen-legend{ display:none; flex-direction:column; position:absolute; top:74px; bottom:auto; left:24px; right:auto; z-index:1100; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:11px; padding:7px 10px; box-shadow:var(--shadow); backdrop-filter:blur(15px); height:auto; min-height:150px; max-height:calc(100dvh - 84px); overflow:hidden; resize:vertical; width:264px; min-width:264px; max-width:264px; font-size:10.4px; }   /* (#R153) WIDER (200→264px) so full climate names READ on one line ("行の幅が狭すぎる" — R152's 200px ellipsised 11 of 30 EN names; 264px fits EN/JP/RU/ES fully, only the 2-3 longest German compounds truncate w/ hover). SINGLE-LINE rows (see .kl-item) keep the 30-zone natural height ~460px so the whole legend fits a laptop viewport and can be stretched to the LAST zone (ET/EF) — "最後の気候区分まで伸ばせない". */
       .koppen-legend .kl-scroll{ overflow-y:auto; flex:1 1 auto; min-height:0; margin-top:1px; scrollbar-gutter:stable; }   /* (#R151) reserve the scrollbar gutter ALWAYS so climate-name rows keep a constant width while the legend is resized ("気候名の行幅が勝手に動かないように") — the appearing/disappearing scrollbar was stealing ~15px and reflowing the row text */
       /* (#R15 / #37) Make the vertical-resize grabber VISIBLE so users discover it — the user reported the
          resize "isn't implemented", but it was: the native grabber was just painted transparent. Now it
@@ -12794,7 +12864,7 @@ window.addEventListener('DOMContentLoaded', () => {
       .kl-period label{ font-size:11px; color:var(--text-muted); }
       .kl-period select{ flex:1; background:var(--input-bg); color:var(--text-main); border:1px solid var(--glass-border,rgba(128,128,128,0.25)); border-radius:6px; padding:3px 6px; font-size:11.5px; cursor:pointer; }
       .legend-collapsed .kl-period{ display:none !important; }
-      .kl-item{ display:flex; align-items:center; gap:6px; padding:0.5px 4px; cursor:pointer; border-radius:5px; white-space:nowrap; line-height:1.25; }   /* (#R152) white-space:nowrap = ONE line per zone (was wrapping to 2 for the 14 long names → doubled the legend height); the code stays fixed, only the name ellipsises */
+      .kl-item{ display:flex; align-items:center; gap:6px; padding:0 4px; cursor:pointer; border-radius:5px; white-space:nowrap; line-height:1.2; }   /* (#R152) white-space:nowrap = ONE line per zone (was wrapping to 2 for the 14 long names → doubled the legend height); the code stays fixed, only the name ellipsises. (#R153) vertical padding 0.5px→0 + line-height 1.25→1.2 shaves ~35px off the 30-row block so the whole legend clears a 1366×768 laptop and the LAST zone (EF) is reachable by stretching. */
       .kl-item .kl-code{ flex-shrink:0; font-weight:600; }   /* (#R152) climate code always fully visible — it is the canonical identifier, so ellipsising the name never loses which zone a row is */
       .kl-item .kl-nm{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted); }   /* (#R152) name ellipsises on one line (full text on hover via title=) so rows stay 14px and 30 zones fit the screen */
       .kl-item:hover{ background:var(--input-bg); } .kl-item.sel{ font-weight:700; background:var(--input-bg); outline:2px solid var(--primary-color); } .kl-item.sel .kl-nm{ color:var(--text-main); }
@@ -14055,6 +14125,9 @@ window.addEventListener('DOMContentLoaded', () => {
     window.KNAME={Af:{en:'Tropical rainforest',jp:'熱帯雨林'},Am:{en:'Tropical monsoon',jp:'熱帯モンスーン'},Aw:{en:'Savanna',jp:'サバナ'},BWh:{en:'Hot desert',jp:'砂漠(高温)'},BWk:{en:'Cold desert',jp:'砂漠(寒冷)'},BSh:{en:'Hot steppe',jp:'ステップ(高温)'},BSk:{en:'Cold steppe',jp:'ステップ(寒冷)'},Csa:{en:'Mediterranean, hot summer',jp:'地中海性(高温夏)'},Csb:{en:'Mediterranean, warm summer',jp:'地中海性(温暖夏)'},Csc:{en:'Mediterranean, cold summer',jp:'地中海性(冷涼夏)'},Cwa:{en:'Humid subtropical, dry winter',jp:'温暖冬季少雨'},Cwb:{en:'Subtropical highland',jp:'温帯高地'},Cwc:{en:'Subtropical highland, dry winter',jp:'温帯高地(冬季少雨)'},Cfa:{en:'Humid subtropical',jp:'温暖湿潤'},Cfb:{en:'Oceanic',jp:'西岸海洋性'},Cfc:{en:'Subpolar oceanic',jp:'亜寒帯海洋性'},Dsa:{en:'Continental, dry-hot summer',jp:'大陸性夏季少雨(高温)'},Dsb:{en:'Continental, dry-warm summer',jp:'大陸性夏季少雨(温暖)'},Dsc:{en:'Continental, dry summer (cold)',jp:'大陸性夏季少雨(冷涼)'},Dsd:{en:'Continental, dry summer (severe)',jp:'大陸性夏季少雨(厳寒)'},Dwa:{en:'Continental, dry winter (hot summer)',jp:'大陸性冬季少雨(高温夏)'},Dwb:{en:'Continental, dry winter (warm summer)',jp:'大陸性冬季少雨(温暖夏)'},Dwc:{en:'Subarctic, dry winter',jp:'亜寒帯冬季少雨'},Dwd:{en:'Subarctic, dry winter (severe)',jp:'亜寒帯冬季少雨(厳寒)'},Dfa:{en:'Humid continental, hot summer',jp:'亜寒帯湿潤(高温夏)'},Dfb:{en:'Humid continental, warm summer',jp:'亜寒帯湿潤(温暖夏)'},Dfc:{en:'Subarctic',jp:'亜寒帯'},Dfd:{en:'Subarctic, severe winter',jp:'亜寒帯(厳寒)'},ET:{en:'Tundra',jp:'ツンドラ'},EF:{en:'Ice cap',jp:'氷雪'}};
     /* (#R32b) German Köppen climate names ("ケッペンでは気候名が書かれていない" — DE showed undefined). */
     try{ const _kde={Af:'Tropischer Regenwald',Am:'Tropisches Monsunklima',Aw:'Savanne',BWh:'Heißwüste',BWk:'Kaltwüste',BSh:'Heiße Steppe',BSk:'Kalte Steppe',Csa:'Mediterran, heißer Sommer',Csb:'Mediterran, warmer Sommer',Csc:'Mediterran, kühler Sommer',Cwa:'Feuchtsubtropisch, trockener Winter',Cwb:'Subtropisches Hochland',Cwc:'Subtropisches Hochland, trockener Winter',Cfa:'Feuchtsubtropisch',Cfb:'Ozeanisch',Cfc:'Subpolar-ozeanisch',Dsa:'Kontinental, trocken-heißer Sommer',Dsb:'Kontinental, trocken-warmer Sommer',Dsc:'Kontinental, trockener Sommer (kühl)',Dsd:'Kontinental, trockener Sommer (streng)',Dwa:'Kontinental, trockener Winter (heißer Sommer)',Dwb:'Kontinental, trockener Winter (warmer Sommer)',Dwc:'Subarktisch, trockener Winter',Dwd:'Subarktisch, trockener Winter (streng)',Dfa:'Feuchtkontinental, heißer Sommer',Dfb:'Feuchtkontinental, warmer Sommer',Dfc:'Subarktisch',Dfd:'Subarktisch, strenger Winter',ET:'Tundra',EF:'Eiskappe'}; for(const k in _kde){ if(window.KNAME[k]) window.KNAME[k].de=_kde[k]; } }catch(_){}
+    /* (#R153) Russian + Spanish Köppen climate names — previously absent from KNAME, so RU/ES users saw the ENGLISH fallback (violates the 5-language rule). Standard Köppen–Geiger terminology in each language. */
+    try{ const _kru={Af:'Влажный тропический лес',Am:'Тропический муссонный',Aw:'Саванна',BWh:'Жаркая пустыня',BWk:'Холодная пустыня',BSh:'Жаркая степь',BSk:'Холодная степь',Csa:'Средиземноморский, жаркое лето',Csb:'Средиземноморский, тёплое лето',Csc:'Средиземноморский, прохладное лето',Cwa:'Влажный субтропический, сухая зима',Cwb:'Субтропическое нагорье',Cwc:'Субтропическое нагорье, сухая зима',Cfa:'Влажный субтропический',Cfb:'Океанический',Cfc:'Субполярный океанический',Dsa:'Континентальный, сухое жаркое лето',Dsb:'Континентальный, сухое тёплое лето',Dsc:'Континентальный, сухое лето (холодный)',Dsd:'Континентальный, сухое лето (суровый)',Dwa:'Континентальный, сухая зима (жаркое лето)',Dwb:'Континентальный, сухая зима (тёплое лето)',Dwc:'Субарктический, сухая зима',Dwd:'Субарктический, сухая зима (суровый)',Dfa:'Влажный континентальный, жаркое лето',Dfb:'Влажный континентальный, тёплое лето',Dfc:'Субарктический',Dfd:'Субарктический, суровая зима',ET:'Тундра',EF:'Ледниковый'}; for(const k in _kru){ if(window.KNAME[k]) window.KNAME[k].ru=_kru[k]; } }catch(_){}
+    try{ const _kes={Af:'Selva tropical',Am:'Monzónico tropical',Aw:'Sabana',BWh:'Desierto cálido',BWk:'Desierto frío',BSh:'Estepa cálida',BSk:'Estepa fría',Csa:'Mediterráneo, verano caluroso',Csb:'Mediterráneo, verano templado',Csc:'Mediterráneo, verano fresco',Cwa:'Subtropical húmedo, invierno seco',Cwb:'Tierras altas subtropicales',Cwc:'Tierras altas subtropicales, invierno seco',Cfa:'Subtropical húmedo',Cfb:'Oceánico',Cfc:'Oceánico subpolar',Dsa:'Continental, verano seco y caluroso',Dsb:'Continental, verano seco y templado',Dsc:'Continental, verano seco (frío)',Dsd:'Continental, verano seco (severo)',Dwa:'Continental, invierno seco (verano caluroso)',Dwb:'Continental, invierno seco (verano templado)',Dwc:'Subártico, invierno seco',Dwd:'Subártico, invierno seco (severo)',Dfa:'Continental húmedo, verano caluroso',Dfb:'Continental húmedo, verano templado',Dfc:'Subártico',Dfd:'Subártico, invierno severo',ET:'Tundra',EF:'Casquete glaciar'}; for(const k in _kes){ if(window.KNAME[k]) window.KNAME[k].es=_kes[k]; } }catch(_){}
     const KCOL=window.KCOL, KNAME=window.KNAME;
     /* safe name lookup: current language → English fallback (never "undefined") */
     window.kName=function(code){ const e=window.KNAME&&window.KNAME[code]; return e?(e[currentLang]||e.en||code):code; };
@@ -25415,8 +25488,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const _COV_SRC='sv-cov-src', _COV_LYR='sv-cov-lyr';
     const _covTileUrl=(sd)=>'https://mts'+sd+'.google.com/vt?hl=en&src=api&x={x}&y={y}&z={z}&lyrs=svv&style=40,18';
     function addCoverageTiles(){ try{
-        if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:256,minzoom:0,maxzoom:19,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});
-        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) THINNER coverage line ("線が太すぎる"): R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased line edges outward, making the blue strokes look fat. Dropping both (and easing opacity 1→0.9) crisps them back to a fine line while keeping the cyan tint (saturation + hue-rotate). raster-resampling:linear keeps the thin edges smooth. */
+        if(!map.getSource(_COV_SRC)) map.addSource(_COV_SRC,{type:'raster',tileSize:128,minzoom:0,maxzoom:21,attribution:'Street View coverage © Google',tiles:[_covTileUrl(0),_covTileUrl(1),_covTileUrl(2),_covTileUrl(3)]});   /* (#R153) GENUINELY THINNER coverage line ("線が太すぎる" — re-report). Google renders the svv stroke at a ~constant ~3-4 screen-px width at every native zoom, and ABOVE z19 it was upscaled → fat. tileSize:128 (was 256) makes MapLibre fetch the NEXT zoom level's 256px tiles and draw them into a 128px slot → the stroke is DOWNSCALED ~2× at every zoom (≈1.5-2px, below Google's native width). maxzoom:19→21 supplies real z20/z21 tiles (verified non-empty: 1440/1674 blue px on Manhattan) so the overzoom keeps working down to street level instead of upscaling z19. */
+        if(!map.getLayer(_COV_LYR)) map.addLayer({id:_COV_LYR,type:'raster',source:_COV_SRC,paint:{'raster-opacity':0.9,'raster-saturation':0.9,'raster-hue-rotate':-42,'raster-resampling':'linear'}});   /* (#R152) R147's raster-brightness-min:0.5 + raster-contrast:0.15 bloomed the anti-aliased edges → fat; dropped both. raster-resampling:linear keeps the downscaled edges smooth (crisp, not blurry). cyan tint via saturation + hue-rotate. */
         return true; }catch(_){ return false; } }
     function removeCoverageTiles(){ try{ if(map.getLayer(_COV_LYR)) map.removeLayer(_COV_LYR); }catch(_){} try{ if(map.getSource(_COV_SRC)) map.removeSource(_COV_SRC); }catch(_){} }
     /* keyless coverage sampling ("Coverageを考慮"): read the svv tile PIXELS around a point and return the nearest
@@ -27958,20 +28031,48 @@ window.addEventListener('DOMContentLoaded', () => {
        stanzas (content-preserving, sentence-aware, EN + CJK); (b) a single newline after a sentence end becomes a
        soft paragraph gap. Structured replies (headings/bullets/blank-line paragraphs) are left exactly as the model
        wrote them. Pure/deterministic → unit-tested via IntMapAtlasDebug.mdMini / _atlStanza. */
+    /* (#R153) DETERMINISTIC structure synthesis — the persistent "同一サイズのテキストが単調に並ぶ／まだほぼ単調" complaint.
+       R150–R152 only promoted a lead when the whole reply was ONE run-on block: the ">1 newline" guard bailed on the
+       COMMON case (multi-paragraph flat prose), so most replies stayed monotone. This restructures ANY unstructured
+       reply into titled, spaced sections — honestly, using only text the MODEL actually wrote:
+         • a model-written "Label:" / "背景：" section lead (paragraph- OR sentence-initial) → a real ## heading (size),
+         • the opening sentence of the reply                          → a bold lead line,
+         • every section/paragraph                                    → separated by a blank line (mdMini → 余白),
+         • a long run of sentences                                    → split into ~2-sentence stanzas,
+         • numbered / dashed lines                                    → normalised to bullets.
+       Replies the model ALREADY structured with ## headings are returned untouched. CJK is weighted (dense) so short
+       Japanese replies still restructure. Labels are capped at a short prefix so mid-sentence colons never misfire.
+       Pure/deterministic → unit-tested via IntMapAtlasDebug. */
     function _atlStanza(raw){ raw=String(raw||'');
-      if(/^\s*#{1,6}\s|^\s*[-・*]\s|\n\s*\n/m.test(raw)) return raw;          /* already structured (heading / bullet / paragraph) */
-      if((raw.match(/\n/g)||[]).length>1) return raw;                        /* model already used line breaks — respect them */
-      const plain=raw.replace(/\s+/g,' ').trim(); if(plain.length<=280) return raw;   /* short enough to read as one block */
-      const parts=plain.match(/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g);
-      if(!parts||parts.length<4) return raw;                                 /* too few sentences to bother grouping */
-      /* (#R152) SIZE hierarchy even when the model returns flat prose (the persistent "同一サイズのテキストが単調に並ぶ"
-         complaint — the prompt already asks for ## headings, but a flat wall gets none): promote the opening sentence to a
-         standalone **bold** line, which mdMini renders as a real 1.2em accent lead. Then group the rest into ~2-sentence
-         stanzas. Guarded: only a short, single, star-free opening becomes the lead. */
-      let lead='', rest=parts; const first=(parts[0]||'').trim();
-      if(first.length>=12 && first.length<=90 && first.indexOf('*')<0){ lead='**'+first.replace(/[.。！!]\s*$/,'')+'**\n\n'; rest=parts.slice(1); }
-      const out=[]; for(let i=0;i<rest.length;i+=2) out.push(rest.slice(i,i+2).join(' ').trim());
-      return lead+out.join('\n\n'); }
+      if(/^\s*#{1,6}\s/m.test(raw)) return raw;                               /* model emitted real headings already → respect */
+      const plainAll=raw.replace(/\s+/g,' ').trim();
+      const cjk=(plainAll.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;               /* CJK carries ~2× the text of a Latin char */
+      const paras=raw.split(/\n\s*\n|\n/).map(s=>s.trim()).filter(Boolean);
+      if(!paras.length) return raw;
+      if((plainAll.length+cjk)<=150 && paras.length<2) return raw;            /* a one-line answer doesn't need restructuring */
+      const LABEL=/^([^\s:：][^:：]{0,23}?)[:：][ \t　]+(?=\S)/;                  /* short "Label: body" prefix (≤24 chars → no mid-sentence colon) */
+      const isList=p=>/^\s*(?:[-・*•]|\d+[.)、]|[①-⑳])\s/.test(p);
+      const SENT=/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g;
+      const out=[]; let buf=[]; let leadDone=false;
+      const flush=()=>{ if(!buf.length) return; const arr=buf; buf=[]; const joined=arr.join(' ').trim(); if(!joined) return;
+        const jc=(joined.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;
+        if((joined.length+jc)>230 && arr.length>=3){ for(let i=0;i<arr.length;i+=2) out.push(arr.slice(i,i+2).join(' ').trim()); }
+        else out.push(joined); };
+      for(const p of paras){
+        if(isList(p)){ flush(); out.push(p.replace(/^\s*(?:\d+[.)、]|[①-⑳])[ \t　]+/,'- ').replace(/^\s*[•・*][ \t　]+/,'- ')); leadDone=true; continue; }
+        const sents=p.match(SENT)||[p];
+        for(let si=0; si<sents.length; si++){ const s=(sents[si]||'').trim(); if(!s) continue;
+          const lm=s.match(LABEL); const label=lm?lm[1].trim():'';
+          if(label && label.length>=2 && label.split(/\s+/).length<=5){       /* sentence-initial section label → heading */
+            flush(); out.push('## '+label); leadDone=true; const body=s.slice(lm[0].length).trim(); if(body) buf.push(body); continue; }
+          if(!leadDone){ const first=s.replace(/[.。！!？?]+["”』）)]*\s*$/,'').trim();   /* opening sentence → bold lead */
+            if(first.length>=12 && first.length<=110 && first.indexOf('*')<0){ out.push('**'+first+'**'); leadDone=true; continue; } }
+          buf.push(s);
+        }
+        flush();                                                             /* paragraph boundary ends the current stanza group */
+      }
+      flush();
+      return out.join('\n\n'); }
     function mdMini(s){ return esc(_dedupText(_atlStanza(String(s||''))))
       /* (#R149) STRONGER visual hierarchy — bigger, accent-coloured headings with clear top spacing so any structure
          the model emits (## sections / # title / ### sub) is unmistakable. Sizes are em, so they scale off the bubble
@@ -27982,7 +28083,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R151) MODEL-INDEPENDENT hierarchy — a line that is ENTIRELY a **bold run** is a section lead the model DID emit
          (models reach for standalone bold far more readily than "## "); render it at real heading size + spacing so the
          reply stops reading as one flat block even when no "## " markers appear. Inline bold stays <b> (below). */
-      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.15em 0 .38em;font-size:1.22em;line-height:1.3;">$1</div>')
+      .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--primary-color);margin:1.2em 0 .4em;font-size:1.3em;line-height:1.28;">$1</div>')   /* (#R153) 1.22→1.3em — a clearer step above body so the lead/sections read as headings, not slightly-bold text */
       .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
       /* (#R74) markdown links render as real (safe) anchors — "記事のリンク等をChatGPT風UIで" */
       .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
@@ -27990,7 +28091,7 @@ window.addEventListener('DOMContentLoaded', () => {
          — the leading-char guard skips urls already inside an href="…" attribute of the anchors made just above. */
       .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
       .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.15em;text-indent:-0.9em;margin:.24em 0;">• $1</div>')
-      .replace(/\n{2,}/g,'<div style="height:1.05em"></div>')                                       /* (#R151/#R152) explicit paragraph → generous gap (more "余白" between groups) */
+      .replace(/\n{2,}/g,'<div style="height:1.2em"></div>')                                         /* (#R151/#R152/#R153) explicit paragraph → generous gap (more "余白" between groups) — 1.05→1.2em since _atlStanza now joins every paragraph/section with a blank line */
       .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.72em"></div>')                  /* (#R150/#R151/#R152) sentence-end + single newline = soft paragraph gap ("まとまりの間に余白") */
       .replace(/\n/g,'<br>'); }
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
@@ -28024,27 +28125,42 @@ window.addEventListener('DOMContentLoaded', () => {
       (s.match(/[぀-ヿ㐀-鿿가-힯]{2,}/g)||[]).forEach(run=>{ for(let i=0;i<run.length-1;i++) out.add(run.slice(i,i+2)); });
       return out; }
     function _atlRelevantCards(cards, refText){ try{ const ref=_atlTokens(refText); if(ref.size<4) return cards;
-      const kept=(cards||[]).filter(c=>{ const t=_atlTokens(((c&&(c.title||c.name||c.src))||'')+' '+((c&&c.url)||'')); for(const w of t){ if(ref.has(w)) return true; } return false; });
+      /* (#R153) CROSS-SCRIPT safety — a Japanese reply vs an English article title share no tokens even on the SAME topic
+         (CJK bigrams vs Latin words). Don't wrongly drop a same-topic card written in the other language: if the reply is
+         purely one script and the card purely the other, we can't judge relevance → keep it. */
+      const refCJK=/[぀-ヿ㐀-鿿가-힯]/.test(refText), refLat=/[a-z]{4}/i.test(refText);
+      const kept=(cards||[]).filter(c=>{ const txt=((c&&(c.title||c.name||c.src))||'')+' '+((c&&c.url)||'');
+        const cardCJK=/[぀-ヿ㐀-鿿가-힯]/.test(txt), cardLat=/[a-z]{4}/i.test(txt);
+        if((refCJK&&!refLat&&cardLat&&!cardCJK)||(refLat&&!refCJK&&cardCJK&&!cardLat)) return true;
+        const t=_atlTokens(txt); for(const w of t){ if(ref.has(w)) return true; } return false; });
       return kept.length?kept:cards; }catch(_){ return cards; } }   /* never blank the section entirely — if nothing overlaps, fall back to the original set */
-    function linkCards(list){ try{
-      const seen=new Set(); const cards=[];
-      /* (#R107) show ONLY links that point at the ACTUAL article ("記事へのリンクではなく情報源の一般的なリンクに
-         なっている → 該当記事のリンクをきちんと貼る"). Google-News RSS links are aggregator REDIRECTS to a
-         news.google.com page, not the article; decode the embedded publisher URL where the token carries it, and
-         DROP any that still resolve to news.google.com (a generic aggregator page is NOT the article). Better to
-         show fewer, real article links (GDELT/direct-RSS provide true URLs) than misleading generic ones. */
-      (list||[]).forEach(it=>{ if(!it||!it.url) return; let u=String(it.url).trim(); if(!/^https?:\/\//i.test(u)||u.length>700) return;
-        if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; else return; }   /* un-decodable aggregator → drop */
-        let host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(_){ return; }
-        if(/(^|\.)news\.google\.com$/i.test(host)||/^news\.google$/i.test(host)) return;   /* still an aggregator → drop */
-        if(_atlBadSourceHost(host)) return;   /* (#R151) drop SNS / UGC / shorteners / video hosts — not reliable factual sources */
-        const k=u.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
-        const title=String(it.title||it.src||host).slice(0,90);
-        cards.push('<a class="atl-lc" href="'+esc(u)+'" target="_blank" rel="noopener">'
-          +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
-          +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(title)+'</span><span class="atl-lc-d">'+esc(host)+'</span></span></a>'); });
-      if(!cards.length) return '';
-      return '<div class="atl-lc-row">'+cards.slice(0,6).join('')+'</div>'; }catch(_){ return ''; } }
+    /* (#R153) SINGLE source-URL cleaner — decode Google-News aggregator redirects to the REAL article, and reject
+       aggregator / SNS / UGC / shortener / video hosts. Returns {url,host} or null. Used by BOTH linkCards AND the inline
+       "article ↗" evidence links (mapReport / events) so EVERY rendered source goes through the same filter — the R152
+       audit found the inline links bypassed it and leaked bare news.google.com / social URLs ("まったく関係ないリンク"). */
+    function _atlCleanUrl(u){ try{ u=String(u||'').trim(); if(!/^https?:\/\//i.test(u)||u.length>700) return null;
+      if(_isAggUrl(u)){ const dec=_decGNewsUrl(u); if(dec) u=dec; else return null; }
+      let host=''; try{ host=new URL(u).hostname.replace(/^www\./,''); }catch(_){ return null; }
+      if(/(^|\.)news\.google\.com$/i.test(host)||/^news\.google$/i.test(host)) return null;
+      if(_atlBadSourceHost(host)) return null;   /* drop SNS / UGC / shorteners / video hosts — not reliable factual sources */
+      return {url:u, host}; }catch(_){ return null; } }
+    /* (#R74) ChatGPT-style SOURCE LINK CARDS. (#R153) host-clean FIRST, THEN relevance (when refText is passed): the R152
+       order (relevance → linkCards) could keep a coincidentally-matching SNS card and drop the real ones, then linkCards
+       dropped the SNS one → an EMPTY section though real sources existed ("出展が全くない"). Cleaning first guarantees the
+       relevance filter only ever chooses among renderable real-article cards, and its own fallback keeps them all if none
+       match — so the section is never blank when genuine sources exist. Pass refText only for the "gathered" buckets;
+       web-verified / model-cited sources are anchored to a claim and skip relevance. */
+    function linkCards(list, refText){ try{
+      const seen=new Set(); let clean=[];
+      (list||[]).forEach(it=>{ if(!it||!it.url) return; const cu=_atlCleanUrl(it.url); if(!cu) return;
+        const k=cu.url.replace(/[#?].*$/,''); if(seen.has(k)) return; seen.add(k);
+        clean.push({url:cu.url, host:cu.host, title:String((it.title||it.src||cu.host)).slice(0,90)}); });
+      if(refText) clean=_atlRelevantCards(clean, refText);
+      if(!clean.length) return '';
+      const cards=clean.slice(0,6).map(c=>'<a class="atl-lc" href="'+esc(c.url)+'" target="_blank" rel="noopener">'
+        +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(c.host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
+        +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(c.title)+'</span><span class="atl-lc-d">'+esc(c.host)+'</span></span></a>');
+      return '<div class="atl-lc-row">'+cards.join('')+'</div>'; }catch(_){ return ''; } }
     function listHtml(title,list,metric){ if(!list||!list.length) return note('⚠ '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
       const painted=highlight(list.map(r=>r.code)); fitTo(list.map(r=>r.code));
       return '<div style="font-weight:600;margin:2px 0 4px;">'+esc(title)+'</div><ol style="margin:0;padding-left:22px;line-height:1.65;font-size:12px;">'
@@ -30038,7 +30154,7 @@ window.addEventListener('DOMContentLoaded', () => {
           if(!String(txtB||'').trim()) return R(false, warn('⚠ '+L('The brief came back empty','ブリーフが空でした','Bericht kam leer zurück','Пустой ответ','El informe volvió vacío')));
           /* (#R69) header = just the place name — no 🤖, no "AI brief" wording ("AI Briefに🤖をつけるな" /
              "AI briefってワードをわざわざAtlasで出すな"). */
-          let srcCardsB=''; try{ srcCardsB=linkCards(_atlRelevantCards(srcSink,txtB)); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards; (#R152) drop gathered articles unrelated to the brief text */
+          let srcCardsB=''; try{ srcCardsB=linkCards(srcSink,txtB); if(srcCardsB) srcCardsB='<div class="atl-src-h">'+L('Sources','ソース','Quellen','Источники','Fuentes')+'</div>'+srcCardsB; }catch(_){}   /* (#R79) real article cards; (#R152/#R153) relevance now runs INSIDE linkCards (after host-clean) so the section is never blanked by an only-SNS coincidence */
           /* (#R103) the per-message "AI-generated — verify" note is dropped — the single static note under the input bar
              now carries that disclaimer (毎メッセージに書くな). */
           /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
@@ -30881,7 +30997,7 @@ window.addEventListener('DOMContentLoaded', () => {
           let okR=paintPois(); for(let i2=0;i2<6&&!okR&&_pois.length;i2++){ await new Promise(r2=>setTimeout(r2,700)); okR=paintPois(); }
           try{ if(_pois.length){ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p=>{ a2=Math.min(a2,p.lng);b2=Math.min(b2,p.lat);c2=Math.max(c2,p.lng);d2=Math.max(d2,p.lat); });
             if(c2-a2<340) map.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:9,duration:1100}); } }catch(_){}
-          const listHtml2=items.map((p,i)=>{ const mi=p.mappable?mappableItems.indexOf(p):-1; return '<div class="atl-rp-item"'+(mi>=0?(' data-i="'+mi+'"'):'')+' style="display:flex;gap:7px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.12);'+(mi>=0?'cursor:pointer;':'')+'"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:'+(p.mappable?(_poiColor||'#ff453a'):'rgba(128,128,128,0.5)')+';position:relative;top:-1px;"></span><span style="flex:1;min-width:0;"><span style="font-weight:600;font-size:12px;">'+esc(p.name)+'</span>'+((p.date||p.src)?' <span style="font-size:10px;color:var(--text-muted);">'+esc([p.date,p.src].filter(Boolean).join(' · '))+'</span>':'')+(p.summary?'<br><span style="font-size:11px;line-height:1.5;color:var(--text-main);opacity:0.9;">'+esc(p.summary.length>150?p.summary.slice(0,150)+'…':p.summary)+'</span>':'')+(p.url?' <a href="'+esc(p.url)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>':'')+(!p.mappable?' <span style="font-size:9.5px;color:var(--text-muted);">('+L('location unverified','位置未確認','Ort unbestätigt','место не подтв.','ubicación no verif.')+')</span>':'')+'</span></div>'; }).join('');
+          const listHtml2=items.map((p,i)=>{ const mi=p.mappable?mappableItems.indexOf(p):-1; const pu=_atlCleanUrl(p.url); return '<div class="atl-rp-item"'+(mi>=0?(' data-i="'+mi+'"'):'')+' style="display:flex;gap:7px;align-items:baseline;padding:4px 0;border-top:1px solid rgba(128,128,128,0.12);'+(mi>=0?'cursor:pointer;':'')+'"><span style="flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:'+(p.mappable?(_poiColor||'#ff453a'):'rgba(128,128,128,0.5)')+';position:relative;top:-1px;"></span><span style="flex:1;min-width:0;"><span style="font-weight:600;font-size:12px;">'+esc(p.name)+'</span>'+((p.date||p.src)?' <span style="font-size:10px;color:var(--text-muted);">'+esc([p.date,p.src].filter(Boolean).join(' · '))+'</span>':'')+(p.summary?'<br><span style="font-size:11px;line-height:1.5;color:var(--text-main);opacity:0.9;">'+esc(p.summary.length>150?p.summary.slice(0,150)+'…':p.summary)+'</span>':'')+(pu?' <a href="'+esc(pu.url)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>':'')   /* (#R153) inline evidence link goes through _atlCleanUrl too (decode GNews aggregator → real article, drop SNS) — was raw p.url, the "無関係リンク／SNS" leak */+(!p.mappable?' <span style="font-size:9.5px;color:var(--text-muted);">('+L('location unverified','位置未確認','Ort unbestätigt','место не подтв.','ubicación no verif.')+')</span>':'')+'</span></div>'; }).join('');
           return R(true,'<div style="font-weight:600;margin:2px 0 4px;">'+esc(jr.title||topic)+'</div>'
             +(jr.overview?'<div style="font-size:12.5px;line-height:1.6;margin-bottom:6px;">'+esc(jr.overview)+'</div>':'')
             +'<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">📌 '+_pois.length+' '+L('points mapped — click a pin (or an item below) for the summary & article','地点をマッピングしました — ピンまたは下の項目をクリックすると要約と記事を開けます','Punkte kartiert — Pin anklicken für Zusammenfassung & Artikel','точек на карте — клик по метке открывает сводку и статью','puntos mapeados — clic en un pin para el resumen y artículo')+'</div>'
@@ -31244,7 +31360,7 @@ window.addEventListener('DOMContentLoaded', () => {
                articles we fed the model); the hosted-search citations come from the provider's annotations. */
             if(_aCites.length){ const wc=linkCards(_aCites.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(wc) html+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+wc; }
             if(cited.length){ const cc=linkCards(cited); if(cc) html+='<div class="atl-src-h">'+L('Cited sources','引用したソース','Zitierte Quellen','Цитированные источники','Fuentes citadas')+'</div>'+cc; }
-            if(rest.length){ const rc=linkCards(_atlRelevantCards(rest,txt).slice(0,4)); if(rc) html+='<div class="atl-src-h">'+(haveBasis?L('Other gathered articles','その他の収集記事','Weitere gesammelte Artikel','Другие собранные статьи','Otros artículos recopilados'):L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados'))+'</div>'+rc; }   /* (#R152) filter unrelated gathered links + relabel: when nothing was cited/web-verified these were shown as "Sources" (misleading) → "Related articles" */
+            if(rest.length){ const rc=linkCards(rest,txt); if(rc) html+='<div class="atl-src-h">'+(haveBasis?L('Other gathered articles','その他の収集記事','Weitere gesammelte Artikel','Другие собранные статьи','Otros artículos recopilados'):L('Related articles','関連記事','Verwandte Artikel','Похожие статьи','Artículos relacionados'))+'</div>'+rc; }   /* (#R152/#R153) filter unrelated gathered links (relevance now inside linkCards, applied to the host-cleaned set) + relabel: when nothing was cited/web-verified these were shown as "Sources" (misleading) → "Related articles" */
           }catch(_){}
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
           /* (#R131) Only claim a live web verification when the hosted search ACTUALLY ran this turn (webUsed) — never
@@ -31469,12 +31585,12 @@ window.addEventListener('DOMContentLoaded', () => {
           const fmtH=h=>h<1?L('<1h ago','1時間以内','<1 h','<1 ч','<1 h'):Math.round(h)+L('h ago','時間前','h','ч назад','h');
           let html='<div style="font-weight:600;margin:2px 0 4px;">🗞 '+L('Events (grouped news, last ','出来事（ニュースをイベント単位に集約・過去','Ereignisse (letzte ','События (за ','Eventos (últimas ')+hrs+'h'+(currentLang==='jp'?'）':')')+(ctx&&ctx.name?(' — '+esc(ctx.name)):'')+'</div>';
           html+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">'+items.length+' '+L('articles → ','記事 → ','Artikel → ','статей → ','artículos → ')+evs.length+' '+L('events; the ','イベント。上位','Ereignisse; Top ','событий; топ-','eventos; los ')+top.length+L(' biggest shown — click an item or pin to fly','件を表示 — 項目/ピンをクリックで移動',' angezeigt',' показаны',' mayores mostrados')+'</div>';
-          top.forEach((e,i2)=>{ const first=e.g[e.g.length-1], latest=e.g[0];
+          top.forEach((e,i2)=>{ const first=e.g[e.g.length-1], latest=e.g[0]; const eu=_atlCleanUrl(latest.it.link);
             html+='<div class="atl-rp-item" data-i="'+i2+'" style="padding:5px 0;border-top:1px solid rgba(128,128,128,0.14);cursor:pointer;">'
               +'<div style="font-size:12px;font-weight:600;line-height:1.45;">'+(i2+1)+'. '+esc(String(latest.it.title).slice(0,110))+'</div>'
               +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+(e.pname?(esc(e.pname)+' · '):'')+e.g.length+' '+L('articles from ','記事・','Artikel von ','статей от ','artículos de ')+e.outlets.slice(0,4).map(esc).join(', ')+(e.outlets.length>4?' …':'')+' · '+fmtH(e.oldest)+' → '+fmtH(e.newest)+'</div>'
               +((e.g.length>1&&first.it.title!==latest.it.title)?('<div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">'+L('First report','最初の報道','Erste Meldung','Первое сообщение','Primer reporte')+': '+esc(String(first.it.title).slice(0,90))+'</div>'):'')
-              +(latest.it.link&&/^https?:/i.test(latest.it.link)?(' <a href="'+esc(latest.it.link)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>'):'')
+              +(eu?(' <a href="'+esc(eu.url)+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--primary-color);text-decoration:none;">'+L('article','記事','Artikel','статья','artículo')+' ↗</a>'):'')   /* (#R153) inline event link via _atlCleanUrl (real article, no aggregator/SNS) */
               +'</div>'; });
           html+=linkCards(top.filter(e=>e.g[0].it.link).slice(0,4).map(e=>({url:e.g[0].it.link,title:e.g[0].it.title,src:e.outlets[0]})));
           html+='<div style="font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.5;">'+L('Grouping is mechanical (place ≤150 km × time ≤48 h × headline similarity) on the loaded IntMap feed — one group = reports that likely cover the same occurrence; "first report → latest" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. "analyze event 2".','グループ化は読み込み済みニュースに対する機械的クラスタリング（位置≤150km×時間≤48h×見出し類似）です。1グループ=同一の出来事を扱うとみられる報道で、「最初の報道→最新」で経過が分かります。報道間の相違や深掘りは「2番の出来事を分析して」のように聞いてください。','Mechanische Gruppierung (Ort×Zeit×Titel). Für Analysen: "analysiere Ereignis 2".','Механическая группировка. Для анализа: «проанализируй событие 2».','Agrupación mecánica. Para análisis: "analiza el evento 2".')+'</div>';
@@ -31518,7 +31634,12 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R150) same code-side reconciliation for the planner's direct `answer`: audit the answer text (safety net
              for an omitted places list), merge with existing pins, honest self-audit + source-concentration note. */
           { const _acit=(Array.isArray(window._aiLastCitations)?window._aiLastCitations:[]).filter(c=>c&&/^https?:\/\//i.test(String(c.url||'')));
-            try{ _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} } }
+            try{ _ah+=await _pinReplyPlaces(a.places||[],{text:String(a.text||''),citations:_acit}); }catch(e){ try{ console.warn('answer map audit',e); }catch(_){} }
+            /* (#R153) the planner's direct `answer` used to render ZERO sources even when the model's hosted web search
+               returned citations — the dominant "出展が全くない" (no sources at all) driver. Show the web-verified cards
+               when they exist (anchored to the reply → no relevance gate). When the answer was from the model's own
+               knowledge there simply are no web sources, which is honest — not a bug. */
+            try{ const sc=linkCards(_acit.map(c=>({url:c.url,title:(c.title||c.url),src:''}))); if(sc) _ah+='<div class="atl-src-h">'+L('Web-verified sources','Web検証済みソース','Web-verifizierte Quellen','Проверенные в интернете источники','Fuentes verificadas en la web')+'</div>'+sc; }catch(_){} }
           return R(true, _ah); }
         default: { if(a.target||a.name){ const c=doControl({target:a.target||a.name,value:a.value,on:a.on}); if(c.ok) return c; } return R(false, warn('⚠ '+L('Unknown action','不明な操作','Unbekannte Aktion','Неизвестное действие','Acción desconocida')+': '+esc(a.type||''))); }
       } }
