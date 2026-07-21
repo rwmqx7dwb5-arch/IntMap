@@ -715,10 +715,11 @@ supabase/
 - **方針：APIキーは絶対にフロントに置かない。** BYOK（ユーザーが鍵を入力）方式は**廃止済み (R27)**。
 - **アカウント制AI** — `supabase/functions/ai-proxy/index.ts`:
   - フロントの `askAI()` → `aiCallServer()` が、ユーザーのSupabase JWT を付けて ai-proxy に POST。
-  - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（R40で free=10/日 `PLAN_LIMITS`）→
+  - ai-proxy は (1)JWTでユーザー確認（要ログイン）→ (2)`profiles.plan` で上限決定（free=**10/日** `PLAN_LIMITS`。#R40=10→#R101=30→**#R147=10へ戻す**）→
     (3)`increment_ai_usage` RPC で当日分を原子的に消費（超過は 429）→ (4)**サーバー保持の鍵**でプロバイダ呼び出し →
     (5)失敗時は `refund_ai_usage` で消費分を返金。
-  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、**現行=`openai` / `gpt-5.6-luna`（Responses API）**。Gemini/Anthropic経路は温存・切替可）。
+  - プロバイダは `AI_PROVIDER`（`anthropic`|`openai`|`gemini`）。モデルは `AI_MODEL`（既定はプロバイダ毎、**現行=`openai` / `gpt-5.6-terra`（Responses API・#R147でLunaから変更）**。Gemini/Anthropic経路は温存・切替可だが**Gemini 3.1 Flash‑Liteは不使用**）。
+  - **#R147 Atlas scope/safety 判定層**：`SYS()` プランナー（＋`_analysisSystemPrompt()`）に「SCOPE & SAFETY」節。機微語の単語一致で全面拒否せず、**目的/対象/精度/出力の4軸**で分解→既定で**安全版を実行**（精密点→広域公開ゾーン、公開情報限定、攻撃最適化→脅威評価/到達圏/防災、不確実性・出典明示、`drawPolygon`/`radius`/`missile`/`radiation`/`impact` 等で実描画）。**全面拒否は真に有害なスライスのみ**の最終手段で、それでも「できる安全な分析」を提示。軍事/災害/感染症/化学(CBRN)/犯罪統計/サイバー/重要インフラに汎用適用。`provider_blocked` 文言も建設的（言い換え提案）に5言語。**日本語は既定で敬語**（ユーザーがくだけた口調を明示した時のみ例外）。
   - 用途：ニュースタイトル翻訳、ビューの要約、画像解析など**ユーザー操作のAI機能**。
   - **#R113 Gemini 3.5 Flash / `thinkingLevel:"low"` 移行 — 責任分離。** クライアントは**タスク種別**
     （`atlas_plan|map_report|analysis|free_text|json_extract|brief`）と**`webMode`**（`off|auto|required`）を送り、

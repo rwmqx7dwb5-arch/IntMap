@@ -120,7 +120,7 @@ test('#14 Radius popup: Style disclosure folds preset/colour, slider stays promi
       presetInside: !!tp.querySelector('details.tp-more #radius-preset'),
       colorInside: !!tp.querySelector('details.tp-more #radius-color'),
       sliderOutside: !!tp.querySelector('.radius-control #radius-range') && !tp.querySelector('details.tp-more #radius-range'),
-      stats: !!tp.querySelector('.rad-stats #rad-r'),
+      stats: !!tp.querySelector('.rad-stats #rad-c'),   // (#R147) redundant #rad-r tile removed; circumference/area remain
     };
   });
   expect(r.disclosure).toBe(true);
