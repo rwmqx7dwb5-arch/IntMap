@@ -27,7 +27,7 @@
 //  Deploy:   supabase functions deploy monitor-run --no-verify-jwt --project-ref vpekfwdpurzejrrmacac
 //  Secrets:  supabase secrets set MONITOR_SECRET=<random>          (REQUIRED — fail-closed)
 //            # AI reuses the SAME server-held key/provider as ai-proxy:
-//            supabase secrets set AI_PROVIDER=openai   AI_MODEL=gpt-5.6-luna   OPENAI_API_KEY=sk-...
+//            supabase secrets set AI_PROVIDER=openai   AI_MODEL=gpt-5.6-terra   OPENAI_API_KEY=sk-...
 //            supabase secrets set MONITOR_AI=off        (optional kill-switch → mechanical only)
 //  (SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 // ============================================================================
@@ -78,7 +78,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 // ---------------------------------------------------------------------------
 //  AI provider (server-held key; same env convention as ai-proxy / refresh-news).
-//  OpenAI goes through the Responses API (works with gpt-5.6-luna, JSON mode, no
+//  OpenAI goes through the Responses API (works with gpt-5.6-terra, JSON mode, no
 //  web tools — the report is grounded ONLY in the evidence we pass). Anthropic &
 //  Gemini kept as selectable fallbacks.
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ const AI_SYS =
 
 async function callAI(cfg: { provider: string; key: string; model: string }, userMsg: string): Promise<string> {
   if (cfg.provider === "openai") {
-    // GPT-5.6-luna via the Responses API. NOTE: OpenAI's json_object validator requires the word
+    // GPT-5.6 (Terra) via the Responses API. NOTE: OpenAI's json_object validator requires the word
     // "json" in the INPUT messages (not `instructions`); the user message carries it. A 400 still
     // degrades to a tool-free/JSON-mode-free retry (like ai-proxy) — the prompt + client validation
     // enforce the shape either way, so a request-shape rejection never blanks a report.

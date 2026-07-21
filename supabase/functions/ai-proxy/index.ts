@@ -17,8 +17,8 @@
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
 //  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-luna               (model fixed here; users never pick it)
-//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Luna via /v1/responses)
+//            supabase secrets set AI_MODEL=gpt-5.6-terra              (#R147 Luna→Terra; model fixed here; users never pick it)
+//            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Terra via /v1/responses)
 //            # other providers stay wired but dormant:
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
 //            supabase secrets set GEMINI_SEARCH_ENABLED=false         (#R113 Gemini grounding, default OFF)
@@ -50,7 +50,9 @@
 //      "do not call functions" hardened + JSON mode forced.
 //  Secrets, JWTs and full prompts are never logged.
 // ----------------------------------------------------------------------------
-//  (#R114) OpenAI gpt-5.6-luna migration (from Gemini) — Responses API path.
+//  (#R114) OpenAI GPT-5.6 migration (from Gemini) — Responses API path.
+//  (#R147) Model is GPT-5.6 Terra (was Luna). Set via the AI_MODEL secret; the
+//  Gemini path stays wired but dormant — Gemini 3.1 Flash-Lite is never used.
 //    • OpenAI calls go through /v1/responses (reasoning.effort:"low", store:false),
 //      text + image input, JSON mode for the JSON tasks (map_report / json_extract).
 //    • Web search is a HOSTED tool attached only when the client asks (webMode
@@ -83,7 +85,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
-const PLAN_LIMITS: Record<string, number> = { free: 30, plus: 50, pro: 200, unlimited: 1_000_000 };   /* (#R101) free 10→30/day */
+const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
@@ -283,7 +285,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
 }
 
 async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
-  // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
+  // GPT-5.6 models (gpt-5.6-terra) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
   const content: unknown[] = [{ type: "input_text", text: prompt }];
@@ -573,7 +575,7 @@ Deno.serve(async (req) => {
     : (wantJson && payload.schema && typeof payload.schema === "object" ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   const model = Deno.env.get("AI_MODEL") ||
-    (provider === "openai" ? "gpt-4o-mini" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");
+    (provider === "openai" ? "gpt-5.6-terra" : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R147) OpenAI default = GPT-5.6 Terra */
 
   try {
     let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[] };
