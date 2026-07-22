@@ -995,6 +995,18 @@ supabase/
 
 ---
 
+## #R157 補足（Atlas 自然言語処理の全面再設計＝「GPTが意味を理解する層」と「コードが安全に実行する層」の明確な分離）
+
+**設計原則（現状仕様）**: Atlas のハイライト系ターゲットは **意味の解釈をGPTが担い、コードは検証・実行のみを担う**。ユーザーの自然言語は意味を保持した原文のまま最初にプランナー（GPT）へ渡る。`localPlan`/`regionGroup`/`GROUP_ALIASES`/`REGION_ALIASES`/正規表現が**GPTより先に概念の意味を決定・改変・拒否する経路は存在しない**。既存の ISO/UN M49/国境 GeoJSON/組織加盟国データは**意味推測辞書ではなく**、GPT出力を検証して実地理形状へ結び付ける**決定論的データ**として残る。
+
+- **① localPlan からハイライト・ターゲットの解釈を撤去**: 旧 `^(.+?)をハイライト` → `{highlight,countries:'<生概念>'}` `confident:true`（GPTを一度も呼ばず dispatch へ生概念を渡していた単一真因）を廃止。localPlan に残る highlight ショートカットは**意味解釈を伴わない2つのみ**＝現ハイライトの色変更（`parseColor` ゲート・ターゲット無し）と解除。あらゆる「…をハイライト」は必ず GPT プランナーへ。
+- **② GPT主導のターゲット契約**: SYS の highlight スキーマ＝`{"type":"highlight","interpretation":str,"targets":[{"name":"<English>","iso3":"<ISO3>"},…]}`。GPTが概念（文化圏/言語圏/政治・歴史的分類/曖昧な国集合＝ゲルマン諸国・スラブ諸国・英語圏・旧植民地・主要産油国・OPEC・G7 等）を**自分で実ISO3集合へ展開**する（「IntMapに概念辞書は無い」と明示）。複数集合を別色＝`groups:[{label,targets}]`。国集合でない**具体的単一地物**（行政区画/河川/流域/自然地域）＝`query:"<地名>"` で従来の `resolveHlTarget` ラダー（＝概念でなく確定地名のみ・GPTの後段でのみ稼働）。
+- **③ コード側実行層（`_hlReadGptGroups`/`_hlValidCodeSet`・dispatch highlight 冒頭）**: GPTの targets/groups/iso3/codes を読み、各ISO3を **`_hlValidCodeSet`（`window.countryGeo` 由来の実在コード集合）で検証**（不正コードは拒否・氏名があれば `resolveCountrySync` で救済＝正確な国名→コードの決定論マッチ）、重複除去、`_codesGeo` で**実国境 MultiPolygon** 構築、`_validGeo` で形状検証、`paintPolys` 描画、`_verifyPolyPaint` で実状態検証、**採用した解釈を凡例＋注記で明示**、無効コードは「スキップ」正直報告、全無効は `ok:false`。`regionGroup` はこの経路を通らない。`countries`（文字列/名前配列）経路は**legacy fallback として温存**（R143 直接 dispatch テスト無回帰。`_hlReadGptGroups` は生ISO3配列のみ targets 扱い＝名前配列/概念文字列は null で legacy へ）。
+- **④ 画像のみ送信で架空ユーザー文を生成しない**: `run()` の `if(!q&&imgs.length) q=L('Read and analyze…')`（既定文をユーザーバブル/履歴へ露出させていた真因）を撤去。`q` は空のまま＝ユーザーバブルはサムネイルのみ・履歴は空。既定指示は `_visionPrompt` 内でユーザー未入力時のみ付与＝**API境界の非表示システム指示に限定**。ペースト/ドロップ/添付が textarea を変更しないのは既存挙動（`_atlAddFiles`＝`_atlImgs` に push のみ）。R156 の Vision/数式/検算/非地理ゲートは無変更。
+- **公開/テストAPI**: `IntMapAtlasDebug.{hlReadGroups,validCodeSet,hlState}` 追加（純関数＝mapなしでCI検証可）。データソース変更なし（`window.countryGeo`/`countryStats` 再利用）。Edge Function 変更なし。テスト: `tests/r157.spec.js`（Playwright 8）＋ `tests/r157-checks.test.mjs`（source 5）。**罠**: Browserペインは `document.hidden`＝`isStyleLoaded()` 未完了で `paintPolys` が false→dispatch ok:false（legacy `東西南北欧` も同ペインで同挙動＝環境要因）。描画真偽は WebGL 可能な Playwright で検証、ペインでは `polyState()`/`hlReadGroups` の**パイプライン出力**で検証（R143/R156 と同一の罠）。
+
+---
+
 ## #R154 補足（UX/機能バッチ10件）
 
 `index.html` のみ（Edge Function 変更なし）。テスト＝`tests/r154-checks.test.mjs`(node 10)＋自変更で壊れた r149/r150/r152/r153 assert 更新。`npm test` 緑（static＋node **109**＋Playwright **80**・pageerror 0）。主要修正をハーネス実測で検証（クリーンポートで Playwright 80/80、汚染ポートの11失敗は同時実行セッションとの資源競合と確認）。
