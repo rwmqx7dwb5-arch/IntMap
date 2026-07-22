@@ -21,52 +21,54 @@ test('R160 (A) right sidebar default width smaller (340 → 300)', () => {
   gone('--lsr-w:min(380px,92vw)', 'the old 380 default is gone');
 });
 
-test('R160 (B1) both sidebars OVERLAY a fixed full-width map (solid AND frosted, desktop, not ws-mode)', () => {
-  // the map is a full-bleed backdrop; the sidebar is an absolute overlay — for EVERY sidebar style, not just frosted
-  ok('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'desktop map-container is a fixed full-width backdrop');
-  ok('body:not(.ws-mode) .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000;', 'desktop sidebar overlays the map (solid + frosted)');
-  ok('body:not(.ws-mode) .sidebar.collapsed{ margin-left:calc(-1 * var(--sidebar-w)); }', 'collapsing slides the overlay off-screen (reveals the map, never shifts it)');
-  // the old glass-ONLY overlay rules are generalised away (they no longer gate on sidebar-glass)
-  gone('body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }', 'overlay layout is no longer frosted-only');
+test('R160 (B1) the LEFT sidebar keeps its ORIGINAL mechanism, UNCHANGED — SOLID=beside-flex, FROSTED=overlay', () => {
+  // SOLID mode: the sidebar is a flex sibling and the map sits beside it (position:relative, NOT an overlay).
+  ok('.sidebar{ position:relative; }', 'solid sidebar stays a flex sibling');
+  // FROSTED mode ONLY overlays the map (unchanged #23 behaviour).
+  ok('body.sidebar-glass .map-container{ position:absolute; inset:0; width:100%; }', 'only the frosted sidebar overlays a full-width map');
+  ok('body.sidebar-glass .sidebar{ position:absolute; left:0; top:0; bottom:0; height:100%; z-index:1000;', 'frosted sidebar is the overlay');
+  // the wrong overlay-for-everything generalisation AND the transition:none tweak are both reverted — the sidebar
+  // CSS is exactly the original (nothing about the mechanism or its animation was touched).
+  gone('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'the map-container is NOT force-overlaid in solid mode');
+  gone('body:not(.sidebar-glass) .sidebar{ transition:none; }', 'the sidebar animation is left as the original (no transition tweak)');
 });
 
-test('R160 (B2) the R158/R159 per-frame-resize + edge-anchor machinery is DELETED', () => {
-  gone('function _sbCaptureAnchor(side){', 'anchor-capture helper deleted');
-  gone('function _sbReanchor(){', 'reanchor helper deleted');
+test('R160 (B2) the R158/R159 per-frame resize + edge-anchor machinery is DELETED (nothing replaces it)', () => {
+  gone('function _sbCaptureAnchor(side){', 'per-frame anchor-capture helper deleted');
+  gone('function _sbReanchor(){', 'per-frame reanchor helper deleted');
   gone('function _sbFrame(){', 'per-frame resize loop deleted');
   gone('function _sbFinishAnim(){', 'finish-anim helper deleted');
-  gone('map.panBy([-dx,-dy],{duration:0})', 'no per-frame pan compensation anymore');
-  gone("const _sbAnchor0=(!document.body.classList.contains('sidebar-glass') && !isMobile()) ? _sbCaptureAnchor('left') : null;", 'left toggle no longer captures an anchor');
   // a plain coalesced resize survives, for GENUINE viewport changes only (keyed on _rsRAF, not the old _sbRAF loop)
   ok('const coalescedResize=()=>{ if(_rsRAF) return;', 'plain coalesced resize kept for real window/container resizes');
-  ok('window._sbBeginAnim=function(onEnd){', 'back-compat shim: no animation, just fire the callback');
 });
 
-test('R160 (B3) the LEFT toggle touches nothing but the panel + pill layout (no camera, no resize)', () => {
-  ok("try{ applySidebarStyle(false); }catch(_){}   /* keep the frost/material classes in sync; NO camera padding */", 'toggle only syncs material classes (no camera padding)');
-  ok("try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* nudge ms-narrow", 'toggle nudges ms-narrow (sidebar size unchanged so RO will not)');
+test('R160 (B3) the LEFT toggle does NOTHING to the camera (no pin, no panBy — panBy ROTATES a globe)', () => {
+  // The whole point: the toggle only flips `collapsed` + syncs material classes + nudges the pill. It must not call
+  // panBy / setPadding / easeTo / map.resize — every one of those moved or rotated the map. The ResizeObserver re-fits.
+  ok("try{ applySidebarStyle(false); }catch(_){}   /* material classes only (blur/translucency) — never the camera */", 'toggle syncs material classes only (never the camera)');
+  ok("try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}   /* recompute the search-pill layout only */", 'toggle only nudges the search-pill layout');
+  // no camera manipulation of ANY kind lives in the toggle handler
+  gone('if(solidBeside && map){', 'the R160 edge-pin block is gone');
+  gone('map.panBy([-dx,-dy],{duration:0}); }', 'no panBy in the toggle (it would spin the globe)');
 });
 
 test('R160 (B4) applySidebarStyle no longer shifts the camera on toggle/style change', () => {
   gone('map.easeTo({padding:_pad, duration:400', 'the frosted optical-center easeTo is gone');
   gone('const pad=(document.body.classList.contains(\'ws-mode\')) ? 0 : (collapsed ? 0 : (sb ? sb.offsetWidth : 440));', 'no sidebar-width padding computed on toggle');
   ok('NO camera padding on toggle or style change anymore', 'documented: the sidebar style change never pans the map');
-  // material classes are still driven (blur/translucency)
   ok("document.body.classList.toggle('sidebar-glass', frosted);", 'the frosted material class is still applied');
 });
 
-test('R160 (B5) the RIGHT sidebar no longer pushes the map; HUD slides to clear the overlay', () => {
+test('R160 (B5) the RIGHT sidebar no longer pushes the map; right HUD slides to clear it; left HUD stays glass-only', () => {
   gone('body.lsr-open .map-container{margin-right', 'the desktop margin-right push is gone (both desktop + mobile variants)');
   gone("mc.style.marginRight=isMob()?'':'var(--lsr-w)'", 'open() no longer pushes the map via inline margin');
   ok('if(mc&&mc.style.marginRight) mc.style.marginRight=', 'open() clears any stale inline margin instead');
   // right-anchored HUD slides left by the panel width while the panel is open
   ok('body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }', 'top-right controls clear the open right panel');
   ok('body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 10px); }', 'the news timeline clears the open right panel');
-  // left-anchored HUD shift is generalised to all overlay styles (was glass-only)
-  ok('body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 16px); }', 'coord readout clears the (always-overlaying) left sidebar');
-  ok('body:not(.ws-mode) .country-info{ left:calc(var(--sidebar-w) + 24px); }', 'country-info popup clears the left sidebar');
-  // ms-narrow accounts for the left overlay in every style, not just frosted
-  ok("if(!document.body.classList.contains('ws-mode')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')&&getComputedStyle(sb).position==='absolute')", 'the search pill avoids the left overlay in every sidebar style');
+  // the LEFT sidebar is beside the map in solid mode, so its HUD shift stays FROSTED-only (reverted the generalisation)
+  ok('body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }', 'coord readout shift is frosted-only again');
+  gone('body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 16px); }', 'left HUD is NOT shifted in solid (beside) mode');
 });
 
 test('R160 (C) settings save no longer force-reopens the right sidebar', () => {

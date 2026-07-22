@@ -44,16 +44,14 @@ test('R159 #3 right sidebar default width smaller (R160 superseded: 340 → 300)
   gone('--lsr-w:min(340px,92vw)', 'the old 340 default is gone');
 });
 
-test('R159 #4 → R160: sidebar open/close never moves the map (STRUCTURAL: overlay, machinery deleted)', () => {
-  // R160 replaced the whole R158/R159 per-frame-resize + edge-anchor scheme with a structural fix: BOTH sidebars
-  // OVERLAY a fixed full-width map, so the map-container never resizes on toggle and the camera is never touched —
-  // it is impossible for the map to move. The old machinery is gone.
-  gone('function _sbCaptureAnchor(side){', 'the R159 anchor-capture machinery is deleted');
-  gone('function _sbReanchor(){', 'the R159 reanchor machinery is deleted');
+test('R159 #4 → R160: LEFT sidebar keeps its mechanism AND the toggle never touches the camera', () => {
+  // R160 deleted the R158/R159 per-frame-resize + edge-anchor LOOP and did NOT replace it — the toggle does nothing to
+  // the camera (a stray panBy would spin the GLOBE). The left sidebar's original beside-flex mechanism is untouched.
+  gone('function _sbCaptureAnchor(side){', 'the R159 per-frame anchor-capture machinery is deleted');
+  gone('function _sbReanchor(){', 'the R159 per-frame reanchor machinery is deleted');
   gone('function _sbFrame(){', 'the R159 per-frame resize loop is deleted');
-  gone('map.panBy([-dx,-dy],{duration:0})', 'no per-frame pan compensation anymore');
-  ok('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'desktop map-container is a fixed full-width backdrop');
-  ok('body:not(.ws-mode) .sidebar{ position:absolute;', 'desktop sidebar overlays the map in BOTH solid and frosted styles');
+  ok('.sidebar{ position:relative; }', 'solid sidebar keeps its beside-flex mechanism (NOT overlaid)');
+  gone('map.panBy([-dx,-dy],{duration:0}); }', 'no edge-pin panBy in the toggle (it rotated the globe)');
 });
 
 test('R159 #6 news-pin band hides when its hover popup opens', () => {

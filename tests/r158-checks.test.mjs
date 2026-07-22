@@ -51,14 +51,14 @@ test('R158 #8/#9 satellite tile protocol — grey placeholder replaced by real c
   ok('window.IntMapSatProto=', 'testable resolve hook exposed');
 });
 
-test('R158 #10 → R160 sidebar open/close — never moves the map (overlay; per-frame/anchor machinery deleted)', () => {
-  // R160 superseded both the R158 (transitionend snap) and R159 (per-frame resize + anchor) schemes with a
-  // structural overlay: the map-container is a fixed full-width backdrop, so a toggle can't resize/recentre it.
+test('R158 #10 → R160 sidebar open/close — per-frame/anchor machinery deleted; toggle never touches the camera', () => {
+  // R160 deleted the R158 (transitionend snap) and R159 (per-frame resize + anchor) schemes and did NOT replace them:
+  // the left sidebar keeps its original mechanism and the toggle does nothing to the camera (no pin, no panBy).
   gone("window._sbBeginAnim=function(onEnd, anchor)", 'the R159 anchor-taking slide gate is gone');
   gone('window._sbBeginAnim(null, _sbAnchor0)', 'the left toggle no longer drives an anchored slide');
   gone('if (time - start < 450) requestAnimationFrame(sync);', 'the old per-frame 450ms resize loop is gone');
   ok('const coalescedResize=()=>{ if(_rsRAF) return;', 'a plain coalesced resize remains for GENUINE viewport changes only');
-  ok('body:not(.ws-mode) .map-container{ position:absolute; inset:0; width:100%; }', 'the map is a fixed full-width backdrop under both sidebars');
+  gone('map.panBy([-dx,-dy],{duration:0}); }', 'the toggle has no panBy (which would rotate the globe)');
 });
 
 test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', () => {
