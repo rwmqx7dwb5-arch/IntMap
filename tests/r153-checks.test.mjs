@@ -42,7 +42,7 @@ test('R153/R154 #3 Atlas typography — safe reflow only, NO fabricated headings
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: the opening sentence is NOT promoted to a bold lead');
   assert.match(html, /model emitted real headings already → respect verbatim/, 'model-authored ## structure is respected as-is');
   assert.match(html, /long run-on → ~2-sentence stanzas \(spacing only, no enlargement\)/, 'the only reflow is stanza-splitting (spacing, not enlargement)');
-  assert.match(html, /<div style="height:1\.3em"><\/div>/, 'paragraph gap 1.3em (R155)');
+  assert.match(html, /<div style="height:1\.5em"><\/div>/, 'paragraph gap 1.5em (R158)');
   // headings are colourless now
   assert.match(html, /HEADINGS DIFFERENTIATE BY SIZE \+ SPACING ONLY — NO COLOUR/, 'headings size/spacing only, no colour');
 });
@@ -70,7 +70,7 @@ test('R153 #6 Atlas sources — one cleaner, relevance-after-host-clean, answer 
 test('R153 #7 Companies compare Time-series metric picker DRIVES the chart', () => {
   assert.match(html, /let _coCmpTsMetric='mcap';/, 'TS metric state exists');
   assert.match(html, /const metric=\(_coCmpTsMetric==='price'\)\?'price':'mcap'/, 'the metric drives the chart');
-  assert.match(html, /pts=arr\.filter\(p=>p\[1\]>0\)\.map\(p=>\(\{fy:p\[0\],v:p\[1\]\*sh\}\)\)/, 'Market cap view plots absolute $ (shares × price)');
+  assert.match(html, /pts=arr\.filter\(p=>p\[1\]>0\)\.map\(p=>\(\{fy:p\[0\],v:p\[1\]\*sh,ts:p\[2\]\}\)\)/, 'Market cap view plots absolute $ (shares × price), R158 carries the timestamp');
   assert.match(html, /data-cmptsm="/, 'TS metric toggle buttons rendered');
   assert.match(html, /if\(_coCmpMode!=='ts'\)/, 'the generic (do-nothing-in-TS) metric picker is hidden in TS mode');
   assert.match(html, /class="co-ts-tip"/, 'crosshair tooltip (Countries parity)');

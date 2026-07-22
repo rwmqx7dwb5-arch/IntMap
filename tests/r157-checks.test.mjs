@@ -35,17 +35,22 @@ test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders
   // accepts targets / groups / iso3 / codes, and a bare-ISO3 "countries" array (never a name array or concept string)
   assert.match(html, /if\(!src&&Array\.isArray\(a\.countries\)&&a\.countries\.length&&a\.countries\.every\(x=>norm3\(x\)\)\) src=a\.countries;/,
     'a name array / concept string does NOT count as targets (only an all-ISO3 array)');
-  // code-recovery via the deterministic country index (an exact name → code, NOT concept guessing)
-  assert.match(html, /if\(!code&&t\.name\)\{ try\{ const c=resolveCountrySync\(t\.name\); if\(c&&c\.code&&valid\.has/,
-    'a wrong/blank ISO3 with a clear name is recovered via resolveCountrySync');
+  // (#R158) NO auto-correction: the old resolveCountrySync auto-rescue is REMOVED — a wrong/blank ISO3 is returned as
+  // UNRESOLVED with a deterministic candidate identifier merely REPORTED (Terra decides, code never corrects).
+  assert.doesNotMatch(html, /if\(!code&&t\.name\)\{ try\{ const c=resolveCountrySync\(t\.name\); if\(c&&c\.code&&valid\.has/,
+    'the resolveCountrySync auto-rescue is removed');
+  assert.match(html, /unresolved\.push\(\{name:t\.name\|\|'', iso3:gi, reason:/, 'a wrong/blank ISO3 is reported as unresolved, not rescued');
+  assert.match(html, /availableIdentifiers:available\}\)/, 'a candidate identifier is REPORTED, never applied');
   // the dispatch path runs BEFORE the legacy resolver and draws real borders via _codesGeo
   assert.match(html, /\(#R157\) GPT-DECIDED TARGETS — the model already interpreted the concept/, 'dispatch targets path documented');
   assert.match(html, /const _gGroups=_hlReadGptGroups\(a\);/, 'dispatch reads the model groups');
-  assert.match(html, /const cg=_codesGeo\(grp\.codes\); if\(!cg\.geo\|\|!cg\.hit\.length\) return;/, 'real borders built from validated codes');
-  assert.match(html, /const vg=_validGeo\(cg\.geo,\{trusted:true,autoclose:true\}\); if\(!vg\.ok\) return;/, 'geometry validated before drawing');
-  // honest execution: no valid codes → ok:false (invalid codes rejected at the execution layer, work-order item 4)
-  assert.match(html, /if\(!G\.length\)\{ return R\(false, warn\('⚠ '\+L\('None of the countries returned for that request were valid'/,
-    'all-invalid targets → honest ok:false rejection');
+  assert.match(html, /const cg=_codesGeo\(grp\.codes\);/, 'real borders built from validated codes');
+  assert.match(html, /if\(!cg\.geo\|\|!cg\.hit\.length\) return;/, 'no geometry for a group → skip it');
+  assert.match(html, /const vg=_validGeo\(cg\.geo,\{trusted:true,autoclose:true\}\);/, 'geometry validated before drawing');
+  // (#R158) all-unresolved → honest ok:false with the STRUCTURED execution result fed back to Terra (not a silent skip)
+  assert.match(html, /return R\(false, warn\('⚠ '\+L\('None of the identifiers for that request resolved to a real border'/,
+    'all-unresolved → honest ok:false + structured exec back to Terra');
+  assert.match(html, /status:\(gUnresolved\.length\?'partial_or_failed':'ok'\)/, 'the mechanical execution-result status');
   // it STATES the interpretation used
   assert.match(html, /Interpreted from your request and drawn from real national borders/, 'the definition used is stated in the reply');
   // a.query (a concrete single feature the model chose NOT to expand) flows into the legacy resolver

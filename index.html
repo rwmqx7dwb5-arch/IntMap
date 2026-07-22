@@ -183,8 +183,8 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
 
   <meta property="og:type" content="website">
 
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
   <script>document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
   <style>
     /* (#R101) --text-muted darkened for legibility ("灰色文字は見えにくい") — was #6c6c70 */
@@ -2720,7 +2720,8 @@ window.__imBuild='R121-b';   /* (#R121) build marker — bump when verifying tha
   </div>
 </div>
 
-<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>   <!-- (#R158) pinned to an exact version (was maplibre-gl@5): reproducible camera-API behaviour for the flight-sim fix -->
+
 <script src="https://unpkg.com/maplibre-contour@0.1.0/dist/index.min.js"></script>
 <!-- Supabase backend. Loads the local vendored SDK if present, else falls back to the CDN,
      then creates the client inline — so publishing JUST index.html (no companion files) works.
@@ -4134,13 +4135,10 @@ window.addEventListener('DOMContentLoaded', () => {
        the container size is unchanged (the sidebar overlays it) — the animated setPadding above already
        glides the center, so the per-frame resize would only fight that ease; skip it. */
     const frosted=document.body.classList.contains('sidebar-glass');
-    if(!frosted || isMobile()){
-      const start = performance.now();
-      requestAnimationFrame(function sync(time) {
-        if (map) map.resize();
-        if (time - start < 450) requestAnimationFrame(sync);
-      });
-    }
+    /* (#R158) SOLID mode reflows the flex map-container as the sidebar slides — suppress the per-frame buffer resize and
+       snap once at transitionend (no flicker). FROSTED mode overlays the map (fixed size) and glides via setPadding above,
+       so it needs no resize at all. */
+    if(!frosted || isMobile()){ try{ window._sbBeginAnim&&window._sbBeginAnim(); }catch(_){} }
   });
   /* (#R15) Keyboard shortcut: Esc collapses the sidebar. Ignored while typing in a field, while a modal
      or popup is open (Esc should close those first), or on mobile (it uses the bottom sheet, not a sidebar). */
@@ -4243,6 +4241,58 @@ window.addEventListener('DOMContentLoaded', () => {
      simultaneous decodes is real OOM pressure on a phone — part of "重い動作をするとブラウザが落ちる").
      Desktop keeps the full firehose. */
   try{ if(maplibregl.config) maplibregl.config.MAX_PARALLEL_IMAGE_REQUESTS=(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?48:256); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
+  /* (#R158) SATELLITE TILE PROTOCOL — "限界までズームしても灰色タイルを出さない／同じズームでも高画質". Esri World_Imagery's
+     native max zoom varies by place (z19 city / z18 rural / z17 desert / z16 open sea); past it Esri returns an HTTP-200
+     grey "Map data not yet available" tile — a FIXED ~2.5 KB JPEG that MapLibre can't distinguish from real imagery, so it
+     rendered grey at the zoom limit. Esri sends `access-control-allow-origin:*`, so we fetch each tile client-side (NO proxy),
+     and when a tile is that placeholder we CROP the matching sub-quadrant of the nearest REAL ancestor tile and upscale it
+     (high-quality) — the sea/desert/rural view stays genuine imagery while cities keep their crisp native z19. Real tiles
+     pass straight through (one fetch, decoded in MapLibre's worker as before), results are cached, and ANY error falls back
+     to the raw bytes so the map is never worse than before. Also lets the flight sim drop its blue water-fill (#R158). */
+  try{ if(maplibregl.addProtocol && typeof fetch!=='undefined' && typeof createImageBitmap!=='undefined'){
+    const _SAT_HOSTS=['https://server.arcgisonline.com','https://services.arcgisonline.com'];
+    const _satUrl=(z,y,x)=>_SAT_HOSTS[(x+y)&1]+'/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x;
+    const _SAT_PLACEHOLDER_MAX=3500;   /* grey "no data" tile ≈ 2521 B; real imagery ≥ ~8 KB — a wide, safe gap */
+    const _satCache=new Map(), _SAT_CACHE_MAX=800;
+    const _satCacheGet=k=>{ const v=_satCache.get(k); if(v!==undefined){ _satCache.delete(k); _satCache.set(k,v); } return v; };
+    const _satCachePut=(k,v)=>{ _satCache.set(k,v); if(_satCache.size>_SAT_CACHE_MAX){ const f=_satCache.keys().next().value; _satCache.delete(f); } };
+    /* raw-fetch cache (keyed z/x/y) so the ancestor walk-up reuses the SHARED low-zoom tiles — over open ocean many z18
+       children resolve to the same z8 ancestor, which is then fetched once, not per child. */
+    const _satRaw=new Map(), _SAT_RAW_MAX=1200;
+    async function _satFetch(z,y,x,signal){ const rk=z+'/'+x+'/'+y; const c=_satRaw.get(rk); if(c){ _satRaw.delete(rk); _satRaw.set(rk,c); return c; }
+      const r=await fetch(_satUrl(z,y,x),{signal,mode:'cors',credentials:'omit'}); if(!r.ok) throw new Error('sat http '+r.status); const buf=await r.arrayBuffer();
+      const out={buf, placeholder: buf.byteLength<=_SAT_PLACEHOLDER_MAX}; _satRaw.set(rk,out); if(_satRaw.size>_SAT_RAW_MAX){ const f=_satRaw.keys().next().value; _satRaw.delete(f); } return out; }
+    async function _satCrop(buf, dz, subX, subY){ const bmp=await createImageBitmap(new Blob([buf])); const n=1<<dz, cell=bmp.width/n;
+      let c; if(typeof OffscreenCanvas!=='undefined'){ c=new OffscreenCanvas(256,256); } else { c=document.createElement('canvas'); c.width=256; c.height=256; }
+      const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      ctx.drawImage(bmp, subX*cell, subY*cell, cell, cell, 0,0,256,256); try{ bmp.close&&bmp.close(); }catch(_){}
+      const blob=c.convertToBlob?await c.convertToBlob({type:'image/jpeg',quality:0.92}):await new Promise(res=>c.toBlob(res,'image/jpeg',0.92));
+      return await blob.arrayBuffer(); }
+    /* resolve one tile to REAL imagery bytes. mode: 'native' (Esri had it) | 'cropped' (upscaled from nearest real ancestor)
+       | 'raw' (placeholder kept — no real ancestor found). Shared by the protocol + a debug hook so it is E2E-testable. */
+    async function _satResolve(z,y,x,signal){ const key=z+'/'+x+'/'+y; const hit=_satCacheGet(key); if(hit) return {buf:hit, mode:hit.__mode||'cache'};
+      const first=await _satFetch(z,y,x,signal);
+      if(!first.placeholder){ first.buf.__mode='native'; _satCachePut(key, first.buf); return {buf:first.buf, mode:'native'}; }
+      /* placeholder → walk up to the nearest REAL ancestor, crop its sub-quadrant, upscale */
+      let az=z, ax=x, ay=y, dz=0, real=null;
+      for(let up=0; up<13 && az>1; up++){ az--; ax=ax>>1; ay=ay>>1; dz++;   /* up to 13 levels so open ocean (Esri imagery ends ~z8) still finds a real ancestor from z19 */
+        let got=null; try{ got=await _satFetch(az,ay,ax,signal); }catch(_){ break; }
+        if(!got.placeholder){ real=got; break; } }
+      if(real){ try{ const cropped=await _satCrop(real.buf, dz, x-((x>>dz)<<dz), y-((y>>dz)<<dz)); cropped.__mode='cropped'; _satCachePut(key, cropped); return {buf:cropped, mode:'cropped'}; }catch(_){} }
+      return {buf:first.buf, mode:'raw'};   /* no real ancestor / crop failed → original bytes (never break) */
+    }
+    maplibregl.addProtocol('imapsat', async (params, abortController)=>{
+      const mm=/imapsat:\/\/(\d+)\/(\d+)\/(\d+)/.exec(params&&params.url||''); if(!mm) throw new Error('bad imapsat url');
+      const z=+mm[1], y=+mm[2], x=+mm[3], signal=abortController&&abortController.signal;
+      let first=null;
+      try{ const res=await _satResolve(z,y,x,signal); return {data: res.buf.slice(0)}; }
+      catch(e){ if(first&&first.buf) return {data: first.buf.slice(0)}; throw e; }
+    });
+    window.__imSatProto=true;
+    /* debug/test hook — resolve a tile and report byte length + mode (native/cropped/raw). Lets an E2E test assert that a
+       known placeholder area (open ocean, rural) comes back as real cropped imagery, and a city as native, against LIVE Esri. */
+    window.IntMapSatProto={ resolve:async(z,y,x)=>{ try{ const r=await _satResolve(z|0,y|0,x|0,null); return {mode:r.mode, bytes:r.buf.byteLength}; }catch(e){ return {mode:'error', err:String(e&&e.message||e)}; } }, placeholderMax:_SAT_PLACEHOLDER_MAX };
+  } }catch(_){}
   try{
     map=new maplibregl.Map({ container:'map', renderWorldCopies:false, attributionControl:false,
       /* (#R18) MSAA antialiasing — DESKTOP ONLY. The 3D globe/terrain silhouette and the satellite
@@ -4269,7 +4319,7 @@ window.addEventListener('DOMContentLoaded', () => {
          at 18 — the extra tile set is pure GPU/RAM cost there ("ブラウザが落ちることがないように"). */
       center:[10,20], zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
-        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
+        sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
         layers:[ {id:'layer-sat',type:'raster',source:'satellite',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},   /* (#R147) instant satellite tiles (no 300ms cross-fade) so fast zoom/pan is comfortable, esp. on mobile ("衛星画像の読み込みが…快適に") — matches every other raster overlay */
           {id:'layer-sat-labels',type:'raster',source:'sat-labels',layout:{visibility:'none'},paint:{'raster-opacity':0.95,'raster-fade-duration':0}},
           /* (#R24) START on the NO-LABEL carto base (we ALWAYS use crisp vector labels now) so the old
@@ -4302,7 +4352,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* Coalesce resizes to one per frame (#32) — the sidebar open/close transition fires the
      ResizeObserver dozens of times; calling map.resize() on each caused a visible flicker. */
-  let _rsRAF=0; const coalescedResize=()=>{ if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };
+  /* (#R158) SIDEBAR-SLIDE FLICKER ("左右のサイドバーを開閉する際の地図のフリッカーを無くして"). Root cause: while a
+     sidebar's width animates (left: .sidebar margin-left reflows the flex map-container; right: #map-container margin-right),
+     the map-container box changes EVERY frame, so the ResizeObserver → map.resize() reallocates the WebGL back-buffer ~25×
+     during the ~0.4 s slide, each realloc a brief blank/stretched frame. Fix (the frosted-mode path already proves it):
+     SUPPRESS the per-frame resize while a known sidebar slide is in flight and resize the buffer exactly ONCE at
+     transitionend — the canvas CSS-scales its existing buffer for the ~0.4 s (imperceptible) then snaps sharp. Only the
+     TIMING of the buffer resize changes; layout, animation curves and camera are untouched. */
+  let _sbSuppressUntil=0, _sbEndTimer=0, _sbOnEnd=null;
+  function _sbFinishAnim(){ _sbSuppressUntil=0; if(_sbEndTimer){ clearTimeout(_sbEndTimer); _sbEndTimer=0; } try{ map&&map.resize(); }catch(_){} const cb=_sbOnEnd; _sbOnEnd=null; if(cb){ try{ cb(); }catch(_){} } }
+  window._sbBeginAnim=function(onEnd){ if(onEnd) _sbOnEnd=onEnd; _sbSuppressUntil=performance.now()+560; if(_sbEndTimer) clearTimeout(_sbEndTimer); _sbEndTimer=setTimeout(_sbFinishAnim,560); };   /* fallback: resize once if transitionend never fires */
+  window.addEventListener('transitionend',e=>{ try{ if(!e||(e.propertyName!=='margin-left'&&e.propertyName!=='margin-right')) return; const t=e.target; if(t&&(t.id==='map-container'||t.id==='sidebar'||t.id==='layer-sidebar-r'||(t.classList&&t.classList.contains('sidebar')))) _sbFinishAnim(); }catch(_){} },true);
+  let _rsRAF=0; const coalescedResize=()=>{ if(performance.now()<_sbSuppressUntil) return; if(_rsRAF) return; _rsRAF=requestAnimationFrame(()=>{ _rsRAF=0; try{ map&&map.resize(); }catch(_){} }); };   /* (#R158) skip the per-frame realloc while a sidebar is sliding */
   if(map&&'ResizeObserver' in window) new ResizeObserver(coalescedResize).observe(document.getElementById('map-container'));
   window.addEventListener('resize',coalescedResize);
 
@@ -8294,16 +8355,16 @@ window.addEventListener('DOMContentLoaded', () => {
          閉まるように") */
       if(!open._mapCloser){ open._mapCloser=()=>{ try{ if(sb&&sb.classList.contains('open')) close(); }catch(_){} }; }
       try{ map&&map.on('click',open._mapCloser); }catch(_){}
-      const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
-      kick(); setTimeout(kick,420); }
+      /* (#R158) suppress the per-frame resize during the margin-right slide; resize once + notify at transitionend (no flicker) */
+      try{ if(window._sbBeginAnim){ window._sbBeginAnim(()=>{ try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }); } else { map&&map.resize(); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){} }
     function close(){ if(document.body.classList.contains('ws-mode')) return;   /* (#R78d) in workspace mode the layer panel lives in its own window and must never auto-close (that turned the window black) */
       if(sb){ sb.classList.remove('open'); sb.style.transform='translateX(102%)'; sb.style.pointerEvents='none'; setTimeout(()=>{ try{ if(!sb.classList.contains('open')) sb.style.visibility='hidden'; }catch(_){} },400); }
       try{ if(open._mapCloser&&map) map.off('click',open._mapCloser); }catch(_){}
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
-      const kick=()=>{ try{ map&&map.resize(); }catch(_){} try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} };
-      kick(); setTimeout(kick,420); }
+      /* (#R158) suppress the per-frame resize during the margin-right slide; resize once + notify at transitionend (no flicker) */
+      try{ if(window._sbBeginAnim){ window._sbBeginAnim(()=>{ try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){} }); } else { map&&map.resize(); window.dispatchEvent(new Event('intmap-sidebar-resize')); } }catch(_){} }
     function toggle(){ if(sb&&sb.classList.contains('open')) close(); else open(); }
     function apply(){ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail'); if(!isMob()) open(); } else { close(); document.body.classList.remove('lsr-avail'); } }   /* (#R107) build on mobile too; only auto-OPEN on desktop (mobile opens on the layer button) */
     setTimeout(()=>{ try{ if(window.imLayerPanel==='right'){ build(); document.body.classList.add('lsr-avail');
@@ -10716,7 +10777,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function _histAll(){ if(_HALL) return Promise.resolve(_HALL); if(_HALLp) return _HALLp;
       const syms=DATA.filter(c=>c.sh>0).map(c=>c.tk);
       _HALLp=(async()=>{ const map={}, mon={}; try{ const sp=await _spark(syms,'max','1mo');
-          sp.forEach((v,tk)=>{ const by={}, series=[], ts=v.ts||[], cl=v.close||[]; for(let i=0;i<ts.length;i++){ const cv=+cl[i]; if(cv>0){ const d=new Date(ts[i]*1000); by[d.getUTCFullYear()]=cv; series.push([d.getUTCFullYear()+d.getUTCMonth()/12, cv]); } } map[tk]=by; mon[tk]=series; }); }catch(_){}   /* (#R152) ALSO keep the raw MONTHLY series (fractional-year, close) for the higher-precision time-series chart */
+          sp.forEach((v,tk)=>{ const by={}, series=[], ts=v.ts||[], cl=v.close||[]; for(let i=0;i<ts.length;i++){ const cv=+cl[i]; if(cv>0){ const d=new Date(ts[i]*1000); by[d.getUTCFullYear()]=cv; series.push([d.getUTCFullYear()+d.getUTCMonth()/12, cv, ts[i]*1000]); } } map[tk]=by; mon[tk]=series; }); }catch(_){}   /* (#R152) ALSO keep the raw MONTHLY series (fractional-year, close) for the higher-precision time-series chart; (#R158) 3rd tuple = the point's REAL ms timestamp so the hover tooltip can show month/day, not just the year */
         _HALL=map; _HMON=mon; return _HALL; })();
       return _HALLp; }
     /* (#R152) MONTHLY price path for the compare time-series ("株価も高精度で") — every month, not just year-end, for a
@@ -10728,7 +10789,7 @@ window.addEventListener('DOMContentLoaded', () => {
       if(!series){ const p1=Math.floor(Date.UTC(y0,0,1)/1000), p2=Math.floor(Date.UTC(y1,11,31)/1000); series=[];
         try{ const j=await _fjson('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(tk)+'?period1='+p1+'&period2='+p2+'&interval=1mo');
           const rt=j&&j.chart&&j.chart.result&&j.chart.result[0]; const ts=rt&&rt.timestamp; const q=rt&&rt.indicators&&rt.indicators.quote&&rt.indicators.quote[0]&&rt.indicators.quote[0].close;
-          if(Array.isArray(ts)&&Array.isArray(q)){ for(let i=0;i<ts.length;i++){ if(q[i]>0){ const d=new Date(ts[i]*1000); series.push([d.getUTCFullYear()+d.getUTCMonth()/12, +q[i]]); } } } }catch(_){} }
+          if(Array.isArray(ts)&&Array.isArray(q)){ for(let i=0;i<ts.length;i++){ if(q[i]>0){ const d=new Date(ts[i]*1000); series.push([d.getUTCFullYear()+d.getUTCMonth()/12, +q[i], ts[i]*1000]); } } } }catch(_){} }   /* (#R158) 3rd tuple = real ms timestamp (hover month/day) */
       const out=(series||[]).filter(p=>p[0]>=y0 && p[0]<y1+1); _fineCache[key]=out; return out; }
     /* (#R142) _hy = the time-machine year (null = present/live). In a past year market cap = today's shares × the share
        price AT that year (c.hp); a company founded AFTER the year, or a non-live name with no price path, has no cap. */
@@ -10912,7 +10973,7 @@ window.addEventListener('DOMContentLoaded', () => {
       +'#co-cmp-view .co-ts-axhi{top:2px;} #co-cmp-view .co-ts-axlo{bottom:2px;}'
       +'#co-cmp-view .co-ts-cursor{position:absolute;top:0;bottom:0;width:1px;background:var(--text-muted);opacity:0.5;display:none;pointer-events:none;}'
       +'#co-cmp-view .co-ts-tip{position:absolute;top:2px;display:none;pointer-events:none;background:var(--card-bg);border:1px solid rgba(128,128,128,0.28);border-radius:8px;box-shadow:var(--shadow);padding:5px 8px;font-size:11px;z-index:5;min-width:120px;}'
-      +'#co-cmp-view .co-ts-tth{font-weight:700;margin-bottom:2px;}'
+      +'#co-cmp-view .co-ts-tth{font-weight:700;margin-bottom:2px;white-space:nowrap;}'
       +'#co-cmp-view .co-ts-ttr{display:flex;align-items:center;gap:5px;line-height:1.5;white-space:nowrap;} #co-cmp-view .co-ts-ttr b{margin-left:auto;font-variant-numeric:tabular-nums;}'
       +'#co-cmp-view .co-ts-ttd{width:8px;height:8px;border-radius:50%;flex:0 0 auto;} #co-cmp-view .co-ts-ttn{overflow:hidden;text-overflow:ellipsis;max-width:120px;}';
     document.head.appendChild(st); }
@@ -10981,8 +11042,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const lines=[]; let vmin=Infinity,vmax=-Infinity;
     series.forEach(s=>{ const arr=s.data; if(!arr||arr.length<2) return;
       let pts;
-      if(metric==='mcap'){ const sh=s.c.sh; if(!(sh>0)) return; pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]*sh})); }   /* (#R153) ABSOLUTE market cap = today's share count × historical price (same approximation the time-machine already uses) */
-      else { const base=arr[0][1]; if(!(base>0)) return; pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]/base*100})); }   /* share price indexed to 100 at the first point */
+      if(metric==='mcap'){ const sh=s.c.sh; if(!(sh>0)) return; pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]*sh,ts:p[2]})); }   /* (#R153) ABSOLUTE market cap = today's share count × historical price (same approximation the time-machine already uses); (#R158) carry the point's real timestamp */
+      else { const base=arr[0][1]; if(!(base>0)) return; pts=arr.filter(p=>p[1]>0).map(p=>({fy:p[0],v:p[1]/base*100,ts:p[2]})); }   /* share price indexed to 100 at the first point */
       if(pts.length<2) return;
       pts.forEach(p=>{ if(p.v<vmin)vmin=p.v; if(p.v>vmax)vmax=p.v; }); lines.push({c:s.c,col:_CO_CMP_PAL[cos.indexOf(s.c)%_CO_CMP_PAL.length],pts}); });
     if(!lines.length){ wrap.innerHTML='<div class="co-ts-note">'+_coL('No price history for these companies (US-listed live names only).','これらの企業の株価履歴がありません（米国上場のライブ銘柄のみ）。','Kein Kursverlauf (nur live gelistete US-Namen).','Нет истории цен (только листингованные в США).','Sin histórico (solo cotizadas en EE. UU.).')+'</div>'; return; }
@@ -11001,10 +11062,15 @@ window.addEventListener('DOMContentLoaded', () => {
     wrap.innerHTML='<div class="co-ts-chart" style="position:relative;">'+svg+axHi+'<div class="co-ts-cursor"></div><div class="co-ts-tip"></div></div><div class="co-ts-note">'+note+'</div>';
     /* (#R153) crosshair tooltip (Countries-parity) — hover shows the year + each company's value at that year. */
     const chart=wrap.querySelector('.co-ts-chart'), cursor=wrap.querySelector('.co-ts-cursor'), tip=wrap.querySelector('.co-ts-tip');
+    /* (#R158) hover date shows the MATCHED data point's REAL month/day (was Math.round(year) only — "月/日が出ない").
+       The monthly series now carries each point's raw timestamp, so the tooltip reads the actual date localised. */
+    const _tsLoc=currentLang==='jp'?'ja-JP':currentLang==='de'?'de-DE':currentLang==='ru'?'ru-RU':currentLang==='es'?'es-ES':'en-US';
+    const _fmtTsD=(ts,fyFb)=>{ try{ if(ts!=null&&isFinite(+ts)) return new Date(+ts).toLocaleDateString(_tsLoc,{year:'numeric',month:'short',day:'numeric'}); }catch(_){} return String(Math.round(fyFb)); };
     if(chart&&cursor&&tip){ const onMove=(e)=>{ const rc=chart.getBoundingClientRect(); if(!rc.width) return; const fx=Math.min(1,Math.max(0,(e.clientX-rc.left)/rc.width)); const fyr=from+fx*_sp;
         cursor.style.left=(fx*100).toFixed(2)+'%'; cursor.style.display='block';
         const rows=lines.map(ln=>{ let best=ln.pts[0],bd=Infinity; ln.pts.forEach(p=>{ const d=Math.abs(p.fy-fyr); if(d<bd){bd=d;best=p;} }); return {c:ln.c,col:ln.col,p:best}; });
-        tip.innerHTML='<div class="co-ts-tth">'+Math.round(Math.min(to,Math.max(from,fyr)))+'</div>'+rows.map(r=>'<div class="co-ts-ttr"><span class="co-ts-ttd" style="background:'+r.col+'"></span><span class="co-ts-ttn">'+IntMapSafe.html(_coName(r.c))+'</span><b>'+(metric==='mcap'?IntMapSafe.html(fmtMoney(r.p.v)):(Math.round(r.p.v)+''))+'</b></div>').join('');
+        let hdTs=null,hdBd=Infinity; rows.forEach(r=>{ if(r.p&&r.p.ts!=null){ const d=Math.abs(r.p.fy-fyr); if(d<hdBd){ hdBd=d; hdTs=r.p.ts; } } });   /* (#R158) date of the nearest actual point */
+        tip.innerHTML='<div class="co-ts-tth">'+IntMapSafe.html(_fmtTsD(hdTs,Math.min(to,Math.max(from,fyr))))+'</div>'+rows.map(r=>'<div class="co-ts-ttr"><span class="co-ts-ttd" style="background:'+r.col+'"></span><span class="co-ts-ttn">'+IntMapSafe.html(_coName(r.c))+'</span><b>'+(metric==='mcap'?IntMapSafe.html(fmtMoney(r.p.v)):(Math.round(r.p.v)+''))+'</b></div>').join('');
         tip.style.display='block'; tip.style.left=Math.min(Math.max(4,e.clientX-rc.left+12), Math.max(4,rc.width-150))+'px'; };
       chart.addEventListener('mousemove',onMove); chart.addEventListener('mouseleave',()=>{ cursor.style.display='none'; tip.style.display='none'; }); } }
   function _coCmpWire(cos){ const root=document.getElementById('co-cmp-view'); if(!root) return;
@@ -26749,6 +26815,10 @@ window.addEventListener('DOMContentLoaded', () => {
         ov.remove(); start(o); };
     }
     function start(opts){ if(on) return true; on=true; opts=opts||{}; _closeAtlas();
+      /* (#R158) SOLE CAMERA CONTROLLER: cancel any in-flight MapLibre camera animation (Atlas flyTo, a snap-back easeTo, the
+         globe intro) before the sim takes over — the per-frame jumpTo below is then the only thing driving the camera. The
+         globe-tour auto-spin is stopped separately by _fsStashLayers() (its checkbox lives in #layer-dropdown). */
+      try{ if(map&&map.stop) map.stop(); }catch(_){} try{ window.__fsCamSkips=0; }catch(_){}
       if(opts.aircraft&&AIRCRAFT[opts.aircraft]) acKey=opts.aircraft;
       const c=map.getCenter(), ac=AC();
       /* (#R95) start heading = the map's bearing. The old `map.getBearing()||90` turned a perfectly valid 0° (north-
@@ -26809,10 +26879,11 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ _fsStashLayers(); }catch(_){}   /* (#R122) hide every data layer / highlight / outline while flying (place-name labels stay); restored on exit */
       try{ map.resize(); }catch(_){} setTimeout(()=>{ try{ map.resize(); }catch(_){} },120); setTimeout(()=>{ try{ map.resize(); }catch(_){} },320);
       buildHUD(); addExtraHUD();
-      /* (#R152) fill the sea with blue water + keep it across the satellite style-swap; removed on exit. Deferred so the
-         satellite style has settled before the fill is inserted, and re-added on styledata (basemap/theme changes). */
-      try{ map.on('styledata',_fsOceanStyleGuard); }catch(_){}
-      try{ map.once('idle',_fsAddOcean); }catch(_){} setTimeout(()=>{ try{ if(on) _fsAddOcean(); }catch(_){} },500);
+      /* (#R158) The blue sea WATER-FILL overlay was REMOVED per request ("フライトシミュレーターの海を水で満たす加工は廃止").
+         The ocean now shows the real satellite imagery — the R158 satellite protocol upscales the nearest real tile so the
+         open sea reads as genuine imagery instead of Esri's grey "no data" placeholder (the reason the fill was added in R152).
+         The PHYSICS sea-surface floor (can't dive below sea level over open ocean) is unrelated and stays. */
+      try{ if(map&&map.getLayer&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); if(map&&map.getSource&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){}   /* clear any leftover fill from an older session */
       try{ fsAudio.start(); }catch(_){}   /* (#R101) start the synthesized flight audio (this call rides the START-button user gesture) */
       mmOn=true; try{ createMinimap(); }catch(_){}   /* (#R96) moving-map on by default each flight */
       window.addEventListener('keydown',onKey,true); window.addEventListener('keyup',onKeyUp,true);
@@ -26828,7 +26899,7 @@ window.addEventListener('DOMContentLoaded', () => {
       window.removeEventListener('pointercancel',onLoseFocus,true); window.removeEventListener('touchcancel',onLoseFocus,true);
       window.__fsCamActive=false;
       try{ if(map.setCenterClampedToGround) map.setCenterClampedToGround(true); }catch(_){}   /* (#R95) restore the default ground-clamp */
-      try{ map.off('styledata',_fsOceanStyleGuard); }catch(_){} _fsRemoveOcean();   /* (#R152) remove the flight water fill */
+      try{ if(map&&map.getLayer&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); if(map&&map.getSource&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){}   /* (#R158) water-fill removed (R152 feature retired) — clean up any leftover layer/source */
       for(const k in keys) keys[k]=false;
       try{ _FSBLOCK.forEach(ev=>window.removeEventListener(ev,_fsBlocker,true)); }catch(_){}   /* (#R117) restore normal map interactivity exactly as before the flight */
       try{ HANDLERS.forEach(h=>{ if(map[h]&&map[h].enable) map[h].enable(); }); }catch(_){}
@@ -27044,12 +27115,13 @@ window.addEventListener('DOMContentLoaded', () => {
     function _terrRead(lng,lat){ let v=null; try{ if(map.queryTerrainElevation){ const te=map.queryTerrainElevation([lng,lat],{exaggerated:false}); if(te!=null&&isFinite(te)) v=te; } }catch(_){}
       if(v==null) return { v:(st&&st.lastTerr!=null)?st.lastTerr:0, ok:false };
       if(st) st.lastTerr=v; return { v, ok:true }; }
-    /* (#R152) OCEAN detection for flight physics + water fill. window.countryGeo = LAND polygons, so a point INSIDE any
+    /* (#R152) OCEAN detection for flight PHYSICS. window.countryGeo = LAND polygons, so a point INSIDE any
        country = land (Dead Sea / Death Valley / Netherlands polders stay flyable below 0 m), OUTSIDE = open ocean
        (floor the collision ground at the sea SURFACE, 0 m, so you can't dive to the bathymetric floor). Cached per
        ~0.25° cell + a per-feature bbox pre-filter so the 200-country point-in-polygon runs rarely — never stuttering
-       the 200 Hz physics. Unknown (turf/countryGeo missing) → treated as LAND, so below-sea land is never wrongly clamped. */
-    let _fsOceanCache=Object.create(null), _fsBBox=null, _fsOceanGeo=null;
+       the 200 Hz physics. Unknown (turf/countryGeo missing) → treated as LAND, so below-sea land is never wrongly clamped.
+       (#R158) The blue water-FILL overlay this once fed was retired — this discriminator now serves the physics floor only. */
+    let _fsOceanCache=Object.create(null), _fsBBox=null;
     function _fsBBoxes(){ if(_fsBBox) return _fsBBox; const cg=window.countryGeo; if(!cg||!cg.features||!window.turf) return null;
       try{ _fsBBox=cg.features.map(f=>{ try{ return turf.bbox(f); }catch(_){ return null; } }); }catch(_){ _fsBBox=null; } return _fsBBox; }
     function _isOpenOcean(lng,lat){ try{
@@ -27060,19 +27132,9 @@ window.addEventListener('DOMContentLoaded', () => {
         try{ if(turf.booleanPointInPolygon(pt,cg.features[i])){ land=true; break; } }catch(_){} }
       return (_fsOceanCache[key]=!land);
     }catch(_){ return false; } }
-    /* (#R152) blue WATER surface during flight ("海を水で満たして"): an inverse-mask ocean polygon (world rectangle with
-       every country's outer ring as a HOLE) drawn as a semi-transparent blue fill over the satellite, so the sea reads
-       as water instead of dark satellite bathymetry. Built once from countryGeo; added on start, removed on exit. */
-    function _fsOceanFC(){ if(_fsOceanGeo) return _fsOceanGeo; const cg=window.countryGeo; if(!cg||!cg.features) return null;
-      const holes=[]; try{ cg.features.forEach(f=>{ const g=f&&f.geometry; if(!g) return; if(g.type==='Polygon'){ if(g.coordinates&&g.coordinates[0]) holes.push(g.coordinates[0]); } else if(g.type==='MultiPolygon'){ (g.coordinates||[]).forEach(poly=>{ if(poly&&poly[0]) holes.push(poly[0]); }); } }); }catch(_){ return null; }
-      const outer=[[-180,-85.051],[180,-85.051],[180,85.051],[-180,85.051],[-180,-85.051]];
-      _fsOceanGeo={type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[outer].concat(holes)}}; return _fsOceanGeo; }
-    function _fsAddOcean(){ try{ if(!map) return; const fc=_fsOceanFC(); if(!fc) return;
-      if(!map.getSource('fs-ocean')) map.addSource('fs-ocean',{type:'geojson',data:fc});
-      if(!map.getLayer('fs-ocean-water')) map.addLayer({id:'fs-ocean-water',type:'fill',source:'fs-ocean',paint:{'fill-color':'#1b628f','fill-opacity':0.5}});
-    }catch(e){ console.warn('fsAddOcean',e); } }
-    function _fsRemoveOcean(){ try{ if(map&&map.getLayer('fs-ocean-water')) map.removeLayer('fs-ocean-water'); }catch(_){} try{ if(map&&map.getSource('fs-ocean')) map.removeSource('fs-ocean'); }catch(_){} }
-    function _fsOceanStyleGuard(){ try{ if(on) _fsAddOcean(); }catch(_){} }
+    /* (#R158) The blue water-FILL overlay (_fsOceanFC / _fsAddOcean / _fsRemoveOcean / _fsOceanStyleGuard, R152) was
+       REMOVED per request. Over open sea the satellite imagery itself now renders (the R158 tile protocol upscales the
+       nearest real Esri tile instead of the grey "no data" placeholder that first motivated the fill). */
     /* ===== (#R94q) ONE fixed-timestep 6-DOF rigid-body step (h seconds) in the BODY frame. Body velocity (u,v,w),
        body angular rates (p,q,r) and a quaternion attitude are integrated from the forces & moments produced by
        AoA + SIDESLIP through the aircraft's stability & control derivatives — so it gives coordinated & skidding
@@ -27313,41 +27375,59 @@ window.addEventListener('DOMContentLoaded', () => {
       try{ st._overOcean=_isOpenOcean(st.lng,st.lat); }catch(_){ st._overOcean=false; }   /* (#R152) refresh open-ocean flag ONCE per frame (cached per cell) — read by stepFixed's sea-surface floor */
       const f=physics(dt), R2D=180/Math.PI, D2R=Math.PI/180, agl=f.agl;
       if(resultShown) return;   /* (#R98) a crash inside physics() opened the result screen → stop the loop */
-      /* ---- CAMERA (#R95): a TRUE eye-point view driven by the attitude, NOT a ground look-at. The old code called
-         calculateCameraOptionsFromTo(eye → a ground target 1.8 km ahead) and then FORCED the resulting pitch into
-         0–85°. Three faults fell out of that: (a) center/zoom/alt were solved for the un-clamped geometry, so once
-         the pitch was crushed to 85° the eye drifted off the aircraft and jittered every frame (the "bounce" — a 1°
-         nose change moved the 1.8 km aim-point tens of metres); (b) a climb/loop could never look above the horizon;
-         (c) the roll came from qToEuler, which flips ±180° as the pitch crosses the vertical (gimbal lock).
-         Now the eye is placed AT the aircraft (Cockpit) or behind+above it (Follow) and bearing/pitch/roll are read
-         straight from the body axes via calculateCameraOptionsFromCameraLngLatAltRotation (MapLibre v5), so the view
-         follows the nose through the vertical, over the top of a loop and inverted — no clamp, no flip, no bounce.
-         roll is the bank of the wings about the view axis (continuous through the vertical, unlike the Euler roll). */
+      /* ---- CAMERA (#R158 — root-cause fix for the "視点が一瞬遠方へ飛んで戻る" teleport). ROOT CAUSE: the previous
+         per-frame calculateCameraOptionsFromCameraLngLatAltRotation() derives the map CENTER by projecting the view ray to
+         the ground (transform.calculateCenterFromCameraLngLatAlt). Near the horizontal that projection distance diverges and
+         MapLibre substitutes a fixed fallback distance, so an UN-smoothed pitch oscillating across that boundary snapped
+         center & zoom for a single frame — the teleport. FIX: aim a target a FIXED distance ahead along the (smoothed) nose
+         and use calculateCameraOptionsFromTo(eye→target): it returns center = the target and zoom = f(cameraToCenterDistance /
+         ‖eye−target‖), so with a CONSTANT look-ahead distance BOTH center and zoom are stable at every attitude — no ground
+         projection, no clamp, no snap. Looking up through a climb/loop is preserved: FromTo yields pitch>90 and start() set
+         maxPitch=179. roll is applied separately; every output is validated (NaN/Inf + abnormal one-frame Δ) and a bad frame
+         is skipped — a SAFETY NET on top of the structural fix, not a substitute (the geometry above should never emit one).
+         The eye altitude is decoupled from the aircraft and floored just above the smoothed terrain, so a DEM refresh can't
+         drop the camera inside the ground. */
+      /* keep the attitude a UNIT quaternion so qRot yields unit body axes (drift here would skew every derived angle). */
+      try{ const _qn=Math.hypot(st.q[0],st.q[1],st.q[2],st.q[3]); if(_qn>1e-9&&Math.abs(_qn-1)>1e-6) st.q=[st.q[0]/_qn,st.q[1]/_qn,st.q[2]/_qn,st.q[3]/_qn]; }catch(_){}
       const fwd=qRot(st.q,[1,0,0]), rightW=qRot(st.q,[0,1,0]);
+      { const _fn=Math.hypot(fwd[0],fwd[1],fwd[2])||1; fwd[0]/=_fn; fwd[1]/=_fn; fwd[2]/=_fn; }   /* normalise the nose vector */
       const mLatM=110574, mLonM=(111320*Math.cos(st.lat*D2R))||1;
-      const eLng=st.lng, eLat=st.lat, eAlt=st.alt;   /* (#R96) COCKPIT only — the eye is AT the aircraft (the follow/chase mode was removed per request) */
+      const eLng=st.lng, eLat=st.lat;   /* (#R96) COCKPIT — the eye is AT the aircraft */
       const bearingT=(Math.atan2(fwd[1],fwd[0])*R2D+360)%360;                       /* nose heading (0=N,90=E) */
-      const pitch=Math.max(0.5,Math.min(179.5, 90 - Math.asin(Math.max(-1,Math.min(1,fwd[2])))*R2D));   /* 90=level, >90 look UP, <90 look DOWN */
+      const pitchT=Math.max(0.5,Math.min(179.5, 90 - Math.asin(Math.max(-1,Math.min(1,fwd[2])))*R2D));   /* 90=level, >90 look UP, <90 look DOWN */
       let rollT=0;
       if(!stabilizeCam){ const a=fwd[0],b=fwd[1],c=fwd[2];   /* bank = angle of the right wing about the nose, vs the wings-level reference (world-horizontal ⟂ nose) */
         const d1=rightW[0]*(-b)+rightW[1]*a, d2=rightW[0]*(-a*c)+rightW[1]*(-b*c)+rightW[2]*(a*a+b*b);
         if(Math.abs(d1)>1e-9||Math.abs(d2)>1e-9) rollT=(Math.atan2(d2,d1)*R2D+360)%360; }
-      /* (#R96) bearing & roll form a COORDINATE chart with a singularity straight up/down: as the nose crosses the
-         vertical both flip ~180° in a single frame (the "pole pop" the report saw — 方位360→180, roll45→−135). Rate-
-         limit them through the crossing (a high cap, so ONLY that instantaneous pop is clipped — real turn and roll
-         rates are far below it) and the view slews smoothly instead of snapping. pitch has no singularity → exact. */
+      /* TIME-BASED attitude stabilisation (framerate-independent): bearing & roll slew through the ±180 vertical-crossing
+         singularity (a high cap clips ONLY the instantaneous pole-pop — real turn/roll rates are far below it); pitch gets an
+         exponential low-pass (τ≈55 ms) that erases a one-frame spike WITHOUT lag. dt-based → 30 fps and 120 fps behave
+         identically, and a jittery pitch can no longer reintroduce the teleport. */
       const cap=900*Math.max(0.001,dt), slew=(prev,tgt)=>{ let dd=((tgt-prev+540)%360)-180; if(dd>cap)dd=cap; else if(dd<-cap)dd=-cap; return (prev+dd+360)%360; };
-      if(st._cB==null){ st._cB=bearingT; st._cR=rollT; }
+      if(st._cB==null){ st._cB=bearingT; st._cR=rollT; st._cP=pitchT; }
       st._cB=slew(st._cB,bearingT); st._cR=slew(st._cR,rollT);
-      const bearing=st._cB, roll=st._cR; st._camRoll=roll; st._camPitch=pitch;
-      let cam=null; try{ if(map.calculateCameraOptionsFromCameraLngLatAltRotation) cam=map.calculateCameraOptionsFromCameraLngLatAltRotation({lng:eLng,lat:eLat},eAlt,bearing,pitch,roll); }catch(_){}
-      if(cam){ st._cam=cam; try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
-      else {   /* safety fallback (older MapLibre without the rotation API): eye→nose look-at with calculateCameraOptionsFromTo,
-                  which also resolves pitch>90 correctly — verified on 5.24.0 — but returns no roll, so we set it ourselves. */
-        const lookM=1800, tLat=st.lat+lookM*fwd[0]/mLatM, tLng=st.lng+lookM*fwd[1]/mLonM, tAlt=st.alt-lookM*fwd[2];
-        let c2=null; try{ if(map.calculateCameraOptionsFromTo) c2=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},eAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
-        if(c2){ c2.roll=roll; st._cam=c2; try{ map.jumpTo(c2); }catch(_){ try{ delete c2.roll; map.jumpTo(c2); }catch(__){} } }
-        else { try{ map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} } }
+      const _pk=1-Math.exp(-Math.max(0.001,dt)/0.055); st._cP+=(pitchT-st._cP)*_pk;
+      const bearing=st._cB, roll=st._cR, pitch=st._cP; st._camRoll=roll; st._camPitch=pitch;
+      /* eye altitude: at the aircraft, but never below (smoothed terrain + a small clearance) — decoupled from st.alt so a
+         DEM refresh can't put the eye inside the ground. */
+      const _grd=(st._terrF!=null&&isFinite(st._terrF))?st._terrF:((st.lastTerr!=null&&isFinite(st.lastTerr))?st.lastTerr:0);
+      const camAlt=Math.max(st.alt, _grd+2.5);
+      /* target: a FIXED 1.8 km ahead along the SMOOTHED nose (rebuilt from the smoothed bearing/pitch) → stable center+zoom. */
+      const _D=1800, _elR=(90-pitch)*D2R, _cE=Math.cos(_elR), _sE=Math.sin(_elR), _bR=bearing*D2R;
+      const _nx=_cE*Math.cos(_bR), _ny=_cE*Math.sin(_bR), _nz=_sE;   /* down-positive nz (matches fwd[2]) */
+      const tLat=eLat+_D*_nx/mLatM, tLng=eLng+_D*_ny/mLonM, tAlt=camAlt-_D*_nz;
+      try{ if(map.isEasing&&map.isEasing()) map.stop(); }catch(_){}   /* sole camera controller: cancel any stray ease (Atlas fly / snap-back) that slipped into this frame */
+      let cam=null; try{ if(map.calculateCameraOptionsFromTo) cam=map.calculateCameraOptionsFromTo({lng:eLng,lat:eLat},camAlt,{lng:tLng,lat:tLat},tAlt); }catch(_){}
+      const _fin=v=>typeof v==='number'&&isFinite(v);
+      let okCam=!!(cam&&cam.center&&_fin(cam.center.lng)&&_fin(cam.center.lat)&&_fin(cam.zoom)&&cam.zoom>=0&&cam.zoom<=24&&_fin(cam.bearing==null?0:cam.bearing)&&_fin(cam.pitch==null?0:cam.pitch)&&_fin(roll)&&Math.abs(cam.center.lat)<=89.5);
+      if(okCam&&st._camPrev){ const _dC=Math.hypot((cam.center.lng-st._camPrev.lng)*mLonM,(cam.center.lat-st._camPrev.lat)*mLatM), _dZ=Math.abs(cam.zoom-st._camPrev.zoom);
+        if(_dC>9000||_dZ>3){ okCam=false; try{ window.__fsCamSkips=(window.__fsCamSkips||0)+1; }catch(_){} } }   /* abnormal one-frame jump → skip (never happens with FromTo geometry; a real defence, not a mask) */
+      if(okCam){ cam.roll=roll; st._cam=cam; st._camPrev={lng:cam.center.lng,lat:cam.center.lat,zoom:cam.zoom};
+        try{ map.jumpTo(cam); }catch(_){ try{ delete cam.roll; map.jumpTo(cam); }catch(__){} } }
+      else if(!cam){   /* FromTo unavailable (very old MapLibre) — last-resort validated direct camera */
+        try{ if(_fin(bearing)&&_fin(pitch)) map.jumpTo({center:[st.lng,st.lat],zoom:14,bearing:bearing,pitch:Math.min(85,pitch),roll:roll}); }catch(_){} }
+      /* okCam===false with cam!=null → skip this frame, keeping the last good camera (no teleport, no freeze — next frame's
+         slightly-advanced geometry resolves cleanly). */
       try{ updateMinimap(dt); }catch(_){}
       try{ fsAudio.update(st,f,AC()); }catch(_){}   /* (#R101) drive the flight audio from this frame's state */
       updateHUD(agl,f);
@@ -27791,13 +27871,17 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       if(!rawGroups.length) return null;
       const valid=_hlValidCodeSet();
-      return rawGroups.map(g=>{ const codes=[],invalid=[],seen=new Set();
-        g.targets.forEach(t=>{ let code=(t.iso3&&valid.has(t.iso3))?t.iso3:'';
-          /* code-recovery: a wrong/blank ISO3 with a clear country NAME is rescued via the deterministic country
-             index (an exact-name → code match, NOT concept guessing) so a small model slip still resolves. */
-          if(!code&&t.name){ try{ const c=resolveCountrySync(t.name); if(c&&c.code&&valid.has(String(c.code).toUpperCase())) code=String(c.code).toUpperCase(); }catch(_){} }
-          if(code){ if(!seen.has(code)){ seen.add(code); codes.push(code); } } else invalid.push(t.name||t.iso3||'?'); });
-        return {label:g.label,codes,invalid}; }); }catch(_){ return null; } }
+      /* (#R158 · Terra is the decision-maker, IntMap the faithful executor) OBSERVE, don't CORRECT. A valid ISO3 Terra chose
+         is executed AS-IS. A blank/invalid ISO3 is NEITHER silently rescued from the name NOR silently dropped — it is
+         returned to Terra as UNRESOLVED, tagged with a machine reason and (if the name deterministically maps to one) a
+         candidate identifier that is REPORTED, never applied. Terra then decides: re-issue with the right code, re-search,
+         ask, or adopt the partial. This replaces the old resolveCountrySync auto-correction the work order removed. */
+      return rawGroups.map(g=>{ const codes=[],unresolved=[],seen=new Set();
+        g.targets.forEach(t=>{ const gi=t.iso3||'';
+          if(gi&&valid.has(gi)){ if(!seen.has(gi)){ seen.add(gi); codes.push(gi); } return; }   /* Terra's identifier is valid → execute faithfully */
+          let available=[]; if(t.name){ try{ const c=resolveCountrySync(t.name); if(c&&c.code&&valid.has(String(c.code).toUpperCase())) available=[String(c.code).toUpperCase()]; }catch(_){} }
+          unresolved.push({name:t.name||'', iso3:gi, reason:(gi?'iso3_not_in_border_data':(t.name?'no_iso3_provided':'empty_target')), availableIdentifiers:available}); });
+        return {label:g.label,codes,unresolved}; }); }catch(_){ return null; } }
     /* categorical palette — distinct, reasonably colour-blind-aware, muted enough to sit on the basemap */
     const _HL_PALETTE=['#e6550d','#3182bd','#31a354','#756bb1','#d6616b','#17a2b8','#bd9e39','#8c6d31','#e377c2','#637939','#843c39','#5254a3'];
     function _hlPaletteColor(i){ const n=_HL_PALETTE.length; return _HL_PALETTE[((i%n)+n)%n]; }
@@ -28470,21 +28554,24 @@ window.addEventListener('DOMContentLoaded', () => {
          (#R154) HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR ("目次を色分けするのはやめる"). (#R155) a "## "
          section also gets a subtle neutral top hairline = pure 配置/placement. */
       let html=esc(_dedupText(_atlStanza(s)))
-        .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.25em 0 .32em;font-size:1.18em;line-height:1.32;">$1</div>')
-        .replace(/^##\s*(.+)$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.7em 0 .55em;padding-top:.62em;border-top:1px solid rgba(128,128,128,.18);font-size:1.44em;line-height:1.28;letter-spacing:.005em;">$1</div>')
-        .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.45em 0 .6em;font-size:1.68em;letter-spacing:.01em;line-height:1.24;">$1</div>')
+        /* (#R158) STRONGER design contrast via SIZE / WEIGHT / SPACING / neutral dividers ONLY — still no colour-coding and
+           no fabricated headings (R154 constraints kept). Bigger size jumps + heavier weight + more generous rhythm + a more
+           visible section hairline give the flat, monotone reply the structure the user asked for ("コントラストに乏しい"). */
+        .replace(/^#{3,6}\s*(.+)$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.6em 0 .4em;font-size:1.3em;line-height:1.3;letter-spacing:.004em;">$1</div>')
+        .replace(/^##\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:2.05em 0 .62em;padding-top:.78em;border-top:1.5px solid rgba(128,128,128,.34);font-size:1.56em;line-height:1.25;letter-spacing:.006em;">$1</div>')
+        .replace(/^#\s*(.+)$/gm,'<div style="font-weight:800;color:var(--text-main);margin:1.55em 0 .66em;font-size:1.9em;letter-spacing:.012em;line-height:1.2;">$1</div>')
         /* (#R151/#R154) a whole-line **bold run** is an author-written section lead → modest heading (size+spacing, no colour) */
-        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:700;color:var(--text-main);margin:1.3em 0 .42em;font-size:1.2em;line-height:1.3;">$1</div>')
+        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div style="font-weight:750;color:var(--text-main);margin:1.5em 0 .46em;font-size:1.28em;line-height:1.3;">$1</div>')
         .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
         .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\w)/g,'$1<i>$2</i>')                      /* (#R156) *italic* (single asterisk; guarded so ** and "2 * 3"/bullets don't misfire) */
-        .replace(/^&gt;\s?(.+)$/gm,'<div style="border-left:3px solid rgba(128,128,128,.35);padding:2px 0 2px 11px;margin:.5em 0;color:var(--text-muted);">$1</div>')   /* (#R156) > blockquote (esc turned > into &gt;) */
+        .replace(/^&gt;\s?(.+)$/gm,'<div style="border-left:3px solid rgba(128,128,128,.4);padding:3px 0 3px 13px;margin:.7em 0;color:var(--text-muted);">$1</div>')   /* (#R156) > blockquote (esc turned > into &gt;) */
         /* (#R74) markdown links → real (safe) anchors */
         .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
         /* (#R79g) linkify BARE urls too (leading-char guard skips urls already inside an href="…") */
         .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
-        .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.3em;text-indent:-1.05em;margin:.32em 0;line-height:1.5;">•&nbsp; $1</div>')   /* (#R155) clearer bullets */
-        .replace(/\n{2,}/g,'<div style="height:1.3em"></div>')                                        /* (#R155) paragraph gap */
-        .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.78em"></div>')                 /* (#R150-R155) sentence-end + single newline = soft gap */
+        .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.35em;text-indent:-1.1em;margin:.42em 0;line-height:1.6;">•&nbsp; $1</div>')   /* (#R158) clearer bullets + more air */
+        .replace(/\n{2,}/g,'<div style="height:1.5em"></div>')                                        /* (#R158) paragraph gap (bigger rhythm) */
+        .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.82em"></div>')                 /* (#R150-R158) sentence-end + single newline = soft gap */
         .replace(/\n/g,'<br>');
       /* 4) restore protected blocks (may hold inline placeholders) THEN inlines */
       return html.replace(/B(\d+)/g,(m,i)=>B[+i]||'').replace(/I(\d+)/g,(m,i)=>I[+i]||''); }
@@ -30317,7 +30404,8 @@ window.addEventListener('DOMContentLoaded', () => {
           return {plan:keep.concat([na]),rejected}; } }
       return {plan:out, rejected}; }
     /* Repair instruction (§10) — the loose "nearby well-known place / coarser target" advice is REMOVED. */
-    function _repairGuidance(){ return 'Do NOT give up, but stay faithful to the request. Propose a GENUINELY different, documented action for the UNMET part only. HARD limits: never re-issue the same call with only a renamed / re-spelt / translated target; never switch a historical question to live news (mapReport) or vice-versa; never change the required evidence mode; never replace a specific place with a whole-world or continental thematic map. If you must widen the target, widen it by ONE step to its immediate surrounding region only (e.g. a sea → its coastline / bordering lands), keeping the original subject. A failure to DRAW on the map is NOT a failure to ANSWER: if the explanation is already given, do not retry the map. Only if it is genuinely impossible with the documented actions, reply with a single "answer" explaining specifically what is impossible.'; }
+    function _repairGuidance(){ return 'Do NOT give up, but stay faithful to the request. Propose a GENUINELY different, documented action for the UNMET part only. HARD limits: never re-issue the same call with only a renamed / re-spelt / translated target; never switch a historical question to live news (mapReport) or vice-versa; never change the required evidence mode; never replace a specific place with a whole-world or continental thematic map. If you must widen the target, widen it by ONE step to its immediate surrounding region only (e.g. a sea → its coastline / bordering lands), keeping the original subject. A failure to DRAW on the map is NOT a failure to ANSWER: if the explanation is already given, do not retry the map. Only if it is genuinely impossible with the documented actions, reply with a single "answer" explaining specifically what is impossible. '
+      + 'When an [EXECUTION RESULT] block is present it is IntMap\'s honest, mechanical observation — IntMap did NOT correct, substitute, drop or reinterpret any identifier; that decision is YOURS. Read "unresolved" and each item\'s "availableIdentifiers": if a candidate is correct, re-issue the SAME action type with the corrected identifier(s) — that is an intended fix, NOT a forbidden rename retry. If no candidate is right, re-search, ask the user a specific question, or explicitly accept the partial result. Never report a target as done unless it appears in "resolved" and the render was verified.'; }
     /* (#R135 §12) Post-execution goal validation — "tool succeeded" is separated from "user goal satisfied". */
     function _goalValidation(profile, outcomes){ outcomes=outcomes||[];
       const okOut=outcomes.filter(o=>o&&o.ok);
@@ -30655,7 +30743,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R114) honest recency footer: show the as-of date, and flag when a LIVE web search actually ran
              (meta.webUsed) so a search-less brief is never mistaken for fresh "latest" intelligence. */
           let asofB=''; try{ const _m=window._aiLastMeta||{}; asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
-          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:12.5px;line-height:1.62;">'+mdMini(txtB)+'</div>'+asofB+srcCardsB); }
+          return R(true,'<div style="font-weight:600;margin:2px 0 5px;">'+esc(nm3)+'</div><div style="font-size:14px;line-height:1.68;">'+mdMini(txtB)+'</div>'+asofB+srcCardsB); }
         case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
             "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
@@ -31132,31 +31220,43 @@ window.addEventListener('DOMContentLoaded', () => {
             if(_gGroups){ if(_hlMyGen!==_hlGen) return R(true,'');
               const _single=(a.color!=null&&String(a.color).trim()!=='')?parseColor(a.color):null;
               const _FBL=L('Highlighted countries','ハイライトした国','Hervorgehobene Länder','Выделенные страны','Países resaltados');
-              const G=[]; const gInvalid=[]; const gSeen=new Set();
-              _gGroups.forEach((grp,gi)=>{ (grp.invalid||[]).forEach(x=>{ if(x) gInvalid.push(String(x)); });
+              const G=[]; const gUnresolved=[]; const _resolvedIso=[]; const gSeen=new Set();
+              _gGroups.forEach((grp,gi)=>{ (grp.unresolved||[]).forEach(u=>{ if(u) gUnresolved.push(u); });   /* (#R158) unresolved = OBSERVED, reported to Terra — never silently skipped */
                 if(!grp.codes.length) return;
-                const cg=_codesGeo(grp.codes); if(!cg.geo||!cg.hit.length) return;
-                const vg=_validGeo(cg.geo,{trusted:true,autoclose:true}); if(!vg.ok) return;   /* real borders → trusted */
+                const cg=_codesGeo(grp.codes);
+                (cg.miss||[]).forEach(mc=>gUnresolved.push({name:'',iso3:String(mc),reason:'no_border_geometry',availableIdentifiers:[]}));   /* a valid-looking code with no border feature → observed, not dropped */
+                if(!cg.geo||!cg.hit.length) return;
+                const vg=_validGeo(cg.geo,{trusted:true,autoclose:true});
+                if(!vg.ok){ (cg.hit||[]).forEach(hc=>gUnresolved.push({name:'',iso3:String(hc),reason:'invalid_geometry:'+(vg.reason||'?'),availableIdentifiers:[]})); return; }   /* real borders → trusted */
                 const key='codes:'+cg.hit.slice().sort().join(','); if(gSeen.has(key)) return; gSeen.add(key);
+                cg.hit.forEach(hc=>{ if(_resolvedIso.indexOf(hc)<0) _resolvedIso.push(hc); });
                 const label=String(grp.label||'').trim();
                 G.push({name:label||('set'+(gi+1)),displayName:label||_FBL,kind:'set',geo:cg.geo,codes:cg.hit.slice(),nCountries:cg.hit.length,basisShort:L('national borders','国境','Staatsgrenzen','госграницы','fronteras')}); });
-              if(!G.length){ return R(false, warn('⚠ '+L('None of the countries returned for that request were valid','その要求に対して返された国コードはいずれも無効でした','Keiner der zurückgegebenen Ländercodes war gültig','Ни один из возвращённых кодов стран не действителен','Ninguno de los códigos de país devueltos era válido'))+(gInvalid.length?note(esc(gInvalid.slice(0,14).join(', '))):'')+cwarn); }
+              /* (#R158) the MECHANICAL execution result — the structured contract the repair loop feeds back to Terra so it,
+                 not IntMap, decides how to recover (correct identifiers / re-search / ask / adopt partial). IntMap only OBSERVES. */
+              const _unrSum=arr=>arr.slice(0,14).map(u=>(u.name||u.iso3||'?')+(u.availableIdentifiers&&u.availableIdentifiers.length?(' → '+u.availableIdentifiers.join('/')):'')).join(', ');
+              const _mkExec=(painted,features,verified)=>({ status:(gUnresolved.length?'partial_or_failed':'ok'), action:{type:'highlight', interpretation:(a.interpretation||''), originalTargets:(a.groups||a.targets||a.iso3||a.codes||a.countries||null)},
+                resolved:_resolvedIso.map(c=>({iso3:c})), unresolved:gUnresolved.slice(0,60),
+                renderState:{painted:!!painted, features:(features!=null?features:0), verified:!!verified},
+                capabilities:{ identifierScheme:'ISO 3166-1 alpha-3', validIdentifierCount:_hlValidCodeSet().size } });
+              if(!G.length){   /* nothing valid to draw → return the STRUCTURED result (not a dead-end) so Terra corrects the identifiers */
+                return R(false, warn('⚠ '+L('None of the identifiers for that request resolved to a real border','その要求の識別子はいずれも実在の国境に解決できませんでした','Keiner der Bezeichner dieser Anfrage ließ sich einer realen Grenze zuordnen','Ни один идентификатор запроса не сопоставлен с реальной границей','Ninguno de los identificadores de esa solicitud se resolvió a una frontera real'))+(gUnresolved.length?note(esc(_unrSum(gUnresolved))):'')+cwarn, {meta:{partial:true}, exec:_mkExec(false,0,false)}); }
               clearHl(); clearLineHl(); _hlLines=[]; clearPolyHl();
               _hlPolys=G.map((g,i)=>{ g.color=_single||_hlPaletteColor(i); return {name:g.name,geo:g.geo,color:g.color,comp:1,op:0.42}; });
               let paintedP=paintPolys();
               for(let i5=0;i5<8&&!paintedP;i5++){ await new Promise(r5=>setTimeout(r5,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
-              if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
+              if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn, {exec:_mkExec(false,0,false)});
               const ver=_verifyPolyPaint(G.length);
               if(!_fitGroups(_hlPolys)){ try{ if(map.getZoom()>2.6) map.flyTo({center:[map.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
               const totalC=G.reduce((s2,g)=>s2+g.nCountries,0);
               let hh=note('✦ '+G.map(g=>esc(g.displayName)).join(', '))+_hlLegendHtml(G);
               /* (#R157) STATE THE DEFINITION USED (the work order's "採用した定義を結果に明示"). */
               hh+=note(L('Interpreted from your request and drawn from real national borders — '+totalC+' countries.','ご依頼を解釈し、実際の国境データから描画しました — '+totalC+'か国。','Aus Ihrer Anfrage interpretiert und aus realen Staatsgrenzen gezeichnet — '+totalC+' Länder.','Интерпретировано по вашему запросу и построено по реальным госграницам — стран: '+totalC+'.','Interpretado a partir de tu solicitud y dibujado con fronteras reales — '+totalC+' países.'));
-              if(gInvalid.length) hh+=warn('⚠ '+L('Skipped invalid/unknown country codes','無効・不明な国コードをスキップ','Ungültige/unbekannte Ländercodes übersprungen','Пропущены неверные/неизвестные коды стран','Se omitieron códigos de país no válidos')+': '+esc(gInvalid.slice(0,14).join(', ')));
+              if(gUnresolved.length) hh+=warn('⚠ '+L('Some targets could not be matched to border data — checking with the model','一部の対象を国境データに一致させられませんでした — モデルに確認しています','Einige Ziele ließen sich den Grenzdaten nicht zuordnen — Rückfrage beim Modell','Некоторые цели не сопоставлены с данными границ — уточняем у модели','Algunos objetivos no coincidieron con los datos de fronteras — consultando al modelo')+': '+esc(_unrSum(gUnresolved)));
               if(ver&&!ver.ok) hh+=warn('⚠ '+L('Could not verify the drawn shapes on the map','描画結果を地図上で確認できませんでした','Gezeichnete Formen nicht verifizierbar','Не удалось проверить фигуры на карте','No se pudieron verificar las formas'));
               try{ _wctx.highlight={ name:G.map(g=>g.displayName||g.name).join(', ').slice(0,160), n:totalC, basis:null }; }catch(_){}
-              const _partial=!!(gInvalid.length||(ver&&!ver.ok));
-              return R(true, hh+cwarn, _partial?{meta:{partial:true}}:undefined);
+              const _partial=!!(gUnresolved.length||(ver&&!ver.ok));
+              return R(true, hh+cwarn, {meta:(_partial?{partial:true}:undefined), exec:_mkExec(true,(ver&&ver.n)||totalC,!!(ver&&ver.ok))});
             } }
           /* (#R150 · geo-target unification) SINGLE ambiguity decision shared by BOTH the multi-region and the
              single-colour paths below. ROOT CAUSE the user reported: candidate-confirmation ("did you mean the
@@ -31572,7 +31672,7 @@ window.addEventListener('DOMContentLoaded', () => {
             return R(false, warn('⚠ '+esc(research.error||L('Could not research this right now','今回は調べられませんでした','Konnte das gerade nicht recherchieren','Не удалось исследовать сейчас','No se pudo investigar ahora'))), {meta:{code:(evid==='live'?'NO_LIVE_EVIDENCE':'NO_HISTORICAL_EVIDENCE'),category:'evidence',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:[],userGoalSatisfied:false}});
           }
           let h='<div style="font-weight:600;margin:2px 0 4px;">'+esc(research.title||place||topic)+(research.temporalBasis?(' <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;">· '+esc(research.temporalBasis)+'</span>'):'')+'</div>';
-          h+='<div style="font-size:12.5px;line-height:1.62;margin-bottom:6px;">'+mdMini(research.explanation)+'</div>';
+          h+='<div style="font-size:14px;line-height:1.68;margin-bottom:6px;">'+mdMini(research.explanation)+'</div>';
           if(mapRes.rendered){ const ml=mapRes.pinCount?L(mapRes.pinCount+' related place(s) shown on the map',mapRes.pinCount+'件の関連地点を地図に表示しました',mapRes.pinCount+' zugehörige Orte auf der Karte',mapRes.pinCount+' связанных мест на карте',mapRes.pinCount+' lugares relacionados en el mapa'):(mapRes.method==='bbox'?L('Framed the area on the map','対象範囲を地図に表示しました','Gebiet auf der Karte eingerahmt','Область показана на карте','Área enmarcada en el mapa'):L('Centred the map on the location','地図を対象地点に移動しました','Karte auf den Ort zentriert','Карта отцентрирована','Mapa centrado en el lugar'));
             h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+esc(ml)+((!mapRes.hasExtent&&mapRes.pinCount)?(' · '+L('the region outline was not available, so related places are shown as points','海域・地域の輪郭は取得できなかったため関連地点を表示','Regionsumriss nicht verfügbar — Punkte stattdessen','контур недоступен — показаны точки','sin contorno — se muestran puntos')):'')+'</div>'; }
           else h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+L('The map view could not be updated for this, but the explanation above stands.','この件では地図表示を更新できませんでしたが、上の説明は有効です。','Kartenansicht nicht aktualisierbar — die Erklärung oben gilt.','Не удалось обновить карту — пояснение выше остаётся в силе.','No se pudo actualizar el mapa, pero la explicación anterior es válida.')+'</div>';
@@ -31801,7 +31901,7 @@ window.addEventListener('DOMContentLoaded', () => {
              it had no way to reject out-of-window items) and, for a multi-country request, the explicit country set
              it must report coverage for. */
           const nowCtx=_nowContext(); const freshness=_analyzeFreshness(q);
-          const analysisWebMode=freshness.critical?'required':'auto';   /* (#R131) freshness-critical → FORCE live web verification (was always "auto" = optional) */
+          const analysisWebMode=(freshness.critical||(use&&use.indexOf('web')>=0))?'required':'auto';   /* (#R131) freshness-critical → FORCE live web verification; (#R158) an explicit use:['web'] (e.g. an informational answer routed here for sources) also forces it, so sources are never zero */
           const covNames=[]; try{ codes.forEach(c=>{ const s6=countryStats[c]; if(s6&&(s6.nameEn||nm(s6))) covNames.push(s6.nameEn||nm(s6)); }); }catch(_){}
           if(!covNames.length&&cnames.length) cnames.forEach(n7=>{ const t7=String(n7||'').trim(); if(t7) covNames.push(t7); });
           const coverage={ region:(placeStr||(ctx&&ctx.name)||''), countries:covNames };
@@ -31858,7 +31958,7 @@ window.addEventListener('DOMContentLoaded', () => {
           /* (#R74) peel the SOURCES line off the prose and render it as ChatGPT-style link cards */
           let srcUrls=[]; try{ txt=String(txt).replace(/\n?\s*SOURCES?\s*[:：]\s*([^\n]+)\s*$/i,(m,g)=>{ srcUrls=g.split(/[|\s]+/).filter(u=>/^https?:\/\//i.test(u)).slice(0,4); return ''; }); }catch(_){}
           let html='<div style="font-weight:600;margin:2px 0 5px;">🧭 '+L('Integrated analysis','統合分析','Integrierte Analyse','Комплексный анализ','Análisis integrado')+'</div>';
-          html+='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(String(txt).trim())+'</div>';
+          html+='<div style="font-size:14px;line-height:1.68;">'+mdMini(String(txt).trim())+'</div>';
           /* (#R149 · mapping commission) pin the specific real places the analysis named (unless the plan already
              pinned) so an integrated analysis delivers MAP value, not just prose — with an honest placed/not-placed note. */
           /* (#R150) ALWAYS reconcile prose↔map — pass the final text (so places the model omitted from the list are
@@ -32169,7 +32269,7 @@ window.addEventListener('DOMContentLoaded', () => {
           return R(false, warn('⚠ '+L('Unknown monitor operation.','不明な監視操作です。','Unbekannte Monitor-Operation.','Неизвестная операция монитора.','Operación de monitor desconocida.')));
         }
         case 'control': return doControl(a);
-        case 'answer': { let _ah='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
+        case 'answer': { let _ah='<div style="font-size:14px;line-height:1.68;">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
           /* (#R156) shared spine: a text answer may also carry a content class + verifiable checks (e.g. the model solved
              an equation in prose). Verify the checks deterministically, show the honest self-check note, and let the SAME
              class gate mapping below — so a math/code/document text answer never runs place extraction either. */
@@ -32262,6 +32362,17 @@ window.addEventListener('DOMContentLoaded', () => {
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
+    let _atlFiles=[];  /* (#R158) pending NON-image, text-extractable file attachments {name,text,size,truncated} — their text is fed to the model with the next message */
+    /* (#R158) which files Atlas accepts. Images → the vision channel (OpenAI input_image). Text-extractable files
+       (text/*, code, data) → their content is read client-side and given to the model. Binary types we can't decode
+       (pdf/docx/zip) are declined honestly (the vision channel is image-only; no document parser is loaded). */
+    const _ATL_TEXT_EXT=/\.(txt|text|md|markdown|rst|csv|tsv|json|jsonl|geojson|ndjson|js|mjs|cjs|ts|tsx|jsx|py|rb|go|rs|java|kt|swift|dart|c|cc|cpp|cxx|h|hpp|cs|php|scala|lua|pl|sh|bash|zsh|fish|ps1|yaml|yml|xml|svg|html|htm|css|scss|sass|less|sql|graphql|log|ini|toml|conf|cfg|env|properties|gradle|tex|bib|r|jl|vue|svelte|astro|srt|vtt|diff|patch|gitignore|dockerfile|makefile)$/i;
+    const _ATL_FILE_MAX=60000;   /* per-file text cap (chars) so one attachment can't blow the token budget; larger files are truncated with a note */
+    function _atlFileKind(f){ try{ const ty=String(f&&f.type||'').toLowerCase(); const nm=String(f&&f.name||'');
+      if(/^image\//.test(ty)) return 'image';
+      if(/^text\//.test(ty)||ty==='application/json'||ty==='application/xml'||ty==='application/javascript'||ty==='application/x-yaml'||_ATL_TEXT_EXT.test(nm)) return 'text';
+      return 'unsupported'; }catch(_){ return 'unsupported'; } }
+    function _atlReadText(f){ return new Promise(res=>{ try{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result||'')); fr.onerror=()=>res(''); fr.readAsText(f); }catch(_){ res(''); } }); }
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
       /* (#R62) refined AI-app look ("ChatGPTのような洗練された生成AI App風のUI") + the DEFAULT desktop layout is a
          tall LEFT column ("初回起動時に、画面左側にサイドバーのように縦長の形で展開"). Dragging/resizing still
@@ -32352,6 +32463,11 @@ window.addEventListener('DOMContentLoaded', () => {
         +'#atlas-panel .atl-thumb{position:relative;width:54px;height:54px;border-radius:9px;overflow:hidden;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);}'
         +'#atlas-panel .atl-thumb img{width:100%;height:100%;object-fit:cover;display:block;}'
         +'#atlas-panel .atl-thumb-x{position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,0.62);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}'
+        +'#atlas-panel .atl-fchip{position:relative;display:inline-flex;align-items:center;gap:5px;max-width:190px;height:30px;padding:0 26px 0 9px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:11.5px;}'   /* (#R158) non-image file chip in the composer */
+        +'#atlas-panel .atl-fchip svg{flex:0 0 auto;opacity:.72;}'
+        +'#atlas-panel .atl-fchip-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+        +'#atlas-panel .atl-fchip-x{position:absolute;top:50%;right:4px;transform:translateY(-50%);}'
+        +'#atlas-panel .atl-b.u .atl-fchip.atl-fchip-msg{height:26px;padding:0 9px;max-width:200px;background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.28);color:#fff;}'   /* (#R158) file chip inside the (gradient) user bubble */
         +'#atlas-panel .atl-thumb-x:hover{background:rgba(220,50,50,0.9);}'
         +'#atlas-panel.atl-drag .atl-chat{outline:2px dashed var(--primary-color);outline-offset:-6px;border-radius:10px;}'
         /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */
@@ -32427,7 +32543,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12px"],'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.5px"],'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.8px"],'
-        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:13px"]{font-size:15px !important;}'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:13px"],'
+        +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:14px"]{font-size:15.5px !important;}'   /* (#R158) desktop reply body is now 14px → keep mobile a touch larger */
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 11px 2px;}'
         +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'
@@ -32481,8 +32598,8 @@ window.addEventListener('DOMContentLoaded', () => {
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
         +'<div class="atl-ex"></div>'
         +'<div class="atl-chat"></div>'
-        +'<div class="atl-imgrow" style="display:none;"></div>'   /* (#R149) pasted/attached image thumbnails appear here */
-        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'" aria-label="'+L('Attach image','画像を添付','Bild anhängen','Прикрепить изображение','Adjuntar imagen')+'"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-mic" title="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'" aria-label="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
+        +'<div class="atl-imgrow" style="display:none;"></div>'   /* (#R149) pasted/attached image thumbnails + (#R158) file chips appear here */
+        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach a file (image or text)','ファイルを添付（画像・テキスト）','Datei anhängen (Bild oder Text)','Прикрепить файл (изображение/текст)','Adjuntar archivo (imagen o texto)')+'" aria-label="'+L('Attach a file','ファイルを添付','Datei anhängen','Прикрепить файл','Adjuntar archivo')+'"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-mic" title="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'" aria-label="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
         +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
@@ -32522,8 +32639,8 @@ window.addEventListener('DOMContentLoaded', () => {
          Uses the SAME client→ai-proxy image path the satellite-compare feature already uses (compressImage → JPEG
          data-URL → images[] the Edge Function forwards as OpenAI input_image). */
       try{
-        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'&&/^image\//.test(it.type||'')){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });
-        const atk=panel.querySelector('.atl-attach'); if(atk) atk.onclick=()=>{ try{ const fi=document.createElement('input'); fi.type='file'; fi.accept='image/*'; fi.multiple=true; fi.style.display='none'; fi.onchange=()=>{ try{ _atlAddFiles([...(fi.files||[])]); }catch(_){} try{ fi.remove(); }catch(_){} }; document.body.appendChild(fi); fi.click(); }catch(_){} };
+        inEl.addEventListener('paste',(e)=>{ try{ const items=(e.clipboardData&&e.clipboardData.items)||[]; const files=[]; for(const it of items){ if(it&&it.kind==='file'){ const f=it.getAsFile&&it.getAsFile(); if(f) files.push(f); } } if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });   /* (#R158) any pasted FILE (image or text), not images only — _atlAddFiles validates; pasted plain TEXT (kind:'string') is untouched */
+        const atk=panel.querySelector('.atl-attach'); if(atk) atk.onclick=()=>{ try{ const fi=document.createElement('input'); fi.type='file'; fi.multiple=true; fi.style.display='none'; fi.onchange=()=>{ try{ _atlAddFiles([...(fi.files||[])]); }catch(_){} try{ fi.remove(); }catch(_){} }; document.body.appendChild(fi); fi.click(); }catch(_){} };   /* (#R158) no accept restriction — images + text files both allowed */
         /* (#R154) VOICE INPUT — Web Speech API dictation. Inserts recognised text into the box (user reviews then sends);
            recognition language follows the UI language. Hidden if the browser has no SpeechRecognition. */
         try{ const mic=panel.querySelector('.atl-mic'); const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -32540,7 +32657,7 @@ window.addEventListener('DOMContentLoaded', () => {
               try{ rec.start(); }catch(_){ recng=false; mic.classList.remove('rec'); } }; } }catch(_){}
         panel.addEventListener('dragover',(e)=>{ try{ if(e.dataTransfer&&[...(e.dataTransfer.types||[])].indexOf('Files')>=0){ e.preventDefault(); panel.classList.add('atl-drag'); } }catch(_){} });
         panel.addEventListener('dragleave',(e)=>{ try{ if(!panel.contains(e.relatedTarget)) panel.classList.remove('atl-drag'); }catch(_){} });
-        panel.addEventListener('drop',(e)=>{ try{ const dt=e.dataTransfer; panel.classList.remove('atl-drag'); if(!dt) return; const files=[...(dt.files||[])].filter(f=>/^image\//.test(f.type||'')); if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });
+        panel.addEventListener('drop',(e)=>{ try{ const dt=e.dataTransfer; panel.classList.remove('atl-drag'); if(!dt) return; const files=[...(dt.files||[])]; if(files.length){ e.preventDefault(); _atlAddFiles(files); } }catch(_){} });   /* (#R158) accept any dropped file — _atlAddFiles validates image vs text vs unsupported */
       }catch(_){}
       /* (#R72) scroll-to-bottom jump ("上部にスクロールしたら、最下部まで行くボタンがでるように") */
       const jump=panel.querySelector('.atl-jump');
@@ -32658,20 +32775,31 @@ window.addEventListener('DOMContentLoaded', () => {
       return panel; }
     /* (#R149) VISION helpers — pending pasted/attached image thumbnails in the input bar (cap 4 = ai-proxy MAX_IMAGES). */
     function _atlRenderImgs(){ try{ if(!panel) return; const row=panel.querySelector('.atl-imgrow'); if(!row) return;
-      if(!_atlImgs.length){ row.style.display='none'; row.innerHTML=''; return; }
-      row.style.display='flex'; row.innerHTML=_atlImgs.map((u,i)=>'<div class="atl-thumb"><img src="'+esc(u)+'" alt=""><button class="atl-thumb-x" data-i="'+i+'" title="'+L('Remove','削除','Entfernen','Удалить','Quitar')+'">✕</button></div>').join('');
-      row.querySelectorAll('.atl-thumb-x').forEach(b=>{ b.onclick=()=>{ const i=+b.getAttribute('data-i'); if(i>=0&&i<_atlImgs.length){ _atlImgs.splice(i,1); _atlRenderImgs(); _atlSyncGo(); } }; });
+      if(!_atlImgs.length&&!_atlFiles.length){ row.style.display='none'; row.innerHTML=''; return; }
+      const rm=L('Remove','削除','Entfernen','Удалить','Quitar');
+      const imgH=_atlImgs.map((u,i)=>'<div class="atl-thumb"><img src="'+esc(u)+'" alt=""><button class="atl-thumb-x" data-kind="img" data-i="'+i+'" title="'+rm+'">✕</button></div>').join('');
+      const fileH=_atlFiles.map((f,i)=>'<div class="atl-fchip" title="'+esc(f.name)+((f.size)?(' · '+_fmtBytes(f.size)):'')+'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span><button class="atl-thumb-x atl-fchip-x" data-kind="file" data-i="'+i+'" title="'+rm+'">✕</button></div>').join('');
+      row.style.display='flex'; row.innerHTML=imgH+fileH;
+      row.querySelectorAll('.atl-thumb-x').forEach(b=>{ b.onclick=()=>{ const k=b.getAttribute('data-kind'), i=+b.getAttribute('data-i');
+        if(k==='file'){ if(i>=0&&i<_atlFiles.length) _atlFiles.splice(i,1); } else { if(i>=0&&i<_atlImgs.length) _atlImgs.splice(i,1); }
+        _atlRenderImgs(); _atlSyncGo(); }; });
     }catch(_){} }
-    function _atlSyncGo(){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go||go.classList.contains('busy')) return; go.classList.toggle('idle', !((inEl&&inEl.value.trim())||_atlImgs.length)); }catch(_){} }
-    async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(f=>f&&/^image\//.test(f.type||'')); if(!files.length) return;
-      for(const f of files){ if(_atlImgs.length>=4){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} break; }
-        /* (#R156) HI-FIDELITY encode for OCR/math: the old 1100px / q0.72 JPEG dissolved small text, fraction bars and
-           subscripts (the "小さい文字を失う固定的な1100px・品質0.72圧縮を廃止または適応化する" of the work order). 2000px /
-           q0.9 preserves fine detail; combined with detail:"high" server-side it reads dense documents and equations. */
-        try{ const u=await compressImage(f,2000,0.9); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){} }
+    function _fmtBytes(n){ n=+n||0; if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(n<10240?1:0)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
+    function _atlSyncGo(){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go||go.classList.contains('busy')) return; go.classList.toggle('idle', !((inEl&&inEl.value.trim())||_atlImgs.length||_atlFiles.length)); }catch(_){} }
+    async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(Boolean); if(!files.length) return; let unsupported=0;
+      for(const f of files){ const kind=_atlFileKind(f);
+        if(kind==='image'){ if(_atlImgs.length>=4){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} continue; }
+          /* (#R156) HI-FIDELITY encode for OCR/math: the old 1100px / q0.72 JPEG dissolved small text, fraction bars and
+             subscripts. 2000px / q0.9 preserves fine detail; combined with detail:"high" server-side it reads dense docs. */
+          try{ const u=await compressImage(f,2000,0.9); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){}
+        } else if(kind==='text'){ if(_atlFiles.length>=4){ try{ aiToast(L('Up to 4 files per message','1メッセージにつきファイルは4件まで','Bis zu 4 Dateien pro Nachricht','До 4 файлов на сообщение','Hasta 4 archivos por mensaje')); }catch(_){} continue; }
+          let txt=await _atlReadText(f); const truncated=txt.length>_ATL_FILE_MAX; if(truncated) txt=txt.slice(0,_ATL_FILE_MAX);
+          _atlFiles.push({name:String((f&&f.name)||'file'),text:txt,size:(f&&f.size)||txt.length,truncated});
+        } else { unsupported++; } }
+      if(unsupported){ try{ aiToast(L('Only images and text-based files can be attached','添付できるのは画像とテキスト系ファイルのみです','Nur Bilder und textbasierte Dateien können angehängt werden','Прикреплять можно только изображения и текстовые файлы','Solo se pueden adjuntar imágenes y archivos de texto')); }catch(_){} }
       _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
     }catch(_){} }
-    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); if(v||imgs.length){ inEl.value=''; _atlImgs=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs); } }   /* (#R149) send text + any pasted/attached images */
+    function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
     /* (#R43) HONEST reporting loop (unchanged behaviour, factored out so the AI path AND the deterministic
        fast-path/rescue share it): run every action, collect REAL per-step results, surface failures prominently
        instead of trusting the model's optimistic "say". Returns the list of failed actions. */
@@ -32865,7 +32993,8 @@ window.addEventListener('DOMContentLoaded', () => {
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
         try{ setStage(ai, _STAGE_OF(a)); }catch(_){}   /* (#R130) reflect the real current action in the indicator */
         let r; try{ r=await dispatch(a); }catch(e){ r=R(false, warn('⚠ '+esc(actLabel(a))+': '+esc((e&&e.message)||'error'))); } if(!r||typeof r!=='object') r=R(true, String(r||'')); body+=r.html||''; if(r.ok===false) fails.push(a);
-        try{ if(r&&r.meta) a.__meta=r.meta; if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
+        try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
+          if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
       try{ const mapped=[]; acts.forEach(a=>{ if(fails.indexOf(a)>=0) return; let ks=OVL_OF[a&&a.type]; if(!ks) return; if(!Array.isArray(ks)) ks=[ks]; ks.forEach(k=>{ if(k&&_ovlVisible(k)&&mapped.indexOf(k)<0) mapped.push(k); }); });
         if(mapped.length){ body+=mapToggleChip(mapped); try{ ai.__ovlSnap=_ovlSnapshot(mapped); mapped.forEach(k=>{
@@ -33250,7 +33379,7 @@ window.addEventListener('DOMContentLoaded', () => {
           else if(vr2.ran && vr2.failed.length<vr.failed.length){ d=d2; vr=vr2; env=env2; } }        /* strictly fewer failures → still an improvement */
       }catch(_){} }
       if(gen!==_runGen) return;
-      let html='<div style="font-size:12.5px;line-height:1.62;">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
+      let html='<div style="font-size:14px;line-height:1.68;">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
       if(Array.isArray(d.uncertain)&&d.uncertain.length) html+='<div style="font-size:11px;margin-top:6px;color:var(--text-muted);"><b>'+esc(L('Uncertain in the image','画像中の判読が不確実な箇所','Im Bild unsicher','Неуверенно распознано','Incierto en la imagen'))+':</b> '+esc(d.uncertain.slice(0,8).join(', '))+'</div>';
       try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
       const cls=_atlContentClass(d.contentClass);
@@ -33259,8 +33388,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if(d.focusPlace){ try{ const g=await geocode(String(d.focusPlace)); if(g&&isFinite(+g.lng)){ if(gen===_runGen) map.flyTo({center:[+g.lng,+g.lat],zoom:Math.max(map.getZoom(),6),duration:900}); } }catch(_){} } }
       if(gen===_runGen){ ai.innerHTML=html; recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
     }
-    async function run(q,imgs){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
-      if(!q&&!imgs.length) return;
+    async function run(q,imgs,files){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
+      files=(Array.isArray(files)?files:[]).filter(f=>f&&typeof f.text==='string').slice(0,4);   /* (#R158) optional text-file attachments — their content is given to the model */
+      if(!q&&!imgs.length&&!files.length) return;
+      /* (#R158) the attached files' content, given to the model at the API boundary only (not shown in the bubble, not stored
+         in history verbatim — the bubble/history keep the user's own words + a file chip). */
+      const _fileBlock=files.length?('\n\n[ATTACHED FILE'+(files.length>1?'S':'')+' — the user attached the following file'+(files.length>1?'s':'')+'. Use the content to answer; do not claim you cannot read attachments.]\n'+files.map(f=>'----- '+String(f.name||'file')+' -----\n'+String(f.text||'')+(f.truncated?'\n…(truncated — file was longer)':'')).join('\n\n')):'';
       /* (#R157) IMAGE-ONLY: do NOT fabricate a user message. The old default text ("Read and analyze this image…") was
          written into `q` here and then SHOWN in the user bubble + saved to history — the "勝手にテキストが添付される" the
          user found unpleasant. `q` now stays EMPTY: the user bubble shows only the image, history stores no invented
@@ -33271,7 +33404,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
       try{ chatEl.querySelectorAll('.atl-b.a .atl-dots').forEach(d=>{ const b=d.closest('.atl-b'); if(b) b.innerHTML=_cancelledNote(); }); }catch(_){}
-      bubble('u',(imgs.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">'+imgs.map(u=>'<img src="'+esc(u)+'" alt="" style="width:74px;height:74px;object-fit:cover;border-radius:8px;">').join('')+'</div>':'')+esc(q));   /* (#R149) show attached image thumbnails in the user bubble */
+      bubble('u',(imgs.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">'+imgs.map(u=>'<img src="'+esc(u)+'" alt="" style="width:74px;height:74px;object-fit:cover;border-radius:8px;">').join('')+'</div>':'')+(files.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">'+files.map(f=>'<span class="atl-fchip atl-fchip-msg"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span></span>').join('')+'</div>':'')+esc(q));   /* (#R149/#R158) show attached image thumbnails + file chips in the user bubble */
       /* (#R142) generating state → the send button becomes a Stop button; a fresh AbortController lets Stop kill the
          in-flight request. The whole turn is wrapped so EVERY exit path (return / throw / early-out) restores the button. */
       try{ _abortCtl=(typeof AbortController!=='undefined')?new AbortController():null; }catch(_){ _abortCtl=null; }
@@ -33288,7 +33421,7 @@ window.addEventListener('DOMContentLoaded', () => {
       /* (#R52) a clear single-intent command runs deterministically with NO AI round-trip — it neither needs an
          account nor spends a daily AI credit, so the most common operations ALWAYS work (the core of the user's
          "claims it did X but didn't" report). The AI path below is still gated as before. */
-      if(lp&&lp.confident&&lp.actions&&lp.actions.length&&!imgs.length){ const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai,q); return; }   /* (#R149) an attached image always goes to the AI (skip the no-AI local shortcut) */
+      if(lp&&lp.confident&&lp.actions&&lp.actions.length&&!imgs.length&&!files.length){ const ai=bubble('a','<span class="atl-dots" aria-hidden="true"><i></i><i></i><i></i></span>'); try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai,q); return; }   /* (#R149/#R158) an attached image OR file always goes to the AI (skip the no-AI local shortcut) */
       /* (#R106) AI FALLBACK & AVAILABILITY — "LocalPlanで無理ならAIにフォールバック / できる限りAIを使用 / エラーが多い".
          Prefer AI for anything localPlan can't confidently handle. But when AI is unavailable (logged out or the daily
          quota is spent) we must NOT dead-end into a silent return + login modal (the frequent "何もせずエラー" case):
@@ -33303,12 +33436,12 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       /* (#R156) IMAGE → DEDICATED VISION PIPELINE (classify → transcribe → solve → verify → render → map-only-if-geo),
          NOT the map-oriented generic planner. AI availability is already gated above. */
-      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q,imgs,gen); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }
+      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q+_fileBlock,imgs,gen); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }   /* (#R158) any text files ride along with the vision prompt */
       const ai=bubble('a',stageDots('think'));   /* (#R130) stage-aware placeholder — updates to Searching/Analyzing/Mapping as runActions executes */
       /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
          "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
-      try{ let plan=await askAIJSON(buildPrompt(q,_profile)+(imgs.length?'\n\n[NOTE: '+imgs.length+' image'+(imgs.length>1?'s are':' is')+' attached to this message — analyze '+(imgs.length>1?'them':'it')+' and answer about '+(imgs.length>1?'them':'it')+' in your "answer" text; if '+(imgs.length>1?'they show':'it shows')+' or imply real places, include them in the answer\'s "places" so IntMap maps them.]':''),SYS(),imgs,{task:'atlas_plan',effortHint:_cplx?'high':undefined,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal; (#R149) attached images (vision) */
+      try{ let plan=await askAIJSON(buildPrompt(q,_profile)+_fileBlock+(imgs.length?'\n\n[NOTE: '+imgs.length+' image'+(imgs.length>1?'s are':' is')+' attached to this message — analyze '+(imgs.length>1?'them':'it')+' and answer about '+(imgs.length>1?'them':'it')+' in your "answer" text; if '+(imgs.length>1?'they show':'it shows')+' or imply real places, include them in the answer\'s "places" so IntMap maps them.]':''),SYS(),imgs,{task:'atlas_plan',effortHint:_cplx?'high':undefined,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal; (#R149) attached images (vision); (#R158) attached file text */
         /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
         /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
@@ -33335,13 +33468,19 @@ window.addEventListener('DOMContentLoaded', () => {
            for this request, DO the real thing instead of printing words that claim an action that never ran — the
            user explicitly reported "実行していない動作を実行したという虚偽の報告". */
         if(acts.every(a=>a&&a.type==='answer') && lp && lp.actions && lp.actions.length){ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); msgTools(ai,q); return; }
-        /* (#R74) TIME-VARIABLE ANSWER OVERRIDE ("ありえないハルシネーションをする"): a memory-only "answer" to a
-           question about current/recent facts is exactly where the wrong-PM class of hallucination lives. If the
-           model answered such a question without any live-data action, run analyze (live web + Wikidata) instead. */
+        /* (#R74/#R158) LIVE-SOURCE OVERRIDE. Two problems share one root: (1) "ありえないハルシネーション" — a memory-only
+           answer to a current-fact question is where hallucination lives; (2) "Atlasに出典が一つもないのはくそ" — the bare
+           answer path attaches NO source cards. Fix both: when the model answered an informational / current-fact question
+           with no live-data action, re-run it through analyze (live web + Wikidata), which grounds the reply AND renders real
+           source cards (use:['web'] forces the search → citations are never empty). Guarded so greetings / social / trivial
+           one-liners are NOT sent to a web search. */
         try{ const TIMEVAR=/(最近|現在|今の|今は|きょう|今日|latest|current(ly)?|right now|this (week|month|year)|今年|首相|大統領|総理|president|prime minister|news|ニュース|情勢|状況|どうなって)/i;
-          if(acts.length&&acts.every(a=>a&&a.type==='answer')&&TIMEVAR.test(q)){
+          const INFO=/[?？]\s*$|(なぜ|どうして|どの|どんな|どこ|いつ|誰|だれ|教え|説明|とは|について|違い|比較|理由|原因|方法|どうやって|what|who|where|when|why|how\b|which|explain|describe|compare|difference|tell me|overview|summar)/i;
+          const SOCIAL=/^\s*(hi|hello|hey|yo|ok|okay|thanks|thank you|thx|ありがとう|どうも|こんにちは|こんばんは|おはよう|やあ|hola|gracias|danke|привет|спасибо)\b/i;
+          const informational=q.length>=8 && !SOCIAL.test(q) && (TIMEVAR.test(q)||INFO.test(q));
+          if(acts.length&&acts.every(a=>a&&a.type==='answer')&&informational){
             const fails=await runActions(ai,'',[{type:'analyze',question:q,use:['web']}],gen);
-            if(gen===_runGen) recordTurn(q,'(routed to live analysis)',[{type:'analyze',question:q}],fails); msgTools(ai,q); return; } }catch(_){}
+            if(gen===_runGen) recordTurn(q,'(routed to live analysis for sources)',[{type:'analyze',question:q}],fails); msgTools(ai,q); return; } }catch(_){}
         const fails=await runActions(ai, plan.say||'', acts, gen);
         if(gen===_runGen) recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
         /* (#R117/#R135) REPAIR PASS — when planned actions FAILED, give the model a DIFFERENT approach. Now bounded
@@ -33350,11 +33489,18 @@ window.addEventListener('DOMContentLoaded', () => {
            translation-only retries of the same research family+mode are dropped, and world/continental scope-blowups
            are refused. A map-draw failure is NOT treated as an answer failure. */
         try{ let pending=(fails||[]).filter(a=>a&&a.type&&a.type!=='answer'); const _tried=[]; const _triedFam=new Set();
+          /* (#R158) a PARTIAL execution (some targets resolved, some not) also needs Terra's decision — seed it into the
+             repair loop even though it reported ok:true. IntMap does not adopt a partial result on its own. */
+          try{ acts.forEach(a=>{ if(a&&a.__exec&&a.__exec.status==='partial_or_failed'&&pending.indexOf(a)<0) pending.push(a); }); }catch(_){}
+          /* (#R158) format the mechanical execution results as a structured block Terra reads to generate a corrected action */
+          const _execFbOf=list=>{ const seen=[],out=[]; (list||[]).forEach(a=>{ const e=a&&a.__exec; if(e&&e.status==='partial_or_failed'&&seen.indexOf(e)<0){ seen.push(e); out.push(e); } });
+            return out.length?('\n\n[EXECUTION RESULT — IntMap executed your action and OBSERVED the following. IntMap did NOT auto-correct, substitute, drop or reinterpret anything. YOU (the model) decide how to proceed: re-issue the action with corrected identifiers, re-search, ask the user, or accept the partial. "availableIdentifiers" are deterministic candidates IntMap found but did NOT apply — use them only if you judge them correct.]\n'+out.slice(0,4).map(e=>{ try{ return JSON.stringify(e).slice(0,1500); }catch(_){ return ''; } }).filter(Boolean).join('\n')):''; };
           acts.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
           for(let _rp=0; _rp<2 && gen===_runGen && pending.length && acts.length<=12; _rp++){
+            const _execFb=_execFbOf(pending);
             pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
             const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            const rp=await askAIJSON(buildPrompt(q,_profile)+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+'\n'+_repairGuidance(),SYS(),imgs,{task:'atlas_plan',effortHint:'high',signal:(_abortCtl?_abortCtl.signal:undefined)});
+            const rp=await askAIJSON(buildPrompt(q,_profile)+_fileBlock+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+_execFb+'\n'+_repairGuidance(),SYS(),imgs,{task:'atlas_plan',effortHint:'high',signal:(_abortCtl?_abortCtl.signal:undefined)});
             let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
             let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
             /* sanitize the repair plan through the SAME capability validation as the first plan */
@@ -33371,6 +33517,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const rf=await runActions(div, rplan.say||'', fresh, gen);
             if(gen===_runGen) recordTurn(q+' (repair '+(_rp+1)+')', rplan.say||'', fresh, rf);
             pending=(rf||[]).filter(a2=>a2&&a2.type&&a2.type!=='answer');
+            try{ fresh.forEach(a2=>{ if(a2&&a2.__exec&&a2.__exec.status==='partial_or_failed'&&pending.indexOf(a2)<0) pending.push(a2); }); }catch(_){}   /* (#R158) a still-partial repair keeps the loop going for Terra's next decision */
             if(fresh.every(a2=>a2.type==='answer')) break;   /* the model declared it impossible — don't loop on that */
           } }catch(_){}
         try{ if(_atlasDbg) _atlasDbg.finalGoalValidation=_goalValidation(_profile,_atlasDbg.actionOutcomes); }catch(_){}

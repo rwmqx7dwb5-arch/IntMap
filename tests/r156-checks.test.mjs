@@ -39,7 +39,7 @@ test('R156 #2 unified renderer: code blocks, math, tables, inline code — place
   assert.match(html, /class="atl-tablewrap"><table class="atl-md-table">/, 'tables render into a scrollable wrapper');
   assert.match(html, /'`\(\[\^`\\n\]\+\)`'|`\(\[\^`\\n\]\+\)`/, 'sanity: inline-code source present');
   // the EXISTING R154/R155 heading/bullet/paragraph HTML is preserved verbatim
-  assert.match(html, /\.replace\(\/\^##\\s\*\(\.\+\)\$\/gm,'<div style="font-weight:750;color:var\(--text-main\);margin:1\.7em 0 \.55em;padding-top:\.62em;border-top:1px solid rgba\(128,128,128,\.18\)/, 'R154/R155 "## " heading style kept verbatim');
+  assert.match(html, /\.replace\(\/\^##\\s\*\(\.\+\)\$\/gm,'<div style="font-weight:800;color:var\(--text-main\);margin:2\.05em 0 \.62em;padding-top:\.78em;border-top:1\.5px solid rgba\(128,128,128,\.34\)/, 'R158 "## " heading style (stronger contrast, still --text-main)');
   assert.match(html, /\.replace\(\/\\\*\\\*\(\[\^\*\]\+\)\\\*\\\*\/g,'<b>\$1<\/b>'\)/, 'inline bold kept');
   // interactive wiring at document level (works in panel + sidebar tab + workspace)
   assert.match(html, /if\(!window\.__atlRenderWired\)\{ window\.__atlRenderWired=true;/, 'one-time document-level wiring for the Copy button');
@@ -73,7 +73,7 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
   assert.match(html, /function _visionSYS\(\)\{/, 'vision system prompt (classify → transcribe → solve → verify → map-only-if-geo)');
   assert.match(html, /task:'vision_read',effortHint:'high',imageDetail:'high'/, 'vision call: vision_read task + high effort + detail:high');
   // run() routes images to the vision turn, NOT the generic planner
-  assert.match(html, /if\(imgs\.length\)\{ const aiv=bubble\('a',stageDots\('read'\)\); try\{ await _atlVisionTurn\(aiv,q,imgs,gen\);/, 'run() routes an attached image to the vision pipeline');
+  assert.match(html, /if\(imgs\.length\)\{ const aiv=bubble\('a',stageDots\('read'\)\); try\{ await _atlVisionTurn\(aiv,q\+_fileBlock,imgs,gen\);/, 'run() routes an attached image to the vision pipeline (R158: file text rides along)');
   // ONE image re-examination round when a deterministic check fails
   assert.match(html, /\[SELF-CHECK FAILED\] Your emitted check\(s\) did NOT hold/, 'failed check triggers an image re-examination round');
   // neutral default prompt (no forced mapping)

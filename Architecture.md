@@ -528,7 +528,8 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
     （クォータニオンなのでジンバル固定なし）。**固定1/200秒**サブステップ（描画と分離＝フレームレート非依存、`_dbg.step`で決定的検証）。
     **カメラ（#R95で真の視点点へ刷新）**: `calculateCameraOptionsFromCameraLngLatAltRotation`（MapLibre v5に実在。`for…in`は非列挙の継承メソッドを見落とすため過去に「無い」と誤認していた）で
     **視点を機体そのものに置き**、方位/ピッチ/ロールを機体軸から直接算出。`setMaxPitch(179)`+`setCenterClampedToGround(false)`で**宙返り/急上昇/背面でも垂直を越えて機首を追い**（ピッチ0.5–179°実測）、
-    ロールはジンバル反転しない幾何バンク（0–180°）、旧`calculateCameraOptionsFromTo`＋85°クランプが起こしていた**毎フレームのバウンス**を解消。開始方位=地図の方位（`||90`の0°誤判定を修正）、
+    ロールはジンバル反転しない幾何バンク（0–180°）。開始方位=地図の方位（`||90`の0°誤判定を修正）、
+    **#R158 視点瞬間移動の根本修正**: 毎フレームの `calculateCameraOptionsFromCameraLngLatAltRotation` は中心を `transform.calculateCenterFromCameraLngLatAlt`（視線を地面へ射影）で求めるが**水平付近で射影距離が発散→MapLibreが固定距離へ切替**し、未平滑化pitchが境界を往復すると center/zoom が1フレーム跳ねて視点が飛んだ。→ 機首方向**一定距離1.8km先のターゲット**を `calculateCameraOptionsFromTo(eye→target)` へ（返り値 center=target・zoom=f(距離)＝**固定距離なら全姿勢で安定**・地面射影もクランプもなし・見上げは pitch>90＋maxPitch179で維持）、rollは別途適用、**pitchに指数ローパス(τ55ms)**でスパイク除去、四元数/機首ベクトル正規化＋全カメラ値の NaN/Inf/異常Δ 検証で異常フレームskip、**カメラ高度を機体高度から分離**（平滑化地形+2.5mフロアで地中侵入防止）、`start()` で `map.stop()`＝唯一のカメラ制御元、`maplibre-gl@5.24.0` にピン留め。
     フォーカス喪失(blur/visibility/pointercancel)でキー固着を解除、背面/負迎角失速も警告、脚上げ接地=胴体着陸で墜落、機体速度は同一旧状態から一括更新＋−ω×vをノルム保存回転にして**宙返りのエネルギー暴走(→マッハ15)を解消**、飛行中は重い move系ハンドラ（オクルージョン/比較同期/経緯線）を停止。
     地形は`_terrRead`でDEM未読込を判定し、開始/リセットは初回の確実な地形読取まで待って安全高度へ整定（0m誤判定の幻の山/「読込即墜落」を解消）。
     **#R96で空力を全迎角対応に刷新＋F-35追加**: 失速を境に**平板モデルへ平滑ブレンド**＝CLが正負両側で連続（負迎角失速の跳びを解消）、90°付近で抗力がCDmaxへ（深失速/テールスライドが減速）、失速後は昇降舵/ピッチ剛性が減衰。
@@ -886,6 +887,7 @@ supabase/
 - **「パースOK」≠「動作OK」**。必ず**レイヤー行≈72個** ＋ **コンソールエラー0** を確認する。
 - **basemap スタイル切替（Map↔Sat）はカスタム source/layer を破棄する**。`countries`/`country-fill` 等は
   必要時に再生成する（Countries(info) ハンドラは `addCountryLayers()` を再実行して自己修復）。
+- **(#R158) 衛星タイルは `maplibregl.addProtocol('imapsat')` 経由**。Esri World_Imagery のネイティブ最大zoomは地域で異なり超過タイルは灰色「no data」（固定~2521B）を返すので、fetch でバイト長≤3500Bを灰色判定→**最寄り実祖先タイルの該当象限を高品質クロップ拡大**（都市z19はネイティブ素通り・LRU+生fetchキャッシュ・エラーで生バイトフォールバック）。Esriは `ACAO:*` なのでプロキシ不要。`window.__imSatProto` 偽なら直Esriへ縮退。灰色タイルが全域で消滅し外洋も実衛星が出る（フライトシムの青い水fillはこれで不要になり撤去）。
 - **`reorganizeLayerPanel()` は DOM を大量に並べ替える**。タップ中に走ると行がずれて誤タップの原因になり得る。
 - **ケッペンのOOMクラッシュ**：モバイルは必ず軽量 `*_4k.png` を使う（フル解像度はモバイルでRAM超過）。
 - **ヘッドレスプレビューは `document.hidden`** で WebGL の `load` が発火しない。地図描画はDOM/状態/console で検証する。
@@ -1094,6 +1096,7 @@ supabase/
 - **② 複数地域＝グループ別色＋凡例**: highlight dispatch に**多地域分岐**（2つ以上の対象・明示単色なし・河川/流域でない・かつ少なくとも1つが国集合/地域）。各対象を**カテゴリ配色 `_HL_PALETTE` の別色**で `nlq-poly-src` に描画（国集合は `_codesGeo(codes)` で **`window.countryGeo` の実国境から MultiPolygon** 構築・内部境界は `comp:1` で淡く）、返信に**色スウォッチ凡例**（`_hlLegendHtml`：地域名＋か国数＋根拠）。単一対象/単色指定/純国リストは従来の単色 feature-state 経路（無変更）。表示名は **`M49_LABELS`（5言語）で localize**（`_hlPolys` 内部名は正準英語キー＝安定・テスト可）。
 - **③ 描画前ジオメトリ検証（ハリボテ拒否）**: `_validGeo(geo,{trusted})` が **未閉リング・退化した少頂点「巨大三角形」・異常な長辺・自己交差・全世界blob・極小スライバー・非ポリゴン**を描画前に拒否。実国境/OSM/構成境界は `trusted` で粗近似ヒューリスティックを免除、AI/派生/ソフト箱は全検査。多地域・単地域の**両経路**で適用（拒否は正直に「不正な形状のため未描画」）。`_bboxSoftPoly` も**厳密閉リング化**（`sin(2π)≠0` の隙間を解消）。
 - **④ 実状態検証＋正直返答**: 描画後に `_verifyPolyPaint(n)` で **source/layer/feature数** を確認。返信は**実行結果から合成**＝描画できた対象（凡例＋根拠）と **失敗（見つからず／不正形状で拒否／曖昧）を明確に分離**、部分失敗は `meta.partial` で**プランナーの実行前 `say` を抑止**（R140/R142 の say-gate）。
+- **④' (#R158) Terra＝意味/対象/方法の最高意思決定者、IntMap＝忠実な実行装置**: コード側の**自動補正・対象除外・意味推測を廃止**。`_hlReadGptGroups` は Terra の識別子をそのまま実行し、無効/空ISO3は**補正せず**（`resolveCountrySync` 救済を撤去）`unresolved:[{name,iso3,reason,availableIdentifiers}]` として返す（候補は**報告のみ・適用しない**）。dispatch は**構造化実行結果** `{status,action,resolved,unresolved,renderState,capabilities}`（委託書JSONスキーマ）を `R(ok,html,{meta,exec})` で返し（`cg.miss`/`_validGeo` 失敗も unresolved に観測記録）、`runActions` が `a.__exec` に保存、run() の**既存2周repairループ**が `partial_or_failed` を `pending` に投入＋`[EXECUTION RESULT …]` を repair プロンプトに添付＝**Terra自身が**修正/再検索/確認/部分採用を決める。スキーマ/型/セキュリティ/描画検証は**Terraの意味判断を覆さない観測層**として維持。`regionGroup`/legacy `countries` 経路は無改変（R143無回帰）。全アクション共通の契約（highlight が第一実装）。
 - **⑤ 堅牢性（style待機・遅延上書き・再描画）**: 世代トークン `_hlGen`＝**新しいハイライトが古い非同期解決の上書きを阻止**、描画は最大 8×0.7s のバウンド再試行、`styledata` 再描画は既存の `paintPolys` ハンドラが継続。
 - **⑥ 複合展開（頑健化）**: `_expandRegionCompound` が **「東西南北欧」→4 M49 キー**、「南北アメリカ」→2、を決定的に展開。さらに**方向欧の2語以上の共起時は M49 に正準化**（＝「北欧」は単独では北欧5国だが、四方位欧の集合内では M49 Northern Europe＝隙間なし4分割）。
 - **公開/テストAPI**: `IntMapAtlasDebug.{regionGroup,validGeo,codesGeo,expandCompound,paletteColor,legendHtml,polyState}`（純関数＝mapなしでCI検証可）。データソース変更なし（既存 `window.countryGeo` の再利用）。

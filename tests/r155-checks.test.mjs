@@ -95,7 +95,7 @@ test('Layer panel: right default only overridden by an explicit choice', () => {
 
 test('Atlas typography: forceful format mandate + sharper heading render', () => {
   assert.match(index, /NEVER write more than ~3 sentences in a row without a "## " heading or a bullet/, 'mandate present');
-  assert.match(index, /border-top:1px solid rgba\(128,128,128,\.18\)/, '## section hairline (placement, not colour)');
+  assert.match(index, /border-top:1\.5px solid rgba\(128,128,128,\.34\)/, '## section hairline (R158: stronger neutral divider, placement not colour)');
 });
 
 test('admin safeUrl() rejects dangerous schemes', () => {
