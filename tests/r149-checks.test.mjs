@@ -47,11 +47,11 @@ test('R149/R150 #3 Köppen legend stretches to the screen bottom (viewport-based
 
 test('R149 #4 Atlas typography: em-based heading hierarchy in mdMini', () => {
   // (#R154) headings differentiate by SIZE + SPACING only — NO colour ("目次を色分けするのはやめる")
-  assert.match(html, /font-size:1\.68em;letter-spacing:\.01em/, 'h1 ~1.68em (R155)');
-  assert.match(html, /font-size:1\.44em;line-height:1\.28;letter-spacing:\.005em/, 'h2 ~1.44em (R155)');
-  assert.match(html, /font-size:1\.18em;line-height:1\.32/, 'h3 ~1.18em (R155)');
+  assert.match(html, /font-size:1\.9em;letter-spacing:\.012em/, 'h1 ~1.9em (R158)');
+  assert.match(html, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 ~1.56em (R158)');
+  assert.match(html, /font-size:1\.3em;line-height:1\.3;letter-spacing:\.004em/, 'h3 ~1.3em (R158)');
   assert.ok(!/color:var\(--primary-color\);margin:1\.\d+em 0 [^;]*;font-size:1\.\d+em/.test(html), 'R154: heading rules no longer use --primary-color (size/spacing only)');
-  assert.match(html, /'<div style="height:1\.3em"><\/div>'/, 'paragraph gap ~1.3em (R155)');
+  assert.match(html, /'<div style="height:1\.5em"><\/div>'/, 'paragraph gap ~1.5em (R158)');
   // prompts mandate the structure
   assert.match(html, /FORMAT FOR READABILITY — REQUIRED for any answer longer than/, 'answer prompt mandates structure');
 });
@@ -75,8 +75,8 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
   assert.match(html, /async function _atlAddFiles\(files\)/, 'add-files helper');
   assert.match(html, /compressImage\(f,2000,0\.9\)/, 'reuses compressImage → JPEG data URL (R156 hi-fi 2000/0.9 for OCR/maths, was 1100/0.72)');
   // run() threads images to the planner call (was hardcoded null)
-  assert.match(html, /async function run\(q,imgs\)\{/, 'run accepts images');
-  assert.match(html, /buildPrompt\(q,_profile\)\+\(imgs\.length\?[\s\S]*?\),SYS\(\),imgs,\{task:'atlas_plan'/, 'planner call gets imgs (not null)');
+  assert.match(html, /async function run\(q,imgs,files\)\{/, 'run accepts images (and R158 file attachments)');
+  assert.match(html, /buildPrompt\(q,_profile\)\+_fileBlock\+\(imgs\.length\?[\s\S]*?\),SYS\(\),imgs,\{task:'atlas_plan'/, 'planner call gets imgs (not null) + R158 file text');
   assert.match(html, /class="atl-attach"/, 'attach button present');
   // server already supports vision
   assert.match(aiproxy, /const MAX_IMAGES = 4/, 'proxy caps images');

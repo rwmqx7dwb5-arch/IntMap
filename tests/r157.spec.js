@@ -34,7 +34,7 @@ test.afterAll(async () => { await page?.context()?.close(); });
 async function hl(action) {
   return page.evaluate(async (a) => {
     const r = await window.IntMapConsole.dispatch(a);
-    return { ok: r && r.ok, html: (r && r.html) || '', meta: (r && r.meta) || null, poly: window.IntMapAtlasDebug.polyState() };
+    return { ok: r && r.ok, html: (r && r.html) || '', meta: (r && r.meta) || null, exec: (r && r.exec) || null, poly: window.IntMapAtlasDebug.polyState() };
   }, action);
 }
 
@@ -91,26 +91,44 @@ test('all-invalid ISO3 codes → rejected at the execution layer (ok:false)', as
   expect(r.poly.n).toBe(0);   // nothing was drawn on a guess
 });
 
-// A mix of valid + invalid draws the valid ones and reports the invalid separately (partial).
-test('mixed valid + invalid → valid drawn, invalid reported, partial flagged', async () => {
+// (#R158) A mix of valid + invalid draws the valid ones and returns a STRUCTURED execution result — the invalid target is
+// UNRESOLVED (reported to Terra), NOT silently skipped, and the partial is flagged so IntMap does not finalise it alone.
+test('mixed valid + invalid → valid drawn, unresolved reported to Terra, partial flagged + exec result', async () => {
   const r = await hl({ type: 'highlight', interpretation: 'test', targets: [
     { name: 'Germany', iso3: 'DEU' }, { name: 'France', iso3: 'FRA' }, { iso3: 'ZZZ' },
   ] });
   expect(r.ok).toBe(true);
   expect(r.poly.n).toBe(1);   // one group of the two valid countries
   expect(/ZZZ/.test(r.html)).toBe(true);
-  expect(/Skipped|無効|omiti|übersprungen|Пропущены/i.test(r.html)).toBe(true);
+  expect(/could not be matched|一致させられ|zuordnen|не сопоставлен|no coincidieron/i.test(r.html)).toBe(true);
   expect(r.meta && r.meta.partial).toBe(true);
+  // the mechanical execution contract the repair loop feeds back to Terra
+  expect(r.exec && r.exec.status).toBe('partial_or_failed');
+  expect(r.exec.resolved.map((x) => x.iso3).sort()).toEqual(['DEU', 'FRA']);
+  expect(r.exec.unresolved.some((u) => u.iso3 === 'ZZZ')).toBe(true);
+  expect(r.exec.renderState.painted).toBe(true);
 });
 
-// The pure reader — validates the model's targets deterministically, and correctly declines to treat a NAME array
-// or a concept STRING as targets (those fall through to the legacy concrete-place resolver).
-test('_hlReadGptGroups: validates codes, recovers a bad ISO3 by name, declines names/concept strings', async () => {
+// (#R158) A fully-valid highlight resolves with an 'ok' execution result (no unresolved, verified render).
+test('all-valid highlight → exec status ok, everything resolved', async () => {
+  const r = await hl({ type: 'highlight', interpretation: 'test', targets: [
+    { name: 'Germany', iso3: 'DEU' }, { name: 'France', iso3: 'FRA' },
+  ] });
+  expect(r.ok).toBe(true);
+  expect(r.exec && r.exec.status).toBe('ok');
+  expect(r.exec.unresolved.length).toBe(0);
+  expect(r.exec.resolved.map((x) => x.iso3).sort()).toEqual(['DEU', 'FRA']);
+});
+
+// (#R158) The pure reader — Terra decides, IntMap OBSERVES. A wrong/blank ISO3 is NOT auto-corrected from the name: it is
+// returned as UNRESOLVED with the deterministic candidate identifier merely REPORTED (availableIdentifiers), never applied.
+// Name arrays and concept strings still decline to targets (legacy concrete-place resolver path).
+test('_hlReadGptGroups: no auto-correction — reports unresolved + candidate identifiers, declines names/concept strings', async () => {
   const v = await page.evaluate(() => {
     const D = window.IntMapAtlasDebug;
     return {
-      // wrong ISO3 "XX" but a clear NAME → recovered to DEU via the deterministic country index (not concept guessing)
-      recovery: D.hlReadGroups({ targets: [{ name: 'Germany', iso3: 'XX' }, { name: 'France', iso3: '' }] }),
+      // wrong ISO3 "XX" (blank/invalid) + a clear NAME → NOT rescued; unresolved with a REPORTED candidate (DEU/FRA)
+      obs: D.hlReadGroups({ targets: [{ name: 'Germany', iso3: 'XX' }, { name: 'France', iso3: '' }] }),
       bareCodes: (D.hlReadGroups({ countries: ['DEU', 'FRA'] }) || []).length,   // bare ISO3 array = targets
       nameArray: D.hlReadGroups({ countries: ['Germany', 'France'] }),           // names → null (legacy path)
       conceptString: D.hlReadGroups({ countries: 'ゲルマン諸国' }),                 // concept string → null (legacy path)
@@ -118,9 +136,12 @@ test('_hlReadGptGroups: validates codes, recovers a bad ISO3 by name, declines n
       validHasZZZ: D.validCodeSet().includes('ZZZ'),
     };
   });
-  expect(v.recovery.length).toBe(1);
-  expect(v.recovery[0].codes).toEqual(['DEU', 'FRA']);
-  expect(v.recovery[0].invalid).toEqual([]);
+  expect(v.obs.length).toBe(1);
+  expect(v.obs[0].codes).toEqual([]);                        // nothing auto-applied
+  expect(v.obs[0].unresolved.length).toBe(2);                // both returned to Terra
+  const avail = v.obs[0].unresolved.reduce((acc, u) => acc.concat(u.availableIdentifiers || []), []);
+  expect(avail).toContain('DEU');                            // candidate REPORTED, not applied
+  expect(avail).toContain('FRA');
   expect(v.bareCodes).toBe(1);
   expect(v.nameArray).toBeNull();
   expect(v.conceptString).toBeNull();
