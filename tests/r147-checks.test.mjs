@@ -60,7 +60,8 @@ test('R147/R152 Street View coverage is a cyan light-blue, THINNER line (R152 dr
 
 test('R147 #9 satellite base layer has instant tile fade (no 300ms cross-fade)', () => {
   assert.match(html, /id:'layer-sat'[\s\S]{0,140}'raster-fade-duration':0/, 'layer-sat fade 0');
-  assert.match(html, /'satellite':\{type:'raster'[\s\S]{0,260}maxzoom:19\}/, 'satellite source maxzoom cap');
+  assert.match(html, /'satellite':\{type:'raster',tiles:\(window\.__imSatProto\?\['imapsat/, 'satellite source uses the R158 tile protocol (grey-tile fix)');
+  assert.match(html, /'satellite':\{type:'raster'[\s\S]{0,400}maxzoom:19,attribution/, 'satellite source maxzoom cap 19');
 });
 
 test('R147 #14 monitor create dialog falls back to the current map view', () => {

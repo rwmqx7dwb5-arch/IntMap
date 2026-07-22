@@ -63,7 +63,7 @@ test('R151 #4 toolbar: Radius under Measure menu, Screenshot + link under one Sh
 
 test('R151 #5 Atlas typography: a standalone bold line becomes a real sub-heading', () => {
   assert.match(html, /\.replace\(\/\^\\\*\\\*\(\[\^\*\\n\]\{2,90\}\)\\\*\\\*\[ \\t\]\*:\?\[ \\t\]\*\$\/gm/, 'standalone **bold line** → heading rule');
-  assert.match(html, /<div style="height:1\.3em"><\/div>/, 'generous explicit-paragraph gap (R155 1.3em)');
+  assert.match(html, /<div style="height:1\.5em"><\/div>/, 'generous explicit-paragraph gap (R158 1.5em)');
 });
 
 test('R151 #6 monitor highlight is cleared when the monitor is deleted', () => {

@@ -58,7 +58,7 @@ test('#2 unified renderer: matrix→KaTeX, code block, table', async () => {
       inlineCode: !!host.querySelector('.atl-code-i'),
       table: !!host.querySelector('.atl-md-table th'),
       tableScroll: (() => { const t = host.querySelector('.atl-tablewrap'); return t ? getComputedStyle(t).overflowX : null; })(),
-      heading: /font-size:1\.44em/.test(host.innerHTML),   // R154/R155 "## " heading preserved
+      heading: /font-size:1\.56em/.test(host.innerHTML),   // R158 "## " heading (stronger size contrast)
     };
   });
   expect(r.katexEls).toBeGreaterThan(0);

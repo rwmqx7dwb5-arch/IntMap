@@ -42,9 +42,10 @@ test('R152 #2 Companies compare dock is the static absolute-overlay (Countries p
 test('R152 #3 Atlas typography — size + spacing hierarchy, NO fabricated headings', () => {
   // (#R154) the opening-sentence→bold-lead fabrication was the "テキストを大きくする箇所がおかしい／判定がおかしい" cause — REMOVED
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: opening sentence is NOT promoted to a bold lead (no wrong enlargement)');
-  assert.match(html, /font-size:1\.68em;letter-spacing:\.01em/, 'h1 (1.68em, R155)');
-  assert.match(html, /font-size:1\.44em;line-height:1\.28;letter-spacing:\.005em/, 'h2 (1.44em, R155)');
-  assert.match(html, /<div style="height:1\.3em"><\/div>/, 'generous paragraph gap (1.3em, R155)');
+  // (#R158) hierarchy strengthened (bigger jumps + stronger neutral divider) — still no colour, no fabricated headings
+  assert.match(html, /font-size:1\.9em;letter-spacing:\.012em/, 'h1 (1.9em, R158)');
+  assert.match(html, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 (1.56em, R158)');
+  assert.match(html, /<div style="height:1\.5em"><\/div>/, 'generous paragraph gap (1.5em, R158)');
 });
 
 test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relevance gate, honest relabel', () => {
@@ -78,13 +79,13 @@ test('R152 #10 Compass right-click numeric popup (desktop)', () => {
   assert.match(html, /if\(typeof _imTouchPrimary==='function' && _imTouchPrimary\(\)\) return;/, 'desktop-only guard');
 });
 
-test('R152 #11 Flight sim — open-ocean sea-surface floor, below-sea land exempt, blue water fill', () => {
-  assert.match(html, /function _isOpenOcean\(lng,lat\)\{/, 'ocean discriminator via countryGeo');
-  assert.match(html, /if\(st\._overOcean && terr<0\)\{ terr=0;/, 'sea-surface floor over open ocean');
+test('R152 #11 Flight sim — open-ocean sea-surface floor + below-sea land exempt (water-fill REMOVED in R158)', () => {
+  assert.match(html, /function _isOpenOcean\(lng,lat\)\{/, 'ocean discriminator via countryGeo (physics kept)');
+  assert.match(html, /if\(st\._overOcean && terr<0\)\{ terr=0;/, 'sea-surface floor over open ocean (physics kept)');
   assert.match(html, /st\._overOcean=_isOpenOcean\(st\.lng,st\.lat\)/, 'ocean flag refreshed once per frame');
-  assert.match(html, /function _fsOceanFC\(\)\{[\s\S]*const outer=\[\[-180,-85\.051\]/, 'inverse-mask ocean polygon (world rect + country holes)');
-  assert.match(html, /addLayer\(\{id:'fs-ocean-water',type:'fill'/, 'blue water fill layer');
-  assert.match(html, /map\.off\('styledata',_fsOceanStyleGuard\); \}catch\(_\)\{\} _fsRemoveOcean\(\)/, 'water removed on exit');
+  // (#R158) the blue water-FILL overlay was retired per request ("海を水で満たす加工は廃止") — its layer + builders are gone
+  assert.doesNotMatch(html, /addLayer\(\{id:'fs-ocean-water',type:'fill'/, 'blue water-fill layer removed (R158)');
+  assert.doesNotMatch(html, /function _fsAddOcean\(\)\{/, 'water-fill builder removed (R158)');
 });
 
 test('R152 #12 Contour density slider rebuilds the source with scaled thresholds, in the legend', () => {
