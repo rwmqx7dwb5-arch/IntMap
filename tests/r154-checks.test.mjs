@@ -86,13 +86,13 @@ test('R154 #8 Layer panel defaults to the right sidebar (normal mode)', () => {
 });
 
 test('R154 #9 Right sidebar resizable + smaller default', () => {
-  assert.match(html, /:root\{--lsr-w:min\(340px,92vw\);\}/, 'default width 430→380→340 (R159)');
+  assert.match(html, /:root\{--lsr-w:min\(300px,92vw\);\}/, 'default width 430→380→340→300 (R160)');
   assert.match(html, /#layer-sidebar-r \.lsr-resizer\{position:absolute;top:0;left:-3px;/, 'left-edge resize handle CSS');
   assert.match(html, /rh\.className='lsr-resizer';/, 'resizer element created in build()');
   assert.match(html, /let w=rsw-\(e\.clientX-rsx\);/, 'grows as the cursor moves left');
   assert.match(html, /localStorage\.setItem\('intmap_lsr_w', String\(sb\.offsetWidth\)\)/, 'persists the dragged width');
   assert.match(html, /let saved=parseInt\(localStorage\.getItem\('intmap_lsr_w'\)\|\|'',10\);/, 'open() honours the saved width');
-  assert.match(html, /\(saved>=260\)\?Math\.min\(saved,cap\):Math\.max\(280,Math\.min\(340/, 'saved width used, else the 340 default (R159)');
+  assert.match(html, /\(saved>=260\)\?Math\.min\(saved,cap\):Math\.max\(280,Math\.min\(300/, 'saved width used, else the 300 default (R160)');
 });
 
 test('R154 #10 Layer on/off desync — OFF learned layer is hidden', () => {

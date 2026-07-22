@@ -102,9 +102,9 @@ test('R152 #13 IntMapGeoEngine renderer abstraction + MapLibre adapter + Cesium 
   assert.match(html, /const CESIUM_CONTRACT=\{ id:'cesium', implemented:false,/, 'Cesium contract (no SDK)');
   assert.match(html, /camera:\{ flyTo:o=>_adapter\.flyTo\(o\)/, 'camera facade delegates to the adapter');
   assert.match(html, /use\(a\)\{ if\(a&&a\.id\) _adapter=a;/, 'a future renderer can be swapped in');
-  // Atlas camera execution now routes through the engine
-  assert.match(html, /IntMapGeoEngine\.camera\.easeTo\(\{pitch:tp,duration:600\}\)/, 'Atlas pitch routes through the engine');
-  assert.match(html, /IntMapGeoEngine\.camera\.easeTo\(\{bearing:tb/, 'Atlas bearing routes through the engine');
+  // Atlas camera execution routes through the engine (R160 aliases `const GE=IntMapGeoEngine.camera` in these cases)
+  assert.match(html, /const GE=IntMapGeoEngine\.camera;[\s\S]*?GE\.easeTo\(\{pitch:tp,duration:600\}\)/, 'Atlas pitch routes through the engine');
+  assert.match(html, /GE\.easeTo\(\{bearing:tb/, 'Atlas bearing routes through the engine');
 });
 
 test('R152 #8 Companies — monthly time-series, fresher prices, deeper history floor', () => {
